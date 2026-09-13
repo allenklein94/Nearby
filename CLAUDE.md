@@ -40,6 +40,65 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 81 ("One Plan can contain multiple businesses" -- the ride/dinner/live-music/ride-home
+itinerary mock) — fully DONE (2026-09-13), resumed cleanly after a codespace restart (a complete
+migration plus matching client edits were found already written and uncommitted at session
+start; all read in full, checked against the user's own mock, and confirmed correct and complete
+-- nothing needed to be redone, only verified live and shipped).** Direct extension of Item 80's
+"Make it special" add-on architecture: Item 80 gave a plan a flat one-slot-per-type readiness
+rollup ("2 of 3 extras confirmed"); this item turns it into the user's own literal mock -- a real
+chronological itinerary (6:30 Ride / 7:00 Dinner / 9:00 Live music / 10:30 Ride home), including
+the genuinely new case of TWO Transportation engagements in one plan (there and back), which
+Item 80's own "one open add-on per type" duplicate guard had accidentally made impossible.
+
+Shipped via `20261105_plan_timeline.sql` (applied and verified live against production
+`enmosvippabmuqslzrox`): two new nullable, purely-descriptive columns on `business_requests` --
+`plan_time` (when this specific engagement happens within the PLAN's own timeline, deliberately
+distinct from `time_window_start`/`time_window_end`, which stay the requester's real availability
+window for matching -- a native time picker only, never AI-inferred, per this repo's own standing
+rule) and `plan_label` (a short freely-typed distinguishing label, "Ride home" vs "Ride there").
+The duplicate-add-on guard in `create_plan_addon_request` (now a 4th trailing param,
+`plan_time_param` -- old 3-arg signature explicitly dropped first, confirmed single overload
+live) is relaxed to only reject a true accidental double-tap (same type AND same plan_time AND
+same plan_label, null-safe via `IS NOT DISTINCT FROM`) rather than any second same-type add-on --
+a deliberate second Transportation entry at a different time now succeeds. A new
+`set_plan_item_time` RPC lets the caller freely retime/relabel any of their own requests in a plan
+after the fact (the primary included -- e.g. labeling it "Dinner at Restaurant A" once a business
+is accepted). `get_business_opportunities` (Item 69/80) now also returns `plan_time`/`plan_label`
+so a business deciding on a Transportation add-on knows WHICH ride it is. A 7th add-on type,
+`entertainment` (🎵, matching the mock's "Live music"), reuses the already-live `Music` leaf tag
+under `entertainment_nightlife` -- no new taxonomy value needed.
+
+Client: `planAddonReadiness.js`'s old one-slot-per-type model (`summarizeAddonsByType`/
+`summarizePlanAddonReadiness`) was replaced with a real timeline builder, `buildPlanTimeline()` --
+merges the primary + every live (non-cancelled) add-on into one sorted list, by whichever time is
+actually known (a manually-set `plan_time` first, else a real accepted offer's own `proposed_time`,
+else honestly "Anytime," sorted last, never guessed into a fake position); two same-type entries
+each get their own row. `summarizePlanTimelineReadiness()` replaces the old readiness rollup,
+computed directly off the timeline. `BusinessRequestDetailScreen.js`'s "✨ Make it special" section
+is now "🗺️ Your Plan" -- a real chronological list (fixed-width time column + icon/label/business
+name/state/actions per row), with a shared inline compose panel (native `DateTimePicker` + a label
+`TextInput`, one open at a time per this app's own Progressive Depth doctrine) driving both "add a
+new entry" and "retime an existing one." `BusinessDashboardScreen.js`'s opportunity card gained a
+"🕐 {time}" chip showing the specific plan time for a business deciding on an add-on.
+
+Verified live against production via two disposable rolled-back transactions using the real
+`create_business_request`/`create_plan_addon_request` RPCs (not raw inserts -- confirmed
+`business_requests` has no direct INSERT policy at all, only SECURITY DEFINER RPC access) with
+real `SET ROLE authenticated` + `request.jwt.claims` impersonation: a second Transportation add-on
+at a different time succeeds (previously blocked); an exact duplicate (same type/time/label) is
+correctly rejected; a null-time/null-label duplicate is also correctly rejected (null-safety
+confirmed); the new `entertainment` type creates successfully; `set_plan_item_time` correctly
+retimes/relabels the primary; `get_business_opportunities` correctly returns `plan_time`/
+`plan_label` in its payload for a business viewing an add-on. Both transactions rolled back and
+re-confirmed afterward with zero leaked rows. Full Jest suite 453/453 passing (test files updated
+to match the new `buildPlanTimeline`/`summarizePlanTimelineReadiness` shape); all eight touched/
+new files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a
+running app (no simulator/device tooling this session, standing note) -- next session should
+confirm on a real account that the "🗺️ Your Plan" timeline renders correctly sorted by time, that
+the inline time-picker/label compose panel works for both adding a new entry and retiming an
+existing one, and that a business's opportunity card shows the correct plan-time chip.
+
 **Item 80 ("Make it special" -- multi-business add-ons on a plan) — IN
 PROGRESS, stopped mid-session for a codespace restart (2026-09-13).** User's
 own explicit instruction: build the real thing end-to-end (schema, RPCs,

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useStripe, initStripe } from '@stripe/stripe-react-native';
-import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon } from '../services/businessFulfillment';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon, setPlanItemTime } from '../services/businessFulfillment';
 import { relevantAddonTypesForOccasion, planAddonIcon, planAddonLabel } from '../constants/planAddons';
-import { summarizeAddonsByType, summarizePlanAddonReadiness, addonStateCopy } from '../utils/planAddonReadiness';
+import { buildPlanTimeline, summarizePlanTimelineReadiness, addonStateCopy } from '../utils/planAddonReadiness';
 import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
 import { getConnectedPeopleWithInterests } from '../services/surpriseMe';
 import { recordIntentSelection } from '../services/intentOutcomes';
@@ -110,7 +111,7 @@ function OfferMediaPreview({ path, type, colors }) {
 // (singular) scope; revisiting a request relies on the push deep link,
 // same as this app's established gathering_invite precedent.
 export default function BusinessRequestDetailScreen({ navigation, route }) {
-  const { colors, shadow } = useTheme();
+  const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
   const requestId = route.params?.requestId;
   const justSubmitted = route.params?.justSubmitted ?? false;
@@ -203,13 +204,24 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // request -- the actual gap the chain-1 audit found. An inline
   // expand-in-place section (Progressive Depth doctrine), not a new
   // screen.
-  // Item 80 ("Make it special," CLAUDE.md): real, independent add-on
-  // business_requests attached to this primary request. addonActionKey
-  // tracks which specific add-on type is mid-action (add/retry/remove),
-  // for a per-row spinner -- never a screen-wide loading lock, since one
-  // add-on's action must never block another's independent lifecycle.
+  // Item 80 ("Make it special," CLAUDE.md), extended by Item 81 ("One
+  // Plan can contain multiple businesses") into a real chronological
+  // timeline: real, independent add-on business_requests attached to
+  // this primary request. addonActionKey tracks which specific entry is
+  // mid-action (add/retry/remove/retime), for a per-row spinner -- never
+  // a screen-wide loading lock, since one add-on's action must never
+  // block another's independent lifecycle.
   const [addons, setAddons] = useState([]);
   const [addonActionKey, setAddonActionKey] = useState(null);
+  // The one shared inline "add a new entry" / "retime an existing one"
+  // compose panel -- only one open at a time, per this app's own
+  // Progressive Depth doctrine (expand in place, never a new screen for
+  // a small structured input). mode 'add' carries `type`; mode 'edit'
+  // carries `requestId` + the entry's current label/time to prefill.
+  const [timelineForm, setTimelineForm] = useState(null);
+  const [timelineFormLabel, setTimelineFormLabel] = useState('');
+  const [timelineFormTime, setTimelineFormTime] = useState(null);
+  const [showTimelineTimePicker, setShowTimelineTimePicker] = useState(false);
   const [showInviteSomeone, setShowInviteSomeone] = useState(false);
   const [connections, setConnections] = useState([]);
   const [selectedInviteeIds, setSelectedInviteeIds] = useState([]);
@@ -397,29 +409,74 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     setInvitingSomeone(false);
   }
 
-  // Item 80 ("Make it special"): each handler acts on exactly one
-  // add-on's own independent lifecycle -- adding, retrying, or removing
-  // Flowers never touches Photographer's own state, and vice versa.
-  async function handleAddAddon(typeKey) {
-    setAddonActionKey(typeKey);
+  // Item 81 ("One Plan can contain multiple businesses," CLAUDE.md):
+  // each handler acts on exactly one entry's own independent lifecycle --
+  // adding a second Transportation entry (a different time/label) never
+  // touches the first, and vice versa. The shared compose panel
+  // (timelineForm) drives both "add a new entry" and "retime an existing
+  // one" through the same small UI.
+  function openAddForm(typeKey) {
+    setTimelineForm({ mode: 'add', type: typeKey });
+    setTimelineFormLabel('');
+    setTimelineFormTime(null);
+  }
+
+  function openEditForm(entry) {
+    setTimelineForm({ mode: 'edit', requestId: entry.requestId, addonType: entry.addonType });
+    setTimelineFormLabel(entry.rawLabel ?? '');
+    if (entry.hasTime && entry.planTime) {
+      const [h, m] = entry.planTime.split(':').map((n) => parseInt(n, 10));
+      const d = new Date();
+      d.setHours(h, m, 0, 0);
+      setTimelineFormTime(d);
+    } else {
+      setTimelineFormTime(null);
+    }
+  }
+
+  function closeTimelineForm() {
+    setTimelineForm(null);
+    setTimelineFormLabel('');
+    setTimelineFormTime(null);
+    setShowTimelineTimePicker(false);
+  }
+
+  function timelineFormTimeString() {
+    if (!timelineFormTime) return null;
+    return `${String(timelineFormTime.getHours()).padStart(2, '0')}:${String(timelineFormTime.getMinutes()).padStart(2, '0')}`;
+  }
+
+  async function submitTimelineForm() {
+    if (!timelineForm) return;
+    const busyKey = timelineForm.mode === 'add' ? timelineForm.type : timelineForm.requestId;
+    setAddonActionKey(busyKey);
     try {
-      const result = await createPlanAddonRequest(requestId, typeKey);
-      const rows = await getPlanAddons(requestId);
-      setAddons(rows);
-      if (result.notifiedCount === 0) {
-        Alert.alert('Added', `We couldn't find any ${planAddonLabel(typeKey).toLowerCase()} businesses nearby yet — we'll keep this open in case one joins.`);
+      const label = timelineFormLabel.trim() || null;
+      const timeStr = timelineFormTimeString();
+      if (timelineForm.mode === 'add') {
+        const result = await createPlanAddonRequest(requestId, timelineForm.type, label, timeStr);
+        const rows = await getPlanAddons(requestId);
+        setAddons(rows);
+        if (result.notifiedCount === 0) {
+          Alert.alert('Added', "We couldn't find a nearby business for this yet — we'll keep it open in case one joins.");
+        }
+      } else {
+        await setPlanItemTime(timelineForm.requestId, timeStr, label, label === null);
+        const rows = await getPlanAddons(requestId);
+        setAddons(rows);
+        await load();
       }
+      closeTimelineForm();
     } catch (e) {
       Alert.alert('Error', e.message);
     }
     setAddonActionKey(null);
   }
 
-  async function handleRemoveAddon(addonSummary) {
-    if (!addonSummary.requestId) return;
-    setAddonActionKey(addonSummary.key);
+  async function handleRemoveEntry(entry) {
+    setAddonActionKey(entry.requestId);
     try {
-      await removePlanAddon(addonSummary.requestId);
+      await removePlanAddon(entry.requestId);
       const rows = await getPlanAddons(requestId);
       setAddons(rows);
     } catch (e) {
@@ -428,20 +485,20 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     setAddonActionKey(null);
   }
 
-  async function handleRetryAddon(addonSummary) {
-    setAddonActionKey(addonSummary.key);
+  async function handleRetryEntry(entry) {
+    setAddonActionKey(entry.requestId);
     try {
       // Only a still-'open' declined attempt needs cancelling first --
       // an already-terminal (expired) attempt doesn't block a fresh
       // create_plan_addon_request call at all.
-      if (addonSummary.state === 'declined' && addonSummary.requestId) {
-        await removePlanAddon(addonSummary.requestId);
+      if (entry.state === 'declined') {
+        await removePlanAddon(entry.requestId);
       }
-      const result = await createPlanAddonRequest(requestId, addonSummary.key);
+      const result = await createPlanAddonRequest(requestId, entry.addonType, entry.rawLabel, entry.hasTime ? entry.planTime : null);
       const rows = await getPlanAddons(requestId);
       setAddons(rows);
       if (result.notifiedCount === 0) {
-        Alert.alert('Added', `We couldn't find any ${planAddonLabel(addonSummary.key).toLowerCase()} businesses nearby yet — we'll keep this open in case one joins.`);
+        Alert.alert('Added', "We couldn't find a nearby business for this yet — we'll keep it open in case one joins.");
       }
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -588,15 +645,24 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const offeredCount = offers.filter((o) => o.status === 'offered').length;
   const showComparison = offeredCount >= 2;
 
-  // Item 80 ("Make it special"): a relevant, occasion-aware add-on list
+  // Item 80 ("Make it special"), extended by Item 81 into a real
+  // chronological timeline: a relevant, occasion-aware add-on type list
   // for the primary request only (relevantAddonTypesForOccasion is a
   // pure, deterministic lookup -- no AI, never shown for an add-on's own
-  // detail view). canAddAddons gates new add/retry actions on the
-  // primary still being genuinely open -- existing add-ons stay visible
-  // and viewable regardless.
+  // detail view), plus the actual sorted timeline of the primary + every
+  // live (non-cancelled) add-on. canAddAddons gates new add/retry
+  // actions on the primary still being genuinely open -- existing
+  // entries stay visible and viewable regardless. Unlike Item 80's
+  // original one-slot-per-type model, a type already in the timeline
+  // stays offered in "Add to your plan" -- a second Transportation entry
+  // at a different time is a real, intended case now, not a mistake to
+  // block.
   const relevantAddonTypes = relevantAddonTypesForOccasion(request.occasion ?? null);
-  const addonSummaries = summarizeAddonsByType(relevantAddonTypes, addons);
-  const planReadinessLabel = summarizePlanAddonReadiness(hasWinner, addonSummaries);
+  const planTimeline = useMemo(
+    () => buildPlanTimeline({ primary: request, primaryOffers: offers, addons }),
+    [request, offers, addons]
+  );
+  const planReadinessLabel = summarizePlanTimelineReadiness(planTimeline);
   const canAddAddons = request.status === 'open';
 
   return (
@@ -868,68 +934,145 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
 
         {!request.addon_type && (
           <View style={styles.groupPlanSection}>
-            <Text style={styles.groupPlanSectionTitle}>✨ Make it special</Text>
+            {/* Item 81 ("One Plan can contain multiple businesses,"
+                CLAUDE.md): the real chronological itinerary -- the
+                primary plus every live add-on, sorted by whichever time
+                is actually known (a manually-set plan_time, else a real
+                accepted offer's own proposed_time, else honestly
+                "Anytime"). Two entries of the same type (two rides, at
+                two different times) each get their own row. */}
+            <Text style={styles.groupPlanSectionTitle}>🗺️ Your Plan</Text>
             <Text style={styles.helperText}>{planReadinessLabel}</Text>
-            {addonSummaries.map((a) => {
-              const busy = addonActionKey === a.key;
-              const copy = addonStateCopy(a.state);
+            {planTimeline.map((entry) => {
+              const busy = addonActionKey === entry.requestId;
+              const copy = addonStateCopy(entry.state);
               return (
-                <View key={a.key} style={styles.candidateRow}>
-                  <View style={styles.addonRowHeader}>
-                    <Text style={styles.candidateName}>{a.icon} {a.label}</Text>
-                    {a.state === 'none' ? (
-                      canAddAddons ? (
-                        <TouchableOpacity
-                          onPress={() => handleAddAddon(a.key)}
-                          disabled={busy}
-                          accessibilityLabel={`Add ${a.label}`}
-                          accessibilityRole="button"
-                        >
-                          {busy ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.addonActionText}>+ Add</Text>}
-                        </TouchableOpacity>
-                      ) : (
-                        <Text style={styles.candidateText}>—</Text>
-                      )
-                    ) : (
-                      <Text style={styles.candidateText}>{copy.short}</Text>
-                    )}
+                <View key={entry.id} style={styles.timelineRow}>
+                  <View style={styles.timelineTimeCol}>
+                    <Text style={[styles.timelineTimeText, !entry.hasTime && styles.timelineTimeTextMuted]}>{entry.planTimeLabel}</Text>
                   </View>
-                  {a.state !== 'none' && (
+                  <View style={styles.timelineBody}>
+                    <View style={styles.addonRowHeader}>
+                      <Text style={styles.candidateName}>{entry.icon} {entry.label}</Text>
+                      <Text style={styles.candidateText}>{copy.short}</Text>
+                    </View>
+                    {entry.businessName && <Text style={styles.candidateText}>with {entry.businessName}</Text>}
                     <View style={styles.addonRowActions}>
-                      {a.requestId && (
+                      {entry.kind === 'addon' && (
                         <TouchableOpacity
-                          onPress={() => navigation.push('BusinessRequestDetail', { requestId: a.requestId })}
-                          accessibilityLabel={`View ${a.label} request`}
+                          onPress={() => navigation.push('BusinessRequestDetail', { requestId: entry.requestId })}
+                          accessibilityLabel={`View ${entry.label}`}
                           accessibilityRole="button"
                         >
                           <Text style={styles.addonActionText}>View →</Text>
                         </TouchableOpacity>
                       )}
-                      {a.canRetry && canAddAddons && (
+                      {canAddAddons && entry.state !== 'confirmed' && (
                         <TouchableOpacity
-                          onPress={() => handleRetryAddon(a)}
+                          onPress={() => openEditForm(entry)}
                           disabled={busy}
-                          accessibilityLabel={`Try again for ${a.label}`}
+                          accessibilityLabel={`Set a time for ${entry.label}`}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.addonActionText}>🔁 Try Again</Text>
+                          <Text style={styles.addonActionText}>🕐 {entry.hasTime ? 'Edit Time' : 'Set a Time'}</Text>
                         </TouchableOpacity>
                       )}
-                      {(a.state === 'pending' || a.state === 'offered') && (
+                      {entry.kind === 'addon' && entry.canRetry && canAddAddons && (
                         <TouchableOpacity
-                          onPress={() => handleRemoveAddon(a)}
+                          onPress={() => handleRetryEntry(entry)}
                           disabled={busy}
-                          accessibilityLabel={`Remove ${a.label}`}
+                          accessibilityLabel={`Try again for ${entry.label}`}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.addonRemoveText}>Remove</Text>
+                          {busy ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.addonActionText}>🔁 Try Again</Text>}
+                        </TouchableOpacity>
+                      )}
+                      {entry.kind === 'addon' && (entry.state === 'pending' || entry.state === 'offered') && (
+                        <TouchableOpacity
+                          onPress={() => handleRemoveEntry(entry)}
+                          disabled={busy}
+                          accessibilityLabel={`Remove ${entry.label}`}
+                          accessibilityRole="button"
+                        >
+                          {busy ? <ActivityIndicator size="small" color={colors.textTertiary} /> : <Text style={styles.addonRemoveText}>Remove</Text>}
                         </TouchableOpacity>
                       )}
                     </View>
-                  )}
+                  </View>
                 </View>
               );
             })}
+
+            {canAddAddons && (
+              <>
+                <Text style={[styles.groupPlanSectionTitle, { marginTop: spacing.md }]}>✨ Make it special</Text>
+                <Text style={styles.helperText}>Add another business to this plan — a ride, live music, flowers, and more.</Text>
+                <View style={styles.chipRow}>
+                  {relevantAddonTypes.map((type) => (
+                    <TouchableOpacity
+                      key={type.key}
+                      style={styles.chip}
+                      onPress={() => openAddForm(type.key)}
+                      accessibilityLabel={`Add ${type.label}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.chipText}>{type.icon} {type.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {!!timelineForm && (
+              <View style={styles.timelineFormCard}>
+                <Text style={styles.candidateName}>
+                  {timelineForm.mode === 'add' ? `+ Add ${relevantAddonTypes.find((t) => t.key === timelineForm.type)?.label ?? ''}` : '🕐 Set a Time'}
+                </Text>
+                <TextInput
+                  style={styles.timelineFormInput}
+                  placeholder="Label (optional) — e.g. Ride home"
+                  placeholderTextColor={colors.textTertiary}
+                  value={timelineFormLabel}
+                  onChangeText={setTimelineFormLabel}
+                />
+                <TouchableOpacity
+                  style={styles.timelineFormTimeButton}
+                  onPress={() => setShowTimelineTimePicker(true)}
+                  accessibilityLabel="Pick a time"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.timelineFormTimeButtonText}>
+                    🕐 {timelineFormTime ? timelineFormTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'Pick a time (optional)'}
+                  </Text>
+                </TouchableOpacity>
+                {showTimelineTimePicker && (
+                  <DateTimePicker
+                    value={timelineFormTime ?? new Date()}
+                    mode="time"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    themeVariant={isDark ? 'dark' : 'light'}
+                    onChange={(event, selected) => {
+                      setShowTimelineTimePicker(Platform.OS === 'ios');
+                      if (selected) setTimelineFormTime(selected);
+                    }}
+                  />
+                )}
+                <View style={styles.timelineFormActions}>
+                  <TouchableOpacity onPress={closeTimelineForm} accessibilityLabel="Cancel" accessibilityRole="button">
+                    <Text style={styles.addonRemoveText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.timelineFormSubmitButton}
+                    onPress={submitTimelineForm}
+                    disabled={!!addonActionKey}
+                    accessibilityLabel={timelineForm.mode === 'add' ? 'Add to plan' : 'Save'}
+                    accessibilityRole="button"
+                  >
+                    {addonActionKey ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.timelineFormSubmitButtonText}>{timelineForm.mode === 'add' ? 'Add' : 'Save'}</Text>}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
         )}
 
@@ -1082,7 +1225,40 @@ const getStyles = (colors) => StyleSheet.create({
   groupPlanButtonDisabled: { opacity: 0.5 },
   groupPlanButtonText: { color: '#fff', fontWeight: '700' },
   addonRowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  addonRowActions: { flexDirection: 'row', marginTop: spacing.xs },
+  addonRowActions: { flexDirection: 'row', marginTop: spacing.xs, flexWrap: 'wrap' },
   addonActionText: { ...typography.caption, color: colors.primary, fontWeight: '700', marginRight: spacing.md },
   addonRemoveText: { ...typography.caption, color: colors.textTertiary, fontWeight: '700' },
+  // Item 81 ("One Plan can contain multiple businesses," CLAUDE.md): the
+  // real chronological timeline row -- a fixed-width time column
+  // (honestly reading "Anytime" rather than a fabricated time) beside
+  // the entry's own icon/label/state/actions.
+  timelineRow: {
+    flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1,
+    borderColor: colors.border, padding: spacing.sm, marginBottom: spacing.xs,
+  },
+  timelineTimeCol: { width: 76, paddingRight: spacing.sm, justifyContent: 'flex-start' },
+  timelineTimeText: { ...typography.caption, color: colors.textPrimary, fontWeight: '700' },
+  timelineTimeTextMuted: { color: colors.textTertiary, fontWeight: '600' },
+  timelineBody: { flex: 1 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.xs },
+  chip: {
+    borderWidth: 1, borderColor: colors.border, borderRadius: radius.full,
+    paddingVertical: spacing.xs, paddingHorizontal: spacing.md, marginRight: spacing.xs, marginBottom: spacing.xs,
+  },
+  chipText: { ...typography.caption, color: colors.textPrimary, fontWeight: '600' },
+  timelineFormCard: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.md, marginTop: spacing.sm,
+  },
+  timelineFormInput: {
+    ...typography.body, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, marginTop: spacing.sm, backgroundColor: colors.surface,
+  },
+  timelineFormTimeButton: { marginTop: spacing.sm, alignSelf: 'flex-start' },
+  timelineFormTimeButtonText: { ...typography.body, color: colors.primary, fontWeight: '700' },
+  timelineFormActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md },
+  timelineFormSubmitButton: {
+    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.xs, paddingHorizontal: spacing.lg,
+  },
+  timelineFormSubmitButtonText: { color: '#fff', fontWeight: '700' },
 });

@@ -32,6 +32,7 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 // Item 70 (CLAUDE.md): a real, honest "when" label for a pending request's
 // own date/time window, shown on the business's opportunity card.
 import { formatRequestWhen } from '../utils/businessRequestWhen';
+import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
 // already-deployed async submit-then-poll weather RPC every other
 // weather-aware surface already calls -- never a new one.
@@ -3240,12 +3241,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     const addonTag = o.business_requests?.addon_type
                       ? `${planAddonIcon(o.business_requests.addon_type)} ${planAddonLabel(o.business_requests.addon_type)} add-on`
                       : null;
+                    // Item 81 ("One Plan can contain multiple businesses,"
+                    // CLAUDE.md): plan_time is when, within the WHOLE
+                    // plan's own timeline, this specific engagement
+                    // happens -- distinct from (and often different from)
+                    // the request's own time_window shown just above via
+                    // requestWhen. A business deciding on a Transportation
+                    // add-on genuinely needs to know WHICH ride this is.
+                    const planTimeLabel = formatPlanTimeLabel(o.business_requests?.plan_time ?? null);
                     const lookingForTags = [
                       addonTag,
                       o.business_requests?.category,
                       reqOccasion ? `${reqOccasion.icon} ${reqOccasion.label}` : null,
                       o.business_requests?.party_size ? `${o.business_requests.party_size} people` : null,
                       requestWhen ? `📅 ${requestWhen}` : null,
+                      planTimeLabel ? `🕐 ${planTimeLabel}` : null,
                       o.business_requests?.budget_max ? `up to $${o.business_requests.budget_max}` : null,
                       o.business_requests?.cuisine ? cuisineLabel(o.business_requests.cuisine) : null,
                       ...reqAttrs.map((key) => businessAttributeLabel(key)),

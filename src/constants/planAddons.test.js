@@ -38,7 +38,7 @@ describe('planAddons', () => {
 
   test('relevantAddonTypesForOccasion returns a real curated set for birthday', () => {
     const result = relevantAddonTypesForOccasion('birthday');
-    expect(result.map((a) => a.key)).toEqual(['dessert', 'photographer', 'decorations', 'flowers', 'gift']);
+    expect(result.map((a) => a.key)).toEqual(['transportation', 'dessert', 'photographer', 'decorations', 'flowers', 'entertainment', 'gift']);
   });
 
   test('relevantAddonTypesForOccasion returns an honest empty set for casual_hangout', () => {

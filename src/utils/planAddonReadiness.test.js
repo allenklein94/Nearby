@@ -2,8 +2,10 @@ import {
   deriveAddonRequestState,
   addonStateCopy,
   canRetryAddon,
-  summarizePlanAddonReadiness,
-  summarizeAddonsByType,
+  parsePlanTimeMinutes,
+  formatPlanTimeLabel,
+  buildPlanTimeline,
+  summarizePlanTimelineReadiness,
 } from './planAddonReadiness';
 
 describe('deriveAddonRequestState', () => {
@@ -73,79 +75,124 @@ describe('canRetryAddon', () => {
   });
 });
 
-describe('summarizePlanAddonReadiness', () => {
-  test('no add-ons added, primary confirmed -> Ready', () => {
-    expect(summarizePlanAddonReadiness(true, [])).toBe('Ready');
+describe('parsePlanTimeMinutes', () => {
+  test('parses HH:MM and HH:MM:SS alike', () => {
+    expect(parsePlanTimeMinutes('06:30')).toBe(390);
+    expect(parsePlanTimeMinutes('18:30:00')).toBe(1110);
+    expect(parsePlanTimeMinutes('00:00')).toBe(0);
+    expect(parsePlanTimeMinutes('23:59')).toBe(1439);
   });
 
-  test('no add-ons added, primary not confirmed -> waiting on the reservation', () => {
-    expect(summarizePlanAddonReadiness(false, [])).toBe('Waiting on your reservation');
-  });
-
-  test('add-ons added but primary not confirmed yet -> still waiting on the reservation', () => {
-    const addons = [{ state: 'confirmed' }, { state: 'pending' }];
-    expect(summarizePlanAddonReadiness(false, addons)).toBe('Waiting on your reservation');
-  });
-
-  test('all added extras confirmed -> Ready, everything confirmed', () => {
-    const addons = [{ state: 'confirmed' }, { state: 'confirmed' }, { state: 'none' }];
-    expect(summarizePlanAddonReadiness(true, addons)).toBe('Ready — everything is confirmed');
-  });
-
-  test('partial confirmation with something still pending -> N of M extras confirmed', () => {
-    const addons = [{ state: 'confirmed' }, { state: 'pending' }, { state: 'offered' }];
-    expect(summarizePlanAddonReadiness(true, addons)).toBe('1 of 3 extras confirmed');
-  });
-
-  test('partial confirmation with a genuine decline -> flags it needs attention', () => {
-    const addons = [{ state: 'confirmed' }, { state: 'declined' }];
-    expect(summarizePlanAddonReadiness(true, addons)).toBe('1 of 2 extras confirmed — one needs attention');
-  });
-
-  test('a skipped (explicitly removed) addon does not count against the ratio, but a genuine decline still flags attention', () => {
-    const addons = [{ state: 'confirmed' }, { state: 'declined' }, { state: 'skipped' }];
-    expect(summarizePlanAddonReadiness(true, addons)).toBe('1 of 2 extras confirmed — one needs attention');
-  });
-
-  test('all remaining (non-skipped) extras confirmed reads Ready even with a skipped one alongside', () => {
-    const addons = [{ state: 'confirmed' }, { state: 'confirmed' }, { state: 'skipped' }];
-    expect(summarizePlanAddonReadiness(true, addons)).toBe('Ready — everything is confirmed');
+  test('null/unset/malformed all honestly return null, never a guessed position', () => {
+    expect(parsePlanTimeMinutes(null)).toBeNull();
+    expect(parsePlanTimeMinutes(undefined)).toBeNull();
+    expect(parsePlanTimeMinutes('')).toBeNull();
+    expect(parsePlanTimeMinutes('not a time')).toBeNull();
+    expect(parsePlanTimeMinutes('25:00')).toBeNull();
   });
 });
 
-describe('summarizeAddonsByType', () => {
-  const types = [
-    { key: 'flowers', label: 'Flowers', icon: '🌸' },
-    { key: 'photographer', label: 'Photographer', icon: '📸' },
-  ];
-
-  test('a type with no request rows at all is "none"', () => {
-    const result = summarizeAddonsByType(types, []);
-    expect(result).toEqual([
-      { key: 'flowers', label: 'Flowers', icon: '🌸', requestId: null, state: 'none', canRetry: true },
-      { key: 'photographer', label: 'Photographer', icon: '📸', requestId: null, state: 'none', canRetry: true },
-    ]);
+describe('formatPlanTimeLabel', () => {
+  test('formats a real time string', () => {
+    expect(formatPlanTimeLabel('18:30:00')).toBe('6:30 PM');
+    expect(formatPlanTimeLabel('06:30')).toBe('6:30 AM');
   });
 
-  test('picks the most recent attempt when a type was retried after a cancel', () => {
-    const rows = [
-      { id: 'old', addon_type: 'flowers', status: 'cancelled', created_at: '2026-01-01T00:00:00Z', business_request_offers: [] },
-      { id: 'new', addon_type: 'flowers', status: 'open', created_at: '2026-01-02T00:00:00Z', business_request_offers: [{ status: 'offered' }] },
-    ];
-    const result = summarizeAddonsByType(types, rows);
-    const flowers = result.find((r) => r.key === 'flowers');
-    expect(flowers.requestId).toBe('new');
-    expect(flowers.state).toBe('offered');
-    expect(flowers.canRetry).toBe(false);
+  test('null when unset', () => {
+    expect(formatPlanTimeLabel(null)).toBeNull();
+  });
+});
+
+describe('buildPlanTimeline', () => {
+  const primary = {
+    id: 'primary',
+    category: 'Foodie',
+    status: 'open',
+    plan_time: null,
+    plan_label: null,
+    created_at: '2026-01-01T00:00:00Z',
+  };
+
+  test('no primary -> empty timeline', () => {
+    expect(buildPlanTimeline({ primary: null })).toEqual([]);
   });
 
-  test('independent lifecycles: one type confirmed does not affect another type still pending', () => {
-    const rows = [
-      { id: 'a', addon_type: 'flowers', status: 'fulfilled', created_at: '2026-01-01T00:00:00Z', business_request_offers: [{ status: 'accepted' }] },
-      { id: 'b', addon_type: 'photographer', status: 'open', created_at: '2026-01-01T00:00:00Z', business_request_offers: [] },
+  test('primary alone, no add-ons, no time set -> one entry, Anytime', () => {
+    const result = buildPlanTimeline({ primary, primaryOffers: [] });
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ kind: 'primary', label: 'Foodie', planTimeLabel: 'Anytime', hasTime: false, state: 'pending' });
+  });
+
+  test('sorts multiple add-ons of the SAME type into the real chronological order (two rides, two different times)', () => {
+    const addons = [
+      { id: 'ride-home', addon_type: 'transportation', status: 'open', plan_time: '22:30:00', plan_label: 'Ride home', created_at: '2026-01-01T00:00:01Z', business_request_offers: [] },
+      { id: 'ride-there', addon_type: 'transportation', status: 'open', plan_time: '18:30:00', plan_label: 'Ride to dinner', created_at: '2026-01-01T00:00:00Z', business_request_offers: [] },
     ];
-    const result = summarizeAddonsByType(types, rows);
-    expect(result.find((r) => r.key === 'flowers').state).toBe('confirmed');
-    expect(result.find((r) => r.key === 'photographer').state).toBe('pending');
+    const result = buildPlanTimeline({ primary, primaryOffers: [], addons });
+    expect(result.map((e) => e.id)).toEqual(['ride-there', 'ride-home', 'primary']);
+    expect(result.map((e) => e.label)).toEqual(['Ride to dinner', 'Ride home', 'Foodie']);
+  });
+
+  test('a cancelled add-on is absent from the timeline entirely, not shown as a ghost "skipped" row', () => {
+    const addons = [
+      { id: 'gone', addon_type: 'flowers', status: 'cancelled', plan_time: '10:00', created_at: '2026-01-01T00:00:00Z', business_request_offers: [] },
+    ];
+    const result = buildPlanTimeline({ primary, primaryOffers: [], addons });
+    expect(result.map((e) => e.id)).toEqual(['primary']);
+  });
+
+  test('a real accepted offer\'s own proposed_time is a valid fallback time when plan_time was never manually set', () => {
+    const addons = [
+      { id: 'music', addon_type: 'entertainment', status: 'open', plan_time: null, created_at: '2026-01-01T00:00:00Z',
+        business_request_offers: [{ status: 'accepted', proposed_time: '2026-06-01T21:00:00.000Z', brand_partners: { name: 'The Venue' } }] },
+    ];
+    const result = buildPlanTimeline({ primary, primaryOffers: [], addons });
+    const music = result.find((e) => e.id === 'music');
+    expect(music.state).toBe('confirmed');
+    expect(music.businessName).toBe('The Venue');
+    expect(music.hasTime).toBe(true);
+  });
+
+  test('untimed entries never affect one another\'s independent state -- one declined add-on does not sink another still-pending one', () => {
+    const addons = [
+      { id: 'declined-one', addon_type: 'gift', status: 'open', created_at: '2026-01-01T00:00:00Z', business_request_offers: [{ status: 'declined' }] },
+      { id: 'pending-one', addon_type: 'dessert', status: 'open', created_at: '2026-01-01T00:00:00Z', business_request_offers: [] },
+    ];
+    const result = buildPlanTimeline({ primary, primaryOffers: [], addons });
+    expect(result.find((e) => e.id === 'declined-one').state).toBe('declined');
+    expect(result.find((e) => e.id === 'pending-one').state).toBe('pending');
+  });
+});
+
+describe('summarizePlanTimelineReadiness', () => {
+  const confirmedPrimary = { kind: 'primary', state: 'confirmed' };
+  const pendingPrimary = { kind: 'primary', state: 'pending' };
+
+  test('no add-ons, primary confirmed -> Ready', () => {
+    expect(summarizePlanTimelineReadiness([confirmedPrimary])).toBe('Ready');
+  });
+
+  test('no add-ons, primary not confirmed -> waiting on the reservation', () => {
+    expect(summarizePlanTimelineReadiness([pendingPrimary])).toBe('Waiting on your reservation');
+  });
+
+  test('add-ons present but primary not confirmed yet -> still waiting on the reservation', () => {
+    const timeline = [pendingPrimary, { kind: 'addon', state: 'confirmed' }];
+    expect(summarizePlanTimelineReadiness(timeline)).toBe('Waiting on your reservation');
+  });
+
+  test('all add-ons confirmed -> Ready, everything confirmed', () => {
+    const timeline = [confirmedPrimary, { kind: 'addon', state: 'confirmed' }, { kind: 'addon', state: 'confirmed' }];
+    expect(summarizePlanTimelineReadiness(timeline)).toBe('Ready — everything is confirmed');
+  });
+
+  test('partial confirmation -> N of M extras confirmed', () => {
+    const timeline = [confirmedPrimary, { kind: 'addon', state: 'confirmed' }, { kind: 'addon', state: 'pending' }, { kind: 'addon', state: 'offered' }];
+    expect(summarizePlanTimelineReadiness(timeline)).toBe('1 of 3 extras confirmed');
+  });
+
+  test('a genuine decline flags "needs attention"', () => {
+    const timeline = [confirmedPrimary, { kind: 'addon', state: 'confirmed' }, { kind: 'addon', state: 'declined' }];
+    expect(summarizePlanTimelineReadiness(timeline)).toBe('1 of 2 extras confirmed — one needs attention');
   });
 });

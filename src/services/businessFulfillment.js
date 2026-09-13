@@ -476,14 +476,39 @@ export async function cancelBusinessRequest(requestId) {
 // collected here -- create_plan_addon_request inherits all of it from
 // the parent server-side, since an add-on enhances an already-described
 // occasion rather than starting a new one.
-export async function createPlanAddonRequest(parentRequestId, addonType, note = null) {
+// Item 81 ("One Plan can contain multiple businesses," CLAUDE.md):
+// planTime is a plain "HH:MM" string from a native time picker (never
+// AI-inferred, per this repo's own standing rule) -- when set, it's what
+// sorts this engagement into the real chronological plan timeline
+// (planAddonReadiness.js's buildPlanTimeline). note doubles as this
+// entry's short display label (plan_label) now, not just text folded
+// into raw_text for the business -- e.g. "Ride home" distinguishing a
+// second Transportation add-on from the first.
+export async function createPlanAddonRequest(parentRequestId, addonType, note = null, planTime = null) {
   const { data, error } = await supabase.rpc('create_plan_addon_request', {
     parent_request_id_param: parentRequestId,
     addon_type_param: addonType,
     note_param: note,
+    plan_time_param: planTime,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, addonType: data.addonType, category: data.category, notifiedCount: data.notifiedCount };
+}
+
+// Freely retime/relabel any of the caller's own requests within a plan
+// (the primary included) after the fact -- e.g. correcting a time, or
+// giving the primary itself a label once accepted. clearLabel lets the
+// caller explicitly blank plan_label (distinct from "leave it as-is,"
+// which omitting planLabel entirely already does server-side).
+export async function setPlanItemTime(requestId, planTime = null, planLabel = null, clearLabel = false) {
+  const { data, error } = await supabase.rpc('set_plan_item_time', {
+    request_id_param: requestId,
+    plan_time_param: planTime,
+    plan_label_param: planLabel,
+    clear_label: clearLabel,
+  });
+  if (error) throw new Error(error.message);
+  return { requestId: data.requestId, planTime: data.planTime, planLabel: data.planLabel };
 }
 
 // RLS already scopes both business_requests and business_request_offers
@@ -491,9 +516,10 @@ export async function createPlanAddonRequest(parentRequestId, addonType, note = 
 // works here exactly like getBusinessRequestWithOffers's own primary-
 // request read -- no new RPC needed for a read the owner is already
 // entitled to. Returns every add-on ever attempted for this plan
-// (including cancelled/expired ones) so a retry's audit trail stays
-// visible -- summarizeAddonsByType (planAddonReadiness.js) picks the
-// most recent attempt per type for display.
+// (including cancelled/expired ones) -- buildPlanTimeline
+// (planAddonReadiness.js, Item 81) filters out the cancelled ones itself
+// when rendering the real chronological timeline, so a retry's own
+// audit trail still stays in the DB without lingering as a ghost row.
 export async function getPlanAddons(parentRequestId) {
   const { data, error } = await supabase
     .from('business_requests')

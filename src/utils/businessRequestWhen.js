@@ -11,7 +11,11 @@
 // already sees occasion/party size/budget -- this closes exactly that
 // gap. Pure and dependency-free so it's directly unit-testable, same
 // split as occasionPackageFormatting.js.
-function formatTimeOfDay(timeStr) {
+// Exported so planAddonReadiness.js's plan-timeline formatting (Item 81,
+// CLAUDE.md) can reuse the exact same "HH:MM:SS" -> "6:30 PM" logic
+// instead of a second copy -- one ontology for time-of-day display, not
+// two that could drift.
+export function formatTimeOfDay(timeStr) {
   const [hStr, mStr] = timeStr.split(':');
   const h = parseInt(hStr, 10);
   const m = parseInt(mStr, 10);

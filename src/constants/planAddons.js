@@ -14,6 +14,11 @@
 // regardless of fit. `businessMajor` is the CATEGORY_GROUPS major used
 // instead, only for Transportation, which deliberately has no leaf tag
 // (matches auto_transportation's existing zero-leaf-tag precedent).
+// Item 81 ("One Plan can contain multiple businesses," CLAUDE.md) added
+// 'entertainment' as a 7th type, matching the mock's own "🎵 Live music"
+// -- reuses the already-live 'Music' leaf tag (entertainment_nightlife
+// major), no new taxonomy value needed unlike Item 80's three brand-new
+// leaf tags.
 export const PLAN_ADDON_TYPES = [
   { key: 'dessert', label: 'Dessert', icon: '🍰', category: 'Bakeries', businessMajor: 'food_drink' },
   { key: 'flowers', label: 'Flowers', icon: '🌸', category: 'Florist', businessMajor: 'shopping' },
@@ -21,6 +26,7 @@ export const PLAN_ADDON_TYPES = [
   { key: 'decorations', label: 'Decorations', icon: '🎈', category: 'Party & Event Decor', businessMajor: 'shopping' },
   { key: 'transportation', label: 'Transportation', icon: '🚗', category: null, businessMajor: 'auto_transportation' },
   { key: 'gift', label: 'Gift', icon: '🎁', category: 'Gift Shop', businessMajor: 'shopping' },
+  { key: 'entertainment', label: 'Entertainment', icon: '🎵', category: 'Music', businessMajor: 'entertainment_nightlife' },
 ];
 
 export const PLAN_ADDON_TYPE_KEYS = PLAN_ADDON_TYPES.map((a) => a.key);
@@ -43,15 +49,15 @@ export function planAddonIcon(key) {
 // small, sensible starter set per occasion, not every conceivable
 // category shown for every occasion.
 const OCCASION_ADDON_RELEVANCE = {
-  birthday: ['dessert', 'photographer', 'decorations', 'flowers', 'gift'],
-  anniversary: ['flowers', 'photographer', 'dessert', 'transportation'],
-  date_night: ['photographer', 'transportation', 'flowers'],
-  celebration: ['dessert', 'photographer', 'flowers', 'gift'],
+  birthday: ['transportation', 'dessert', 'photographer', 'decorations', 'flowers', 'entertainment', 'gift'],
+  anniversary: ['flowers', 'photographer', 'dessert', 'transportation', 'entertainment'],
+  date_night: ['photographer', 'transportation', 'flowers', 'entertainment'],
+  celebration: ['dessert', 'photographer', 'flowers', 'entertainment', 'gift'],
   family_gathering: ['dessert', 'photographer', 'decorations'],
   graduation: ['photographer', 'gift', 'dessert'],
   baby_shower: ['decorations', 'dessert', 'gift'],
   engagement: ['flowers', 'photographer', 'transportation'],
-  wedding: ['flowers', 'photographer', 'transportation', 'decorations', 'gift'],
+  wedding: ['flowers', 'photographer', 'transportation', 'decorations', 'entertainment', 'gift'],
   housewarming: ['gift', 'flowers'],
   new_job: ['gift', 'dessert'],
   promotion: ['gift', 'dessert'],
@@ -59,9 +65,9 @@ const OCCASION_ADDON_RELEVANCE = {
   achievement: ['gift', 'dessert'],
   moving: ['gift'],
   farewell: ['gift', 'dessert'],
-  reunion: ['photographer', 'dessert'],
+  reunion: ['photographer', 'dessert', 'entertainment'],
   welcome: ['gift', 'flowers'],
-  holiday_gathering: ['decorations', 'dessert', 'gift'],
+  holiday_gathering: ['decorations', 'dessert', 'entertainment', 'gift'],
   milestone: ['dessert', 'photographer', 'gift'],
   life_event: ['dessert', 'gift'],
   other: ['dessert', 'photographer', 'flowers', 'gift'],
