@@ -266,7 +266,12 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   // use (runIntentSearch()). customSearchResult holds the full
   // {outcome, items, experience, classifyResult, typedText, submissionId}
   // shape runIntentSearch() returns -- null until a search has actually run.
-  const [customDescription, setCustomDescription] = useState('');
+  // Item 75 (CLAUDE.md): landing here from OccasionsScreen's calendar
+  // section ("Plan Something →" on a real device-calendar event) prefills
+  // this with the event's own title -- still fully editable, same "AI/
+  // signals suggest, never silently commit" posture as every other prefill
+  // in this wizard.
+  const [customDescription, setCustomDescription] = useState(route.params?.initialCustomDescription ?? '');
   const [customSearching, setCustomSearching] = useState(false);
   const [customSearchResult, setCustomSearchResult] = useState(null);
 

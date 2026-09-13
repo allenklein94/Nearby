@@ -16,6 +16,8 @@ import { resolveIntent } from './intentResolver';
 import { getMyFriends } from './friends';
 import { getMyMatches } from './matchActions';
 import { supabase } from './supabase';
+import { isCalendarIntegrationEnabled, getUpcomingCalendarEvents } from './deviceCalendar';
+import { nearestCalendarHint, formatCalendarEventDateLabel } from '../utils/calendarOccasionSuggestion';
 import {
   moodToParams,
   categoryPoolForMood,
@@ -75,6 +77,26 @@ async function fetchMyInterests() {
 
 const CATEGORY_SAMPLE_SIZE = 3;
 
+// Item 75 (CLAUDE.md): "use calendar signals to improve... Surprise Me."
+// Best-effort, purely additive context -- only ever runs if the user has
+// already opted in to calendar integration elsewhere (OccasionsScreen);
+// Surprise Me itself never requests calendar permission. Fails open to
+// null on any error, exactly like the rest of this file's other optional
+// enrichments (getConnectedPeopleWithInterests).
+async function getCalendarHint() {
+  try {
+    const enabled = await isCalendarIntegrationEnabled();
+    if (!enabled) return null;
+    const events = await getUpcomingCalendarEvents(7);
+    const hint = nearestCalendarHint(events, 5);
+    if (!hint) return null;
+    return { title: hint.title, dateLabel: formatCalendarEventDateLabel(hint.startDate) };
+  } catch (e) {
+    console.error('getCalendarHint failed', e);
+    return null;
+  }
+}
+
 // The one async orchestrator this module exposes -- everything it calls is
 // already-real (resolveIntent, getMyFriends/getMyMatches, a plain profiles
 // read). No new table, no new RPC, no new location code: resolveIntent()
@@ -87,18 +109,21 @@ export async function runSurpriseMe({ when, mood }) {
   const pool = categoryPoolForMood(mood, myInterests);
   const categories = pickSampleCategories(pool, CATEGORY_SAMPLE_SIZE);
 
-  const results = await Promise.all(
-    categories.map((category) =>
-      resolveIntent({
-        category,
-        dateWindow: when,
-        rawText: '',
-        partyType: params.partyType,
-        attributes: params.attributes,
-        occasion: params.occasion,
-      }).catch(() => ({ items: [], experience: null }))
-    )
-  );
+  const [results, calendarHint] = await Promise.all([
+    Promise.all(
+      categories.map((category) =>
+        resolveIntent({
+          category,
+          dateWindow: when,
+          rawText: '',
+          partyType: params.partyType,
+          attributes: params.attributes,
+          occasion: params.occasion,
+        }).catch(() => ({ items: [], experience: null }))
+      )
+    ),
+    getCalendarHint(),
+  ]);
 
   const merged = mergeCandidatePools(results.map((r) => r.items));
   // Only one call can ever produce a real cross-category experience here:
@@ -112,5 +137,5 @@ export async function runSurpriseMe({ when, mood }) {
   const connectedPeople = suggestion ? await getConnectedPeopleWithInterests().catch(() => []) : [];
   const connectedPerson = suggestion ? findConnectedPerson(suggestion, connectedPeople) : null;
 
-  return { suggestion, pool: merged, connectedPeople, connectedPerson };
+  return { suggestion, pool: merged, connectedPeople, connectedPerson, calendarHint };
 }

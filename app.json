@@ -78,6 +78,12 @@
           "color": "#FF5A5F"
         }
       ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Nearby can look at events on calendars you choose to share, to help suggest occasions and plans. Nearby never edits, adds, or shares your calendar."
+        }
+      ],
       "@sentry/react-native/expo",
       "expo-localization",
       "expo-font",

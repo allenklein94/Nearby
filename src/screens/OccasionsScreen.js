@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getMyOccasions, addOccasion, deleteOccasion, setOccasionReminderEnabled } from '../services/occasions';
@@ -8,6 +8,19 @@ import { getMyFriends } from '../services/friends';
 import { composeCelebrationTitle } from '../services/celebrateSomething';
 import { OCCASION_OPTIONS, personalOccasionTypeOptions, personalOccasionTypeGroupOptions } from '../constants/businessAttributes';
 import { groupOccasionsByPerson } from '../utils/occasionGrouping';
+import {
+  isCalendarIntegrationSupported,
+  requestCalendarPermission,
+  listDeviceCalendars,
+  getSelectedCalendarIds,
+  setSelectedCalendarIds,
+  clearSelectedCalendarIds,
+  getDismissedCalendarEventIds,
+  markCalendarEventHandled,
+  isCalendarIntegrationEnabled,
+  getUpcomingCalendarEvents,
+} from '../services/deviceCalendar';
+import { guessOccasionTypeFromEventTitle, formatCalendarEventDateLabel, filterUpcomingCalendarSuggestions } from '../utils/calendarOccasionSuggestion';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -97,6 +110,151 @@ export default function OccasionsScreen({ navigation }) {
   // someone with no account. Forces shareWithFriend off (also a hard DB
   // constraint, occasions_surprise_no_share_check).
   const [surpriseMode, setSurpriseMode] = useState(false);
+
+  // Item 75 (CLAUDE.md): "Connect occasions to the user's calendar" --
+  // permission-driven (never blanket access), read-only, with a hard
+  // structural distinction between private calendar info (calendarEvents
+  // below, read live from the device, never uploaded) and a real Nearby
+  // Occasion (only created when the user explicitly taps an action). See
+  // src/services/deviceCalendar.js's own header comment for the full
+  // privacy boundary.
+  const [calendarEnabled, setCalendarEnabled] = useState(false);
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [loadingCalendarEvents, setLoadingCalendarEvents] = useState(false);
+  const [connectingCalendar, setConnectingCalendar] = useState(false);
+  const [showCalendarPicker, setShowCalendarPicker] = useState(false);
+  const [availableCalendars, setAvailableCalendars] = useState([]);
+  const [pickerSelectedIds, setPickerSelectedIds] = useState(() => new Set());
+  const [handlingEventId, setHandlingEventId] = useState(null);
+
+  const loadCalendarSection = useCallback(async () => {
+    if (!isCalendarIntegrationSupported()) return;
+    const enabled = await isCalendarIntegrationEnabled();
+    setCalendarEnabled(enabled);
+    if (!enabled) {
+      setCalendarEvents([]);
+      return;
+    }
+    setLoadingCalendarEvents(true);
+    const [events, dismissed] = await Promise.all([getUpcomingCalendarEvents(60), getDismissedCalendarEventIds()]);
+    setCalendarEvents(filterUpcomingCalendarSuggestions(events, dismissed));
+    setLoadingCalendarEvents(false);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadCalendarSection();
+    }, [loadCalendarSection])
+  );
+
+  function handleConnectCalendarPress() {
+    Alert.alert(
+      'Allow Nearby to use selected calendar events to help you plan?',
+      "Nearby will only see events from calendars you choose to share. It can never edit, add, or share anything on your calendar.",
+      [
+        { text: 'Not Now', style: 'cancel' },
+        { text: 'Continue', onPress: requestAndPickCalendars },
+      ]
+    );
+  }
+
+  async function requestAndPickCalendars() {
+    setConnectingCalendar(true);
+    const status = await requestCalendarPermission();
+    setConnectingCalendar(false);
+    if (status !== 'granted') {
+      Alert.alert('Calendar access is off', 'You can turn it on any time from your device Settings.');
+      return;
+    }
+    await openCalendarPicker();
+  }
+
+  async function openCalendarPicker() {
+    const calendars = await listDeviceCalendars();
+    setAvailableCalendars(calendars);
+    const currentIds = await getSelectedCalendarIds();
+    setPickerSelectedIds(new Set(currentIds));
+    setShowCalendarPicker(true);
+  }
+
+  function togglePickerCalendar(id) {
+    setPickerSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  async function saveCalendarSelection() {
+    await setSelectedCalendarIds(Array.from(pickerSelectedIds));
+    setShowCalendarPicker(false);
+    await loadCalendarSection();
+  }
+
+  function confirmDisconnectCalendar() {
+    Alert.alert(
+      'Disconnect calendar?',
+      "Nearby will stop looking at your calendar events. This doesn't change your device's own calendar permission -- you can fully revoke that any time in your device Settings.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Disconnect',
+          style: 'destructive',
+          onPress: async () => {
+            await clearSelectedCalendarIds();
+            await loadCalendarSection();
+          },
+        },
+      ]
+    );
+  }
+
+  // "Save as Occasion": a lightweight, explicit tracking action -- creates
+  // a real Occasion (with a reminder, per Items 62/63), never anything
+  // more. Does not navigate anywhere -- the point is remembering, not
+  // planning yet.
+  async function handleSaveEventAsOccasion(event) {
+    setHandlingEventId(event.id);
+    const isoDate = new Date(event.startDate).toISOString().slice(0, 10);
+    const result = await addOccasion({
+      occasionType: guessOccasionTypeFromEventTitle(event.title),
+      title: event.title,
+      occasionDate: isoDate,
+      recursAnnually: false,
+      importedFromCalendar: true,
+    });
+    if (result.error) {
+      Alert.alert('Error', result.error);
+      setHandlingEventId(null);
+      return;
+    }
+    await markCalendarEventHandled(event.id);
+    setCalendarEvents((prev) => prev.filter((e) => e.id !== event.id));
+    setHandlingEventId(null);
+    load();
+  }
+
+  // "Plan Something →": the user's own example ("Dad's visiting -- want to
+  // take him somewhere special") -- lands directly on Item 74's Custom
+  // Occasion Describe step, prefilled with the real event title, which
+  // Nearby then classifies + resolves the same way Home's ask box does.
+  // Deliberately does not also create an Occasion row here (that's the
+  // separate, explicit "Save as Occasion" action above) -- this is about
+  // planning right now, not record-keeping.
+  async function handlePlanFromEvent(event) {
+    setHandlingEventId(event.id);
+    await markCalendarEventHandled(event.id);
+    setCalendarEvents((prev) => prev.filter((e) => e.id !== event.id));
+    setHandlingEventId(null);
+    navigation.navigate('CelebrateSomething', { initialOccasion: 'other', initialCustomDescription: event.title });
+  }
+
+  async function handleDismissEvent(event) {
+    setHandlingEventId(event.id);
+    await markCalendarEventHandled(event.id);
+    setCalendarEvents((prev) => prev.filter((e) => e.id !== event.id));
+    setHandlingEventId(null);
+  }
 
   const load = useCallback(async () => {
     try {
@@ -264,6 +422,82 @@ export default function OccasionsScreen({ navigation }) {
             Reminders can be turned off per occasion, any time.
           </Text>
 
+          {isCalendarIntegrationSupported() && (
+            <View style={{ marginBottom: spacing.md }}>
+              {!calendarEnabled ? (
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={handleConnectCalendarPress}
+                  disabled={connectingCalendar}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Connect your calendar"
+                >
+                  <Text style={{ fontSize: 22, marginRight: spacing.sm }}>📅</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.name}>{connectingCalendar ? 'Connecting…' : 'Connect Your Calendar'}</Text>
+                    <Text style={styles.detail}>Let Nearby quietly suggest occasions from events on calendars you choose to share.</Text>
+                  </View>
+                </TouchableOpacity>
+              ) : (
+                <>
+                  <View style={styles.calendarSectionHeaderRow}>
+                    <Text style={styles.sectionLabel}>From Your Calendar</Text>
+                    <View style={{ flexDirection: 'row', gap: spacing.md }}>
+                      <TouchableOpacity onPress={openCalendarPicker} accessibilityRole="button" accessibilityLabel="Manage which calendars are shared">
+                        <Text style={styles.calendarManageLink}>Manage</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={confirmDisconnectCalendar} accessibilityRole="button" accessibilityLabel="Disconnect calendar">
+                        <Text style={[styles.calendarManageLink, { color: colors.danger }]}>Disconnect</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <Text style={styles.helperText}>
+                    Only the calendars you picked are read. Nearby never edits your calendar -- event
+                    details stay on this device unless you choose to act on one below.
+                  </Text>
+                  {loadingCalendarEvents ? (
+                    <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
+                  ) : calendarEvents.length === 0 ? (
+                    <Text style={styles.helperText}>Nothing new on your shared calendars right now.</Text>
+                  ) : (
+                    calendarEvents.map((event) => {
+                      const guessedType = guessOccasionTypeFromEventTitle(event.title);
+                      const meta = OCCASION_TYPES.find((t) => t.key === guessedType);
+                      const busy = handlingEventId === event.id;
+                      return (
+                        <View key={event.id} style={styles.card}>
+                          <Text style={{ fontSize: 22, marginRight: spacing.sm }}>{meta?.icon ?? '📅'}</Text>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.name}>{event.title}</Text>
+                            <Text style={styles.detail}>{formatCalendarEventDateLabel(event.startDate)}</Text>
+                            <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs, flexWrap: 'wrap' }}>
+                              <TouchableOpacity disabled={busy} onPress={() => handlePlanFromEvent(event)} accessibilityRole="button" accessibilityLabel={`Plan something for ${event.title}`}>
+                                <Text style={styles.calendarActionPrimary}>Plan Something →</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity disabled={busy} onPress={() => handleSaveEventAsOccasion(event)} accessibilityRole="button" accessibilityLabel={`Save ${event.title} as an occasion`}>
+                                <Text style={styles.calendarManageLink}>Save as Occasion</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.iconButton}
+                            disabled={busy}
+                            onPress={() => handleDismissEvent(event)}
+                            accessibilityLabel={`Not relevant: ${event.title}`}
+                            accessibilityRole="button"
+                          >
+                            <Text style={{ fontSize: 16, color: colors.textTertiary }}>✕</Text>
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })
+                  )}
+                </>
+              )}
+            </View>
+          )}
+
           {groupPlans.length > 0 && (
             <>
               <Text style={styles.sectionLabel}>Group Plans</Text>
@@ -314,6 +548,7 @@ export default function OccasionsScreen({ navigation }) {
                         {formatDate(new Date(occasion.occasion_date + 'T00:00:00'))}
                         {occasion.recurs_annually ? ' · Repeats every year' : ' · One time'}
                         {occasion.resulting_plan_id ? ' · ✅ Planned' : ''}
+                        {occasion.imported_from_calendar ? ' · 📅 From your calendar' : ''}
                       </Text>
                     </View>
                     <TouchableOpacity
@@ -487,6 +722,50 @@ export default function OccasionsScreen({ navigation }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={showCalendarPicker}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowCalendarPicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <SafeAreaView style={styles.modalSheet}>
+            <Text style={styles.headerTitle}>Which calendars can Nearby use?</Text>
+            <Text style={styles.headerSubtitle}>Only checked calendars will ever be read. Nothing is shared or edited.</Text>
+            <ScrollView style={{ maxHeight: 320 }}>
+              {availableCalendars.length === 0 ? (
+                <Text style={styles.helperText}>No calendars found on this device.</Text>
+              ) : (
+                availableCalendars.map((cal) => {
+                  const checked = pickerSelectedIds.has(cal.id);
+                  return (
+                    <TouchableOpacity
+                      key={cal.id}
+                      style={styles.recurRow}
+                      onPress={() => togglePickerCalendar(cal.id)}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked }}
+                      accessibilityLabel={cal.title}
+                    >
+                      <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+                        {checked && <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>✓</Text>}
+                      </View>
+                      <Text style={{ color: colors.textPrimary, flex: 1 }}>{cal.title}{cal.source ? ` (${cal.source})` : ''}</Text>
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </ScrollView>
+            <TouchableOpacity style={styles.addButton} onPress={saveCalendarSelection} activeOpacity={0.85}>
+              <Text style={styles.addButtonText}>Save Selection</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ alignItems: 'center', marginTop: spacing.sm, paddingVertical: spacing.sm }} onPress={() => setShowCalendarPicker(false)} accessibilityRole="button" accessibilityLabel="Cancel">
+              <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
+            </TouchableOpacity>
+          </SafeAreaView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -537,4 +816,12 @@ const getStyles = (colors) => StyleSheet.create({
   checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
   addButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.xs },
   addButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  calendarSectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md },
+  calendarManageLink: { color: colors.primary, fontWeight: '600', fontSize: 13 },
+  calendarActionPrimary: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
+  modalSheet: {
+    backgroundColor: colors.surface, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg,
+    padding: spacing.lg, paddingBottom: spacing.xl,
+  },
 });

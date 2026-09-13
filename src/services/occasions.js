@@ -18,7 +18,7 @@ export async function getMyOccasions() {
   return data ?? [];
 }
 
-export async function addOccasion({ occasionType, title, occasionDate, recursAnnually = true, connectedUserId = null, whoForName = null, whoForFriendId = null, surpriseMode = false }) {
+export async function addOccasion({ occasionType, title, occasionDate, recursAnnually = true, connectedUserId = null, whoForName = null, whoForFriendId = null, surpriseMode = false, importedFromCalendar = false }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not signed in' };
   const { data, error } = await supabase
@@ -36,6 +36,11 @@ export async function addOccasion({ occasionType, title, occasionDate, recursAnn
       who_for_name: whoForName,
       who_for_friend_id: whoForFriendId,
       surprise_mode: surpriseMode,
+      // Item 75: a pure provenance marker -- true only when this row was
+      // created from an explicitly-picked device calendar event (see
+      // deviceCalendar.js's own header comment for the full privacy
+      // boundary this supports).
+      imported_from_calendar: importedFromCalendar,
     })
     .select()
     .single();

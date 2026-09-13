@@ -23,6 +23,7 @@
     "expo-application": "~7.0.8",
     "expo-auth-session": "~7.0.11",
     "expo-av": "~16.0.8",
+    "expo-calendar": "~15.0.8",
     "expo-constants": "~18.0.14",
     "expo-contacts": "~15.0.11",
     "expo-crypto": "~15.0.9",

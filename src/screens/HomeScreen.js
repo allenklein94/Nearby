@@ -14,6 +14,8 @@ import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/
 import { formatPlaceStatusLabel } from '../utils/planCompletion';
 import { getUpcomingConnectedBirthdays } from '../services/friends';
 import { getUpcomingOccasions } from '../services/occasions';
+import { isCalendarIntegrationEnabled, getUpcomingCalendarEvents } from '../services/deviceCalendar';
+import { nearestCalendarHint } from '../utils/calendarOccasionSuggestion';
 import { logBusinessProfileView, getActiveOffers } from '../services/brandOffers';
 import { buildHomeRecommendations } from '../services/homeRecommendations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -507,6 +509,27 @@ export default function HomeScreen({ navigation }) {
         }
       })();
 
+      // Item 75 (CLAUDE.md): a real, best-effort calendar signal joins the
+      // existing placeholder rotation -- same "merge into the pool, pick
+      // one at random" mechanism intentPatternTask already established
+      // above. Never requests calendar permission itself; only reads if
+      // the user already opted in elsewhere (OccasionsScreen). A benign
+      // race with intentPatternTask over which one last sets
+      // intentPlaceholder is fine -- it's placeholder text, not data.
+      const calendarHintTask = (async () => {
+        try {
+          const enabled = await isCalendarIntegrationEnabled();
+          if (!enabled) return;
+          const events = await getUpcomingCalendarEvents(7);
+          const hint = nearestCalendarHint(events, 5);
+          if (!hint) return;
+          const pool = [...INTENT_PLACEHOLDER_EXAMPLES, `Plan something for ${hint.title}…`];
+          setIntentPlaceholder(pool[Math.floor(Math.random() * pool.length)]);
+        } catch (e) {
+          console.error('calendarHintTask failed', e);
+        }
+      })();
+
       const [result, weatherResult] = await Promise.all([
         dashboardTask,
         weatherTask,
@@ -521,6 +544,7 @@ export default function HomeScreen({ navigation }) {
         occasionTask,
         venueTask,
         rsvpsTask,
+        calendarHintTask,
       ]);
       const { forecast, myLocation } = weatherResult;
       setLoadError(false);
@@ -897,9 +921,9 @@ export default function HomeScreen({ navigation }) {
     setSurprise(null);
     setSurpriseLoading(true);
     try {
-      const { suggestion, pool, connectedPeople, connectedPerson } = await runSurpriseMe({ when, mood });
+      const { suggestion, pool, connectedPeople, connectedPerson, calendarHint } = await runSurpriseMe({ when, mood });
       if (!suggestion) {
-        setSurprise({ when, mood, suggestion: null, pool, connectedPeople, connectedPerson: null, shown: new Set() });
+        setSurprise({ when, mood, suggestion: null, pool, connectedPeople, connectedPerson: null, calendarHint, shown: new Set() });
         return;
       }
       setSurprise({
@@ -909,11 +933,12 @@ export default function HomeScreen({ navigation }) {
         pool,
         connectedPeople,
         connectedPerson,
+        calendarHint,
         shown: new Set(suggestionCandidateKeys(suggestion)),
       });
     } catch (e) {
       console.error('runSurpriseMe failed', e);
-      setSurprise({ when, mood, suggestion: null, pool: [], connectedPeople: [], connectedPerson: null, shown: new Set() });
+      setSurprise({ when, mood, suggestion: null, pool: [], connectedPeople: [], connectedPerson: null, calendarHint: null, shown: new Set() });
     } finally {
       setSurpriseLoading(false);
     }
@@ -938,7 +963,7 @@ export default function HomeScreen({ navigation }) {
     }
     setSurpriseLoading(true);
     try {
-      const { suggestion, pool, connectedPeople, connectedPerson } = await runSurpriseMe({ when: surprise.when, mood: surprise.mood });
+      const { suggestion, pool, connectedPeople, connectedPerson, calendarHint } = await runSurpriseMe({ when: surprise.when, mood: surprise.mood });
       setSurprise({
         when: surprise.when,
         mood: surprise.mood,
@@ -946,6 +971,7 @@ export default function HomeScreen({ navigation }) {
         pool,
         connectedPeople,
         connectedPerson: suggestion ? connectedPerson : null,
+        calendarHint,
         shown: suggestion ? new Set(suggestionCandidateKeys(suggestion)) : new Set(),
       });
     } catch (e) {
@@ -1388,6 +1414,17 @@ export default function HomeScreen({ navigation }) {
                         </Text>
                       )}
                     </View>
+                  )}
+                  {/* Item 75 (CLAUDE.md): a real, best-effort calendar
+                      signal -- only ever rendered when the user has
+                      already opted in to calendar integration elsewhere
+                      (OccasionsScreen) and a genuine near-term event
+                      exists. Purely informational context, never a gate
+                      on the suggestion itself. */}
+                  {surprise.calendarHint && (
+                    <Text style={styles.surpriseConnectedText}>
+                      📅 You also have "{surprise.calendarHint.title}" coming up ({surprise.calendarHint.dateLabel})
+                    </Text>
                   )}
                   <View style={styles.surpriseActionsRow}>
                     {surprise.suggestion.kind === 'candidate' && (

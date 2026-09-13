@@ -40,6 +40,100 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 75 ("Connect occasions to the user's calendar") — fully DONE (2026-09-13), same-day
+direct follow-up to Item 74.** User's own locked spec (via `AskUserQuestion`): a real, production-
+ready first increment, not a mocked UI or backlog item — permission-driven ("Allow Nearby to use
+selected calendar events to help you plan?", never blanket access), read-only (Nearby never
+creates/edits a device calendar event), a hard structural distinction between private calendar
+information and events actually being planned through Nearby, calendar as a signal/context layer
+rather than a new content type to manage, and integrated into existing flows (no new Calendar
+tab/screen) — directly paired with Item 76's own locked boundary, "Calendar = when, Nearby = what
++ who + where + how" (now in Standing Conventions below).
+
+Added `expo-calendar` (~15.0.8, SDK 54-compatible, via `npx expo install`) plus its config plugin
+in `app.json` (iOS `NSCalendars(FullAccess)UsageDescription`/Android `READ_CALENDAR`+
+`WRITE_CALENDAR`, the latter bundled unconditionally by the module's own plugin even though this
+app never calls any calendar write API anywhere). New `src/services/deviceCalendar.js` is the one
+real architectural choice this item hinges on: calendar permission state, which specific device
+calendars the user has explicitly opted in to share (never all of them), and the "already
+handled" dismissed-event-id set are ALL plain AsyncStorage on-device — raw calendar event data is
+read live from the OS and rendered directly in the client, and NEVER reaches Nearby's servers at
+all until the exact moment the user explicitly taps an action on one specific event. That's the
+real mechanism behind the "private calendar info vs. events you're planning through Nearby"
+distinction: an event only crosses that line when the user deliberately converts it into a real,
+already-existing `occasions` row (`addOccasion()`, an unchanged RLS-scoped plain insert -- no RPC
+overload risk since this was never an RPC to begin with). A new
+`occasions.imported_from_calendar boolean default false` column
+(`20261101_occasion_calendar_import_marker.sql`, applied and verified live against production) is
+a pure, honest provenance marker for that one moment -- never storing the calendar event's own
+device-local id server-side (meaningless off-device anyway); on-device dedup is tracked
+separately, in AsyncStorage.
+
+New pure, dependency-free `src/utils/calendarOccasionSuggestion.js` (11 new Jest tests) mirrors
+`businessAttributeExtraction.js`'s own "real keywords only, honestly labeled guess, always
+user-editable" shape: `guessOccasionTypeFromEventTitle()` (falls back to 'other'/Custom Occasion,
+Item 74's own free-text catch-all, for anything ambiguous rather than guessing wrong),
+`formatCalendarEventDateLabel()` (same short-date shape `formatRequestWhen()` already
+established), and `filterUpcomingCalendarSuggestions()`/`nearestCalendarHint()` for dedup/context.
+
+Client: `OccasionsScreen.js` (the existing "Occasions & Reminders" screen -- no new screen/route)
+gained a new "From Your Calendar" section, above Group Plans. Not yet connected: a compact "📅
+Connect Your Calendar" card. Tapping it shows the user's own exact requested copy as a contextual
+`Alert` ("Allow Nearby to use selected calendar events to help you plan?...") before the real
+native OS permission dialog fires; once granted, an in-place picker `Modal` (same "full-screen
+slide sheet" shape `SurpriseMeSheet.js`/`FiltersModal.js` already established -- no new screen)
+lets the user check specifically which device calendars to share, never a blanket "all calendars"
+default. Once enabled, the section shows real upcoming events (60-day window) from only the
+selected calendars, each with three explicit actions, none automatic: "Plan Something →" (marks
+the event handled and lands directly on Item 74's Custom Occasion Describe step, prefilled with
+the real event title -- the user's own example, "Dad's visiting," flows straight into the same
+classify+resolve pipeline Item 74 already built); "Save as Occasion" (creates a real, tracked
+`occasions` row with a reminder, tagged `imported_from_calendar: true`, shown with a "📅 From your
+calendar" badge in the existing list); and a plain "✕" dismiss for "not relevant." "Manage"/
+"Disconnect" links let the user change which calendars are shared or fully opt out at any time
+(disconnecting clears Nearby's own opt-in state; the confirm dialog honestly discloses that this
+doesn't revoke the device-level OS permission, which only the user's own Settings can do).
+`CelebrateSomethingScreen.js` gained one new optional route param, `initialCustomDescription`,
+threaded into its existing Custom Occasion Describe step's text state -- a one-line, low-risk
+addition since `initialStepFor()`'s existing `hasOccasion` branch already lands correctly on that
+step for `initialOccasion: 'other'` with no other change needed.
+
+Per the user's own "where appropriate, use calendar signals to improve recommendations, planning,
+occasions, and Surprise Me" -- both wired as small, genuinely additive touches, never a second
+permission prompt of their own (only ever reading if the user already opted in via
+OccasionsScreen): `surpriseMe.js`'s `runSurpriseMe()` now returns a best-effort `calendarHint`
+(nearest real event within 5 days) fetched in parallel with its existing candidate resolution,
+rendered on Home as one small, purely informational line ("📅 You also have '...' coming up...")
+under the suggestion card -- never a gate on the suggestion itself. `HomeScreen.js`'s existing
+ask-box placeholder rotation (the same "merge a real per-user signal into the pool" mechanism the
+existing recurring-intent-pattern placeholder already established) gained one more real candidate
+line, "Plan something for {title}…", only when a genuine near-term calendar event exists.
+
+Deliberately NOT touched: onboarding (`OnboardingScreen.js`'s own header comment explicitly says
+it "sells the outcome, not features... whatever someone needs to know, they'll learn by using the
+app" -- a dedicated calendar-permission pitch mid-onboarding would contradict that design choice
+on record, and OccasionsScreen is already the natural, contextual, existing-flow entry point the
+user's own instruction asked for); any deeper `linkOccasionToPlan`/resulting-plan linkage for the
+"Plan Something" path specifically (it reuses Item 74's existing Custom Occasion pipeline as-is,
+which does not itself call `linkOccasionToPlan` for the 'other' destination -- a real, disclosed,
+pre-existing scope boundary from Item 74, not something this item introduced or was asked to
+close).
+
+Verified live against production (`enmosvippabmuqslzrox`): the new `occasions.imported_from_
+calendar` column applied and confirmed present via `information_schema.columns` (boolean, default
+false). Full Jest suite 413/413 passing (11 new); all seven touched/new files transform-checked
+clean via `@babel/core` + `babel-preset-expo`; `app.json` re-confirmed valid JSON after the manual
+edit. **Not exercised in a running app or against a real device** (no simulator/device tooling
+available this session, standing note) -- this is the one item in this whole build where that
+matters most: native calendar permission dialogs, the OS-level calendar picker, and
+`expo-calendar`'s actual runtime behavior have never been exercised at all. Next session with
+device access should confirm: the contextual Alert correctly precedes the real OS permission
+dialog; the calendar-selection picker correctly lists real device calendars and the selection
+persists across app restarts; a real upcoming event renders with a sensible guessed occasion
+type; "Plan Something" correctly lands on a prefilled Describe step; "Save as Occasion" correctly
+creates a badged Occasion; and Disconnect correctly stops all calendar reads without needing an
+app restart.
+
 **Item 74 ("'Custom Occasion' is important... keeps the system open-ended") — fully DONE
 (2026-09-12), same-day direct follow-up to Item 73.** User's own example: "My dad is visiting
 from out of town" isn't a standard life event -- picking "Custom Occasion" should ask "What are
@@ -2567,6 +2661,11 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
 - **No invented numbers, no fabricated signals, ever.** Every metric/count/reason shown anywhere
   in the app must trace to a real query result. An absent signal renders as an honest empty
   state, never a guessed placeholder.
+- **Calendar = when, Nearby = what + who + where + how (Item 76, locked 2026-09-13).** Nearby
+  may read device calendar context (Item 75) to inform suggestions, plans, occasions, and
+  Surprise Me, but must never become a calendar-management surface itself -- no new "Calendar"
+  screen/tab, no event creation/editing, no calendar-app-shaped view. Any future calendar-adjacent
+  work should read and suggest, never manage.
 - **No dead ends (Item 56, locked 2026-09-12).** No major surface's empty state may be
   unactionable "nothing here" copy alone — it must offer a concrete, tappable next step to a real
   existing destination (create/adjust-filters/invite/explore-elsewhere, whichever genuinely fits),
