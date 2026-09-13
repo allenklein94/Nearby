@@ -40,6 +40,44 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 77 ("Add an 'Occasion Hub' to Profile") — audited, deliberately NOT built as proposed, one
+small real placement fix shipped instead (2026-09-13).** The user's own framing was conditional
+throughout ("Potentially"..."I'd avoid adding another huge section if the existing Profile
+hierarchy is already busy... the important thing is that occasions remain accessible without
+becoming another top-level tab") -- read as an invitation to audit and recommend, not a firm spec
+to build verbatim, so this was treated that way rather than implemented literally.
+
+Audited the real current `ProfileScreen.js` hierarchy (1500+ lines) before changing anything:
+it's already genuinely busy -- Interests, Your Plans, Your Connections, Your Story (5 links),
+Achievements, Business, then a whole separate profile-editing half (More Photos, Prompts, Voice
+Intro, About You, Details, Basics, Interests-editor). Adding a new "Occasion Hub" screen/section
+consolidating My Plans + Occasions + Communities + Gatherings, as the user's own sketch proposed,
+would be exactly the bloat they explicitly asked to avoid -- and it doesn't map cleanly onto what
+actually exists: Communities and Friends on this screen are browse/discovery destinations (tap
+through to browse *all* communities/friends), while Plans and Occasions are personal-record
+screens (*my own* commitments/reminders) -- a fundamentally different kind of "list." Gatherings
+has no dedicated Profile entry at all today (reached via Discover/Home instead); folding it in
+would mean inventing a new entry point for something that already has a perfectly good one
+elsewhere. Merging all four under one hub would conflate two different categories of screen, not
+simplify anything -- so no new hub/screen was built.
+
+The one real, warranted gap: Occasions was already reachable in one tap from Profile (confirmed:
+it already was, "the important thing" per the user's own words was already true before this item)
+-- but it lived in the "Your Story" group, alongside Timeline/Memory Vault/Your Activity/Your
+Rewards, which is a *backward*-looking "how has my social life gone" group. An occasion (an
+upcoming birthday, anniversary, etc.) is forward-looking planning, the same category as "Your
+Plans" right above it, not personal history. Moved the existing Occasions link row (same icon,
+label, subtitle, destination -- nothing new rendered) from "Your Story" into "Your Plans," right
+under the Upcoming/Past quick-stat tiles -- net zero new UI, one row relocated to the section it
+actually belongs in. This is the one respect in which Profile changed for this item; no new
+section, no new screen, no new tab.
+
+Full Jest suite 413/413 passing (no pure-logic changes, so no new tests); `ProfileScreen.js`
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app
+(no simulator/device tooling this session, standing note) -- next session should confirm the
+Occasions row renders correctly in its new spot under "Your Plans" and that "Your Story" still
+reads coherently with one fewer row.
+
 **Item 75 ("Connect occasions to the user's calendar") — fully DONE (2026-09-13), same-day
 direct follow-up to Item 74.** User's own locked spec (via `AskUserQuestion`): a real, production-
 ready first increment, not a mocked UI or backlog item — permission-driven ("Allow Nearby to use

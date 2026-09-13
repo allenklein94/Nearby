@@ -721,6 +721,31 @@ export default function ProfileScreen({ navigation, route }) {
             <Text style={styles.quickStatLabel}>Past</Text>
           </TouchableOpacity>
         </View>
+        {/* Item 77 (CLAUDE.md): relocated from "Your Story" below -- an
+            occasion is forward-looking planning ("what's coming up"), not
+            personal history, so it belongs next to Plans, not next to
+            Timeline/Memory Vault. Deliberately NOT built as a new
+            "Occasion Hub" section/screen consolidating Plans+Occasions+
+            Communities+Gatherings (the user's own explicit "avoid adding
+            another huge section" caveat, plus Communities/Gatherings on
+            this screen are browse/discovery destinations, not personal-
+            plan records the way Plans/Occasions are -- merging them would
+            conflate two different kinds of thing, not simplify anything).
+            This is the one real, warranted change: same row already
+            existed, only its section moved -- net zero new UI. */}
+        <TouchableOpacity
+          style={styles.timelineLink}
+          onPress={() => navigation.navigate('Occasions')}
+          activeOpacity={0.85}
+          accessibilityLabel="View your saved occasions"
+          accessibilityRole="button"
+        >
+          <View style={styles.timelineLinkTextCol}>
+            <Text style={styles.timelineLinkText}>📅 Occasions</Text>
+            <Text style={styles.timelineLinkSubtitle}>Anniversaries, graduations, and other real dates</Text>
+          </View>
+          <Text style={styles.timelineLinkChevron}>›</Text>
+        </TouchableOpacity>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">Your Connections</Text>
         <View style={styles.quickStatsRow}>
@@ -801,22 +826,6 @@ export default function ProfileScreen({ navigation, route }) {
           <View style={styles.timelineLinkTextCol}>
             <Text style={styles.timelineLinkText}>🎁 Your Rewards</Text>
             <Text style={styles.timelineLinkSubtitle}>Your loyalty tier, from perks you've redeemed</Text>
-          </View>
-          <Text style={styles.timelineLinkChevron}>›</Text>
-        </TouchableOpacity>
-        {/* Phase H (CLAUDE.md, "global onboarding -> product wiring" master
-            plan) -- real Occasions CRUD, additive to the already-live
-            birthday nudge (unchanged). */}
-        <TouchableOpacity
-          style={styles.timelineLink}
-          onPress={() => navigation.navigate('Occasions')}
-          activeOpacity={0.85}
-          accessibilityLabel="View your saved occasions"
-          accessibilityRole="button"
-        >
-          <View style={styles.timelineLinkTextCol}>
-            <Text style={styles.timelineLinkText}>📅 Occasions</Text>
-            <Text style={styles.timelineLinkSubtitle}>Anniversaries, graduations, and other real dates</Text>
           </View>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
