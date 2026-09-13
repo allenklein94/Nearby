@@ -14,6 +14,8 @@ import PhotoLightbox from '../components/PhotoLightbox';
 import LoadErrorState from '../components/LoadErrorState';
 import { sendFriendRequest, respondToFriendRequest, getMutualFriends, getRelationshipStatus } from '../services/friends';
 import { getHostStats, getHostReputation } from '../services/gatherings';
+import { getUpcomingOccasions } from '../services/occasions';
+import { occasionIcon, occasionLabel } from '../constants/businessAttributes';
 import { buildOccasionWhoForParams } from '../utils/createHubWhoFor';
 import { getSignedVoiceIntroUrl } from '../services/voiceNotes';
 import VoicePlayButton from '../components/VoicePlayButton';
@@ -41,6 +43,16 @@ function isNewHere(createdAt) {
   if (!createdAt) return false;
   const daysSinceJoined = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24);
   return daysSinceJoined <= NEW_HERE_DAYS;
+}
+
+// Item 87 (CLAUDE.md, "Add 'Upcoming' to the person's profile") -- same
+// short "month day" convention already used inline in several other
+// screens for a compact date chip (e.g. MomentumScreen.js/MakeAPlanScreen.js).
+function formatOccasionShortDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 export default function ViewProfileScreen({ route, navigation }) {
@@ -84,6 +96,18 @@ export default function ViewProfileScreen({ route, navigation }) {
   const [respondingToFriendRequest, setRespondingToFriendRequest] = useState(false);
   const [matchId, setMatchId] = useState(null);
   const [mutualFriends, setMutualFriends] = useState([]);
+  // Item 87 ("Add 'Upcoming' to the person's profile", CLAUDE.md): occasions
+  // *I've* saved (who_for_friend_id) for *this* person -- filtered to
+  // owner_id === myId below, never a row merely shared with me
+  // (get_upcoming_occasions() also returns those via its own separate
+  // connected_user_id branch, which this repo's privacy conventions require
+  // staying out of this specific card -- it's a private reminder about
+  // someone else, not something to surface as "about" a third person's
+  // profile). This is why the filter is on ownership, not just a name/id
+  // match -- it's the one thing that makes this section safe to show with
+  // zero extra privacy logic: it's already 100% my own private data, just
+  // surfaced in a more useful place than a flat list.
+  const [upcomingOccasionsForPerson, setUpcomingOccasionsForPerson] = useState([]);
   const [hostStats, setHostStats] = useState(null);
   const [hostReputation, setHostReputation] = useState(null);
   // Item 3 (external UX critique reply, 2026-09-10): a real bug, not just a
@@ -125,6 +149,13 @@ export default function ViewProfileScreen({ route, navigation }) {
         getMutualFriends(userId).then(setMutualFriends);
         getHostStats(userId).then(setHostStats);
         getHostReputation(userId).then(setHostReputation);
+        // A generous 365-day window -- these are mostly annually-recurring
+        // occasions (get_upcoming_occasions() already computes each one's
+        // *next* real occurrence), so a short "actionable soon" window like
+        // Home's own nudge card uses would be the wrong shape here.
+        getUpcomingOccasions(365).then((rows) => {
+          setUpcomingOccasionsForPerson(rows.filter((r) => r.owner_id === myId && r.who_for_friend_id === userId));
+        });
 
         relationship = await getRelationshipStatus(userId);
 
@@ -509,6 +540,17 @@ export default function ViewProfileScreen({ route, navigation }) {
             </TouchableOpacity>
           )}
 
+          {upcomingOccasionsForPerson.length > 0 && (
+            <View style={styles.upcomingOccasionsBlock}>
+              <Text style={styles.sectionLabel} accessibilityRole="header">Upcoming</Text>
+              {upcomingOccasionsForPerson.map((o) => (
+                <Text key={o.occasion_id} style={styles.mutualFriendsText}>
+                  {occasionIcon(o.occasion_type) ?? '📅'} {occasionLabel(o.occasion_type)} · {formatOccasionShortDate(o.occasion_date)}
+                </Text>
+              ))}
+            </View>
+          )}
+
           {mutualFriends.length > 0 && (
             <Text style={styles.mutualFriendsText}>
               🤝 {mutualFriends.length === 1
@@ -740,6 +782,7 @@ const getStyles = (colors) => StyleSheet.create({
   chemistryDiaryLink: { alignSelf: 'flex-start', marginBottom: spacing.md },
   chemistryDiaryLinkText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
   mutualFriendsText: { color: colors.textSecondary, fontSize: 13, marginBottom: spacing.sm },
+  upcomingOccasionsBlock: { marginBottom: spacing.sm },
   emptyText: { color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xxl },
   trackRowDisplay: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   trackArtDisplay: { width: 44, height: 44, borderRadius: radius.sm, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },

@@ -40,6 +40,44 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 87 ("Add 'Upcoming' to the person's profile") — fully DONE (2026-09-13), same-day direct
+follow-up to Item 86.** User's own example: on a friend's profile, if I've saved a real occasion
+for them, show "Upcoming / 🎂 Birthday · Sept 18" — but only if appropriate to privacy settings,
+without turning profiles into a social timeline.
+
+Shipped as a small new section on `ViewProfileScreen.js`, sourced from the already-existing
+`get_upcoming_occasions()` RPC (`getUpcomingOccasions()`, `occasions.js`) rather than a new query
+or table — fetched with a generous 365-day window (these are mostly annually-recurring occasions,
+each already resolved to its real next occurrence server-side, so a short "act now" window like
+Home's own nudge card uses would be the wrong shape for a standing profile fact) and filtered
+client-side to `owner_id === me && who_for_friend_id === this profile`. That filter is the whole
+privacy story, and it needs no new logic to be correct: `get_upcoming_occasions()` already returns
+two structurally different kinds of row — ones I own, and ones merely *shared with me* about
+myself (via `connected_user_id`) — and requiring `owner_id === me` excludes every row of the
+second kind regardless of its `who_for_friend_id`, so this can never surface someone else's
+private reminder, a surprise plan I'm not part of, or an occasion actually about me rendered as if
+it were "about" a third person. What's left is by construction 100% my own already-private data
+(RLS already scopes every row to its owner), just surfaced in a more useful, contextual place —
+"only if appropriate to privacy settings" is satisfied structurally, not by an added runtime check.
+
+Renders as a compact "Upcoming" label (reusing the same `sectionLabel` style Interests/Details/
+Basics already use) plus one short line per real occasion — icon + label from the already-shared
+`occasionIcon()`/`occasionLabel()` lookups (Item 84), a plain "month day" date (`Sept 18`, the same
+inline-formatter convention several other screens already use for a compact date, e.g.
+`MomentumScreen.js`) — never a list of every interaction, never anything beyond a real occasion
+row I actually saved. Deliberately excluded from a person's OWN profile view of themselves (the
+fetch only runs for `myId !== userId` at all) — this card is about occasions the VIEWER saved
+about someone else, never a feed of what others have saved about you.
+
+Full Jest suite 455/455 passing (no new pure functions — reuses `getUpcomingOccasions()`/
+`occasionIcon()`/`occasionLabel()`, all already covered where they were first introduced; the new
+`formatOccasionShortDate()` is a tiny inline formatter, same untested-local-helper precedent as
+the many equivalent ones already in other screens). `ViewProfileScreen.js` transform-checked clean
+via `@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device
+tooling this session, standing note) — next session should confirm on a real account that a real
+saved occasion for a friend renders correctly under "Upcoming" on their profile, that it's absent
+when no such occasion exists, and that it never appears on a user's own profile view of themselves.
+
 **Item 86 ("Let Nearby start from the person, not just the occasion") — fully DONE (2026-09-13),
 same-day direct follow-up to Items 83-85 and "ok do it" above.** User's own example: on a friend's
 profile, "Friends ✓ / Plan Something / Celebrate Claude" should open "What are you planning for
