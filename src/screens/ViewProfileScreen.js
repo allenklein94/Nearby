@@ -14,6 +14,7 @@ import PhotoLightbox from '../components/PhotoLightbox';
 import LoadErrorState from '../components/LoadErrorState';
 import { sendFriendRequest, respondToFriendRequest, getMutualFriends, getRelationshipStatus } from '../services/friends';
 import { getHostStats, getHostReputation } from '../services/gatherings';
+import { buildOccasionWhoForParams } from '../utils/createHubWhoFor';
 import { getSignedVoiceIntroUrl } from '../services/voiceNotes';
 import VoicePlayButton from '../components/VoicePlayButton';
 import { useTheme } from '../context/ThemeContext';
@@ -468,6 +469,33 @@ export default function ViewProfileScreen({ route, navigation }) {
                 <Text style={friendshipStatus === 'accepted' ? styles.addFriendButtonText : styles.messageButtonText}>💬 Message</Text>
               </TouchableOpacity>
             </View>
+          )}
+
+          {/* Item 86 (CLAUDE.md, "Let Nearby start from the person, not
+              just the occasion"): a real friend is itself a valid entry
+              point into the Occasion wizard, not just Create's own "Plan
+              for Someone" card. Gated on friendshipStatus alone (not
+              matchId, unlike the row above) since this doesn't depend on
+              the dating-match machinery at all -- just needs a real
+              accepted friend. Passes only who_for -- never an occasion --
+              so the wizard lands on its own real first (occasion) step,
+              already personalized ("What are you planning for {name}?"),
+              with who-for already answered for when the user reaches that
+              step. No new screen, no new picker built here -- reuses the
+              exact same wizard entry point/params Item 64's CreateHub
+              selector and every push-deep-link already use. */}
+          {!isOwnProfile && friendshipStatus === 'accepted' && (
+            <TouchableOpacity
+              style={styles.addFriendButton}
+              onPress={() => navigation.navigate('CelebrateSomething', buildOccasionWhoForParams({
+                whoFor: 'friend', whoForName: profile.display_name, whoForFriendId: userId,
+              }))}
+              activeOpacity={0.85}
+              accessibilityLabel={`Celebrate ${profile.display_name}`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.addFriendButtonText}>🎉 Celebrate {profile.display_name}</Text>
+            </TouchableOpacity>
           )}
 
           {!isOwnProfile && (

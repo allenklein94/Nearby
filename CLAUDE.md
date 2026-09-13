@@ -40,6 +40,55 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 86 ("Let Nearby start from the person, not just the occasion") — fully DONE (2026-09-13),
+same-day direct follow-up to Items 83-85 and "ok do it" above.** User's own example: on a friend's
+profile, "Friends ✓ / Plan Something / Celebrate Claude" should open "What are you planning for
+Claude? 🎂 Birthday / 🎉 Celebration / 🏆 Milestone / 🎁 Surprise / ✨ Something else" directly —
+the relationship with the person becomes the starting point, not the occasion.
+
+Shipped as a real entry point on `ViewProfileScreen.js`: a new "🎉 Celebrate {Name}" button, shown
+for any real accepted friend (`friendshipStatus === 'accepted'`, checked independently of
+`matchId` — this doesn't depend on the dating-match machinery at all, just a real friendship),
+styled as the same outlined secondary treatment "Message" already uses in this state (Plan
+Together/the dating-planning flow stays the screen's one coral primary action, per Item 37's
+already-locked "coral = the one primary action" convention — this is an additional, not a
+competing, primary). Navigates straight into the already-existing Occasion wizard
+(`CelebrateSomething`) using the exact same `buildOccasionWhoForParams()` helper Item 64's
+CreateHub who-for selector and every occasion push-deep-link already use — `whoFor: 'friend'`,
+the real name and id, no new params shape invented. Deliberately passes no `initialOccasion` — the
+whole point is that the person is already known and the occasion is the very next thing the user
+picks, exactly matching the mock — so the wizard opens on its own real first step, Item 83's
+already-shipped 5-tile quick-pick front door (Birthday/Anniversary/Celebration/Surprise/Custom;
+kept as-is rather than relabeling to the mock's illustrative "Milestone"/"Something else" wording,
+since these tiles are the one real, already-wired occasion vocabulary and "Milestone" already
+exists as one of the 24 values reachable via "More occasions" — inventing a second, parallel label
+set would be exactly the "category = X here, category = Y there" drift this repo's own locked "one
+ontology" convention exists to prevent).
+
+One small, genuine personalization closes the loop per the user's own framing ("intuitive" because
+the relationship is already known): the occasion step's header, previously always the generic
+"What are you planning?", now reads "What are you planning for {Name}?" whenever `whoForName` is
+already real at that step — true for this new entry point, and for any other future entry that
+pre-seeds who-for without pre-seeding an occasion, not a one-off special case. A real, previously
+latent bug was found and fixed while touching `initialStepFor()` (the function that decides which
+step a deep-linked entry lands on): its `hasOccasion && hasWhoFor` branch unconditionally returned
+step index 2, but `occasion === 'other'` has its own 2-step `buildStepDefs()` (occasion,
+custom_describe) with no who_for/activity/when steps at all — index 2 would have been out of
+bounds. Not reachable before this item (no existing caller combined `initialOccasion: 'other'`
+with `initialWhoFor`), but disclosed and fixed rather than left as a live trap, since a future
+entry easily could.
+
+Full Jest suite 455/455 passing (no new pure functions — this reuses `buildOccasionWhoForParams()`,
+already covered by `createHubWhoFor.test.js`; the label change and the `initialStepFor` fix are
+plain in-component render/routing logic, consistent with this screen's existing untested-helper
+precedent). Both touched files transform-checked clean via `@babel/core` + `babel-preset-expo`.
+Not exercised in a running app (no simulator/device tooling this session, standing note) — next
+session should confirm on a real account that "🎉 Celebrate {Name}" renders correctly for an
+accepted friend, that tapping it lands on the personalized "What are you planning for {Name}?"
+occasion step with the friend chip already pre-selected once the who_for step is reached, and that
+picking each of the 5 quick-pick tiles (including Surprise, which also needs the friend as
+who_for to make sense of surprise_mode) proceeds correctly from there.
+
 **"ok do it" (Who to invite -> Options for a business-destined Occasion) — fully DONE
 (2026-09-13), same-day direct follow-up to Items 83-85.** Closed the one honest nuance flagged
 when the user's own "Create -> Plan for Someone -> Occasion -> Who -> What -> When -> Who to

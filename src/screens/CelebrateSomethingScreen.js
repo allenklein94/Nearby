@@ -201,12 +201,22 @@ const WHO_INVOLVED_OPTIONS = [
 // type's own real last step (business 'options', or gathering/custom
 // 'who_involved') rather than re-asking anything.
 function initialStepFor(route) {
-  const hasOccasion = !!route.params?.initialOccasion;
+  const occasion = route.params?.initialOccasion;
+  const hasOccasion = !!occasion;
   const hasWhoFor = !!route.params?.initialWhoFor;
   const hasActivity = !!route.params?.initialActivityType;
   const hasWhen = !!route.params?.initialWhenPreset;
+  // Latent bug fix, found while building Item 86: occasion === 'other' has
+  // its own 2-step buildStepDefs() (occasion, custom_describe) with no
+  // who_for/activity/when steps at all -- the hasWhoFor branch below would
+  // return step index 2, out of bounds for that 2-step array. Not
+  // previously reachable (no caller combined initialOccasion:'other' with
+  // initialWhoFor), but Item 86's own ViewProfileScreen entry point can
+  // reach it on a Back-navigation re-seed, so it's fixed here rather than
+  // left as a live trap.
+  if (hasOccasion && occasion === 'other') return 1; // 'custom_describe'
   if (hasOccasion && hasWhoFor && hasActivity && hasWhen) {
-    return buildStepDefs(route.params.initialOccasion, route.params.initialActivityType).length - 1;
+    return buildStepDefs(occasion, route.params.initialActivityType).length - 1;
   }
   if (hasOccasion && hasWhoFor) return 2; // 'activity'
   if (hasOccasion) return 1; // 'who_for'
@@ -962,7 +972,17 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
             {stepKey === 'occasion' && (
               <>
-                <Text style={styles.label}>What are you planning?</Text>
+                {/* Item 86 (CLAUDE.md, "Let Nearby start from the person,
+                    not just the occasion"): a real deep link into this
+                    wizard (e.g. ViewProfileScreen's "Celebrate {name}")
+                    can pre-seed who_for without pre-seeding an occasion --
+                    "the user's relationship with the person becomes the
+                    starting point." When that's true, whoForName is
+                    already real at this very first step, so the header
+                    speaks to it directly instead of the generic question. */}
+                <Text style={styles.label}>
+                  {whoForName.trim() ? `What are you planning for ${whoForName.trim()}?` : 'What are you planning?'}
+                </Text>
                 {/* Item 83 ("Plan for Someone", CLAUDE.md): a real, fast
                     front door -- "the most understandable/high-frequency
                     entry points, not the entire underlying occasion
