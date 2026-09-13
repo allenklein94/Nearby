@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useStripe, initStripe } from '@stripe/stripe-react-native';
-import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
+import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon } from '../services/businessFulfillment';
+import { relevantAddonTypesForOccasion, planAddonIcon, planAddonLabel } from '../constants/planAddons';
+import { summarizeAddonsByType, summarizePlanAddonReadiness, addonStateCopy } from '../utils/planAddonReadiness';
 import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
 import { getConnectedPeopleWithInterests } from '../services/surpriseMe';
 import { recordIntentSelection } from '../services/intentOutcomes';
@@ -201,6 +203,13 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // request -- the actual gap the chain-1 audit found. An inline
   // expand-in-place section (Progressive Depth doctrine), not a new
   // screen.
+  // Item 80 ("Make it special," CLAUDE.md): real, independent add-on
+  // business_requests attached to this primary request. addonActionKey
+  // tracks which specific add-on type is mid-action (add/retry/remove),
+  // for a per-row spinner -- never a screen-wide loading lock, since one
+  // add-on's action must never block another's independent lifecycle.
+  const [addons, setAddons] = useState([]);
+  const [addonActionKey, setAddonActionKey] = useState(null);
   const [showInviteSomeone, setShowInviteSomeone] = useState(false);
   const [connections, setConnections] = useState([]);
   const [selectedInviteeIds, setSelectedInviteeIds] = useState([]);
@@ -256,6 +265,17 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       setRequest(result.request);
       setOffers(result.offers);
       setLoadError(false);
+
+      // Item 80: an add-on's own detail view never gets its own nested
+      // "Make it special" section (no addon-of-addon) -- only a primary
+      // request fetches its real add-ons.
+      if (!result.request.addon_type) {
+        getPlanAddons(requestId)
+          .then((rows) => setAddons(rows))
+          .catch((e) => console.error('getPlanAddons failed', e));
+      } else {
+        setAddons([]);
+      }
 
       // Phase 3: a real, honest read receipt -- the requester's own
       // session is genuinely looking at every currently-offered row on
@@ -375,6 +395,58 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       Alert.alert('Error', e.message);
     }
     setInvitingSomeone(false);
+  }
+
+  // Item 80 ("Make it special"): each handler acts on exactly one
+  // add-on's own independent lifecycle -- adding, retrying, or removing
+  // Flowers never touches Photographer's own state, and vice versa.
+  async function handleAddAddon(typeKey) {
+    setAddonActionKey(typeKey);
+    try {
+      const result = await createPlanAddonRequest(requestId, typeKey);
+      const rows = await getPlanAddons(requestId);
+      setAddons(rows);
+      if (result.notifiedCount === 0) {
+        Alert.alert('Added', `We couldn't find any ${planAddonLabel(typeKey).toLowerCase()} businesses nearby yet — we'll keep this open in case one joins.`);
+      }
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setAddonActionKey(null);
+  }
+
+  async function handleRemoveAddon(addonSummary) {
+    if (!addonSummary.requestId) return;
+    setAddonActionKey(addonSummary.key);
+    try {
+      await removePlanAddon(addonSummary.requestId);
+      const rows = await getPlanAddons(requestId);
+      setAddons(rows);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setAddonActionKey(null);
+  }
+
+  async function handleRetryAddon(addonSummary) {
+    setAddonActionKey(addonSummary.key);
+    try {
+      // Only a still-'open' declined attempt needs cancelling first --
+      // an already-terminal (expired) attempt doesn't block a fresh
+      // create_plan_addon_request call at all.
+      if (addonSummary.state === 'declined' && addonSummary.requestId) {
+        await removePlanAddon(addonSummary.requestId);
+      }
+      const result = await createPlanAddonRequest(requestId, addonSummary.key);
+      const rows = await getPlanAddons(requestId);
+      setAddons(rows);
+      if (result.notifiedCount === 0) {
+        Alert.alert('Added', `We couldn't find any ${planAddonLabel(addonSummary.key).toLowerCase()} businesses nearby yet — we'll keep this open in case one joins.`);
+      }
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setAddonActionKey(null);
   }
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -516,9 +588,33 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const offeredCount = offers.filter((o) => o.status === 'offered').length;
   const showComparison = offeredCount >= 2;
 
+  // Item 80 ("Make it special"): a relevant, occasion-aware add-on list
+  // for the primary request only (relevantAddonTypesForOccasion is a
+  // pure, deterministic lookup -- no AI, never shown for an add-on's own
+  // detail view). canAddAddons gates new add/retry actions on the
+  // primary still being genuinely open -- existing add-ons stay visible
+  // and viewable regardless.
+  const relevantAddonTypes = relevantAddonTypesForOccasion(request.occasion ?? null);
+  const addonSummaries = summarizeAddonsByType(relevantAddonTypes, addons);
+  const planReadinessLabel = summarizePlanAddonReadiness(hasWinner, addonSummaries);
+  const canAddAddons = request.status === 'open';
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+        {!!request.addon_type && (
+          <View style={styles.groupPlanBanner}>
+            <Text style={styles.groupPlanBannerText}>{planAddonIcon(request.addon_type)} {planAddonLabel(request.addon_type)} — part of a bigger plan</Text>
+            <TouchableOpacity
+              style={styles.groupPlanBannerButton}
+              onPress={() => navigation.push('BusinessRequestDetail', { requestId: request.parent_request_id })}
+              accessibilityLabel="View the full plan"
+              accessibilityRole="button"
+            >
+              <Text style={styles.groupPlanBannerButtonText}>View the Full Plan →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         {showReasonBanner && notificationReason && (
           <View style={styles.notificationReasonBanner}>
             <Text style={styles.notificationReasonText}>{notificationReason}</Text>
@@ -770,6 +866,73 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           </>
         )}
 
+        {!request.addon_type && (
+          <View style={styles.groupPlanSection}>
+            <Text style={styles.groupPlanSectionTitle}>✨ Make it special</Text>
+            <Text style={styles.helperText}>{planReadinessLabel}</Text>
+            {addonSummaries.map((a) => {
+              const busy = addonActionKey === a.key;
+              const copy = addonStateCopy(a.state);
+              return (
+                <View key={a.key} style={styles.candidateRow}>
+                  <View style={styles.addonRowHeader}>
+                    <Text style={styles.candidateName}>{a.icon} {a.label}</Text>
+                    {a.state === 'none' ? (
+                      canAddAddons ? (
+                        <TouchableOpacity
+                          onPress={() => handleAddAddon(a.key)}
+                          disabled={busy}
+                          accessibilityLabel={`Add ${a.label}`}
+                          accessibilityRole="button"
+                        >
+                          {busy ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.addonActionText}>+ Add</Text>}
+                        </TouchableOpacity>
+                      ) : (
+                        <Text style={styles.candidateText}>—</Text>
+                      )
+                    ) : (
+                      <Text style={styles.candidateText}>{copy.short}</Text>
+                    )}
+                  </View>
+                  {a.state !== 'none' && (
+                    <View style={styles.addonRowActions}>
+                      {a.requestId && (
+                        <TouchableOpacity
+                          onPress={() => navigation.push('BusinessRequestDetail', { requestId: a.requestId })}
+                          accessibilityLabel={`View ${a.label} request`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.addonActionText}>View →</Text>
+                        </TouchableOpacity>
+                      )}
+                      {a.canRetry && canAddAddons && (
+                        <TouchableOpacity
+                          onPress={() => handleRetryAddon(a)}
+                          disabled={busy}
+                          accessibilityLabel={`Try again for ${a.label}`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.addonActionText}>🔁 Try Again</Text>
+                        </TouchableOpacity>
+                      )}
+                      {(a.state === 'pending' || a.state === 'offered') && (
+                        <TouchableOpacity
+                          onPress={() => handleRemoveAddon(a)}
+                          disabled={busy}
+                          accessibilityLabel={`Remove ${a.label}`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.addonRemoveText}>Remove</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        )}
+
         {request.status === 'open' && groupPlanCandidates.length > 0 && (
           <View style={styles.groupPlanSection}>
             <Text style={styles.groupPlanSectionTitle}>👥 People you know are also asking for this</Text>
@@ -918,4 +1081,8 @@ const getStyles = (colors) => StyleSheet.create({
   groupPlanButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.sm },
   groupPlanButtonDisabled: { opacity: 0.5 },
   groupPlanButtonText: { color: '#fff', fontWeight: '700' },
+  addonRowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  addonRowActions: { flexDirection: 'row', marginTop: spacing.xs },
+  addonActionText: { ...typography.caption, color: colors.primary, fontWeight: '700', marginRight: spacing.md },
+  addonRemoveText: { ...typography.caption, color: colors.textTertiary, fontWeight: '700' },
 });

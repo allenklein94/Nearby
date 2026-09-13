@@ -65,8 +65,16 @@ export const CATEGORY_GROUPS = [
     tags: ['Reading', 'Art', 'Photography', 'Crafts'],
   },
   {
+    // Item 80 ("Make it special," CLAUDE.md): 3 new leaf tags -- Florist,
+    // Party & Event Decor, Gift Shop -- fill the real gaps a Flowers/
+    // Decorations/Gift plan add-on needs to classify a business by.
+    // Photographer and Dessert both already had a home (Photography,
+    // Bakeries) and needed nothing new; Transportation deliberately has
+    // no leaf tag, matching auto_transportation's own zero-leaf-tag
+    // major-only precedent. Widened together with the 7 CHECK constraints
+    // that mirror this exact array (20261104_plan_addons.sql).
     key: 'shopping', icon: '🛍️', label: 'Shopping',
-    tags: ['Farmers Markets', 'Thrift & Vintage'],
+    tags: ['Farmers Markets', 'Thrift & Vintage', 'Florist', 'Party & Event Decor', 'Gift Shop'],
   },
   {
     key: 'wellness_beauty', icon: '💆', label: 'Wellness & Beauty',

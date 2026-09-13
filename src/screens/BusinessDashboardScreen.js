@@ -39,6 +39,7 @@ import { getSocialForecast } from '../services/homeDashboard';
 import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiencesForOpportunity, buildOfferTitleScaffold } from '../services/businessOfferRecommendation';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
+import { planAddonIcon, planAddonLabel } from '../constants/planAddons';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
 import { bundleableOccasions, experienceComponentOptionsForOccasion } from '../constants/experienceTemplates';
 import { classifyBusinessCategory } from '../constants/businessCategoryClassifier';
@@ -3229,7 +3230,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       o.business_requests?.time_window_start,
                       o.business_requests?.time_window_end
                     );
+                    // Item 80 ("Make it special," CLAUDE.md): a real,
+                    // independent add-on to a bigger occasion plan --
+                    // shown first so it reads as a distinct request type,
+                    // never conflated with the "category" tag right after
+                    // it (which is already the closest matching leaf tag
+                    // for 5 of 6 add-on types, but Transportation has no
+                    // leaf tag at all, so this is its only visible cue).
+                    const addonTag = o.business_requests?.addon_type
+                      ? `${planAddonIcon(o.business_requests.addon_type)} ${planAddonLabel(o.business_requests.addon_type)} add-on`
+                      : null;
                     const lookingForTags = [
+                      addonTag,
                       o.business_requests?.category,
                       reqOccasion ? `${reqOccasion.icon} ${reqOccasion.label}` : null,
                       o.business_requests?.party_size ? `${o.business_requests.party_size} people` : null,

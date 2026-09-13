@@ -40,6 +40,150 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 80 ("Make it special" -- multi-business add-ons on a plan) — IN
+PROGRESS, stopped mid-session for a codespace restart (2026-09-13).** User's
+own explicit instruction: build the real thing end-to-end (schema, RPCs,
+RLS, lifecycle, client UI, tests, live verification) -- NOT a backlog item,
+NOT a design doc, NOT a mocked UI. Locked architecture, verbatim: **"One
+Occasion -> one Plan -> multiple optional business engagements -> one
+simple readiness view."** Each add-on (flowers/photographer/transportation/
+decorations/dessert/gift) is its own fully independent business_requests
+row with its own request->offer->accept/decline->reservation lifecycle --
+one business declining an add-on must never affect another add-on or the
+primary. No new business-request system was built; the existing one was
+extended.
+
+**What's DONE and verified live against production (`enmosvippabmuqslzrox`)
+this session** -- full detail in `supabase/migrations/20261104_plan_addons.sql`'s
+own header comments:
+- Taxonomy: 3 new leaf tags (Florist, Party & Event Decor, Gift Shop) added
+  to the `shopping` group in `gatheringCategories.js`'s `CATEGORY_GROUPS`
+  (Photographer/Dessert reuse the existing Photography/Bakeries tags;
+  Transportation is deliberately major-only, matching `auto_transportation`'s
+  existing zero-leaf-tag precedent). All 7 real CHECK constraints that
+  mirror this shared flat list were widened together (found via a live
+  search for every constraint referencing the array, before writing the
+  migration, so none drift).
+- Schema: `business_requests` gained `parent_request_id` (self-FK) and
+  `addon_type` (6-value CHECK), with a both-or-neither pairing CHECK. A new
+  index on `parent_request_id`.
+- `create_plan_from_business_request()` (the trigger that auto-creates a
+  `plans` row on every business_requests insert) now skips add-on rows --
+  the one guard that keeps "one occasion, one plan" real at the data level
+  instead of a UI convention (without it, every add-on would spawn its own
+  redundant Plans-tab entry).
+- `_business_request_fanout()` generalized (DROP+CREATE, not duplicated)
+  with two new optional trailing filters (`category_filter_param text[]`,
+  `business_major_filter_param text`), both defaulting to null so the one
+  existing caller (`create_business_request`) is byte-identical to before.
+  Add-ons are the first caller to pass a real filter, so e.g. a Flowers
+  add-on broadcasts only to real florist-classified partners instead of
+  every nearby business.
+- New RPC `create_plan_addon_request(parent_request_id, addon_type, note)`
+  -- inherits location/date/time/party-size from the parent (never
+  re-collected), generates a privacy-safe generic raw_text server-side
+  (occasion-only, never the parent's own free text, which may carry a
+  celebrated person's name -- mirrors Item 69's
+  `composeCelebrationAskTextForBusiness` convention), rejects an addon-of-
+  an-addon, rejects adding to a cancelled primary, and blocks a duplicate
+  *open* addon of the same type (a cancelled/expired one doesn't block a
+  retry -- audit trail preserved, a retry creates a new independent row,
+  never mutates history). Deliberately skips `_match_request_to_policy`
+  (no category awareness at all -- would cross-match any nearby business)
+  and `_match_request_to_package` (occasion packages are the PRIMARY
+  business's own concept) -- only the now-category-aware fanout plus
+  `_match_request_to_availability`/`_ai_auto_respond_to_business_requests`
+  run, and only when a real leaf category exists (skipped for
+  Transportation, which is major-only).
+- `get_business_opportunities()` (Item 69's RPC) now also returns
+  `addon_type`/`is_addon` in its fixed jsonb column list -- same privacy
+  boundary as everything else it returns (no requester identity, no parent
+  request's own raw_text).
+- Verified live via a disposable rolled-back transaction (real fixtures:
+  2 users, 3 brand_partners -- a real Florist match, a real
+  auto_transportation match, a non-matching food_drink business) BEFORE
+  applying the migration for real: primary creates exactly 1 `plans` row;
+  a Flowers add-on notifies ONLY the florist partner (not the diner or the
+  transportation company) and creates ZERO `plans` rows; raw_text never
+  leaks the parent's own free text; duplicate-open-addon rejected;
+  addon-of-addon rejected; Transportation add-on (null category, major-only)
+  notifies only the transportation partner; retry-after-cancel succeeds;
+  cancelled-parent rejected; business-side `get_business_opportunities`
+  correctly surfaces `addon_type`/`is_addon` with no `requester_id` leak.
+  All assertions passed (each as a `RAISE EXCEPTION` that would have
+  surfaced as an API error, confirmed by deliberately triggering and
+  observing several real errors earlier in the same session). Re-confirmed
+  after the real apply: `_business_request_fanout`/`create_plan_addon_request`/
+  `get_business_opportunities`/`create_plan_from_business_request` each have
+  exactly 1 live overload (no signature-drift risk).
+- Client: `src/constants/planAddons.js` (the 6-type vocabulary + a
+  deterministic, non-AI occasion->relevant-add-ons lookup,
+  `relevantAddonTypesForOccasion` -- 9 new Jest tests) and
+  `src/utils/planAddonReadiness.js` (pure state-derivation --
+  `deriveAddonRequestState`, `summarizeAddonsByType`,
+  `summarizePlanAddonReadiness`, `canRetryAddon` -- 19 new Jest tests, all
+  independent-lifecycle behavior explicitly covered: one addon confirmed
+  never affects another still pending, one declined offer among several
+  doesn't sink the whole addon if another offer is still live, a "skipped"
+  addon doesn't count against the readiness ratio). `businessFulfillment.js`
+  gained `createPlanAddonRequest`/`getPlanAddons`/`removePlanAddon` (the
+  last just reuses the existing generic `cancel_business_request` --
+  no new remove primitive needed). `BusinessRequestDetailScreen.js` (the
+  screen every business-request creation path already lands on, including
+  Item 67's group-vote "Book It" flow -- so this needed zero new entry-point
+  wiring) gained: (a) a "part of a bigger plan" context banner + back-link
+  when the screen itself is showing an add-on, and (b) a full "✨ Make it
+  special" section on the PRIMARY request's own screen -- occasion-relevant
+  add-on chips to add, each existing add-on's real state
+  (waiting/offered/confirmed/declined/skipped) with View/Try
+  Again/Remove actions, and a one-line plan-readiness summary ("N of M
+  extras confirmed"). `BusinessDashboardScreen.js`'s existing "What they're
+  looking for" tag row now shows an add-on badge (e.g. "🌸 Flowers add-on")
+  first, ahead of the category tag, so a business can tell a Make-it-
+  special add-on apart from a standalone ask. Full Jest suite 448/448
+  passing; every touched/new file transform-checked clean via
+  `@babel/core` + `babel-preset-expo`.
+
+**What's genuinely NOT done yet -- pick up here next session:**
+1. **Not committed to git yet** -- check `git status` first; if the restart
+   hit mid-commit, the working tree should still have every file listed
+   above (`git status --short` was last confirmed clean-except-these-files
+   right before the restart). Commit and push per this repo's own standing
+   "commit after each increment" convention before doing anything else.
+2. `getPlanAddons()`'s nested PostgREST embed
+   (`business_requests -> business_request_offers -> brand_partners(name)`)
+   was reasoned correct by analogy to `getBusinessRequestWithOffers()`'s
+   already-working identical embed shape, but was **never round-tripped
+   against a real live REST call** this session (only the underlying SQL/
+   RLS was verified via the Management API's raw query endpoint, not
+   PostgREST itself) -- worth a quick live check early next session.
+3. **Not exercised in a running app** at all (standing limitation, no
+   simulator/device tooling ever available in this project) -- next
+   session with device access should confirm: the "✨ Make it special"
+   section renders correctly under a primary request with occasion-
+   relevant chips, tapping "+ Add" creates a real add-on and updates the
+   row in place, "🔁 Try Again" after a decline works, the add-on's own
+   detail screen shows the "part of a bigger plan" banner and back-link
+   correctly, and the business dashboard's new add-on badge renders.
+4. Optional/nice-to-have, not blocking: `create_plan_addon_request`'s
+   `note_param` is wired end-to-end at the DB layer but has no UI surface
+   yet (the "+ Add" chip fires with `note = null`) -- could add a small
+   optional note field later if wanted.
+5. Not built (disclosed, not an oversight): a dedicated business-side UI
+   distinguishing an add-on's own response flow from a normal request --
+   it currently reuses the exact same generic "Make an Offer"/"Can't
+   accommodate" buttons every opportunity already has, which is correct
+   and sufficient (an add-on's offer lifecycle IS a normal offer
+   lifecycle), but there's no add-on-specific business messaging beyond
+   the new tag.
+6. Cross-check against the item's own spec once more before declaring this
+   fully done: cancellation of a *confirmed* add-on reservation (not just a
+   pending/offered one) already works for free via the existing
+   `cancelBusinessReservation`/`cancel_business_reservation` primitive
+   (unchanged, real-money-safety-gated per Item 50/51) -- not re-verified
+   specifically for an add-on row this session, should be a quick sanity
+   check, not new code.
+
 **Item 79 ("businesses get a new demand signal") — fully DONE (2026-09-13),
 same-day direct follow-up to Item 78.** User's own examples: "14 birthday
 groups are looking for dinner this weekend." / "8 groups are looking for

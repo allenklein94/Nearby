@@ -469,6 +469,53 @@ export async function cancelBusinessRequest(requestId) {
   return data;
 }
 
+// Item 80 ("Make it special," CLAUDE.md) -- an add-on is a real,
+// independent business_requests row (same lifecycle, same offer/accept/
+// decline/reservation machinery as any other request), pointed back at
+// the primary request it enhances. No location/date/party-size is
+// collected here -- create_plan_addon_request inherits all of it from
+// the parent server-side, since an add-on enhances an already-described
+// occasion rather than starting a new one.
+export async function createPlanAddonRequest(parentRequestId, addonType, note = null) {
+  const { data, error } = await supabase.rpc('create_plan_addon_request', {
+    parent_request_id_param: parentRequestId,
+    addon_type_param: addonType,
+    note_param: note,
+  });
+  if (error) throw new Error(error.message);
+  return { requestId: data.requestId, addonType: data.addonType, category: data.category, notifiedCount: data.notifiedCount };
+}
+
+// RLS already scopes both business_requests and business_request_offers
+// to their real owner (the requester), so a plain nested-embed select
+// works here exactly like getBusinessRequestWithOffers's own primary-
+// request read -- no new RPC needed for a read the owner is already
+// entitled to. Returns every add-on ever attempted for this plan
+// (including cancelled/expired ones) so a retry's audit trail stays
+// visible -- summarizeAddonsByType (planAddonReadiness.js) picks the
+// most recent attempt per type for display.
+export async function getPlanAddons(parentRequestId) {
+  const { data, error } = await supabase
+    .from('business_requests')
+    .select('*, business_request_offers(*, brand_partners(name))')
+    .eq('parent_request_id', parentRequestId)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+// Removes an add-on that's still open (cancel_business_request already
+// enforces this) so the same type can be retried -- reuses the exact
+// generic primitive every other "cancel my own open request" action in
+// this app already uses. The old row stays in the table, cancelled, per
+// the "replacement creates a new independent engagement rather than
+// mutating history" instruction; a subsequent createPlanAddonRequest
+// call of the same type is then no longer blocked by the duplicate
+// guard.
+export async function removePlanAddon(addonRequestId) {
+  return cancelBusinessRequest(addonRequestId);
+}
+
 export async function completeBusinessReservation(offerId) {
   const { data, error } = await supabase.rpc('complete_business_reservation', { offer_id_param: offerId });
   if (error) throw new Error(error.message);
