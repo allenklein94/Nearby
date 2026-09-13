@@ -40,6 +40,104 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 89 ("Give the occasion a single shared conversation") — fully DONE (2026-09-13), same-day
+direct follow-up to Item 88, resumed cleanly after a codespace restart (git was clean at session
+start — Item 88 was the last commit; Item 89 had not been started, so this was a fresh build, not
+a resume).** User's own framing: rather than Messages → individual chats → trying to coordinate,
+the occasion itself should have a lightweight group conversation — "Sarah's Birthday 🎂 / 8 people
+/ Plan / Chat / Guests / Business."
+
+Audited the real current state before writing anything (a background research fork surveyed the
+whole chat/occasion-plan stack first): a GATHERING-destined occasion (a party) already has exactly
+this — `gathering_messages`/`GatheringChatScreen.js`, a real, already-shipped group chat for the
+host and every approved attendee, reachable via "💬 Say Hello" once you're in. Building a second
+one for that destination would be pure duplication, not a gap. The one genuine, concrete gap is
+the OTHER real occasion destination: a business_request-destined plan (dinner/night out/activity)
+— which, especially since Item 88's `plan_organizers` and Item 81's multi-request "Your Plan"
+timeline, can now have a real host, co-organizers, and several invited people (via
+`invite_to_business_request` or the older `propose_group_plan`/`confirm_group_plan` flow), all of
+whom today could only coordinate via scattered 1:1 DMs. Item 89 was scoped to exactly that gap.
+
+Shipped via `20261109_plan_group_chat.sql`: a new `plan_messages` table (plan_id/sender_id/body/
+created_at) keyed on the already-unified `plans` object (Phase G) rather than a gathering- or
+occasion-specific copy, so any future plan-type inherits the same mechanism for free. **One
+deliberate posture choice, different from `plan_organizers`/`occasion_group_plans`' own "zero
+client policies, RPC-only" convention**: Supabase Realtime's `postgres_changes` delivery evaluates
+every change against the *subscribing client's own* RLS policies, not a service-role bypass — a
+table with RLS enabled and zero policies can never deliver a live event to an ordinary
+authenticated client, since RLS defaults to deny with nothing granted. A shared conversation's
+whole value is messages arriving live while the screen is open, so `plan_messages` instead follows
+`gathering_messages`/`community_messages`' own older, already-proven-live direct-policy shape:
+real SELECT/INSERT policies gated by a new SECURITY DEFINER predicate, `is_plan_participant(plan_id,
+user_id)` — host or organizer (reusing `is_plan_organizer`), OR a real accepted `group_plan_participants`
+row tied to the plan's primary request. That last check had to cover **two different real
+mechanisms** that can put a second person on a business-request-destined plan: Item 36's newer
+`invite_to_business_request` (the primary request id stays the operative one forever, never
+merged) and the older Phase D `propose_group_plan`/`confirm_group_plan` flow (confirming creates a
+brand-new MERGED request and never updates `group_plan_participants.source_request_id` to point at
+it) — resolved by also matching on the merged request's own `business_requests.group_plan_id`
+column, found and added during live verification, not assumed correct on the first pass. Two more
+RPCs: `get_plan_participants(plan_id)` (the real roster + host/organizer/guest role, for the
+"👥 N people" header) and `get_plan_chat_info(business_request_id)` (the actual client entry point
+— resolves a business_requests id the caller already has on screen, primary or any Item 81 add-on
+via the same `coalesce(parent_request_id, id)` convention `get_plan_organizers` already
+established, checks real participant access, and returns plan id + title + roster in one round
+trip, since the client can never read the `plans` table directly for a plan it didn't create).
+`plan_messages` was added to the `supabase_realtime` publication (same idempotent conditional-add
+shape as the existing `20260815_v5_realtime_publication_fix.sql`).
+
+Client: `src/services/planChat.js` mirrors `gatheringChat.js`'s exact 3-function shape
+(`getPlanMessagesPage`/`getPlanMessageById`/`sendPlanMessage`, direct table queries now that RLS
+allows it) plus the two new RPC wrappers. New `PlanChatScreen.js` mirrors `GatheringChatScreen.js`
+closely (same `usePaginatedMessages`/`useChatComposer` hooks, same per-message realtime-INSERT-then-
+rehydrate pattern, same inverted FlatList/photo-signing/report-block flow) minus its
+gathering-specific extras (post story, suggest offers, out of scope here) — plus a "👥 N people ▼"
+header that expands into a real host/organizer/guest roster. Registered as a new `PlanChat` route
+in `RootNavigator.js`. Entry point: `BusinessRequestDetailScreen.js` gained a "💬 Group Chat (N)"
+link, shown on both a primary's and an add-on's own screen (organizing/coordinating authority
+already applies plan-wide either way, same reasoning Item 88's Organizers section already
+established) — gated the same "presence is the render gate" way as `planOrganizerInfo`: a
+best-effort `getPlanChatInfo(requestId)` fetch on load, silently null for anyone not a real
+participant.
+
+Verified live against production (`enmosvippabmuqslzrox`) via two disposable rolled-back
+transactions covering both real mechanisms, with real fixtures and no shortcuts: (1) the
+`invite_to_business_request` shape — host, an added co-organizer, an accepted guest, a
+merely-invited-but-not-yet-accepted person, and a stranger — confirmed `is_plan_participant` is
+true for the first three and false for the last two; confirmed `get_plan_chat_info` resolves both
+the primary's own id and one of its add-ons to the identical plan with the correct 3-person roster;
+confirmed RLS end-to-end via real `SET ROLE authenticated` + `request.jwt.claims` impersonation — an
+accepted guest can send and read `plan_messages`, a stranger sees zero rows and is rejected on
+insert, and the merely-invited-but-not-accepted person also correctly sees zero rows; (2) the older
+`propose_group_plan`/`confirm_group_plan` merged-request shape — confirmed both the original host
+and the original guest are still correctly recognized as participants on the plan behind the new
+merged request even though neither of their `group_plan_participants.source_request_id` values was
+ever updated to point at it, and a stranger is still correctly excluded. Both transactions rolled
+back with zero leaked rows confirmed. Re-confirmed live after the real apply: both RLS policies
+present, `plan_messages` in the `supabase_realtime` publication, and all three new functions
+(`is_plan_participant`/`get_plan_participants`/`get_plan_chat_info`) have exactly one overload each
+— including after a second `CREATE OR REPLACE` pass mid-session to add the merged-flow fallback,
+re-confirmed with no signature drift.
+
+No new pure functions were introduced (this is DB/RLS-plus-UI wiring, same shape as Item 88) — full
+Jest suite 455/455 passing throughout; all four touched/new files (`planChat.js`, `PlanChatScreen.js`,
+`BusinessRequestDetailScreen.js`, `RootNavigator.js`) transform-checked clean via `@babel/core` +
+`babel-preset-expo`. **Deliberately NOT built, disclosed rather than assumed covered**: no push
+notification for a new `plan_messages` row (matches the existing, already-shipped precedent for
+`gathering_messages`/`community_messages` — live-while-open only, no push — a real fast-follow
+candidate, not an oversight); no full Plan/Chat/Guests/Business tab-bar retrofit of
+`BusinessRequestDetailScreen.js` (the mock's literal 4-tab layout) — its existing sections (🗺️ Your
+Plan, 👥 Organizers, the offer list) already cover Plan/Guests/Business content vertically, and
+retrofitting two large, already-complex screens into a segmented-tab layout is a materially bigger,
+riskier UI rewrite than "give the occasion a chat" asks for; a gathering-destined occasion's chat
+was left fully untouched since it already has its own, more mature equivalent. Not exercised in a
+running app (no simulator/device tooling this session, standing note) — next session should
+confirm on a real account that "💬 Group Chat (N)" renders correctly on both a primary and an
+add-on's own screen, that the roster expand/collapse and message send/receive work end to end, and
+—the one part of this item that most needs a second device to truly confirm — that a message sent
+from one participant's device arrives live (via the real Postgres Realtime subscription) on
+another participant's device without a manual refresh.
+
 **Item 88 ("Let multiple people organize the same occasion") — fully DONE (2026-09-13), same-day
 direct follow-up to Item 87.** User's own example: "Sarah's birthday could have Organizer: Allen,
 Co-organizers: John + Emily. Everyone can help. One person might find the restaurant, another

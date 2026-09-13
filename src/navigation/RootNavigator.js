@@ -100,6 +100,7 @@ import FeaturesOverviewScreen from '../screens/FeaturesOverviewScreen';
 import SelectGatheringLocationScreen from '../screens/SelectGatheringLocationScreen';
 import FriendsScreen from '../screens/FriendsScreen';
 import GatheringChatScreen from '../screens/GatheringChatScreen';
+import PlanChatScreen from '../screens/PlanChatScreen';
 import QuickFilterCustomizeScreen from '../screens/QuickFilterCustomizeScreen';
 import MusicModeScreen from '../screens/MusicModeScreen';
 
@@ -567,6 +568,17 @@ export default function RootNavigator() {
             <Stack.Screen name="RequestBusinessPartner" component={RequestBusinessPartnerScreen} options={{ headerShown: true, title: 'Request a Business Partner', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AskBusiness" component={AskBusinessScreen} options={{ headerShown: true, title: 'Ask a Business', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="BusinessRequestDetail" component={BusinessRequestDetailScreen} options={{ headerShown: true, title: 'Your Request', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen
+              name="PlanChat"
+              component={PlanChatScreen}
+              options={{
+                headerShown: true,
+                title: 'Plan Chat',
+                headerStyle: { backgroundColor: colors.background },
+                headerTintColor: colors.textPrimary,
+                headerShadowVisible: false,
+              }}
+            />
             <Stack.Screen name="GroupPlan" component={GroupPlanScreen} options={{ headerShown: true, title: 'Group Plan', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="GroupOccasionPlan" component={GroupOccasionPlanScreen} options={{ headerShown: true, title: 'Group Plan', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="DateProposal" component={DateProposalScreen} options={{ headerShown: true, title: 'Plan Something Together', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

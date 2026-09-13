@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useStripe, initStripe } from '@stripe/stripe-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon, setPlanItemTime, getPlanOrganizers, addPlanOrganizer, removePlanOrganizer } from '../services/businessFulfillment';
+import { getPlanChatInfo } from '../services/planChat';
 import { relevantAddonTypesForOccasion, planAddonIcon, planAddonLabel } from '../constants/planAddons';
 import { buildPlanTimeline, summarizePlanTimelineReadiness, addonStateCopy } from '../utils/planAddonReadiness';
 import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
@@ -251,6 +252,12 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const [planOrganizerInfo, setPlanOrganizerInfo] = useState(null);
   const [showOrganizers, setShowOrganizers] = useState(false);
   const [organizerActionBusy, setOrganizerActionBusy] = useState(false);
+  // Item 89 ("Give the occasion a single shared conversation"): same
+  // "presence is the gate" shape as planOrganizerInfo above -- null until
+  // a successful get_plan_chat_info(), which only ever succeeds for a
+  // real participant of the plan behind this request (host, organizer, or
+  // an accepted invitee). A rejected fetch just means no chat link shows.
+  const [planChatInfo, setPlanChatInfo] = useState(null);
   const [selectedNewOrganizerId, setSelectedNewOrganizerId] = useState(null);
   // Offer System outcome capture (CLAUDE.md, Aug 23 2026): the real "did it
   // go well?" step, asked right after a real completeBusinessReservation()
@@ -317,6 +324,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       }
       setPlanOrganizerInfo(organizerInfo);
       const isOrganizerNow = !!organizerInfo;
+
+      // Item 89: same best-effort, silent-on-rejection shape as the
+      // organizer fetch just above -- most viewers of this screen aren't
+      // part of the plan's chat and that's expected, not an error.
+      try {
+        setPlanChatInfo(await getPlanChatInfo(requestId));
+      } catch (e) {
+        setPlanChatInfo(null);
+      }
 
       // Item 80: an add-on's own detail view never gets its own nested
       // "Make it special" section (no addon-of-addon) -- only a primary
@@ -1048,6 +1064,24 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           </>
         )}
 
+        {/* Item 89 ("Give the occasion a single shared conversation,"
+            CLAUDE.md): shown for both a primary and an add-on's own
+            screen, same reasoning as the Organizers section right below --
+            the chat belongs to the whole plan, not to whichever specific
+            request row happens to be on screen. planChatInfo is only
+            ever non-null for a real participant (get_plan_chat_info's own
+            authorization check), so its presence is the render gate. */}
+        {planChatInfo && (
+          <TouchableOpacity
+            style={styles.groupChatLink}
+            onPress={() => navigation.navigate('PlanChat', { businessRequestId: requestId, initialTitle: planChatInfo.title })}
+            accessibilityLabel={`Open group chat, ${planChatInfo.participants?.length ?? 0} people`}
+            accessibilityRole="button"
+          >
+            <Text style={styles.groupChatLinkText}>💬 Group Chat ({planChatInfo.participants?.length ?? 0})</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Item 88 ("Let multiple people organize the same occasion,"
             CLAUDE.md): shown for both a primary and an add-on's own
             screen -- organizing authority applies plan-wide either way.
@@ -1409,6 +1443,8 @@ const getStyles = (colors) => StyleSheet.create({
   inviteSomeoneLinkText: { ...typography.body, color: colors.primary, fontWeight: '700' },
   groupPlanSection: { marginTop: spacing.lg, marginBottom: spacing.md },
   groupPlanSectionTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginBottom: 2 },
+  groupChatLink: { marginTop: spacing.lg, alignSelf: 'flex-start', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  groupChatLinkText: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
   // "ok do it": same framing GatheringConfirmationScreen's own
   // suggestedInviteeIds header already uses.
   suggestedInviteeHeader: { ...typography.caption, color: colors.primary, fontWeight: '700', marginBottom: 2 },
