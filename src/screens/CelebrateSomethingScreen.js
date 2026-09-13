@@ -43,8 +43,8 @@ import { typography, spacing, radius } from '../theme';
 //
 // Renamed to "Occasion" in every user-facing surface (direct user request,
 // CLAUDE.md, 2026-09-12) -- Create's own primary "Occasion" card, this
-// screen's nav title ("Create an Occasion") and in-body header both say
-// Occasion now, matching the app's existing Gathering/Gatherings and
+// screen's nav title ("Create an Occasion") and in-body header both said
+// Occasion, matching the app's existing Gathering/Gatherings and
 // Community/Communities create-vs-browse naming pattern (singular =
 // create this one; plural, OccasionsScreen.js, = browse/manage the ones
 // you've already logged -- a genuinely different, pre-existing screen,
@@ -53,6 +53,22 @@ import { typography, spacing, radius } from '../theme';
 // were NOT renamed -- they're not user-visible, and renaming them risks
 // exactly the file-name collision this comment is disambiguating
 // (OccasionScreen.js vs OccasionsScreen.js) for no real benefit.
+//
+// Item 83 (CLAUDE.md, direct user request): user-facing name changed
+// again, this time to "Plan for Someone" -- "'Occasion' sounds like
+// internal product terminology; 'Plan for Someone' immediately
+// communicates the action." Same internal-identifiers-untouched posture
+// as the original rename above (still CelebrateSomethingScreen.js /
+// 'CelebrateSomething' / celebrateSomething.js / occasion === the state
+// key everywhere in this file). The occasion step itself also gained a
+// real 5-tile quick-pick front door (Birthday / Anniversary / Celebration
+// / Surprise / Custom) in front of the existing 24-value grouped picker
+// (occasionGroupOptions(), unchanged, still reachable via "More
+// occasions") -- per the user's own locked answer, "simple front door,
+// full capability behind it," never a replacement for the full
+// vocabulary. All five tiles funnel into the exact same `occasion` state
+// and the same downstream pipeline every other occasion pick already
+// used -- no second, divergent implementation.
 //
 // "Connect it to businesses" follow-up (direct user request): for a
 // business-destined activity type (dinner/night_out/activity), the final
@@ -127,6 +143,28 @@ const WHO_FOR_OPTIONS = [
 // invite step instead of asking what to do. Rendered separately below the
 // main row so it doesn't read as an 8th equivalent activity choice.
 const GROUP_VOTE_OPTION = { key: 'group_vote', label: 'Let the Group Vote', icon: '🗳️' };
+
+// Item 83 (CLAUDE.md, "Plan for Someone"): a real, fast front door in front
+// of the existing 24-value grouped occasion picker below it -- "the most
+// understandable/high-frequency entry points, not the entire underlying
+// occasion system" (the user's own framing). Every key here maps onto a
+// real occasion the wizard already fully supports (birthday/anniversary/
+// celebration/other) -- 'surprise' is a pseudo-key handled specially in
+// its own onPress below, not a real occasion_type: it sets
+// occasion='celebration' and turns Item 65's real surprise_mode on,
+// rather than inventing a new vocabulary value for something that's
+// actually a privacy mode applicable to any occasion. Deliberately
+// defined here rather than in businessAttributes.js, same precedent as
+// WHO_FOR_OPTIONS/GROUP_VOTE_OPTION above -- wizard-UI-only presentation,
+// not a data vocabulary any other screen needs.
+const QUICK_OCCASION_TILES = [
+  { key: 'birthday', label: 'Birthday', icon: '🎂' },
+  { key: 'anniversary', label: 'Anniversary', icon: '💍' },
+  { key: 'celebration', label: 'Celebration', icon: '🎉' },
+  { key: 'surprise', label: 'Surprise', icon: '✨' },
+  { key: 'other', label: 'Custom', icon: '✏️' },
+];
+const QUICK_PICK_OCCASION_KEYS = ['birthday', 'anniversary', 'celebration', 'other'];
 
 const WHO_INVOLVED_OPTIONS = [
   { key: 'friends', label: 'Friends', icon: '👥' },
@@ -235,6 +273,16 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   // underlying group_plan row already has surprise_mode set regardless of
   // this local state, this just keeps the UI honest about it.
   const [surpriseMode, setSurpriseMode] = useState(route.params?.initialSurpriseMode ?? false);
+
+  // Item 83 ("Plan for Someone"): the occasion step's own "More occasions"
+  // reveal -- starts collapsed (just the 5 quick-pick tiles), but opens
+  // automatically if the wizard is re-entered with an occasion already set
+  // that isn't one of the tiles (e.g. Back-navigating after a deep link
+  // pre-seeded a value like 'graduation'), so a real selection is never
+  // hidden behind a link the user has to know to tap.
+  const [showMoreOccasions, setShowMoreOccasions] = useState(
+    () => !!route.params?.initialOccasion && !QUICK_PICK_OCCASION_KEYS.includes(route.params.initialOccasion)
+  );
 
   // Item 66 (CLAUDE.md, "Add collaborative planning"): a real, explicit
   // per-person budget range for the group vote -- 'any' (the default)
@@ -833,7 +881,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
-            <Text style={styles.header} accessibilityRole="header">🎉 Create an Occasion</Text>
+            <Text style={styles.header} accessibilityRole="header">🎉 Plan for Someone</Text>
             <Text style={styles.subheader}>Let's turn this into a real plan.</Text>
 
             <View style={styles.progressRow} accessibilityLabel={`Step ${step + 1} of ${stepDefs.length}: ${stepDefs[step].label}`}>
@@ -847,37 +895,96 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
             {stepKey === 'occasion' && (
               <>
-                <Text style={styles.label}>What are you celebrating?</Text>
+                <Text style={styles.label}>What are you planning?</Text>
+                {/* Item 83 ("Plan for Someone", CLAUDE.md): a real, fast
+                    front door -- "the most understandable/high-frequency
+                    entry points, not the entire underlying occasion
+                    system." 'surprise' is a pseudo-tile: it sets
+                    occasion='celebration' and turns on Item 65's real
+                    surprise_mode, rather than inventing a new occasion
+                    value for what's actually a privacy mode. Every tile
+                    (including Custom, occasion='other') feeds the exact
+                    same `occasion` state and downstream pipeline the full
+                    grouped list below does. */}
+                <View style={styles.chipRow}>
+                  {QUICK_OCCASION_TILES.map((tile) => {
+                    const selected = tile.key === 'surprise'
+                      ? occasion === 'celebration' && surpriseMode
+                      : occasion === tile.key;
+                    return (
+                      <TouchableOpacity
+                        key={tile.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => {
+                          Haptics.selectionAsync();
+                          if (tile.key === 'surprise') {
+                            setOccasion('celebration');
+                            if (!surpriseMode) setSurpriseModeOn(true);
+                          } else {
+                            setOccasion(tile.key);
+                          }
+                        }}
+                        activeOpacity={0.8}
+                        accessibilityLabel={tile.label}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{tile.icon} {tile.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {!showMoreOccasions && (
+                  <TouchableOpacity
+                    onPress={() => setShowMoreOccasions(true)}
+                    style={{ marginTop: spacing.xs, marginBottom: spacing.md }}
+                    accessibilityLabel="More occasions"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.createOwnLinkText}>More occasions →</Text>
+                  </TouchableOpacity>
+                )}
+
                 {/* Item 73 (CLAUDE.md): "have the category architecture
                     flexible enough for ... don't hard-code the product
                     around birthdays" -- real grouped sections
                     (Celebrations/Milestones/Social Moments/Custom)
                     instead of one long flat chip row, so the vocabulary
                     can keep growing without reading as "birthday, plus an
-                    ever-longer afterthought list." */}
-                {occasionGroupOptions().map((group) => (
-                  <View key={group.key} style={{ marginBottom: spacing.md }}>
-                    <Text style={styles.sublabel}>{group.label}</Text>
-                    <View style={styles.chipRow}>
-                      {group.options.map((o) => {
-                        const selected = occasion === o.key;
-                        return (
-                          <TouchableOpacity
-                            key={o.key}
-                            style={[styles.chip, selected && styles.chipSelected]}
-                            onPress={() => { Haptics.selectionAsync(); setOccasion(o.key); }}
-                            activeOpacity={0.8}
-                            accessibilityLabel={o.label}
-                            accessibilityRole="button"
-                            accessibilityState={{ selected }}
-                          >
-                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </View>
-                ))}
+                    ever-longer afterthought list." Item 83: this full list
+                    is preserved exactly as-is, just moved behind the
+                    "More occasions" reveal above -- "don't sacrifice the
+                    existing 24-value capability just to make the first
+                    screen simpler" (the user's own words). */}
+                {showMoreOccasions && (
+                  <>
+                    <Text style={[styles.sublabel, { marginTop: spacing.xs }]}>More Occasions</Text>
+                    {occasionGroupOptions().map((group) => (
+                      <View key={group.key} style={{ marginBottom: spacing.md }}>
+                        <Text style={styles.sublabel}>{group.label}</Text>
+                        <View style={styles.chipRow}>
+                          {group.options.map((o) => {
+                            const selected = occasion === o.key;
+                            return (
+                              <TouchableOpacity
+                                key={o.key}
+                                style={[styles.chip, selected && styles.chipSelected]}
+                                onPress={() => { Haptics.selectionAsync(); setOccasion(o.key); }}
+                                activeOpacity={0.8}
+                                accessibilityLabel={o.label}
+                                accessibilityRole="button"
+                                accessibilityState={{ selected }}
+                              >
+                                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    ))}
+                  </>
+                )}
               </>
             )}
 

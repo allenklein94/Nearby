@@ -14,8 +14,9 @@ import { spacing, radius, typography } from '../theme';
 // For an occasion grouped rows + a second 'bigger' section below" layout
 // (which had grown to 3+3+1+1 buttons plus a ~13-tile category grid, all
 // competing for the same visual weight) with exactly three primary
-// entities you can create in this app -- Gathering, Community, Occasion
-// -- as the screen's one clear visual hierarchy, matching the user's own
+// entities you can create in this app -- Gathering, Community, Plan for
+// Someone (renamed from "Occasion," Item 83) -- as the screen's one clear
+// visual hierarchy, matching the user's own
 // mock verbatim (label + one-line tagline each). Every other real action
 // this screen used to offer (Invite Friends/Plan a Date/Meet New People/
 // Ask Nearby Businesses/Start a Weekly Meetup/Something Else) is kept,
@@ -33,10 +34,18 @@ import { spacing, radius, typography } from '../theme';
 // Quick Picks row (StartSomethingModal.js, a separate, unmodified
 // consumer of the same CREATE_HUB_OPTIONS/SUB_OPTIONS constants this
 // screen used to import for its own copy of that same grid).
+// Item 83 (CLAUDE.md, direct user request): "Occasion" renamed to "Plan
+// for Someone" -- "'Occasion' sounds like internal product terminology;
+// 'Plan for Someone' immediately communicates the action... it fits
+// everything we've been building around birthdays, anniversaries,
+// celebrations, etc." Still exactly 3 primary cards, no 4th card added
+// (user's own explicit instruction) -- key/route are internal identifiers
+// and deliberately untouched, only label/subtitle changed, same posture
+// as every other internal-vs-user-facing rename in this codebase.
 const PRIMARY_CREATE_OPTIONS = [
   { key: 'gathering', icon: 'people-outline', label: 'Gathering', subtitle: 'Bring people together.', route: 'CreateGathering' },
   { key: 'community', icon: 'globe-outline', label: 'Community', subtitle: 'Build something ongoing.', route: 'CreateCommunity' },
-  { key: 'occasion', icon: 'sparkles-outline', label: 'Occasion', subtitle: 'Plan a birthday, anniversary, milestone or celebration.', route: 'CelebrateSomething' },
+  { key: 'occasion', icon: 'sparkles-outline', label: 'Plan for Someone', subtitle: 'Create something special for someone else.', route: 'CelebrateSomething' },
 ];
 
 // Demoted from three separate grouped rows (With people / With businesses
@@ -396,8 +405,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   browseLinkText: { ...typography.body, color: colors.textPrimary, fontWeight: '600', flex: 1 },
   browseLinkChevron: { color: colors.textTertiary, fontSize: 22 },
   // The one visual hierarchy this screen now has -- three roomy, co-equal
-  // primary cards (Gathering/Community/Occasion), each with its own icon,
-  // label, and one-line tagline, per the user's own mock verbatim. Same
+  // primary cards (Gathering/Community/Plan for Someone), each with its
+  // own icon, label, and one-line tagline, per the user's own mock
+  // verbatim (Item 83 renamed the third card's label/subtitle). Same
   // bordered-surface + shadow.card treatment this file's old peopleAction
   // cards used, just bigger and full-width since there are only three.
   primaryCards: { gap: spacing.sm, marginBottom: spacing.xl },

@@ -40,6 +40,51 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 83 ("Plan for Someone") — fully DONE (2026-09-13), same-day direct follow-up to Item 82
+(which itself needed no new work — Item 81's two-transportation-legs case already covers the
+ride-there/activity/ride-home orchestration it asked about).** User's own locked scope, given via
+`AskUserQuestion` after an initial ambiguous pitch: keep Create at exactly 3 primary cards (no 4th
+card), rename the existing "🎉 Occasion" card to "Plan for Someone" (label + subtitle only, same
+`CelebrateSomething` destination) — "'Occasion' sounds like internal product terminology; 'Plan
+for Someone' immediately communicates the action." Renamed everywhere user-visible:
+`CreateHubScreen.js`'s primary card, `RootNavigator.js`'s nav title, and
+`CelebrateSomethingScreen.js`'s in-body header. Internal identifiers (file name, `CelebrateSomething`
+route key, `celebrateSomething.js`, the `occasion` state/column names) deliberately untouched —
+same posture as Item 61's original rename.
+
+Second locked piece: the wizard's own occasion step gained a real 5-tile quick-pick front door
+(Birthday / Anniversary / Celebration / Surprise / Custom) in front of the existing 24-value
+grouped picker, reached via a new "More occasions →" link — "simple front door, full capability
+behind it... don't sacrifice the existing 24-value capability." 4 of the 5 tiles map directly onto
+occasion keys the wizard already supported (birthday/anniversary/other); "Surprise" is a pseudo-tile
+(no new vocabulary value) that sets `occasion='celebration'` and turns on Item 65's real
+`surprise_mode`. The one real gap this surfaced: `'celebration'` was a long-standing legal
+`business_requests.occasion` value but had never been added to `occasions.occasion_type` or
+`occasion_group_plans.occasion_type`'s own CHECK constraints, nor to `OCCASION_GROUPS`
+(`businessAttributes.js`) — so making it a first-class wizard tile would have broken the
+"save to calendar" step and "Let the Group Vote" the moment a user picked it. Fixed via
+`20261106_celebration_occasion_and_plan_for_someone.sql`: both CHECK constraints widened to add
+`'celebration'`, `_occasion_emoji()`/`_occasion_noun()` (Item 78's shared push-copy helpers) gained
+a `'celebration'` → 🎉/"Celebration" case, and `'celebration'` added to `OCCASION_GROUPS`'s
+"Celebrations" group (businessAttributes.js) — which automatically makes it flow through
+`CELEBRATE_OCCASION_KEYS`/`CALENDAR_SAVEABLE_OCCASION_KEYS`/`PERSONAL_OCCASION_TYPE_KEYS`
+correctly with no special-casing needed. Every other occasion-vocabulary gate in the schema was
+individually audited and confirmed to already accept `'celebration'` (business_requests/
+brand_partners/business_partner_requests/business_occasion_packages and every function with its
+own inline copy) — no other migration needed.
+
+Verified live against production (`enmosvippabmuqslzrox`) via a disposable rolled-back transaction
+before applying for real (both widened CHECK constraints accept a real `'celebration'` insert into
+`occasions` and `occasion_group_plans`; `_occasion_emoji`/`_occasion_noun` return the correct new
+case) with zero leaked rows afterward; both constraints re-confirmed live after the real apply.
+Full Jest suite 453/453 passing (no new pure functions — this is DB-plus-UI wiring); all four
+touched files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a
+running app (no simulator/device tooling this session, standing note) — next session should
+confirm on a real account that the "Plan for Someone" card renders with its new label/subtitle,
+that the 5 quick-pick tiles render above "More occasions →", that tapping Surprise correctly
+pre-checks the surprise-mode checkbox on the next (who_for) step, and that the full grouped list
+still renders correctly once expanded.
+
 **Item 81 ("One Plan can contain multiple businesses" -- the ride/dinner/live-music/ride-home
 itinerary mock) — fully DONE (2026-09-13), resumed cleanly after a codespace restart (a complete
 migration plus matching client edits were found already written and uncommitted at session

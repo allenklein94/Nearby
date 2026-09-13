@@ -221,11 +221,23 @@ export const OCCASION_OPTIONS = [
 // broader flat picker), but not "life event celebrations" in the sense
 // this grouping is about, same boundary CELEBRATE_OCCASION_KEYS already
 // drew before this item.
+//
+// Item 83 (CLAUDE.md, "Plan for Someone"): 'celebration' -- previously
+// excluded from every group for the same reason as its four siblings
+// above -- is now included, since it's one of the wizard's own new
+// top-level quick-pick tiles ("Birthday / Anniversary / Celebration /
+// Surprise / Custom") and needs to be a real, fully-supported wizard
+// selection, not just a business_requests-only value. Every downstream
+// occasion-vocabulary gate this makes newly reachable from the wizard
+// (occasions.occasion_type, occasion_group_plans.occasion_type) was
+// widened to accept it in the same change -- see
+// 20261106_celebration_occasion_and_plan_for_someone.sql's own header
+// comment for the full audit.
 export const OCCASION_GROUPS = [
   {
     key: 'celebrations',
     label: 'Celebrations',
-    keys: ['birthday', 'anniversary', 'graduation', 'engagement', 'wedding', 'baby_shower', 'housewarming'],
+    keys: ['birthday', 'anniversary', 'celebration', 'graduation', 'engagement', 'wedding', 'baby_shower', 'housewarming'],
   },
   {
     key: 'milestones',
