@@ -144,20 +144,50 @@ own header comments:
   passing; every touched/new file transform-checked clean via
   `@babel/core` + `babel-preset-expo`.
 
-**What's genuinely NOT done yet -- pick up here next session:**
-1. **Not committed to git yet** -- check `git status` first; if the restart
-   hit mid-commit, the working tree should still have every file listed
-   above (`git status --short` was last confirmed clean-except-these-files
-   right before the restart). Commit and push per this repo's own standing
-   "commit after each increment" convention before doing anything else.
-2. `getPlanAddons()`'s nested PostgREST embed
-   (`business_requests -> business_request_offers -> brand_partners(name)`)
-   was reasoned correct by analogy to `getBusinessRequestWithOffers()`'s
-   already-working identical embed shape, but was **never round-tripped
-   against a real live REST call** this session (only the underlying SQL/
-   RLS was verified via the Management API's raw query endpoint, not
-   PostgREST itself) -- worth a quick live check early next session.
-3. **Not exercised in a running app** at all (standing limitation, no
+**Follow-up session (2026-09-13): items 1, 2, and 6 below closed out; what's
+left is genuinely just device-only verification + two disclosed, non-
+blocking scope notes.** The codespace restart had actually landed cleanly --
+`git status` was already clean with `aa74f01c` (this item's commit) already
+in the log, so nothing was lost or needed re-committing. The two real open
+verification gaps were closed via disposable live tests against production
+(`enmosvippabmuqslzrox`), each using a real signed-up-and-confirmed disposable
+auth user + a real minted session token (via the Admin API + password grant,
+not just the Management API's table-owner bypass), so these are genuine
+PostgREST/RLS-as-a-real-user round trips, not SQL-level approximations --
+all test rows and the disposable auth user deleted afterward, zero leaked
+rows confirmed by direct count query both times:
+- **`getPlanAddons()`'s nested embed, confirmed live via a real REST call**:
+  created a real primary request + Flowers add-on via the actual RPCs as a
+  real authenticated test user, inserted a disposable florist `brand_partners`
+  row + a `business_request_offers` row on the add-on, then hit
+  `GET .../business_requests?parent_request_id=eq.<id>&select=*,business_request_offers(*,brand_partners(name))`
+  with that user's own real access token. The exact embed shape resolved
+  correctly: the add-on row (privacy-safe `raw_text`, "Flowers for a birthday
+  celebration" -- never the parent's own free text), nested inside it the
+  offer row, and nested inside *that* the florist's real name via the
+  `brand_partners(name)` embed. Confirmed as a sanity check that a stray
+  in-scope RLS gap exists but is unrelated to this item and fails closed, not
+  open (see below).
+- **Item 6, confirmed live**: accepted a real disposable add-on offer
+  (`accept_business_offer`) to create a genuine `confirmed` reservation, then
+  called `cancel_business_reservation` on it -- both the reservation and its
+  offer correctly flipped to `cancelled`, and the primary request's own
+  `status` stayed `open` throughout, confirming the "cancelling an add-on
+  never touches the primary" guarantee holds for a *confirmed* reservation,
+  not just a pending/offered one.
+- **Incidental, unrelated finding, not fixed (out of scope for this item,
+  disclosed rather than silently ignored)**: an unauthenticated (`anon`)
+  PostgREST read of `business_requests` returns a hard `42501 permission
+  denied for function is_match_participant` instead of an honest empty
+  array -- `anon` lacks `EXECUTE` on `is_match_participant`/
+  `is_group_plan_participant`, and at least one RLS policy combination
+  reaches that check even when `match_id`/`group_plan_id` is null. Fails
+  closed (no data exposure), pre-existing, unrelated to Item 80's own
+  changes -- a real, small, separate cleanup candidate for later, not part
+  of this item's own spec.
+
+**What's genuinely still NOT done -- pick up here next session:**
+1. **Not exercised in a running app** at all (standing limitation, no
    simulator/device tooling ever available in this project) -- next
    session with device access should confirm: the "✨ Make it special"
    section renders correctly under a primary request with occasion-
@@ -165,24 +195,17 @@ own header comments:
    row in place, "🔁 Try Again" after a decline works, the add-on's own
    detail screen shows the "part of a bigger plan" banner and back-link
    correctly, and the business dashboard's new add-on badge renders.
-4. Optional/nice-to-have, not blocking: `create_plan_addon_request`'s
+2. Optional/nice-to-have, not blocking: `create_plan_addon_request`'s
    `note_param` is wired end-to-end at the DB layer but has no UI surface
    yet (the "+ Add" chip fires with `note = null`) -- could add a small
    optional note field later if wanted.
-5. Not built (disclosed, not an oversight): a dedicated business-side UI
+3. Not built (disclosed, not an oversight): a dedicated business-side UI
    distinguishing an add-on's own response flow from a normal request --
    it currently reuses the exact same generic "Make an Offer"/"Can't
    accommodate" buttons every opportunity already has, which is correct
    and sufficient (an add-on's offer lifecycle IS a normal offer
    lifecycle), but there's no add-on-specific business messaging beyond
    the new tag.
-6. Cross-check against the item's own spec once more before declaring this
-   fully done: cancellation of a *confirmed* add-on reservation (not just a
-   pending/offered one) already works for free via the existing
-   `cancelBusinessReservation`/`cancel_business_reservation` primitive
-   (unchanged, real-money-safety-gated per Item 50/51) -- not re-verified
-   specifically for an add-on row this session, should be a quick sanity
-   check, not new code.
 
 **Item 79 ("businesses get a new demand signal") — fully DONE (2026-09-13),
 same-day direct follow-up to Item 78.** User's own examples: "14 birthday
