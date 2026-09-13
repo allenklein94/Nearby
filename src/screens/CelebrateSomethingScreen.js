@@ -893,6 +893,27 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
               ))}
             </View>
 
+            {/* Item 84 (CLAUDE.md, "make the UI feel emotionally different"):
+                a real, live preview of what's actually being planned --
+                "🎂 Sarah's Birthday" instead of a plain "Saturday Dinner" --
+                threaded through every step from here on as the wizard's one
+                consistent, subtle "this is special" signal. Deliberately a
+                warm amber tint, never colors.primary (coral) -- this is
+                purely informational, not a tappable action, and this
+                repo's own locked visual system reserves coral for that
+                (CLAUDE.md, Standing Conventions). Excluded for occasion
+                === 'other' -- Item 74's Custom Occasion path is a wholly
+                different, more open-ended flow with its own framing, and
+                a generic "A Celebration ✨" preview would add noise there,
+                not personality. */}
+            {occasion && occasion !== 'other' && (
+              <View style={styles.occasionPreviewBanner}>
+                <Text style={styles.occasionPreviewText} numberOfLines={1}>
+                  {composeCelebrationTitle({ occasion, whoFor, whoForName: whoForName.trim() || null })}
+                </Text>
+              </View>
+            )}
+
             {stepKey === 'occasion' && (
               <>
                 <Text style={styles.label}>What are you planning?</Text>
@@ -1646,6 +1667,20 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   header: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.xs },
   subheader: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg, lineHeight: 18 },
   progressRow: { flexDirection: 'row', marginBottom: spacing.xl },
+  // Item 84: a soft, warm amber tint (never colors.primary/coral, which
+  // this app reserves for actionable buttons) -- reads as "special"
+  // against both light and dark backgrounds without a new theme token.
+  occasionPreviewBanner: {
+    backgroundColor: 'rgba(230, 168, 46, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(230, 168, 46, 0.4)',
+    borderRadius: radius.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.lg,
+    alignItems: 'center',
+  },
+  occasionPreviewText: { ...typography.headline, color: colors.textPrimary, textAlign: 'center' },
   progressStep: { flex: 1, alignItems: 'center' },
   progressDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border, marginBottom: 6 },
   progressDotActive: { backgroundColor: colors.primary },

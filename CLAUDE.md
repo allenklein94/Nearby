@@ -40,6 +40,41 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Items 84 & 85 ("make the UI feel emotionally different" / "keep the underlying architecture
+unified") — fully DONE (2026-09-13), same-day direct follow-up to Item 83.** Paired ask: give the
+Plan-for-Someone wizard real personality ("Sarah's 30th Birthday 🎂" vs. a plain gathering's
+"Saturday Dinner") without becoming cheesy/cluttered (84), and do it by extending the already-
+unified Occasion → Plan → People → Activity → Place/Business → Offer/Availability → Reservation →
+Notifications pipeline rather than building a parallel "birthday system" (85, a restatement of the
+already-locked architecture -- no new tables/RPCs/notification types were needed or added).
+
+Shipped as two small, contained changes, both pure presentation-layer: (1)
+`composeCelebrationTitle()` (celebrateSomething.js) now appends the occasion's own real icon
+(new `occasionIcon()` export, businessAttributes.js, mirrors `occasionLabel()`) -- "Sarah's
+Birthday 🎂," never a plain string. This is the one real title this wizard already produces, and
+it already flows unmodified into every already-unified surface an occasion can become
+(`gatherings.title` via `quickStartTitle`, `occasion_group_plans.title`, `occasions.title`) -- so
+the personality travels everywhere for free with zero new screen-level code, exactly per Item 85's
+own directive. A real, live-consumer bug this surfaced and fixed in the same pass:
+`extractNameFromBirthdayTitle()` (parses a self-logged birthday occasion's title back out for
+`notifications.js`'s `birthday_upcoming` push-tap routing) anchored its regex on the string
+literally ending in "birthday" -- now strips a real trailing occasion icon first (looked up, not
+hardcoded, so it can't drift) before matching; a title saved before this change (no icon suffix)
+matches exactly as before. (2) The wizard's own occasion step onward now shows a small, warm-amber
+(deliberately not `colors.primary`/coral, which this app's locked visual system reserves for
+actionable buttons, not decoration) live preview banner of the real composed title -- appears the
+moment an occasion is picked, refines live as who-for is answered, excluded for the Custom
+Occasion path (occasion === 'other'), which has its own different, more open-ended framing.
+
+Full Jest suite 455/455 passing (2 new: an unrecognized-occasion-key case for
+`composeCelebrationTitle`, and an icon-stripping case for `extractNameFromBirthdayTitle`; 4
+existing `composeCelebrationTitle` assertions updated for the new icon suffix). All four touched
+files transform-checked clean via `@babel/core` + `babel-preset-expo`. No DB migration -- pure
+client-side. Not exercised in a running app (no simulator/device tooling this session, standing
+note) -- next session should confirm the amber preview banner renders correctly and updates live
+as occasion/who-for change, and that a real device's birthday-reminder push still correctly
+pre-fills the celebrated person's name when tapped.
+
 **Item 83 ("Plan for Someone") — fully DONE (2026-09-13), same-day direct follow-up to Item 82
 (which itself needed no new work — Item 81's two-transportation-legs case already covers the
 ride-there/activity/ride-home orchestration it asked about).** User's own locked scope, given via

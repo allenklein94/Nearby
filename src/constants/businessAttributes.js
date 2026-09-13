@@ -268,6 +268,18 @@ export function occasionLabel(key) {
   return OCCASION_OPTIONS.find((o) => o.key === key)?.label ?? key;
 }
 
+// Item 84 (CLAUDE.md, "make the UI feel emotionally different"): the one
+// real per-occasion signal composeCelebrationTitle() (celebrateSomething.js)
+// needs to give an occasion's own title real personality ("Sarah's Birthday
+// 🎂" vs. a plain gathering's "Saturday Dinner") -- never fabricated, always
+// the same real icon already shown next to this occasion everywhere else
+// (the wizard's own chips, OccasionsScreen's list). Returns null (not a
+// fallback glyph) for an unknown key, so a caller can cleanly omit the
+// suffix rather than print a broken icon.
+export function occasionIcon(key) {
+  return OCCASION_OPTIONS.find((o) => o.key === key)?.icon ?? null;
+}
+
 // Item 61: the curated subset + literal order the "Celebrate Something"
 // wizard shows -- deliberately excludes date_night/casual_hangout/
 // business_meal/family_gathering (real occasions elsewhere, but not

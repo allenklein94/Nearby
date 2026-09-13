@@ -17,22 +17,29 @@ import {
 } from './celebrateSomething';
 
 describe('composeCelebrationTitle', () => {
+  // Item 84 (CLAUDE.md, "make the UI feel emotionally different"): every
+  // composed title now carries the occasion's own real icon as a suffix
+  // ("Sarah's Birthday 🎂," never a plain "Saturday Dinner").
   it('uses "My {Occasion}" for whoFor=me', () => {
-    expect(composeCelebrationTitle({ occasion: 'birthday', whoFor: 'me' })).toBe('My Birthday');
+    expect(composeCelebrationTitle({ occasion: 'birthday', whoFor: 'me' })).toBe('My Birthday 🎂');
   });
 
   it('uses the real chosen name when present, regardless of whoFor', () => {
-    expect(composeCelebrationTitle({ occasion: 'graduation', whoFor: 'friend', whoForName: 'Sarah' })).toBe("Sarah's Graduation");
+    expect(composeCelebrationTitle({ occasion: 'graduation', whoFor: 'friend', whoForName: 'Sarah' })).toBe("Sarah's Graduation 🎓");
   });
 
   it('falls back to a generic phrase per whoFor when no name is picked', () => {
-    expect(composeCelebrationTitle({ occasion: 'anniversary', whoFor: 'friend' })).toBe('Anniversary Celebration');
+    expect(composeCelebrationTitle({ occasion: 'anniversary', whoFor: 'friend' })).toBe('Anniversary Celebration 💍');
   });
 
   it('collapses "other" to a plain "Celebration" noun instead of "Other Occasion"', () => {
-    expect(composeCelebrationTitle({ occasion: 'other', whoFor: 'me' })).toBe('My Celebration');
-    expect(composeCelebrationTitle({ occasion: 'other', whoFor: 'friend' })).toBe('A Celebration');
-    expect(composeCelebrationTitle({ occasion: 'other', whoFor: 'friend', whoForName: 'Sarah' })).toBe("Sarah's Celebration");
+    expect(composeCelebrationTitle({ occasion: 'other', whoFor: 'me' })).toBe('My Celebration ✨');
+    expect(composeCelebrationTitle({ occasion: 'other', whoFor: 'friend' })).toBe('A Celebration ✨');
+    expect(composeCelebrationTitle({ occasion: 'other', whoFor: 'friend', whoForName: 'Sarah' })).toBe("Sarah's Celebration ✨");
+  });
+
+  it('omits the suffix entirely for an unrecognized occasion key', () => {
+    expect(composeCelebrationTitle({ occasion: 'not_a_real_key', whoFor: 'me' })).toBe('My not_a_real_key');
   });
 });
 
@@ -185,6 +192,11 @@ describe('extractNameFromBirthdayTitle', () => {
 
   it('is case-insensitive on the trailing "birthday" word', () => {
     expect(extractNameFromBirthdayTitle("Mom's birthday")).toBe('Mom');
+  });
+
+  it('strips a real composeCelebrationTitle-style trailing icon before matching (Item 84)', () => {
+    expect(extractNameFromBirthdayTitle("Mom's Birthday 🎂")).toBe('Mom');
+    expect(extractNameFromBirthdayTitle(composeCelebrationTitle({ occasion: 'birthday', whoFor: 'family', whoForName: 'Mom' }))).toBe('Mom');
   });
 
   it('honestly returns null for a title that does not match the expected shape, rather than guessing wrong', () => {

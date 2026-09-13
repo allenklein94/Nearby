@@ -3,7 +3,7 @@
 // -> who's involved -> route to an existing real creation/request screen
 // with full prefill. No new entity; this is orchestration only, same
 // discipline as surpriseMeLogic.js's own mood-to-real-params mapping.
-import { occasionLabel, CALENDAR_SAVEABLE_OCCASION_KEYS } from '../constants/businessAttributes';
+import { occasionLabel, occasionIcon, CALENDAR_SAVEABLE_OCCASION_KEYS } from '../constants/businessAttributes';
 
 // The wizard's own 7 real activity types (CelebrateSomethingScreen.js's
 // 'activity' step) -- exported so occasion_group_plan_options' own
@@ -69,11 +69,24 @@ function celebrationNoun(occasion) {
 // never fabricated. Falls back to a generic, honest phrase per whoFor when
 // no specific name was picked (allowed -- "someone else"/"a friend" doesn't
 // require naming a real connected person, e.g. a coworker not on Nearby).
+//
+// Item 84 (CLAUDE.md, "make the UI feel emotionally different"): appends
+// the occasion's own real icon (occasionIcon(), same one already shown on
+// every occasion chip) -- "Sarah's Birthday 🎂," never a plain "Saturday
+// Dinner." Deliberately baked into the title STRING itself rather than a
+// UI treatment bolted onto each downstream screen -- this is the one real
+// output of the wizard that already flows, unmodified, into every already-
+// unified surface an occasion can become (gatherings.title via
+// quickStartTitle, occasion_group_plans.title, occasions.title) per Item
+// 85's own "extend what's unified, don't silo" directive, so the
+// personality travels everywhere for free with zero new screen-level code.
 export function composeCelebrationTitle({ occasion, whoFor, whoForName }) {
   const noun = celebrationNoun(occasion);
-  if (whoFor === 'me') return `My ${noun}`;
-  if (whoForName) return `${whoForName}'s ${noun}`;
-  return noun === 'Celebration' ? 'A Celebration' : `${noun} Celebration`;
+  const icon = occasionIcon(occasion);
+  const suffix = icon ? ` ${icon}` : '';
+  if (whoFor === 'me') return `My ${noun}${suffix}`;
+  if (whoForName) return `${whoForName}'s ${noun}${suffix}`;
+  return noun === 'Celebration' ? `A Celebration${suffix}` : `${noun} Celebration${suffix}`;
 }
 
 const WHO_FOR_ASK_PHRASE = {
@@ -225,9 +238,19 @@ export function dateWindowForWhenPreset(whenPreset) {
 // anything else (a title typed some other way) returns null rather than
 // guessing wrong -- the caller should fall back to letting the person
 // re-type it, never silently mislabel an unrelated string as a name.
+//
+// Item 84 (CLAUDE.md): composeCelebrationTitle() now appends the
+// occasion's own icon ("Sarah's Birthday 🎂") -- strip a real trailing
+// " 🎂" (birthday's own icon, looked up rather than hardcoded so this
+// can never drift from OCCASION_OPTIONS) before matching, so a title
+// composed after this change still parses correctly. A title saved
+// before this change (no trailing icon) is untouched and matches exactly
+// as before.
 export function extractNameFromBirthdayTitle(title) {
   if (!title) return null;
-  const match = title.match(/^(.+?)['’]s\s+birthday$/i);
+  const icon = occasionIcon('birthday');
+  const stripped = icon && title.endsWith(` ${icon}`) ? title.slice(0, -(icon.length + 1)) : title;
+  const match = stripped.match(/^(.+?)['’]s\s+birthday$/i);
   return match ? match[1].trim() : null;
 }
 
