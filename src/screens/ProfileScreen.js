@@ -711,41 +711,42 @@ export default function ProfileScreen({ navigation, route }) {
             below it. Same two real quick-stat tiles, same destination
             (the existing Plans screen) -- only the grouping moved. */}
         <Text style={styles.sectionLabel} accessibilityRole="header">Your Plans</Text>
-        <View style={styles.quickStatsRow}>
-          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'upcoming' })} accessibilityLabel={`${quickStats.upcomingPlans} upcoming plans`} accessibilityRole="button">
-            <Text style={styles.quickStatNumber}>{quickStats.upcomingPlans}</Text>
-            <Text style={styles.quickStatLabel}>Upcoming</Text>
-          </TouchableOpacity>
-         <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'past' })} accessibilityLabel={`${quickStats.pastGatherings} past experiences`} accessibilityRole="button">
-            <Text style={styles.quickStatNumber}>{quickStats.pastGatherings}</Text>
-            <Text style={styles.quickStatLabel}>Past</Text>
+        {/* Item 77 follow-up (CLAUDE.md), direct user request ("i want
+            that polish so it feels more integrated"): Occasions moved from
+            its own separate bordered row below this card into a third row
+            INSIDE the same card as the Upcoming/Past tiles, divided by a
+            plain hairline rather than a second border -- one visual
+            object (a single outer border/corner-radius/shadow), not two
+            cards stacked with a gap. Still the exact same destination,
+            still no new section/screen/tab -- purely a container change.
+            "Your Connections" below keeps the original plain quickStatsRow
+            (untouched) since it has no third row to integrate. */}
+        <View style={styles.plansCard}>
+          <View style={styles.plansStatsRow}>
+            <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'upcoming' })} accessibilityLabel={`${quickStats.upcomingPlans} upcoming plans`} accessibilityRole="button">
+              <Text style={styles.quickStatNumber}>{quickStats.upcomingPlans}</Text>
+              <Text style={styles.quickStatLabel}>Upcoming</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'past' })} accessibilityLabel={`${quickStats.pastGatherings} past experiences`} accessibilityRole="button">
+              <Text style={styles.quickStatNumber}>{quickStats.pastGatherings}</Text>
+              <Text style={styles.quickStatLabel}>Past</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.plansCardDivider} />
+          <TouchableOpacity
+            style={styles.plansOccasionRow}
+            onPress={() => navigation.navigate('Occasions')}
+            activeOpacity={0.7}
+            accessibilityLabel="View your saved occasions"
+            accessibilityRole="button"
+          >
+            <View style={styles.timelineLinkTextCol}>
+              <Text style={styles.timelineLinkText}>📅 Occasions</Text>
+              <Text style={styles.timelineLinkSubtitle}>Anniversaries, graduations, and other real dates</Text>
+            </View>
+            <Text style={styles.timelineLinkChevron}>›</Text>
           </TouchableOpacity>
         </View>
-        {/* Item 77 (CLAUDE.md): relocated from "Your Story" below -- an
-            occasion is forward-looking planning ("what's coming up"), not
-            personal history, so it belongs next to Plans, not next to
-            Timeline/Memory Vault. Deliberately NOT built as a new
-            "Occasion Hub" section/screen consolidating Plans+Occasions+
-            Communities+Gatherings (the user's own explicit "avoid adding
-            another huge section" caveat, plus Communities/Gatherings on
-            this screen are browse/discovery destinations, not personal-
-            plan records the way Plans/Occasions are -- merging them would
-            conflate two different kinds of thing, not simplify anything).
-            This is the one real, warranted change: same row already
-            existed, only its section moved -- net zero new UI. */}
-        <TouchableOpacity
-          style={styles.timelineLink}
-          onPress={() => navigation.navigate('Occasions')}
-          activeOpacity={0.85}
-          accessibilityLabel="View your saved occasions"
-          accessibilityRole="button"
-        >
-          <View style={styles.timelineLinkTextCol}>
-            <Text style={styles.timelineLinkText}>📅 Occasions</Text>
-            <Text style={styles.timelineLinkSubtitle}>Anniversaries, graduations, and other real dates</Text>
-          </View>
-          <Text style={styles.timelineLinkChevron}>›</Text>
-        </TouchableOpacity>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">Your Connections</Text>
         <View style={styles.quickStatsRow}>
@@ -1445,6 +1446,20 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   quickStat: { flex: 1, alignItems: 'center', paddingVertical: spacing.md },
   quickStatNumber: { ...typography.headline, color: colors.textPrimary },
   quickStatLabel: { color: colors.textTertiary, fontSize: 11, marginTop: 2 },
+  // Item 77 follow-up: "Your Plans"' own card -- one outer border/radius
+  // wrapping the stat-tiles row, a hairline divider, and the Occasions
+  // row, so all three read as one integrated object instead of two
+  // separately-bordered cards stacked with a gap.
+  plansCard: {
+    backgroundColor: colors.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg, overflow: 'hidden',
+  },
+  plansStatsRow: { flexDirection: 'row' },
+  plansCardDivider: { height: 1, backgroundColor: colors.border },
+  plansOccasionRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    padding: spacing.md,
+  },
   achievementsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
   achievementBadge: {
     alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md,

@@ -72,6 +72,18 @@ under the Upcoming/Past quick-stat tiles -- net zero new UI, one row relocated t
 actually belongs in. This is the one respect in which Profile changed for this item; no new
 section, no new screen, no new tab.
 
+**Follow-up, same day, direct user request ("i want that polish so it feels more integrated"):**
+the user reviewed the move, explicitly endorsed the "reorganize before creating anything new"
+principle behind it, confirmed the new ordering (Your Plans → Occasions → Connections → Story →
+Achievements → Business) matches their own ideal structure exactly, and asked for one visual
+refinement -- the relocated Occasions row was its own separately-bordered card sitting right below
+the Upcoming/Past tile card, which read as *adjacent* rather than *integrated*. Restructured so
+the tiles and the Occasions row now share ONE outer card (`plansCard`: single border/radius/
+background) with a plain hairline `plansCardDivider` between them, instead of two bordered cards
+stacked with a gap -- same destinations, same copy, still zero new sections/screens/tabs, purely a
+container change. "Your Connections" directly below keeps the original plain `quickStatsRow`
+untouched, since it has no third row to integrate.
+
 Full Jest suite 413/413 passing (no pure-logic changes, so no new tests); `ProfileScreen.js`
 transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app
 (no simulator/device tooling this session, standing note) -- next session should confirm the
