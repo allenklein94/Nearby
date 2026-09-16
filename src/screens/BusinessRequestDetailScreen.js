@@ -817,6 +817,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   styles.planSummaryStatusPill,
                   planSummary.statusKind === 'confirmed' && styles.planSummaryStatusPillConfirmed,
                   planSummary.statusKind === 'cancelled' && styles.planSummaryStatusPillCancelled,
+                  (planSummary.statusKind === 'option_selected' || planSummary.statusKind === 'booking_pending') && styles.planSummaryStatusPillInProgress,
+                  planSummary.statusKind === 'completed' && styles.planSummaryStatusPillCompleted,
                 ]}
               >
                 <Text
@@ -824,6 +826,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     styles.planSummaryStatusText,
                     planSummary.statusKind === 'confirmed' && styles.planSummaryStatusTextConfirmed,
                     planSummary.statusKind === 'cancelled' && styles.planSummaryStatusTextCancelled,
+                    (planSummary.statusKind === 'option_selected' || planSummary.statusKind === 'booking_pending') && styles.planSummaryStatusTextInProgress,
+                    planSummary.statusKind === 'completed' && styles.planSummaryStatusTextCompleted,
                   ]}
                 >
                   {planSummary.statusLabel}
@@ -1460,9 +1464,20 @@ const getStyles = (colors) => StyleSheet.create({
   planSummaryStatusPill: { backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.sm, paddingVertical: 2 },
   planSummaryStatusPillConfirmed: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
   planSummaryStatusPillCancelled: { backgroundColor: colors.dangerMuted ?? colors.surface, borderColor: colors.danger },
+  // Item 91 ("Add a 'Plan Status'" -- CLAUDE.md): two more real tones for
+  // the two new mid-progression states (Option Selected / Booking
+  // Pending) -- the same warm-amber tint Item 84's occasion preview
+  // banner already established for "in progress, not yet the app's one
+  // primary coral action" -- and one for Completed (a past, settled
+  // state, not a "look at this" one, so it reads as muted/quiet rather
+  // than colored).
+  planSummaryStatusPillInProgress: { backgroundColor: 'rgba(230, 168, 46, 0.14)', borderColor: 'rgba(230, 168, 46, 0.4)' },
+  planSummaryStatusPillCompleted: { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
   planSummaryStatusText: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
   planSummaryStatusTextConfirmed: { color: colors.primary },
   planSummaryStatusTextCancelled: { color: colors.danger },
+  planSummaryStatusTextInProgress: { color: '#B8791F' },
+  planSummaryStatusTextCompleted: { color: colors.textTertiary },
   planSummaryLine: { ...typography.body, color: colors.textSecondary, marginTop: 2 },
   rawText: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
   statusLine: { ...typography.caption, color: colors.textTertiary, fontWeight: '600', marginBottom: spacing.lg },

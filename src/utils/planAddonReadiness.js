@@ -204,6 +204,136 @@ export function summarizePlanTimelineReadiness(timeline) {
   return `${confirmedCount} of ${addonEntries.length} extras confirmed`;
 }
 
+// Item 91 ("Add a 'Plan Status'" -- CLAUDE.md): the real, granular
+// progression the item asks for -- Planning -> Awaiting Responses ->
+// Option Selected -> Booking Pending -> Confirmed -> Completed ->
+// Cancelled -- replacing Item 90's original coarse Planning/Confirmed/
+// Cancelled pill. Every step is derived from real, already-fetched
+// columns already reachable off the primary request + its offers
+// (business_requests.status, business_request_offers.status, and each
+// accepted offer's own nested business_reservations/business_payments
+// row -- see getBusinessRequestWithOffers' own embed in
+// businessFulfillment.js) -- nothing here is invented beyond what those
+// tables already say happened. Deliberately reuses the exact real
+// sub-states the "Offer System Phase 1" migration
+// (20260817_offer_system_phase1_reservation_payment_seams.sql) already
+// locked -- "Offer -> Offer Accepted -> Reservation Requested ->
+// Reservation Confirmed -> Experience Confirmed" -- rather than
+// inventing a second, parallel state machine:
+//   - Option Selected: a business has made a real offer (status
+//     'offered') that the requester can review and accept. Named for
+//     what the requester can now do, not what they've already done --
+//     there's no real, distinguishable-from-this "reviewing offers"
+//     word left in the item's own given vocabulary, and this is the
+//     moment a real option first exists to select.
+//   - Booking Pending: the requester has accepted an offer, but the
+//     booking isn't fully settled yet -- either the resulting
+//     Reservation hasn't reached 'confirmed' (the seam a future non-
+//     'nearby' provider like Resy/OpenTable would use), or it has but
+//     its Payment is still 'pending' (a real Stripe charge not yet
+//     resolved -- reachable today whenever the business has completed
+//     Stripe Connect onboarding and set a real offer price).
+//   - Confirmed: the Reservation is 'confirmed' and payment is resolved
+//     (not_required/authorized/captured) or no payment was ever
+//     required -- the locked "Experience Confirmed" derived state.
+//   - Completed: an offer explicitly reached 'completed'
+//     (complete_business_reservation(), the consumer's own after-the-
+//     fact confirmation), OR the plan's own real date has already
+//     passed while otherwise Confirmed -- an honest "this already
+//     happened" rather than leaving a past plan reading "Confirmed"
+//     forever.
+//   - Cancelled: the primary itself is 'cancelled'/'expired'
+//     (resolveGroupPlanStatus's own precedent for 'expired' meaning
+//     "didn't happen"), or an accepted offer's own Reservation ended up
+//     'cancelled'/'failed' (cancel_business_reservation() never reverts
+//     business_requests.status itself, so this can only be caught by
+//     reading the Reservation directly, not the primary's own status).
+export const PLAN_LIFECYCLE_STATUS = {
+  PLANNING: 'planning',
+  AWAITING_RESPONSES: 'awaiting_responses',
+  OPTION_SELECTED: 'option_selected',
+  BOOKING_PENDING: 'booking_pending',
+  CONFIRMED: 'confirmed',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+};
+
+const PLAN_LIFECYCLE_LABELS = {
+  [PLAN_LIFECYCLE_STATUS.PLANNING]: 'Planning',
+  [PLAN_LIFECYCLE_STATUS.AWAITING_RESPONSES]: 'Awaiting Responses',
+  [PLAN_LIFECYCLE_STATUS.OPTION_SELECTED]: 'Option Selected',
+  [PLAN_LIFECYCLE_STATUS.BOOKING_PENDING]: 'Booking Pending',
+  [PLAN_LIFECYCLE_STATUS.CONFIRMED]: 'Confirmed',
+  [PLAN_LIFECYCLE_STATUS.COMPLETED]: 'Completed',
+  [PLAN_LIFECYCLE_STATUS.CANCELLED]: 'Cancelled',
+};
+
+// dateStr is a plain 'YYYY-MM-DD' (business_requests.date). Local-date
+// comparison, same granularity every other business-request date label
+// already uses (businessRequestWhen.js) -- never fabricates a past/
+// future verdict for a date that was never actually set.
+function isPastDate(dateStr) {
+  if (!dateStr) return false;
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  return dateStr < todayStr;
+}
+
+export function resolveBusinessRequestPlanStatus({ primary, primaryOffers = [] } = {}) {
+  if (!primary) return null;
+
+  if (primary.status === 'cancelled' || primary.status === 'expired') {
+    return { statusKind: PLAN_LIFECYCLE_STATUS.CANCELLED, statusLabel: PLAN_LIFECYCLE_LABELS[PLAN_LIFECYCLE_STATUS.CANCELLED] };
+  }
+  // A 'merged' primary (the older propose_group_plan/confirm_group_plan
+  // flow) was superseded by a brand-new merged request -- functionally
+  // resolved from this row's own point of view, matching
+  // deriveAddonRequestState's existing 'merged' -> 'confirmed' precedent.
+  if (primary.status === 'merged') {
+    return { statusKind: PLAN_LIFECYCLE_STATUS.CONFIRMED, statusLabel: PLAN_LIFECYCLE_LABELS[PLAN_LIFECYCLE_STATUS.CONFIRMED] };
+  }
+
+  let kind;
+  if (primaryOffers.some((o) => o.status === 'completed')) {
+    kind = PLAN_LIFECYCLE_STATUS.COMPLETED;
+  } else {
+    const acceptedOffer = primaryOffers.find((o) => o.status === 'accepted');
+    if (acceptedOffer) {
+      const reservation = acceptedOffer.business_reservations?.[0] ?? null;
+      const payment = reservation?.business_payments?.[0] ?? null;
+      if (reservation?.status === 'cancelled' || reservation?.status === 'failed') {
+        kind = PLAN_LIFECYCLE_STATUS.CANCELLED;
+      } else if (reservation && reservation.status !== 'confirmed') {
+        kind = PLAN_LIFECYCLE_STATUS.BOOKING_PENDING;
+      } else if (payment?.status === 'pending') {
+        kind = PLAN_LIFECYCLE_STATUS.BOOKING_PENDING;
+      } else {
+        // reservation.status === 'confirmed' (or no reservation embed was
+        // provided at all -- accept_business_offer() always inserts one
+        // in the same transaction that accepts the offer, so a missing
+        // embed here is a caller/query gap, not a real "still pending"
+        // signal, and should fail open rather than stall the user).
+        kind = PLAN_LIFECYCLE_STATUS.CONFIRMED;
+      }
+      if (kind === PLAN_LIFECYCLE_STATUS.CONFIRMED && isPastDate(primary.date)) {
+        kind = PLAN_LIFECYCLE_STATUS.COMPLETED;
+      }
+    } else if (primaryOffers.some((o) => o.status === 'offered')) {
+      kind = PLAN_LIFECYCLE_STATUS.OPTION_SELECTED;
+    } else if (primaryOffers.length === 0) {
+      kind = PLAN_LIFECYCLE_STATUS.PLANNING;
+    } else {
+      // Every offer so far is pending/declined/withdrawn/expired, but the
+      // primary itself is still genuinely open -- a fresh offer from
+      // another business (or a retry) is still possible, so this is
+      // honestly still "awaiting responses," not a dead end.
+      kind = PLAN_LIFECYCLE_STATUS.AWAITING_RESPONSES;
+    }
+  }
+
+  return { statusKind: kind, statusLabel: PLAN_LIFECYCLE_LABELS[kind] };
+}
+
 // Item 90 ("the Plan itself becomes the source of truth" -- CLAUDE.md):
 // one real, single canonical summary of the primary engagement --
 // title/date/time/location/party size/status -- instead of that
@@ -213,17 +343,16 @@ export function summarizePlanTimelineReadiness(timeline) {
 // primary request row + its offers + the plan's own already-composed
 // title from get_plan_chat_info/get_plan_participants) -- nothing new is
 // fetched or fabricated here, same "regroup what's already real" shape
-// buildPlanTimeline above already established.
+// buildPlanTimeline above already established. Item 91 replaced this
+// card's own inline Planning/Confirmed/Cancelled logic with the full
+// resolveBusinessRequestPlanStatus() progression above.
 export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null }) {
   if (!primary) return null;
 
   const timeline = buildPlanTimeline({ primary, primaryOffers, addons: [] });
   const entry = timeline.find((e) => e.kind === 'primary') ?? null;
 
-  const isCancelled = primary.status === 'cancelled';
-  const isConfirmed = !isCancelled && entry?.state === 'confirmed';
-  const statusKind = isCancelled ? 'cancelled' : isConfirmed ? 'confirmed' : 'planning';
-  const statusLabel = isCancelled ? 'Cancelled' : isConfirmed ? 'Confirmed' : 'Planning';
+  const { statusKind, statusLabel } = resolveBusinessRequestPlanStatus({ primary, primaryOffers }) ?? {};
 
   const timeLabel = entry?.hasTime
     ? entry.planTimeLabel

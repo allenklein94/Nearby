@@ -40,6 +40,42 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 91 ("Add a 'Plan Status'") — fully DONE (2026-09-16), same-day direct follow-up to Item
+90.** User's own progression: Planning → Awaiting Responses → Option Selected → Booking Pending →
+Confirmed → Completed → Cancelled — "ties beautifully into your existing business-request state
+machine." Replaced Item 90's original coarse Planning/Confirmed/Cancelled pill on the "Plan"
+summary card with the full 7-value progression, derived entirely from real, already-fetched
+columns (no new fetch, no new migration) — `getBusinessRequestWithOffers()`'s existing offers
+query already embeds each offer's own `business_reservations(status, business_payments(status,...))`
+row. New `resolveBusinessRequestPlanStatus()` (`planAddonReadiness.js`, exported alongside a new
+`PLAN_LIFECYCLE_STATUS` enum) reuses the exact real sub-states the "Offer System Phase 1" migration
+(`20260817_offer_system_phase1_reservation_payment_seams.sql`) already locked — "Offer → Offer
+Accepted → Reservation Requested → Reservation Confirmed → Experience Confirmed" — rather than
+inventing a second state machine: **Option Selected** = a business made a real offer
+(`status='offered'`) now ready for the requester to review/accept; **Booking Pending** = an offer
+was accepted but the booking isn't fully settled (reservation not yet `'confirmed'` — the seam a
+future non-`'nearby'` provider like Resy/OpenTable would use — or reservation confirmed with a
+real Stripe charge still `'pending'`, genuinely reachable today once a business finishes Stripe
+Connect onboarding); **Confirmed** = reservation confirmed and payment resolved/not required;
+**Completed** = an offer explicitly reached `'completed'` (`complete_business_reservation()`) OR
+the plan's own real date has already passed while otherwise Confirmed (an honest "this already
+happened" rather than reading "Confirmed" forever); **Cancelled** = the primary itself is
+`cancelled`/`expired`, or — a real, non-obvious case — an accepted offer's own reservation ended
+up `cancelled`/`failed`, which `cancel_business_reservation()` never reflects back onto
+`business_requests.status` (that stays `'fulfilled'` forever), so this can only be caught by
+reading the reservation directly, not the primary's own status. `buildPlanSummary()` now calls
+this resolver instead of its old inline `isCancelled`/`isConfirmed` check. `BusinessRequestDetailScreen.js`'s
+status pill gained two new visual tones (a warm-amber "in progress" treatment, reusing Item 84's
+exact same tint, for Option Selected/Booking Pending; a muted/quiet tone for Completed) alongside
+its existing Confirmed/Cancelled/neutral tones. 12 new Jest tests for the resolver plus one more
+for `buildPlanSummary`'s Option Selected case; full suite 476/476 passing. Both touched files
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Deliberately scoped to the
+primary engagement only (matching Item 90's own scope) — an add-on's own state stays shown via
+the existing per-add-on state chips in "🗺️ Your Plan," not this pill. Not exercised in a running
+app (no simulator/device tooling this session, standing note) — next session should confirm on a
+real account that a real offer-in-hand shows "Option Selected," that a Stripe-pending acceptance
+shows "Booking Pending," and that a past-dated confirmed plan reads "Completed."
+
 **Item 90 ("The 'Plan' itself becomes the source of truth") — fully DONE (2026-09-16), direct
 follow-up to Items 88/89.** User's own example: once a plan is confirmed ("Sarah's Birthday 🎂 /
 Sat Sep 19 / 7:00 PM / Restaurant / 8 people / Confirmed"), everyone should see the same

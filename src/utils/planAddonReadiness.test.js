@@ -7,6 +7,8 @@ import {
   buildPlanTimeline,
   summarizePlanTimelineReadiness,
   buildPlanSummary,
+  resolveBusinessRequestPlanStatus,
+  PLAN_LIFECYCLE_STATUS,
 } from './planAddonReadiness';
 
 describe('deriveAddonRequestState', () => {
@@ -253,5 +255,124 @@ describe('buildPlanSummary', () => {
     expect(summary.title).toBe('Restaurants');
     const summaryNoCategory = buildPlanSummary({ primary: { ...basePrimary, category: null }, primaryOffers: [] });
     expect(summaryNoCategory.title).toBe('Your Plan');
+  });
+
+  test('a real offer with no accepted one yet -> Option Selected', () => {
+    const summary = buildPlanSummary({
+      primary: basePrimary,
+      primaryOffers: [{ status: 'offered' }],
+    });
+    expect(summary.statusKind).toBe('option_selected');
+    expect(summary.statusLabel).toBe('Option Selected');
+  });
+});
+
+describe('resolveBusinessRequestPlanStatus', () => {
+  const open = { status: 'open', date: '2099-01-01' };
+
+  test('no primary -> null', () => {
+    expect(resolveBusinessRequestPlanStatus({ primary: null })).toBeNull();
+  });
+
+  test('no offers at all -> Planning', () => {
+    expect(resolveBusinessRequestPlanStatus({ primary: open, primaryOffers: [] })).toEqual({
+      statusKind: PLAN_LIFECYCLE_STATUS.PLANNING,
+      statusLabel: 'Planning',
+    });
+  });
+
+  test('only unresponded/declined offers so far, request still open -> Awaiting Responses', () => {
+    expect(
+      resolveBusinessRequestPlanStatus({ primary: open, primaryOffers: [{ status: 'pending' }, { status: 'declined' }] })
+    ).toEqual({ statusKind: PLAN_LIFECYCLE_STATUS.AWAITING_RESPONSES, statusLabel: 'Awaiting Responses' });
+  });
+
+  test('a real offer exists to review, none accepted yet -> Option Selected', () => {
+    expect(resolveBusinessRequestPlanStatus({ primary: open, primaryOffers: [{ status: 'offered' }] })).toEqual({
+      statusKind: PLAN_LIFECYCLE_STATUS.OPTION_SELECTED,
+      statusLabel: 'Option Selected',
+    });
+  });
+
+  test('accepted, reservation not yet confirmed by the provider -> Booking Pending', () => {
+    const offers = [{ status: 'accepted', business_reservations: [{ status: 'requested' }] }];
+    expect(resolveBusinessRequestPlanStatus({ primary: open, primaryOffers: offers })).toEqual({
+      statusKind: PLAN_LIFECYCLE_STATUS.BOOKING_PENDING,
+      statusLabel: 'Booking Pending',
+    });
+  });
+
+  test('accepted, reservation confirmed but a real Stripe charge is still pending -> Booking Pending', () => {
+    const offers = [
+      { status: 'accepted', business_reservations: [{ status: 'confirmed', business_payments: [{ status: 'pending' }] }] },
+    ];
+    expect(resolveBusinessRequestPlanStatus({ primary: open, primaryOffers: offers })).toEqual({
+      statusKind: PLAN_LIFECYCLE_STATUS.BOOKING_PENDING,
+      statusLabel: 'Booking Pending',
+    });
+  });
+
+  test('accepted, reservation confirmed, payment not required -> Confirmed', () => {
+    const offers = [
+      { status: 'accepted', business_reservations: [{ status: 'confirmed', business_payments: [{ status: 'not_required' }] }] },
+    ];
+    expect(resolveBusinessRequestPlanStatus({ primary: open, primaryOffers: offers })).toEqual({
+      statusKind: PLAN_LIFECYCLE_STATUS.CONFIRMED,
+      statusLabel: 'Confirmed',
+    });
+  });
+
+  test('accepted with no reservation embed at all fails open to Confirmed, not a stuck Booking Pending', () => {
+    const offers = [{ status: 'accepted' }];
+    expect(resolveBusinessRequestPlanStatus({ primary: open, primaryOffers: offers })).toEqual({
+      statusKind: PLAN_LIFECYCLE_STATUS.CONFIRMED,
+      statusLabel: 'Confirmed',
+    });
+  });
+
+  test('would-be Confirmed, but the plan date has already passed -> Completed', () => {
+    const offers = [{ status: 'accepted', business_reservations: [{ status: 'confirmed' }] }];
+    const past = { status: 'open', date: '2000-01-01' };
+    expect(resolveBusinessRequestPlanStatus({ primary: past, primaryOffers: offers })).toEqual({
+      statusKind: PLAN_LIFECYCLE_STATUS.COMPLETED,
+      statusLabel: 'Completed',
+    });
+  });
+
+  test('an offer explicitly marked completed -> Completed, even before the date passes', () => {
+    const offers = [{ status: 'completed' }];
+    expect(resolveBusinessRequestPlanStatus({ primary: open, primaryOffers: offers })).toEqual({
+      statusKind: PLAN_LIFECYCLE_STATUS.COMPLETED,
+      statusLabel: 'Completed',
+    });
+  });
+
+  test('accepted offer whose reservation was later cancelled -> Cancelled, even though the primary itself stays "fulfilled"', () => {
+    const offers = [{ status: 'accepted', business_reservations: [{ status: 'cancelled' }] }];
+    const fulfilled = { status: 'fulfilled', date: '2099-01-01' };
+    expect(resolveBusinessRequestPlanStatus({ primary: fulfilled, primaryOffers: offers })).toEqual({
+      statusKind: PLAN_LIFECYCLE_STATUS.CANCELLED,
+      statusLabel: 'Cancelled',
+    });
+  });
+
+  test('primary cancelled outright -> Cancelled regardless of any offer on record', () => {
+    expect(
+      resolveBusinessRequestPlanStatus({ primary: { status: 'cancelled', date: '2099-01-01' }, primaryOffers: [{ status: 'accepted' }] })
+    ).toEqual({ statusKind: PLAN_LIFECYCLE_STATUS.CANCELLED, statusLabel: 'Cancelled' });
+  });
+
+  test('primary expired with no acceptance -> Cancelled, a real dead end', () => {
+    expect(resolveBusinessRequestPlanStatus({ primary: { status: 'expired', date: '2099-01-01' }, primaryOffers: [] })).toEqual({
+      statusKind: PLAN_LIFECYCLE_STATUS.CANCELLED,
+      statusLabel: 'Cancelled',
+    });
+  });
+
+  test('a merged primary reads as Confirmed, matching deriveAddonRequestState\'s own precedent', () => {
+    expect(resolveBusinessRequestPlanStatus({ primary: { status: 'merged', date: '2099-01-01' }, primaryOffers: [] })).toEqual({
+      statusKind: PLAN_LIFECYCLE_STATUS.CONFIRMED,
+      statusLabel: 'Confirmed',
+    });
   });
 });
