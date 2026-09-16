@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { getMyOccasions, addOccasion, deleteOccasion, setOccasionReminderEnabled } from '../services/occasions';
+import { getMyOccasions, addOccasion, deleteOccasion, setOccasionReminderEnabled, revealOccasion } from '../services/occasions';
 import { getMyOccasionGroupPlans } from '../services/occasionGroupPlans';
 import { getMyFriends } from '../services/friends';
 import { composeCelebrationTitle } from '../services/celebrateSomething';
@@ -88,6 +88,7 @@ export default function OccasionsScreen({ navigation }) {
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [togglingReminderId, setTogglingReminderId] = useState(null);
+  const [revealingId, setRevealingId] = useState(null);
 
   // "Who is this for?" -- optional, but required for grouping to mean
   // anything. Defaults to 'me' (no third party named, nothing to share) --
@@ -370,6 +371,35 @@ export default function OccasionsScreen({ navigation }) {
     setTogglingReminderId(null);
   }
 
+  // Item 96 (CLAUDE.md, "Add surprise mode... Eventually: Reveal plan
+  // becomes an action"): a real, one-way action -- when a real connected
+  // friend is attached, this also turns ON sharing with them server-side
+  // (reveal_occasion), so confirm before firing.
+  function confirmReveal(occasion) {
+    Alert.alert(
+      'Reveal the surprise?',
+      occasion.who_for_name
+        ? `${occasion.who_for_name} will be able to see this occasion — this can't be undone.`
+        : "This occasion will stop being marked as a surprise — this can't be undone.",
+      [
+        { text: 'Not yet', style: 'cancel' },
+        {
+          text: 'Reveal',
+          onPress: async () => {
+            setRevealingId(occasion.id);
+            try {
+              await revealOccasion(occasion.id);
+              setOccasions((prev) => prev.map((o) => (o.id === occasion.id ? { ...o, surprise_mode: false } : o)));
+            } catch (e) {
+              Alert.alert('Something went wrong', e.message);
+            }
+            setRevealingId(null);
+          },
+        },
+      ]
+    );
+  }
+
   function confirmDelete(occasion) {
     Alert.alert(
       `Remove "${occasion.title}"?`,
@@ -542,7 +572,7 @@ export default function OccasionsScreen({ navigation }) {
                     <Text style={{ fontSize: 22, marginRight: spacing.sm }}>{meta?.icon ?? '📅'}</Text>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.name}>
-                        {group.label ? (meta?.label ?? occasion.title) : occasion.title}
+                        {occasion.surprise_mode ? '🔒 ' : ''}{group.label ? (meta?.label ?? occasion.title) : occasion.title}
                       </Text>
                       <Text style={styles.detail}>
                         {formatDate(new Date(occasion.occasion_date + 'T00:00:00'))}
@@ -550,6 +580,21 @@ export default function OccasionsScreen({ navigation }) {
                         {occasion.resulting_plan_id ? ' · ✅ Planned' : ''}
                         {occasion.imported_from_calendar ? ' · 📅 From your calendar' : ''}
                       </Text>
+                      {/* Item 96 ("Add surprise mode"): "Eventually: Reveal
+                          plan becomes an action" -- a real, one-way tap. */}
+                      {occasion.surprise_mode && (
+                        <TouchableOpacity
+                          onPress={() => confirmReveal(occasion)}
+                          disabled={revealingId === occasion.id}
+                          activeOpacity={0.8}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Reveal the surprise for ${occasion.title}`}
+                        >
+                          <Text style={styles.revealLink}>
+                            {revealingId === occasion.id ? 'Revealing…' : '🎉 Reveal the Surprise'}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                     <TouchableOpacity
                       style={styles.iconButton}
@@ -785,6 +830,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   name: { ...typography.bodyBold, color: colors.textPrimary },
   detail: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
+  revealLink: { color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: 4 },
   iconButton: { paddingHorizontal: spacing.xs, paddingVertical: spacing.sm },
   removeButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
   removeButtonText: { color: colors.danger, fontWeight: '700', fontSize: 13 },

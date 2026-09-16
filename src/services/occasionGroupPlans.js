@@ -172,6 +172,19 @@ export async function cancelOccasionGroupPlan(planId) {
   if (error) throw new Error(error.message);
 }
 
+// Item 96 (CLAUDE.md, "Add surprise mode... Eventually: Reveal plan becomes
+// an action"): host-only, mirrors decide/cancel's own single-decider
+// authority. Flips surprise_mode off, clears it on any real resulting
+// business_requests row(s) too, and lets the previously-excluded person in
+// -- a real 'invited' participant row plus a real push, server-side.
+export async function revealOccasionGroupPlan(planId) {
+  const { data, error } = await supabase.rpc('reveal_occasion_group_plan', {
+    plan_id_param: planId,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 // "Occasion architecture should not be a silo" (CLAUDE.md, direct user
 // request): links a decided group plan to the real `plans` row that its
 // downstream gathering/business_request creation already produced --

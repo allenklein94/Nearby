@@ -3334,7 +3334,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     // it's shown like every other real answer here rather
                     // than singled out as noise.
                     const expLevelOpt = EXPERIENCE_LEVEL_OPTIONS.find((o2) => o2.key === o.business_requests?.experience_level);
+                    // Item 96 (CLAUDE.md, "Add surprise mode"): "business
+                    // knows it's a surprise if relevant" -- a plain
+                    // boolean, shown first alongside the add-on tag since
+                    // it reframes how the whole request should be read
+                    // (e.g. keep any confirmation calls discreet). Never
+                    // reveals who the surprise is for -- Item 69's privacy
+                    // boundary stays intact.
+                    const surpriseTag = o.business_requests?.surprise_mode ? '🎁 Surprise!' : null;
                     const lookingForTags = [
+                      surpriseTag,
                       addonTag,
                       o.business_requests?.category,
                       reqOccasion ? `${reqOccasion.icon} ${reqOccasion.label}` : null,

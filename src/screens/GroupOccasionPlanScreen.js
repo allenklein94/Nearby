@@ -16,6 +16,7 @@ import {
   decideOccasionGroupPlanBusiness,
   skipOccasionGroupPlanBusinessVote,
   linkOccasionGroupPlanToPlan,
+  revealOccasionGroupPlan,
 } from '../services/occasionGroupPlans';
 import { getMyFriends } from '../services/friends';
 import { resolveIntent } from '../services/intentResolver';
@@ -303,6 +304,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
         occasion: detail.occasionType,
         preferredAvailabilityId: option.businessAvailabilityId,
         experienceLevel: detail.experienceLevel,
+        surpriseMode: detail.surpriseMode,
       });
       linkOccasionGroupPlanToPlan({ groupPlanId: planId, resultingBusinessRequestId: result.requestId }).catch(() => {});
       navigation.replace('BusinessRequestDetail', {
@@ -325,6 +327,22 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
       { text: 'Never mind', style: 'cancel' },
       { text: 'Cancel Plan', style: 'destructive', onPress: () => runAction(() => cancelOccasionGroupPlan(planId)) },
     ]);
+  }
+
+  // Item 96 (CLAUDE.md, "Add surprise mode... Eventually: Reveal plan
+  // becomes an action"): host-only. A real, one-way action -- lets the
+  // previously-excluded person in as a real participant and notifies
+  // them, server-side (reveal_occasion_group_plan), not just a local flag
+  // flip.
+  function handleReveal() {
+    Alert.alert(
+      'Reveal the surprise?',
+      `${detail.whoForName || 'They'} will be invited to this plan and notified — this can't be undone.`,
+      [
+        { text: 'Not yet', style: 'cancel' },
+        { text: 'Reveal', onPress: () => runAction(() => revealOccasionGroupPlan(planId)) },
+      ]
+    );
   }
 
   function goFindBusinesses() {
@@ -452,6 +470,18 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
             <Text style={styles.surpriseBannerText}>
               🔒 Surprise mode — {detail.whoForName || 'the person this is for'} isn't part of this plan and won't be notified. Keep it quiet!
             </Text>
+            {detail.isHost && (
+              <TouchableOpacity
+                onPress={handleReveal}
+                disabled={acting}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Reveal the surprise"
+                style={{ marginTop: spacing.sm }}
+              >
+                <Text style={styles.surpriseRevealLink}>🎉 Reveal the Surprise</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -800,6 +830,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     padding: spacing.sm, marginBottom: spacing.lg,
   },
   surpriseBannerText: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
+  surpriseRevealLink: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   inviteRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   declineButton: { flex: 1, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingVertical: 14, alignItems: 'center' },
   declineButtonText: { color: colors.textSecondary, fontWeight: '700' },

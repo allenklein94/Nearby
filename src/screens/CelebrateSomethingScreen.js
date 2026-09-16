@@ -681,6 +681,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         date: dateParam,
         occasion,
         experienceLevel,
+        surpriseMode,
         // Item 68 (CLAUDE.md): a picked business_occasion_package binds via
         // its own dedicated preferred param -- it has no business_
         // availability row behind it, so preferredAvailabilityId would be
@@ -848,6 +849,14 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       // (never a floor), so the resolved max carries straight across.
       const resolvedBudgetMax = resolveBudgetMax(budgetRangeKey, budgetMaxOverride);
       if (resolvedBudgetMax) params.prefillBudgetMax = resolvedBudgetMax;
+      // Item 95: carries the wizard's own real experience-level answer
+      // through the "Skip -- post manually" escape hatch too, same as
+      // budget just above.
+      params.prefillExperienceLevel = experienceLevel;
+      // Item 96 ("Add surprise mode"): a surprise ask must stay a surprise
+      // even when the user skips straight to AskBusinessScreen -- the
+      // business still needs to know.
+      if (surpriseMode) params.prefillSurpriseMode = true;
       if (whenPreset === 'now' || whenPreset === 'tonight') {
         params.prefillDateWindow = 'today';
       } else if (whenPreset === 'tomorrow') {

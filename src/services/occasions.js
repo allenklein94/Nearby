@@ -82,6 +82,20 @@ export async function setOccasionReminderEnabled(occasionId, enabled) {
   return true;
 }
 
+// Item 96 (CLAUDE.md, "Add surprise mode... Eventually: Reveal plan becomes
+// an action"): owner-only. Flips surprise_mode off and -- now legal, since
+// the CHECK constraint only blocks connected_user_id + surprise_mode
+// together while surprise_mode is still true -- turns ON sharing with the
+// real connected friend this occasion is for (the same mechanism Items
+// 62/63 already built for "share this too"), plus a real reveal push.
+export async function revealOccasion(occasionId) {
+  const { data, error } = await supabase.rpc('reveal_occasion', {
+    occasion_id_param: occasionId,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 export async function deleteOccasion(occasionId) {
   const { error } = await supabase.from('occasions').delete().eq('id', occasionId);
   if (error) {

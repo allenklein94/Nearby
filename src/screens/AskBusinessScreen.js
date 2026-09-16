@@ -228,6 +228,12 @@ export default function AskBusinessScreen({ navigation, route }) {
   // how to respond. Defaults to 'special', the sensible middle ground,
   // same posture as CelebrateSomethingScreen's own wizard.
   const [experienceLevel, setExperienceLevel] = useState(route.params?.prefillExperienceLevel ?? 'special');
+  // Item 96 (CLAUDE.md, "Add surprise mode"): purely inherited context --
+  // this screen has no "who is this for" step of its own to decide a
+  // surprise from scratch, so it's carried forward read-only from the
+  // Occasion wizard's own "Skip -- post manually" escape hatch, never a
+  // new toggle here.
+  const surpriseMode = !!route.params?.prefillSurpriseMode;
 
   // Item 53 ("The business relationship should attach to the Plan",
   // CLAUDE.md): "Allen + Claude + Dinner + Friday 7PM" should let Nearby
@@ -382,6 +388,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           cuisine: category === 'Foodie' ? cuisineInput : null,
           occasion: occasionInput,
           experienceLevel,
+          surpriseMode,
         });
       }
       // Finding 4: carry the original ask's real prefill fields forward so
@@ -401,6 +408,7 @@ export default function AskBusinessScreen({ navigation, route }) {
         prefillRadiusMiles: radiusMiles,
         prefillOccasion: occasionInput,
         prefillExperienceLevel: isSoloMode ? experienceLevel : null,
+        prefillSurpriseMode: surpriseMode || undefined,
         prefillSubmissionId: submissionId,
         gatheringId,
         gatheringTitle,
@@ -443,6 +451,7 @@ export default function AskBusinessScreen({ navigation, route }) {
     if (isSoloMode && experienceLevel && experienceLevel !== 'special') {
       recapParts.push(EXPERIENCE_LEVEL_OPTIONS.find((o) => o.key === experienceLevel)?.label ?? null);
     }
+    if (surpriseMode) recapParts.push('🎁 kept as a surprise');
     if (isSoloMode && category === 'Foodie' && cuisineInput) recapParts.push(cuisineLabel(cuisineInput));
     if (isSoloMode && attributesInput.length > 0) recapParts.push(attributesInput.map(businessAttributeLabel).join(', '));
     if (isSoloMode && pickedAvailability) recapParts.push(`at ${pickedAvailability.partner_name}`);

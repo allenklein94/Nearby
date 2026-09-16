@@ -40,6 +40,104 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 96 ("Add surprise mode") — fully DONE (2026-09-16), same-day direct follow-up to Item 95.**
+User's own list: 🎁 Surprise Mode / "Keep this plan hidden from Sarah" — then Sarah isn't
+notified, organizers can coordinate, invitations can be discreet, business knows it's a surprise
+if relevant, and "Eventually: Reveal plan becomes an action."
+
+Audited the real current state first rather than assumed: Item 65 (2026-09-12) already built the
+structural core of this — `occasions.surprise_mode`/`occasion_group_plans.surprise_mode`, a
+function-level early-skip plus a BEFORE INSERT trigger backstop that make it genuinely impossible
+to invite the celebrated person to vote, and a real 🔒 banner on `GroupOccasionPlanScreen` for
+collaborators. Two concrete pieces from this item's own list were genuinely missing, found by
+tracing every real invite/organizer code path rather than trusted from memory:
+
+1. **"business knows it's a surprise if relevant"** — `business_requests` had no surprise concept
+   at all. Added a plain `surprise_mode boolean` column — deliberately never `who_for_friend_id`,
+   preserving Item 69's locked "businesses shouldn't need to know the person's identity" boundary
+   intact: the business learns THAT it's a surprise, never WHO for.
+2. **"invitations can be discreet" / "organizers can coordinate"** stopped being true the moment a
+   decided group plan became a REAL `business_requests`-backed plan: Item 36's
+   `invite_to_business_request` and Item 88's `add_plan_organizer` (both operate on the real
+   resulting plan, not `occasion_group_plan_participants`) had zero surprise awareness — a host
+   could accidentally re-invite, or even directly co-organizer-promote, the exact person the whole
+   plan is hidden from, with no guardrail at all. Closed via a new internal helper,
+   `_surprise_excluded_friend_id_for_business_request()`, which walks the real
+   `plans.resulting_business_request_id` / `occasion_group_plans.resulting_plan_id` /
+   `occasions.resulting_plan_id` linkage ("Occasion architecture should not be a silo") to find who
+   (if anyone) must stay excluded — no new identity field duplicated onto `business_requests`
+   itself. Since `plan_messages` access (`is_plan_participant`) is entirely derived from
+   `group_plan_participants` + `plan_organizers`, protecting these two real INSERT paths
+   transitively protects the group chat too — no separate fix needed there.
+
+"Eventually: Reveal plan becomes an action" was genuinely unbuilt — no code anywhere referenced
+"reveal." Two new RPCs, one per real surprise-mode source table: `reveal_occasion_group_plan()`
+(host-only, mirroring decide/cancel's own single-decider authority) and `reveal_occasion()`
+(owner-only). Both flip `surprise_mode` off, propagate that onto any resulting real
+`business_requests` row(s) — primary and add-ons, via a shared
+`_clear_surprise_on_resulting_business_requests()` helper — so the business-facing signal stays
+honest, and, the part that makes this a real action rather than an inert flag flip, actually let
+the previously-excluded person in: `reveal_occasion_group_plan()` inserts them as a real
+`'invited'` participant (the same shape any other invite already produces) and sends them a real
+push; `reveal_occasion()` sets `connected_user_id = who_for_friend_id` (now legal — the CHECK
+constraint blocking that combination only fires while `surprise_mode` is still true), turning ON
+the exact sharing mechanism Items 62/63 already built for "share this too" rather than inventing a
+second one, plus the same kind of real reveal push.
+
+Client: `create_business_request`'s new `surprise_mode_param` threaded through
+`submitBusinessRequest()` and its two real occasion-sourced callers
+(`submitSelectedBusinessRequests()` in `CelebrateSomethingScreen.js`, `handleBookWinningBusiness()`
+in `GroupOccasionPlanScreen.js`); `AskBusinessScreen.js` gained a purely inherited (never a new
+decision made on that screen) `surpriseMode` carried through the wizard's own "Skip — post
+manually" escape hatch, shown as a plain recap line ("🎁 kept as a surprise"). Also closed a small,
+real gap left by Item 95 the same day: that same escape hatch never carried `experienceLevel`
+through at all — fixed alongside this. `BusinessDashboardScreen.js`'s "What they're looking for"
+tag row gained a "🎁 Surprise!" chip (shown first, alongside the add-on tag, since it reframes how
+the whole request should be read) sourced from the new `get_business_opportunities` field.
+`GroupOccasionPlanScreen.js`'s existing 🔒 surprise banner gained a host-only "🎉 Reveal the
+Surprise" link with a confirm `Alert`. `OccasionsScreen.js`'s personal occasion rows gained a 🔒
+prefix and their own matching "🎉 Reveal the Surprise" link when `surprise_mode` is true. A new
+push type, `occasion_surprise_revealed` (the solo case only — the group case reuses
+`occasion_group_plan_invite`'s already-correct routing), routes to the revealing host's own
+`ViewProfile` — Item 87's own "Upcoming" section is exactly where a newly-shared occasion becomes
+visible to its recipient.
+
+**Deliberately not built, disclosed rather than assumed covered**: `BusinessRequestDetailScreen.js`'s
+own "Invite Someone"/"+ Add Co-Organizer" friend pickers don't pre-filter the excluded person
+client-side — tapping them fails gracefully with a real server-side error (add_plan_organizer's
+own clear message; invite_to_business_request's existing generic "none could be invited" message
+for a single-person batch), but there's no purely-cosmetic client-side pre-filter the way
+`GroupOccasionPlanScreen`'s own `inviteMoreCandidates` already has for the voting phase. The
+server-side guarantee is authoritative either way — this is a UX-polish gap, not a privacy gap.
+
+Verified live against production (`enmosvippabmuqslzrox`) via a comprehensive disposable
+rolled-back transaction with real fixtures (a host, the celebrated friend, a real accepted friend,
+a second real accepted friend) and real `SET ROLE authenticated` + `request.jwt.claims`
+impersonation: `_surprise_excluded_friend_id_for_business_request` correctly resolves the
+celebrated friend for both a primary request and its own add-on; `invite_to_business_request`
+correctly silently skips the celebrated friend while still inviting a different real friend;
+`add_plan_organizer` correctly rejects the celebrated friend with a clear surprise-specific error
+while succeeding for a different real friend; `reveal_occasion_group_plan` correctly rejects a
+non-host, succeeds for the real host, inserts the celebrated friend as a real `'invited'`
+participant, and clears `surprise_mode` on both the primary and its add-on; a second reveal
+attempt is correctly rejected ("isn't a surprise"); the exclusion helper correctly returns null
+once revealed; `reveal_occasion` (the solo case) correctly sets `connected_user_id` and clears
+`surprise_mode`. Rolled back with zero leaked rows confirmed. Re-confirmed live after the real
+apply: `business_requests.surprise_mode` present; all eight touched/new functions
+(`create_business_request`/`get_business_opportunities`/`invite_to_business_request`/
+`add_plan_organizer`/`_surprise_excluded_friend_id_for_business_request`/
+`_clear_surprise_on_resulting_business_requests`/`reveal_occasion_group_plan`/`reveal_occasion`)
+have exactly one overload each — no signature drift; the two new internal helpers are correctly
+revoked from `authenticated` (not just `public`/`anon`), matching Item 90's own "a mutating helper
+left grantable to authenticated is a real vulnerability" lesson applied defensively here. Full
+Jest suite 501/501 passing (no new pure functions — this is DB/RLS-plus-UI wiring); all nine
+touched/new files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised
+in a running app (no simulator/device tooling this session, standing note) — next session should
+confirm on a real account that the "🎁 Surprise!" chip renders on the business dashboard, that
+"🎉 Reveal the Surprise" works correctly from both `GroupOccasionPlanScreen` and `OccasionsScreen`,
+and that a tapped `occasion_surprise_revealed` push correctly lands on the host's profile with the
+newly-shared occasion visible under "Upcoming."
+
 **Item 95 ("Ask 'How important is the occasion?'") — fully DONE (2026-09-16), resumed cleanly
 after a codespace restart mid-build.** User's own spec: "What kind of experience are you looking
 for? Keep it simple / Make it special / Go all out" — "a surprisingly useful recommendation

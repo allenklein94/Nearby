@@ -167,6 +167,10 @@ export async function submitBusinessRequest({
   // experienceLevelToPriceLevel(), celebrateSomething.js) and is stored
   // as a real context signal for the business deciding how to respond.
   experienceLevel = null,
+  // Item 96 (CLAUDE.md, "Add surprise mode"): "business knows it's a
+  // surprise if relevant" -- a plain boolean, never the celebrated
+  // person's identity (Item 69's own privacy boundary stays intact).
+  surpriseMode = false,
 }) {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {
@@ -193,6 +197,7 @@ export async function submitBusinessRequest({
     occasion_param: occasion,
     preferred_package_id_param: preferredPackageId,
     experience_level_param: experienceLevel,
+    surprise_mode_param: surpriseMode,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, duplicate: !!data.duplicate };

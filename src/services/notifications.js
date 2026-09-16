@@ -502,6 +502,18 @@ export async function routeNotificationTap(data) {
         navigationRef.navigate('GroupOccasionPlan', { planId: data.plan_id });
       }
       break;
+    // Item 96 (CLAUDE.md, "Add surprise mode... Eventually: Reveal plan
+    // becomes an action"): the solo (non-group-vote) reveal push --
+    // reveal_occasion() also turns on sharing with this recipient, so the
+    // real place to see it is the host's own profile (Item 87's own
+    // "Upcoming" section already surfaces a shared occasion there).
+    case 'occasion_surprise_revealed':
+      if (data.owner_id) {
+        navigationRef.navigate('ViewProfile', { userId: data.owner_id });
+      } else {
+        navigationRef.navigate('Occasions');
+      }
+      break;
     default:
       break;
   }
