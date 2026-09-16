@@ -63,14 +63,54 @@ example — the Occasion wizard's "Custom Occasion" free-text path (Item 74) or 
 birthday flow both terminate at `AskBusinessScreen`/`create_business_request`, which is this same
 fan-out, unconditionally.
 
-One candidate gap was considered and deliberately NOT built: the mock's "$70/person" labeling
-implies a per-person price, but `business_request_offers.offer_price` is a single flat number with
-no stored per-person/total distinction (a manually-typed business offer could honestly be either
-— e.g. "Private venue C — $90" could be a flat rental fee, not $90/head). Appending a fabricated
-"/person" suffix without a real field backing that distinction would be exactly the kind of
-invented label this project's own "no fabricated signals" convention exists to prevent — flagged
-here rather than silently added or silently skipped. If a real per-person vs. flat-total field is
-wanted, that's a small, separate, concrete follow-up, not assumed.
+**Follow-up, same day, direct user request ("add the per person field follow up") — fully DONE
+(2026-09-16).** Added the real field rather than fabricating a label: `business_request_offers.
+price_is_per_person` (boolean, default false — every existing, already-written offer keeps meaning exactly
+what it always meant, a flat number). `submit_business_offer` gained a new trailing
+`price_is_per_person_param` (old 10-arg signature explicitly dropped first); `admin_review_
+business_content_screening`'s offer_response branch reads the same boolean back out of its own
+jsonb content snapshot; `get_business_opportunities` (RETURNS jsonb, safe plain CREATE OR REPLACE)
+now also returns it.
+
+**A real, live, previously-silent bug was found and fixed in the same migration, not
+hypothetical**: `_match_request_to_package()` (Item 68) computes `offer_price` two different ways
+depending on whether the request's own `party_size` is known — `price_per_person × party_size` (a
+genuine total) when it is, but `price_per_person` completely UNCHANGED (a genuine per-person rate,
+never multiplied) when `party_size` is null. Every auto-generated Occasion Package offer with an
+unknown party size has therefore always stored a real per-person number under `offer_price` while
+every consumer-facing screen rendered it exactly like a flat total — a real mislabeling, now fixed
+at the source (both the preferred-binding block and the general scan loop correctly set
+`price_is_per_person = true` only in that exact case) rather than papered over client-side.
+
+Client: `formatOfferSummary()` (`businessFulfillment.js`, feeding `AcceptedBusinessOfferCard`,
+`ActivityScreen`, and the dashboard's own "Upcoming Nearby Visits" card) and the two direct offer-
+card renders (`BusinessRequestDetailScreen.js`'s "Compare Your Options" list, `GroupPlanScreen.js`)
+all now append a real "/person" suffix only when `price_is_per_person` is true — never inferred.
+`BusinessDashboardScreen.js`'s "Make an Offer" modal gained a Total/Per Person chip toggle next to
+the price field (shown only once a price is entered); picking "🎁 Use your own package" (Item 92)
+now also sets it to true automatically, since a package's own `price_per_person` is genuinely
+per-person by definition.
+
+Verified live against production (`enmosvippabmuqslzrox`) via a disposable rolled-back transaction
+with real fixtures: `submit_business_offer` with `price_is_per_person_param: true` correctly
+stores it; a package match with a known party size correctly produces a real multiplied total with
+`price_is_per_person = false`; a package match with an unknown party size correctly leaves the raw
+per-person rate in place with `price_is_per_person = true` (the exact bug case above); `get_
+business_opportunities` correctly returns the field. Rolled back with zero leaked rows confirmed.
+Re-confirmed live after the real apply: the new column present (boolean, default false); all four
+touched/new functions (`_match_request_to_package`, `submit_business_offer`, `admin_review_
+business_content_screening`, `get_business_opportunities`) have exactly one overload each; `submit_
+business_offer`'s new 11-arg signature keeps the correct `authenticated`-only grant, no `anon`
+leak. `screen-business-content` Edge Function updated (parses/forwards `priceIsPerPerson`, folds it
+into the write-path RPC call and the moderation content snapshot — never into the moderated text
+itself, since it's a real boolean, not user-authored prose) and redeployed, confirmed live via the
+decoded deployed bundle. Full Jest suite 485/485 passing (no new pure functions — this is DB-plus-
+UI wiring over an already-tested display helper); all six touched/new files transform-checked
+clean via `@babel/core` + `babel-preset-expo`; the Edge Function's TypeScript syntax-checked clean
+via `esbuild`. Not exercised in a running app (no simulator/device tooling this session, standing
+note) — next session should confirm on a real account that the Total/Per Person toggle renders and
+saves correctly, and that a real per-person-flagged offer shows the "/person" suffix on the
+consumer's own comparison card.
 
 **Item 92 ("Businesses should be able to respond specifically to the occasion") — fully DONE
 (2026-09-16), same-day direct follow-up to Item 91.** User's own mock: a birthday request (🎂 10

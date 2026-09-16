@@ -281,7 +281,7 @@ export async function getAcceptedOfferForRequest(requestId) {
   if (!requestId) return null;
   const { data, error } = await supabase
     .from('business_request_offers')
-    .select('id, offer_type, offer_price, offer_description, proposed_time, status, partner_id, media_path, media_type, brand_partners(name, logo_url, address, latitude, longitude)')
+    .select('id, offer_type, offer_price, price_is_per_person, offer_description, proposed_time, status, partner_id, media_path, media_type, brand_partners(name, logo_url, address, latitude, longitude)')
     .eq('request_id', requestId)
     .in('status', ['accepted', 'completed'])
     .maybeSingle();
@@ -396,11 +396,15 @@ const OFFER_TYPE_LABELS = {
 
 // One honest "what they offered" line (offer type + price, when present)
 // -- same shared-rendering reasoning as getAcceptedOfferForRequest above.
+// Item 93 follow-up (CLAUDE.md): "/person" only ever appears when the
+// business (or a matched Occasion Package) genuinely said so via the real
+// price_is_per_person column -- never inferred, since a flat total and a
+// per-person rate are both honestly possible for the same raw number.
 export function formatOfferSummary(offer) {
   if (!offer) return null;
   const parts = [];
   if (offer.offer_type && OFFER_TYPE_LABELS[offer.offer_type]) parts.push(OFFER_TYPE_LABELS[offer.offer_type]);
-  if (offer.offer_price != null) parts.push(`$${Number(offer.offer_price).toFixed(2)}`);
+  if (offer.offer_price != null) parts.push(`$${Number(offer.offer_price).toFixed(2)}${offer.price_is_per_person ? '/person' : ''}`);
   return parts.length > 0 ? parts.join(' · ') : null;
 }
 
@@ -653,7 +657,7 @@ export async function getBusinessOpportunities(partnerId) {
   return data ?? [];
 }
 
-export async function submitBusinessOfferResponse(requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [] }) {
+export async function submitBusinessOfferResponse(requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false }) {
   const { data, error } = await supabase.rpc('submit_business_offer', {
     request_id_param: requestId,
     offer_type_param: offerType,
@@ -665,6 +669,7 @@ export async function submitBusinessOfferResponse(requestId, { offerType, offerD
     media_type_param: mediaType,
     offer_title_param: offerTitle,
     included_items_param: includedItems,
+    price_is_per_person_param: priceIsPerPerson,
   });
   if (error) throw new Error(error.message);
   return data;
@@ -677,7 +682,7 @@ export async function submitBusinessOfferResponse(requestId, { offerType, offerD
 // submitBusinessOfferResponse() above, whose underlying RPC derives
 // ownership internally from request_id_param) since the Edge Function's
 // top-level ownership gate needs it explicitly for every target_type.
-export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [] }) {
+export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -701,6 +706,7 @@ export async function submitBusinessOfferResponseForScreening(partnerId, request
       mediaType,
       offerTitle,
       includedItems,
+      priceIsPerPerson,
     }),
   });
 
@@ -1243,7 +1249,7 @@ export async function getMyBusinessEcosystemActivity(myId) {
   // right now".
   const { data: offers } = await supabase
     .from('business_request_offers')
-    .select('id, request_id, offer_type, offer_price, status, responded_at, accepted_at, brand_partners(name)')
+    .select('id, request_id, offer_type, offer_price, price_is_per_person, status, responded_at, accepted_at, brand_partners(name)')
     .in('request_id', requestIds);
 
   const events = [];

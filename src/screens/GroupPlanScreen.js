@@ -444,7 +444,7 @@ export default function GroupPlanScreen({ navigation, route }) {
                     <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? 'A business'}</Text>
                     <Text style={styles.offerStatus}>{OFFER_STATUS_COPY[o.status] ?? o.status}</Text>
                     {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
-                    {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}</Text> : null}
+                    {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}{o.price_is_per_person ? '/person' : ''}</Text> : null}
                     {o.status === 'offered' && amActiveParticipant && (
                       <>
                         <Text style={styles.confirmCountLine}>{confirmedForThisOffer.length} of {acceptedParticipants.length} confirmed</Text>

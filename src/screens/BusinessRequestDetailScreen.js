@@ -1002,7 +1002,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     <Text key={index} style={styles.offerIncludedItem}>✓ {item}</Text>
                   ))}
                   {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
-                  {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}</Text> : null}
+                  {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}{o.price_is_per_person ? '/person' : ''}</Text> : null}
                   <OfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
                   {showComparison && o.viewed_at ? (
                     <Text style={styles.offerViewedIndicator}>👁 You've seen this</Text>
@@ -1037,7 +1037,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     <Text key={index} style={styles.offerIncludedItem}>✓ {item}</Text>
                   ))}
                   {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
-                  {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}</Text> : null}
+                  {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}{o.price_is_per_person ? '/person' : ''}</Text> : null}
                   <OfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
                   {o.brand_partners?.latitude != null && o.brand_partners?.longitude != null && (
                     <TouchableOpacity

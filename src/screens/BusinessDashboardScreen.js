@@ -531,6 +531,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [offerTypeInput, setOfferTypeInput] = useState('standard');
   const [offerDescriptionInput, setOfferDescriptionInput] = useState('');
   const [offerPriceInput, setOfferPriceInput] = useState('');
+  // Item 93 follow-up (CLAUDE.md): an explicit, business-set flag -- never
+  // inferred -- so the consumer's own comparison card can honestly render
+  // "$70/person" instead of a bare, ambiguous "$70." Defaults false (a
+  // flat/total price), matching what every existing offer_price has always
+  // meant.
+  const [offerPriceIsPerPerson, setOfferPriceIsPerPerson] = useState(false);
   // Item 92 ("Businesses should be able to respond specifically to the
   // occasion", CLAUDE.md) -- a real, optional structured title ("Special
   // Birthday Offer") and a real included-items checklist, both purely
@@ -1478,6 +1484,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferTypeInput('standard');
     setOfferDescriptionInput('');
     setOfferPriceInput('');
+    setOfferPriceIsPerPerson(false);
     setOfferProposedTime(null);
     setShowOfferTimePicker(false);
     setSelectedExperienceIdInput(null);
@@ -1495,7 +1502,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   function applyOccasionPackageToOffer(pkg) {
     setOfferTitleInput(pkg.name);
     setOfferDescriptionInput(pkg.description || pkg.name);
-    if (pkg.price_per_person != null) setOfferPriceInput(String(pkg.price_per_person));
+    if (pkg.price_per_person != null) {
+      setOfferPriceInput(String(pkg.price_per_person));
+      setOfferPriceIsPerPerson(true);
+    }
     setOfferIncludedItemsInput(Array.isArray(pkg.included_items) ? [...pkg.included_items] : []);
     setSelectedExperienceIdInput(null);
   }
@@ -1594,6 +1604,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         mediaType,
         offerTitle: offerTitleInput.trim() || null,
         includedItems: offerIncludedItemsInput,
+        priceIsPerPerson: offerPriceIsPerPerson,
       });
 
       if (result.published) {
@@ -5396,6 +5407,31 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 keyboardType="decimal-pad"
                 accessibilityLabel="Offer price, optional"
               />
+              {/* Item 93 follow-up (CLAUDE.md): an explicit per-person vs.
+                  flat/total choice -- never guessed -- so the consumer's
+                  comparison card can render an honest "$70/person" instead
+                  of an ambiguous bare number. Only shown once a price is
+                  actually entered. */}
+              {offerPriceInput.trim() ? (
+                <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
+                  <TouchableOpacity
+                    style={[styles.chip, !offerPriceIsPerPerson && styles.chipSelected]}
+                    onPress={() => setOfferPriceIsPerPerson(false)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Flat or total price"
+                  >
+                    <Text style={[styles.chipText, !offerPriceIsPerPerson && styles.chipTextSelected]}>Total</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.chip, offerPriceIsPerPerson && styles.chipSelected]}
+                    onPress={() => setOfferPriceIsPerPerson(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Price is per person"
+                  >
+                    <Text style={[styles.chipText, offerPriceIsPerPerson && styles.chipTextSelected]}>Per Person</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
               <BusinessMediaPicker
                 colors={colors}
                 pickedAsset={offerPickedMediaAsset}

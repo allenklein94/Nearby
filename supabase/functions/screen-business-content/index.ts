@@ -759,6 +759,10 @@ Body: ${updateBody || '(none)'}`;
     const offerDescription = typeof body.offerDescription === 'string' ? body.offerDescription.trim().slice(0, 1000) : '';
     if (!offerDescription) return json({ error: 'Say what you can offer.' }, 400);
     const offerPrice = Number.isFinite(body.offerPrice) ? body.offerPrice : null;
+    // Item 93 follow-up (CLAUDE.md): a real boolean, not user-authored
+    // text -- no moderation-injection risk, so it never enters contentBlock
+    // below, just the write-path params/snapshot.
+    const priceIsPerPerson = body.priceIsPerPerson === true;
     const proposedTime = typeof body.proposedTime === 'string' && body.proposedTime ? body.proposedTime : null;
     // Item 92 ("Businesses should be able to respond specifically to the
     // occasion", CLAUDE.md) -- a real, optional structured title ("Special
@@ -804,7 +808,7 @@ Body: ${updateBody || '(none)'}`;
     if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
     const { riskTier, matchedCategories, reasoning } = result;
 
-    const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, proposedTime, experienceId, mediaPath, mediaType };
+    const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, priceIsPerPerson, proposedTime, experienceId, mediaPath, mediaType };
 
     const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
       partner_id_param: partnerId,
@@ -827,6 +831,7 @@ Body: ${updateBody || '(none)'}`;
         offer_price_param: offerPrice, proposed_time_param: proposedTime, experience_id_param: experienceId,
         media_path_param: mediaPath, media_type_param: mediaType,
         offer_title_param: offerTitle, included_items_param: includedItems,
+        price_is_per_person_param: priceIsPerPerson,
       });
       if (writeError) {
         console.error('screen-business-content: low-tier offer_response write failed', writeError);
