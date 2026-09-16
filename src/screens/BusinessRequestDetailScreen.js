@@ -6,6 +6,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon, setPlanItemTime, getPlanOrganizers, addPlanOrganizer, removePlanOrganizer } from '../services/businessFulfillment';
 import { getPlanChatInfo } from '../services/planChat';
 import { relevantAddonTypesForOccasion, planAddonIcon, planAddonLabel } from '../constants/planAddons';
+import { occasionIcon, occasionLabel } from '../constants/businessAttributes';
 import { buildPlanTimeline, summarizePlanTimelineReadiness, buildPlanSummary, addonStateCopy } from '../utils/planAddonReadiness';
 import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
 import { getConnectedPeopleWithInterests } from '../services/surpriseMe';
@@ -856,6 +857,14 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
         )}
+        {planChatInfo?.whoForName && myId && request.requester_id !== myId && (
+          <View style={styles.occasionContextBanner}>
+            <Text style={styles.occasionContextText}>
+              {occasionIcon(planChatInfo.occasionType) ?? '🎉'} You're helping plan {planChatInfo.whoForName}'s{' '}
+              {(occasionLabel(planChatInfo.occasionType) || 'plan').toLowerCase()}.
+            </Text>
+          </View>
+        )}
         {showReasonBanner && notificationReason && (
           <View style={styles.notificationReasonBanner}>
             <Text style={styles.notificationReasonText}>{notificationReason}</Text>
@@ -1530,6 +1539,17 @@ const getStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.primaryMuted, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary,
     padding: spacing.md, marginBottom: spacing.lg,
   },
+  // Item 97 ("Invite without revealing the surprise"): a persistent, real
+  // "you're helping plan X's Y" line for anyone genuinely invited/added
+  // as an organizer -- not just a one-time push they might dismiss. Safe
+  // to show unconditionally to a real plan participant: the celebrated
+  // person can never become one in the first place when surprise_mode is
+  // on (Item 96), and this screen is never reachable by the business side.
+  occasionContextBanner: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.md, marginBottom: spacing.lg,
+  },
+  occasionContextText: { ...typography.body, color: colors.textPrimary, fontWeight: '600' },
   groupPlanBannerText: { ...typography.body, color: colors.textPrimary, marginBottom: spacing.xs },
   groupPlanBannerButton: { alignSelf: 'flex-start' },
   groupPlanBannerButtonText: { ...typography.body, color: colors.primary, fontWeight: '700' },
