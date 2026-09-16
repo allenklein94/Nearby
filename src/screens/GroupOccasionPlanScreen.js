@@ -28,6 +28,7 @@ import {
   extractBusinessCandidateIds,
   formatBusinessOptionDetail,
   composeCelebrationAskText,
+  experienceLevelToPriceLevel,
 } from '../services/celebrateSomething';
 import { OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { WHEN_PRESETS } from '../utils/whenPresets';
@@ -236,6 +237,11 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
         rawText: '',
         partySize: Math.max(joinedCount, 1),
         occasion: detail?.occasionType,
+        // Item 95 (CLAUDE.md): the group's own real "how important is the
+        // occasion?" answer nudges which real postings get proposed for
+        // the vote, same lever CelebrateSomethingScreen's own solo options
+        // step already uses.
+        priceLevel: experienceLevelToPriceLevel(detail?.experienceLevel),
       });
       const ids = extractBusinessCandidateIds(result);
       if (ids.length === 0) {
@@ -296,6 +302,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
         date: detail.scheduledDate,
         occasion: detail.occasionType,
         preferredAvailabilityId: option.businessAvailabilityId,
+        experienceLevel: detail.experienceLevel,
       });
       linkOccasionGroupPlanToPlan({ groupPlanId: planId, resultingBusinessRequestId: result.requestId }).catch(() => {});
       navigation.replace('BusinessRequestDetail', {

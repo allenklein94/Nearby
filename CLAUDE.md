@@ -40,6 +40,85 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 95 ("Ask 'How important is the occasion?'") — fully DONE (2026-09-16), resumed cleanly
+after a codespace restart mid-build.** User's own spec: "What kind of experience are you looking
+for? Keep it simple / Make it special / Go all out" — "a surprisingly useful recommendation
+signal... a birthday dinner doesn't need the same recommendations as a 50th anniversary."
+
+Found at session start: the pure client-side groundwork (`EXPERIENCE_LEVEL_OPTIONS`/
+`experienceLevelLabel`/`experienceLevelToPriceLevel` in `celebrateSomething.js`, plus
+`resolveDecidedGroupPlanParams` already carrying `initialExperienceLevel` forward, both with
+their own new Jest tests) was already written and uncommitted before the restart — read in full,
+confirmed correct, and kept as the foundation rather than redone. What was missing was everything
+that makes it a real signal rather than an inert stub: the wizard question itself, DB persistence,
+and the actual resolver lever.
+
+Shipped via `20261113_occasion_experience_level.sql` (applied and verified live against
+production `enmosvippabmuqslzrox` via disposable rolled-back transactions before applying for
+real): two new nullable `experience_level text` columns (`business_requests`,
+`occasion_group_plans`), both CHECK-constrained to `'simple'/'special'/'go_all_out'`.
+`create_business_request` gained a new trailing `experience_level_param` (old 17-arg signature
+explicitly dropped first, confirmed single overload live); `create_occasion_group_plan` likewise
+(old 10-arg signature dropped). `get_occasion_group_plan_detail`/`decide_occasion_group_plan`
+(unchanged signatures, safe `CREATE OR REPLACE`) now also return `experienceLevel`, and
+`get_business_opportunities` now also returns it nested under `business_requests` — real context
+for a business deciding how to respond (e.g. whether to reach for a Special/Go-All-Out structured
+offer, Item 92), the same "surface it in the tag row" precedent Item 70's date chip and Item 81's
+plan_time chip already established.
+
+The literal "adjust recommendations" ask is a real, concrete lever, not just a stored field:
+`experienceLevelToPriceLevel()` (already built pre-restart) feeds `resolveIntent()`'s own
+already-existing `priceLevel` scoring bonus — `'go_all_out'` nudges toward pricier/more-curated
+real candidates, `'special'` toward mid-tier, `'simple'` stays unbiased (a low-key ask isn't
+necessarily a cheap one). Wired into both real places `resolveIntent()` gets called from an
+occasion context: `CelebrateSomethingScreen.js`'s own 'options' step (the solo business path) and
+`GroupOccasionPlanScreen.js`'s "Vote on Where" business-options proposal (the group-vote path) —
+one lever, not two competing ones.
+
+Client: a new "What kind of experience are you looking for?" 3-chip row (🙂/✨/🎆, defaulting to
+`'special'`, the same "sensible middle ground, never forced" posture Item 94's budget default
+already established) appears on `CelebrateSomethingScreen.js`'s 'when' step (shown only for a
+business-destined activity type, since that's the one place the answer is actually used) and
+again on the 'group_invite' step right next to the existing budget chips (mirroring that step's
+own shape exactly, since a group vote doesn't yet know its eventual destination). Threaded through
+`submitSelectedBusinessRequests()`, `createGroupVote()`, and `GroupOccasionPlanScreen.js`'s own
+`handleBookWinningBusiness()` — every real path that creates a `business_requests` or
+`occasion_group_plans` row from this wizard now carries the real answer. The 'options' step's own
+staleness guard (which already force-refetches on occasion/activity/when/party-size changes) now
+also covers `experienceLevel`, so going back and changing the answer correctly invalidates a
+stale fetch. `AskBusinessScreen.js` (the standalone solo ask, not just the wizard) got the
+identical chip row, solo-mode-gated the same way attributes/cuisine already are — feeds both
+`submitBusinessRequest()`'s new `experienceLevel` param and the existing recap line (shown only
+when it differs from the `'special'` default, so the common case stays quiet) — plus a new
+`prefillExperienceLevel` route param so the "Try a Wider Radius" retry path preserves it, same
+precedent every other prefilled field on that screen already follows.
+`BusinessDashboardScreen.js`'s "What they're looking for" tag row gained a matching icon+label
+chip, sourced from the same new `get_business_opportunities` field, no new query.
+
+Deliberately NOT wired into `create_business_request_for_gathering`/`_for_match`/`_for_community`
+(same disclosed "first increment" scope boundary Item 68's package-matching and Item 81's
+plan_time additions already drew) or into `AskBusinessScreen.js`'s own "Find options nearby"
+browse search (`search_active_business_availability` is a plain unscored list, not
+`resolveIntent()`'s scored candidate pool — no lever to hook into there without a bigger,
+separate RPC change).
+
+Verified live against production via disposable rolled-back transactions covering every new
+surface: valid values persist on both tables and both invalid-value rejections fire the expected
+`'Invalid experience level'` error; `get_occasion_group_plan_detail` and
+`decide_occasion_group_plan` both correctly return the real stored value; `get_business_opportunities`
+correctly surfaces it to the business side of a real request/offer pair. Re-confirmed live
+afterward: both columns present, and all five touched/new functions
+(`create_business_request`/`create_occasion_group_plan`/`get_occasion_group_plan_detail`/
+`decide_occasion_group_plan`/`get_business_opportunities`) have exactly one overload each — no
+signature drift. Full Jest suite 501/501 passing (existing pre-restart tests for the pure helpers,
+no new pure functions needed for this session's own DB/UI wiring); all seven touched/new client
+files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running
+app (no simulator/device tooling this session, standing note) — next session should confirm on a
+real account that the 3-chip row renders correctly on both `CelebrateSomethingScreen`'s 'when'
+step and `AskBusinessScreen`, that a `'go_all_out'` pick genuinely shifts the "Nearby found these
+options" results toward pricier candidates, and that the business dashboard's tag row shows the
+correct icon+label.
+
 **Item 94 ("Add budget without making it feel transactional") — fully DONE (2026-09-16), same-day
 direct follow-up to Item 93's per-person price field.** User's own literal spec: instead of forcing
 a "$50–$100" range, ask "What's your budget? $ / $$ / $$$ / No preference," then optionally "Set a

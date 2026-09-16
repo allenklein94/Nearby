@@ -161,6 +161,12 @@ export async function submitBusinessRequest({
   // only ever re-deriving a match from scratch, same shape as
   // preferredAvailabilityId above. Absent for every other entry point.
   preferredPackageId = null,
+  // Item 95 (CLAUDE.md, "Ask 'How important is the occasion?'"): a real,
+  // explicit, never-inferred 'simple'/'special'/'go_all_out' answer --
+  // reuses resolveIntent()'s own priceLevel scoring (via
+  // experienceLevelToPriceLevel(), celebrateSomething.js) and is stored
+  // as a real context signal for the business deciding how to respond.
+  experienceLevel = null,
 }) {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {
@@ -186,6 +192,7 @@ export async function submitBusinessRequest({
     cuisine_param: cuisine,
     occasion_param: occasion,
     preferred_package_id_param: preferredPackageId,
+    experience_level_param: experienceLevel,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, duplicate: !!data.duplicate };

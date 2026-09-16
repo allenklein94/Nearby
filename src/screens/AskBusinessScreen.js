@@ -6,7 +6,7 @@ import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusines
 import { createBusinessRequestForMatch } from '../services/dateProposals';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, OCCASION_OPTIONS, businessAttributeLabel, cuisineLabel, occasionLabel } from '../constants/businessAttributes';
-import { BUDGET_LEVEL_OPTIONS, resolveBudgetMax, initialBudgetSelectionFromMax } from '../services/celebrateSomething';
+import { BUDGET_LEVEL_OPTIONS, resolveBudgetMax, initialBudgetSelectionFromMax, EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -220,6 +220,14 @@ export default function AskBusinessScreen({ navigation, route }) {
   // fully editable/deselectable, the user still reviews before submitting.
   const [occasionInput, setOccasionInput] = useState(route.params?.prefillOccasion ?? null);
   const isSoloMode = !gatheringId && !matchId && !communityId;
+  // Item 95 (CLAUDE.md, "Ask 'How important is the occasion?'"): solo mode
+  // only, same gating as attributes/cuisine above -- a real, explicit,
+  // never-inferred 'simple'/'special'/'go_all_out' answer that adjusts
+  // both resolveIntent()'s own priceLevel scoring (on the "Find options
+  // nearby" search below) and the context a business sees when deciding
+  // how to respond. Defaults to 'special', the sensible middle ground,
+  // same posture as CelebrateSomethingScreen's own wizard.
+  const [experienceLevel, setExperienceLevel] = useState(route.params?.prefillExperienceLevel ?? 'special');
 
   // Item 53 ("The business relationship should attach to the Plan",
   // CLAUDE.md): "Allen + Claude + Dinner + Friday 7PM" should let Nearby
@@ -373,6 +381,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           attributes: attributesInput.length > 0 ? attributesInput : null,
           cuisine: category === 'Foodie' ? cuisineInput : null,
           occasion: occasionInput,
+          experienceLevel,
         });
       }
       // Finding 4: carry the original ask's real prefill fields forward so
@@ -391,6 +400,7 @@ export default function AskBusinessScreen({ navigation, route }) {
         prefillPickedDateISO: dateWindow === PICK_DATE_KEY && pickedDate ? pickedDate.toISOString() : null,
         prefillRadiusMiles: radiusMiles,
         prefillOccasion: occasionInput,
+        prefillExperienceLevel: isSoloMode ? experienceLevel : null,
         prefillSubmissionId: submissionId,
         gatheringId,
         gatheringTitle,
@@ -430,6 +440,9 @@ export default function AskBusinessScreen({ navigation, route }) {
     const recapBudgetMax = resolveBudgetMax(budgetRangeKey, budgetMaxOverride);
     if (recapBudgetMax) recapParts.push(`up to $${recapBudgetMax}`);
     if (occasionInput) recapParts.push(occasionLabel(occasionInput));
+    if (isSoloMode && experienceLevel && experienceLevel !== 'special') {
+      recapParts.push(EXPERIENCE_LEVEL_OPTIONS.find((o) => o.key === experienceLevel)?.label ?? null);
+    }
     if (isSoloMode && category === 'Foodie' && cuisineInput) recapParts.push(cuisineLabel(cuisineInput));
     if (isSoloMode && attributesInput.length > 0) recapParts.push(attributesInput.map(businessAttributeLabel).join(', '));
     if (isSoloMode && pickedAvailability) recapParts.push(`at ${pickedAvailability.partner_name}`);
@@ -702,6 +715,31 @@ export default function AskBusinessScreen({ navigation, route }) {
               </TouchableOpacity>
             ))}
           </View>
+
+          {isSoloMode && (
+            <>
+              {/* Item 95 (CLAUDE.md, "Ask 'How important is the
+                  occasion?'"): solo mode only -- a real signal that
+                  adjusts what "Find options nearby" above surfaces and
+                  what the business sees, never forced ("special" is
+                  already a real, deterministic default). */}
+              <Text style={styles.label}>What kind of experience are you looking for?</Text>
+              <View style={styles.chipRow}>
+                {EXPERIENCE_LEVEL_OPTIONS.map((o) => (
+                  <TouchableOpacity
+                    key={o.key}
+                    style={[styles.chip, experienceLevel === o.key && styles.chipSelected]}
+                    onPress={() => setExperienceLevel(o.key)}
+                    accessibilityLabel={o.label}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: experienceLevel === o.key }}
+                  >
+                    <Text style={[styles.chipText, experienceLevel === o.key && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
 
           {isSoloMode && (
             <>

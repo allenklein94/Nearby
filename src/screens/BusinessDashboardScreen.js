@@ -41,6 +41,7 @@ import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiences
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { planAddonIcon, planAddonLabel } from '../constants/planAddons';
+import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
 import { bundleableOccasions, experienceComponentOptionsForOccasion } from '../constants/experienceTemplates';
 import { classifyBusinessCategory } from '../constants/businessCategoryClassifier';
@@ -3325,6 +3326,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     // requestWhen. A business deciding on a Transportation
                     // add-on genuinely needs to know WHICH ride this is.
                     const planTimeLabel = formatPlanTimeLabel(o.business_requests?.plan_time ?? null);
+                    // Item 95 (CLAUDE.md, "Ask 'How important is the
+                    // occasion?'"): real context for a business deciding
+                    // how to respond -- e.g. whether to reach for a
+                    // Special/Go-All-Out structured offer (Item 92) or
+                    // keep it simple. 'special' is the common default, so
+                    // it's shown like every other real answer here rather
+                    // than singled out as noise.
+                    const expLevelOpt = EXPERIENCE_LEVEL_OPTIONS.find((o2) => o2.key === o.business_requests?.experience_level);
                     const lookingForTags = [
                       addonTag,
                       o.business_requests?.category,
@@ -3332,6 +3341,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       o.business_requests?.party_size ? `${o.business_requests.party_size} people` : null,
                       requestWhen ? `📅 ${requestWhen}` : null,
                       planTimeLabel ? `🕐 ${planTimeLabel}` : null,
+                      expLevelOpt ? `${expLevelOpt.icon} ${expLevelOpt.label}` : null,
                       o.business_requests?.budget_max ? `up to $${o.business_requests.budget_max}` : null,
                       o.business_requests?.cuisine ? cuisineLabel(o.business_requests.cuisine) : null,
                       ...reqAttrs.map((key) => businessAttributeLabel(key)),

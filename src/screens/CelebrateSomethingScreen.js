@@ -30,6 +30,8 @@ import {
   resolveBudgetMax,
   initialBudgetSelectionFromMax,
   formatBudgetRange,
+  EXPERIENCE_LEVEL_OPTIONS,
+  experienceLevelToPriceLevel,
 } from '../services/celebrateSomething';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
 import { useTheme } from '../context/ThemeContext';
@@ -324,6 +326,15 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   const [budgetMaxOverride, setBudgetMaxOverride] = useState(initialBudgetSelection.override);
   const [showBudgetMaxOverride, setShowBudgetMaxOverride] = useState(!!initialBudgetSelection.override);
 
+  // Item 95 (CLAUDE.md, "Ask 'How important is the occasion?'"): a real,
+  // explicit, always-editable answer -- never AI-inferred. Defaults to
+  // 'special', the sensible middle ground (same "keeps the initial
+  // interaction easy" spirit as Item 94's own budget default). Seeded from
+  // a decided group plan the same way budget/surpriseMode already are, so
+  // a host re-entering this wizard after "find options nearby" doesn't
+  // lose the group's own real answer.
+  const [experienceLevel, setExperienceLevel] = useState(route.params?.initialExperienceLevel ?? 'special');
+
   // "Connect it to businesses": resolveIntent()'s own real, already-scored
   // candidate pool (business_availability + gathering), fetched using the
   // wizard's own structured answers -- no free text, no AI classification
@@ -459,6 +470,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         surpriseMode,
         budgetMin: null,
         budgetMax: resolveBudgetMax(budgetRangeKey, budgetMaxOverride),
+        experienceLevel,
       });
       navigation.replace('GroupOccasionPlan', { planId: result.planId });
     } catch (e) {
@@ -493,15 +505,15 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   }, [stepKey]);
 
   // A real staleness guard: going Back from 'options' to change occasion/
-  // when/party size (all real inputs to the query above) must force a
-  // fresh fetch next time 'options' is reached, not silently keep serving
-  // results computed from the answers the user just changed.
+  // when/party size/experience level (all real inputs to the query above)
+  // must force a fresh fetch next time 'options' is reached, not silently
+  // keep serving results computed from the answers the user just changed.
   useEffect(() => {
     setOptionsFetched(false);
     setOptionsResult(null);
     setSelectedIds(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [occasion, activityType, whenPreset, scheduledAt, partySize]);
+  }, [occasion, activityType, whenPreset, scheduledAt, partySize, experienceLevel]);
 
   async function fetchOptions() {
     setOptionsLoading(true);
@@ -512,6 +524,11 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         rawText: '',
         partySize,
         occasion,
+        // Item 95 (CLAUDE.md): "How important is the occasion?" adjusts
+        // recommendations -- a real, concrete lever, not just a stored
+        // field. 'simple' stays unbiased (null); 'special'/'go_all_out'
+        // nudge toward pricier/more-curated real candidates.
+        priceLevel: experienceLevelToPriceLevel(experienceLevel),
       });
       setOptionsResult(result);
     } catch (e) {
@@ -663,6 +680,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         budgetMax: resolveBudgetMax(budgetRangeKey, budgetMaxOverride),
         date: dateParam,
         occasion,
+        experienceLevel,
         // Item 68 (CLAUDE.md): a picked business_occasion_package binds via
         // its own dedicated preferred param -- it has no business_
         // availability row behind it, so preferredAvailabilityId would be
@@ -1377,6 +1395,31 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   />
                 )}
 
+                {destination === 'business' && (
+                  <>
+                    <Text style={[styles.label, { marginTop: spacing.lg }]}>What kind of experience are you looking for?</Text>
+                    <Text style={styles.helperText}>A birthday dinner doesn't need the same options as a 50th anniversary — this helps Nearby adjust what it finds.</Text>
+                    <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
+                      {EXPERIENCE_LEVEL_OPTIONS.map((o) => {
+                        const selected = experienceLevel === o.key;
+                        return (
+                          <TouchableOpacity
+                            key={o.key}
+                            style={[styles.chip, selected && styles.chipSelected]}
+                            onPress={() => { Haptics.selectionAsync(); setExperienceLevel(o.key); }}
+                            activeOpacity={0.8}
+                            accessibilityRole="button"
+                            accessibilityLabel={o.label}
+                            accessibilityState={{ selected }}
+                          >
+                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </>
+                )}
+
                 {shouldOfferCalendarSave(occasion, !!whoForFriendId) && (
                   <TouchableOpacity
                     style={styles.calendarToggleRow}
@@ -1675,6 +1718,27 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     <Text style={styles.createOwnLinkText}>+ Set a maximum per person</Text>
                   </TouchableOpacity>
                 )}
+
+                <Text style={[styles.label, { marginTop: spacing.lg }]}>What kind of experience are you looking for?</Text>
+                <Text style={styles.helperText}>A birthday dinner doesn't need the same options as a 50th anniversary — this helps Nearby adjust what it finds.</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
+                  {EXPERIENCE_LEVEL_OPTIONS.map((o) => {
+                    const selected = experienceLevel === o.key;
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => { Haptics.selectionAsync(); setExperienceLevel(o.key); }}
+                        activeOpacity={0.8}
+                        accessibilityRole="button"
+                        accessibilityLabel={o.label}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </>
             )}
 

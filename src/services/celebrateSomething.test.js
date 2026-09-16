@@ -13,6 +13,9 @@ import {
   resolveBudgetMax,
   initialBudgetSelectionFromMax,
   formatBudgetRange,
+  EXPERIENCE_LEVEL_OPTIONS,
+  experienceLevelLabel,
+  experienceLevelToPriceLevel,
   dedupeBusinessCandidates,
   extractBusinessCandidateIds,
   formatBusinessOptionDetail,
@@ -235,7 +238,17 @@ describe('resolveDecidedGroupPlanParams', () => {
       initialSurpriseMode: false,
       initialBudgetMin: null,
       initialBudgetMax: null,
+      initialExperienceLevel: null,
     });
+  });
+
+  it('carries experienceLevel through as initialExperienceLevel, honestly null when absent (CLAUDE.md, Item 95)', () => {
+    const base = {
+      occasionType: 'birthday', whoForName: 'Sarah', whoForFriendId: 'friend-1',
+      whenPreset: 'tonight', scheduledDate: '2026-10-05', activityType: 'dinner', label: null, partySize: 8,
+    };
+    expect(resolveDecidedGroupPlanParams(base).initialExperienceLevel).toBeNull();
+    expect(resolveDecidedGroupPlanParams({ ...base, experienceLevel: 'go_all_out' }).initialExperienceLevel).toBe('go_all_out');
   });
 
   it('carries budgetMin/budgetMax through as initialBudgetMin/initialBudgetMax, honestly null when absent (CLAUDE.md, Item 66)', () => {
@@ -351,6 +364,40 @@ describe('initialBudgetSelectionFromMax', () => {
 describe('BUDGET_LEVEL_OPTIONS', () => {
   it('is exactly the 4 quick-pick levels the item asks for, in order', () => {
     expect(BUDGET_LEVEL_OPTIONS.map((o) => o.key)).toEqual(['any', '$', '$$', '$$$']);
+  });
+});
+
+// Item 95 ("Ask 'How important is the occasion?'," CLAUDE.md)
+describe('EXPERIENCE_LEVEL_OPTIONS / experienceLevelLabel', () => {
+  it('is exactly the 3 levels the item asks for, in order', () => {
+    expect(EXPERIENCE_LEVEL_OPTIONS.map((o) => o.key)).toEqual(['simple', 'special', 'go_all_out']);
+  });
+
+  it('resolves a real label for each known key', () => {
+    expect(experienceLevelLabel('simple')).toBe('Keep it simple');
+    expect(experienceLevelLabel('special')).toBe('Make it special');
+    expect(experienceLevelLabel('go_all_out')).toBe('Go all out');
+  });
+
+  it('honestly returns null for an unrecognized or missing key, never a guess', () => {
+    expect(experienceLevelLabel('nonsense')).toBeNull();
+    expect(experienceLevelLabel(null)).toBeNull();
+  });
+});
+
+describe('experienceLevelToPriceLevel', () => {
+  it('maps go_all_out to the top price tier', () => {
+    expect(experienceLevelToPriceLevel('go_all_out')).toBe('$$$');
+  });
+
+  it('maps special to the middle price tier', () => {
+    expect(experienceLevelToPriceLevel('special')).toBe('$$');
+  });
+
+  it('leaves simple and any unrecognized/absent value unbiased (null), never a guessed floor', () => {
+    expect(experienceLevelToPriceLevel('simple')).toBeNull();
+    expect(experienceLevelToPriceLevel(null)).toBeNull();
+    expect(experienceLevelToPriceLevel('nonsense')).toBeNull();
   });
 });
 

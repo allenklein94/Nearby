@@ -24,6 +24,10 @@ export async function createOccasionGroupPlan({
   // organizer leaves it unset.
   budgetMin = null,
   budgetMax = null,
+  // Item 95 (CLAUDE.md, "Ask 'How important is the occasion?'"): a real,
+  // explicit 'simple'/'special'/'go_all_out' answer -- never AI-inferred,
+  // honestly null when the organizer leaves it unset.
+  experienceLevel = null,
 }) {
   const { data, error } = await supabase.rpc('create_occasion_group_plan', {
     occasion_type_param: occasionType,
@@ -36,6 +40,7 @@ export async function createOccasionGroupPlan({
     surprise_mode_param: surpriseMode,
     budget_min_param: budgetMin,
     budget_max_param: budgetMax,
+    experience_level_param: experienceLevel,
   });
   if (error) throw new Error(error.message);
   return data;

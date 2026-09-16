@@ -78,6 +78,39 @@ export function formatBudgetRange(min, max) {
   return `Up to $${max}/person`;
 }
 
+// Item 95 (CLAUDE.md, "Ask 'How important is the occasion?'") -- a real,
+// explicit, always-editable answer, never AI-inferred. Distinct from Item
+// 94's own budget question -- this is about effort/curation, not dollar
+// amount (a "keep it simple" ask can still have a real budget, and vice
+// versa) -- but it reuses the exact same "one shared chip vocabulary, both
+// stored on the request AND surfaced to the business" shape budget already
+// established. Defaults to 'special', the sensible middle ground, per this
+// item's own "keeps the initial interaction easy" spirit -- always
+// changeable, never a forced choice.
+export const EXPERIENCE_LEVEL_OPTIONS = [
+  { key: 'simple', label: 'Keep it simple', icon: '🙂' },
+  { key: 'special', label: 'Make it special', icon: '✨' },
+  { key: 'go_all_out', label: 'Go all out', icon: '🎆' },
+];
+
+export function experienceLevelLabel(key) {
+  return EXPERIENCE_LEVEL_OPTIONS.find((o) => o.key === key)?.label ?? null;
+}
+
+// The one real, concrete lever this signal pulls on the resolver side in
+// this first increment: reuses resolveIntent()'s already-existing,
+// already-tested `priceLevel` param (the same $/$$/$$$ vocabulary
+// PRICE_LEVEL_LABELS/priceAndPartyBonus already use for gatherings
+// scoring) rather than inventing a new heuristic. 'simple' stays
+// unbiased (null) -- a simple ask isn't necessarily a cheap one, so this
+// only ever nudges toward pricier/more curated gatherings, never away from
+// anything.
+export function experienceLevelToPriceLevel(level) {
+  if (level === 'go_all_out') return '$$$';
+  if (level === 'special') return '$$';
+  return null;
+}
+
 const ACTIVITY_ASK_PHRASE = {
   dinner: 'dinner',
   night_out: 'night out',
@@ -400,6 +433,9 @@ export function resolveDecidedGroupPlanParams(decided, groupPlanId = null) {
     // into whichever business request the group actually submits.
     initialBudgetMin: decided.budgetMin ?? null,
     initialBudgetMax: decided.budgetMax ?? null,
+    // Item 95 (CLAUDE.md, "Ask 'How important is the occasion?'"): carries
+    // the group's own real answer forward the same way budget already is.
+    initialExperienceLevel: decided.experienceLevel ?? null,
   };
 }
 
