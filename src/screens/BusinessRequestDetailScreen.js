@@ -6,7 +6,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon, setPlanItemTime, getPlanOrganizers, addPlanOrganizer, removePlanOrganizer } from '../services/businessFulfillment';
 import { getPlanChatInfo } from '../services/planChat';
 import { relevantAddonTypesForOccasion, planAddonIcon, planAddonLabel } from '../constants/planAddons';
-import { buildPlanTimeline, summarizePlanTimelineReadiness, addonStateCopy } from '../utils/planAddonReadiness';
+import { buildPlanTimeline, summarizePlanTimelineReadiness, buildPlanSummary, addonStateCopy } from '../utils/planAddonReadiness';
 import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
 import { getConnectedPeopleWithInterests } from '../services/surpriseMe';
 import { recordIntentSelection } from '../services/intentOutcomes';
@@ -786,6 +786,14 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     [request, offers, addons]
   );
   const planReadinessLabel = summarizePlanTimelineReadiness(planTimeline);
+  // Item 90 ("the Plan itself becomes the source of truth" -- CLAUDE.md):
+  // one real, single canonical summary block -- shown only on the
+  // primary's own screen, same as "Your Plan" below, since an add-on
+  // already links back to the full plan via the banner above.
+  const planSummary = useMemo(
+    () => (request.addon_type ? null : buildPlanSummary({ primary: request, primaryOffers: offers, planTitle: planChatInfo?.title ?? null })),
+    [request, offers, planChatInfo]
+  );
   // Item 88: this used to be visible to ANY viewer who could load this
   // screen at all (including a match participant or gathering-interest-
   // approved attendee who could never actually succeed at the underlying
@@ -800,6 +808,37 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+        {planSummary && (
+          <View style={styles.planSummaryCard}>
+            <View style={styles.planSummaryHeaderRow}>
+              <Text style={styles.planSummaryTitle} numberOfLines={2}>{planSummary.title}</Text>
+              <View
+                style={[
+                  styles.planSummaryStatusPill,
+                  planSummary.statusKind === 'confirmed' && styles.planSummaryStatusPillConfirmed,
+                  planSummary.statusKind === 'cancelled' && styles.planSummaryStatusPillCancelled,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.planSummaryStatusText,
+                    planSummary.statusKind === 'confirmed' && styles.planSummaryStatusTextConfirmed,
+                    planSummary.statusKind === 'cancelled' && styles.planSummaryStatusTextCancelled,
+                  ]}
+                >
+                  {planSummary.statusLabel}
+                </Text>
+              </View>
+            </View>
+            {(planSummary.dateLabel || planSummary.timeLabel) && (
+              <Text style={styles.planSummaryLine}>
+                📅 {planSummary.dateLabel ?? 'Date not set'}{planSummary.timeLabel ? `  🕖 ${planSummary.timeLabel}` : ''}
+              </Text>
+            )}
+            {planSummary.location && <Text style={styles.planSummaryLine}>📍 {planSummary.location}</Text>}
+            {planSummary.partySize != null && <Text style={styles.planSummaryLine}>👥 {planSummary.partySize} people</Text>}
+          </View>
+        )}
         {!!request.addon_type && (
           <View style={styles.groupPlanBanner}>
             <Text style={styles.groupPlanBannerText}>{planAddonIcon(request.addon_type)} {planAddonLabel(request.addon_type)} — part of a bigger plan</Text>
@@ -1407,6 +1446,24 @@ const getStyles = (colors) => StyleSheet.create({
   notificationReasonDismissText: { color: colors.textTertiary, fontSize: 15, fontWeight: '600' },
   widerRadiusButton: { marginTop: spacing.sm, alignSelf: 'flex-start' },
   widerRadiusButtonText: { ...typography.body, color: colors.primary, fontWeight: '700' },
+  // Item 90 ("the Plan itself becomes the source of truth" -- CLAUDE.md):
+  // the one real, single canonical plan-state block -- every real
+  // participant looking at this same request sees the same title/date/
+  // time/location/party size/status, instead of piecing it together from
+  // raw_text, per-offer cards, and the timeline separately.
+  planSummaryCard: {
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginBottom: spacing.lg,
+  },
+  planSummaryHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.xs },
+  planSummaryTitle: { ...typography.headline, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
+  planSummaryStatusPill: { backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  planSummaryStatusPillConfirmed: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
+  planSummaryStatusPillCancelled: { backgroundColor: colors.dangerMuted ?? colors.surface, borderColor: colors.danger },
+  planSummaryStatusText: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
+  planSummaryStatusTextConfirmed: { color: colors.primary },
+  planSummaryStatusTextCancelled: { color: colors.danger },
+  planSummaryLine: { ...typography.body, color: colors.textSecondary, marginTop: 2 },
   rawText: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
   statusLine: { ...typography.caption, color: colors.textTertiary, fontWeight: '600', marginBottom: spacing.lg },
   emptyText: { ...typography.body, color: colors.textSecondary },

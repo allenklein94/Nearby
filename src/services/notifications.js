@@ -379,6 +379,17 @@ export async function routeNotificationTap(data) {
     // business_requests-shaped push, since the new "👥 Organizers" section
     // lives right there.
     case 'plan_organizer_added':
+    // Item 90 (CLAUDE.md, "the Plan itself becomes the source of truth"):
+    // a business declined the request, or the plan/an add-on was
+    // confirmed/retimed/cancelled -- every real plan participant (not
+    // just the original requester) now gets one of these, all landing on
+    // the same real plan-state screen so everyone sees the same thing.
+    case 'business_offer_declined':
+    case 'plan_confirmed':
+    case 'plan_reservation_cancelled':
+    case 'plan_cancelled':
+    case 'plan_addon_removed':
+    case 'plan_item_time_changed':
       if (data.request_id) {
         navigationRef.navigate('BusinessRequestDetail', { requestId: data.request_id, notificationReason: data.body ?? null });
       }
@@ -420,6 +431,11 @@ export async function routeNotificationTap(data) {
       }
       break;
     case 'reservation_cancelled_by_customer':
+    // Item 90: cancel_business_request() previously notified no one at
+    // all, including a business whose pending/offered ask just vanished.
+    // Same destination as its sibling above -- same "check your requests"
+    // action either way.
+    case 'business_request_cancelled':
       navigationRef.navigate('BusinessDashboard', { initialSection: 'requests' });
       break;
     // Nearby 2.0 vision layer 3 (see CLAUDE.md's "Nearby 2.0 Vision" doc):

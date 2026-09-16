@@ -6,6 +6,7 @@ import {
   formatPlanTimeLabel,
   buildPlanTimeline,
   summarizePlanTimelineReadiness,
+  buildPlanSummary,
 } from './planAddonReadiness';
 
 describe('deriveAddonRequestState', () => {
@@ -194,5 +195,63 @@ describe('summarizePlanTimelineReadiness', () => {
   test('a genuine decline flags "needs attention"', () => {
     const timeline = [confirmedPrimary, { kind: 'addon', state: 'confirmed' }, { kind: 'addon', state: 'declined' }];
     expect(summarizePlanTimelineReadiness(timeline)).toBe('1 of 2 extras confirmed — one needs attention');
+  });
+});
+
+describe('buildPlanSummary', () => {
+  const basePrimary = {
+    status: 'open',
+    category: 'Restaurants',
+    plan_label: null,
+    date: '2026-09-19',
+    time_window_start: '19:00:00',
+    time_window_end: null,
+    party_size: 8,
+  };
+
+  test('no primary request -> null', () => {
+    expect(buildPlanSummary({ primary: null })).toBeNull();
+  });
+
+  test('open request with no offers yet -> Planning, time falls back to the requested window', () => {
+    const summary = buildPlanSummary({ primary: basePrimary, primaryOffers: [] });
+    expect(summary.statusKind).toBe('planning');
+    expect(summary.statusLabel).toBe('Planning');
+    expect(summary.dateLabel).toMatch(/Sep 19/);
+    expect(summary.timeLabel).toBe('7 PM');
+    expect(summary.location).toBeNull();
+    expect(summary.partySize).toBe(8);
+  });
+
+  test('an accepted offer -> Confirmed, with the real business name as location', () => {
+    const summary = buildPlanSummary({
+      primary: basePrimary,
+      primaryOffers: [{ status: 'accepted', proposed_time: '2026-09-19T19:30:00Z', brand_partners: { name: 'Il Forno' } }],
+      planTitle: "Sarah's Birthday 🎂",
+    });
+    expect(summary.statusKind).toBe('confirmed');
+    expect(summary.title).toBe("Sarah's Birthday 🎂");
+    expect(summary.location).toBe('Il Forno');
+  });
+
+  test('a manually-set plan_time overrides the requested window', () => {
+    const summary = buildPlanSummary({ primary: { ...basePrimary, plan_time: '20:00:00' }, primaryOffers: [] });
+    expect(summary.timeLabel).toBe('8 PM');
+  });
+
+  test('a cancelled request is honestly "Cancelled" even with an accepted offer on record', () => {
+    const summary = buildPlanSummary({
+      primary: { ...basePrimary, status: 'cancelled' },
+      primaryOffers: [{ status: 'accepted' }],
+    });
+    expect(summary.statusKind).toBe('cancelled');
+    expect(summary.statusLabel).toBe('Cancelled');
+  });
+
+  test('falls back to category, then a generic label, when there is no plan title or plan_label', () => {
+    const summary = buildPlanSummary({ primary: basePrimary, primaryOffers: [] });
+    expect(summary.title).toBe('Restaurants');
+    const summaryNoCategory = buildPlanSummary({ primary: { ...basePrimary, category: null }, primaryOffers: [] });
+    expect(summaryNoCategory.title).toBe('Your Plan');
   });
 });

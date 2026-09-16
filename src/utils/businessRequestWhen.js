@@ -26,14 +26,26 @@ export function formatTimeOfDay(timeStr) {
 }
 
 // dateStr is a plain 'YYYY-MM-DD' (business_requests.date, no time
+// component). Returns a real, honest "Sat, Sep 19" label, or null when
+// no date is actually set -- never fabricated. Exported so
+// planAddonReadiness.js's Item 90 plan-summary card (CLAUDE.md, "the
+// Plan itself becomes the source of truth") can reuse the exact same
+// date-label formatting formatRequestWhen already established below,
+// instead of a second copy that could drift.
+export function formatDateLabel(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+// dateStr is a plain 'YYYY-MM-DD' (business_requests.date, no time
 // component); timeWindowStart/End are plain 'HH:MM:SS' time strings or
 // null. Returns a real, honest label like "Sat, Sep 19" or "Sat, Sep 19,
 // 6–9 PM" -- never fabricates a time window when none was actually set.
 export function formatRequestWhen(dateStr, timeWindowStart = null, timeWindowEnd = null) {
-  if (!dateStr) return null;
-  const d = new Date(`${dateStr}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return null;
-  const dateLabel = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const dateLabel = formatDateLabel(dateStr);
+  if (!dateLabel) return null;
   const start = timeWindowStart ? formatTimeOfDay(timeWindowStart) : null;
   if (!start) return dateLabel;
   const end = timeWindowEnd ? formatTimeOfDay(timeWindowEnd) : null;

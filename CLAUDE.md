@@ -40,6 +40,78 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 90 ("The 'Plan' itself becomes the source of truth") — fully DONE (2026-09-16), direct
+follow-up to Items 88/89.** User's own example: once a plan is confirmed ("Sarah's Birthday 🎂 /
+Sat Sep 19 / 7:00 PM / Restaurant / 8 people / Confirmed"), everyone should see the same
+information — and if the time changes, the business cancels, or the host cancels, everyone gets
+notified, "much cleaner than everyone having separate versions of the plan."
+
+A background research fork audited the real current state first (reading every relevant function
+live against production, not trusting past CLAUDE.md summaries): a business-request-destined
+plan's info was genuinely scattered across `BusinessRequestDetailScreen.js` (raw_text/status/
+per-offer cards/timeline, no single date-time-location-party-size-status block), and every one of
+the 4 real "plan changed" events only reached a subset of the real roster (`plan_organizers` +
+`group_plan_participants` via Item 88/36/Phase-D) — `submit_business_offer`/`accept_business_offer`
+notified the original requester only; `set_plan_item_time` (Item 81's retime/relabel RPC) and
+`decline_business_offer` sent literally zero notifications to anyone; `withdraw_business_offer`/
+`cancel_business_reservation` notified only the direct counterparty; `cancel_business_request` sent
+no notifications at all and was still hard-gated on literal `requester_id = auth.uid()`, contradicting
+Item 88's own claim that "any organizer can manage any add-on" (never actually implemented there).
+
+Shipped via `20261110_plan_source_of_truth_notifications.sql`: one new shared helper,
+`_notify_other_plan_participants()` (built directly on the same roster logic `is_plan_participant`/
+`get_plan_participants` already use — host, organizers, accepted group-plan guests — not a second,
+possibly-drifting query), gated per-recipient on `notify_planning`, mirroring the existing
+gathering-cancellation precedent (`notify_gathering_cancelled`/`cancel_community`, which already
+fan out to every real attendee/member). Wired into `accept_business_offer` (the "Confirmed" moment
+now reaches everyone, not just whoever tapped Accept), `decline_business_offer` (previously silent
+— now notifies the requester too, a real pre-existing gap), `withdraw_business_offer`,
+`cancel_business_reservation` (both the business-cancels and consumer-cancels branches),
+`cancel_business_request` (widened so a primary plan stays host-only to cancel per Item 88's own
+locked decision, while an add-on can now genuinely be managed by any real organizer — closing that
+disclosed gap — plus the affected business is now notified of its vanished ask, previously silent),
+and `set_plan_item_time` (a time/label change now notifies every other real participant). **A real
+vulnerability was caught and fixed before this was considered done**: the new helper is a mutating,
+side-effect function with no caller-identity check of its own (meant to be invoked only internally
+by an already-authorized caller) — the first `revoke ... from public, anon` left the default
+`authenticated` grant in place, which would have let any signed-in client call it directly to send
+arbitrary push text to a real plan's participants; fixed to also revoke from `authenticated`,
+mirroring `_cancel_reservation_by_offer`'s identical posture, and reconfirmed live.
+
+Client: a new "Plan" summary card on `BusinessRequestDetailScreen.js` (primary's own screen only)
+— title (the plan's own already-composed name, e.g. "Sarah's Birthday 🎂", sourced from the
+already-fetched `planChatInfo.title` rather than a new query) / date+time / location (the accepted
+offer's business name) / party size / a Planning-Confirmed-Cancelled status pill — computed by a
+new pure `buildPlanSummary()` (`planAddonReadiness.js`, 6 new Jest tests) purely regrouping data
+the screen already fetches, same "regroup what's already real" shape `buildPlanTimeline` already
+established. New push types (`plan_confirmed`/`plan_cancelled`/`plan_addon_removed`/
+`plan_item_time_changed`/`plan_reservation_cancelled`/`business_offer_declined`/
+`business_request_cancelled`) routed in `notifications.js` to the same `BusinessRequestDetail`/
+`BusinessDashboard` destinations their siblings already use.
+
+Verified live against production (`enmosvippabmuqslzrox`) via two comprehensive disposable
+rolled-back transactions with real fixtures (a host, a real `plan_organizers` co-organizer, a real
+accepted `group_plan_participants` guest, a business owner, a stranger) and real
+`SET ROLE authenticated` + `request.jwt.claims` impersonation, inspecting actual queued push rows
+in `net.http_request_queue`: the fan-out helper correctly notifies organizer+guest while excluding
+the acting user; `set_plan_item_time` now fans out where it previously sent nothing; a stranger is
+correctly blocked from cancelling an add-on; a host correctly CAN cancel an add-on a co-organizer
+created (closing Item 88's disclosed gap); a non-host organizer is correctly blocked from
+cancelling the primary ("Only the host can cancel this plan"); the host cancelling the primary
+correctly notifies the organizer+guest AND the business with a still-pending offer (previously
+silent); `accept_business_offer` correctly fans out `plan_confirmed` to the organizer alongside its
+existing pushes; `cancel_business_reservation` correctly fans out on both the business-cancels and
+consumer-cancels branches. Both transactions rolled back with zero leaked rows confirmed
+afterward. Re-confirmed live after the real apply: all 7 touched/new functions have exactly one
+overload each, every pre-existing function kept its correct `authenticated` grant, and the new
+helper's grant leak was caught and fixed (see above). Full Jest suite 461/461 passing (6 new); all
+four touched files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised
+in a running app (no simulator/device tooling this session, standing note) — next session should
+confirm on a real account that the new "Plan" summary card renders correctly (title/date/time/
+location/party size/status) on a primary request's own screen, and that a tapped
+`plan_confirmed`/`plan_cancelled`/`plan_item_time_changed`/etc. push correctly lands on the right
+screen for a co-organizer or accepted guest, not just the original requester.
+
 **Item 89 ("Give the occasion a single shared conversation") — fully DONE (2026-09-13), same-day
 direct follow-up to Item 88, resumed cleanly after a codespace restart (git was clean at session
 start — Item 88 was the last commit; Item 89 had not been started, so this was a fresh build, not

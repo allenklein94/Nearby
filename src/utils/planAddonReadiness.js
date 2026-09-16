@@ -12,7 +12,7 @@
 // add-on's state or the primary's -- there is no shared state here to
 // invalidate, only a client-side summary of what's already true.
 import { planAddonType } from '../constants/planAddons';
-import { formatTimeOfDay } from './businessRequestWhen';
+import { formatTimeOfDay, formatDateLabel } from './businessRequestWhen';
 
 // Reduces one add-on's business_requests row + its offers down to one of
 // a small, honest set of states.
@@ -202,4 +202,42 @@ export function summarizePlanTimelineReadiness(timeline) {
   if (confirmedCount === addonEntries.length) return 'Ready — everything is confirmed';
   if (needsAttention) return `${confirmedCount} of ${addonEntries.length} extras confirmed — one needs attention`;
   return `${confirmedCount} of ${addonEntries.length} extras confirmed`;
+}
+
+// Item 90 ("the Plan itself becomes the source of truth" -- CLAUDE.md):
+// one real, single canonical summary of the primary engagement --
+// title/date/time/location/party size/status -- instead of that
+// information staying scattered across raw_text, the per-offer cards,
+// and the timeline the way it was before this item. Pure client-side
+// regrouping of data BusinessRequestDetailScreen.js already fetches (the
+// primary request row + its offers + the plan's own already-composed
+// title from get_plan_chat_info/get_plan_participants) -- nothing new is
+// fetched or fabricated here, same "regroup what's already real" shape
+// buildPlanTimeline above already established.
+export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null }) {
+  if (!primary) return null;
+
+  const timeline = buildPlanTimeline({ primary, primaryOffers, addons: [] });
+  const entry = timeline.find((e) => e.kind === 'primary') ?? null;
+
+  const isCancelled = primary.status === 'cancelled';
+  const isConfirmed = !isCancelled && entry?.state === 'confirmed';
+  const statusKind = isCancelled ? 'cancelled' : isConfirmed ? 'confirmed' : 'planning';
+  const statusLabel = isCancelled ? 'Cancelled' : isConfirmed ? 'Confirmed' : 'Planning';
+
+  const timeLabel = entry?.hasTime
+    ? entry.planTimeLabel
+    : primary.time_window_start
+    ? formatTimeOfDay(primary.time_window_start)
+    : null;
+
+  return {
+    title: planTitle || primary.plan_label || primary.category || 'Your Plan',
+    dateLabel: formatDateLabel(primary.date),
+    timeLabel,
+    location: entry?.businessName ?? null,
+    partySize: primary.party_size ?? null,
+    statusLabel,
+    statusKind,
+  };
 }
