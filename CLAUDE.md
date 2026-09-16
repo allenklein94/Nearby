@@ -40,6 +40,38 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 93 ("Let the user ask multiple businesses simultaneously") — audited, already fully DONE,
+no code change needed (2026-09-16).** User's own example: "Find me something for my mom's 60th
+birthday" should fan out to appropriate businesses and come back as a real "Your Offers"
+comparison list (Restaurant A $70/person, Activity B $45/person, Private venue C $90/person) the
+user can compare.
+
+Verified live against the current codebase (not assumed from memory) that this is exactly how the
+request/offer engine already works, end to end, and has for a long time: `create_business_request`
+→ `_business_request_fanout()` (`supabase/migrations/20261104_plan_addons.sql:236`) ranks every
+real nearby eligible `brand_partners` row by attribute/cuisine fit, reputation, and distance, and
+pushes "New opportunity nearby!" to up to 10 of them in one submission — a single ask genuinely
+reaches several appropriate businesses at once, not one. Each business independently decides,
+completely unaware of the others, whether to respond with a real, structured offer (Item 92's
+named title + ✓ included-items checklist + price) or decline. `BusinessRequestDetailScreen.js`
+already renders exactly the comparison view the item describes: once 2+ real `'offered'` rows
+exist, a "🔍 Compare Your Options" header appears ("N businesses want to make this happen — ranked
+by reliability"), and `displayOffers` (line 278) sorts those specific rows by each partner's own
+real completion-rate reputation (Nearby V3/V4 Phase C) while every other offer status keeps its
+plain chronological position. This is reachable from the exact scenario in the item's own
+example — the Occasion wizard's "Custom Occasion" free-text path (Item 74) or its structured
+birthday flow both terminate at `AskBusinessScreen`/`create_business_request`, which is this same
+fan-out, unconditionally.
+
+One candidate gap was considered and deliberately NOT built: the mock's "$70/person" labeling
+implies a per-person price, but `business_request_offers.offer_price` is a single flat number with
+no stored per-person/total distinction (a manually-typed business offer could honestly be either
+— e.g. "Private venue C — $90" could be a flat rental fee, not $90/head). Appending a fabricated
+"/person" suffix without a real field backing that distinction would be exactly the kind of
+invented label this project's own "no fabricated signals" convention exists to prevent — flagged
+here rather than silently added or silently skipped. If a real per-person vs. flat-total field is
+wanted, that's a small, separate, concrete follow-up, not assumed.
+
 **Item 92 ("Businesses should be able to respond specifically to the occasion") — fully DONE
 (2026-09-16), same-day direct follow-up to Item 91.** User's own mock: a birthday request (🎂 10
 guests / Sat 7 PM / $75pp / outdoor seating preferred) gets back a real "Special Birthday Offer —
