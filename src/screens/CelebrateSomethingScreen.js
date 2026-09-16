@@ -26,7 +26,9 @@ import {
   dedupeBusinessCandidates,
   possessiveFriendsLabel,
   ACTIVITY_OPTIONS,
-  BUDGET_RANGE_OPTIONS,
+  BUDGET_LEVEL_OPTIONS,
+  resolveBudgetMax,
+  initialBudgetSelectionFromMax,
   formatBudgetRange,
 } from '../services/celebrateSomething';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
@@ -306,18 +308,21 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     () => !!route.params?.initialOccasion && !QUICK_PICK_OCCASION_KEYS.includes(route.params.initialOccasion)
   );
 
-  // Item 66 (CLAUDE.md, "Add collaborative planning"): a real, explicit
-  // per-person budget range for the group vote -- 'any' (the default)
-  // means honestly unset, never a fabricated guess. Seeded from a decided
-  // group plan the same way surpriseMode is above, so the budget the group
-  // already agreed on carries into the resulting business request.
-  const [budgetRangeKey, setBudgetRangeKey] = useState(() => {
-    const min = route.params?.initialBudgetMin ?? null;
-    const max = route.params?.initialBudgetMax ?? null;
-    const match = BUDGET_RANGE_OPTIONS.find((o) => o.min === min && o.max === max);
-    return match?.key ?? 'any';
-  });
-  const budgetRange = BUDGET_RANGE_OPTIONS.find((o) => o.key === budgetRangeKey) ?? BUDGET_RANGE_OPTIONS[0];
+  // Item 94 (CLAUDE.md, "Add budget without making it feel transactional"):
+  // a lightweight qualitative $/$$/$$$/No preference pick for the group
+  // vote -- 'any' (the default) means honestly unset, never a fabricated
+  // guess. Seeded from a decided group plan the same way surpriseMode is
+  // above, so a budget the group already agreed on carries into the
+  // resulting business request; an exact custom ceiling (including one
+  // saved under Item 66's original 4-bucket design) is preserved honestly
+  // via the override field rather than silently rounded into a tier.
+  const initialBudgetSelection = useMemo(
+    () => initialBudgetSelectionFromMax(route.params?.initialBudgetMax ?? null),
+    []
+  );
+  const [budgetRangeKey, setBudgetRangeKey] = useState(initialBudgetSelection.key);
+  const [budgetMaxOverride, setBudgetMaxOverride] = useState(initialBudgetSelection.override);
+  const [showBudgetMaxOverride, setShowBudgetMaxOverride] = useState(!!initialBudgetSelection.override);
 
   // "Connect it to businesses": resolveIntent()'s own real, already-scored
   // candidate pool (business_availability + gathering), fetched using the
@@ -452,8 +457,8 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         scheduledDate: scheduledAt.toISOString().slice(0, 10),
         inviteeIds: Array.from(selectedInviteeIds),
         surpriseMode,
-        budgetMin: budgetRange.min,
-        budgetMax: budgetRange.max,
+        budgetMin: null,
+        budgetMax: resolveBudgetMax(budgetRangeKey, budgetMaxOverride),
       });
       navigation.replace('GroupOccasionPlan', { planId: result.planId });
     } catch (e) {
@@ -654,8 +659,8 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         text: askText,
         category: c.category ?? null,
         partySize,
-        budgetMin: budgetRange.min,
-        budgetMax: budgetRange.max,
+        budgetMin: null,
+        budgetMax: resolveBudgetMax(budgetRangeKey, budgetMaxOverride),
         date: dateParam,
         occasion,
         // Item 68 (CLAUDE.md): a picked business_occasion_package binds via
@@ -821,10 +826,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       const categoryHint = celebrationCategoryHint(activityType);
       if (categoryHint) params.prefillCategory = categoryHint;
       if (partySize) params.prefillPartySize = partySize;
-      // Item 66: AskBusinessScreen only ever has a single ceiling field --
-      // budgetRange.max is the honest value for it; budgetRange.min (a
-      // real floor when the group set one) has no field to land in there.
-      if (budgetRange.max) params.prefillBudgetMax = budgetRange.max;
+      // Item 94: AskBusinessScreen's own budget field is a ceiling too now
+      // (never a floor), so the resolved max carries straight across.
+      const resolvedBudgetMax = resolveBudgetMax(budgetRangeKey, budgetMaxOverride);
+      if (resolvedBudgetMax) params.prefillBudgetMax = resolvedBudgetMax;
       if (whenPreset === 'now' || whenPreset === 'tonight') {
         params.prefillDateWindow = 'today';
       } else if (whenPreset === 'tomorrow') {
@@ -1627,10 +1632,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   </>
                 )}
 
-                <Text style={[styles.label, { marginTop: spacing.lg }]}>Budget (optional)</Text>
-                <Text style={styles.helperText}>A rough per-person range helps Nearby find realistic options once the group decides.</Text>
+                <Text style={[styles.label, { marginTop: spacing.lg }]}>What's your budget?</Text>
+                <Text style={styles.helperText}>A rough feel helps Nearby find realistic options once the group decides.</Text>
                 <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
-                  {BUDGET_RANGE_OPTIONS.map((o) => {
+                  {BUDGET_LEVEL_OPTIONS.map((o) => {
                     const selected = budgetRangeKey === o.key;
                     return (
                       <TouchableOpacity
@@ -1647,6 +1652,29 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     );
                   })}
                 </View>
+                {/* Item 94: progressive disclosure -- exact precision is
+                    opt-in, never forced up front. */}
+                {showBudgetMaxOverride ? (
+                  <TextInput
+                    style={[styles.input, { marginTop: spacing.sm }]}
+                    placeholder="Maximum per person (optional)"
+                    placeholderTextColor={colors.textTertiary}
+                    value={budgetMaxOverride}
+                    onChangeText={setBudgetMaxOverride}
+                    keyboardType="number-pad"
+                    accessibilityLabel="Maximum budget per person, optional"
+                  />
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => setShowBudgetMaxOverride(true)}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Set a maximum per person"
+                    style={{ marginTop: spacing.sm }}
+                  >
+                    <Text style={styles.createOwnLinkText}>+ Set a maximum per person</Text>
+                  </TouchableOpacity>
+                )}
               </>
             )}
 

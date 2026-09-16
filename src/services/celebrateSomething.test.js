@@ -9,6 +9,9 @@ import {
   dateWindowForWhenPreset,
   extractNameFromBirthdayTitle,
   resolveDecidedGroupPlanParams,
+  BUDGET_LEVEL_OPTIONS,
+  resolveBudgetMax,
+  initialBudgetSelectionFromMax,
   formatBudgetRange,
   dedupeBusinessCandidates,
   extractBusinessCandidateIds,
@@ -298,6 +301,56 @@ describe('resolveDecidedGroupPlanParams', () => {
     });
     expect(params.initialWhoFor).toBe('me');
     expect(params.initialScheduledAtISO).toBeNull();
+  });
+});
+
+// Item 94 ("Add budget without making it feel transactional," CLAUDE.md)
+describe('resolveBudgetMax', () => {
+  it('resolves "No preference" to null', () => {
+    expect(resolveBudgetMax('any', '')).toBeNull();
+  });
+
+  it('resolves a known tier to its real representative ceiling', () => {
+    expect(resolveBudgetMax('$', '')).toBe(25);
+    expect(resolveBudgetMax('$$', '')).toBe(60);
+    expect(resolveBudgetMax('$$$', '')).toBe(150);
+  });
+
+  it('lets an explicit numeric override win over the tier ceiling', () => {
+    expect(resolveBudgetMax('$', '40')).toBe(40);
+    expect(resolveBudgetMax('any', '75')).toBe(75);
+  });
+
+  it('ignores a non-numeric or non-positive override and falls back to the tier', () => {
+    expect(resolveBudgetMax('$$', 'abc')).toBe(60);
+    expect(resolveBudgetMax('$$', '0')).toBe(60);
+    expect(resolveBudgetMax('$$', '-5')).toBe(60);
+  });
+
+  it('treats an unrecognized key the same as "any"', () => {
+    expect(resolveBudgetMax('nonsense', '')).toBeNull();
+  });
+});
+
+describe('initialBudgetSelectionFromMax', () => {
+  it('returns "any" with no override for a null max', () => {
+    expect(initialBudgetSelectionFromMax(null)).toEqual({ key: 'any', override: '' });
+  });
+
+  it('re-selects the matching tier for an exact known ceiling', () => {
+    expect(initialBudgetSelectionFromMax(25)).toEqual({ key: '$', override: '' });
+    expect(initialBudgetSelectionFromMax(60)).toEqual({ key: '$$', override: '' });
+    expect(initialBudgetSelectionFromMax(150)).toEqual({ key: '$$$', override: '' });
+  });
+
+  it('honestly treats a custom/legacy value as an override rather than rounding into a tier', () => {
+    expect(initialBudgetSelectionFromMax(40)).toEqual({ key: 'any', override: '40' });
+  });
+});
+
+describe('BUDGET_LEVEL_OPTIONS', () => {
+  it('is exactly the 4 quick-pick levels the item asks for, in order', () => {
+    expect(BUDGET_LEVEL_OPTIONS.map((o) => o.key)).toEqual(['any', '$', '$$', '$$$']);
   });
 });
 

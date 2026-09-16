@@ -21,18 +21,51 @@ export const ACTIVITY_OPTIONS = [
   { key: 'custom', label: 'Something Custom', icon: '💡' },
 ];
 
-// Item 66 (CLAUDE.md, "Add collaborative planning"): a real, explicit,
-// chip-picked per-person budget range for a group plan -- never AI-
-// inferred. `min`/`max` are the real values sent to createOccasionGroupPlan
-// and, once decided, to create_business_request's own budget_min_param/
-// budget_max_param -- 'any' maps to null/null, an honestly-unset budget.
-export const BUDGET_RANGE_OPTIONS = [
-  { key: 'any', label: 'Any budget', min: null, max: null },
-  { key: '0-25', label: '$0–25', min: 0, max: 25 },
-  { key: '25-50', label: '$25–50', min: 25, max: 50 },
-  { key: '50-100', label: '$50–100', min: 50, max: 100 },
-  { key: '100+', label: '$100+', min: 100, max: null },
+// Item 94 (CLAUDE.md, "Add budget without making it feel transactional") --
+// replaces the original Item 66 design (a literal "$50-100" dollar-range
+// chip row, exactly the "forced range feels transactional" pattern this
+// item calls out) with a lightweight qualitative pick -- never AI-inferred.
+// Reuses the exact same $/$$/$$$ symbols this app's own PRICE_LEVEL_LABELS
+// (gatherings.price_level, business_experiences.price_level) already use
+// for price tier elsewhere -- one shared vocabulary, not a fourth copy
+// that could drift. Each tier's `max` is a real, honest representative
+// per-person ceiling, not a fabricated range -- a disclosed judgment call,
+// not a measured fact, same posture as this app's other "reasonable
+// default" choices (see CLAUDE.md, e.g. Item 78's lead-time note). There is
+// deliberately no `min` here -- the item's own design is a ceiling
+// ("maximum per person"), never a floor; every call site now always sends
+// budgetMin: null. The optional "Set a maximum per person" follow-up (see
+// resolveBudgetMax below) always wins over a tier's own representative
+// ceiling when the user bothers to type an exact number.
+export const BUDGET_LEVEL_OPTIONS = [
+  { key: 'any', label: 'No preference', max: null },
+  { key: '$', label: '$', max: 25 },
+  { key: '$$', label: '$$', max: 60 },
+  { key: '$$$', label: '$$$', max: 150 },
 ];
+
+// The real budgetMax to submit -- an explicit numeric override always wins
+// over the selected tier's own representative ceiling; an unrecognized key
+// or no override at all falls back to 'any' (null), never a guess.
+export function resolveBudgetMax(rangeKey, overrideInput) {
+  const overrideNum = typeof overrideInput === 'string' && overrideInput.trim() ? parseInt(overrideInput.trim(), 10) : null;
+  if (Number.isInteger(overrideNum) && overrideNum > 0) return overrideNum;
+  const tier = BUDGET_LEVEL_OPTIONS.find((o) => o.key === rangeKey);
+  return tier ? tier.max : null;
+}
+
+// Seeds the chip picker + override field from a real, already-saved
+// budgetMax (e.g. a decided group plan's own agreed budget) -- an exact
+// match to one of the tiers above re-selects that tier with the override
+// field left collapsed; anything else (a custom number, or a value saved
+// before this item under the old 4-bucket design) is honestly treated as a
+// real custom ceiling, not silently rounded into the nearest tier.
+export function initialBudgetSelectionFromMax(max) {
+  if (max == null) return { key: 'any', override: '' };
+  const match = BUDGET_LEVEL_OPTIONS.find((o) => o.key !== 'any' && o.max === max);
+  if (match) return { key: match.key, override: '' };
+  return { key: 'any', override: String(max) };
+}
 
 // A real, honest display string for whatever min/max combination actually
 // got saved -- never fabricates the other half when only one bound is set

@@ -40,6 +40,64 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 94 ("Add budget without making it feel transactional") — fully DONE (2026-09-16), same-day
+direct follow-up to Item 93's per-person price field.** User's own literal spec: instead of forcing
+a "$50–$100" range, ask "What's your budget? $ / $$ / $$$ / No preference," then optionally "Set a
+maximum per person" — "keeps the initial interaction easy."
+
+Audited the real current state first: two genuine surfaces already ask a consumer to state a
+budget, and both were exactly the pattern this item complains about. (1) `BUDGET_RANGE_OPTIONS`
+(Item 66, `CelebrateSomethingScreen.js`'s group-plan budget step) — a literal "$0–25 / $25–50 /
+$50–100 / $100+" dollar-range chip row. (2) `AskBusinessScreen.js`'s solo "Budget max" field — worse
+than (1): a bare required numeric `TextInput` with no qualitative option at all, gated by a locked
+Aug 24 2026 "every rendered field is required" rule, meaning a user could not submit an ask to a
+business without first typing an exact dollar figure.
+
+Replaced both with one shared design in `celebrateSomething.js` — no DB migration needed anywhere
+(`business_requests.budget_min`/`budget_max` are already plain nullable integers with no CHECK
+requiring a non-null value; the qualitative tier key itself was never persisted, purely client
+UI state, confirmed by reading every real call site before touching anything). New
+`BUDGET_LEVEL_OPTIONS` (`any` "No preference" / `$` / `$$` / `$$$`) reuses the exact same `$`/`$$`/
+`$$$` symbols this app's own `PRICE_LEVEL_LABELS` (gatherings.price_level, business_experiences.
+price_level) already use for price tier elsewhere — one shared vocabulary, not a fourth copy that
+could drift. Each tier is a real, honest representative per-person **ceiling only** ($25/$60/$150)
+— deliberately no floor, since the item's own design is "set a maximum," never a range; every call
+site now always sends `budgetMin: null`. New `resolveBudgetMax(rangeKey, override)` lets an
+explicit numeric override always win over the tier's own ceiling — the "optionally: Set a maximum
+per person" half of the spec, rendered as a collapsed "+ Set a maximum per person" link that
+expands into a plain number field only on tap (progressive disclosure, never forced up front). New
+`initialBudgetSelectionFromMax(max)` re-selects the matching tier when re-entering with an
+already-saved value (e.g. a decided group plan's own agreed budget), or honestly treats a
+non-matching number — including one saved under Item 66's old 4-bucket design — as a real custom
+override rather than silently rounding it into the nearest tier.
+
+**A real, disclosed, deliberate reversal of a previously locked design**: the Aug 24 2026 rule that
+"every field genuinely rendered as an editable input [on AskBusinessScreen] is required" is no
+longer true for budget specifically — the chip row always has a real, deterministic value selected
+(defaults to "No preference," same reasoning the existing "When?" chip row already established),
+so the old "you must type a number" validation block was removed outright; forcing precision here
+would have directly contradicted this item's own "keeps the initial interaction easy." Every other
+field on that screen (text/category/party size) keeps its original required-field behavior
+untouched.
+
+Client: `CelebrateSomethingScreen.js`'s group-plan budget step and `AskBusinessScreen.js`'s solo
+budget field both now render the identical 4-chip row + optional override, sourced from the same
+one `celebrateSomething.js` export set rather than two independently-maintained copies. Both
+screens' submit paths, retry/prefill round-trips ("Try a Wider Radius," the "Skip — post manually"
+hand-off to AskBusinessScreen), and recap-summary text were all updated to compute the real
+resolved max through `resolveBudgetMax()` rather than reading a raw text field. `AskBusinessScreen`'s
+now-unused `styles.row` (only ever used to lay "Party size"/"Budget max" side-by-side) was removed
+rather than left dead, since budget is now a full-width block.
+
+9 new Jest tests for `resolveBudgetMax`/`initialBudgetSelectionFromMax`/`BUDGET_LEVEL_OPTIONS`;
+full suite 494/494 passing. All three touched files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. No DB migration — pure client-side, confirmed safe against the real schema
+(both columns already nullable with no non-null constraint). Not exercised in a running app (no
+simulator/device tooling this session, standing note) — next session should confirm on a real
+account that the 4-chip row renders and defaults to "No preference" on both screens, that
+`AskBusinessScreen` is now submittable with zero budget input at all, and that "+ Set a maximum per
+person" correctly expands and its typed value wins over the selected tier.
+
 **Item 93 ("Let the user ask multiple businesses simultaneously") — audited, already fully DONE,
 no code change needed (2026-09-16).** User's own example: "Find me something for my mom's 60th
 birthday" should fan out to appropriate businesses and come back as a real "Your Offers"

@@ -6,6 +6,7 @@ import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusines
 import { createBusinessRequestForMatch } from '../services/dateProposals';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, OCCASION_OPTIONS, businessAttributeLabel, cuisineLabel, occasionLabel } from '../constants/businessAttributes';
+import { BUDGET_LEVEL_OPTIONS, resolveBudgetMax, initialBudgetSelectionFromMax } from '../services/celebrateSomething';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -154,7 +155,17 @@ export default function AskBusinessScreen({ navigation, route }) {
   const [text, setText] = useState(route.params?.prefillText ?? '');
   const [category, setCategory] = useState(route.params?.prefillCategory ?? null);
   const [partySize, setPartySize] = useState(route.params?.prefillPartySize ? String(route.params.prefillPartySize) : '');
-  const [budgetMax, setBudgetMax] = useState(route.params?.prefillBudgetMax ? String(route.params.prefillBudgetMax) : '');
+  // Item 94 ("Add budget without making it feel transactional", CLAUDE.md):
+  // replaces the old required free-number "Budget max" field with a
+  // lightweight $/$$/$$$/No preference pick (defaults to "No preference"
+  // -- never blocks submission, unlike the field it replaces) plus an
+  // optional exact "Set a maximum per person" override. Shares the exact
+  // same tiers/helpers CelebrateSomethingScreen's own group-plan budget
+  // step uses (celebrateSomething.js) -- one budget vocabulary, not two.
+  const initialBudgetSelection = initialBudgetSelectionFromMax(route.params?.prefillBudgetMax ?? null);
+  const [budgetRangeKey, setBudgetRangeKey] = useState(initialBudgetSelection.key);
+  const [budgetMaxOverride, setBudgetMaxOverride] = useState(initialBudgetSelection.override);
+  const [showBudgetMaxOverride, setShowBudgetMaxOverride] = useState(!!initialBudgetSelection.override);
   // 'tonight' is a real value create-assistant can return, but this
   // screen's own chip set only has today/tomorrow/weekend/flexible --
   // previously an incoming 'tonight' was kept as-is, so no chip ever
@@ -239,11 +250,16 @@ export default function AskBusinessScreen({ navigation, route }) {
   // deterministic value selected (defaults to 'flexible', a genuine "no
   // preference" answer, not an unanswered field), so there's no missing
   // state to validate against for it.
+  // Item 94 ("Add budget without making it feel transactional", CLAUDE.md):
+  // budget is a deliberate, disclosed exception to the rule above now --
+  // it always has a real, deterministic value selected too (defaults to
+  // "No preference", the same reasoning the When? chip row already
+  // established), so a forced "must type a number" check would contradict
+  // the whole point of this item -- keeping the initial interaction easy.
   function findMissingField() {
     if (!text.trim()) return { title: 'Tell us what you want', body: 'A few words about what you’re looking for.' };
     if (!category) return { title: 'Pick a category', body: 'Helps us route this to the right kind of business.' };
     if (!gatheringId && !matchId && !partySize.trim()) return { title: 'How many people?', body: 'A real party size helps a business quote the right offer.' };
-    if (!budgetMax.trim()) return { title: 'What’s your budget?', body: 'A rough ceiling is enough -- it just helps businesses respond with something realistic.' };
     return null;
   }
 
@@ -297,8 +313,7 @@ export default function AskBusinessScreen({ navigation, route }) {
     }
     setSubmitting(true);
     try {
-      const budgetMaxNum = budgetMax.trim() ? parseInt(budgetMax.trim(), 10) : null;
-      const safeBudgetMax = Number.isInteger(budgetMaxNum) && budgetMaxNum > 0 ? budgetMaxNum : null;
+      const safeBudgetMax = resolveBudgetMax(budgetRangeKey, budgetMaxOverride);
 
       const partySizeNum = partySize.trim() ? parseInt(partySize.trim(), 10) : null;
       const safePartySize = Number.isInteger(partySizeNum) && partySizeNum > 0 ? partySizeNum : null;
@@ -412,7 +427,8 @@ export default function AskBusinessScreen({ navigation, route }) {
       if (dateLabel) recapParts.push(dateLabel);
     }
     if (!gatheringId && !matchId && partySize.trim()) recapParts.push(`${partySize.trim()} people`);
-    if (budgetMax.trim()) recapParts.push(`up to $${budgetMax.trim()}`);
+    const recapBudgetMax = resolveBudgetMax(budgetRangeKey, budgetMaxOverride);
+    if (recapBudgetMax) recapParts.push(`up to $${recapBudgetMax}`);
     if (occasionInput) recapParts.push(occasionLabel(occasionInput));
     if (isSoloMode && category === 'Foodie' && cuisineInput) recapParts.push(cuisineLabel(cuisineInput));
     if (isSoloMode && attributesInput.length > 0) recapParts.push(attributesInput.map(businessAttributeLabel).join(', '));
@@ -549,34 +565,63 @@ export default function AskBusinessScreen({ navigation, route }) {
             </>
           )}
 
-          <View style={styles.row}>
-            {!gatheringId && !matchId && (
-              <View style={{ flex: 1, marginRight: spacing.sm }}>
-                <Text style={styles.label}>Party size</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. 4"
-                  placeholderTextColor={colors.textTertiary}
-                  value={partySize}
-                  onChangeText={setPartySize}
-                  keyboardType="number-pad"
-                  accessibilityLabel="Party size"
-                />
-              </View>
-            )}
-            <View style={{ flex: 1 }}>
-              <Text style={styles.label}>Budget max</Text>
+          {!gatheringId && !matchId && (
+            <>
+              <Text style={styles.label}>Party size</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. 150"
+                placeholder="e.g. 4"
                 placeholderTextColor={colors.textTertiary}
-                value={budgetMax}
-                onChangeText={setBudgetMax}
+                value={partySize}
+                onChangeText={setPartySize}
                 keyboardType="number-pad"
-                accessibilityLabel="Budget max"
+                accessibilityLabel="Party size"
               />
-            </View>
+            </>
+          )}
+
+          {/* Item 94 ("Add budget without making it feel transactional",
+              CLAUDE.md): a lightweight quick-pick instead of the old
+              required "Budget max" number field -- defaults to "No
+              preference," which keeps this screen submittable with zero
+              budget friction unless the user actually wants precision. */}
+          <Text style={styles.label}>What's your budget?</Text>
+          <View style={styles.chipRow}>
+            {BUDGET_LEVEL_OPTIONS.map((o) => {
+              const selected = budgetRangeKey === o.key;
+              return (
+                <TouchableOpacity
+                  key={o.key}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => setBudgetRangeKey(o.key)}
+                  accessibilityRole="button"
+                  accessibilityLabel={o.label}
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
+          {showBudgetMaxOverride ? (
+            <TextInput
+              style={styles.input}
+              placeholder="Maximum per person (optional)"
+              placeholderTextColor={colors.textTertiary}
+              value={budgetMaxOverride}
+              onChangeText={setBudgetMaxOverride}
+              keyboardType="number-pad"
+              accessibilityLabel="Maximum budget per person, optional"
+            />
+          ) : (
+            <TouchableOpacity
+              onPress={() => setShowBudgetMaxOverride(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Set a maximum per person"
+            >
+              <Text style={styles.inlineLinkText}>+ Set a maximum per person</Text>
+            </TouchableOpacity>
+          )}
 
           {isSoloMode && !matchedAvailability && (
             <View style={{ marginTop: spacing.md }}>
@@ -774,7 +819,6 @@ const getStyles = (colors) => StyleSheet.create({
     borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md,
   },
-  row: { flexDirection: 'row' },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap' },
   chip: {
     backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
@@ -783,6 +827,7 @@ const getStyles = (colors) => StyleSheet.create({
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
   chipTextSelected: { color: '#fff' },
+  inlineLinkText: { color: colors.primary, fontWeight: '600', fontSize: 13, marginTop: spacing.xs },
   findNearbyButton: {
     borderRadius: radius.full, borderWidth: 1, borderColor: colors.primary,
     paddingVertical: spacing.sm, alignItems: 'center', backgroundColor: colors.primaryMuted,
