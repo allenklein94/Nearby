@@ -760,6 +760,21 @@ Body: ${updateBody || '(none)'}`;
     if (!offerDescription) return json({ error: 'Say what you can offer.' }, 400);
     const offerPrice = Number.isFinite(body.offerPrice) ? body.offerPrice : null;
     const proposedTime = typeof body.proposedTime === 'string' && body.proposedTime ? body.proposedTime : null;
+    // Item 92 ("Businesses should be able to respond specifically to the
+    // occasion", CLAUDE.md) -- a real, optional structured title ("Special
+    // Birthday Offer") and a real included-items checklist, both purely
+    // additive to the existing free-text offerDescription. Both are
+    // user-authored text reaching a real consumer, so both flow into the
+    // same moderation contentBlock below -- a business can't bypass
+    // screening just by putting disallowed text in the title or an item
+    // instead of the description.
+    const offerTitle = typeof body.offerTitle === 'string' ? body.offerTitle.trim().slice(0, 100) || null : null;
+    const includedItems = Array.isArray(body.includedItems)
+      ? body.includedItems
+          .filter((item: unknown) => typeof item === 'string' && item.trim())
+          .map((item: string) => item.trim().slice(0, 80))
+          .slice(0, 10)
+      : [];
     // Phase 4 (media upload, CLAUDE.md) -- a real, already-uploaded photo/
     // video for this specific offer, same re-validation/unscreened-media
     // posture as the `experience` branch above.
@@ -779,13 +794,17 @@ Body: ${updateBody || '(none)'}`;
       }
     }
 
-    const contentBlock = `Offer description: ${offerDescription}`;
+    const contentBlock = [
+      offerTitle ? `Offer title: ${offerTitle}` : null,
+      `Offer description: ${offerDescription}`,
+      includedItems.length > 0 ? `Included items: ${includedItems.join(', ')}` : null,
+    ].filter(Boolean).join('\n');
 
     const result = await classifyContent(contentBlock);
     if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
     const { riskTier, matchedCategories, reasoning } = result;
 
-    const contentSnapshot = { requestId, offerType, offerDescription, offerPrice, proposedTime, experienceId, mediaPath, mediaType };
+    const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, proposedTime, experienceId, mediaPath, mediaType };
 
     const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
       partner_id_param: partnerId,
@@ -807,6 +826,7 @@ Body: ${updateBody || '(none)'}`;
         request_id_param: requestId, offer_type_param: offerType, offer_description_param: offerDescription,
         offer_price_param: offerPrice, proposed_time_param: proposedTime, experience_id_param: experienceId,
         media_path_param: mediaPath, media_type_param: mediaType,
+        offer_title_param: offerTitle, included_items_param: includedItems,
       });
       if (writeError) {
         console.error('screen-business-content: low-tier offer_response write failed', writeError);

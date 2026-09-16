@@ -15,7 +15,7 @@ import { TARGET_TYPE_LABELS } from './AdminContentReviewScreen';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
 import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
-import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel } from '../services/occasionPackages';
+import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage } from '../services/occasionPackages';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
@@ -37,7 +37,7 @@ import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 // already-deployed async submit-then-poll weather RPC every other
 // weather-aware surface already calls -- never a new one.
 import { getSocialForecast } from '../services/homeDashboard';
-import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiencesForOpportunity, buildOfferTitleScaffold } from '../services/businessOfferRecommendation';
+import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiencesForOpportunity, buildOfferTitleScaffold, buildOccasionOfferTitle } from '../services/businessOfferRecommendation';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { planAddonIcon, planAddonLabel } from '../constants/planAddons';
@@ -487,6 +487,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       category: offerModalRequest.category ?? null,
     });
   }, [offerModalRequest]);
+  // Item 92: the business's own already-built, already-active Occasion
+  // Package that genuinely fits this specific request (same occasion,
+  // real party size clears the package's own min_guests) -- the
+  // strongest, most specific real starting point for a structured
+  // response, since it's the business's own already-declared standing
+  // offering, not a guessed scaffold.
+  const matchingOccasionPackage = useMemo(() => {
+    if (!offerModalRequest) return null;
+    return findMatchingOccasionPackage({
+      occasion: offerModalRequest.occasion ?? null,
+      partySize: offerModalRequest.party_size ?? null,
+      packages: myOccasionPackages,
+    });
+  }, [offerModalRequest, myOccasionPackages]);
+  // A real occasion-only title suggestion ("Special Birthday Offer") for
+  // the new dedicated title field -- shown only when no matching package
+  // already covers this (that suggestion is stronger and takes priority)
+  // and no title has been typed yet.
+  const occasionOfferTitleSuggestion = useMemo(() => {
+    if (!offerModalRequest || matchingOccasionPackage) return null;
+    return buildOccasionOfferTitle({ occasion: offerModalRequest.occasion ?? null });
+  }, [offerModalRequest, matchingOccasionPackage]);
   const [policyModalVisible, setPolicyModalVisible] = useState(false);
   const [policyPartySizeMinInput, setPolicyPartySizeMinInput] = useState('');
   const [policyPartySizeMaxInput, setPolicyPartySizeMaxInput] = useState('');
@@ -509,6 +531,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [offerTypeInput, setOfferTypeInput] = useState('standard');
   const [offerDescriptionInput, setOfferDescriptionInput] = useState('');
   const [offerPriceInput, setOfferPriceInput] = useState('');
+  // Item 92 ("Businesses should be able to respond specifically to the
+  // occasion", CLAUDE.md) -- a real, optional structured title ("Special
+  // Birthday Offer") and a real included-items checklist, both purely
+  // additive to the existing free-text offerDescriptionInput above. Same
+  // add-one-at-a-time editor shape the Occasion Package section already
+  // established for its own included_items (packageIncludedItemsInput/
+  // packageIncludedItemDraft below) -- one input pattern, not two.
+  const [offerTitleInput, setOfferTitleInput] = useState('');
+  const [offerIncludedItemsInput, setOfferIncludedItemsInput] = useState([]);
+  const [offerIncludedItemDraft, setOfferIncludedItemDraft] = useState('');
   // Only meaningful when offerTypeInput === 'alt_time' -- proposedTime
   // stays null for every other offer type, matching submit_business_
   // offer's own default. Previously the "Alt. time" chip changed the
@@ -1450,6 +1482,33 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setShowOfferTimePicker(false);
     setSelectedExperienceIdInput(null);
     setOfferPickedMediaAsset(null);
+    setOfferTitleInput('');
+    setOfferIncludedItemsInput([]);
+    setOfferIncludedItemDraft('');
+  }
+
+  // Item 92: one explicit tap copies the business's own already-built
+  // package's real name/description/price/included_items onto this one
+  // response -- still fully editable before Send, never auto-submitted,
+  // same "suggest, never silently commit" shape as every other suggestion
+  // in this modal.
+  function applyOccasionPackageToOffer(pkg) {
+    setOfferTitleInput(pkg.name);
+    setOfferDescriptionInput(pkg.description || pkg.name);
+    if (pkg.price_per_person != null) setOfferPriceInput(String(pkg.price_per_person));
+    setOfferIncludedItemsInput(Array.isArray(pkg.included_items) ? [...pkg.included_items] : []);
+    setSelectedExperienceIdInput(null);
+  }
+
+  function addOfferIncludedItem() {
+    const trimmed = offerIncludedItemDraft.trim();
+    if (!trimmed) return;
+    setOfferIncludedItemsInput((prev) => [...prev, trimmed]);
+    setOfferIncludedItemDraft('');
+  }
+
+  function removeOfferIncludedItem(index) {
+    setOfferIncludedItemsInput((prev) => prev.filter((_, i) => i !== index));
   }
 
   // Business Intelligence & Opportunity Engine, Phase 3: tapping a real
@@ -1462,6 +1521,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferDescriptionInput(
       suggestion.description ? `${suggestion.title} -- ${suggestion.description}` : suggestion.title
     );
+    // Item 92: this Signature Experience's own real title is a genuine,
+    // already-existing candidate for the new dedicated title field --
+    // still fully editable, never forced.
+    setOfferTitleInput(suggestion.title);
     if (suggestedOfferType) {
       if (suggestedOfferType.offerType !== 'alt_time') setOfferProposedTime(null);
       setOfferTypeInput(suggestedOfferType.offerType);
@@ -1529,6 +1592,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         experienceId: selectedExperienceIdInput,
         mediaPath,
         mediaType,
+        offerTitle: offerTitleInput.trim() || null,
+        includedItems: offerIncludedItemsInput,
       });
 
       if (result.published) {
@@ -5115,6 +5180,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 Never just a discount -- offer whatever fits: your normal price, a discount, a
                 perk, an upgrade, or a different time that works better.
               </Text>
+              {/* Item 92: this is the business's own already-built, already-active
+                  Occasion Package -- real owned data, not an AI recommendation, so it's
+                  shown unconditionally rather than behind the ai_offer_recommendations
+                  entitlement gate below. The strongest real starting point available,
+                  since the business already explicitly published these exact terms. */}
+              {matchingOccasionPackage && (
+                <TouchableOpacity
+                  style={[styles.offerCard, { marginBottom: spacing.md }]}
+                  onPress={() => applyOccasionPackageToOffer(matchingOccasionPackage)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Use your own package: ${matchingOccasionPackage.name}`}
+                >
+                  <Text style={styles.offerDescription}>
+                    🎁 Use your own "{matchingOccasionPackage.name}" package -- title, price and included items filled in for you
+                  </Text>
+                </TouchableOpacity>
+              )}
               {/* Business Intelligence Phase 8: unlike missed-match/category-outcomes,
                   this suggestion is computed entirely client-side over data the business
                   already owns (its own experiences/opportunities) -- no server RPC boundary
@@ -5232,6 +5314,31 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   )}
                 </>
               )}
+              {/* Item 92 ("Businesses should be able to respond specifically to the
+                  occasion", CLAUDE.md): a real, optional, named offer title --
+                  "Special Birthday Offer" instead of a generic listing. Never
+                  required -- a plain offer with just a description still works
+                  exactly as it always has. */}
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm }]}
+                placeholder="Offer title (optional) -- e.g. Special Birthday Offer"
+                placeholderTextColor={colors.textTertiary}
+                value={offerTitleInput}
+                onChangeText={setOfferTitleInput}
+                accessibilityLabel="Offer title, optional"
+              />
+              {!offerTitleInput && occasionOfferTitleSuggestion && (
+                <TouchableOpacity
+                  onPress={() => setOfferTitleInput(occasionOfferTitleSuggestion)}
+                  style={{ marginTop: spacing.xs }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Use suggested title: ${occasionOfferTitleSuggestion}`}
+                >
+                  <Text style={[styles.offerDescription, { color: colors.primary, marginBottom: 0 }]}>
+                    ✨ Use "{occasionOfferTitleSuggestion}"
+                  </Text>
+                </TouchableOpacity>
+              )}
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm, minHeight: 80 }]}
                 placeholder="What are you offering? e.g. Table for 4 at 7:30, 15% off the check"
@@ -5241,6 +5348,45 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 multiline
                 accessibilityLabel="Offer description"
               />
+              {/* Item 92: a real included-items checklist -- "✓ Private table,
+                  ✓ Birthday dessert, ✓ Complimentary champagne alternative" --
+                  same add-one-at-a-time editor shape the Occasion Package
+                  section's own included_items editor already established. */}
+              <Text style={[styles.sectionHeader, { marginTop: spacing.sm }]}>What's included? (optional)</Text>
+              <View style={{ flexDirection: 'row' }}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="e.g. Private table"
+                  placeholderTextColor={colors.textTertiary}
+                  value={offerIncludedItemDraft}
+                  onChangeText={setOfferIncludedItemDraft}
+                  onSubmitEditing={addOfferIncludedItem}
+                  accessibilityLabel="Add an included item"
+                />
+                <TouchableOpacity
+                  style={[styles.smallActionButton, { backgroundColor: colors.primary, marginLeft: spacing.sm, alignSelf: 'center' }]}
+                  onPress={addOfferIncludedItem}
+                  accessibilityLabel="Add item"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.smallActionButtonText}>Add</Text>
+                </TouchableOpacity>
+              </View>
+              {offerIncludedItemsInput.length > 0 && (
+                <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
+                  {offerIncludedItemsInput.map((item, index) => (
+                    <TouchableOpacity
+                      key={`${item}-${index}`}
+                      style={[styles.chip, styles.chipSelected]}
+                      onPress={() => removeOfferIncludedItem(index)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${item}`}
+                    >
+                      <Text style={[styles.chipText, styles.chipTextSelected]}>✓ {item} ×</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm }]}
                 placeholder="Price (optional)"

@@ -979,6 +979,12 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             return (
             <View key={o.id} style={styles.offerCard}>
               <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? 'A business'}</Text>
+              {/* Item 92 ("Businesses should be able to respond specifically to
+                  the occasion", CLAUDE.md): a real, named offer title -- "Special
+                  Birthday Offer" -- rendered as its own headline, distinct from
+                  the business's own name above it. Null for a plain generic
+                  offer with no title, same as it always rendered before. */}
+              {o.offer_title ? <Text style={styles.offerTitleHeadline}>{o.offer_title}</Text> : null}
               {reputationLine && (o.status === 'offered' || o.status === 'accepted') ? (
                 <Text style={styles.offerReputationLine}>{reputationLine}</Text>
               ) : null}
@@ -989,6 +995,12 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     <Text style={styles.offerTypeLabel}>{OFFER_TYPE_LABELS[o.offer_type] ?? o.offer_type}</Text>
                   )}
                   {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
+                  {/* Item 92: a real included-items checklist, "✓ Private table" /
+                      "✓ Birthday dessert" per row -- absent entirely for a plain
+                      offer with no items, never a fabricated placeholder list. */}
+                  {(o.included_items ?? []).map((item, index) => (
+                    <Text key={index} style={styles.offerIncludedItem}>✓ {item}</Text>
+                  ))}
                   {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
                   {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}</Text> : null}
                   <OfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
@@ -1021,6 +1033,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               {o.status === 'accepted' && (
                 <>
                   {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
+                  {(o.included_items ?? []).map((item, index) => (
+                    <Text key={index} style={styles.offerIncludedItem}>✓ {item}</Text>
+                  ))}
                   {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
                   {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}</Text> : null}
                   <OfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
@@ -1490,10 +1505,17 @@ const getStyles = (colors) => StyleSheet.create({
     padding: spacing.md, marginBottom: spacing.md,
   },
   offerPartnerName: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
+  // Item 92 ("Businesses should be able to respond specifically to the
+  // occasion", CLAUDE.md): a real, named offer reads as its own headline
+  // -- "Special Birthday Offer" -- distinct from the plain business-name
+  // line above it, so the compelling structured response the item asks
+  // for actually looks like one, not just more prose.
+  offerTitleHeadline: { ...typography.headline, color: colors.textPrimary, marginTop: 2 },
   offerReputationLine: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
   offerStatus: { ...typography.caption, color: colors.textTertiary, marginTop: 2, marginBottom: spacing.xs },
   offerTypeLabel: { ...typography.caption, color: colors.primary, fontWeight: '700', marginBottom: spacing.xs },
   offerDescription: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xs },
+  offerIncludedItem: { ...typography.body, color: colors.textPrimary, marginBottom: 2 },
   offerProposedTime: { ...typography.body, color: colors.textPrimary, fontWeight: '600', marginBottom: spacing.xs },
   offerPrice: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginBottom: spacing.sm },
   offerViewedIndicator: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm },

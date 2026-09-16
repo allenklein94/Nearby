@@ -40,6 +40,73 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 92 ("Businesses should be able to respond specifically to the occasion") — fully DONE
+(2026-09-16), same-day direct follow-up to Item 91.** User's own mock: a birthday request (🎂 10
+guests / Sat 7 PM / $75pp / outdoor seating preferred) gets back a real "Special Birthday Offer —
+$65/person / ✓ Private table / ✓ Birthday dessert / ✓ Complimentary champagne alternative / ✓ 7:30
+PM available / Accept Offer" — "much more compelling than a generic restaurant listing."
+
+Audited the real gap first: `business_request_offers` had exactly one free-text field
+(`offer_description`) to carry all of this — a business could type a whole paragraph, but the
+consumer-facing card could only ever render it as undifferentiated prose, never a real headline +
+checklist. The single biggest real lever turned out not to be the manual "Make an Offer" modal at
+all: `_match_request_to_package()` (Item 68) already auto-generates a real `'offered'` row the
+instant a request matches one of a business's own standing Occasion Packages, but concatenated the
+package's name + description into one string and discarded its own real `included_items` entirely.
+Shipped via `20261111_occasion_aware_offer_response.sql`: two new purely-additive columns on
+`business_request_offers` (`offer_title text`, `included_items text[] not null default '{}'`);
+`_match_request_to_package()` (both its preferred-binding block and general scan loop, unchanged
+signature) now carries the package's own real `name`/`included_items` onto the auto-generated
+offer — meaning every business that already built an Occasion Package gets the mock's exact
+compelling structured offer for free, zero extra manual work per request. `submit_business_offer`
+(new trailing `offer_title_param`/`included_items_param`, old 8-arg signature explicitly dropped)
+lets a business manually add the same real structure to a hand-written response, trimming/
+filtering blank items the same way `create_occasion_package` already does — one validation rule,
+not two. `admin_review_business_content_screening`'s `offer_response` branch got the identical
+treatment for the MEDIUM/UNCERTAIN admin-reviewed write path. **A real bug was caught and fixed
+during live verification, not hypothetical**: the screening branch's first draft read
+`included_items` straight off the jsonb array with no trim/blank-filter, letting a literal empty-
+string item survive — caught by a disposable rolled-back transaction's own Test 4 before this was
+ever applied, fixed to match `submit_business_offer`'s own filter exactly.
+
+Client: `screen-business-content` (parses/validates `offerTitle`/`includedItems`, folds both into
+the real moderation text so a business can't bypass screening by hiding disallowed text in a title
+or item instead of the description, forwards both through every write path) redeployed and
+confirmed live via the deployed bundle's own decoded source. `businessFulfillment.js`'s two
+submit-offer wrappers thread the new fields through. `BusinessDashboardScreen.js`'s "Make an
+Offer" modal gained a real offer-title field, a real included-items add-one-at-a-time checklist
+editor (mirroring the Occasion Package section's own identical editor), a real, unconditional
+(never entitlement-gated — it's the business's own owned data, not an AI suggestion) "🎁 Use your
+own '{Package Name}' package" suggestion (new `findMatchingOccasionPackage()`,
+`occasionPackageFormatting.js`, prefers the most specific real match when several packages could
+fit) that one-tap-fills title/description/price/items, and a lighter "✨ Use '{Special X Offer}'"
+title suggestion (new `buildOccasionOfferTitle()`, distinct from the pre-existing
+`buildOfferTitleScaffold()` which still seeds the description field) when no package matches —
+both still fully editable, never auto-submitted. Picking an existing Signature Experience
+suggestion now also seeds the new title field with that experience's own real title.
+`BusinessRequestDetailScreen.js`'s offer card renders `offer_title` as a real bold headline
+(distinct from the plain business-name line above it) and `included_items` as a real "✓ {item}"
+checklist, in both the offered and accepted states.
+
+Verified live against production (`enmosvippabmuqslzrox`) via a disposable rolled-back transaction
+with real fixtures (a consumer, a bistro with an active Birthday Occasion Package, real
+`SET ROLE authenticated` + `request.jwt.claims` impersonation for both the business-owner and
+admin calls): the auto-matched package offer correctly carries the real title + included_items;
+a party size below the package's own minimum correctly gets no structured offer at all; manual
+`submit_business_offer` correctly trims the title and filters blank/whitespace-only included
+items; the admin-review screening path correctly does the same from its own jsonb content
+snapshot. Rolled back with zero leaked rows confirmed. Re-confirmed live after the real apply: both
+new columns present, and all three touched/new functions (`_match_request_to_package`,
+`submit_business_offer`, `admin_review_business_content_screening`) have exactly one overload each
+— no signature drift. Full Jest suite 485/485 passing (9 new); all six touched/new client files
+transform-checked clean via `@babel/core` + `babel-preset-expo`; the Edge Function redeployed and
+confirmed live via its own decoded bundle source. Not exercised in a running app (no simulator/
+device tooling this session, standing note) — next session should confirm on a real account that
+the "🎁 Use your own package" suggestion renders and correctly prefills the modal, that a manually
+typed title + checklist renders correctly as a headline + checkmarks on the consumer's own
+`BusinessRequestDetail` screen, and that a real Occasion-Package-auto-matched offer shows the same
+structured card with zero manual business action.
+
 **Item 91 ("Add a 'Plan Status'") — fully DONE (2026-09-16), same-day direct follow-up to Item
 90.** User's own progression: Planning → Awaiting Responses → Option Selected → Booking Pending →
 Confirmed → Completed → Cancelled — "ties beautifully into your existing business-request state

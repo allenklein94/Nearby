@@ -44,3 +44,26 @@ export function formatOccasionPackageDetail({ pricePerPerson, minGuests, availab
   if (daysLabel) parts.push(daysLabel);
   return parts.join(' · ') || null;
 }
+
+// Item 92 ("Businesses should be able to respond specifically to the
+// occasion", CLAUDE.md) -- when a business is about to manually respond
+// to a specific open request, this finds the one real, already-active
+// Occasion Package (Item 68) that genuinely fits it (same occasion, and
+// the request's own real party size clears the package's real min_guests
+// floor, when either is set) -- a real, one-tap starting point ("use my
+// own already-built package") instead of a blank title/checklist. Never
+// invents a match: a null occasion, or no package that actually fits,
+// returns null. When more than one package could fit, prefers the most
+// specific real one -- the highest min_guests the party size still
+// genuinely clears -- over an arbitrary array-order pick.
+export function findMatchingOccasionPackage({ occasion = null, partySize = null, packages = [] } = {}) {
+  if (!occasion) return null;
+  const candidates = packages.filter(
+    (pkg) =>
+      pkg.active !== false &&
+      pkg.occasion_type === occasion &&
+      (pkg.min_guests == null || partySize == null || partySize >= pkg.min_guests)
+  );
+  if (candidates.length === 0) return null;
+  return candidates.reduce((best, pkg) => ((pkg.min_guests ?? 0) > (best.min_guests ?? 0) ? pkg : best));
+}

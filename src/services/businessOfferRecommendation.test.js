@@ -3,6 +3,7 @@ import {
   bestAcceptedOfferType,
   rankExperiencesForOpportunity,
   buildOfferTitleScaffold,
+  buildOccasionOfferTitle,
   MAX_OFFER_SUGGESTIONS,
 } from './businessOfferRecommendation';
 import { SCORE_INTEREST_MATCH, SCORE_CLOSE_DISTANCE, SCORE_HAPPENING_NOW } from './intentResolverScoring';
@@ -156,5 +157,16 @@ describe('buildOfferTitleScaffold', () => {
 
   it('returns null when both are missing', () => {
     expect(buildOfferTitleScaffold({})).toBeNull();
+  });
+});
+
+describe('buildOccasionOfferTitle', () => {
+  it('builds a real "Special X Offer" title from a real occasion', () => {
+    expect(buildOccasionOfferTitle({ occasion: 'birthday' })).toBe('Special Birthday Offer');
+  });
+
+  it('returns null when there is no occasion -- never fabricates one', () => {
+    expect(buildOccasionOfferTitle({ occasion: null })).toBeNull();
+    expect(buildOccasionOfferTitle({})).toBeNull();
   });
 });

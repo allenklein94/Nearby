@@ -152,3 +152,15 @@ export function buildOfferTitleScaffold({ occasion = null, category = null } = {
   if (!occasion || !category) return null;
   return `${occasionLabel(occasion)} ${category}`;
 }
+
+// Item 92 ("Businesses should be able to respond specifically to the
+// occasion", CLAUDE.md) -- a real, honest starting point for the new,
+// dedicated offer_title field ("Special Birthday Offer"), distinct from
+// buildOfferTitleScaffold above (which seeds the plain offerDescription
+// field with an occasion+category pairing like "Birthday Foodie"). Only
+// ever built from the request's own real occasion -- null when there
+// isn't one, never a guessed title for a plain, occasion-less ask.
+export function buildOccasionOfferTitle({ occasion = null } = {}) {
+  if (!occasion) return null;
+  return `Special ${occasionLabel(occasion)} Offer`;
+}

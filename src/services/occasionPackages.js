@@ -11,7 +11,7 @@ import { supabase } from './supabase';
 // stay directly unit-testable (see that file's own header comment) --
 // re-exported here so every existing call site can keep importing them
 // from this service file.
-export { formatAvailableDaysLabel, formatIncludedItemsLabel, formatOccasionPackageDetail } from '../utils/occasionPackageFormatting';
+export { formatAvailableDaysLabel, formatIncludedItemsLabel, formatOccasionPackageDetail, findMatchingOccasionPackage } from '../utils/occasionPackageFormatting';
 
 // ---------- business-side management ----------
 
