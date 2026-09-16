@@ -40,6 +40,66 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 97 ("Add 'Invite without revealing the surprise'") — fully DONE (2026-09-16), same-day
+direct follow-up to Item 96.** User's own example: for a surprise birthday, inviting John should
+tell HIM "You're helping plan Sarah's birthday" while Sarah never learns anything at all.
+
+Item 96 already made the second half structurally true (the celebrated person can never be
+invited/organizer-promoted onto their own surprise plan). Auditing the actual invite-time push
+text for the two real ways someone joins a business-request-destined plan
+(`invite_to_business_request`, `add_plan_organizer`) found the first half was missing —
+**regardless of surprise mode** — because both sourced their text from
+`business_requests.raw_text`/`plans.title`, which is always the privacy-scrubbed, name-free text
+Item 69 composes for the BUSINESS's own eyes. John got a generic "invited you to their Foodie
+plan," never told it was for Sarah's birthday at all. `get_plan_chat_info`'s own returned `title`
+(feeding Item 90's Plan summary card and Item 89's Plan Chat header) had the identical problem.
+
+Fixed via `20261115_invite_reveals_occasion_context.sql`: widened
+`_occasion_context_for_business_request` (Item 78) to also return the real linked occasion's
+`title`, and wired it into all three surfaces — the two invite pushes now read "{host} invited you
+to help plan {name}'s {occasion}" (falling back to the exact original generic text when no
+occasion is linked), and `get_plan_chat_info` now returns that real title plus
+`occasionType`/`whoForName` instead of the generic one. Safe unconditionally: the celebrated person
+can never be a real participant of a surprise plan (Item 96), and none of these three functions is
+ever reachable by the business side.
+
+**A real, pre-existing vulnerability was caught and fixed in the same migration, not
+hypothetical**: `_occasion_context_for_business_request` had been callable directly by
+`authenticated` since Item 78 first created it — its own `revoke ... from public, anon` never
+actually closed it off, because this Supabase project's `ALTER DEFAULT PRIVILEGES` auto-grants
+EXECUTE to `authenticated` on every new function regardless (confirmed live via `pg_default_acl`),
+unlike this codebase's sibling internal helpers (`_surprise_excluded_friend_id_for_business_request`,
+`_notify_other_plan_participants`) which already explicitly revoke from `authenticated` too. Any
+signed-in user could have called it with an arbitrary request id and learned a linked occasion's
+real who-for name/title — including a surprise one — directly defeating Item 96's own privacy
+design; now made worse-if-unfixed by this migration since the function also returns the full title.
+Closed by adding the missing `authenticated` revoke, then reconfirmed live with a real
+`SET ROLE authenticated` session: a direct call is now correctly rejected
+(`insufficient_privilege`) while `get_plan_chat_info`/`invite_to_business_request`/
+`add_plan_organizer` all still work correctly through their own SECURITY DEFINER call chains.
+
+Client: `BusinessRequestDetailScreen.js` gained a persistent "🎂 You're helping plan Sarah's
+Birthday" banner (sourced from `planChatInfo.occasionType`/`whoForName`, using the existing
+`occasionIcon()`/`occasionLabel()` lookups) shown to any real non-requester plan participant — not
+just a one-time push they could dismiss and forget.
+
+Verified live against production (`enmosvippabmuqslzrox`) via disposable rolled-back transactions
+with real fixtures (a host, a real friend "John," and a real friend "Sarah" who is the surprise's
+who-for) and real `SET ROLE authenticated` + `request.jwt.claims` impersonation, inspecting the
+actual queued push bodies in `net.http_request_queue`: the occasion-linked case produces exactly
+"Allen invited you to help plan Sarah's birthday" / "Allen added you as a co-organizer to help plan
+Sarah's birthday," Sarah is silently excluded from the invite the whole time (confirmed she never
+appears as a participant and never receives a queued push); a separate non-occasion-linked fixture
+confirms the fallback text is byte-identical to the original ("Allen invited you to their Coffee
+plan"); the direct-call vulnerability was reproduced and then reconfirmed fixed as a genuine
+`authenticated` session. Both transactions rolled back with zero leaked rows confirmed. Re-confirmed
+live afterward: all four touched/new functions have exactly one overload each — no signature drift.
+Full Jest suite 501/501 passing (no new pure functions — DB/RLS-plus-UI wiring); the touched client
+file transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running
+app (no simulator/device tooling this session, standing note) — next session should confirm on a
+real account that the new banner renders correctly for an invited participant/co-organizer and
+that the invite push reads the real occasion text on a real device.
+
 **Item 96 ("Add surprise mode") — fully DONE (2026-09-16), same-day direct follow-up to Item 95.**
 User's own list: 🎁 Surprise Mode / "Keep this plan hidden from Sarah" — then Sarah isn't
 notified, organizers can coordinate, invitations can be discreet, business knows it's a surprise
