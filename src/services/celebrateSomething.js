@@ -4,6 +4,8 @@
 // with full prefill. No new entity; this is orchestration only, same
 // discipline as surpriseMeLogic.js's own mood-to-real-params mapping.
 import { occasionLabel, occasionIcon, CALENDAR_SAVEABLE_OCCASION_KEYS } from '../constants/businessAttributes';
+import { experienceTemplateForOccasion } from '../constants/experienceTemplates';
+import { relevantAddonTypesForOccasion } from '../constants/planAddons';
 
 // The wizard's own 7 real activity types (CelebrateSomethingScreen.js's
 // 'activity' step) -- exported so occasion_group_plan_options' own
@@ -203,9 +205,19 @@ export function composeCelebrationAskTextForBusiness({ occasion, activityType })
 // case that hands off to the existing free-text AI classification pipeline
 // (CreateHubScreen's "Something Else" box), since there's no structured
 // answer to route on.
+//
+// 'auto_plan' (Item 111, "We'll plan it for you" -- CLAUDE.md) is a
+// pseudo-activity-type, same shape as 'group_vote' below it: picking it
+// means "don't make me choose Dinner vs. Night Out vs. Activity myself,"
+// and it routes to 'business' for the same reason those three already do
+// -- fetchOptions() never actually reads activityType at all (only
+// occasion/partySize/priceLevel/when), so which of the four the user picks
+// has never changed what gets searched. What differs is only how the
+// 'options' step presents itself once reached this way (see
+// buildAutoPlanSuggestion below).
 export function resolveCelebrationDestination(activityType) {
   if (activityType === 'party' || activityType === 'surprise' || activityType === 'weekend_trip') return 'gathering';
-  if (activityType === 'dinner' || activityType === 'night_out' || activityType === 'activity') return 'business';
+  if (activityType === 'dinner' || activityType === 'night_out' || activityType === 'activity' || activityType === 'auto_plan') return 'business';
   return 'custom';
 }
 
@@ -448,4 +460,69 @@ export function possessiveFriendsLabel(name) {
   const trimmed = (name ?? '').trim();
   if (!trimmed) return null;
   return `${trimmed}${trimmed.endsWith('s') ? '’' : '’s'} friends`;
+}
+
+// Item 111 ("We'll plan it for you" -- CLAUDE.md): a real, honest
+// aggregation of what the 'options' step's own already-fetched
+// resolveIntent() result (via assembleExperience(), Item 61's own "connect
+// it to businesses" follow-up) amounts to as ONE proposed plan -- never a
+// second, speculative fetch, and never a fabricated price. Two kinds of
+// line item, kept honestly distinct rather than blended into one
+// misleading total:
+// - `items`: one per real Experience Template component that found a
+//   genuine top-scored match (e.g. "🍽️ Dinner" / "🎵 Something Fun") --
+//   `estimatedTotal` is summed ONLY from these, and only from the ones
+//   with a real known price; `hasUnknownPrice` tells the caller to render
+//   the total as a floor ("$X+") rather than an exact figure when at
+//   least one matched item's own price isn't listed.
+// - `suggestions`: real, deterministic occasion -> relevant add-on TYPES
+//   (planAddons.js's own relevantAddonTypesForOccasion) -- these have no
+//   real matched business yet (an add-on only becomes a real request
+//   against a real primary business_requests row, Item 80, which doesn't
+//   exist until this plan is actually submitted), so they're shown as
+//   ideas only, never priced, never counted toward the total. Filtered to
+//   drop any add-on type whose own single category is already covered by
+//   a real, genuinely-matched template component (e.g. birthday's
+//   'entertainment'/'dessert' add-ons are dropped once "Something Fun"/
+//   "Sweet Treat" already matched something in that same category) --
+//   otherwise the same real idea (live music, dessert) would be shown
+//   twice, once priced and once not. Capped at 2 so the summary stays
+//   lean, matching the mock's own 3-total-items shape rather than dumping
+//   every deterministically-relevant add-on type onto the screen at once.
+export function buildAutoPlanSuggestion(occasion, optionsResult) {
+  const template = experienceTemplateForOccasion(occasion);
+  const components = optionsResult?.experience?.components ?? [];
+
+  const items = components
+    .map((comp) => {
+      const top = comp.items?.[0] ?? null;
+      if (!top) return null;
+      return {
+        key: comp.key,
+        label: comp.label,
+        id: top.id,
+        businessName: top.matchedAvailability?.partnerName ?? top.title ?? null,
+        price: top.matchedAvailability?.price ?? null,
+      };
+    })
+    .filter(Boolean);
+
+  const estimatedTotal = items.reduce((sum, item) => sum + (item.price ?? 0), 0);
+  const hasUnknownPrice = items.some((item) => item.price == null);
+
+  // Only the categories a component that ACTUALLY found a real match
+  // covers, not every category the static template merely lists -- a
+  // component with zero genuine matches was already dropped by
+  // assembleExperience() (never shown, never "covered"), so its own
+  // add-on-type sibling should still be offered as a real, useful
+  // suggestion rather than incorrectly hidden.
+  const coveredCategories = new Set(
+    components.flatMap((comp) => template?.components.find((t) => t.key === comp.key)?.categories ?? [])
+  );
+  const suggestions = relevantAddonTypesForOccasion(occasion)
+    .filter((addon) => !addon.category || !coveredCategories.has(addon.category))
+    .slice(0, 2)
+    .map((addon) => ({ type: addon.key, label: addon.label, icon: addon.icon }));
+
+  return { items, estimatedTotal, hasUnknownPrice, suggestions };
 }

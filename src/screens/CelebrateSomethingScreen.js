@@ -9,7 +9,7 @@ import { resolveIntent, runIntentSearch, navigateToIntentResultItem } from '../s
 import { intentSearchFallbackTitle, INTENT_SEARCH_TYPE_EMOJI } from '../services/intentResolverScoring';
 import { routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { recordIntentSelection } from '../services/intentOutcomes';
-import { submitBusinessRequest } from '../services/businessFulfillment';
+import { submitBusinessRequest, createPlanAddonRequest } from '../services/businessFulfillment';
 import { createOccasionGroupPlan, linkOccasionGroupPlanToPlan } from '../services/occasionGroupPlans';
 import { sendPreferencePoll, getMyAskedPreferencePolls } from '../services/preferencePolls';
 import { PREFERENCE_POLL_QUESTIONS } from '../constants/preferencePollQuestions';
@@ -34,7 +34,9 @@ import {
   formatBudgetRange,
   EXPERIENCE_LEVEL_OPTIONS,
   experienceLevelToPriceLevel,
+  buildAutoPlanSuggestion,
 } from '../services/celebrateSomething';
+import { experienceTemplateForOccasion } from '../constants/experienceTemplates';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -161,6 +163,15 @@ const WHO_FOR_OPTIONS = [
 // invite step instead of asking what to do. Rendered separately below the
 // main row so it doesn't read as an 8th equivalent activity choice.
 const GROUP_VOTE_OPTION = { key: 'group_vote', label: 'Let the Group Vote', icon: '🗳️' };
+
+// Item 111 ("We'll plan it for you" -- CLAUDE.md): another real, distinct
+// pseudo-activity-type, same shape as GROUP_VOTE_OPTION above -- picking it
+// means "I don't know what to do, you decide," not an 8th equivalent
+// activity choice. Only rendered when the current occasion has a real
+// Experience Template (experienceTemplateForOccasion) to auto-select from
+// -- an occasion with no template (e.g. a plain Farewell) has nothing
+// multi-part to propose, so offering this would set up a false promise.
+const AUTO_PLAN_OPTION = { key: 'auto_plan', label: 'Let Nearby Plan It', icon: '🤖' };
 
 // Item 83 (CLAUDE.md, "Plan for Someone"): a real, fast front door in front
 // of the existing 24-value grouped occasion picker below it -- "the most
@@ -347,6 +358,21 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   const [optionsResult, setOptionsResult] = useState(null);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [submittingOptions, setSubmittingOptions] = useState(false);
+
+  // Item 111 ("We'll plan it for you" -- CLAUDE.md): activityType ===
+  // 'auto_plan' reaches this exact same 'options' step and fetch (see
+  // resolveCelebrationDestination/fetchOptions -- activityType was never
+  // actually read by either), but presents it as a compact "Here's what
+  // we'd do" summary first (autoPlanExpanded === false) rather than the
+  // full browse-and-check UI -- tapping "Find available options →" reveals
+  // that same existing UI, pre-selected with what was just proposed.
+  // autoPlanAddonTypes holds which of buildAutoPlanSuggestion()'s real
+  // add-on-type suggestions (e.g. Flowers) the user keeps checked; those
+  // become real create_plan_addon_request() calls on the primary that
+  // results from submission, not a second independent business_requests
+  // row (they have no specific candidate/price of their own to preserve).
+  const [autoPlanExpanded, setAutoPlanExpanded] = useState(false);
+  const [autoPlanAddonTypes, setAutoPlanAddonTypes] = useState(() => new Set());
 
   // Item 74: "Custom Occasion" ('other') -- one open-ended free-text
   // description instead of who/what/when, resolved via the same
@@ -551,8 +577,47 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     setOptionsFetched(false);
     setOptionsResult(null);
     setSelectedIds(new Set());
+    setAutoPlanExpanded(false);
+    setAutoPlanAddonTypes(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [occasion, activityType, whenPreset, scheduledAt, partySize, experienceLevel, whoForFriendId]);
+
+  // Item 111: the real add-on-type suggestions depend on live-fetched
+  // candidates (which template components actually found a match), so
+  // they're only known once fetchOptions() resolves -- seed the accepted
+  // set once, the moment that happens, rather than on every render (the
+  // user's own later unchecks must survive a re-render of this same
+  // result).
+  const autoPlanSuggestion = useMemo(
+    () => buildAutoPlanSuggestion(occasion, optionsResult),
+    [occasion, optionsResult]
+  );
+  useEffect(() => {
+    if (activityType === AUTO_PLAN_OPTION.key && optionsFetched) {
+      setAutoPlanAddonTypes(new Set(autoPlanSuggestion.suggestions.map((s) => s.type)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [optionsFetched]);
+
+  function toggleAutoPlanAddonType(type) {
+    Haptics.selectionAsync();
+    setAutoPlanAddonTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type); else next.add(type);
+      return next;
+    });
+  }
+
+  // "Find available options →" on the auto-plan summary: pre-selects
+  // exactly what was just proposed (the real top candidate per matched
+  // template component) and reveals the existing full browse-and-check UI
+  // below it -- the user can still freely add/remove candidates from
+  // there, this just saves re-picking what Nearby already suggested.
+  function proceedFromAutoPlanSummary() {
+    Haptics.selectionAsync();
+    setSelectedIds(new Set(autoPlanSuggestion.items.map((i) => i.id)));
+    setAutoPlanExpanded(true);
+  }
 
   async function fetchOptions() {
     setOptionsLoading(true);
@@ -752,6 +817,20 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     }
     if (savedOccasionId) {
       linkOccasionToPlan({ occasionId: savedOccasionId, resultingBusinessRequestId: primaryRequestId }).catch(() => {});
+    }
+    // Item 111 ("We'll plan it for you"): the auto-plan summary's own
+    // add-on-type suggestions (Flowers, a Photographer, ...) never had a
+    // specific candidate/price of their own -- unlike the priced template
+    // components above, which each keep their own real, already-bound
+    // submission -- so they become real Item 80 add-on requests attached
+    // to whichever primary just succeeded, rather than independent asks.
+    // Best-effort: an add-on that fails to create (e.g. this occasion
+    // genuinely has no nearby match for that category) never blocks or
+    // undoes the primary submission that already succeeded.
+    if (activityType === AUTO_PLAN_OPTION.key && autoPlanAddonTypes.size > 0) {
+      Promise.allSettled(
+        Array.from(autoPlanAddonTypes).map((type) => createPlanAddonRequest(primaryRequestId, type))
+      ).catch(() => {});
     }
     if (succeeded.length === 1) {
       const params = {
@@ -1424,6 +1503,35 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   })()}
                 </View>
 
+                {/* Item 111 ("We'll plan it for you" -- CLAUDE.md): don't
+                    know what to do at all? Skip picking Dinner/Night Out/
+                    Activity yourself -- Nearby proposes a real, priced
+                    multi-part plan from the occasion alone. Only offered
+                    when this occasion actually has a template to build
+                    from. */}
+                {!!experienceTemplateForOccasion(occasion) && (
+                  <>
+                    <Text style={styles.sublabel}>Don't know what to do? Let Nearby plan it.</Text>
+                    <View style={styles.chipRow}>
+                      {(() => {
+                        const selected = activityType === AUTO_PLAN_OPTION.key;
+                        return (
+                          <TouchableOpacity
+                            style={[styles.chip, selected && styles.chipSelected]}
+                            onPress={() => { Haptics.selectionAsync(); setActivityType(AUTO_PLAN_OPTION.key); }}
+                            activeOpacity={0.8}
+                            accessibilityLabel={AUTO_PLAN_OPTION.label}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected }}
+                          >
+                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{AUTO_PLAN_OPTION.icon} {AUTO_PLAN_OPTION.label}</Text>
+                          </TouchableOpacity>
+                        );
+                      })()}
+                    </View>
+                  </>
+                )}
+
                 {activityType !== GROUP_VOTE_OPTION.key && (
                   <>
                     <Text style={styles.sublabel}>How many people? (optional)</Text>
@@ -1560,7 +1668,61 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
               </>
             )}
 
-            {stepKey === 'options' && (
+            {stepKey === 'options' && activityType === AUTO_PLAN_OPTION.key && !autoPlanExpanded && (
+              <>
+                <Text style={styles.label}>✨ Here's what we'd do</Text>
+                {optionsLoading && (
+                  <>
+                    <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />
+                    <Text style={[styles.helperText, { textAlign: 'center', marginTop: spacing.sm }]}>✨ Nearby is finding options…</Text>
+                  </>
+                )}
+                {!optionsLoading && optionsFetched && (
+                  autoPlanSuggestion.items.length === 0 && autoPlanSuggestion.suggestions.length === 0 ? (
+                    <Text style={styles.helperText}>
+                      Nothing live nearby right now — no worries, you can still post a request and businesses will respond.
+                    </Text>
+                  ) : (
+                    <>
+                      {autoPlanSuggestion.items.map((item) => (
+                        <View key={item.key} style={styles.autoPlanRow}>
+                          <Text style={styles.autoPlanRowLabel}>{item.label}</Text>
+                          <Text style={styles.autoPlanRowDetail}>
+                            {item.businessName}{item.price != null ? ` · $${item.price}` : ' · price varies'}
+                          </Text>
+                        </View>
+                      ))}
+                      {autoPlanSuggestion.suggestions.map((s) => {
+                        const included = autoPlanAddonTypes.has(s.type);
+                        return (
+                          <TouchableOpacity
+                            key={s.type}
+                            style={styles.autoPlanRow}
+                            onPress={() => toggleAutoPlanAddonType(s.type)}
+                            activeOpacity={0.8}
+                            accessibilityRole="checkbox"
+                            accessibilityState={{ checked: included }}
+                            accessibilityLabel={`${s.label}, ${included ? 'included' : 'not included'}`}
+                          >
+                            <Text style={[styles.autoPlanRowLabel, !included && styles.autoPlanRowLabelMuted]}>
+                              {included ? '✓ ' : ''}{s.icon} {s.label}
+                            </Text>
+                            <Text style={styles.autoPlanRowDetail}>{included ? 'Added to your plan' : 'Tap to add'}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                      {autoPlanSuggestion.items.length > 0 && (
+                        <Text style={styles.autoPlanTotal}>
+                          Estimated total: ${autoPlanSuggestion.estimatedTotal}{autoPlanSuggestion.hasUnknownPrice ? '+' : ''}
+                        </Text>
+                      )}
+                    </>
+                  )
+                )}
+              </>
+            )}
+
+            {stepKey === 'options' && !(activityType === AUTO_PLAN_OPTION.key && !autoPlanExpanded) && (
               <>
                 <Text style={styles.label}>Nearby found these options</Text>
                 {optionsLoading && (
@@ -1616,6 +1778,16 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         </Text>
                       )}
                   </>
+                )}
+                {/* Item 111: a quiet reminder of what "Let Nearby Plan It"
+                    also carries into this submission -- the accepted
+                    add-on-type suggestions from the summary, which don't
+                    appear as checkable candidates here since they have no
+                    specific business/price of their own yet. */}
+                {activityType === AUTO_PLAN_OPTION.key && autoPlanAddonTypes.size > 0 && (
+                  <Text style={[styles.helperText, { marginTop: spacing.sm }]}>
+                    + We'll also request: {autoPlanSuggestion.suggestions.filter((s) => autoPlanAddonTypes.has(s.type)).map((s) => `${s.icon} ${s.label}`).join(', ')}
+                  </Text>
                 )}
               </>
             )}
@@ -1853,7 +2025,18 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
               >
                 <Text style={styles.backButtonText}>{step === 0 ? 'Cancel' : 'Back'}</Text>
               </TouchableOpacity>
-              {stepKey === 'options' ? (
+              {stepKey === 'options' && activityType === AUTO_PLAN_OPTION.key && !autoPlanExpanded ? (
+                <TouchableOpacity
+                  style={[styles.nextButton, (!optionsFetched || optionsLoading || (autoPlanSuggestion.items.length === 0 && autoPlanSuggestion.suggestions.length === 0)) && styles.nextButtonDisabled]}
+                  onPress={proceedFromAutoPlanSummary}
+                  activeOpacity={0.85}
+                  disabled={!optionsFetched || optionsLoading || (autoPlanSuggestion.items.length === 0 && autoPlanSuggestion.suggestions.length === 0)}
+                  accessibilityLabel="Find available options"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.nextButtonText}>Find available options →</Text>
+                </TouchableOpacity>
+              ) : stepKey === 'options' ? (
                 <TouchableOpacity
                   style={[styles.nextButton, (selectedIds.size === 0 || submittingOptions) && styles.nextButtonDisabled]}
                   onPress={submitSelectedBusinessRequests}
@@ -2002,6 +2185,20 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   optionTitle: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
   optionSubtitle: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
   optionHint: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
+  // Item 111 ("We'll plan it for you"): the "Here's what we'd do" summary
+  // -- same optionCard visual language (surface/border/radius), laid out
+  // as a simple label+detail row rather than a full tappable card, since
+  // nothing here is individually selectable until "Find available options"
+  // reveals the real checkable candidates below it.
+  autoPlanRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginBottom: spacing.xs,
+  },
+  autoPlanRowLabel: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
+  autoPlanRowLabelMuted: { color: colors.textTertiary, fontWeight: '600' },
+  autoPlanRowDetail: { color: colors.textSecondary, fontSize: 13 },
+  autoPlanTotal: { color: colors.textPrimary, fontWeight: '700', fontSize: 15, marginTop: spacing.sm, textAlign: 'right' },
   navRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xl },
   backButton: {
     paddingVertical: 16, paddingHorizontal: spacing.lg, borderRadius: radius.full,

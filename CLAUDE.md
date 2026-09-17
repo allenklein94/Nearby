@@ -40,6 +40,61 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 111 ("We'll plan it for you" — a single "Don't know what to do? Let Nearby plan it" front
+door that collects Who/Occasion/When/People/Budget/Vibe and returns "Here's what we'd do: 🍽️
+Dinner / 🎵 Live music / 🌹 Flowers / Estimated total: $X / Find available options →") — fully DONE
+(2026-09-17), reversing this same day's own earlier "logged as backlog, explicitly NOT built"
+call.** Found at session start: a complete, uncommitted implementation of exactly this already on
+disk (`CelebrateSomethingScreen.js`/`celebrateSomething.js`/`celebrateSomething.test.js`) — a real
+build had evidently happened after the backlog-log commit was made, in a session this repo's own
+"restart-prone codespace" pattern (see memory) then lost track of. Read in full, checked field-by-
+field against the mock and against every function/shape it calls (`experienceTemplateForOccasion`,
+`assembleExperience`'s component/item shape, `relevantAddonTypesForOccasion`,
+`createPlanAddonRequest`'s real signature), confirmed correct and complete, then verified and
+shipped rather than left stranded a second time.
+
+Shipped as a new pseudo-activity-type, `AUTO_PLAN_OPTION` (`🤖 Let Nearby Plan It`) — same shape as
+the existing `GROUP_VOTE_OPTION` ("Let the Group Vote"): a real, distinct choice on the wizard's
+'activity' step, not an 8th equivalent activity, only rendered when the current occasion has a
+real Experience Template (`experienceTemplateForOccasion`) to auto-select from — an occasion with
+no template (e.g. a plain Farewell) has nothing multi-part to propose, so offering this would set
+up a false promise. Routes to the same `'business'` destination as Dinner/Night Out/Activity
+(`resolveCelebrationDestination`), reusing the exact same `who_involved` → `options` step sequence,
+`fetchOptions()` call, and `resolveIntent()`/`assembleExperience()` pipeline those three already
+use unmodified — `activityType` was never actually read by any of that machinery to begin with.
+
+The only genuinely new piece is how the 'options' step *presents itself* when reached this way: a
+new `buildAutoPlanSuggestion()` (`celebrateSomething.js`) purely re-aggregates what
+`assembleExperience()`'s own components already found — never a second fetch, never a fabricated
+price — into "✨ Here's what we'd do": one line per real Experience Template component that found a
+genuine top-scored match (e.g. "🍽️ Dinner · Bistro A · $65"), plus up to 2 real, deterministic
+add-on-type suggestions (`planAddons.js`'s `relevantAddonTypesForOccasion`, e.g. "🌹 Flowers") —
+filtered to drop any add-on type whose own category is already covered by a matched template
+component, so the same real idea (live music, dessert) is never shown twice, once priced and once
+not. `estimatedTotal` sums only the priced, matched items; `hasUnknownPrice` renders it as a floor
+("$105+") rather than a false-precision exact figure whenever a matched item's own price isn't
+listed. Tapping "Find available options →" pre-selects exactly what was just proposed and reveals
+the existing full browse-and-check UI below it — every candidate stays freely addable/removable
+from there, nothing is ever silently locked in. The add-on-type suggestions have no specific
+business/price of their own (unlike the priced components, which are real, already-bound
+candidates) — accepted ones become real Item 80 `create_plan_addon_request()` calls against
+whichever primary request the submission produces, fired best-effort right after that primary
+already succeeded, never blocking or undoing it on their own failure. The pre-existing "Skip — I'll
+post a general request myself →" escape hatch (`proceedToDestination`, already fully generic over
+every business-destined activity type) renders unconditionally under this view too, so an occasion
+with zero live nearby matches is never a dead end.
+
+No DB migration — pure client-side reuse of already-existing, already-tested infrastructure
+(`experienceTemplates.js`, `experienceAssembly.js`, `planAddons.js`, `businessFulfillment.js`'s
+`createPlanAddonRequest`). Full Jest suite 571/571 passing (6 new: 5 for `buildAutoPlanSuggestion`
+covering the priced-total/unknown-price-floor/empty/capped-suggestions/missing-input cases, 1 for
+`resolveCelebrationDestination('auto_plan')`); both touched files transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device tooling
+this session, standing note) — next session should confirm on a real account that the "🤖 Let
+Nearby Plan It" chip only appears for a template-backed occasion, that the summary view's total/
+add-on toggles render correctly, and that "Find available options →" correctly pre-selects the
+right candidates in the revealed full options view.
+
 **Item 110 ("This could tie directly into your notification recommendation engine... distinguish
 Important (relationship/contextual, e.g. 'Sarah's birthday is in 7 days') from Recommendation
 (discovery, e.g. 'New live music nearby')... much less spammy") — fully DONE (2026-09-17), same-day
@@ -4783,48 +4838,6 @@ specifically said not to build yet:
   current lean voting view)
 - Complicated calendars (recurring sub-events, multi-day itineraries, etc. — beyond the single
   `scheduled_date` the occasion already has)
-
-**Item 111 ("We'll plan it for you" — a single "Don't know what to do? Let Nearby plan it" front
-door that collects Who/Occasion/When/People/Budget/Vibe and returns "Here's what we'd do: 🍽️
-Dinner / 🎵 Live music / 🌹 Flowers / Estimated total: $X / Find available options →") — logged
-2026-09-17, explicitly NOT built.** User's own framing: "Eventually... That is where your AI/
-intent layer becomes a consumer-facing experience rather than simply infrastructure" — this
-project's own established shorthand (see Items 96/99/100's identical treatment) for "log this,
-don't build it yet." Logged here rather than built, per that explicit signal.
-
-Real building blocks this would connect, once actually greenlit — most of the hard infrastructure
-already exists, confirmed by reading the real code rather than assumed:
-- `CelebrateSomethingScreen.js`'s wizard already collects every one of the 6 named inputs
-  (Who → who_for step; Occasion → occasion step; When → when step/`WHEN_PRESETS`; People →
-  party-size chips; Budget → Item 94's `$/$$/$$$` chips; Vibe → Item 95's Keep it simple/Make it
-  special/Go all out `experience_level`) — just spread across several sequential steps, not one
-  compact form.
-- `experienceTemplates.js` + `assembleExperience()` (the 2026-09-10 "Experiences assembly" work)
-  already turns an occasion into a real multi-component plan (birthday → Dinner + Something Fun +
-  Sweet Treat) from live, already-scored `resolveIntent()` candidates — this is most of "Here's
-  what we'd do," already built and already live on the wizard's own 'options' step.
-- `planAddons.js`'s `relevantAddonTypesForOccasion()` (Item 80) is the real source for the mock's
-  "🌹 Flowers" line — a deterministic, non-AI, occasion → relevant-add-on-types lookup — but it's a
-  genuinely SEPARATE mechanism from `experienceTemplates.js`'s own components today (one feeds
-  Item 81's post-creation "🗺️ Your Plan" timeline, the other feeds the wizard's pre-creation
-  options step); this item would need them merged into one coherent preview list for the first
-  time, not just displayed side by side.
-
-Real, genuinely new gaps a future build would need to actually design, not just wire up:
-1. **The core UX inversion**: today the wizard makes the user pick an activity type (Dinner/Party/
-   Activity/etc.) themselves at its own 'activity' step before anything gets searched. This
-   item's whole point is skipping that — Nearby decides WHAT to do from occasion + vibe alone.
-   That means auto-selecting/driving `experienceTemplates.js`'s template from `occasion_type`
-   directly, with no user activity-type choice at all — a real, deliberate flow branch, not
-   currently how any existing entry point works.
-2. **A real "Estimated total: $X"** — no existing surface sums a multi-category assembled plan
-   into one aggregate dollar figure; the wizard only ever shows each component's own per-candidate
-   price individually. Computing an honest total means picking one real representative candidate
-   per component/add-on (top-scored? cheapest? — a real design decision) and summing real prices,
-   never a fabricated estimate.
-3. Where this front door actually lives (a new CreateHub entry point? An alternate branch inside
-   the existing wizard's activity step, e.g. "🤖 Not sure — let Nearby decide"?) is itself a real
-   product decision, not just an implementation detail.
 
 ## Standing Conventions (Locked)
 

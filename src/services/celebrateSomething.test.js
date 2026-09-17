@@ -20,6 +20,7 @@ import {
   extractBusinessCandidateIds,
   formatBusinessOptionDetail,
   possessiveFriendsLabel,
+  buildAutoPlanSuggestion,
 } from './celebrateSomething';
 
 describe('composeCelebrationTitle', () => {
@@ -79,6 +80,10 @@ describe('resolveCelebrationDestination', () => {
     expect(resolveCelebrationDestination('dinner')).toBe('business');
     expect(resolveCelebrationDestination('night_out')).toBe('business');
     expect(resolveCelebrationDestination('activity')).toBe('business');
+  });
+
+  it('routes auto_plan ("Let Nearby Plan It") to business too', () => {
+    expect(resolveCelebrationDestination('auto_plan')).toBe('business');
   });
 
   it('routes custom to the AI-assisted custom path', () => {
@@ -475,6 +480,78 @@ describe('formatBusinessOptionDetail', () => {
 
   it('honestly returns null when neither field is real, never a fabricated placeholder', () => {
     expect(formatBusinessOptionDetail({ price: null, startsAt: null })).toBeNull();
+  });
+});
+
+describe('buildAutoPlanSuggestion', () => {
+  it('returns real priced items summed into an estimated total, plus non-overlapping addon suggestions', () => {
+    const optionsResult = {
+      experience: {
+        components: [
+          {
+            key: 'dinner',
+            label: '🍽️ Dinner',
+            items: [{ id: 'd1', title: 'Fallback Title', matchedAvailability: { partnerName: 'Bistro A', price: 65 } }],
+          },
+          {
+            key: 'something_fun',
+            label: '🎉 Something Fun',
+            items: [{ id: 'f1', title: 'Fallback Title', matchedAvailability: { partnerName: 'Live Music Co', price: 40 } }],
+          },
+        ],
+      },
+      items: [],
+    };
+    const result = buildAutoPlanSuggestion('birthday', optionsResult);
+    expect(result.items).toEqual([
+      { key: 'dinner', label: '🍽️ Dinner', id: 'd1', businessName: 'Bistro A', price: 65 },
+      { key: 'something_fun', label: '🎉 Something Fun', id: 'f1', businessName: 'Live Music Co', price: 40 },
+    ]);
+    expect(result.estimatedTotal).toBe(105);
+    expect(result.hasUnknownPrice).toBe(false);
+    // birthday's own relevance list starts with transportation/dessert/
+    // photographer -- dessert is excluded because "Something Fun"'s own
+    // covered categories don't include Bakeries (so dessert survives),
+    // but 'entertainment' (category 'Music') IS excluded since
+    // "Something Fun" genuinely matched something in that same category.
+    expect(result.suggestions.map((s) => s.type)).not.toContain('entertainment');
+  });
+
+  it('marks the total as a floor (hasUnknownPrice) when a matched item has no real listed price', () => {
+    const optionsResult = {
+      experience: {
+        components: [
+          { key: 'dinner', label: '🍽️ Dinner', items: [{ id: 'd1', title: 'X', matchedAvailability: { partnerName: 'Bistro A', price: 65 } }] },
+          { key: 'something_fun', label: '🎉 Something Fun', items: [{ id: 'f1', title: 'Y', matchedAvailability: { partnerName: 'Z', price: null } }] },
+        ],
+      },
+      items: [],
+    };
+    const result = buildAutoPlanSuggestion('birthday', optionsResult);
+    expect(result.estimatedTotal).toBe(65);
+    expect(result.hasUnknownPrice).toBe(true);
+  });
+
+  it('returns an honest empty items list when nothing assembled yet, but still offers deterministic addon suggestions', () => {
+    const result = buildAutoPlanSuggestion('birthday', { experience: null, items: [] });
+    expect(result.items).toEqual([]);
+    expect(result.estimatedTotal).toBe(0);
+    expect(result.hasUnknownPrice).toBe(false);
+    expect(result.suggestions.length).toBeGreaterThan(0);
+  });
+
+  it('caps addon suggestions at 2', () => {
+    const result = buildAutoPlanSuggestion('wedding', { experience: null, items: [] });
+    expect(result.suggestions.length).toBeLessThanOrEqual(2);
+  });
+
+  it('handles a missing optionsResult entirely', () => {
+    expect(buildAutoPlanSuggestion('birthday', null)).toEqual({
+      items: [],
+      estimatedTotal: 0,
+      hasUnknownPrice: false,
+      suggestions: expect.any(Array),
+    });
   });
 });
 
