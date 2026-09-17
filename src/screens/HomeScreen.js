@@ -13,7 +13,8 @@ import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomeP
 import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/businessFulfillment';
 import { formatPlaceStatusLabel } from '../utils/planCompletion';
 import { getUpcomingConnectedBirthdays } from '../services/friends';
-import { getUpcomingOccasions } from '../services/occasions';
+import { getUpcomingOccasions, getOccasionRecall } from '../services/occasions';
+import { formatOccasionRecallSummary, occasionRecallLikedText } from '../utils/occasionRecall';
 import { getMyPendingPreferencePolls } from '../services/preferencePolls';
 import { occasionDueLabel } from '../utils/occasionDatePrecision';
 import { isCalendarIntegrationEnabled, getUpcomingCalendarEvents } from '../services/deviceCalendar';
@@ -246,6 +247,10 @@ export default function HomeScreen({ navigation }) {
   // routes to gathering creation instead.
   const [birthdayNudge, setBirthdayNudge] = useState(null);
   const [occasionNudge, setOccasionNudge] = useState(null);
+  // Item 101 (CLAUDE.md): a real recall of what happened the last time a
+  // recurring occasion was fulfilled -- null whenever this is a first-time
+  // occasion or the recall genuinely can't resolve (see get_occasion_recall).
+  const [occasionRecall, setOccasionRecall] = useState(null);
   // Item 100 (CLAUDE.md): a real count of pending "quick question" polls
   // waiting for this user's own answer.
   const [pendingPollsCount, setPendingPollsCount] = useState(0);
@@ -458,6 +463,15 @@ export default function HomeScreen({ navigation }) {
               if (!loggedNudgeShownRef.current.has(dismissKey)) {
                 loggedNudgeShownRef.current.add(dismissKey);
                 recordNudgeEvent('predictive', 'shown', 'occasion');
+              }
+              // Item 101 (CLAUDE.md, "Occasions can become recurring"): only
+              // fetched when this occasion has genuine prior-year history
+              // (a real resulting_plan_id + last_planned_at) -- a first-
+              // time occasion never triggers this extra round trip.
+              // Best-effort: a failed/null recall just falls back to the
+              // existing plain nudge card, never blocks it.
+              if (soonest.resulting_plan_id && soonest.last_planned_at) {
+                getOccasionRecall(soonest.occasion_id).then(setOccasionRecall).catch(() => {});
               }
             }
           }
@@ -1142,6 +1156,7 @@ export default function HomeScreen({ navigation }) {
     if (!occasionNudge) return;
     const dismissKey = `occasion_dismiss_${new Date().toDateString()}_${occasionNudge.occasion_id}`;
     setOccasionNudge(null);
+    setOccasionRecall(null);
     AsyncStorage.setItem(dismissKey, '1').catch(() => {});
     recordNudgeEvent('predictive', 'acted', 'occasion');
     navigation.navigate('CreateGathering', { quickStartTitle: occasionNudge.title });
@@ -1151,8 +1166,46 @@ export default function HomeScreen({ navigation }) {
     if (!occasionNudge) return;
     const dismissKey = `occasion_dismiss_${new Date().toDateString()}_${occasionNudge.occasion_id}`;
     setOccasionNudge(null);
+    setOccasionRecall(null);
     AsyncStorage.setItem(dismissKey, '1').catch(() => {});
     recordNudgeEvent('predictive', 'dismissed', 'occasion');
+  }
+
+  // Item 101 (CLAUDE.md, "Occasions can become recurring"): the real
+  // "return to last year's place" action -- MakeAPlanScreen's existing
+  // partnerId mode already does exactly this (a real plan at that exact
+  // business), no new creation primitive needed.
+  function handleOccasionRecallReturn() {
+    if (!occasionNudge || !occasionRecall || occasionRecall.planType !== 'business') return;
+    const dismissKey = `occasion_dismiss_${new Date().toDateString()}_${occasionNudge.occasion_id}`;
+    const params = { partnerId: occasionRecall.partnerId, initialTitle: occasionNudge.title };
+    setOccasionNudge(null);
+    setOccasionRecall(null);
+    AsyncStorage.setItem(dismissKey, '1').catch(() => {});
+    recordNudgeEvent('predictive', 'acted', 'occasion_recall_return');
+    navigation.navigate('MakeAPlan', params);
+  }
+
+  // The real "try something new" action -- lands on the same Occasion
+  // wizard a tapped occasion_upcoming push already uses (notifications.js),
+  // pre-seeded with the real occasion/who-for so the wizard's own live
+  // resolveIntent() options step runs a fresh search (whoForPreferenceBonus
+  // still gently favors what's already known to fit, never excludes
+  // anything else) instead of reusing last year's business unconditionally.
+  function handleOccasionRecallNew() {
+    if (!occasionNudge) return;
+    const dismissKey = `occasion_dismiss_${new Date().toDateString()}_${occasionNudge.occasion_id}`;
+    const params = {
+      initialOccasion: occasionNudge.occasion_type,
+      initialWhoFor: occasionNudge.who_for_friend_id ? 'friend' : occasionNudge.who_for_name ? 'someone_else' : 'me',
+      initialWhoForName: occasionNudge.who_for_name,
+      initialWhoForFriendId: occasionNudge.who_for_friend_id,
+    };
+    setOccasionNudge(null);
+    setOccasionRecall(null);
+    AsyncStorage.setItem(dismissKey, '1').catch(() => {});
+    recordNudgeEvent('predictive', 'acted', 'occasion_recall_new');
+    navigation.navigate('CelebrateSomething', params);
   }
 
   // "The Plan Engine" Phase 2 (CLAUDE.md) -- deliberately does NOT submit
@@ -1846,7 +1899,48 @@ export default function HomeScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
             )}
-            {occasionNudge && (
+            {occasionNudge && occasionRecall?.planType === 'business' && (
+              <View style={styles.outcomePromptCard}>
+                <View style={styles.outcomePromptHeaderRow}>
+                  <Text style={styles.outcomePromptText} numberOfLines={2}>
+                    {occasionTypeIcon(occasionNudge.occasion_type)} {occasionNudge.title}{' '}
+                    {occasionDueLabel(occasionNudge.date_precision, occasionNudge.occasion_date, occasionNudge.days_until)}
+                  </Text>
+                  <TouchableOpacity onPress={handleOccasionDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="close" size={16} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                </View>
+                {/* Item 101: a real recall, never fabricated -- every part
+                    of this line traces to get_occasion_recall()'s own
+                    real resolved data. */}
+                <Text style={styles.outcomePromptSubtext} numberOfLines={2}>
+                  Nearby remembers: {formatOccasionRecallSummary(occasionRecall)}
+                  {occasionRecallLikedText(occasionRecall) ? ` · ${occasionRecallLikedText(occasionRecall)}` : ''}
+                </Text>
+                <Text style={[styles.outcomePromptText, { marginTop: spacing.xs }]} numberOfLines={2}>
+                  Want to return to {occasionRecall.partnerName} or try something new?
+                </Text>
+                <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
+                  <TouchableOpacity
+                    style={[styles.predictiveActButton, { flex: 1 }]}
+                    onPress={handleOccasionRecallReturn}
+                    accessibilityLabel={`Return to ${occasionRecall.partnerName}`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.predictiveActButtonText} numberOfLines={1}>🔄 Return to {occasionRecall.partnerName}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.predictiveActButton, { flex: 1 }]}
+                    onPress={handleOccasionRecallNew}
+                    accessibilityLabel="Try something new"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.predictiveActButtonText}>✨ Try Something New</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+            {occasionNudge && occasionRecall?.planType !== 'business' && (
               <View style={styles.outcomePromptCard}>
                 <View style={styles.outcomePromptHeaderRow}>
                   <Text style={styles.outcomePromptText} numberOfLines={2}>
@@ -2588,6 +2682,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   outcomePromptHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.sm },
   outcomePromptText: { flex: 1, color: colors.textPrimary, fontWeight: '600', fontSize: 14, marginRight: spacing.sm },
+  outcomePromptSubtext: { color: colors.textTertiary, fontSize: 12, lineHeight: 16 },
   outcomePromptRow: { flexDirection: 'row', justifyContent: 'space-between' },
   outcomePromptButton: { flex: 1, alignItems: 'center', paddingVertical: spacing.xs },
   outcomePromptButtonEmoji: { fontSize: 20, marginBottom: 2 },

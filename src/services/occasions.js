@@ -125,3 +125,20 @@ export async function getUpcomingOccasions(daysAhead = 30) {
   }
   return data ?? [];
 }
+
+// Item 101 (CLAUDE.md, "Occasions can become recurring"): a real, owner-only
+// recall of what actually happened the last time this occasion was
+// fulfilled -- resolved server-side from the occasion's own resulting_plan_id
+// chain (see get_occasion_recall()'s own migration comment). Best-effort:
+// returns null on any failure, never blocks or errors the caller -- this
+// enriches a "Plan Again" moment, it never gates it.
+export async function getOccasionRecall(occasionId) {
+  const { data, error } = await supabase.rpc('get_occasion_recall', {
+    occasion_id_param: occasionId,
+  });
+  if (error) {
+    console.error('getOccasionRecall error', error);
+    return null;
+  }
+  return data ?? null;
+}

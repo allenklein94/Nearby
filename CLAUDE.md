@@ -40,6 +40,82 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 101 ("Occasions can become recurring") — fully DONE (2026-09-17), resumed cleanly after a
+codespace restart mid-build (a complete migration plus matching client edits were found already
+written and uncommitted at session start — read in full, checked against the user's own example,
+confirmed correct, then verified live and shipped).** User's own example: after the first year, an
+anniversary nudge shouldn't just repeat "your anniversary is coming up" — Nearby should remember
+what was chosen, where, what was liked, approximate budget, and preferred time, then offer a real
+"Want to return to last year's restaurant or try something new?" choice — "that's excellent
+retention."
+
+The recurrence and "already planned this occurrence" tracking already existed
+(`occasions.recurs_annually`/`resulting_plan_id`/`last_planned_at`, "Occasion architecture should
+not be a silo," 2026-09-12) — what was missing was using that real history for anything beyond a
+skip check. Two real pieces, both reading data this schema already honestly captures, never
+fabricating a memory the app doesn't actually have, shipped via
+`20261121_occasion_recurring_recall.sql`:
+
+(1) A new owner-only `get_occasion_recall(occasion_id)` resolves an occasion's own
+`resulting_plan_id` → `plans` → the real accepted/completed `business_request_offers` row → its
+`brand_partners` row (where you went, what you paid, what time) → its `business_offer_outcomes`
+row if one was ever submitted (what you liked — `satisfaction_rating`/`would_repeat`, already a
+real, existing consumer feedback mechanism from "The Plan Engine" Phase 4, never a new rating
+system). Returns null, honestly, whenever any link in that chain isn't real (no resulting plan
+yet, the plan produced a gathering with no business attached, the business request never reached
+a real accepted offer) — a recall card can never be fabricated from a partial chain. A
+gathering-destined plan gets its own honest fallback shape (title/category only — there's no
+single "business to return to").
+
+(2) `send_occasion_planning_nudges()` (unchanged signature) now names the real business in the
+push body itself ("...is in 14 days. Want to return to {partner} or try something new?") whenever
+a real accepted-offer recall resolves for that occasion, falling back to the exact original
+generic text for a first-year occasion or one that only ever produced a gathering. The push
+payload carries a new `has_recall` boolean so the client can route a recall-aware tap differently
+without an extra round trip.
+
+**A real, live bug was caught and fixed during verification, not hypothetical**:
+`get_occasion_recall()`'s first draft used plain `record IS NOT NULL`/`IS NULL` checks to test
+"was a row found" — but a Postgres `record`'s `IS [NOT] NULL` uses SQL row-comparison semantics
+(true only when EVERY field is null, or EVERY field is non-null), not "was a row found" semantics.
+A real, fully-resolved accepted offer with an ordinary null nullable column (`expires_at`,
+`offer_type` — the common case, not the exception) silently made `v_offer IS NOT NULL` evaluate
+false, so the function always returned null even for a genuinely complete recall chain — caught
+live via a disposable rolled-back transaction with real fixtures before this was ever treated as
+working. Fixed by testing each record's own always-populated `id` column instead.
+
+Client: `getOccasionRecall()` (`occasions.js`) wraps the RPC, best-effort (null on any failure,
+never blocks). `HomeScreen.js`'s existing occasion-nudge card now fetches a recall only when the
+occasion has genuine prior-year history (`resulting_plan_id` + `last_planned_at` both real — a
+first-time occasion never triggers the extra round trip), and when a real business recall
+resolves, renders a distinct card: "Nearby remembers: {business} · {price} · {time}" plus an
+honest "You loved it last time!"/"You liked it last time." line (new pure
+`formatOccasionRecallSummary()`/`occasionRecallLikedText()` in `occasionRecall.js`, 7 new Jest
+tests — every part honestly omitted, never guessed, when the underlying field is null; a
+neutral/negative/missing rating renders no liked-it line at all) with two real actions: "🔄 Return
+to {partner}" (navigates to the existing `MakeAPlanScreen` in its `partnerId` mode — already
+exactly "a real plan at that exact business," no new creation primitive needed — carrying the
+occasion's own real title through as the one deliberate exception to that screen's normal
+"never prefill the title" rule, since it's genuine user-authored history, not an invention) and
+"✨ Try Something New" (lands on the existing Occasion wizard pre-seeded with the real occasion/
+who-for, so `resolveIntent()`'s own live options step runs a fresh search rather than reusing last
+year's business unconditionally — Item 100's `whoForPreferenceBonus()` still gently favors what's
+already known to fit, never excludes anything else). A first-year or gathering-destined occasion
+keeps the exact original nudge card unchanged. `notifications.js`'s `occasion_upcoming` tap
+routing now checks the new `has_recall` push field first and lands on Home (the real "Plan Again"
+surface with both real choices) instead of straight into the wizard, since the wizard itself has
+neither the recall detail nor the return-vs-new choice.
+
+Verified live against production (`enmosvippabmuqslzrox`): `get_occasion_recall` present with the
+correct single-arg signature and correctly scoped to `authenticated` only (no `anon` leak);
+`send_occasion_planning_nudges` confirmed to contain the new recall-lookup logic. Full Jest suite
+538/538 passing (7 new); all five touched/new files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised in a running app (no simulator/device tooling this session,
+standing note) — next session should confirm on a real account that a recurring occasion with real
+fulfillment history renders the recall card correctly, that "Return to {partner}" lands on
+`MakeAPlanScreen` prefilled with the right partner and title, and that a tapped recall-aware
+`occasion_upcoming` push lands on Home rather than the wizard.
+
 **Item 100 ("Let the recipient contribute preferences without spoiling the surprise") — fully
 DONE (2026-09-17), same-day direct override of the "logged as future, not now" call made earlier
 in this session, resumed cleanly after a codespace restart (a complete, uncommitted migration was

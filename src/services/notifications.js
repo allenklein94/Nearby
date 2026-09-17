@@ -289,7 +289,16 @@ export async function routeNotificationTap(data) {
     // ever route through here); a self-logged occasion of any type,
     // including birthday/anniversary, now arrives as this type instead.
     case 'occasion_upcoming':
-      if (data.who_for_friend_id) {
+      // Item 101 (CLAUDE.md, "Occasions can become recurring"): a
+      // recall-aware push (the real "Want to return to {partner} or try
+      // something new?" text, has_recall set by send_occasion_planning_
+      // nudges()) lands on Home instead of straight into the wizard --
+      // Home's own occasion nudge card is the real "Plan Again" surface
+      // this item built, with the actual recall detail and both real
+      // choices; the wizard has neither.
+      if (data.has_recall === true || data.has_recall === 'true') {
+        navigationRef.navigate('MainTabs', { screen: 'Home' });
+      } else if (data.who_for_friend_id) {
         navigationRef.navigate('CelebrateSomething', {
           initialOccasion: data.occasion_type,
           initialWhoFor: 'friend',

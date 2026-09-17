@@ -39,7 +39,7 @@ import { typography, spacing, radius } from '../theme';
 // mechanism for the identical "business TBD" case, exactly what this
 // whole convergence pass exists to avoid.
 export default function MakeAPlanScreen({ route, navigation }) {
-  const { offerId = null, partnerId = null } = route.params ?? {};
+  const { offerId = null, partnerId = null, initialTitle = null } = route.params ?? {};
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
 
@@ -92,8 +92,12 @@ export default function MakeAPlanScreen({ route, navigation }) {
         // the user's own worked example (just "Business = The Grove," the
         // host still types their own real title, same "AI/prefill never
         // invents the title outright" discipline every other creation
-        // flow in this app already follows).
-        setTitle('');
+        // flow in this app already follows). The one real exception:
+        // Item 101's "Plan Again" recall already has a genuine, real,
+        // user-authored title (the occasion's own, e.g. "Our Anniversary")
+        // -- passing it through isn't inventing anything, still fully
+        // editable either way.
+        setTitle(initialTitle ?? '');
       } else {
         setLoadError(true);
         setLoading(false);
