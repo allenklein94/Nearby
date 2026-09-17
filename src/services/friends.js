@@ -204,5 +204,8 @@ export async function getUpcomingConnectedBirthdays(daysAhead = 14) {
     console.error('getUpcomingConnectedBirthdays error', error);
     return [];
   }
-  return data ?? [];
+  // Item 104 (CLAUDE.md): same latent unsorted-result bug as
+  // getUpcomingOccasions() (get_upcoming_connected_birthdays() itself has
+  // no ORDER BY) -- fixed here for the same reason.
+  return (data ?? []).slice().sort((a, b) => a.days_until - b.days_until);
 }

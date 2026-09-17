@@ -123,7 +123,14 @@ export async function getUpcomingOccasions(daysAhead = 30) {
     console.error('getUpcomingOccasions error', error);
     return [];
   }
-  return data ?? [];
+  // Item 104 (CLAUDE.md): get_upcoming_occasions() itself has no ORDER BY
+  // (a plain plpgsql loop over an unordered query) -- every existing
+  // caller that reads occasions[0] as "the soonest" (HomeScreen's own
+  // occasion nudge) has been relying on incidental row order, a real,
+  // previously-latent bug surfaced while building the "Upcoming in your
+  // world" widget, which genuinely needs a correctly sorted list. Fixed
+  // once here so every caller gets it for free.
+  return (data ?? []).slice().sort((a, b) => a.days_until - b.days_until);
 }
 
 // Item 101 (CLAUDE.md, "Occasions can become recurring"): a real, owner-only

@@ -40,6 +40,66 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 104 ("There could eventually be an 'Occasions' recommendation engine") — first real
+increment shipped (2026-09-17), same-day direct follow-up to Item 103.** User's own mock:
+"Upcoming in your world / 🎂 Sarah's birthday — 10 days / 💍 Anniversary — 22 days / 🎓 John's
+graduation — 31 days / Plan Something" — "that becomes a personalized planning dashboard. But
+again, I'd keep it inside Home/Profile, not make it another top-level tab."
+
+Built as a genuine new, standing preview widget on Home — pure regrouping of two already-real,
+already-fetched lists (`getUpcomingOccasions()`/`getUpcomingConnectedBirthdays()`), no new query,
+no new table. Deliberately does NOT duplicate the existing single-item birthdayNudge/occasionNudge
+cards those same two lists already feed — the new widget shows whatever's coming up BEYOND the one
+item those cards already feature (`buildUpcomingWorldItems()`, `src/utils/upcomingWorld.js`, new
+pure function with its own Jest tests, `skip: 1` default), so a user never sees "Sarah's birthday
+— 10 days" rendered twice on the same screen. This reads as the fuller "world" picture
+complementing the existing "here's the one most urgent thing" nudge, rather than a second,
+competing copy of it.
+
+**A real, previously-latent bug was found and fixed while building this, not hypothetical**:
+neither `get_upcoming_occasions()` nor `get_upcoming_connected_birthdays()` has an `ORDER BY` — a
+plain PL/pgSQL loop with no explicit ordering over its underlying query — yet every existing
+caller (`HomeScreen.js`'s own `occasions[0]`/`birthdays[0]`) had been silently trusting incidental
+row order as "the soonest" since these were first built. Confirmed by reading both function bodies
+directly, not assumed. Fixed at the single shared client-layer choke point instead of touching
+either RPC: `getUpcomingOccasions()`/`getUpcomingConnectedBirthdays()` (`occasions.js`/
+`friends.js`) now sort by `days_until` ascending before returning, so every existing consumer
+(the two single-item nudge cards, `ViewProfileScreen`'s own "Upcoming" section) gets correctly
+sorted data for free, not just this new widget.
+
+Each row in the new "📅 Upcoming in Your World" card is directly tappable — richer than the mock's
+single generic "Plan Something" button below a static list, but consistent with how every other
+summary row in this app already works (`OccasionsScreen`, `ViewProfileScreen`'s own Upcoming
+section) — and lands on the Occasion wizard pre-filled for that specific item
+(`handlePlanFromUpcomingWorldItem()`), using the exact same real who-for resolution shape
+`notifications.js`'s own `occasion_upcoming` push-tap routing already established (a real
+connected friend id wins, else a hand-typed name, else occasion-only). Purely informational
+otherwise — no per-day dismiss/suppression, since this is a standing preview, not a one-shot
+nudge; it simply doesn't render at all when there's nothing real beyond the featured item.
+`formatUpcomingWorldItemLine()` produces the mock's exact compact shape ("🎂 Sarah's birthday — 10
+days") with one real, disclosed subtlety caught before this was considered done: a wizard-composed
+occasion title already bakes its own trailing icon onto the string (Item 84's
+`composeCelebrationTitle()`, e.g. "Sarah's Birthday 🎂") — prepending the row's own icon
+unconditionally would have doubled it ("🎂 Sarah's Birthday 🎂"); the formatter only prepends when
+the label doesn't already end with that exact icon.
+
+**Deliberately scoped to Home only, not also duplicated onto Profile** — the user's own phrasing
+("Home/Profile") reads as "somewhere in the existing app surfaces, not a new tab," and Profile's
+own `OccasionsScreen` (reached via "Your Plans") already serves the exhaustive, standing-dashboard
+role there; adding a second, smaller teaser widget in Profile would be redundant with what's
+already one tap away, not a genuinely new capability. Disclosed rather than silently assumed
+covered.
+
+New Jest coverage: `upcomingWorld.test.js` (11 tests — merge/sort/skip/limit behavior, the empty
+and missing-input cases, and both icon-dedup branches). Full suite 549/549 passing; all four
+touched/new files transform-checked clean via `@babel/core` + `babel-preset-expo`. No DB migration
+— pure client-side (the sort fix and the new widget both work entirely off data these two RPCs
+already return). Not exercised in a running app (no simulator/device tooling this session,
+standing note) — next session should confirm on a real account that the widget renders correctly
+below the existing nudge cards, that it correctly shows nothing when there's only one real
+upcoming item total, and that tapping a row lands on the Occasion wizard correctly pre-filled for
+that specific item.
+
 **Item 103 ("Don't forget non-celebratory life events") — audited, fully DONE (2026-09-17),
 same-day direct follow-up to Item 102.** User's own list: "Mom is visiting" / "My friend is
 moving away" / "We're back in town" / "College reunion" / "Team celebration" / "First date" /

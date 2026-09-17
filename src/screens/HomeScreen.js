@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator, Alert, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,7 @@ import { formatPlaceStatusLabel } from '../utils/planCompletion';
 import { getUpcomingConnectedBirthdays } from '../services/friends';
 import { getUpcomingOccasions, getOccasionRecall, setOccasionRecallShareable } from '../services/occasions';
 import { formatOccasionRecallSummary, occasionRecallLikedText } from '../utils/occasionRecall';
+import { buildUpcomingWorldItems, formatUpcomingWorldItemLine } from '../utils/upcomingWorld';
 import { getMyPendingPreferencePolls } from '../services/preferencePolls';
 import { occasionDueLabel } from '../utils/occasionDatePrecision';
 import { isCalendarIntegrationEnabled, getUpcomingCalendarEvents } from '../services/deviceCalendar';
@@ -251,6 +252,14 @@ export default function HomeScreen({ navigation }) {
   // recurring occasion was fulfilled -- null whenever this is a first-time
   // occasion or the recall genuinely can't resolve (see get_occasion_recall).
   const [occasionRecall, setOccasionRecall] = useState(null);
+  // Item 104 (CLAUDE.md, "There could eventually be an 'Occasions'
+  // recommendation engine"): the full real sorted lists behind
+  // birthdayNudge/occasionNudge above (not just their own soonest item),
+  // kept only so the "Upcoming in Your World" widget below can show what's
+  // coming up BEYOND the one thing already featured -- see
+  // upcomingWorld.js's own header comment.
+  const [allUpcomingOccasions, setAllUpcomingOccasions] = useState([]);
+  const [allUpcomingBirthdays, setAllUpcomingBirthdays] = useState([]);
   // Item 100 (CLAUDE.md): a real count of pending "quick question" polls
   // waiting for this user's own answer.
   const [pendingPollsCount, setPendingPollsCount] = useState(0);
@@ -291,6 +300,16 @@ export default function HomeScreen({ navigation }) {
   // honest -- one real impression per distinct nudge instance per app launch,
   // not one per refocus.
   const loggedNudgeShownRef = useRef(new Set());
+
+  // Item 104 (CLAUDE.md): the real "Upcoming in Your World" preview --
+  // whatever's coming up beyond the single item already featured by
+  // birthdayNudge/occasionNudge above (see buildUpcomingWorldItems's own
+  // header comment for why `skip` defaults to 1). Recomputes whenever
+  // either underlying list changes; empty until both real fetches land.
+  const upcomingWorldItems = useMemo(
+    () => buildUpcomingWorldItems({ occasions: allUpcomingOccasions, birthdays: allUpcomingBirthdays }),
+    [allUpcomingOccasions, allUpcomingBirthdays]
+  );
 
   const load = useCallback(async () => {
     try {
@@ -426,6 +445,7 @@ export default function HomeScreen({ navigation }) {
       const birthdayTask = (async () => {
         try {
           const birthdays = await getUpcomingConnectedBirthdays();
+          setAllUpcomingBirthdays(birthdays);
           if (birthdays.length > 0) {
             const soonest = birthdays[0];
             const dismissKey = `birthday_dismiss_${new Date().toDateString()}_${soonest.connection_id}`;
@@ -454,6 +474,7 @@ export default function HomeScreen({ navigation }) {
       const occasionTask = (async () => {
         try {
           const occasions = await getUpcomingOccasions();
+          setAllUpcomingOccasions(occasions);
           if (occasions.length > 0) {
             const soonest = occasions[0];
             const dismissKey = `occasion_dismiss_${new Date().toDateString()}_${soonest.occasion_id}`;
@@ -1169,6 +1190,23 @@ export default function HomeScreen({ navigation }) {
     setOccasionRecall(null);
     AsyncStorage.setItem(dismissKey, '1').catch(() => {});
     recordNudgeEvent('predictive', 'dismissed', 'occasion');
+  }
+
+  // Item 104 (CLAUDE.md): routes a tapped "Upcoming in Your World" row
+  // into the Occasion wizard, pre-filled -- same real who_for-resolution
+  // shape notifications.js's own occasion_upcoming tap routing already
+  // uses (a real connected friend id wins, else a hand-typed name, else
+  // occasion-only). No dismiss/suppression here -- this is a standing
+  // preview list, not a one-shot nudge.
+  function handlePlanFromUpcomingWorldItem(item) {
+    if (!item) return;
+    recordNudgeEvent('predictive', 'acted', 'upcoming_world');
+    navigation.navigate('CelebrateSomething', {
+      initialOccasion: item.occasionType,
+      initialWhoFor: item.whoForFriendId ? 'friend' : item.whoForName ? (item.occasionType === 'birthday' ? 'family' : 'someone_else') : 'me',
+      initialWhoForName: item.whoForName ?? null,
+      initialWhoForFriendId: item.whoForFriendId ?? null,
+    });
   }
 
   // Item 101 (CLAUDE.md, "Occasions can become recurring"): the real
@@ -1992,6 +2030,36 @@ export default function HomeScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
             )}
+            {/* Item 104 (CLAUDE.md, "There could eventually be an
+                'Occasions' recommendation engine"): a real, forward-
+                looking preview -- what's coming up BEYOND the one thing
+                already featured above (birthdayNudge/occasionNudge),
+                never the same item twice on this screen. Each row is
+                directly tappable (richer than the mock's single generic
+                "Plan Something" button, consistent with how every other
+                summary row in this app already works) -- lands on the
+                Occasion wizard pre-filled for that specific item, same
+                real routing shape a tapped occasion_upcoming push already
+                uses. Purely informational otherwise -- no dismiss, no
+                daily suppression, since it's a standing preview, not a
+                one-shot nudge. */}
+            {upcomingWorldItems.length > 0 && (
+              <View style={styles.outcomePromptCard}>
+                <Text style={styles.outcomePromptText} numberOfLines={1}>📅 Upcoming in Your World</Text>
+                {upcomingWorldItems.map((item) => (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={styles.upcomingWorldRow}
+                    onPress={() => handlePlanFromUpcomingWorldItem(item)}
+                    accessibilityLabel={`Plan something for ${item.label}`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.outcomePromptSubtext} numberOfLines={1}>{formatUpcomingWorldItemLine(item)}</Text>
+                    <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
             {pendingPollsCount > 0 && (
               <View style={styles.outcomePromptCard}>
                 <Text style={styles.outcomePromptText} numberOfLines={2}>
@@ -2718,6 +2786,10 @@ const getStyles = (colors) => StyleSheet.create({
   outcomePromptHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.sm },
   outcomePromptText: { flex: 1, color: colors.textPrimary, fontWeight: '600', fontSize: 14, marginRight: spacing.sm },
   outcomePromptSubtext: { color: colors.textTertiary, fontSize: 12, lineHeight: 16 },
+  upcomingWorldRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: spacing.xs, marginTop: spacing.xs,
+  },
   outcomePromptRow: { flexDirection: 'row', justifyContent: 'space-between' },
   outcomePromptButton: { flex: 1, alignItems: 'center', paddingVertical: spacing.xs },
   outcomePromptButtonEmoji: { fontSize: 20, marginBottom: 2 },
