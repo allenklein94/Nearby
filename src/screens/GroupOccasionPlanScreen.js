@@ -308,6 +308,13 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
         // the vote, same lever CelebrateSomethingScreen's own solo options
         // step already uses.
         priceLevel: experienceLevelToPriceLevel(detail?.experienceLevel),
+        // Item 100 (CLAUDE.md): the plan's own real who-for person's
+        // standing/polled preferences bias the proposed options too --
+        // safe unconditionally, including under surprise mode, since this
+        // reads their own already-visible data and never notifies or
+        // reveals anything to them.
+        whoForFriendId: detail?.whoForFriendId,
+        whoForName: detail?.whoForName,
       });
       const ids = extractBusinessCandidateIds(result);
       if (ids.length === 0) {

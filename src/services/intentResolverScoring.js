@@ -267,6 +267,29 @@ export function pastPlanBonus(row, pastPartnerIds) {
   return pastPartnerIds.has(row.partner_id) ? SCORE_HAPPENING_NOW : 0;
 }
 
+// Item 100 (CLAUDE.md, "Let the recipient contribute preferences without
+// spoiling the surprise"): a real signal about the PERSON the ask is FOR
+// (occasion/occasion_group_plans.who_for_friend_id), distinct from every
+// bonus above, which all score the CALLER's own preferences. Sourced from
+// getWhoForPreferenceSignals() (preferencePolls.js) -- a merge of that
+// person's own standing profiles.cuisine_preferences/venue_preferences and
+// any real, already-answered disguised preference_polls question for them.
+// Same "real signal, flat bonus, never a filter" shape as every bonus
+// above -- a business that doesn't match either source is never excluded,
+// just not boosted. Two separate flat bonuses (cuisine, venue/attribute),
+// matching attributeAndCuisineBonus()'s own reasoning for scoring the two
+// dimensions independently rather than collapsing them into one.
+export function whoForPreferenceBonus(row, whoForSignals) {
+  if (!whoForSignals) return 0;
+  let bonus = 0;
+  const cuisineKeys = Array.isArray(whoForSignals.cuisineKeys) ? whoForSignals.cuisineKeys : [];
+  if (row.cuisine && cuisineKeys.includes(row.cuisine)) bonus += SCORE_HAPPENING_NOW;
+  const venueKeys = Array.isArray(whoForSignals.venueKeys) ? whoForSignals.venueKeys : [];
+  const rowAttributes = Array.isArray(row.attributes) ? row.attributes : [];
+  if (venueKeys.length > 0 && rowAttributes.some((a) => venueKeys.includes(a))) bonus += SCORE_HAPPENING_NOW;
+  return bonus;
+}
+
 // Thursday plan item 23 ("every recommendation should explain WHY"):
 // gatherings have always had getGatheringFitReasons() (services/
 // gatherings.js) feeding a real reason into resolveIntent()'s subtitle;
@@ -278,7 +301,7 @@ export function pastPlanBonus(row, pastPartnerIds) {
 // exact condition (never a new signal, never a fabricated one) and returns
 // human-readable text for whichever ones actually fired, in the same
 // priority order resolveBusinessAvailability() already scores them in.
-export function getBusinessAvailabilityReasons(row, { category, attributes, cuisine, partyType, occasion, followedPartnerIds, pastPartnerIds } = {}) {
+export function getBusinessAvailabilityReasons(row, { category, attributes, cuisine, partyType, occasion, followedPartnerIds, pastPartnerIds, whoForSignals, whoForName } = {}) {
   const reasons = [];
   const matchesCategory = !!(category && (
     (row.category && row.category === category)
@@ -311,6 +334,21 @@ export function getBusinessAvailabilityReasons(row, { category, attributes, cuis
   }
   if (row.partner_id && pastPartnerIds && pastPartnerIds.has(row.partner_id)) reasons.push("You've been here before");
   if (row.partner_id && followedPartnerIds && followedPartnerIds.has(row.partner_id)) reasons.push('A business you follow');
+  // Item 100: never names the source (a saved preference vs. an answered
+  // disguised question look identical from here on out) and never says
+  // WHY it's asking -- just that it fits who the plan is for, the same
+  // honesty boundary the whole feature is built around.
+  if (whoForSignals) {
+    const cuisineKeys = Array.isArray(whoForSignals.cuisineKeys) ? whoForSignals.cuisineKeys : [];
+    const venueKeys = Array.isArray(whoForSignals.venueKeys) ? whoForSignals.venueKeys : [];
+    const rowAttributes = Array.isArray(row.attributes) ? row.attributes : [];
+    if (row.cuisine && cuisineKeys.includes(row.cuisine)) {
+      const label = CUISINE_OPTIONS.find((c) => c.key === row.cuisine)?.label ?? row.cuisine;
+      reasons.push(whoForName ? `${whoForName} tends to like ${label}` : `They tend to like ${label}`);
+    } else if (venueKeys.length > 0 && rowAttributes.some((a) => venueKeys.includes(a))) {
+      reasons.push(whoForName ? `Matches ${whoForName}'s taste` : 'Matches their taste');
+    }
+  }
   return reasons;
 }
 

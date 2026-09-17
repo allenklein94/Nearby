@@ -40,6 +40,99 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 100 ("Let the recipient contribute preferences without spoiling the surprise") — fully
+DONE (2026-09-17), same-day direct override of the "logged as future, not now" call made earlier
+in this session, resumed cleanly after a codespace restart (a complete, uncommitted migration was
+found on disk at session start — read in full, checked against the user's own two-example spec,
+confirmed correct, verified live before being applied for real, then followed by all the client
+wiring, which had not been started).** User's own example: planning a wife's anniversary, Nearby
+could already know her saved preferences (Italian / outdoor seating / live music) without telling
+her anything is being planned, or — "if appropriate" — the organizer could ask her directly ("What
+kind of dinner are you in the mood for?") without exposing why.
+
+Two real, separate halves, matching the item's own two examples, both shipped via
+`20261120_who_for_preference_signals.sql`:
+
+**(A) Passive** — two new real, optional, self-declared columns, `profiles.cuisine_preferences`/
+`venue_preferences` (same posture as the already-existing `profiles.interests`, CHECK-constrained
+to the exact same `CUISINE_OPTIONS`/`BUSINESS_ATTRIBUTE_OPTIONS` vocabulary
+`business_requests.cuisine`/`attributes` already use — no new taxonomy invented). No new RPC
+needed to read or write them — profiles' own existing "Users can update own profile" RLS policy
+already covers a plain direct update, the identical mechanism `interests` already uses. Reading a
+connected friend's own already-visible profile data for scoring purposes is not a new access
+grant — it's the same row `ViewProfileScreen` already reads for a friend.
+
+**(B) Active, "if appropriate"** — a real, disguised quick-question poll, `preference_polls`
+(RLS-enabled, zero client policies, every access through a SECURITY DEFINER RPC). The organizer
+sends ONE of exactly two fixed, neutral questions (never free text, which could itself leak what's
+being planned) to a real connected friend/match via `send_preference_poll` — the same "real
+connections only" eligibility check this schema's other friend-facing RPCs already use, one
+pending question per (asker, target) pair at a time (a plain, honest rate limit against
+accidentally spamming someone with several "quick questions" that would themselves become a
+tell), and a deliberately plain, unremarkable push ("💬 Quick question — {asker} wants to know:
+{question}") with zero occasion reference of any kind. The recipient answers via
+`answer_preference_poll`. **The privacy boundary is structural, not a client choice**:
+`get_my_pending_preference_polls` (the only read a target-facing client ever calls) never selects
+`occasion_context` at all — it isn't in that function's own column list, so there's no field to
+accidentally leak. `occasion_context` (a free-text note, e.g. "Sarah's anniversary dinner," for
+the ASKER's own private reference) and the real `answer_keys` are only ever both returned together
+by `get_my_asked_preference_polls`, callable only by the asker about their own sent polls.
+
+Both halves feed one real scoring signal, never two competing ones: `getWhoForPreferenceSignals()`
+(`preferencePolls.js`) merges a person's own standing declared preferences with any real,
+already-answered poll for them (fresher/more specific, so merged in rather than treated as a
+competing source) into one `{cuisineKeys, venueKeys}` shape, best-effort (degrades to an empty
+signal on any failure — this personalizes ranking, it never gates it). A new
+`whoForPreferenceBonus()` (`intentResolverScoring.js`) scores it in `resolveBusinessAvailability()`
+— same "real signal, flat bonus, never a filter" shape every other bonus in that file already
+uses, distinct from every existing bonus there (all of which score the CALLER's own preferences,
+never a third party's). `resolveIntent()` gained new optional `whoForFriendId`/`whoForName`
+params, threaded through from the two real places an occasion's own who-for person is already
+known: `CelebrateSomethingScreen.js`'s solo "options" step and `GroupOccasionPlanScreen.js`'s
+group-vote business-options proposal (safe unconditionally, including under surprise mode, since
+this only ever reads the who-for person's own already-visible data and never notifies or reveals
+anything to them). `getBusinessAvailabilityReasons()` gained matching real "why" text ("Sarah
+tends to like Italian" / "Matches Sarah's taste"), never naming which of the two sources it came
+from — a saved preference and an answered disguised question look identical from there on, and
+neither ever says WHY it's asking.
+
+Client: `ProfileScreen.js` gained a real, optional "Dining & Venue Preferences" editable chip
+section (same toggleable-chip shape as the existing Interests editor), writing straight to the two
+new profile columns. `CelebrateSomethingScreen.js`'s who_for step gained a "💬 Ask {name} a quick
+question" expand-in-place panel (Progressive Depth doctrine — no new screen) shown once a real
+connected friend is picked as who-for; each of the 2 fixed questions is a tappable chip that sends
+`send_preference_poll`, with an already-asked question honestly shown as "⏳ waiting for a reply"
+rather than allowed to hit the server's own duplicate-pending rejection. A new `PreferencePollScreen.js`
+(registered as a modal route, `PreferencePolls`) is the real target-facing surface — lists every
+real pending question with a plain chip-picker answer flow, reachable both via a new
+`preference_poll_received` push-tap route (`notifications.js`) and via a real, un-dismissible
+"💬 Someone you know has a quick question for you" card on `HomeScreen.js` (per this file's own
+"no dead ends" convention — a missed/dismissed push must never be the only way to find a pending
+question).
+
+Verified live against production (`enmosvippabmuqslzrox`) via a disposable rolled-back transaction
+with real fixtures (two real accepted friends, a stranger) before applying the migration for real:
+valid cuisine/venue preference writes persist correctly and an invalid value is correctly rejected
+by the CHECK constraint; `send_preference_poll` succeeds for a real connection and correctly
+rejects both a stranger ("You can only ask a real connection") and a duplicate pending question;
+`get_my_pending_preference_polls` returns exactly the real pending poll with `occasion_context`
+structurally absent from the payload; `answer_preference_poll` correctly records a real answer;
+`get_my_asked_preference_polls` correctly returns the full detail (occasion_context + answers) to
+the asker only, and correctly returns zero rows for someone who never asked anyone. Rolled back
+with zero leaked rows confirmed. Re-confirmed live after the real apply: both new profile columns
+present, `preference_polls` present with RLS enabled, and all four new functions
+(`send_preference_poll`/`answer_preference_poll`/`get_my_pending_preference_polls`/
+`get_my_asked_preference_polls`) have exactly one overload each with the correct `authenticated`-
+only grant (no `anon` leak). Full Jest suite 531/531 passing (10 new: `whoForPreferenceBonus`, the
+new who-for reason-text case, and `preferencePollQuestions.js`'s own vocabulary tests); all eleven
+touched/new files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised
+in a running app (no simulator/device tooling this session, standing note) — next session should
+confirm on a real account that the Dining & Venue Preferences chips render and save correctly on
+Profile, that "💬 Ask {name} a quick question" sends correctly and shows the waiting state on a
+re-ask, that a tapped `preference_poll_received` push (or the Home card) lands on
+`PreferencePollScreen` with the real pending question, and that a real answered/declared
+preference genuinely nudges the "Nearby found these options" results in `CelebrateSomethingScreen`.
+
 **Item 99 ("Let Nearby recommend when to celebrate") — fully DONE (2026-09-17), same-day direct
 override of the "logged as future, not now" call made earlier in this session.** User's own
 example: "If the birthday is Wednesday but most invited people are unavailable: Saturday has the
@@ -4135,40 +4228,6 @@ specifically said not to build yet:
   current lean voting view)
 - Complicated calendars (recurring sub-events, multi-day itineraries, etc. — beyond the single
   `scheduled_date` the occasion already has)
-
-**Item 100 ("Let the recipient contribute preferences without spoiling the surprise") — logged
-2026-09-17, explicitly NOT for now.** User's own framing: planning a wife's anniversary, Nearby
-could already know her saved preferences (Italian / outdoor seating / live music) without telling
-her anything is being planned, or — "if appropriate" — the organizer could ask her directly ("What
-kind of dinner are you in the mood for?") without exposing why. User's own words: "This is a
-really interesting future feature" — the same "future, not a build request" framing Item 99
-originally carried before the user directly overrode it in the very next message; logged here
-rather than built, on the same precedent, pending the same kind of explicit override if wanted.
-
-Real building blocks already in place: `profiles.interests` is real, already-stored data a
-connected friend/spouse can already see (`ViewProfileScreen`'s own interest display) — reading it
-for scoring purposes isn't a new access grant. Surprise mode (Item 96) already guarantees the
-celebrated person can never see or be invited onto their own surprise plan, and Item 71 already
-established the precedent of surfacing a celebrated person's own real signal (mutual friends) into
-the organizer's flow without alerting them. `resolveIntent()`'s scoring
-(`attributeAndCuisineBonus`/`occasionBonus` in `intentResolverScoring.js`) already knows how to
-score real attribute/cuisine overlap — today only against what the CALLER explicitly typed, never
-against a third party's own stored preferences.
-
-The real gap, passive half: nothing feeds the who-for person's own `profiles.interests` (or a
-finer preference signal, if one existed) into the organizer's own business search scoring at all
-— when `who_for_friend_id` is set (occasions/occasion_group_plans already carry it), that
-person's real, already-visible interests could plausibly bias `resolveBusinessAvailability()`'s
-ranking the same way the caller's own signals already do.
-
-The real gap, active half: no "ask without exposing why" mechanism exists anywhere in this
-codebase — no lightweight, occasion-decoupled quick-question/poll feature that could reach a
-specific person with a single neutral question and route the answer back to the organizer's own
-search, structurally severed from any occasion context. This is real, non-trivial UX/privacy
-design work of its own (how a "just curious" question avoids looking like a giveaway, how many can
-plausibly be asked, where the answer surfaces for the organizer, whether the recipient's own
-answer should ever reveal that someone asked) — worth a deliberate scoping conversation when
-actually greenlit, not an assumed shape.
 
 ## Standing Conventions (Locked)
 

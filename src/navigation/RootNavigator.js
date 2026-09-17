@@ -102,6 +102,7 @@ import FriendsScreen from '../screens/FriendsScreen';
 import GatheringChatScreen from '../screens/GatheringChatScreen';
 import PlanChatScreen from '../screens/PlanChatScreen';
 import QuickFilterCustomizeScreen from '../screens/QuickFilterCustomizeScreen';
+import PreferencePollScreen from '../screens/PreferencePollScreen';
 import MusicModeScreen from '../screens/MusicModeScreen';
 
 const Stack = createNativeStackNavigator();
@@ -540,6 +541,7 @@ export default function RootNavigator() {
                 the audit found (FiltersModal itself was already a real
                 in-place modal; only this deeper "Customize" screen wasn't). */}
             <Stack.Screen name="QuickFilterCustomize" component={QuickFilterCustomizeScreen} options={({ route }) => ({ headerShown: true, title: route?.params?.mode === 'friends' ? 'Customize Friends Filters' : 'Customize Quick Filters', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' })} />
+            <Stack.Screen name="PreferencePolls" component={PreferencePollScreen} options={{ headerShown: true, title: 'Quick Questions', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="Communities" component={CommunitiesScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="CreateCommunity" component={CreateCommunityScreen} options={{ headerShown: true, title: 'Create Community', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="EditCommunity" component={EditCommunityScreen} options={{ headerShown: true, title: 'Edit Community', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />

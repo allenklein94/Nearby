@@ -15,6 +15,7 @@ const {
   secondaryCategoryBonus,
   favoriteBusinessBonus,
   pastPlanBonus,
+  whoForPreferenceBonus,
   getBusinessAvailabilityReasons,
   detectFriendDiscoveryIntent,
   SCORE_HAPPENING_NOW,
@@ -236,6 +237,29 @@ describe('pastPlanBonus', () => {
   });
 });
 
+describe('whoForPreferenceBonus', () => {
+  it('awards a bonus for a real cuisine match against the who-for person\'s own preference signal', () => {
+    expect(whoForPreferenceBonus({ cuisine: 'italian' }, { cuisineKeys: ['italian', 'french'], venueKeys: [] })).toBe(SCORE_HAPPENING_NOW);
+  });
+
+  it('awards a bonus for a real venue/attribute overlap', () => {
+    expect(whoForPreferenceBonus({ attributes: ['outdoor_seating'] }, { cuisineKeys: [], venueKeys: ['outdoor_seating', 'live_music'] })).toBe(SCORE_HAPPENING_NOW);
+  });
+
+  it('awards both bonuses together when both dimensions genuinely match', () => {
+    expect(whoForPreferenceBonus(
+      { cuisine: 'italian', attributes: ['live_music'] },
+      { cuisineKeys: ['italian'], venueKeys: ['live_music'] }
+    )).toBe(SCORE_HAPPENING_NOW * 2);
+  });
+
+  it('awards nothing for a real mismatch, or when no signal exists', () => {
+    expect(whoForPreferenceBonus({ cuisine: 'mexican' }, { cuisineKeys: ['italian'], venueKeys: [] })).toBe(0);
+    expect(whoForPreferenceBonus({ cuisine: 'italian' }, null)).toBe(0);
+    expect(whoForPreferenceBonus({ cuisine: 'italian' }, { cuisineKeys: [], venueKeys: [] })).toBe(0);
+  });
+});
+
 describe('getBusinessAvailabilityReasons', () => {
   it('returns no reasons when nothing was asked and nothing matches', () => {
     expect(getBusinessAvailabilityReasons({}, {})).toEqual([]);
@@ -268,6 +292,21 @@ describe('getBusinessAvailabilityReasons', () => {
     expect(getBusinessAvailabilityReasons({ partner_id: 'p1' }, {
       pastPartnerIds: new Set(['p1']), followedPartnerIds: new Set(['p1']),
     })).toEqual(["You've been here before", 'A business you follow']);
+  });
+
+  it('names a real who-for preference match, naming them when a name is known', () => {
+    expect(getBusinessAvailabilityReasons({ cuisine: 'italian' }, {
+      whoForSignals: { cuisineKeys: ['italian'], venueKeys: [] }, whoForName: 'Sarah',
+    })).toEqual(['Sarah tends to like Italian']);
+    expect(getBusinessAvailabilityReasons({ cuisine: 'italian' }, {
+      whoForSignals: { cuisineKeys: ['italian'], venueKeys: [] },
+    })).toEqual(['They tend to like Italian']);
+    expect(getBusinessAvailabilityReasons({ attributes: ['live_music'] }, {
+      whoForSignals: { cuisineKeys: [], venueKeys: ['live_music'] }, whoForName: 'Sarah',
+    })).toEqual(["Matches Sarah's taste"]);
+    expect(getBusinessAvailabilityReasons({ cuisine: 'mexican' }, {
+      whoForSignals: { cuisineKeys: ['italian'], venueKeys: [] }, whoForName: 'Sarah',
+    })).toEqual([]);
   });
 
   it('never fabricates a reason for a real mismatch', () => {

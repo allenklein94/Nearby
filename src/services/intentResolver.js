@@ -3,6 +3,7 @@ import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
 import { getActiveOffers, logBusinessProfileView } from './brandOffers';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, getMyBusinessAffinitySignals } from './businessFulfillment';
+import { getWhoForPreferenceSignals } from './preferencePolls';
 import { searchOccasionPackages, formatOccasionPackageDetail } from './occasionPackages';
 import { getSocialForecast } from './homeDashboard';
 import { classifyCreateRequest } from './createAssistant';
@@ -39,6 +40,7 @@ import {
   secondaryCategoryBonus,
   favoriteBusinessBonus,
   pastPlanBonus,
+  whoForPreferenceBonus,
   getBusinessAvailabilityReasons,
   detectFriendDiscoveryIntent,
   SCORE_OCCASION_PACKAGE_FLOOR,
@@ -269,7 +271,7 @@ async function resolvePerks(category, location) {
 // that requires submitting a fresh ask and waiting. This is what makes
 // the business path a real candidate instead of a dead end -- see the
 // integration audit for the gap this closes.
-async function resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise) {
+async function resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName) {
   if (!location) return [];
   // Universal Signal Remediation Pass, P0 item 2 (CLAUDE.md, Aug 28 2026):
   // a real hard feasibility filter now, not just relevance -- a posting
@@ -278,7 +280,7 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
   // lower. partySize is already resolved once at the top of
   // resolveIntent() and passed to every branch that needs it, same as
   // category/location.
-  const [rows, affinitySignals] = await Promise.all([
+  const [rows, affinitySignals, whoForSignals] = await Promise.all([
     searchActiveBusinessAvailability({
       category: category ?? null,
       latitude: location.latitude,
@@ -286,6 +288,7 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
       partySize: partySize ?? null,
     }),
     affinitySignalsPromise,
+    whoForSignalsPromise,
   ]);
   return rows.map((row) => {
     let score = 0;
@@ -341,6 +344,9 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
     // ordering below.
     score += pastPlanBonus(row, affinitySignals?.pastPartnerIds);
     score += favoriteBusinessBonus(row, affinitySignals?.followedPartnerIds);
+    // Item 100 (CLAUDE.md): a real signal about the person the ask is FOR,
+    // not the caller -- see whoForPreferenceBonus()'s own header comment.
+    score += whoForPreferenceBonus(row, whoForSignals);
     // Thursday plan item 23: real "why" text for the same bonuses just
     // scored above, never a second computation -- appended to the
     // existing title/price subtitle rather than replacing it, so no
@@ -349,6 +355,7 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
       category, attributes, cuisine, partyType, occasion,
       followedPartnerIds: affinitySignals?.followedPartnerIds,
       pastPartnerIds: affinitySignals?.pastPartnerIds,
+      whoForSignals, whoForName,
     });
     const baseSubtitle = row.price != null ? `${row.title} · $${row.price}` : row.title;
     return {
@@ -492,7 +499,7 @@ async function resolveOccasionPackages(location, occasion, partySize) {
 // 2026-09-06) -- only ever a ranking bonus against a business's own real,
 // declared priority_occasions (resolveBusinessAvailability), never a
 // filter and never written anywhere.
-export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, partyType = null, attributes = [], cuisine = null, occasion = null }) {
+export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null }) {
   // Resolved once, up front, before any branch runs in parallel below —
   // not a check-only call. getNearbyGatherings() (called from
   // resolveGatherings) already calls Location.requestForegroundPermissionsAsync()
@@ -556,12 +563,20 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     followedPartnerIds: new Set(), pastPartnerIds: new Set(),
   }));
 
+  // Item 100 (CLAUDE.md): only fetched when the ask actually carries a real
+  // who-for person -- best-effort, degrades to an empty signal on any
+  // failure. Never awaited before the branches below start, same
+  // no-added-latency discipline the two promises above already establish.
+  const whoForSignalsPromise = whoForFriendId
+    ? getWhoForPreferenceSignals(whoForFriendId).catch(() => ({ cuisineKeys: [], venueKeys: [] }))
+    : Promise.resolve({ cuisineKeys: [], venueKeys: [] });
+
   const branches = await Promise.allSettled([
     resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise),
     resolveCommunities(category, location, myCity),
     resolveConnectedRequests(category, dateWindow),
     resolvePerks(category, location),
-    resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise),
+    resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName),
     resolvePolicyOnlyBusinesses(location, partySize),
     resolveOccasionPackages(location, occasion, partySize),
   ]);

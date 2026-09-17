@@ -519,6 +519,15 @@ export async function routeNotificationTap(data) {
         navigationRef.navigate('Occasions');
       }
       break;
+    // Item 100 (CLAUDE.md, "Let the recipient contribute preferences
+    // without spoiling the surprise"): a plain, neutral "quick question"
+    // push -- lands on a real screen listing every pending question, never
+    // deep-linked straight into answering one specific poll_id (the push
+    // payload never carries occasion_context, so there's nothing more
+    // specific to route to anyway).
+    case 'preference_poll_received':
+      navigationRef.navigate('PreferencePolls');
+      break;
     default:
       break;
   }

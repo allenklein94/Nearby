@@ -14,6 +14,7 @@ import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/
 import { formatPlaceStatusLabel } from '../utils/planCompletion';
 import { getUpcomingConnectedBirthdays } from '../services/friends';
 import { getUpcomingOccasions } from '../services/occasions';
+import { getMyPendingPreferencePolls } from '../services/preferencePolls';
 import { occasionDueLabel } from '../utils/occasionDatePrecision';
 import { isCalendarIntegrationEnabled, getUpcomingCalendarEvents } from '../services/deviceCalendar';
 import { nearestCalendarHint } from '../utils/calendarOccasionSuggestion';
@@ -245,6 +246,9 @@ export default function HomeScreen({ navigation }) {
   // routes to gathering creation instead.
   const [birthdayNudge, setBirthdayNudge] = useState(null);
   const [occasionNudge, setOccasionNudge] = useState(null);
+  // Item 100 (CLAUDE.md): a real count of pending "quick question" polls
+  // waiting for this user's own answer.
+  const [pendingPollsCount, setPendingPollsCount] = useState(0);
   // "The Plan Engine" Phase 2 (CLAUDE.md) -- the soonest real upcoming
   // hosted gathering that genuinely has no venue and no business_requests
   // row yet at all. Same per-day dismiss convention as the nudges above;
@@ -466,6 +470,21 @@ export default function HomeScreen({ navigation }) {
       // soonest real upcoming hosted gathering with genuinely no venue and
       // no business_requests row yet. Per-day dismiss, same convention as
       // every other nudge here.
+      // Item 100 (CLAUDE.md, "Let the recipient contribute preferences
+      // without spoiling the surprise"): a real, un-dismissible entry
+      // point so a pending "quick question" is never a dead end if the
+      // push notification was missed -- distinct from the other nudge
+      // cards above/below, which are all optional suggestions; this one is
+      // a real pending action someone else is waiting on.
+      const pendingPollsTask = (async () => {
+        try {
+          const pending = await getMyPendingPreferencePolls();
+          setPendingPollsCount(pending.length);
+        } catch (e) {
+          console.error('getMyPendingPreferencePolls failed', e);
+        }
+      })();
+
       const venueTask = (async () => {
         try {
           const needingVenue = await getMyGatheringsNeedingVenue();
@@ -546,6 +565,7 @@ export default function HomeScreen({ navigation }) {
         venueTask,
         rsvpsTask,
         calendarHintTask,
+        pendingPollsTask,
       ]);
       const { forecast, myLocation } = weatherResult;
       setLoadError(false);
@@ -1777,7 +1797,7 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
 
-        {(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || outcomePrompt || predictivePattern || groupIntentSignal || birthdayNudge || occasionNudge || venueNeededGathering || rsvpsOutstandingGathering || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
+        {(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || outcomePrompt || predictivePattern || groupIntentSignal || birthdayNudge || occasionNudge || pendingPollsCount > 0 || venueNeededGathering || rsvpsOutstandingGathering || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
           <View style={{ marginBottom: spacing.md }}>
             {predictivePattern && (
               <View style={styles.outcomePromptCard}>
@@ -1840,6 +1860,21 @@ export default function HomeScreen({ navigation }) {
                 </View>
                 <TouchableOpacity style={styles.predictiveActButton} onPress={handleOccasionAct} accessibilityLabel="Plan something" accessibilityRole="button">
                   <Text style={styles.predictiveActButtonText}>Yes, let's plan something →</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {pendingPollsCount > 0 && (
+              <View style={styles.outcomePromptCard}>
+                <Text style={styles.outcomePromptText} numberOfLines={2}>
+                  💬 Someone you know has a quick question for you
+                </Text>
+                <TouchableOpacity
+                  style={styles.predictiveActButton}
+                  onPress={() => navigation.navigate('PreferencePolls')}
+                  accessibilityLabel="Answer question"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.predictiveActButtonText}>Answer it →</Text>
                 </TouchableOpacity>
               </View>
             )}

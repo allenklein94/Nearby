@@ -11,6 +11,8 @@ import { routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { recordIntentSelection } from '../services/intentOutcomes';
 import { submitBusinessRequest } from '../services/businessFulfillment';
 import { createOccasionGroupPlan, linkOccasionGroupPlanToPlan } from '../services/occasionGroupPlans';
+import { sendPreferencePoll, getMyAskedPreferencePolls } from '../services/preferencePolls';
+import { PREFERENCE_POLL_QUESTIONS } from '../constants/preferencePollQuestions';
 import { occasionGroupOptions } from '../constants/businessAttributes';
 import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import {
@@ -393,6 +395,43 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     return () => { cancelled = true; };
   }, [whoForFriendId]);
 
+  // Item 100 (CLAUDE.md): which of the 2 fixed preference questions have
+  // already been asked of this real friend, so the "Ask a quick question"
+  // panel can honestly show "Waiting for a reply" instead of letting a
+  // duplicate ask hit send_preference_poll's own "already have a question
+  // pending" rejection. Re-fetched whenever whoForFriendId changes, same
+  // shape as the mutual-friends effect above.
+  const [askedPollKeys, setAskedPollKeys] = useState(() => new Set());
+  const [askPollExpanded, setAskPollExpanded] = useState(false);
+  const [askPollSending, setAskPollSending] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setAskPollExpanded(false);
+    if (!whoForFriendId) {
+      setAskedPollKeys(new Set());
+      return undefined;
+    }
+    getMyAskedPreferencePolls(whoForFriendId).then((polls) => {
+      if (cancelled) return;
+      setAskedPollKeys(new Set(polls.filter((p) => !p.answeredAt).map((p) => p.questionKey)));
+    });
+    return () => { cancelled = true; };
+  }, [whoForFriendId]);
+
+  async function handleSendPreferencePoll(questionKey) {
+    if (!whoForFriendId || askPollSending) return;
+    setAskPollSending(true);
+    try {
+      await sendPreferencePoll(whoForFriendId, questionKey, composeCelebrationTitle({ occasion, whoFor, whoForName: whoForName.trim() || null }));
+      setAskedPollKeys((prev) => new Set(prev).add(questionKey));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      Alert.alert("Couldn't send", e.message || 'Please try again.');
+    }
+    setAskPollSending(false);
+  }
+
   async function ensureCommunitiesLoaded() {
     if (communitiesLoaded || loadingCommunities) return;
     setLoadingCommunities(true);
@@ -513,7 +552,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     setOptionsResult(null);
     setSelectedIds(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [occasion, activityType, whenPreset, scheduledAt, partySize, experienceLevel]);
+  }, [occasion, activityType, whenPreset, scheduledAt, partySize, experienceLevel, whoForFriendId]);
 
   async function fetchOptions() {
     setOptionsLoading(true);
@@ -529,6 +568,12 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         // field. 'simple' stays unbiased (null); 'special'/'go_all_out'
         // nudge toward pricier/more-curated real candidates.
         priceLevel: experienceLevelToPriceLevel(experienceLevel),
+        // Item 100 (CLAUDE.md): a real connected friend's own standing/
+        // polled preferences bias which businesses surface here -- never
+        // exposed to them, never a filter, only ever set when a real
+        // connected friend was picked as who-for.
+        whoForFriendId,
+        whoForName: whoForName.trim() || null,
       });
       setOptionsResult(result);
     } catch (e) {
@@ -1287,6 +1332,46 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         </Text>
                       </TouchableOpacity>
                     )}
+
+                    {whoForFriendId && (
+                      <View style={{ marginTop: spacing.md }}>
+                        <TouchableOpacity
+                          onPress={() => setAskPollExpanded((v) => !v)}
+                          activeOpacity={0.8}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Ask ${whoForName} a quick question`}
+                        >
+                          <Text style={styles.expandLinkText}>
+                            {askPollExpanded ? '▾' : '▸'} 💬 Ask {whoForName} a quick question
+                          </Text>
+                        </TouchableOpacity>
+                        {askPollExpanded && (
+                          <View style={styles.expandPanel}>
+                            <Text style={styles.helperText}>
+                              A plain question, never mentioning this occasion — {whoForName} never sees why you asked.
+                            </Text>
+                            {PREFERENCE_POLL_QUESTIONS.map((q) => {
+                              const alreadyAsked = askedPollKeys.has(q.key);
+                              return (
+                                <TouchableOpacity
+                                  key={q.key}
+                                  style={[styles.chip, { marginTop: spacing.xs, alignSelf: 'flex-start' }, alreadyAsked && styles.chipDisabled]}
+                                  onPress={() => handleSendPreferencePoll(q.key)}
+                                  disabled={alreadyAsked || askPollSending}
+                                  activeOpacity={0.8}
+                                  accessibilityLabel={q.questionText}
+                                  accessibilityRole="button"
+                                >
+                                  <Text style={styles.chipText}>
+                                    {alreadyAsked ? `⏳ Asked: "${q.questionText}" — waiting for a reply` : `“${q.questionText}”`}
+                                  </Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                        )}
+                      </View>
+                    )}
                   </>
                 )}
               </>
@@ -1872,6 +1957,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
   chipTextSelected: { color: '#fff' },
+  chipDisabled: { opacity: 0.5 },
+  // Item 100: the "Ask a quick question" expand-in-place panel, same
+  // Progressive Depth shape as GroupOccasionPlanScreen's own "+ Invite More
+  // Guests" panel -- a link that expands in place, never a new screen.
+  expandLinkText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  expandPanel: { marginTop: spacing.sm, gap: spacing.xs },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border, marginTop: spacing.xs },
   // Item 74: the "Custom Occasion" free-text description box.
   textArea: { minHeight: 84, paddingTop: spacing.md },

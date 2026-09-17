@@ -15,6 +15,7 @@ import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { feetInchesToTotalInches, isBlankHeightPair, totalInchesToFeetInches } from '../utils/heightUnits';
 import { PERSONAL_INTEREST_OPTIONS as INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS } from '../constants/businessAttributes';
 import VoicePlayButton from '../components/VoicePlayButton';
 import { typography, spacing, radius } from '../theme';
 
@@ -101,6 +102,16 @@ export default function ProfileScreen({ navigation, route }) {
   const [extraPhotos, setExtraPhotos] = useState([]);
   const [uploadingExtra, setUploadingExtra] = useState(false);
   const [interests, setInterests] = useState([]);
+  // Item 100 (CLAUDE.md, "Let the recipient contribute preferences without
+  // spoiling the surprise"), half A: a real, optional, self-declared
+  // standing preference -- same posture as `interests` above, drawn from
+  // the exact same CUISINE_OPTIONS/BUSINESS_ATTRIBUTE_OPTIONS vocabulary
+  // business_requests.cuisine/attributes already use. A connected friend
+  // reading this for scoring purposes (getWhoForPreferenceSignals) isn't a
+  // new access grant -- it's the same profile row ViewProfileScreen
+  // already reads for a friend.
+  const [cuisinePreferences, setCuisinePreferences] = useState([]);
+  const [venuePreferences, setVenuePreferences] = useState([]);
   const [pronouns, setPronouns] = useState('');
   const [gender, setGender] = useState('');
   const [sexualOrientation, setSexualOrientation] = useState('');
@@ -207,6 +218,8 @@ export default function ProfileScreen({ navigation, route }) {
       setBio(data.bio || '');
       setPhotoVerified(!!data.photo_verified);
       setInterests(data.interests || []);
+      setCuisinePreferences(data.cuisine_preferences || []);
+      setVenuePreferences(data.venue_preferences || []);
       setPronouns(data.pronouns || '');
       setGender(data.gender || '');
       setSexualOrientation(data.sexual_orientation || '');
@@ -272,6 +285,14 @@ export default function ProfileScreen({ navigation, route }) {
     setInterests((prev) =>
       prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
     );
+  }
+
+  function toggleCuisinePreference(key) {
+    setCuisinePreferences((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  }
+
+  function toggleVenuePreference(key) {
+    setVenuePreferences((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   }
 
   // Same instant-write shape SettingsScreen's own toggleNotifPref already
@@ -501,6 +522,8 @@ export default function ProfileScreen({ navigation, route }) {
         display_name: displayName,
         bio,
         interests,
+        cuisine_preferences: cuisinePreferences,
+        venue_preferences: venuePreferences,
         pronouns: pronouns.trim() || null,
         gender: gender.trim() || null,
         sexual_orientation: sexualOrientation.trim() || null,
@@ -1292,6 +1315,52 @@ export default function ProfileScreen({ navigation, route }) {
                 accessibilityState={{ selected }}
               >
                 <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{interest}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Item 100 (CLAUDE.md, "Let the recipient contribute preferences
+            without spoiling the surprise"), half A -- a real, optional,
+            standing declaration, same shape as Interests above. A friend
+            planning something for you can use this (getWhoForPreferenceSignals)
+            without ever telling you anything's being planned. */}
+        <Text style={styles.sectionLabel} accessibilityRole="header">Dining & Venue Preferences</Text>
+        <Text style={styles.sublabel}>
+          Optional. A friend planning something for you can quietly use this to pick better options.
+        </Text>
+        <View style={styles.chipsWrap}>
+          {CUISINE_OPTIONS.map((o) => {
+            const selected = cuisinePreferences.includes(o.key);
+            return (
+              <TouchableOpacity
+                key={o.key}
+                style={[styles.chip, selected && styles.chipSelected]}
+                onPress={() => toggleCuisinePreference(o.key)}
+                activeOpacity={0.8}
+                accessibilityLabel={o.label}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+              >
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <View style={[styles.chipsWrap, { marginTop: spacing.sm }]}>
+          {BUSINESS_ATTRIBUTE_OPTIONS.map((o) => {
+            const selected = venuePreferences.includes(o.key);
+            return (
+              <TouchableOpacity
+                key={o.key}
+                style={[styles.chip, selected && styles.chipSelected]}
+                onPress={() => toggleVenuePreference(o.key)}
+                activeOpacity={0.8}
+                accessibilityLabel={o.label}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+              >
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
               </TouchableOpacity>
             );
           })}
