@@ -40,6 +40,51 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 107 ("Build the occasion around a beautiful shareable card") — fully DONE (2026-09-17),
+same-day direct follow-up to Items 105 & 106.** User's own mock: once a plan is finalized, a real
+branded card ("🎂 Sarah's 30th Birthday / Saturday · 7:30 PM / 📍 Restaurant / 👥 10 going / View
+Plan") shareable through Messages/text — "a recognizable visual artifact."
+
+Built on Item 90's own already-real `buildPlanSummary()` (title/dateLabel/timeLabel/location/
+partySize) rather than a second "what does a finalized plan look like" model — this is the exact
+data the mock's fields map onto field-for-field. New `OccasionPlanShareCard.js` renders a fixed,
+theme-independent (deliberately not `useTheme()` — a shared image should look the same regardless
+of the sharer's own light/dark setting, same reasoning `docs/invite.html` hardcodes its own
+palette) branded gradient card via `expo-linear-gradient` + the app's own approved `NearbyMark`
+brand component (Item 57's "the N mark should become part of the product language" — this is a new,
+concrete instance of exactly that). Rendered off-screen (always mounted once a plan is
+`statusKind === 'confirmed'`, positioned via absolute+opacity so it never appears in the visible
+layout) and captured to a real PNG via the new `react-native-view-shot` dependency
+(`npx expo install`, no config plugin/permissions needed — confirmed via its own README) the
+instant the user taps "🎉 Share This Plan," then handed to `expo-sharing`'s existing `shareAsync`
+(the same pattern `dataExport.js` already established for sharing a generated file) — that's what
+actually opens Messages/text/etc. Gated strictly to `statusKind === 'confirmed'` (Item 91's own
+real status resolver) — matching "when the plan is finalized" precisely, not shown for a
+still-pending or cancelled request. New pure `buildOccasionPlanShareCaption()`
+(`occasionPlanShareCard.js`, 6 new Jest tests) composes the same real fields into a plain-text
+description, used as the Share button's `accessibilityLabel` — a screen-reader user gets the actual
+plan content described, not just a generic "share" label, since the artifact itself is an image
+with no alt text of its own.
+
+Deliberately scoped to the one real "Plan" object Item 90 already made canonical
+(`BusinessRequestDetailScreen`'s primary-request screen) rather than also duplicating a second
+card-generation path on `GroupOccasionPlanScreen`'s own decided/fulfilled state — that screen's
+"decided" card has no `partySize`/location shape as clean as `buildPlanSummary()`'s, and once a
+group plan is finalized into a real business request, it already lands on this exact screen where
+the share action now lives, per Item 90's own "the Plan itself becomes the source of truth"
+architecture (one canonical summary, not two).
+
+Full Jest suite 555/555 passing (6 new); all three touched/new files transform-checked clean via
+`@babel/core` + `babel-preset-expo`. No DB migration — pure client-side, reusing an already-real
+data shape. Not exercised in a running app or on a real device (no simulator/device tooling this
+session, standing note) — this is the one item in this session where that matters most: neither
+`react-native-view-shot`'s actual on-device capture behavior nor the native share sheet hand-off
+has ever been exercised. Next session with device access should confirm: "🎉 Share This Plan"
+renders only once a plan is genuinely Confirmed, tapping it produces a real, correctly-styled PNG
+(not a blank/black capture — a known `react-native-view-shot` failure mode when a captured view
+render order or timing goes wrong), and the native share sheet correctly offers Messages/text/etc.
+with that image attached.
+
 **Items 105 & 106 ("This could also improve user acquisition" — non-Nearby guests on an Occasion
 plan) — fully DONE (2026-09-17), same-day direct follow-up to Item 104, built after a locked
 `AskUserQuestion` scope pick ("build it now").** User's own example: inviting 8 people to Sarah's

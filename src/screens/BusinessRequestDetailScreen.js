@@ -8,6 +8,10 @@ import { getPlanChatInfo } from '../services/planChat';
 import { relevantAddonTypesForOccasion, planAddonIcon, planAddonLabel } from '../constants/planAddons';
 import { occasionIcon, occasionLabel } from '../constants/businessAttributes';
 import { buildPlanTimeline, summarizePlanTimelineReadiness, buildPlanSummary, addonStateCopy } from '../utils/planAddonReadiness';
+import { buildOccasionPlanShareCaption } from '../utils/occasionPlanShareCard';
+import OccasionPlanShareCard from '../components/OccasionPlanShareCard';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
 import { getConnectedPeopleWithInterests } from '../services/surpriseMe';
 import { recordIntentSelection } from '../services/intentOutcomes';
@@ -806,6 +810,34 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const isOrganizer = !!planOrganizerInfo;
   const canAddAddons = request.status === 'open' && isOrganizer;
 
+  // Item 107 (CLAUDE.md): "Build the occasion around a beautiful
+  // shareable card" -- once the plan is genuinely finalized (Item 91's
+  // 'confirmed' status, the same real state this card's own pill already
+  // shows), render it off-screen and let the user share the captured
+  // image through the native share sheet ("Messages, text, etc.").
+  const shareCardRef = useRef(null);
+  const [sharingPlanCard, setSharingPlanCard] = useState(false);
+
+  async function handleSharePlanCard() {
+    if (!planSummary || !shareCardRef.current) return;
+    setSharingPlanCard(true);
+    try {
+      const uri = await captureRef(shareCardRef, { format: 'png', quality: 1 });
+      const available = await Sharing.isAvailableAsync();
+      if (!available) {
+        Alert.alert("Sharing isn't available on this device.");
+        return;
+      }
+      await Sharing.shareAsync(`file://${uri}`, {
+        mimeType: 'image/png',
+        dialogTitle: planSummary.title,
+      });
+    } catch (e) {
+      Alert.alert('Error', "Couldn't create the shareable card. Try again.");
+    }
+    setSharingPlanCard(false);
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
@@ -842,6 +874,33 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             )}
             {planSummary.location && <Text style={styles.planSummaryLine}>📍 {planSummary.location}</Text>}
             {planSummary.partySize != null && <Text style={styles.planSummaryLine}>👥 {planSummary.partySize} people</Text>}
+            {planSummary.statusKind === 'confirmed' && (
+              <TouchableOpacity
+                style={styles.sharePlanCardLink}
+                onPress={handleSharePlanCard}
+                disabled={sharingPlanCard}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`Share this plan: ${buildOccasionPlanShareCaption(planSummary).replace(/\n/g, ', ')}`}
+              >
+                <Text style={styles.sharePlanCardLinkText}>{sharingPlanCard ? 'Creating card…' : '🎉 Share This Plan'}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+        {planSummary && planSummary.statusKind === 'confirmed' && (
+          // Off-screen, always-mounted so the ref is ready to capture the
+          // moment the user taps Share -- never rendered visibly (view-shot
+          // captures this ref directly regardless of on-screen position).
+          <View style={styles.hiddenShareCardWrap} pointerEvents="none">
+            <OccasionPlanShareCard
+              ref={shareCardRef}
+              title={planSummary.title}
+              dateLabel={planSummary.dateLabel}
+              timeLabel={planSummary.timeLabel}
+              location={planSummary.location}
+              partySize={planSummary.partySize}
+            />
           </View>
         )}
         {!!request.addon_type && (
@@ -1503,6 +1562,9 @@ const getStyles = (colors) => StyleSheet.create({
   planSummaryStatusTextInProgress: { color: '#B8791F' },
   planSummaryStatusTextCompleted: { color: colors.textTertiary },
   planSummaryLine: { ...typography.body, color: colors.textSecondary, marginTop: 2 },
+  sharePlanCardLink: { marginTop: spacing.sm, alignSelf: 'flex-start' },
+  sharePlanCardLinkText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
+  hiddenShareCardWrap: { position: 'absolute', top: -9999, left: -9999, opacity: 0 },
   rawText: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
   statusLine: { ...typography.caption, color: colors.textTertiary, fontWeight: '600', marginBottom: spacing.lg },
   emptyText: { ...typography.body, color: colors.textSecondary },
