@@ -4065,6 +4065,28 @@ specifically said not to build yet:
 - Complicated calendars (recurring sub-events, multi-day itineraries, etc. — beyond the single
   `scheduled_date` the occasion already has)
 
+**Item 99 ("Let Nearby recommend when to celebrate") — logged 2026-09-17, explicitly NOT for
+now.** User's own framing: "If the birthday is Wednesday but most invited people are unavailable:
+Saturday has the most availability among your guests" → "Plan for Saturday?" — the user's own
+words: "a cool future capability... Again, future — not necessarily Thursday" (this project's own
+shorthand, established across many prior sessions, for "don't build this yet"). Logged here
+rather than built, per that explicit signal.
+
+Real building blocks this would connect, once actually greenlit: Item 75's device-calendar read
+access (`src/services/deviceCalendar.js`) already gives Nearby a real, permissioned, per-user
+signal of busy/free time, but only ever the CALLER's own calendar today — this item needs each
+INVITEE's own availability, which no current mechanism collects (a guest's device calendar is
+never shared with the host, by design — Item 76's own locked "Calendar = when" boundary would
+need real thought about how a recommendation like this respects that without asking every guest
+to grant Nearby calendar access too). `occasion_group_plans`/`occasion_group_plan_participants`
+(Items 66/96) already model a real invited-guest roster Nearby could poll or reason about. Item
+98's new `date_precision` (`weekend`/`around`/`flexible`) is the natural anchor a "Saturday has
+the most availability" suggestion would resolve TOWARD, not a competing mechanism. No RSVP-based
+per-day availability poll exists anywhere in this schema yet (closest precedent:
+`occasion_group_plan_options`/`_votes`, which vote on WHAT, not WHEN) — building this for real
+would likely mean a genuinely new "which days work for you?" ask per invitee, not just reusing an
+existing signal, which is real scope worth scoping deliberately when the user actually asks.
+
 ## Standing Conventions (Locked)
 
 These are the load-bearing rules distilled from thousands of lines of prior build history. Full
