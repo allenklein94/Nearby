@@ -40,6 +40,50 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 109 ("Security/privacy should be designed in from day one... make the visibility model
+explicit: Private / Invite-only / Friends / Public, default to the most private reasonable
+setting") — audited, fully DONE (2026-09-17), same-day direct follow-up to Item 108.** Audited the
+real current model (RLS policies, RPC access checks, function bodies pulled live) against the
+user's own 4-tier vocabulary before writing anything, rather than assumed. Verdict: the underlying
+access-control architecture already implements exactly this, and already defaults to the most
+private reasonable tier at every step:
+- **Private** = an `occasions` row itself (a personal reminder) — RLS is `auth.uid() = user_id`
+  only; the one broadening mechanism, `connected_user_id`, is a single explicitly-picked person,
+  opt-in, default off (Item 62/63) — confirmed live via `get_upcoming_occasions()`'s own access
+  check: owner, or that one real connected friend/match, never anyone else.
+- **Invite-only** = an `occasion_group_plans` row — RLS enabled with **zero** client policies
+  (confirmed live), every access routed through a SECURITY DEFINER RPC that checks host/organizer/
+  joined-participant membership; structurally can't leak beyond that roster. A resulting Gathering
+  from the Occasion wizard defaults here too — `resolveCelebrationVisibility()` (already built)
+  returns `invite_only` for every activity type except an explicit "existing group" pick, never
+  defaults to public.
+- **Friends** / **Public** = `gatherings.visibility` = `'friends'` / `'everyone'`, both already
+  real, already gated identically everywhere a gathering can be browsed
+  (`applyGatheringVisibilityFilters()`, the same predicate Item 108 just extended to Home's
+  friend-activity feed) — never the *default* for anything occasion-sourced, only ever reached by
+  the user's own explicit, later widening.
+
+What was genuinely missing, and the one real thing this item shipped: the model was correct but
+**invisible** — a user had no way to actually see/confirm "this is private" short of trusting an
+RLS rule they can't read. Added real, always-visible, no-new-data-needed privacy indicators, pure
+UI reusing already-fetched fields: a shared `VISIBILITY_OPTIONS` vocabulary (`src/constants/
+gatheringVisibility.js`, extracted out of `CreateGatheringScreen.js`'s own local copy, reordered
+narrowest-to-widest) now also renders as a persistent badge on `GatheringDetailScreen.js` (icon +
+label + the specific community name when applicable) — previously shown only inside the create
+picker, never on the resulting detail screen. New `describeOccasionPrivacy()`
+(`src/utils/occasionVisibility.js`, 5 new Jest tests) renders "🔒 Private" or "👤 Shared with
+{name}" on every `OccasionsScreen.js` row, and a plain "🔒 Invite-only" line on that screen's Group
+Plans rows and on `GroupOccasionPlanScreen.js`'s own header (additive to, not replacing, Item 65's
+existing surprise-specific banner).
+
+No DB migration — pure client-side surfacing of already-real, already-correctly-scoped data. Full
+Jest suite 560/560 passing (5 new); all six touched/new files transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device tooling
+this session, standing note) — next session should confirm on a real account that the visibility
+badge renders correctly on `GatheringDetailScreen` for each of the 4 tiers (including the
+community name for a community-scoped gathering), and that the new privacy lines render correctly
+on `OccasionsScreen`'s occasion rows, its Group Plans rows, and `GroupOccasionPlanScreen`'s header.
+
 **Item 108 ("don't make the app socially noisy" — a real privacy leak in Home's friend-activity
 feed) — fully DONE (2026-09-17), picked up and finished after an interrupted prior session left
 the fix uncommitted on disk.** Found at session start: a complete, uncommitted fix to

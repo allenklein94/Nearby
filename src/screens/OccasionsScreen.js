@@ -8,6 +8,7 @@ import { getMyFriends } from '../services/friends';
 import { composeCelebrationTitle } from '../services/celebrateSomething';
 import { OCCASION_OPTIONS, personalOccasionTypeOptions, personalOccasionTypeGroupOptions } from '../constants/businessAttributes';
 import { groupOccasionsByPerson } from '../utils/occasionGrouping';
+import { describeOccasionPrivacy } from '../utils/occasionVisibility';
 import {
   OCCASION_DATE_PRECISION_OPTIONS,
   normalizeOccasionDateForPrecision,
@@ -576,6 +577,11 @@ export default function OccasionsScreen({ navigation }) {
                       <Text style={styles.detail}>
                         {GROUP_PLAN_STATUS_COPY[plan.status] ?? plan.status}{plan.isHost ? ' · Hosting' : ''}
                       </Text>
+                      {/* Item 109 (CLAUDE.md, "make the visibility model
+                          explicit"): a group plan is always invite-only by
+                          construction (zero client RLS policies, RPC-gated
+                          to the host and invited participants) -- say so. */}
+                      <Text style={styles.privacyLine}>🔒 Invite-only</Text>
                     </View>
                   </TouchableOpacity>
                 );
@@ -607,6 +613,13 @@ export default function OccasionsScreen({ navigation }) {
                         {occasion.recurs_annually ? ' · Repeats every year' : ' · One time'}
                         {occasion.resulting_plan_id ? ' · ✅ Planned' : ''}
                         {occasion.imported_from_calendar ? ' · 📅 From your calendar' : ''}
+                      </Text>
+                      {/* Item 109 (CLAUDE.md, "make the visibility model
+                          explicit"): who can actually see this record --
+                          always Private, or Shared with one explicitly
+                          picked person, never anything broader. */}
+                      <Text style={styles.privacyLine}>
+                        {describeOccasionPrivacy(occasion).icon} {describeOccasionPrivacy(occasion).label}
                       </Text>
                       {/* Item 96 ("Add surprise mode"): "Eventually: Reveal
                           plan becomes an action" -- a real, one-way tap. */}
@@ -905,6 +918,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   name: { ...typography.bodyBold, color: colors.textPrimary },
   detail: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
+  privacyLine: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   revealLink: { color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: 4 },
   iconButton: { paddingHorizontal: spacing.xs, paddingVertical: spacing.sm },
   removeButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },

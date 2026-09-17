@@ -566,6 +566,14 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
           {occasionLabel(detail.occasionType)} · {formatWhen(detail.whenPreset, detail.scheduledDate)}
           {detail.isHost ? ' · You\'re hosting' : ''}
         </Text>
+        {/* Item 109 (CLAUDE.md, "make the visibility model explicit"): this
+            plan is invite-only by construction whether or not surprise mode
+            is on -- occasion_group_plans has zero client RLS policies,
+            every access goes through an RPC that checks host/organizer/
+            joined-participant membership. Say so plainly instead of
+            leaving it an invisible rule; the richer surprise-specific
+            banner below still covers the surprise case on top of this. */}
+        <Text style={[styles.subheader, { marginTop: 2 }]}>🔒 Invite-only — visible to the host and invited guests only</Text>
         {budgetLabel && <Text style={[styles.subheader, { marginTop: 2 }]}>💰 {budgetLabel}</Text>}
 
         {/* Item 65 (CLAUDE.md): the one collaborator-facing surface this

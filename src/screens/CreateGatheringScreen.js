@@ -12,6 +12,7 @@ import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { CATEGORY_GROUPS, groupForTag } from '../constants/gatheringCategories';
+import { VISIBILITY_OPTIONS } from '../constants/gatheringVisibility';
 import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -41,13 +42,6 @@ const PARTY_TYPE_OPTIONS = [
   { key: 'friends', label: '👥 Bring Friends' },
   { key: 'groups', label: '👨‍👩‍👧‍👦 Big Group' },
   { key: 'date', label: '💕 A Date Idea' },
-];
-
-const VISIBILITY_OPTIONS = [
-  { key: 'everyone', icon: '🌍', label: 'Everyone', hint: 'Anyone nearby can discover this' },
-  { key: 'friends', icon: '👥', label: 'Friends', hint: 'Only your friends can find this' },
-  { key: 'community', icon: '🏘', label: 'Community', hint: 'Only members of one of your communities' },
-  { key: 'invite_only', icon: '🔒', label: 'Invite Only', hint: "Only people you personally invite — you'll approve each person" },
 ];
 
 // Capacity buckets match the original mockup language. "10+" doesn't map to

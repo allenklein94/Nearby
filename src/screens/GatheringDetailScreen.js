@@ -21,6 +21,7 @@ import {
   stopRecurringSeries,
 } from '../services/gatherings';
 import { filterToMyConnections } from '../services/connections';
+import { visibilityMeta } from '../constants/gatheringVisibility';
 import { formatPreciseBucketLine, formatInterestLine } from '../utils/groupInsightsLabels';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getGatheringOffer } from '../services/brandOffers';
@@ -534,6 +535,17 @@ export default function GatheringDetailScreen({ route, navigation }) {
           <Text style={styles.metaLine}>
             {formatDate(gathering.scheduled_at)}{gathering.distanceLabel ? ` · ${gathering.distanceLabel}` : ''}
           </Text>
+          {/* Item 109 (CLAUDE.md, "make the visibility model explicit"): a
+              real, always-visible badge showing who this gathering is
+              actually visible to -- the same VISIBILITY_OPTIONS vocabulary
+              the create flow's own picker already uses, so a host or
+              attendee never has to trust an invisible rule. */}
+          {visibilityMeta(gathering.visibility) && (
+            <Text style={styles.metaLine}>
+              {visibilityMeta(gathering.visibility).icon} {visibilityMeta(gathering.visibility).label}
+              {gathering.visibility === 'community' && gathering.community?.name ? ` · ${gathering.community.name}` : ''}
+            </Text>
+          )}
 
           {gathering.isHost ? (
             <GatheringStatusBadge status="hosting" />
