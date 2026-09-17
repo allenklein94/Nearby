@@ -81,3 +81,34 @@ export async function searchOccasionPackages({ occasionType, latitude = null, lo
   if (error) throw new Error(error.message);
   return data ?? [];
 }
+
+// ---------- returning-customer recall (Item 102, CLAUDE.md, "Businesses
+// can participate in recurring occasions") ----------
+//
+// A business's own real "this customer celebrated here last year" list --
+// see 20261123_business_recurring_occasion_recall.sql for the full
+// consent/privacy design. Owner-scoped (managed_partner_id), and only ever
+// includes a real customer who explicitly opted in (Item 101's own recall
+// card, occasions.recall_shareable_with_business) AND has a real accepted/
+// completed business_request_offers history with THIS specific business.
+
+export async function getBusinessReturningOccasionCustomers(partnerId) {
+  const { data, error } = await supabase.rpc('get_business_returning_occasion_customers', {
+    partner_id_param: partnerId,
+  });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+// A real, rate-limited (once per occurrence, server-enforced) "Welcome
+// back" push to a real, consented returning customer -- optionally naming
+// one of the business's own already-built Occasion Packages rather than
+// inventing new offer content.
+export async function sendBusinessRecallOutreach(occasionId, partnerId, packageId = null) {
+  const { error } = await supabase.rpc('send_business_recall_outreach', {
+    occasion_id_param: occasionId,
+    partner_id_param: partnerId,
+    package_id_param: packageId,
+  });
+  if (error) throw new Error(error.message);
+}

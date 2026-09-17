@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { getMyOccasions, addOccasion, deleteOccasion, setOccasionReminderEnabled, revealOccasion } from '../services/occasions';
+import { getMyOccasions, addOccasion, deleteOccasion, setOccasionReminderEnabled, setOccasionRecallShareable, revealOccasion } from '../services/occasions';
 import { getMyOccasionGroupPlans } from '../services/occasionGroupPlans';
 import { getMyFriends } from '../services/friends';
 import { composeCelebrationTitle } from '../services/celebrateSomething';
@@ -100,6 +100,7 @@ export default function OccasionsScreen({ navigation }) {
   const [deletingId, setDeletingId] = useState(null);
   const [togglingReminderId, setTogglingReminderId] = useState(null);
   const [revealingId, setRevealingId] = useState(null);
+  const [togglingRecallShareId, setTogglingRecallShareId] = useState(null);
 
   // "Who is this for?" -- optional, but required for grouping to mean
   // anything. Defaults to 'me' (no third party named, nothing to share) --
@@ -384,6 +385,20 @@ export default function OccasionsScreen({ navigation }) {
     setTogglingReminderId(null);
   }
 
+  // Item 102 (CLAUDE.md, "Businesses can participate in recurring
+  // occasions"): the real, durable place to control this consent, since
+  // Home's own recall card only shows up the day it fires. Default OFF,
+  // never inferred -- see setOccasionRecallShareable's own header comment.
+  async function handleToggleRecallShare(occasion) {
+    setTogglingRecallShareId(occasion.id);
+    const next = !occasion.recall_shareable_with_business;
+    const ok = await setOccasionRecallShareable(occasion.id, next);
+    if (ok) {
+      setOccasions((prev) => prev.map((o) => (o.id === occasion.id ? { ...o, recall_shareable_with_business: next } : o)));
+    }
+    setTogglingRecallShareId(null);
+  }
+
   // Item 96 (CLAUDE.md, "Add surprise mode... Eventually: Reveal plan
   // becomes an action"): a real, one-way action -- when a real connected
   // friend is attached, this also turns ON sharing with them server-side
@@ -618,6 +633,22 @@ export default function OccasionsScreen({ navigation }) {
                     >
                       <Text style={{ fontSize: 18 }}>{occasion.reminder_enabled ? '🔔' : '🔕'}</Text>
                     </TouchableOpacity>
+                    {/* Item 102: only meaningful once there's real
+                        recurring history a business could ever recognize
+                        -- a plan that turned out to be gathering-destined
+                        (no business) just means consenting has no real
+                        effect, never a privacy leak either way. */}
+                    {occasion.recurs_annually && occasion.resulting_plan_id && (
+                      <TouchableOpacity
+                        style={styles.iconButton}
+                        onPress={() => handleToggleRecallShare(occasion)}
+                        disabled={togglingRecallShareId === occasion.id}
+                        accessibilityLabel={occasion.recall_shareable_with_business ? `Stop letting businesses recognize you for ${occasion.title}` : `Let a business recognize you for ${occasion.title}`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={{ fontSize: 18 }}>{occasion.recall_shareable_with_business ? '🏪' : '🚫'}</Text>
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity
                       style={styles.removeButton}
                       onPress={() => confirmDelete(occasion)}

@@ -142,3 +142,19 @@ export async function getOccasionRecall(occasionId) {
   }
   return data ?? null;
 }
+
+// Item 102 (CLAUDE.md, "Businesses can participate in recurring
+// occasions"): the consumer's own real, explicit, per-occasion consent
+// that the business behind a real recall may recognize them as a
+// returning customer next time -- default OFF, same "share this too,
+// opt-in" posture Item 62's connected_user_id checkbox already
+// established. A plain owner-scoped update (the table's own RLS policy
+// already covers UPDATE), same posture as setOccasionReminderEnabled.
+export async function setOccasionRecallShareable(occasionId, shareable) {
+  const { error } = await supabase.from('occasions').update({ recall_shareable_with_business: shareable }).eq('id', occasionId);
+  if (error) {
+    console.error('setOccasionRecallShareable error', error);
+    return false;
+  }
+  return true;
+}

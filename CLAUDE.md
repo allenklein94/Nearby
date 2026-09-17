@@ -40,6 +40,87 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 102 ("Businesses can participate in recurring occasions") — fully DONE (2026-09-17),
+same-day direct follow-up to Item 101.** User's own example: a business could eventually see
+"This customer celebrated here last year" and potentially offer "Welcome back — anniversary
+package available" — "subject to privacy and appropriate consent."
+
+Direct continuation of Item 101's `get_occasion_recall()` (the same real history read from the
+OTHER side), gated behind a brand-new, separate, explicit consent — never inferred from the
+reservation itself, and deliberately distinct from Item 69's existing post-acceptance
+`requester_display_name` reveal (which is about ONE already-confirmed booking, not a durable,
+recurring "recognize me next year" relationship). Shipped via
+`20261123_business_recurring_occasion_recall.sql`:
+
+(1) A new `occasions.recall_shareable_with_business` column (default false — same "share this
+too, opt-in, default OFF" posture Item 62's own `connected_user_id` checkbox and Item 101's own
+recall card already established) — the consumer's own explicit, per-occasion consent that the
+SPECIFIC business they were last fulfilled through may recognize them as a returning customer
+next time. Consent is scoped to whichever business the real history already points to — there is
+no "which business" picker, since the whole point is recognizing a real relationship that already
+exists, not broadcasting to arbitrary nearby businesses.
+
+(2) `get_business_returning_occasion_customers(partner_id)` — a business-owner-only read (same
+`profiles.managed_partner_id` ownership check every other business RPC in this schema uses) that
+surfaces exactly the real customers who (a) explicitly consented, (b) have a real recurring
+occasion, and (c) were genuinely fulfilled through THIS business via a real accepted/completed
+`business_request_offers` row — never a prospective/declined one, never a different business's
+customer. Bounded to a real, disclosed judgment call (next occurrence within 60 days) so the
+dashboard reads as timely "reach out now" candidates, not a year-round list.
+`send_business_recall_outreach()` is the real, rate-limited (once per occurrence, mirroring
+`send_occasion_planning_nudges()`'s own once-per-year dedup shape) action a business can take on
+one of these rows — a real push to the real returning customer, optionally naming one of the
+business's own already-built Occasion Packages (Item 68) rather than inventing a second offer-
+content mechanism. `get_occasion_recall()` (Item 101, unchanged signature) now also returns the
+consumer's own real consent state for the business it already resolved, so the client can render
+a toggle without a second round trip.
+
+What is deliberately NOT exposed to the business, even with consent: `who_for_name` — the
+occasion may be FOR a third party the requester organized for (e.g. a spouse's own anniversary
+dinner the requester themselves booked); the business needs to recognize the returning BOOKER,
+never learn who the occasion's who-for is, per the same privacy-minimalism discipline Item 69's
+original "the business gets only what it needs" rule already established.
+
+Client: `HomeScreen.js`'s existing Item 101 business-recall card gained a real, unchecked-by-
+default checkbox ("Let {partner} recognize you as a returning customer next time") right below
+the Return/Try Something New actions, wired to the new `setOccasionRecallShareable()`
+(`occasions.js`, plain owner-scoped update, same posture as `setOccasionReminderEnabled`).
+`OccasionsScreen.js` gained the same consent as a durable 🏪/🚫 per-row toggle (shown only when an
+occasion is genuinely recurring with real resulting-plan history — harmless, not a leak, if that
+history turns out to be gathering-destined, since the business-side RPC only ever surfaces a real
+business match regardless). `BusinessDashboardScreen.js` gained a new "🎉 Returning Customers"
+section (via `getBusinessReturningOccasionCustomers()`/`sendBusinessRecallOutreach()`, both new in
+`occasionPackages.js`) — each real consented customer shows occasion/name/last-visit price/next
+occurrence, with a "👋 Welcome Them Back" expand-in-place action (Progressive Depth doctrine) that
+optionally lets the owner pick one of their own matching, active Occasion Packages before sending
+— honestly labeled "✓ Already reached out" once the rate limit has fired this year, never allowed
+to re-fire silently. A new push type, `business_recall_outreach`, routes
+(`notifications.js`) to the same real `MakeAPlanScreen(partnerId)` orchestration Item 101's own
+"Return to {partner}" action already uses — no new screen needed.
+
+Verified live against production (`enmosvippabmuqslzrox`) via a comprehensive disposable rolled-
+back transaction with real fixtures (a consumer, a real business owner, a stranger business
+owner, a real accepted offer, an active Occasion Package) and real `SET ROLE authenticated` +
+`request.jwt.claims` impersonation: the real owner correctly sees the consented, recurring,
+genuinely-fulfilled-through-their-business customer with the correct next-occurrence date and
+last price; a stranger business sees nothing; toggling consent off correctly hides the row and
+back on correctly restores it; `send_business_recall_outreach` correctly succeeds (queued push
+body confirmed via `net.http_request_queue`: "Welcome back -- ask about our Anniversary Package."
+with `type=business_recall_outreach`) and sets the rate-limit marker; a same-year re-send is
+correctly rejected; a different (stranger) business is correctly rejected for lacking real
+fulfillment history with that occasion; `get_occasion_recall` correctly returns the new consent
+field. Rolled back with zero leaked rows confirmed. Re-confirmed live after the real apply: both
+new functions have exactly one overload each with the correct `authenticated`-only grant (no
+`anon` leak), and `get_occasion_recall` stayed single-overload after its `CREATE OR REPLACE`. Full
+Jest suite 538/538 passing (no new pure functions — this is DB/RLS-plus-UI wiring, same shape as
+Item 90); all six touched/new files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised in a running app (no simulator/device tooling this session,
+standing note) — next session should confirm on a real account that the consent checkbox renders
+and persists correctly on both Home's recall card and `OccasionsScreen`'s per-row toggle, that the
+"🎉 Returning Customers" section and its package-picker expand-in-place panel render and send
+correctly on the business dashboard, and that a tapped `business_recall_outreach` push lands on
+`MakeAPlanScreen` prefilled with the right business and title.
+
 **Item 101 ("Occasions can become recurring") — fully DONE (2026-09-17), resumed cleanly after a
 codespace restart mid-build (a complete migration plus matching client edits were found already
 written and uncommitted at session start — read in full, checked against the user's own example,

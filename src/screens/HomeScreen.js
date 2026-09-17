@@ -13,7 +13,7 @@ import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomeP
 import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/businessFulfillment';
 import { formatPlaceStatusLabel } from '../utils/planCompletion';
 import { getUpcomingConnectedBirthdays } from '../services/friends';
-import { getUpcomingOccasions, getOccasionRecall } from '../services/occasions';
+import { getUpcomingOccasions, getOccasionRecall, setOccasionRecallShareable } from '../services/occasions';
 import { formatOccasionRecallSummary, occasionRecallLikedText } from '../utils/occasionRecall';
 import { getMyPendingPreferencePolls } from '../services/preferencePolls';
 import { occasionDueLabel } from '../utils/occasionDatePrecision';
@@ -1208,6 +1208,21 @@ export default function HomeScreen({ navigation }) {
     navigation.navigate('CelebrateSomething', params);
   }
 
+  // Item 102 (CLAUDE.md, "Businesses can participate in recurring
+  // occasions"): the consumer's own real, explicit, per-occasion consent
+  // that the business behind this recall may recognize them next time --
+  // default OFF, and only ever meaningful right where the recall itself is
+  // shown, since that's the one business it applies to. Optimistic local
+  // update, same pattern as every other toggle in this screen.
+  function handleToggleRecallShareable() {
+    if (!occasionNudge || !occasionRecall || occasionRecall.planType !== 'business') return;
+    const next = !occasionRecall.recall_shareable_with_business;
+    setOccasionRecall((prev) => (prev ? { ...prev, recall_shareable_with_business: next } : prev));
+    setOccasionRecallShareable(occasionNudge.occasion_id, next).then((ok) => {
+      if (!ok) setOccasionRecall((prev) => (prev ? { ...prev, recall_shareable_with_business: !next } : prev));
+    });
+  }
+
   // "The Plan Engine" Phase 2 (CLAUDE.md) -- deliberately does NOT submit
   // or create anything itself. GatheringDetailScreen's own existing
   // 4-state host banner already owns the real decision/submit step; this
@@ -1938,6 +1953,26 @@ export default function HomeScreen({ navigation }) {
                     <Text style={styles.predictiveActButtonText}>✨ Try Something New</Text>
                   </TouchableOpacity>
                 </View>
+                {/* Item 102: a real, explicit, opt-in (default OFF)
+                    consent -- never inferred from the reservation itself
+                    -- that lets THIS specific business recognize a
+                    returning customer next time. */}
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}
+                  onPress={handleToggleRecallShareable}
+                  accessibilityLabel={`${occasionRecall.recall_shareable_with_business ? 'Stop letting' : 'Let'} ${occasionRecall.partnerName} recognize you next time`}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: !!occasionRecall.recall_shareable_with_business }}
+                >
+                  <Ionicons
+                    name={occasionRecall.recall_shareable_with_business ? 'checkbox' : 'square-outline'}
+                    size={16}
+                    color={occasionRecall.recall_shareable_with_business ? colors.primary : colors.textTertiary}
+                  />
+                  <Text style={[styles.outcomePromptSubtext, { marginLeft: spacing.xs, flex: 1 }]} numberOfLines={2}>
+                    Let {occasionRecall.partnerName} recognize you as a returning customer next time
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
             {occasionNudge && occasionRecall?.planType !== 'business' && (

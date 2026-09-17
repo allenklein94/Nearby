@@ -317,6 +317,19 @@ export async function routeNotificationTap(data) {
         navigationRef.navigate('Occasions');
       }
       break;
+    case 'business_recall_outreach':
+      // Item 102 (CLAUDE.md, "Businesses can participate in recurring
+      // occasions"): the real "Welcome back" push a consented, returning-
+      // customer business sends. Lands on the exact same real-plan-at-
+      // this-exact-business orchestration Item 101's own "Return to
+      // {partner}" action already uses -- no new screen needed.
+      if (data.partner_id) {
+        navigationRef.navigate('MakeAPlan', {
+          partnerId: data.partner_id,
+          initialTitle: data.package_name ? `${data.package_name} at ${data.partner_name ?? ''}`.trim() : null,
+        });
+      }
+      break;
     case 'crossed_paths_sighting':
       // Same real destination the existing Crossed Paths Discover surfaces
       // already open on a tap (see CLAUDE.md, "Unified Crossed Paths across

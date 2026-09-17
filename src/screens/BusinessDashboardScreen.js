@@ -15,7 +15,7 @@ import { TARGET_TYPE_LABELS } from './AdminContentReviewScreen';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
 import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
-import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage } from '../services/occasionPackages';
+import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
@@ -428,6 +428,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // Item 68 (CLAUDE.md): a business's own durable, named occasion packages
   // -- distinct from myAvailability (one-time posted slots) above.
   const [myOccasionPackages, setMyOccasionPackages] = useState([]);
+  // Item 102 (CLAUDE.md, "Businesses can participate in recurring
+  // occasions"): real, consented returning customers -- see
+  // getBusinessReturningOccasionCustomers's own header comment for the
+  // full consent/privacy boundary.
+  const [returningCustomers, setReturningCustomers] = useState([]);
+  const [outreachExpandedOccasionId, setOutreachExpandedOccasionId] = useState(null);
+  const [outreachPackageChoice, setOutreachPackageChoice] = useState(null);
+  const [sendingOutreachOccasionId, setSendingOutreachOccasionId] = useState(null);
   const [packageModalVisible, setPackageModalVisible] = useState(false);
   const [editingPackageId, setEditingPackageId] = useState(null);
   const [packageOccasionInput, setPackageOccasionInput] = useState(null);
@@ -1376,6 +1384,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadMyAvailability(selectedPartner.id);
         loadFulfillmentPolicy(selectedPartner.id);
         loadMyOccasionPackages();
+        loadReturningCustomers(selectedPartner.id);
         loadExperiences(selectedPartner.id);
         loadEntitlements(selectedPartner.id);
       }
@@ -1707,6 +1716,36 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     } catch (e) {
       // Non-fatal -- the rest of the dashboard already loaded independently.
     }
+  }
+
+  // Item 102 (CLAUDE.md): real, consented returning customers with a
+  // genuine next occurrence coming up soon -- see the RPC's own header
+  // comment for the full consent/ownership boundary.
+  async function loadReturningCustomers(partnerId) {
+    try {
+      const results = await getBusinessReturningOccasionCustomers(partnerId);
+      setReturningCustomers(results);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+    }
+  }
+
+  function toggleOutreachExpanded(occasionId) {
+    setOutreachPackageChoice(null);
+    setOutreachExpandedOccasionId((prev) => (prev === occasionId ? null : occasionId));
+  }
+
+  async function handleSendOutreach(occasionId, partnerId) {
+    setSendingOutreachOccasionId(occasionId);
+    try {
+      await sendBusinessRecallOutreach(occasionId, partnerId, outreachPackageChoice);
+      setReturningCustomers((prev) => prev.map((c) => (c.occasion_id === occasionId ? { ...c, already_outreached_this_year: true } : c)));
+      setOutreachExpandedOccasionId(null);
+      setOutreachPackageChoice(null);
+    } catch (e) {
+      Alert.alert('Could not send', e.message || 'Please try again.');
+    }
+    setSendingOutreachOccasionId(null);
   }
 
   function openPackageModal(pkg) {
@@ -3539,6 +3578,104 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       </View>
                     </TouchableOpacity>
                   ))
+                )}
+
+                {/* Item 102 (CLAUDE.md, "Businesses can participate in
+                    recurring occasions"): real, consented returning
+                    customers with a genuine next occurrence coming up soon
+                    -- see get_business_returning_occasion_customers's own
+                    migration comment for the full consent/privacy
+                    boundary. Empty whenever no real customer has both
+                    opted in and has real history with this business --
+                    never padded or guessed. */}
+                <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>🎉 Returning Customers</Text>
+                <Text style={styles.helperText}>
+                  Customers who celebrated a recurring occasion here before, and explicitly
+                  chose to let you recognize them next time. A real "Welcome back" nudge, sent
+                  at most once per occurrence -- never automatic.
+                </Text>
+                {returningCustomers.length === 0 ? (
+                  <Text style={styles.emptyText}>No returning customers yet.</Text>
+                ) : (
+                  returningCustomers.map((c) => {
+                    const daysUntil = Math.round((new Date(c.next_occasion_date + 'T00:00:00') - new Date()) / (24 * 60 * 60 * 1000));
+                    const matchingPackages = myOccasionPackages.filter((pkg) => pkg.occasion_type === c.occasion_type && pkg.active);
+                    return (
+                      <View key={c.occasion_id} style={styles.gatheringRow}>
+                        <Text style={styles.offerTitle}>
+                          {occasionLabel(c.occasion_type)} · {c.requester_display_name}
+                        </Text>
+                        <Text style={styles.breakdownText}>
+                          This customer celebrated here last year
+                          {c.last_offer_price != null ? ` · $${Number(c.last_offer_price).toFixed(2)}${c.last_offer_price_is_per_person ? '/person' : ''}` : ''}
+                        </Text>
+                        <Text style={styles.breakdownText}>
+                          Next {occasionLabel(c.occasion_type).toLowerCase()}: {new Date(c.next_occasion_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          {daysUntil >= 0 ? ` (${daysUntil === 0 ? 'today' : `in ${daysUntil}d`})` : ''}
+                        </Text>
+                        {c.already_outreached_this_year ? (
+                          <Text style={[styles.breakdownText, { color: colors.textTertiary, marginTop: spacing.sm }]}>✓ Already reached out</Text>
+                        ) : outreachExpandedOccasionId === c.occasion_id ? (
+                          <View style={{ marginTop: spacing.sm }}>
+                            {matchingPackages.length > 0 && (
+                              <>
+                                <Text style={styles.breakdownText}>Mention a package? (optional)</Text>
+                                <View style={styles.chipRow}>
+                                  <TouchableOpacity
+                                    style={[styles.chip, outreachPackageChoice === null && styles.chipSelected]}
+                                    onPress={() => setOutreachPackageChoice(null)}
+                                    accessibilityLabel="No package"
+                                    accessibilityRole="button"
+                                  >
+                                    <Text style={[styles.chipText, outreachPackageChoice === null && styles.chipTextSelected]}>None</Text>
+                                  </TouchableOpacity>
+                                  {matchingPackages.map((pkg) => (
+                                    <TouchableOpacity
+                                      key={pkg.id}
+                                      style={[styles.chip, outreachPackageChoice === pkg.id && styles.chipSelected]}
+                                      onPress={() => setOutreachPackageChoice(pkg.id)}
+                                      accessibilityLabel={pkg.name}
+                                      accessibilityRole="button"
+                                    >
+                                      <Text style={[styles.chipText, outreachPackageChoice === pkg.id && styles.chipTextSelected]}>{pkg.name}</Text>
+                                    </TouchableOpacity>
+                                  ))}
+                                </View>
+                              </>
+                            )}
+                            <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
+                              <TouchableOpacity
+                                style={[styles.smallActionButton, { backgroundColor: colors.primary, marginRight: spacing.sm }]}
+                                onPress={() => handleSendOutreach(c.occasion_id, selectedPartner.id)}
+                                disabled={sendingOutreachOccasionId === c.occasion_id}
+                                accessibilityLabel={`Send welcome back to ${c.requester_display_name}`}
+                                accessibilityRole="button"
+                              >
+                                {sendingOutreachOccasionId === c.occasion_id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.smallActionButtonText}>Send</Text>}
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
+                                onPress={() => toggleOutreachExpanded(c.occasion_id)}
+                                accessibilityLabel="Cancel"
+                                accessibilityRole="button"
+                              >
+                                <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Cancel</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        ) : (
+                          <TouchableOpacity
+                            style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm, alignSelf: 'flex-start' }]}
+                            onPress={() => toggleOutreachExpanded(c.occasion_id)}
+                            accessibilityLabel={`Welcome back ${c.requester_display_name}`}
+                            accessibilityRole="button"
+                          >
+                            <Text style={styles.smallActionButtonText}>👋 Welcome Them Back</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    );
+                  })
                 )}
 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
