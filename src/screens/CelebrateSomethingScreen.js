@@ -1605,6 +1605,60 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
                 {destination === 'business' && (
                   <>
+                    {/* Item 111 ("We'll plan it for you" -- CLAUDE.md): the
+                        mock's own "Budget: $$" input was already fully
+                        built (BUDGET_LEVEL_OPTIONS, Item 94) but only ever
+                        rendered on the group-vote path's own 'group_invite'
+                        step -- every solo business-destined path (Dinner/
+                        Night Out/Activity/the new auto_plan) silently never
+                        asked at all, leaving resolveBudgetMax() permanently
+                        at its unset default there. Same chip row, same
+                        override field, duplicated here rather than
+                        extracted -- matches this step's own existing
+                        precedent of duplicating EXPERIENCE_LEVEL_OPTIONS
+                        between this step and 'group_invite' just below. */}
+                    <Text style={[styles.label, { marginTop: spacing.lg }]}>What's your budget?</Text>
+                    <Text style={styles.helperText}>A rough feel helps Nearby find realistic options.</Text>
+                    <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
+                      {BUDGET_LEVEL_OPTIONS.map((o) => {
+                        const selected = budgetRangeKey === o.key;
+                        return (
+                          <TouchableOpacity
+                            key={o.key}
+                            style={[styles.chip, selected && styles.chipSelected]}
+                            onPress={() => { Haptics.selectionAsync(); setBudgetRangeKey(o.key); }}
+                            activeOpacity={0.8}
+                            accessibilityRole="button"
+                            accessibilityLabel={o.label}
+                            accessibilityState={{ selected }}
+                          >
+                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                    {showBudgetMaxOverride ? (
+                      <TextInput
+                        style={[styles.input, { marginTop: spacing.sm }]}
+                        placeholder="Maximum per person (optional)"
+                        placeholderTextColor={colors.textTertiary}
+                        value={budgetMaxOverride}
+                        onChangeText={setBudgetMaxOverride}
+                        keyboardType="number-pad"
+                        accessibilityLabel="Maximum budget per person, optional"
+                      />
+                    ) : (
+                      <TouchableOpacity
+                        onPress={() => setShowBudgetMaxOverride(true)}
+                        activeOpacity={0.8}
+                        accessibilityRole="button"
+                        accessibilityLabel="Set a maximum per person"
+                        style={{ marginTop: spacing.sm }}
+                      >
+                        <Text style={styles.createOwnLinkText}>+ Set a maximum per person</Text>
+                      </TouchableOpacity>
+                    )}
+
                     <Text style={[styles.label, { marginTop: spacing.lg }]}>What kind of experience are you looking for?</Text>
                     <Text style={styles.helperText}>A birthday dinner doesn't need the same options as a 50th anniversary — this helps Nearby adjust what it finds.</Text>
                     <View style={[styles.chipRow, { marginTop: spacing.sm }]}>

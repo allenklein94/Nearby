@@ -118,6 +118,24 @@ Jest suite 571/571 passing; both touched files transform-checked clean via `@bab
 standing note) — next session should confirm the new Quick Action renders and correctly lands on
 the wizard with "Let Nearby Plan It" pre-selected once an occasion/who-for are answered.
 
+**Second same-day follow-up — real gap closed, "Budget" was never actually collected on the solo
+path (2026-09-17).** Re-checked the shipped feature line-by-line against the mock's own 6 inputs
+(Who/Occasion/When/People/Budget/Vibe) rather than trusting the first pass — found that
+`BUDGET_LEVEL_OPTIONS` (Item 94) only ever rendered on the group-vote flow's own `group_invite`
+step; every solo business-destined path (Dinner/Night Out/Activity, and now `auto_plan`) never
+showed a budget chip at all, silently submitting with `budgetRangeKey` stuck at its unset default
+forever. Fixed by duplicating the same chip row + optional per-person override field into the
+'when' step's `destination === 'business'` block, right before the Vibe/experience-level row that
+was already duplicated there — matches this step's own existing precedent (Vibe is already shown
+in both `'when'` and `group_invite`), not a new pattern. Confirmed budget is stored-only (feeds
+`resolveBudgetMax()` → the submitted request's own `budget_max` column, for the business to see),
+never a `resolveIntent()` search parameter — so this doesn't change what "Here's what we'd do"
+proposes, only what gets recorded on the resulting request, matching how budget already worked on
+every other path. No DB migration, no new pure functions; full Jest suite 571/571 passing;
+`CelebrateSomethingScreen.js` transform-checked clean. Not exercised in a running app (standing
+note) — next session should confirm the new budget chip row renders correctly on the 'when' step
+for Dinner/Night Out/Activity/Let Nearby Plan It, distinct from its own copy on `group_invite`.
+
 **Item 110 ("This could tie directly into your notification recommendation engine... distinguish
 Important (relationship/contextual, e.g. 'Sarah's birthday is in 7 days') from Recommendation
 (discovery, e.g. 'New live music nearby')... much less spammy") — fully DONE (2026-09-17), same-day
