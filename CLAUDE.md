@@ -40,6 +40,44 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Fifth same-day follow-up ("do same reveal for occasions screen and also... the finished plan
+could have a living header") — fully DONE (2026-09-17), same-day direct follow-up to the fourth
+follow-up above.** Two small, separate asks:
+
+(1) **OccasionsScreen reveal animation.** The 🔒→✨→🎉 `SurpriseRevealAnimation` shipped on
+`GroupOccasionPlanScreen.js` above is now also wired into `OccasionsScreen.js`'s own per-row solo
+occasion reveal (Item 96's "Eventually: Reveal plan becomes an action," the personal-occasion
+case). Same discipline as the group-plan version: `confirmReveal()` now awaits the real
+`revealOccasion()` RPC succeeding first, only then sets `revealAnimatingId`, which swaps that
+one row's content (icon + name + detail + privacy line + reveal link + the reminder/recall/remove
+icon buttons) for the animation in place; `onDone` clears it and flips the row's own
+`surprise_mode` false locally. The reveal link itself was relabeled "🎁 Reveal Plan" (was "🎉 Reveal
+the Surprise") and recolored to the new `colors.surprise` violet token instead of `colors.primary`
+coral, so both surfaces now share one consistent surprise-mode visual language, not two.
+
+(2) **Living plan header.** User's own mock: instead of a static "Sarah's Birthday," a finished
+plan's header should be "🎂 Sarah's 30th Birthday" with "extremely subtle motion... 🎈 gently
+floating or a tiny shimmer through the celebration icon... motion should happen when something
+changes," never constant idle movement. Shipped on `BusinessRequestDetailScreen.js`'s existing
+"Plan" summary card (Item 90/91) — only once `planSummary.statusKind === 'confirmed'` (the actual
+"finished" state, same gate the share-card action already uses): the title's own occasion icon
+(`occasionIcon(planChatInfo?.occasionType ?? request.occasion)`) is pulled out into its own small
+`CelebrationHeaderIcon.js` component, which sits perfectly still by default (no looping/idle
+animation at all) and plays exactly one gentle float+pulse (`translateY` + `scale`, spring back to
+rest) only when a new `buildPlanHeaderChangeKey()` — a stable string of
+statusKind/title/dateLabel/timeLabel/location/partySize — actually differs from what it last saw;
+never on first mount, never on a re-render with an unchanged key. A new
+`stripTrailingCelebrationIcon()` strips a real trailing icon match off the title text first, since
+`composeCelebrationTitle()` (Item 84) already bakes one onto the string (e.g. "Sarah's Birthday
+🎂") — without this the separately-rendered animated icon would literally double it.
+
+9 new Jest tests (`livingPlanHeader.test.js`, both pure helpers); full suite 580/580 passing. All
+four touched/new files transform-checked clean via `@babel/core` + `babel-preset-expo`. No DB
+migration. Not exercised in a running app (no simulator/device tooling this session, standing
+note) — next session should confirm the Occasions reveal animation plays correctly per-row without
+disrupting the rest of the list, and that the living header's icon genuinely stays still until a
+real change (status/retime/party size) occurs, then plays a clearly "subtle" (not jarring) bounce.
+
 **Fourth same-day follow-up ("🎁 Surprise Mode could have its own visual language... the lock
 opens: 🔒 → ✨ → 🎉") — fully DONE (2026-09-17), resumed cleanly after a codespace restart (an
 uncommitted `theme.js` color addition, a new uncommitted `SurpriseRevealAnimation.js`, and a
