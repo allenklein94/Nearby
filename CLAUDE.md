@@ -4784,6 +4784,48 @@ specifically said not to build yet:
 - Complicated calendars (recurring sub-events, multi-day itineraries, etc. — beyond the single
   `scheduled_date` the occasion already has)
 
+**Item 111 ("We'll plan it for you" — a single "Don't know what to do? Let Nearby plan it" front
+door that collects Who/Occasion/When/People/Budget/Vibe and returns "Here's what we'd do: 🍽️
+Dinner / 🎵 Live music / 🌹 Flowers / Estimated total: $X / Find available options →") — logged
+2026-09-17, explicitly NOT built.** User's own framing: "Eventually... That is where your AI/
+intent layer becomes a consumer-facing experience rather than simply infrastructure" — this
+project's own established shorthand (see Items 96/99/100's identical treatment) for "log this,
+don't build it yet." Logged here rather than built, per that explicit signal.
+
+Real building blocks this would connect, once actually greenlit — most of the hard infrastructure
+already exists, confirmed by reading the real code rather than assumed:
+- `CelebrateSomethingScreen.js`'s wizard already collects every one of the 6 named inputs
+  (Who → who_for step; Occasion → occasion step; When → when step/`WHEN_PRESETS`; People →
+  party-size chips; Budget → Item 94's `$/$$/$$$` chips; Vibe → Item 95's Keep it simple/Make it
+  special/Go all out `experience_level`) — just spread across several sequential steps, not one
+  compact form.
+- `experienceTemplates.js` + `assembleExperience()` (the 2026-09-10 "Experiences assembly" work)
+  already turns an occasion into a real multi-component plan (birthday → Dinner + Something Fun +
+  Sweet Treat) from live, already-scored `resolveIntent()` candidates — this is most of "Here's
+  what we'd do," already built and already live on the wizard's own 'options' step.
+- `planAddons.js`'s `relevantAddonTypesForOccasion()` (Item 80) is the real source for the mock's
+  "🌹 Flowers" line — a deterministic, non-AI, occasion → relevant-add-on-types lookup — but it's a
+  genuinely SEPARATE mechanism from `experienceTemplates.js`'s own components today (one feeds
+  Item 81's post-creation "🗺️ Your Plan" timeline, the other feeds the wizard's pre-creation
+  options step); this item would need them merged into one coherent preview list for the first
+  time, not just displayed side by side.
+
+Real, genuinely new gaps a future build would need to actually design, not just wire up:
+1. **The core UX inversion**: today the wizard makes the user pick an activity type (Dinner/Party/
+   Activity/etc.) themselves at its own 'activity' step before anything gets searched. This
+   item's whole point is skipping that — Nearby decides WHAT to do from occasion + vibe alone.
+   That means auto-selecting/driving `experienceTemplates.js`'s template from `occasion_type`
+   directly, with no user activity-type choice at all — a real, deliberate flow branch, not
+   currently how any existing entry point works.
+2. **A real "Estimated total: $X"** — no existing surface sums a multi-category assembled plan
+   into one aggregate dollar figure; the wizard only ever shows each component's own per-candidate
+   price individually. Computing an honest total means picking one real representative candidate
+   per component/add-on (top-scored? cheapest? — a real design decision) and summing real prices,
+   never a fabricated estimate.
+3. Where this front door actually lives (a new CreateHub entry point? An alternate branch inside
+   the existing wizard's activity step, e.g. "🤖 Not sure — let Nearby decide"?) is itself a real
+   product decision, not just an implementation detail.
+
 ## Standing Conventions (Locked)
 
 These are the load-bearing rules distilled from thousands of lines of prior build history. Full
