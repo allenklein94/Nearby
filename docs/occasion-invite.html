@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>You're Invited — Nearby</title>
+<meta name="description" content="View this plan and RSVP on Nearby — no app required.">
+<style>
+  /* Items 105 & 106 (CLAUDE.md): the same "plain static HTML + direct REST
+     call with the public anon key" shape docs/invite.html already
+     established for Gatherings (Item 72), extended to Occasion group
+     plans -- a named guest can view the plan and RSVP with zero install,
+     via a per-guest token instead of a plain object id. */
+  :root {
+    --background: #FFF8F3;
+    --surface: #FFFFFF;
+    --surface-elevated: #FFEEE2;
+    --primary: #FF6B5B;
+    --primary-muted: rgba(255, 107, 91, 0.12);
+    --text-primary: #2D2420;
+    --text-secondary: #6B5D54;
+    --text-tertiary: #A69B92;
+    --success: #4CAF7D;
+    --border: #F0E0D4;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-full: 999px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: #14141f;
+      --surface: #1e1e30;
+      --surface-elevated: #262640;
+      --primary: #ff4d6d;
+      --primary-muted: rgba(255, 77, 109, 0.15);
+      --text-primary: #ffffff;
+      --text-secondary: #a8a8c0;
+      --text-tertiary: #6e6e8a;
+      --success: #4ade80;
+      --border: rgba(255, 255, 255, 0.08);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--background);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px 24px;
+    text-align: center;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+  }
+  .brand { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 16px; color: var(--text-primary); text-decoration: none; margin-bottom: 20px; }
+  .brand span { color: var(--primary); }
+  .emoji { font-size: 44px; margin-bottom: 8px; }
+  h1 { font-size: 21px; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.2px; }
+  .meta-line { font-size: 14px; color: var(--text-secondary); margin: 4px 0; }
+  .status-badge {
+    display: inline-block; margin-top: 12px; background: var(--surface-elevated);
+    color: var(--text-secondary); font-size: 13px; font-weight: 600;
+    padding: 6px 14px; border-radius: var(--radius-full);
+  }
+  .status-badge.joined { background: rgba(76, 175, 125, 0.15); color: var(--success); }
+  .rsvp-row { display: flex; gap: 10px; margin-top: 22px; }
+  .rsvp-button {
+    flex: 1; font-weight: 700; font-size: 15px; border-radius: var(--radius-full);
+    padding: 13px 10px; cursor: pointer; border: 1.5px solid var(--primary);
+  }
+  .rsvp-button.yes { background: var(--primary); color: #fff; border: none; }
+  .rsvp-button.no { background: transparent; color: var(--primary); }
+  .cta-button {
+    display: block; width: 100%; background: var(--primary); color: #fff;
+    font-weight: 700; font-size: 16px; border: none; border-radius: var(--radius-full);
+    padding: 15px; cursor: pointer; margin-top: 24px; text-decoration: none;
+  }
+  .cta-button.secondary {
+    background: transparent; color: var(--primary); border: 1.5px solid var(--primary);
+    margin-top: 10px; padding: 13.5px;
+  }
+  .fine-print { margin-top: 14px; font-size: 12px; color: var(--text-tertiary); }
+  .state-text { font-size: 15px; color: var(--text-secondary); padding: 20px 0; }
+  #loaded, #not-found { display: none; }
+</style>
+</head>
+<body>
+<div class="card">
+  <a class="brand" href="index.html">
+    <svg width="20" height="20" viewBox="0 0 100 100" aria-hidden="true">
+      <defs>
+        <linearGradient id="nearbyBrandMarkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0" stop-color="#FF5A5F" />
+          <stop offset="1" stop-color="#FFA35C" />
+        </linearGradient>
+      </defs>
+      <line x1="19.06" y1="39.55" x2="19.06" y2="84.96" stroke="url(#nearbyBrandMarkGradient)" stroke-width="20.09" stroke-linecap="round" />
+      <line x1="81.14" y1="39.55" x2="81.14" y2="84.96" stroke="url(#nearbyBrandMarkGradient)" stroke-width="20.09" stroke-linecap="round" />
+      <line x1="28.5" y1="39.55" x2="73.91" y2="84.96" stroke="url(#nearbyBrandMarkGradient)" stroke-width="20.09" stroke-linecap="round" />
+      <circle cx="19.26" cy="14.24" r="9.34" fill="url(#nearbyBrandMarkGradient)" />
+      <circle cx="81.34" cy="14.24" r="9.24" fill="url(#nearbyBrandMarkGradient)" />
+    </svg>
+    Near<span>by</span>
+  </a>
+
+  <div id="loading" class="state-text">Loading your invite…</div>
+
+  <div id="not-found">
+    <div class="emoji">🙈</div>
+    <h1>This invite isn't available anymore</h1>
+    <p class="meta-line">The plan may have been cancelled, or this link isn't valid.</p>
+    <a class="cta-button" id="get-app-btn-notfound" href="#">Get Nearby</a>
+  </div>
+
+  <div id="loaded">
+    <div class="emoji" id="preview-emoji">🎉</div>
+    <h1 id="preview-title">You're invited!</h1>
+    <div class="meta-line" id="preview-host"></div>
+    <div class="meta-line" id="preview-when"></div>
+    <div class="meta-line" id="preview-decided" style="display:none;"></div>
+    <div class="status-badge" id="preview-status"></div>
+
+    <div class="rsvp-row" id="rsvp-row">
+      <button class="rsvp-button yes" id="rsvp-yes">I'm in</button>
+      <button class="rsvp-button no" id="rsvp-no">Can't make it</button>
+    </div>
+
+    <a class="cta-button secondary" id="get-app-btn">Join Nearby</a>
+    <p class="fine-print" id="fine-print">See more, vote on ideas, and chat with the group — free, no card needed.</p>
+  </div>
+</div>
+
+<script>
+  // Reads a plain ?t=<guest token> query param and renders/updates a real
+  // preview via get_public_occasion_group_plan_guest_view /
+  // respond_to_occasion_group_plan_guest_invite
+  // (20261126_occasion_group_plan_guest_invites.sql) -- same shape as
+  // docs/invite.html's own gathering preview.
+  var SUPABASE_URL = 'https://enmosvippabmuqslzrox.supabase.co';
+  var SUPABASE_ANON_KEY = 'sb_publishable_NU_9KSD7wft-FDSHclDHuw_6vsUDrZW';
+  var IOS_STORE_URL = 'https://apps.apple.com/app/id6792143175';
+  var ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.allenklein.nearby';
+
+  var OCCASION_EMOJI = {
+    birthday: '🎂', anniversary: '💍', graduation: '🎓', baby_shower: '🍼',
+    engagement: '💍', housewarming: '🏡', promotion: '🎉', farewell: '👋',
+    milestone: '🥂', other: '🎉',
+  };
+  var ACTIVITY_LABEL = {
+    dinner: 'Dinner', party: 'Party', surprise: 'Surprise', activity: 'Activity',
+    night_out: 'Night out', weekend_trip: 'Weekend trip', custom: 'Something special',
+  };
+  var WHEN_PRESET_LABEL = { now: 'Now', tonight: 'Tonight', tomorrow: 'Tomorrow' };
+
+  function isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent); }
+  function isAndroid() { return /Android/.test(navigator.userAgent); }
+  function storeUrl() { return isAndroid() ? ANDROID_STORE_URL : IOS_STORE_URL; }
+
+  var params = new URLSearchParams(window.location.search);
+  var token = params.get('t');
+
+  var loadingEl = document.getElementById('loading');
+  var notFoundEl = document.getElementById('not-found');
+  var loadedEl = document.getElementById('loaded');
+  var rsvpRowEl = document.getElementById('rsvp-row');
+
+  document.getElementById('get-app-btn-notfound').href = storeUrl();
+  document.getElementById('get-app-btn').href = storeUrl();
+
+  function callRpc(name, body) {
+    return fetch(SUPABASE_URL + '/rest/v1/rpc/' + name, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify(body),
+    }).then(function (res) { return res.ok ? res.json() : Promise.reject(new Error('request failed')); });
+  }
+
+  function loadPreview() {
+    callRpc('get_public_occasion_group_plan_guest_view', { token_param: token })
+      .then(function (preview) {
+        loadingEl.style.display = 'none';
+        if (!preview) {
+          notFoundEl.style.display = 'block';
+          return;
+        }
+        renderPreview(preview);
+        loadedEl.style.display = 'block';
+      })
+      .catch(function () {
+        loadingEl.style.display = 'none';
+        notFoundEl.style.display = 'block';
+      });
+  }
+
+  function renderPreview(preview) {
+    document.getElementById('preview-emoji').textContent = OCCASION_EMOJI[preview.occasionType] || '🎉';
+    document.getElementById('preview-title').textContent = "You're invited to " + preview.title;
+    document.getElementById('preview-host').textContent = preview.hostDisplayName
+      ? 'Hosted by ' + preview.hostDisplayName
+      : '';
+    var whenText = '';
+    if (preview.scheduledDate) {
+      var d = new Date(preview.scheduledDate + 'T00:00:00');
+      if (!isNaN(d.getTime())) {
+        whenText = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      }
+    } else if (preview.whenPreset) {
+      whenText = WHEN_PRESET_LABEL[preview.whenPreset] || '';
+    }
+    document.getElementById('preview-when').textContent = whenText;
+
+    var decidedEl = document.getElementById('preview-decided');
+    if (preview.planStatus === 'decided' || preview.planStatus === 'fulfilled') {
+      var activity = preview.decidedLabel || ACTIVITY_LABEL[preview.decidedActivityType] || '';
+      if (activity) {
+        decidedEl.textContent = "The group decided: " + activity;
+        decidedEl.style.display = 'block';
+      }
+    }
+
+    var statusEl = document.getElementById('preview-status');
+    if (preview.guestStatus === 'joined') {
+      statusEl.textContent = "You're in! See you there.";
+      statusEl.classList.add('joined');
+      rsvpRowEl.style.display = 'none';
+    } else if (preview.guestStatus === 'declined') {
+      statusEl.textContent = "You let them know you can't make it.";
+      rsvpRowEl.style.display = 'none';
+    } else if (preview.planStatus === 'cancelled') {
+      statusEl.textContent = 'This plan was cancelled.';
+      rsvpRowEl.style.display = 'none';
+    } else {
+      statusEl.style.display = 'none';
+    }
+  }
+
+  function respond(accept) {
+    document.getElementById('rsvp-yes').disabled = true;
+    document.getElementById('rsvp-no').disabled = true;
+    callRpc('respond_to_occasion_group_plan_guest_invite', { token_param: token, accept_param: accept })
+      .then(function () { loadPreview(); })
+      .catch(function () {
+        document.getElementById('rsvp-yes').disabled = false;
+        document.getElementById('rsvp-no').disabled = false;
+        alert("That didn't go through -- try again in a moment.");
+      });
+  }
+
+  document.getElementById('rsvp-yes').addEventListener('click', function () { respond(true); });
+  document.getElementById('rsvp-no').addEventListener('click', function () { respond(false); });
+
+  if (!token) {
+    loadingEl.style.display = 'none';
+    notFoundEl.style.display = 'block';
+  } else {
+    loadPreview();
+  }
+</script>
+</body>
+</html>

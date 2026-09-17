@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput, Platform, Share } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
@@ -13,6 +13,8 @@ import {
   cancelOccasionGroupPlan,
   setOccasionGroupPlanOrganizer,
   inviteMoreToOccasionGroupPlan,
+  inviteGuestToOccasionGroupPlan,
+  occasionGroupPlanGuestInviteShareUrl,
   proposeOccasionBusinessOptions,
   decideOccasionGroupPlanBusiness,
   skipOccasionGroupPlanBusinessVote,
@@ -121,6 +123,12 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [selectedNewInviteeIds, setSelectedNewInviteeIds] = useState(() => new Set());
   const [invitingMore, setInvitingMore] = useState(false);
+  // Items 105 & 106 (CLAUDE.md, "make invitations frictionless" extended
+  // to Occasion plans): invite someone by name who isn't a Nearby user
+  // yet -- shares a real, per-guest link (docs/occasion-invite.html) they
+  // can view and RSVP from with zero install.
+  const [guestName, setGuestName] = useState('');
+  const [invitingGuest, setInvitingGuest] = useState(false);
 
   // Item 67 ("Let the group vote on businesses"): businessOptionsLoading
   // covers the host's device fetching real resolveIntent() candidates right
@@ -482,6 +490,34 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
     setInvitingMore(false);
   }
 
+  // Items 105 & 106: creates the real guest participant row + token, then
+  // hands the resulting link straight to the OS share sheet -- the host
+  // picks whichever channel (text/email/etc.) actually reaches that person;
+  // Nearby never sends it on their behalf.
+  async function handleInviteGuest() {
+    const trimmed = guestName.trim();
+    if (!trimmed) return;
+    setInvitingGuest(true);
+    try {
+      const result = await inviteGuestToOccasionGroupPlan(planId, trimmed);
+      setGuestName('');
+      await load();
+      await Share.share({
+        message: `You're invited to ${detail?.title ?? 'a plan'} on Nearby — ${occasionGroupPlanGuestInviteShareUrl(result.guestToken)}`,
+      });
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setInvitingGuest(false);
+  }
+
+  function handleShareGuestLink(participant) {
+    if (!participant.guestToken) return;
+    Share.share({
+      message: `You're invited to ${detail?.title ?? 'a plan'} on Nearby — ${occasionGroupPlanGuestInviteShareUrl(participant.guestToken)}`,
+    });
+  }
+
   if (loading && !detail) {
     return (
       <SafeAreaView style={styles.container}>
@@ -825,7 +861,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                 const canDemote = detail.isHost && !isSelf;
                 return (
                   <TouchableOpacity
-                    key={p.userId}
+                    key={p.id}
                     style={styles.participantChip}
                     disabled={!canDemote}
                     activeOpacity={canDemote ? 0.7 : 1}
@@ -855,23 +891,34 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
             <View style={styles.participantsWrap}>
               {guests.map((p) => {
                 const isSelf = p.userId === myId;
-                const canPromote = detail.isHost && !isSelf && p.status === 'joined';
+                const canPromote = detail.isHost && !isSelf && !p.isGuest && p.status === 'joined';
+                // Items 105 & 106: a guest with no Nearby account can't be
+                // promoted (there's no account to grant organizer power
+                // to) -- tapping their chip instead re-shares their real
+                // invite link, when this viewer is privileged to see it.
+                const canShareLink = !!p.guestToken;
                 return (
                   <TouchableOpacity
-                    key={p.userId}
+                    key={p.id}
                     style={styles.participantChip}
-                    disabled={!canPromote}
-                    activeOpacity={canPromote ? 0.7 : 1}
-                    onPress={() => canPromote && Alert.alert(
-                      `Make ${p.displayName} an organizer?`,
-                      'They\'ll be able to invite more guests to help plan.',
-                      [{ text: 'Never mind', style: 'cancel' }, { text: 'Make Organizer', onPress: () => handleToggleOrganizer(p) }]
-                    )}
-                    accessibilityRole={canPromote ? 'button' : undefined}
-                    accessibilityLabel={canPromote ? `Make ${p.displayName} an organizer` : undefined}
+                    disabled={!canPromote && !canShareLink}
+                    activeOpacity={(canPromote || canShareLink) ? 0.7 : 1}
+                    onPress={() => {
+                      if (canPromote) {
+                        Alert.alert(
+                          `Make ${p.displayName} an organizer?`,
+                          'They\'ll be able to invite more guests to help plan.',
+                          [{ text: 'Never mind', style: 'cancel' }, { text: 'Make Organizer', onPress: () => handleToggleOrganizer(p) }]
+                        );
+                      } else if (canShareLink) {
+                        handleShareGuestLink(p);
+                      }
+                    }}
+                    accessibilityRole={(canPromote || canShareLink) ? 'button' : undefined}
+                    accessibilityLabel={canPromote ? `Make ${p.displayName} an organizer` : (canShareLink ? `Share invite link with ${p.displayName}` : undefined)}
                   >
                     <Text style={styles.participantText}>
-                      {p.displayName}{isSelf ? ' (You)' : ''} · {PARTICIPANT_STATUS_COPY[p.status] ?? p.status}
+                      {p.isGuest ? '🔗 ' : ''}{p.displayName}{isSelf ? ' (You)' : ''} · {PARTICIPANT_STATUS_COPY[p.status] ?? p.status}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -924,6 +971,31 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                         </TouchableOpacity>
                       </>
                     )}
+                    {/* Items 105 & 106 (CLAUDE.md): "make invitations
+                        frictionless" extended to Occasion plans -- a guest
+                        who isn't (yet) a Nearby user gets a real link they
+                        can view and RSVP from with zero install. */}
+                    <Text style={[styles.helperText, { marginTop: spacing.sm, marginBottom: spacing.xs }]}>
+                      Or invite someone who isn't on Nearby yet:
+                    </Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Their name (e.g. John)"
+                      placeholderTextColor={colors.textTertiary}
+                      value={guestName}
+                      onChangeText={setGuestName}
+                      accessibilityLabel="Guest's name"
+                    />
+                    <TouchableOpacity
+                      style={[styles.addOptionButton, !guestName.trim() && { opacity: 0.5 }]}
+                      onPress={handleInviteGuest}
+                      disabled={!guestName.trim() || invitingGuest}
+                      activeOpacity={0.85}
+                      accessibilityRole="button"
+                      accessibilityLabel="Send a shareable invite link"
+                    >
+                      <Text style={styles.addOptionButtonText}>{invitingGuest ? 'Creating link…' : '🔗 Get Invite Link'}</Text>
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>

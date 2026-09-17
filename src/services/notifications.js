@@ -525,6 +525,11 @@ export async function routeNotificationTap(data) {
     // -- same real detail screen, which already shows the plan's own
     // current scheduledDate.
     case 'occasion_group_plan_date_set':
+    // Items 105 & 106 (CLAUDE.md, "make invitations frictionless" extended
+    // to Occasion plans): a non-Nearby guest RSVP'd via their own real
+    // invite link (respond_to_occasion_group_plan_guest_invite) -- same
+    // real detail screen, which already shows that guest's own status.
+    case 'occasion_group_plan_guest_rsvp':
       if (data.plan_id) {
         navigationRef.navigate('GroupOccasionPlan', { planId: data.plan_id });
       }

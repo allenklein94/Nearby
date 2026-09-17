@@ -40,6 +40,80 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Items 105 & 106 ("This could also improve user acquisition" — non-Nearby guests on an Occasion
+plan) — fully DONE (2026-09-17), same-day direct follow-up to Item 104, built after a locked
+`AskUserQuestion` scope pick ("build it now").** User's own example: inviting 8 people to Sarah's
+30th Birthday, 3 of whom aren't Nearby users, should send them a real "You're invited — View Plan"
+link that works with zero install, RSVP included, with "Join Nearby" as the natural upgrade path
+afterward.
+
+Item 72 (2026-09-10, "Make invitations frictionless") already built exactly this for Gatherings
+(`get_public_gathering_invite_preview` / `docs/invite.html`) but explicitly scoped Occasion group
+plans OUT, calling genuine anonymous-guest access "a materially bigger, separate feature (guest
+identity, spam/abuse risk)." This is that feature, deliberately bounded: a guest is invited BY
+NAME (never a single shared/generic link), each getting their own unique, unguessable bearer
+token (`occasion_group_plan_participants.guest_token`) — so an RSVP is always traceable to a
+specific person the host actually typed in, never spoofable by someone holding a different
+guest's link. A guest can VIEW the plan and RSVP (accept/decline) — the item's own "view/RSVP/see
+details" list — but deliberately can NOT propose ideas or vote: that's real collaborative
+decision-making among people Nearby can hold accountable via a real account, and this repo's own
+backlog guardrail already warns against building "a giant event-management platform." A guest who
+wants to do more taps "Join Nearby."
+
+Shipped via `20261126_occasion_group_plan_guest_invites.sql`: `occasion_group_plan_participants
+.user_id` is now nullable (a guest row has `guest_name` instead, CHECK-constrained so a row always
+has one or the other); `invite_guest_to_occasion_group_plan` (host/organizer-only, same
+authorization check `invite_more_to_occasion_group_plan` already uses, capped at 20 guest invites
+per plan) creates the row and returns its token immediately. Two new anon-callable RPCs mirror
+Item 72's own privacy discipline exactly (fixed, minimal return column list — no participant list,
+no budget, no exact business/location detail): `get_public_occasion_group_plan_guest_view(token)`
+resolves ONLY that one guest's own row (title/occasion/host name/when/decided-activity-once-
+decided/their own RSVP status), and `respond_to_occasion_group_plan_guest_invite(token, accept)`
+records their RSVP and pushes the host a real notification either way — something a host would
+otherwise never learn about a non-Nearby guest. `get_occasion_group_plan_detail` (unchanged
+signature, safe `CREATE OR REPLACE`) now returns a guest's real name/status to every participant,
+but the actual shareable `guestToken` only to the host or an organizer — never to a plain fellow
+guest.
+
+New `docs/occasion-invite.html`, same "plain static HTML + direct REST call with the public anon
+key" shape as `docs/invite.html`/`docs/track.html`, reading a `?t=<guest token>` param and
+rendering a live preview with "I'm in"/"Can't make it" buttons that call the RSVP RPC directly,
+plus the same "Join Nearby" store-link upgrade path. Client:
+`GroupOccasionPlanScreen.js`'s existing "+ Invite More Guests" panel (host/organizer-only) gained a
+"Or invite someone who isn't on Nearby yet" name field + "🔗 Get Invite Link" button
+(`inviteGuestToOccasionGroupPlan()`, new in `occasionGroupPlans.js`) that creates the guest row and
+immediately hands the resulting link (`occasionGroupPlanGuestInviteShareUrl()`) to the native OS
+share sheet — Nearby never sends it on the host's behalf, matching Item 72's own "the host picks
+the channel" precedent. Each guest chip in the roster is now tappable by the host/an organizer to
+re-share their link (🔗 prefix, since a guest has no account to promote to organizer — a real,
+disclosed gap this surfaced and fixed in the same pass: the pre-existing promote-to-organizer tap
+handler had no `isGuest` guard at all, and every participant chip was silently keyed by `p.userId`,
+which is `null` for every guest — a real React key-collision bug with 2+ guests, fixed by exposing
+each participant row's own non-sensitive `id` for keying instead). A new push type,
+`occasion_group_plan_guest_rsvp`, routes to the same real `GroupOccasionPlanScreen` every sibling
+push in this family already uses.
+
+Verified live against production (`enmosvippabmuqslzrox`) via a comprehensive disposable rolled-
+back transaction with real fixtures before applying for real: guest invite/trim, the public guest
+view (correct payload, a bogus token honestly returns null), RSVP accept (and a second RSVP on the
+same token correctly rejected, a bogus token on respond correctly rejected), the host seeing a
+real `guestToken` in `get_occasion_group_plan_detail` while a plain non-organizer participant
+cannot, and the 20-guest cap correctly enforced. Rolled back with zero leaked rows confirmed. A
+second live (non-rolled-back) round-trip then hit the REAL production REST endpoint with the anon
+key exactly as the static page does — `get_public_occasion_group_plan_guest_view` and
+`respond_to_occasion_group_plan_guest_invite` both confirmed working end to end over HTTP, not just
+at the SQL level — before the disposable fixture was deleted and re-confirmed at zero leaked rows.
+Re-confirmed live afterward: all four touched/new functions have exactly one overload each, and
+grants are exactly as intended (the two guest-facing RPCs on `anon`+`authenticated`, the host-only
+invite RPC on `authenticated` only, no leak). Full Jest suite 549/549 passing (no new pure
+functions — this is DB/RLS-plus-UI wiring); all four touched/new client files transform-checked
+clean via `@babel/core` + `babel-preset-expo`; the new page's inline script syntax-checked clean
+via `node --check`. Not exercised in a running app or a real browser (no simulator/device/browser
+tooling this session, standing note) — next session should confirm on a real account that "🔗 Get
+Invite Link" creates a link and opens the native share sheet, that the link renders and RSVPs
+correctly in an actual browser, and that a tapped `occasion_group_plan_guest_rsvp` push lands on
+the right plan for the host.
+
 **Item 104 ("There could eventually be an 'Occasions' recommendation engine") — first real
 increment shipped (2026-09-17), same-day direct follow-up to Item 103.** User's own mock:
 "Upcoming in your world / 🎂 Sarah's birthday — 10 days / 💍 Anniversary — 22 days / 🎓 John's

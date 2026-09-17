@@ -234,6 +234,26 @@ export async function setOccasionGroupPlanDate(planId, scheduledDate) {
   if (error) throw new Error(error.message);
 }
 
+// Items 105 & 106 (CLAUDE.md, "make invitations frictionless" extended to
+// Occasion plans): host/organizer invites someone by name who isn't (yet)
+// a Nearby user. Returns a real, unique per-guest token immediately so the
+// caller can build and share the link right away -- occasionGroupPlanGuest
+// InviteShareUrl below builds the exact URL docs/occasion-invite.html reads.
+export async function inviteGuestToOccasionGroupPlan(planId, guestName) {
+  const { data, error } = await supabase.rpc('invite_guest_to_occasion_group_plan', {
+    plan_id_param: planId,
+    guest_name_param: guestName,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+const GITHUB_PAGES_BASE = 'https://allenklein94.github.io/Nearby';
+
+export function occasionGroupPlanGuestInviteShareUrl(guestToken) {
+  return `${GITHUB_PAGES_BASE}/occasion-invite.html?t=${guestToken}`;
+}
+
 export async function getMyOccasionGroupPlans() {
   const { data, error } = await supabase.rpc('get_my_occasion_group_plans');
   if (error) {
