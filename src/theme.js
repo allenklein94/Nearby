@@ -10,6 +10,14 @@ export const lightColors = {
   success: '#4CAF7D',
   danger: '#FF6B5B',
   border: '#F0E0D4',
+  // Item 112 follow-up (CLAUDE.md, "Surprise Mode could have its own
+  // visual language"): a deliberate, small, contained addition -- a real
+  // "locked/secret" register distinct from coral (the one primary-action
+  // color per this app's own locked visual-system convention) so surprise
+  // mode reads as visually different, not just a coral banner with
+  // different text. Used only by surprise-mode-specific UI.
+  surprise: '#6C5CE7',
+  surpriseMuted: 'rgba(108, 92, 231, 0.12)',
 };
 
 export const darkColors = {
@@ -24,6 +32,8 @@ export const darkColors = {
   success: '#4ade80',
   danger: '#ff4d6d',
   border: 'rgba(255, 255, 255, 0.08)',
+  surprise: '#9B8CFF',
+  surpriseMuted: 'rgba(155, 140, 255, 0.18)',
 };
 
 export const typography = {

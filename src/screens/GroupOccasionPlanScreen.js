@@ -40,6 +40,7 @@ import {
 import { OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { WHEN_PRESETS } from '../utils/whenPresets';
 import LoadErrorState from '../components/LoadErrorState';
+import SurpriseRevealAnimation from '../components/SurpriseRevealAnimation';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -112,6 +113,13 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   const [acting, setActing] = useState(false);
   const [proposeType, setProposeType] = useState(null);
   const [proposeLabel, setProposeLabel] = useState('');
+  // Item 112 follow-up (CLAUDE.md, "the lock opens... and the plan
+  // becomes visible to the recipient"): true only after the real reveal
+  // RPC has already succeeded -- the surprise banner below swaps to the
+  // reveal animation for a moment before `load()` (deferred until the
+  // animation finishes) flips detail.surpriseMode false and the whole
+  // banner naturally disappears.
+  const [revealAnimating, setRevealAnimating] = useState(false);
 
   // Item 66 (CLAUDE.md, "Add collaborative planning"): host/organizer-only
   // "invite more guests" expand-in-place, same "no navigation, contextual
@@ -420,9 +428,30 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
       `${detail.whoForName || 'They'} will be invited to this plan and notified — this can't be undone.`,
       [
         { text: 'Not yet', style: 'cancel' },
-        { text: 'Reveal', onPress: () => runAction(() => revealOccasionGroupPlan(planId)) },
+        { text: 'Reveal', onPress: performReveal },
       ]
     );
+  }
+
+  // Item 112 follow-up: bypasses the shared runAction() helper on purpose
+  // -- the reveal animation needs to play, in full, AFTER the real RPC has
+  // already succeeded and BEFORE the refetch flips detail.surpriseMode
+  // false (which would otherwise unmount this whole banner mid-animation).
+  async function performReveal() {
+    setActing(true);
+    try {
+      await revealOccasionGroupPlan(planId);
+      setRevealAnimating(true);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+      setActing(false);
+    }
+  }
+
+  async function handleRevealAnimationDone() {
+    setRevealAnimating(false);
+    setActing(false);
+    await load();
   }
 
   function goFindBusinesses() {
@@ -583,20 +612,36 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
             invited friends know to keep it quiet. */}
         {detail.surpriseMode && (
           <View style={styles.surpriseBanner}>
-            <Text style={styles.surpriseBannerText}>
-              🔒 Surprise mode — {detail.whoForName || 'the person this is for'} isn't part of this plan and won't be notified. Keep it quiet!
-            </Text>
-            {detail.isHost && (
-              <TouchableOpacity
-                onPress={handleReveal}
-                disabled={acting}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel="Reveal the surprise"
-                style={{ marginTop: spacing.sm }}
-              >
-                <Text style={styles.surpriseRevealLink}>🎉 Reveal the Surprise</Text>
-              </TouchableOpacity>
+            {revealAnimating ? (
+              // Item 112 follow-up: the real reveal RPC has already
+              // succeeded by the time this renders (performReveal awaits
+              // it first) -- this is celebrating a fact that's already
+              // true server-side, never a speculative animation.
+              <SurpriseRevealAnimation
+                text={`🎉 ${detail.whoForName || 'They'} can see it now!`}
+                onDone={handleRevealAnimationDone}
+              />
+            ) : (
+              <>
+                <Text style={styles.surpriseBannerText}>
+                  🔒 Surprise mode — {detail.whoForName || 'the person this is for'} isn't part of this plan and won't be notified. Keep it quiet!
+                </Text>
+                {detail.isHost && (
+                  <View style={styles.surpriseRevealRow}>
+                    <Text style={styles.surpriseRevealLabel}>🎁 Ready to reveal?</Text>
+                    <TouchableOpacity
+                      onPress={handleReveal}
+                      disabled={acting}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Reveal the surprise"
+                      style={styles.surpriseRevealButton}
+                    >
+                      <Text style={styles.surpriseRevealButtonText}>Reveal Plan</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </>
             )}
           </View>
         )}
@@ -1101,12 +1146,25 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   subheader: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs, marginBottom: spacing.lg },
   emptyState: { alignItems: 'center', paddingVertical: spacing.xl },
   emptyText: { color: colors.textTertiary },
+  // Item 112 follow-up (CLAUDE.md, "Surprise Mode could have its own
+  // visual language... the screen subtly changes"): a distinct
+  // surprise/violet register (colors.surprise/surpriseMuted, theme.js),
+  // not the same coral primaryMuted every other banner on this screen
+  // uses -- so surprise mode is visually distinguishable at a glance, not
+  // just a differently-worded coral box.
   surpriseBanner: {
-    backgroundColor: colors.primaryMuted, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary,
-    padding: spacing.sm, marginBottom: spacing.lg,
+    backgroundColor: colors.surpriseMuted, borderRadius: radius.md, borderWidth: 1, borderColor: colors.surprise,
+    padding: spacing.md, marginBottom: spacing.lg, alignItems: 'stretch',
   },
   surpriseBannerText: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
-  surpriseRevealLink: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  surpriseRevealRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.sm,
+  },
+  surpriseRevealLabel: { color: colors.surprise, fontSize: 13, fontWeight: '700' },
+  surpriseRevealButton: {
+    backgroundColor: colors.surprise, borderRadius: radius.sm, paddingVertical: spacing.xs, paddingHorizontal: spacing.md,
+  },
+  surpriseRevealButtonText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   recommendationBanner: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary,
     padding: spacing.sm, marginTop: spacing.sm, marginBottom: spacing.sm,
