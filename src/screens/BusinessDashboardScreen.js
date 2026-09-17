@@ -3172,8 +3172,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     by occasion rather than category, matching the item's
                     own literal examples ("8 groups are looking for
                     graduation celebrations"). Real, anonymized, geo-scoped;
-                    honestly empty until real nearby volume exists. */}
-                <Text style={styles.sectionHeader}>🎉 What They're Celebrating</Text>
+                    honestly empty until real nearby volume exists.
+                    Item 103 (CLAUDE.md, "Don't forget non-celebratory life
+                    events"): this groups by ANY real occasion.occasion
+                    value, including real non-celebratory ones (a farewell,
+                    a move, a new job) -- "What They're Celebrating" read
+                    wrong the moment one of those showed up here. */}
+                <Text style={styles.sectionHeader}>🎉 What They're Planning</Text>
                 <Text style={styles.helperText}>
                   Real open requests nearby, grouped by occasion instead of category -- a
                   different cut of the same real signal below, made to answer "what should

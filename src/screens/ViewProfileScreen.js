@@ -505,7 +505,13 @@ export default function ViewProfileScreen({ route, navigation }) {
               with who-for already answered for when the user reaches that
               step. No new screen, no new picker built here -- reuses the
               exact same wizard entry point/params Item 64's CreateHub
-              selector and every push-deep-link already use. */}
+              selector and every push-deep-link already use.
+              Item 103 (CLAUDE.md, "Don't forget non-celebratory life
+              events"): relabeled from "🎉 Celebrate {name}" -- a genuinely
+              wrong verb for a real, non-celebratory occasion reachable
+              from this exact button (a Farewell, "Mom is visiting" via
+              Custom Occasion, etc.), the same "Occasions, not
+              Celebrations" framing already locked elsewhere. */}
           {!isOwnProfile && friendshipStatus === 'accepted' && (
             <TouchableOpacity
               style={styles.addFriendButton}
@@ -513,10 +519,10 @@ export default function ViewProfileScreen({ route, navigation }) {
                 whoFor: 'friend', whoForName: profile.display_name, whoForFriendId: userId,
               }))}
               activeOpacity={0.85}
-              accessibilityLabel={`Celebrate ${profile.display_name}`}
+              accessibilityLabel={`Plan something for ${profile.display_name}`}
               accessibilityRole="button"
             >
-              <Text style={styles.addFriendButtonText}>🎉 Celebrate {profile.display_name}</Text>
+              <Text style={styles.addFriendButtonText}>✨ Plan for {profile.display_name}</Text>
             </TouchableOpacity>
           )}
 

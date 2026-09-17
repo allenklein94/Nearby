@@ -40,6 +40,83 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 103 ("Don't forget non-celebratory life events") — audited, fully DONE (2026-09-17),
+same-day direct follow-up to Item 102.** User's own list: "Mom is visiting" / "My friend is
+moving away" / "We're back in town" / "College reunion" / "Team celebration" / "First date" /
+"New job" / "Retirement" — "these are reasons to get people together... this is why I like
+Occasions more than 'Celebrations.'"
+
+Audited against the real current vocabulary and code before writing anything, rather than
+assumed. Verdict: WHAT can be expressed already has no real gap. Item 73's life-events expansion
+(2026-09-12) already added `retirement`/`new_job`/`reunion`/`welcome`/`farewell`/`moving` to every
+occasion-vocabulary CHECK constraint; anything not on the named list at all ("Mom is visiting")
+already has a first-class, dedicated path via Item 74's Custom Occasion free-text flow, which
+skips the usual who/what/when interrogation entirely. **"First date" was deliberately left
+unbuilt as a named occasion type** — adding it would duplicate the already-real, dedicated match/
+date-planning flow `DateProposalScreen` already owns (a genuinely different "who is this with"
+model — a match, not a friend/family/someone_else), and it remains fully expressible today via
+Custom Occasion for anyone who wants to log/plan one as a personal record outside that dedicated
+flow. Disclosed rather than silently skipped.
+
+What the audit found instead were real, concrete instances of the exact failure mode this item
+warns about — server-side and client-side copy that silently assumed every occasion is a
+celebration, confirmed live against the actually-deployed function bodies and actual screen code,
+not guessed from memory:
+
+1. **`_occasion_emoji()`/`_occasion_noun()`** — the two shared helpers feeding emoji/label text
+   into 12 real push-sending functions (confirmed via a live `prosrc` search: `invite_to_business_
+   request`, `submit_business_offer`, `accept_business_offer`/`decline_business_offer`, `add_plan_
+   organizer`, `confirm_group_plan_offer`, `post_business_availability`, `send_occasion_planning_
+   nudges`, `send_occasion_group_plan_stall_nudges`, `notify_occasion_demand_threshold`, `send_
+   business_recall_outreach`, `admin_review_business_content_screening`) — were missing 8 of Item
+   73's own 8 new life-event values entirely (`wedding`/`new_job`/`retirement`/`achievement`/
+   `moving`/`reunion`/`welcome`/`holiday_gathering` all silently fell through to a generic 📅/
+   "Occasion"), meaning a real "Retirement" or "New Job" occasion got a bland, generic push
+   everywhere a "Birthday" already got a rich, specific one — precisely the asymmetry this item
+   warns about. Also fixed a real, separate drift caught in the same pass: the DB helper mapped
+   `milestone` to 🏆, but the client's own authoritative `OCCASION_OPTIONS`
+   (`businessAttributes.js`) maps `milestone` to 🥂 and `achievement` to 🏆 — the two had silently
+   diverged. Both fixed to match the client exactly.
+2. **`create_plan_addon_request()`'s** auto-generated, privacy-safe business-facing `raw_text`
+   (Item 80) hardcoded every add-on's description as "{Label} for a {occasion, underscores
+   replaced} celebration" regardless of actual occasion — a real florist or photographer add-on
+   tied to a farewell/moving/new-job occasion literally read "Flowers for a farewell celebration"
+   / "Photographer for a moving celebration" / "Transportation for a new job celebration" in front
+   of the business deciding whether to respond. Fixed to use the corrected `_occasion_noun()`
+   helper instead ("Flowers for a Farewell" / "Transportation for a New Job"), with a minimal a/an
+   article fix for the three nouns that need it (Anniversary/Engagement/Achievement) — a real,
+   small, pre-existing grammar bug in the original hardcoded text too ("for a anniversary
+   celebration"), fixed in the same pass since this line was already being rewritten.
+3. **`CelebrateSomethingScreen.js`**'s two validation prompts ("What's the occasion for this
+   celebration?" / "Who is this celebration for?") were the only two remaining non-neutral labels
+   in the whole wizard — every other on-screen label ("What are you planning?" / "Who is this
+   for?") was already neutral. Reworded to match.
+4. **`ViewProfileScreen.js`**'s Item 86 entry-point button, "🎉 Celebrate {name}" — a genuinely
+   wrong verb for the real non-celebratory occasions reachable from that exact button (a Farewell,
+   "Mom is visiting" via Custom Occasion). Relabeled "✨ Plan for {name}", matching Create's own
+   already-renamed "Plan for Someone" card (Item 83).
+5. **`BusinessDashboardScreen.js`**'s Item 79 dashboard section, "🎉 What They're Celebrating" —
+   groups by ANY real `business_requests.occasion` value, including genuinely non-celebratory ones
+   (a farewell, a move, a new job); the header read wrong the moment one of those appeared.
+   Relabeled "🎉 What They're Planning" (the row copy beneath it, "N groups are planning a
+   {noun}," was already neutral).
+
+Migration `20261124_non_celebratory_occasion_copy_fixes.sql` (the three server-side fixes) applied
+and verified live against production (`enmosvippabmuqslzrox`): direct spot-checks of
+`_occasion_emoji`/`_occasion_noun` confirmed the correct icon/label for every previously-missing
+value, including the corrected `milestone`/`achievement` mapping; a disposable rolled-back
+transaction with real fixtures confirmed `create_plan_addon_request` now produces "Flowers for a
+Moving" (was "Flowers for a moving celebration") and "Photographer for an Anniversary" (correct
+article) — zero leaked rows afterward. Re-confirmed live: all three functions single-overload,
+`create_plan_addon_request` and both helpers keep their pre-existing `authenticated` grant with no
+`anon` leak (unchanged from before, since a plain `CREATE OR REPLACE` doesn't reset grants —
+confirmed rather than assumed). Full Jest suite 538/538 passing (no new pure functions — this is a
+copy/text-correctness pass); all three touched client files transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device tooling
+this session, standing note) — next session should confirm on a real account that the reworded
+Alert prompts, the "✨ Plan for {name}" button, and the "🎉 What They're Planning" dashboard header
+all render correctly.
+
 **Item 102 ("Businesses can participate in recurring occasions") — fully DONE (2026-09-17),
 same-day direct follow-up to Item 101.** User's own example: a business could eventually see
 "This customer celebrated here last year" and potentially offer "Welcome back — anniversary

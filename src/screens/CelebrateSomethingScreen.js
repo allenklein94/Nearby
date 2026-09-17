@@ -786,11 +786,17 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   }
 
   function goNext() {
+    // Item 103 (CLAUDE.md, "Don't forget non-celebratory life events"):
+    // these two validation prompts used to say "this celebration" --
+    // wrong for a real Farewell/Moving/New Job occasion. Every other
+    // on-screen label in this wizard was already neutral (see "What are
+    // you planning?"/"Who is this for?" elsewhere in this file); these
+    // two were the only stragglers.
     if (stepKey === 'occasion' && !occasion) {
-      return Alert.alert('Pick an occasion', "What's the occasion for this celebration?");
+      return Alert.alert('Pick an occasion', "What's the occasion?");
     }
     if (stepKey === 'who_for' && !whoFor) {
-      return Alert.alert('Pick who it’s for', 'Who is this celebration for?');
+      return Alert.alert('Pick who it’s for', 'Who is this for?');
     }
     if (stepKey === 'activity' && !activityType) {
       return Alert.alert('Pick something to do', "What would you like to do?");
