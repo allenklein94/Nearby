@@ -40,6 +40,17 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 112 ("This reinforces the original Nearby promise... the most important conclusion") — a
+guiding thesis, not a build item, logged 2026-09-17.** User's own crystallized tagline: Nearby
+should NOT be "Here's what's near you" ("that's easy to replicate") — it should be "Tell Nearby
+what you want to make happen, and we'll help make it happen with the people, places, businesses
+and experiences around you." "A birthday is just one of the clearest demonstrations of that." No
+code change — folded into the standing memory `project_intent_engine_vision` as the north-star
+tiebreaker for future feature calls (prefer whichever shape makes Nearby DO something on the
+user's behalf over whichever shape merely shows more of what's nearby). The whole Occasion/
+"We'll plan it for you" arc (Items 61, 80-81, 90-92, 99-111 below) is the concrete proof of this
+thesis already shipped, not a side feature.
+
 **Item 111 ("We'll plan it for you" — a single "Don't know what to do? Let Nearby plan it" front
 door that collects Who/Occasion/When/People/Budget/Vibe and returns "Here's what we'd do: 🍽️
 Dinner / 🎵 Live music / 🌹 Flowers / Estimated total: $X / Find available options →") — fully DONE
