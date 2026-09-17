@@ -28,6 +28,7 @@ import {
 } from '../services/deviceCalendar';
 import { guessOccasionTypeFromEventTitle, formatCalendarEventDateLabel, filterUpcomingCalendarSuggestions } from '../utils/calendarOccasionSuggestion';
 import LoadErrorState from '../components/LoadErrorState';
+import SurpriseRevealAnimation from '../components/SurpriseRevealAnimation';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -101,6 +102,11 @@ export default function OccasionsScreen({ navigation }) {
   const [deletingId, setDeletingId] = useState(null);
   const [togglingReminderId, setTogglingReminderId] = useState(null);
   const [revealingId, setRevealingId] = useState(null);
+  // Item 112 follow-up (CLAUDE.md, "do same reveal for occasions screen"):
+  // set only after the real reveal_occasion RPC has already succeeded --
+  // same "never a speculative reveal" discipline as GroupOccasionPlanScreen's
+  // own version of this animation.
+  const [revealAnimatingId, setRevealAnimatingId] = useState(null);
   const [togglingRecallShareId, setTogglingRecallShareId] = useState(null);
 
   // "Who is this for?" -- optional, but required for grouping to mean
@@ -418,7 +424,11 @@ export default function OccasionsScreen({ navigation }) {
             setRevealingId(occasion.id);
             try {
               await revealOccasion(occasion.id);
-              setOccasions((prev) => prev.map((o) => (o.id === occasion.id ? { ...o, surprise_mode: false } : o)));
+              // Item 112 follow-up: the animation starts only once the
+              // real reveal has already happened server-side -- the row's
+              // own surprise_mode flip is deferred to handleRevealAnimationDone
+              // so it doesn't unmount the animation mid-play.
+              setRevealAnimatingId(occasion.id);
             } catch (e) {
               Alert.alert('Something went wrong', e.message);
             }
@@ -427,6 +437,11 @@ export default function OccasionsScreen({ navigation }) {
         },
       ]
     );
+  }
+
+  function handleRevealAnimationDone(occasionId) {
+    setRevealAnimatingId(null);
+    setOccasions((prev) => prev.map((o) => (o.id === occasionId ? { ...o, surprise_mode: false } : o)));
   }
 
   function confirmDelete(occasion) {
@@ -603,74 +618,90 @@ export default function OccasionsScreen({ navigation }) {
                 const meta = OCCASION_TYPES.find((t) => t.key === occasion.occasion_type);
                 return (
                   <View key={occasion.id} style={styles.card}>
-                    <Text style={{ fontSize: 22, marginRight: spacing.sm }}>{meta?.icon ?? '📅'}</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.name}>
-                        {occasion.surprise_mode ? '🔒 ' : ''}{group.label ? (meta?.label ?? occasion.title) : occasion.title}
-                      </Text>
-                      <Text style={styles.detail}>
-                        {formatOccasionDateForPrecision(occasion.date_precision, occasion.occasion_date)}
-                        {occasion.recurs_annually ? ' · Repeats every year' : ' · One time'}
-                        {occasion.resulting_plan_id ? ' · ✅ Planned' : ''}
-                        {occasion.imported_from_calendar ? ' · 📅 From your calendar' : ''}
-                      </Text>
-                      {/* Item 109 (CLAUDE.md, "make the visibility model
-                          explicit"): who can actually see this record --
-                          always Private, or Shared with one explicitly
-                          picked person, never anything broader. */}
-                      <Text style={styles.privacyLine}>
-                        {describeOccasionPrivacy(occasion).icon} {describeOccasionPrivacy(occasion).label}
-                      </Text>
-                      {/* Item 96 ("Add surprise mode"): "Eventually: Reveal
-                          plan becomes an action" -- a real, one-way tap. */}
-                      {occasion.surprise_mode && (
-                        <TouchableOpacity
-                          onPress={() => confirmReveal(occasion)}
-                          disabled={revealingId === occasion.id}
-                          activeOpacity={0.8}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Reveal the surprise for ${occasion.title}`}
-                        >
-                          <Text style={styles.revealLink}>
-                            {revealingId === occasion.id ? 'Revealing…' : '🎉 Reveal the Surprise'}
+                    {revealAnimatingId === occasion.id ? (
+                      // Item 112 follow-up (CLAUDE.md, "do same reveal for
+                      // occasions screen"): the animation replaces the
+                      // row's whole content, same "already-real, never
+                      // speculative" reveal discipline as
+                      // GroupOccasionPlanScreen's own version.
+                      <View style={{ flex: 1 }}>
+                        <SurpriseRevealAnimation
+                          text={`🎉 ${occasion.who_for_name || 'They'} can see it now!`}
+                          onDone={() => handleRevealAnimationDone(occasion.id)}
+                        />
+                      </View>
+                    ) : (
+                      <>
+                        <Text style={{ fontSize: 22, marginRight: spacing.sm }}>{meta?.icon ?? '📅'}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.name}>
+                            {occasion.surprise_mode ? '🔒 ' : ''}{group.label ? (meta?.label ?? occasion.title) : occasion.title}
                           </Text>
+                          <Text style={styles.detail}>
+                            {formatOccasionDateForPrecision(occasion.date_precision, occasion.occasion_date)}
+                            {occasion.recurs_annually ? ' · Repeats every year' : ' · One time'}
+                            {occasion.resulting_plan_id ? ' · ✅ Planned' : ''}
+                            {occasion.imported_from_calendar ? ' · 📅 From your calendar' : ''}
+                          </Text>
+                          {/* Item 109 (CLAUDE.md, "make the visibility model
+                              explicit"): who can actually see this record --
+                              always Private, or Shared with one explicitly
+                              picked person, never anything broader. */}
+                          <Text style={styles.privacyLine}>
+                            {describeOccasionPrivacy(occasion).icon} {describeOccasionPrivacy(occasion).label}
+                          </Text>
+                          {/* Item 96 ("Add surprise mode"): "Eventually: Reveal
+                              plan becomes an action" -- a real, one-way tap. */}
+                          {occasion.surprise_mode && (
+                            <TouchableOpacity
+                              onPress={() => confirmReveal(occasion)}
+                              disabled={revealingId === occasion.id}
+                              activeOpacity={0.8}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Reveal the surprise for ${occasion.title}`}
+                            >
+                              <Text style={styles.revealLink}>
+                                {revealingId === occasion.id ? 'Revealing…' : '🎁 Reveal Plan'}
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                        <TouchableOpacity
+                          style={styles.iconButton}
+                          onPress={() => handleToggleReminder(occasion)}
+                          disabled={togglingReminderId === occasion.id}
+                          accessibilityLabel={occasion.reminder_enabled ? `Turn off reminder for ${occasion.title}` : `Turn on reminder for ${occasion.title}`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={{ fontSize: 18 }}>{occasion.reminder_enabled ? '🔔' : '🔕'}</Text>
                         </TouchableOpacity>
-                      )}
-                    </View>
-                    <TouchableOpacity
-                      style={styles.iconButton}
-                      onPress={() => handleToggleReminder(occasion)}
-                      disabled={togglingReminderId === occasion.id}
-                      accessibilityLabel={occasion.reminder_enabled ? `Turn off reminder for ${occasion.title}` : `Turn on reminder for ${occasion.title}`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={{ fontSize: 18 }}>{occasion.reminder_enabled ? '🔔' : '🔕'}</Text>
-                    </TouchableOpacity>
-                    {/* Item 102: only meaningful once there's real
-                        recurring history a business could ever recognize
-                        -- a plan that turned out to be gathering-destined
-                        (no business) just means consenting has no real
-                        effect, never a privacy leak either way. */}
-                    {occasion.recurs_annually && occasion.resulting_plan_id && (
-                      <TouchableOpacity
-                        style={styles.iconButton}
-                        onPress={() => handleToggleRecallShare(occasion)}
-                        disabled={togglingRecallShareId === occasion.id}
-                        accessibilityLabel={occasion.recall_shareable_with_business ? `Stop letting businesses recognize you for ${occasion.title}` : `Let a business recognize you for ${occasion.title}`}
-                        accessibilityRole="button"
-                      >
-                        <Text style={{ fontSize: 18 }}>{occasion.recall_shareable_with_business ? '🏪' : '🚫'}</Text>
-                      </TouchableOpacity>
+                        {/* Item 102: only meaningful once there's real
+                            recurring history a business could ever recognize
+                            -- a plan that turned out to be gathering-destined
+                            (no business) just means consenting has no real
+                            effect, never a privacy leak either way. */}
+                        {occasion.recurs_annually && occasion.resulting_plan_id && (
+                          <TouchableOpacity
+                            style={styles.iconButton}
+                            onPress={() => handleToggleRecallShare(occasion)}
+                            disabled={togglingRecallShareId === occasion.id}
+                            accessibilityLabel={occasion.recall_shareable_with_business ? `Stop letting businesses recognize you for ${occasion.title}` : `Let a business recognize you for ${occasion.title}`}
+                            accessibilityRole="button"
+                          >
+                            <Text style={{ fontSize: 18 }}>{occasion.recall_shareable_with_business ? '🏪' : '🚫'}</Text>
+                          </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                          style={styles.removeButton}
+                          onPress={() => confirmDelete(occasion)}
+                          disabled={deletingId === occasion.id}
+                          accessibilityLabel={`Remove ${occasion.title}`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.removeButtonText}>{deletingId === occasion.id ? '...' : 'Remove'}</Text>
+                        </TouchableOpacity>
+                      </>
                     )}
-                    <TouchableOpacity
-                      style={styles.removeButton}
-                      onPress={() => confirmDelete(occasion)}
-                      disabled={deletingId === occasion.id}
-                      accessibilityLabel={`Remove ${occasion.title}`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.removeButtonText}>{deletingId === occasion.id ? '...' : 'Remove'}</Text>
-                    </TouchableOpacity>
                   </View>
                 );
               })}
@@ -919,7 +950,9 @@ const getStyles = (colors) => StyleSheet.create({
   name: { ...typography.bodyBold, color: colors.textPrimary },
   detail: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   privacyLine: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
-  revealLink: { color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: 4 },
+  // Item 112 follow-up: colors.surprise (theme.js), not colors.primary --
+  // matches GroupOccasionPlanScreen's own surprise-mode visual language.
+  revealLink: { color: colors.surprise, fontSize: 12, fontWeight: '700', marginTop: 4 },
   iconButton: { paddingHorizontal: spacing.xs, paddingVertical: spacing.sm },
   removeButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
   removeButtonText: { color: colors.danger, fontWeight: '700', fontSize: 13 },

@@ -9,8 +9,10 @@ import { relevantAddonTypesForOccasion, planAddonIcon, planAddonLabel } from '..
 import { occasionIcon, occasionLabel } from '../constants/businessAttributes';
 import { buildPlanTimeline, summarizePlanTimelineReadiness, buildPlanSummary, addonStateCopy } from '../utils/planAddonReadiness';
 import { buildOccasionPlanShareCaption } from '../utils/occasionPlanShareCard';
+import { stripTrailingCelebrationIcon, buildPlanHeaderChangeKey } from '../utils/livingPlanHeader';
 import OccasionPlanShareCard from '../components/OccasionPlanShareCard';
 import PlanCreatedCelebration from '../components/PlanCreatedCelebration';
+import CelebrationHeaderIcon from '../components/CelebrationHeaderIcon';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
@@ -800,6 +802,21 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     () => (request.addon_type ? null : buildPlanSummary({ primary: request, primaryOffers: offers, planTitle: planChatInfo?.title ?? null })),
     [request, offers, planChatInfo]
   );
+
+  // Item 112 follow-up (CLAUDE.md, "the finished plan could have a living
+  // header... 🎂 Sarah's 30th Birthday"): only once the plan is genuinely
+  // finished (statusKind 'confirmed', the same gate the share-card action
+  // below already uses) -- a plan still in progress keeps the plain
+  // static title, since "finished" is the whole premise of this treatment.
+  const planHeaderIcon = useMemo(
+    () => occasionIcon(planChatInfo?.occasionType ?? request.occasion ?? null) ?? '🎉',
+    [planChatInfo, request.occasion]
+  );
+  const planHeaderLabel = useMemo(
+    () => (planSummary ? stripTrailingCelebrationIcon(planSummary.title, planHeaderIcon) : ''),
+    [planSummary, planHeaderIcon]
+  );
+  const planHeaderChangeKey = useMemo(() => buildPlanHeaderChangeKey(planSummary), [planSummary]);
   // Item 88: this used to be visible to ANY viewer who could load this
   // screen at all (including a match participant or gathering-interest-
   // approved attendee who could never actually succeed at the underlying
@@ -845,7 +862,19 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         {planSummary && (
           <View style={styles.planSummaryCard}>
             <View style={styles.planSummaryHeaderRow}>
-              <Text style={styles.planSummaryTitle} numberOfLines={2}>{planSummary.title}</Text>
+              {planSummary.statusKind === 'confirmed' ? (
+                <View style={styles.planSummaryTitleRow}>
+                  <CelebrationHeaderIcon
+                    icon={planHeaderIcon}
+                    changeKey={planHeaderChangeKey}
+                    size={20}
+                    style={styles.planSummaryTitleIcon}
+                  />
+                  <Text style={styles.planSummaryTitle} numberOfLines={2}>{planHeaderLabel}</Text>
+                </View>
+              ) : (
+                <Text style={styles.planSummaryTitle} numberOfLines={2}>{planSummary.title}</Text>
+              )}
               <View
                 style={[
                   styles.planSummaryStatusPill,
@@ -1558,6 +1587,10 @@ const getStyles = (colors) => StyleSheet.create({
   },
   planSummaryHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.xs },
   planSummaryTitle: { ...typography.headline, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
+  // Item 112 follow-up ("the finished plan could have a living header"):
+  // wraps the title + its separately-animated CelebrationHeaderIcon.
+  planSummaryTitleRow: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: spacing.sm },
+  planSummaryTitleIcon: { marginRight: spacing.xs },
   planSummaryStatusPill: { backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.sm, paddingVertical: 2 },
   planSummaryStatusPillConfirmed: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
   planSummaryStatusPillCancelled: { backgroundColor: colors.dangerMuted ?? colors.surface, borderColor: colors.danger },
