@@ -40,6 +40,51 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Fourth same-day follow-up ("🎁 Surprise Mode could have its own visual language... the lock
+opens: 🔒 → ✨ → 🎉") — fully DONE (2026-09-17), resumed cleanly after a codespace restart (an
+uncommitted `theme.js` color addition, a new uncommitted `SurpriseRevealAnimation.js`, and a
+partial, not-yet-wired-in `GroupOccasionPlanScreen.js` diff were all found on disk at session
+start, read in full, checked against the user's own mock, and completed rather than restarted).**
+User's own mock, verbatim: when Surprise Mode is enabled, "the screen subtly changes... only the
+organizers and invited guests can see this plan"; then, when ready, "🎁 Ready to reveal? / Reveal
+Plan" — tapping it opens the lock (🔒 → ✨ → 🎉) and the plan becomes visible to the recipient.
+
+The pre-restart work had already added two new theme tokens (`colors.surprise`/`surpriseMuted`, a
+violet register distinct from coral, `theme.js`) and a complete, self-contained
+`SurpriseRevealAnimation.js` (plain RN `Animated` cross-fade through 🔒→✨→🎉 with a haptic on
+start, same shape `OccasionSelectAnimation.js`'s own kinds already use), plus
+`GroupOccasionPlanScreen.js` state/handlers (`revealAnimating`, `performReveal`,
+`handleRevealAnimationDone`) — but none of it was actually wired into the screen's render yet; the
+existing Item 96 surprise banner still used the plain coral `primaryMuted` styling and a bare
+"🎉 Reveal the Surprise" link with no animation.
+
+Finished this session: the banner now renders in the new violet register (`surpriseBanner` uses
+`colors.surprise`/`surpriseMuted` instead of `colors.primary`/`primaryMuted`) — the literal
+"screen subtly changes" from the mock. The host-only reveal action is now framed exactly per the
+mock ("🎁 Ready to reveal?" label + a "Reveal Plan" button in the new violet color, replacing the
+old plain text link). Tapping it calls `performReveal()`, which awaits the real
+`reveal_occasion_group_plan` RPC (Item 96) succeeding FIRST, then sets `revealAnimating` — only
+once the server-side reveal is already real does the banner's content swap to
+`<SurpriseRevealAnimation>` in place, playing 🔒→✨→🎉 and landing on "🎉 {name} can see it now!".
+`onDone` clears `revealAnimating` and awaits a real `load()`, which flips `detail.surpriseMode`
+false and lets the whole banner unmount cleanly right after the animation finishes, not mid-
+animation. Never a speculative "revealed!" shown before the real reveal succeeded.
+
+Deliberately scoped to `GroupOccasionPlanScreen.js` only (the dedicated plan screen the user's own
+mock describes) — `OccasionsScreen.js`'s own, much smaller per-row "🎉 Reveal the Surprise" link
+(the solo/personal-occasion case, Item 96) was left untouched; it's a compact list row, not "the
+screen," and retrofitting a full-card animation into a dense per-row list is a different, smaller-
+fidelity design problem than what the mock is describing — a disclosed scope boundary, not an
+oversight.
+
+No DB migration, no new pure functions (animation timing, same untested-by-design precedent as
+every other Animated component in `src/components/`). Full Jest suite 571/571 passing (unchanged
+— no pure logic added); all three touched/new files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised in a running app (no simulator/device tooling this session,
+standing note) — next session should confirm the violet banner color reads as intended against
+both light and dark themes, and that the 🔒→✨→🎉 reveal animation plays smoothly and the banner
+disappears cleanly right after, on a real device.
+
 **Item 112 ("This reinforces the original Nearby promise... the most important conclusion") — a
 guiding thesis, not a build item, logged 2026-09-17.** User's own crystallized tagline: Nearby
 should NOT be "Here's what's near you" ("that's easy to replicate") — it should be "Tell Nearby
