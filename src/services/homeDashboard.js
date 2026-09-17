@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { getNearbyMatches } from './proximity';
-import { getNearbyGatherings, getGatheringFitReasons, getMyTopGatheringCategories } from './gatherings';
+import { getNearbyGatherings, getGatheringFitReasons, getMyTopGatheringCategories, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { getMyGroupPlans } from './groupPlans';
 
@@ -565,15 +565,29 @@ export async function getHomeDashboard() {
     // (getHomeInsight() below counts friendsActivity.length as the number
     // of *people*, not the number of gathering rows) or render as the same
     // host's name repeated 3 times in a row.
+    //
+    // Item 108 (CLAUDE.md, "don't make the app socially noisy"): this used
+    // to select ANY gathering a friend hosted with no visibility check at
+    // all -- a real, confirmed leak (gatherings' own RLS SELECT policy is
+    // `true`, so nothing at the DB layer protected this either) that would
+    // have rendered "{friend} is hosting" / "Sarah's Birthday 🎂" for a
+    // genuinely invite_only (e.g. surprise) plan to any OTHER friend of
+    // that host, spoiling exactly the kind of private planning object this
+    // item asks to keep default-private. Now runs through the exact same
+    // applyGatheringVisibilityFilters() gate getNearbyGatherings()/
+    // searchGatherings() already use, instead of a second, ungated query
+    // that could (and did) drift from that established rule.
     const { data: friendGatherings } = await supabase
       .from('gatherings')
-      .select('id, title, host_id, created_at, scheduled_at, profiles!gatherings_host_id_fkey(display_name)')
+      .select('id, title, host_id, created_at, scheduled_at, visibility, community_id, women_only, profiles!gatherings_host_id_fkey(display_name)')
       .in('host_id', friendIds)
       .gte('created_at', threeDaysAgo)
       .order('created_at', { ascending: false })
       .limit(15);
+    const visibilityContext = await fetchGatheringVisibilityContext(myId);
+    const visibleFriendGatherings = applyGatheringVisibilityFilters(friendGatherings ?? [], visibilityContext);
     const seenHosts = new Set();
-    friendsActivity = (friendGatherings ?? []).filter((g) => {
+    friendsActivity = visibleFriendGatherings.filter((g) => {
       if (seenHosts.has(g.host_id)) return false;
       seenHosts.add(g.host_id);
       return true;

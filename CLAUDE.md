@@ -40,6 +40,46 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 108 ("don't make the app socially noisy" — a real privacy leak in Home's friend-activity
+feed) — fully DONE (2026-09-17), picked up and finished after an interrupted prior session left
+the fix uncommitted on disk.** Found at session start: a complete, uncommitted fix to
+`homeDashboard.js`/`gatherings.js` (no trace of the original request text anywhere — inferred
+purely from the fix's own inline comments — so treat this description as reconstructed, not
+quoted verbatim). Session-start audit confirmed the fix was correct and complete before shipping
+it; nothing needed to be redone.
+
+The real bug: `getHomeDashboard()`'s "friends are already making plans" activity feed
+(`friendsActivity`, feeding the "🎉 N of your friends are already making plans" Home card) queried
+`gatherings` for anything a friend hosted in the last 3 days with **zero visibility check** —
+no filter on `visibility`/`community_id`/`women_only`, and confirmed live-equivalent (via the
+table's own already-known RLS shape) that nothing at the DB layer caught this either, since
+`gatherings`' SELECT policy is unconditionally `true`. A friend creating a genuinely
+`invite_only` plan — including a surprise occasion, Item 96's whole reason to exist — would
+render "{host} is hosting" / the plan's own real title (e.g. "Sarah's Birthday 🎂") to every
+*other* mutual friend of that host, regardless of whether they were actually invited. This is
+exactly the kind of private planning object this app's own architecture (surprise mode, invite-
+only gatherings) already goes out of its way to keep private everywhere else — this was the one
+surface that silently didn't.
+
+Fixed by reuse, not a new rule: `fetchGatheringVisibilityContext()`/
+`applyGatheringVisibilityFilters()` — the exact predicate `getNearbyGatherings()`/
+`searchGatherings()` already share so plain browse and search can never drift on who's allowed to
+see what (blocks, women-only, and the friends/community/invite_only discovery-scope funnel) — are
+now exported from `gatherings.js` and reused by `homeDashboard.js`'s friend-activity query
+instead of a second, ungated query that could (and did) drift from that established rule. The
+query now also selects `visibility`/`community_id`/`women_only` (needed by the shared filter,
+never rendered — the client already had full access to its own dashboard data either way) and
+runs the result through the same filter before deduping to one row per host and capping at 3.
+
+No DB migration — pure client-side reuse of an already-live, already-proven query-field set (the
+three added columns are already selected by the untouched `getNearbyGatherings()`/
+`searchGatherings()` in the same file). Full Jest suite 555/555 passing (no new pure functions —
+this is a query-gating fix, not new logic); both touched files transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device tooling
+this session, standing note) — next session should confirm on two real accounts that a friend's
+`invite_only`/surprise gathering no longer appears in the other's Home "friends are already making
+plans" card, while a normal `everyone`/`friends`/`community`-visible one still does.
+
 **Item 107 ("Build the occasion around a beautiful shareable card") — fully DONE (2026-09-17),
 same-day direct follow-up to Items 105 & 106.** User's own mock: once a plan is finalized, a real
 branded card ("🎂 Sarah's 30th Birthday / Saturday · 7:30 PM / 📍 Restaurant / 👥 10 going / View

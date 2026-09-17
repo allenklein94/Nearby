@@ -117,7 +117,13 @@ const NEARBY_GATHERING_SELECT = `${SAFE_GATHERING_FIELDS}, host:profiles!gatheri
 // and the Create 2.0 discovery-scope funnel (friends/community/invite_only)
 // are all real, privacy-relevant checks that must apply identically
 // regardless of whether the caller arrived via plain browse or via search.
-async function fetchGatheringVisibilityContext(userId) {
+// Item 108 (CLAUDE.md, "don't make the app socially noisy"): exported so
+// any OTHER ambient/browse-style surface (not just getNearbyGatherings/
+// searchGatherings below) can gate on the exact same rule instead of
+// re-deriving its own copy that could drift and silently leak a
+// friends/community/invite_only gathering -- see homeDashboard.js's own
+// friendsActivity fix, the first real case this was needed for.
+export async function fetchGatheringVisibilityContext(userId) {
   const [blockedByMeRes, blockedMeRes, profileRes, myFriends, myCommunities] = await Promise.all([
     supabase.from('blocks').select('blocked_id').eq('blocker_id', userId),
     supabase.from('blocks').select('blocker_id').eq('blocked_id', userId),
@@ -142,7 +148,7 @@ async function fetchGatheringVisibilityContext(userId) {
 // invite_only is always excluded here; a shared link or accepted invite
 // still works via getGatheringById, matching how "private" (is_public=false)
 // gatherings have always behaved.
-function applyGatheringVisibilityFilters(rows, context) {
+export function applyGatheringVisibilityFilters(rows, context) {
   return rows
     .filter((gathering) => !context.excludedHostIds.has(gathering.host_id))
     .filter((gathering) => !gathering.women_only || context.isWoman)
