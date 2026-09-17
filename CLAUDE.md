@@ -40,6 +40,64 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 110 ("This could tie directly into your notification recommendation engine... distinguish
+Important (relationship/contextual, e.g. 'Sarah's birthday is in 7 days') from Recommendation
+(discovery, e.g. 'New live music nearby')... much less spammy") — fully DONE (2026-09-17), same-day
+direct follow-up to Item 109.** Real tier classification for every push type this app sends,
+delivered at genuinely different OS-level urgency rather than just a labeling exercise.
+
+New `notificationTier()` (`src/constants/notificationTier.js`) classifies every real push type
+`notifications.js`'s own `routeNotificationTap()` switch already enumerates (~78 types) into
+`'important'` (a specific person/commitment/something the recipient already actively did — every
+occasion/plan/social/business-relationship push) or `'recommendation'` (algorithmic discovery —
+`recommended_gathering`/`recommended_business_availability` from Item 17, aggregated demand
+signals, gamification nudges). Defaults an unrecognized/future type to `'important'` — fails
+toward delivering normally rather than silently muting something nobody's classified yet. A real
+drift guard, not just a hand-asserted list: `notificationTier.test.js` reads `notifications.js`'s
+actual switch cases straight from source via regex and asserts every one is classified, plus the
+reverse (no stale classified type that no longer has a real switch case) — the same "second copy
+drifts" bug class this codebase has hit before (CLAUDE.md's own migration-discipline notes), now
+guarded automatically for this vocabulary specifically.
+
+The tier now genuinely changes delivery, not just a settings label: every push already carries its
+own `type` inside `data` (confirmed live — every `notify_*` function already does, needed for tap
+routing), so `send-push` (the one Edge Function all ~60 Postgres `notify_*` functions already route
+through) derives the tier from `data.type` with **zero changes needed to any of those 60
+functions** — it now sets `channelId`/`priority`/`sound` on the outbound Expo push request:
+important-tier keeps today's exact existing behavior (`sound: 'default'`, `priority: 'high'`,
+`channelId: 'important-alerts'`); recommendation-tier is quiet (`sound: null`, `priority:
+'default'`, `channelId: 'recommendations'`). Client: `registerForPushNotifications()`
+(`notifications.js`) now registers two real Android notification channels alongside the existing
+`'default'` one (kept as a harmless fallback) — `important-alerts` at `AndroidImportance.HIGH`
+(heads-up + sound), `recommendations` at `AndroidImportance.LOW` (tray-only, no heads-up, no
+sound) — so a recommendation-tier push genuinely interrupts less on Android, not just carries a
+quieter label.
+
+**Deliberately duplicated, not shared**: the Deno edge function can't import from `src/` (this
+codebase's established constraint for every edge function), so `send-push/index.ts` carries its
+own inline copy of the same type→tier set, with an explicit comment that the two must be kept in
+sync by hand — the client copy has an automated drift guard; this one doesn't, a real, disclosed
+limitation rather than a silently assumed one. Deliberately did NOT touch `SettingsScreen.js`'s
+existing 6-category toggles (Item 29) — category (WHAT domain: Social/Discovery/Proximity/
+Planning/Business/Community) and tier (HOW urgently to deliver) are two different axes that don't
+map 1:1 (e.g. Business spans both — `business_offer_received` is important,
+`business_opportunity_received` is a recommendation) — conflating them into one UI would misstate
+the model rather than clarify it.
+
+Redeployed and confirmed live via the Management API's function-body endpoint (the new
+`notificationTier`/`RECOMMENDATION_TYPES`/`channelId` logic present in the deployed bundle) — `npx
+supabase functions deploy` itself succeeding is this repo's own established TypeScript-syntax-
+validity signal for a Deno edge function (no local `deno` binary available to check independently).
+No DB migration — every `notify_*` function already sends `type` inside `data`, confirmed via a
+live grep of the migrations rather than assumed. Full Jest suite 565/565 passing (5 new); both
+touched client files transform-checked clean via `@babel/core` + `babel-preset-expo`. **Not
+exercised on a real device** (no simulator/device tooling this session, standing note — this is
+the one item in this session where that matters most: the actual Android heads-up-vs-quiet
+behavioral difference, and whether `channelId`/`priority`/`sound: null` are honored exactly as
+expected by Expo's push API today, have never been observed firsthand) — next session with device
+access should confirm a recommendation-tier push (e.g. trigger `recommended_gathering`) lands
+quietly with no heads-up/sound on Android while an important-tier push behaves exactly as before.
+
 **Item 109 ("Security/privacy should be designed in from day one... make the visibility model
 explicit: Private / Invite-only / Friends / Public, default to the most private reasonable
 setting") — audited, fully DONE (2026-09-17), same-day direct follow-up to Item 108.** Audited the
