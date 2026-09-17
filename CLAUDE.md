@@ -4136,6 +4136,40 @@ specifically said not to build yet:
 - Complicated calendars (recurring sub-events, multi-day itineraries, etc. — beyond the single
   `scheduled_date` the occasion already has)
 
+**Item 100 ("Let the recipient contribute preferences without spoiling the surprise") — logged
+2026-09-17, explicitly NOT for now.** User's own framing: planning a wife's anniversary, Nearby
+could already know her saved preferences (Italian / outdoor seating / live music) without telling
+her anything is being planned, or — "if appropriate" — the organizer could ask her directly ("What
+kind of dinner are you in the mood for?") without exposing why. User's own words: "This is a
+really interesting future feature" — the same "future, not a build request" framing Item 99
+originally carried before the user directly overrode it in the very next message; logged here
+rather than built, on the same precedent, pending the same kind of explicit override if wanted.
+
+Real building blocks already in place: `profiles.interests` is real, already-stored data a
+connected friend/spouse can already see (`ViewProfileScreen`'s own interest display) — reading it
+for scoring purposes isn't a new access grant. Surprise mode (Item 96) already guarantees the
+celebrated person can never see or be invited onto their own surprise plan, and Item 71 already
+established the precedent of surfacing a celebrated person's own real signal (mutual friends) into
+the organizer's flow without alerting them. `resolveIntent()`'s scoring
+(`attributeAndCuisineBonus`/`occasionBonus` in `intentResolverScoring.js`) already knows how to
+score real attribute/cuisine overlap — today only against what the CALLER explicitly typed, never
+against a third party's own stored preferences.
+
+The real gap, passive half: nothing feeds the who-for person's own `profiles.interests` (or a
+finer preference signal, if one existed) into the organizer's own business search scoring at all
+— when `who_for_friend_id` is set (occasions/occasion_group_plans already carry it), that
+person's real, already-visible interests could plausibly bias `resolveBusinessAvailability()`'s
+ranking the same way the caller's own signals already do.
+
+The real gap, active half: no "ask without exposing why" mechanism exists anywhere in this
+codebase — no lightweight, occasion-decoupled quick-question/poll feature that could reach a
+specific person with a single neutral question and route the answer back to the organizer's own
+search, structurally severed from any occasion context. This is real, non-trivial UX/privacy
+design work of its own (how a "just curious" question avoids looking like a giveaway, how many can
+plausibly be asked, where the answer surfaces for the organizer, whether the recipient's own
+answer should ever reveal that someone asked) — worth a deliberate scoping conversation when
+actually greenlit, not an assumed shape.
+
 ## Standing Conventions (Locked)
 
 These are the load-bearing rules distilled from thousands of lines of prior build history. Full
