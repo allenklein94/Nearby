@@ -37,6 +37,7 @@ import {
   buildAutoPlanSuggestion,
 } from '../services/celebrateSomething';
 import { experienceTemplateForOccasion } from '../constants/experienceTemplates';
+import OccasionSelectAnimation, { OCCASION_SELECT_ANIMATIONS } from '../components/OccasionSelectAnimation';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -322,6 +323,14 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   const [showMoreOccasions, setShowMoreOccasions] = useState(
     () => !!route.params?.initialOccasion && !QUICK_PICK_OCCASION_KEYS.includes(route.params.initialOccasion)
   );
+
+  // Item 112 (CLAUDE.md, "We should have animations for that too"): which
+  // small, purposeful micro-celebration (if any) is currently playing --
+  // null the rest of the time. Keyed by the TILE/option actually tapped,
+  // not the resulting `occasion` state, since 'surprise' and 'celebration'
+  // both resolve to occasion === 'celebration' but need two different
+  // animations (OCCASION_SELECT_ANIMATIONS keeps them as separate keys).
+  const [occasionAnimTrigger, setOccasionAnimTrigger] = useState(null);
 
   // Item 94 (CLAUDE.md, "Add budget without making it feel transactional"):
   // a lightweight qualitative $/$$/$$$/No preference pick for the group
@@ -1172,6 +1181,11 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                           } else {
                             setOccasion(tile.key);
                           }
+                          // Item 112: keyed on the TILE itself, not the
+                          // resulting occasion -- 'surprise' plays its own
+                          // lock animation even though it also sets
+                          // occasion='celebration' under the hood.
+                          if (OCCASION_SELECT_ANIMATIONS[tile.key]) setOccasionAnimTrigger(tile.key);
                         }}
                         activeOpacity={0.8}
                         accessibilityLabel={tile.label}
@@ -1183,6 +1197,22 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     );
                   })}
                 </View>
+
+                {/* Item 112 (CLAUDE.md, "We should have animations for
+                    that too... purposeful and contextual, not generic
+                    animations everywhere"): a small, self-dismissing
+                    micro-celebration for exactly the 5 occasions the user
+                    named -- rendered once, right below whichever picker
+                    (quick tiles or the full grouped list) the user just
+                    used. `key` forces a clean remount if a second
+                    selection lands before the first animation finishes. */}
+                {occasionAnimTrigger && (
+                  <OccasionSelectAnimation
+                    key={occasionAnimTrigger}
+                    triggerKey={occasionAnimTrigger}
+                    onDone={() => setOccasionAnimTrigger(null)}
+                  />
+                )}
 
                 {!showMoreOccasions && (
                   <TouchableOpacity
@@ -1219,7 +1249,15 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                               <TouchableOpacity
                                 key={o.key}
                                 style={[styles.chip, selected && styles.chipSelected]}
-                                onPress={() => { Haptics.selectionAsync(); setOccasion(o.key); }}
+                                onPress={() => {
+                                  Haptics.selectionAsync();
+                                  setOccasion(o.key);
+                                  // Item 112: Graduation lives only in this
+                                  // full list, never a quick tile -- same
+                                  // trigger lookup as the tiles above, so
+                                  // it plays here too.
+                                  if (OCCASION_SELECT_ANIMATIONS[o.key]) setOccasionAnimTrigger(o.key);
+                                }}
                                 activeOpacity={0.8}
                                 accessibilityLabel={o.label}
                                 accessibilityRole="button"

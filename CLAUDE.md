@@ -51,6 +51,41 @@ user's behalf over whichever shape merely shows more of what's nearby). The whol
 "We'll plan it for you" arc (Items 61, 80-81, 90-92, 99-111 below) is the concrete proof of this
 thesis already shipped, not a side feature.
 
+**Same-day follow-up ("We should have animations for that too... purposeful and contextual, not
+generic animations everywhere") — fully DONE (2026-09-17).** User's own 5-occasion spec, each with
+a distinct brief glyph sequence and (except Celebration) a transition line: 🎂 Birthday
+(🎂→✨→🎈, "Let's make it special."), 💍 Anniversary (💍→✨, "Plan something they'll remember."),
+🎓 Graduation (🎓→✨, "Celebrate the milestone."), 🎉 Celebration (a quick tasteful particle burst,
+no line named), 🎁 Surprise (a 🔓→🔒 "snap," landing on "🔒 Surprise Mode" — a lock micro-
+animation, not a full theme change, which would be a much bigger, separate redesign this item
+doesn't ask for).
+
+Shipped as a new, small, reusable `OccasionSelectAnimation.js` (plain RN `Animated` API — the same
+`spring`/`timing`, `useNativeDriver: true` shape `MatchCelebrationModal.js`'s own entrance already
+uses, no new dependency) with a deliberately tiny lookup table, `OCCASION_SELECT_ANIMATIONS`,
+covering exactly these 5 keys and nothing else — every other occasion (anything else reachable via
+"More Occasions") plays no animation at all, on purpose, matching "not generic animations
+everywhere." Wired into `CelebrateSomethingScreen.js`'s occasion step at both places an occasion
+can actually be picked: the 5 quick-pick tiles (keyed on the TILE tapped, e.g. `'surprise'`, not
+the resulting `occasion` state — `'surprise'` and plain `'celebration'` both set
+`occasion:'celebration'` under the hood but need two different animations) and the full grouped
+"More Occasions" list (the only place Graduation is reachable at all, since it isn't one of the 5
+quick tiles). Renders as a small, self-dismissing card (~1.1-1.3s total) right below whichever
+picker was used, `pointerEvents="none"` throughout so it's never a barrier to continuing — "just
+enough to communicate," never a blocking modal or a forced auto-advance; the user still taps the
+existing "Next" button when ready, unchanged.
+
+No DB migration, no new pure functions (this is UI/animation timing, the same untested-by-design
+precedent `MatchCelebrationModal.js` already set — no `.test.js` exists for any component in
+`src/components/`). Full Jest suite 571/571 passing (unchanged); both new/touched files transform-
+checked clean via `@babel/core` + `babel-preset-expo`. **Not exercised in a running app** (no
+simulator/device tooling this session, standing note) — this is the one item this session where
+that matters most, since animation timing/feel can only really be judged on a real device; next
+session with device access should confirm all 5 animations play at a genuinely "subtle" pace (not
+too fast to register, not slow enough to feel like a delay), that rapid re-tapping between
+different occasions cleanly aborts/restarts rather than glitching, and that the particle burst
+(Celebration) and lock snap (Surprise) read as intended rather than janky.
+
 **Item 111 ("We'll plan it for you" — a single "Don't know what to do? Let Nearby plan it" front
 door that collects Who/Occasion/When/People/Budget/Vibe and returns "Here's what we'd do: 🍽️
 Dinner / 🎵 Live music / 🌹 Flowers / Estimated total: $X / Find available options →") — fully DONE
