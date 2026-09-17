@@ -17,6 +17,7 @@ import { getHostStats, getHostReputation } from '../services/gatherings';
 import { getUpcomingOccasions } from '../services/occasions';
 import { occasionIcon, occasionLabel } from '../constants/businessAttributes';
 import { buildOccasionWhoForParams } from '../utils/createHubWhoFor';
+import { formatOccasionDateForPrecision } from '../utils/occasionDatePrecision';
 import { getSignedVoiceIntroUrl } from '../services/voiceNotes';
 import VoicePlayButton from '../components/VoicePlayButton';
 import { useTheme } from '../context/ThemeContext';
@@ -43,16 +44,6 @@ function isNewHere(createdAt) {
   if (!createdAt) return false;
   const daysSinceJoined = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24);
   return daysSinceJoined <= NEW_HERE_DAYS;
-}
-
-// Item 87 (CLAUDE.md, "Add 'Upcoming' to the person's profile") -- same
-// short "month day" convention already used inline in several other
-// screens for a compact date chip (e.g. MomentumScreen.js/MakeAPlanScreen.js).
-function formatOccasionShortDate(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(`${dateStr}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 export default function ViewProfileScreen({ route, navigation }) {
@@ -545,7 +536,7 @@ export default function ViewProfileScreen({ route, navigation }) {
               <Text style={styles.sectionLabel} accessibilityRole="header">Upcoming</Text>
               {upcomingOccasionsForPerson.map((o) => (
                 <Text key={o.occasion_id} style={styles.mutualFriendsText}>
-                  {occasionIcon(o.occasion_type) ?? '📅'} {occasionLabel(o.occasion_type)} · {formatOccasionShortDate(o.occasion_date)}
+                  {occasionIcon(o.occasion_type) ?? '📅'} {occasionLabel(o.occasion_type)} · {formatOccasionDateForPrecision(o.date_precision, o.occasion_date, { short: true })}
                 </Text>
               ))}
             </View>

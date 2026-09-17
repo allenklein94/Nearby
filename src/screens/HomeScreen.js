@@ -14,6 +14,7 @@ import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/
 import { formatPlaceStatusLabel } from '../utils/planCompletion';
 import { getUpcomingConnectedBirthdays } from '../services/friends';
 import { getUpcomingOccasions } from '../services/occasions';
+import { occasionDueLabel } from '../utils/occasionDatePrecision';
 import { isCalendarIntegrationEnabled, getUpcomingCalendarEvents } from '../services/deviceCalendar';
 import { nearestCalendarHint } from '../utils/calendarOccasionSuggestion';
 import { logBusinessProfileView, getActiveOffers } from '../services/brandOffers';
@@ -1829,8 +1830,8 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.outcomePromptCard}>
                 <View style={styles.outcomePromptHeaderRow}>
                   <Text style={styles.outcomePromptText} numberOfLines={2}>
-                    {occasionTypeIcon(occasionNudge.occasion_type)} {occasionNudge.title} is{' '}
-                    {occasionNudge.days_until === 0 ? 'today' : occasionNudge.days_until === 1 ? 'tomorrow' : `in ${occasionNudge.days_until} days`}
+                    {occasionTypeIcon(occasionNudge.occasion_type)} {occasionNudge.title}{' '}
+                    {occasionDueLabel(occasionNudge.date_precision, occasionNudge.occasion_date, occasionNudge.days_until)}
                     {' '}— want to plan something?
                   </Text>
                   <TouchableOpacity onPress={handleOccasionDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>

@@ -9,6 +9,11 @@ import { composeCelebrationTitle } from '../services/celebrateSomething';
 import { OCCASION_OPTIONS, personalOccasionTypeOptions, personalOccasionTypeGroupOptions } from '../constants/businessAttributes';
 import { groupOccasionsByPerson } from '../utils/occasionGrouping';
 import {
+  OCCASION_DATE_PRECISION_OPTIONS,
+  normalizeOccasionDateForPrecision,
+  formatOccasionDateForPrecision,
+} from '../utils/occasionDatePrecision';
+import {
   isCalendarIntegrationSupported,
   requestCalendarPermission,
   listDeviceCalendars,
@@ -84,6 +89,12 @@ export default function OccasionsScreen({ navigation }) {
   const [titleTouched, setTitleTouched] = useState(false);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  // Item 98 (CLAUDE.md, "Don't require exact dates"): "Her birthday is
+  // sometime next month" is a completely normal thing to know. Defaults to
+  // 'exact' -- the safest, most useful default for anyone who does know
+  // the real day, same posture as every other default-on-the-common-case
+  // choice in this screen (e.g. whoFor defaulting to 'me').
+  const [datePrecision, setDatePrecision] = useState('exact');
   const [recursAnnually, setRecursAnnually] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
@@ -333,12 +344,13 @@ export default function OccasionsScreen({ navigation }) {
       return;
     }
     setSubmitting(true);
-    const isoDate = date.toISOString().slice(0, 10);
+    const isoDate = normalizeOccasionDateForPrecision(datePrecision, date);
     const trimmedWhoForName = whoFor === 'me' ? null : whoForName.trim() || null;
     const result = await addOccasion({
       occasionType,
       title: title.trim(),
       occasionDate: isoDate,
+      datePrecision,
       recursAnnually,
       whoForName: trimmedWhoForName,
       whoForFriendId: whoFor === 'friend' ? whoForFriendId : null,
@@ -353,6 +365,7 @@ export default function OccasionsScreen({ navigation }) {
     setTitle('');
     setTitleTouched(false);
     setDate(new Date());
+    setDatePrecision('exact');
     setWhoFor('me');
     setWhoForName('');
     setWhoForFriendId(null);
@@ -575,7 +588,7 @@ export default function OccasionsScreen({ navigation }) {
                         {occasion.surprise_mode ? '🔒 ' : ''}{group.label ? (meta?.label ?? occasion.title) : occasion.title}
                       </Text>
                       <Text style={styles.detail}>
-                        {formatDate(new Date(occasion.occasion_date + 'T00:00:00'))}
+                        {formatOccasionDateForPrecision(occasion.date_precision, occasion.occasion_date)}
                         {occasion.recurs_annually ? ' · Repeats every year' : ' · One time'}
                         {occasion.resulting_plan_id ? ' · ✅ Planned' : ''}
                         {occasion.imported_from_calendar ? ' · 📅 From your calendar' : ''}
@@ -735,9 +748,40 @@ export default function OccasionsScreen({ navigation }) {
               onChangeText={(text) => { setTitle(text); setTitleTouched(true); }}
               accessibilityLabel="Occasion title"
             />
+            {/* Item 98 (CLAUDE.md, "Don't require exact dates"): "Her
+                birthday is sometime next month" is a completely normal
+                thing to know -- the picker below still returns one real
+                day (it has no other mode), but this controls how that
+                pick gets INTERPRETED before it's saved (see
+                occasionDatePrecision.js). */}
+            <Text style={styles.fieldLabel}>How well do you know the date?</Text>
+            <View style={styles.chipRow}>
+              {OCCASION_DATE_PRECISION_OPTIONS.map((p) => (
+                <TouchableOpacity
+                  key={p.key}
+                  style={[styles.chip, datePrecision === p.key && styles.chipSelected]}
+                  onPress={() => setDatePrecision(p.key)}
+                  accessibilityRole="button"
+                  accessibilityLabel={p.label}
+                  accessibilityState={{ selected: datePrecision === p.key }}
+                >
+                  <Text style={[styles.chipText, datePrecision === p.key && styles.chipTextSelected]}>{p.icon} {p.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
             <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)} accessibilityRole="button" accessibilityLabel="Occasion date">
               <Text style={{ color: colors.textPrimary }}>{formatDate(date)}</Text>
             </TouchableOpacity>
+            {datePrecision !== 'exact' && (
+              <Text style={styles.helperText}>
+                {datePrecision === 'flexible'
+                  ? 'Only the month matters -- pick any day in it.'
+                  : datePrecision === 'weekend'
+                  ? "We'll round this to that week's Saturday."
+                  : "We'll save this as your best guess."}
+                {' '}Will show as "{formatOccasionDateForPrecision(datePrecision, normalizeOccasionDateForPrecision(datePrecision, date))}".
+              </Text>
+            )}
             {showDatePicker && (
               <DateTimePicker
                 value={date}

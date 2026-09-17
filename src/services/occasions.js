@@ -18,7 +18,7 @@ export async function getMyOccasions() {
   return data ?? [];
 }
 
-export async function addOccasion({ occasionType, title, occasionDate, recursAnnually = true, connectedUserId = null, whoForName = null, whoForFriendId = null, surpriseMode = false, importedFromCalendar = false }) {
+export async function addOccasion({ occasionType, title, occasionDate, recursAnnually = true, connectedUserId = null, whoForName = null, whoForFriendId = null, surpriseMode = false, importedFromCalendar = false, datePrecision = 'exact' }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not signed in' };
   const { data, error } = await supabase
@@ -28,6 +28,12 @@ export async function addOccasion({ occasionType, title, occasionDate, recursAnn
       occasion_type: occasionType,
       title,
       occasion_date: occasionDate,
+      // Item 98 (CLAUDE.md, "Don't require exact dates"): controls how
+      // occasion_date is interpreted/displayed downstream -- see
+      // src/utils/occasionDatePrecision.js. `occasionDate` should already
+      // be normalized for this precision (normalizeOccasionDateForPrecision)
+      // before it ever reaches here.
+      date_precision: datePrecision,
       recurs_annually: recursAnnually,
       // Item 65: structurally impossible to share a surprise occasion with
       // the person it's for -- also enforced by a DB CHECK constraint, but

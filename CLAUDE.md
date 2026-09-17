@@ -40,6 +40,66 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 98 ("Don't require exact dates") — fully DONE (2026-09-17), resumed cleanly after a
+codespace restart mid-build.** User's own framing: "Her birthday is sometime next month" is a
+completely normal thing to know — the system should accommodate Exact date / Weekend / Around
+this date / Flexible, especially useful when planning ahead.
+
+Found at session start: `src/utils/occasionDatePrecision.js` (the pure precision helpers) and
+`supabase/migrations/20261116_occasion_flexible_dates.sql` already written, uncommitted, and
+already applied live in production (`enmosvippabmuqslzrox`, confirmed via a live column check) —
+read in full, checked against the user's own 4-option spec, and found correct and complete;
+nothing needed to be redone. No client code referenced any of it yet (confirmed via a repo-wide
+grep for `date_precision`/`datePrecision`), so this session's work was entirely the client wiring.
+
+Design (already locked by the pre-restart migration): `occasions.occasion_date` stays a real,
+non-null anchor date (needed for sorting/next-occurrence math), and a new `date_precision` column
+(`exact`/`weekend`/`around`/`flexible`, CHECK-constrained) controls how that anchor is
+INTERPRETED and DISPLAYED — never claims false precision. `normalizeOccasionDateForPrecision()`
+rounds a `weekend` pick forward to that week's Saturday and a `flexible` pick to the 1st of the
+month before saving; `formatOccasionDateForPrecision()` renders honest text ("Weekend of Sept
+20" / "Around Sept 20" / "Sometime in September"). `get_upcoming_occasions()` returns the new
+column; `send_occasion_planning_nudges()` fires precision-aware push copy (a `flexible` occasion
+fires once, 5 days before its target month starts, with no fake day-count). That same migration
+also fixed a real, pre-existing regression while it was already rewriting this function:
+`reminder_enabled` (Item 62's per-occasion mute) had been silently dropped from this function's
+`WHERE` clause by `20261102_occasion_aware_notifications.sql`'s own `CREATE OR REPLACE` — restored.
+
+Client wiring shipped this session: `OccasionsScreen.js`'s manual "Add an occasion" form gained a
+new "How well do you know the date?" 4-chip row (defaults to `exact`) right above the existing
+native date picker, plus a live preview line ("Will show as \"...\"") so the user sees exactly how
+their pick will be interpreted before saving; `handleAdd` now normalizes the picked date through
+`normalizeOccasionDateForPrecision()` before it ever reaches `addOccasion()` (which gained a new
+`datePrecision` param, defaulting to `'exact'` so every other existing caller — including the
+device-calendar-import path, which always has a real exact date — is unaffected). The occasion
+list itself now renders each row's real date through `formatOccasionDateForPrecision()` instead
+of a plain month/day. `HomeScreen.js`'s occasion nudge card (previously always "is in N days," a
+fabricated-precision bug for any fuzzy occasion) now uses a new `occasionDueLabel()` helper that
+reads "is coming up weekend of Oct 17" / "is coming up around Oct 15" / "is coming up sometime in
+Oct" for the three fuzzy cases, falling back to the original exact day-count phrasing otherwise
+(the separate, always-exact `birthdayNudge` card — sourced from `profiles.birthdate` — was left
+untouched, correctly). `ViewProfileScreen.js`'s "Upcoming" section (Item 87) now uses the same
+precision-aware formatter instead of its own local `formatOccasionShortDate()`, which was removed
+as now-redundant. Deliberately NOT touched: `CelebrateSomethingScreen.js`'s wizard "When?" step —
+its own `WHEN_PRESETS` (Now/Tonight/Tomorrow/Pick a Date) are all real, near-term, always-exact
+picks for planning an activity happening imminently, a genuinely different question from
+"remembering a date I don't know exactly yet" (the migration's own header comment draws this same
+line); a calendar-imported event also always has a real exact date. Both are correctly left at the
+`addOccasion()` default of `'exact'`.
+
+New Jest coverage: `occasionDatePrecision.test.js` (20 new tests covering every precision's
+normalize/format/due-label behavior, including the pre-migration-row fallback when `date_precision`
+is missing). Full suite 521/521 passing; all five touched/new files transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Verified live against production via two disposable
+rolled-back transactions: a real `'flexible'` insert round-trips correctly (`occasion_date`
+rounded to the 1st, `date_precision` stored as given), and an invalid precision value is correctly
+rejected by the CHECK constraint — zero leaked rows confirmed afterward in both cases. Not
+exercised in a running app (no simulator/device tooling this session, standing note) — next
+session should confirm on a real account that the 4-chip row and live preview render correctly,
+that a `weekend`/`flexible` pick actually rounds as expected once saved, and that the Home nudge
+card and profile "Upcoming" section both show the honest fuzzy-precision text rather than a fake
+day count.
+
 **Item 97 ("Add 'Invite without revealing the surprise'") — fully DONE (2026-09-16), same-day
 direct follow-up to Item 96.** User's own example: for a surprise birthday, inviting John should
 tell HIM "You're helping plan Sarah's birthday" while Sarah never learns anything at all.
