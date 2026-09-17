@@ -73,6 +73,19 @@ const QUICK_ACTIONS = [
   { icon: 'people-outline', label: 'Meet New People', route: 'FriendDiscovery' },
   { icon: 'storefront-outline', label: 'Ask Nearby Businesses', route: 'AskBusiness' },
   { icon: 'repeat-outline', label: 'Start a Weekly Meetup', route: 'CreateGathering', params: { quickStartRecurring: true } },
+  // Item 111 ("We'll plan it for you" -- CLAUDE.md): the real front door
+  // this feature was disclosed as missing when it shipped -- a "🤖 Let
+  // Nearby Plan It" chip already exists inside the Occasion wizard's own
+  // 'activity' step, but only once someone has already navigated Create ->
+  // Plan for Someone -> picked an occasion -> answered who it's for --
+  // three steps before a user who genuinely doesn't know what to do would
+  // ever see it. This is the same real destination (CelebrateSomething),
+  // just entered with `initialActivityType: 'auto_plan'` already set, so
+  // the wizard still asks the two things it structurally can't skip
+  // (Occasion, Who) but arrives at its own 'activity' step with "Let
+  // Nearby Plan It" already selected -- no new screen, no duplicated
+  // occasion picker, same discipline as every other Quick Action here.
+  { icon: 'bulb-outline', label: 'Let Nearby Plan It', route: 'CelebrateSomething', params: { initialActivityType: 'auto_plan' } },
 ];
 
 export default function CreateHubScreen({ navigation, route }) {
@@ -139,6 +152,12 @@ export default function CreateHubScreen({ navigation, route }) {
     } else if (action.route === 'CreateGathering') {
       const quickStartTitle = buildGatheringQuickStartTitle(whoFor, trimmedName);
       if (quickStartTitle) extraParams = { quickStartTitle };
+    } else if (action.route === 'CelebrateSomething') {
+      // Item 111: same real who-for prefill the "Plan for Someone" primary
+      // card already threads through (buildOccasionWhoForParams) -- this
+      // Quick Action reaches the identical screen, just with
+      // initialActivityType already set via action.params below.
+      extraParams = buildOccasionWhoForParams({ whoFor, whoForName: trimmedName, whoForFriendId });
     }
     navigation.navigate(action.route, extraParams ? { ...action.params, ...extraParams } : action.params);
   }

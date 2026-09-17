@@ -95,6 +95,29 @@ Nearby Plan It" chip only appears for a template-backed occasion, that the summa
 add-on toggles render correctly, and that "Find available options →" correctly pre-selects the
 right candidates in the revealed full options view.
 
+**Same-day follow-up ("build the auto plan entry point") — fully DONE (2026-09-17).** The
+`AUTO_PLAN_OPTION` chip above was only reachable after three prior steps (Create → Plan for
+Someone → pick an occasion → answer who it's for) — a real front door was still missing for
+someone who genuinely doesn't know where to start. Added a new `CreateHubScreen.js` Quick Action,
+"🤖 Let Nearby Plan It," alongside the existing Invite Friends/Plan a Date/Ask Nearby Businesses
+row — same destination (`CelebrateSomething`), just navigated with `initialActivityType:
+'auto_plan'` and the same real who-for prefill (`buildOccasionWhoForParams`) the primary "Plan for
+Someone" card already threads through. No new screen, no duplicated occasion picker: the wizard
+still asks Occasion and Who (neither is skippable — the auto-plan summary needs a real occasion to
+pick a template from), but now arrives at its own 'activity' step with "Let Nearby Plan It"
+already selected rather than requiring the user to notice and tap it themselves. Disclosed, minor,
+pre-existing edge case (not introduced by this change): if the user picks an occasion with no
+Experience Template after entering this way, `activityType` stays `'auto_plan'` internally with no
+visible chip selected on the 'activity' step (the chip itself is gated on
+`experienceTemplateForOccasion`) — the wizard still functions correctly (routes to `'business'`,
+the options step degrades honestly to add-on suggestions only, never blocks), just with no visual
+confirmation of the invisible pre-selection in that one specific case. No DB migration, no new
+pure functions (pure routing/UI wiring reusing already-tested `buildOccasionWhoForParams`); full
+Jest suite 571/571 passing; both touched files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised in a running app (no simulator/device tooling this session,
+standing note) — next session should confirm the new Quick Action renders and correctly lands on
+the wizard with "Let Nearby Plan It" pre-selected once an occasion/who-for are answered.
+
 **Item 110 ("This could tie directly into your notification recommendation engine... distinguish
 Important (relationship/contextual, e.g. 'Sarah's birthday is in 7 days') from Recommendation
 (discovery, e.g. 'New live music nearby')... much less spammy") — fully DONE (2026-09-17), same-day
