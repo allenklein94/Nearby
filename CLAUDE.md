@@ -121,6 +121,42 @@ expo`. Not exercised in a running app (standing note, same caveat as the tile-se
 above) -- next session should confirm the N→✨→✓ sequence reads clearly at a glance and that it
 correctly plays for all 3 real justSubmitted call sites, not just the Occasion wizard's.
 
+**Third same-day follow-up ("the best animation might actually be the planning process...
+instead of the user staring at a spinner, they're watching Nearby work") — fully DONE
+(2026-09-17).** User's own mock: while the wizard's 'options' step is loading, cycle "Finding
+something special nearby…" → "Finding places…" → "Checking availability…" → "Building your
+options…" (with the N subtly animating), then let the real results settle into place rather than
+appear all at once.
+
+**Honesty check done before building, not after**: `fetchOptions()` is genuinely ONE
+`resolveIntent()` network round trip -- there is no real, separately-timed backend phase for
+"finding places" vs. "checking availability" vs. "building options" to report on. Building this
+as 3 fake sequential delays with a fabricated "N places found!" count would have crossed this
+repo's own locked "no invented numbers, no fabricated signals" rule. Built honestly instead: new
+`FindingOptionsLoader.js` cycles the 4 captions on a fixed timer (900ms) paired with a subtly
+pulsing `NearbyMark`, purely as generic pacing narration of the real conceptual stages
+`resolveIntent()` actually performs internally -- never a claimed count, never asserting "done"
+before the real result (`optionsFetched`) actually arrives (it loops for as long as the real fetch
+actually takes, however long or short that genuinely is). Replaces the bare `ActivityIndicator` +
+static "✨ Nearby is finding options…" text on both loading states in `CelebrateSomethingScreen.js`
+(the normal options view and the `auto_plan` summary view).
+
+The "options settle into place" half is real, not simulated: new `StaggeredReveal.js` wraps each
+result card in a small per-index fade/slide-in (capped at 350ms max delay) -- applied to
+`renderOptionCard()` (now takes an optional `index`, covering Experience Bundles, per-component
+candidates, the flat business_availability list, and Occasion Packages -- every real call site
+updated) and to the `auto_plan` summary's own priced-item/add-on-suggestion rows. This animates
+the REAL fetched data settling in, once it's genuinely available -- never an artificial delay
+inserted to make a fast response look more thorough, and never fabricated interim content.
+
+No DB migration, no new pure functions (animation timing); full Jest suite 571/571 passing
+(unchanged); all three new/touched files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised in a running app (standing note, same caveat as the other two
+follow-ups above) -- next session should confirm the caption cycle reads naturally regardless of
+how fast or slow the real fetch actually resolves (including the edge case of a near-instant
+response, where the loader should barely be visible rather than feel like an artificial delay),
+and that the staggered card reveal looks like a natural cascade rather than a jarring pop-in.
+
 **Item 111 ("We'll plan it for you" — a single "Don't know what to do? Let Nearby plan it" front
 door that collects Who/Occasion/When/People/Budget/Vibe and returns "Here's what we'd do: 🍽️
 Dinner / 🎵 Live music / 🌹 Flowers / Estimated total: $X / Find available options →") — fully DONE

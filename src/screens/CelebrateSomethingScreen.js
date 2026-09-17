@@ -38,6 +38,8 @@ import {
 } from '../services/celebrateSomething';
 import { experienceTemplateForOccasion } from '../constants/experienceTemplates';
 import OccasionSelectAnimation, { OCCASION_SELECT_ANIMATIONS } from '../components/OccasionSelectAnimation';
+import FindingOptionsLoader from '../components/FindingOptionsLoader';
+import StaggeredReveal from '../components/StaggeredReveal';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -1032,46 +1034,53 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   // filling "Something Fun") can't be requested from a business -- it's
   // already a real, already-happening thing, so it renders as a plain
   // tap-to-view row instead of a selectable checkbox.
-  function renderOptionCard(item) {
+  // Item 112 follow-up (CLAUDE.md, "the final options settle into place"):
+  // `index` (optional, defaults to 0 for any caller that doesn't care)
+  // drives StaggeredReveal's per-card entrance delay -- real content
+  // fetched once, revealed in a small cascade rather than dumped in all at
+  // once.
+  function renderOptionCard(item, index = 0) {
     if (item.type === 'gathering') {
       return (
-        <TouchableOpacity
-          key={`gathering-${item.id}`}
-          style={styles.optionCard}
-          onPress={() => navigation.navigate('GatheringDetail', { gatheringId: item.id })}
-          activeOpacity={0.8}
-          accessibilityLabel={item.title}
-          accessibilityRole="button"
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={styles.optionTitle}>🎊 {item.title}</Text>
-            {item.subtitle ? <Text style={styles.optionSubtitle}>{item.subtitle}</Text> : null}
-            <Text style={styles.optionHint}>Already happening — tap to view</Text>
-          </View>
-        </TouchableOpacity>
+        <StaggeredReveal key={`gathering-${item.id}`} index={index}>
+          <TouchableOpacity
+            style={styles.optionCard}
+            onPress={() => navigation.navigate('GatheringDetail', { gatheringId: item.id })}
+            activeOpacity={0.8}
+            accessibilityLabel={item.title}
+            accessibilityRole="button"
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.optionTitle}>🎊 {item.title}</Text>
+              {item.subtitle ? <Text style={styles.optionSubtitle}>{item.subtitle}</Text> : null}
+              <Text style={styles.optionHint}>Already happening — tap to view</Text>
+            </View>
+          </TouchableOpacity>
+        </StaggeredReveal>
       );
     }
     const selected = selectedIds.has(item.id);
     const isBundle = Array.isArray(item.componentLabels);
     return (
-      <TouchableOpacity
-        key={`business-${item.id}`}
-        style={[styles.optionCard, selected && styles.optionCardSelected]}
-        onPress={() => toggleSelected(item)}
-        activeOpacity={0.8}
-        accessibilityLabel={item.title}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: selected }}
-      >
-        <View style={[styles.checkbox, selected && styles.checkboxChecked]}>
-          {selected && <Text style={styles.checkboxMark}>✓</Text>}
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.optionTitle}>{item.title}</Text>
-          {item.subtitle ? <Text style={styles.optionSubtitle}>{item.subtitle}</Text> : null}
-          {isBundle && <Text style={styles.optionHint}>Covers: {item.componentLabels.join(', ')}</Text>}
-        </View>
-      </TouchableOpacity>
+      <StaggeredReveal key={`business-${item.id}`} index={index}>
+        <TouchableOpacity
+          style={[styles.optionCard, selected && styles.optionCardSelected]}
+          onPress={() => toggleSelected(item)}
+          activeOpacity={0.8}
+          accessibilityLabel={item.title}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: selected }}
+        >
+          <View style={[styles.checkbox, selected && styles.checkboxChecked]}>
+            {selected && <Text style={styles.checkboxMark}>✓</Text>}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.optionTitle}>{item.title}</Text>
+            {item.subtitle ? <Text style={styles.optionSubtitle}>{item.subtitle}</Text> : null}
+            {isBundle && <Text style={styles.optionHint}>Covers: {item.componentLabels.join(', ')}</Text>}
+          </View>
+        </TouchableOpacity>
+      </StaggeredReveal>
     );
   }
 
@@ -1763,12 +1772,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
             {stepKey === 'options' && activityType === AUTO_PLAN_OPTION.key && !autoPlanExpanded && (
               <>
                 <Text style={styles.label}>✨ Here's what we'd do</Text>
-                {optionsLoading && (
-                  <>
-                    <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />
-                    <Text style={[styles.helperText, { textAlign: 'center', marginTop: spacing.sm }]}>✨ Nearby is finding options…</Text>
-                  </>
-                )}
+                {optionsLoading && <FindingOptionsLoader />}
                 {!optionsLoading && optionsFetched && (
                   autoPlanSuggestion.items.length === 0 && autoPlanSuggestion.suggestions.length === 0 ? (
                     <Text style={styles.helperText}>
@@ -1776,31 +1780,34 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     </Text>
                   ) : (
                     <>
-                      {autoPlanSuggestion.items.map((item) => (
-                        <View key={item.key} style={styles.autoPlanRow}>
-                          <Text style={styles.autoPlanRowLabel}>{item.label}</Text>
-                          <Text style={styles.autoPlanRowDetail}>
-                            {item.businessName}{item.price != null ? ` · $${item.price}` : ' · price varies'}
-                          </Text>
-                        </View>
+                      {autoPlanSuggestion.items.map((item, i) => (
+                        <StaggeredReveal key={item.key} index={i}>
+                          <View style={styles.autoPlanRow}>
+                            <Text style={styles.autoPlanRowLabel}>{item.label}</Text>
+                            <Text style={styles.autoPlanRowDetail}>
+                              {item.businessName}{item.price != null ? ` · $${item.price}` : ' · price varies'}
+                            </Text>
+                          </View>
+                        </StaggeredReveal>
                       ))}
-                      {autoPlanSuggestion.suggestions.map((s) => {
+                      {autoPlanSuggestion.suggestions.map((s, i) => {
                         const included = autoPlanAddonTypes.has(s.type);
                         return (
-                          <TouchableOpacity
-                            key={s.type}
-                            style={styles.autoPlanRow}
-                            onPress={() => toggleAutoPlanAddonType(s.type)}
-                            activeOpacity={0.8}
-                            accessibilityRole="checkbox"
-                            accessibilityState={{ checked: included }}
-                            accessibilityLabel={`${s.label}, ${included ? 'included' : 'not included'}`}
-                          >
-                            <Text style={[styles.autoPlanRowLabel, !included && styles.autoPlanRowLabelMuted]}>
-                              {included ? '✓ ' : ''}{s.icon} {s.label}
-                            </Text>
-                            <Text style={styles.autoPlanRowDetail}>{included ? 'Added to your plan' : 'Tap to add'}</Text>
-                          </TouchableOpacity>
+                          <StaggeredReveal key={s.type} index={autoPlanSuggestion.items.length + i}>
+                            <TouchableOpacity
+                              style={styles.autoPlanRow}
+                              onPress={() => toggleAutoPlanAddonType(s.type)}
+                              activeOpacity={0.8}
+                              accessibilityRole="checkbox"
+                              accessibilityState={{ checked: included }}
+                              accessibilityLabel={`${s.label}, ${included ? 'included' : 'not included'}`}
+                            >
+                              <Text style={[styles.autoPlanRowLabel, !included && styles.autoPlanRowLabelMuted]}>
+                                {included ? '✓ ' : ''}{s.icon} {s.label}
+                              </Text>
+                              <Text style={styles.autoPlanRowDetail}>{included ? 'Added to your plan' : 'Tap to add'}</Text>
+                            </TouchableOpacity>
+                          </StaggeredReveal>
                         );
                       })}
                       {autoPlanSuggestion.items.length > 0 && (
@@ -1817,12 +1824,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
             {stepKey === 'options' && !(activityType === AUTO_PLAN_OPTION.key && !autoPlanExpanded) && (
               <>
                 <Text style={styles.label}>Nearby found these options</Text>
-                {optionsLoading && (
-                  <>
-                    <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />
-                    <Text style={[styles.helperText, { textAlign: 'center', marginTop: spacing.sm }]}>✨ Nearby is finding options…</Text>
-                  </>
-                )}
+                {optionsLoading && <FindingOptionsLoader />}
                 {!optionsLoading && optionsResult && (
                   <>
                     {optionsResult.experience ? (
@@ -1830,13 +1832,13 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         {optionsResult.experience.bundles.length > 0 && (
                           <View style={{ marginBottom: spacing.md }}>
                             <Text style={styles.sublabel}>✨ One place has it all</Text>
-                            {optionsResult.experience.bundles.map((item) => renderOptionCard(item))}
+                            {optionsResult.experience.bundles.map((item, i) => renderOptionCard(item, i))}
                           </View>
                         )}
                         {optionsResult.experience.components.map((comp) => (
                           <View key={comp.key} style={{ marginBottom: spacing.md }}>
                             <Text style={styles.sublabel}>{comp.label}</Text>
-                            {comp.items.map((item) => renderOptionCard(item))}
+                            {comp.items.map((item, i) => renderOptionCard(item, i))}
                           </View>
                         ))}
                       </>
@@ -1846,7 +1848,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         {optionsResult.items
                           .filter((i) => i.type === 'business_availability')
                           .slice(0, 5)
-                          .map((item) => renderOptionCard(item))}
+                          .map((item, i) => renderOptionCard(item, i))}
                       </View>
                     ) : null}
                     {optionsResult.items.some((i) => i.type === 'business_occasion_package') && (
@@ -1859,7 +1861,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         {optionsResult.items
                           .filter((i) => i.type === 'business_occasion_package')
                           .slice(0, 5)
-                          .map((item) => renderOptionCard(item))}
+                          .map((item, i) => renderOptionCard(item, i))}
                       </View>
                     )}
                     {!optionsResult.experience &&
