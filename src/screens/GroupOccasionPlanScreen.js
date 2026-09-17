@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../services/supabase';
 import {
@@ -17,6 +18,9 @@ import {
   skipOccasionGroupPlanBusinessVote,
   linkOccasionGroupPlanToPlan,
   revealOccasionGroupPlan,
+  proposeOccasionGroupPlanDates,
+  markOccasionDateAvailability,
+  setOccasionGroupPlanDate,
 } from '../services/occasionGroupPlans';
 import { getMyFriends } from '../services/friends';
 import { resolveIntent } from '../services/intentResolver';
@@ -81,6 +85,13 @@ function formatWhen(whenPreset, scheduledDate) {
   return dateLabel ?? 'Date not set';
 }
 
+// Item 99 (CLAUDE.md, "Let Nearby recommend when to celebrate") -- the
+// same weekday/month/day shape formatWhen already uses for its own
+// scheduledDate, just for one standalone candidate date at a time.
+function formatDateOptionLabel(dateStr) {
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 const PARTICIPANT_STATUS_COPY = {
   invited: 'Invited',
   joined: 'In',
@@ -121,6 +132,17 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   const [businessOptionsLoading, setBusinessOptionsLoading] = useState(false);
   const [businessFetchError, setBusinessFetchError] = useState(false);
   const [booking, setBooking] = useState(false);
+
+  // Item 99 (CLAUDE.md, "Let Nearby recommend when to celebrate"): host-only
+  // "propose candidate dates" expand-in-place, same Progressive Depth
+  // doctrine as inviteMoreOpen above -- a real native date picker, never
+  // AI-inferred, feeding pendingDateOptions until the host explicitly
+  // submits them.
+  const [proposeDatesOpen, setProposeDatesOpen] = useState(false);
+  const [pendingDateOptions, setPendingDateOptions] = useState([]);
+  const [pickerDate, setPickerDate] = useState(() => new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [proposingDates, setProposingDates] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -177,6 +199,49 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   function handleToggleVote(option) {
     Haptics.selectionAsync();
     runAction(() => castOccasionVote(option.id, !option.myVote));
+  }
+
+  // Item 99: a real "I'm free this day" toggle -- any joined participant,
+  // same insert-or-delete shape castOccasionVote already uses for votes.
+  function handleToggleDateAvailability(dateOption) {
+    Haptics.selectionAsync();
+    runAction(() => markOccasionDateAvailability(dateOption.id, !dateOption.myAvailable));
+  }
+
+  function addPendingDateOption() {
+    const iso = pickerDate.toISOString().slice(0, 10);
+    setPendingDateOptions((prev) => (prev.includes(iso) ? prev : [...prev, iso].sort()));
+    setShowDatePicker(false);
+  }
+
+  function removePendingDateOption(iso) {
+    setPendingDateOptions((prev) => prev.filter((d) => d !== iso));
+  }
+
+  async function handleProposeDates() {
+    if (pendingDateOptions.length === 0) return;
+    Haptics.selectionAsync();
+    setProposingDates(true);
+    const result = await runAction(() => proposeOccasionGroupPlanDates(planId, pendingDateOptions));
+    setProposingDates(false);
+    if (result) {
+      setPendingDateOptions([]);
+      setProposeDatesOpen(false);
+    }
+  }
+
+  // The real "Plan for Saturday?" action -- host-only, always confirmed
+  // (never silently applied), notifies everyone else in the plan.
+  function handleApplyDate(dateOption) {
+    const label = formatDateOptionLabel(dateOption.optionDate);
+    Alert.alert(
+      `Plan for ${label}?`,
+      'Everyone in this plan will be notified of the date.',
+      [
+        { text: 'Not yet', style: 'cancel' },
+        { text: `Plan for ${label}`, onPress: () => runAction(() => setOccasionGroupPlanDate(planId, dateOption.optionDate)) },
+      ]
+    );
   }
 
   function handlePropose() {
@@ -481,6 +546,130 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
               >
                 <Text style={styles.surpriseRevealLink}>🎉 Reveal the Surprise</Text>
               </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* Item 99 (CLAUDE.md, "Let Nearby recommend when to celebrate"):
+            a real, honest availability poll among the plan's own already-
+            real guest roster -- not a read of anyone's calendar (no
+            mechanism exists anywhere for a host to see an invitee's own
+            calendar, and Item 76 draws a hard line against building one
+            for this). Whichever candidate date has the most real "I'm
+            free" marks is surfaced back as a real recommendation, computed
+            server-side, never guessed -- and only once at least one real
+            mark exists, so an unanswered poll never fabricates a pick. */}
+        {detail.status !== 'cancelled' && detail.status !== 'fulfilled' && (
+          <View style={{ marginBottom: spacing.md }}>
+            <Text style={styles.sectionLabel}>📅 When Works Best?</Text>
+            {detail.dateOptions.length === 0 ? (
+              <Text style={styles.helperText}>
+                {detail.isHost ? 'Propose a few candidate dates below and see which works for everyone.' : "The host hasn't proposed any dates to check yet."}
+              </Text>
+            ) : (
+              detail.dateOptions.map((opt) => (
+                <View key={opt.id} style={styles.optionCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.optionTitle}>{opt.isTopRecommendation ? '⭐ ' : ''}{formatDateOptionLabel(opt.optionDate)}</Text>
+                    <Text style={styles.optionSubtitle}>
+                      {opt.availableCount} {opt.availableCount === 1 ? 'person is' : 'people are'} free
+                      {opt.isTopRecommendation ? ' · Most availability' : ''}
+                    </Text>
+                  </View>
+                  {detail.myStatus === 'joined' && (
+                    <TouchableOpacity
+                      style={[styles.voteButton, opt.myAvailable && styles.voteButtonActive]}
+                      onPress={() => handleToggleDateAvailability(opt)}
+                      disabled={acting}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel={opt.myAvailable ? "I'm no longer free this day" : "I'm free this day"}
+                    >
+                      <Text style={[styles.voteButtonText, opt.myAvailable && styles.voteButtonTextActive]}>{opt.myAvailable ? "✓ I'm free" : "I'm free"}</Text>
+                    </TouchableOpacity>
+                  )}
+                  {detail.isHost && (
+                    <TouchableOpacity style={styles.decideLink} onPress={() => handleApplyDate(opt)} disabled={acting} accessibilityRole="button" accessibilityLabel={`Plan for ${formatDateOptionLabel(opt.optionDate)}`}>
+                      <Text style={styles.decideLinkText}>Use →</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))
+            )}
+
+            {/* The item's own literal moment: "Saturday has the most
+                availability among your guests... Plan for Saturday?" --
+                shown only when there's a real recommendation the plan
+                hasn't already been set to. */}
+            {(() => {
+              const top = detail.dateOptions.find((o) => o.isTopRecommendation);
+              if (!top || !detail.isHost || detail.scheduledDate === top.optionDate) return null;
+              const label = formatDateOptionLabel(top.optionDate);
+              return (
+                <View style={styles.recommendationBanner}>
+                  <Text style={styles.recommendationText}>
+                    {label} has the most availability among your guests ({top.availableCount}).
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.decideButton, { marginTop: spacing.sm, alignSelf: 'flex-start' }]}
+                    onPress={() => handleApplyDate(top)}
+                    disabled={acting}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Plan for ${label}`}
+                  >
+                    <Text style={styles.decideButtonText}>Plan for {label}?</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })()}
+
+            {detail.isHost && (
+              <>
+                <TouchableOpacity onPress={() => setProposeDatesOpen((v) => !v)} accessibilityRole="button" accessibilityLabel="Propose candidate dates">
+                  <Text style={styles.inviteMoreLink}>{proposeDatesOpen ? 'Cancel' : '+ Propose Dates'}</Text>
+                </TouchableOpacity>
+                {proposeDatesOpen && (
+                  <View style={styles.proposeCard}>
+                    {pendingDateOptions.length > 0 && (
+                      <View style={styles.chipRow}>
+                        {pendingDateOptions.map((iso) => (
+                          <TouchableOpacity key={iso} style={[styles.chip, styles.chipSelected]} onPress={() => removePendingDateOption(iso)} accessibilityRole="button" accessibilityLabel={`Remove ${formatDateOptionLabel(iso)}`}>
+                            <Text style={[styles.chipText, styles.chipTextSelected]}>{formatDateOptionLabel(iso)} ✕</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                    <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)} accessibilityRole="button" accessibilityLabel="Pick a candidate date">
+                      <Text style={{ color: colors.textPrimary }}>{formatDateOptionLabel(pickerDate.toISOString().slice(0, 10))}</Text>
+                    </TouchableOpacity>
+                    {showDatePicker && (
+                      <DateTimePicker
+                        value={pickerDate}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(event, selectedDate) => {
+                          setShowDatePicker(Platform.OS === 'ios');
+                          if (selectedDate) setPickerDate(selectedDate);
+                        }}
+                      />
+                    )}
+                    <TouchableOpacity style={[styles.addOptionButton, { marginBottom: spacing.sm }]} onPress={addPendingDateOption} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Add this date to the list">
+                      <Text style={styles.addOptionButtonText}>+ Add This Date</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.addOptionButton, pendingDateOptions.length === 0 && { opacity: 0.5 }]}
+                      onPress={handleProposeDates}
+                      disabled={pendingDateOptions.length === 0 || proposingDates}
+                      activeOpacity={0.85}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Propose ${pendingDateOptions.length} dates`}
+                    >
+                      <Text style={styles.addOptionButtonText}>{proposingDates ? 'Proposing…' : `Propose ${pendingDateOptions.length || ''} Date${pendingDateOptions.length === 1 ? '' : 's'}`}</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </>
             )}
           </View>
         )}
@@ -831,6 +1020,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   surpriseBannerText: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
   surpriseRevealLink: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  recommendationBanner: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.sm, marginTop: spacing.sm, marginBottom: spacing.sm,
+  },
+  recommendationText: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
   inviteRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   declineButton: { flex: 1, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingVertical: 14, alignItems: 'center' },
   declineButtonText: { color: colors.textSecondary, fontWeight: '700' },

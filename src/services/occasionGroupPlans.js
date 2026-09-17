@@ -199,6 +199,41 @@ export async function linkOccasionGroupPlanToPlan({ groupPlanId, resultingGather
   if (error) console.error('linkOccasionGroupPlanToPlan error', error);
 }
 
+// Item 99 (CLAUDE.md, "Let Nearby recommend when to celebrate"): host-only,
+// adds up to 6 total real candidate dates (the occasion's own known target
+// date, if any, is already auto-seeded as candidate #1 by
+// createOccasionGroupPlan itself). Never AI-inferred -- the host picks
+// these through a real native date picker.
+export async function proposeOccasionGroupPlanDates(planId, dates) {
+  const { data, error } = await supabase.rpc('propose_occasion_group_plan_dates', {
+    plan_id_param: planId,
+    dates_param: dates,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// Any joined participant marks themselves free (or un-marks) for one
+// specific candidate date -- the exact same insert-or-delete toggle shape
+// castOccasionVote already uses for "vote"/"un-vote."
+export async function markOccasionDateAvailability(dateOptionId, available) {
+  const { error } = await supabase.rpc('mark_occasion_date_availability', {
+    date_option_id_param: dateOptionId,
+    available_param: available,
+  });
+  if (error) throw new Error(error.message);
+}
+
+// Host-only -- the real "Plan for Saturday?" action. Sets the plan's own
+// real scheduled_date and notifies every other joined participant.
+export async function setOccasionGroupPlanDate(planId, scheduledDate) {
+  const { error } = await supabase.rpc('set_occasion_group_plan_date', {
+    plan_id_param: planId,
+    scheduled_date_param: scheduledDate,
+  });
+  if (error) throw new Error(error.message);
+}
+
 export async function getMyOccasionGroupPlans() {
   const { data, error } = await supabase.rpc('get_my_occasion_group_plans');
   if (error) {

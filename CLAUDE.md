@@ -40,6 +40,77 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 99 ("Let Nearby recommend when to celebrate") — fully DONE (2026-09-17), same-day direct
+override of the "logged as future, not now" call made earlier in this session.** User's own
+example: "If the birthday is Wednesday but most invited people are unavailable: Saturday has the
+most availability among your guests. Then: Plan for Saturday?" — calendar availability, social
+planning, and recommendation intelligence starting to come together. First logged to the Backlog
+as an explicit future idea (the user's own words, "Again, future — not necessarily Thursday"),
+then the user directly said "no build it now," overriding that call.
+
+The honest scope boundary that shaped the design: "calendar availability" can't literally mean
+reading each INVITEE's own device calendar — Item 75's calendar read access is permission-scoped
+to the caller's own device and is never uploaded to Nearby's servers at all (Item 76's own locked
+"Calendar = when, Nearby = what+who+where+how" boundary), and no mechanism anywhere in this schema
+lets a host read a guest's calendar. Built instead as a real, honest AVAILABILITY POLL among the
+plan's own already-real, already-connected guest roster (`occasion_group_plan_participants`) —
+non-fabricated data (a person explicitly marks which candidate day(s) work for them), with the
+"recommendation" being the plainest possible honest computation: whichever candidate date has the
+most real "I'm free" marks, computed server-side, never AI-guessed.
+
+Shipped via `20261118_occasion_group_plan_date_recommendation.sql`: two new tables,
+`occasion_group_plan_date_options` (real candidate dates) and
+`occasion_group_plan_date_availability` (a plain insert/delete toggle, the exact same shape
+`occasion_group_plan_votes` already uses for vote/un-vote) — deliberately NOT reusing the existing
+`occasion_group_plan_options`/`_votes` WHAT-to-do voting mechanism, since those feed
+`decide_occasion_group_plan`'s activity-type branching directly and a "vote" there means "I
+prefer this," not "I am free this day"; a separate pair of tables makes the wrong states
+structurally unrepresentable instead of needing extra guardrails bolted onto the existing one.
+`create_occasion_group_plan` (unchanged 11-arg signature, safe `CREATE OR REPLACE`) now
+auto-seeds the occasion's own already-known `scheduled_date` as candidate #1 — the literal "if the
+birthday is Wednesday" starting point, never fabricated since it's exactly what the host already
+typed into the same call. New RPCs: `propose_occasion_group_plan_dates` (host-only, caps at 6
+total candidates, mirrors `propose_occasion_business_options`' own host-only capped-slot shape),
+`mark_occasion_date_availability` (any joined participant, toggle), `set_occasion_group_plan_date`
+(host-only — the real "Plan for Saturday?" action: updates the plan's own `scheduled_date`,
+notifies every other joined participant with a real push, never silently decides on the group's
+behalf). `get_occasion_group_plan_detail` (unchanged signature, safe `CREATE OR REPLACE`) now also
+returns `dateOptions` (each with a real `availableCount`/`myAvailable`) and flags whichever one
+currently has the most real marks as `isTopRecommendation` — but only once at least one real mark
+exists anywhere, so an unanswered poll can never fabricate a recommendation out of a 0-0 tie.
+
+Client: `GroupOccasionPlanScreen.js` gained a "📅 When Works Best?" section (visible whenever the
+plan isn't cancelled/fulfilled) — each candidate date shows its real free-count, a joined
+participant's own "I'm free" toggle, and a host-only "Use →" link; the top real recommendation
+(when one exists and differs from the plan's current `scheduledDate`) gets its own highlighted
+banner with the item's own literal "{date} has the most availability among your guests... Plan
+for {date}?" copy and button; a host-only "+ Propose Dates" expand-in-place panel (same
+Progressive Depth doctrine as the screen's existing "Invite More Guests" panel) uses a real native
+date picker, never AI-inferred. A new push type, `occasion_group_plan_date_set`, routes to the
+same real `GroupOccasionPlanScreen` every sibling push in this family already uses.
+
+Verified live against production (`enmosvippabmuqslzrox`) via a comprehensive disposable
+rolled-back transaction with real fixtures (a host, two real accepted friends, a stranger) and
+real `SET ROLE authenticated` + `request.jwt.claims` impersonation: the occasion's known date is
+correctly auto-seeded as a candidate; the host successfully proposes an additional candidate date
+while a non-host is correctly rejected; both friends join and mark a specific date available; a
+stranger is correctly rejected both from marking availability and from reading the plan detail at
+all; `get_occasion_group_plan_detail` correctly computes the top recommendation (2 marks vs. 0)
+and correctly flags NO recommendation at all on a freshly created plan with zero marks anywhere
+(the fabrication guard); a null date is correctly rejected by `set_occasion_group_plan_date`; a
+real apply correctly updates `scheduled_date` and queues exactly 2 pushes (to the two other joined
+participants, explicitly excluding the acting host) inspected directly in `net.http_request_queue`.
+Rolled back with zero leaked rows confirmed. Re-confirmed live after the real apply: both new
+tables present, and all five touched/new functions (`create_occasion_group_plan`,
+`get_occasion_group_plan_detail`, `propose_occasion_group_plan_dates`,
+`mark_occasion_date_availability`, `set_occasion_group_plan_date`) have exactly one overload each
+— no signature drift. Full Jest suite 521/521 passing (no new pure functions — this is DB/RLS-plus-
+UI wiring); all four touched/new client files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised in a running app (no simulator/device tooling this session,
+standing note) — next session should confirm on a real account that the "📅 When Works Best?"
+section renders correctly, that the recommendation banner appears and correctly applies the date
+end to end, and that a tapped `occasion_group_plan_date_set` push correctly lands on the plan.
+
 **Item 98 ("Don't require exact dates") — fully DONE (2026-09-17), resumed cleanly after a
 codespace restart mid-build.** User's own framing: "Her birthday is sometime next month" is a
 completely normal thing to know — the system should accommodate Exact date / Weekend / Around
@@ -4064,28 +4135,6 @@ specifically said not to build yet:
   current lean voting view)
 - Complicated calendars (recurring sub-events, multi-day itineraries, etc. — beyond the single
   `scheduled_date` the occasion already has)
-
-**Item 99 ("Let Nearby recommend when to celebrate") — logged 2026-09-17, explicitly NOT for
-now.** User's own framing: "If the birthday is Wednesday but most invited people are unavailable:
-Saturday has the most availability among your guests" → "Plan for Saturday?" — the user's own
-words: "a cool future capability... Again, future — not necessarily Thursday" (this project's own
-shorthand, established across many prior sessions, for "don't build this yet"). Logged here
-rather than built, per that explicit signal.
-
-Real building blocks this would connect, once actually greenlit: Item 75's device-calendar read
-access (`src/services/deviceCalendar.js`) already gives Nearby a real, permissioned, per-user
-signal of busy/free time, but only ever the CALLER's own calendar today — this item needs each
-INVITEE's own availability, which no current mechanism collects (a guest's device calendar is
-never shared with the host, by design — Item 76's own locked "Calendar = when" boundary would
-need real thought about how a recommendation like this respects that without asking every guest
-to grant Nearby calendar access too). `occasion_group_plans`/`occasion_group_plan_participants`
-(Items 66/96) already model a real invited-guest roster Nearby could poll or reason about. Item
-98's new `date_precision` (`weekend`/`around`/`flexible`) is the natural anchor a "Saturday has
-the most availability" suggestion would resolve TOWARD, not a competing mechanism. No RSVP-based
-per-day availability poll exists anywhere in this schema yet (closest precedent:
-`occasion_group_plan_options`/`_votes`, which vote on WHAT, not WHEN) — building this for real
-would likely mean a genuinely new "which days work for you?" ask per invitee, not just reusing an
-existing signal, which is real scope worth scoping deliberately when the user actually asks.
 
 ## Standing Conventions (Locked)
 

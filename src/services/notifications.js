@@ -498,6 +498,11 @@ export async function routeNotificationTap(data) {
     // Item 78 (CLAUDE.md): "Your group hasn't finalized the plan yet" --
     // send_occasion_group_plan_stall_nudges(), same real detail screen.
     case 'occasion_group_plan_stalled':
+    // Item 99 (CLAUDE.md, "Let Nearby recommend when to celebrate"): the
+    // host applied a real date recommendation (set_occasion_group_plan_date)
+    // -- same real detail screen, which already shows the plan's own
+    // current scheduledDate.
+    case 'occasion_group_plan_date_set':
       if (data.plan_id) {
         navigationRef.navigate('GroupOccasionPlan', { planId: data.plan_id });
       }
