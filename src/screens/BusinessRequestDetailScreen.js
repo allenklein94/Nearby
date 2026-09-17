@@ -10,6 +10,7 @@ import { occasionIcon, occasionLabel } from '../constants/businessAttributes';
 import { buildPlanTimeline, summarizePlanTimelineReadiness, buildPlanSummary, addonStateCopy } from '../utils/planAddonReadiness';
 import { buildOccasionPlanShareCaption } from '../utils/occasionPlanShareCard';
 import OccasionPlanShareCard from '../components/OccasionPlanShareCard';
+import PlanCreatedCelebration from '../components/PlanCreatedCelebration';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
@@ -939,6 +940,19 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         )}
         {justSubmitted && (
           <View style={styles.banner}>
+            {/* Item 112 follow-up (CLAUDE.md, "take it beyond the
+                occasion-selection screen... when the plan is successfully
+                created"): only the genuine success case (a real business
+                was actually asked) gets the N -> ✨ -> ✓ celebration --
+                the duplicate case ("here it is again") and the
+                zero-notified case (nothing has actually happened yet,
+                still needs a wider-radius retry) aren't real "it's
+                happening" moments, so they keep the plain informational
+                line only. Applies to every real caller of this screen's
+                justSubmitted param (AskBusinessScreen, the Occasion
+                wizard's business-destined submit, GroupOccasionPlanScreen's
+                "Book It") -- one shared success moment, not three copies. */}
+            {!isDuplicate && notifiedCount > 0 && <PlanCreatedCelebration />}
             <Text style={styles.bannerText}>
               {isDuplicate
                 ? "You already have an open request just like this — here it is, no need to ask twice."

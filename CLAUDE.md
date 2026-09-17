@@ -86,6 +86,41 @@ too fast to register, not slow enough to feel like a delay), that rapid re-tappi
 different occasions cleanly aborts/restarts rather than glitching, and that the particle burst
 (Celebration) and lock snap (Surprise) read as intended rather than janky.
 
+**Second same-day follow-up ("take it beyond the occasion-selection screen... when the plan is
+successfully created") — fully DONE (2026-09-17).** User's own example: instead of a flat "Plan
+created." line, animate the Nearby N itself into the celebration -- N → ✨ → ✓, settling into
+"It's happening. 🎉" -- "a memorable Nearby interaction."
+
+No literal "Plan created." text existed anywhere (confirmed via a repo-wide grep) -- the real
+"plan just got created" moment this maps onto is `BusinessRequestDetailScreen.js`'s existing
+`justSubmitted` banner, reached from all 3 real places that create a business request and land
+here right after (`AskBusinessScreen.js`, the Occasion wizard's business-destined submit path
+including the new `auto_plan`, and `GroupOccasionPlanScreen.js`'s "Book It" winning-business
+booking) -- previously a bare informational text line, no celebration at all.
+
+Shipped a new, small, reusable `PlanCreatedCelebration.js` -- the brand mark itself becomes the
+celebration rather than sitting beside one (a step further than Item 57's `GatheringConfirmation
+Screen.js` treatment, which keeps the mark and the 🎉 emoji as two separate elements): the
+`NearbyMark` component cross-fades through N → ✨ → ✓ (same plain RN `Animated` cross-fade
+shape `OccasionSelectAnimation.js`'s own 'morph' kind already uses), settles on a brand-coral
+`✓`, then "It's happening. 🎉" fades in below and STAYS -- this is a settled header state, not a
+self-dismissing toast, since it becomes the visual lead-in for the real informational text
+underneath it (e.g. "We asked 4 nearby businesses…"). Gated to the genuine success case only
+(`!isDuplicate && notifiedCount > 0`) -- the duplicate case ("here it is again," nothing new
+happened) and the zero-notified case (nothing has actually happened yet, still needs a
+wider-radius retry) keep their plain original text only, matching "purposeful and contextual, not
+generic everywhere." Deliberately did NOT touch `GatheringConfirmationScreen.js`'s own already-
+shipped, already-working Item 57 celebration -- a real, disclosed scope boundary, not an
+oversight: it already has a distinct, working treatment, and this item's example maps onto the
+one real "success" moment that had NO celebration at all, not a request to replace an existing one.
+
+No DB migration, no new pure functions (animation timing, same untested-by-design precedent as
+every other Animated-based component in `src/components/`). Full Jest suite 571/571 passing
+(unchanged); both new/touched files transform-checked clean via `@babel/core` + `babel-preset-
+expo`. Not exercised in a running app (standing note, same caveat as the tile-selection animations
+above) -- next session should confirm the N→✨→✓ sequence reads clearly at a glance and that it
+correctly plays for all 3 real justSubmitted call sites, not just the Occasion wizard's.
+
 **Item 111 ("We'll plan it for you" — a single "Don't know what to do? Let Nearby plan it" front
 door that collects Who/Occasion/When/People/Budget/Vibe and returns "Here's what we'd do: 🍽️
 Dinner / 🎵 Live music / 🌹 Flowers / Estimated total: $X / Find available options →") — fully DONE
