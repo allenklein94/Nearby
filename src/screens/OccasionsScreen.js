@@ -608,11 +608,9 @@ export default function OccasionsScreen({ navigation, route }) {
                           construction (zero client RLS policies, RPC-gated
                           to the host and invited participants) -- say so. */}
                       <Text style={styles.privacyLine}>🔒 Invite-only</Text>
-                      {plan.isHost && (
-                        <TouchableOpacity onPress={() => openPlanDetail({ groupPlanId: plan.id })} accessibilityRole="button" accessibilityLabel="View the whole plan">
-                          <Text style={styles.revealLink}>View the whole plan →</Text>
-                        </TouchableOpacity>
-                      )}
+                      <TouchableOpacity onPress={() => openPlanDetail({ groupPlanId: plan.id })} accessibilityRole="button" accessibilityLabel="View the whole plan">
+                        <Text style={styles.revealLink}>View the whole plan →</Text>
+                      </TouchableOpacity>
                     </View>
                   </TouchableOpacity>
                 );
