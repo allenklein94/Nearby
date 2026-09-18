@@ -1,3 +1,45 @@
+## Sep 18 2026 — Location powers the whole system ("the user should never repeatedly tell Nearby where they are") — DONE
+
+Direct request. Built in increments, each committed + pushed; Jest 677/677; nothing exercised on a device.
+
+1. **Central provider** (`src/services/userLocation.js`, commit 577f5234): permission checked once and only
+   asked while undetermined; fresh fixes shared (in-flight dedupe) and cached 2 min; fallback chain fresh ->
+   OS last-known -> last stored position; returns null (never throws) when location is genuinely off.
+   ~19 call sites migrated (Discover, Gatherings, Places, Home, Community, CreateGathering, AskBusiness,
+   BrandOffers, businessFulfillment, dateProposals, stories, intentResolver). `locationCentralGuard.test.js`
+   allow-lists the 7 files that may still call expo-location directly, each with a reason (proximity.js
+   background presence, onboarding ask, map picker, date check-in, two passive last-known reads).
+2. **Happening Now / Today / This Weekend** (Discover): were already location-fed. Now nearest-first within
+   each bucket (Happening Now purely by distance; Today/Weekend score then distance) and a "Turn on
+   location" invitation when there's no position, which reloads the feed on success.
+3. **Business offers**: Matches/Gatherings called `getActiveOffers()` with no coords (location-blind). The
+   offers/search/businesses functions now default to the shared position (passive, `ask:false`); businesses
+   sorted nearest-first with `distanceMiles`. Offers still ordered by created_at (the nearby-offers RPC
+   returns ids only; distance ordering would need a migration -- not done).
+4. **Availability**: `searchActiveBusinessAvailability`/`searchPolicyOnlyBusinesses` sent null coords ->
+   server searched anywhere. Now default to the shared position.
+5. **Places / Directions**: places carry real straight-line `distanceMiles` ("0.4 mi away"); tapping a
+   place opens turn-by-turn directions (`buildDirectionsUrl` + `destination_place_id`) instead of a pin.
+   Deliberately NO directions for gatherings: their coordinates are fuzzed for privacy.
+6. **Notification area** (migrations `20261128_notification_area.sql`, `20261129_clear_notification_area.sql`):
+   location-targeted pushes previously joined `presence_reports` (last hour, refreshed only from Discovery /
+   background task). Added `notification_areas` (RLS on, no policies, RPC-only writes; ~0.7 mi rounding),
+   view `push_target_areas` (fresh presence else notification area <48h), and repointed the three triggers
+   (`notify_matching_things_to_do`, `notify_matching_business_availability`, `notify_gathering_interest_threshold`)
+   at it. NOT presence: feeds no crossed-paths/matching/user-facing surface. Client `notificationArea.js`
+   reports on fresh fixes, throttled 30 min/area. Clear control: `clear_my_notification_area()`, Settings
+   button, and the Discovery master switch off deletes + blocks storing. Copy disclosure added to the Settings
+   push section.
+   Verified live against production (single overloads, anon denied, view + set/clear/off assertions in
+   rolled-back transactions) AND a full from-scratch Docker replay (193 migrations, 0 errors, no `notify_*`
+   function still joins presence_reports).
+7. Business web export regenerated (79d39a2d).
+
+**Known gaps / not done:** the clear button only holds until the next fix while notifications are on (turn the
+switch off to keep it cleared); users inactive >48h get no location pushes; Home's location-off state not
+audited; offers not distance-ordered; device verification (permission flows, Settings control, push receipt).
+Convention bullets added to CLAUDE.md: "Location is asked once, used everywhere", "Notification area".
+
 # Item 137 (2026-09-18) - Animation consistency audit
 Swept for spinners, durations, loading indicators, icon animations, transitions, modals, success states,
 button feedback, pull-to-refresh, empty states. Replaced literal durations with budget tokens, modals with
