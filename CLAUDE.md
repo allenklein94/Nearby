@@ -113,6 +113,10 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   `intentPhaseCaption()`: Understanding your request… -> Finding activities…/Finding communities…/
   Checking availability…), then `FoundLine` ("Here's what we found.") as results land. Phases are
   reported as the work actually moves, never on a timer -- no artificial delay for theater.
+- **Preference wiring (2026-09-18, requirement; plan in `PRODUCT_AUDIT/PREFERENCE_WIRING_AUDIT_2026-09-18.md`).**
+  Capture a preference once (onboarding where appropriate, progressive otherwise), store it once, and
+  feed every consumer from that one value -- one canonical category/interest vocabulary (`PLACE_CATEGORIES`
+  / `CATEGORY_GROUPS`), no per-feature category lists, no captured-but-unused fields.
 - **Animation consistency (Item 137, audit 2026-09-18).** All motion goes through `src/motion/`:
   durations are `MOTION_BUDGET`/`SEQUENCES`/`AMBIENT` tokens (no literal `duration: N`), native modals use
   `modalAnimation()`, list refresh uses `PullToRefresh`, layout changes use `animateLayout()` (small tier,
