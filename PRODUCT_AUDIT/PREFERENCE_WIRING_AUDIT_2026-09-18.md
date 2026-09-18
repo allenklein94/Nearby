@@ -74,3 +74,14 @@ consumer reads the same canonical value. Progressive completion: never force adv
   DatingPreferencesScreen -- appearance stays optional/progressive. (4) Profile-completion meter already exists in
   ProfileScreen (`getProfileCompleteness`, real fields only) -- no change. NOT built: the cuisine/venue nudge for
   Food-group interests (needs a new nudge surface; awaiting an explicit go). Jest 656/656.
+- **Cuisine/venue prompt built (2026-09-18):** `DiningPreferencesPromptModal` + a dismissible Home card, offered only
+  when the user has a food_drink interest, no cuisine/venue tastes, and hasn't dismissed
+  (`shouldOfferDiningPrompt`). Writes the same `profiles.cuisine_preferences`/`venue_preferences` ProfileScreen
+  edits (one store, two entry points). Dismiss is permanent, per-user, AsyncStorage.
+- **Phase 5 live verification (2026-09-18, production, one rolled-back transaction, no push triggers fired, zero
+  rows left behind -- confirmed):** disposable auth user + profile: (1) every onboarding-group tag stores in
+  `profiles.interests` (no CHECK rejects the canonical vocabulary); (2) the server push-candidate predicate
+  (`interests @> array[tag]`) matches a declared tag (Coffee) and rejects an undeclared one (Networking);
+  (3) `notify_things_to_do_categories` narrowing excludes Coffee once only Yoga is selected, null = all interests;
+  (4) dining prefs writable. NOT verified live: client-side surfaces (Discover ordering, People default, Home
+  card, onboarding steps) -- unit-tested / parse-checked only; no device.
