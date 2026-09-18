@@ -58,7 +58,7 @@ paths come from presence sightings (proximity.js), deliberately separate from th
 first-run race: Home's weather task and Discover's loadCore read with `ask:false` while the dashboard/gatherings call
 prompted, so a user who tapped Allow still got the location-off card / no userLocation until the next load; both now use
 the default (deduped, once-per-session) ask. Home's Happening Now tiles were time-ordered; now nearest-first (`nearestThenSoonest` in homeDashboard.js, soonest
-start breaks ties, unknown distance last, unit-tested) to match Discover. Tiles still show no distance.
+start breaks ties, unknown distance last, unit-tested) to match Discover. Tiles now show the real distance after the title ("Title  0.4 mi away", hidden when unknown; also in the a11y label).
 Business export re-run after this fix: byte-identical output (HomeScreen/DiscoverHubScreen aren't in the business web
 bundle, provider unchanged since the last export), so nothing to commit; the committed export is current.
 Convention bullets added to CLAUDE.md: "Location is asked once, used everywhere", "Notification area".

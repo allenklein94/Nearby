@@ -47,6 +47,7 @@ import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { lightenHex } from '../utils/colorUtils';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { getUserLocation } from '../services/userLocation';
+import { placeDistanceLabel } from '../services/places';
 
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
@@ -2380,11 +2381,14 @@ export default function HomeScreen({ navigation }) {
                     style={[styles.happeningNowChip, { borderColor: style.color }]}
                     onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
                     activeOpacity={0.85}
-                    accessibilityLabel={`${g.title}, ${g.interest_tag ?? 'General'}, happening now`}
+                    accessibilityLabel={`${g.title}, ${g.interest_tag ?? 'General'}, happening now${placeDistanceLabel(g.distanceMiles) ? `, ${placeDistanceLabel(g.distanceMiles)}` : ''}`}
                     accessibilityRole="button"
                   >
                     <Text style={styles.happeningNowIcon}>{style.icon}</Text>
-                    <Text style={styles.happeningNowLabel} numberOfLines={1}>{g.title}</Text>
+                    <Text style={styles.happeningNowLabel} numberOfLines={1}>
+                      {g.title}
+                      {placeDistanceLabel(g.distanceMiles) ? <Text style={styles.happeningNowDistance}>{`  ${placeDistanceLabel(g.distanceMiles)}`}</Text> : null}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
@@ -2827,6 +2831,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   happeningNowIcon: { fontSize: 16, marginRight: 6 },
   happeningNowLabel: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
+  happeningNowDistance: { color: colors.textTertiary, fontWeight: '400' },
   fab: {
     position: 'absolute', right: spacing.lg, bottom: spacing.lg,
     backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.md, paddingHorizontal: spacing.lg,
