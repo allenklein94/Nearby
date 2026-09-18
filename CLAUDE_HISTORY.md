@@ -88,6 +88,20 @@ Business export re-run after the label change: byte-identical output (Communitie
 bundle; no shared service changed), so nothing to commit; the committed export is current. intentResolver also reads getPublicCommunities but scores independently.
 Business export re-run after this: CHANGED (new hashed AppEntry bundle + index.html, committed and pushed). Confirmed by
 checking the built bundle: it contains `area_lat`, so services/communities.js IS in the business web bundle.
+**Follow-up: server-side bounded communities query.** Migration `20261201_public_communities_by_distance.sql`:
+`get_public_community_ids_by_distance(my_lat, my_lng, row_limit=200)` (SECURITY INVOKER -- communities' own SELECT policy
+still applies; mirrors it with public + active) returns the NEAREST 200 (located ones by real distance, then newest to
+fill), plus a partial index on public+active created_at. `getPublicCommunities` uses it when a position is known
+(two-step: ids+distance, then a bounded `.in('id')` fetch, server order + server distance preserved via
+`mergeCommunitiesInServerOrder`), falling back to the old newest-200 when there's no position or the RPC errors. This closes
+the earlier limitation (a nearby older community outside the newest 200 couldn't surface). `searchPublicCommunities` keeps
+the client-side `orderCommunitiesNearestFirst` (its ILIKE filters already bound the result). Verified live with disposable
+communities in a rolled-back transaction (user triggers disabled inside it because of the 3/day community limit): public +
+active filter, nearest-first with no-point last, row_limit, and the nearest-but-oldest community surviving a limit of 1;
+plus a full from-scratch replay (195 migrations, 0 errors). Caveat: the distance sort scans public active communities
+server-side (no index can serve a computed distance) -- fine at current scale, and far cheaper than shipping rows; a
+geo index would be the next step if the table grows large. Production has 1 community and none with a map point, so the
+located path was exercised only with disposable data.
 Business export re-run after this audit: CHANGED (new hashed AppEntry bundle, 4-line diff, + index.html; committed and
 pushed). The screen-only fixes (Discovery location-off text, map fallback) are NOT in the bundle; the change came from the
 shared service files, most likely proximity.js / occasionPackages.js (not diffed to confirm). Rule of thumb: check the

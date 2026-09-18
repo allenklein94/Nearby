@@ -96,11 +96,6 @@ export async function getMyCommunities() {
   return (data ?? []).filter((row) => row.communities).map((row) => ({ ...row.communities, myRole: row.role }));
 }
 
-// Scalability audit step 7: was unbounded, downloading every public
-// community in the app on every browse. A plain cap is the right-sized fix
-// here (per the audit's own locked decision 5) -- communities have no
-// location column to bound geographically, so there's no distance-based
-// RPC to build, just a Postgres-side LIMIT on top of the existing query.
 // With a known position, communities that have a coarse map point (area_lat/area_lng) carry a real `distanceMiles` and
 // come first, nearest to farthest; ones without a point keep their original order after them. No position: untouched.
 // Position is read passively (never prompts from a list load).
@@ -117,6 +112,47 @@ export function sortCommunitiesByDistance(communities, lat, lng) {
 }
 
 export async function getPublicCommunities() {
+  const l = await getUserLocation({ ask: false });
+  if (l) {
+    const nearest = await getNearestPublicCommunities(l.coords.latitude, l.coords.longitude);
+    if (nearest) return nearest;
+  }
+  return getNewestPublicCommunities();
+}
+
+// With a position: the 200 NEAREST active public communities (server-bounded, get_public_community_ids_by_distance --
+// located ones by distance, then newest to fill), so a nearby older community isn't cut off by a newest-200 cap.
+// Returns null on any failure so the caller falls back to the plain newest-200 browse.
+async function getNearestPublicCommunities(lat, lng) {
+  const { data: idRows, error: idError } = await supabase.rpc('get_public_community_ids_by_distance', { my_lat: lat, my_lng: lng, row_limit: 200 });
+  if (idError) {
+    console.error('get_public_community_ids_by_distance error', idError);
+    return null;
+  }
+  const ids = (idRows ?? []).map((r) => r.id);
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase.from('communities').select(PUBLIC_COMMUNITY_SELECT).in('id', ids);
+  if (error) {
+    console.error('getNearestPublicCommunities error', error);
+    return null;
+  }
+  return mergeCommunitiesInServerOrder(idRows, data ?? []);
+}
+
+// Rows in the order the server ranked them, each carrying the server's real distance (null when it has no map point).
+export function mergeCommunitiesInServerOrder(idRows, rows) {
+  const byId = new Map(rows.map((c) => [c.id, c]));
+  return idRows
+    .filter((r) => byId.has(r.id))
+    .map((r) => ({ ...byId.get(r.id), distanceMiles: r.distance_miles ?? null }));
+}
+
+// Scalability audit step 7: was unbounded, downloading every public
+// community in the app on every browse. A plain cap is the right-sized fix
+// here (per the audit's own locked decision 5) -- the no-position
+// fallback (and the fallback if the distance RPC fails): the newest 200. With a position, see
+// getNearestPublicCommunities above -- communities do have a coarse map point after all.
+async function getNewestPublicCommunities() {
   const { data, error } = await supabase
     .from('communities')
     .select(PUBLIC_COMMUNITY_SELECT)
@@ -136,7 +172,7 @@ export async function getPublicCommunities() {
     console.error('getPublicCommunities error', error);
     return [];
   }
-  return orderCommunitiesNearestFirst(data ?? []);
+  return data ?? [];
 }
 
 const PUBLIC_COMMUNITY_SELECT = 'id, name, description, interest_tag, is_public, cover_photo_url, creator_id, hosting_partner_id, area_city, area_region, area_label, area_lat, area_lng';

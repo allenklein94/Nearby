@@ -18,3 +18,13 @@ test('nearest first, no-map-point after (original order kept), no position untou
   expect(sortCommunitiesByDistance(cs, 40, -74)[0].distanceMiles).toBeGreaterThan(0);
   expect(await orderCommunitiesNearestFirst(cs)).toBe(cs);
 });
+
+import { mergeCommunitiesInServerOrder } from './communities';
+test('server order and distance are preserved; ids without a readable row are dropped', () => {
+  const idRows = [{ id: 'b', distance_miles: 1.5 }, { id: 'gone', distance_miles: 2 }, { id: 'a', distance_miles: null }];
+  const rows = [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }];
+  expect(mergeCommunitiesInServerOrder(idRows, rows)).toEqual([
+    { id: 'b', name: 'B', distanceMiles: 1.5 },
+    { id: 'a', name: 'A', distanceMiles: null },
+  ]);
+});
