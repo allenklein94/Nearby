@@ -1702,7 +1702,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                       photoUrl={o.target_interest_tag ? curatedCoverPhotoFor(o.target_interest_tag) : null}
                       tintColor={o.target_interest_tag ? categoryStyleFor(o.target_interest_tag).color : null}
                       title={o.title}
-                      reason={[o.brand_partners?.name, businessSignalLine(o.brand_partners)].filter(Boolean).join(' · ')}
+                      reason={[o.brand_partners?.name, placeDistanceLabel(o.distanceMiles), businessSignalLine(o.brand_partners)].filter(Boolean).join(' · ')}
                       onPress={() => navigation.navigate('BrandOffers', { highlightOfferId: o.id })}
                       accessibilityLabel={`${o.title}, ${o.brand_partners?.name}, ${isRedeemed ? 'already redeemed' : 'Redeem'}`}
                       actionLabel={isRedeemed ? 'Redeemed ✓' : 'Redeem'}
@@ -2188,6 +2188,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                     title={o.title}
                     reason={[
                       o.brand_partners?.name,
+                      placeDistanceLabel(o.distanceMiles),
                       businessSignalLine(o.brand_partners),
                       // Phase 8 (CLAUDE.md, Discover visual hierarchy) --
                       // names the real matched tag, not the generic shared

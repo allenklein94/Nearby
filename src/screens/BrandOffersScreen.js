@@ -12,6 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { getUserLocation } from '../services/userLocation';
+import { placeDistanceLabel } from '../services/places';
 
 export default function BrandOffersScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
@@ -205,7 +206,7 @@ export default function BrandOffersScreen({ navigation, route }) {
                     <View style={[styles.logo, styles.logoPlaceholder]} />
                   )}
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.partnerName}>{offer.brand_partners?.name}</Text>
+                    <Text style={styles.partnerName}>{[offer.brand_partners?.name, placeDistanceLabel(offer.distanceMiles)].filter(Boolean).join(' · ')}</Text>
                     <Text style={styles.offerTitle}>{offer.title}</Text>
                   </View>
                 </TouchableOpacity>

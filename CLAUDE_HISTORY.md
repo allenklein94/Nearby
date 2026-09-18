@@ -48,7 +48,7 @@ Home's other location consumers (weather, offers, gatherings, people) already re
 (same set as `get_nearby_offer_ids`, plus real `distance_miles`; new function, not a changed return type). `getActiveOffers`/
 `searchOffers` now attach `distanceMiles` and order nearest-first (`orderNearestFirst`, unit-tested); no position = old order.
 Verified live with disposable partners/offers in a rolled-back transaction (same set as the old RPC, radius, ~13.8 mi) + a
-full from-scratch replay (194 migrations, 0 errors). No UI shows the offer distance yet.
+full from-scratch replay (194 migrations, 0 errors). Distance label ("0.4 mi away") now shows on offer cards: BrandOffers (partner line) and both Discover offer card lists.
 Convention bullets added to CLAUDE.md: "Location is asked once, used everywhere", "Notification area".
 
 # Item 137 (2026-09-18) - Animation consistency audit
