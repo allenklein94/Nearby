@@ -314,6 +314,33 @@ clean via `@babel/core` + `babel-preset-expo`, plus a full 358-file repo-wide tr
 confirmed the deletions broke nothing anywhere else in `src/`. Not exercised on a real device
 (standing note) — pure deletion/comment cleanup, no behavior change.
 
+**Same-day follow-up ("do the same for MatchAnimation's remaining shim usages").** Migrated the
+last two shims' 5 real consumers — unlike the four already-migrated shims, `MatchCelebrationModal`/
+`FriendMatchCelebrationModal` weren't pure re-exports; each was a thin wrapper injecting a fixed
+`kind="dating"`/`kind="friend"` prop onto the real `MatchAnimation` component so its own callers
+never had to pass `kind` themselves. Migrating meant adding that prop explicitly at each real call
+site rather than a blind import-path swap: `MatchesScreen.js`'s match-celebration modal (now
+`<MatchAnimation kind="dating" ...>`, same props otherwise) and `ActivityScreen.js`/
+`FriendsScreen.js`/`ViewProfileScreen.js`/`FriendDiscoveryScreen.js`'s four friend-celebration
+modals (now `<MatchAnimation kind="friend" ...>`) all now import `MatchAnimation` from `'../motion'`
+directly. Every prop each call site already passed was checked against `MatchAnimation`'s own
+`DatingVariant`/`FriendVariant` destructured signatures before touching anything — all matched
+exactly, so no prop was dropped or renamed. `ViewProfileScreen.js` and `FriendDiscoveryScreen.js`
+each already had a separate `../motion` import for `NLoader` from an earlier follow-up in this
+chain — merged into one combined import in both, same as the earlier five-file merge.
+
+A repo-wide grep now confirms zero real screens import either of the two remaining shim paths —
+every real call site across the entire Item 113 shim-migration chain (`SuccessAnimation`,
+`OccasionAnimation`, `SurpriseRevealAnimation`, `NLoader`, and now `MatchAnimation`) is on the
+canonical `../motion` import. `src/components/MatchCelebrationModal.js`/
+`FriendMatchCelebrationModal.js` are left in place, now unreferenced by any screen but not deleted
+in this pass — deletion wasn't asked for here (the equivalent deletion for the other four shims was
+its own separate, explicit request last time), so it wasn't done; a clear next step if wanted. Full
+Jest suite 580/580 passing (unchanged); all 5 touched files transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised on a real device (standing note) — pure
+import-path change with one added always-constant prop per call site, no expected visual
+difference.
+
 No DB migration, no new pure functions (a component library + three wiring sites). Full Jest suite
 580/580 passing (unchanged); all 18 touched/new files (10 new `src/motion/` files, 6 shim files, 2
 wired screens) transform-checked clean via `@babel/core` + `babel-preset-expo` — plus a full

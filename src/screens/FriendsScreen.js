@@ -9,7 +9,7 @@ import PersonCard from '../components/PersonCard';
 import { Share } from 'react-native';
 import { getSignedPhotoUrl } from '../services/photos';
 import LoadErrorState from '../components/LoadErrorState';
-import FriendMatchCelebrationModal from '../components/FriendMatchCelebrationModal';
+import { MatchAnimation } from '../motion';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -512,7 +512,8 @@ export default function FriendsScreen({ navigation }) {
         </KeyboardAvoidingView>
       </Modal>
 
-      <FriendMatchCelebrationModal
+      <MatchAnimation
+        kind="friend"
         visible={!!celebratingFriend}
         theirName={celebratingFriend?.display_name}
         theirPhotoUrl={photoUrls[celebratingFriend?.id]}

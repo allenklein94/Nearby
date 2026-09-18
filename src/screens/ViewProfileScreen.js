@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, FlatList, Dimensions, TouchableOpacity, Alert } from 'react-native';
-import { NLoader } from '../motion';
+import { NLoader, MatchAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -14,7 +14,6 @@ import ReportBlockModal from '../components/ReportBlockModal';
 import PhotoLightbox from '../components/PhotoLightbox';
 import LoadErrorState from '../components/LoadErrorState';
 import { sendFriendRequest, respondToFriendRequest, getMutualFriends, getRelationshipStatus } from '../services/friends';
-import FriendMatchCelebrationModal from '../components/FriendMatchCelebrationModal';
 import { getHostStats, getHostReputation } from '../services/gatherings';
 import { getUpcomingOccasions } from '../services/occasions';
 import { occasionIcon, occasionLabel } from '../constants/businessAttributes';
@@ -717,7 +716,8 @@ export default function ViewProfileScreen({ route, navigation }) {
         myUserId={myUserId}
       />
 
-      <FriendMatchCelebrationModal
+      <MatchAnimation
+        kind="friend"
         visible={showFriendCelebration}
         theirName={profile.display_name}
         theirPhotoUrl={photos[0]?.signedUrl}

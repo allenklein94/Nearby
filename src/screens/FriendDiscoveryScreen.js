@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Switch, Alert } from 'react-native';
-import { NLoader } from '../motion';
+import { NLoader, MatchAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   isOpenToFriendDiscovery,
@@ -16,7 +16,6 @@ import StoryViewerModal from '../components/StoryViewerModal';
 import { calculateFriendCompatibility } from '../services/compatibility';
 import { supabase } from '../services/supabase';
 import FriendDiscoverySwipeCards from '../components/FriendDiscoverySwipeCards';
-import FriendMatchCelebrationModal from '../components/FriendMatchCelebrationModal';
 import LoadErrorState from '../components/LoadErrorState';
 import { PERSONAL_INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { FRIEND_DEFAULT_ORDER, FRIEND_DEFAULT_VISIBLE } from '../constants/quickFilterCatalog';
@@ -539,7 +538,8 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
         />
       )}
 
-      <FriendMatchCelebrationModal
+      <MatchAnimation
+        kind="friend"
         visible={!!matchModal}
         theirName={matchModal?.theirName}
         theirPhotoUrl={matchModal?.theirPhotoUrl}

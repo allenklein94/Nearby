@@ -10,7 +10,7 @@ import { generateCompatibilityReport } from '../services/compatibility';
 import { getMyActivePlansByMatch } from '../services/dateProposals';
 import { getMatchPlanCompletion, hasStartedMatchPlan, formatPlaceStatusLabel } from '../utils/planCompletion';
 import PlanCompletionRow from '../components/PlanCompletionRow';
-import MatchCelebrationModal from '../components/MatchCelebrationModal';
+import { MatchAnimation } from '../motion';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import SkeletonCard from '../components/SkeletonCard';
 import LoadErrorState from '../components/LoadErrorState';
@@ -473,7 +473,8 @@ export default function MatchesScreen({ navigation }) {
       />
       )}
 
-      <MatchCelebrationModal
+      <MatchAnimation
+        kind="dating"
         visible={!!celebrationMatch}
         myPhotoUrl={myPhotoUrl}
         theirPhotoUrl={celebrationMatch ? photoUrls[celebrationMatch.id] : null}
