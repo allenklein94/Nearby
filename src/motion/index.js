@@ -13,7 +13,10 @@
 //     gate or slow down a real button/action.
 //
 // Import from here going forward, e.g. `import { NLoader } from
-// '../motion'`. All six of the original component locations under
+// '../motion'`. TapActiveChip/useTapActivate (Item 117) are the control-side half of the
+// cause-and-effect pattern ModeTransition/FilterTransition (Items 114-116) started on the results
+// side: a chip/tab/toggle should visibly confirm it was the thing tapped, not just its results.
+// All six of the original component locations under
 // src/components/ (BrandedLoader, PlanCreatedCelebration,
 // OccasionSelectAnimation, SurpriseRevealAnimation, MatchCelebrationModal,
 // FriendMatchCelebrationModal) were thin shims kept only so the many
@@ -28,3 +31,5 @@ export { default as SurpriseRevealAnimation, SURPRISE_REVEAL_TOTAL_MS } from './
 export { default as ModeTransition } from './ModeTransition';
 export { default as FilterTransition } from './FilterTransition';
 export { default as PullToRefresh } from './PullToRefresh';
+export { default as TapActiveChip } from './TapActiveChip';
+export { default as useTapActivate } from './useTapActivate';

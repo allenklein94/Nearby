@@ -38,7 +38,7 @@ import PlaceCard from '../components/PlaceCard';
 import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
-import { ModeTransition, FilterTransition } from '../motion';
+import { ModeTransition, FilterTransition, TapActiveChip } from '../motion';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -1356,8 +1356,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {DISCOVER_MODES.map((m) => {
             const active = mode === m.key;
             return (
-              <TouchableOpacity
+              <TapActiveChip
                 key={m.key}
+                active={active}
                 style={[styles.modeToggleButton, active && styles.modeToggleButtonActive]}
                 onPress={() => selectMode(m.key)}
                 accessibilityLabel={m.label}
@@ -1366,7 +1367,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               >
                 <Text style={styles.modeToggleIcon}>{m.icon}</Text>
                 <Text style={[styles.modeToggleText, active && styles.modeToggleTextActive]}>{m.label}</Text>
-              </TouchableOpacity>
+              </TapActiveChip>
             );
           })}
         </View>
@@ -1433,8 +1434,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 {TYPE_FILTERS.map((f) => {
                   const active = typeFilter === f.key;
                   return (
-                    <TouchableOpacity
+                    <TapActiveChip
                       key={f.key}
+                      active={active}
                       style={[styles.filterChip, active && styles.filterChipActive]}
                       onPress={() => setTypeTab(f.key)}
                       accessibilityLabel={f.label}
@@ -1442,7 +1444,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                       accessibilityState={{ selected: active }}
                     >
                       <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{f.label}</Text>
-                    </TouchableOpacity>
+                    </TapActiveChip>
                   );
                 })}
               </ScrollView>
@@ -1463,8 +1465,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 {PLACE_CATEGORIES.map((c) => {
                   const active = placesCategory === c.key;
                   return (
-                    <TouchableOpacity
+                    <TapActiveChip
                       key={c.key}
+                      active={active}
                       style={[styles.filterChip, active && styles.filterChipActive]}
                       onPress={() => setPlacesCategory(c.key)}
                       accessibilityLabel={c.label}
@@ -1473,7 +1476,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                     >
                       <Text style={styles.filterChipIcon}>{c.icon}</Text>
                       <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{c.label}</Text>
-                    </TouchableOpacity>
+                    </TapActiveChip>
                   );
                 })}
               </ScrollView>
@@ -1529,8 +1532,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 {PEOPLE_SUBMODES.map((pm) => {
                   const active = peopleSubMode === pm.key;
                   return (
-                    <TouchableOpacity
+                    <TapActiveChip
                       key={pm.key}
+                      active={active}
                       style={[styles.peopleSubToggleButton, active && styles.peopleSubToggleButtonActive]}
                       onPress={() => selectPeopleSubMode(pm.key)}
                       accessibilityLabel={pm.label}
@@ -1539,7 +1543,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                     >
                       <Text style={styles.peopleSubToggleIcon}>{pm.icon}</Text>
                       <Text style={[styles.peopleSubToggleText, active && styles.peopleSubToggleTextActive]}>{pm.label}</Text>
-                    </TouchableOpacity>
+                    </TapActiveChip>
                   );
                 })}
               </View>

@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Modal,
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { DATING_QUICK_FILTER_CATALOG } from '../constants/quickFilterCatalog';
+import { TapActiveChip } from '../motion';
 
 // Aug 30 2026 (CLAUDE.md, external UX critique response): this used to be
 // the Advanced Filters (Premium-only) modal alone -- a caller would only
@@ -131,7 +132,8 @@ export default function FiltersModal({
             <View style={styles.fieldSection}>
               <Text style={styles.fieldLabel}>🔀 Discovery</Text>
               <View style={styles.chipsWrap}>
-                <TouchableOpacity
+                <TapActiveChip
+                  active={discoveryMode !== 'browse'}
                   style={[styles.chip, discoveryMode !== 'browse' && styles.chipActive]}
                   onPress={() => onChangeDiscoveryMode('crossedPaths')}
                   accessibilityLabel="Crossed Paths, people you've actually been near"
@@ -139,8 +141,9 @@ export default function FiltersModal({
                   accessibilityState={{ selected: discoveryMode !== 'browse' }}
                 >
                   <Text style={[styles.chipText, discoveryMode !== 'browse' && styles.chipTextActive]}>📍 Crossed Paths</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </TapActiveChip>
+                <TapActiveChip
+                  active={discoveryMode === 'browse'}
                   style={[styles.chip, discoveryMode === 'browse' && styles.chipActive]}
                   onPress={() => onChangeDiscoveryMode('browse')}
                   accessibilityLabel="Browse, a wider pool of people matching your filters"
@@ -148,7 +151,7 @@ export default function FiltersModal({
                   accessibilityState={{ selected: discoveryMode === 'browse' }}
                 >
                   <Text style={[styles.chipText, discoveryMode === 'browse' && styles.chipTextActive]}>🔎 Browse</Text>
-                </TouchableOpacity>
+                </TapActiveChip>
               </View>
               <Text style={styles.sectionHelp}>
                 {DISCOVERY_MODE_HELP[discoveryMode] ?? DISCOVERY_MODE_HELP.crossedPaths}
@@ -163,8 +166,9 @@ export default function FiltersModal({
                 {intentionOptions.map((option) => {
                   const active = intentionFilter.includes(option.value);
                   return (
-                    <TouchableOpacity
+                    <TapActiveChip
                       key={option.value}
+                      active={active}
                       style={[styles.chip, active && styles.chipActive]}
                       onPress={() => onToggleIntention(option.value)}
                       accessibilityLabel={`Filter by ${option.label}`}
@@ -172,7 +176,7 @@ export default function FiltersModal({
                       accessibilityState={{ selected: active }}
                     >
                       <Text style={[styles.chipText, active && styles.chipTextActive]}>{option.icon} {option.label}</Text>
-                    </TouchableOpacity>
+                    </TapActiveChip>
                   );
                 })}
               </View>
@@ -200,8 +204,9 @@ export default function FiltersModal({
                   const active = !!quickFilters?.[key];
                   const label = quickFilterChipLabel(info, quickFilterConfig);
                   return (
-                    <TouchableOpacity
+                    <TapActiveChip
                       key={key}
+                      active={active}
                       style={[styles.chip, active && styles.chipActive]}
                       onPress={() => onToggleQuickFilter(key)}
                       accessibilityLabel={info.a11y ?? label}
@@ -209,7 +214,7 @@ export default function FiltersModal({
                       accessibilityState={{ selected: active }}
                     >
                       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
-                    </TouchableOpacity>
+                    </TapActiveChip>
                   );
                 })}
               </View>

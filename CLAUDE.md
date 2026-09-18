@@ -461,6 +461,50 @@ the filtered set keep their mounted instance and don't re-animate, since `FlatLi
 should confirm the dip reads as "results updated" rather than a flicker on all three surfaces, and
 that toggling a filter rapidly doesn't produce overlapping/stale dips.
 
+**Item 117 ("Use animation to establish cause and effect") — fully DONE (2026-09-18), same-day
+direct follow-up to Item 116.** User's own framing: tapping "Happening Now" or "Friends" should
+visually show the tapped control BECOMING active, then the results changing underneath — the
+animation confirms "my action caused this change," rather than leaving the user unsure whether
+they navigated somewhere else. Items 114-116 only ever animated the results side
+(`ModeTransition`/`FilterTransition`); a background research audit confirmed every real chip/tab/
+toggle in the app — the control actually tapped — still did a plain instant conditional-style flip
+(`style={[styles.chip, active && styles.chipActive]}`) with zero animation of its own, and that no
+shared Chip/FilterChip component exists anywhere (`src/components/`) to fix this in one place —
+every screen defines its own local chip JSX+styles.
+
+Shipped the control-side half of the same cause-and-effect pattern as a new small hook,
+`src/motion/useTapActivate.js` (mirrors `useKeyChangeFade`'s exact shape — Reduce-Motion-aware,
+`useNativeDriver: true`, never fires on first mount, only fires when a control transitions FROM
+inactive TO active, never on becoming inactive, so only the thing just chosen pops rather than two
+competing motions), wrapped by a drop-in component, `src/motion/TapActiveChip.js`
+(`Animated.createAnimatedComponent(TouchableOpacity)` — same props as a plain `TouchableOpacity`
+plus a required `active` boolean; the existing instant color/border style flip stays exactly as it
+was, a brief scale pop layers on top of it). Both exported from the `../motion` barrel alongside
+the existing pieces, per the barrel's own "import from here going forward" convention.
+
+Wired into every real tappable chip/tab/toggle found across the 5 screens the audit named (a
+literal `TouchableOpacity` → `TapActiveChip` swap + one added `active={...}` prop at each site,
+zero behavior change otherwise): `GatheringsScreen.js` (When/Environment/Price/People filter-chip
+accordion rows, the Trending toggle, and the full category-tag grid — 6 call sites total);
+`FiltersModal.js` (Discovery Mode Crossed-Paths/Browse, Looking For, and Quick Filters chip rows —
+the shared modal `DiscoveryScreen.js` opens, which is where the literal "70%+ match" Quick Filter
+chip actually renders, confirmed via the audit rather than assumed); `DiscoverHubScreen.js` (the
+outer Things-to-Do | People mode toggle — the literal example screen shape, though "Happening Now"
+itself is a plain section header, not a tappable control, so the closest real equivalent is
+`GatheringsScreen`'s own `DATE_OPTIONS` "Right Now" chip — plus the inner Dating | Friends toggle,
+the literal "Friends" example, and the "All" browse view's type-filter row and Places-category
+row); `FriendDiscoveryScreen.js` (interests/distance/verified/online filter chips — 4 call sites);
+`PlacesScreen.js` (the category-chip row added in Item 40).
+
+No DB migration, no new pure functions (animation-timing/UI wiring, same untested-by-design
+precedent as every other piece in `src/motion/`). Full Jest suite 580/580 passing (unchanged); all
+8 touched/new files (2 new in `src/motion/`, `src/motion/index.js`, and 5 screens/components)
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised on a real device
+(standing note) — next session should confirm the scale-pop reads as a clear, quick "this is what
+I tapped" confirmation rather than a jarring bounce, that it doesn't visually fight with
+`TouchableOpacity`'s own built-in press-opacity feedback, and that rapidly tapping between chips
+doesn't produce overlapping pops.
+
 **"Nearby Motion & Microinteraction System" — first real increment shipped (2026-09-18), same
 day, direct "build it now" override of the earlier "queue for Thursday" call.** User's own scope:
 audit and standardize every real interaction moment in the app into one cohesive motion language

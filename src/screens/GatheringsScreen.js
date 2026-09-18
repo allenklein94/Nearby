@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
-import { PullToRefresh, FilterTransition } from '../motion';
+import { PullToRefresh, FilterTransition, TapActiveChip } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, searchGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering, stopRecurringSeries } from '../services/gatherings';
@@ -707,8 +707,9 @@ export default function GatheringsScreen({ navigation, route }) {
                 {DATE_OPTIONS.map((option) => {
                   const active = dateFilter === option.key;
                   return (
-                    <TouchableOpacity
+                    <TapActiveChip
                       key={option.key}
+                      active={active}
                       style={[styles.dateChip, active && styles.dateChipActive]}
                       onPress={() => setDateFilter(option.key)}
                       accessibilityLabel={`Filter by ${option.label}`}
@@ -716,7 +717,7 @@ export default function GatheringsScreen({ navigation, route }) {
                       accessibilityState={{ selected: active }}
                     >
                       <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{option.label}</Text>
-                    </TouchableOpacity>
+                    </TapActiveChip>
                   );
                 })}
               </View>
@@ -759,7 +760,8 @@ export default function GatheringsScreen({ navigation, route }) {
                     <Text style={styles.forYouChipLockedText}>⭐ For You (soon)</Text>
                   </View>
                 )}
-                <TouchableOpacity
+                <TapActiveChip
+                  active={trendingActive}
                   style={[styles.forYouChip, trendingActive && styles.forYouChipActive]}
                   onPress={() => setTrendingActive((v) => !v)}
                   accessibilityLabel="Trending — most popular gatherings nearby right now"
@@ -767,7 +769,7 @@ export default function GatheringsScreen({ navigation, route }) {
                   accessibilityState={{ selected: trendingActive }}
                 >
                   <Text style={[styles.forYouChipText, trendingActive && styles.forYouChipTextActive]}>🔥 Trending</Text>
-                </TouchableOpacity>
+                </TapActiveChip>
               </View>
               {CATEGORY_GROUPS.map((group) => (
                 <View key={group.key} style={{ marginTop: spacing.sm }}>
@@ -777,8 +779,9 @@ export default function GatheringsScreen({ navigation, route }) {
                       const active = interestFilter === option;
                       const style = categoryStyleFor(option);
                       return (
-                        <TouchableOpacity
+                        <TapActiveChip
                           key={option}
+                          active={active}
                           style={[styles.filterChip, active && { backgroundColor: style.color, borderColor: style.color }]}
                           onPress={() => selectInterestFilter(option)}
                           accessibilityLabel={`Filter by ${option}`}
@@ -786,7 +789,7 @@ export default function GatheringsScreen({ navigation, route }) {
                           accessibilityState={{ selected: active }}
                         >
                           <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{style.icon} {option}</Text>
-                        </TouchableOpacity>
+                        </TapActiveChip>
                       );
                     })}
                   </View>
@@ -816,8 +819,9 @@ export default function GatheringsScreen({ navigation, route }) {
                 {[{ key: null, label: 'Either' }, { key: 'indoor', label: '🏠 Indoor' }, { key: 'outdoor', label: '🌳 Outdoor' }].map((option) => {
                   const active = environmentFilter === option.key;
                   return (
-                    <TouchableOpacity
+                    <TapActiveChip
                       key={option.label}
+                      active={active}
                       style={[styles.dateChip, active && styles.dateChipActive]}
                       onPress={() => setEnvironmentFilter(option.key)}
                       accessibilityLabel={`Filter by ${option.label}`}
@@ -825,7 +829,7 @@ export default function GatheringsScreen({ navigation, route }) {
                       accessibilityState={{ selected: active }}
                     >
                       <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{option.label}</Text>
-                    </TouchableOpacity>
+                    </TapActiveChip>
                   );
                 })}
               </View>
@@ -853,8 +857,9 @@ export default function GatheringsScreen({ navigation, route }) {
                 {PRICE_FILTER_OPTIONS.map((option) => {
                   const active = priceFilter === option.key;
                   return (
-                    <TouchableOpacity
+                    <TapActiveChip
                       key={option.label}
+                      active={active}
                       style={[styles.dateChip, active && styles.dateChipActive]}
                       onPress={() => setPriceFilter(option.key)}
                       accessibilityLabel={`Filter by ${option.label}`}
@@ -862,7 +867,7 @@ export default function GatheringsScreen({ navigation, route }) {
                       accessibilityState={{ selected: active }}
                     >
                       <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{option.label}</Text>
-                    </TouchableOpacity>
+                    </TapActiveChip>
                   );
                 })}
               </View>
@@ -890,8 +895,9 @@ export default function GatheringsScreen({ navigation, route }) {
                 {PARTY_TYPE_FILTER_OPTIONS.map((option) => {
                   const active = partyTypeFilter === option.key;
                   return (
-                    <TouchableOpacity
+                    <TapActiveChip
                       key={option.label}
+                      active={active}
                       style={[styles.dateChip, active && styles.dateChipActive]}
                       onPress={() => setPartyTypeFilter(option.key)}
                       accessibilityLabel={`Filter by ${option.label}`}
@@ -899,7 +905,7 @@ export default function GatheringsScreen({ navigation, route }) {
                       accessibilityState={{ selected: active }}
                     >
                       <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{option.label}</Text>
-                    </TouchableOpacity>
+                    </TapActiveChip>
                   );
                 })}
               </View>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, SafeAreaView, ActivityIndicator, Linking } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import { FilterTransition } from '../motion';
+import { FilterTransition, TapActiveChip } from '../motion';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, getGoogleMapsRequestHeaders } from '../services/places';
@@ -151,7 +151,8 @@ export default function PlacesScreen({ navigation }) {
         renderItem={({ item }) => {
           const active = category === item.key;
           return (
-            <TouchableOpacity
+            <TapActiveChip
+              active={active}
               style={[styles.categoryChip, active && styles.categoryChipActive]}
               onPress={() => {
                 setCategory(item.key);
@@ -163,7 +164,7 @@ export default function PlacesScreen({ navigation }) {
             >
               <Text style={styles.categoryChipIcon}>{item.icon}</Text>
               <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>{item.label}</Text>
-            </TouchableOpacity>
+            </TapActiveChip>
           );
         }}
       />

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Switch, Alert } from 'react-native';
-import { NLoader, MatchAnimation, FilterTransition } from '../motion';
+import { NLoader, MatchAnimation, FilterTransition, TapActiveChip } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   isOpenToFriendDiscovery,
@@ -412,8 +412,9 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                         {PERSONAL_INTEREST_OPTIONS.map((tag) => {
                           const selected = interestFilters.includes(tag);
                           return (
-                            <TouchableOpacity
+                            <TapActiveChip
                               key={tag}
+                              active={selected}
                               style={[styles.filterChip, selected && styles.filterChipActive]}
                               onPress={() => toggleInterestFilter(tag)}
                               accessibilityLabel={tag}
@@ -421,7 +422,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                               accessibilityState={{ selected }}
                             >
                               <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{tag}</Text>
-                            </TouchableOpacity>
+                            </TapActiveChip>
                           );
                         })}
                       </View>
@@ -442,8 +443,9 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                         {DISTANCE_BUCKETS.map((bucket) => {
                           const selected = distanceFilter === bucket;
                           return (
-                            <TouchableOpacity
+                            <TapActiveChip
                               key={bucket}
+                              active={selected}
                               style={[styles.filterChip, selected && styles.filterChipActive]}
                               onPress={() => setDistanceFilter(selected ? null : bucket)}
                               accessibilityLabel={bucket}
@@ -451,7 +453,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                               accessibilityState={{ selected }}
                             >
                               <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{bucket}</Text>
-                            </TouchableOpacity>
+                            </TapActiveChip>
                           );
                         })}
                       </View>
@@ -463,7 +465,8 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                     <View key={key} style={{ marginTop: spacing.sm }}>
                       <Text style={styles.accordionSubLabel}>Verified</Text>
                       <View style={styles.filterChipRow}>
-                        <TouchableOpacity
+                        <TapActiveChip
+                          active={verifiedOnlyFilter}
                           style={[styles.filterChip, verifiedOnlyFilter && styles.filterChipActive]}
                           onPress={() => setVerifiedOnlyFilter((prev) => !prev)}
                           accessibilityLabel="Verified Only"
@@ -471,7 +474,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                           accessibilityState={{ selected: verifiedOnlyFilter }}
                         >
                           <Text style={[styles.filterChipText, verifiedOnlyFilter && styles.filterChipTextActive]}>Verified Only</Text>
-                        </TouchableOpacity>
+                        </TapActiveChip>
                       </View>
                     </View>
                   );
@@ -481,7 +484,8 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                     <View key={key} style={{ marginTop: spacing.sm }}>
                       <Text style={styles.accordionSubLabel}>Online</Text>
                       <View style={styles.filterChipRow}>
-                        <TouchableOpacity
+                        <TapActiveChip
+                          active={onlineOnlyFilter}
                           style={[styles.filterChip, onlineOnlyFilter && styles.filterChipActive]}
                           onPress={() => setOnlineOnlyFilter((prev) => !prev)}
                           accessibilityLabel="Online Now"
@@ -489,7 +493,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                           accessibilityState={{ selected: onlineOnlyFilter }}
                         >
                           <Text style={[styles.filterChipText, onlineOnlyFilter && styles.filterChipTextActive]}>Online Now</Text>
-                        </TouchableOpacity>
+                        </TapActiveChip>
                       </View>
                     </View>
                   );
