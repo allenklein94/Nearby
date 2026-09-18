@@ -33,7 +33,8 @@ Direct request. Built in increments, each committed + pushed; Jest 677/677; noth
    Verified live against production (single overloads, anon denied, view + set/clear/off assertions in
    rolled-back transactions) AND a full from-scratch Docker replay (193 migrations, 0 errors, no `notify_*`
    function still joins presence_reports).
-7. Business web export regenerated (79d39a2d).
+7. Business web export regenerated (79d39a2d), and again after the follow-ups below (provider prompt change; offer
+   distance changes). Base path `/Nearby/business`, not opened in a real browser.
 
 **Known gaps / not done:** the clear button only holds until the next fix while notifications are on (turn the
 switch off to keep it cleared); users inactive >48h get no location pushes; Home's location-off state not
