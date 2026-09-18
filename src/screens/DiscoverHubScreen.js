@@ -38,7 +38,7 @@ import PlaceCard from '../components/PlaceCard';
 import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
-import { ModeTransition } from '../motion';
+import { ModeTransition, FilterTransition } from '../motion';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -1556,7 +1556,20 @@ export default function DiscoverHubScreen({ navigation, route }) {
             )}
           </View>
         </View>
-      ) : expandedContext ? (
+      ) : (
+        // FilterTransition (the Nearby Motion System, CLAUDE.md Item 113): a
+        // brief cue that these are new results whenever the active category
+        // changes -- covers both directions of the Categories row's chips
+        // (browse -> a category, one category -> another via the breadcrumb
+        // back button, and back to browse), keyed on contextLabel, which is
+        // already null while browsing and a distinct string per selected
+        // category/context. Wraps the whole expandedContext/map/default
+        // sub-switch (unlike PlacesScreen's single in-place FlatList, this
+        // one swaps entire branches) so the cue survives the branch swap the
+        // same way the outer ModeTransition above survives the People<->
+        // Things swap.
+        <FilterTransition activeKey={contextLabel} style={{ flex: 1 }}>
+        {expandedContext ? (
         /* Phase 8 section F -- the same screen, reconfigured. Gatherings /
            Places / Perks are the primary content, all three scoped to this
            context's own real interest tag; People You Know is a strictly
@@ -2173,6 +2186,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </>
           )}
         </ScrollView>
+        )}
+        </FilterTransition>
       )}
       </ModeTransition>
 

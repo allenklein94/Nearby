@@ -125,6 +125,25 @@ and-recover reads as a subtle "something changed" cue rather than a flicker when
 ↔ People, and that the map/expanded-context/default Things sub-views still render and scroll
 correctly through the new wrapper.
 
+**Same-day follow-up ("do the same for FilterTransition on DiscoverHubScreen's category
+chips").** The literal "category chips" in this screen are the `styles.categoryChip` row under
+the "Categories" header (`CATEGORY_GROUPS.map`, item 14) — tapping one calls `openCategoryContext`,
+which sets `expandedContext` and swaps the screen into the Phase 8 "expand in place" branch
+(Gatherings/Places/Perks scoped to that category). Unlike `PlacesScreen`'s own `FilterTransition`
+use (one persistent `FlatList`, only its data changes), a category chip here swaps entire ternary
+branches (browse's default/map view <-> the expanded-context view), the same shape the outer
+People<->Things `ModeTransition` above already had to handle — so `FilterTransition` wraps the
+whole `expandedContext ? (...) : viewStyle === 'map' ? (...) : (...)` sub-switch (nested inside
+the outer `ModeTransition`, only on the non-People side) rather than a single in-place list, keyed
+on `contextLabel` — an already-existing derived value that's `null` while browsing and a distinct
+string per selected category/gathering-tile context, so the cue correctly fires on browse->category,
+category->a-different-category (via the breadcrumb back button then a new chip), and back to
+browse. No new state, no new derived value. Full Jest suite 580/580 passing (unchanged);
+`DiscoverHubScreen.js` transform-checked clean via `@babel/core` + `babel-preset-expo`. Not
+exercised on a real device (standing note) — next session should confirm the cue reads correctly
+across all three transition directions and that the breadcrumb/back-button flow still renders
+correctly through the new wrapper.
+
 No DB migration, no new pure functions (a component library + three wiring sites). Full Jest suite
 580/580 passing (unchanged); all 18 touched/new files (10 new `src/motion/` files, 6 shim files, 2
 wired screens) transform-checked clean via `@babel/core` + `babel-preset-expo` — plus a full
