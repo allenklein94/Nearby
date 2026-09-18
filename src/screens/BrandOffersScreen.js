@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import { NLoader } from '../motion';
+import { NLoader, PullToRefresh } from '../motion';
 import * as Location from 'expo-location';
 import { useFocusEffect } from '@react-navigation/native';
 import { getActiveOffers, getMyRedemptions, redeemOffer, followBusiness, unfollowBusiness, isFollowingBusiness, getRedemptionCounts } from '../services/brandOffers';
@@ -171,7 +171,7 @@ export default function BrandOffersScreen({ navigation, route }) {
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={{ padding: spacing.lg }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <Text style={styles.headerTitle} accessibilityRole="header">{t('brandOffers.title')}</Text>
         <Text style={styles.headerSubtitle}>

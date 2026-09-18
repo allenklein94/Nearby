@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import { PullToRefresh } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyAttendingGatherings, getMyGatherings } from '../services/gatherings';
@@ -265,7 +266,7 @@ export default function PlansScreen({ navigation, route }) {
           data={listData}
           keyExtractor={(row) => `${row.type}-${row.key}`}
           contentContainerStyle={{ padding: spacing.lg }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📅</Text>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import { NLoader } from '../motion';
+import { NLoader, PullToRefresh } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyBlockedUsers, unblockUser } from '../services/blockedUsers';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -102,7 +102,7 @@ export default function BlockedUsersScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView
         contentContainerStyle={{ padding: spacing.lg }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <Text style={styles.headerTitle} accessibilityRole="header">{t('blockedUsers.title')}</Text>
         <Text style={styles.headerSubtitle}>

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator, Alert, Image } from 'react-native';
-import { NLoader } from '../motion';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
+import { NLoader, PullToRefresh } from '../motion';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -1407,7 +1407,7 @@ export default function HomeScreen({ navigation }) {
         // overlapped the tail end of the "Continue Browsing" button once
         // scrolled all the way down; xxl*3 leaves real breathing room.
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl * 3 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>

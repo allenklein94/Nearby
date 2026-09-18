@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image, RefreshControl, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image, Alert } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
@@ -10,7 +10,7 @@ import { generateCompatibilityReport } from '../services/compatibility';
 import { getMyActivePlansByMatch } from '../services/dateProposals';
 import { getMatchPlanCompletion, hasStartedMatchPlan, formatPlaceStatusLabel } from '../utils/planCompletion';
 import PlanCompletionRow from '../components/PlanCompletionRow';
-import { MatchAnimation } from '../motion';
+import { MatchAnimation, PullToRefresh } from '../motion';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import SkeletonCard from '../components/SkeletonCard';
 import LoadErrorState from '../components/LoadErrorState';
@@ -307,7 +307,7 @@ export default function MatchesScreen({ navigation }) {
         data={matches}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <FadeInState style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>✨</Text>

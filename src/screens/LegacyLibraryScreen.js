@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import { NLoader } from '../motion';
+import { NLoader, PullToRefresh } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { getLegacyEntries } from '../services/relationshipLegacy';
 import { useTheme } from '../context/ThemeContext';
@@ -70,7 +70,7 @@ export default function LegacyLibraryScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <ScrollView
         contentContainerStyle={{ padding: spacing.lg }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <Text style={styles.headerTitle} accessibilityRole="header">{t('legacyLibrary.title')}</Text>
         <Text style={styles.headerSubtitle}>

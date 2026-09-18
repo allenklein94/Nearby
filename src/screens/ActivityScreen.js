@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Image, RefreshControl, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Image, Alert } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
@@ -9,7 +9,7 @@ import { calculateCompatibility } from '../services/compatibility';
 import { sendNoticeTo } from '../services/noticeActions';
 import { getNearbyMatches } from '../services/proximity';
 import { getPendingFriendRequests, respondToFriendRequest } from '../services/friends';
-import { MatchAnimation } from '../motion';
+import { MatchAnimation, PullToRefresh } from '../motion';
 import { getFollowedBusinessUpdates } from '../services/brandOffers';
 import { getMyBusinessEcosystemActivity, formatOfferSummary } from '../services/businessFulfillment';
 import { getAllPendingRequests, approveInterest, getUpcomingReminders } from '../services/gatherings';
@@ -562,7 +562,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
           data={items}
           keyExtractor={(item) => item.key}
           contentContainerStyle={{ padding: spacing.lg }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
           ListHeaderComponent={(hasAnyGroupContent || items.length > 0) ? (
             <View style={{ marginBottom: spacing.md }}>
               {clusterOrder.map((cluster) => cluster === 'needsAttention' ? renderNeedsAttentionCluster() : renderTodayCluster())}

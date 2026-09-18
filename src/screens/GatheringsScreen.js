@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import { PullToRefresh } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, searchGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering, stopRecurringSeries } from '../services/gatherings';
@@ -946,7 +947,7 @@ export default function GatheringsScreen({ navigation, route }) {
           data={filteredNearby}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: spacing.lg }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
           ListHeaderComponent={
             forYouActive ? (
               <Text style={styles.forYouHint}>Based on gatherings you've attended or shown interest in before.</Text>
@@ -1164,7 +1165,7 @@ export default function GatheringsScreen({ navigation, route }) {
           ]}
           keyExtractor={(row) => row.key}
           contentContainerStyle={{ padding: spacing.lg }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>✅</Text>
@@ -1333,7 +1334,7 @@ export default function GatheringsScreen({ navigation, route }) {
           ]}
           keyExtractor={(row) => row.key}
           contentContainerStyle={{ padding: spacing.lg }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📅</Text>
