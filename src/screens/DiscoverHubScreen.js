@@ -409,7 +409,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // said no once had no path back in from here. A real prompt, using the
   // same expo-location already imported for that check.
   async function enableLocation() {
-    const position = await getUserLocation({ fresh: true });
+    const position = await getUserLocation({ fresh: true, force: true });
     if (position) {
       setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
       loadCore(); // Happening Now/Today/This Weekend were empty without a position

@@ -211,6 +211,9 @@ export default function HomeScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [startModalVisible, setStartModalVisible] = useState(false);
   const [socialForecast, setSocialForecast] = useState(null);
+  // No position at all (permission off/undetermined, no stored fix): nearby sections can't fill, so Home
+  // says so and invites turning it on, instead of implying a quiet night.
+  const [locationOff, setLocationOff] = useState(false);
   const [continueCommunities, setContinueCommunities] = useState([]);
   const [perksCount, setPerksCount] = useState(0);
   const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
@@ -612,6 +615,7 @@ export default function HomeScreen({ navigation }) {
         pendingPollsTask,
       ]);
       const { forecast, myLocation } = weatherResult;
+      setLocationOff(!myLocation);
       setLoadError(false);
 
       // Real, computed Place status for "Your Plans" (CLAUDE.md, Aug 29
@@ -2340,6 +2344,24 @@ export default function HomeScreen({ navigation }) {
           ))}
         </ScrollView>
 
+        {locationOff && (
+          <View style={styles.quietCard}>
+            <Text style={styles.quietTitle}>See what's around you</Text>
+            <Text style={styles.quietText}>Turn on location and Nearby will find what's happening near you, right now, today and this weekend.</Text>
+            <TouchableOpacity
+              onPress={async () => {
+                const position = await getUserLocation({ fresh: true, force: true });
+                if (position) load();
+              }}
+              accessibilityLabel="Turn on location"
+              accessibilityRole="button"
+              style={{ marginTop: spacing.sm }}
+            >
+              <Text style={styles.browseButtonText}>Turn on location →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {dashboard?.happeningNow?.length > 0 && (
           <>
             <View style={styles.sectionHeaderRow}>
@@ -2623,7 +2645,7 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         )}
 
-        {!dashboard?.bestPick && (!dashboard?.trendingGatherings || dashboard.trendingGatherings.length === 0) && (dashboard?.nearbyPeopleCount ?? 0) === 0 && (
+        {!locationOff && !dashboard?.bestPick && (!dashboard?.trendingGatherings || dashboard.trendingGatherings.length === 0) && (dashboard?.nearbyPeopleCount ?? 0) === 0 && (
           <View style={styles.quietCard}>
             <Text style={styles.quietTitle}>Quiet night nearby</Text>
             <Text style={styles.quietText}>Nothing notable happening right now — but that can change fast. Browse anyway, or check back later.</Text>

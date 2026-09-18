@@ -15,13 +15,15 @@ export function createLocationProvider({ loc, storage, now = () => Date.now(), m
   let cache = null; // { coords, timestamp, source }
   let inflight = null;
   let lastStatus = null;
+  let requestedThisSession = false; // a system prompt is shown at most once per session unless forced
 
-  async function permissionGranted(ask) {
+  async function permissionGranted(ask, force) {
     let perm = await loc.getForegroundPermissionsAsync().catch(() => null);
-    if (perm?.status !== 'granted' && ask && perm?.status !== 'denied') {
-      perm = await loc.requestForegroundPermissionsAsync().catch(() => null);
-    } else if (perm?.status === 'denied' && ask && perm?.canAskAgain) {
-      perm = await loc.requestForegroundPermissionsAsync().catch(() => perm);
+    if (perm?.status !== 'granted' && ask && (force || !requestedThisSession)) {
+      if (perm?.status !== 'denied' || perm?.canAskAgain) {
+        requestedThisSession = true;
+        perm = await loc.requestForegroundPermissionsAsync().catch(() => perm);
+      }
     }
     lastStatus = perm?.status ?? 'undetermined';
     return lastStatus === 'granted';
@@ -34,8 +36,8 @@ export function createLocationProvider({ loc, storage, now = () => Date.now(), m
     return cache;
   }
 
-  async function resolve({ fresh, ask, accuracy }) {
-    if (!(await permissionGranted(ask))) return null;
+  async function resolve({ fresh, ask, force, accuracy }) {
+    if (!(await permissionGranted(ask, force))) return null;
     let pos = await loc.getCurrentPositionAsync({ accuracy }).catch(() => null);
     if (pos?.coords) return remember(pos, 'fresh');
     pos = await loc.getLastKnownPositionAsync().catch(() => null);
@@ -52,11 +54,12 @@ export function createLocationProvider({ loc, storage, now = () => Date.now(), m
     return null;
   }
 
+  // `force`: the user just tapped an "enable location" control, so ask even if we already asked this session.
   // Returns { coords: { latitude, longitude, ... }, source } -- same `.coords` shape callers already used
   // with expo-location -- or null when location is off/unavailable. Never throws.
-  async function getUserLocation({ fresh = false, ask = true, accuracy = loc.Accuracy?.Balanced } = {}) {
+  async function getUserLocation({ fresh = false, ask = true, force = false, accuracy = loc.Accuracy?.Balanced } = {}) {
     if (!fresh && cache && now() - cache.timestamp < maxAgeMs && cache.source !== 'stored') return cache;
-    if (!inflight) inflight = resolve({ fresh, ask, accuracy }).finally(() => { inflight = null; });
+    if (!inflight) inflight = resolve({ fresh, ask, force, accuracy }).finally(() => { inflight = null; });
     return inflight;
   }
 

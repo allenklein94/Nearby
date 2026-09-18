@@ -76,3 +76,13 @@ test('requireUserLocation throws the feature\'s own message when unavailable', a
   const { p } = fakes({ perm: { status: 'denied', canAskAgain: false } });
   await expect(p.requireUserLocation('Location access is needed to find nearby businesses.')).rejects.toThrow('nearby businesses');
 });
+
+test('a re-askable denial prompts once per session, then only when forced by a user tap', async () => {
+  const { p, calls } = fakes({ perm: { status: 'denied', canAskAgain: true }, afterRequest: { status: 'denied', canAskAgain: true } });
+  expect(await p.getUserLocation()).toBeNull();
+  expect(await p.getUserLocation({ fresh: true })).toBeNull();
+  expect(await p.getUserLocation({ fresh: true })).toBeNull();
+  expect(calls.request).toBe(1);
+  await p.getUserLocation({ fresh: true, force: true });
+  expect(calls.request).toBe(2);
+});
