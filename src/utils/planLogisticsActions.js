@@ -46,9 +46,10 @@ export function buildPlanCalendarEvent({ title, rawDate, rawTime, businessAddres
 // A real turn-by-turn directions link (not just a centered pin) -- prefers real coordinates,
 // falls back to the business's own real street address, returns null when neither is known
 // (never a fabricated destination).
-export function buildDirectionsUrl({ latitude, longitude, address }) {
+export function buildDirectionsUrl({ latitude, longitude, address, placeId }) {
   if (latitude != null && longitude != null) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+    const pid = placeId ? `&destination_place_id=${encodeURIComponent(placeId)}` : '';
+    return `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}${pid}`;
   }
   if (address) {
     return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;

@@ -3,7 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, S
 import FadeInState from '../components/FadeInState';
 import { FilterTransition, TapActiveChip, NLoader } from '../motion';
 import { Ionicons } from '@expo/vector-icons';
-import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, getGoogleMapsRequestHeaders } from '../services/places';
+import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, placeDistanceLabel, getGoogleMapsRequestHeaders } from '../services/places';
+import { buildDirectionsUrl } from '../utils/planLogisticsActions';
 import { PLACE_CATEGORIES as CATEGORIES } from '../constants/placeCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -216,7 +217,7 @@ export default function PlacesScreen({ navigation }) {
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.placeCard}
-              onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}&query_place_id=${item.placeId}`)}
+              onPress={() => Linking.openURL(buildDirectionsUrl(item))}
               activeOpacity={0.85}
               accessibilityLabel={`${item.name}${item.openNow !== null ? (item.openNow ? ', open now' : ', closed now') : ''}${item.gatheringCount > 0 ? `, ${item.gatheringCount} gatherings hosted here` : ''}`}
               accessibilityRole="button"
@@ -228,7 +229,7 @@ export default function PlacesScreen({ navigation }) {
               )}
               <View style={{ flex: 1 }}>
                 <Text style={styles.placeName}>{item.name}</Text>
-                {item.address ? <Text style={styles.placeAddress}>{item.address}</Text> : null}
+                {item.address || item.distanceMiles != null ? <Text style={styles.placeAddress}>{[item.address, placeDistanceLabel(item.distanceMiles)].filter(Boolean).join(' · ')}</Text> : null}
                 <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, marginTop: 4 }}>
                   {item.rating !== null && (
                     <Text style={styles.placeRating}>

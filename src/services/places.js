@@ -20,6 +20,20 @@ export function getGoogleMapsRequestHeaders() {
 // Real venues from Google Places, not invented or gathering-derived
 // data — this is genuine place discovery, distinct from (and
 // complementary to) browsing gatherings the app already knows about.
+// Straight-line miles from the user to a place (both real coordinates); null when either is missing.
+export function straightLineMiles(lat1, lng1, lat2, lng2) {
+  if ([lat1, lng1, lat2, lng2].some((v) => typeof v !== 'number')) return null;
+  const rad = Math.PI / 180;
+  const a = Math.sin(((lat2 - lat1) * rad) / 2) ** 2 +
+    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(((lng2 - lng1) * rad) / 2) ** 2;
+  return 3958.8 * 2 * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+export function placeDistanceLabel(miles) {
+  if (miles == null) return null;
+  return miles < 0.1 ? 'Very close' : `${miles.toFixed(1)} mi away`;
+}
+
 export async function searchNearbyPlaces(latitude, longitude, category, keyword = null) {
   const placeType = PLACE_TYPES[category] ?? 'point_of_interest';
   const keywordParam = keyword ? `&keyword=${encodeURIComponent(keyword)}` : '';
@@ -47,6 +61,7 @@ export async function searchNearbyPlaces(latitude, longitude, category, keyword 
     priceLevel: typeof p.price_level === 'number' ? p.price_level : null,
     latitude: p.geometry?.location?.lat,
     longitude: p.geometry?.location?.lng,
+    distanceMiles: straightLineMiles(latitude, longitude, p.geometry?.location?.lat, p.geometry?.location?.lng),
     photoRef: p.photos?.[0]?.photo_reference ?? null,
     // Kept (previously discarded here even though Google returns it, and
     // it's already read elsewhere in this file — see

@@ -9,7 +9,8 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
 import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptions } from '../services/brandOffers';
-import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, getGoogleMapsRequestHeaders } from '../services/places';
+import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, placeDistanceLabel, getGoogleMapsRequestHeaders } from '../services/places';
+import { buildDirectionsUrl } from '../utils/planLogisticsActions';
 import { getSocialForecast } from '../services/homeDashboard';
 // Phase 8 section G (CLAUDE.md) -- accepted friends UNION real matches,
 // the one shared client-side definition of this app's connected set.
@@ -1127,12 +1128,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
       p.rating !== null ? `⭐ ${p.rating}${p.reviewCount !== null ? ` (${p.reviewCount})` : ''}` : null,
       priceLevelLabel(p.priceLevel),
       p.openNow !== null ? (p.openNow ? 'Open now' : 'Closed') : null,
+      placeDistanceLabel(p.distanceMiles),
       p.gatheringCount > 0 ? `🎉 ${p.gatheringCount} gathering${p.gatheringCount === 1 ? '' : 's'} here` : null,
     ].filter(Boolean).join('  ·  ') || p.address;
   }
 
   function openPlaceInMaps(p) {
-    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}&query_place_id=${p.placeId}`);
+    Linking.openURL(buildDirectionsUrl(p));
   }
 
   // The standard gathering row inside an expanded context. Tapping it does
