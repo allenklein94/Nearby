@@ -38,6 +38,7 @@ import PlaceCard from '../components/PlaceCard';
 import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
+import { ModeTransition } from '../motion';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -1475,6 +1476,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
         )}
       </View>
 
+      {/* ModeTransition (the Nearby Motion System, CLAUDE.md Item 113): a brief
+          state-change cue on the Things-to-Do<->People switch above, same
+          mechanic MessagesScreen's own Matches<->Friends toggle already uses.
+          Deliberately deferred when Item 113 first shipped this component --
+          this ternary is structurally asymmetric (People is a plain View;
+          Things is itself a further expandedContext/map/default split) -- so
+          it's wrapped as one single outer transition around the whole
+          already-existing ternary rather than restructuring any branch. */}
+      <ModeTransition activeKey={mode} style={{ flex: 1 }}>
       {mode === 'people' ? (
         // Real screens embedded in place, no navigation -- the exact same
         // "segmented toggle swaps content in place" pattern the outer
@@ -2164,6 +2174,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
         </ScrollView>
       )}
+      </ModeTransition>
 
       <Modal visible={!!gatheringStoryViewer} animationType="slide" onRequestClose={() => setGatheringStoryViewer(null)}>
         <SafeAreaView style={styles.container}>

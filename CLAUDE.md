@@ -101,15 +101,31 @@ rather than shipping untested library code: `ModeTransition` into `MessagesScree
 Matches↔Friends embedded-screen toggle (a small, clean screen with the switched content already a
 single top-level ternary — safe to wrap without restructuring); `FilterTransition` into
 `PlacesScreen.js`'s category-filtered results list, keyed on the active category. **Deliberately
-did NOT wire `ModeTransition` into `DiscoverHubScreen.js`'s own Things-to-Do↔People toggle** — the
-user's own literal example — a real, disclosed scope boundary: that screen is 2000+ lines with a
-structurally asymmetric mode switch (the "things" branch is an always-mounted container with
-internally-gated children; "people" is a fully separate sibling ternary), already flagged as real
-regression risk in the immediately-preceding Motion & Microinteraction System pass on this exact
-same screen. The reusable component is ready for it; wiring it in deserves a more careful, ideally
-device-verified pass on that specific screen rather than a blind wrap under time pressure.
+did NOT wire `ModeTransition` into `DiscoverHubScreen.js`'s own Things-to-Do↔People toggle at
+first** — the user's own literal example — a real, disclosed scope boundary: that screen is
+2000+ lines with a structurally asymmetric mode switch (the "things" branch is an always-mounted
+container with internally-gated children; "people" is a fully separate sibling ternary), already
+flagged as real regression risk in the immediately-preceding Motion & Microinteraction System pass
+on this exact same screen.
 
-No DB migration, no new pure functions (a component library + two wiring sites). Full Jest suite
+**Closed same day (2026-09-18), direct follow-up ("finish wiring transition mode into Discover").**
+Re-read the screen's real current render before touching it rather than trusting the deferral note
+above verbatim: the Things/People split is in fact already ONE single outer ternary
+(`mode === 'people' ? (...) : expandedContext ? (...) : viewStyle === 'map' ? (...) : (...)`,
+`DiscoverHubScreen.js` lines ~1479-2167) — no restructuring needed at all, just the same "wrap the
+whole already-existing ternary" move already proven safe on `MessagesScreen.js`. Wrapped that
+entire ternary in `<ModeTransition activeKey={mode} style={{ flex: 1 }}>`, keyed on the outer
+Things-to-Do/People `mode` state only (not `peopleSubMode`/`expandedContext`/`viewStyle`, which
+stay instant — this fires exactly once, on the one real top-level mode switch the user's own
+original example named, not on every internal sub-state change within either mode). Full Jest
+suite 580/580 passing (unchanged — no pure functions touched); `DiscoverHubScreen.js`
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised on a real device
+(no simulator/device tooling this session, standing note) — next session should confirm the dip-
+and-recover reads as a subtle "something changed" cue rather than a flicker when switching Things
+↔ People, and that the map/expanded-context/default Things sub-views still render and scroll
+correctly through the new wrapper.
+
+No DB migration, no new pure functions (a component library + three wiring sites). Full Jest suite
 580/580 passing (unchanged); all 18 touched/new files (10 new `src/motion/` files, 6 shim files, 2
 wired screens) transform-checked clean via `@babel/core` + `babel-preset-expo` — plus a full
 324-file repo-wide transform sweep confirmed nothing else broke from the consolidation. Not
