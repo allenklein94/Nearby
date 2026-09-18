@@ -522,3 +522,19 @@ export function intentSearchDateLabel(dateWindow) {
 export function intentSearchFallbackTitle(classifyResult) {
   return classifyResult?.category ? `${classifyResult.category} Ideas` : 'Ideas For You';
 }
+
+// Item 135 ("Search can have a little thinking moment"): captions for the REAL phases of an
+// intent search, so the AI/intent pipeline is tangible without a fake delay. Phases are reported
+// by the pipeline itself as it actually moves on (understanding = the classify call is in flight;
+// finding = classification came back and the resolver is now fetching real candidates), never on
+// a timer, and never held on screen longer than the real work takes. The finding caption reflects
+// what the request was understood as, so it's real information, not decoration.
+export function intentPhaseCaption(phase, classifyResult) {
+  if (phase === 'understanding') return 'Understanding your request…';
+  if (phase === 'finding') {
+    if (classifyResult?.intent === 'community') return 'Finding communities…';
+    if (classifyResult?.intent === 'business_availability') return 'Checking availability…';
+    return 'Finding activities…';
+  }
+  return null;
+}

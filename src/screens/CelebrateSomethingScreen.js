@@ -6,7 +6,7 @@ import { getMyFriends, getMutualFriends } from '../services/friends';
 import { getMyCommunities } from '../services/communities';
 import { addOccasion, linkOccasionToPlan } from '../services/occasions';
 import { resolveIntent, runIntentSearch, navigateToIntentResultItem } from '../services/intentResolver';
-import { intentSearchFallbackTitle, INTENT_SEARCH_TYPE_EMOJI } from '../services/intentResolverScoring';
+import { intentSearchFallbackTitle, INTENT_SEARCH_TYPE_EMOJI, intentPhaseCaption } from '../services/intentResolverScoring';
 import { routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { recordIntentSelection } from '../services/intentOutcomes';
 import { submitBusinessRequest, createPlanAddonRequest } from '../services/businessFulfillment';
@@ -37,7 +37,7 @@ import {
   buildAutoPlanSuggestion,
 } from '../services/celebrateSomething';
 import { experienceTemplateForOccasion } from '../constants/experienceTemplates';
-import { OccasionAnimation, OCCASION_SELECT_ANIMATIONS, NearbyPickBadge, NLoader } from '../motion';
+import { OccasionAnimation, OCCASION_SELECT_ANIMATIONS, NearbyPickBadge, NLoader, FoundLine } from '../motion';
 import FindingOptionsLoader from '../components/FindingOptionsLoader';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
@@ -398,6 +398,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   // in this wizard.
   const [customDescription, setCustomDescription] = useState(route.params?.initialCustomDescription ?? '');
   const [customSearching, setCustomSearching] = useState(false);
+  const [customPhase, setCustomPhase] = useState(null); // Item 135: real pipeline phase
   const [customSearchResult, setCustomSearchResult] = useState(null);
 
   async function ensureFriendsLoaded() {
@@ -678,7 +679,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     setCustomSearching(true);
     setCustomSearchResult(null);
     try {
-      const result = await runIntentSearch(typedText);
+      const result = await runIntentSearch(typedText, { onPhase: setCustomPhase });
       if (result.outcome === 'business_partner') {
         routeClassifiedIntentToCreation(navigation, result.classifyResult, typedText);
         return;
@@ -1325,7 +1326,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
                 {customSearching && (
                   <View style={styles.customSearchLoadingRow}>
-                    <NLoader fullScreen={false} size="inline" caption="Understanding what you're planning…" />
+                    <NLoader fullScreen={false} size="inline" caption={intentPhaseCaption(customPhase?.phase ?? 'understanding', customPhase?.classifyResult)} />
                   </View>
                 )}
 
@@ -1333,6 +1334,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   <View style={styles.customResultsBlock}>
                     {customSearchResult.items.length > 0 ? (
                       <>
+                        <FoundLine />
                         <Text style={styles.sublabel}>
                           {customSearchResult.experience?.title ?? intentSearchFallbackTitle(customSearchResult.classifyResult)}
                         </Text>

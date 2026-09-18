@@ -1,3 +1,19 @@
+## Sep 18 2026 — Item 135 ("Search can have a little thinking moment") — DONE
+
+Honesty check first: the intent pipeline has exactly two real phases (the create-assistant classify
+call, then resolveIntent/resolveCommunityIntent fetching real candidates), so the mock's three
+captions can't be three fake timed stages. Built it from the real two, with the second caption
+reflecting what the request was UNDERSTOOD as. `runIntentSearch(text, { onPhase })` reports
+'understanding' before classify and 'finding' (with classifyResult) once it returns; pure
+`intentPhaseCaption()` (intentResolverScoring.js): "Understanding your request…" then "Finding
+activities…" / "Finding communities…" / "Checking availability…". Wired into Discover's search
+row, the Occasion wizard's custom search, and Home's ask box (which has its own inline
+classify->resolve flow, so it sets the same two phases directly). New `FoundLine` ("Here's what we
+found.", 120ms fade, Reduce Motion: present) renders with the results on all three surfaces --
+it never delays them. No timers/minimum display: a fast response simply shows each caption
+briefly or not at all. `intentPhaseCaption.test.js` (2 tests) incl. a source guard that
+runIntentSearch has no setTimeout/delay. Suite 642/642. Not seen on a device.
+
 ## Sep 18 2026 — Item 134 ("Empty states can animate into opportunity") — DONE
 
 Extended `FadeInState` with an opt-in `opportunity` prop: two-beat sequence -- the N mark fades/scales

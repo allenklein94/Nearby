@@ -41,3 +41,4 @@ export { playHaptic, HAPTIC_MOMENTS } from './haptics';
 export * from './motionBudget';
 export * from './loadingLanguage';
 export { default as SkeletonFeed } from './SkeletonFeed';
+export { default as FoundLine } from './FoundLine';

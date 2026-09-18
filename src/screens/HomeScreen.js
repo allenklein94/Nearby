@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
-import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge } from '../motion';
+import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge, FoundLine } from '../motion';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -9,7 +9,7 @@ import { getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGather
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent, navigateToIntentResultItem, buildFriendDiscoveryResultItem } from '../services/intentResolver';
 import { runSurpriseMe, pickNextFromPool, findConnectedPerson, suggestionCandidateKeys, moodToParams } from '../services/surpriseMe';
-import { detectFriendDiscoveryIntent } from '../services/intentResolverScoring';
+import { detectFriendDiscoveryIntent, intentPhaseCaption } from '../services/intentResolverScoring';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/businessFulfillment';
 import { formatPlaceStatusLabel } from '../utils/planCompletion';
@@ -216,6 +216,7 @@ export default function HomeScreen({ navigation }) {
   const [quickPicksEditVisible, setQuickPicksEditVisible] = useState(false);
   const [intentText, setIntentText] = useState('');
   const [intentThinking, setIntentThinking] = useState(false);
+  const [intentPhase, setIntentPhase] = useState(null); // Item 135: real pipeline phase
   const [intentResults, setIntentResults] = useState(null);
   const [intentEmptyFallback, setIntentEmptyFallback] = useState(null);
   const [intentPlaceholder, setIntentPlaceholder] = useState(() => INTENT_PLACEHOLDER_EXAMPLES[Math.floor(Math.random() * INTENT_PLACEHOLDER_EXAMPLES.length)]);
@@ -805,11 +806,13 @@ export default function HomeScreen({ navigation }) {
     if (!typedText) return;
     if (overrideText) setIntentText(overrideText);
     setIntentThinking(true);
+    setIntentPhase({ phase: 'understanding' });
     setIntentResults(null);
     setIntentEmptyFallback(null);
     setSurprise(null);
     try {
       const result = await classifyCreateRequest(typedText);
+      setIntentPhase({ phase: 'finding', classifyResult: result });
       if (result.intent === 'business_partner') {
         // No existing-supply concept to check for a business-partner
         // proposal -- logged for the funnel's own intent_kind breakdown,
@@ -1466,7 +1469,7 @@ export default function HomeScreen({ navigation }) {
 
           {intentThinking && (
             <View style={styles.intentResults}>
-              <NLoader fullScreen={false} size="compact" kind="activities" />
+              <NLoader fullScreen={false} size="compact" caption={intentPhaseCaption(intentPhase?.phase ?? 'understanding', intentPhase?.classifyResult)} />
             </View>
           )}
 
@@ -1597,6 +1600,7 @@ export default function HomeScreen({ navigation }) {
 
           {intentResults && (
             <View style={styles.intentResults}>
+              {intentResults.items?.length > 0 && <FoundLine />}
               {intentResults.classifyResult?.intent === 'unclear' && (
                 <Text style={styles.intentUnclearNote}>
                   {detectFriendDiscoveryIntent(intentResults.typedText)

@@ -23,7 +23,7 @@ import { resolveDefaultPeopleSubMode } from '../utils/peopleSubModePreference';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import {
   SCORE_HAPPENING_NOW as WEATHER_BONUS,
-  INTENT_SEARCH_TYPE_EMOJI, intentSearchDateLabel, intentSearchFallbackTitle,
+  INTENT_SEARCH_TYPE_EMOJI, intentSearchDateLabel, intentSearchFallbackTitle, intentPhaseCaption,
 } from '../services/intentResolverScoring';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
@@ -38,7 +38,7 @@ import PlaceCard from '../components/PlaceCard';
 import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
-import { ModeTransition, FilterTransition, TapActiveChip, NearbyPickBadge, NLoader } from '../motion';
+import { ModeTransition, FilterTransition, TapActiveChip, NearbyPickBadge, NLoader, FoundLine } from '../motion';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -297,6 +297,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // already use for the exact same race.
   const [intentSearch, setIntentSearch] = useState(null);
   const [intentSearching, setIntentSearching] = useState(false);
+  const [intentPhase, setIntentPhase] = useState(null); // Item 135: real pipeline phase
+
   const intentSearchRequestId = useRef(0);
   const [typeFilter, setTypeFilter] = useState('all');
   function setTypeTab(key) {
@@ -927,7 +929,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const thisRequestId = ++intentSearchRequestId.current;
     setIntentSearching(true);
     try {
-      const result = await runIntentSearch(typedText);
+      const result = await runIntentSearch(typedText, {
+        onPhase: (p) => { if (thisRequestId === intentSearchRequestId.current) setIntentPhase(p); },
+      });
       if (thisRequestId !== intentSearchRequestId.current) return;
       if (result.outcome === 'business_partner') {
         setIntentSearch(null);
@@ -1885,11 +1889,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
               there too. */}
           {isSearching && intentSearching && (
             <View style={styles.intentSearchLoadingRow}>
-              <NLoader fullScreen={false} size="inline" caption={`Understanding "${searchQuery.trim()}"…`} />
+              <NLoader fullScreen={false} size="inline" caption={intentPhaseCaption(intentPhase?.phase ?? 'understanding', intentPhase?.classifyResult)} />
             </View>
           )}
           {isSearching && !intentSearching && intentSearch?.outcome === 'results' && (
             <View style={styles.intentSearchBlock}>
+              <FoundLine />
               <Text style={styles.intentSearchTitle}>
                 {intentSearch.experience?.title ?? intentSearchFallbackTitle(intentSearch.classifyResult)}
               </Text>

@@ -108,7 +108,11 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   Plain `ActivityIndicator` stays only for in-flight feedback inside a button/footer control.
   Item 134: an empty state that carries a real next-step action uses `<FadeInState opportunity>` --
   the N appears, then the invitation + action settle in (medium tier). Only with a real tappable
-  action (guarded by `emptyInvitation.test.js`); errors and private/admin/chat empties stay plain fades. Aesthetic target: modern + polished
+  action (guarded by `emptyInvitation.test.js`); errors and private/admin/chat empties stay plain fades.
+  Item 135: intent searches narrate their REAL phases (`runIntentSearch(text, { onPhase })`;
+  `intentPhaseCaption()`: Understanding your request… -> Finding activities…/Finding communities…/
+  Checking availability…), then `FoundLine` ("Here's what we found.") as results land. Phases are
+  reported as the work actually moves, never on a timer -- no artificial delay for theater. Aesthetic target: modern + polished
   + alive + restrained — a premium social product, not a children's app; no confetti-everywhere.
 - **Motion intensity varies by context (Item 122, locked 2026-09-18).** Occasion-creation moments
   (a plan being born, a birthday/anniversary pick, a community going live) can stay fully

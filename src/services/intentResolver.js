@@ -670,8 +670,13 @@ export function buildFriendDiscoveryResultItem(category) {
 //   shape resolveIntent()/resolveCommunityIntent() already return.
 // - 'empty': genuinely checked and found nothing -- the caller's own
 //   "ask nearby businesses fresh" / "create it yourself" fallback applies.
-export async function runIntentSearch(typedText) {
+// `onPhase` (Item 135, optional): called as the real pipeline actually moves between phases
+// ('understanding' before the classify call, 'finding' once it returns), so a caller can narrate
+// real work. Fire-and-forget: it never delays or affects the search.
+export async function runIntentSearch(typedText, { onPhase } = {}) {
+  onPhase?.({ phase: 'understanding' });
   const classifyResult = await classifyCreateRequest(typedText);
+  onPhase?.({ phase: 'finding', classifyResult });
 
   if (classifyResult.intent === 'business_partner') {
     const submissionId = await recordIntentSubmission({
