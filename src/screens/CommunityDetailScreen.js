@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Image, Modal } from 'react-native';
+import BrandedLoader from '../components/BrandedLoader';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { supabase } from '../services/supabase';
@@ -14,6 +15,7 @@ import CommunityCalendar from '../components/CommunityCalendar';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import LoadErrorState from '../components/LoadErrorState';
+import PlanCreatedCelebration from '../components/PlanCreatedCelebration';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -31,6 +33,11 @@ export default function CommunityDetailScreen({ route, navigation }) {
   // own content already shows below is the obvious next thing to look at.
   const notificationReason = route.params?.notificationReason ?? null;
   const [showReasonBanner, setShowReasonBanner] = useState(!!notificationReason);
+  // Success state (✓/🎉, per the Nearby Motion Language): the previous "create a
+  // community" path landed here with zero feedback at all beyond the screen simply
+  // appearing (a real, previously-disclosed gap -- CLAUDE.md Item 57). Consumed once
+  // on mount, never re-shown on a later revisit to the same screen.
+  const [showJustCreated] = useState(!!route.params?.justCreated);
   const [community, setCommunity] = useState(null);
   const [isMember, setIsMember] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
@@ -347,7 +354,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
+        <BrandedLoader fullScreen={false} />
         <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm }}>Loading community…</Text>
       </SafeAreaView>
     );
@@ -366,6 +373,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+        {showJustCreated && <PlanCreatedCelebration text="Your community is live. 🎉" />}
         {showReasonBanner && notificationReason && (
           <View style={styles.notificationReasonBanner}>
             <Text style={styles.notificationReasonText}>{notificationReason}</Text>

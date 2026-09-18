@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, FlatList, Dimensions, TouchableOpacity, Alert } from 'react-native';
+import BrandedLoader from '../components/BrandedLoader';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -13,6 +14,7 @@ import ReportBlockModal from '../components/ReportBlockModal';
 import PhotoLightbox from '../components/PhotoLightbox';
 import LoadErrorState from '../components/LoadErrorState';
 import { sendFriendRequest, respondToFriendRequest, getMutualFriends, getRelationshipStatus } from '../services/friends';
+import FriendMatchCelebrationModal from '../components/FriendMatchCelebrationModal';
 import { getHostStats, getHostReputation } from '../services/gatherings';
 import { getUpcomingOccasions } from '../services/occasions';
 import { occasionIcon, occasionLabel } from '../constants/businessAttributes';
@@ -85,6 +87,7 @@ export default function ViewProfileScreen({ route, navigation }) {
   const [friendshipStatus, setFriendshipStatus] = useState(null);
   const [friendshipId, setFriendshipId] = useState(null);
   const [respondingToFriendRequest, setRespondingToFriendRequest] = useState(false);
+  const [showFriendCelebration, setShowFriendCelebration] = useState(false);
   const [matchId, setMatchId] = useState(null);
   const [mutualFriends, setMutualFriends] = useState([]);
   // Item 87 ("Add 'Upcoming' to the person's profile", CLAUDE.md): occasions
@@ -257,6 +260,10 @@ export default function ViewProfileScreen({ route, navigation }) {
         setFriendshipStatus(relationship.friendshipStatus);
         setFriendshipId(relationship.friendshipId);
         setMatchId(relationship.matchId);
+        // Connection (🤝, per the Nearby Motion Language): the same real "you're now
+        // friends" moment the friend-discovery swipe flow shows on a mutual match --
+        // accepting an explicit request here is the identical real outcome.
+        setShowFriendCelebration(true);
       } else {
         setFriendshipStatus(null);
         setFriendshipId(null);
@@ -276,7 +283,7 @@ export default function ViewProfileScreen({ route, navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
+        <BrandedLoader fullScreen={false} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading profile...</Text>
       </SafeAreaView>
     );
@@ -708,6 +715,14 @@ export default function ViewProfileScreen({ route, navigation }) {
         photoOwnerId={userId}
         photoRef={lightboxPhotoRef}
         myUserId={myUserId}
+      />
+
+      <FriendMatchCelebrationModal
+        visible={showFriendCelebration}
+        theirName={profile.display_name}
+        theirPhotoUrl={photos[0]?.signedUrl}
+        onSayHi={() => setShowFriendCelebration(false)}
+        onDismiss={() => setShowFriendCelebration(false)}
       />
     </SafeAreaView>
   );

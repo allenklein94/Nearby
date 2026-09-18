@@ -65,19 +65,32 @@ export default function CreateCommunityScreen({ navigation, route }) {
       });
 
       const seedGatheringId = route?.params?.seedFromGatheringId;
+      let seedReason = null;
       if (seedGatheringId) {
         const { invitedCount, totalAttendeeCount } = await seedCommunityFromGathering(community.id, seedGatheringId);
         if (totalAttendeeCount > 0) {
-          const message = invitedCount === totalAttendeeCount
+          seedReason = invitedCount === totalAttendeeCount
             ? `Invited all ${invitedCount} attendee${invitedCount === 1 ? '' : 's'} who are already your friends.`
             : invitedCount > 0
               ? `Invited ${invitedCount} of ${totalAttendeeCount} attendees who are already your friends. Add the rest as friends to invite them here too.`
               : "None of this gathering's attendees are your friends yet — add them as friends to invite them here.";
-          Alert.alert('Community created! 🎉', message);
         }
       }
 
-      navigation.replace('CommunityDetail', { communityId: community.id, communityName: community.name });
+      // Success state (per the Nearby Motion Language): previously a bare Alert here
+      // (blocking, required a tap to dismiss before you could even see the new
+      // community -- itself against the "never slow down the user's task" rule) or,
+      // for a from-scratch community, literally nothing at all. Both now land on the
+      // same real, non-blocking `justCreated` celebration the destination screen
+      // already renders; the invite summary rides along as the same dismissible
+      // reason banner every other notified-context arrival on this screen already
+      // uses, not a second competing mechanism.
+      navigation.replace('CommunityDetail', {
+        communityId: community.id,
+        communityName: community.name,
+        justCreated: true,
+        notificationReason: seedReason,
+      });
     } catch (e) {
       Alert.alert('Error', e.message);
     }

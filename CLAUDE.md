@@ -40,37 +40,101 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
-**QUEUED, NOT STARTED — "Nearby Motion & Microinteraction System" (added to the user's own
-"Thursday plan" 2026-09-18, do not build without a direct go-ahead).** User's own scope: audit
-and standardize every real interaction moment in the app into one cohesive motion language,
-rather than "a bunch of unrelated animations" — Loading, Pull-to-refresh, Tab transitions, Mode
-switching, Match creation, Friend acceptance, Plan creation, Plan confirmation, Reservation
-confirmation, Occasion creation, Birthday, Anniversary, Graduation, Surprise mode, Empty-state
-transitions, Success states, Notification interactions — "especially" the N-branded loading
-animation. User's own framing: combine "your Facebook-style idea" (referenced from an earlier
-conversation not present in this session's own context — don't assume or fabricate its specifics
-without asking) + the new N mark + the occasion animations already shipped into one system,
-rather than treating each as its own one-off. Explicitly named as the kind of detail that moves
-Nearby from "a lot of features" to "a real, polished product."
+**"Nearby Motion & Microinteraction System" — first real increment shipped (2026-09-18), same
+day, direct "build it now" override of the earlier "queue for Thursday" call.** User's own scope:
+audit and standardize every real interaction moment in the app into one cohesive motion language
+— Loading, Pull-to-refresh, Tab transitions, Mode switching, Match creation, Friend acceptance,
+Plan creation, Plan confirmation, Reservation confirmation, Occasion creation, Birthday,
+Anniversary, Graduation, Surprise mode, Empty-state transitions, Success states, Notification
+interactions — "especially" the N-branded loading animation, combined with "your Facebook-style
+idea" (referenced from an earlier conversation not present in this session's own context — never
+assumed or fabricated; if that reference matters concretely, it needs to be restated) into one
+system rather than unrelated one-offs.
 
-Real foundation already in place for whoever picks this up: the locked 6-glyph Motion Language
-(`src/constants/motionLanguage.js`) and the animation-discipline Standing Convention
-(`src/hooks/useReduceMotion.js`, both logged directly above/below this entry, same day) already
-cover the *glyph* vocabulary and the *Reduce Motion* requirement for the 9 components Item 112
-already shipped (Occasion selection, Surprise reveal, Plan-created, the options-loading caption
-cycler, staggered result reveal, the living-header icon, both match-celebration modals). What
-this new item actually adds, not yet done: (1) auditing the many items on the user's own list that
-have **no dedicated animation treatment at all yet** — pull-to-refresh, tab transitions, mode
-switching, friend acceptance (distinct from the friend-match *modal*, which already has one),
-plan confirmation/reservation confirmation as their own moments (Item 91's Plan Status pill is a
-static colored label today, not an animated state-change), empty-state transitions, and
-generic notification-tap interactions; (2) deciding whether the N-branded loading treatment
-(`BrandedLoader`, currently only used at the app's own boot/session gate) should become the
-standard loading treatment more broadly, replacing plain spinners/`ActivityIndicator` elsewhere,
-and what "Facebook-style" means concretely once that context is available; (3) actually building
-whatever that audit turns up, verifying each against the just-locked animation-discipline rule
-(meaning-first, short/subtle/interruptible, Reduce-Motion-aware) rather than adding motion for
-its own sake.
+Audited every item on the list against real code before building anything, rather than assumed:
+
+- **Loading — the "especially" item, and the biggest real change.** Found 40 screens all
+  independently reimplementing the exact same "whole screen is still loading" shape (`if (loading)
+  return <SafeAreaView><ActivityIndicator color={colors.primary} .../></SafeAreaView>`) — the
+  precise "unrelated animations instead of one system" problem the user named, and the direct
+  inline sibling of the boot-gate moment `BrandedLoader` already owns. Swapped all 40 to
+  `<BrandedLoader fullScreen={false} />` (a scripted, mechanically verified substitution — every
+  target line matched and replaced, every file re-imported correctly, all 40 transform-checked
+  clean afterward). Deliberately did NOT touch the many smaller inline/button/list-footer
+  `ActivityIndicator` usages elsewhere (e.g. a coral button's own in-flight spinner, a nested
+  "loading more friends" row) — those are a different, appropriately small/subtle moment, and
+  replacing them with an 88px brand mark would itself violate "restrained, not confetti
+  everywhere."
+- **Pull-to-refresh — audited, already fully standardized, no change needed.** Every real
+  `RefreshControl` in the app (15 screens) already sets `tintColor={colors.primary}` — this
+  category was already consistent before this item; confirmed rather than assumed.
+- **Tab transitions / Mode switching — audited, deliberately left as native/instant.** No custom
+  transition exists for either (React Navigation's own bottom-tab default, and Discover's
+  Things/People and Dating/Friends toggles both re-render instantly). Left as-is: these are
+  reached constantly, at zero stakes, and a decorative crossfade purely for its own sake on
+  DiscoverHubScreen's own large, conditionally-heavy render tree is real regression risk for
+  marginal benefit — exactly the "never animate simply because we can" / "never slow down the
+  user's task" line the user's own rule draws. Disclosed as a deliberate boundary, not silently
+  skipped.
+- **Match creation — already done** (this same day's earlier follow-up: ❤️/🤝 swap in
+  `MatchCelebrationModal`/`FriendMatchCelebrationModal`).
+- **Friend acceptance — a real, concrete gap, now fixed.** Explicitly accepting a friend request
+  (as opposed to a mutual match via the friend-discovery *swipe* flow, which already had
+  `FriendMatchCelebrationModal`) was completely silent in all three places it happens —
+  `FriendsScreen.js`, `ActivityScreen.js`, `ViewProfileScreen.js` all called `respondToFriendRequest`
+  and just quietly reloaded, zero feedback. All three now show the same real 🤝
+  `FriendMatchCelebrationModal` "New Friend!" moment on a genuine accept — the identical real
+  outcome (a new friendship) reached from three different screens now reads as one consistent
+  moment instead of two animated paths and one silent one.
+- **Plan creation — already done** (`PlanCreatedCelebration`, Item 112).
+- **Plan confirmation / Reservation confirmation — audited, already covered, no new build
+  needed.** The living plan header (Item 112's fifth follow-up, `CelebrationHeaderIcon` +
+  `buildPlanHeaderChangeKey`) already keys its one-shot float+pulse on `statusKind` as part of its
+  change key — a real transition into `'confirmed'` (Item 91's resolver, which is exactly what a
+  reservation confirming produces) already triggers it. Confirmed by reading
+  `buildPlanHeaderChangeKey()` directly rather than assumed.
+- **Occasion creation / Birthday / Anniversary / Graduation / Surprise mode — already done**
+  (`OccasionSelectAnimation`, `SurpriseRevealAnimation`, Item 112).
+- **Empty-state transitions — a real, small, broadly-reaching fix.** `LoadErrorState.js` (the one
+  shared "couldn't load, try again" component nearly every screen's load-failure state already
+  funnels through, per Item 57's own precedent for reaching many screens with one change) now
+  fades in over 220ms instead of snapping into place, Reduce-Motion-aware. Deliberately did NOT
+  sweep the many per-screen custom **empty-result** states (the "no dead ends" CTAs from Items
+  25/26/56, which are bespoke JSX on dozens of individual screens, not one shared component) — a
+  real, disclosed, much larger separate undertaking, not attempted in this pass.
+- **Success states — a real, concrete gap, now fixed.** Community creation
+  (`CreateCommunityScreen.js`) previously showed a blocking `Alert.alert('Community created! 🎉',
+  ...)` **only** in the seed-from-gathering case, and literally nothing at all for the more common
+  from-scratch case (Item 57's own audit had already flagged this as a disclosed, unbuilt gap).
+  Fixed: both paths now land on `CommunityDetailScreen` with a real, non-blocking
+  `justCreated` flag that renders `PlanCreatedCelebration` ("Your community is live. 🎉") — the
+  same completion/celebration language already established elsewhere, never a second competing
+  pattern — with the seed-invite summary riding along as the screen's own existing dismissible
+  `notificationReason` banner instead of a second, blocking `Alert`. Business-offer-accept and
+  group-plan-confirm (the other two silent-success cases Item 57's audit named) were **not**
+  touched in this pass — real, disclosed, remaining gaps, not assumed fixed by this change.
+- **Notification interactions — audited, already adequately covered, no new build.** Item 55's own
+  real-reason banners (`notificationReason`) already give a tapped push real, specific context on
+  arrival; no further bespoke animation was judged to add real value on top of that without
+  drifting toward motion for its own sake.
+
+No DB migration, no new pure functions (this is animation/UI wiring). Full Jest suite 580/580
+passing (unchanged); every touched file (40 loading-swap screens + 6 more:
+`FriendsScreen.js`/`ActivityScreen.js`/`ViewProfileScreen.js`/`CommunityDetailScreen.js`/
+`CreateCommunityScreen.js`/`LoadErrorState.js`) transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised on a real device (no simulator/device tooling this session,
+standing note) — next session should confirm the N-branded loader renders correctly (not
+oversized/cramped) across a representative sample of the 40 swapped screens, that accepting a
+friend request from all three real entry points shows the 🤝 celebration correctly, and that
+creating a community (both the plain and seed-from-gathering paths) shows the new success
+moment and, where applicable, the invite-summary banner beneath it.
+
+**Remaining, real, not done — a genuine "first increment," not a closed item**: business-offer-
+accept and group-plan-confirm's own silent-success states; a full sweep of per-screen custom
+empty-*result* states (as opposed to the one shared load-*error* state just fixed) for a
+consistent transition treatment; the "Facebook-style idea" reference was never resolved since its
+specifics aren't in this session's context — ask the user directly next time it's relevant rather
+than guessing.
 
 **Seventh same-day follow-up ("animations should reinforce meaning... respect Reduce Motion")
 — fully DONE (2026-09-18), direct follow-up to the Motion Language above.** User's own locked

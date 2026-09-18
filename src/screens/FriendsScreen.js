@@ -8,6 +8,7 @@ import PersonCard from '../components/PersonCard';
 import { Share } from 'react-native';
 import { getSignedPhotoUrl } from '../services/photos';
 import LoadErrorState from '../components/LoadErrorState';
+import FriendMatchCelebrationModal from '../components/FriendMatchCelebrationModal';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -23,6 +24,7 @@ export default function FriendsScreen({ navigation }) {
   const [contactMatches, setContactMatches] = useState(null);
   const [searchingContacts, setSearchingContacts] = useState(false);
   const [requestedIds, setRequestedIds] = useState({});
+  const [celebratingFriend, setCelebratingFriend] = useState(null);
   const [notOnAppContacts, setNotOnAppContacts] = useState([]);
   const [suggestedFriends, setSuggestedFriends] = useState([]);
   const [circles, setCircles] = useState([]);
@@ -66,9 +68,14 @@ export default function FriendsScreen({ navigation }) {
     }, [load])
   );
 
-  async function handleRespond(friendshipId, accept) {
+  async function handleRespond(friendshipId, accept, person) {
     try {
       await respondToFriendRequest(friendshipId, accept);
+      // Connection (🤝, per the Nearby Motion Language): reuse the same real
+      // "you're now friends" moment the friend-discovery swipe flow already shows on
+      // a mutual match -- accepting an explicit request is the same real outcome, it
+      // shouldn't feel like a lesser, silent path to the identical relationship state.
+      if (accept && person) setCelebratingFriend(person);
       load();
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -301,7 +308,7 @@ export default function FriendsScreen({ navigation }) {
                       <View style={{ flexDirection: 'row', gap: spacing.xs }}>
                         <TouchableOpacity
                           style={styles.acceptButton}
-                          onPress={() => handleRespond(person.friendshipId, true)}
+                          onPress={() => handleRespond(person.friendshipId, true, person)}
                           accessibilityLabel={`Accept friend request from ${person.display_name}`}
                           accessibilityRole="button"
                         >
@@ -309,7 +316,7 @@ export default function FriendsScreen({ navigation }) {
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={styles.declineButton}
-                          onPress={() => handleRespond(person.friendshipId, false)}
+                          onPress={() => handleRespond(person.friendshipId, false, person)}
                           accessibilityLabel={`Decline friend request from ${person.display_name}`}
                           accessibilityRole="button"
                         >
@@ -503,6 +510,18 @@ export default function FriendsScreen({ navigation }) {
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </Modal>
+
+      <FriendMatchCelebrationModal
+        visible={!!celebratingFriend}
+        theirName={celebratingFriend?.display_name}
+        theirPhotoUrl={photoUrls[celebratingFriend?.id]}
+        onSayHi={() => {
+          const userId = celebratingFriend?.id;
+          setCelebratingFriend(null);
+          if (userId) navigation.navigate('ViewProfile', { userId });
+        }}
+        onDismiss={() => setCelebratingFriend(null)}
+      />
     </SafeAreaView>
   );
 }

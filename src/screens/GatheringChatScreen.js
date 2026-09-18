@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import BrandedLoader from '../components/BrandedLoader';
 import * as Haptics from 'expo-haptics';
 import { getGatheringMessagesPage, getGatheringMessageById, sendGatheringMessage } from '../services/gatheringChat';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -175,7 +176,7 @@ export default function GatheringChatScreen({ route, navigation }) {
   if (loadingInitial) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
+        <BrandedLoader fullScreen={false} />
       </SafeAreaView>
     );
   }

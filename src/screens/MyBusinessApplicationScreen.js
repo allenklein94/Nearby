@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import BrandedLoader from '../components/BrandedLoader';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyBusinessPartnerRequest, resubmitBusinessPartnerRequest } from '../services/businessPartnerApply';
 import { checkTextModeration } from '../services/textModeration';
@@ -121,7 +122,7 @@ export default function MyBusinessApplicationScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centered}>
-          <ActivityIndicator color={colors.primary} />
+          <BrandedLoader fullScreen={false} />
           <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your application...</Text>
         </View>
       </SafeAreaView>

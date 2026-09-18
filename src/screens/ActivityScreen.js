@@ -8,6 +8,7 @@ import { calculateCompatibility } from '../services/compatibility';
 import { sendNoticeTo } from '../services/noticeActions';
 import { getNearbyMatches } from '../services/proximity';
 import { getPendingFriendRequests, respondToFriendRequest } from '../services/friends';
+import FriendMatchCelebrationModal from '../components/FriendMatchCelebrationModal';
 import { getFollowedBusinessUpdates } from '../services/brandOffers';
 import { getMyBusinessEcosystemActivity, formatOfferSummary } from '../services/businessFulfillment';
 import { getAllPendingRequests, approveInterest, getUpcomingReminders } from '../services/gatherings';
@@ -67,6 +68,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
   const [compatScores, setCompatScores] = useState({});
   const [noticedBackIds, setNoticedBackIds] = useState({});
   const [respondedFriendIds, setRespondedFriendIds] = useState({});
+  const [celebratingFriend, setCelebratingFriend] = useState(null);
 
   // Connection Requests — pending gathering_interest rows for
   // gatherings the caller hosts (formerly Inbox's "Requests" tab).
@@ -347,6 +349,10 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
     try {
       await respondToFriendRequest(friendReq.friendshipId, accept);
       setRespondedFriendIds((prev) => ({ ...prev, [friendReq.friendshipId]: true }));
+      // Connection (🤝, per the Nearby Motion Language): the same real "you're now
+      // friends" moment the friend-discovery swipe flow already shows on a mutual
+      // match -- this is the identical real outcome, just reached from Activity.
+      if (accept) setCelebratingFriend(friendReq);
       loadInvitations();
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -696,6 +702,18 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
           }}
         />
       )}
+
+      <FriendMatchCelebrationModal
+        visible={!!celebratingFriend}
+        theirName={celebratingFriend?.display_name}
+        theirPhotoUrl={friendRequestPhotoUrls[celebratingFriend?.friendshipId]}
+        onSayHi={() => {
+          const userId = celebratingFriend?.id;
+          setCelebratingFriend(null);
+          if (userId) navigation.navigate('ViewProfile', { userId });
+        }}
+        onDismiss={() => setCelebratingFriend(null)}
+      />
     </SafeAreaView>
   );
 }

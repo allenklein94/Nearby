@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, Image, ActivityIndicator, AppState } from 'react-native';
+import BrandedLoader from '../components/BrandedLoader';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { Audio, Video } from 'expo-av';
 import { supabase, functionUrl } from '../services/supabase';
@@ -1179,7 +1180,7 @@ export default function ChatScreen({ route, navigation }) {
   if (loadingInitial) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
+        <BrandedLoader fullScreen={false} />
       </SafeAreaView>
     );
   }

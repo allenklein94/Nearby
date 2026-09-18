@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, ActivityIndicator, Modal } from 'react-native';
+import BrandedLoader from '../components/BrandedLoader';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { getCommunityMessagesPage, getCommunityMessageById, sendCommunityMessage, getCommunitySummary } from '../services/communities';
@@ -138,7 +139,7 @@ export default function CommunityChatScreen({ route, navigation }) {
   if (loadingInitial) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
+        <BrandedLoader fullScreen={false} />
       </SafeAreaView>
     );
   }

@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ScrollView, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import BrandedLoader from '../components/BrandedLoader';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyPartnershipTargets, requestBusinessPartnership } from '../services/businessPartnerships';
 import { getActivePartnersByName, getAllActivePartners } from '../services/brandOffers';
@@ -127,7 +128,7 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
     if (loadingTargets) {
       return (
         <SafeAreaView style={styles.container}>
-          <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
+          <BrandedLoader fullScreen={false} />
         </SafeAreaView>
       );
     }

@@ -1,8 +1,9 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing, typography } from '../theme';
 import { NearbyMark } from './brand';
+import useReduceMotion from '../hooks/useReduceMotion';
 
 // Shared "couldn't load, try again" state for screens whose initial data
 // fetch has no error handling at all — previously a thrown error (e.g. no
@@ -22,8 +23,24 @@ import { NearbyMark } from './brand';
 export default function LoadErrorState({ message, onRetry }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
+  const reduceMotion = useReduceMotion();
+  const opacity = useRef(new Animated.Value(reduceMotion ? 1 : 0)).current;
+
+  // Empty/error-state transition (per the Nearby Motion Language, locked
+  // 2026-09-18): a small, one-shot fade-in instead of the state just snapping into
+  // place -- this is the one shared component nearly every "couldn't load" moment
+  // in the app already funnels through, so a single change reaches all of them
+  // consistently. Reduce Motion: appear immediately, no fade.
+  useEffect(() => {
+    if (reduceMotion) {
+      opacity.setValue(1);
+      return;
+    }
+    Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: true }).start();
+  }, [reduceMotion]);
+
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { opacity }]}>
       <NearbyMark size={28} style={styles.mark} />
       <Text style={styles.title}>Couldn't load this</Text>
       <Text style={styles.message}>{message ?? 'Check your connection and try again.'}</Text>
@@ -35,7 +52,7 @@ export default function LoadErrorState({ message, onRetry }) {
       >
         <Text style={styles.buttonText}>Try Again</Text>
       </TouchableOpacity>
-    </View>
+    </Animated.View>
   );
 }
 
