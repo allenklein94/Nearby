@@ -83,7 +83,9 @@ keep their original order after the located ones; no position = untouched. Unit-
 Limitations: the browse query is still the newest 200 active public communities, so a nearby OLDER community outside that
 cap can't surface by distance (the fix would be a server-side bounded RPC like gatherings/offers); distance label now shows on community cards (CommunitiesScreen Discover list: "Boca Raton, FL · 2.3 mi away"; Discover's
 Communities cards: before the description); hidden when the row has no real distance, and "Your Communities" (getMyCommunities,
-no distance) shows the area only. intentResolver also reads getPublicCommunities but scores independently.
+no distance) shows the area only.
+Business export re-run after the label change: byte-identical output (CommunitiesScreen/DiscoverHubScreen aren't in the business web
+bundle; no shared service changed), so nothing to commit; the committed export is current. intentResolver also reads getPublicCommunities but scores independently.
 Business export re-run after this: CHANGED (new hashed AppEntry bundle + index.html, committed and pushed). Confirmed by
 checking the built bundle: it contains `area_lat`, so services/communities.js IS in the business web bundle.
 Business export re-run after this audit: CHANGED (new hashed AppEntry bundle, 4-line diff, + index.html; committed and
