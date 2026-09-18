@@ -4,8 +4,8 @@ with 5 rows mapped onto the existing category columns (Things to do -> notify_di
 Plans -> notify_planning, Businesses & offers -> notify_business, Nearby opportunities -> notify_proximity; all default on).
 Choices are stashed in the existing `pending_onboarding_answers` blob and CompleteProfile upserts only explicit opt-outs
 (`notificationOptOuts`, `constants/notificationCategories.js`). Settings -> Notifications stays the full control center (same
-columns, one store). Not surfaced at onboarding: Community. No migration. Jest 685/685. Device-unverified. Business export not
-regenerated (onboarding screens aren't in the business web bundle -- not bundle-checked).
+columns, one store). Not surfaced at onboarding: Community. No migration. Jest 685/685. Device-unverified. Business export re-run: byte-identical (not in the bundle), nothing to commit.
+(verified by rebuilding).
 
 ## Sep 18 2026 — Location powers the whole system ("the user should never repeatedly tell Nearby where they are") — DONE
 
