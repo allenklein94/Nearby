@@ -12,7 +12,7 @@ import { buildPlanTimeline, summarizePlanTimelineReadiness, buildPlanSummary, ad
 import { buildOccasionPlanShareCaption } from '../utils/occasionPlanShareCard';
 import { stripTrailingCelebrationIcon, buildPlanHeaderChangeKey } from '../utils/livingPlanHeader';
 import OccasionPlanShareCard from '../components/OccasionPlanShareCard';
-import PlanCreatedCelebration from '../components/PlanCreatedCelebration';
+import { SuccessAnimation } from '../motion';
 import CelebrationHeaderIcon from '../components/CelebrationHeaderIcon';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -872,7 +872,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        {justAccepted && <PlanCreatedCelebration text="Reservation confirmed. ✓" />}
+        {justAccepted && <SuccessAnimation text="Reservation confirmed. ✓" />}
         {planSummary && (
           <View style={styles.planSummaryCard}>
             <View style={styles.planSummaryHeaderRow}>
@@ -995,7 +995,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                 justSubmitted param (AskBusinessScreen, the Occasion
                 wizard's business-destined submit, GroupOccasionPlanScreen's
                 "Book It") -- one shared success moment, not three copies. */}
-            {!isDuplicate && notifiedCount > 0 && <PlanCreatedCelebration />}
+            {!isDuplicate && notifiedCount > 0 && <SuccessAnimation />}
             <Text style={styles.bannerText}>
               {isDuplicate
                 ? "You already have an open request just like this — here it is, no need to ask twice."

@@ -178,6 +178,23 @@ transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised o
 than a jarring stutter across a screen with this many independent result sections, and that
 rapidly switching categories/searching doesn't produce overlapping/stale staggers.
 
+**Same-day follow-up ("do the same for SuccessAnimation on business offer accept").**
+`BusinessRequestDetailScreen.js`'s two `justAccepted`/`justSubmitted` success flashes — the
+"business offer accept" moment ("Reservation confirmed. ✓") already built in the earlier
+"close the remaining gaps too" pass, plus the sibling `justSubmitted` "It's happening" flash right
+below it — were still importing the pre-consolidation shim, `../components/PlanCreatedCelebration`,
+rather than the canonical `SuccessAnimation` name the motion library's own barrel header comment
+asks new/touched code to use. Migrated both call sites in this one file to
+`import { SuccessAnimation } from '../motion'` — no behavior change (the shim re-exports the exact
+same component), purely retiring one more caller of the legacy path per the library's own stated
+long-term intent. `GroupPlanScreen.js`'s own two `PlanCreatedCelebration` usages (plan-confirmed/
+reservation-confirmed) were deliberately left on the shim — out of scope for "business offer
+accept" specifically; a real, disclosed candidate for the same migration later, not silently
+assumed done. Full Jest suite 580/580 passing (unchanged); `BusinessRequestDetailScreen.js`
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised on a real device
+(standing note) — next session should confirm both flashes still render identically (same "✓"
+settle behavior) since this was a pure import-path change.
+
 No DB migration, no new pure functions (a component library + three wiring sites). Full Jest suite
 580/580 passing (unchanged); all 18 touched/new files (10 new `src/motion/` files, 6 shim files, 2
 wired screens) transform-checked clean via `@babel/core` + `babel-preset-expo` — plus a full
