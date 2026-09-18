@@ -1,3 +1,14 @@
+# Item 146 (2026-09-18) - Universal Plan, pass D: budget
+Migration `20261207_plan_budget.sql`. Budget is really captured only on `business_requests` and `occasion_group_plans` (min/max);
+`plans` had budget_max only. Added `plans.budget_min`, kept both columns synced from those two sources (create + update triggers,
+backfill; `sync_plan_budget_from_business_request` new, group-plan create/sync functions and trigger extended), and `get_plan_overview`
+now returns one budget in `plan.budget_min/budget_max/budget_source` from the first source that has one (plan -> group plan ->
+business request; min+max from the same source). Occasions, matches and gatherings capture no budget, so they report none -- nothing
+invented, no new capture built. Client: `planJourney` gets a Budget step ("$20-$50" / "Up to $50" / "No budget set"; no per-person/total
+unit claimed since none is recorded). Verified live in a rolled-back transaction (request budget -> plan sync -> overview, clear -> null,
+single overload), then applied. Not exercised on real data: the group-plan source (production has no budgets anywhere). Not run:
+from-scratch Docker replay. Device-unverified. Completes the Item 141-146 Universal Plan direction.
+
 # Item 145 (2026-09-18) - Universal Plan, pass C: standalone gatherings + business requests
 Migration `20261206_plan_gathering_request.sql`. Found: the 20260914/20261104 triggers never backfilled, so 25 gatherings had 3 plans and the
 1 business request had none -- both backfilled (add-on requests stay plan-less). One shared access predicate, `_plan_direct_access` /
