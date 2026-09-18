@@ -83,6 +83,8 @@ keep their original order after the located ones; no position = untouched. Unit-
 Limitations: the browse query is still the newest 200 active public communities, so a nearby OLDER community outside that
 cap can't surface by distance (the fix would be a server-side bounded RPC like gatherings/offers); no distance label is
 shown on community cards (ordering only). intentResolver also reads getPublicCommunities but scores independently.
+Business export re-run after this: CHANGED (new hashed AppEntry bundle + index.html, committed and pushed). Confirmed by
+checking the built bundle: it contains `area_lat`, so services/communities.js IS in the business web bundle.
 Business export re-run after this audit: CHANGED (new hashed AppEntry bundle, 4-line diff, + index.html; committed and
 pushed). The screen-only fixes (Discovery location-off text, map fallback) are NOT in the bundle; the change came from the
 shared service files, most likely proximity.js / occasionPackages.js (not diffed to confirm). Rule of thumb: check the
