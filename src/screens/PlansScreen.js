@@ -267,7 +267,7 @@ export default function PlansScreen({ navigation, route }) {
           contentContainerStyle={{ padding: spacing.lg }}
           refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
-            <FadeInState style={styles.emptyState}>
+            <FadeInState opportunity style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📅</Text>
               <Text style={styles.emptyText}>{emptyCopy}</Text>
               {/* Item 56 ("no dead ends"): a real next action per tab

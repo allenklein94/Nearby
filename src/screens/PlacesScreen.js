@@ -174,7 +174,7 @@ export default function PlacesScreen({ navigation }) {
           <NLoader fullScreen={false} size="compact" caption={isSearching ? `Searching for "${searchQuery.trim()}"…` : undefined} kind="places" />
         </View>
       ) : locationDenied ? (
-        <FadeInState style={styles.emptyState}>
+        <FadeInState opportunity style={styles.emptyState}>
           <Text style={styles.emptyEmoji}>📍</Text>
           <Text style={styles.emptyText}>Enable location to discover places nearby.</Text>
           <TouchableOpacity onPress={load} accessibilityLabel="Enable location" accessibilityRole="button">
@@ -195,7 +195,7 @@ export default function PlacesScreen({ navigation }) {
           keyExtractor={(item) => item.placeId}
           contentContainerStyle={{ padding: spacing.lg }}
           ListEmptyComponent={
-            <FadeInState style={styles.emptyState}>
+            <FadeInState opportunity style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🔍</Text>
               <Text style={styles.emptyText}>
                 {isSearching ? `No places match "${searchQuery.trim()}" nearby.` : 'Nothing found nearby in this category.'}

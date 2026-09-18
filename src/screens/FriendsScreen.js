@@ -386,7 +386,7 @@ export default function FriendsScreen({ navigation }) {
         }
         ListEmptyComponent={
           !loading && (
-            <FadeInState style={styles.emptyState}>
+            <FadeInState opportunity style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🤝</Text>
               <Text style={styles.emptyText}>
                 Add friends from anyone's profile, or find friends from your contacts above, to see who's interested in the same gatherings as you.

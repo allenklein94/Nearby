@@ -606,9 +606,18 @@ export default function OccasionsScreen({ navigation }) {
           )}
 
           {occasions.length === 0 && (
-            <FadeInState style={styles.emptyState}>
+            <FadeInState opportunity style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📅</Text>
               <Text style={styles.emptyText}>No occasions saved yet.</Text>
+              {/* Item 134: an empty state that animates into an invitation needs a real action. */}
+              <TouchableOpacity
+                style={styles.emptyPlanButton}
+                onPress={() => navigation.navigate('CelebrateSomething')}
+                accessibilityRole="button"
+                accessibilityLabel="Plan something for someone"
+              >
+                <Text style={styles.emptyPlanButtonText}>Want to plan something? →</Text>
+              </TouchableOpacity>
             </FadeInState>
           )}
 
@@ -942,6 +951,8 @@ const getStyles = (colors) => StyleSheet.create({
   emptyState: { alignItems: 'center', paddingVertical: spacing.lg },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary, textAlign: 'center' },
+  emptyPlanButton: { marginTop: spacing.md },
+  emptyPlanButtonText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   personHeader: { ...typography.bodyBold, color: colors.textPrimary, marginBottom: spacing.xs, fontSize: 15 },
   card: {
     flexDirection: 'row', alignItems: 'center',

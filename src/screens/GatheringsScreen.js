@@ -982,7 +982,7 @@ export default function GatheringsScreen({ navigation, route }) {
             // when one genuinely exists.
             const label = isSearchingGatherings ? searchQuery.trim() : (interestFilter || '');
             return (
-              <FadeInState style={styles.emptyState}>
+              <FadeInState opportunity style={styles.emptyState}>
                 <Text style={styles.emptyEmoji}>🎉</Text>
                 <Text style={styles.emptyText}>{isSearchingGatherings ? `No gatherings match "${searchQuery.trim()}".` : (forYouActive ? "Nothing matching your history right now — check back later." : ((interestFilter || dateFilter !== 'anytime') ? 'No gatherings match these filters right now.' : t('gatherings.emptyNearby')))}</Text>
                 {!forYouActive && (
@@ -1187,7 +1187,7 @@ export default function GatheringsScreen({ navigation, route }) {
           contentContainerStyle={{ padding: spacing.lg }}
           refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
-            <FadeInState style={styles.emptyState}>
+            <FadeInState opportunity style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>✅</Text>
               <Text style={styles.emptyText}>{t('gatherings.emptyAttending')}</Text>
               <TouchableOpacity onPress={() => setTab('nearby')} accessibilityLabel="Browse nearby gatherings" accessibilityRole="button" style={styles.emptyStateCreateButton}>
@@ -1356,7 +1356,7 @@ export default function GatheringsScreen({ navigation, route }) {
           contentContainerStyle={{ padding: spacing.lg }}
           refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
-            <FadeInState style={styles.emptyState}>
+            <FadeInState opportunity style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📅</Text>
               <Text style={styles.emptyText}>{t('gatherings.emptyHosting')}</Text>
               <TouchableOpacity

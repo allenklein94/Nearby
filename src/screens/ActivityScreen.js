@@ -567,7 +567,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
             </View>
           ) : null}
           ListEmptyComponent={hasAnyGroupContent ? null : (
-            <FadeInState style={styles.emptyState}>
+            <FadeInState opportunity style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🔔</Text>
               <Text style={styles.emptyText}>
                 Nothing new yet — notices, crossed paths, and other activity will show up here.

@@ -286,7 +286,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
   function renderPeopleEmptyState() {
     const filtered = discoveryMode === 'browse' || anyFilterActive;
     return (
-      <FadeInState style={styles.emptyState}>
+      <FadeInState opportunity style={styles.emptyState}>
         <Text style={styles.emptyEmoji}>{discoveryMode === 'browse' ? '🔎' : '📍'}</Text>
         <Text style={styles.emptyTitle}>
           {discoveryMode === 'browse'

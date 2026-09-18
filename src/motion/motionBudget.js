@@ -46,6 +46,8 @@ export const SEQUENCES = {
   occasionParticles: { tier: 'special', maxDelayMs: 150, riseMs: 420, fadeMs: 260 },
   // ❤️ -> N intro, then the real match content.
   matchIntro: { tier: 'medium', stageMs: 140, stages: 2, entranceMs: 200 },
+  // Empty state -> invitation: the N appears, then the invitation + action settle in.
+  emptyInvitation: { tier: 'medium', markMs: 200, delayMs: 180, invitationMs: 220 },
   // Result cascades.
   cascade: { tier: 'medium', maxDelayMs: 200, itemMs: 250 },
 };
@@ -67,6 +69,8 @@ export function settleMs(name) {
       return s.maxDelayMs + s.riseMs + s.fadeMs;
     case 'matchIntro':
       return s.stageMs * s.stages + s.entranceMs;
+    case 'emptyInvitation':
+      return s.delayMs + s.invitationMs;
     case 'cascade':
       return s.maxDelayMs + s.itemMs;
     default:

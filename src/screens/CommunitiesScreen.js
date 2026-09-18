@@ -136,7 +136,7 @@ export default function CommunitiesScreen({ navigation }) {
         }
         ListEmptyComponent={
           !loading && (
-            <FadeInState style={styles.emptyState}>
+            <FadeInState opportunity style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🏘️</Text>
               <Text style={styles.emptyText}>No public communities to discover right now — start your own!</Text>
               <TouchableOpacity

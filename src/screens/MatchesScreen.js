@@ -303,7 +303,7 @@ export default function MatchesScreen({ navigation }) {
         contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}
         refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
-          <FadeInState style={styles.emptyState}>
+          <FadeInState opportunity style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>✨</Text>
             <Text style={styles.emptyText}>{t('matches.emptyText')}</Text>
             {/* Thursday plan item 25: a real next action instead of a dead

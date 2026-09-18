@@ -1,3 +1,18 @@
+## Sep 18 2026 — Item 134 ("Empty states can animate into opportunity") — DONE
+
+Extended `FadeInState` with an opt-in `opportunity` prop: two-beat sequence -- the N mark fades/scales
+in (200ms), then the invitation copy + action fade in beneath it (180ms delay + 220ms; settled 400ms,
+`SEQUENCES.emptyInvitation`, medium tier). Reduce Motion: mark and invitation just present. Applied
+to the empty states that already carry a real action (Item 56 CTAs): Gatherings x3 ("+ Start a
+Gathering", "Browse Nearby Gatherings", etc.), Communities ("Create a Community"), Matches,
+Discovery people, Plans, Friends, Activity, Places (2 of 3; the load-error one stays a plain fade).
+Occasions' empty state had no action, so it gained a real one ("Want to plan something? ->" into the
+Plan for Someone wizard) rather than an invitation with nothing to accept. Not applied to
+chat/admin/private-archive empties (no creation opportunity). New `emptyInvitation.test.js` (3 tests)
+enforces that every `opportunity` empty state has an onPress. Copy per screen left as already
+written (already invitation-shaped). Suite 640/640. Not seen on a device -- check the N + existing
+emoji doesn't feel doubled on the Gatherings empty states.
+
 ## Sep 18 2026 — Item 133 ("Use skeletons where they actually improve perceived performance") — DONE
 
 Refines Item 132: skeleton and N now have different meanings. Skeleton = content is loading; N =
