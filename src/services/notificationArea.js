@@ -6,7 +6,7 @@ const MIN_INTERVAL_MS = 30 * 60 * 1000;
 
 export function createNotificationAreaReporter({ send, now = () => Date.now() }) {
   let last = null; // { key, at }
-  return async function report(coords) {
+  async function report(coords) {
     if (!coords || typeof coords.latitude !== 'number' || typeof coords.longitude !== 'number') return;
     const key = `${coords.latitude.toFixed(2)},${coords.longitude.toFixed(2)}`;
     if (last && last.key === key && now() - last.at < MIN_INTERVAL_MS) return;
@@ -16,7 +16,9 @@ export function createNotificationAreaReporter({ send, now = () => Date.now() })
     } catch {
       last = null; // best-effort; try again on the next fix
     }
-  };
+  }
+  report.reset = () => { last = null; };
+  return report;
 }
 
 export const reportNotificationArea = createNotificationAreaReporter({
@@ -27,3 +29,11 @@ export const reportNotificationArea = createNotificationAreaReporter({
     if (error) throw error;
   },
 });
+
+// Removes the server's saved area now. While Discovery notifications are on, the next fresh fix saves it
+// again; turning them off keeps it cleared (the RPC refuses to store while off).
+export async function clearNotificationArea() {
+  reportNotificationArea.reset();
+  const { error } = await supabase.rpc('clear_my_notification_area');
+  if (error) throw error;
+}

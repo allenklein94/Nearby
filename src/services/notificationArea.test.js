@@ -20,3 +20,12 @@ test('reports once per coarse area per 30 minutes, again on a move, retries afte
   await report(null);
   expect(send).toHaveBeenCalledTimes(5);
 });
+
+test('reset lets the same area be reported again immediately', async () => {
+  const send = jest.fn().mockResolvedValue();
+  const report = createNotificationAreaReporter({ send, now: () => 0 });
+  await report({ latitude: 1, longitude: 2 });
+  report.reset();
+  await report({ latitude: 1, longitude: 2 });
+  expect(send).toHaveBeenCalledTimes(2);
+});

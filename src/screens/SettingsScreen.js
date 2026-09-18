@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { deleteAccount } from '../services/account';
 import { requestDataExport } from '../services/dataExport';
+import { clearNotificationArea } from '../services/notificationArea';
 import RecommendationCustomizePanel from '../components/RecommendationCustomizePanel';
 import { typography, spacing, radius } from '../theme';
 
@@ -637,13 +638,23 @@ export default function SettingsScreen({ navigation, route }) {
             </View>
             <Switch
               value={notifyDiscovery}
-              onValueChange={(v) => toggleNotifPref('notify_discovery', v, setNotifyDiscovery)}
+              onValueChange={(v) => { toggleNotifPref('notify_discovery', v, setNotifyDiscovery); if (!v) clearNotificationArea().catch(() => {}); }}
               trackColor={{ true: colors.primary, false: colors.border }}
               accessibilityLabel="Notify me when something new matches my interests"
             />
           </View>
           {notifyDiscovery && (
             <>
+              <TouchableOpacity
+                style={styles.customizeLink}
+                onPress={() => clearNotificationArea()
+                  .then(() => showSuccessToast('Saved area cleared', 'Nearby will save a fresh one next time you use it.'))
+                  .catch((e) => Alert.alert('Error', e.message))}
+                accessibilityLabel="Clear my saved area"
+                accessibilityRole="button"
+              >
+                <Text style={styles.customizeLinkText}>📍 Clear my saved area (refreshes next time you use Nearby)</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.customizeLink}
                 onPress={() => setExpandedRecPanel(expandedRecPanel === 'things_to_do' ? null : 'things_to_do')}
