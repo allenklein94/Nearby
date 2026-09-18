@@ -633,7 +633,7 @@ export default function SettingsScreen({ navigation, route }) {
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.settingLabel}>🎯 Discovery</Text>
-              <Text style={styles.helperText}>A new gathering or business that matches your interests.</Text>
+              <Text style={styles.helperText}>A new gathering or business that matches your interests, near where you are. Nearby uses your approximate area (about a mile) for this -- it's never shown to anyone.</Text>
             </View>
             <Switch
               value={notifyDiscovery}

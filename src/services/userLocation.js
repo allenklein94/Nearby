@@ -6,11 +6,12 @@
 // "where are you" by the app -- it either knows, or the feature honestly says location is off.
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { reportNotificationArea } from './notificationArea';
 
 const STORED_KEY = 'nearby_last_location';
 export const DEFAULT_MAX_AGE_MS = 2 * 60 * 1000;
 
-export function createLocationProvider({ loc, storage, now = () => Date.now(), maxAgeMs = DEFAULT_MAX_AGE_MS }) {
+export function createLocationProvider({ loc, storage, now = () => Date.now(), maxAgeMs = DEFAULT_MAX_AGE_MS, onFix = null }) {
   let cache = null; // { coords, timestamp, source }
   let inflight = null;
   let lastStatus = null;
@@ -28,6 +29,7 @@ export function createLocationProvider({ loc, storage, now = () => Date.now(), m
 
   async function remember(pos, source) {
     cache = { coords: pos.coords, timestamp: now(), source };
+    if (source === 'fresh') Promise.resolve(onFix?.(pos.coords)).catch(() => {}); // real current fix only
     storage?.setItem(STORED_KEY, JSON.stringify({ coords: { latitude: pos.coords.latitude, longitude: pos.coords.longitude }, timestamp: cache.timestamp })).catch(() => {});
     return cache;
   }
@@ -73,7 +75,7 @@ export function createLocationProvider({ loc, storage, now = () => Date.now(), m
   };
 }
 
-const provider = createLocationProvider({ loc: Location, storage: AsyncStorage });
+const provider = createLocationProvider({ loc: Location, storage: AsyncStorage, onFix: reportNotificationArea });
 export const getUserLocation = provider.getUserLocation;
 export const requireUserLocation = provider.requireUserLocation;
 export const getLocationPermissionStatus = provider.getLocationPermissionStatus;

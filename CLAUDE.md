@@ -118,6 +118,7 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   feed every consumer from that one value -- one canonical category/interest vocabulary (`PLACE_CATEGORIES`
   / `CATEGORY_GROUPS`), no per-feature category lists, no captured-but-unused fields.
 - **Location is asked once, used everywhere (2026-09-18).** Device position comes only from `src/services/userLocation.js` (`getUserLocation`/`requireUserLocation`): permission checked once, fixes shared/cached, fallback to last-known then stored position; the app never asks the user where they are. Direct expo-location permission/position calls are allow-listed in `locationCentralGuard.test.js` with a stated reason each.
+- **Notification area (2026-09-18).** Location-targeted pushes read `push_target_areas` (fresh presence, else the coarse ~0.7 mi `notification_areas` row, 48h TTL) -- never raw presence alone. The row is written only via `set_my_notification_area` from the central location provider's fresh fixes (`services/notificationArea.js`, throttled), is not presence, and is read by nothing user-facing. Any new location-targeted push trigger must join `push_target_areas`.
 - **Animation consistency (Item 137, audit 2026-09-18).** All motion goes through `src/motion/`:
   durations are `MOTION_BUDGET`/`SEQUENCES`/`AMBIENT` tokens (no literal `duration: N`), native modals use
   `modalAnimation()`, list refresh uses `PullToRefresh`, layout changes use `animateLayout()` (small tier,
