@@ -7,6 +7,7 @@ import { useStripe, initStripe } from '@stripe/stripe-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon, setPlanItemTime, getPlanOrganizers, addPlanOrganizer, removePlanOrganizer } from '../services/businessFulfillment';
 import { getPlanChatInfo } from '../services/planChat';
+import { getPlanIdForResource } from '../services/plans';
 import { relevantAddonTypesForOccasion, planAddonIcon, planAddonLabel } from '../constants/planAddons';
 import { occasionIcon, occasionLabel } from '../constants/businessAttributes';
 import { buildPlanTimeline, summarizePlanTimelineReadiness, buildPlanSummary, addonStateCopy } from '../utils/planAddonReadiness';
@@ -455,6 +456,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
 
   function toggleGroupPlanCandidate(id) {
     setSelectedCandidateIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  async function openPlanDetail() {
+    try {
+      const planId = await getPlanIdForResource('business_request', request.id);
+      if (planId) navigation.navigate('PlanDetail', { planId });
+    } catch (e) {
+      Alert.alert('Error', 'Could not open this plan.');
+    }
   }
 
   async function handleProposeGroupPlan() {
@@ -958,6 +968,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             moment, with tone="business" (skips the ✨ discovery beat, settles fast, no
             springy bounce). */}
         {justAccepted && <SuccessAnimation haptic text="Reservation confirmed. ✓" tone="business" />}
+        {request && (
+          <TouchableOpacity onPress={openPlanDetail} accessibilityRole="button" accessibilityLabel="View the whole plan">
+            <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: spacing.sm }}>View the whole plan →</Text>
+          </TouchableOpacity>
+        )}
         {planSummary && (
           <View style={styles.planSummaryCard}>
             <View style={styles.planSummaryHeaderRow}>

@@ -59,6 +59,9 @@ export default function PlanDetailScreen({ navigation, route }) {
     ? `${match.kind === 'friend' ? 'Friends' : 'Matched'} since ${new Date(match.matched_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}`
     : null;
 
+  const isGatheringPlan = activity?.kind === 'gathering' && (plan.plan_type === 'gathering' || plan.plan_type === 'friend_hangout');
+  const isRequestPlan = plan.plan_type === 'business_request' && !!businessRequest;
+
   function startPlanning() {
     if (match) { navigation.navigate('DateProposal', { matchId: match.id, matchName: match.other_display_name }); return; }
     if (groupPlan) navigation.navigate('GroupOccasionPlan', { planId: groupPlan.id });
@@ -126,6 +129,16 @@ export default function PlanDetailScreen({ navigation, route }) {
           </>
         )}
 
+        {isGatheringPlan && (
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('GatheringDetail', { gatheringId: activity.id })} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Open the gathering">
+            <Text style={styles.buttonText}>Open the gathering →</Text>
+          </TouchableOpacity>
+        )}
+        {isRequestPlan && (
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Open the request">
+            <Text style={styles.buttonText}>Open the request →</Text>
+          </TouchableOpacity>
+        )}
         {(isMatchPlan || (nothingYet && (plan.plan_type === 'occasion' || plan.plan_type === 'group_occasion') && plan.status !== 'cancelled')) && (
           <TouchableOpacity style={styles.button} onPress={startPlanning} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={isMatchPlan ? 'Plan something together' : 'Plan something'}>
             <Text style={styles.buttonText}>{isMatchPlan ? 'Plan something together →' : 'Plan something →'}</Text>

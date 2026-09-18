@@ -25,6 +25,7 @@ import { filterToMyConnections } from '../services/connections';
 import { visibilityMeta } from '../constants/gatheringVisibility';
 import { formatPreciseBucketLine, formatInterestLine } from '../utils/groupInsightsLabels';
 import { getSignedPhotoUrl } from '../services/photos';
+import { getPlanIdForResource } from '../services/plans';
 import { getGatheringOffer } from '../services/brandOffers';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
 import {
@@ -253,6 +254,15 @@ export default function GatheringDetailScreen({ route, navigation }) {
       load();
     }, [load])
   );
+
+  async function openPlanDetail() {
+    try {
+      const planId = await getPlanIdForResource('gathering', gatheringId);
+      if (planId) navigation.navigate('PlanDetail', { planId });
+    } catch (e) {
+      Alert.alert('Error', 'Could not open this plan.');
+    }
+  }
 
   async function handleConfirmIntent() {
     setIntentModalVisible(false);
@@ -536,6 +546,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
           <Text style={styles.metaLine}>
             {formatDate(gathering.scheduled_at)}{gathering.distanceLabel ? ` · ${gathering.distanceLabel}` : ''}
           </Text>
+          {(gathering.isHost || gathering.myStatus === 'approved') && (
+            <TouchableOpacity onPress={openPlanDetail} accessibilityRole="button" accessibilityLabel="View the whole plan">
+              <Text style={{ color: colors.primary, fontWeight: '700', marginTop: spacing.xs }}>View the whole plan →</Text>
+            </TouchableOpacity>
+          )}
           {/* Item 109 (CLAUDE.md, "make the visibility model explicit"): a
               real, always-visible badge showing who this gathering is
               actually visible to -- the same VISIBILITY_OPTIONS vocabulary

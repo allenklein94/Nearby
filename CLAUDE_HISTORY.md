@@ -1,3 +1,16 @@
+# Item 145 (2026-09-18) - Universal Plan, pass C: standalone gatherings + business requests
+Migration `20261206_plan_gathering_request.sql`. Found: the 20260914/20261104 triggers never backfilled, so 25 gatherings had 3 plans and the
+1 business request had none -- both backfilled (add-on requests stay plan-less). One shared access predicate, `_plan_direct_access` /
+`_can_view_plan` (creator/organizer, occasion group-plan participant, match participant, approved gathering attendee, and for a request
+the audiences business_requests RLS already grants: group-plan / match / gathering-attendee), now backs both `get_plan_overview` and the new
+`get_plan_id_for_resource(kind, id)` ('gathering' | 'business_request'). Overview: a request's gathering is its activity, a gathering's/
+match's request is its business request, `who.attendee_count` (count only, no attendee names). Client: `getPlanIdForResource`,
+`attendeeCount`, PlanDetail "Open the gathering / request" buttons, "View the whole plan ->" on GatheringDetail (host or approved
+attendee) and BusinessRequestDetail. PlansScreen unaffected (it filters plan_type/non-cancelled; the backfilled request is expired).
+Verified live in a rolled-back transaction (attendee/host/requester see it, stranger gets null, single overloads), then applied:
+25 gathering + 1 business_request plans. Not exercised on real data: a request with offers/reservation; group-plan/match-sourced
+request access. Not run: from-scratch Docker replay. Device-unverified. Remaining in the direction: budget as a first-class field.
+
 # Item 144 (2026-09-18) - Universal Plan, pass B: dating match + friend connection get a Plan
 Migration `20261205_plan_from_match.sql`. Every `matches` row (romantic, or friend-sourced -- a friendship IS a match row via
 `create_match_on_friendship_accepted`) gets a `plans` row: plan_type `dating_match` / `friend_match` (friend = source_friendship_id or

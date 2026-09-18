@@ -8,13 +8,16 @@ describe('normalizePlanOverview', () => {
   });
   it('fills absent sections with honest empties, never invented values', () => {
     const o = normalizePlanOverview({ plan: { id: 'p', status: 'draft' } });
-    expect(o.who).toEqual({ host: null, forName: null, organizers: [], participants: [], guestCount: 0 });
+    expect(o.who).toEqual({ host: null, forName: null, organizers: [], participants: [], guestCount: 0, attendeeCount: 0 });
     expect(o.offers).toEqual([]);
     expect(o.reservation).toBeNull();
     expect(o.lifecycle).toEqual({
       status: 'draft', hasActivity: false, hasBusiness: false, hasOffer: false,
       hasAcceptedOffer: false, hasReservation: false, reservationStatus: null,
     });
+  });
+  it('carries the gathering attendee count as a count only', () => {
+    expect(normalizePlanOverview({ plan: { id: 'p' }, who: { attendee_count: 4 } }).who.attendeeCount).toBe(4);
   });
   it('passes the match section through, and is null for non-match plans', () => {
     expect(normalizePlanOverview({ plan: { id: 'p' } }).match).toBeNull();

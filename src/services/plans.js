@@ -95,6 +95,7 @@ export function normalizePlanOverview(raw) {
       organizers: who.organizers || [],
       participants: who.participants || [],
       guestCount: who.guest_count || 0,
+      attendeeCount: who.attendee_count || 0,
     },
     match: raw.match || null,
     occasion: raw.occasion || null,
@@ -128,6 +129,15 @@ export async function getPlanOverview(planId) {
 // creator-only). Null when the caller isn't in the match.
 export async function getPlanIdForMatch(matchId) {
   const { data, error } = await supabase.rpc('get_plan_id_for_match', { match_id_param: matchId });
+  if (error) throw new Error(error.message);
+  return data ?? null;
+}
+
+// Resolves the plans row behind a standalone gathering or business request for anyone who may view that plan
+// (get_plan_id_for_resource -- host/requester, approved attendees, group-plan/match participants). kind is
+// 'gathering' | 'business_request'. Null when there is no plan or the caller can't see it.
+export async function getPlanIdForResource(kind, resourceId) {
+  const { data, error } = await supabase.rpc('get_plan_id_for_resource', { kind_param: kind, resource_id_param: resourceId });
   if (error) throw new Error(error.message);
   return data ?? null;
 }

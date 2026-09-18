@@ -3,7 +3,7 @@
 export function buildPlanJourney(overview) {
   if (!overview) return [];
   const { who, activity, businessRequest, offers, reservation, lifecycle } = overview;
-  const people = (who.participants?.length || 0) + (who.organizers?.length || 0) + (who.guestCount || 0);
+  const people = (who.participants?.length || 0) + (who.organizers?.length || 0) + (who.guestCount || 0) + (who.attendeeCount || 0);
   const acceptedOffer = (offers || []).find((o) => o.accepted_at);
   return [
     {
