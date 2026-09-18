@@ -26,7 +26,6 @@ import DatingPreferencesPromptModal from '../components/DatingPreferencesPromptM
 import ConfidenceModeBanner from '../components/ConfidenceModeBanner';
 import FiltersModal from '../components/FiltersModal';
 import SkeletonCard from '../components/SkeletonCard';
-import AnimatedListItem from '../components/AnimatedListItem';
 import SwipeableDiscoveryCards from '../components/SwipeableDiscoveryCards';
 import SightingMapModal from '../components/SightingMapModal';
 import SightingsOverviewMap from '../components/SightingsOverviewMap';
@@ -643,12 +642,16 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
           ) : null
         }
         ListEmptyComponent={renderPeopleEmptyState()}
-        renderItem={({ item, index }) => {
+        renderItem={({ item }) => {
           const crossedPathsTime = discoveryMode === 'browse' ? null : formatCrossedPathsTime(item.last_seen_at);
           const gatheringText = discoveryMode === 'browse' ? null : gatheringReasonText(item.crossedPathsReason, formatCrossedPathsTime);
           const storyGroup = storyByUserId[item.otherUserId] ?? null;
           return (
-          <AnimatedListItem index={index}>
+          // Item 126 ("Don't animate every card"): removed this card's own per-index
+          // AnimatedListItem stagger -- FilterTransition already wraps this whole FlatList with
+          // one coordinated container settle whenever quick filters change; this candidate list
+          // has no cap and every card also independently sliding in on top of that was exactly
+          // the excess this item warns against.
           <View style={styles.card}>
             {/* Discover UX cleanup item 8: the avatar itself is now the
                 real story affordance -- a ring when a visible (in
@@ -767,7 +770,6 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
               </View>
             </TouchableOpacity>
           </View>
-          </AnimatedListItem>
         );
         }}
       />

@@ -22,7 +22,6 @@ import { getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
 import ReportBlockModal from '../components/ReportBlockModal';
-import AnimatedListItem from '../components/AnimatedListItem';
 import SkeletonCard from '../components/SkeletonCard';
 import GatheringsMapView from '../components/GatheringsMapView';
 import StoryViewerModal from '../components/StoryViewerModal';
@@ -1008,10 +1007,16 @@ export default function GatheringsScreen({ navigation, route }) {
               </FadeInState>
             );
           })()}
-          renderItem={({ item, index }) => {
+          renderItem={({ item }) => {
             const categoryStyle = categoryStyleFor(item.interest_tag);
             return (
-              <AnimatedListItem index={index}>
+              // Item 126 ("Don't animate every card"): removed this card's own per-index
+              // AnimatedListItem stagger -- FilterTransition already wraps this whole FlatList
+              // (below) with one coordinated container settle whenever the real filtered content
+              // changes; every card also independently sliding in on top of that was exactly the
+              // "20 cards slide in independently" excess this item warns against, especially
+              // since this list has no client-side cap (up to 500 real rows, per
+              // get_bounded_nearby_gathering_ids' own row_limit).
               <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }, item.matchesYourInterests && styles.matchCard]}>
                 {coverPhotoUrls[item.id] ? (
                   <Image source={{ uri: coverPhotoUrls[item.id] }} style={styles.coverPhoto} accessibilityLabel={`${item.title} cover photo`} />
@@ -1162,7 +1167,6 @@ export default function GatheringsScreen({ navigation, route }) {
                   )}
                 </View>
               </View>
-              </AnimatedListItem>
             );
           }}
         />

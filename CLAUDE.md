@@ -915,6 +915,33 @@ pop-in reads as a genuine "introduction" rather than a jarring pop, that it corr
 only the single top result per list across all three screens, and that it never appears twice on
 the same visible card even when several sections render on one screen at once.
 
+**Item 126 ("Don't animate every card") — fully DONE (2026-09-18), same-day direct follow-up to
+Item 125.** Principle: a long list should settle in as one coordinated block, never N cards each
+independently sliding in — per-card stagger is fine for a small, capped set (Items 112/124's
+handful of real options), but excessive on an uncapped list, especially stacked on top of a
+`FilterTransition` container cue that already announces "the results changed."
+
+Audited every per-card entrance animation and fixed only the genuinely uncapped ones:
+- **Removed per-card `AnimatedListItem` stagger** from `DiscoveryScreen.js`'s people list and
+  `GatheringsScreen.js`'s nearby list (up to 500 real rows) — both already sit inside a
+  `FilterTransition` (Item 116), which remains the one container-level cue.
+- **`InviteFriendsModal.js`**: swapped per-row `AnimatedListItem` for a single outer
+  `StaggeredReveal index={0}` around the whole friends `FlatList`.
+- **`DiscoverHubScreen.js`**: on the uncapped expanded-context lists (`contextGatherings`,
+  `contextOtherTimeGatherings`, `contextOffers`) and the non-"All" full lists (`gatheringsToShow`,
+  `communitiesToShow`, `placesToShow`, `offersToShow`), the per-card `StaggeredReveal` wrappers
+  (Item 112/124 follow-ups) were replaced by ONE outer `StaggeredReveal index={0}` + `View` around
+  each mapped list; `key` moved back onto the card itself. `renderContextGatheringRow` no longer
+  takes/uses an `index`.
+- **Deliberately kept per-card stagger** where the set is small and capped (the blended "All"
+  view's few-card sections, `CelebrateSomethingScreen`'s options, business-offer comparison lists
+  from Item 124) — those are the "N options arrived" moment the stagger exists for.
+
+No DB migration, no new pure functions. Full Jest suite 600/600 passing (unchanged); all four
+touched files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised on a
+real device (standing note) — next session should confirm long lists read as one calm settle
+rather than a flat pop-in, and that the small capped sections still cascade.
+
 **"Nearby Motion & Microinteraction System" — first real increment shipped (2026-09-18), same
 day, direct "build it now" override of the earlier "queue for Thursday" call.** User's own scope:
 audit and standardize every real interaction moment in the app into one cohesive motion language
