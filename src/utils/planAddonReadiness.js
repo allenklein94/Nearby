@@ -346,7 +346,33 @@ export function resolveBusinessRequestPlanStatus({ primary, primaryOffers = [] }
 // buildPlanTimeline above already established. Item 91 replaced this
 // card's own inline Planning/Confirmed/Cancelled logic with the full
 // resolveBusinessRequestPlanStatus() progression above.
-export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null }) {
+// Item 120 ("Plan creation should feel like a major achievement"): the mock's own Who/What/When/
+// Where breakdown -- What/When/Where were already real fields on buildPlanSummary above; Who was
+// the one genuinely missing. Sourced entirely from data the screen already fetches for the plan's
+// own group chat (get_plan_chat_info's real participants roster + whoForName for an occasion-
+// linked plan) -- never a new query, never fabricated. A solo plan with no real group roster
+// beyond the host themselves honestly falls back to null (the caller renders nothing rather than
+// a manufactured "just you" line) rather than invent a signal that isn't there.
+export function buildPlanWhoSummary({ participants, myId, whoForName }) {
+  const names = (participants || [])
+    .map((p) => (p.id === myId ? 'You' : p.displayName))
+    .filter(Boolean);
+
+  if (whoForName) {
+    const others = names.filter((n) => n !== 'You');
+    if (others.length === 0) return `For ${whoForName}`;
+    const shown = others.slice(0, 2);
+    const extra = others.length - shown.length;
+    return `For ${whoForName}, with ${shown.join(', ')}${extra > 0 ? ` +${extra} more` : ''}`;
+  }
+
+  if (names.length <= 1) return null;
+  const shown = names.slice(0, 3);
+  const extra = names.length - shown.length;
+  return shown.join(', ') + (extra > 0 ? ` +${extra} more` : '');
+}
+
+export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null, participants = null, myId = null, whoForName = null }) {
   if (!primary) return null;
 
   const timeline = buildPlanTimeline({ primary, primaryOffers, addons: [] });
@@ -362,6 +388,7 @@ export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null
 
   return {
     title: planTitle || primary.plan_label || primary.category || 'Your Plan',
+    who: buildPlanWhoSummary({ participants, myId, whoForName }),
     dateLabel: formatDateLabel(primary.date),
     timeLabel,
     location: entry?.businessName ?? null,

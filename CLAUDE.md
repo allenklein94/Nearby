@@ -603,6 +603,70 @@ revisiting a profile after the other person accepted elsewhere shows the "+ → 
 transient "You're friends now" line exactly once, and that a normal already-accepted profile load
 never shows the "+" glyph at all.
 
+**Item 120 ("Plan creation should feel like a major achievement") — fully DONE (2026-09-18),
+same-day direct follow-up to Item 119.** User's own framing: this is one of the most important
+moments in the product — "Maybe we should do something" → "It's happening." — so once a plan is
+finalized, show "✨ It's happening." then a real Who/What/When/Where breakdown, then Invite/Share
+Plan as the ending actions.
+
+Audited the real current state before building anything: most of this mock already existed, built
+across Items 90/91/92/107/112's own earlier work — `buildPlanSummary()` already resolves What
+(title)/When (date+time)/Where (business location) plus a real lifecycle status pill;
+`OccasionPlanShareCard.js`/`buildOccasionPlanShareCaption()` (Item 107) already render a real
+branded shareable card gated on the plan reaching `statusKind === 'confirmed'`; the `justAccepted`
+`SuccessAnimation` flash (Item 92 follow-up) already plays the moment THIS viewer's own tap
+confirms a reservation. Two real, concrete gaps against the mock, both closed:
+
+1. **Who was the one genuinely missing field.** `buildPlanSummary()` never returned anything
+   naming who the plan is actually for/with. New pure `buildPlanWhoSummary()`
+   (`planAddonReadiness.js`, 4 new Jest tests) sources it entirely from data this screen already
+   fetches for the plan's own group chat (`get_plan_chat_info`'s real participant roster +
+   `whoForName` for an occasion-linked plan) — never a new query, never fabricated. A solo plan
+   with no real roster beyond the host alone honestly returns `null` (the card renders nothing
+   rather than a manufactured "Just you" line) — matching this repo's own "no fabricated signals"
+   rule. An occasion-linked plan leads with who it's for ("For Sarah, with John"); otherwise it
+   names the real roster, capped at 3 with a real "+N more" count. Rendered as a new "👤 {who}"
+   line on the Plan summary card, right after the title — the one field the mock's own
+   Who/What/When/Where ordering asks for that wasn't already there.
+2. **"Invite / Share Plan" weren't actually co-located, and a naive "just add an Invite button"
+   fix would have been broken.** Share was already real; there was no Invite action anywhere near
+   it. Investigated why before building: the screen's OTHER invite mechanism
+   (`invite_to_business_request`, Item 36) is hard-gated server-side to `status = 'open'` — a real,
+   deliberate safety boundary, not a UI oversight, since a confirmed reservation is already sized
+   for a specific party, and silently letting more people claim a seat on it would misrepresent a
+   real booking to the business without ever telling them. Building a naive "Invite" button that
+   called that RPC post-confirmation would have hit a hard, confusing server rejection at the exact
+   achievement moment. Used the already-real, already-safe alternative instead: `add_plan_organizer`
+   (Item 88) has no `status='open'` requirement at all — it's about organizing authority, not
+   claiming a reservation seat — and the screen's own "👥 Organizers" section already lets the host
+   add one. A new "👥 Invite" quick-link, shown only to the host (`planOrganizerInfo?.isHost`),
+   sits directly beside "🎉 Share This Plan" in the achievement card and expands + scrolls to that
+   already-existing Organizers section (a new `scrollViewRef`/`organizersSectionYRef`, same
+   onLayout-based scroll-to precedent `ProfileScreen.js`'s own `scrollToInterestsSection` already
+   established) — reusing real, already-verified infrastructure rather than inventing a second
+   invite mechanism or silently working around the server's own real constraint.
+
+The flash text itself: `justAccepted`'s `SuccessAnimation` was showing "Reservation confirmed. ✓"
+— changed to "It's happening. 🎉" (`SuccessAnimation`'s own existing default text elsewhere in the
+app), matching the item's emotional register almost verbatim. Deliberately did NOT literally
+prepend "✨" to the settled text as the mock's own shorthand shows — per this codebase's own locked
+Nearby Motion Language (Standing Conventions below), ✨ is reserved for the discovery/transition
+beat (which already plays mid-animation, N→✨→✓, before the text appears) and 🎉 is the correct
+settled celebration glyph; the mock's "✨" is honored by the animation itself, not duplicated into
+the label. Deliberately did NOT add Who to the external shareable card (`OccasionPlanShareCard.js`)
+— that card is meant to be forwarded to anyone via the native share sheet, and naming other real
+people on an externally-shared image is a mild, avoidable privacy exposure the on-screen,
+app-private card doesn't have; a disclosed scope boundary, not an oversight.
+
+No DB migration (the one action that needed server-side awareness, Invite, already exists and
+already works correctly post-confirmation via `add_plan_organizer`). Full Jest suite 585/585
+passing (5 new); both touched files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised on a real device (standing note) — next session should confirm
+the achievement card's new Who line renders correctly for both an occasion-linked and a plain
+group plan, that "👥 Invite" correctly expands and scrolls to the Organizers section, and that the
+"It's happening. 🎉" flash reads as the intended finale rather than feeling redundant with the
+Plan card's own now-visible Confirmed state directly below it.
+
 **"Nearby Motion & Microinteraction System" — first real increment shipped (2026-09-18), same
 day, direct "build it now" override of the earlier "queue for Thursday" call.** User's own scope:
 audit and standardize every real interaction moment in the app into one cohesive motion language

@@ -7,6 +7,7 @@ import {
   buildPlanTimeline,
   summarizePlanTimelineReadiness,
   buildPlanSummary,
+  buildPlanWhoSummary,
   resolveBusinessRequestPlanStatus,
   PLAN_LIFECYCLE_STATUS,
 } from './planAddonReadiness';
@@ -264,6 +265,61 @@ describe('buildPlanSummary', () => {
     });
     expect(summary.statusKind).toBe('option_selected');
     expect(summary.statusLabel).toBe('Option Selected');
+  });
+
+  test('threads a real Who summary through from the roster', () => {
+    const summary = buildPlanSummary({
+      primary: basePrimary,
+      primaryOffers: [],
+      participants: [{ id: 'me', displayName: 'Allen' }, { id: 'them', displayName: 'John' }],
+      myId: 'me',
+    });
+    expect(summary.who).toBe('You, John');
+  });
+});
+
+describe('buildPlanWhoSummary', () => {
+  test('no real roster beyond the host alone -> null, never a fabricated "just you" line', () => {
+    expect(buildPlanWhoSummary({ participants: [{ id: 'me', displayName: 'Allen' }], myId: 'me' })).toBeNull();
+    expect(buildPlanWhoSummary({ participants: [], myId: 'me' })).toBeNull();
+    expect(buildPlanWhoSummary({ participants: null, myId: 'me' })).toBeNull();
+  });
+
+  test('a real multi-person roster names "You" plus the others', () => {
+    const who = buildPlanWhoSummary({
+      participants: [
+        { id: 'me', displayName: 'Allen' },
+        { id: 'a', displayName: 'John' },
+        { id: 'b', displayName: 'Emily' },
+      ],
+      myId: 'me',
+    });
+    expect(who).toBe('You, John, Emily');
+  });
+
+  test('caps the shown names and adds a real "+N more" count', () => {
+    const who = buildPlanWhoSummary({
+      participants: [
+        { id: 'me', displayName: 'Allen' },
+        { id: 'a', displayName: 'John' },
+        { id: 'b', displayName: 'Emily' },
+        { id: 'c', displayName: 'Mike' },
+        { id: 'd', displayName: 'Sarah' },
+      ],
+      myId: 'me',
+    });
+    expect(who).toBe('You, John, Emily +2 more');
+  });
+
+  test('an occasion-linked plan leads with who it is for, not the roster', () => {
+    expect(buildPlanWhoSummary({ participants: [{ id: 'me', displayName: 'Allen' }], myId: 'me', whoForName: 'Sarah' }))
+      .toBe('For Sarah');
+    const who = buildPlanWhoSummary({
+      participants: [{ id: 'me', displayName: 'Allen' }, { id: 'a', displayName: 'John' }],
+      myId: 'me',
+      whoForName: 'Sarah',
+    });
+    expect(who).toBe('For Sarah, with John');
   });
 });
 

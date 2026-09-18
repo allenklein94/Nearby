@@ -811,8 +811,18 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // primary's own screen, same as "Your Plan" below, since an add-on
   // already links back to the full plan via the banner above.
   const planSummary = useMemo(
-    () => (request.addon_type ? null : buildPlanSummary({ primary: request, primaryOffers: offers, planTitle: planChatInfo?.title ?? null })),
-    [request, offers, planChatInfo]
+    () => (request.addon_type ? null : buildPlanSummary({
+      primary: request,
+      primaryOffers: offers,
+      planTitle: planChatInfo?.title ?? null,
+      // Item 120 ("Plan creation should feel like a major achievement"): the mock's own Who,
+      // sourced from the plan's own already-fetched real roster/occasion who-for -- never a new
+      // query.
+      participants: planChatInfo?.participants ?? null,
+      myId,
+      whoForName: planChatInfo?.whoForName ?? null,
+    })),
+    [request, offers, planChatInfo, myId]
   );
 
   // Item 112 follow-up (CLAUDE.md, "the finished plan could have a living
@@ -847,6 +857,22 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // image through the native share sheet ("Messages, text, etc.").
   const shareCardRef = useRef(null);
   const [sharingPlanCard, setSharingPlanCard] = useState(false);
+  // Item 120 ("Plan creation should feel like a major achievement"): "Invite / Share Plan"
+  // co-located as the finale's two actions. Share already existed; Invite is real and unblocked
+  // regardless of status via add_plan_organizer (organizing authority, not "grow the reservation
+  // size" -- the actual invite_to_business_request RPC is hard-gated to status='open' server-side
+  // for good reason, since a confirmed reservation is already sized for a specific party and
+  // silently letting more people claim a seat on it would misrepresent a real booking to the
+  // business). This quick-link reuses that already-built, already-safe Organizers section below
+  // rather than inventing a second invite mechanism.
+  const scrollViewRef = useRef(null);
+  const organizersSectionYRef = useRef(0);
+  function goInviteFromAchievementCard() {
+    setShowOrganizers(true);
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollTo?.({ y: Math.max(organizersSectionYRef.current - spacing.lg, 0), animated: true });
+    });
+  }
 
   async function handleSharePlanCard() {
     if (!planSummary || !shareCardRef.current) return;
@@ -870,8 +896,13 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        {justAccepted && <SuccessAnimation text="Reservation confirmed. ✓" />}
+      <ScrollView ref={scrollViewRef} contentContainerStyle={{ padding: spacing.lg }}>
+        {/* Item 120 ("Plan creation should feel like a major achievement"): "Maybe we should do
+            something" -> "It's happening" is the whole point of this exact moment -- the plan
+            just became real. Reused text (this codebase's own locked celebration-glyph
+            convention, colors.primary reserved for 🎉 not ✨ standalone) rather than inventing a
+            second phrase that would compete with SuccessAnimation's default elsewhere. */}
+        {justAccepted && <SuccessAnimation text="It's happening. 🎉" />}
         {planSummary && (
           <View style={styles.planSummaryCard}>
             <View style={styles.planSummaryHeaderRow}>
@@ -910,6 +941,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                 </Text>
               </View>
             </View>
+            {/* Item 120: Who, right after the title -- What/When/Where were already real fields
+                on this card; Who was the one genuinely missing from the mock's own breakdown. */}
+            {planSummary.who && <Text style={styles.planSummaryLine}>👤 {planSummary.who}</Text>}
             {(planSummary.dateLabel || planSummary.timeLabel) && (
               <Text style={styles.planSummaryLine}>
                 📅 {planSummary.dateLabel ?? 'Date not set'}{planSummary.timeLabel ? `  🕖 ${planSummary.timeLabel}` : ''}
@@ -918,16 +952,29 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             {planSummary.location && <Text style={styles.planSummaryLine}>📍 {planSummary.location}</Text>}
             {planSummary.partySize != null && <Text style={styles.planSummaryLine}>👥 {planSummary.partySize} people</Text>}
             {planSummary.statusKind === 'confirmed' && (
-              <TouchableOpacity
-                style={styles.sharePlanCardLink}
-                onPress={handleSharePlanCard}
-                disabled={sharingPlanCard}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={`Share this plan: ${buildOccasionPlanShareCaption(planSummary).replace(/\n/g, ', ')}`}
-              >
-                <Text style={styles.sharePlanCardLinkText}>{sharingPlanCard ? 'Creating card…' : '🎉 Share This Plan'}</Text>
-              </TouchableOpacity>
+              <View style={styles.planSummaryActionsRow}>
+                {planOrganizerInfo?.isHost && (
+                  <TouchableOpacity
+                    style={styles.sharePlanCardLink}
+                    onPress={goInviteFromAchievementCard}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Invite someone to this plan"
+                  >
+                    <Text style={styles.sharePlanCardLinkText}>👥 Invite</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={styles.sharePlanCardLink}
+                  onPress={handleSharePlanCard}
+                  disabled={sharingPlanCard}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Share this plan: ${buildOccasionPlanShareCaption(planSummary).replace(/\n/g, ', ')}`}
+                >
+                  <Text style={styles.sharePlanCardLinkText}>{sharingPlanCard ? 'Creating card…' : '🎉 Share This Plan'}</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         )}
@@ -1271,7 +1318,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             authorized (the host, or an already-added co-organizer), so its
             mere presence is the render gate -- no separate check needed. */}
         {planOrganizerInfo && (
-          <View style={styles.groupPlanSection}>
+          <View
+            style={styles.groupPlanSection}
+            onLayout={(e) => { organizersSectionYRef.current = e.nativeEvent.layout.y; }}
+          >
             <Text style={styles.groupPlanSectionTitle}>👥 Organizers</Text>
             <Text style={styles.candidateText}>👑 {planOrganizerInfo.hostName ?? 'Host'} (host)</Text>
             {planOrganizerInfo.organizers.map((o) => (
@@ -1622,7 +1672,8 @@ const getStyles = (colors) => StyleSheet.create({
   planSummaryStatusTextInProgress: { color: '#B8791F' },
   planSummaryStatusTextCompleted: { color: colors.textTertiary },
   planSummaryLine: { ...typography.body, color: colors.textSecondary, marginTop: 2 },
-  sharePlanCardLink: { marginTop: spacing.sm, alignSelf: 'flex-start' },
+  planSummaryActionsRow: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.sm },
+  sharePlanCardLink: { alignSelf: 'flex-start' },
   sharePlanCardLinkText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   hiddenShareCardWrap: { position: 'absolute', top: -9999, left: -9999, opacity: 0 },
   rawText: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
