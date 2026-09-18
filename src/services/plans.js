@@ -96,6 +96,7 @@ export function normalizePlanOverview(raw) {
       participants: who.participants || [],
       guestCount: who.guest_count || 0,
     },
+    match: raw.match || null,
     occasion: raw.occasion || null,
     groupPlan: raw.group_plan || null,
     activity: raw.activity || null,
@@ -121,6 +122,14 @@ export async function getPlanOverview(planId) {
   const { data, error } = await supabase.rpc('get_plan_overview', { plan_id_param: planId });
   if (error) throw new Error(error.message);
   return normalizePlanOverview(data);
+}
+
+// Resolves the plans row behind a dating/friend match for either participant (get_plan_id_for_match; plans RLS is
+// creator-only). Null when the caller isn't in the match.
+export async function getPlanIdForMatch(matchId) {
+  const { data, error } = await supabase.rpc('get_plan_id_for_match', { match_id_param: matchId });
+  if (error) throw new Error(error.message);
+  return data ?? null;
 }
 
 // Resolves the plans row behind an occasion (creator only -- plans RLS is creator-only) or an occasion group plan

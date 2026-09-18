@@ -26,6 +26,7 @@ import GifPickerModal from '../components/GifPickerModal';
 import DateCheckInModal from '../components/DateCheckInModal';
 import AnimatedMessageBubble from '../components/AnimatedMessageBubble';
 import * as ScreenCapture from 'expo-screen-capture';
+import { getPlanIdForMatch } from '../services/plans';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -559,8 +560,18 @@ export default function ChatScreen({ route, navigation }) {
     // match participancy alone, never romantic-vs-friend -- so it's
     // offered here regardless, with the label swapping to match context
     // the same way "Ask them out" etc. stay romantic-only just above.
+    { key: 'ourplan', text: '🗂️ Our Plans', onPress: openOurPlan },
     { key: 'plantogether', text: isRomanticMatch ? '💌 Plan Something Together' : '🎯 Plan Something Together', onPress: () => navigation.navigate('DateProposal', { matchId, matchName: otherUser?.display_name }) },
   ].filter((opt) => !opt.romanticOnly || isRomanticMatch);
+
+  async function openOurPlan() {
+    try {
+      const planId = await getPlanIdForMatch(matchId);
+      if (planId) navigation.navigate('PlanDetail', { planId });
+    } catch (e) {
+      Alert.alert('Error', 'Could not open your plans.');
+    }
+  }
 
   async function suggestDateNight() {
     try {

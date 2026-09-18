@@ -16,6 +16,11 @@ describe('normalizePlanOverview', () => {
       hasAcceptedOffer: false, hasReservation: false, reservationStatus: null,
     });
   });
+  it('passes the match section through, and is null for non-match plans', () => {
+    expect(normalizePlanOverview({ plan: { id: 'p' } }).match).toBeNull();
+    const m = { id: 'm', kind: 'friend', other_display_name: 'Sam', matched_at: '2026-08-08T00:00:00Z' };
+    expect(normalizePlanOverview({ plan: { id: 'p', plan_type: 'friend_match' }, match: m }).match).toEqual(m);
+  });
   it('maps lifecycle facts from the server response', () => {
     const o = normalizePlanOverview({
       plan: { id: 'p', status: 'confirmed' },

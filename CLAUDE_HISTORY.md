@@ -1,3 +1,16 @@
+# Item 144 (2026-09-18) - Universal Plan, pass B: dating match + friend connection get a Plan
+Migration `20261205_plan_from_match.sql`. Every `matches` row (romantic, or friend-sourced -- a friendship IS a match row via
+`create_match_on_friendship_accepted`) gets a `plans` row: plan_type `dating_match` / `friend_match` (friend = source_friendship_id or
+source_gathering_id set, same rule as Item 59), `plans.match_id` (unique, cascade), created_by = user_a, via trigger + backfill.
+`create_plan_from_date_proposal` now sets `parent_plan_id` to the match's plan, so date/hangout plans hang under it. `get_plan_overview`
+(same signature, single overload verified) grants access to either match participant (or via parent) and returns a `match` section
+(kind, matched_at, other user's display name) + both participants. `get_plan_id_for_match(match_id)` = participant-only id lookup.
+Client: `getPlanIdForMatch`, `normalizePlanOverview.match`, PlanDetailScreen renders "You & Sam" / "Matched|Friends since ..." with a
+"Plan something together" button -> DateProposal; entry = "Our Plans" in ChatScreen's together menu. PlansScreen lists unaffected
+(they filter on resulting_date_proposal_id). Verified live in a rolled-back transaction (both participants + stranger, single overload),
+then applied: 1 dating_match + 1 friend_match. The one existing date proposal has no plans row, so no child was exercised on real data.
+Not run: from-scratch Docker replay. Device-unverified. Next in the direction: standalone gatherings/business requests, budget.
+
 # Item 143 (2026-09-18) - Participants can open the Plan detail for a group plan
 Migration `20261204_get_plan_id_for_group_plan.sql`: SECURITY DEFINER `get_plan_id_for_group_plan(group_plan_id_param uuid)` returns the
 `plans.id` behind a group occasion plan, only to its host/invited participants (`is_occasion_group_plan_participant`); revoked from

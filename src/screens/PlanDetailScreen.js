@@ -45,7 +45,7 @@ export default function PlanDetailScreen({ navigation, route }) {
     );
   }
 
-  const { plan, who, groupPlan, activity, businessRequest, offers, reservation, parent, children } = overview;
+  const { plan, who, match, groupPlan, activity, businessRequest, offers, reservation, parent, children } = overview;
   const meta = OCCASION_OPTIONS.find((o) => o.key === plan.occasion_type);
   const journey = buildPlanJourney(overview);
   const nothingYet = journey.every((s) => !s.done);
@@ -53,7 +53,14 @@ export default function PlanDetailScreen({ navigation, route }) {
     ? new Date(plan.scheduled_at).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
     : null;
 
+  const isMatchPlan = !!match;
+  const matchTitle = match ? `${match.kind === 'friend' ? '🤝' : '❤️'} You & ${match.other_display_name || 'them'}` : null;
+  const matchedLabel = match?.matched_at
+    ? `${match.kind === 'friend' ? 'Friends' : 'Matched'} since ${new Date(match.matched_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}`
+    : null;
+
   function startPlanning() {
+    if (match) { navigation.navigate('DateProposal', { matchId: match.id, matchName: match.other_display_name }); return; }
     if (groupPlan) navigation.navigate('GroupOccasionPlan', { planId: groupPlan.id });
     else navigation.navigate('CelebrateSomething');
   }
@@ -61,9 +68,11 @@ export default function PlanDetailScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.title}>{meta?.icon ? `${meta.icon} ` : ''}{plan.title || 'Untitled plan'}</Text>
+        <Text style={styles.title}>{isMatchPlan ? matchTitle : `${meta?.icon ? `${meta.icon} ` : ''}${plan.title || 'Untitled plan'}`}</Text>
         <Text style={styles.muted}>
-          {[STATUS_LABEL[plan.status] || plan.status, dateLabel, who.forName ? `For ${who.forName}` : null].filter(Boolean).join(' · ')}
+          {isMatchPlan
+            ? matchedLabel
+            : [STATUS_LABEL[plan.status] || plan.status, dateLabel, who.forName ? `For ${who.forName}` : null].filter(Boolean).join(' · ')}
         </Text>
         {parent ? <Text style={styles.muted}>Part of: {parent.title}</Text> : null}
 
@@ -80,7 +89,7 @@ export default function PlanDetailScreen({ navigation, route }) {
           ))}
         </View>
 
-        {(who.participants.length > 0 || who.organizers.length > 0) && (
+        {!isMatchPlan && (who.participants.length > 0 || who.organizers.length > 0) && (
           <>
             <Text style={styles.sectionLabel}>People</Text>
             <View style={styles.card}>
@@ -117,9 +126,9 @@ export default function PlanDetailScreen({ navigation, route }) {
           </>
         )}
 
-        {nothingYet && (plan.plan_type === 'occasion' || plan.plan_type === 'group_occasion') && plan.status !== 'cancelled' && (
-          <TouchableOpacity style={styles.button} onPress={startPlanning} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Plan something">
-            <Text style={styles.buttonText}>Plan something →</Text>
+        {(isMatchPlan || (nothingYet && (plan.plan_type === 'occasion' || plan.plan_type === 'group_occasion') && plan.status !== 'cancelled')) && (
+          <TouchableOpacity style={styles.button} onPress={startPlanning} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={isMatchPlan ? 'Plan something together' : 'Plan something'}>
+            <Text style={styles.buttonText}>{isMatchPlan ? 'Plan something together →' : 'Plan something →'}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
