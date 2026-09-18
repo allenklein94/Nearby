@@ -39,6 +39,7 @@ import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
 import { ModeTransition, FilterTransition } from '../motion';
+import StaggeredReveal from '../components/StaggeredReveal';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -959,10 +960,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
     navigateToIntentResultItem(navigation, item, { typedText, classifyResult });
   }
 
-  function renderIntentSearchResultRow(item) {
+  function renderIntentSearchResultRow(item, index) {
     return (
+      <StaggeredReveal key={`${item.type}-${item.id}`} index={index}>
       <TouchableOpacity
-        key={`${item.type}-${item.id}`}
         style={styles.intentSearchResultRow}
         onPress={() => handleIntentSearchResultTap(item)}
         activeOpacity={0.85}
@@ -976,6 +977,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         </View>
         <Text style={styles.intentSearchResultChevron}>›</Text>
       </TouchableOpacity>
+      </StaggeredReveal>
     );
   }
 
@@ -1126,13 +1128,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // in-place depth to reveal, so opening the gathering itself is a genuine
   // task change (join, message, see the roster) -- exactly the line
   // CLAUDE.md's Progressive Depth doctrine draws.
-  function renderContextGatheringRow(g) {
+  function renderContextGatheringRow(g, index) {
     const action = gatheringActionInfo(g);
     const timeLine = gatheringTimeLine(g.scheduled_at);
     const isSource = g.id === expandedContext?.sourceGatheringId;
     return (
+      <StaggeredReveal key={g.id} index={index}>
       <TouchableOpacity
-        key={g.id}
         style={[styles.card, isSource && styles.cardSourceHighlight]}
         onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
         activeOpacity={0.85}
@@ -1166,6 +1168,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           <Text style={styles.cardStateLabel} numberOfLines={1}>{action.label}</Text>
         )}
       </TouchableOpacity>
+      </StaggeredReveal>
     );
   }
 
@@ -1175,7 +1178,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // shared by the dedicated Gatherings tab's notableGatherings AND the new
   // Today/This Weekend sections below, instead of three copies of this
   // block drifting apart.
-  function renderGatheringTile(g) {
+  function renderGatheringTile(g, index) {
     const action = gatheringActionInfo(g);
     const reasonLine = primaryReasonLine(g);
     const timeLine = gatheringTimeLine(g.scheduled_at);
@@ -1183,8 +1186,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
     if (g.fit.score >= HERO_SCORE) {
       const categoryStyle = categoryStyleFor(g.interest_tag);
       return (
+        <StaggeredReveal key={g.id} index={index}>
         <TouchableOpacity
-          key={g.id}
           style={styles.heroCard}
           /* Phase 8 section F -- the card body no longer navigates:
              tapping it expands this screen around the gathering's own
@@ -1252,12 +1255,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
             )}
           </View>
         </TouchableOpacity>
+        </StaggeredReveal>
       );
     }
 
     return (
+      <StaggeredReveal key={g.id} index={index}>
       <TouchableOpacity
-        key={g.id}
         style={styles.card}
         onPress={() => openContextFor(g)}
         activeOpacity={0.85}
@@ -1298,6 +1302,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           <Text style={styles.cardStateLabel} numberOfLines={1}>{action.label}</Text>
         )}
       </TouchableOpacity>
+      </StaggeredReveal>
     );
   }
 
@@ -1307,11 +1312,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // horizontal set," not a peer of Today/This Weekend's fuller cards).
   // Still taps into the same real expand-in-place context as every other
   // gathering tile on this screen.
-  function renderHappeningNowTile(g) {
+  function renderHappeningNowTile(g, index) {
     const timeLine = gatheringTimeLine(g.scheduled_at);
     return (
+      <StaggeredReveal key={g.id} index={index}>
       <TouchableOpacity
-        key={g.id}
         style={styles.nowCard}
         onPress={() => openContextFor(g)}
         activeOpacity={0.85}
@@ -1332,6 +1337,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           </Text>
         )}
       </TouchableOpacity>
+      </StaggeredReveal>
     );
   }
 
@@ -1623,17 +1629,18 @@ export default function DiscoverHubScreen({ navigation, route }) {
               </TouchableOpacity>
             </>
           ) : (
-            contextPlaces.slice(0, PREVIEW_COUNT).map((p) => (
-              <PlaceCard
-                key={p.placeId}
-                photoUrl={p.photoRef ? getPlacePhotoUrl(p.photoRef) : null}
-                photoHeaders={p.photoRef ? getGoogleMapsRequestHeaders() : undefined}
-                icon="📍"
-                title={p.name}
-                reason={placeReasonLine(p)}
-                onPress={() => openPlaceInMaps(p)}
-                accessibilityLabel={p.name}
-              />
+            contextPlaces.slice(0, PREVIEW_COUNT).map((p, i) => (
+              <StaggeredReveal key={p.placeId} index={i}>
+                <PlaceCard
+                  photoUrl={p.photoRef ? getPlacePhotoUrl(p.photoRef) : null}
+                  photoHeaders={p.photoRef ? getGoogleMapsRequestHeaders() : undefined}
+                  icon="📍"
+                  title={p.name}
+                  reason={placeReasonLine(p)}
+                  onPress={() => openPlaceInMaps(p)}
+                  accessibilityLabel={p.name}
+                />
+              </StaggeredReveal>
             ))
           )}
 
@@ -1646,21 +1653,22 @@ export default function DiscoverHubScreen({ navigation, route }) {
               </TouchableOpacity>
             </>
           ) : (
-            contextOffers.map((o) => {
+            contextOffers.map((o, i) => {
               const isRedeemed = redeemedOfferIds.has(o.id);
               return (
-                <PlaceCard
-                  key={o.id}
-                  icon="🎁"
-                  photoUrl={o.target_interest_tag ? curatedCoverPhotoFor(o.target_interest_tag) : null}
-                  tintColor={o.target_interest_tag ? categoryStyleFor(o.target_interest_tag).color : null}
-                  title={o.title}
-                  reason={[o.brand_partners?.name, businessSignalLine(o.brand_partners)].filter(Boolean).join(' · ')}
-                  onPress={() => navigation.navigate('BrandOffers', { highlightOfferId: o.id })}
-                  accessibilityLabel={`${o.title}, ${o.brand_partners?.name}, ${isRedeemed ? 'already redeemed' : 'Redeem'}`}
-                  actionLabel={isRedeemed ? 'Redeemed ✓' : 'Redeem'}
-                  actionIsState={isRedeemed}
-                />
+                <StaggeredReveal key={o.id} index={i}>
+                  <PlaceCard
+                    icon="🎁"
+                    photoUrl={o.target_interest_tag ? curatedCoverPhotoFor(o.target_interest_tag) : null}
+                    tintColor={o.target_interest_tag ? categoryStyleFor(o.target_interest_tag).color : null}
+                    title={o.title}
+                    reason={[o.brand_partners?.name, businessSignalLine(o.brand_partners)].filter(Boolean).join(' · ')}
+                    onPress={() => navigation.navigate('BrandOffers', { highlightOfferId: o.id })}
+                    accessibilityLabel={`${o.title}, ${o.brand_partners?.name}, ${isRedeemed ? 'already redeemed' : 'Redeem'}`}
+                    actionLabel={isRedeemed ? 'Redeemed ✓' : 'Redeem'}
+                    actionIsState={isRedeemed}
+                  />
+                </StaggeredReveal>
               );
             })
           )}
@@ -1921,9 +1929,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   </TouchableOpacity>
                 )}
               </View>
-              {gatheringsToShow.map((g) => (
+              {gatheringsToShow.map((g, i) => (
+                <StaggeredReveal key={g.id} index={i}>
                 <TouchableOpacity
-                  key={g.id}
                   style={styles.card}
                   onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
                   activeOpacity={0.85}
@@ -1949,6 +1957,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   </View>
                   <Text style={styles.cardChevron}>›</Text>
                 </TouchableOpacity>
+                </StaggeredReveal>
               ))}
             </>
           )}
@@ -1981,9 +1990,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   </TouchableOpacity>
                 )}
               </View>
-              {communitiesToShow.map((c) => (
+              {communitiesToShow.map((c, i) => (
+                <StaggeredReveal key={c.id} index={i}>
                 <TouchableOpacity
-                  key={c.id}
                   style={styles.card}
                   onPress={() => navigation.navigate('CommunityDetail', { communityId: c.id, communityName: c.name })}
                   activeOpacity={0.85}
@@ -1997,6 +2006,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   </View>
                   <Text style={styles.cardChevron}>›</Text>
                 </TouchableOpacity>
+                </StaggeredReveal>
               ))}
             </>
           )}
@@ -2059,17 +2069,18 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   </TouchableOpacity>
                 </>
               ) : (
-                placesToShow.map((p) => (
-                  <PlaceCard
-                    key={p.placeId}
-                    photoUrl={p.photoRef ? getPlacePhotoUrl(p.photoRef) : null}
-                    photoHeaders={p.photoRef ? getGoogleMapsRequestHeaders() : undefined}
-                    icon="📍"
-                    title={p.name}
-                    reason={placeReasonLine(p)}
-                    onPress={() => openPlaceInMaps(p)}
-                    accessibilityLabel={p.name}
-                  />
+                placesToShow.map((p, i) => (
+                  <StaggeredReveal key={p.placeId} index={i}>
+                    <PlaceCard
+                      photoUrl={p.photoRef ? getPlacePhotoUrl(p.photoRef) : null}
+                      photoHeaders={p.photoRef ? getGoogleMapsRequestHeaders() : undefined}
+                      icon="📍"
+                      title={p.name}
+                      reason={placeReasonLine(p)}
+                      onPress={() => openPlaceInMaps(p)}
+                      accessibilityLabel={p.name}
+                    />
+                  </StaggeredReveal>
                 ))
               )}
             </>
@@ -2103,29 +2114,30 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   </TouchableOpacity>
                 )}
               </View>
-              {offersToShow.map((o) => {
+              {offersToShow.map((o, i) => {
                 const isRedeemed = redeemedOfferIds.has(o.id);
                 return (
-                  <PlaceCard
-                    key={o.id}
-                    icon="🎁"
-                    photoUrl={o.target_interest_tag ? curatedCoverPhotoFor(o.target_interest_tag) : null}
-                    tintColor={o.target_interest_tag ? categoryStyleFor(o.target_interest_tag).color : null}
-                    title={o.title}
-                    reason={[
-                      o.brand_partners?.name,
-                      businessSignalLine(o.brand_partners),
-                      // Phase 8 (CLAUDE.md, Discover visual hierarchy) --
-                      // names the real matched tag, not the generic shared
-                      // "Matches your interests" string (o.target_interest_tag
-                      // is already the actual tag value on this row).
-                      o.target_interest_tag ? `Matches your ${o.target_interest_tag} interest` : null,
-                    ].filter(Boolean).join(' · ')}
-                    onPress={() => navigation.navigate('BrandOffers', { highlightOfferId: o.id })}
-                    accessibilityLabel={`${o.title}, ${o.brand_partners?.name}, ${isRedeemed ? 'already redeemed' : 'Redeem'}`}
-                    actionLabel={isRedeemed ? 'Redeemed ✓' : 'Redeem'}
-                    actionIsState={isRedeemed}
-                  />
+                  <StaggeredReveal key={o.id} index={i}>
+                    <PlaceCard
+                      icon="🎁"
+                      photoUrl={o.target_interest_tag ? curatedCoverPhotoFor(o.target_interest_tag) : null}
+                      tintColor={o.target_interest_tag ? categoryStyleFor(o.target_interest_tag).color : null}
+                      title={o.title}
+                      reason={[
+                        o.brand_partners?.name,
+                        businessSignalLine(o.brand_partners),
+                        // Phase 8 (CLAUDE.md, Discover visual hierarchy) --
+                        // names the real matched tag, not the generic shared
+                        // "Matches your interests" string (o.target_interest_tag
+                        // is already the actual tag value on this row).
+                        o.target_interest_tag ? `Matches your ${o.target_interest_tag} interest` : null,
+                      ].filter(Boolean).join(' · ')}
+                      onPress={() => navigation.navigate('BrandOffers', { highlightOfferId: o.id })}
+                      accessibilityLabel={`${o.title}, ${o.brand_partners?.name}, ${isRedeemed ? 'already redeemed' : 'Redeem'}`}
+                      actionLabel={isRedeemed ? 'Redeemed ✓' : 'Redeem'}
+                      actionIsState={isRedeemed}
+                    />
+                  </StaggeredReveal>
                 );
               })}
             </>

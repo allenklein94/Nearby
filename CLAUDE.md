@@ -144,6 +144,40 @@ exercised on a real device (standing note) — next session should confirm the c
 across all three transition directions and that the breadcrumb/back-button flow still renders
 correctly through the new wrapper.
 
+**Same-day follow-up ("do the same for StaggeredReveal on Discover's result cards").**
+`StaggeredReveal` (`src/components/StaggeredReveal.js`, an Item 112 follow-up, never moved into
+`src/motion/` since it predates that consolidation — CelebrateSomethingScreen's own "options"
+cards are its only prior consumer) now also wraps every genuine search/browse result card on
+`DiscoverHubScreen.js`, each `.map()` call site keeping its own independent per-index delay per
+the component's own "resets per section" design: the three shared gathering-tile render functions
+(`renderGatheringTile` — both its hero and standard return branches — `renderHappeningNowTile`,
+`renderContextGatheringRow`, each given a real `index` second parameter, which `.map(fnName)`
+already passes automatically with no call-site change needed, reaching every section that reuses
+them — Happening Now/Today/This Weekend/the Item 46 personalized top-category section/the
+dedicated Gatherings tab's `notableGatherings`/both `expandedContext` gathering rows in one
+mechanical edit each), `renderIntentSearchResultRow` (the Item 39 "understood as" search-result
+rows, bundles and per-component items alike), and the four inline result maps for the default
+"All" browse view and its `expandedContext` counterpart (`gatheringsToShow`, `communitiesToShow`,
+`placesToShow`, `offersToShow`, `contextPlaces`, `contextOffers` — each `.map((x) => ...)` gained
+its own `i` index param). `key` moved from each inner `TouchableOpacity`/`PlaceCard` onto the new
+outer `StaggeredReveal`, since React needs the key on the element actually returned from `.map()`.
+
+**Deliberately NOT wrapped, disclosed rather than assumed covered**: the "Happening Nearby" stories
+strip (`happeningNearby` — gathering memories + business moments, a recency-sorted activity feed,
+not a search/browse result) and the `expandedContext` "People You Know" section
+(`contextConnections` — a secondary connections list, not primary result content) — neither is a
+genuine "result card" settling in after a fetch the way this component's own doc comment describes;
+retrofitting either would be reaching past what was asked. The Categories/mode/type-filter/
+places-category chip rows were also left untouched — navigation/filter controls, not results.
+
+No DB migration, no new pure functions (animation-timing/UI wiring reusing an already-shipped,
+untested-by-design component — the same precedent every other `Animated`-based component in this
+codebase already has). Full Jest suite 580/580 passing (unchanged); `DiscoverHubScreen.js`
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised on a real device
+(standing note) — next session should confirm the cascade reads as a natural settling-in rather
+than a jarring stutter across a screen with this many independent result sections, and that
+rapidly switching categories/searching doesn't produce overlapping/stale staggers.
+
 No DB migration, no new pure functions (a component library + three wiring sites). Full Jest suite
 580/580 passing (unchanged); all 18 touched/new files (10 new `src/motion/` files, 6 shim files, 2
 wired screens) transform-checked clean via `@babel/core` + `babel-preset-expo` — plus a full
