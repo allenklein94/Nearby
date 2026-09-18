@@ -76,3 +76,49 @@ export async function getMyDateProposalPlans() {
   if (error) throw new Error(error.message);
   return data ?? [];
 }
+
+// Universal Plan read layer (20261203_plan_read_layer.sql). `plans` is the aggregation identity: occasions and group
+// occasion plans now have their own rows, and downstream gathering/business-request plans hang under them via
+// parent_plan_id. get_plan_overview returns everything about ONE plan in one response -- who, occasion, group plan,
+// activity, business request, offers, reservation, children, and a lifecycle of real facts. New Plan functionality
+// should read through this instead of building another ad-hoc union across the underlying tables.
+// Returns null when the caller has no access to the plan (or it doesn't exist).
+export function normalizePlanOverview(raw) {
+  if (!raw || !raw.plan) return null;
+  const who = raw.who || {};
+  const lifecycle = raw.lifecycle || {};
+  return {
+    plan: raw.plan,
+    who: {
+      host: who.host || null,
+      forName: who.for_name || null,
+      organizers: who.organizers || [],
+      participants: who.participants || [],
+      guestCount: who.guest_count || 0,
+    },
+    occasion: raw.occasion || null,
+    groupPlan: raw.group_plan || null,
+    activity: raw.activity || null,
+    businessRequest: raw.business_request || null,
+    dateProposalId: raw.date_proposal_id || null,
+    offers: raw.offers || [],
+    reservation: raw.reservation || null,
+    parent: raw.parent || null,
+    children: raw.children || [],
+    lifecycle: {
+      status: lifecycle.status || raw.plan.status,
+      hasActivity: !!lifecycle.has_activity,
+      hasBusiness: !!lifecycle.has_business,
+      hasOffer: !!lifecycle.has_offer,
+      hasAcceptedOffer: !!lifecycle.has_accepted_offer,
+      hasReservation: !!lifecycle.has_reservation,
+      reservationStatus: lifecycle.reservation_status || null,
+    },
+  };
+}
+
+export async function getPlanOverview(planId) {
+  const { data, error } = await supabase.rpc('get_plan_overview', { plan_id_param: planId });
+  if (error) throw new Error(error.message);
+  return normalizePlanOverview(data);
+}
