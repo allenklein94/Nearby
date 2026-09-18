@@ -8,7 +8,7 @@ describe('notificationOptOuts', () => {
     expect(notificationOptOuts(undefined)).toEqual({});
   });
   it('only uses the 6 real category columns', () => {
-    const real = ['notify_social', 'notify_discovery', 'notify_proximity', 'notify_planning', 'notify_business', 'notify_community'];
+    const real = ['notify_social', 'notify_dating', 'notify_discovery', 'notify_proximity', 'notify_planning', 'notify_business', 'notify_community'];
     NOTIFICATION_CATEGORIES.forEach((c) => expect(real).toContain(c.column));
   });
 });

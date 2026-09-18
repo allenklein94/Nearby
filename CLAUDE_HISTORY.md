@@ -1,3 +1,14 @@
+# Item 139 (2026-09-18) - Friends and Dating notification switches split
+Migration `20261202_split_friends_dating_notifications.sql`: new `profiles.notify_dating` (backfilled from notify_social, so no
+one's setting changed). `notify_social` now means Friends (friend requests/accepts, friend discovery, stories, birthday/occasion
+nudges, preference polls); `notify_dating` gates the 13 match-side pushes (check_mutual_notice, notify_super_notice, notify_new_message,
+send_match_reminders, notify_video_call_started, notify_screenshot_taken, and the timeline/memory/playlist/trip idea/constitution/
+stress test/shared decision additions) -- bodies are the live definitions with only the gate column swapped. Applied to production;
+verified each function is a single overload and 4/4 profiles match. Full from-scratch Docker replay NOT run. Settings and the onboarding
+step show separate Friends / Dating switches (onboarding now 6 rows). Jest 685/685. Business export re-run: byte-identical.
+Caveat: match messages/reminders now follow Dating, so a user with Dating off no longer gets them (as intended); friend chats
+were never on these functions.
+
 # Item 138 (2026-09-18) - Notification preferences in onboarding
 New `OnboardingNotificationsScreen` (Location -> Notifications -> Login): "What would you like Nearby to keep you posted about?"
 with 5 rows mapped onto the existing category columns (Things to do -> notify_discovery, Friends & dating -> notify_social,

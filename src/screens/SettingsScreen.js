@@ -81,6 +81,7 @@ export default function SettingsScreen({ navigation, route }) {
   // domains from item 17) -- those are unchanged, only their plain on/off
   // master switch collapsed into notify_discovery below.
   const [notifySocial, setNotifySocial] = useState(true);
+  const [notifyDating, setNotifyDating] = useState(true);
   const [notifyDiscovery, setNotifyDiscovery] = useState(true);
   const [notifyProximity, setNotifyProximity] = useState(true);
   const [notifyPlanning, setNotifyPlanning] = useState(true);
@@ -158,6 +159,7 @@ export default function SettingsScreen({ navigation, route }) {
     const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
     if (data) {
       setNotifySocial(data.notify_social ?? true);
+      setNotifyDating(data.notify_dating ?? true);
       setNotifyDiscovery(data.notify_discovery ?? true);
       setNotifyProximity(data.notify_proximity ?? true);
       setNotifyPlanning(data.notify_planning ?? true);
@@ -620,14 +622,27 @@ export default function SettingsScreen({ navigation, route }) {
         <View style={styles.card}>
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>💬 Social</Text>
-              <Text style={styles.helperText}>Friend requests, matches, messages, and waves.</Text>
+              <Text style={styles.settingLabel}>🤝 Friends</Text>
+              <Text style={styles.helperText}>Friend requests, friends' stories, and birthday and occasion reminders.</Text>
             </View>
             <Switch
               value={notifySocial}
               onValueChange={(v) => toggleNotifPref('notify_social', v, setNotifySocial)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me about social activity -- friend requests, matches, messages, and waves"
+              accessibilityLabel="Notify me about friends -- friend requests, stories, and occasion reminders"
+            />
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.settingRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>❤️ Dating</Text>
+              <Text style={styles.helperText}>Matches, messages, waves, calls, and shared-space updates with your matches.</Text>
+            </View>
+            <Switch
+              value={notifyDating}
+              onValueChange={(v) => toggleNotifPref('notify_dating', v, setNotifyDating)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Notify me about dating -- matches, messages, waves, and calls"
             />
           </View>
           <View style={styles.divider} />
