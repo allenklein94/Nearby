@@ -32,3 +32,13 @@ test('becauseYouLikeCategories: behavior wins, else declared, else empty', () =>
   expect(becauseYouLikeCategories([], ['Music', 'Hiking'], ['Food'])).toEqual(['Music', 'Hiking', 'Foodie']);
   expect(becauseYouLikeCategories([], [], null)).toEqual([]);
 });
+
+test('shouldOfferDiningPrompt: only for food interests with no tastes set and not dismissed', () => {
+  const { shouldOfferDiningPrompt } = require('./interestGraph');
+  expect(shouldOfferDiningPrompt({ interests: ['Coffee'], cuisinePreferences: [], venuePreferences: [] })).toBe(true);
+  expect(shouldOfferDiningPrompt({ interests: ['Hiking'], cuisinePreferences: [], venuePreferences: [] })).toBe(false);
+  expect(shouldOfferDiningPrompt({ interests: ['Coffee'], cuisinePreferences: ['thai'], venuePreferences: [] })).toBe(false);
+  expect(shouldOfferDiningPrompt({ interests: ['Coffee'], cuisinePreferences: [], venuePreferences: ['quiet'], dismissed: false })).toBe(false);
+  expect(shouldOfferDiningPrompt({ interests: ['Coffee'], dismissed: true })).toBe(false);
+  expect(shouldOfferDiningPrompt({ interests: null })).toBe(false);
+});

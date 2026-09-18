@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
-import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge, FoundLine } from '../motion';
+import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge, FoundLine, showSuccessToast } from '../motion';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -32,6 +32,8 @@ import * as Location from 'expo-location';
 import StartSomethingModal, { CREATE_HUB_OPTIONS } from '../components/StartSomethingModal';
 import SurpriseMeSheet from '../components/SurpriseMeSheet';
 import QuickPicksEditModal from '../components/QuickPicksEditModal';
+import DiningPreferencesPromptModal from '../components/DiningPreferencesPromptModal';
+import { shouldOfferDiningPrompt } from '../constants/interestGraph';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { iconNameForCategory } from '../constants/quickPickIcons';
 import LoadErrorState from '../components/LoadErrorState';
@@ -213,6 +215,9 @@ export default function HomeScreen({ navigation }) {
   const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
   const [unratedGathering, setUnratedGathering] = useState(null);
   const [pinnedQuickPicks, setPinnedQuickPicks] = useState(null);
+  // Progressive dining-taste prompt (Preference wiring Phase 4): a permanent, per-user dismissable Home card.
+  const [diningNudge, setDiningNudge] = useState(false);
+  const [diningModalVisible, setDiningModalVisible] = useState(false);
   const [quickPicksEditVisible, setQuickPicksEditVisible] = useState(false);
   const [intentText, setIntentText] = useState('');
   const [intentThinking, setIntentThinking] = useState(false);
@@ -321,10 +326,12 @@ export default function HomeScreen({ navigation }) {
         // Phase J (CLAUDE.md) -- created_at is the one new column this
         // whole phase needs; a plain, already-fetched real timestamp, zero
         // new query, used below to compute real account-age maturity.
-        const { data: profile } = await supabase.from('profiles').select('display_name, home_quick_pick_categories, seen_home_first_run_moment, social_comfort_level, created_at').eq('id', myId).single();
+        const { data: profile } = await supabase.from('profiles').select('display_name, home_quick_pick_categories, seen_home_first_run_moment, social_comfort_level, created_at, interests, cuisine_preferences, venue_preferences').eq('id', myId).single();
         setMyName(profile?.display_name?.split(' ')[0] ?? '');
         setPinnedQuickPicks(Array.isArray(profile?.home_quick_pick_categories) ? profile.home_quick_pick_categories : null);
         setSeenFirstRunMoment(profile?.seen_home_first_run_moment ?? true);
+        const diningDismissed = await AsyncStorage.getItem(`dining_prompt_dismissed_${myId}`).catch(() => null);
+        setDiningNudge(shouldOfferDiningPrompt({ interests: profile?.interests, cuisinePreferences: profile?.cuisine_preferences, venuePreferences: profile?.venue_preferences, dismissed: !!diningDismissed }));
       }
       // Everything below is independent -- none of these fetches need each
       // other's *results* (each only ever sets its own isolated piece of
@@ -1162,6 +1169,14 @@ export default function HomeScreen({ navigation }) {
   // (a birthday isn't "existing supply" to check against first), so it
   // navigates straight to gathering creation with an honest prefilled
   // title -- never auto-submits, never guesses a date/time.
+  async function handleDiningDismiss() {
+    setDiningNudge(false);
+    setDiningModalVisible(false);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const uid = sessionData?.session?.user?.id;
+    if (uid) AsyncStorage.setItem(`dining_prompt_dismissed_${uid}`, '1').catch(() => {});
+  }
+
   function handleBirthdayAct() {
     if (!birthdayNudge) return;
     const dismissKey = `birthday_dismiss_${new Date().toDateString()}_${birthdayNudge.connection_id}`;
@@ -1913,7 +1928,7 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
 
-        {(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || outcomePrompt || predictivePattern || groupIntentSignal || birthdayNudge || occasionNudge || pendingPollsCount > 0 || venueNeededGathering || rsvpsOutstandingGathering || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
+        {(diningNudge || pendingInvitesCount > 0 || perksCount > 0 || socialForecast || outcomePrompt || predictivePattern || groupIntentSignal || birthdayNudge || occasionNudge || pendingPollsCount > 0 || venueNeededGathering || rsvpsOutstandingGathering || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
           <View style={{ marginBottom: spacing.md }}>
             {predictivePattern && (
               <View style={styles.outcomePromptCard}>
@@ -1942,6 +1957,19 @@ export default function HomeScreen({ navigation }) {
                 </View>
                 <TouchableOpacity style={[styles.predictiveActButton, intentThinking && styles.intentButtonDisabled]} onPress={handleGroupIntentAct} disabled={intentThinking} accessibilityLabel="Find something together" accessibilityRole="button">
                   <Text style={styles.predictiveActButtonText}>Find something for the group →</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {diningNudge && (
+              <View style={styles.outcomePromptCard}>
+                <View style={styles.outcomePromptHeaderRow}>
+                  <Text style={styles.outcomePromptText} numberOfLines={2}>🍽️ Into food? Tell us what you like to eat and we'll find better spots.</Text>
+                  <TouchableOpacity onPress={handleDiningDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="close" size={16} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity style={styles.predictiveActButton} onPress={() => setDiningModalVisible(true)} accessibilityLabel="Set my tastes" accessibilityRole="button">
+                  <Text style={styles.predictiveActButtonText}>Set my tastes →</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -2641,6 +2669,11 @@ export default function HomeScreen({ navigation }) {
         gatheringId={unratedGathering?.id}
         navigation={navigation}
         onClose={() => setUnratedGathering(null)}
+      />
+      <DiningPreferencesPromptModal
+        visible={diningModalVisible}
+        onClose={handleDiningDismiss}
+        onSaved={() => { setDiningNudge(false); setDiningModalVisible(false); showSuccessToast('Saved', 'Your tastes are set.'); }}
       />
       <QuickPicksEditModal
         visible={quickPicksEditVisible}

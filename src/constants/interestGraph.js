@@ -59,3 +59,13 @@ export function becauseYouLikeCategories(behavioral, declaredInterests, monthlyI
   if (history.length > 0) return history.slice(0, limit);
   return canonicalizeInterests([...(declaredInterests ?? []), ...(monthlyInterests ?? [])]).slice(0, limit);
 }
+
+// Progressive dining prompt: offered only when the user has told us they're into food & drink (any
+// food_drink tag), hasn't already set cuisine/venue tastes, and hasn't dismissed it. Cuisine/venue
+// aren't derivable from interests, so this asks -- once, skippable -- instead of guessing.
+export function shouldOfferDiningPrompt({ interests, cuisinePreferences, venuePreferences, dismissed }) {
+  if (dismissed) return false;
+  if ((cuisinePreferences ?? []).length > 0 || (venuePreferences ?? []).length > 0) return false;
+  const foodTags = new Set(CATEGORY_GROUPS.find((g) => g.key === 'food_drink')?.tags ?? []);
+  return canonicalizeInterests(interests).some((t) => foodTags.has(t));
+}
