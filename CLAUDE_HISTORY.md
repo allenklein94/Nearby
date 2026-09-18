@@ -61,6 +61,9 @@ the default (deduped, once-per-session) ask. Home's Happening Now tiles were tim
 start breaks ties, unknown distance last, unit-tested) to match Discover. Tiles now show the real distance after the title ("Title  0.4 mi away", hidden when unknown; also in the a11y label).
 Business export re-run after this fix: byte-identical output (HomeScreen/DiscoverHubScreen aren't in the business web
 bundle, provider unchanged since the last export), so nothing to commit; the committed export is current.
+Export re-run after the Happening Now ordering + distance-label changes: this one DID change (new hashed AppEntry bundle +
+index.html). Cause: `services/homeDashboard.js` IS in the business web bundle (it contains `nearestThenSoonest`) even though
+HomeScreen isn't -- so a homeDashboard.js change needs a regeneration; HomeScreen-only changes don't. Committed and pushed.
 Convention bullets added to CLAUDE.md: "Location is asked once, used everywhere", "Notification area".
 
 # Item 137 (2026-09-18) - Animation consistency audit
