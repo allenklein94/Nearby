@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput } from 'react-native';
-import BrandedLoader from '../components/BrandedLoader';
-import { SuccessAnimation } from '../motion';
+import { NLoader, SuccessAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import {
@@ -310,7 +309,7 @@ export default function GroupPlanScreen({ navigation, route }) {
   if (loading && !detail) {
     return (
       <SafeAreaView style={styles.container}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
       </SafeAreaView>
     );
   }

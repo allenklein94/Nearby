@@ -17,7 +17,7 @@ import {
   StyleSheet, SafeAreaView, Alert, ActivityIndicator, Modal, KeyboardAvoidingView,
   Platform, TouchableWithoutFeedback, Keyboard,
 } from 'react-native';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -398,7 +398,7 @@ export default function BusinessAIAutomationScreen({ route }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
       </SafeAreaView>
     );
   }

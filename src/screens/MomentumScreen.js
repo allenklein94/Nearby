@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMomentumStats } from '../services/momentum';
 import { getInsightsStats } from '../services/insights';
@@ -78,7 +78,7 @@ export default function MomentumScreen({ navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your activity...</Text>
       </SafeAreaView>
     );

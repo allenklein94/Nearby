@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, RefreshControl } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { getLegacyEntries } from '../services/relationshipLegacy';
 import { useTheme } from '../context/ThemeContext';
@@ -52,7 +52,7 @@ export default function LegacyLibraryScreen({ navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your legacy library...</Text>
       </SafeAreaView>
     );

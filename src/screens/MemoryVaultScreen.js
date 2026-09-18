@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader } from '../motion';
 import { addMemoryItem, getMemoryItems } from '../services/memoryVault';
 import { checkTextModeration } from '../services/textModeration';
 import { supabase } from '../services/supabase';
@@ -78,7 +78,7 @@ export default function MemoryVaultScreen({ route }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
       </SafeAreaView>
     );
   }

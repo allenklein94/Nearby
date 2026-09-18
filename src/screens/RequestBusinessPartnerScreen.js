@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ScrollView, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyPartnershipTargets, requestBusinessPartnership } from '../services/businessPartnerships';
 import { getActivePartnersByName, getAllActivePartners } from '../services/brandOffers';
@@ -129,7 +129,7 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
     if (loadingTargets) {
       return (
         <SafeAreaView style={styles.container}>
-          <BrandedLoader fullScreen={false} />
+          <NLoader fullScreen={false} />
         </SafeAreaView>
       );
     }

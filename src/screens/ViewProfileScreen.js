@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, FlatList, Dimensions, TouchableOpacity, Alert } from 'react-native';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -283,7 +283,7 @@ export default function ViewProfileScreen({ route, navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading profile...</Text>
       </SafeAreaView>
     );

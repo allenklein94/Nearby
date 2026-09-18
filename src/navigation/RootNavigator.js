@@ -13,7 +13,7 @@ import { startBackgroundPresenceReporting } from '../services/proximity';
 import { initPurchases } from '../services/purchases';
 import { getActivityBadgeCount } from '../services/homeDashboard';
 import { getMyManagedPartner } from '../services/brandOffers';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader } from '../motion';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import OnboardingQuestionsScreen from '../screens/OnboardingQuestionsScreen';
 import OnboardingLocationScreen from '../screens/OnboardingLocationScreen';
@@ -401,7 +401,7 @@ export default function RootNavigator() {
   // one moment every single app open passes through, and the most natural
   // place for the new branded loading treatment (BrandedLoader.js) rather
   // than a generic spinner.
-  if (loading || (session && profileLoading) || brandTransitioning) return <BrandedLoader />;
+  if (loading || (session && profileLoading) || brandTransitioning) return <NLoader />;
 
   return (
     <NavigationContainer ref={navigationRef} linking={linking}>

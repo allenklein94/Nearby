@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput, Platform, Share } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader, SurpriseRevealAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
@@ -42,7 +42,6 @@ import {
 import { OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { WHEN_PRESETS } from '../utils/whenPresets';
 import LoadErrorState from '../components/LoadErrorState';
-import { SurpriseRevealAnimation } from '../motion';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -552,7 +551,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   if (loading && !detail) {
     return (
       <SafeAreaView style={styles.container}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
       </SafeAreaView>
     );
   }

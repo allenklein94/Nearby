@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Share, ActivityIndicator, TextInput } from 'react-native';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader } from '../motion';
 import { getMyReferralCode, getMyReferralStats, redeemReferralCode } from '../services/referrals';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
@@ -81,7 +81,7 @@ export default function InviteFriendsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your friends...</Text>
       </SafeAreaView>
     );

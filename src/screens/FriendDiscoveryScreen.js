@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Switch, Alert } from 'react-native';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   isOpenToFriendDiscovery,
@@ -304,7 +304,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
       <Container style={styles.container}>
         <Header />
         <View style={styles.centered}>
-          <BrandedLoader fullScreen={false} />
+          <NLoader fullScreen={false} />
           <Text style={styles.loadingCaption}>
             {discoveryMode === 'crossedPaths' ? 'Finding people you’ve crossed paths with…' : 'Finding people who match…'}
           </Text>

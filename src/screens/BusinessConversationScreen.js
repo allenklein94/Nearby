@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader } from '../motion';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from '@react-navigation/native';
 import { getBusinessMessagesPage, sendMessageToBusiness } from '../services/brandOffers';
@@ -109,7 +109,7 @@ export default function BusinessConversationScreen({ route, navigation }) {
   if (loadingInitial) {
     return (
       <SafeAreaView style={styles.container}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
       </SafeAreaView>
     );
   }

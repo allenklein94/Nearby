@@ -254,6 +254,41 @@ disclosed here rather than silently assumed covered. Full Jest suite 580/580 pas
 both touched files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised
 on a real device (standing note) — pure import-path change, same as the prior four follow-ups.
 
+**Same-day follow-up ("do the same for BrandedLoader's remaining shim usages") — the big one,
+41 files.** A repo-wide grep confirmed every one of the 41 real `BrandedLoader` consumers used the
+exact same uniform shape (`import BrandedLoader from '../components/BrandedLoader';` plus exactly
+one self-closing JSX usage, either `<BrandedLoader fullScreen={false} />` or, for
+`RootNavigator.js`'s own boot-gate case, bare `<BrandedLoader />`, never with children) — confirmed
+before touching anything, not assumed uniform, since a scripted mechanical substitution across 41
+files is only safe when the pattern genuinely never varies. Ran a small Node script (not `sed`, to
+avoid regex-escaping risk on the `{false}` JSX prop braces) doing exact literal string replacement
+of the import line and both JSX shapes to `import { NLoader } from '../motion'` /
+`<NLoader fullScreen={false} />` / `<NLoader />` across all 41 files — every file confirmed changed,
+none silently skipped. Five of the 41 (`GroupPlanScreen.js`, `GroupOccasionPlanScreen.js`,
+`BusinessRequestDetailScreen.js`, `OccasionsScreen.js`, `CommunityDetailScreen.js`) already had a
+separate `../motion` import from the prior four follow-ups in this same chain — merged into one
+combined import statement each rather than leaving two redundant lines from the same module.
+
+Left the handful of prose comments that mention "BrandedLoader" untouched (`RootNavigator.js`'s
+own two, `LoadErrorState.js`'s one) — they refer to the shim file by its real, still-current name
+(`BrandedLoader.js` genuinely still exists on disk) or describe the historical build note, not
+live code; rewriting them wasn't part of the ask and risks stating something no longer quite true
+about when/why the file was named that. `src/components/BrandedLoader.js` itself is left in place,
+now with zero real screen consumers (confirmed via a repo-wide grep) — same disclosed-not-deleted
+posture as `PlanCreatedCelebration.js` earlier in this chain.
+
+With this, every real call site across the whole shim-migration chain (SuccessAnimation,
+OccasionAnimation, SurpriseRevealAnimation, and now NLoader) is on the canonical `../motion`
+import — nothing left importing from the original `src/components/` locations except the shim
+files themselves. All 41 touched files transform-checked clean via `@babel/core` +
+`babel-preset-expo` (checked as a batch via `git diff --name-only`, not spot-checked); full Jest
+suite 580/580 passing (unchanged — this is import-path wiring, no logic changed). Not exercised on
+a real device (standing note) — same as every follow-up in this chain, a pure import-path change
+with no expected visual difference; next session with device access should still spot-check a
+representative handful (the boot-gate case in `RootNavigator.js`, one full-screen case, one
+`fullScreen={false}` in-content case) to be thorough, since this is the widest-reaching of the six
+migrations in this chain.
+
 No DB migration, no new pure functions (a component library + three wiring sites). Full Jest suite
 580/580 passing (unchanged); all 18 touched/new files (10 new `src/motion/` files, 6 shim files, 2
 wired screens) transform-checked clean via `@babel/core` + `babel-preset-expo` — plus a full

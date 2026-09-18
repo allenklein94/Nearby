@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { getIntentFunnelStats, getMarketValidationStats, getMarketplaceReliabilityRankings, getCrossUserIntentPatterns, getHomeNudgeStats } from '../services/marketValidation';
 import { useTheme } from '../context/ThemeContext';
@@ -86,7 +86,7 @@ export default function MarketValidationScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading market validation stats...</Text>
       </SafeAreaView>
     );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image, Platform } from 'react-native';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader, SuccessAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { useStripe, initStripe } from '@stripe/stripe-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -12,7 +12,6 @@ import { buildPlanTimeline, summarizePlanTimelineReadiness, buildPlanSummary, ad
 import { buildOccasionPlanShareCaption } from '../utils/occasionPlanShareCard';
 import { stripTrailingCelebrationIcon, buildPlanHeaderChangeKey } from '../utils/livingPlanHeader';
 import OccasionPlanShareCard from '../components/OccasionPlanShareCard';
-import { SuccessAnimation } from '../motion';
 import CelebrationHeaderIcon from '../components/CelebrationHeaderIcon';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -761,7 +760,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   if (loading && !request) {
     return (
       <SafeAreaView style={styles.container}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
       </SafeAreaView>
     );
   }

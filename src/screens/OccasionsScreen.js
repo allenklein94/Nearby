@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader, SurpriseRevealAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getMyOccasions, addOccasion, deleteOccasion, setOccasionReminderEnabled, setOccasionRecallShareable, revealOccasion } from '../services/occasions';
@@ -30,7 +30,6 @@ import {
 } from '../services/deviceCalendar';
 import { guessOccasionTypeFromEventTitle, formatCalendarEventDateLabel, filterUpcomingCalendarSuggestions } from '../utils/calendarOccasionSuggestion';
 import LoadErrorState from '../components/LoadErrorState';
-import { SurpriseRevealAnimation } from '../motion';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -469,7 +468,7 @@ export default function OccasionsScreen({ navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your occasions...</Text>
       </SafeAreaView>
     );

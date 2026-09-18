@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader } from '../motion';
 import * as Haptics from 'expo-haptics';
 import { getMyPendingPreferencePolls, answerPreferencePoll } from '../services/preferencePolls';
 import { preferencePollQuestion } from '../constants/preferencePollQuestions';
@@ -66,7 +66,7 @@ export default function PreferencePollScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
       </SafeAreaView>
     );
   }

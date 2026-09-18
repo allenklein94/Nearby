@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Image, Modal } from 'react-native';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader, SuccessAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { supabase } from '../services/supabase';
@@ -15,7 +15,6 @@ import CommunityCalendar from '../components/CommunityCalendar';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import LoadErrorState from '../components/LoadErrorState';
-import { SuccessAnimation } from '../motion';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -354,7 +353,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
         <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm }}>Loading community…</Text>
       </SafeAreaView>
     );

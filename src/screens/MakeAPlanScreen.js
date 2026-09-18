@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, Platform } from 'react-native';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader } from '../motion';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../services/supabase';
@@ -210,7 +210,7 @@ export default function MakeAPlanScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
       </View>
     );
   }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ActivityIndicator } from 'react-native';
-import BrandedLoader from '../components/BrandedLoader';
+import { NLoader } from '../motion';
 import { takeVerificationPhoto, submitVerification, getMyVerificationStatus } from '../services/idVerification';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
@@ -77,7 +77,7 @@ export default function IdVerificationScreen() {
   if (loadingStatus) {
     return (
       <SafeAreaView style={styles.container}>
-        <BrandedLoader fullScreen={false} />
+        <NLoader fullScreen={false} />
       </SafeAreaView>
     );
   }
