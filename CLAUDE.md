@@ -40,6 +40,42 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Sixth same-day follow-up ("The Nearby Motion Language") — fully DONE (2026-09-18), direct
+follow-up to Item 112's animation arc.** User laid out a locked 6-glyph vocabulary for every
+animation/loading/status moment in the app — N (NearbyMark) = system intelligence (loading/
+searching/finding/matching/recommending), ✨ = discovery/recommendation, ❤️ = connection
+(romantic), 🎉 = celebration (occasion/plan/milestone), ✓ = completion (plan/reservation/request
+confirmed), 🔒 = privacy/surprise — "the animation system itself becomes part of the Nearby brand
+language." Formalized as `src/constants/motionLanguage.js`, a documentation-only reference module
+(no runtime export) other components' own header comments should point back to, rather than a
+free-standing idea with nowhere to live.
+
+Audited the app's existing animation/celebration components against it before treating this as
+purely aspirational — found one real, concrete drift: `MatchCelebrationModal.js`
+(`🎉🌟`/`🎉`) and `FriendMatchCelebrationModal.js` (`🤝🎉`) both used the celebration glyph for what
+is actually a connection moment, conflating the two categories this vocabulary exists to keep
+separate. Fixed: the dating match modal now shows `❤️🌟`/`❤️` (romantic connection); the friend
+match modal now shows plain `🤝` (platonic connection — kept as its own established glyph rather
+than collapsed into ❤️, since this app already uses 🤝 specifically for friend/organizer
+relationships elsewhere — "🤝 Plan Together," the mutual-friends badge — and romantic vs. platonic
+connection have always read as visually distinct things in this app). Every other existing
+animation/loading component was checked and found already consistent: `BrandedLoader`/
+`FindingOptionsLoader` (N for loading/finding), `PlanCreatedCelebration` (N→✨→✓, "It's happening
+🎉" — correctly uses completion AND celebration glyphs for their own distinct beats),
+`SurpriseRevealAnimation` (🔒→✨→🎉 — privacy transitioning into a real celebration moment),
+`OccasionSelectAnimation` (per-occasion icon→✨→target, celebration-family only) — no changes
+needed to any of them.
+
+Deliberately did NOT retrofit static, non-animated UI (e.g. `BusinessRequestDetailScreen`'s Item
+91 Plan Status pill, which uses colored text pills, not glyphs) — this vocabulary governs which
+glyph an *animated/celebratory moment* reaches for, not a mandate to add an icon to every status
+label in the app; that would be much larger, unrequested scope. No DB migration, no new pure
+functions (a documentation constant plus two one-line emoji swaps). Full Jest suite 580/580
+passing (unchanged); all three touched/new files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised in a running app (no simulator/device tooling this session,
+standing note) — next session should confirm on a real device that ❤️/🤝 read correctly in both
+match-celebration modals in place of the old 🎉.
+
 **Fifth same-day follow-up ("do same reveal for occasions screen and also... the finished plan
 could have a living header") — fully DONE (2026-09-17), same-day direct follow-up to the fourth
 follow-up above.** Two small, separate asks:
@@ -5088,6 +5124,14 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
 - **No invented numbers, no fabricated signals, ever.** Every metric/count/reason shown anywhere
   in the app must trace to a real query result. An absent signal renders as an honest empty
   state, never a guessed placeholder.
+- **The Nearby Motion Language (locked 2026-09-18, `src/constants/motionLanguage.js`).** A fixed
+  6-glyph vocabulary for animation/loading/celebration moments: N (NearbyMark) = system
+  intelligence (loading/searching/finding/matching/recommending); ✨ = discovery/recommendation
+  (a transition beat, not a standalone icon); ❤️ = romantic connection (a dating match); 🤝 =
+  platonic connection (a friend match, an organizer relationship — this app's own pre-existing
+  handshake motif, kept distinct from ❤️); 🎉 = celebration (occasion/plan/milestone); ✓ =
+  completion (plan/reservation/request confirmed); 🔒 = privacy/surprise. Never reach for 🎉 as a
+  generic "something good happened" glyph for a connection moment — that's what ❤️/🤝 are for.
 - **Calendar = when, Nearby = what + who + where + how (Item 76, locked 2026-09-13).** Nearby
   may read device calendar context (Item 75) to inform suggestions, plans, occasions, and
   Surprise Me, but must never become a calendar-management surface itself -- no new "Calendar"

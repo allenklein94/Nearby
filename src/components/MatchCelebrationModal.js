@@ -31,7 +31,9 @@ export default function MatchCelebrationModal({ visible, myPhotoUrl, theirPhotoU
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <View style={styles.overlay}>
         <Animated.View style={[styles.content, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]}>
-          <Text style={styles.emoji}>{isFirstMatch ? '🎉🌟' : '🎉'}</Text>
+          {/* ❤️ = connection (romantic), per the Nearby Motion Language -- not 🎉, which is
+              reserved for occasion/plan/milestone celebration. See motionLanguage.js. */}
+          <Text style={styles.emoji}>{isFirstMatch ? '❤️🌟' : '❤️'}</Text>
           <Text style={styles.title}>{isFirstMatch ? 'Your First Match!' : "It's a Match!"}</Text>
           <Text style={styles.subtitle}>
             {subtitle}{isFirstMatch ? ' This is the start of something new.' : ''}

@@ -29,7 +29,9 @@ export default function FriendMatchCelebrationModal({ visible, theirPhotoUrl, th
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <View style={styles.overlay}>
         <Animated.View style={[styles.content, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]}>
-          <Text style={styles.emoji}>🤝🎉</Text>
+          {/* 🤝 = connection (platonic), per the Nearby Motion Language -- not 🎉, which is
+              reserved for occasion/plan/milestone celebration. See motionLanguage.js. */}
+          <Text style={styles.emoji}>🤝</Text>
           <Text style={styles.title}>New Friend!</Text>
           <Text style={styles.subtitle}>You and {theirName} are both interested in connecting.</Text>
 
