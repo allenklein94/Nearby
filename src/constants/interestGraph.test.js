@@ -42,3 +42,24 @@ test('shouldOfferDiningPrompt: only for food interests with no tastes set and no
   expect(shouldOfferDiningPrompt({ interests: ['Coffee'], dismissed: true })).toBe(false);
   expect(shouldOfferDiningPrompt({ interests: null })).toBe(false);
 });
+
+describe('ranking helpers', () => {
+  const { rankByInterests, orderGroupsByInterests, personalizeQuickOptions } = require('./interestGraph');
+  test('rankByInterests is stable and only reorders', () => {
+    const items = [{ id: 1, interest_tag: 'Hiking' }, { id: 2, interest_tag: 'Music' }, { id: 3, interest_tag: 'Yoga' }, { id: 4, interest_tag: 'Golf' }];
+    expect(rankByInterests(items, ['Music', 'Yoga']).map((x) => x.id)).toEqual([2, 3, 1, 4]);
+    expect(rankByInterests(items, []).map((x) => x.id)).toEqual([1, 2, 3, 4]);
+    expect(rankByInterests(items, ['Music']).length).toBe(4);
+  });
+  test('orderGroupsByInterests floats groups with a declared tag', () => {
+    const order = orderGroupsByInterests(CATEGORY_GROUPS, ['Hiking']).map((g) => g.key);
+    expect(order[0]).toBe('outdoors_nature');
+    expect(order.length).toBe(CATEGORY_GROUPS.length);
+  });
+  test('personalizeQuickOptions ranks, adds capped extras, keeps Something Else last', () => {
+    const opts = [{ label: 'Coffee', category: 'Coffee' }, { label: 'Music', category: 'Music' }, { label: 'Something Else', category: null }];
+    const out = personalizeQuickOptions(opts, ['Music', 'Yoga', 'Hiking', 'Golf'], () => '•');
+    expect(out.map((o) => o.label)).toEqual(['Music', 'Coffee', 'Yoga', 'Hiking', 'Something Else']);
+    expect(personalizeQuickOptions(opts, [], () => '•')).toBe(opts);
+  });
+});

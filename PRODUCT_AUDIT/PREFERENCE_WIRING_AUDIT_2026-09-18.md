@@ -85,3 +85,12 @@ consumer reads the same canonical value. Progressive completion: never force adv
   (3) `notify_things_to_do_categories` narrowing excludes Coffee once only Yoga is selected, null = all interests;
   (4) dining prefs writable. NOT verified live: client-side surfaces (Discover ordering, People default, Home
   card, onboarding steps) -- unit-tested / parse-checked only; no device.
+- **Preferences DO something (2026-09-18):** audited each surface for real influence. Already true: Discover
+  sections rank by `fit.score` (interest match +5); Home recs; push copy ("... matches your interests");
+  People shared-interest counts; Surprise Me. Fixed: (1) the Gatherings "Nearby" feed ordered by distance only --
+  declared interests now rise (`rankByInterests`, stable; nothing hidden); (2) "For You" was behavior-only --
+  falls back to declared interests for new users; (3) Create: Home's Start-something options put declared
+  interests first and add up to 2 declared interests not already offered (`personalizeQuickOptions`); the
+  CreateGathering category picker floats groups containing a declared tag (`orderGroupsByInterests`). New shared
+  hook `useMyInterests`. NOT built: passing interests to businesses on a request -- that shares personal profile
+  data with a third party and needs its own explicit opt-in design (request already carries the chosen category).

@@ -69,3 +69,37 @@ export function shouldOfferDiningPrompt({ interests, cuisinePreferences, venuePr
   const foodTags = new Set(CATEGORY_GROUPS.find((g) => g.key === 'food_drink')?.tags ?? []);
   return canonicalizeInterests(interests).some((t) => foodTags.has(t));
 }
+
+// ---- Ranking helpers: declared interests change what rises, they never hide anything ----
+
+// Stable: items whose interest_tag the user declared come first; everything else keeps its order.
+export function rankByInterests(items, interests, tagOf = (x) => x.interest_tag) {
+  const mine = new Set(canonicalizeInterests(interests));
+  if (mine.size === 0) return items;
+  const hit = [];
+  const rest = [];
+  for (const it of items) (mine.has(tagOf(it)) ? hit : rest).push(it);
+  return [...hit, ...rest];
+}
+
+// Category groups (Create's picker): groups containing any declared tag float up, order otherwise kept.
+export function orderGroupsByInterests(groups, interests) {
+  const mine = new Set(canonicalizeInterests(interests));
+  if (mine.size === 0) return groups;
+  const hit = groups.filter((g) => g.tags.some((t) => mine.has(t)));
+  return [...hit, ...groups.filter((g) => !hit.includes(g))];
+}
+
+// Create's quick options: declared-interest options first, then up to `maxExtras` declared interests
+// that aren't already an option (icon supplied by the caller), with the open-ended "Something Else"
+// (category null) always last.
+export function personalizeQuickOptions(options, interests, iconFor, maxExtras = 2) {
+  const mine = canonicalizeInterests(interests);
+  if (mine.length === 0) return options;
+  const fixed = options.filter((o) => o.category);
+  const tail = options.filter((o) => !o.category);
+  const present = new Set(fixed.map((o) => o.category));
+  const ranked = [...fixed.filter((o) => mine.includes(o.category)), ...fixed.filter((o) => !mine.includes(o.category))];
+  const extras = mine.filter((t) => !present.has(t)).slice(0, maxExtras).map((t) => ({ icon: iconFor(t), label: t, category: t }));
+  return [...ranked, ...extras, ...tail];
+}

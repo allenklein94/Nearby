@@ -33,7 +33,8 @@ import StartSomethingModal, { CREATE_HUB_OPTIONS } from '../components/StartSome
 import SurpriseMeSheet from '../components/SurpriseMeSheet';
 import QuickPicksEditModal from '../components/QuickPicksEditModal';
 import DiningPreferencesPromptModal from '../components/DiningPreferencesPromptModal';
-import { shouldOfferDiningPrompt } from '../constants/interestGraph';
+import { shouldOfferDiningPrompt, personalizeQuickOptions } from '../constants/interestGraph';
+import useMyInterests from '../hooks/useMyInterests';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { iconNameForCategory } from '../constants/quickPickIcons';
 import LoadErrorState from '../components/LoadErrorState';
@@ -216,6 +217,7 @@ export default function HomeScreen({ navigation }) {
   const [unratedGathering, setUnratedGathering] = useState(null);
   const [pinnedQuickPicks, setPinnedQuickPicks] = useState(null);
   // Progressive dining-taste prompt (Preference wiring Phase 4): a permanent, per-user dismissable Home card.
+  const myDeclaredInterests = useMyInterests();
   const [diningNudge, setDiningNudge] = useState(false);
   const [diningModalVisible, setDiningModalVisible] = useState(false);
   const [quickPicksEditVisible, setQuickPicksEditVisible] = useState(false);
@@ -2662,7 +2664,7 @@ export default function HomeScreen({ navigation }) {
         visible={startModalVisible}
         onClose={closeStartModal}
         navigation={navigation}
-        topLevelOptions={CREATE_HUB_OPTIONS}
+        topLevelOptions={personalizeQuickOptions(CREATE_HUB_OPTIONS, myDeclaredInterests, (t) => categoryStyleFor(t).icon)}
       />
       <GatheringFeedbackModal
         visible={!!unratedGathering}

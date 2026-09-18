@@ -36,6 +36,8 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 import { DATE_OPTIONS, matchesDateFilter } from '../utils/gatheringDateFilter';
 import { gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { useTheme } from '../context/ThemeContext';
+import useMyInterests from '../hooks/useMyInterests';
+import { rankByInterests, becauseYouLikeCategories } from '../constants/interestGraph';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -97,6 +99,9 @@ export default function GatheringsScreen({ navigation, route }) {
   const [trendingActive, setTrendingActive] = useState(false);
   const [trendingIds, setTrendingIds] = useState([]);
   const [topCategories, setTopCategories] = useState([]);
+  const myInterests = useMyInterests();
+  // "For You": real behavior first, else what the user declared (so it works from day one).
+  const forYouCategories = becauseYouLikeCategories(topCategories, myInterests, [], 50);
   const [initialLoading, setInitialLoading] = useState(true);
   const [newOfferCount, setNewOfferCount] = useState(0);
   const [viewStyle, setViewStyle] = useState('list');
@@ -538,8 +543,8 @@ export default function GatheringsScreen({ navigation, route }) {
     interestFilter, forYouActive, trendingActive, dateFilter, environmentFilter, priceFilter, partyTypeFilter,
   });
 
-  const filteredNearby = (isSearchingGatherings ? searchedNearby : nearby)
-    .filter((g) => forYouActive ? topCategories.includes(g.interest_tag) : (!interestFilter || g.interest_tag === interestFilter))
+  const filteredNearbyUnranked = (isSearchingGatherings ? searchedNearby : nearby)
+    .filter((g) => forYouActive ? forYouCategories.includes(g.interest_tag) : (!interestFilter || g.interest_tag === interestFilter))
     .filter((g) => !trendingActive || trendingIds.includes(g.id))
     .filter((g) => matchesDateFilter(g.scheduled_at, dateFilter))
     .filter((g) => !environmentFilter || (environmentFilter === 'indoor' ? isIndoorCategory(g.interest_tag) : isOutdoorCategory(g.interest_tag)))
@@ -547,12 +552,15 @@ export default function GatheringsScreen({ navigation, route }) {
     .filter((g) => !partyTypeFilter || g.party_type === partyTypeFilter)
     .sort((a, b) => {
       if (forYouActive) {
-        const aRank = topCategories.indexOf(a.interest_tag);
-        const bRank = topCategories.indexOf(b.interest_tag);
+        const aRank = forYouCategories.indexOf(a.interest_tag);
+        const bRank = forYouCategories.indexOf(b.interest_tag);
         return aRank - bRank;
       }
       return Number(weatherFits(b)) - Number(weatherFits(a));
     });
+  // Declared interests make matching gatherings rise (stable: distance order kept within each group);
+  // "For You" already orders by its own category rank, so it's left alone.
+  const filteredNearby = forYouActive ? filteredNearbyUnranked : rankByInterests(filteredNearbyUnranked, myInterests);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -740,7 +748,7 @@ export default function GatheringsScreen({ navigation, route }) {
           {expandedFilterSection === 'category' && (
             <View style={styles.accordionBody}>
               <View style={styles.chipsWrapInline}>
-                {topCategories.length > 0 ? (
+                {forYouCategories.length > 0 ? (
                   <TouchableOpacity
                     style={[styles.forYouChip, forYouActive && styles.forYouChipActive]}
                     onPress={toggleForYou}

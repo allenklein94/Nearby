@@ -12,6 +12,8 @@ import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { CATEGORY_GROUPS, groupForTag } from '../constants/gatheringCategories';
+import useMyInterests from '../hooks/useMyInterests';
+import { orderGroupsByInterests } from '../constants/interestGraph';
 import { VISIBILITY_OPTIONS } from '../constants/gatheringVisibility';
 import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import { useTheme } from '../context/ThemeContext';
@@ -98,6 +100,7 @@ function walkTimeLabel(miles) {
 export default function CreateGatheringScreen({ navigation, route }) {
   const { colors, shadow, isDark } = useTheme();
   const { t } = useLanguage();
+  const myInterests = useMyInterests();
   const styles = getStyles(colors, shadow);
 
   const skipWhat = !!route.params?.fromQuickPick && !!route.params?.quickStartTitle;
@@ -417,7 +420,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
             />
 
             <Text style={styles.label}>{t('gatherings.categoryLabel')}</Text>
-            {CATEGORY_GROUPS.map((group) => (
+            {orderGroupsByInterests(CATEGORY_GROUPS, myInterests).map((group) => (
               <View key={group.key} style={{ marginBottom: spacing.sm }}>
                 <Text style={styles.subLabel}>{group.icon} {group.label}</Text>
                 <View style={styles.chipsWrap}>
