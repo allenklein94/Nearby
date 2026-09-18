@@ -549,6 +549,60 @@ as a restrained, quick beat rather than a distracting delay before the real matc
 that the haptic fires once per real match (not per re-render), and that "Message"/"🤝 Plan
 Something Together" both render correctly side by side on a real device.
 
+**Item 119 ("Friend acceptance could have a similar microinteraction") — fully DONE
+(2026-09-18), same-day direct follow-up to Item 118.** User's own spec: instead of a plain
+"Pending → Friends" state flip, a tiny "+ → ✓" or connection animation should communicate the
+transition, landing on "You're friends now" with Message and Plan Something.
+
+Audited the real current mechanism before building anything: the ACCEPTER's own side of a friend
+request (this viewer taps Accept on an incoming request) already has exactly this kind of
+moment — the Motion & Microinteraction System pass earlier this session already wired
+`handleRespondToFriendRequest`'s accept path to `MatchAnimation kind="friend"`, a real 🤝 "New
+Friend!" celebration. Item 119's own literal framing ("someone accepts your friend request")
+describes the OTHER side — the REQUESTER, who sent the request and is only told about the
+acceptance later, either via push or by revisiting that profile — and that side was a real, silent
+gap: `ViewProfileScreen.js`'s "✓ Friends" badge is a plain static render with no memory of what it
+looked like a moment ago, so a `pending_sent → accepted` transition (discovered on refocus, via
+the screen's own existing `useFocusEffect` reload) produced zero visual acknowledgment — the exact
+"simply changing Pending → Friends" the item warns against.
+
+Shipped `src/motion/ConnectionGlyphSwap.js` — a small, one-shot "+" → real-label cross-fade
+(Reduce-Motion-aware, `useNativeDriver: true`, ~250ms total, deliberately smaller/quieter than
+`MatchAnimation`'s full-screen modal, matching the item's own "tiny" framing), mounted only when
+the caller has already confirmed a genuine transition happened — never speculatively, so there's
+no risk of a fabricated "+" flashing on an ordinary already-connected profile load. Wired into
+`ViewProfileScreen.js` via a new `prevFriendshipStatusRef` (remembers what this screen's own
+`load()` last actually saw, starting null so a first-ever visit can never fabricate a transition)
+and a one-shot `justBecameFriends` flag, set true only when a `load()` call finds
+`prevFriendshipStatusRef.current === 'pending_sent'` and the fresh `relationship.friendshipStatus`
+now reads `'accepted'` — the real, narrow transition, not just "is currently accepted." A real,
+disclosed subtlety caught before this was considered done: `handleAddFriend()` sets
+`friendshipStatus` to `'pending_sent'` directly (not via a fresh `load()` call), so the ref needed
+an explicit update there too — without it, a same-session revisit after the request was later
+accepted elsewhere would have found the ref still at its original `null` and silently missed the
+animation, since `null !== 'pending_sent'`.
+
+A transient "🤝 You're friends now" line (fades in, holds ~2.4s, fades out, then clears
+`justBecameFriends`) accompanies the badge swap — clearing the flag afterward is visually safe
+since `ConnectionGlyphSwap` has already long since settled on the exact same "✓ Friends" text/style
+the plain static branch renders, so falling back to that branch produces no flicker. Message and
+🤝 Plan Together (Item 118's own tightened copy) needed no new wiring at all — both already render
+the instant `matchId` is populated, which `load()` already does unconditionally on every focus
+regardless of which side (accepter or requester) caused the acceptance; confirmed by reading the
+existing code rather than assumed. Deliberately scoped to `ViewProfileScreen.js` only, the one
+real surface where a specific person's own friend-request state is durably visible across visits —
+`FriendsScreen.js`'s pending-requests list is a different shape (a request there disappears into
+the main Friends list once accepted, rather than a single badge flipping in place), a real,
+disclosed candidate for the same treatment later, not silently assumed covered.
+
+No DB migration, no new pure functions (animation-timing/UI wiring, same untested-by-design
+precedent as every other piece in `src/motion/`). Full Jest suite 580/580 passing (unchanged); all
+three touched/new files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not
+exercised on a real device (standing note) — next session should confirm on two real accounts that
+revisiting a profile after the other person accepted elsewhere shows the "+ → ✓" swap and the
+transient "You're friends now" line exactly once, and that a normal already-accepted profile load
+never shows the "+" glyph at all.
+
 **"Nearby Motion & Microinteraction System" — first real increment shipped (2026-09-18), same
 day, direct "build it now" override of the earlier "queue for Thursday" call.** User's own scope:
 audit and standardize every real interaction moment in the app into one cohesive motion language

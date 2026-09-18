@@ -1,6 +1,6 @@
-import React, { useCallback, useState } from 'react';
-import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, FlatList, Dimensions, TouchableOpacity, Alert } from 'react-native';
-import { NLoader, MatchAnimation } from '../motion';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, FlatList, Dimensions, TouchableOpacity, Alert, Animated } from 'react-native';
+import { NLoader, MatchAnimation, ConnectionGlyphSwap } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -23,6 +23,7 @@ import { getSignedVoiceIntroUrl } from '../services/voiceNotes';
 import VoicePlayButton from '../components/VoicePlayButton';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import useReduceMotion from '../hooks/useReduceMotion';
 import { typography, spacing, radius } from '../theme';
 
 const { width } = Dimensions.get('window');
@@ -89,6 +90,17 @@ export default function ViewProfileScreen({ route, navigation }) {
   const [showFriendCelebration, setShowFriendCelebration] = useState(false);
   const [matchId, setMatchId] = useState(null);
   const [mutualFriends, setMutualFriends] = useState([]);
+  // Item 119 ("Friend acceptance could have a similar microinteraction"): the REQUESTER's own
+  // side of this moment -- someone else accepted while this screen wasn't focused, discovered on
+  // the next real refetch. prevFriendshipStatusRef remembers what this screen last actually saw
+  // (starts null, so a first-ever load can never fabricate a transition); justBecameFriends fires
+  // exactly once per genuine pending_sent -> accepted transition and drives both the tiny "+ -> ✓"
+  // badge swap (ConnectionGlyphSwap) and a transient "You're friends now" line, distinct from
+  // showFriendCelebration above (the ACCEPTER's own big modal moment for their own tap).
+  const prevFriendshipStatusRef = useRef(null);
+  const [justBecameFriends, setJustBecameFriends] = useState(false);
+  const reduceMotion = useReduceMotion();
+  const justConnectedToastOpacity = useRef(new Animated.Value(0)).current;
   // Item 87 ("Add 'Upcoming' to the person's profile", CLAUDE.md): occasions
   // *I've* saved (who_for_friend_id) for *this* person -- filtered to
   // owner_id === myId below, never a row merely shared with me
@@ -204,6 +216,15 @@ export default function ViewProfileScreen({ route, navigation }) {
         setFriendshipId(relationship.friendshipId);
         setMatchId(relationship.matchId);
 
+        // Item 119: a real transition, not a fabricated one -- only fires when this screen's own
+        // last-known status (from an earlier focus in this same session) was genuinely
+        // 'pending_sent' and now reads 'accepted'. A fresh first-ever load (prevFriendshipStatusRef
+        // still null) or a load that was already 'accepted' the whole time never fires this.
+        if (prevFriendshipStatusRef.current === 'pending_sent' && relationship.friendshipStatus === 'accepted') {
+          setJustBecameFriends(true);
+        }
+        prevFriendshipStatusRef.current = relationship.friendshipStatus;
+
         if (relationship.friendshipStatus !== 'accepted') {
           const { data: myProfile } = await supabase.from('profiles').select('interests, basics, favorite_tracks').eq('id', myId).single();
           const report = generateCompatibilityReport(myProfile, data);
@@ -236,6 +257,11 @@ export default function ViewProfileScreen({ route, navigation }) {
     try {
       await sendFriendRequest(userId);
       setFriendshipStatus('pending_sent');
+      // Item 119: this is set directly here rather than via a fresh load(), so the ref that
+      // detects a later real transition needs updating here too -- otherwise a revisit after the
+      // other person accepts would find prevFriendshipStatusRef still at its original null and
+      // silently miss the "+ -> ✓" moment entirely.
+      prevFriendshipStatusRef.current = 'pending_sent';
       Alert.alert('Friend request sent', `${profile.display_name} will see your request.`);
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -256,6 +282,7 @@ export default function ViewProfileScreen({ route, navigation }) {
         // Message/Plan Something appear immediately, not only on the next
         // profile visit.
         const relationship = await getRelationshipStatus(userId);
+        prevFriendshipStatusRef.current = relationship.friendshipStatus;
         setFriendshipStatus(relationship.friendshipStatus);
         setFriendshipId(relationship.friendshipId);
         setMatchId(relationship.matchId);
@@ -272,6 +299,31 @@ export default function ViewProfileScreen({ route, navigation }) {
     }
     setRespondingToFriendRequest(false);
   }
+
+  // Item 119: the transient "You're friends now" line accompanying the "+ -> ✓" badge swap --
+  // fades in, holds briefly, fades out, then clears justBecameFriends so the screen quietly falls
+  // back to the plain static "✓ Friends" branch (visually identical to ConnectionGlyphSwap's own
+  // settled state, so there's no flicker when the branch swaps). Reduce Motion still shows and
+  // hides the line on the same timer, just without animating the fade itself.
+  useEffect(() => {
+    if (!justBecameFriends) return undefined;
+    if (reduceMotion) {
+      justConnectedToastOpacity.setValue(1);
+    } else {
+      justConnectedToastOpacity.setValue(0);
+      Animated.timing(justConnectedToastOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    }
+    const hideTimer = setTimeout(() => {
+      if (reduceMotion) {
+        justConnectedToastOpacity.setValue(0);
+        setJustBecameFriends(false);
+      } else {
+        Animated.timing(justConnectedToastOpacity, { toValue: 0, duration: 250, useNativeDriver: true })
+          .start(() => setJustBecameFriends(false));
+      }
+    }, 2400);
+    return () => clearTimeout(hideTimer);
+  }, [justBecameFriends, reduceMotion]);
 
   function openLightbox(uri, photoId) {
     setLightboxPhotoUri(uri);
@@ -417,9 +469,28 @@ export default function ViewProfileScreen({ route, navigation }) {
           </View>
 
           {!isOwnProfile && friendshipStatus === 'accepted' && (
-            <View style={[styles.addFriendButton, styles.addFriendButtonSent]}>
-              <Text style={styles.addFriendButtonText}>✓ Friends</Text>
-            </View>
+            <>
+              {/* Item 119: a real, tiny "+ -> ✓" confirmation the one time this screen actually
+                  detects the other person accepted while it wasn't focused -- everywhere else
+                  (a normal load that was already 'accepted') renders the plain static badge with
+                  zero animation, never a fabricated transition. */}
+              {justBecameFriends && (
+                <Animated.Text style={[styles.justConnectedToast, { opacity: justConnectedToastOpacity }]}>
+                  🤝 You're friends now
+                </Animated.Text>
+              )}
+              {justBecameFriends ? (
+                <ConnectionGlyphSwap
+                  style={[styles.addFriendButton, styles.addFriendButtonSent]}
+                  textStyle={styles.addFriendButtonText}
+                  label="✓ Friends"
+                />
+              ) : (
+                <View style={[styles.addFriendButton, styles.addFriendButtonSent]}>
+                  <Text style={styles.addFriendButtonText}>✓ Friends</Text>
+                </View>
+              )}
+            </>
           )}
 
           {!isOwnProfile && friendshipStatus === 'pending_sent' && (
@@ -784,6 +855,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   addFriendButtonSent: { borderColor: colors.success },
   addFriendButtonText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  justConnectedToast: { color: colors.success, fontSize: 13, fontWeight: '700', marginBottom: spacing.xs },
   friendRequestRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   messageButton: {
     alignSelf: 'flex-start', backgroundColor: colors.primary,
