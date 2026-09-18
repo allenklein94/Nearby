@@ -1,110 +1,11 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, Animated } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
-import { typography, spacing, radius } from '../theme';
-import useReduceMotion from '../hooks/useReduceMotion';
+import React from 'react';
+import MatchAnimation from '../motion/MatchAnimation';
 
-export default function MatchCelebrationModal({ visible, myPhotoUrl, theirPhotoUrl, theirName, gatheringTitle, wasWave, isFirstMatch, onSendMessage, onPlanTogether, onDismiss }) {
-  const { colors, shadow } = useTheme();
-  const reduceMotion = useReduceMotion();
-  const styles = getStyles(colors, shadow);
-  const scaleAnim = useRef(new Animated.Value(0.7)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (visible) {
-      // Reduce Motion: appear at rest, no spring/scale-in.
-      if (reduceMotion) {
-        scaleAnim.setValue(1);
-        opacityAnim.setValue(1);
-        return;
-      }
-      Animated.parallel([
-        Animated.spring(scaleAnim, { toValue: 1, friction: 6, useNativeDriver: true }),
-        Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
-      ]).start();
-    } else {
-      scaleAnim.setValue(reduceMotion ? 1 : 0.7);
-      opacityAnim.setValue(0);
-    }
-  }, [visible, reduceMotion]);
-
-  const subtitle = gatheringTitle
-    ? `You met through "${gatheringTitle}"`
-    : wasWave
-      ? `${theirName} waved at you, and you noticed them back.`
-      : `You and ${theirName} noticed each other.`;
-
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
-      <View style={styles.overlay}>
-        <Animated.View style={[styles.content, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]}>
-          {/* ❤️ = connection (romantic), per the Nearby Motion Language -- not 🎉, which is
-              reserved for occasion/plan/milestone celebration. See motionLanguage.js. */}
-          <Text style={styles.emoji}>{isFirstMatch ? '❤️🌟' : '❤️'}</Text>
-          <Text style={styles.title}>{isFirstMatch ? 'Your First Match!' : "It's a Match!"}</Text>
-          <Text style={styles.subtitle}>
-            {subtitle}{isFirstMatch ? ' This is the start of something new.' : ''}
-          </Text>
-
-          <View style={styles.photosRow}>
-            <View style={[styles.photoWrap, styles.photoWrapLeft]}>
-              {myPhotoUrl ? (
-                <Image source={{ uri: myPhotoUrl }} style={styles.photo} />
-              ) : (
-                <View style={[styles.photo, styles.photoPlaceholder]} />
-              )}
-            </View>
-            <View style={[styles.photoWrap, styles.photoWrapRight]}>
-              {theirPhotoUrl ? (
-                <Image source={{ uri: theirPhotoUrl }} style={styles.photo} />
-              ) : (
-                <View style={[styles.photo, styles.photoPlaceholder]} />
-              )}
-            </View>
-          </View>
-
-          <TouchableOpacity style={styles.messageButton} onPress={onSendMessage} activeOpacity={0.85}>
-            <Text style={styles.messageButtonText}>Send a Message</Text>
-          </TouchableOpacity>
-          {onPlanTogether && (
-            <TouchableOpacity style={styles.planButton} onPress={onPlanTogether} activeOpacity={0.85}>
-              <Text style={styles.planButtonText}>🤝 Plan Together</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={onDismiss} style={{ marginTop: spacing.md }}>
-            <Text style={styles.dismissText}>Keep Browsing</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-    </Modal>
-  );
+// Canonical implementation moved to src/motion/MatchAnimation.js (the Nearby
+// Motion System, CLAUDE.md Item 113) -- kept here as a thin wrapper so the
+// existing import site (MatchesScreen.js) doesn't need to change its props.
+// New code should import MatchAnimation from '../motion' and pass
+// kind="dating" directly.
+export default function MatchCelebrationModal(props) {
+  return <MatchAnimation kind="dating" {...props} />;
 }
-
-const getStyles = (colors, shadow) => StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
-  content: { alignItems: 'center', width: '100%' },
-  emoji: { fontSize: 48, marginBottom: spacing.sm },
-  title: { ...typography.display, color: '#fff', marginBottom: spacing.xs, textAlign: 'center' },
-  subtitle: { ...typography.body, color: 'rgba(255,255,255,0.8)', marginBottom: spacing.xl, textAlign: 'center' },
-  photosRow: { flexDirection: 'row', marginBottom: spacing.xl },
-  photoWrap: {
-    width: 110, height: 110, borderRadius: 55, borderWidth: 4, borderColor: 'rgba(255,255,255,0.3)',
-    overflow: 'hidden', backgroundColor: colors.surfaceElevated,
-  },
-  photoWrapLeft: { marginRight: -20, zIndex: 1 },
-  photoWrapRight: { marginLeft: -20 },
-  photo: { width: '100%', height: '100%' },
-  photoPlaceholder: { backgroundColor: colors.surfaceElevated },
-  messageButton: {
-    backgroundColor: colors.primary, borderRadius: radius.full,
-    paddingHorizontal: spacing.xl, paddingVertical: spacing.md, ...shadow.button,
-  },
-  messageButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  planButton: {
-    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.6)', borderRadius: radius.full,
-    paddingHorizontal: spacing.xl, paddingVertical: spacing.md, marginTop: spacing.sm,
-  },
-  planButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  dismissText: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '600' },
-});

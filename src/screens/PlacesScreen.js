@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, SafeAreaView, ActivityIndicator, Linking } from 'react-native';
 import FadeInState from '../components/FadeInState';
+import { FilterTransition } from '../motion';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, getGoogleMapsRequestHeaders } from '../services/places';
@@ -186,6 +187,9 @@ export default function PlacesScreen({ navigation }) {
           <Text style={styles.emptyText}>Couldn't load places right now. Pull down to try again.</Text>
         </FadeInState>
       ) : (
+        // FilterTransition (the Nearby Motion System, CLAUDE.md Item 113): a brief
+        // cue that these are new results whenever the active category changes.
+        <FilterTransition activeKey={category} style={{ flex: 1 }}>
         <FlatList
           data={places}
           keyExtractor={(item) => item.placeId}
@@ -261,6 +265,7 @@ export default function PlacesScreen({ navigation }) {
             </TouchableOpacity>
           )}
         />
+        </FilterTransition>
       )}
     </SafeAreaView>
   );
