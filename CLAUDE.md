@@ -505,6 +505,50 @@ I tapped" confirmation rather than a jarring bounce, that it doesn't visually fi
 `TouchableOpacity`'s own built-in press-opacity feedback, and that rapidly tapping between chips
 doesn't produce overlapping pops.
 
+**Item 118 ("Match animations should be restrained") — fully DONE (2026-09-18), same-day direct
+follow-up to Item 117.** User's own spec: on a real dating match, ❤️ could briefly animate into
+the Nearby N, then settle into "It's a Match!" with two co-equal buttons — Message and Plan
+Something — "notice the second button": the success state must never simply be "Start chatting,"
+since the product thesis is connection → real-world interaction, so "Plan Something Together"
+should be presented immediately, reinforcing the product at the exact moment the connection is
+created.
+
+Audited the real current `MatchAnimation` component (`src/motion/`, the Item 113 merge of the
+former `MatchCelebrationModal`/`FriendMatchCelebrationModal`) before building anything: the button
+half was already correct — `MatchesScreen.js`'s real match-celebration modal (the only live dating
+`kind="dating"` consumer that creates a genuine new match) already renders both "Send a Message"
+and "🤝 Plan Together" side by side, wired to real handlers (`handleSendMessage`/
+`handlePlanTogether`), and a repo-wide grep confirmed "Start chatting" appears nowhere in the
+codebase — so the core thesis violation the item warns against was never actually present. Tightened
+the copy to match the user's own exact wording anyway ("Send a Message" → "Message," "🤝 Plan
+Together" → "🤝 Plan Something Together") so the second button reads as the literal reinforcing
+phrase, not just a paraphrase of it.
+
+The real gap was the animation itself: the ❤️ was a static emoji with a plain spring+fade entrance,
+never animating into the N mark. Added a new `useHeartToMarkIntro` hook (same stage-cross-fade
+shape `SuccessAnimation`'s N→✨→✓ sequence already established — Reduce-Motion-aware,
+`useNativeDriver: true`, a `Haptics.notificationAsync(Success)` tap on start) that plays a brief
+two-beat ❤️ → `NearbyMark` (white variant, for the dark match-overlay background) sequence — 250ms
+per beat, well under 600ms total — as an absolutely-positioned overlay layer, then fades out into
+the real "It's a Match!" content underneath it (photos/title/buttons), which now starts its own
+existing entrance animation only once the intro clears (`useModalEntrance` gained an optional
+`delay` param, computed directly and synchronously from `reduceMotion` rather than from the intro
+hook's own async `show` state, to avoid a one-render race where content could start animating in
+before the intro had a chance to claim the delay). Reduce Motion skips the heart→N beat entirely
+and lands straight on the real settled content, matching every other decorative beat in this
+codebase. Scoped to the `DatingVariant` only — the ❤️ example and "Plan Something Together" thesis
+are both explicitly about the romantic-match case; the `FriendVariant` (🤝, "New Friend!") already
+has its own deliberately different, already-correct content per Item 113's own locked reasoning
+and was left untouched, a disclosed scope boundary rather than a silently-assumed one.
+
+No DB migration, no new pure functions (animation-timing/UI wiring, same untested-by-design
+precedent as every other piece in `src/motion/`). Full Jest suite 580/580 passing (unchanged);
+`src/motion/MatchAnimation.js` transform-checked clean via `@babel/core` + `babel-preset-expo`. Not
+exercised on a real device (standing note) — next session should confirm the ❤️→N cross-fade reads
+as a restrained, quick beat rather than a distracting delay before the real match content appears,
+that the haptic fires once per real match (not per re-render), and that "Message"/"🤝 Plan
+Something Together" both render correctly side by side on a real device.
+
 **"Nearby Motion & Microinteraction System" — first real increment shipped (2026-09-18), same
 day, direct "build it now" override of the earlier "queue for Thursday" call.** User's own scope:
 audit and standardize every real interaction moment in the app into one cohesive motion language

@@ -1,5 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, Animated } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { NearbyMark } from '../components/brand';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import useReduceMotion from '../hooks/useReduceMotion';
@@ -14,7 +16,7 @@ import useReduceMotion from '../hooks/useReduceMotion';
 // match does yet, a dating match's own two photos are a different shape than
 // a single friend photo), so this deliberately does NOT force one identical
 // layout onto both.
-function useModalEntrance(visible) {
+function useModalEntrance(visible, { delay = 0 } = {}) {
   const reduceMotion = useReduceMotion();
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -24,19 +26,74 @@ function useModalEntrance(visible) {
       if (reduceMotion) {
         scaleAnim.setValue(1);
         opacityAnim.setValue(1);
-        return;
+        return undefined;
       }
-      Animated.parallel([
-        Animated.spring(scaleAnim, { toValue: 1, friction: 6, useNativeDriver: true }),
-        Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
-      ]).start();
-    } else {
-      scaleAnim.setValue(reduceMotion ? 1 : 0.7);
+      scaleAnim.setValue(0.7);
       opacityAnim.setValue(0);
+      const timer = setTimeout(() => {
+        Animated.parallel([
+          Animated.spring(scaleAnim, { toValue: 1, friction: 6, useNativeDriver: true }),
+          Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+        ]).start();
+      }, delay);
+      return () => clearTimeout(timer);
     }
-  }, [visible, reduceMotion]);
+    scaleAnim.setValue(reduceMotion ? 1 : 0.7);
+    opacityAnim.setValue(0);
+    return undefined;
+  }, [visible, reduceMotion, delay]);
 
   return { scaleAnim, opacityAnim };
+}
+
+// Item 118 ("match animations should be restrained"): the ❤️ briefly animates into the Nearby N
+// before settling into the real "It's a Match!" content -- the brand mark appearing at the exact
+// moment a connection is created, same "the mark itself becomes part of the moment" idea
+// SuccessAnimation already established for N -> ✨ -> ✓, just a different two-beat sequence here
+// (heart -> mark) since this is a connection moment, not a completion one. Deliberately brief
+// (~250ms per beat, under 600ms total) and self-dismissing into the real content underneath it --
+// never a second thing to wait through, never gates the real Message/Plan buttons, which are
+// already mounted (just at opacity 0 until this beat clears). Reduce Motion skips it outright and
+// lands directly on the real settled content, matching every other decorative beat in this
+// codebase (see useReduceMotion.js's own header comment).
+const INTRO_STAGE_MS = 250;
+export const MATCH_INTRO_TOTAL_MS = INTRO_STAGE_MS * 2;
+
+function useHeartToMarkIntro(visible) {
+  const reduceMotion = useReduceMotion();
+  const [stage, setStage] = useState('heart'); // 'heart' -> 'mark'
+  const [show, setShow] = useState(false);
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.6)).current;
+
+  useEffect(() => {
+    if (!visible || reduceMotion) {
+      setShow(false);
+      return undefined;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setShow(true);
+    const playStage = (next) => {
+      setStage(next);
+      opacity.setValue(0);
+      scale.setValue(0.6);
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 1, duration: 160, useNativeDriver: true }),
+        Animated.spring(scale, { toValue: 1, friction: 5, useNativeDriver: true }),
+      ]).start();
+    };
+    playStage('heart');
+    const toMark = setTimeout(() => playStage('mark'), INTRO_STAGE_MS);
+    const toHide = setTimeout(() => {
+      Animated.timing(opacity, { toValue: 0, duration: 160, useNativeDriver: true }).start(() => setShow(false));
+    }, MATCH_INTRO_TOTAL_MS);
+    return () => {
+      clearTimeout(toMark);
+      clearTimeout(toHide);
+    };
+  }, [visible, reduceMotion]);
+
+  return { show, stage, opacity, scale };
 }
 
 export default function MatchAnimation(props) {
@@ -49,7 +106,13 @@ function DatingVariant({
 }) {
   const { colors, shadow } = useTheme();
   const styles = getDatingStyles(colors, shadow);
-  const { scaleAnim, opacityAnim } = useModalEntrance(visible);
+  const reduceMotion = useReduceMotion();
+  const intro = useHeartToMarkIntro(visible);
+  // Delay computed directly from reduceMotion (known synchronously) rather than intro.show
+  // (which only flips true a render later, inside an effect) -- avoids a race where the content's
+  // own entrance would briefly start with delay=0 before the intro's own effect has a chance to
+  // set delay=MATCH_INTRO_TOTAL_MS.
+  const { scaleAnim, opacityAnim } = useModalEntrance(visible, { delay: reduceMotion ? 0 : MATCH_INTRO_TOTAL_MS });
 
   const subtitle = gatheringTitle
     ? `You met through "${gatheringTitle}"`
@@ -60,6 +123,15 @@ function DatingVariant({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <View style={styles.overlay}>
+        {intro.show && (
+          <Animated.View style={[styles.introGlyph, { opacity: intro.opacity, transform: [{ scale: intro.scale }] }]}>
+            {intro.stage === 'heart' ? (
+              <Text style={styles.emoji}>❤️</Text>
+            ) : (
+              <NearbyMark size={48} variant="white" />
+            )}
+          </Animated.View>
+        )}
         <Animated.View style={[styles.content, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]}>
           {/* ❤️ = connection (romantic), per the Nearby Motion Language -- not 🎉, which is
               reserved for occasion/plan/milestone celebration. */}
@@ -86,12 +158,16 @@ function DatingVariant({
             </View>
           </View>
 
+          {/* Item 118: the product thesis is connection -> real-world interaction, so the
+              success state is never just "start chatting" -- Plan Something Together sits right
+              beside Message as a co-equal action, not a lesser afterthought, at the exact moment
+              the connection is created. */}
           <TouchableOpacity style={styles.messageButton} onPress={onSendMessage} activeOpacity={0.85}>
-            <Text style={styles.messageButtonText}>Send a Message</Text>
+            <Text style={styles.messageButtonText}>Message</Text>
           </TouchableOpacity>
           {onPlanTogether && (
             <TouchableOpacity style={styles.planButton} onPress={onPlanTogether} activeOpacity={0.85}>
-              <Text style={styles.planButtonText}>🤝 Plan Together</Text>
+              <Text style={styles.planButtonText}>🤝 Plan Something Together</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity onPress={onDismiss} style={{ marginTop: spacing.md }}>
@@ -142,6 +218,7 @@ function FriendVariant({ visible, theirPhotoUrl, theirName, onSayHi, onDismiss }
 
 const getDatingStyles = (colors, shadow) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
+  introGlyph: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   content: { alignItems: 'center', width: '100%' },
   emoji: { fontSize: 48, marginBottom: spacing.sm },
   title: { ...typography.display, color: '#fff', marginBottom: spacing.xs, textAlign: 'center' },
