@@ -3430,6 +3430,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         <View style={{ marginTop: spacing.xs }}>
                           <Text style={styles.notesLabel}>They're into</Text>
                           <Text style={styles.breakdownText}>{o.business_requests.shared_interests.join(' · ')}</Text>
+                          <Text style={[styles.breakdownText, { color: colors.textTertiary, fontStyle: 'italic' }]}>They chose to share this to help you tailor your offer.</Text>
                         </View>
                       )}
                       {o.status === 'pending' && o.business_requests?.status === 'open' && (
