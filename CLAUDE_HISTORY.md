@@ -76,6 +76,10 @@ CreateGathering, AskBusiness, business-side screens (business addresses, not use
 (presence, deliberately separate). Not changed, disclosed: public communities are not distance-ranked (they carry a coarse
 `area_lat/lng` but Discover doesn't order by it); Home's surprise/celebrate flows reach location only through
 resolveIntent (already provider-backed). proximity.js is still allow-listed in the guard test (background presence flow).
+Business export re-run after this audit: CHANGED (new hashed AppEntry bundle, 4-line diff, + index.html; committed and
+pushed). The screen-only fixes (Discovery location-off text, map fallback) are NOT in the bundle; the change came from the
+shared service files, most likely proximity.js / occasionPackages.js (not diffed to confirm). Rule of thumb: check the
+built bundle for a string to see whether a file is in it, rather than assuming from the screen name.
 Convention bullets added to CLAUDE.md: "Location is asked once, used everywhere", "Notification area".
 
 # Item 137 (2026-09-18) - Animation consistency audit
