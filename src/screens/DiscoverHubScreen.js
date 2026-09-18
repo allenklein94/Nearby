@@ -411,8 +411,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const position = await getUserLocation({ fresh: true });
     if (position) {
       setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+      loadCore(); // Happening Now/Today/This Weekend were empty without a position
     }
   }
+
+  // Within a time bucket, nearer wins ties (and, for Happening Now, comes first outright: "now" is only
+  // useful if you can get there). Distance is otherwise a small +3 inside fit.score.
+  const byDistance = (a, b) => (a.distanceMiles ?? Infinity) - (b.distanceMiles ?? Infinity);
+  const byScoreThenDistance = (a, b) => b.fit.score - a.fit.score || byDistance(a, b);
 
   // Android hardware back clears the expanded context instead of leaving
   // the whole Discover tab -- without this, "back" from an expanded view
@@ -746,7 +752,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     ? filteredGatherings
         .filter((g) => matchesDateFilter(g.scheduled_at, 'now') && !topCategoryIds.has(g.id))
         .map(scoreGathering)
-        .sort((a, b) => b.fit.score - a.fit.score)
+        .sort(byDistance)
         .slice(0, HAPPENING_NOW_CAP)
     : [];
   const happeningNowIds = new Set(happeningNowGatherings.map((g) => g.id));
@@ -756,7 +762,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     : [];
   const todayGatherings = todayQualifying
     .map(scoreGathering)
-    .sort((a, b) => b.fit.score - a.fit.score)
+    .sort(byScoreThenDistance)
     .slice(0, TIME_SECTION_CAP);
   const todayHasMore = todayQualifying.length > TIME_SECTION_CAP;
   const todayIds = new Set(todayGatherings.map((g) => g.id));
@@ -766,7 +772,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     : [];
   const weekendGatherings = weekendQualifying
     .map(scoreGathering)
-    .sort((a, b) => b.fit.score - a.fit.score)
+    .sort(byScoreThenDistance)
     .slice(0, TIME_SECTION_CAP);
   const weekendHasMore = weekendQualifying.length > TIME_SECTION_CAP;
 
@@ -1803,6 +1809,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
               logic the dedicated Gatherings screen's own "When" filter
               uses) and hides itself when genuinely empty, same as every
               other section on this screen -- no fabricated placeholder. */}
+          {!loadingCore && !userLocation && isAll && !isSearching && (
+            <View style={{ marginBottom: spacing.md }}>
+              <Text style={styles.emptyTextTight}>Turn on location and Nearby will show what's happening around you, right now, today and this weekend.</Text>
+              <TouchableOpacity onPress={enableLocation} accessibilityLabel="Turn on location" accessibilityRole="button">
+                <Text style={styles.emptyActionText}>Turn on location →</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           {happeningNowGatherings.length > 0 && (
             <>
               <Text style={styles.sectionHeader}>⚡ Happening Now</Text>
