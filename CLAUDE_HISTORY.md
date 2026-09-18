@@ -1,3 +1,10 @@
+# Item 143 (2026-09-18) - Participants can open the Plan detail for a group plan
+Migration `20261204_get_plan_id_for_group_plan.sql`: SECURITY DEFINER `get_plan_id_for_group_plan(group_plan_id_param uuid)` returns the
+`plans.id` behind a group occasion plan, only to its host/invited participants (`is_occasion_group_plan_participant`); revoked from
+public/anon, granted to authenticated. `getPlanIdForOccasion` uses it for group plans (occasions still read `plans` directly, creator-only).
+OccasionsScreen's "View the whole plan ->" is no longer host-only. Closes the Item 142 gap. Verified live: single overload, anon can't
+execute. Jest 692/692. Participant flow not exercised end-to-end; device-unverified.
+
 # Item 142 (2026-09-18) - Plan detail screen (first consumer of get_plan_overview)
 `PlanDetailScreen` (route `PlanDetail`, `{ planId }`): read-only, reads ONLY through `getPlanOverview`. Shows title/status/date/for-whom,
 a "The plan so far" journey (`utils/planJourney.js`: People / Activity / Business / Offer / Reservation, each a real fact or an honest
