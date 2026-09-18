@@ -667,6 +667,63 @@ group plan, that "👥 Invite" correctly expands and scrolls to the Organizers s
 "It's happening. 🎉" flash reads as the intended finale rather than feeling redundant with the
 Plan card's own now-visible Confirmed state directly below it.
 
+**Item 121 ("Business offer acceptance should feel equally tangible") — fully DONE (2026-09-18),
+same-day direct follow-up to Item 120, resumed cleanly after a codespace restart (a complete,
+uncommitted implementation was found on disk at session start — `planLogisticsActions.js`/
+`.test.js`, plus matching edits to `planAddonReadiness.js`/`.test.js` and
+`BusinessRequestDetailScreen.js` — read in full, checked against the user's own mock, confirmed
+correct and complete, then finished with one small polish and shipped).** User's own mock: once a
+business responds ("Restaurant accepted your request"), the offer's own detail should visibly
+settle into place ("Offer Accepted ✓ → details slide into place"); once a reservation is genuinely
+confirmed, "🎉 You're booked. / Saturday · 7:30 PM / 8 people / Restaurant" plus Add to Calendar /
+Get Directions / Get an Uber, appearing immediately — no separate tap needed to find them.
+
+Both halves reuse already-existing, already-verified infrastructure rather than building parallel
+new UI: "details slide into place" is the same `ModeTransition` dip-and-recover cause-and-effect
+cue Items 114-117 already built, now wrapped around each per-offer card's whole status-dependent
+block (`o.status` as the `activeKey`) — fires on every genuine offer-state change (a business's
+`pending → offered` response, the consumer's own `offered → accepted`), not a new animation
+primitive. The "🎉 You're booked" moment is Item 90/91/120's own already-canonical "Plan" summary
+card (`buildPlanSummary()`, `statusKind === 'confirmed'`) — it already renders exactly this real
+field set (title/date/time/location/party size) the instant a plan is genuinely confirmed; nothing
+new was needed there beyond adding the three logistics actions.
+
+What Item 121 actually added: `buildPlanSummary()` (`planAddonReadiness.js`) now also resolves a
+real accepted/completed offer's own `brand_partners` row for its address/latitude/longitude, plus
+raw (non-display-formatted) `rawDate`/`rawTime` fields — sourced from data this function already
+fetches internally (no second query), honestly null whenever no accepted offer exists yet. New
+pure `src/utils/planLogisticsActions.js` (dependency-free, same "pure function file" split as
+`occasionPackageFormatting.js`/`businessRequestWhen.js`): `buildPlanCalendarEvent()` builds the
+event payload for `expo-calendar`'s `createEventInCalendarAsync` — the native OS compose UI the
+user themselves reviews and taps Save on, never a silent background write via `createEventAsync`,
+honoring the spirit of the already-locked "Calendar = when, Nearby = what+who+where+how" read-only
+boundary (Item 76) as a disclosed, narrow one-way EXPORT exception, now folded into that Standing
+Convention bullet below; builds an honest all-day event (never a fabricated hour) when no real
+time is known, and a real 2-hour default duration disclosed in its own comment as an estimate, not
+a business-confirmed fact. `buildDirectionsUrl()` prefers real coordinates, falls back to the
+business's own real address, returns null when neither is known. "Get an Uber" reuses the
+already-existing `openUberToDestination()` (`uberDeepLink.js`, built for `AcceptedBusinessOfferCard`/
+`GatheringHubScreen`) rather than a second Uber integration. All three actions render inside the
+Plan summary card's existing `statusKind === 'confirmed'` block, alongside Item 120's Invite/Share
+— Get Directions/Get an Uber only render when real geo/address data actually exists; Add to
+Calendar always renders but honestly alerts ("This plan doesn't have a confirmed date yet.")
+rather than silently failing on the rare case a confirmed plan has no real date. One small polish
+added this session: the Add to Calendar button now reads "Opening…" while the native compose UI is
+being invoked, matching the "Creating card…" busy-state precedent the adjacent Share button already
+set.
+
+`expo-calendar` was already installed and configured (Item 75) — `createEventInCalendarAsync`
+needs no explicit app-level permission request of its own (it hands off to the OS's own compose
+UI on both platforms), so no new permission flow was added. No DB migration, no new schema — pure
+client-side reuse of already-fetched data. Full Jest suite 595/595 passing (9 new: 2 for the
+widened `buildPlanSummary`, 7 for `planLogisticsActions.js`); all four touched/new files
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised on a real device
+(standing note) — next session should confirm on a real account that a genuine business-accept →
+consumer-accept sequence shows the dip-and-recover cue on the offer card, that the achievement
+card's three new actions appear immediately once confirmed, that "Add to Calendar" opens the real
+native compose UI prefilled correctly (including the honest all-day fallback when no time is
+known), and that "Get Directions"/"Get an Uber" open to the correct real business location.
+
 **"Nearby Motion & Microinteraction System" — first real increment shipped (2026-09-18), same
 day, direct "build it now" override of the earlier "queue for Thursday" call.** User's own scope:
 audit and standardize every real interaction moment in the app into one cohesive motion language
@@ -5942,11 +5999,17 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   `src/hooks/useReduceMotion.js`, collapsing to its final/settled visual state (content and
   meaning intact, motion only removed) when it returns true. Aesthetic target: modern + polished
   + alive + restrained — a premium social product, not a children's app; no confetti-everywhere.
-- **Calendar = when, Nearby = what + who + where + how (Item 76, locked 2026-09-13).** Nearby
-  may read device calendar context (Item 75) to inform suggestions, plans, occasions, and
-  Surprise Me, but must never become a calendar-management surface itself -- no new "Calendar"
-  screen/tab, no event creation/editing, no calendar-app-shaped view. Any future calendar-adjacent
-  work should read and suggest, never manage.
+- **Calendar = when, Nearby = what + who + where + how (Item 76, locked 2026-09-13; narrow
+  export exception added by Item 121, 2026-09-18).** Nearby may read device calendar context
+  (Item 75) to inform suggestions, plans, occasions, and Surprise Me, but must never become a
+  calendar-management surface itself -- no new "Calendar" screen/tab, no general event
+  creation/editing, no calendar-app-shaped view, no browsing/CRUD of existing events. The one
+  disclosed exception: a single "Add to Calendar" export of one already-real, already-confirmed
+  Nearby commitment (e.g. a confirmed reservation) via `expo-calendar`'s
+  `createEventInCalendarAsync` -- the native OS compose UI, where the user themselves reviews and
+  taps Save, never a silent background write via `createEventAsync`. This is a one-way EXPORT of a
+  single fact, not management; any future calendar-adjacent work should still read and suggest,
+  never manage or silently write.
 - **No dead ends (Item 56, locked 2026-09-12).** No major surface's empty state may be
   unactionable "nothing here" copy alone — it must offer a concrete, tappable next step to a real
   existing destination (create/adjust-filters/invite/explore-elsewhere, whichever genuinely fits),

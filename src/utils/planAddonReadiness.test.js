@@ -237,6 +237,29 @@ describe('buildPlanSummary', () => {
     expect(summary.location).toBe('Il Forno');
   });
 
+  test('carries the real confirmed business geo/address and a raw computable date+time', () => {
+    const summary = buildPlanSummary({
+      primary: basePrimary,
+      primaryOffers: [{
+        status: 'accepted',
+        proposed_time: '2026-09-19T19:30:00Z',
+        brand_partners: { name: 'Il Forno', address: '123 Main St', latitude: 40.7, longitude: -74.0 },
+      }],
+    });
+    expect(summary.rawDate).toBe('2026-09-19');
+    expect(summary.rawTime).toMatch(/^\d{2}:\d{2}$/);
+    expect(summary.businessAddress).toBe('123 Main St');
+    expect(summary.businessLatitude).toBe(40.7);
+    expect(summary.businessLongitude).toBe(-74.0);
+  });
+
+  test('no accepted offer yet -> business geo/address honestly null, never fabricated', () => {
+    const summary = buildPlanSummary({ primary: basePrimary, primaryOffers: [] });
+    expect(summary.businessAddress).toBeNull();
+    expect(summary.businessLatitude).toBeNull();
+    expect(summary.businessLongitude).toBeNull();
+  });
+
   test('a manually-set plan_time overrides the requested window', () => {
     const summary = buildPlanSummary({ primary: { ...basePrimary, plan_time: '20:00:00' }, primaryOffers: [] });
     expect(summary.timeLabel).toBe('8 PM');

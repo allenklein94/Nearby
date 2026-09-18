@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image, Platform } from 'react-native';
-import { NLoader, SuccessAnimation } from '../motion';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image, Platform, Linking } from 'react-native';
+import * as Calendar from 'expo-calendar';
+import { NLoader, SuccessAnimation, ModeTransition } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { useStripe, initStripe } from '@stripe/stripe-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -9,6 +10,7 @@ import { getPlanChatInfo } from '../services/planChat';
 import { relevantAddonTypesForOccasion, planAddonIcon, planAddonLabel } from '../constants/planAddons';
 import { occasionIcon, occasionLabel } from '../constants/businessAttributes';
 import { buildPlanTimeline, summarizePlanTimelineReadiness, buildPlanSummary, addonStateCopy } from '../utils/planAddonReadiness';
+import { buildPlanCalendarEvent, buildDirectionsUrl } from '../utils/planLogisticsActions';
 import { buildOccasionPlanShareCaption } from '../utils/occasionPlanShareCard';
 import { stripTrailingCelebrationIcon, buildPlanHeaderChangeKey } from '../utils/livingPlanHeader';
 import OccasionPlanShareCard from '../components/OccasionPlanShareCard';
@@ -874,6 +876,55 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     });
   }
 
+  // Item 121 ("Business offer acceptance should feel equally tangible"): Add to Calendar / Get
+  // Directions / Get an Uber, appearing immediately once a plan is genuinely confirmed. Add to
+  // Calendar uses createEventInCalendarAsync -- the native OS compose UI, where the USER
+  // themselves reviews and taps Save -- never a silent background write, honoring the spirit of
+  // CLAUDE.md's own locked "Calendar = when, Nearby = what+who+where+how" read-only boundary (a
+  // single, user-confirmed export of one already-real commitment, not Nearby becoming a calendar
+  // management surface).
+  const [addingToCalendar, setAddingToCalendar] = useState(false);
+  async function handleAddToCalendar() {
+    const event = buildPlanCalendarEvent({
+      title: planSummary?.title,
+      rawDate: planSummary?.rawDate,
+      rawTime: planSummary?.rawTime,
+      businessAddress: planSummary?.businessAddress,
+      location: planSummary?.location,
+    });
+    if (!event) {
+      Alert.alert("Couldn't add to calendar", "This plan doesn't have a confirmed date yet.");
+      return;
+    }
+    setAddingToCalendar(true);
+    try {
+      await Calendar.createEventInCalendarAsync(event);
+    } catch (e) {
+      Alert.alert("Couldn't open your calendar", e.message ?? 'Please try again.');
+    }
+    setAddingToCalendar(false);
+  }
+
+  function handleGetDirections() {
+    const url = buildDirectionsUrl({
+      latitude: planSummary?.businessLatitude,
+      longitude: planSummary?.businessLongitude,
+      address: planSummary?.businessAddress,
+    });
+    if (!url) return;
+    Linking.openURL(url).catch(() => Alert.alert('Error', "Couldn't open Maps."));
+  }
+
+  function handleGetUberForPlan() {
+    if (planSummary?.businessLatitude == null || planSummary?.businessLongitude == null) return;
+    openUberToDestination({
+      latitude: planSummary.businessLatitude,
+      longitude: planSummary.businessLongitude,
+      nickname: planSummary.location,
+      address: planSummary.businessAddress,
+    }).catch(() => Alert.alert('Error', "Couldn't open Uber."));
+  }
+
   async function handleSharePlanCard() {
     if (!planSummary || !shareCardRef.current) return;
     setSharingPlanCard(true);
@@ -974,6 +1025,42 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                 >
                   <Text style={styles.sharePlanCardLinkText}>{sharingPlanCard ? 'Creating card…' : '🎉 Share This Plan'}</Text>
                 </TouchableOpacity>
+                {/* Item 121 ("Business offer acceptance should feel equally tangible"): "Add to
+                    Calendar / Get Directions / Get an Uber... should appear immediately" once
+                    genuinely booked -- co-located here with Invite/Share rather than buried in
+                    the per-offer card further down. */}
+                <TouchableOpacity
+                  style={styles.sharePlanCardLink}
+                  onPress={handleAddToCalendar}
+                  disabled={addingToCalendar}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add this plan to your calendar"
+                >
+                  <Text style={styles.sharePlanCardLinkText}>{addingToCalendar ? 'Opening…' : '📅 Add to Calendar'}</Text>
+                </TouchableOpacity>
+                {(planSummary.businessLatitude != null || planSummary.businessAddress) && (
+                  <TouchableOpacity
+                    style={styles.sharePlanCardLink}
+                    onPress={handleGetDirections}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Get directions"
+                  >
+                    <Text style={styles.sharePlanCardLinkText}>🧭 Get Directions</Text>
+                  </TouchableOpacity>
+                )}
+                {planSummary.businessLatitude != null && planSummary.businessLongitude != null && (
+                  <TouchableOpacity
+                    style={styles.sharePlanCardLink}
+                    onPress={handleGetUberForPlan}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Get an Uber there"
+                  >
+                    <Text style={styles.sharePlanCardLinkText}>🚗 Get an Uber</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>
@@ -1159,6 +1246,13 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               {reputationLine && (o.status === 'offered' || o.status === 'accepted') ? (
                 <Text style={styles.offerReputationLine}>{reputationLine}</Text>
               ) : null}
+              {/* Item 121 ("Business offer acceptance should feel equally tangible"): "Offer
+                  Accepted ✓ -> details slide into place" -- a brief dip/recover on the whole
+                  status-dependent block whenever o.status actually changes (offered -> accepted),
+                  the same cause-and-effect confirmation ModeTransition already gives mode/filter
+                  switches (Items 114-117), applied here to a single offer card's own real state
+                  transition. */}
+              <ModeTransition activeKey={o.status}>
               <Text style={styles.offerStatus}>{OFFER_STATUS_COPY[o.status] ?? o.status}</Text>
               {o.status === 'offered' && (
                 <>
@@ -1287,6 +1381,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   </TouchableOpacity>
                 </>
               )}
+              </ModeTransition>
             </View>
             );
           })}
@@ -1672,7 +1767,7 @@ const getStyles = (colors) => StyleSheet.create({
   planSummaryStatusTextInProgress: { color: '#B8791F' },
   planSummaryStatusTextCompleted: { color: colors.textTertiary },
   planSummaryLine: { ...typography.body, color: colors.textSecondary, marginTop: 2 },
-  planSummaryActionsRow: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.sm },
+  planSummaryActionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.sm },
   sharePlanCardLink: { alignSelf: 'flex-start' },
   sharePlanCardLinkText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   hiddenShareCardWrap: { position: 'absolute', top: -9999, left: -9999, opacity: 0 },

@@ -386,12 +386,24 @@ export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null
     ? formatTimeOfDay(primary.time_window_start)
     : null;
 
+  // Item 121 ("Business offer acceptance should feel equally tangible"): Add to
+  // Calendar/Get Directions/Get an Uber all need the REAL confirmed business's own
+  // geo/address and a computable (not just display-formatted) date/time -- sourced from
+  // the same real accepted offer buildPlanTimeline already resolves internally, never a
+  // second lookup or a fabricated coordinate.
+  const acceptedOffer = primaryOffers.find((o) => o.status === 'accepted' || o.status === 'completed') ?? null;
+
   return {
     title: planTitle || primary.plan_label || primary.category || 'Your Plan',
     who: buildPlanWhoSummary({ participants, myId, whoForName }),
     dateLabel: formatDateLabel(primary.date),
     timeLabel,
+    rawDate: primary.date ?? null,
+    rawTime: entry?.planTime ?? primary.time_window_start ?? null,
     location: entry?.businessName ?? null,
+    businessAddress: acceptedOffer?.brand_partners?.address ?? null,
+    businessLatitude: acceptedOffer?.brand_partners?.latitude ?? null,
+    businessLongitude: acceptedOffer?.brand_partners?.longitude ?? null,
     partySize: primary.party_size ?? null,
     statusLabel,
     statusKind,
