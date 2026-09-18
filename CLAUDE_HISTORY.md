@@ -102,6 +102,7 @@ plus a full from-scratch replay (195 migrations, 0 errors). Caveat: the distance
 server-side (no index can serve a computed distance) -- fine at current scale, and far cheaper than shipping rows; a
 geo index would be the next step if the table grows large. Production has 1 community and none with a map point, so the
 located path was exercised only with disposable data.
+Business export re-run after the server-side communities query: CHANGED (new hashed AppEntry bundle contains `get_public_community_ids_by_distance`; committed and pushed). Live check: function exists, single overload, anon has no execute. Jest 682/682.
 Business export re-run after this audit: CHANGED (new hashed AppEntry bundle, 4-line diff, + index.html; committed and
 pushed). The screen-only fixes (Discovery location-off text, map fallback) are NOT in the bundle; the change came from the
 shared service files, most likely proximity.js / occasionPackages.js (not diffed to confirm). Rule of thumb: check the
