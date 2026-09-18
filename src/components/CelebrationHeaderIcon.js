@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
+import useReduceMotion from '../hooks/useReduceMotion';
 
 // Item 112 follow-up (CLAUDE.md, "the finished plan could have a living
 // header... extremely subtle motion... 🎈 gently floating or a tiny
@@ -11,6 +12,7 @@ import { Animated } from 'react-native';
 // isn't a "change," it's just the initial display) and never on a
 // re-render with the same key.
 export default function CelebrationHeaderIcon({ icon, changeKey, size = 20, style }) {
+  const reduceMotion = useReduceMotion();
   const translateY = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
   const seenKeyRef = useRef(changeKey);
@@ -20,6 +22,9 @@ export default function CelebrationHeaderIcon({ icon, changeKey, size = 20, styl
     seenKeyRef.current = changeKey;
     translateY.setValue(0);
     scale.setValue(1);
+    // Reduce Motion: the icon still updates to reflect the real change, it just
+    // doesn't float/pulse to announce it.
+    if (reduceMotion) return;
     Animated.sequence([
       Animated.parallel([
         Animated.timing(translateY, { toValue: -5, duration: 380, useNativeDriver: true }),

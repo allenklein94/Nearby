@@ -2,24 +2,32 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, Animated } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import useReduceMotion from '../hooks/useReduceMotion';
 
 export default function MatchCelebrationModal({ visible, myPhotoUrl, theirPhotoUrl, theirName, gatheringTitle, wasWave, isFirstMatch, onSendMessage, onPlanTogether, onDismiss }) {
   const { colors, shadow } = useTheme();
+  const reduceMotion = useReduceMotion();
   const styles = getStyles(colors, shadow);
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
+      // Reduce Motion: appear at rest, no spring/scale-in.
+      if (reduceMotion) {
+        scaleAnim.setValue(1);
+        opacityAnim.setValue(1);
+        return;
+      }
       Animated.parallel([
         Animated.spring(scaleAnim, { toValue: 1, friction: 6, useNativeDriver: true }),
         Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
       ]).start();
     } else {
-      scaleAnim.setValue(0.7);
+      scaleAnim.setValue(reduceMotion ? 1 : 0.7);
       opacityAnim.setValue(0);
     }
-  }, [visible]);
+  }, [visible, reduceMotion]);
 
   const subtitle = gatheringTitle
     ? `You met through "${gatheringTitle}"`

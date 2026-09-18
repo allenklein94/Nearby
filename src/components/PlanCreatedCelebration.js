@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { NearbyMark } from './brand';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, typography } from '../theme';
+import useReduceMotion from '../hooks/useReduceMotion';
 
 // Item 112 follow-up (CLAUDE.md, "take it beyond the occasion-selection
 // screen... when the plan is successfully created"): the brand mark itself
@@ -21,6 +22,7 @@ const STAGE_MS = 340;
 
 export default function PlanCreatedCelebration({ text = "It's happening. 🎉" }) {
   const { colors } = useTheme();
+  const reduceMotion = useReduceMotion();
   const styles = getStyles(colors);
   const [stage, setStage] = useState('mark'); // 'mark' -> 'sparkle' -> 'check'
   const glyphOpacity = useRef(new Animated.Value(0)).current;
@@ -30,6 +32,18 @@ export default function PlanCreatedCelebration({ text = "It's happening. 🎉" }
   useEffect(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const timers = [];
+
+    // Reduce Motion: land directly on the real settled state (✓ + the real success
+    // text) with no cross-fade through mark/sparkle -- this is the header of the
+    // screen's own real content below it, so it needs to be legible immediately.
+    if (reduceMotion) {
+      setStage('check');
+      glyphOpacity.setValue(1);
+      glyphScale.setValue(1);
+      textOpacity.setValue(1);
+      return undefined;
+    }
+
     const playStage = (next) => {
       setStage(next);
       glyphOpacity.setValue(0);
@@ -47,7 +61,7 @@ export default function PlanCreatedCelebration({ text = "It's happening. 🎉" }
     }, STAGE_MS * 2 + 180));
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [reduceMotion]);
 
   return (
     <View style={styles.container}>

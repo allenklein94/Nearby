@@ -3,6 +3,7 @@ import { View, Animated, StyleSheet, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { spacing } from '../theme';
+import useReduceMotion from '../hooks/useReduceMotion';
 
 // Sep 6 2026 (CLAUDE.md, external UX critique item 13): a branded loading
 // treatment using the app's own splash mark (assets/branding/splash-mark.png
@@ -21,10 +22,19 @@ const SWEEP_WIDTH = 46;
 
 export default function BrandedLoader({ fullScreen = true }) {
   const { colors } = useTheme();
+  const reduceMotion = useReduceMotion();
   const sweep = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Reduce Motion: no continuous decorative loop -- the mark just sits at rest,
+    // fully visible, while the real load happens (this is a transient boot gate,
+    // so there's no meaningful progress signal lost by not animating it).
+    if (reduceMotion) {
+      sweep.setValue(0);
+      pulse.setValue(1);
+      return undefined;
+    }
     const sweepLoop = Animated.loop(
       Animated.timing(sweep, {
         toValue: 1,
@@ -45,7 +55,7 @@ export default function BrandedLoader({ fullScreen = true }) {
       sweepLoop.stop();
       pulseLoop.stop();
     };
-  }, [sweep, pulse]);
+  }, [sweep, pulse, reduceMotion]);
 
   const translateX = sweep.interpolate({
     inputRange: [0, 1],

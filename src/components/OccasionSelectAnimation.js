@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Animated, Easing } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import useReduceMotion from '../hooks/useReduceMotion';
 
 // Item 112 (CLAUDE.md, "We should have animations for that too... purposeful
 // and contextual, not generic animations everywhere"): a deliberately SMALL
@@ -30,9 +31,15 @@ export const OCCASION_SELECT_ANIMATIONS = {
 const MORPH_STEP_MS = 260;
 const HOLD_MS = 550;
 const LOCK_SNAP_DELAY_MS = 320;
+// Reduce Motion: no multi-stage cross-fade -- morph/lock land directly on their real
+// final glyph+text with no motion, held just long enough to register, then dismissed.
+// A particle burst has no natural "final state" to freeze on, so it's skipped entirely
+// rather than shown as a frozen mid-burst frame.
+const REDUCED_HOLD_MS = 450;
 
 export default function OccasionSelectAnimation({ triggerKey, onDone }) {
   const { colors, shadow } = useTheme();
+  const reduceMotion = useReduceMotion();
   const styles = getStyles(colors, shadow);
   const spec = OCCASION_SELECT_ANIMATIONS[triggerKey];
 
@@ -57,6 +64,25 @@ export default function OccasionSelectAnimation({ triggerKey, onDone }) {
 
     let cancelled = false;
     const timers = [];
+
+    if (reduceMotion) {
+      if (spec.kind === 'particles') {
+        // No static equivalent of a burst -- skip the visual, still honor the real
+        // moment by pausing briefly before continuing.
+        timers.push(setTimeout(() => { if (!cancelled) onDone?.(); }, REDUCED_HOLD_MS));
+      } else {
+        containerOpacity.setValue(1);
+        glyphOpacity.setValue(1);
+        glyphScale.setValue(1);
+        setGlyphIndex(spec.glyphs.length - 1);
+        textOpacity.setValue(spec.text ? 1 : 0);
+        timers.push(setTimeout(() => { if (!cancelled) onDone?.(); }, REDUCED_HOLD_MS));
+      }
+      return () => {
+        cancelled = true;
+        timers.forEach(clearTimeout);
+      };
+    }
 
     containerOpacity.setValue(0);
     textOpacity.setValue(0);
@@ -127,7 +153,7 @@ export default function OccasionSelectAnimation({ triggerKey, onDone }) {
       timers.forEach(clearTimeout);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [triggerKey]);
+  }, [triggerKey, reduceMotion]);
 
   if (!spec) return null;
 

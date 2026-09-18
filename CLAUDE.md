@@ -40,6 +40,53 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Seventh same-day follow-up ("animations should reinforce meaning... respect Reduce Motion")
+— fully DONE (2026-09-18), direct follow-up to the Motion Language above.** User's own locked
+animation-discipline rule: "Animations should reinforce meaning, hierarchy, state changes, and
+feedback. Never animate simply because we can... short, subtle, interruptible, respect Reduce
+Motion, and never slow down the user's task... modern + polished + alive + restrained... not
+confetti everywhere."
+
+The checkable, concrete part of this rule — "respect Reduce Motion" — was a real, total gap:
+nothing anywhere in the codebase (old or new) ever read the OS-level Reduce Motion accessibility
+setting. Shipped a new shared `src/hooks/useReduceMotion.js` (`AccessibilityInfo
+.isReduceMotionEnabled()` + a live `reduceMotionChanged` subscription, fails safe to `false` —
+motion allowed — on any platform/error where the check isn't available, e.g. web) and wired it
+into all 9 decorative/celebratory animation components from Item 112's own arc:
+`BrandedLoader`/`FindingOptionsLoader` (continuous pulse/sweep loops are skipped entirely, held
+at rest — `FindingOptionsLoader`'s own caption *text* rotation keeps cycling regardless, since
+that's real informational content narrating actual work, not decorative motion);
+`OccasionSelectAnimation`/`SurpriseRevealAnimation` (the multi-stage morph/lock cross-fades are
+skipped — land directly on the real final glyph+text, held briefly, then dismiss; the one kind
+with no static equivalent, a particle burst, is skipped visually altogether rather than frozen
+mid-burst); `PlanCreatedCelebration` (lands directly on ✓ + the real settled text, since this is
+a header other real content renders under, not a one-shot toast); `StaggeredReveal` (real result
+cards appear immediately, all at once, no per-card delay); `CelebrationHeaderIcon` (the icon
+still updates to reflect a real change, it just doesn't float/pulse to announce it);
+`MatchCelebrationModal`/`FriendMatchCelebrationModal` (appear at rest, no spring/scale-in). In
+every case content/meaning is fully preserved — only the motion itself is removed, per the rule's
+own "content and meaning first" framing, never a degraded or missing state.
+
+Deliberately scoped to Item 112's own 9 components (the ones actually built under "the animation
+system itself becomes part of the Nearby brand language") rather than a full-app retrofit of
+every pre-existing `Animated`-based component (swipe decks, existing screen transitions, etc.) —
+a real, disclosed scope boundary, not silently assumed covered; the newly-locked Standing
+Convention below governs any future animation work, old or new, going forward. The qualitative
+parts of the rule (short/subtle/interruptible/never-slow-the-task) were checked against what
+Item 112 already shipped, not just Reduce Motion: every sequence there is already capped well
+under 1.5s total, self-dismissing, and none of them block or gate any real button/action — no
+further changes needed for those.
+
+No DB migration, no new pure functions (this is animation-timing/UI wiring, same untested-by-
+design precedent as every other `Animated`-based component in `src/components/`). Full Jest
+suite 580/580 passing (unchanged); all 10 touched/new files transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised on a real device (no simulator/device tooling
+this session, standing note) — this is the one item in this whole follow-up chain where that
+matters most, since Reduce Motion behavior can only really be confirmed by toggling the real OS
+accessibility setting on a device; next session with device access should confirm each of the 9
+components correctly collapses to its static end state with Reduce Motion on, and animates
+normally with it off.
+
 **Sixth same-day follow-up ("The Nearby Motion Language") — fully DONE (2026-09-18), direct
 follow-up to Item 112's animation arc.** User laid out a locked 6-glyph vocabulary for every
 animation/loading/status moment in the app — N (NearbyMark) = system intelligence (loading/
@@ -5132,6 +5179,12 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   handshake motif, kept distinct from ❤️); 🎉 = celebration (occasion/plan/milestone); ✓ =
   completion (plan/reservation/request confirmed); 🔒 = privacy/surprise. Never reach for 🎉 as a
   generic "something good happened" glyph for a connection moment — that's what ❤️/🤝 are for.
+- **Animation discipline (locked 2026-09-18).** Animations must reinforce meaning, hierarchy,
+  state changes, or feedback — never "because we can." Every animated/celebratory moment must be
+  short, subtle, interruptible, never gate or slow down a real button/action, and call
+  `src/hooks/useReduceMotion.js`, collapsing to its final/settled visual state (content and
+  meaning intact, motion only removed) when it returns true. Aesthetic target: modern + polished
+  + alive + restrained — a premium social product, not a children's app; no confetti-everywhere.
 - **Calendar = when, Nearby = what + who + where + how (Item 76, locked 2026-09-13).** Nearby
   may read device calendar context (Item 75) to inform suggestions, plans, occasions, and
   Surprise Me, but must never become a calendar-management surface itself -- no new "Calendar"

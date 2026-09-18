@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Animated } from 'react-native';
 import { NearbyMark } from './brand';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, typography } from '../theme';
+import useReduceMotion from '../hooks/useReduceMotion';
 
 // Item 112 follow-up (CLAUDE.md, "the best animation might actually be the
 // planning process... instead of the user staring at a spinner, they're
@@ -28,26 +29,35 @@ const PULSE_MS = 700;
 
 export default function FindingOptionsLoader() {
   const { colors } = useTheme();
+  const reduceMotion = useReduceMotion();
   const styles = getStyles(colors);
   const [captionIndex, setCaptionIndex] = useState(0);
   const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.12, duration: PULSE_MS, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 1, duration: PULSE_MS, useNativeDriver: true }),
-      ])
-    );
-    loop.start();
+    // Reduce Motion: the caption rotation itself is real informational content (it
+    // narrates actual work), so it keeps cycling -- only the decorative pulsing scale
+    // on the mark is suppressed, held at rest instead.
+    let loop;
+    if (!reduceMotion) {
+      loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulse, { toValue: 1.12, duration: PULSE_MS, useNativeDriver: true }),
+          Animated.timing(pulse, { toValue: 1, duration: PULSE_MS, useNativeDriver: true }),
+        ])
+      );
+      loop.start();
+    } else {
+      pulse.setValue(1);
+    }
     const interval = setInterval(() => {
       setCaptionIndex((i) => (i + 1) % CAPTIONS.length);
     }, CAPTION_STEP_MS);
     return () => {
-      loop.stop();
+      loop?.stop();
       clearInterval(interval);
     };
-  }, []);
+  }, [reduceMotion]);
 
   return (
     <View style={styles.container}>

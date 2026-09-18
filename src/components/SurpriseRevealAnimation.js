@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, typography } from '../theme';
+import useReduceMotion from '../hooks/useReduceMotion';
 
 // Item 112 follow-up (CLAUDE.md, "Surprise Mode could have its own visual
 // language... the lock opens: 🔒 → ✨ → 🎉, and the plan becomes visible to
@@ -15,9 +16,13 @@ import { spacing, typography } from '../theme';
 const STAGE_MS = 320;
 const HOLD_MS = 500;
 export const SURPRISE_REVEAL_TOTAL_MS = STAGE_MS * 2 + HOLD_MS;
+// Reduce Motion: skip straight to the real end state (🎉 + the real reveal text) with no
+// cross-fade through the lock/sparkle stages, held just long enough to register.
+const REDUCED_HOLD_MS = 450;
 
 export default function SurpriseRevealAnimation({ text, onDone }) {
   const { colors } = useTheme();
+  const reduceMotion = useReduceMotion();
   const styles = getStyles(colors);
   const [stage, setStage] = useState('lock'); // 'lock' -> 'sparkle' -> 'party'
   const glyphOpacity = useRef(new Animated.Value(1)).current;
@@ -27,6 +32,16 @@ export default function SurpriseRevealAnimation({ text, onDone }) {
   useEffect(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const timers = [];
+
+    if (reduceMotion) {
+      setStage('party');
+      glyphOpacity.setValue(1);
+      glyphScale.setValue(1);
+      textOpacity.setValue(1);
+      timers.push(setTimeout(() => onDone?.(), REDUCED_HOLD_MS));
+      return () => timers.forEach(clearTimeout);
+    }
+
     const playStage = (next) => {
       setStage(next);
       glyphOpacity.setValue(0);
@@ -44,7 +59,7 @@ export default function SurpriseRevealAnimation({ text, onDone }) {
     timers.push(setTimeout(() => onDone?.(), STAGE_MS * 2 + HOLD_MS));
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [reduceMotion]);
 
   const glyph = stage === 'lock' ? '🔒' : stage === 'sparkle' ? '✨' : '🎉';
 
