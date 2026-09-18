@@ -8,10 +8,14 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import BusinessHostBadge from '../components/BusinessHostBadge';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
+import { placeDistanceLabel } from '../services/places';
 import { spacing, radius, typography } from '../theme';
 
+// "Boca Raton, FL · 2.3 mi away" -- the distance part only when the row carries a real one (public communities
+// ordered by the shared position); a community you're a member of, or with no map point, just shows its area.
 function areaLine(c) {
-  return c.area_label || [c.area_city, c.area_region].filter(Boolean).join(', ') || null;
+  const area = c.area_label || [c.area_city, c.area_region].filter(Boolean).join(', ') || null;
+  return [area, placeDistanceLabel(c.distanceMiles)].filter(Boolean).join(' · ') || null;
 }
 
 export default function CommunitiesScreen({ navigation }) {

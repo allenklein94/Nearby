@@ -2059,7 +2059,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   {renderCardIcon('🏘️', c.interest_tag)}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{c.name}</Text>
-                    {c.description ? <Text style={styles.cardSubtitle} numberOfLines={1}>{c.description}</Text> : null}
+                    {c.description || c.distanceMiles != null ? <Text style={styles.cardSubtitle} numberOfLines={1}>{[placeDistanceLabel(c.distanceMiles), c.description].filter(Boolean).join(' · ')}</Text> : null}
                   </View>
                   <Text style={styles.cardChevron}>›</Text>
                 </TouchableOpacity>
