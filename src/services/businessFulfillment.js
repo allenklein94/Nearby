@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase, functionUrl } from './supabase';
-import { requireUserLocation } from './userLocation';
+import { requireUserLocation, getUserLocation } from './userLocation';
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -965,7 +965,16 @@ export async function upsertBusinessFulfillmentPolicy(partnerId, {
 // capacity can't fit the requester's own real party size, and returns
 // that real remaining_capacity so a caller can show it honestly (never
 // guessed or displayed as if unlimited).
-export async function searchActiveBusinessAvailability({ category = null, latitude = null, longitude = null, radiusMiles = 15, partySize = null } = {}) {
+// A search with no coordinates asks the server for availability anywhere -- never what "where I am"
+// means. Callers that don't have a position to hand get the shared one (passive, never prompts).
+async function coordsOrShared(lat, lng) {
+  if (lat != null && lng != null) return { latitude: lat, longitude: lng };
+  const l = await getUserLocation({ ask: false });
+  return l ? { latitude: l.coords.latitude, longitude: l.coords.longitude } : { latitude: null, longitude: null };
+}
+
+export async function searchActiveBusinessAvailability({ category = null, latitude: lat = null, longitude: lng = null, radiusMiles = 15, partySize = null } = {}) {
+  const { latitude, longitude } = await coordsOrShared(lat, lng);
   const { data, error } = await supabase.rpc('search_active_business_availability', {
     category_param: category,
     latitude_param: latitude,
@@ -1037,7 +1046,8 @@ export async function getMyBusinessAffinitySignals() {
   return { followedPartnerIds, pastPartnerIds };
 }
 
-export async function searchPolicyOnlyBusinesses({ latitude = null, longitude = null, radiusMiles = 15, partySize = null } = {}) {
+export async function searchPolicyOnlyBusinesses({ latitude: lat = null, longitude: lng = null, radiusMiles = 15, partySize = null } = {}) {
+  const { latitude, longitude } = await coordsOrShared(lat, lng);
   const { data, error } = await supabase.rpc('search_policy_only_businesses', {
     latitude_param: latitude,
     longitude_param: longitude,
