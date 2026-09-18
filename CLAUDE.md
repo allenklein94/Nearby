@@ -397,6 +397,32 @@ access should confirm the pull-to-refresh spinner still renders correctly (no la
 change expected, since this only swaps which component supplies the same `tintColor`/`colors`
 props) on a representative sample of the 15 touched screens.
 
+**Item 114 ("Animate the Things To Do ↔ People transition") — audited, already fully DONE, no
+code change needed (2026-09-18).** This was already shipped in the same-day "finish wiring
+transition mode into Discover" follow-up above: the outer Things-to-Do<->People toggle on
+`DiscoverHubScreen.js` already wraps its entire content ternary in `<ModeTransition
+activeKey={mode}>`, playing the same dip-and-recover cue described here every time `mode`
+changes, never on first mount or on an internal sub-state change. Confirmed by re-reading the live
+code rather than re-trusted from memory — matches the user's own framing exactly ("I'm still in
+Discover, I just changed what I'm discovering").
+
+**Item 115 ("Dating ↔ Friends should also be a state transition") — fully DONE (2026-09-18), same-
+day direct follow-up.** The outer Things-to-Do<->People switch had the `ModeTransition` cue (Item
+114); the inner Dating<->Friends sub-toggle inside People mode did not — it swapped
+`<DiscoveryScreen>`/`<FriendDiscoveryScreen>` instantly, exactly the abruptness the user flagged.
+Wrapped that inner swap in its own `<ModeTransition activeKey={peopleSubMode}>`, independent of
+the outer transition (each fires only for its own real state change, never both at once for one
+tap). The "with the relevant filters changing" half needed no separate wiring: each embedded
+screen already renders its own filter row as part of its own content, so it's inside the wrapper
+and transitions along with everything else automatically. `MessagesScreen.js`'s own Matches<->
+Friends toggle was already wired with the identical mechanic from the original Item 113 build —
+confirmed via a live re-read, no change needed there. Full Jest suite 580/580 passing (unchanged);
+`DiscoverHubScreen.js` transform-checked clean via `@babel/core` + `babel-preset-expo`. Not
+exercised on a real device (standing note) — next session should confirm the Dating<->Friends dip
+reads as a clear "same place, different content" cue rather than a flicker, and that it fires
+independently of (not stacked with) the outer Things-to-Do<->People cue when only the inner toggle
+is tapped.
+
 **"Nearby Motion & Microinteraction System" — first real increment shipped (2026-09-18), same
 day, direct "build it now" override of the earlier "queue for Thursday" call.** User's own scope:
 audit and standardize every real interaction moment in the app into one cohesive motion language
