@@ -56,3 +56,11 @@ consumer reads the same canonical value. Progressive completion: never force adv
   array names a non-canonical tag. Deliberately left: `CREATE_HUB_OPTIONS` stays a fixed stable set (its own
   comment); unrelated local `CATEGORIES` lists (trip/memory/decision/features) aren't interest vocabularies.
   Jest 653/653.
+- **Phase 3 resolved as "already wired -- deliberately no copy" (2026-09-18):** notification category prefs are a
+  NARROWING on top of declared interests, not a separate store (`notify_*_categories` null = all of the user's
+  interests; push triggers require `p.interests @> tag` AND (null OR tag in list) --
+  `20261005_notification_categories.sql`; Settings shows every interest selected when null). So interests picked
+  in onboarding already drive notifications with zero extra storage, and seeding a copy would have created the
+  duplicate state the master rule forbids. Home quick picks: `home_quick_pick_categories` null = automatic, and
+  the automatic path now includes declared interests (Phase 2). Cuisine/venue prefs are NOT derivable from
+  interests (no signal), so they move to Phase 4 as a progressive prompt when a Food-group interest is chosen.
