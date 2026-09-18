@@ -863,6 +863,58 @@ business request's offers, a group plan's offers/social-offers, a live "Find opt
 search, and a group occasion's business-vote options all cascade in naturally rather than popping
 in flat or stuttering when several arrive at once.
 
+**Item 125 ("Make 'Nearby found this for you' visually recognizable") — fully DONE (2026-09-18),
+same-day direct follow-up to Item 124.** User's own framing: when the recommendation engine
+produces something specifically because of the user's own stated intent, mark it "✨ Nearby Pick,"
+introduced with a subtle animation — "this can become a recurring product signal. The user learns:
+✨ = Nearby thinks this is particularly relevant to me."
+
+A deliberate, disclosed evolution of the already-locked Nearby Motion Language: ✨ previously meant
+strictly "the discovery transition beat between two other glyphs, never a standalone icon"
+(`motionLanguage.js`). This item adds one narrow second meaning — a standalone "✨ Nearby Pick"
+badge — reserved specifically for the single real top-scored result of a genuine, user-STATED
+intent search, never a generic "found something" icon on every card. The honesty mechanism:
+`resolveIntent()` already does one final global sort by real score
+(`deduped.sort((a, b) => b.score - a.score)`) before ever returning its `items` array to a caller
+— so "this item is at index 0 of an already relevance-sorted list" is a real, non-fabricated
+signal, not an invented one. New `NearbyPickBadge` (`src/motion/`) renders the badge with one
+brief pop-in (scale + fade) on mount — Reduce Motion appears immediately at rest — and callers are
+responsible for only rendering it on a genuine index-0 item; the badge itself has no scoring logic
+of its own.
+
+Wired into every real place a genuinely intent-scored, already-sorted candidate list renders in
+the app (audited by tracing every `resolveIntent()`/`runIntentSearch()` consumer, not guessed):
+`HomeScreen.js`'s ask-box intent results (both the single-type "Already happening near you" list
+and each type-group's own first item when results span 2+ types, plus each Experience component's
+own top match), and `DiscoverHubScreen.js`'s "understood as" search panel (the flat results list
+and each Experience component's own items) — both needed a small `index` param threaded through
+their existing per-item render function (`renderIntentResultItem`/`renderIntentSearchResultRow`),
+which already existed on the Discover side (from `StaggeredReveal`'s own index requirement) but
+had to be added on Home's side. Also wired into `CelebrateSomethingScreen.js`'s own "options" step
+— the occasion wizard's real live-search results, arguably the app's most direct "recommendation
+engine, driven by explicit stated intent" surface — covering the flat "🍽️ Nearby options" list,
+each Experience component's own items, and the "🎁 Occasion Packages" list (all share one render
+function, `renderOptionCard`, already `index`-aware from Item 112's own staggered-reveal work).
+
+Deliberately excluded, disclosed rather than silently skipped: a bundle row (already carries its
+own "✨ One place has it all" section heading — a second ✨ right next to it would be redundant,
+not clarifying); the synthetic `friend_discovery` fallback item (appended after real results, not
+itself a scored candidate — badging it would overstate its nature even in the edge case where it's
+the only item shown); a `friend_request`-type intent result (a relationship-status item, not
+discovered supply). Discover's default Things-To-Do browse view, Gatherings' own tiered list, and
+every other plain proximity/category browse surface in the app were deliberately left untouched —
+none of those are driven by a user-stated intent at all (Item 40's own "categories are the
+fallback, not the primary burden" hierarchy), so badging anything there would fabricate a signal
+that isn't real, directly contradicting this item's own honesty mechanism.
+
+No DB migration, no new pure functions (a small presentational component plus index-threading
+through already-existing render functions). Full Jest suite 600/600 passing (unchanged — pure UI
+wiring); all five touched/new files transform-checked clean via `@babel/core` + `babel-preset-
+expo`. Not exercised on a real device (standing note) — next session should confirm the badge's
+pop-in reads as a genuine "introduction" rather than a jarring pop, that it correctly appears on
+only the single top result per list across all three screens, and that it never appears twice on
+the same visible card even when several sections render on one screen at once.
+
 **"Nearby Motion & Microinteraction System" — first real increment shipped (2026-09-18), same
 day, direct "build it now" override of the earlier "queue for Thursday" call.** User's own scope:
 audit and standardize every real interaction moment in the app into one cohesive motion language

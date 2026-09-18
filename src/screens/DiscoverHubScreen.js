@@ -38,7 +38,7 @@ import PlaceCard from '../components/PlaceCard';
 import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
-import { ModeTransition, FilterTransition, TapActiveChip } from '../motion';
+import { ModeTransition, FilterTransition, TapActiveChip, NearbyPickBadge } from '../motion';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -961,17 +961,25 @@ export default function DiscoverHubScreen({ navigation, route }) {
   }
 
   function renderIntentSearchResultRow(item, index) {
+    // Item 125 ("Make 'Nearby found this for you' visually recognizable"): the single real
+    // top-scored item of an already relevance-sorted list (resolveIntent() sorts by real score
+    // before this ever renders) gets the "✨ Nearby Pick" badge -- index === 0 only, so it never
+    // shows on a bundle row (called with no index) or anywhere past the genuine #1 real match.
+    // friend_discovery is a synthetic fallback item appended after the real ranked candidates,
+    // never itself a scored "pick" -- excluded even in the edge case where it's the only item.
+    const isTopPick = index === 0 && item.type !== 'friend_discovery';
     return (
       <StaggeredReveal key={`${item.type}-${item.id}`} index={index}>
       <TouchableOpacity
         style={styles.intentSearchResultRow}
         onPress={() => handleIntentSearchResultTap(item)}
         activeOpacity={0.85}
-        accessibilityLabel={item.title}
+        accessibilityLabel={isTopPick ? `${item.title}, Nearby Pick` : item.title}
         accessibilityRole="button"
       >
         <Text style={styles.intentSearchResultEmoji}>{INTENT_SEARCH_TYPE_EMOJI[item.type] ?? '📌'}</Text>
         <View style={{ flex: 1 }}>
+          {isTopPick && <NearbyPickBadge />}
           <Text style={styles.intentSearchResultTitle} numberOfLines={1}>{item.title}</Text>
           {item.subtitle ? <Text style={styles.intentSearchResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
         </View>

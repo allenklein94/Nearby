@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
-import { NLoader, PullToRefresh, AnticipationText } from '../motion';
+import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge } from '../motion';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -891,7 +891,13 @@ export default function HomeScreen({ navigation }) {
   // original flat view can share the exact same per-item rendering,
   // including the friend_request row's two-action treatment -- no
   // behavior duplicated or drifted between the two layouts.
-  function renderIntentResultItem(item) {
+  function renderIntentResultItem(item, index) {
+    // Item 125 ("Make 'Nearby found this for you' visually recognizable"): the single real
+    // top-scored item of an already relevance-sorted list (resolveIntent() sorts by real score
+    // before this ever renders) gets the "✨ Nearby Pick" badge -- index === 0 only, and only on
+    // real discovered supply, never a relationship-status item (friend_request) or the synthetic
+    // friend_discovery fallback appended after real results, neither of which is a scored "pick."
+    const isTopPick = index === 0 && item.type !== 'friend_request' && item.type !== 'friend_discovery';
     if (item.type === 'friend_request') {
       return (
         <View key={`${item.type}-${item.id}`} style={styles.intentResultRow}>
@@ -948,6 +954,7 @@ export default function HomeScreen({ navigation }) {
           style={styles.intentResultIcon}
         />
         <View style={styles.intentResultTextCol}>
+          {isTopPick && <NearbyPickBadge />}
           <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
           {item.subtitle ? (
             <Text
@@ -1632,7 +1639,7 @@ export default function HomeScreen({ navigation }) {
                   {intentResults.experience.components.map((component) => (
                     <View key={component.key} style={{ marginBottom: spacing.sm }}>
                       <Text style={styles.intentGroupLabel}>{component.label}</Text>
-                      {component.items.map((item) => renderIntentResultItem(item))}
+                      {component.items.map((item, index) => renderIntentResultItem(item, index))}
                     </View>
                   ))}
                 </View>
@@ -1669,7 +1676,7 @@ export default function HomeScreen({ navigation }) {
                           <Text style={styles.intentGroupLabel}>
                             {INTENT_RESULT_TYPE_LABELS[group.type] ?? group.type}
                           </Text>
-                          {group.items.map((item) => renderIntentResultItem(item))}
+                          {group.items.map((item, index) => renderIntentResultItem(item, index))}
                         </View>
                       ))}
                     </>
@@ -1678,7 +1685,7 @@ export default function HomeScreen({ navigation }) {
                 return (
                   <>
                     <Text style={styles.intentResultsHeading}>Already happening near you</Text>
-                    {remainingItems.map((item) => renderIntentResultItem(item))}
+                    {remainingItems.map((item, index) => renderIntentResultItem(item, index))}
                   </>
                 );
               })()}

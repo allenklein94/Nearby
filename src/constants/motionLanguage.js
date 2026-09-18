@@ -8,7 +8,14 @@
 //                       SuccessAnimation's opening frame.
 //   ✨ -- discovery / recommendation: Nearby found something particularly relevant. Used as the
 //                       "something happened" transition beat between two other glyphs (e.g.
-//                       N -> ✨ -> ✓, 🎂 -> ✨ -> 🎈), not as a standalone icon on its own.
+//                       N -> ✨ -> ✓, 🎂 -> ✨ -> 🎈). Item 125 ("Make 'Nearby found this for
+//                       you' visually recognizable") added one deliberate, disclosed second
+//                       meaning: a standalone "✨ Nearby Pick" badge (NearbyPickBadge,
+//                       src/motion/) on the single real top-scored result of a genuine, user-
+//                       STATED intent search -- never a generic "found something" icon slapped
+//                       on every card. Both meanings share the glyph on purpose (discovery is
+//                       discovery, whether mid-transition or labeling a real pick) -- see
+//                       NearbyPickBadge's own header comment for exactly which lists qualify.
 //   ❤️ -- connection (romantic): a dating match. NOT used for friend connections (see 🤝 below)
 //                       or for celebration.
 //   🤝 -- connection (platonic): a friend match, an organizer/co-organizer relationship, "Plan

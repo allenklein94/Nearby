@@ -35,3 +35,4 @@ export { default as TapActiveChip } from './TapActiveChip';
 export { default as useTapActivate } from './useTapActivate';
 export { default as ConnectionGlyphSwap } from './ConnectionGlyphSwap';
 export { default as AnticipationText } from './AnticipationText';
+export { default as NearbyPickBadge } from './NearbyPickBadge';

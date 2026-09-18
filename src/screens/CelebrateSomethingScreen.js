@@ -37,7 +37,7 @@ import {
   buildAutoPlanSuggestion,
 } from '../services/celebrateSomething';
 import { experienceTemplateForOccasion } from '../constants/experienceTemplates';
-import { OccasionAnimation, OCCASION_SELECT_ANIMATIONS } from '../motion';
+import { OccasionAnimation, OCCASION_SELECT_ANIMATIONS, NearbyPickBadge } from '../motion';
 import FindingOptionsLoader from '../components/FindingOptionsLoader';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
@@ -1040,6 +1040,12 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   // fetched once, revealed in a small cascade rather than dumped in all at
   // once.
   function renderOptionCard(item, index = 0) {
+    // Item 125 ("Make 'Nearby found this for you' visually recognizable"): the single real
+    // top-scored item of an already relevance-sorted list gets the "✨ Nearby Pick" badge --
+    // index === 0 only. Never on a bundle (it already has its own "✨ One place has it all"
+    // section heading above it -- a second ✨ right below would be redundant, not clarifying).
+    const isBundle = Array.isArray(item.componentLabels);
+    const isTopPick = index === 0 && !isBundle;
     if (item.type === 'gathering') {
       return (
         <StaggeredReveal key={`gathering-${item.id}`} index={index}>
@@ -1051,6 +1057,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
             accessibilityRole="button"
           >
             <View style={{ flex: 1 }}>
+              {isTopPick && <NearbyPickBadge />}
               <Text style={styles.optionTitle}>🎊 {item.title}</Text>
               {item.subtitle ? <Text style={styles.optionSubtitle}>{item.subtitle}</Text> : null}
               <Text style={styles.optionHint}>Already happening — tap to view</Text>
@@ -1060,7 +1067,6 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       );
     }
     const selected = selectedIds.has(item.id);
-    const isBundle = Array.isArray(item.componentLabels);
     return (
       <StaggeredReveal key={`business-${item.id}`} index={index}>
         <TouchableOpacity
@@ -1075,6 +1081,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
             {selected && <Text style={styles.checkboxMark}>✓</Text>}
           </View>
           <View style={{ flex: 1 }}>
+            {isTopPick && <NearbyPickBadge />}
             <Text style={styles.optionTitle}>{item.title}</Text>
             {item.subtitle ? <Text style={styles.optionSubtitle}>{item.subtitle}</Text> : null}
             {isBundle && <Text style={styles.optionHint}>Covers: {item.componentLabels.join(', ')}</Text>}
