@@ -339,8 +339,12 @@ export default function GroupPlanScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        {successBanner === 'plan' && <SuccessAnimation text="Plan confirmed. ✓" />}
-        {successBanner === 'reservation' && <SuccessAnimation text="Reservation confirmed. ✓" />}
+        {/* Item 122 ("Don't overanimate the business experience"): both of these are business
+            TRANSACTION confirmations (a group's business offer/reservation locking in), not an
+            occasion-creation moment -- tone="business" for a fast, professional settle rather
+            than the full celebratory production. */}
+        {successBanner === 'plan' && <SuccessAnimation text="Plan confirmed. ✓" tone="business" />}
+        {successBanner === 'reservation' && <SuccessAnimation text="Reservation confirmed. ✓" tone="business" />}
         <Text style={styles.title}>{proposal.category} — Group Plan</Text>
         <Text style={styles.statusLine}>
           {proposal.status === 'pending' && 'Deciding together'}

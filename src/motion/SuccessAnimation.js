@@ -15,13 +15,25 @@ import useReduceMotion from '../hooks/useReduceMotion';
 // A caller that wants a transient flash (e.g. "you just accepted an offer,"
 // distinct from a standing status label right below it) is responsible for its
 // own show/hide timing -- this component always renders fully mounted.
-const STAGE_MS = 340;
+//
+// Item 122 ("Don't overanimate the business experience"): occasion-creation
+// moments (a plan being born, a community going live) can stay playful --
+// tone="celebratory" (the default), the full N -> ✨ -> ✓ production below.
+// A business TRANSACTION confirming (an offer accepted, a reservation locking
+// in) should feel fast + trustworthy + professional instead -- tone="business"
+// skips the ✨ discovery beat entirely (a confirmation isn't Nearby finding
+// something, it's a fact settling), lands on the checkmark in roughly half the
+// time, and swaps the springy scale-pop for a plain, minimal-overshoot settle.
+// Content/meaning are identical either way; only the intensity changes.
+const STAGE_MS = { celebratory: 340, business: 160 };
 
-export default function SuccessAnimation({ text = "It's happening. 🎉" }) {
+export default function SuccessAnimation({ text = "It's happening. 🎉", tone = 'celebratory' }) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const styles = getStyles(colors);
-  const [stage, setStage] = useState('mark'); // 'mark' -> 'sparkle' -> 'check'
+  const isBusiness = tone === 'business';
+  const stageMs = STAGE_MS[tone] ?? STAGE_MS.celebratory;
+  const [stage, setStage] = useState('mark'); // 'mark' -> 'sparkle'? -> 'check'
   const glyphOpacity = useRef(new Animated.Value(0)).current;
   const glyphScale = useRef(new Animated.Value(0.6)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
@@ -44,21 +56,26 @@ export default function SuccessAnimation({ text = "It's happening. 🎉" }) {
     const playStage = (next) => {
       setStage(next);
       glyphOpacity.setValue(0);
-      glyphScale.setValue(0.6);
+      glyphScale.setValue(isBusiness ? 0.85 : 0.6);
       Animated.parallel([
-        Animated.timing(glyphOpacity, { toValue: 1, duration: 180, useNativeDriver: true }),
-        Animated.spring(glyphScale, { toValue: 1, friction: 5, useNativeDriver: true }),
+        Animated.timing(glyphOpacity, { toValue: 1, duration: isBusiness ? 120 : 180, useNativeDriver: true }),
+        isBusiness
+          // A plain, fast settle -- no springy overshoot, reads as "confirmed," not "confetti."
+          ? Animated.timing(glyphScale, { toValue: 1, duration: 120, useNativeDriver: true })
+          : Animated.spring(glyphScale, { toValue: 1, friction: 5, useNativeDriver: true }),
       ]).start();
     };
-    playStage('mark');
-    timers.push(setTimeout(() => playStage('sparkle'), STAGE_MS));
-    timers.push(setTimeout(() => playStage('check'), STAGE_MS * 2));
+    const stages = isBusiness ? ['mark', 'check'] : ['mark', 'sparkle', 'check'];
+    stages.forEach((next, i) => {
+      if (i === 0) { playStage(next); return; }
+      timers.push(setTimeout(() => playStage(next), stageMs * i));
+    });
     timers.push(setTimeout(() => {
-      Animated.timing(textOpacity, { toValue: 1, duration: 260, useNativeDriver: true }).start();
-    }, STAGE_MS * 2 + 180));
+      Animated.timing(textOpacity, { toValue: 1, duration: isBusiness ? 160 : 260, useNativeDriver: true }).start();
+    }, stageMs * (stages.length - 1) + (isBusiness ? 120 : 180)));
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reduceMotion]);
+  }, [reduceMotion, tone]);
 
   return (
     <View style={styles.container}>

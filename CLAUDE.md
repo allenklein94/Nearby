@@ -724,6 +724,52 @@ card's three new actions appear immediately once confirmed, that "Add to Calenda
 native compose UI prefilled correctly (including the honest all-day fallback when no time is
 known), and that "Get Directions"/"Get an Uber" open to the correct real business location.
 
+**Item 122 ("Don't overanimate the business experience") — fully DONE (2026-09-18), same-day
+direct follow-up to Item 121.** User's own distinction: occasion creation (🎂 birthday, 💍
+anniversary) can stay playful/emotional; a business TRANSACTION (💰 an offer, ✅ a reservation)
+should feel fast + trustworthy + professional instead — different contexts, different motion
+intensity, not one uniform animation everywhere.
+
+Audited every real animated moment that could plausibly be a "business transaction" before
+touching anything: the business-DASHBOARD side (making an offer) has no animation at all today
+(confirmed via grep — already appropriately minimal/functional, no change needed); Item 121's own
+`ModeTransition` dip on a per-offer card's status block (offer received/accepted) is already
+short and subtle by design, already matching "functional," left untouched. The one real gap:
+`SuccessAnimation` — the shared N→✨→✓ full-production component — was being used identically for
+both genuine occasion/creation moments (a plan being born, a community going live) AND real
+business-transaction confirmations (`BusinessRequestDetailScreen.js`'s `justAccepted` flash for
+accepting a business's offer; `GroupPlanScreen.js`'s `'plan'`/`'reservation'` banners for a
+group's business offer/reservation locking in) — no distinction in intensity at all, and Item 120
+had in fact deliberately pushed the accept-offer flash TOWARD the festive end ("It's happening.
+🎉") for its own "major achievement" framing, which this item now explicitly corrects for that one
+specific moment.
+
+Added a `tone` prop to `SuccessAnimation` (`src/motion/SuccessAnimation.js`) — `"celebratory"`
+(default, unchanged N→✨→✓ production, still used for `justSubmitted`'s "we asked businesses"
+plan-creation moment and `CommunityDetailScreen`'s "Your community is live. 🎉," both genuine
+occasion/creation moments, not transactions) vs. new `"business"`: skips the ✨ discovery beat
+entirely (a confirmation isn't Nearby finding something new, it's a fact settling), lands on the
+checkmark in roughly half the time (160ms/stage vs. 340ms), and swaps the springy scale-pop
+(`Animated.spring`, friction 5) for a plain fast timing settle — same content, same haptic, only
+the intensity drops. Wired `tone="business"` into the two real transaction-confirming call sites:
+`BusinessRequestDetailScreen.js`'s `justAccepted` flash (also reverted its text from Item 120's
+"It's happening. 🎉" back to "Reservation confirmed. ✓," matching `GroupPlanScreen`'s own existing
+phrasing for the identical real moment — a direct, disclosed correction of Item 120's earlier
+choice, now that this item clarifies a reservation confirming is reassuring, not festive) and
+`GroupPlanScreen.js`'s `'plan'`/`'reservation'` success banners (text unchanged, tone added).
+Folded the distinction into `motionLanguage.js`'s own reference doc and a new Standing Conventions
+bullet so future animated business-transaction moments (a payment confirming, a business making
+an offer) inherit the same judgment rather than defaulting back to the celebratory production.
+
+No DB migration, no new pure functions (animation-timing/UI wiring, same untested-by-design
+precedent as every other piece in `src/motion/`). Full Jest suite 595/595 passing (unchanged — no
+pure logic touched); all four touched files (`SuccessAnimation.js`, `motionLanguage.js`,
+`BusinessRequestDetailScreen.js`, `GroupPlanScreen.js`) transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised on a real device (standing note) — next session should confirm
+the business-tone flash genuinely reads as faster/calmer than the celebratory one side by side,
+and that "Reservation confirmed. ✓" on `BusinessRequestDetailScreen` doesn't feel redundant next
+to the achievement card's own "🎉 You're booked"-equivalent confirmed state directly below it.
+
 **"Nearby Motion & Microinteraction System" — first real increment shipped (2026-09-18), same
 day, direct "build it now" override of the earlier "queue for Thursday" call.** User's own scope:
 audit and standardize every real interaction moment in the app into one cohesive motion language
@@ -5999,6 +6045,15 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   `src/hooks/useReduceMotion.js`, collapsing to its final/settled visual state (content and
   meaning intact, motion only removed) when it returns true. Aesthetic target: modern + polished
   + alive + restrained — a premium social product, not a children's app; no confetti-everywhere.
+- **Motion intensity varies by context (Item 122, locked 2026-09-18).** Occasion-creation moments
+  (a plan being born, a birthday/anniversary pick, a community going live) can stay fully
+  playful/celebratory. A real business TRANSACTION confirming (an offer accepted, a reservation
+  locking in) must feel fast + trustworthy + professional instead — reassuring, not festive.
+  `SuccessAnimation`'s `tone` prop (`"celebratory"` default vs. `"business"`) is the mechanism:
+  business tone skips the ✨ discovery beat, settles in roughly half the time, and drops the
+  springy scale-pop for a plain settle. Same content/meaning either way — only the intensity
+  changes with context. Apply this same judgment to any future animated business-transaction
+  moment (a payment confirming, an offer being made), not just the two call sites fixed here.
 - **Calendar = when, Nearby = what + who + where + how (Item 76, locked 2026-09-13; narrow
   export exception added by Item 121, 2026-09-18).** Nearby may read device calendar context
   (Item 75) to inform suggestions, plans, occasions, and Surprise Me, but must never become a

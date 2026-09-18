@@ -948,12 +948,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView ref={scrollViewRef} contentContainerStyle={{ padding: spacing.lg }}>
-        {/* Item 120 ("Plan creation should feel like a major achievement"): "Maybe we should do
-            something" -> "It's happening" is the whole point of this exact moment -- the plan
-            just became real. Reused text (this codebase's own locked celebration-glyph
-            convention, colors.primary reserved for 🎉 not ✨ standalone) rather than inventing a
-            second phrase that would compete with SuccessAnimation's default elsewhere. */}
-        {justAccepted && <SuccessAnimation text="It's happening. 🎉" />}
+        {/* Item 122 ("Don't overanimate the business experience"): accepting a business's offer
+            is a reservation locking in -- a business TRANSACTION, not an occasion-creation
+            moment -- so it should feel fast + trustworthy + reassuring, not festive. Reverted
+            from Item 120's "It's happening. 🎉" (which was calibrated for the plan-CREATION
+            moment, still correct below at justSubmitted) back to the plain "Reservation
+            confirmed. ✓" phrasing GroupPlanScreen already uses for this exact same real
+            moment, with tone="business" (skips the ✨ discovery beat, settles fast, no
+            springy bounce). */}
+        {justAccepted && <SuccessAnimation text="Reservation confirmed. ✓" tone="business" />}
         {planSummary && (
           <View style={styles.planSummaryCard}>
             <View style={styles.planSummaryHeaderRow}>

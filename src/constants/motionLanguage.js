@@ -28,4 +28,13 @@
 // reference in their own header comments, not a runtime dependency. Per-occasion icons (🎂/💍/🎓/
 // etc, see businessAttributes.js's occasionIcon()) are a separate, larger vocabulary and are not
 // part of this core 6-glyph system.
+//
+// Motion INTENSITY, not just glyph choice (Item 122, "Don't overanimate the business
+// experience"): an occasion-creation moment (a plan being born, a birthday/anniversary tile
+// pick, a community going live) can stay playful -- the full N -> ✨ -> ✓ production. A real
+// business TRANSACTION confirming (a business's offer accepted, a reservation locking in)
+// should feel fast + trustworthy + professional instead -- reassuring, not festive. See
+// SuccessAnimation's `tone` prop ("celebratory" default vs. "business": no ✨ discovery beat,
+// roughly half the duration, no springy overshoot). Same content/meaning either way -- only how
+// loud the motion is changes with the context.
 export const NEARBY_MOTION_LANGUAGE_DOC_ONLY = true;
