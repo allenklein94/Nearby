@@ -794,6 +794,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
         visible={showDatingPrefsPrompt}
         userId={myUserId}
         initialValues={myProfile}
+        onFineTune={() => navigation.navigate('DatingPreferences')}
         onDone={(fields) => {
           setShowDatingPrefsPrompt(false);
           setMyProfile((prev) => (prev ? { ...prev, ...fields } : prev));

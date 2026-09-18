@@ -64,3 +64,13 @@ consumer reads the same canonical value. Progressive completion: never force adv
   duplicate state the master rule forbids. Home quick picks: `home_quick_pick_categories` null = automatic, and
   the automatic path now includes declared interests (Phase 2). Cuisine/venue prefs are NOT derivable from
   interests (no signal), so they move to Phase 4 as a progressive prompt when a Food-group interest is chosen.
+- **Phase 4 done, partly (2026-09-18):** (1) `onboarding_motivations` now has a real consumer beyond the signup
+  friend-discovery flag: it sets the starting People sub-mode (friends-only motivations -> Friends) when there is
+  no usage and no remembered choice (`subModeFromMotivations`, `peopleSubModePreference.js`; usage and last-used
+  still win). (2) `connection_goal` (was written in Profile, read by nothing) now shows on ViewProfile as "Hoping
+  to find: X" when no dating `relationship_intention` is set. Note it overlaps `onboarding_motivations` in intent;
+  left as two fields because one is a private signup signal and the other a public profile line -- not merged.
+  (3) The first-open Dating prompt gained an optional "Save and fine-tune (hair, height, eyes)" link into
+  DatingPreferencesScreen -- appearance stays optional/progressive. (4) Profile-completion meter already exists in
+  ProfileScreen (`getProfileCompleteness`, real fields only) -- no change. NOT built: the cuisine/venue nudge for
+  Food-group interests (needs a new nudge surface; awaiting an explicit go). Jest 656/656.

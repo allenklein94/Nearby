@@ -30,7 +30,7 @@ import { modalAnimation } from '../motion';
 // exact same fields/vocab/copy ProfileScreen.js's own "I identify as"/
 // "I'm interested in dating" pickers already use -- one canonical system,
 // not two, from a user's very first open of Dating.
-export default function DatingPreferencesPromptModal({ visible, userId, initialValues, onDone }) {
+export default function DatingPreferencesPromptModal({ visible, userId, initialValues, onDone, onFineTune }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
 
@@ -95,7 +95,7 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
     finish({});
   }
 
-  function handleSave() {
+  function handleSave(thenFineTune = false) {
     const minAgeNum = parseInt(minAge, 10);
     const maxAgeNum = parseInt(maxAge, 10);
     const validAge = !isNaN(minAgeNum) && !isNaN(maxAgeNum) && minAgeNum >= 18 && maxAgeNum >= minAgeNum;
@@ -105,7 +105,7 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
       gender_identity: genderIdentity,
       interested_in_genders: interestedInGenders,
       ...(validAge ? { preferred_min_age: minAgeNum, preferred_max_age: maxAgeNum } : {}),
-    });
+    }).then(() => { if (thenFineTune === true) onFineTune?.(); });
   }
 
   return (
@@ -205,6 +205,16 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
             Select all that apply. Matching is mutual — you'll only see people whose preferences
             also include you.
           </Text>
+          {onFineTune && (
+            <TouchableOpacity
+              onPress={() => handleSave(true)}
+              disabled={saving}
+              accessibilityLabel="Save, then add hair, height and eye color preferences"
+              accessibilityRole="button"
+            >
+              <Text style={styles.fineTuneText}>Save and fine-tune (hair, height, eyes) →</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
 
         <View style={styles.footer}>
@@ -218,7 +228,7 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.saveButton, shadow.button]}
-            onPress={handleSave}
+            onPress={() => handleSave()}
             disabled={saving}
             activeOpacity={0.85}
             accessibilityLabel="Save preferences"
@@ -259,6 +269,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
     borderTopWidth: 1, borderTopColor: colors.border,
   },
+  fineTuneText: { ...typography.small, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.lg },
   skipText: { ...typography.body, color: colors.textSecondary, fontWeight: '600' },
   saveButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, paddingHorizontal: spacing.xl },
   saveButtonText: { color: '#fff', ...typography.body, fontWeight: '700' },

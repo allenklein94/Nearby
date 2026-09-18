@@ -19,19 +19,20 @@ export async function recordPeopleSubModeUse(submode) {
 export async function getMyPeopleSubModeUsage() {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { datingUses: 0, friendsUses: 0 };
+    if (!user) return { datingUses: 0, friendsUses: 0, motivations: null };
     const { data, error } = await supabase
       .from('profiles')
-      .select('people_submode_dating_uses, people_submode_friends_uses')
+      .select('people_submode_dating_uses, people_submode_friends_uses, onboarding_motivations')
       .eq('id', user.id)
       .single();
     if (error) throw error;
     return {
       datingUses: data?.people_submode_dating_uses ?? 0,
       friendsUses: data?.people_submode_friends_uses ?? 0,
+      motivations: data?.onboarding_motivations ?? null,
     };
   } catch (e) {
     console.error('getMyPeopleSubModeUsage failed', e);
-    return { datingUses: 0, friendsUses: 0 };
+    return { datingUses: 0, friendsUses: 0, motivations: null };
   }
 }

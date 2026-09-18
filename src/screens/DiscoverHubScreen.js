@@ -228,8 +228,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
       Promise.all([
         AsyncStorage.getItem(LAST_PEOPLE_SUBMODE_KEY).catch(() => null),
         getMyPeopleSubModeUsage(),
-      ]).then(([lastUsedSubMode, { datingUses, friendsUses }]) => {
-        setPeopleSubMode(resolveDefaultPeopleSubMode({ datingUses, friendsUses, lastUsedSubMode }));
+      ]).then(([lastUsedSubMode, { datingUses, friendsUses, motivations }]) => {
+        setPeopleSubMode(resolveDefaultPeopleSubMode({ datingUses, friendsUses, lastUsedSubMode, motivations }));
       });
     }
   }, []);

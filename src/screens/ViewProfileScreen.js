@@ -175,7 +175,7 @@ export default function ViewProfileScreen({ route, navigation }) {
 
       const { data } = await supabase
         .from('profiles')
-        .select('id, display_name, bio, photo_url, interests, basics, prompts, is_premium, birthdate, photo_verified, created_at, pronouns, gender, gender_hidden, sexual_orientation, ethnicity, ethnicity_hidden, relationship_intention, favorite_tracks, voice_intro_path, gender_identity, interested_in_genders')
+        .select('id, display_name, bio, photo_url, interests, basics, prompts, is_premium, birthdate, photo_verified, created_at, pronouns, gender, gender_hidden, sexual_orientation, ethnicity, ethnicity_hidden, relationship_intention, connection_goal, favorite_tracks, voice_intro_path, gender_identity, interested_in_genders')
         .eq('id', userId)
         .single();
 
@@ -649,6 +649,12 @@ export default function ViewProfileScreen({ route, navigation }) {
               ⭐ {hostReputation.welcoming_pct}% said welcoming · {hostReputation.would_return_pct}% would attend again ({hostReputation.feedback_count} review{hostReputation.feedback_count === 1 ? '' : 's'})
             </Text>
           )}
+
+          {!intentionText && profile.connection_goal ? (
+            <View style={styles.intentionCard}>
+              <Text style={styles.intentionText}>Hoping to find: {profile.connection_goal}</Text>
+            </View>
+          ) : null}
 
           {intentionText && (
             <View style={styles.intentionCard}>

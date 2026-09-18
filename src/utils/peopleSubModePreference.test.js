@@ -27,3 +27,20 @@ describe('resolveDefaultPeopleSubMode', () => {
     expect(resolveDefaultPeopleSubMode({ datingUses: 0, friendsUses: 0, lastUsedSubMode: 'bogus' })).toBe('dating');
   });
 });
+
+describe('onboarding motivations set the starting sub-mode (no usage, no remembered choice)', () => {
+  const { subModeFromMotivations } = require('./peopleSubModePreference');
+  it('friends-only motivations start on friends', () => {
+    expect(resolveDefaultPeopleSubMode({ motivations: ['Make new friends', 'Explore my city'] })).toBe('friends');
+    expect(subModeFromMotivations(['Find activity partners'])).toBe('friends');
+  });
+  it('dates, mixed, or absent motivations keep the dating default', () => {
+    expect(subModeFromMotivations(['Go on dates'])).toBe('dating');
+    expect(subModeFromMotivations(['Go on dates', 'Make new friends'])).toBe('dating');
+    expect(subModeFromMotivations(null)).toBe('dating');
+  });
+  it('usage and remembered choice still win over motivations', () => {
+    expect(resolveDefaultPeopleSubMode({ lastUsedSubMode: 'dating', motivations: ['Make new friends'] })).toBe('dating');
+    expect(resolveDefaultPeopleSubMode({ datingUses: 6, friendsUses: 0, motivations: ['Make new friends'] })).toBe('dating');
+  });
+});
