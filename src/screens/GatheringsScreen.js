@@ -219,7 +219,8 @@ export default function GatheringsScreen({ navigation, route }) {
       setMapStoryDisplayNames(Object.fromEntries((posterProfiles ?? []).map((p) => [p.id, p.display_name])));
     }
 
-    const location = await getUserLocation({ ask: false });
+    // Default ask, deduped with getNearbyGatherings' own: a check-only read raced its prompt on first run.
+    const location = await getUserLocation();
     if (location) {
       const coords = { latitude: location.coords.latitude, longitude: location.coords.longitude };
       setUserLocation(coords);

@@ -6,6 +6,7 @@
 // rationale -- a genuinely different concept from a one-time posted
 // business_availability slot or a flat priority_occasions appetite signal.
 import { supabase } from './supabase';
+import { getUserLocation } from './userLocation';
 
 // Pure display helpers live in a separate, dependency-free module so they
 // stay directly unit-testable (see that file's own header comment) --
@@ -69,7 +70,15 @@ export async function deleteOccasionPackage(packageId) {
 
 // ---------- consumer-side search (used by the intent resolver) ----------
 
-export async function searchOccasionPackages({ occasionType, latitude = null, longitude = null, partySize = null, radiusMiles = 25 } = {}) {
+export async function searchOccasionPackages({ occasionType, latitude: lat = null, longitude: lng = null, partySize = null, radiusMiles = 25 } = {}) {
+  // No coordinates would search anywhere: fall back to the shared position (passive, never prompts).
+  let latitude = lat;
+  let longitude = lng;
+  if (lat == null || lng == null) {
+    const l = await getUserLocation({ ask: false });
+    latitude = l ? l.coords.latitude : null;
+    longitude = l ? l.coords.longitude : null;
+  }
   if (!occasionType) return [];
   const { data, error } = await supabase.rpc('search_occasion_packages', {
     occasion_type_param: occasionType,

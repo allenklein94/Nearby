@@ -5,6 +5,7 @@ import { PullToRefresh, FilterTransition, SkeletonFeed } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyMatches, getBrowseMatches, reportPresence } from '../services/proximity';
+import { getUserLocation } from '../services/userLocation';
 import { formatCrossedPathsTime, gatheringReasonText } from '../services/crossedPathsSignals';
 import { checkAndCountBrowseView } from '../services/browseLimits';
 import { getOnlineStatuses } from '../services/presenceStatus';
@@ -111,11 +112,13 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
   const [quickFilterOrder, setQuickFilterOrder] = useState(DATING_DEFAULT_ORDER);
   const [quickFilterVisible, setQuickFilterVisible] = useState(DATING_DEFAULT_VISIBLE);
   const [quickFilterConfig, setQuickFilterConfig] = useState(DATING_DEFAULT_CONFIG);
+  // No position: nearby/browse can't fill, so say that instead of implying nobody is around.
+  const [locationOff, setLocationOff] = useState(false);
   const undoTimeoutRef = useRef(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
 
   const load = useCallback(async () => {
-    await reportPresence();
+    setLocationOff(!(await reportPresence()));
     const results = await getNearbyMatches();
     setNearby(results);
     setInitialLoading(false);
@@ -285,6 +288,22 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
   // section already on Settings), not a vague suggestion with nothing to
   // tap.
   function renderPeopleEmptyState() {
+    if (locationOff) {
+      return (
+        <FadeInState opportunity style={styles.emptyState}>
+          <Text style={styles.emptyEmoji}>📍</Text>
+          <Text style={styles.emptyTitle}>Turn on location to see who's around</Text>
+          <Text style={styles.emptyText}>Nearby uses your location to find people near you. It's never shown to anyone as an exact spot.</Text>
+          <TouchableOpacity
+            onPress={async () => { if (await getUserLocation({ fresh: true, force: true })) load(); }}
+            accessibilityLabel="Turn on location"
+            accessibilityRole="button"
+          >
+            <Text style={styles.emptyActionText}>Turn on location →</Text>
+          </TouchableOpacity>
+        </FadeInState>
+      );
+    }
     const filtered = discoveryMode === 'browse' || anyFilterActive;
     return (
       <FadeInState opportunity style={styles.emptyState}>

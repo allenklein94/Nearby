@@ -64,6 +64,18 @@ bundle, provider unchanged since the last export), so nothing to commit; the com
 Export re-run after the Happening Now ordering + distance-label changes: this one DID change (new hashed AppEntry bundle +
 index.html). Cause: `services/homeDashboard.js` IS in the business web bundle (it contains `nearestThenSoonest`) even though
 HomeScreen isn't -- so a homeDashboard.js change needs a regeneration; HomeScreen-only changes don't. Committed and pushed.
+**Follow-up: whole-app location audit (beyond Home).** Swept every lat/lng consumer. Fixed: (1) GatheringsScreen had the
+same first-run `ask:false` race as Home/Discover (now default ask, deduped); (2) Discovery (people) called
+`reportPresence()` which re-prompted for permission on EVERY load and had no location-off state -- it now uses the shared
+provider (`reportPresence()` returns false when there's no position) and shows a "Turn on location to see who's around"
+invitation (force-ask on tap, reloads) instead of implying nobody is nearby; (3) `GatheringsMapView` fell back to
+hardcoded Boca Raton coordinates when there was no position and no pins -> neutral whole-US view; (4)
+`searchOccasionPackages` sent null coords (= search anywhere) when a caller had none -> defaults to the shared position.
+Already fine: stories (location captured only for public posts, via the provider), CommunityDetail (Alert when off),
+CreateGathering, AskBusiness, business-side screens (business addresses, not user location), crossed-paths/sightings
+(presence, deliberately separate). Not changed, disclosed: public communities are not distance-ranked (they carry a coarse
+`area_lat/lng` but Discover doesn't order by it); Home's surprise/celebrate flows reach location only through
+resolveIntent (already provider-backed). proximity.js is still allow-listed in the guard test (background presence flow).
 Convention bullets added to CLAUDE.md: "Location is asked once, used everywhere", "Notification area".
 
 # Item 137 (2026-09-18) - Animation consistency audit

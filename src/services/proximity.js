@@ -17,6 +17,7 @@
  */
 
 import * as Location from 'expo-location';
+import { getUserLocation } from './userLocation';
 import * as TaskManager from 'expo-task-manager';
 import { supabase, functionUrl } from './supabase';
 import { calculateCompatibility } from './compatibility';
@@ -113,15 +114,13 @@ async function sendPresenceReport(latitude, longitude) {
   }
 }
 
+// Foreground presence report from the shared location provider: one permission check for the whole app (this
+// used to prompt on every Discovery load), same fix everything else uses. Returns false when there's no position.
 export async function reportPresence() {
-  const hasPermission = await requestLocationPermission();
-  if (!hasPermission) return;
-
-  const location = await Location.getCurrentPositionAsync({
-    accuracy: Location.Accuracy.Balanced,
-  });
-
+  const location = await getUserLocation({ fresh: true });
+  if (!location) return false;
   await sendPresenceReport(location.coords.latitude, location.coords.longitude);
+  return true;
 }
 
 TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {

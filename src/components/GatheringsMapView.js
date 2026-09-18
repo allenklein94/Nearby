@@ -53,10 +53,11 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
           longitudeDelta: 0.1,
         }
       : {
-          latitude: 26.4615,
-          longitude: -80.0728,
-          latitudeDelta: 0.1,
-          longitudeDelta: 0.1,
+          // No position and nothing to pin: a neutral whole-country view, not one city's coordinates.
+          latitude: 39.5,
+          longitude: -98.35,
+          latitudeDelta: 40,
+          longitudeDelta: 40,
         };
 
   return (
