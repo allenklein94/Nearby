@@ -1,3 +1,19 @@
+## Sep 18 2026 — Item 129 ("Haptics could complement the animations") — DONE
+
+Audit: expo-haptics was already used widely for input ticks (chip selection, swipes, sends) --
+left alone, that's per-tap feedback the item says not to add to. For the four named moments:
+plan/reservation confirmed already fired a success haptic (SuccessAnimation, both tones); the dating
+match fired a strong success haptic but ONLY when Reduce Motion was off (haptic wrongly tied to
+motion); the friend match modal and the requester-side "they accepted" glyph swap had none. Added
+`src/motion/haptics.js` (`playHaptic`, moments match/friendAccepted = light impact, success =
+success notification; try/catch + promise-catch safe, no-op on web) and routed every motion
+component through it: MatchAnimation dating (now subtle, fires whenever the modal appears, not
+Reduce-Motion-gated) and friend variants, ConnectionGlyphSwap, SuccessAnimation,
+SurpriseRevealAnimation. Haptics deliberately independent of Reduce Motion. 3 new Jest tests;
+suite 616/616. Not felt on a device (no tooling) -- next session with an iPhone should confirm the
+light impact reads as "subtle" for a match and doesn't double up with the success haptic when a
+match modal is followed by another celebration.
+
 ## Sep 18 2026 — Item 128 ("Motion should also work with dark/light mode") — DONE
 
 Audited every `src/motion/` piece plus FindingOptionsLoader/Skeletons/LoadErrorState/FadeInState/

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { playHaptic, HAPTIC_MOMENTS } from './haptics';
 import { NearbyMark } from '../components/brand';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, typography } from '../theme';
@@ -39,7 +39,7 @@ export default function SuccessAnimation({ text = "It's happening. 🎉", tone =
   const textOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    playHaptic(HAPTIC_MOMENTS.success);
     const timers = [];
 
     // Reduce Motion: land directly on the real settled state (✓ + the real success

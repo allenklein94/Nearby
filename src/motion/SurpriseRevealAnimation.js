@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { playHaptic, HAPTIC_MOMENTS } from './haptics';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, typography } from '../theme';
 import useReduceMotion from '../hooks/useReduceMotion';
@@ -30,7 +30,7 @@ export default function SurpriseRevealAnimation({ text, onDone }) {
   const textOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    playHaptic(HAPTIC_MOMENTS.success);
     const timers = [];
 
     if (reduceMotion) {

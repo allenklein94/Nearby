@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, View } from 'react-native';
 import useReduceMotion from '../hooks/useReduceMotion';
+import { playHaptic, HAPTIC_MOMENTS } from './haptics';
 
 // Item 119 ("Friend acceptance could have a similar microinteraction"): a tiny, one-shot "+ -> ✓"
 // glyph swap for a small status badge whose underlying state just genuinely transitioned (e.g.
@@ -20,6 +21,10 @@ export default function ConnectionGlyphSwap({ style, textStyle, fromGlyph = '+',
   const opacity = useRef(new Animated.Value(1)).current;
   const scale = useRef(new Animated.Value(1)).current;
   const [showFinal, setShowFinal] = useState(reduceMotion);
+
+  // Item 129: the requester's own "they accepted" beat gets the same subtle haptic; mounted only
+  // on a genuine transition, so this fires once per real acceptance.
+  useEffect(() => { playHaptic(HAPTIC_MOMENTS.friendAccepted); }, []);
 
   useEffect(() => {
     if (reduceMotion) {

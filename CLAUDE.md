@@ -84,7 +84,11 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   the reduced state is different content (skip a morph/particle burst, drop a slide offset).
   Item 128: motion must work in both light and dark -- draw only with `useTheme()` tokens (never a
   hardcoded hex; `#fff` only over a fixed dark overlay/brand-coral surface), and any new token a
-  motion piece reads gets a light+dark value guarded by `src/motion/motionThemeContrast.test.js`. Aesthetic target: modern + polished
+  motion piece reads gets a light+dark value guarded by `src/motion/motionThemeContrast.test.js`.
+  Item 129: haptics accompany only IMPORTANT state changes, via the named beats in
+  `src/motion/haptics.js` (`playHaptic`): match/friendAccepted = subtle light impact, success (plan/
+  reservation confirmed, plan created, surprise revealed) = success notification. Never per-tap;
+  independent of Reduce Motion; never call expo-haptics directly from a motion component. Aesthetic target: modern + polished
   + alive + restrained — a premium social product, not a children's app; no confetti-everywhere.
 - **Motion intensity varies by context (Item 122, locked 2026-09-18).** Occasion-creation moments
   (a plan being born, a birthday/anniversary pick, a community going live) can stay fully
