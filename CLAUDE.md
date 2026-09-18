@@ -289,6 +289,31 @@ representative handful (the boot-gate case in `RootNavigator.js`, one full-scree
 `fullScreen={false}` in-content case) to be thorough, since this is the widest-reaching of the six
 migrations in this chain.
 
+**Same-day follow-up ("delete the now-unused shim files").** Deleted the four shim files that
+genuinely had zero remaining real consumers after the migration chain above — confirmed via a
+repo-wide grep for each filename before deleting, not assumed: `src/components/BrandedLoader.js`,
+`PlanCreatedCelebration.js`, `OccasionSelectAnimation.js`, `SurpriseRevealAnimation.js`.
+**Deliberately NOT deleted**: `MatchCelebrationModal.js`/`FriendMatchCelebrationModal.js` — the
+other two Item 113 shims, still genuinely imported by 5 real screens
+(`MatchesScreen`/`ActivityScreen`/`FriendsScreen`/`ViewProfileScreen`/`FriendDiscoveryScreen`) that
+were never part of this migration chain; deleting those would break the app, not clean it up.
+
+Updated the three remaining prose references to the deleted filenames so nothing in the codebase
+points at a file that no longer exists: `src/motion/index.js`'s own header comment (now correctly
+says four of the six original shims were deleted once every real call site migrated, and that the
+two remaining ones — `MatchCelebrationModal`/`FriendMatchCelebrationModal` — still exist with real
+consumers); `motionLanguage.js`'s glyph-vocabulary reference table (swapped its `BrandedLoader`/
+`PlanCreatedCelebration` examples for their real canonical names, `NLoader`/`SuccessAnimation`);
+`RootNavigator.js`'s two comments and `LoadErrorState.js`'s one comment (swapped `BrandedLoader`/
+`BrandedLoader.js` for `NLoader`). None of these were required for the app to keep working — pure
+documentation accuracy, since a comment naming a deleted file is exactly the kind of stale
+reference that misleads the next person reading it.
+
+Full Jest suite 580/580 passing (unchanged); the three touched non-deleted files transform-checked
+clean via `@babel/core` + `babel-preset-expo`, plus a full 358-file repo-wide transform sweep
+confirmed the deletions broke nothing anywhere else in `src/`. Not exercised on a real device
+(standing note) — pure deletion/comment cleanup, no behavior change.
+
 No DB migration, no new pure functions (a component library + three wiring sites). Full Jest suite
 580/580 passing (unchanged); all 18 touched/new files (10 new `src/motion/` files, 6 shim files, 2
 wired screens) transform-checked clean via `@babel/core` + `babel-preset-expo` — plus a full

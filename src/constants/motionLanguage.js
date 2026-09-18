@@ -4,8 +4,8 @@
 // table other components should consult before picking a glyph for a new animated moment.
 //
 //   N  (NearbyMark)  -- system intelligence: loading, searching, finding, matching, building
-//                       recommendations. Used by BrandedLoader, FindingOptionsLoader,
-//                       PlanCreatedCelebration's opening frame.
+//                       recommendations. Used by NLoader, FindingOptionsLoader,
+//                       SuccessAnimation's opening frame.
 //   ✨ -- discovery / recommendation: Nearby found something particularly relevant. Used as the
 //                       "something happened" transition beat between two other glyphs (e.g.
 //                       N -> ✨ -> ✓, 🎂 -> ✨ -> 🎈), not as a standalone icon on its own.

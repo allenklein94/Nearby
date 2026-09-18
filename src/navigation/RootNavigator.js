@@ -375,8 +375,8 @@ export default function RootNavigator() {
   // (session -> null) and finishing onboarding (profileComplete -> true) --
   // and until now that was an instant, un-transitioned cut with zero brand
   // touch on either edge. This doesn't change the real navigation logic at
-  // all; it only inserts one brief BrandedLoader beat (the same component
-  // the boot gate below already uses) between the two real states, on
+  // all; it only inserts one brief NLoader beat (the same component the
+  // boot gate below already uses) between the two real states, on
   // exactly those two flips -- never on first mount (both refs start
   // already equal to the initial values, so there's nothing to detect yet).
   const prevSessionRef = useRef(session);
@@ -399,8 +399,8 @@ export default function RootNavigator() {
   // Sep 6 2026 (CLAUDE.md, external UX critique item 13): this used to be
   // a bare blank screen while the session/profile check resolves -- the
   // one moment every single app open passes through, and the most natural
-  // place for the new branded loading treatment (BrandedLoader.js) rather
-  // than a generic spinner.
+  // place for the new branded loading treatment (NLoader, src/motion/)
+  // rather than a generic spinner.
   if (loading || (session && profileLoading) || brandTransitioning) return <NLoader />;
 
   return (

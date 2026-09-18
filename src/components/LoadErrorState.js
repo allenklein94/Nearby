@@ -18,7 +18,7 @@ import useReduceMotion from '../hooks/useReduceMotion';
 // moment across the whole app already funnels through, so a single small,
 // muted mark here reaches broad, consistent brand identity with exactly
 // one change — not a per-screen retrofit. Muted (low opacity), not the
-// full-vividness gradient BrandedLoader/Login/Onboarding use, since this is
+// full-vividness gradient NLoader/Login/Onboarding use, since this is
 // a quiet, secondary moment, not a hero one.
 export default function LoadErrorState({ message, onRetry }) {
   const { colors } = useTheme();
