@@ -21,7 +21,7 @@ Conventions" as one bullet, not a narrative.
 
 ## Active / unfinished work
 
-Nothing in progress. Everything through **Item 141** (universal Plan read layer, `get_plan_overview`; 140 skippable onboarding occasions step; 139 Friends/Dating notification split; 138 onboarding notification prefs; 137 animation audit) (2026-09-18) is done and archived in
+Nothing in progress. Everything through **Item 142** (plan detail screen on the read layer; 141 universal Plan read layer, `get_plan_overview`; 140 skippable onboarding occasions step; 139 Friends/Dating notification split; 138 onboarding notification prefs; 137 animation audit) (2026-09-18) is done and archived in
 `CLAUDE_HISTORY.md` (top section, "Full Active / unfinished work archive" — grep by "Item NNN").
 Recent arc for orientation: Items 61-111 Occasions/"Plan for Someone" (wizard, group voting,
 surprise mode, packages, recall, guest invites); Items 112-126 the Nearby Motion System

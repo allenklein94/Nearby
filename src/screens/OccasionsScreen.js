@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getMyOccasions, addOccasion, deleteOccasion, setOccasionReminderEnabled, setOccasionRecallShareable, revealOccasion } from '../services/occasions';
 import { getMyOccasionGroupPlans } from '../services/occasionGroupPlans';
+import { getPlanIdForOccasion } from '../services/plans';
 import { getMyFriends } from '../services/friends';
 import { composeCelebrationTitle } from '../services/celebrateSomething';
 import { OCCASION_OPTIONS, personalOccasionTypeOptions, personalOccasionTypeGroupOptions } from '../constants/businessAttributes';
@@ -100,6 +101,15 @@ export default function OccasionsScreen({ navigation, route }) {
   const [datePrecision, setDatePrecision] = useState('exact');
   const [recursAnnually, setRecursAnnually] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  async function openPlanDetail(ref) {
+    try {
+      const planId = await getPlanIdForOccasion(ref);
+      if (planId) navigation.navigate('PlanDetail', { planId });
+    } catch (e) {
+      Alert.alert('Error', 'Could not open this plan.');
+    }
+  }
   const [deletingId, setDeletingId] = useState(null);
   const [togglingReminderId, setTogglingReminderId] = useState(null);
   const [revealingId, setRevealingId] = useState(null);
@@ -598,6 +608,11 @@ export default function OccasionsScreen({ navigation, route }) {
                           construction (zero client RLS policies, RPC-gated
                           to the host and invited participants) -- say so. */}
                       <Text style={styles.privacyLine}>🔒 Invite-only</Text>
+                      {plan.isHost && (
+                        <TouchableOpacity onPress={() => openPlanDetail({ groupPlanId: plan.id })} accessibilityRole="button" accessibilityLabel="View the whole plan">
+                          <Text style={styles.revealLink}>View the whole plan →</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </TouchableOpacity>
                 );
@@ -660,6 +675,9 @@ export default function OccasionsScreen({ navigation, route }) {
                           <Text style={styles.privacyLine}>
                             {describeOccasionPrivacy(occasion).icon} {describeOccasionPrivacy(occasion).label}
                           </Text>
+                          <TouchableOpacity onPress={() => openPlanDetail({ occasionId: occasion.id })} accessibilityRole="button" accessibilityLabel="View the whole plan">
+                            <Text style={styles.revealLink}>View the whole plan →</Text>
+                          </TouchableOpacity>
                           {/* Item 96 ("Add surprise mode"): "Eventually: Reveal
                               plan becomes an action" -- a real, one-way tap. */}
                           {occasion.surprise_mode && (

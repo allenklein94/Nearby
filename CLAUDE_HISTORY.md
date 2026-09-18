@@ -1,3 +1,12 @@
+# Item 142 (2026-09-18) - Plan detail screen (first consumer of get_plan_overview)
+`PlanDetailScreen` (route `PlanDetail`, `{ planId }`): read-only, reads ONLY through `getPlanOverview`. Shows title/status/date/for-whom,
+a "The plan so far" journey (`utils/planJourney.js`: People / Activity / Business / Offer / Reservation, each a real fact or an honest
+"not yet"), people, offers + reservation, parts made from this plan; a bare occasion plan offers "Plan something ->" (group plan ->
+GroupOccasionPlan, else CelebrateSomething). Entry: "View the whole plan ->" on OccasionsScreen's personal occasion cards and on group
+plan cards the caller HOSTS (`getPlanIdForOccasion`; plans RLS is creator-only, so invited non-host participants aren't linked -- they keep
+GroupOccasionPlan; a participant-facing lookup RPC would be the fix). No migration. Jest 692/692. Device-unverified; offers/reservation
+rendering never seen with real data. Business export: rebuilt, see commit.
+
 # Item 141 (2026-09-18) - Universal Plan, pass A (plans = aggregation/read identity)
 Migration `20261203_plan_read_layer.sql`. Occasions and occasion group plans now each get a `plans` row (plan_type 'occasion' /
 'group_occasion', kind in `plans.occasion_type`) via triggers (create + sync; FK cascade on delete) plus backfill. New
@@ -12,7 +21,7 @@ parent link + activity, cascade delete), then applied; production had 0 occasion
 business/offer/reservation sections were never exercised on real data. Not run: from-scratch Docker replay. No screen consumes the read
 layer yet. Recurring occasions keep one plan row (no yearly roll-over). plan_type 'birthday'/'anniversary' remain valid but unused.
 Direction (user): B (make plans the primary table for every entry point) only if this pass's evidence supports it.
-Business export: see git log for whether it changed.
+Business export: unchanged by this migration (verified by rebuilding).
 
 # Item 140 (2026-09-18) - Skippable occasions step in onboarding
 `OnboardingOccasionsScreen` (after OnboardingRecommendations's "Let's Go", before MainTabs): "Any dates worth remembering?" with

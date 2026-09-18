@@ -122,3 +122,11 @@ export async function getPlanOverview(planId) {
   if (error) throw new Error(error.message);
   return normalizePlanOverview(data);
 }
+
+// Resolves the plans row behind an occasion / occasion group plan the caller created (plans RLS is creator-only).
+export async function getPlanIdForOccasion({ occasionId = null, groupPlanId = null }) {
+  const col = occasionId ? 'occasion_id' : 'occasion_group_plan_id';
+  const { data, error } = await supabase.from('plans').select('id').eq(col, occasionId || groupPlanId).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data?.id ?? null;
+}
