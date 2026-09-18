@@ -18,6 +18,10 @@ export const lightColors = {
   // different text. Used only by surprise-mode-specific UI.
   surprise: '#6C5CE7',
   surpriseMuted: 'rgba(108, 92, 231, 0.12)',
+  // Item 128: the amber "in progress" text tone (Item 91's plan status, Item 123's "close"
+  // countdown). One hardcoded #B8791F used to serve both modes -- 3.45:1 on the light background,
+  // under AA. Per-mode tokens keep >= 4.5:1 in each appearance.
+  inProgress: '#9A6210',
 };
 
 export const darkColors = {
@@ -34,6 +38,7 @@ export const darkColors = {
   border: 'rgba(255, 255, 255, 0.08)',
   surprise: '#9B8CFF',
   surpriseMuted: 'rgba(155, 140, 255, 0.18)',
+  inProgress: '#E0A84A',
 };
 
 export const typography = {

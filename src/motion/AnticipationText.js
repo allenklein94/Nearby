@@ -24,7 +24,7 @@ export default function AnticipationText({ daysUntil, children, style }) {
   const opacity = useKeyChangeFade(tier);
   const toneStyle =
     tier === 'today' ? { color: colors.primary, fontWeight: '700' }
-    : tier === 'close' ? { color: '#B8791F', fontWeight: '700' } // same amber "in progress" tint Item 91 already established
+    : tier === 'close' ? { color: colors.inProgress, fontWeight: '700' } // same amber "in progress" tone Item 91 established, per-mode (Item 128)
     : tier === 'building' ? { color: colors.textPrimary, fontWeight: '600' }
     : null;
   return (

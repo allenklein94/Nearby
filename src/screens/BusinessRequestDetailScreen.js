@@ -1774,7 +1774,7 @@ const getStyles = (colors) => StyleSheet.create({
   planSummaryStatusText: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
   planSummaryStatusTextConfirmed: { color: colors.primary },
   planSummaryStatusTextCancelled: { color: colors.danger },
-  planSummaryStatusTextInProgress: { color: '#B8791F' },
+  planSummaryStatusTextInProgress: { color: colors.inProgress },
   planSummaryStatusTextCompleted: { color: colors.textTertiary },
   planSummaryLine: { ...typography.body, color: colors.textSecondary, marginTop: 2 },
   planSummaryActionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.sm },

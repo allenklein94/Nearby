@@ -1,3 +1,22 @@
+## Sep 18 2026 — Item 128 ("Motion should also work with dark/light mode") — DONE
+
+Audited every `src/motion/` piece plus FindingOptionsLoader/Skeletons/LoadErrorState/FadeInState/
+StaggeredReveal/CelebrationHeaderIcon for appearance-specific color. Already correct: all read
+`useTheme()` tokens live each render (a mid-session theme flip re-colors with no restart); NLoader's
+splash mark is a transparent-background coral PNG (reads on both backgrounds); NearbyMark's
+gradient variant is documented for any background; MatchAnimation's dating variant uses a fixed
+dark overlay + white text by design (identical in both modes), its friend variant uses surface
+tokens; OccasionPlanShareCard is deliberately theme-independent (a shared image). One real defect:
+the amber "in progress" text (`#B8791F`, hardcoded in AnticipationText's "close" tier and
+BusinessRequestDetailScreen's plan-status pill) measured 3.45:1 on the light background (under
+AA). Added a per-mode `colors.inProgress` token (light `#9A6210` 4.8:1+, dark `#E0A84A` 7.7:1+)
+and replaced both hardcoded uses. New `motionThemeContrast.test.js` (10 tests) guards, in BOTH
+palettes, that motion-relevant tokens exist and text/amber/surprise pairs meet 4.5:1 and skeleton
+bars stay distinguishable. Known/unchanged: brand coral as text on white is 2.8:1 app-wide (brand
+color, used at bold/large sizes); not changed here. Not visually verified on a device in both
+appearances (no tooling) -- next session with a device should eyeball NLoader, SuccessAnimation,
+occasion effects and match modal in light and dark.
+
 ## Sep 18 2026 — Item 127 ("Respect Reduce Motion") — shared-level enforcement — DONE
 
 Audit: 9 Item-112 components already honored Reduce Motion individually, but ~10 other animated

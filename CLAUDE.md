@@ -81,7 +81,10 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   Reduce Motion store and, installed at app start (`App.js`), turns every `Animated.spring` into an
   instant timing and every `Animated.loop` into a no-op while it's on; the stack navigator swaps to
   a plain fade. Prefer `Animated.timing` fades for new work; branch on `useReduceMotion()` only where
-  the reduced state is different content (skip a morph/particle burst, drop a slide offset). Aesthetic target: modern + polished
+  the reduced state is different content (skip a morph/particle burst, drop a slide offset).
+  Item 128: motion must work in both light and dark -- draw only with `useTheme()` tokens (never a
+  hardcoded hex; `#fff` only over a fixed dark overlay/brand-coral surface), and any new token a
+  motion piece reads gets a light+dark value guarded by `src/motion/motionThemeContrast.test.js`. Aesthetic target: modern + polished
   + alive + restrained — a premium social product, not a children's app; no confetti-everywhere.
 - **Motion intensity varies by context (Item 122, locked 2026-09-18).** Occasion-creation moments
   (a plan being born, a birthday/anniversary pick, a community going live) can stay fully
