@@ -40,6 +40,38 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**QUEUED, NOT STARTED — "Nearby Motion & Microinteraction System" (added to the user's own
+"Thursday plan" 2026-09-18, do not build without a direct go-ahead).** User's own scope: audit
+and standardize every real interaction moment in the app into one cohesive motion language,
+rather than "a bunch of unrelated animations" — Loading, Pull-to-refresh, Tab transitions, Mode
+switching, Match creation, Friend acceptance, Plan creation, Plan confirmation, Reservation
+confirmation, Occasion creation, Birthday, Anniversary, Graduation, Surprise mode, Empty-state
+transitions, Success states, Notification interactions — "especially" the N-branded loading
+animation. User's own framing: combine "your Facebook-style idea" (referenced from an earlier
+conversation not present in this session's own context — don't assume or fabricate its specifics
+without asking) + the new N mark + the occasion animations already shipped into one system,
+rather than treating each as its own one-off. Explicitly named as the kind of detail that moves
+Nearby from "a lot of features" to "a real, polished product."
+
+Real foundation already in place for whoever picks this up: the locked 6-glyph Motion Language
+(`src/constants/motionLanguage.js`) and the animation-discipline Standing Convention
+(`src/hooks/useReduceMotion.js`, both logged directly above/below this entry, same day) already
+cover the *glyph* vocabulary and the *Reduce Motion* requirement for the 9 components Item 112
+already shipped (Occasion selection, Surprise reveal, Plan-created, the options-loading caption
+cycler, staggered result reveal, the living-header icon, both match-celebration modals). What
+this new item actually adds, not yet done: (1) auditing the many items on the user's own list that
+have **no dedicated animation treatment at all yet** — pull-to-refresh, tab transitions, mode
+switching, friend acceptance (distinct from the friend-match *modal*, which already has one),
+plan confirmation/reservation confirmation as their own moments (Item 91's Plan Status pill is a
+static colored label today, not an animated state-change), empty-state transitions, and
+generic notification-tap interactions; (2) deciding whether the N-branded loading treatment
+(`BrandedLoader`, currently only used at the app's own boot/session gate) should become the
+standard loading treatment more broadly, replacing plain spinners/`ActivityIndicator` elsewhere,
+and what "Facebook-style" means concretely once that context is available; (3) actually building
+whatever that audit turns up, verifying each against the just-locked animation-discipline rule
+(meaning-first, short/subtle/interruptible, Reduce-Motion-aware) rather than adding motion for
+its own sake.
+
 **Seventh same-day follow-up ("animations should reinforce meaning... respect Reduce Motion")
 — fully DONE (2026-09-18), direct follow-up to the Motion Language above.** User's own locked
 animation-discipline rule: "Animations should reinforce meaning, hierarchy, state changes, and
