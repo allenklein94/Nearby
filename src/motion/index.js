@@ -38,3 +38,4 @@ export { default as AnticipationText } from './AnticipationText';
 export { default as NearbyPickBadge } from './NearbyPickBadge';
 export { getReduceMotion, subscribeReduceMotion, installReducedMotionPolicy } from './motionPolicy';
 export { playHaptic, HAPTIC_MOMENTS } from './haptics';
+export * from './motionBudget';

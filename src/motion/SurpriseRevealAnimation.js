@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { playHaptic, HAPTIC_MOMENTS } from './haptics';
+import { SEQUENCES } from './motionBudget';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, typography } from '../theme';
 import useReduceMotion from '../hooks/useReduceMotion';
@@ -13,7 +14,7 @@ import useReduceMotion from '../hooks/useReduceMotion';
 // right after the real reveal RPC has already succeeded -- never speculatively
 // before the real server-side reveal is confirmed, so it can never show a
 // "revealed!" moment that didn't actually happen.
-const STAGE_MS = 320;
+const STAGE_MS = SEQUENCES.surpriseReveal.stageMs; // Item 131 budget tokens
 const HOLD_MS = 500;
 export const SURPRISE_REVEAL_TOTAL_MS = STAGE_MS * 2 + HOLD_MS;
 // Reduce Motion: skip straight to the real end state (🎉 + the real reveal text) with no
@@ -48,14 +49,14 @@ export default function SurpriseRevealAnimation({ text, onDone, haptic = false }
       glyphOpacity.setValue(0);
       glyphScale.setValue(0.6);
       Animated.parallel([
-        Animated.timing(glyphOpacity, { toValue: 1, duration: 170, useNativeDriver: true }),
+        Animated.timing(glyphOpacity, { toValue: 1, duration: SEQUENCES.surpriseReveal.glyphFadeMs, useNativeDriver: true }),
         Animated.spring(glyphScale, { toValue: 1, friction: 5, useNativeDriver: true }),
       ]).start();
     };
     timers.push(setTimeout(() => playStage('sparkle'), STAGE_MS));
     timers.push(setTimeout(() => {
       playStage('party');
-      Animated.timing(textOpacity, { toValue: 1, duration: 240, useNativeDriver: true }).start();
+      Animated.timing(textOpacity, { toValue: 1, duration: SEQUENCES.surpriseReveal.textFadeMs, useNativeDriver: true }).start();
     }, STAGE_MS * 2));
     timers.push(setTimeout(() => onDone?.(), STAGE_MS * 2 + HOLD_MS));
     return () => timers.forEach(clearTimeout);

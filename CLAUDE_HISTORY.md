@@ -1,3 +1,20 @@
+## Sep 18 2026 — Item 131 ("Create a motion budget") — DONE
+
+Defined the budget once in `src/motion/motionBudget.js`: tiny 50-150ms, small 150-300, medium
+300-500, special 500-900, measured trigger -> settled end state (dwell holds and ambient loading
+loops exempt). `SEQUENCES` tokens now drive the real timings so the numbers that run are the numbers
+tested. Audit found over-budget sequences and re-timed them (settled-state times before -> after):
+celebratory success ~1040ms -> 720ms tokens (stage 340->240); occasion morph 3 glyphs ~1000 ->
+800; surprise reveal ~880 (text at 640+240) -> 500; occasion lock/particles kept inside special;
+dating match intro+entrance ~800 -> 480 (medium, per "match state"); business success (plan/
+reservation confirmed) 320ms medium; list cascades (AnimatedListItem, StaggeredReveal) max delay
+350/250 -> 200 with 250ms items (450 settled, medium). Sequence text-timer in SuccessAnimation now
+starts as the last stage begins (matches the budget's definition). `motionBudget.test.js` (12
+tests) checks tier bounds, every sequence settles inside its declared tier, glyph fades fit their
+stage, business < celebratory, and source-scans motion+component files so no literal Animated
+duration exceeds 900ms. Suite 632/632. Not felt on a device -- next session should eyeball that the
+tightened success/occasion/match sequences still read as deliberate rather than rushed.
+
 ## Sep 18 2026 — Item 130 ("Don't use haptics for notifications that aren't user-initiated") — DONE
 
 Audit of Item 129's haptics: `services/notifications.js` (push handling) never used expo-haptics --

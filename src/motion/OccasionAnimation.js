@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Animated, Easing } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { SEQUENCES } from './motionBudget';
 import useReduceMotion from '../hooks/useReduceMotion';
 
 // OccasionAnimation -- 🎉 = celebration (occasion/plan/milestone), per the
@@ -23,9 +24,9 @@ export const OCCASION_SELECT_ANIMATIONS = {
   surprise: { kind: 'lock', glyphs: ['🔓', '🔒'], text: '🔒 Surprise Mode' },
 };
 
-const MORPH_STEP_MS = 260;
+const MORPH_STEP_MS = SEQUENCES.occasionMorph.stepMs; // Item 131 budget tokens
 const HOLD_MS = 550;
-const LOCK_SNAP_DELAY_MS = 320;
+const LOCK_SNAP_DELAY_MS = SEQUENCES.occasionLock.snapDelayMs;
 // Reduce Motion: no multi-stage cross-fade -- morph/lock land directly on their real
 // final glyph+text with no motion, held just long enough to register. A particle
 // burst has no natural "final state" to freeze on, so it's skipped entirely rather
@@ -90,14 +91,14 @@ export default function OccasionAnimation({ triggerKey, onDone }) {
         glyphOpacity.setValue(0);
         glyphScale.setValue(0.6);
         Animated.parallel([
-          Animated.timing(glyphOpacity, { toValue: 1, duration: 160, useNativeDriver: true }),
+          Animated.timing(glyphOpacity, { toValue: 1, duration: SEQUENCES.occasionMorph.glyphFadeMs, useNativeDriver: true }),
           Animated.spring(glyphScale, { toValue: 1, friction: 5, useNativeDriver: true }),
         ]).start();
         if (i < spec.glyphs.length - 1) {
           timers.push(setTimeout(() => playGlyph(i + 1), MORPH_STEP_MS));
         } else {
           timers.push(setTimeout(() => {
-            if (!cancelled) Animated.timing(textOpacity, { toValue: 1, duration: 220, useNativeDriver: true }).start();
+            if (!cancelled) Animated.timing(textOpacity, { toValue: 1, duration: SEQUENCES.occasionMorph.textFadeMs, useNativeDriver: true }).start();
           }, MORPH_STEP_MS));
         }
       };
@@ -111,7 +112,7 @@ export default function OccasionAnimation({ triggerKey, onDone }) {
         setGlyphIndex(1);
         glyphScale.setValue(1.3);
         Animated.spring(glyphScale, { toValue: 1, friction: 4, useNativeDriver: true }).start();
-        Animated.timing(textOpacity, { toValue: 1, duration: 220, useNativeDriver: true }).start();
+        Animated.timing(textOpacity, { toValue: 1, duration: SEQUENCES.occasionLock.textFadeMs, useNativeDriver: true }).start();
       }, LOCK_SNAP_DELAY_MS));
       totalMs = LOCK_SNAP_DELAY_MS + HOLD_MS;
     } else {
@@ -123,13 +124,13 @@ export default function OccasionAnimation({ triggerKey, onDone }) {
         const angle = (i / particleAnims.length) * Math.PI * 2;
         const dist = 30 + (i % 2) * 12;
         Animated.sequence([
-          Animated.delay(i * 30),
+          Animated.delay(i * (SEQUENCES.occasionParticles.maxDelayMs / Math.max(particleAnims.length - 1, 1))),
           Animated.parallel([
             Animated.timing(p.opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-            Animated.timing(p.translateX, { toValue: Math.cos(angle) * dist, duration: 420, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-            Animated.timing(p.translateY, { toValue: Math.sin(angle) * dist, duration: 420, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+            Animated.timing(p.translateX, { toValue: Math.cos(angle) * dist, duration: SEQUENCES.occasionParticles.riseMs, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+            Animated.timing(p.translateY, { toValue: Math.sin(angle) * dist, duration: SEQUENCES.occasionParticles.riseMs, easing: Easing.out(Easing.quad), useNativeDriver: true }),
           ]),
-          Animated.timing(p.opacity, { toValue: 0, duration: 260, useNativeDriver: true }),
+          Animated.timing(p.opacity, { toValue: 0, duration: SEQUENCES.occasionParticles.fadeMs, useNativeDriver: true }),
         ]).start();
       });
       totalMs = 700;

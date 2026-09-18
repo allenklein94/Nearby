@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, Animated } from 'react-native';
 import { playHaptic, HAPTIC_MOMENTS } from './haptics';
+import { SEQUENCES } from './motionBudget';
 import { NearbyMark } from '../components/brand';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -33,7 +34,7 @@ function useModalEntrance(visible, { delay = 0 } = {}) {
       const timer = setTimeout(() => {
         Animated.parallel([
           Animated.spring(scaleAnim, { toValue: 1, friction: 6, useNativeDriver: true }),
-          Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+          Animated.timing(opacityAnim, { toValue: 1, duration: SEQUENCES.matchIntro.entranceMs, useNativeDriver: true }),
         ]).start();
       }, delay);
       return () => clearTimeout(timer);
@@ -56,7 +57,7 @@ function useModalEntrance(visible, { delay = 0 } = {}) {
 // already mounted (just at opacity 0 until this beat clears). Reduce Motion skips it outright and
 // lands directly on the real settled content, matching every other decorative beat in this
 // codebase (see useReduceMotion.js's own header comment).
-const INTRO_STAGE_MS = 250;
+const INTRO_STAGE_MS = SEQUENCES.matchIntro.stageMs; // Item 131 budget tokens
 export const MATCH_INTRO_TOTAL_MS = INTRO_STAGE_MS * 2;
 
 function useHeartToMarkIntro(visible) {
@@ -77,14 +78,14 @@ function useHeartToMarkIntro(visible) {
       opacity.setValue(0);
       scale.setValue(0.6);
       Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration: 160, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1, duration: INTRO_STAGE_MS, useNativeDriver: true }),
         Animated.spring(scale, { toValue: 1, friction: 5, useNativeDriver: true }),
       ]).start();
     };
     playStage('heart');
     const toMark = setTimeout(() => playStage('mark'), INTRO_STAGE_MS);
     const toHide = setTimeout(() => {
-      Animated.timing(opacity, { toValue: 0, duration: 160, useNativeDriver: true }).start(() => setShow(false));
+      Animated.timing(opacity, { toValue: 0, duration: 120, useNativeDriver: true }).start(() => setShow(false));
     }, MATCH_INTRO_TOTAL_MS);
     return () => {
       clearTimeout(toMark);

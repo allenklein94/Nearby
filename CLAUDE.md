@@ -93,7 +93,12 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   `haptic` prop (default false); pass it only when the animation is the direct result of the user's
   own tap. Arrival-driven states (realtime update, refocus discovery, a push) get the animation but
   no haptic, and `services/notifications.js` never touches expo-haptics -- a background push keeps
-  normal OS notification behavior. Guarded by `src/motion/hapticsRespect.test.js`. Aesthetic target: modern + polished
+  normal OS notification behavior. Guarded by `src/motion/hapticsRespect.test.js`.
+  Item 131: every transition is authored against the motion budget in `src/motion/motionBudget.js` --
+  tiny 50-150ms (button/icon), small 150-300 (filters/tabs/cards), medium 300-500 (plan confirm, match),
+  special 500-900 (occasion celebration, surprise reveal). Measured trigger -> settled state; holds
+  and ambient loading loops are exempt. Sequence timings are `SEQUENCES` tokens shared by the
+  components and `motionBudget.test.js`; nothing may exceed 900ms. New sequences add a token + test. Aesthetic target: modern + polished
   + alive + restrained — a premium social product, not a children's app; no confetti-everywhere.
 - **Motion intensity varies by context (Item 122, locked 2026-09-18).** Occasion-creation moments
   (a plan being born, a birthday/anniversary pick, a community going live) can stay fully

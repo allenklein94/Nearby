@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { playHaptic, HAPTIC_MOMENTS } from './haptics';
+import { SEQUENCES } from './motionBudget';
 import { NearbyMark } from '../components/brand';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, typography } from '../theme';
@@ -25,7 +26,8 @@ import useReduceMotion from '../hooks/useReduceMotion';
 // something, it's a fact settling), lands on the checkmark in roughly half the
 // time, and swaps the springy scale-pop for a plain, minimal-overshoot settle.
 // Content/meaning are identical either way; only the intensity changes.
-const STAGE_MS = { celebratory: 340, business: 160 };
+// Timings live in motionBudget.js (Item 131): celebratory = special tier, business = medium.
+const TIMING = { celebratory: SEQUENCES.successCelebratory, business: SEQUENCES.successBusiness };
 
 // `haptic` (Item 130): opt-in, pass true ONLY when this plays as the direct result of the user's
 // own action (they tapped Confirm/Submit). A state change that merely arrived (a realtime update,
@@ -35,7 +37,8 @@ export default function SuccessAnimation({ text = "It's happening. 🎉", tone =
   const reduceMotion = useReduceMotion();
   const styles = getStyles(colors);
   const isBusiness = tone === 'business';
-  const stageMs = STAGE_MS[tone] ?? STAGE_MS.celebratory;
+  const timing = TIMING[tone] ?? TIMING.celebratory;
+  const stageMs = timing.stageMs;
   const [stage, setStage] = useState('mark'); // 'mark' -> 'sparkle'? -> 'check'
   const glyphOpacity = useRef(new Animated.Value(0)).current;
   const glyphScale = useRef(new Animated.Value(0.6)).current;
@@ -61,10 +64,10 @@ export default function SuccessAnimation({ text = "It's happening. 🎉", tone =
       glyphOpacity.setValue(0);
       glyphScale.setValue(isBusiness ? 0.85 : 0.6);
       Animated.parallel([
-        Animated.timing(glyphOpacity, { toValue: 1, duration: isBusiness ? 120 : 180, useNativeDriver: true }),
+        Animated.timing(glyphOpacity, { toValue: 1, duration: timing.glyphFadeMs, useNativeDriver: true }),
         isBusiness
           // A plain, fast settle -- no springy overshoot, reads as "confirmed," not "confetti."
-          ? Animated.timing(glyphScale, { toValue: 1, duration: 120, useNativeDriver: true })
+          ? Animated.timing(glyphScale, { toValue: 1, duration: timing.glyphFadeMs, useNativeDriver: true })
           : Animated.spring(glyphScale, { toValue: 1, friction: 5, useNativeDriver: true }),
       ]).start();
     };
@@ -74,8 +77,8 @@ export default function SuccessAnimation({ text = "It's happening. 🎉", tone =
       timers.push(setTimeout(() => playStage(next), stageMs * i));
     });
     timers.push(setTimeout(() => {
-      Animated.timing(textOpacity, { toValue: 1, duration: isBusiness ? 160 : 260, useNativeDriver: true }).start();
-    }, stageMs * (stages.length - 1) + (isBusiness ? 120 : 180)));
+      Animated.timing(textOpacity, { toValue: 1, duration: timing.textFadeMs, useNativeDriver: true }).start();
+    }, stageMs * (stages.length - 1)));
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduceMotion, tone]);

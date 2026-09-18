@@ -6,7 +6,8 @@ import useReduceMotion from '../hooks/useReduceMotion';
 // position so items animate in as a gentle cascade rather than all
 // at once. Delay is capped so long lists don't leave later items
 // waiting an unreasonably long time to appear.
-const MAX_STAGGER_MS = 250;
+// Item 131: cascade budget -- max stagger 200 + 250 item = 450ms to fully settled (medium).
+const MAX_STAGGER_MS = 200;
 const STAGGER_STEP_MS = 40;
 
 export default function AnimatedListItem({ index = 0, children }) {
@@ -18,8 +19,8 @@ export default function AnimatedListItem({ index = 0, children }) {
   useEffect(() => {
     const delay = reduceMotion ? 0 : Math.min(index * STAGGER_STEP_MS, MAX_STAGGER_MS);
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: reduceMotion ? 150 : 280, delay, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 280, delay, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: reduceMotion ? 150 : 250, delay, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: 0, duration: 250, delay, useNativeDriver: true }),
     ]).start();
   }, []);
 

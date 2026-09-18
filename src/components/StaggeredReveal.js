@@ -11,7 +11,8 @@ import useReduceMotion from '../hooks/useReduceMotion';
 // "🍽️ Nearby options," reads as its own small cascade rather than
 // continuing a long global stagger).
 const BASE_DELAY_MS = 70;
-const MAX_DELAY_MS = 350;
+// Item 131: cascade budget -- max delay 200 + 250 item = 450ms to fully settled (medium).
+const MAX_DELAY_MS = 200;
 
 export default function StaggeredReveal({ index = 0, children, style }) {
   const reduceMotion = useReduceMotion();
@@ -29,8 +30,8 @@ export default function StaggeredReveal({ index = 0, children, style }) {
     const delay = Math.min(index * BASE_DELAY_MS, MAX_DELAY_MS);
     const timer = setTimeout(() => {
       Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: true }),
-        Animated.timing(translateY, { toValue: 0, duration: 220, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: 0, duration: 250, useNativeDriver: true }),
       ]).start();
     }, delay);
     return () => clearTimeout(timer);
