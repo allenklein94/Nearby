@@ -352,6 +352,23 @@ confirmed celebrations, the occasion tile animations, the surprise reveal), and 
 `ModeTransition`/`FilterTransition` dip-and-recover cue on MessagesScreen/PlacesScreen reads as a
 subtle "something changed" signal rather than a flicker.
 
+**Same-day follow-up ("delete the last two shim files too"), resumed cleanly after a codespace
+restart mid-task — fully DONE (2026-09-18).** Closed the one item the paragraph above had left as
+"a clear next step if wanted": deleted `src/components/MatchCelebrationModal.js`/
+`FriendMatchCelebrationModal.js` (the last two of the six original Item 113 shims — the other four
+were already deleted in the immediately-preceding follow-up above). A repo-wide grep re-confirmed
+zero remaining references to either file path anywhere in `src/` before deleting. Updated
+`src/motion/index.js`'s own header comment (previously said "four of six shims deleted, two still
+exist" — now correctly says all six were deleted) and the one stray prose reference in
+`GatheringConfirmationScreen.js`'s comment (named `MatchCelebrationModal.js` directly; now points
+at `MatchAnimation (src/motion/)`, the real canonical name). With this, every one of the six
+original Item 113 shim files (`BrandedLoader`, `PlanCreatedCelebration`, `OccasionSelectAnimation`,
+`SurpriseRevealAnimation`, `MatchCelebrationModal`, `FriendMatchCelebrationModal`) is gone; every
+real call site across the whole app is on the canonical `../motion` import. Full Jest suite
+580/580 passing (unchanged); both touched files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised on a real device (standing note) — pure deletion/comment
+cleanup, no behavior change.
+
 **"Nearby Motion & Microinteraction System" — first real increment shipped (2026-09-18), same
 day, direct "build it now" override of the earlier "queue for Thursday" call.** User's own scope:
 audit and standardize every real interaction moment in the app into one cohesive motion language
