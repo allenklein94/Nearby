@@ -817,6 +817,52 @@ session should confirm the amber/coral warming reads as a genuine "getting close
 an alarming color change, and that the one-shot dip correctly fires if the app is left open across
 a tier boundary (e.g. midnight, 4→3 days) rather than only ever showing the static end color.
 
+**Item 124 ("Use animation when something becomes available") — fully DONE (2026-09-18), same-day
+direct follow-up to Item 123.** User's own example: a pending request ("Finding something for
+you…") that later resolves to "We found 3 options" should have the options enter naturally — "far
+more engaging than a notification that simply says: Results available."
+
+The underlying animation piece already existed (`StaggeredReveal`, built for the Occasion wizard's
+own live options step and Discover's result cards — a small per-index fade/slide-in cascade,
+Reduce-Motion-aware) but had never been swept across every other real "a request is pending, its
+results arrive later" surface in the app. Audited every such surface via a targeted grep (every
+real `.map()` rendering a business offer/search-result list) rather than assumed covered: found 4
+concrete, previously-flat gaps, all fixed by wrapping each row in `StaggeredReveal` with its own
+real per-index delay (`key` moved from the inner element onto the wrapper, per the component's own
+established convention) —
+
+- `BusinessRequestDetailScreen.js`'s "🔍 Compare Your Options" offer list — the literal "we found
+  N options" moment for a pending business request, whether the user is watching live or opened
+  the app from a `business_offer_received` push.
+- `GroupPlanScreen.js`'s own Offers list (a group's pending business request, same underlying
+  data shape) and its separate Social Offers list ("I'll drive," "I'll host" — the same "an offer
+  arrived" pattern for a person-to-person ask rather than a business one).
+- `AskBusinessScreen.js`'s "🔎 Find options nearby" live search results (Item 53) — a real,
+  synchronous search whose results previously appeared all at once.
+- `GroupOccasionPlanScreen.js`'s "🍽️ Vote on Where" business-vote options (Item 67) — already had
+  a real "✨ Nearby is finding real options for the group to vote on…" loading caption (matching
+  this item's own "Finding something for you…" framing almost verbatim) but the options themselves
+  still popped in flat once the fetch resolved.
+
+Deliberately did not touch the many other `.map()` lists across the app that aren't a "pending
+request resolving into fresh results" moment (settings rows, a standing roster, an already-open
+screen's static content) — this item is about a request's real results becoming available, not a
+blanket sweep of every list in the codebase, matching Item 123's own "don't apply everywhere"
+discipline one item ago. The "Results available"-style generic-notification half of the item's own
+framing was checked against the app's real push copy (Item 78's `business_offer_received` already
+leads with real occasion context when one exists, e.g. "🍽️ A business responded to your birthday
+request," never a bare "Results available") and found already correct — no text was flat/generic
+in practice, so no push-copy change was needed.
+
+No DB migration, no new pure functions (reusing an already-built, already-tested-by-design
+component — the same untested-by-design precedent every other `Animated`-based piece in this
+codebase has). Full Jest suite 600/600 passing (unchanged — pure UI wiring, no logic touched); all
+four touched files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised
+on a real device (standing note) — next session should confirm on a real account that a pending
+business request's offers, a group plan's offers/social-offers, a live "Find options nearby"
+search, and a group occasion's business-vote options all cascade in naturally rather than popping
+in flat or stuttering when several arrive at once.
+
 **"Nearby Motion & Microinteraction System" — first real increment shipped (2026-09-18), same
 day, direct "build it now" override of the earlier "queue for Thursday" call.** User's own scope:
 audit and standardize every real interaction moment in the app into one cohesive motion language

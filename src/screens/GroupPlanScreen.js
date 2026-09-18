@@ -16,6 +16,7 @@ import {
 import { submitSocialOffer, respondToSocialOffer, markSocialOfferViewed } from '../services/socialOffers';
 import { recordIntentSelection } from '../services/intentOutcomes';
 import LoadErrorState from '../components/LoadErrorState';
+import StaggeredReveal from '../components/StaggeredReveal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -459,12 +460,16 @@ export default function GroupPlanScreen({ navigation, route }) {
             {offers.length === 0 ? (
               <Text style={styles.helperText}>No businesses have responded yet.</Text>
             ) : (
-              offers.map((o) => {
+              offers.map((o, offerIndex) => {
                 const confirmedForThisOffer = confirmations.filter((c) => c.offer_id === o.id);
                 const iConfirmed = confirmedForThisOffer.some((c) => c.user_id === myId);
                 const amActiveParticipant = myParticipant?.status === 'accepted';
                 return (
-                  <View key={o.id} style={styles.offerCard}>
+                  // Item 124 ("Use animation when something becomes available"): the group's own
+                  // "we found options" moment -- each offer settles into place with a small
+                  // per-index cascade rather than appearing all at once.
+                  <StaggeredReveal key={o.id} index={offerIndex} style={styles.offerCard}>
+                  <View>
                     <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? 'A business'}</Text>
                     <Text style={styles.offerStatus}>{OFFER_STATUS_COPY[o.status] ?? o.status}</Text>
                     {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
@@ -484,6 +489,7 @@ export default function GroupPlanScreen({ navigation, route }) {
                       </>
                     )}
                   </View>
+                  </StaggeredReveal>
                 );
               })
             )}
@@ -493,8 +499,9 @@ export default function GroupPlanScreen({ navigation, route }) {
             {socialOffers.length === 0 ? (
               <Text style={styles.helperText}>No one has offered to help yet.</Text>
             ) : (
-              socialOffers.map((o) => (
-                <View key={o.id} style={styles.offerCard}>
+              socialOffers.map((o, socialOfferIndex) => (
+                <StaggeredReveal key={o.id} index={socialOfferIndex} style={styles.offerCard}>
+                <View>
                   <Text style={styles.offerPartnerName}>{o.profiles?.display_name ?? 'Someone'}</Text>
                   <Text style={styles.offerStatus}>{SOCIAL_OFFER_STATUS_COPY[o.status] ?? o.status}</Text>
                   <Text style={styles.offerDescription}>{o.offer_description}</Text>
@@ -521,6 +528,7 @@ export default function GroupPlanScreen({ navigation, route }) {
                     </View>
                   )}
                 </View>
+                </StaggeredReveal>
               ))
             )}
             {myParticipant?.status === 'accepted' && !isInitiator && !socialOffers.some((o) => o.offerer_id === myId) && (

@@ -7,6 +7,7 @@ import { createBusinessRequestForMatch } from '../services/dateProposals';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, OCCASION_OPTIONS, businessAttributeLabel, cuisineLabel, occasionLabel } from '../constants/businessAttributes';
 import { BUDGET_LEVEL_OPTIONS, resolveBudgetMax, initialBudgetSelectionFromMax, EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
+import StaggeredReveal from '../components/StaggeredReveal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -672,9 +673,12 @@ export default function AskBusinessScreen({ navigation, route }) {
 
               {nearbyResults && nearbyResults.length > 0 && (
                 <View style={styles.nearbyResultsList}>
-                  {nearbyResults.map((result) => (
+                  {/* Item 124 ("Use animation when something becomes available"): the real
+                      "we found options" moment for this search -- each result settles into
+                      place with a small per-index cascade instead of appearing all at once. */}
+                  {nearbyResults.map((result, resultIndex) => (
+                    <StaggeredReveal key={result.id} index={resultIndex}>
                     <TouchableOpacity
-                      key={result.id}
                       style={[styles.nearbyResultCard, pickedAvailability?.id === result.id && styles.nearbyResultCardSelected]}
                       onPress={() => handleChooseNearby(result)}
                       accessibilityLabel={`Choose ${result.partner_name}`}
@@ -693,6 +697,7 @@ export default function AskBusinessScreen({ navigation, route }) {
                           .join(' · ')}
                       </Text>
                     </TouchableOpacity>
+                    </StaggeredReveal>
                   ))}
                 </View>
               )}
