@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import BrandedLoader from '../components/BrandedLoader';
 import * as Haptics from 'expo-haptics';
 import { getGatheringMessagesPage, getGatheringMessageById, sendGatheringMessage } from '../services/gatheringChat';
@@ -185,10 +186,10 @@ export default function GatheringChatScreen({ route, navigation }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {messages.length === 0 ? (
-          <View style={[styles.emptyState, { flex: 1, justifyContent: 'center' }]}>
+          <FadeInState style={[styles.emptyState, { flex: 1, justifyContent: 'center' }]}>
             <Text style={styles.emptyEmoji}>💬</Text>
             <Text style={styles.emptyText}>Say hi to everyone attending "{gatheringTitle}"!</Text>
-          </View>
+          </FadeInState>
         ) : (
         <FlatList
           data={messages}

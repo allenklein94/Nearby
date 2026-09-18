@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import { Ionicons } from '@expo/vector-icons';
 import { getMyTimeline } from '../services/homeDashboard';
 import { useTheme } from '../context/ThemeContext';
@@ -67,10 +68,10 @@ export default function TimelineScreen({ navigation }) {
           keyExtractor={(item, i) => `${item.date}-${i}`}
           contentContainerStyle={{ padding: spacing.lg }}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
+            <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📖</Text>
               <Text style={styles.emptyText}>Your story is just getting started.</Text>
-            </View>
+            </FadeInState>
           }
           renderItem={({ item }) => (
             <View style={styles.row}>

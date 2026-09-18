@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert, Linking, ActivityIndicator } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import { addPlaylistItem, getPlaylistItems } from '../services/sharedPlaylist';
 import { searchSpotifyTracks } from '../services/spotifyAuth';
 import { supabase } from '../services/supabase';
@@ -156,10 +157,10 @@ export default function SharedPlaylistScreen({ route }) {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: spacing.lg }}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
+            <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🎧</Text>
               <Text style={styles.emptyText}>No songs added yet. Search above to add the first one!</Text>
-            </View>
+            </FadeInState>
           }
           renderItem={({ item }) => (
             <View style={styles.card}>

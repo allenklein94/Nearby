@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import BrandedLoader from '../components/BrandedLoader';
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -606,10 +607,10 @@ export default function OccasionsScreen({ navigation }) {
           )}
 
           {occasions.length === 0 && (
-            <View style={styles.emptyState}>
+            <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📅</Text>
               <Text style={styles.emptyText}>No occasions saved yet.</Text>
-            </View>
+            </FadeInState>
           )}
 
           {personGroups.map((group) => (

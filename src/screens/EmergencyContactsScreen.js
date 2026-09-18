@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import BrandedLoader from '../components/BrandedLoader';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyEmergencyContacts, addEmergencyContact, deleteEmergencyContact } from '../services/emergencyContacts';
@@ -108,10 +109,10 @@ export default function EmergencyContactsScreen() {
           </Text>
 
           {contacts.length === 0 && (
-            <View style={styles.emptyState}>
+            <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🛡️</Text>
               <Text style={styles.emptyText}>No emergency contacts yet.</Text>
-            </View>
+            </FadeInState>
           )}
 
           {contacts.map((contact) => (

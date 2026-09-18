@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image, RefreshControl } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import BrandedLoader from '../components/BrandedLoader';
 import * as Location from 'expo-location';
 import { useFocusEffect } from '@react-navigation/native';
@@ -178,10 +179,10 @@ export default function BrandOffersScreen({ navigation, route }) {
         </Text>
 
         {offers.length === 0 && (
-          <View style={styles.emptyState}>
+          <FadeInState style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>🎁</Text>
             <Text style={styles.emptyText}>{t('brandOffers.noOffers')}</Text>
-          </View>
+          </FadeInState>
         )}
 
         {offers.map((offer) => {

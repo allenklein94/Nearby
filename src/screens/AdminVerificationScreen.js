@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import BrandedLoader from '../components/BrandedLoader';
 import { supabase } from '../services/supabase';
 import LoadErrorState from '../components/LoadErrorState';
@@ -96,9 +97,9 @@ export default function AdminVerificationScreen() {
         <Text style={styles.headerTitle} accessibilityRole="header">Pending Verifications</Text>
 
         {submissions.length === 0 && (
-          <View style={styles.emptyState}>
+          <FadeInState style={styles.emptyState}>
             <Text style={styles.emptyText}>No pending submissions.</Text>
-          </View>
+          </FadeInState>
         )}
 
         {submissions.map((s) => (

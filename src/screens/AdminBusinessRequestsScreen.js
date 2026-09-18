@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, SafeAreaView, Alert, RefreshControl } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
@@ -91,9 +92,9 @@ export default function AdminBusinessRequestsScreen() {
         contentContainerStyle={{ padding: spacing.lg }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
+          <FadeInState style={styles.emptyState}>
             <Text style={styles.emptyText}>No pending business partner requests.</Text>
-          </View>
+          </FadeInState>
         }
         renderItem={({ item }) => (
           <View style={styles.card}>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, SafeAreaView, ActivityIndicator, Linking } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, getGoogleMapsRequestHeaders } from '../services/places';
@@ -172,25 +173,25 @@ export default function PlacesScreen({ navigation }) {
           <Text style={styles.emptyText}>{isSearching ? `Searching for "${searchQuery.trim()}"…` : 'Finding places nearby…'}</Text>
         </View>
       ) : locationDenied ? (
-        <View style={styles.emptyState}>
+        <FadeInState style={styles.emptyState}>
           <Text style={styles.emptyEmoji}>📍</Text>
           <Text style={styles.emptyText}>Enable location to discover places nearby.</Text>
           <TouchableOpacity onPress={load} accessibilityLabel="Enable location" accessibilityRole="button">
             <Text style={styles.emptyActionText}>Enable Location →</Text>
           </TouchableOpacity>
-        </View>
+        </FadeInState>
       ) : loadError ? (
-        <View style={styles.emptyState}>
+        <FadeInState style={styles.emptyState}>
           <Text style={styles.emptyEmoji}>⚠️</Text>
           <Text style={styles.emptyText}>Couldn't load places right now. Pull down to try again.</Text>
-        </View>
+        </FadeInState>
       ) : (
         <FlatList
           data={places}
           keyExtractor={(item) => item.placeId}
           contentContainerStyle={{ padding: spacing.lg }}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
+            <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🔍</Text>
               <Text style={styles.emptyText}>
                 {isSearching ? `No places match "${searchQuery.trim()}" nearby.` : 'Nothing found nearby in this category.'}
@@ -220,7 +221,7 @@ export default function PlacesScreen({ navigation }) {
               >
                 <Text style={styles.emptyActionText}>Ask Nearby Businesses →</Text>
               </TouchableOpacity>
-            </View>
+            </FadeInState>
           }
           renderItem={({ item }) => (
             <TouchableOpacity

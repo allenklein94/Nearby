@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyAttendingGatherings, getMyGatherings } from '../services/gatherings';
 import { getMyGroupPlans } from '../services/groupPlans';
@@ -266,7 +267,7 @@ export default function PlansScreen({ navigation, route }) {
           contentContainerStyle={{ padding: spacing.lg }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
+            <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📅</Text>
               <Text style={styles.emptyText}>{emptyCopy}</Text>
               {/* Item 56 ("no dead ends"): a real next action per tab
@@ -282,7 +283,7 @@ export default function PlansScreen({ navigation, route }) {
                   </TouchableOpacity>
                 )}
               </View>
-            </View>
+            </FadeInState>
           }
           renderItem={({ item }) => {
             if (item.type === 'header') {

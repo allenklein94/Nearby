@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, TextInput, Modal, RefreshControl, ScrollView } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import BrandedLoader from '../components/BrandedLoader';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyGoodbyeEntries, deleteGoodbyeEntry } from '../services/goodbyeArchive';
@@ -127,10 +128,10 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
         </TouchableOpacity>
 
         {entries.length === 0 && (
-          <View style={styles.emptyState}>
+          <FadeInState style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>🌙</Text>
             <Text style={styles.emptyText}>{t('goodbyeArchive.nothingYet')}</Text>
-          </View>
+          </FadeInState>
         )}
 
         {entries.map((entry) => {

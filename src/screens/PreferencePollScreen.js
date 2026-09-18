@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import BrandedLoader from '../components/BrandedLoader';
 import * as Haptics from 'expo-haptics';
 import { getMyPendingPreferencePolls, answerPreferencePoll } from '../services/preferencePolls';
@@ -74,10 +75,10 @@ export default function PreferencePollScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         {polls.length === 0 && (
-          <View style={styles.emptyState}>
+          <FadeInState style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No questions right now</Text>
             <Text style={styles.emptyText}>When someone you know sends a quick question, it'll show up here.</Text>
-          </View>
+          </FadeInState>
         )}
         {polls.map((poll) => {
           const question = preferencePollQuestion(poll.questionKey);

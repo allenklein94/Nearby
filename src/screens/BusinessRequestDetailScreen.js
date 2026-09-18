@@ -202,6 +202,13 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const [loadError, setLoadError] = useState(false);
   const [actingOfferId, setActingOfferId] = useState(null);
   const [cancelling, setCancelling] = useState(false);
+  // Success state (per the Nearby Motion Language): accepting an offer used to be a
+  // silent state re-render (CLAUDE.md Item 57's own disclosed, unbuilt gap) -- now a
+  // brief, self-clearing celebration, distinct from the Plan Status pill's own
+  // permanent "Confirmed" label just below it (that one stays forever; this one is
+  // the one-time moment of it becoming true).
+  const [justAccepted, setJustAccepted] = useState(false);
+  const justAcceptedTimerRef = useRef(null);
   // 10/10 roadmap Part 5 (see CLAUDE.md's "10/10 roadmap" plan) --
   // partnerId -> { reputation, responseTime }, fetched for every partner
   // with a real offer showing, so the consumer isn't blind to whether a
@@ -645,6 +652,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     try {
       const result = await acceptBusinessOffer(offerId);
       await load();
+      setJustAccepted(true);
+      clearTimeout(justAcceptedTimerRef.current);
+      justAcceptedTimerRef.current = setTimeout(() => setJustAccepted(false), 3200);
       // accept_business_offer() itself already confirmed the real
       // reservation ('nearby' provider) regardless of payment -- this is
       // purely the follow-up payment-collection step, never a condition
@@ -657,6 +667,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     }
     setActingOfferId(null);
   }
+
+  useEffect(() => () => clearTimeout(justAcceptedTimerRef.current), []);
 
   // The real Stripe Connect direct-charge flow: create_business_payment_intent
   // returns a real client_secret scoped to the accepting business's own
@@ -860,6 +872,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+        {justAccepted && <PlanCreatedCelebration text="Reservation confirmed. ✓" />}
         {planSummary && (
           <View style={styles.planSummaryCard}>
             <View style={styles.planSummaryHeaderRow}>

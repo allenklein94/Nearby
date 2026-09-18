@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, searchGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering, stopRecurringSeries } from '../services/gatherings';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
@@ -966,7 +967,7 @@ export default function GatheringsScreen({ navigation, route }) {
             // when one genuinely exists.
             const label = isSearchingGatherings ? searchQuery.trim() : (interestFilter || '');
             return (
-              <View style={styles.emptyState}>
+              <FadeInState style={styles.emptyState}>
                 <Text style={styles.emptyEmoji}>🎉</Text>
                 <Text style={styles.emptyText}>{isSearchingGatherings ? `No gatherings match "${searchQuery.trim()}".` : (forYouActive ? "Nothing matching your history right now — check back later." : ((interestFilter || dateFilter !== 'anytime') ? 'No gatherings match these filters right now.' : t('gatherings.emptyNearby')))}</Text>
                 {!forYouActive && (
@@ -982,7 +983,7 @@ export default function GatheringsScreen({ navigation, route }) {
                     <Text style={styles.emptyStateCreateButtonText}>+ Start a{label ? ` ${label}` : ''} Gathering</Text>
                   </TouchableOpacity>
                 )}
-              </View>
+              </FadeInState>
             );
           })()}
           renderItem={({ item, index }) => {
@@ -1165,13 +1166,13 @@ export default function GatheringsScreen({ navigation, route }) {
           contentContainerStyle={{ padding: spacing.lg }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
+            <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>✅</Text>
               <Text style={styles.emptyText}>{t('gatherings.emptyAttending')}</Text>
               <TouchableOpacity onPress={() => setTab('nearby')} accessibilityLabel="Browse nearby gatherings" accessibilityRole="button" style={styles.emptyStateCreateButton}>
                 <Text style={styles.emptyStateCreateButtonText}>Browse Nearby Gatherings</Text>
               </TouchableOpacity>
-            </View>
+            </FadeInState>
           }
           renderItem={({ item: row }) => {
             if (row.type === 'header') {
@@ -1334,7 +1335,7 @@ export default function GatheringsScreen({ navigation, route }) {
           contentContainerStyle={{ padding: spacing.lg }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
+            <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📅</Text>
               <Text style={styles.emptyText}>{t('gatherings.emptyHosting')}</Text>
               <TouchableOpacity
@@ -1345,7 +1346,7 @@ export default function GatheringsScreen({ navigation, route }) {
               >
                 <Text style={styles.emptyStateCreateButtonText}>+ Host a Gathering</Text>
               </TouchableOpacity>
-            </View>
+            </FadeInState>
           }
           renderItem={({ item: row }) => {
             if (row.type === 'header') {

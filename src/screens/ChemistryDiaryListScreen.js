@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, TextInput, Modal, RefreshControl } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import BrandedLoader from '../components/BrandedLoader';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyChemistryEntries, deleteChemistryEntry } from '../services/chemistryDiary';
@@ -208,10 +209,10 @@ export default function ChemistryDiaryListScreen({ navigation }) {
         )}
 
         {entries.length === 0 && (
-          <View style={styles.emptyState}>
+          <FadeInState style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📔</Text>
             <Text style={styles.emptyText}>Nothing here yet. Add an entry any time after spending time with someone — above, or from their profile or a chat.</Text>
-          </View>
+          </FadeInState>
         )}
 
         {entries.map((entry) => {

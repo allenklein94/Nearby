@@ -5,6 +5,7 @@
 // calls) -- never a surface a real business ever sees.
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, SafeAreaView, Alert, RefreshControl, ActivityIndicator } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -89,9 +90,9 @@ export default function AdminBusinessTierScreen() {
           contentContainerStyle={{ padding: spacing.lg }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
+            <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyText}>No businesses match.</Text>
-            </View>
+            </FadeInState>
           }
           renderItem={({ item }) => (
             <View style={styles.card}>

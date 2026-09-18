@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Animated, ScrollView } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyMatches, getBrowseMatches, reportPresence } from '../services/proximity';
 import { formatCrossedPathsTime, gatheringReasonText } from '../services/crossedPathsSignals';
@@ -286,7 +287,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
   function renderPeopleEmptyState() {
     const filtered = discoveryMode === 'browse' || anyFilterActive;
     return (
-      <View style={styles.emptyState}>
+      <FadeInState style={styles.emptyState}>
         <Text style={styles.emptyEmoji}>{discoveryMode === 'browse' ? '🔎' : '📍'}</Text>
         <Text style={styles.emptyTitle}>
           {discoveryMode === 'browse'
@@ -320,7 +321,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
             </TouchableOpacity>
           </View>
         )}
-      </View>
+      </FadeInState>
     );
   }
 

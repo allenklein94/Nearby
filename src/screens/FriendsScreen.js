@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyFriends, getPendingFriendRequests, respondToFriendRequest, sendFriendRequest, getSuggestedFriends } from '../services/friends';
 import { getMyCircles, createCircle, deleteCircle, addFriendToCircle, removeFriendFromCircle } from '../services/friendCircles';
@@ -386,7 +387,7 @@ export default function FriendsScreen({ navigation }) {
         }
         ListEmptyComponent={
           !loading && (
-            <View style={styles.emptyState}>
+            <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🤝</Text>
               <Text style={styles.emptyText}>
                 Add friends from anyone's profile, or find friends from your contacts above, to see who's interested in the same gatherings as you.
@@ -405,7 +406,7 @@ export default function FriendsScreen({ navigation }) {
               >
                 <Text style={styles.emptyActionText}>Meet New People →</Text>
               </TouchableOpacity>
-            </View>
+            </FadeInState>
           )
         }
         renderItem={({ item }) => (

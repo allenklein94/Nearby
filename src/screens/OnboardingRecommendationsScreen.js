@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import { getOnboardingRecommendations } from '../services/homeDashboard';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
@@ -76,10 +77,10 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
             ))}
           </>
         ) : (
-          <View style={styles.emptyState}>
+          <FadeInState style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>🔍</Text>
             <Text style={styles.emptyText}>We're still gathering opportunities in your area — check back soon, or explore what's already happening.</Text>
-          </View>
+          </FadeInState>
         )}
       </View>
 

@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ScrollView, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import BrandedLoader from '../components/BrandedLoader';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyPartnershipTargets, requestBusinessPartnership } from '../services/businessPartnerships';
@@ -141,7 +142,7 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
           keyExtractor={(t) => `${t.type}-${t.id}`}
           contentContainerStyle={{ padding: spacing.lg }}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
+            <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyText}>
                 You don't have a gathering or community to attach a business partner to yet.
               </Text>
@@ -151,7 +152,7 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
               <TouchableOpacity style={styles.emptyLink} onPress={() => navigation.navigate('CreateCommunity')}>
                 <Text style={styles.emptyLinkText}>👥 Create a Community</Text>
               </TouchableOpacity>
-            </View>
+            </FadeInState>
           }
           renderItem={({ item }) => (
             <TouchableOpacity

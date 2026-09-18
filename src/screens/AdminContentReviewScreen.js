@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, RefreshControl } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
@@ -118,9 +119,9 @@ export default function AdminContentReviewScreen() {
         contentContainerStyle={{ padding: spacing.lg }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
+          <FadeInState style={styles.emptyState}>
             <Text style={styles.emptyText}>Nothing awaiting review — every recent submission was either published automatically or blocked outright.</Text>
-          </View>
+          </FadeInState>
         }
         renderItem={({ item }) => {
           const snapshot = item.content_snapshot ?? {};

@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image, RefreshControl, Alert } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -308,7 +309,7 @@ export default function MatchesScreen({ navigation }) {
         contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
+          <FadeInState style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>✨</Text>
             <Text style={styles.emptyText}>{t('matches.emptyText')}</Text>
             {/* Thursday plan item 25: a real next action instead of a dead
@@ -331,7 +332,7 @@ export default function MatchesScreen({ navigation }) {
                 <Text style={styles.emptyActionText}>Invite Friends →</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </FadeInState>
         }
         renderItem={({ item }) => {
           const other = otherPersonFor(item);

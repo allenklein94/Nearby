@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput } from 'react-native';
 import BrandedLoader from '../components/BrandedLoader';
+import PlanCreatedCelebration from '../components/PlanCreatedCelebration';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import {
@@ -80,6 +81,19 @@ export default function GroupPlanScreen({ navigation, route }) {
   const [budgetInput, setBudgetInput] = useState('');
   const [excludeIds, setExcludeIds] = useState([]);
   const [socialOfferInput, setSocialOfferInput] = useState('');
+  // Success state (per the Nearby Motion Language): confirming the plan and locking
+  // in the group's reservation (CLAUDE.md's own disclosed "group-plan-confirm" gap)
+  // used to be a silent state re-render -- now a brief, self-clearing celebration,
+  // distinct text per moment since they're two genuinely different real events.
+  const [successBanner, setSuccessBanner] = useState(null); // null | 'plan' | 'reservation'
+  const successBannerTimerRef = useRef(null);
+  useEffect(() => () => clearTimeout(successBannerTimerRef.current), []);
+
+  function flashSuccess(kind) {
+    setSuccessBanner(kind);
+    clearTimeout(successBannerTimerRef.current);
+    successBannerTimerRef.current = setTimeout(() => setSuccessBanner(null), 3200);
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -215,14 +229,17 @@ export default function GroupPlanScreen({ navigation, route }) {
           // submission for a group plan (it's formed from several
           // participants' own separate asks), so this is honestly
           // recorded as unlinked rather than attributed to one.
-          (result) => recordIntentSelection({
-            rawText: null,
-            category: proposal.category,
-            dateWindow: proposal.date,
-            resultType: 'created_new',
-            resultId: result?.requestId ?? null,
-            resultTitle: `Group plan — ${proposal.category}`,
-          })
+          (result) => {
+            flashSuccess('plan');
+            recordIntentSelection({
+              rawText: null,
+              category: proposal.category,
+              dateWindow: proposal.date,
+              resultType: 'created_new',
+              resultId: result?.requestId ?? null,
+              resultTitle: `Group plan — ${proposal.category}`,
+            });
+          }
         ),
       },
     ]);
@@ -251,6 +268,7 @@ export default function GroupPlanScreen({ navigation, route }) {
           // an outcome yet, it's still in progress.
           (result) => {
             if (!result?.allConfirmed) return;
+            flashSuccess('reservation');
             const offer = offers.find((o) => o.id === offerId);
             recordIntentSelection({
               rawText: null,
@@ -322,6 +340,8 @@ export default function GroupPlanScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+        {successBanner === 'plan' && <PlanCreatedCelebration text="Plan confirmed. ✓" />}
+        {successBanner === 'reservation' && <PlanCreatedCelebration text="Reservation confirmed. ✓" />}
         <Text style={styles.title}>{proposal.category} — Group Plan</Text>
         <Text style={styles.statusLine}>
           {proposal.status === 'pending' && 'Deciding together'}

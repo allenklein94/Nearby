@@ -129,12 +129,46 @@ friend request from all three real entry points shows the 🤝 celebration corre
 creating a community (both the plain and seed-from-gathering paths) shows the new success
 moment and, where applicable, the invite-summary banner beneath it.
 
-**Remaining, real, not done — a genuine "first increment," not a closed item**: business-offer-
-accept and group-plan-confirm's own silent-success states; a full sweep of per-screen custom
-empty-*result* states (as opposed to the one shared load-*error* state just fixed) for a
-consistent transition treatment; the "Facebook-style idea" reference was never resolved since its
-specifics aren't in this session's context — ask the user directly next time it's relevant rather
-than guessing.
+**Same-day follow-up ("close the remaining gaps too") — fully DONE (2026-09-18).** Closed all
+three real, disclosed gaps the increment above left open:
+
+- **Business-offer-accept / group-plan-confirm success states.** Both were genuinely silent
+  state re-renders, confirmed by reading the actual `handleAccept`/`handleConfirm`/
+  `handleConfirmOffer` code rather than assumed. `BusinessRequestDetailScreen.js`'s `handleAccept`
+  now flashes a brief, self-clearing (3.2s) `PlanCreatedCelebration` ("Reservation confirmed. ✓")
+  right after a real accept succeeds — distinct from the Plan Status pill just below it, which
+  stays a permanent label; this is the one-time moment of it *becoming* true, not a second
+  standing pill. `GroupPlanScreen.js` gained the same transient-banner mechanism for its own two
+  real success moments — confirming the group's plan itself ("Plan confirmed. ✓," when
+  `confirmGroupPlan` succeeds) and the group's reservation actually locking in ("Reservation
+  confirmed. ✓," gated on the real `allConfirmed` flag, matching the same "only the genuine
+  completion counts" discipline the screen's own existing `intent_outcomes` recording already
+  uses right next to it, not an interim "N of M confirmed" step).
+- **Empty-*result* state fade-in — the big remaining piece.** Found 34 real occurrences across 30
+  screens of the identical shape (`<View style={styles.emptyState}>...</View>`, sometimes
+  `emptyContainer` or an inline-merged style array) — confirmed via a full grep audit before
+  touching anything, not assumed uniform. Built `src/components/FadeInState.js`, a drop-in
+  replacement for that same `<View style={...}>` wrapper (same `style` prop, same children, zero
+  layout change) that fades in over 220ms on mount, Reduce-Motion-aware — the direct empty-
+  *result* sibling to `LoadErrorState`'s own fade-in (the empty-*error* case, fixed in the
+  increment above). Applied via a verified scripted substitution (matched each opening tag to its
+  real closing `</View>` by indentation, not by guessing a fixed line offset) across all 34
+  occurrences in 30 files — every one confirmed matched and substituted correctly, none silently
+  skipped. Deliberately did NOT touch the one existing per-screen empty-state block that's
+  multi-branch/conditional in a way that didn't match this exact shape (none were found — all 34
+  matched cleanly) and did not invent a new empty-state anywhere no gap existed.
+- **"Facebook-style idea" — still genuinely unresolved, not fabricated.** That reference is from
+  an earlier conversation not present in this session's context. No action taken on it here rather
+  than guessing at its meaning; if it matters, it needs to be restated directly.
+
+No DB migration, no new pure functions. Full Jest suite 580/580 passing (unchanged); all 33
+touched/new files (32 modified + the new `FadeInState.js`) transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised on a real device (no simulator/device tooling
+this session, standing note) — next session should confirm on a real account that accepting a
+business offer and confirming/locking in a group plan both show the correct transient success
+banner without lingering, and that a representative sample of the 30 empty-state screens (at
+least one chat screen, one admin screen, one consumer-facing browse screen) fades in correctly
+rather than snapping or breaking layout.
 
 **Seventh same-day follow-up ("animations should reinforce meaning... respect Reduce Motion")
 — fully DONE (2026-09-18), direct follow-up to the Motion Language above.** User's own locked

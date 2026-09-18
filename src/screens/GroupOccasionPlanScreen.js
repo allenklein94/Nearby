@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput, Platform, Share } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import BrandedLoader from '../components/BrandedLoader';
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -772,9 +773,9 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
         )}
 
         {detail.status === 'cancelled' && (
-          <View style={styles.emptyState}>
+          <FadeInState style={styles.emptyState}>
             <Text style={styles.emptyText}>This plan was cancelled.</Text>
-          </View>
+          </FadeInState>
         )}
 
         {detail.myStatus === 'invited' && detail.status === 'voting' && (
@@ -845,7 +846,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
               </View>
             )}
             {!businessOptionsLoading && detail.options.filter((o) => o.optionKind === 'business').length === 0 && (
-              <View style={styles.emptyState}>
+              <FadeInState style={styles.emptyState}>
                 <Text style={styles.emptyText}>{businessFetchError ? "Nearby couldn't find real businesses nearby for this." : 'No options yet.'}</Text>
                 {detail.isHost && (
                   <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
@@ -857,7 +858,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                     </TouchableOpacity>
                   </View>
                 )}
-              </View>
+              </FadeInState>
             )}
             {!businessOptionsLoading && detail.options.filter((o) => o.optionKind === 'business').map((option) => (
               <View key={option.id} style={styles.optionCard}>

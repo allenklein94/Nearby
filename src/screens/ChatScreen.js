@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, Image, ActivityIndicator, AppState } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import BrandedLoader from '../components/BrandedLoader';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { Audio, Video } from 'expo-av';
@@ -1193,7 +1194,7 @@ export default function ChatScreen({ route, navigation }) {
         keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
         {messages.length === 0 ? (
-          <View style={[styles.emptyState, { flex: 1, justifyContent: 'center' }]}>
+          <FadeInState style={[styles.emptyState, { flex: 1, justifyContent: 'center' }]}>
             <Text style={styles.emptyEmoji}>💬</Text>
             <Text style={styles.emptyText}>{emptyStateText}</Text>
             {isBlockedFromSending && (
@@ -1216,7 +1217,7 @@ export default function ChatScreen({ route, navigation }) {
                 )}
               </TouchableOpacity>
             )}
-          </View>
+          </FadeInState>
         ) : (
         <FlatList
           data={messages}

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image, RefreshControl } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import BrandedLoader from '../components/BrandedLoader';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyBlockedUsers, unblockUser } from '../services/blockedUsers';
@@ -109,10 +110,10 @@ export default function BlockedUsersScreen() {
         </Text>
 
         {blockedUsers.length === 0 && (
-          <View style={styles.emptyState}>
+          <FadeInState style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>✓</Text>
             <Text style={styles.emptyText}>{t('blockedUsers.noneBlocked')}</Text>
-          </View>
+          </FadeInState>
         )}
 
         {blockedUsers.map((block) => (

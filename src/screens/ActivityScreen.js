@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Image, RefreshControl, Alert } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -569,7 +570,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
             </View>
           ) : null}
           ListEmptyComponent={hasAnyGroupContent ? null : (
-            <View style={styles.emptyState}>
+            <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🔔</Text>
               <Text style={styles.emptyText}>
                 Nothing new yet — notices, crossed paths, and other activity will show up here.
@@ -584,7 +585,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                   <Text style={styles.emptyActionText}>Discover People →</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </FadeInState>
           )}
           renderItem={({ item }) => {
             if (item.type === 'business_update') {

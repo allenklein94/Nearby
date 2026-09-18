@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, ActivityIndicator } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import BrandedLoader from '../components/BrandedLoader';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyCommunities, getPublicCommunities, joinCommunity, getCommunityMemberCount } from '../services/communities';
@@ -135,7 +136,7 @@ export default function CommunitiesScreen({ navigation }) {
         }
         ListEmptyComponent={
           !loading && (
-            <View style={styles.emptyState}>
+            <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🏘️</Text>
               <Text style={styles.emptyText}>No public communities to discover right now — start your own!</Text>
               <TouchableOpacity
@@ -146,7 +147,7 @@ export default function CommunitiesScreen({ navigation }) {
               >
                 <Text style={styles.emptyActionText}>+ Create a Community →</Text>
               </TouchableOpacity>
-            </View>
+            </FadeInState>
           )
         }
         renderItem={({ item }) => {

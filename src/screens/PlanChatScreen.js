@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, ActivityIndicator } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import * as Haptics from 'expo-haptics';
 import { getPlanChatInfo, getPlanMessagesPage, getPlanMessageById, sendPlanMessage } from '../services/planChat';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -152,10 +153,10 @@ export default function PlanChatScreen({ route, navigation }) {
         ) : loadingInitial ? (
           <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
         ) : messages.length === 0 ? (
-          <View style={[styles.emptyState, { flex: 1, justifyContent: 'center' }]}>
+          <FadeInState style={[styles.emptyState, { flex: 1, justifyContent: 'center' }]}>
             <Text style={styles.emptyEmoji}>💬</Text>
             <Text style={styles.emptyText}>Say hi to everyone coordinating this plan!</Text>
-          </View>
+          </FadeInState>
         ) : (
           <FlatList
             data={messages}

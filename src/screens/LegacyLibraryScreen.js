@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, RefreshControl } from 'react-native';
+import FadeInState from '../components/FadeInState';
 import BrandedLoader from '../components/BrandedLoader';
 import { useFocusEffect } from '@react-navigation/native';
 import { getLegacyEntries } from '../services/relationshipLegacy';
@@ -89,10 +90,10 @@ export default function LegacyLibraryScreen({ navigation }) {
         )}
 
         {entries.length === 0 && (
-          <View style={styles.emptyState}>
+          <FadeInState style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>💌</Text>
             <Text style={styles.emptyText}>Nothing shared yet — this library grows as couples choose to leave their reflections.</Text>
-          </View>
+          </FadeInState>
         )}
 
         {entries.map((entry) => {
