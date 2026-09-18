@@ -1,6 +1,8 @@
 import { supabase } from './supabase';
 import { filterToMyFriends } from './friends';
 import { sendInvite } from './invites';
+import { getUserLocation } from './userLocation';
+import { straightLineMiles } from './places';
 
 // "Start a Community from This Gathering" — a real invite-based spinoff, not
 // auto-membership. community_members' own INSERT policy only ever allows
@@ -99,6 +101,21 @@ export async function getMyCommunities() {
 // here (per the audit's own locked decision 5) -- communities have no
 // location column to bound geographically, so there's no distance-based
 // RPC to build, just a Postgres-side LIMIT on top of the existing query.
+// With a known position, communities that have a coarse map point (area_lat/area_lng) carry a real `distanceMiles` and
+// come first, nearest to farthest; ones without a point keep their original order after them. No position: untouched.
+// Position is read passively (never prompts from a list load).
+export async function orderCommunitiesNearestFirst(communities) {
+  const l = await getUserLocation({ ask: false });
+  if (!l) return communities;
+  return sortCommunitiesByDistance(communities, l.coords.latitude, l.coords.longitude);
+}
+
+export function sortCommunitiesByDistance(communities, lat, lng) {
+  return communities
+    .map((c) => ({ ...c, distanceMiles: straightLineMiles(lat, lng, c.area_lat, c.area_lng) }))
+    .sort((a, b) => (a.distanceMiles ?? Infinity) - (b.distanceMiles ?? Infinity));
+}
+
 export async function getPublicCommunities() {
   const { data, error } = await supabase
     .from('communities')
@@ -119,7 +136,7 @@ export async function getPublicCommunities() {
     console.error('getPublicCommunities error', error);
     return [];
   }
-  return data ?? [];
+  return orderCommunitiesNearestFirst(data ?? []);
 }
 
 const PUBLIC_COMMUNITY_SELECT = 'id, name, description, interest_tag, is_public, cover_photo_url, creator_id, hosting_partner_id, area_city, area_region, area_label, area_lat, area_lng';
@@ -156,7 +173,7 @@ export async function searchPublicCommunities(queryText) {
 
   const byId = new Map();
   for (const row of [...(nameRes.data ?? []), ...(descriptionRes.data ?? []), ...(tagRes.data ?? [])]) byId.set(row.id, row);
-  return [...byId.values()];
+  return orderCommunitiesNearestFirst([...byId.values()]);
 }
 
 export async function getCommunityMemberCount(communityId) {
