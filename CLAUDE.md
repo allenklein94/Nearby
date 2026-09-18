@@ -195,6 +195,17 @@ transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised o
 (standing note) — next session should confirm both flashes still render identically (same "✓"
 settle behavior) since this was a pure import-path change.
 
+**Same-day follow-up ("do the same for GroupPlanScreen's PlanCreatedCelebration usages").**
+Closed the one disclosed candidate the follow-up above named: `GroupPlanScreen.js`'s own
+plan-confirmed/reservation-confirmed success flashes migrated the same way, off
+`../components/PlanCreatedCelebration` onto `import { SuccessAnimation } from '../motion'` — same
+component, no behavior change. `CommunityDetailScreen.js`'s community-creation success flash is
+the one remaining consumer of the legacy shim path (confirmed via a repo-wide grep) — left as-is,
+not part of "GroupPlanScreen" and not silently assumed done. Full Jest suite 580/580 passing
+(unchanged); `GroupPlanScreen.js` transform-checked clean via `@babel/core` + `babel-preset-expo`.
+Not exercised on a real device (standing note) — same as the prior follow-up, a pure import-path
+change with no expected visual difference.
+
 No DB migration, no new pure functions (a component library + three wiring sites). Full Jest suite
 580/580 passing (unchanged); all 18 touched/new files (10 new `src/motion/` files, 6 shim files, 2
 wired screens) transform-checked clean via `@babel/core` + `babel-preset-expo` — plus a full

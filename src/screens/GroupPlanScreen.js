@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput } from 'react-native';
 import BrandedLoader from '../components/BrandedLoader';
-import PlanCreatedCelebration from '../components/PlanCreatedCelebration';
+import { SuccessAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import {
@@ -340,8 +340,8 @@ export default function GroupPlanScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        {successBanner === 'plan' && <PlanCreatedCelebration text="Plan confirmed. ✓" />}
-        {successBanner === 'reservation' && <PlanCreatedCelebration text="Reservation confirmed. ✓" />}
+        {successBanner === 'plan' && <SuccessAnimation text="Plan confirmed. ✓" />}
+        {successBanner === 'reservation' && <SuccessAnimation text="Reservation confirmed. ✓" />}
         <Text style={styles.title}>{proposal.category} — Group Plan</Text>
         <Text style={styles.statusLine}>
           {proposal.status === 'pending' && 'Deciding together'}
