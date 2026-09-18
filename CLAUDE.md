@@ -99,11 +99,13 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   special 500-900 (occasion celebration, surprise reveal). Measured trigger -> settled state; holds
   and ambient loading loops are exempt. Sequence timings are `SEQUENCES` tokens shared by the
   components and `motionBudget.test.js`; nothing may exceed 900ms. New sequences add a token + test.
-  Item 132: `NLoader` (N + brand sweep) is THE loading language -- "Nearby is working." Use
-  `<NLoader fullScreen={false} size="compact|inline" kind=... | caption=... />` for any content
-  loading (kinds: people/activities/businesses/places/availability/recommendations/search, see
-  `loadingLanguage.js`); captions narrate real work, never counts/percentages. No skeletons. Plain
-  `ActivityIndicator` remains only for in-flight feedback inside a button/footer control. Aesthetic target: modern + polished
+  Items 132/133 (loading language, two meanings): `NLoader` (N + brand sweep) = "Nearby is thinking/
+  finding/matching" -- use `<NLoader fullScreen={false} size="compact|inline" kind=... | caption=... />`
+  for search, recommendations, availability, discovery (kinds in `loadingLanguage.js`; captions narrate
+  real work, never counts/percentages). `SkeletonFeed` (`src/motion/`) = "a known feed's content is
+  loading" -- use for large lists of the user's own content (matches, friends, plans, timeline,
+  activity, gatherings/people feeds, load-more footers) so the screen feels fast and doesn't jump.
+  Plain `ActivityIndicator` stays only for in-flight feedback inside a button/footer control. Aesthetic target: modern + polished
   + alive + restrained — a premium social product, not a children's app; no confetti-everywhere.
 - **Motion intensity varies by context (Item 122, locked 2026-09-18).** Occasion-creation moments
   (a plan being born, a birthday/anniversary pick, a community going live) can stay fully

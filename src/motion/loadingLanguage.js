@@ -1,5 +1,5 @@
-// Item 132 ("The N should become the universal loading language"): one loading treatment for the
-// whole app -- the N mark + brand sweep -- that means "Nearby is working." What Nearby is working
+// Items 132/133: the N mark + brand sweep means "Nearby is thinking/finding/matching" -- distinct
+// from a skeleton (SkeletonFeed.js), which means "a known feed's content is loading." What Nearby is working
 // ON is carried only by a short plain-language caption under it, from this one vocabulary, so the
 // animation itself never varies and stays recognizable (brand equity), while the caption stays
 // honest about what's happening. Captions narrate real work only -- never a fabricated count or

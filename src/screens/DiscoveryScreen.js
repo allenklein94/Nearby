@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Animated, ScrollView } from 'react-native';
-import { PullToRefresh, FilterTransition, NLoader } from '../motion';
+import { PullToRefresh, FilterTransition, SkeletonFeed } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyMatches, getBrowseMatches, reportPresence } from '../services/proximity';
@@ -598,7 +598,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
       </TouchableOpacity>
 
       {initialLoading ? (
-        <NLoader fullScreen={false} size="compact" kind="people" />
+        <SkeletonFeed count={3} />
       ) : (
       <FilterTransition activeKey={quickFilterKey} style={{ flex: 1 }}>
       {viewStyle === 'cards' ? (
@@ -632,7 +632,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
         ListFooterComponent={
           discoveryMode === 'browse' && loadingMoreBrowse ? (
             <View style={{ paddingVertical: spacing.lg }}>
-              <NLoader fullScreen={false} size="inline" kind="people" />
+              <SkeletonFeed count={1} />
             </View>
           ) : null
         }

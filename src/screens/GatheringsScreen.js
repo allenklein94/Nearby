@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
-import { PullToRefresh, FilterTransition, TapActiveChip, NLoader } from '../motion';
+import { PullToRefresh, FilterTransition, TapActiveChip, NLoader, SkeletonFeed } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, searchGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering, stopRecurringSeries } from '../services/gatherings';
@@ -915,7 +915,7 @@ export default function GatheringsScreen({ navigation, route }) {
       )}
 
       {tab === 'nearby' && initialLoading ? (
-        <NLoader fullScreen={false} size="compact" kind="activities" />
+        <SkeletonFeed count={3} />
       ) : tab === 'nearby' && viewStyle === 'map' ? (
         <View style={{ flex: 1 }}>
           <GatheringsMapView

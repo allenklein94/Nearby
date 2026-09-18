@@ -1,3 +1,16 @@
+## Sep 18 2026 — Item 133 ("Use skeletons where they actually improve perceived performance") — DONE
+
+Refines Item 132: skeleton and N now have different meanings. Skeleton = content is loading; N =
+Nearby is thinking/finding/matching. Restored `SkeletonCard`/`SkeletonGridCard` (from git) and
+added `src/motion/SkeletonFeed.js` (variant list|grid, count) as the one way to render them.
+Skeleton (large feeds of known content): Matches, Discovery people list (initial + load-more
+footer), Gatherings initial load, Activity (grid), Timeline, Friends, Plans. N kept for Nearby
+doing work: Discover section/search finding, Places finding, Home ask/Surprise Me, onboarding
+recommendations, Gatherings search, the Occasion wizard options/"Understanding..." rows,
+FindingOptionsLoader. Skeleton pulse is inert under Reduce Motion via motionPolicy (bars sit at
+rest). Tests updated (`loadingLanguage.test.js`): both treatments exist, and feed screens use
+SkeletonFeed while find/search screens use NLoader. Suite 637/637. Not seen on a device.
+
 ## Sep 18 2026 — Item 132 ("The N should become the universal loading language") — DONE
 
 Deliberate reversal of Item 13's/Motion System's earlier "keep SkeletonCard for in-list loading"

@@ -9,7 +9,7 @@ import { calculateCompatibility } from '../services/compatibility';
 import { sendNoticeTo } from '../services/noticeActions';
 import { getNearbyMatches } from '../services/proximity';
 import { getPendingFriendRequests, respondToFriendRequest } from '../services/friends';
-import { MatchAnimation, PullToRefresh, NLoader } from '../motion';
+import { MatchAnimation, PullToRefresh, SkeletonFeed } from '../motion';
 import { getFollowedBusinessUpdates } from '../services/brandOffers';
 import { getMyBusinessEcosystemActivity, formatOfferSummary } from '../services/businessFulfillment';
 import { getAllPendingRequests, approveInterest, getUpcomingReminders } from '../services/gatherings';
@@ -551,7 +551,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
       )}
 
       {loading ? (
-        <NLoader fullScreen={false} size="compact" caption="Loading your activity…" />
+        <SkeletonFeed variant="grid" count={4} />
       ) : loadError ? (
         <LoadErrorState message="Couldn't load your activity." onRetry={load} />
       ) : (

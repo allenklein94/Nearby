@@ -17,8 +17,21 @@ test('captions never fabricate counts or progress', () => {
     expect(c).not.toMatch(/%/);
   });
 });
-test('skeleton components are gone (N is the one loading language)', () => {
+test('skeletons and the N loader are two distinct, both-present treatments (Item 133)', () => {
   const fs = require('fs'); const path = require('path');
-  expect(fs.existsSync(path.join(__dirname, '../components/SkeletonCard.js'))).toBe(false);
-  expect(fs.existsSync(path.join(__dirname, '../components/SkeletonGridCard.js'))).toBe(false);
+  // Skeleton = a known feed's content is loading; N = Nearby is finding/thinking.
+  expect(fs.existsSync(path.join(__dirname, '../components/SkeletonCard.js'))).toBe(true);
+  expect(fs.existsSync(path.join(__dirname, '../components/SkeletonGridCard.js'))).toBe(true);
+  expect(fs.existsSync(path.join(__dirname, 'SkeletonFeed.js'))).toBe(true);
+  expect(fs.existsSync(path.join(__dirname, 'NLoader.js'))).toBe(true);
+});
+test('feeds of the user\'s own content use skeletons; finding/searching uses the N', () => {
+  const fs = require('fs'); const path = require('path');
+  const read = (f) => fs.readFileSync(path.join(__dirname, '../screens', f), 'utf8');
+  ['MatchesScreen.js', 'FriendsScreen.js', 'PlansScreen.js', 'TimelineScreen.js', 'ActivityScreen.js'].forEach((f) => {
+    expect(read(f)).toMatch(/<SkeletonFeed/);
+  });
+  ['PlacesScreen.js', 'HomeScreen.js', 'DiscoverHubScreen.js'].forEach((f) => {
+    expect(read(f)).toMatch(/<NLoader fullScreen=\{false\}/);
+  });
 });

@@ -7,7 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 
-import { NLoader } from '../motion';
+import { SkeletonFeed } from '../motion';
 // This screen is reached as a top-level stack push (not a bottom tab),
 // headerShown: false in RootNavigator -- the same "reachable, but no
 // visible way back" shape found and fixed on FriendDiscoveryScreen for a
@@ -58,7 +58,7 @@ export default function TimelineScreen({ navigation }) {
 
       {loading ? (
         <>
-          <NLoader fullScreen={false} size="compact" caption="Loading your timeline…" />
+          <SkeletonFeed count={3} />
         </>
       ) : loadError ? (
         <LoadErrorState message="Couldn't load your timeline." onRetry={load} />

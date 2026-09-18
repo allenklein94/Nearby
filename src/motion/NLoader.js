@@ -11,9 +11,10 @@ import useReduceMotion from '../hooks/useReduceMotion';
 // (assets/branding/splash-mark.png -- the same image the native splash screen
 // shows, so this reads as a continuation of it rather than a jarring image
 // swap) plus a subtle coral sweep, in place of a generic spinner/blank screen.
-// Item 132: this is now THE loading language for the whole app (SkeletonCard/SkeletonGridCard
-// are gone). Same N + sweep everywhere = "Nearby is working"; only the caption (loadingLanguage.js)
-// says what on. Small inline spinners inside buttons/footers stay plain ActivityIndicators --
+// Item 132/133: N + sweep = "Nearby is thinking/finding/matching", with the caption
+// (loadingLanguage.js) saying what on. It is NOT the treatment for a known feed's content simply
+// loading -- that's a skeleton (SkeletonFeed.js), which makes a large list feel fast by holding its
+// shape. Two different meanings, two different treatments. Small inline spinners inside buttons/footers stay plain ActivityIndicators --
 // those are in-flight feedback on a control, not Nearby loading content.
 const ICON_SIZES = { default: 88, compact: 56, inline: 32 };
 const CAPTION_STEP_MS = 900;

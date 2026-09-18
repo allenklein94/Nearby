@@ -10,7 +10,7 @@ import { generateCompatibilityReport } from '../services/compatibility';
 import { getMyActivePlansByMatch } from '../services/dateProposals';
 import { getMatchPlanCompletion, hasStartedMatchPlan, formatPlaceStatusLabel } from '../utils/planCompletion';
 import PlanCompletionRow from '../components/PlanCompletionRow';
-import { MatchAnimation, PullToRefresh, NLoader } from '../motion';
+import { MatchAnimation, PullToRefresh, SkeletonFeed } from '../motion';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import LoadErrorState from '../components/LoadErrorState';
 import { getActiveOffers, getMyRedemptions } from '../services/brandOffers';
@@ -293,7 +293,7 @@ export default function MatchesScreen({ navigation }) {
       )}
 
       {loading ? (
-        <NLoader fullScreen={false} size="compact" kind="people" />
+        <SkeletonFeed count={4} />
       ) : loadError ? (
         <LoadErrorState message="Couldn't load your messages." onRetry={load} />
       ) : (

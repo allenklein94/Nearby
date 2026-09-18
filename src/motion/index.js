@@ -40,3 +40,4 @@ export { getReduceMotion, subscribeReduceMotion, installReducedMotionPolicy } fr
 export { playHaptic, HAPTIC_MOMENTS } from './haptics';
 export * from './motionBudget';
 export * from './loadingLanguage';
+export { default as SkeletonFeed } from './SkeletonFeed';
