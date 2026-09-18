@@ -13,15 +13,13 @@
 //     gate or slow down a real button/action.
 //
 // Import from here going forward, e.g. `import { NLoader } from
-// '../motion'`. Four of the original component locations (BrandedLoader,
-// PlanCreatedCelebration, OccasionSelectAnimation, SurpriseRevealAnimation
-// under src/components/) were thin re-export shims kept only so the many
+// '../motion'`. All six of the original component locations under
+// src/components/ (BrandedLoader, PlanCreatedCelebration,
+// OccasionSelectAnimation, SurpriseRevealAnimation, MatchCelebrationModal,
+// FriendMatchCelebrationModal) were thin shims kept only so the many
 // existing call sites didn't all need to change at once -- every real call
-// site has since been migrated to import from here directly, so those four
-// shim files were deleted (2026-09-18). MatchCelebrationModal and
-// FriendMatchCelebrationModal under src/components/ still exist as shims
-// (real remaining call sites) -- new code should import MatchAnimation from
-// this module directly rather than adding a new consumer of either.
+// site has since been migrated to import from here directly, so all six
+// shim files were deleted (2026-09-18).
 export { default as NLoader } from './NLoader';
 export { default as SuccessAnimation } from './SuccessAnimation';
 export { default as MatchAnimation } from './MatchAnimation';

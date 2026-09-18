@@ -48,7 +48,7 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
   // emoji + haptic below), and the single flagship spot for the brand mark
   // to make a "confirmed by Nearby" moment — not a replacement for the
   // celebratory emoji, a small addition above it. Same spring-in shape
-  // MatchCelebrationModal.js already established for a celebration entrance.
+  // MatchAnimation (src/motion/) already established for a celebration entrance.
   const markScale = useRef(new Animated.Value(0.7)).current;
   const markOpacity = useRef(new Animated.Value(0)).current;
 
