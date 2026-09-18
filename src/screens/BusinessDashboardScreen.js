@@ -368,6 +368,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         requestBudgetMax: req.budget_max ?? null,
         requestPartySize: req.party_size ?? null,
         requestOccasion: req.occasion ?? null,
+        requestSharedInterests: req.shared_interests ?? [],
+        businessInterestTags: [selectedPartner?.subcategory, ...(selectedPartner?.categories ?? [])].filter(Boolean),
         businessAttributes: selectedPartner?.attributes ?? [],
         businessCuisine: selectedPartner?.cuisine ?? null,
         businessPriorityAttributes: selectedPartner?.priority_attributes ?? [],
@@ -3422,6 +3424,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                               </View>
                             ))}
                           </View>
+                        </View>
+                      )}
+                      {(o.business_requests?.shared_interests ?? []).length > 0 && (
+                        <View style={{ marginTop: spacing.xs }}>
+                          <Text style={styles.notesLabel}>They're into</Text>
+                          <Text style={styles.breakdownText}>{o.business_requests.shared_interests.join(' · ')}</Text>
                         </View>
                       )}
                       {o.status === 'pending' && o.business_requests?.status === 'open' && (

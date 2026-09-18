@@ -5,6 +5,8 @@ import * as Location from 'expo-location';
 import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity, searchActiveBusinessAvailability } from '../services/businessFulfillment';
 import { createBusinessRequestForMatch } from '../services/dateProposals';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import useMyInterests from '../hooks/useMyInterests';
+import { shareableInterestsFor } from '../constants/interestGraph';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, OCCASION_OPTIONS, businessAttributeLabel, cuisineLabel, occasionLabel } from '../constants/businessAttributes';
 import { BUDGET_LEVEL_OPTIONS, resolveBudgetMax, initialBudgetSelectionFromMax, EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
 import StaggeredReveal from '../components/StaggeredReveal';
@@ -205,6 +207,11 @@ export default function AskBusinessScreen({ navigation, route }) {
   // only -- matching where party size/budget are already solo-only inputs
   // on this screen, same isSoloMode gate.
   const [attributesInput, setAttributesInput] = useState([]);
+  // Opt-in interest sharing (design 2026-09-18): OFF by default, per request only, never remembered.
+  const myInterests = useMyInterests();
+  const shareableTags = shareableInterestsFor(myInterests);
+  const [shareInterestsOn, setShareInterestsOn] = useState(false);
+  const [sharedPicked, setSharedPicked] = useState([]);
   const [cuisineInput, setCuisineInput] = useState(null);
   // "Intelligent demand inbox" Phase 1 (CLAUDE.md, Sep 3 2026): a real
   // WHY signal, genuinely optional in every mode -- unlike attributes/
@@ -390,6 +397,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           occasion: occasionInput,
           experienceLevel,
           surpriseMode,
+          sharedInterests: isSoloMode && !surpriseMode && shareInterestsOn ? sharedPicked.filter((t) => shareableTags.includes(t)) : null,
         });
       }
       // Finding 4: carry the original ask's real prefill fields forward so
@@ -792,6 +800,49 @@ export default function AskBusinessScreen({ navigation, route }) {
                       </TouchableOpacity>
                     ))}
                   </View>
+                </>
+              )}
+              {!surpriseMode && shareableTags.length > 0 && (
+                <>
+                  <Text style={styles.label}>Help businesses tailor their offer (optional)</Text>
+                  <TouchableOpacity
+                    style={[styles.chip, shareInterestsOn && styles.chipSelected, { alignSelf: 'flex-start' }]}
+                    onPress={() => {
+                      const next = !shareInterestsOn;
+                      setShareInterestsOn(next);
+                      setSharedPicked(next ? shareableTags : []);
+                    }}
+                    accessibilityLabel="Share my interests with businesses on this request"
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: shareInterestsOn }}
+                  >
+                    <Text style={[styles.chipText, shareInterestsOn && styles.chipTextSelected]}>
+                      {shareInterestsOn ? '✓ ' : ''}Share my interests with businesses
+                    </Text>
+                  </TouchableOpacity>
+                  {shareInterestsOn ? (
+                    <>
+                      <Text style={[styles.matchedAvailabilityDescription, { marginTop: spacing.xs }]}>These go to businesses on this request only. Tap to remove any.</Text>
+                      <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                        {shareableTags.map((tag) => {
+                          const on = sharedPicked.includes(tag);
+                          return (
+                            <TouchableOpacity
+                              key={tag}
+                              style={[styles.chip, on && styles.chipSelected]}
+                              onPress={() => setSharedPicked((prev) => (on ? prev.filter((t) => t !== tag) : [...prev, tag]))}
+                              accessibilityLabel={`${on ? 'Stop sharing' : 'Share'} ${tag}`}
+                              accessibilityRole="button"
+                              accessibilityState={{ selected: on }}
+                            >
+                              <Text style={[styles.chipText, on && styles.chipTextSelected]}>{tag}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </>
+                  ) : null}
+                  <Text style={[styles.matchedAvailabilityDescription, { marginTop: spacing.xs }]}>Businesses never see your name or profile.</Text>
                 </>
               )}
             </>

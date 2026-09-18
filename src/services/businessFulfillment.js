@@ -171,6 +171,9 @@ export async function submitBusinessRequest({
   // surprise if relevant" -- a plain boolean, never the celebrated
   // person's identity (Item 69's own privacy boundary stays intact).
   surpriseMode = false,
+  // Opt-in interest tags shared with businesses for THIS request only (design 2026-09-18). null = not shared.
+  // The server keeps only tags the caller declared and never attaches them to a surprise-mode request.
+  sharedInterests = null,
 }) {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {
@@ -198,6 +201,7 @@ export async function submitBusinessRequest({
     preferred_package_id_param: preferredPackageId,
     experience_level_param: experienceLevel,
     surprise_mode_param: surpriseMode,
+    shared_interests_param: sharedInterests && sharedInterests.length > 0 ? sharedInterests : null,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, duplicate: !!data.duplicate };

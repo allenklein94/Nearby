@@ -59,3 +59,19 @@ fits, without Nearby ever handing a third party their profile.
    (Recommended: on the request, since the point is tailoring the offer.)
 2. Allow sharing on gathering/community requests later (group request; whose interests?) -- recommended: no.
 3. OK with the scoring boost, or display-only for v1? (Recommended: display + small boost.)
+
+## BUILT (2026-09-18) -- owner approved all three recommendations
+- Migration `20261127_business_request_shared_interests.sql` applied to production: `business_requests.shared_interests`
+  (<=8), `create_business_request(... , shared_interests_param)` (old signature dropped; one overload verified; grants
+  authenticated only), `get_business_opportunities` (jsonb) returns `shared_interests`.
+- Server keeps only tags in the caller's own profile interests, drops sensitive tags (Faith & Spirituality, Dating,
+  Speed Dating, Singles Events, Group Hangouts), max 8, never on surprise-mode requests.
+- Consumer: AskBusinessScreen, personal (solo) requests only, off by default, per-request, tags removable,
+  "Businesses never see your name or profile." Not on gathering/community/match requests.
+- Business: dashboard opportunity card shows "They're into: ..." on the request itself, before an offer.
+- Matching: `SCORE_SHARED_INTEREST = 1` (< smallest operational weight 2), applied once, tag overlap vs the
+  business's own subcategory + categories (existing tag infra, no new tag system); silent if either side is empty;
+  test proves an operational fit always outscores a tags-only match.
+- Live check (rolled-back txn, disposable users): opt-in keeps only declared non-sensitive tags; no opt-in = null;
+  surprise mode = null; business sees tags via the RPC with no requester name/id; zero rows left behind.
+- Not verified on a device.

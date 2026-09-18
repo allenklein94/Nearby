@@ -63,3 +63,10 @@ describe('ranking helpers', () => {
     expect(personalizeQuickOptions(opts, [], () => '•')).toBe(opts);
   });
 });
+
+test('shareableInterestsFor drops sensitive tags, canonicalizes, caps at 8', () => {
+  const { shareableInterestsFor, MAX_SHARED_INTERESTS } = require('./interestGraph');
+  expect(shareableInterestsFor(['Music', 'Faith & Spirituality', 'Dating', 'hiking', 'Nope'])).toEqual(['Music', 'Hiking']);
+  expect(shareableInterestsFor(INTEREST_OPTIONS).length).toBe(MAX_SHARED_INTERESTS);
+  expect(shareableInterestsFor(null)).toEqual([]);
+});

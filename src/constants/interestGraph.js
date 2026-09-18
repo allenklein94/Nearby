@@ -103,3 +103,15 @@ export function personalizeQuickOptions(options, interests, iconFor, maxExtras =
   const extras = mine.filter((t) => !present.has(t)).slice(0, maxExtras).map((t) => ({ icon: iconFor(t), label: t, category: t }));
   return [...ranked, ...extras, ...tail];
 }
+
+// ---- Opt-in sharing with a business on ONE personal request (design 2026-09-18) ----
+// Never shareable: identity-adjacent or sensitive tags. Mirrors the server allow-check in
+// create_business_request (20261127); the server is the authority, this only shapes what the UI offers.
+export const NEVER_SHARE_WITH_BUSINESS = ['Faith & Spirituality', 'Dating', 'Speed Dating', 'Singles Events', 'Group Hangouts'];
+export const MAX_SHARED_INTERESTS = 8;
+
+export function shareableInterestsFor(profileInterests) {
+  return canonicalizeInterests(profileInterests)
+    .filter((t) => !NEVER_SHARE_WITH_BUSINESS.includes(t))
+    .slice(0, MAX_SHARED_INTERESTS);
+}
