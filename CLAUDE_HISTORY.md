@@ -57,8 +57,8 @@ weather task's position. Friends' activity is connection-scoped, not location-sc
 paths come from presence sightings (proximity.js), deliberately separate from the shared provider. Found + fixed a
 first-run race: Home's weather task and Discover's loadCore read with `ask:false` while the dashboard/gatherings call
 prompted, so a user who tapped Allow still got the location-off card / no userLocation until the next load; both now use
-the default (deduped, once-per-session) ask. Not changed: Home's Happening Now tiles stay time-ordered and show no
-distance (Discover's are nearest-first).
+the default (deduped, once-per-session) ask. Home's Happening Now tiles were time-ordered; now nearest-first (`nearestThenSoonest` in homeDashboard.js, soonest
+start breaks ties, unknown distance last, unit-tested) to match Discover. Tiles still show no distance.
 Business export re-run after this fix: byte-identical output (HomeScreen/DiscoverHubScreen aren't in the business web
 bundle, provider unchanged since the last export), so nothing to commit; the committed export is current.
 Convention bullets added to CLAUDE.md: "Location is asked once, used everywhere", "Notification area".

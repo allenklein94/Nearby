@@ -368,6 +368,12 @@ export async function getUnlockedPerksCount() {
   return data?.length ?? 0;
 }
 
+// Happening Now is only useful if you can get there: nearest first (same as Discover), soonest start breaking
+// ties -- including gatherings with no known distance, which sort after any with one.
+export function nearestThenSoonest(a, b) {
+  return (a.distanceMiles ?? Infinity) - (b.distanceMiles ?? Infinity) || new Date(a.scheduled_at) - new Date(b.scheduled_at);
+}
+
 export async function getHomeDashboard() {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;
@@ -421,7 +427,7 @@ export async function getHomeDashboard() {
       const startMs = new Date(g.scheduled_at).getTime();
       return startMs - nowMs <= HAPPENING_NOW_AFTER_MS && nowMs - startMs <= HAPPENING_NOW_BEFORE_MS;
     })
-    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+    .sort(nearestThenSoonest)
     .slice(0, 6);
 
   // A single, genuine best pick rather than another list — scored on
