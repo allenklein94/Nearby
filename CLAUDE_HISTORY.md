@@ -59,6 +59,8 @@ first-run race: Home's weather task and Discover's loadCore read with `ask:false
 prompted, so a user who tapped Allow still got the location-off card / no userLocation until the next load; both now use
 the default (deduped, once-per-session) ask. Not changed: Home's Happening Now tiles stay time-ordered and show no
 distance (Discover's are nearest-first).
+Business export re-run after this fix: byte-identical output (HomeScreen/DiscoverHubScreen aren't in the business web
+bundle, provider unchanged since the last export), so nothing to commit; the committed export is current.
 Convention bullets added to CLAUDE.md: "Location is asked once, used everywhere", "Notification area".
 
 # Item 137 (2026-09-18) - Animation consistency audit
