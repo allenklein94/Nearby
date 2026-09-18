@@ -15,7 +15,7 @@ import CommunityCalendar from '../components/CommunityCalendar';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import LoadErrorState from '../components/LoadErrorState';
-import PlanCreatedCelebration from '../components/PlanCreatedCelebration';
+import { SuccessAnimation } from '../motion';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -373,7 +373,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        {showJustCreated && <PlanCreatedCelebration text="Your community is live. 🎉" />}
+        {showJustCreated && <SuccessAnimation text="Your community is live. 🎉" />}
         {showReasonBanner && notificationReason && (
           <View style={styles.notificationReasonBanner}>
             <Text style={styles.notificationReasonText}>{notificationReason}</Text>

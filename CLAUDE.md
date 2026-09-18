@@ -206,6 +206,21 @@ not part of "GroupPlanScreen" and not silently assumed done. Full Jest suite 580
 Not exercised on a real device (standing note) — same as the prior follow-up, a pure import-path
 change with no expected visual difference.
 
+**Same-day follow-up ("do the same for CommunityDetailScreen's PlanCreatedCelebration usage").**
+Closed the last remaining candidate: `CommunityDetailScreen.js`'s community-creation success flash
+("Your community is live. 🎉") migrated the same way, off `../components/PlanCreatedCelebration`
+onto `import { SuccessAnimation } from '../motion'` — same component, no behavior change. A
+repo-wide grep now confirms zero real screens still import the legacy shim path (the only
+remaining hits are `src/motion/index.js`'s own barrel definition and `motionLanguage.js`'s
+documentation reference) — every call site named across this whole follow-up chain (business
+offer accept, GroupPlanScreen, CommunityDetailScreen) is now on the canonical import.
+`src/components/PlanCreatedCelebration.js` itself is left in place, unreferenced by any screen but
+still exported as Item 113's own deliberate continuity shim — deleting it wasn't asked for here,
+so it wasn't done; a real, disclosed candidate for a future cleanup pass, not silently assumed
+covered. Full Jest suite 580/580 passing (unchanged); `CommunityDetailScreen.js` transform-checked
+clean via `@babel/core` + `babel-preset-expo`. Not exercised on a real device (standing note) —
+same as the prior two follow-ups, a pure import-path change with no expected visual difference.
+
 No DB migration, no new pure functions (a component library + three wiring sites). Full Jest suite
 580/580 passing (unchanged); all 18 touched/new files (10 new `src/motion/` files, 6 shim files, 2
 wired screens) transform-checked clean via `@babel/core` + `babel-preset-expo` — plus a full
