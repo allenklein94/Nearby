@@ -80,7 +80,8 @@ named exports. Built via genuine consolidation, not just a new import path aroun
   bigger, higher-risk undertaking not attempted here, especially with no simulator/device tooling
   available to verify a custom gesture surface. What this component genuinely delivers: every
   future screen's pull-to-refresh is correctly Nearby-branded on both platforms automatically,
-  without a developer needing to remember two separate platform props by hand.
+  without a developer needing to remember two separate platform props by hand. **Wired into every
+  real screen (2026-09-18 follow-up)** — see below.
 
 **Backward compatibility, deliberately chosen over a big-bang rename**: the original file locations
 (`src/components/BrandedLoader.js`, `PlanCreatedCelebration.js`, `MatchCelebrationModal.js`,
@@ -368,6 +369,33 @@ real call site across the whole app is on the canonical `../motion` import. Full
 580/580 passing (unchanged); both touched files transform-checked clean via `@babel/core` +
 `babel-preset-expo`. Not exercised on a real device (standing note) — pure deletion/comment
 cleanup, no behavior change.
+
+**Same-day follow-up ("wire PullToRefresh into every screen"), closing Item 113's last remaining
+gap — fully DONE (2026-09-18).** `PullToRefresh` (the 7th named component in the user's own
+original Item 113 spec) existed but had zero real consumers — every screen's own `RefreshControl`
+still set `tintColor={colors.primary}` directly by hand rather than going through the new
+component. A repo-wide grep found 18 real `RefreshControl` JSX occurrences across 15 screens
+(`ActivityScreen`/`AdminBusinessRequestsScreen`/`AdminBusinessTierScreen`/
+`AdminContentReviewScreen`/`BlockedUsersScreen`/`BrandOffersScreen`/`ChemistryDiaryListScreen`/
+`CommunitiesScreen`/`DiscoveryScreen`/`GatheringsScreen` [3 separate lists]/
+`GoodbyeArchiveListScreen`/`HomeScreen`/`LegacyLibraryScreen`/`MatchesScreen`/`PlansScreen`) —
+confirmed every single one shared the exact same uniform shape
+(`<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />`)
+before writing any scripted substitution, the same discipline the earlier 41-file `BrandedLoader`
+migration in this chain already established. A small Node script did an exact literal swap to
+`<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />` at all 18 sites, removed
+`RefreshControl` from each file's `react-native` import, and added `PullToRefresh` to (or merged
+it into) each file's own `../motion` import — 9 of the 15 files already had a `../motion` import
+for `NLoader`/`MatchAnimation` from earlier follow-ups in this chain, merged into one combined
+import line each rather than left as two redundant lines from the same module. With this, every
+real pull-to-refresh gesture in the app now gets the correct branded color on both platforms
+automatically — the last of the 7 components named in the user's original Item 113 request is now
+actually wired in, not just built. Full Jest suite 580/580 passing (unchanged — pure UI wiring, no
+logic changed); all 15 touched files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised on a real device (standing note) — next session with device
+access should confirm the pull-to-refresh spinner still renders correctly (no layout/behavior
+change expected, since this only swaps which component supplies the same `tintColor`/`colors`
+props) on a representative sample of the 15 touched screens.
 
 **"Nearby Motion & Microinteraction System" — first real increment shipped (2026-09-18), same
 day, direct "build it now" override of the earlier "queue for Thursday" call.** User's own scope:
