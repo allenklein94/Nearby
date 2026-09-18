@@ -112,7 +112,15 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   Item 135: intent searches narrate their REAL phases (`runIntentSearch(text, { onPhase })`;
   `intentPhaseCaption()`: Understanding your request… -> Finding activities…/Finding communities…/
   Checking availability…), then `FoundLine` ("Here's what we found.") as results land. Phases are
-  reported as the work actually moves, never on a timer -- no artificial delay for theater. Aesthetic target: modern + polished
+  reported as the work actually moves, never on a timer -- no artificial delay for theater.
+- **Product personality (Item 136, guiding thesis, logged 2026-09-18): Nearby is quietly working for
+  you -- never "here's a database."** The interface should say, in effect: *tell us what you want, we'll
+  figure out the rest.* Use as a tiebreaker for copy, motion and flow: prefer intent-first entry
+  points over browse-and-filter, narrate real work calmly (Item 135), turn empty results into an
+  invitation (Item 134), lead with a reason/outcome instead of a raw list or count, and keep motion
+  restrained (Items 122/126/131). Avoid database voice ("0 results," "no data," raw field labels).
+  Companion to the intent-engine north star (Item 112); no build item of its own -- apply it to
+  whatever is being touched. Aesthetic target: modern + polished
   + alive + restrained — a premium social product, not a children's app; no confetti-everywhere.
 - **Motion intensity varies by context (Item 122, locked 2026-09-18).** Occasion-creation moments
   (a plan being born, a birthday/anniversary pick, a community going live) can stay fully

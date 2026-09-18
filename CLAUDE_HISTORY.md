@@ -1,3 +1,13 @@
+## Sep 18 2026 — Item 136 (product personality: "Nearby is quietly working for you") — GUIDING THESIS, no build
+
+Logged, like Item 112, as a north-star tiebreaker rather than a build item (feature-freeze convention:
+no new surface without a direct ask). Already embodied by shipped work: intent-first Home/Discover
+search (Items 38-39), real-phase "thinking" captions (135), empty-state invitations (134), N as the
+"Nearby is working" loading language (132/133), restrained motion/haptics (122-131). A quick grep
+for database-voice copy ("no results", "0 results", "no data") found only one user-facing hit
+(BusinessDashboard's "No data yet for this business."); left as-is -- an owner-facing analytics
+state where plain wording is correct. A broader voice/copy audit is available on request.
+
 ## Sep 18 2026 — Item 135 ("Search can have a little thinking moment") — DONE
 
 Honesty check first: the intent pipeline has exactly two real phases (the create-assistant classify
