@@ -1,6 +1,16 @@
 import { supabase, functionUrl } from './supabase';
 import Constants from 'expo-constants';
 import { getGoogleMapsRequestHeaders } from './places';
+import { getUserLocation } from './userLocation';
+
+// Callers that don't pass coordinates (Matches, Gatherings) used to get an unfiltered, location-blind
+// offers list. Nearby knows where the user is, so fall back to the shared position -- passively, never
+// prompting from a background list load. No position at all still means "unfiltered", as before.
+async function resolveCoords(lat, lng) {
+  if (lat != null && lng != null) return { lat, lng };
+  const l = await getUserLocation({ ask: false });
+  return l ? { lat: l.coords.latitude, lng: l.coords.longitude } : { lat: null, lng: null };
+}
 
 export async function getEstimatedAmountOwed(partnerId) {
   // Real per-partner contract terms (see partner_contracts), not a flat
@@ -44,7 +54,8 @@ export async function getRedemptionCounts(offerIds) {
   return counts;
 }
 
-export async function getActiveOffers(myLat = null, myLng = null) {
+export async function getActiveOffers(lat = null, lng = null) {
+  const { lat: myLat, lng: myLng } = await resolveCoords(lat, lng);
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;
 
@@ -97,9 +108,10 @@ export async function getActiveOffers(myLat = null, myLng = null) {
 // target-interest and nearby-radius filtering getActiveOffers() already
 // applies, so a search result can never surface an offer plain browse would
 // have excluded.
-export async function searchOffers(queryText, myLat = null, myLng = null) {
+export async function searchOffers(queryText, lat = null, lng = null) {
   const term = (queryText ?? '').trim();
   if (!term) return [];
+  const { lat: myLat, lng: myLng } = await resolveCoords(lat, lng);
   // Escape ILIKE's own wildcard characters so a literal % or _ typed by the
   // user is matched literally, not treated as a wildcard — same convention
   // searchGatherings()/searchPublicCommunities() already use.
@@ -160,7 +172,8 @@ export async function searchOffers(queryText, myLat = null, myLng = null) {
 // the business-partner count is expected to stay much smaller than
 // gatherings for a long while (same reasoning as the Rewards/Billing
 // sections). Ordered by created_at so the capped 300 is deterministic.
-export async function getNearbyBusinesses(myLat, myLng, radiusMiles = 50) {
+export async function getNearbyBusinesses(lat, lng, radiusMiles = 50) {
+  const { lat: myLat, lng: myLng } = await resolveCoords(lat, lng);
   const { data, error } = await supabase
     .from('brand_partners')
     .select('id, name, logo_url, latitude, longitude')
@@ -178,12 +191,14 @@ export async function getNearbyBusinesses(myLat, myLng, radiusMiles = 50) {
   if (myLat == null || myLng == null) return data ?? [];
 
   const milesPerDegreeLat = 69;
-  return (data ?? []).filter((b) => {
-    const dLat = (b.latitude - myLat) * milesPerDegreeLat;
-    const dLng = (b.longitude - myLng) * milesPerDegreeLat * Math.cos((myLat * Math.PI) / 180);
-    const approxMiles = Math.sqrt(dLat * dLat + dLng * dLng);
-    return approxMiles <= radiusMiles;
-  });
+  return (data ?? [])
+    .map((b) => {
+      const dLat = (b.latitude - myLat) * milesPerDegreeLat;
+      const dLng = (b.longitude - myLng) * milesPerDegreeLat * Math.cos((myLat * Math.PI) / 180);
+      return { ...b, distanceMiles: Math.sqrt(dLat * dLat + dLng * dLng) };
+    })
+    .filter((b) => b.distanceMiles <= radiusMiles)
+    .sort((a, b) => a.distanceMiles - b.distanceMiles);
 }
 
 // Name search for the business-partnership-request flow (services/
