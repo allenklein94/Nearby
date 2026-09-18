@@ -45,6 +45,7 @@ import {
   detectFriendDiscoveryIntent,
   SCORE_OCCASION_PACKAGE_FLOOR,
 } from './intentResolverScoring';
+import { getUserLocation } from './userLocation';
 
 const RESULT_CAP = 4;
 
@@ -502,7 +503,7 @@ async function resolveOccasionPackages(location, occasion, partySize) {
 export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null }) {
   // Resolved once, up front, before any branch runs in parallel below —
   // not a check-only call. getNearbyGatherings() (called from
-  // resolveGatherings) already calls Location.requestForegroundPermissionsAsync()
+  // resolveGatherings) already calls the shared location provider
   // itself, which prompts if the decision hasn't been made yet; a
   // previous version of this function used the non-prompting
   // getForegroundPermissionsAsync() here, running at the same instant as
@@ -518,9 +519,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   let location = null;
   let myCity = null;
   try {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === 'granted') {
-      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    const position = await getUserLocation();
+    if (position) {
       location = { latitude: position.coords.latitude, longitude: position.coords.longitude };
       // Best-effort only -- feeds the Community Area city-name fallback
       // below when a candidate community has no coarse map point set.

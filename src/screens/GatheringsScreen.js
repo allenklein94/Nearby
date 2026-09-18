@@ -24,7 +24,6 @@ import { usePostHog } from 'posthog-react-native';
 import ReportBlockModal from '../components/ReportBlockModal';
 import GatheringsMapView from '../components/GatheringsMapView';
 import StoryViewerModal from '../components/StoryViewerModal';
-import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { getActiveOffers, getMyRedemptions } from '../services/brandOffers';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
@@ -40,6 +39,7 @@ import useMyInterests from '../hooks/useMyInterests';
 import { rankByInterests, becauseYouLikeCategories } from '../constants/interestGraph';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import { getUserLocation } from '../services/userLocation';
 
 
 // Real Free/$/$$/$$$ filter options, backed by gatherings.price_level --
@@ -219,14 +219,11 @@ export default function GatheringsScreen({ navigation, route }) {
       setMapStoryDisplayNames(Object.fromEntries((posterProfiles ?? []).map((p) => [p.id, p.display_name])));
     }
 
-    const { status } = await Location.getForegroundPermissionsAsync();
-    if (status === 'granted') {
-      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
-      if (location) {
-        const coords = { latitude: location.coords.latitude, longitude: location.coords.longitude };
-        setUserLocation(coords);
-        getSocialForecast(coords.latitude, coords.longitude).then(setWeatherSignal).catch(() => {});
-      }
+    const location = await getUserLocation({ ask: false });
+    if (location) {
+      const coords = { latitude: location.coords.latitude, longitude: location.coords.longitude };
+      setUserLocation(coords);
+      getSocialForecast(coords.latitude, coords.longitude).then(setWeatherSignal).catch(() => {});
     }
 
     const friendsList = await getMyFriends();

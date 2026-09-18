@@ -3,11 +3,11 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, S
 import FadeInState from '../components/FadeInState';
 import { FilterTransition, TapActiveChip, NLoader } from '../motion';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, getGoogleMapsRequestHeaders } from '../services/places';
 import { PLACE_CATEGORIES as CATEGORIES } from '../constants/placeCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { getUserLocation } from '../services/userLocation';
 
 // This screen is reached as a top-level stack push (not a bottom tab),
 // headerShown: false in RootNavigator -- the same "reachable, but no
@@ -57,18 +57,9 @@ export default function PlacesScreen({ navigation }) {
     const thisRequestId = ++requestIdRef.current;
     setLoading(true);
     setLoadError(false);
-    let status;
-    try {
-      ({ status } = await Location.requestForegroundPermissionsAsync());
-    } catch (e) {
-      console.error('PlacesScreen load error', e);
-      if (thisRequestId === requestIdRef.current) {
-        setLoadError(true);
-        setLoading(false);
-      }
-      return;
-    }
-    if (status !== 'granted') {
+    const location = await getUserLocation();
+    if (!location) {
+      // No permission and no usable last-known position: the honest "location is off" state.
       if (thisRequestId === requestIdRef.current) {
         setLocationDenied(true);
         setLoading(false);
@@ -76,11 +67,6 @@ export default function PlacesScreen({ navigation }) {
       return;
     }
     if (thisRequestId === requestIdRef.current) setLocationDenied(false);
-    const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
-    if (!location) {
-      if (thisRequestId === requestIdRef.current) setLoading(false);
-      return;
-    }
     try {
       // Item 40: while actively searching, the category chip stops acting
       // as a hard type filter (Google's Nearby Search ANDs type+keyword

@@ -2,7 +2,6 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Image, Modal } from 'react-native';
 import { NLoader, SuccessAnimation, modalAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
-import * as Location from 'expo-location';
 import { supabase } from '../services/supabase';
 import { getMyCommunities, joinCommunity, leaveCommunity, deleteCommunity, pauseCommunity, resumeCommunity, cancelCommunity, getCommunityMemberCount, getCommunityGatherings, getCommunityMembers, setCommunityMemberRole, updateCommunityArea } from '../services/communities';
 import { isFollowingBusiness, followBusiness, unfollowBusiness, getCommunityOffers, getMyRedemptions, redeemOffer, getMyManagedPartner } from '../services/brandOffers';
@@ -17,6 +16,7 @@ import InviteFriendsModal from '../components/InviteFriendsModal';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { getUserLocation } from '../services/userLocation';
 
 const ROLE_LABELS = { creator: 'Creator', leader: 'Leader', member: 'Member' };
 
@@ -203,12 +203,12 @@ export default function CommunityDetailScreen({ route, navigation }) {
   async function handleUseCurrentLocationForArea() {
     setLocatingArea(true);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
+      const location = await getUserLocation();
+      if (!location) {
         Alert.alert('Location permission needed', 'Enable location access to set a coarse map point for this Area.');
+        setLocatingArea(false);
         return;
       }
-      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       setAreaPoint({ lat: location.coords.latitude, lng: location.coords.longitude });
     } catch (e) {
       Alert.alert('Error', 'Could not get your current location.');

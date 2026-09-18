@@ -2,7 +2,6 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader, PullToRefresh } from '../motion';
-import * as Location from 'expo-location';
 import { useFocusEffect } from '@react-navigation/native';
 import { getActiveOffers, getMyRedemptions, redeemOffer, followBusiness, unfollowBusiness, isFollowingBusiness, getRedemptionCounts } from '../services/brandOffers';
 import { getCommunityMemberCount } from '../services/communities';
@@ -12,6 +11,7 @@ import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import { getUserLocation } from '../services/userLocation';
 
 export default function BrandOffersScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
@@ -42,13 +42,10 @@ export default function BrandOffersScreen({ navigation, route }) {
     try {
       let myLat = null;
       let myLng = null;
-      const { status } = await Location.getForegroundPermissionsAsync();
-      if (status === 'granted') {
-        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
-        if (location) {
-          myLat = location.coords.latitude;
-          myLng = location.coords.longitude;
-        }
+      const location = await getUserLocation({ ask: false });
+      if (location) {
+        myLat = location.coords.latitude;
+        myLng = location.coords.longitude;
       }
       [offersData, redemptionsData] = await Promise.all([getActiveOffers(myLat, myLng), getMyRedemptions()]);
       setOffers(offersData);

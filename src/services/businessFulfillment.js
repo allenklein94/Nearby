@@ -1,8 +1,8 @@
 import { Platform } from 'react-native';
-import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase, functionUrl } from './supabase';
+import { requireUserLocation } from './userLocation';
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -175,11 +175,7 @@ export async function submitBusinessRequest({
   // The server keeps only tags the caller declared and never attaches them to a surprise-mode request.
   sharedInterests = null,
 }) {
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') {
-    throw new Error('Location access is needed to find nearby businesses.');
-  }
-  const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+  const location = await requireUserLocation('Location access is needed to find nearby businesses.');
 
   const { data, error } = await supabase.rpc('create_business_request', {
     raw_text_param: text,

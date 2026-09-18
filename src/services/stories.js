@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from './supabase';
+import { getUserLocation } from './userLocation';
 const MAX_VIDEO_SECONDS = 15;
 
 // fetch(uri).blob() silently produces 0-byte files on iOS for local
@@ -55,13 +55,10 @@ export async function uploadStory(userId, uri, mediaType, isPublic = false, gath
   let latitude = null;
   let longitude = null;
   if (isPublic || partnerId) {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === 'granted') {
-      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
-      if (location) {
-        latitude = location.coords.latitude;
-        longitude = location.coords.longitude;
-      }
+    const location = await getUserLocation();
+    if (location) {
+      latitude = location.coords.latitude;
+      longitude = location.coords.longitude;
     }
   }
 

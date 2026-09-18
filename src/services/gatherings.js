@@ -6,6 +6,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { getMyFriends } from './friends';
 import { getMyCommunities } from './communities';
 import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
+import { getUserLocation, requireUserLocation } from './userLocation';
 
 function localArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 100) / 100;
@@ -69,10 +70,7 @@ export async function createGathering({ title, description, interestTag, schedul
     lat = customLocation.latitude;
     lng = customLocation.longitude;
   } else {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') throw new Error('Location permission is needed to post a gathering.');
-
-    const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    const location = await requireUserLocation('Location permission is needed to post a gathering.');
     lat = location.coords.latitude;
     lng = location.coords.longitude;
   }
@@ -220,10 +218,8 @@ export async function getNearbyGatherings(tier = 'local') {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
 
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') return [];
-
-  const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+  const location = await getUserLocation();
+  if (!location) return [];
   const myLat = location.coords.latitude;
   const myLng = location.coords.longitude;
 
@@ -276,10 +272,8 @@ export async function searchGatherings(queryText, tier = 'wide') {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
 
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') return [];
-
-  const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+  const location = await getUserLocation();
+  if (!location) return [];
   const myLat = location.coords.latitude;
   const myLng = location.coords.longitude;
 
@@ -451,10 +445,7 @@ export async function getMyAttendingGatherings() {
 async function attachFuzzedCoordinates(gatheringList) {
   if (gatheringList.length === 0) return gatheringList;
 
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') return gatheringList.map((g) => ({ ...g, latitude: null, longitude: null }));
-
-  const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+  const location = await getUserLocation();
   if (!location) return gatheringList.map((g) => ({ ...g, latitude: null, longitude: null }));
 
   const { data: distances, error } = await supabase.rpc('get_gathering_distances', {
@@ -915,9 +906,8 @@ export async function getGatheringById(gatheringId) {
   let distanceMiles = null;
   let latitude = null;
   let longitude = null;
-  const { status: locStatus } = await Location.getForegroundPermissionsAsync();
-  if (locStatus === 'granted') {
-    const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+  {
+    const location = await getUserLocation({ ask: false });
     if (location) {
       const { data: distances } = await supabase.rpc('get_gathering_distances', {
         my_lat: location.coords.latitude,

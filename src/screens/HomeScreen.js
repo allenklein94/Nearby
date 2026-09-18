@@ -28,7 +28,6 @@ import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import PlanCard from '../components/PlanCard';
 import { resolveGatheringPlanStatus, resolveGroupPlanStatus } from '../constants/planStatus';
 import { supabase } from '../services/supabase';
-import * as Location from 'expo-location';
 import StartSomethingModal, { CREATE_HUB_OPTIONS } from '../components/StartSomethingModal';
 import SurpriseMeSheet from '../components/SurpriseMeSheet';
 import QuickPicksEditModal from '../components/QuickPicksEditModal';
@@ -47,6 +46,7 @@ import { gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { lightenHex } from '../utils/colorUtils';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
+import { getUserLocation } from '../services/userLocation';
 
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
@@ -362,9 +362,7 @@ export default function HomeScreen({ navigation }) {
 
       const weatherTask = (async () => {
         try {
-          const { status } = await Location.getForegroundPermissionsAsync();
-          if (status !== 'granted') return { forecast: null, myLocation: null };
-          const myLocation = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+          const myLocation = await getUserLocation({ ask: false });
           if (!myLocation) return { forecast: null, myLocation: null };
           const forecast = await getSocialForecast(myLocation.coords.latitude, myLocation.coords.longitude);
           setSocialForecast(forecast);

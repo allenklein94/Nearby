@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform, ScrollView, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Image } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { createGathering } from '../services/gatherings';
 import { linkOccasionToPlan } from '../services/occasions';
@@ -21,6 +20,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 import { NLoader } from '../motion';
+import { getUserLocation } from '../services/userLocation';
 // Real Free/$/$$/$$$ chip labels for the new Price field -- mirrors the
 // visual convention services/places.js's own priceLevelLabel() already
 // established for Google Places results, without reusing that function
@@ -228,13 +228,12 @@ export default function CreateGatheringScreen({ navigation, route }) {
     try {
       let loc = myLocation;
       if (!loc) {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
+        const position = await getUserLocation();
+        if (!position) {
           setPopularPlaces([]);
           setLoadingPlaces(false);
           return;
         }
-        const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         loc = { latitude: position.coords.latitude, longitude: position.coords.longitude };
         setMyLocation(loc);
       }

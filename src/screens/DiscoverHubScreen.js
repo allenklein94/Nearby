@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Linking, Alert, BackHandler } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Location from 'expo-location';
 import { Video } from 'expo-av';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -48,6 +47,7 @@ import { gatheringSignalLine } from '../constants/gatheringDisplaySignals';
 // P2 remediation item 8 (CLAUDE.md, "Discover information parity") --
 // the business/perk half of the same fix.
 import { businessSignalLine } from '../constants/businessDisplaySignals';
+import { getUserLocation } from '../services/userLocation';
 
 // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- real, disclosed
 // thresholds against getGatheringFitReasons()'s real 0-22 score range
@@ -408,12 +408,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // said no once had no path back in from here. A real prompt, using the
   // same expo-location already imported for that check.
   async function enableLocation() {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === 'granted') {
-      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
-      if (position) {
-        setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
-      }
+    const position = await getUserLocation({ fresh: true });
+    if (position) {
+      setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
     }
   }
 
@@ -475,14 +472,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
       const publicCommunitiesPromise = getPublicCommunities();
       const myCommunitiesPromise = getMyCommunities();
 
-      const { status } = await Location.getForegroundPermissionsAsync();
       let loc = null;
-      if (status === 'granted') {
-        const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
-        if (position) {
-          loc = { latitude: position.coords.latitude, longitude: position.coords.longitude };
-          setUserLocation(loc);
-        }
+      const position = await getUserLocation({ ask: false });
+      if (position) {
+        loc = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+        setUserLocation(loc);
       }
 
       const [gatheringsData, publicCommunities, myCommunities, offersData, businessesData, redeemedIds] = await Promise.all([

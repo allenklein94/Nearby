@@ -1,6 +1,6 @@
-import * as Location from 'expo-location';
 import { supabase } from './supabase';
 import { searchActiveBusinessAvailability } from './businessFulfillment';
+import { requireUserLocation } from './userLocation';
 
 // "The Offer System" Phase 5 (see CLAUDE.md's own plan, Decision 4): the
 // locked Match -> Proposal -> Other person accepts -> Dating Experience ->
@@ -19,11 +19,7 @@ import { searchActiveBusinessAvailability } from './businessFulfillment';
 // broad browse, not a missing value -- search_active_business_availability
 // already treats a null category_param as "no category filter."
 export async function searchNearbyForPlan(category) {
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') {
-    throw new Error('Location access is needed to find nearby places.');
-  }
-  const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+  const location = await requireUserLocation('Location access is needed to find nearby places.');
   return searchActiveBusinessAvailability({
     category,
     latitude: location.coords.latitude,
@@ -187,11 +183,7 @@ export async function createBusinessRequestForMatch({
   radiusMiles = 15,
   occasion = null,
 }) {
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') {
-    throw new Error('Location access is needed to find nearby businesses.');
-  }
-  const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+  const location = await requireUserLocation('Location access is needed to find nearby businesses.');
 
   const { data, error } = await supabase.rpc('create_business_request_for_match', {
     match_id_param: matchId,
