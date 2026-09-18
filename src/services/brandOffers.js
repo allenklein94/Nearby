@@ -54,6 +54,15 @@ export async function getRedemptionCounts(offerIds) {
   return counts;
 }
 
+// With a known position, offers carry their real `distanceMiles` and come back nearest-first (the query's
+// created_at order is kept among equals); without one, the list is returned untouched.
+export function orderNearestFirst(offers, distanceById) {
+  if (!distanceById) return offers;
+  return offers
+    .map((o) => ({ ...o, distanceMiles: distanceById.get(o.id) ?? null }))
+    .sort((a, b) => (a.distanceMiles ?? Infinity) - (b.distanceMiles ?? Infinity));
+}
+
 export async function getActiveOffers(lat = null, lng = null) {
   const { lat: myLat, lng: myLng } = await resolveCoords(lat, lng);
   const { data: sessionData } = await supabase.auth.getSession();
@@ -71,8 +80,8 @@ export async function getActiveOffers(lat = null, lng = null) {
   // getting an empty list over a missing precondition.
   let nearbyOfferIds = null;
   if (myLat != null && myLng != null) {
-    const { data: nearby } = await supabase.rpc('get_nearby_offer_ids', { my_lat: myLat, my_lng: myLng, radius_miles: 50 });
-    nearbyOfferIds = new Set((nearby ?? []).map((n) => n.id));
+    const { data: nearby } = await supabase.rpc('get_nearby_offer_distances', { my_lat: myLat, my_lng: myLng, radius_miles: 50 });
+    nearbyOfferIds = new Map((nearby ?? []).map((n) => [n.id, n.distance_miles]));
   }
 
   const { data, error } = await supabase
@@ -91,11 +100,14 @@ export async function getActiveOffers(lat = null, lng = null) {
   // like coffee) only show to people whose interests genuinely
   // match — untargeted offers with no target_interest_tag remain
   // visible to everyone, same as before.
-  return (data ?? []).filter((offer) => {
-    if (nearbyOfferIds !== null && !nearbyOfferIds.has(offer.id)) return false;
-    if (!offer.target_interest_tag) return true;
-    return myInterests.some((i) => i.toLowerCase() === offer.target_interest_tag.toLowerCase());
-  });
+  return orderNearestFirst(
+    (data ?? []).filter((offer) => {
+      if (nearbyOfferIds !== null && !nearbyOfferIds.has(offer.id)) return false;
+      if (!offer.target_interest_tag) return true;
+      return myInterests.some((i) => i.toLowerCase() === offer.target_interest_tag.toLowerCase());
+    }),
+    nearbyOfferIds
+  );
 }
 
 // Real, indexed, server-side search across brand_offers.title/description
@@ -128,8 +140,8 @@ export async function searchOffers(queryText, lat = null, lng = null) {
 
   let nearbyOfferIds = null;
   if (myLat != null && myLng != null) {
-    const { data: nearby } = await supabase.rpc('get_nearby_offer_ids', { my_lat: myLat, my_lng: myLng, radius_miles: 50 });
-    nearbyOfferIds = new Set((nearby ?? []).map((n) => n.id));
+    const { data: nearby } = await supabase.rpc('get_nearby_offer_distances', { my_lat: myLat, my_lng: myLng, radius_miles: 50 });
+    nearbyOfferIds = new Map((nearby ?? []).map((n) => [n.id, n.distance_miles]));
   }
 
   const { data: idRows, error: idError } = await supabase.rpc('search_offer_ids', { query_text: escaped });
@@ -150,11 +162,14 @@ export async function searchOffers(queryText, lat = null, lng = null) {
     return [];
   }
 
-  return (data ?? []).filter((offer) => {
-    if (nearbyOfferIds !== null && !nearbyOfferIds.has(offer.id)) return false;
-    if (!offer.target_interest_tag) return true;
-    return myInterests.some((i) => i.toLowerCase() === offer.target_interest_tag.toLowerCase());
-  });
+  return orderNearestFirst(
+    (data ?? []).filter((offer) => {
+      if (nearbyOfferIds !== null && !nearbyOfferIds.has(offer.id)) return false;
+      if (!offer.target_interest_tag) return true;
+      return myInterests.some((i) => i.toLowerCase() === offer.target_interest_tag.toLowerCase());
+    }),
+    nearbyOfferIds
+  );
 }
 
 // Every nearby active business, not just ones currently running an offer —

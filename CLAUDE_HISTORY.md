@@ -37,13 +37,18 @@ Direct request. Built in increments, each committed + pushed; Jest 677/677; noth
 
 **Known gaps / not done:** the clear button only holds until the next fix while notifications are on (turn the
 switch off to keep it cleared); users inactive >48h get no location pushes; Home's location-off state not
-audited; offers not distance-ordered; device verification (permission flows, Settings control, push receipt).
+audited; offers not distance-ordered (since done, see below); device verification (permission flows, Settings control, push receipt).
 **Follow-up: Home location-off audit.** Found (1) Home showed "Quiet night nearby -- nothing notable" when the real
 cause was no position (an implied claim with no data behind it) -> now a "See what's around you / Turn on
 location" card (locationOff from the shared provider), quiet card suppressed while off, tap reloads Home;
 (2) the provider re-prompted a re-askable denial on every list load -> system prompt now at most once per
 session unless `force:true` (user tapped an enable control; Discover + Home buttons pass it), test added.
 Home's other location consumers (weather, offers, gatherings, people) already read the shared provider.
+**Follow-up: offers by distance.** Migration `20261130_nearby_offer_distances.sql` adds `get_nearby_offer_distances`
+(same set as `get_nearby_offer_ids`, plus real `distance_miles`; new function, not a changed return type). `getActiveOffers`/
+`searchOffers` now attach `distanceMiles` and order nearest-first (`orderNearestFirst`, unit-tested); no position = old order.
+Verified live with disposable partners/offers in a rolled-back transaction (same set as the old RPC, radius, ~13.8 mi) + a
+full from-scratch replay (194 migrations, 0 errors). No UI shows the offer distance yet.
 Convention bullets added to CLAUDE.md: "Location is asked once, used everywhere", "Notification area".
 
 # Item 137 (2026-09-18) - Animation consistency audit
