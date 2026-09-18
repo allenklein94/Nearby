@@ -42,7 +42,7 @@ import {
 import { OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { WHEN_PRESETS } from '../utils/whenPresets';
 import LoadErrorState from '../components/LoadErrorState';
-import SurpriseRevealAnimation from '../components/SurpriseRevealAnimation';
+import { SurpriseRevealAnimation } from '../motion';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 

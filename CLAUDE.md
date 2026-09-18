@@ -238,6 +238,22 @@ candidate for the same migration later, not silently assumed done. Full Jest sui
 `babel-preset-expo`. Not exercised on a real device (standing note) — pure import-path change,
 same as the prior three follow-ups.
 
+**Same-day follow-up ("do the same for SurpriseRevealAnimation's remaining shim usages").**
+Closed the last remaining candidate named in the OccasionAnimation follow-up above:
+`OccasionsScreen.js`'s per-row personal-occasion reveal and `GroupOccasionPlanScreen.js`'s
+host-only "🎉 Reveal the Surprise" banner both migrated from
+`import SurpriseRevealAnimation from '../components/SurpriseRevealAnimation'` to
+`import { SurpriseRevealAnimation } from '../motion'` — same component, same JSX usage (only the
+import statement changed, the exported name is identical), no behavior change. A repo-wide grep
+now confirms zero screens import the `PlanCreatedCelebration`/`OccasionSelectAnimation`/
+`SurpriseRevealAnimation` shim paths — every celebration/reveal-animation call site named across
+this whole follow-up chain is now on the canonical `../motion` import. `BrandedLoader`'s own shim
+is a separate, much larger case (still imported by 41 files) — never part of this follow-up chain,
+which was scoped to the celebration/reveal animations specifically, so it's untouched and
+disclosed here rather than silently assumed covered. Full Jest suite 580/580 passing (unchanged);
+both touched files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised
+on a real device (standing note) — pure import-path change, same as the prior four follow-ups.
+
 No DB migration, no new pure functions (a component library + three wiring sites). Full Jest suite
 580/580 passing (unchanged); all 18 touched/new files (10 new `src/motion/` files, 6 shim files, 2
 wired screens) transform-checked clean via `@babel/core` + `babel-preset-expo` — plus a full
