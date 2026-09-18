@@ -31,19 +31,6 @@ const COMFORT_LEVELS = [
   { value: 'open', label: "I'm open to anything" },
 ];
 
-const MONTHLY_INTERESTS = [
-  { icon: '☕', label: 'Coffee' },
-  { icon: '🍽️', label: 'Food' },
-  { icon: '🏖️', label: 'Beach' },
-  { icon: '🏐', label: 'Sports' },
-  { icon: '🎲', label: 'Games' },
-  { icon: '🎵', label: 'Music' },
-  { icon: '📚', label: 'Books' },
-  { icon: '🐶', label: 'Dog walks' },
-  { icon: '🍻', label: 'Happy Hour' },
-  { icon: '🎨', label: 'Art' },
-];
-
 export default function OnboardingQuestionsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);

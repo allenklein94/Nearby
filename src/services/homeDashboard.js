@@ -3,7 +3,7 @@ import { getNearbyMatches } from './proximity';
 import { getNearbyGatherings, getGatheringFitReasons, getMyTopGatheringCategories, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { getMyGroupPlans } from './groupPlans';
-import { canonicalizeInterests } from '../constants/interestGraph';
+import { canonicalizeInterests, becauseYouLikeCategories } from '../constants/interestGraph';
 
 function isToday(iso) {
   const d = new Date(iso);
@@ -373,7 +373,7 @@ export async function getHomeDashboard() {
   const myId = sessionData?.session?.user?.id;
   if (!myId) return null;
 
-  const { data: profileData } = await supabase.from('profiles').select('last_home_visit').eq('id', myId).single();
+  const { data: profileData } = await supabase.from('profiles').select('last_home_visit, interests, monthly_interests').eq('id', myId).single();
   const lastVisit = profileData?.last_home_visit ? new Date(profileData.last_home_visit) : null;
   await supabase.from('profiles').update({ last_home_visit: new Date().toISOString() }).eq('id', myId);
 
@@ -534,7 +534,7 @@ export async function getHomeDashboard() {
   // to so nothing is suggested twice. Built from the full attending/
   // hosting sets, not just the display-capped plansGoing/plansHosting
   // above, so a plan that fell outside the top-3 preview still counts.
-  const topInterestCategories = topCategories.slice(0, 3);
+  const topInterestCategories = becauseYouLikeCategories(topCategories, profileData?.interests, profileData?.monthly_interests);
   const upcomingPlanIds = new Set([
     ...(attendingUpcoming ?? []).map((row) => row.gatherings?.id).filter(Boolean),
     ...(hostingUpcoming ?? []).map((g) => g.id),

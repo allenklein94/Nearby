@@ -25,3 +25,10 @@ test('canonicalizeInterests maps legacy, fixes case, dedupes, drops unknown', ()
   expect(canonicalizeInterests(['Food', 'coffee', 'Coffee', 'Beach', 'Books'])).toEqual(['Foodie', 'Coffee', 'Reading']);
   expect(canonicalizeInterests(null)).toEqual([]);
 });
+
+test('becauseYouLikeCategories: behavior wins, else declared, else empty', () => {
+  const { becauseYouLikeCategories } = require('./interestGraph');
+  expect(becauseYouLikeCategories(['Yoga', 'Coffee'], ['Music'], [])).toEqual(['Yoga', 'Coffee']);
+  expect(becauseYouLikeCategories([], ['Music', 'Hiking'], ['Food'])).toEqual(['Music', 'Hiking', 'Foodie']);
+  expect(becauseYouLikeCategories([], [], null)).toEqual([]);
+});

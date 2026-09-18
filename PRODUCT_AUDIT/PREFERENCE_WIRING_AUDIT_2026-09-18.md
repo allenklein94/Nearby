@@ -47,3 +47,12 @@ consumer reads the same canonical value. Progressive completion: never force adv
   canonical tags at read time (`canonicalizeInterests` in `homeDashboard.js`) -- this also fixes a real bug:
   labels like Food/Games/Books/Dog walks never matched any gathering `interest_tag`. No schema change, no
   migration. Not verified on a device.
+- **Phase 2 done (2026-09-18):** consumer audit. Already reading declared interests: Discover ("Matches your X
+  interest"), People/friend matching, compatibility, proximity, surprise-me, recs, brand offers, and
+  server-side push (`interests @> category`) + business-opportunity matching. Fixes: (1) Home's "Because
+  you're into" was behavior-only, so a new account's declared interests went unused -- now falls back to them
+  (`becauseYouLikeCategories`, `homeDashboard.js`); (2) removed the orphaned `MONTHLY_INTERESTS` list left in
+  onboarding; (3) `categoryVocabularyGuard.test.js` fails if any `category: 'X'` literal or experience-template
+  array names a non-canonical tag. Deliberately left: `CREATE_HUB_OPTIONS` stays a fixed stable set (its own
+  comment); unrelated local `CATEGORIES` lists (trip/memory/decision/features) aren't interest vocabularies.
+  Jest 653/653.
