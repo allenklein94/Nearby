@@ -480,7 +480,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
       const myCommunitiesPromise = getMyCommunities();
 
       let loc = null;
-      const position = await getUserLocation({ ask: false });
+      // Default ask (deduped with getNearbyGatherings' own): a check-only read here raced that prompt and
+      // left userLocation null on a first-run Allow.
+      const position = await getUserLocation();
       if (position) {
         loc = { latitude: position.coords.latitude, longitude: position.coords.longitude };
         setUserLocation(loc);

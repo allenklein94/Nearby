@@ -365,7 +365,10 @@ export default function HomeScreen({ navigation }) {
 
       const weatherTask = (async () => {
         try {
-          const myLocation = await getUserLocation({ ask: false });
+          // Not ask:false. getHomeDashboard() below prompts anyway (nearby gatherings), and this call
+          // starts first: a check-only read here saw "undetermined" before the prompt was answered, so a
+          // first-run user who tapped Allow still got the location-off card and no weather.
+          const myLocation = await getUserLocation();
           if (!myLocation) return { forecast: null, myLocation: null };
           const forecast = await getSocialForecast(myLocation.coords.latitude, myLocation.coords.longitude);
           setSocialForecast(forecast);

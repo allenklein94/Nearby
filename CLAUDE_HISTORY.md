@@ -50,6 +50,15 @@ Home's other location consumers (weather, offers, gatherings, people) already re
 `searchOffers` now attach `distanceMiles` and order nearest-first (`orderNearestFirst`, unit-tested); no position = old order.
 Verified live with disposable partners/offers in a rolled-back transaction (same set as the old RPC, radius, ~13.8 mi) + a
 full from-scratch replay (194 migrations, 0 errors). Distance label ("0.4 mi away") now shows on offer cards: BrandOffers (partner line) and both Discover offer card lists.
+**Follow-up: Home's remaining location sections audited.** All gathering-derived sections (Happening Now, trending,
+Best Pick, Because You Like, indoor/outdoor weather picks, since-away new gatherings) come from one
+`getNearbyGatherings('wide')` -> shared provider, already distance-sorted (ties keep nearest first); offers reuse the
+weather task's position. Friends' activity is connection-scoped, not location-scoped, by design. Nearby-people/crossed-
+paths come from presence sightings (proximity.js), deliberately separate from the shared provider. Found + fixed a
+first-run race: Home's weather task and Discover's loadCore read with `ask:false` while the dashboard/gatherings call
+prompted, so a user who tapped Allow still got the location-off card / no userLocation until the next load; both now use
+the default (deduped, once-per-session) ask. Not changed: Home's Happening Now tiles stay time-ordered and show no
+distance (Discover's are nearest-first).
 Convention bullets added to CLAUDE.md: "Location is asked once, used everywhere", "Notification area".
 
 # Item 137 (2026-09-18) - Animation consistency audit
