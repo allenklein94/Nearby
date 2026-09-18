@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Aler
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../services/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { notificationOptOuts } from '../constants/notificationCategories';
 import { ONBOARDING_ANSWERS_KEY } from './OnboardingQuestionsScreen';
 import { canonicalizeInterests } from '../constants/interestGraph';
 import { pickProfilePhoto, uploadProfilePhoto } from '../services/photos';
@@ -237,6 +238,7 @@ export default function CompleteProfileScreen() {
         ...(onboardingAnswers.social_comfort_level ? { social_comfort_level: onboardingAnswers.social_comfort_level } : {}),
         ...(canonicalizeInterests(onboardingAnswers.monthly_interests).length ? { monthly_interests: canonicalizeInterests(onboardingAnswers.monthly_interests), monthly_interests_updated_at: new Date().toISOString() } : {}),
         ...(wantsFriends ? { open_to_friend_discovery: true } : {}),
+        ...notificationOptOuts(onboardingAnswers.notification_choices),
       });
       if (!profileError) {
         // Marks this as a fresh signup so the navigator shows the

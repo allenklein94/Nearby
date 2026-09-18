@@ -1,3 +1,12 @@
+# Item 138 (2026-09-18) - Notification preferences in onboarding
+New `OnboardingNotificationsScreen` (Location -> Notifications -> Login): "What would you like Nearby to keep you posted about?"
+with 5 rows mapped onto the existing category columns (Things to do -> notify_discovery, Friends & dating -> notify_social,
+Plans -> notify_planning, Businesses & offers -> notify_business, Nearby opportunities -> notify_proximity; all default on).
+Choices are stashed in the existing `pending_onboarding_answers` blob and CompleteProfile upserts only explicit opt-outs
+(`notificationOptOuts`, `constants/notificationCategories.js`). Settings -> Notifications stays the full control center (same
+columns, one store). Not surfaced at onboarding: Community. No migration. Jest 685/685. Device-unverified. Business export not
+regenerated (onboarding screens aren't in the business web bundle -- not bundle-checked).
+
 ## Sep 18 2026 — Location powers the whole system ("the user should never repeatedly tell Nearby where they are") — DONE
 
 Direct request. Built in increments, each committed + pushed; Jest 677/677; nothing exercised on a device.

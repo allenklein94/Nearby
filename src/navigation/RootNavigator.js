@@ -18,6 +18,7 @@ import useReduceMotion from '../hooks/useReduceMotion';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import OnboardingQuestionsScreen from '../screens/OnboardingQuestionsScreen';
 import OnboardingLocationScreen from '../screens/OnboardingLocationScreen';
+import OnboardingNotificationsScreen from '../screens/OnboardingNotificationsScreen';
 import OnboardingRecommendationsScreen from '../screens/OnboardingRecommendationsScreen';
 import LoginScreen from '../screens/LoginScreen';
 import CompleteProfileScreen from '../screens/CompleteProfileScreen';
@@ -414,6 +415,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             <Stack.Screen name="OnboardingQuestions" component={OnboardingQuestionsScreen} />
             <Stack.Screen name="OnboardingLocation" component={OnboardingLocationScreen} />
+            <Stack.Screen name="OnboardingNotifications" component={OnboardingNotificationsScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
           </>
         ) : !profileComplete ? (

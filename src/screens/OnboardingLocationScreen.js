@@ -23,7 +23,7 @@ export default function OnboardingLocationScreen({ navigation }) {
     setRequesting(true);
     await Location.requestForegroundPermissionsAsync().catch(() => null);
     setRequesting(false);
-    navigation.navigate('Login');
+    navigation.navigate('OnboardingNotifications');
   }
 
   return (
