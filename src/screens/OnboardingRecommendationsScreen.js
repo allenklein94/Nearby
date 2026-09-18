@@ -91,7 +91,7 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
         </View>
         <TouchableOpacity
           style={styles.button}
-          onPress={() => navigation.navigate('MainTabs')}
+          onPress={() => navigation.navigate('OnboardingOccasions')}
           activeOpacity={0.85}
           accessibilityLabel="Continue to the app"
           accessibilityRole="button"

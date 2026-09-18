@@ -20,6 +20,7 @@ import OnboardingQuestionsScreen from '../screens/OnboardingQuestionsScreen';
 import OnboardingLocationScreen from '../screens/OnboardingLocationScreen';
 import OnboardingNotificationsScreen from '../screens/OnboardingNotificationsScreen';
 import OnboardingRecommendationsScreen from '../screens/OnboardingRecommendationsScreen';
+import OnboardingOccasionsScreen from '../screens/OnboardingOccasionsScreen';
 import LoginScreen from '../screens/LoginScreen';
 import CompleteProfileScreen from '../screens/CompleteProfileScreen';
 import DiscoveryScreen from '../screens/DiscoveryScreen';
@@ -436,6 +437,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Messages" component={MessagesScreen} options={{ headerShown: true, title: 'Messages', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="OnboardingRecommendations" component={OnboardingRecommendationsScreen} />
+            <Stack.Screen name="OnboardingOccasions" component={OnboardingOccasionsScreen} />
             {/* headerShown starts true (blank title, real back chevron) so
                 the loading/error states -- before ChatScreen's own init()
                 calls setOptions() with the real title/icons -- aren't a

@@ -320,6 +320,9 @@ export const CALENDAR_SAVEABLE_OCCASION_KEYS = CELEBRATE_OCCASION_KEYS.filter((k
 // OCCASION_OPTIONS' own comment above).
 export const PERSONAL_OCCASION_TYPE_KEYS = [...CELEBRATE_OCCASION_KEYS, 'life_event'];
 
+// Occasion types offered as tiles in onboarding (real personal types only; skippable, nothing created there).
+export const ONBOARDING_OCCASION_KEYS = ['birthday', 'anniversary', 'graduation', 'promotion', 'life_event'];
+
 export function personalOccasionTypeOptions() {
   return PERSONAL_OCCASION_TYPE_KEYS.map((key) => OCCASION_OPTIONS.find((o) => o.key === key)).filter(Boolean);
 }

@@ -1,3 +1,11 @@
+# Item 140 (2026-09-18) - Skippable occasions step in onboarding
+`OnboardingOccasionsScreen` (after OnboardingRecommendations's "Let's Go", before MainTabs): "Any dates worth remembering?" with
+5 tiles from the real occasion vocabulary (`ONBOARDING_OCCASION_KEYS` in businessAttributes.js: birthday, anniversary, graduation,
+promotion, life event) and "Skip for now". Post-signup on purpose (an occasion needs an account). Nothing is created there: a tile
+opens the existing Occasions add form with the type preselected (new `presetType` route param on OccasionsScreen, validated
+against the real type list). Rest of the chain (reminders -> Plan for Someone -> business request -> offer -> reservation) already existed.
+No migration. Jest 686/686. Device-unverified. Business export CHANGED (OccasionsScreen is in the bundle) -- new bundle committed.
+
 # Item 139 (2026-09-18) - Friends and Dating notification switches split
 Migration `20261202_split_friends_dating_notifications.sql`: new `profiles.notify_dating` (backfilled from notify_social, so no
 one's setting changed). `notify_social` now means Friends (friend requests/accepts, friend discovery, stories, birthday/occasion

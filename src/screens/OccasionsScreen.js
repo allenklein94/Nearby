@@ -79,7 +79,7 @@ const GROUP_PLAN_STATUS_COPY = {
   fulfilled: '✅ Turned into a plan',
 };
 
-export default function OccasionsScreen({ navigation }) {
+export default function OccasionsScreen({ navigation, route }) {
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors);
   const [occasions, setOccasions] = useState([]);
@@ -87,7 +87,7 @@ export default function OccasionsScreen({ navigation }) {
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [occasionType, setOccasionType] = useState('anniversary');
+  const [occasionType, setOccasionType] = useState(OCCASION_TYPES.some((t) => t.key === route?.params?.presetType) ? route.params.presetType : 'anniversary');
   const [title, setTitle] = useState('');
   const [titleTouched, setTitleTouched] = useState(false);
   const [date, setDate] = useState(new Date());
