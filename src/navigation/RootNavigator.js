@@ -14,6 +14,7 @@ import { initPurchases } from '../services/purchases';
 import { getActivityBadgeCount } from '../services/homeDashboard';
 import { getMyManagedPartner } from '../services/brandOffers';
 import { NLoader } from '../motion';
+import useReduceMotion from '../hooks/useReduceMotion';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import OnboardingQuestionsScreen from '../screens/OnboardingQuestionsScreen';
 import OnboardingLocationScreen from '../screens/OnboardingLocationScreen';
@@ -280,6 +281,8 @@ function MainTabs() {
 
 export default function RootNavigator() {
   const { session, loading, profileComplete, profileLoading } = useAuth();
+  // Item 127: Reduce Motion swaps every stack push/modal slide for a plain crossfade.
+  const reduceMotion = useReduceMotion();
   const { colors } = useTheme();
 
   // Runs once, independent of auth state, so a nearby://gathering/:id link
@@ -405,7 +408,7 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer ref={navigationRef} linking={linking}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{ headerShown: false, ...(reduceMotion ? { animation: 'fade' } : null) }}>
         {!session ? (
           <>
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />

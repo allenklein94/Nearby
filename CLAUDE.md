@@ -76,7 +76,12 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   state changes, or feedback — never "because we can." Every animated/celebratory moment must be
   short, subtle, interruptible, never gate or slow down a real button/action, and call
   `src/hooks/useReduceMotion.js`, collapsing to its final/settled visual state (content and
-  meaning intact, motion only removed) when it returns true. Aesthetic target: modern + polished
+  meaning intact, motion only removed) when it returns true.
+  Item 127 (2026-09-18) enforces this at the shared level: `src/motion/motionPolicy.js` holds the one
+  Reduce Motion store and, installed at app start (`App.js`), turns every `Animated.spring` into an
+  instant timing and every `Animated.loop` into a no-op while it's on; the stack navigator swaps to
+  a plain fade. Prefer `Animated.timing` fades for new work; branch on `useReduceMotion()` only where
+  the reduced state is different content (skip a morph/particle burst, drop a slide offset). Aesthetic target: modern + polished
   + alive + restrained — a premium social product, not a children's app; no confetti-everywhere.
 - **Motion intensity varies by context (Item 122, locked 2026-09-18).** Occasion-creation moments
   (a plan being born, a birthday/anniversary pick, a community going live) can stay fully

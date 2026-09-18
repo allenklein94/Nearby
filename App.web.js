@@ -1,9 +1,14 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { Animated } from 'react-native';
+import { installReducedMotionPolicy } from './src/motion/motionPolicy';
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import BusinessWebNavigator from './src/navigation/BusinessWebNavigator';
+
+// Item 127: enforce OS Reduce Motion for every Animated.spring/loop, once, at startup.
+installReducedMotionPolicy(Animated);
 
 // Phase 7 (Business Web, CLAUDE.md) -- Metro resolves this file in place of
 // App.js for web builds automatically (standard .web.js platform-extension

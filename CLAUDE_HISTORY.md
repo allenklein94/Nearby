@@ -1,3 +1,21 @@
+## Sep 18 2026 — Item 127 ("Respect Reduce Motion") — shared-level enforcement — DONE
+
+Audit: 9 Item-112 components already honored Reduce Motion individually, but ~10 other animated
+pieces did not (AnimatedListItem, AnimatedMessageBubble, ScaleButton, SkeletonCard/GridCard loops,
+swipe-card springs, tab bounce, GatheringConfirmation spring, stack/modal navigation slides), and
+each component held its own AccessibilityInfo subscription. Shipped `src/motion/motionPolicy.js`:
+one module-level Reduce Motion store (`useReduceMotion` is now a thin hook over it) plus
+`installReducedMotionPolicy(Animated)`, called once in `App.js`/`App.web.js`, which while the
+setting is on converts every `Animated.spring` to a 0ms timing (no bounce/overshoot) and every
+`Animated.loop` to an inert no-op (no perpetual pulse/sweep); checked at call time so toggling the
+OS setting applies immediately. Plain timing fades are left alone as the sanctioned crossfade.
+`RootNavigator` sets `animation: 'fade'` on the stack while reduced. AnimatedListItem (no slide/
+stagger), AnimatedMessageBubble (no scale-pop) and ScaleButton (no press-scale) got explicit
+handling since their reduced state is different behavior. 3 new Jest tests; suite 603/603;
+touched files transform-checked. Not verified on a device. Not covered: RN `Modal
+animationType="slide"` instances and bottom-tab switching (native defaults), and native-driven
+`Animated.timing` translate slides in third-party code.
+
 ## Sep 17-18 2026 — Full "Active / unfinished work" archive (Items 61-126, Motion System, Occasions arc, Business Web phases, etc.) — ALL DONE
 
 Moved byte-for-byte out of CLAUDE.md on 2026-09-18 per its own standing split rule. Contents are in the order they sat in CLAUDE.md (Items 113-126 first, then the Motion System follow-ups, then Items 111 down to 25 roughly newest-first).
