@@ -423,6 +423,44 @@ reads as a clear "same place, different content" cue rather than a flicker, and 
 independently of (not stacked with) the outer Things-to-Do<->People cue when only the inner toggle
 is tapped.
 
+**Item 116 ("Animate filter changes, not page changes") — fully DONE (2026-09-18), same-day direct
+follow-up to Items 114/115.** User's own 3 examples: Things To Do → "Tonight," Food → "Italian,"
+Dating → "70%+ match" — results should fade/move/replace/resize in place, never
+loading-screen→new-page→loading-screen.
+
+Audited every real filter-driven results list before writing anything: the concrete good news is
+none of these were ever a real page reload to begin with — `DiscoveryScreen.js`'s quick filters
+(verified/high-compat-match-%/online/shared-interests/intention/advanced/age),
+`GatheringsScreen.js`'s nearby-tab When/category/trending/environment/price/party-type filters, and
+`FriendDiscoveryScreen.js`'s interest/distance/verified/online filters are all already a pure
+client-side `.filter()` re-derivation over already-fetched data — genuinely instant, no network
+round trip. What was missing was any visual cue that the results had actually changed; a filter tap
+just silently swapped the rendered list with zero transition, which reads exactly like the abrupt
+"page changed" feeling the user described even though no page navigation or reload was involved.
+`GatheringsScreen.js`'s own real dateFilter chips are the literal "Tonight"-shaped interaction (Now/
+Today/This Weekend); `DiscoveryScreen.js`'s `highCompatOnly` + its own configurable
+`quickFilterConfig.highCompat.value` threshold (Item 9's Quick Filter Customization) is the literal
+"70%+ match" interaction. **"Food → Italian" doesn't map onto a real existing results filter** —
+cuisine (`italian`, etc.) is currently only a request-*composition* field on `AskBusinessScreen`
+(what you're asking a business for), never a browse-results filter chip anywhere in the app;
+disclosed rather than silently assumed covered — building an actual cuisine-filterable results
+browse would be new scope, not just animating an existing interaction.
+
+Wired `FilterTransition` (already built for Items 40/44's category-drill-down cases) into all three
+real surfaces, each keyed on a signature of only its own real filter state — deliberately excluding
+pagination, pull-to-refresh, and (on `GatheringsScreen`) an in-flight text search, which already has
+its own real "Searching gatherings…" loading state for a genuine network round trip; mixing that in
+would fire the cue twice for one action. `FriendDiscoveryScreen.js` got the identical treatment
+for Dating/Friends parity, per Item 115's own "siblings" framing, even though the user's own
+examples didn't name it directly. New-to-view cards still get `AnimatedListItem`'s existing
+per-index staggered entrance on `DiscoveryScreen`/`GatheringsScreen`'s list views (items already in
+the filtered set keep their mounted instance and don't re-animate, since `FlatList` reconciles by
+`item.id` — only genuinely new-to-view rows animate in, on top of the outer dip). Full Jest suite
+580/580 passing (unchanged — pure UI wiring); all three touched files transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised on a real device (standing note) — next session
+should confirm the dip reads as "results updated" rather than a flicker on all three surfaces, and
+that toggling a filter rapidly doesn't produce overlapping/stale dips.
+
 **"Nearby Motion & Microinteraction System" — first real increment shipped (2026-09-18), same
 day, direct "build it now" override of the earlier "queue for Thursday" call.** User's own scope:
 audit and standardize every real interaction moment in the app into one cohesive motion language
