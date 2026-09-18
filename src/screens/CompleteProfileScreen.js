@@ -4,6 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../services/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ONBOARDING_ANSWERS_KEY } from './OnboardingQuestionsScreen';
+import { canonicalizeInterests } from '../constants/interestGraph';
 import { pickProfilePhoto, uploadProfilePhoto } from '../services/photos';
 import { checkTextModeration } from '../services/textModeration';
 import { useAuth } from '../context/AuthContext';
@@ -86,16 +87,24 @@ export default function CompleteProfileScreen() {
         if (!userId) return;
         draftKeyRef.current = wizardDraftKey(userId);
         const stored = await AsyncStorage.getItem(draftKeyRef.current);
+        let restoredInterests = false;
         if (stored) {
           const draft = JSON.parse(stored);
           if (draft.displayName) setDisplayName(draft.displayName);
           if (draft.birthdateIso) setBirthdate(new Date(draft.birthdateIso));
-          if (Array.isArray(draft.interests)) setInterests(draft.interests);
+          if (Array.isArray(draft.interests) && draft.interests.length) { setInterests(draft.interests); restoredInterests = true; }
           if (draft.agreedToTerms) setAgreedToTerms(true);
           if (typeof draft.step === 'number') {
             const photoStepIndex = STEP_DEFS.findIndex((s) => s.key === 'photo');
             setStep(Math.min(draft.step, photoStepIndex));
           }
+        }
+        // Seed the interests step from what onboarding already asked (shown for confirmation, the
+        // user still edits/confirms before it's saved) so nobody re-states their interests.
+        if (!restoredInterests) {
+          const pending = await AsyncStorage.getItem(ONBOARDING_ANSWERS_KEY);
+          const seeded = canonicalizeInterests(pending ? JSON.parse(pending).monthly_interests : []);
+          if (seeded.length) setInterests(seeded);
         }
       } catch (e) {
         console.error('Failed to restore profile wizard draft', e);
@@ -226,7 +235,7 @@ export default function CompleteProfileScreen() {
         terms_accepted_at: new Date().toISOString(),
         ...(onboardingAnswers.onboarding_motivations ? { onboarding_motivations: onboardingAnswers.onboarding_motivations } : {}),
         ...(onboardingAnswers.social_comfort_level ? { social_comfort_level: onboardingAnswers.social_comfort_level } : {}),
-        ...(onboardingAnswers.monthly_interests ? { monthly_interests: onboardingAnswers.monthly_interests, monthly_interests_updated_at: new Date().toISOString() } : {}),
+        ...(canonicalizeInterests(onboardingAnswers.monthly_interests).length ? { monthly_interests: canonicalizeInterests(onboardingAnswers.monthly_interests), monthly_interests_updated_at: new Date().toISOString() } : {}),
         ...(wantsFriends ? { open_to_friend_discovery: true } : {}),
       });
       if (!profileError) {

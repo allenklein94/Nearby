@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { ONBOARDING_INTEREST_GROUPS, tagsForGroups } from '../constants/interestGraph';
 
 // This screen runs before signup — there's no account yet to save
 // these answers to. They're held in AsyncStorage temporarily and
@@ -43,18 +44,14 @@ const MONTHLY_INTERESTS = [
   { icon: '🎨', label: 'Art' },
 ];
 
-// This month, not forever — deliberately not asking people to
-// permanently define themselves before they've even used the app.
-// These naturally get revisited over time rather than locking
-// someone into a static identity from day one.
-
 export default function OnboardingQuestionsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [step, setStep] = useState(0);
   const [motivations, setMotivations] = useState([]);
   const [comfortLevel, setComfortLevel] = useState(null);
-  const [monthlyInterests, setMonthlyInterests] = useState([]);
+  const [groupKeys, setGroupKeys] = useState([]);
+  const [tags, setTags] = useState([]);
   const [saving, setSaving] = useState(false);
 
   function toggleMotivation(label) {
@@ -65,12 +62,23 @@ export default function OnboardingQuestionsScreen({ navigation }) {
     });
   }
 
-  function toggleMonthlyInterest(label) {
-    setMonthlyInterests((prev) => (prev.includes(label) ? prev.filter((m) => m !== label) : [...prev, label]));
+  function toggleGroup(key) {
+    const next = groupKeys.includes(key) ? groupKeys.filter((k) => k !== key) : [...groupKeys, key];
+    setGroupKeys(next);
+    // Drop any picked tag whose group was just deselected.
+    const allowed = new Set(tagsForGroups(next));
+    setTags((t) => t.filter((x) => allowed.has(x)));
   }
 
+  function toggleTag(tag) {
+    setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  }
+
+  // Step 3 (refine to tags) only exists when at least one group was picked.
+  const lastStep = groupKeys.length > 0 ? 3 : 2;
+
   async function handleContinue() {
-    if (step < 2) {
+    if (step < lastStep) {
       setStep((s) => s + 1);
       return;
     }
@@ -81,7 +89,9 @@ export default function OnboardingQuestionsScreen({ navigation }) {
         JSON.stringify({
           onboarding_motivations: motivations,
           social_comfort_level: comfortLevel,
-          monthly_interests: monthlyInterests,
+          // Canonical tags (see interestGraph.js): seed CompleteProfile's interests step and this
+          // month's mood, so onboarding never introduces a vocabulary of its own.
+          monthly_interests: tags,
         })
       );
     } catch (e) {
@@ -94,7 +104,7 @@ export default function OnboardingQuestionsScreen({ navigation }) {
     navigation.navigate('OnboardingLocation');
   }
 
-  const canContinue = step === 0 ? motivations.length > 0 : step === 1 ? !!comfortLevel : true;
+  const canContinue = step === 0 ? motivations.length > 0 : step === 1 ? !!comfortLevel : true; // interest steps are skippable
 
   return (
     <SafeAreaView style={styles.container}>
@@ -149,21 +159,46 @@ export default function OnboardingQuestionsScreen({ navigation }) {
 
         {step === 2 && (
           <>
-            <Text style={styles.title}>What are you in the mood for this month?</Text>
+            <Text style={styles.title}>What are you into?</Text>
+            <Text style={styles.subtitle}>Pick any that fit — you can skip this.</Text>
             <View style={styles.grid}>
-              {MONTHLY_INTERESTS.map((m) => {
-                const selected = monthlyInterests.includes(m.label);
+              {ONBOARDING_INTEREST_GROUPS.map((g) => {
+                const selected = groupKeys.includes(g.key);
                 return (
                   <TouchableOpacity
-                    key={m.label}
+                    key={g.key}
                     style={[styles.chip, selected && styles.chipSelected]}
-                    onPress={() => toggleMonthlyInterest(m.label)}
-                    accessibilityLabel={m.label}
+                    onPress={() => toggleGroup(g.key)}
+                    accessibilityLabel={g.label}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
                   >
-                    <Text style={styles.chipIcon}>{m.icon}</Text>
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{m.label}</Text>
+                    <Text style={styles.chipIcon}>{g.icon}</Text>
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{g.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            <Text style={styles.title}>Any favorites?</Text>
+            <Text style={styles.subtitle}>Optional — the more specific, the better we can find things for you.</Text>
+            <View style={styles.grid}>
+              {tagsForGroups(groupKeys).map((tag) => {
+                const selected = tags.includes(tag);
+                return (
+                  <TouchableOpacity
+                    key={tag}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                    onPress={() => toggleTag(tag)}
+                    accessibilityLabel={tag}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                  >
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{tag}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -174,7 +209,7 @@ export default function OnboardingQuestionsScreen({ navigation }) {
 
       <View style={styles.footer}>
         <View style={styles.dots}>
-          {[0, 1, 2].map((i) => (
+          {Array.from({ length: lastStep + 1 }, (_, i) => i).map((i) => (
             <View key={i} style={[styles.dot, i === step && styles.dotActive]} />
           ))}
         </View>

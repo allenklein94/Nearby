@@ -38,3 +38,12 @@ consumer reads the same canonical value. Progressive completion: never force adv
 4. Progressive completion: mode-triggered prompts (first Dating use -> hair/height; first Friends use ->
    activity interests) + profile-completion meter from real fields; retire or wire dead fields.
 5. Verification: live disposable-user check that a preference set once changes Discover, People, Plans.
+
+## Status
+- **Phase 1 done (2026-09-18):** `src/constants/interestGraph.js` (+ test) layers onboarding helpers on the one
+  canonical vocabulary. Onboarding now asks groups ("What are you into?", skippable) then optional tags from
+  those groups; the old 10 free-form mood labels are gone. Picked tags seed CompleteProfile's interests step
+  (user confirms/edits before save) and `monthly_interests`. Legacy `monthly_interests` rows are mapped to
+  canonical tags at read time (`canonicalizeInterests` in `homeDashboard.js`) -- this also fixes a real bug:
+  labels like Food/Games/Books/Dog walks never matched any gathering `interest_tag`. No schema change, no
+  migration. Not verified on a device.

@@ -3,6 +3,7 @@ import { getNearbyMatches } from './proximity';
 import { getNearbyGatherings, getGatheringFitReasons, getMyTopGatheringCategories, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { getMyGroupPlans } from './groupPlans';
+import { canonicalizeInterests } from '../constants/interestGraph';
 
 function isToday(iso) {
   const d = new Date(iso);
@@ -337,7 +338,7 @@ export async function getOnboardingRecommendations() {
     .order('scheduled_at', { ascending: true })
     .limit(30);
 
-  const monthlyInterests = myProfile.monthly_interests ?? [];
+  const monthlyInterests = canonicalizeInterests(myProfile.monthly_interests);
 
   // A genuine, honestly-computed score based on real overlap with
   // what they said they're interested in this month — not an
