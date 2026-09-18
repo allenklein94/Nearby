@@ -1012,7 +1012,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   <TouchableOpacity
                     style={styles.sharePlanCardLink}
                     onPress={goInviteFromAchievementCard}
-                    activeOpacity={0.7}
+                    activeOpacity={0.85}
                     accessibilityRole="button"
                     accessibilityLabel="Invite someone to this plan"
                   >
@@ -1023,7 +1023,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   style={styles.sharePlanCardLink}
                   onPress={handleSharePlanCard}
                   disabled={sharingPlanCard}
-                  activeOpacity={0.7}
+                  activeOpacity={0.85}
                   accessibilityRole="button"
                   accessibilityLabel={`Share this plan: ${buildOccasionPlanShareCaption(planSummary).replace(/\n/g, ', ')}`}
                 >
@@ -1037,7 +1037,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   style={styles.sharePlanCardLink}
                   onPress={handleAddToCalendar}
                   disabled={addingToCalendar}
-                  activeOpacity={0.7}
+                  activeOpacity={0.85}
                   accessibilityRole="button"
                   accessibilityLabel="Add this plan to your calendar"
                 >
@@ -1047,7 +1047,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   <TouchableOpacity
                     style={styles.sharePlanCardLink}
                     onPress={handleGetDirections}
-                    activeOpacity={0.7}
+                    activeOpacity={0.85}
                     accessibilityRole="button"
                     accessibilityLabel="Get directions"
                   >
@@ -1058,7 +1058,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   <TouchableOpacity
                     style={styles.sharePlanCardLink}
                     onPress={handleGetUberForPlan}
-                    activeOpacity={0.7}
+                    activeOpacity={0.85}
                     accessibilityRole="button"
                     accessibilityLabel="Get an Uber there"
                   >

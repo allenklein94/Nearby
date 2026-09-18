@@ -1898,7 +1898,7 @@ export default function HomeScreen({ navigation }) {
                     {item.type === 'perk' && (
                       <TouchableOpacity
                         onPress={() => navigation.navigate('MakeAPlan', { offerId: item.id })}
-                        activeOpacity={0.7}
+                        activeOpacity={0.85}
                         accessibilityLabel={`Make a plan around ${item.title}`}
                         accessibilityRole="button"
                       >
@@ -2480,7 +2480,7 @@ export default function HomeScreen({ navigation }) {
                 <TouchableOpacity
                   style={[styles.heroCard, shadow.card]}
                   onPress={() => navigation.navigate('GatheringDetail', { gatheringId: dashboard.bestPick.id })}
-                  activeOpacity={0.9}
+                  activeOpacity={0.85}
                   accessibilityLabel={`Best Pick Tonight: ${dashboard.bestPick.title}, ${dashboard.bestPick.reasons.join(', ')}`}
                   accessibilityRole="button"
                 >

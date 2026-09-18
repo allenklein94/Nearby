@@ -9,6 +9,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import RootNavigator from './src/navigation/RootNavigator';
+import { SuccessToastHost } from './src/motion';
 import { setupNotificationTapHandling } from './src/services/notifications';
 import { STRIPE_PUBLISHABLE_KEY, isStripeConfigured } from './src/services/stripeConnect';
 
@@ -58,6 +59,7 @@ function App() {
             <MaybeStripeProvider>
               <StatusBarWithTheme />
               <RootNavigator />
+              <SuccessToastHost />
             </MaybeStripeProvider>
           </AuthProvider>
         </LanguageProvider>

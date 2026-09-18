@@ -62,7 +62,7 @@ export default function VoicePlayButton({ getUrl, label = 'Voice message', style
     <TouchableOpacity
       style={[styles.button, style]}
       onPress={togglePlay}
-      activeOpacity={0.8}
+      activeOpacity={0.85}
       accessibilityLabel={`${label}, ${playing ? 'playing, tap to pause' : 'tap to play'}`}
       accessibilityRole="button"
     >

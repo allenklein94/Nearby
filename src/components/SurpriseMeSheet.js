@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { WHEN_OPTIONS, MOOD_OPTIONS } from '../services/surpriseMeLogic';
 
+import { modalAnimation } from '../motion';
 // "Surprise Me" (critique item 28) -- the locked-spec quick-picker: When
 // (Now/Today/This Weekend, the real gatheringDateFilter.js DATE_OPTIONS
 // keys) and Mood (six real chips, mapped to real vocabulary in
@@ -29,7 +30,7 @@ export default function SurpriseMeSheet({ visible, onClose, onSubmit }) {
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <SafeAreaView style={styles.sheet}>
           <View style={styles.header}>

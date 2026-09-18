@@ -3,6 +3,7 @@ import { View, Animated, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
 
+import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 // Matches the shape of Notices' 2-column grid cards (tall
 // photo area + name line), distinct from SkeletonCard's
 // horizontal row shape used in single-column lists.
@@ -14,8 +15,8 @@ export default function SkeletonGridCard() {
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1, duration: AMBIENT.skeletonPulseMs, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.4, duration: AMBIENT.skeletonPulseMs, useNativeDriver: true }),
       ])
     );
     loop.start();

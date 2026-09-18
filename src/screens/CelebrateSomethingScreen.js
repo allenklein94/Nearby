@@ -37,7 +37,7 @@ import {
   buildAutoPlanSuggestion,
 } from '../services/celebrateSomething';
 import { experienceTemplateForOccasion } from '../constants/experienceTemplates';
-import { OccasionAnimation, OCCASION_SELECT_ANIMATIONS, NearbyPickBadge, NLoader, FoundLine } from '../motion';
+import { OccasionAnimation, OCCASION_SELECT_ANIMATIONS, NearbyPickBadge, NLoader, FoundLine, showSuccessToast } from '../motion';
 import FindingOptionsLoader from '../components/FindingOptionsLoader';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
@@ -872,7 +872,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       navigation.replace('BusinessRequestDetail', params);
       return;
     }
-    Alert.alert('Requests sent', `🎉 Sent ${succeeded.length} requests — track them all from your Plans tab.`);
+    showSuccessToast('Requests sent', `🎉 Sent ${succeeded.length} requests — track them all from your Plans tab.`);
     navigation.navigate('Plans');
   }
 
@@ -1053,7 +1053,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.optionCard}
             onPress={() => navigation.navigate('GatheringDetail', { gatheringId: item.id })}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
             accessibilityLabel={item.title}
             accessibilityRole="button"
           >
@@ -1073,7 +1073,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         <TouchableOpacity
           style={[styles.optionCard, selected && styles.optionCardSelected]}
           onPress={() => toggleSelected(item)}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
           accessibilityLabel={item.title}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: selected }}
@@ -1107,7 +1107,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         key={`${item.type}-${item.id}`}
         style={styles.optionCard}
         onPress={() => handleCustomResultTap(item)}
-        activeOpacity={0.8}
+        activeOpacity={0.85}
         accessibilityLabel={item.title}
         accessibilityRole="button"
       >
@@ -1204,7 +1204,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                           // occasion='celebration' under the hood.
                           if (OCCASION_SELECT_ANIMATIONS[tile.key]) setOccasionAnimTrigger(tile.key);
                         }}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityLabel={tile.label}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
@@ -1275,7 +1275,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                                   // it plays here too.
                                   if (OCCASION_SELECT_ANIMATIONS[o.key]) setOccasionAnimTrigger(o.key);
                                 }}
-                                activeOpacity={0.8}
+                                activeOpacity={0.85}
                                 accessibilityLabel={o.label}
                                 accessibilityRole="button"
                                 accessibilityState={{ selected }}
@@ -1397,7 +1397,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         key={o.key}
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => pickWhoFor(o.key)}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityLabel={o.label}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
@@ -1410,7 +1410,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
                 {whoFor && whoFor !== 'me' && (
                   <>
-                    {loadingFriends && <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} />}
+                    {loadingFriends && <NLoader fullScreen={false} size="inline" caption="Loading friends…" />}
                     {!loadingFriends && friends.length > 0 && (
                       <>
                         <Text style={styles.sublabel}>Pick a real friend (optional)</Text>
@@ -1428,7 +1428,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                                   setSurpriseMode(false);
                                   setShareOccasionWithFriend(false);
                                 }}
-                                activeOpacity={0.8}
+                                activeOpacity={0.85}
                                 accessibilityLabel={f.display_name}
                                 accessibilityRole="button"
                                 accessibilityState={{ selected }}
@@ -1459,7 +1459,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                       <TouchableOpacity
                         style={styles.calendarToggleRow}
                         onPress={() => setSurpriseModeOn(!surpriseMode)}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityRole="checkbox"
                         accessibilityState={{ checked: surpriseMode }}
                         accessibilityLabel={`Surprise mode — keep this hidden from ${whoForName}`}
@@ -1477,7 +1477,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                       <View style={{ marginTop: spacing.md }}>
                         <TouchableOpacity
                           onPress={() => setAskPollExpanded((v) => !v)}
-                          activeOpacity={0.8}
+                          activeOpacity={0.85}
                           accessibilityRole="button"
                           accessibilityLabel={`Ask ${whoForName} a quick question`}
                         >
@@ -1498,7 +1498,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                                   style={[styles.chip, { marginTop: spacing.xs, alignSelf: 'flex-start' }, alreadyAsked && styles.chipDisabled]}
                                   onPress={() => handleSendPreferencePoll(q.key)}
                                   disabled={alreadyAsked || askPollSending}
-                                  activeOpacity={0.8}
+                                  activeOpacity={0.85}
                                   accessibilityLabel={q.questionText}
                                   accessibilityRole="button"
                                 >
@@ -1528,7 +1528,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         key={o.key}
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => { Haptics.selectionAsync(); setActivityType(o.key); }}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityLabel={o.label}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
@@ -1547,7 +1547,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                       <TouchableOpacity
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => { Haptics.selectionAsync(); setActivityType(GROUP_VOTE_OPTION.key); setPartySize(null); }}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityLabel={GROUP_VOTE_OPTION.label}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
@@ -1574,7 +1574,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                           <TouchableOpacity
                             style={[styles.chip, selected && styles.chipSelected]}
                             onPress={() => { Haptics.selectionAsync(); setActivityType(AUTO_PLAN_OPTION.key); }}
-                            activeOpacity={0.8}
+                            activeOpacity={0.85}
                             accessibilityLabel={AUTO_PLAN_OPTION.label}
                             accessibilityRole="button"
                             accessibilityState={{ selected }}
@@ -1599,7 +1599,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                             key={n}
                             style={[styles.chip, selected && styles.chipSelected]}
                             onPress={() => { Haptics.selectionAsync(); setPartySize(selected ? null : n); }}
-                            activeOpacity={0.8}
+                            activeOpacity={0.85}
                             accessibilityLabel={`${label} people`}
                             accessibilityRole="button"
                             accessibilityState={{ selected }}
@@ -1625,7 +1625,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         key={p.key}
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => pickWhenPreset(p.key)}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityLabel={p.label}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
@@ -1682,7 +1682,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                             key={o.key}
                             style={[styles.chip, selected && styles.chipSelected]}
                             onPress={() => { Haptics.selectionAsync(); setBudgetRangeKey(o.key); }}
-                            activeOpacity={0.8}
+                            activeOpacity={0.85}
                             accessibilityRole="button"
                             accessibilityLabel={o.label}
                             accessibilityState={{ selected }}
@@ -1705,7 +1705,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     ) : (
                       <TouchableOpacity
                         onPress={() => setShowBudgetMaxOverride(true)}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityRole="button"
                         accessibilityLabel="Set a maximum per person"
                         style={{ marginTop: spacing.sm }}
@@ -1724,7 +1724,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                             key={o.key}
                             style={[styles.chip, selected && styles.chipSelected]}
                             onPress={() => { Haptics.selectionAsync(); setExperienceLevel(o.key); }}
-                            activeOpacity={0.8}
+                            activeOpacity={0.85}
                             accessibilityRole="button"
                             accessibilityLabel={o.label}
                             accessibilityState={{ selected }}
@@ -1741,7 +1741,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   <TouchableOpacity
                     style={styles.calendarToggleRow}
                     onPress={() => { Haptics.selectionAsync(); setSaveToCalendar((v) => !v); }}
-                    activeOpacity={0.8}
+                    activeOpacity={0.85}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: saveToCalendar }}
                     accessibilityLabel="Also save to your Occasions calendar"
@@ -1760,7 +1760,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     <TouchableOpacity
                       style={styles.calendarToggleRow}
                       onPress={() => { Haptics.selectionAsync(); setShareOccasionWithFriend((v) => !v); }}
-                      activeOpacity={0.8}
+                      activeOpacity={0.85}
                       accessibilityRole="checkbox"
                       accessibilityState={{ checked: shareOccasionWithFriend }}
                       accessibilityLabel={`Also share this with ${whoForName || 'them'}`}
@@ -1805,7 +1805,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                             <TouchableOpacity
                               style={styles.autoPlanRow}
                               onPress={() => toggleAutoPlanAddonType(s.type)}
-                              activeOpacity={0.8}
+                              activeOpacity={0.85}
                               accessibilityRole="checkbox"
                               accessibilityState={{ checked: included }}
                               accessibilityLabel={`${s.label}, ${included ? 'included' : 'not included'}`}
@@ -1911,7 +1911,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         key={o.key}
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => pickWhoInvolved(o.key)}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityLabel={o.label}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
@@ -1924,7 +1924,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
                 {whoInvolved === 'existing_group' && (
                   <>
-                    {loadingCommunities && <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} />}
+                    {loadingCommunities && <NLoader fullScreen={false} size="inline" caption="Loading communities…" />}
                     {!loadingCommunities && communities.length === 0 && communitiesLoaded && (
                       <Text style={styles.helperText}>You're not a member of any active community yet — pick a different option above.</Text>
                     )}
@@ -1937,7 +1937,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                               key={c.id}
                               style={[styles.chip, selected && styles.chipSelected]}
                               onPress={() => { Haptics.selectionAsync(); setCommunityId(c.id); }}
-                              activeOpacity={0.8}
+                              activeOpacity={0.85}
                               accessibilityLabel={c.name}
                               accessibilityRole="button"
                               accessibilityState={{ selected }}
@@ -1982,7 +1982,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                                 key={f.id}
                                 style={[styles.chip, selected && styles.chipSelected]}
                                 onPress={() => toggleInvitee(f.id)}
-                                activeOpacity={0.8}
+                                activeOpacity={0.85}
                                 accessibilityLabel={f.display_name}
                                 accessibilityRole="checkbox"
                                 accessibilityState={{ checked: selected }}
@@ -2013,7 +2013,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                 {surpriseMode && (
                   <Text style={styles.helperText}>🔒 Surprise mode is on — {whoForName} won't appear in this list or be notified.</Text>
                 )}
-                {loadingFriends && <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} />}
+                {loadingFriends && <NLoader fullScreen={false} size="inline" caption="Loading friends…" />}
                 {!loadingFriends && friendsLoaded && friends.filter((f) => !(surpriseMode && f.id === whoForFriendId)).length === 0 && (
                   <Text style={styles.helperText}>You don't have any friends connected yet to invite.</Text>
                 )}
@@ -2034,7 +2034,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                               key={f.id}
                               style={[styles.chip, selected && styles.chipSelected]}
                               onPress={() => toggleInvitee(f.id)}
-                              activeOpacity={0.8}
+                              activeOpacity={0.85}
                               accessibilityLabel={isMutual ? `${f.display_name}, mutual friend` : f.display_name}
                               accessibilityRole="checkbox"
                               accessibilityState={{ checked: selected }}
@@ -2059,7 +2059,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         key={o.key}
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => { Haptics.selectionAsync(); setBudgetRangeKey(o.key); }}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityRole="button"
                         accessibilityLabel={o.label}
                         accessibilityState={{ selected }}
@@ -2084,7 +2084,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                 ) : (
                   <TouchableOpacity
                     onPress={() => setShowBudgetMaxOverride(true)}
-                    activeOpacity={0.8}
+                    activeOpacity={0.85}
                     accessibilityRole="button"
                     accessibilityLabel="Set a maximum per person"
                     style={{ marginTop: spacing.sm }}
@@ -2103,7 +2103,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         key={o.key}
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => { Haptics.selectionAsync(); setExperienceLevel(o.key); }}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityRole="button"
                         accessibilityLabel={o.label}
                         accessibilityState={{ selected }}
@@ -2196,7 +2196,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
               <TouchableOpacity
                 style={styles.skipRow}
                 onPress={proceedToDestination}
-                activeOpacity={0.7}
+                activeOpacity={0.85}
                 disabled={submittingOptions}
                 accessibilityLabel="Skip, I'll ask myself"
                 accessibilityRole="button"

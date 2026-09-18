@@ -35,6 +35,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 const UNDO_WINDOW_SECONDS = 5;
 
 const DISCOVERY_FILTER_FIELDS = [
@@ -335,10 +336,10 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
   function showUndoBanner(noticeId, isWave, otherUserId) {
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
     setUndoState({ noticeId, isWave, otherUserId });
-    Animated.timing(undoOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    Animated.timing(undoOpacity, { toValue: 1, duration: MOTION_BUDGET.small.ms, useNativeDriver: true }).start();
 
     undoTimeoutRef.current = setTimeout(() => {
-      Animated.timing(undoOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+      Animated.timing(undoOpacity, { toValue: 0, duration: MOTION_BUDGET.small.ms, useNativeDriver: true }).start(() => {
         setUndoState(null);
       });
     }, UNDO_WINDOW_SECONDS * 1000);
@@ -359,7 +360,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    Animated.timing(undoOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+    Animated.timing(undoOpacity, { toValue: 0, duration: MOTION_BUDGET.small.ms, useNativeDriver: true }).start(() => {
       setUndoState(null);
     });
     load();
@@ -662,7 +663,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
                   ? setViewingStoryGroup(storyGroup)
                   : navigation.navigate('ViewProfile', { userId: item.otherUserId, viewContext: 'dating' })
               }
-              activeOpacity={0.9}
+              activeOpacity={0.85}
               accessibilityLabel={
                 storyGroup
                   ? `View ${item.profiles?.display_name}'s story`
@@ -684,7 +685,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
             <TouchableOpacity
               style={styles.cardBody}
               onPress={() => navigation.navigate('ViewProfile', { userId: item.otherUserId, viewContext: 'dating' })}
-              activeOpacity={0.95}
+              activeOpacity={0.85}
               accessibilityLabel={`View ${item.profiles?.display_name}'s profile`}
               accessibilityRole="button"
             >

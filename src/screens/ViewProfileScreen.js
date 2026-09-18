@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, FlatList, Dimensions, TouchableOpacity, Alert, Animated } from 'react-native';
-import { NLoader, MatchAnimation, ConnectionGlyphSwap } from '../motion';
+import { NLoader, MatchAnimation, ConnectionGlyphSwap, showSuccessToast } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -26,6 +26,7 @@ import { useLanguage } from '../context/LanguageContext';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { typography, spacing, radius } from '../theme';
 
+import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 const { width } = Dimensions.get('window');
 const NEW_HERE_DAYS = 7;
 const FREQUENT_CHANGE_THRESHOLD = 3;
@@ -262,7 +263,7 @@ export default function ViewProfileScreen({ route, navigation }) {
       // other person accepts would find prevFriendshipStatusRef still at its original null and
       // silently miss the "+ -> ✓" moment entirely.
       prevFriendshipStatusRef.current = 'pending_sent';
-      Alert.alert('Friend request sent', `${profile.display_name} will see your request.`);
+      showSuccessToast('Friend request sent', `${profile.display_name} will see your request.`);
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -311,14 +312,14 @@ export default function ViewProfileScreen({ route, navigation }) {
       justConnectedToastOpacity.setValue(1);
     } else {
       justConnectedToastOpacity.setValue(0);
-      Animated.timing(justConnectedToastOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+      Animated.timing(justConnectedToastOpacity, { toValue: 1, duration: MOTION_BUDGET.small.ms, useNativeDriver: true }).start();
     }
     const hideTimer = setTimeout(() => {
       if (reduceMotion) {
         justConnectedToastOpacity.setValue(0);
         setJustBecameFriends(false);
       } else {
-        Animated.timing(justConnectedToastOpacity, { toValue: 0, duration: 250, useNativeDriver: true })
+        Animated.timing(justConnectedToastOpacity, { toValue: 0, duration: MOTION_BUDGET.small.ms, useNativeDriver: true })
           .start(() => setJustBecameFriends(false));
       }
     }, 2400);
@@ -422,7 +423,7 @@ export default function ViewProfileScreen({ route, navigation }) {
             }}
             renderItem={({ item, index }) => (
               <TouchableOpacity
-                activeOpacity={0.95}
+                activeOpacity={0.85}
                 onPress={() => openLightbox(item.signedUrl, item.id)}
                 accessibilityLabel={`${profile.display_name}'s photo ${index + 1} of ${photos.length}, tap to view full screen`}
                 accessibilityRole="button"
@@ -457,7 +458,7 @@ export default function ViewProfileScreen({ route, navigation }) {
               <TouchableOpacity
                 style={[styles.compatBadge, { borderColor: compatibilityColor(compatibilityReport.score) }]}
                 onPress={() => setCompatModalVisible(true)}
-                activeOpacity={0.7}
+                activeOpacity={0.85}
                 accessibilityLabel={`${compatibilityReport.score} percent match, view why`}
                 accessibilityRole="button"
               >

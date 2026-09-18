@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 import useReduceMotion from '../hooks/useReduceMotion';
 
+import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 // A lightweight fade + slide-up entrance for list cards, staggered by
 // position so items animate in as a gentle cascade rather than all
 // at once. Delay is capped so long lists don't leave later items
@@ -19,8 +20,8 @@ export default function AnimatedListItem({ index = 0, children }) {
   useEffect(() => {
     const delay = reduceMotion ? 0 : Math.min(index * STAGGER_STEP_MS, MAX_STAGGER_MS);
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: reduceMotion ? 150 : 250, delay, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 250, delay, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: reduceMotion ? MOTION_BUDGET.tiny.max : SEQUENCES.cascade.itemMs, delay, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: 0, duration: SEQUENCES.cascade.itemMs, delay, useNativeDriver: true }),
     ]).start();
   }, []);
 

@@ -6,6 +6,7 @@ import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
+import { modalAnimation } from '../motion';
 // Phase 3 of the "build everything" plan (see CLAUDE.md): a real
 // first-open prompt for DiscoveryScreen.js, closing the gap that
 // "Looking For"/"Discovery Preferences" were previously only ever asked
@@ -108,7 +109,7 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
   }
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={handleSkip}>
+    <Modal visible={visible} animationType={modalAnimation('slide')} onRequestClose={handleSkip}>
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.title}>What are you looking for?</Text>
@@ -126,7 +127,7 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
                   key={option.value}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleIntention(option.value)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                   accessibilityLabel={option.label}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
@@ -169,7 +170,7 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
                   key={option}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleGenderIdentity(option)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                   accessibilityLabel={option}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
@@ -190,7 +191,7 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
                   key={option}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleInterestedInGender(option)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                   accessibilityLabel={option}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}

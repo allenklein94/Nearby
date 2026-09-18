@@ -250,7 +250,7 @@ export default function MakeAPlanScreen({ route, navigation }) {
               key={preset.key}
               style={[styles.chip, whenPreset === preset.key && styles.chipSelected]}
               onPress={() => pickPreset(preset.key)}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               accessibilityLabel={preset.label}
               accessibilityRole="button"
               accessibilityState={{ selected: whenPreset === preset.key }}
@@ -282,7 +282,7 @@ export default function MakeAPlanScreen({ route, navigation }) {
         <Text style={styles.label}>Invite Friends</Text>
         <Text style={styles.helperText}>Only people you're already friends with — never nearby strangers.</Text>
         {loadingFriends ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} />
+          <NLoader fullScreen={false} size="inline" caption="Loading friends…" />
         ) : friends.length === 0 ? (
           <View>
             {/* Item 57 ("N mark as product language, but don't overdo it"):
@@ -309,7 +309,7 @@ export default function MakeAPlanScreen({ route, navigation }) {
                 key={f.id}
                 style={styles.friendRow}
                 onPress={() => toggleFriend(f.id)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 accessibilityLabel={`${selected ? 'Deselect' : 'Select'} ${f.display_name}`}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: selected }}

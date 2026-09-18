@@ -8,6 +8,7 @@ import { getMyEmergencyContacts } from '../services/emergencyContacts';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { modalAnimation } from '../motion';
 export default function DateCheckInModal({ visible, onClose, matchId, matchName, navigation, isRomanticMatch = true }) {
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors);
@@ -121,7 +122,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>{isRomanticMatch ? '🛡️ Date Safety Check-In' : '🛡️ Safety Check-In'}</Text>

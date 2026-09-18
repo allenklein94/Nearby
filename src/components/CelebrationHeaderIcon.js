@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 import useReduceMotion from '../hooks/useReduceMotion';
 
+import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 // Item 112 follow-up (CLAUDE.md, "the finished plan could have a living
 // header... extremely subtle motion... 🎈 gently floating or a tiny
 // shimmer through the celebration icon. It doesn't need to constantly
@@ -27,8 +28,8 @@ export default function CelebrationHeaderIcon({ icon, changeKey, size = 20, styl
     if (reduceMotion) return;
     Animated.sequence([
       Animated.parallel([
-        Animated.timing(translateY, { toValue: -5, duration: 380, useNativeDriver: true }),
-        Animated.timing(scale, { toValue: 1.16, duration: 380, useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: -5, duration: MOTION_BUDGET.medium.ms, useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1.16, duration: MOTION_BUDGET.medium.ms, useNativeDriver: true }),
       ]),
       Animated.parallel([
         Animated.spring(translateY, { toValue: 0, friction: 4, useNativeDriver: true }),

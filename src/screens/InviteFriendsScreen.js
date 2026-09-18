@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Share, ActivityIndicator, TextInput } from 'react-native';
-import { NLoader } from '../motion';
+import { NLoader, showSuccessToast } from '../motion';
 import { getMyReferralCode, getMyReferralStats, redeemReferralCode } from '../services/referrals';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
@@ -69,7 +69,7 @@ export default function InviteFriendsScreen() {
     try {
       await redeemReferralCode(redeemInput);
       posthog.capture('referral_code_redeemed');
-      Alert.alert('Success!', "You've both received 3 bonus Notices.");
+      showSuccessToast('Success!', "You've both received 3 bonus Notices.");
       setRedeemInput('');
       load();
     } catch (e) {

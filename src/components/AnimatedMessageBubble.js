@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 import useReduceMotion from '../hooks/useReduceMotion';
 
+import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 // A quick fade + scale entrance for chat bubbles, applied only to
 // the most recently added message rather than the whole list, so
 // scrolling back through history doesn't re-trigger animations on
@@ -15,7 +16,7 @@ export default function AnimatedMessageBubble({ isNew, children }) {
   useEffect(() => {
     if (isNew) {
       Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1, duration: MOTION_BUDGET.small.ms, useNativeDriver: true }),
         Animated.spring(scale, { toValue: 1, friction: 7, tension: 100, useNativeDriver: true }),
       ]).start();
     }

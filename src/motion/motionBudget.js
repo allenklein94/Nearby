@@ -77,3 +77,7 @@ export function settleMs(name) {
       return NaN;
   }
 }
+
+// Ambient (non-transition) loops sit outside the tiers -- a loop isn't a transition, it runs as
+// long as real loading does. One token so skeletons can't drift apart.
+export const AMBIENT = { skeletonPulseMs: 700 };

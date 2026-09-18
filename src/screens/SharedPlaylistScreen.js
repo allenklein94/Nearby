@@ -177,7 +177,7 @@ export default function SharedPlaylistScreen({ route }) {
               <TouchableOpacity
                 style={styles.openButton}
                 onPress={() => handleOpenPress(item)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 accessibilityLabel={`Open ${item.song_title}`}
                 accessibilityRole="button"
               >

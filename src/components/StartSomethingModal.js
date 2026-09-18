@@ -8,6 +8,7 @@ import { iconNameForOption } from '../constants/quickPickIcons';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 
+import { modalAnimation } from '../motion';
 const SOMETHING_ELSE = { icon: '➕', label: 'Something Else', category: null };
 
 // Fixed, non-time-adaptive option set for CreateHubScreen's "Start a
@@ -82,7 +83,7 @@ export default function StartSomethingModal({ visible, onClose, navigation, init
   const title = activeCategory ? `What kind of ${activeCategory.label.toLowerCase()}?` : 'I want to...';
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+    <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={handleClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           {activeCategory && (

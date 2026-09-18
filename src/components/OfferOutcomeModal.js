@@ -4,6 +4,7 @@ import { submitOfferOutcome } from '../services/businessFulfillment';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { modalAnimation } from '../motion';
 // Same four-option scale GatheringFeedbackModal already established --
 // deliberately not a new star-rating invented for this, per direct
 // instruction to mirror the existing shape rather than build a second one.
@@ -59,7 +60,7 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
   const canSubmit = !!satisfaction && !!wouldRepeat;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+    <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={handleClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>How did it go?</Text>

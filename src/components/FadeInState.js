@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { NearbyMark } from './brand';
-import { SEQUENCES } from '../motion/motionBudget';
+import { SEQUENCES, MOTION_BUDGET } from '../motion/motionBudget';
 
 // Empty/error-state transition (per the Nearby Motion Language, locked 2026-09-18): a
 // small, one-shot fade-in for a screen's own custom "nothing here yet" state, instead
@@ -33,7 +33,7 @@ export default function FadeInState({ style, children, opportunity = false, ...r
       return;
     }
     if (!opportunity) {
-      Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: true }).start();
+      Animated.timing(opacity, { toValue: 1, duration: MOTION_BUDGET.small.ms, useNativeDriver: true }).start();
       return;
     }
     Animated.parallel([

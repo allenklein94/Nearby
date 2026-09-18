@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, TextInput, Modal, ScrollView } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import { NLoader, PullToRefresh } from '../motion';
+import { NLoader, PullToRefresh, modalAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyGoodbyeEntries, deleteGoodbyeEntry } from '../services/goodbyeArchive';
 import LoadErrorState from '../components/LoadErrorState';
@@ -159,7 +159,7 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
         })}
       </ScrollView>
 
-      <Modal visible={nameModalVisible} animationType="slide" transparent onRequestClose={() => setNameModalVisible(false)}>
+      <Modal visible={nameModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setNameModalVisible(false)}>
         <View style={styles.overlay}>
           <View style={styles.sheet}>
             <Text style={styles.sheetTitle}>{t('goodbyeArchive.whoIsThisAbout')}</Text>

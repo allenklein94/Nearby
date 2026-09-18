@@ -150,7 +150,7 @@ export default function CreateCommunityScreen({ navigation, route }) {
                     isSelected && { backgroundColor: style.color, borderColor: style.color },
                   ]}
                   onPress={() => setInterestTag(interestTag === option ? null : option)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                   accessibilityLabel={`Category: ${option}`}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}

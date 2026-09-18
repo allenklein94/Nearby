@@ -21,7 +21,7 @@ Conventions" as one bullet, not a narrative.
 
 ## Active / unfinished work
 
-Nothing in progress. Everything through **Item 126** (2026-09-18) is done and archived in
+Nothing in progress. Everything through **Item 137** (2026-09-18) is done and archived in
 `CLAUDE_HISTORY.md` (top section, "Full Active / unfinished work archive" — grep by "Item NNN").
 Recent arc for orientation: Items 61-111 Occasions/"Plan for Someone" (wizard, group voting,
 surprise mode, packages, recall, guest invites); Items 112-126 the Nearby Motion System
@@ -113,6 +113,12 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   `intentPhaseCaption()`: Understanding your request… -> Finding activities…/Finding communities…/
   Checking availability…), then `FoundLine` ("Here's what we found.") as results land. Phases are
   reported as the work actually moves, never on a timer -- no artificial delay for theater.
+- **Animation consistency (Item 137, audit 2026-09-18).** All motion goes through `src/motion/`:
+  durations are `MOTION_BUDGET`/`SEQUENCES`/`AMBIENT` tokens (no literal `duration: N`), native modals use
+  `modalAnimation()`, list refresh uses `PullToRefresh`, layout changes use `animateLayout()` (small tier,
+  snaps under Reduce Motion), pure confirmations use `showSuccessToast` not `Alert`. Guarded by
+  `src/motion/consistencyAudit.test.js`. Left deliberately: chat "load older" footer spinners (footer
+  control), StoryViewer's functional progress timer, PhotoLightbox/swipe-card physics springs.
 - **Product personality (Item 136, guiding thesis, logged 2026-09-18): Nearby is quietly working for
   you -- never "here's a database."** The interface should say, in effect: *tell us what you want, we'll
   figure out the rest.* Use as a tiebreaker for copy, motion and flow: prefer intent-first entry

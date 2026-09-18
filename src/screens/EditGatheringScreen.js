@@ -6,6 +6,7 @@ import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { showSuccessToast } from '../motion';
 const VIBE_SCALES = [
   { key: 'energyLevel', label: 'Energy', lowLabel: 'Chill', highLabel: 'High energy' },
   { key: 'conversationLevel', label: 'Conversation', lowLabel: 'Quiet', highLabel: 'Chatty' },
@@ -108,7 +109,7 @@ export default function EditGatheringScreen({ route, navigation }) {
         timelineSteps: cleanedTimelineSteps.length > 0 ? cleanedTimelineSteps : null,
         showGroupInsights,
       });
-      Alert.alert('Updated', 'Your changes are saved.');
+      showSuccessToast('Updated', 'Your changes are saved.');
       navigation.goBack();
     } catch (e) {
       Alert.alert('Error', e.message);

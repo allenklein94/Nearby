@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { formatCrossedPathsTimeShort, gatheringReasonText } from '../services/crossedPathsSignals';
 
+import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
 
@@ -55,7 +56,7 @@ export default function SwipeableDiscoveryCards({
   function forceSwipe(direction) {
     const x = direction === 'right' ? SCREEN_WIDTH * 1.2 : -SCREEN_WIDTH * 1.2;
     Haptics.impactAsync(direction === 'right' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
-    Animated.timing(position, { toValue: { x, y: 0 }, duration: 220, useNativeDriver: false }).start(() => {
+    Animated.timing(position, { toValue: { x, y: 0 }, duration: MOTION_BUDGET.small.ms, useNativeDriver: false }).start(() => {
       onSwipeComplete(direction);
     });
   }
@@ -136,7 +137,7 @@ export default function SwipeableDiscoveryCards({
             profile" behavior, unchanged. Profile is still one tap away
             below via cardBody regardless of story presence. */}
         <TouchableOpacity
-          activeOpacity={0.95}
+          activeOpacity={0.85}
           onPress={() => (storyGroup ? onViewStory(storyGroup) : onViewProfile(item.otherUserId))}
           accessibilityLabel={storyGroup ? `View ${item.profiles?.display_name}'s story` : `View ${item.profiles?.display_name}'s profile`}
           accessibilityRole="button"
@@ -157,7 +158,7 @@ export default function SwipeableDiscoveryCards({
 
         <TouchableOpacity
           style={styles.cardBody}
-          activeOpacity={0.95}
+          activeOpacity={0.85}
           onPress={() => onViewProfile(item.otherUserId)}
           accessibilityLabel={`View ${item.profiles?.display_name}'s profile`}
           accessibilityRole="button"

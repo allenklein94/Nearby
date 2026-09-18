@@ -51,6 +51,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { NLoader, modalAnimation, showSuccessToast } from '../motion';
 const SECTIONS = [
   { key: 'home', icon: '🏠', label: 'Dashboard' },
   { key: 'gatherings', icon: '🎉', label: 'Gatherings' },
@@ -805,7 +806,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       await updateBusinessAddress(selectedPartner.id, addressInput.trim());
       setSelectedPartner((prev) => ({ ...prev, address: addressInput.trim() }));
       setAddressModalVisible(false);
-      Alert.alert('Saved', 'Your business address is now set — offers will show to people nearby, and your business will now appear on the map.');
+      showSuccessToast('Saved', 'Your business address is now set — offers will show to people nearby, and your business will now appear on the map.');
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -855,7 +856,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
           categories: editCategoriesInput,
         }));
         setEditProfileModalVisible(false);
-        Alert.alert('Saved', 'Your business profile has been updated.');
+        showSuccessToast('Saved', 'Your business profile has been updated.');
         logBusinessAcquisitionEvent(sessionId, 'profile_completed', { partnerId: selectedPartner.id });
       } else if (result.blocked) {
         Alert.alert(
@@ -899,7 +900,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         priority_time_windows: priorityTimeWindowsInput,
         priority_occasions: priorityOccasionsInput,
       }));
-      Alert.alert('Saved', "We'll flag opportunities that match what you're looking for.");
+      showSuccessToast('Saved', "We'll flag opportunities that match what you're looking for.");
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -1422,7 +1423,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   function renderLockedFeature(feature, description) {
     const label = ENTITLEMENT_FEATURE_LABELS[feature] ?? feature;
     return (
-      <TouchableOpacity style={styles.lockedFeatureCard} onPress={() => showUpgradePlaceholder(feature)} activeOpacity={0.8}>
+      <TouchableOpacity style={styles.lockedFeatureCard} onPress={() => showUpgradePlaceholder(feature)} activeOpacity={0.85}>
         <Text style={styles.lockedFeatureTitle}>🔒 {label}</Text>
         {description ? <Text style={styles.lockedFeatureDescription}>{description}</Text> : null}
         <Text style={styles.lockedFeatureCta}>See what you get →</Text>
@@ -2395,7 +2396,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       if (!myUserId) return;
       setPostingMoment(true);
       await uploadBusinessMoment(myUserId, selectedPartner.id, media.uri, media.type);
-      Alert.alert('Posted', 'Your moment is live for the next 24 hours — people nearby will see it under "Happening Nearby" on Discover.');
+      showSuccessToast('Posted', 'Your moment is live for the next 24 hours — people nearby will see it under "Happening Nearby" on Discover.');
     } catch (e) {
       const entitlementError = parseEntitlementError(e);
       if (entitlementError) {
@@ -2423,7 +2424,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         setUpdateModalVisible(false);
         setUpdateTitle('');
         setUpdateBody('');
-        Alert.alert('Sent', 'Your followers have been notified.');
+        showSuccessToast('Sent', 'Your followers have been notified.');
       } else if (result.blocked) {
         Alert.alert(
           "Couldn't Send",
@@ -2524,7 +2525,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     try {
       const result = await confirmOfferRedemption(redemptionCodeInput);
       if (result.success) {
-        Alert.alert('Confirmed', `${result.redeemedByName ?? 'This customer'}'s redemption of "${result.offerTitle}" is confirmed.`);
+        showSuccessToast('Confirmed', `${result.redeemedByName ?? 'This customer'}'s redemption of "${result.offerTitle}" is confirmed.`);
         setRedemptionCodeInput('');
         loadOffers(selectedPartner.id);
       } else {
@@ -2595,7 +2596,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         {loading ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
+          <NLoader fullScreen={false} size="compact" kind="content" />
         ) : loadError ? (
           <LoadErrorState message="Couldn't load your business dashboard." onRetry={loadMyPartner} />
         ) : (
@@ -4497,7 +4498,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </Text>
                 )}
                 {loadingExperiences ? (
-                  <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.sm }} />
+                  <NLoader fullScreen={false} size="inline" caption="Loading experiences…" />
                 ) : experiences.length === 0 ? (
                   <Text style={styles.emptyText}>No signature experiences yet.</Text>
                 ) : (
@@ -4833,7 +4834,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         )}
       </ScrollView>
 
-      <Modal visible={createModalVisible} animationType="slide" transparent onRequestClose={() => setCreateModalVisible(false)}>
+      <Modal visible={createModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setCreateModalVisible(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
@@ -4943,7 +4944,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </Modal>
-      <Modal visible={addressModalVisible} animationType="slide" transparent onRequestClose={() => setAddressModalVisible(false)}>
+      <Modal visible={addressModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setAddressModalVisible(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
@@ -4977,7 +4978,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </Modal>
-      <Modal visible={editProfileModalVisible} animationType="slide" transparent onRequestClose={() => setEditProfileModalVisible(false)}>
+      <Modal visible={editProfileModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setEditProfileModalVisible(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
@@ -5155,7 +5156,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       {/* "Business Story" plan, Phase 6 -- create/edit a Signature
           Experience. Same modal shape as Edit Profile above (KeyboardAvoidingView
           + TouchableWithoutFeedback-to-dismiss, chip-row pickers). */}
-      <Modal visible={experienceModalVisible} animationType="slide" transparent onRequestClose={() => setExperienceModalVisible(false)}>
+      <Modal visible={experienceModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setExperienceModalVisible(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
@@ -5275,7 +5276,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         </KeyboardAvoidingView>
       </Modal>
 
-      <Modal visible={qrModalVisible} animationType="slide" transparent onRequestClose={() => setQrModalVisible(false)}>
+      <Modal visible={qrModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setQrModalVisible(false)}>
         <View style={styles.overlay}>
           <View style={[styles.sheet, { alignItems: 'center' }]}>
             <Text style={styles.sheetTitle}>Share Your QR Code</Text>
@@ -5302,7 +5303,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
           </View>
         </View>
       </Modal>
-      <Modal visible={updateModalVisible} animationType="slide" transparent onRequestClose={() => setUpdateModalVisible(false)}>
+      <Modal visible={updateModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setUpdateModalVisible(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
@@ -5342,7 +5343,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </Modal>
-      <Modal visible={!!offerModalRequestId} animationType="slide" transparent onRequestClose={() => setOfferModalRequestId(null)}>
+      <Modal visible={!!offerModalRequestId} animationType={modalAnimation('slide')} transparent onRequestClose={() => setOfferModalRequestId(null)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
@@ -5625,7 +5626,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </Modal>
-      <Modal visible={!!declineModalRequestId} animationType="slide" transparent onRequestClose={() => setDeclineModalRequestId(null)}>
+      <Modal visible={!!declineModalRequestId} animationType={modalAnimation('slide')} transparent onRequestClose={() => setDeclineModalRequestId(null)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
@@ -5677,7 +5678,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </Modal>
-      <Modal visible={postAvailabilityModalVisible} animationType="slide" transparent onRequestClose={() => setPostAvailabilityModalVisible(false)}>
+      <Modal visible={postAvailabilityModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setPostAvailabilityModalVisible(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
@@ -5843,7 +5844,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       {/* Item 68 (CLAUDE.md): create/edit a durable, named occasion
           package -- e.g. "Birthday Package": dessert + a group table,
           minimum 6 guests, available Fri/Sat, $X/person. */}
-      <Modal visible={packageModalVisible} animationType="slide" transparent onRequestClose={() => setPackageModalVisible(false)}>
+      <Modal visible={packageModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setPackageModalVisible(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
@@ -5982,7 +5983,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         </KeyboardAvoidingView>
       </Modal>
 
-      <Modal visible={policyModalVisible} animationType="slide" transparent onRequestClose={() => setPolicyModalVisible(false)}>
+      <Modal visible={policyModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setPolicyModalVisible(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>

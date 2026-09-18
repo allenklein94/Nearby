@@ -3,6 +3,7 @@ import { View, Animated, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
 
+import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 export default function SkeletonCard() {
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -11,8 +12,8 @@ export default function SkeletonCard() {
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1, duration: AMBIENT.skeletonPulseMs, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.4, duration: AMBIENT.skeletonPulseMs, useNativeDriver: true }),
       ])
     );
     loop.start();

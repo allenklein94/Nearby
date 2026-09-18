@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, FlatList, I
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
 
+import { NLoader, modalAnimation } from '../motion';
 const GIPHY_API_KEY = 'o5pKU4HMe3qE4mQhC5rxZvSFHRZfombw';
 const RATING = 'pg-13';
 
@@ -42,7 +43,7 @@ export default function GifPickerModal({ visible, onClose, onSelect }) {
   }
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} animationType={modalAnimation('slide')} onRequestClose={onClose}>
       <View style={styles.container}>
         <View style={styles.header}>
           <TextInput
@@ -62,7 +63,7 @@ export default function GifPickerModal({ visible, onClose, onSelect }) {
         </View>
 
         {loading ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
+          <NLoader fullScreen={false} size="compact" caption="Finding GIFs…" />
         ) : (
           <FlatList
             data={gifs}
@@ -73,7 +74,7 @@ export default function GifPickerModal({ visible, onClose, onSelect }) {
               <TouchableOpacity
                 style={styles.gifTile}
                 onPress={() => handleSelect(item)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
               >
                 <Image
                   source={{ uri: item.images.fixed_width_small.url }}

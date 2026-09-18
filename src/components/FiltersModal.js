@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Modal,
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { DATING_QUICK_FILTER_CATALOG } from '../constants/quickFilterCatalog';
-import { TapActiveChip } from '../motion';
+import { TapActiveChip, modalAnimation } from '../motion';
 
 // Aug 30 2026 (CLAUDE.md, external UX critique response): this used to be
 // the Advanced Filters (Premium-only) modal alone -- a caller would only
@@ -115,7 +115,7 @@ export default function FiltersModal({
   const activeCount = intentionFilter.length + quickActiveCount + advancedDraftCount + (ageActiveInDraft ? 1 : 0);
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} animationType={modalAnimation('slide')} onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} accessibilityLabel="Cancel" accessibilityRole="button">

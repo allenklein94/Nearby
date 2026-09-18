@@ -10,6 +10,7 @@ import { requestDataExport } from '../services/dataExport';
 import RecommendationCustomizePanel from '../components/RecommendationCustomizePanel';
 import { typography, spacing, radius } from '../theme';
 
+import { showSuccessToast } from '../motion';
 function toE164(rawInput) {
   const digits = rawInput.replace(/\D/g, '');
   if (digits.length === 10) return `+1${digits}`;
@@ -241,7 +242,7 @@ export default function SettingsScreen({ navigation, route }) {
       type: 'phone_change',
     });
     if (error) return Alert.alert('Error', error.message);
-    Alert.alert('Phone number updated', 'Your new number is now linked to your account.');
+    showSuccessToast('Phone number updated', 'Your new number is now linked to your account.');
     setChangingPhone(false);
     setOtpSent(false);
     setNewPhoneInput('');
@@ -450,7 +451,7 @@ export default function SettingsScreen({ navigation, route }) {
         <TouchableOpacity
           style={[styles.card, styles.settingRow]}
           onPress={() => navigation.navigate('DatingPreferences')}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
           accessibilityLabel="Dating Preferences, manage in your Dating Profile"
           accessibilityRole="button"
         >
@@ -477,7 +478,7 @@ export default function SettingsScreen({ navigation, route }) {
               <TouchableOpacity
                 style={[styles.chip, discoveryViewStyle === 'list' && styles.chipSelected]}
                 onPress={() => updateDiscoveryViewStyle('list')}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 accessibilityLabel="List view"
                 accessibilityRole="button"
                 accessibilityState={{ selected: discoveryViewStyle === 'list' }}
@@ -487,7 +488,7 @@ export default function SettingsScreen({ navigation, route }) {
               <TouchableOpacity
                 style={[styles.chip, discoveryViewStyle === 'cards' && styles.chipSelected]}
                 onPress={() => updateDiscoveryViewStyle('cards')}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 accessibilityLabel="Card swipe view"
                 accessibilityRole="button"
                 accessibilityState={{ selected: discoveryViewStyle === 'cards' }}
@@ -504,7 +505,7 @@ export default function SettingsScreen({ navigation, route }) {
             <TouchableOpacity
               style={[styles.chip, language === 'en' && styles.chipSelected]}
               onPress={() => setLanguage('en')}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               accessibilityLabel="English"
               accessibilityRole="button"
               accessibilityState={{ selected: language === 'en' }}
@@ -514,7 +515,7 @@ export default function SettingsScreen({ navigation, route }) {
             <TouchableOpacity
               style={[styles.chip, language === 'es' && styles.chipSelected]}
               onPress={() => setLanguage('es')}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               accessibilityLabel="Español"
               accessibilityRole="button"
               accessibilityState={{ selected: language === 'es' }}
@@ -524,7 +525,7 @@ export default function SettingsScreen({ navigation, route }) {
             <TouchableOpacity
               style={[styles.chip, language === 'de' && styles.chipSelected]}
               onPress={() => setLanguage('de')}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               accessibilityLabel="Deutsch"
               accessibilityRole="button"
               accessibilityState={{ selected: language === 'de' }}
@@ -534,7 +535,7 @@ export default function SettingsScreen({ navigation, route }) {
             <TouchableOpacity
               style={[styles.chip, language === 'fr' && styles.chipSelected]}
               onPress={() => setLanguage('fr')}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               accessibilityLabel="Français"
               accessibilityRole="button"
               accessibilityState={{ selected: language === 'fr' }}
@@ -544,7 +545,7 @@ export default function SettingsScreen({ navigation, route }) {
             <TouchableOpacity
               style={[styles.chip, language === 'pt' && styles.chipSelected]}
               onPress={() => setLanguage('pt')}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               accessibilityLabel="Português"
               accessibilityRole="button"
               accessibilityState={{ selected: language === 'pt' }}
@@ -554,7 +555,7 @@ export default function SettingsScreen({ navigation, route }) {
             <TouchableOpacity
               style={[styles.chip, language === 'ht' && styles.chipSelected]}
               onPress={() => setLanguage('ht')}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               accessibilityLabel="Kreyòl Ayisyen"
               accessibilityRole="button"
               accessibilityState={{ selected: language === 'ht' }}
@@ -564,7 +565,7 @@ export default function SettingsScreen({ navigation, route }) {
             <TouchableOpacity
               style={[styles.chip, language === 'zh' && styles.chipSelected]}
               onPress={() => setLanguage('zh')}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               accessibilityLabel="中文"
               accessibilityRole="button"
               accessibilityState={{ selected: language === 'zh' }}
@@ -574,7 +575,7 @@ export default function SettingsScreen({ navigation, route }) {
             <TouchableOpacity
               style={[styles.chip, language === 'vi' && styles.chipSelected]}
               onPress={() => setLanguage('vi')}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               accessibilityLabel="Tiếng Việt"
               accessibilityRole="button"
               accessibilityState={{ selected: language === 'vi' }}
@@ -584,7 +585,7 @@ export default function SettingsScreen({ navigation, route }) {
             <TouchableOpacity
               style={[styles.chip, language === 'tl' && styles.chipSelected]}
               onPress={() => setLanguage('tl')}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               accessibilityLabel="Tagalog"
               accessibilityRole="button"
               accessibilityState={{ selected: language === 'tl' }}
@@ -594,7 +595,7 @@ export default function SettingsScreen({ navigation, route }) {
             <TouchableOpacity
               style={[styles.chip, language === 'ru' && styles.chipSelected]}
               onPress={() => setLanguage('ru')}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               accessibilityLabel="Русский"
               accessibilityRole="button"
               accessibilityState={{ selected: language === 'ru' }}
@@ -604,7 +605,7 @@ export default function SettingsScreen({ navigation, route }) {
             <TouchableOpacity
               style={[styles.chip, language === 'ko' && styles.chipSelected]}
               onPress={() => setLanguage('ko')}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               accessibilityLabel="한국어"
               accessibilityRole="button"
               accessibilityState={{ selected: language === 'ko' }}

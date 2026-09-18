@@ -6,6 +6,7 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 
+import { modalAnimation } from '../motion';
 const MAX_PICKS = 5;
 
 export default function QuickPicksEditModal({ visible, onClose, initialPicks, onSave, onResetToAuto }) {
@@ -31,7 +32,7 @@ export default function QuickPicksEditModal({ visible, onClose, initialPicks, on
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>Edit Quick Picks</Text>

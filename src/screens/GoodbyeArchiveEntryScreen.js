@@ -8,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+import { showSuccessToast } from '../motion';
 export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
   const { aboutDisplayName } = route.params;
   const { colors, shadow } = useTheme();
@@ -45,7 +46,7 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('goodbye_archive_entry_saved');
-      Alert.alert('Saved privately', 'Only you can see this. It\u2019s yours whenever you want to look back.');
+      showSuccessToast('Saved privately', 'Only you can see this. It\u2019s yours whenever you want to look back.');
       navigation.goBack();
     } catch (e) {
       Alert.alert('Error', e.message);

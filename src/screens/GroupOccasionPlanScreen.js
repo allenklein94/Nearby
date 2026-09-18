@@ -634,7 +634,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                     <TouchableOpacity
                       onPress={handleReveal}
                       disabled={acting}
-                      activeOpacity={0.8}
+                      activeOpacity={0.85}
                       accessibilityRole="button"
                       accessibilityLabel="Reveal the surprise"
                       style={styles.surpriseRevealButton}
@@ -679,7 +679,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                       style={[styles.voteButton, opt.myAvailable && styles.voteButtonActive]}
                       onPress={() => handleToggleDateAvailability(opt)}
                       disabled={acting}
-                      activeOpacity={0.8}
+                      activeOpacity={0.85}
                       accessibilityRole="button"
                       accessibilityLabel={opt.myAvailable ? "I'm no longer free this day" : "I'm free this day"}
                     >
@@ -841,7 +841,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
             <Text style={styles.sectionLabel}>🍽️ Vote on Where</Text>
             {businessOptionsLoading && (
               <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
-                <ActivityIndicator color={colors.primary} />
+                <NLoader fullScreen={false} size="compact" />
                 <Text style={[styles.helperText, { marginTop: spacing.sm }]}>✨ Nearby is finding real options for the group to vote on…</Text>
               </View>
             )}
@@ -878,7 +878,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                     style={[styles.voteButton, option.myVote && styles.voteButtonActive]}
                     onPress={() => handleToggleVote(option)}
                     disabled={acting}
-                    activeOpacity={0.8}
+                    activeOpacity={0.85}
                     accessibilityRole="button"
                     accessibilityLabel={option.myVote ? 'Remove vote' : 'Vote for this'}
                   >
@@ -993,7 +993,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                 </TouchableOpacity>
                 {inviteMoreOpen && (
                   <View style={styles.inviteMorePanel}>
-                    {loadingFriends && <ActivityIndicator color={colors.primary} />}
+                    {loadingFriends && <NLoader fullScreen={false} size="inline" caption="Loading friends…" />}
                     {!loadingFriends && friendsLoaded && inviteMoreCandidates.length === 0 && (
                       <Text style={styles.helperText}>Everyone you're connected with is already part of this plan.</Text>
                     )}
@@ -1007,7 +1007,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                                 key={f.id}
                                 style={[styles.chip, selected && styles.chipSelected]}
                                 onPress={() => toggleNewInvitee(f.id)}
-                                activeOpacity={0.8}
+                                activeOpacity={0.85}
                                 accessibilityRole="checkbox"
                                 accessibilityState={{ checked: selected }}
                                 accessibilityLabel={f.display_name}
@@ -1078,7 +1078,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                       style={[styles.voteButton, option.myVote && styles.voteButtonActive]}
                       onPress={() => handleToggleVote(option)}
                       disabled={acting}
-                      activeOpacity={0.8}
+                      activeOpacity={0.85}
                       accessibilityRole="button"
                       accessibilityLabel={option.myVote ? 'Remove vote' : 'Vote for this'}
                     >
@@ -1111,7 +1111,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                         key={o.key}
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => { Haptics.selectionAsync(); setProposeType(o.key); }}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityRole="button"
                         accessibilityLabel={o.label}
                         accessibilityState={{ selected }}

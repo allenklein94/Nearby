@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+import { NLoader } from '../motion';
 export default function PaywallScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
@@ -108,7 +109,7 @@ export default function PaywallScreen({ navigation }) {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
+        <NLoader fullScreen={false} size="compact" kind="content" />
       ) : alreadyPremium ? (
         <View style={styles.alreadyPremiumCard}>
           <Text style={styles.alreadyPremiumEmoji}>🎉</Text>

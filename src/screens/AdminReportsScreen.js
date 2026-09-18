@@ -5,6 +5,7 @@ import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
+import { PullToRefresh } from '../motion';
 
 // This screen is reached as a top-level stack push (not a bottom tab),
 // headerShown: false in RootNavigator, and previously took no navigation
@@ -82,8 +83,7 @@ export default function AdminReportsScreen({ navigation }) {
         data={reports}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}
-        refreshing={loading}
-        onRefresh={load}
+        refreshControl={<PullToRefresh refreshing={loading} onRefresh={load} />}
         ListEmptyComponent={
           loadError ? (
             <LoadErrorState message="Couldn't load reports." onRetry={load} />

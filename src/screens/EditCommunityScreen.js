@@ -8,6 +8,7 @@ import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { showSuccessToast } from '../motion';
 export default function EditCommunityScreen({ route, navigation }) {
   const { community } = route.params;
   const { colors, shadow } = useTheme();
@@ -42,7 +43,7 @@ export default function EditCommunityScreen({ route, navigation }) {
         interestTag,
         isPublic,
       });
-      Alert.alert('Updated', 'Your changes are saved.');
+      showSuccessToast('Updated', 'Your changes are saved.');
       navigation.goBack();
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -94,7 +95,7 @@ export default function EditCommunityScreen({ route, navigation }) {
                     isSelected && { backgroundColor: style.color, borderColor: style.color },
                   ]}
                   onPress={() => setInterestTag(interestTag === option ? null : option)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                   accessibilityLabel={`Category: ${option}`}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}

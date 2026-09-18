@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 import useReduceMotion from '../hooks/useReduceMotion';
 
+import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 // Item 112 follow-up (CLAUDE.md, "the final options settle into place"):
 // once the real fetch resolves, each result card fades/slides in with a
 // small per-index delay instead of all appearing at once -- the "settling
@@ -30,8 +31,8 @@ export default function StaggeredReveal({ index = 0, children, style }) {
     const delay = Math.min(index * BASE_DELAY_MS, MAX_DELAY_MS);
     const timer = setTimeout(() => {
       Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }),
-        Animated.timing(translateY, { toValue: 0, duration: 250, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1, duration: SEQUENCES.cascade.itemMs, useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: 0, duration: SEQUENCES.cascade.itemMs, useNativeDriver: true }),
       ]).start();
     }, delay);
     return () => clearTimeout(timer);

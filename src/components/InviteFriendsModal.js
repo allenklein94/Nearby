@@ -10,6 +10,7 @@ import StaggeredReveal from './StaggeredReveal';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { NLoader, modalAnimation } from '../motion';
 // Gathering invites go through the older, gathering-specific
 // invite_friend_to_gathering RPC (women-only + blocks-aware, already
 // wired here before this component also learned to invite to
@@ -96,14 +97,14 @@ export default function InviteFriendsModal({
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>Invite Friends</Text>
           <Text style={styles.subtitle}>to "{resolvedTargetTitle}"</Text>
 
           {loading ? (
-            <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
+            <NLoader fullScreen={false} size="compact" caption="Loading friends…" />
           ) : (
             // Item 126 ("Don't animate every card"): the whole list settles into place once,
             // instead of each friend row independently staggering in -- a real friends list can

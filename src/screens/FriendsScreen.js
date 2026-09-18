@@ -9,7 +9,7 @@ import PersonCard from '../components/PersonCard';
 import { Share } from 'react-native';
 import { getSignedPhotoUrl } from '../services/photos';
 import LoadErrorState from '../components/LoadErrorState';
-import { MatchAnimation, SkeletonFeed } from '../motion';
+import { MatchAnimation, SkeletonFeed, modalAnimation } from '../motion';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -430,7 +430,7 @@ export default function FriendsScreen({ navigation }) {
       />
       )}
 
-      <Modal visible={newCircleModalVisible} animationType="slide" transparent onRequestClose={() => setNewCircleModalVisible(false)}>
+      <Modal visible={newCircleModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setNewCircleModalVisible(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
             <View style={styles.modalOverlay}>
@@ -459,7 +459,7 @@ export default function FriendsScreen({ navigation }) {
         </KeyboardAvoidingView>
       </Modal>
 
-      <Modal visible={!!manageCirclesFor} animationType="slide" transparent onRequestClose={() => setManageCirclesFor(null)}>
+      <Modal visible={!!manageCirclesFor} animationType={modalAnimation('slide')} transparent onRequestClose={() => setManageCirclesFor(null)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
             <View style={styles.modalOverlay}>

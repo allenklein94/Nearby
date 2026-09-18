@@ -211,10 +211,10 @@ function BouncyTabButton({ children, onPress, accessibilityLabel, accessibilityS
   const scale = useRef(new Animated.Value(1)).current;
 
   function handlePress(event) {
+    // Tiny-tier press feedback, same feel as ScaleButton -- no overshoot on a plain tab tap.
     Animated.sequence([
-      Animated.spring(scale, { toValue: 0.8, speed: 50, useNativeDriver: true }),
-      Animated.spring(scale, { toValue: 1.15, speed: 20, bounciness: 12, useNativeDriver: true }),
-      Animated.spring(scale, { toValue: 1, speed: 20, bounciness: 8, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 0.92, speed: 50, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, speed: 20, bounciness: 6, useNativeDriver: true }),
     ]).start();
     onPress(event);
   }

@@ -5,7 +5,7 @@
 // calls) -- never a surface a real business ever sees.
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
-import { PullToRefresh } from '../motion';
+import { PullToRefresh, NLoader } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
@@ -83,7 +83,7 @@ export default function AdminBusinessTierScreen() {
         accessibilityLabel="Search businesses"
       />
       {loading ? (
-        <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
+        <NLoader fullScreen={false} size="compact" kind="content" />
       ) : (
         <FlatList
           data={businesses}

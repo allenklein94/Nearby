@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import { NLoader } from '../motion';
+import { NLoader, showSuccessToast } from '../motion';
 import * as Haptics from 'expo-haptics';
 import { getGatheringMessagesPage, getGatheringMessageById, sendGatheringMessage } from '../services/gatheringChat';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -84,7 +84,7 @@ export default function GatheringChatScreen({ route, navigation }) {
       const myId = sessionData?.session?.user?.id;
       setPostingStory(true);
       await uploadStory(myId, media.uri, media.type, false, gatheringId);
-      Alert.alert('Posted!', `Your story is now shared with everyone at ${gatheringTitle}.`);
+      showSuccessToast('Posted!', `Your story is now shared with everyone at ${gatheringTitle}.`);
     } catch (e) {
       Alert.alert('Error', e.message);
     }

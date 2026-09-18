@@ -8,6 +8,7 @@ import { buildGatheringQuickStartTitle, buildAskBusinessPrefillText, buildOccasi
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { NLoader } from '../motion';
 // "I'd call the whole feature 'Occasion' ... I wouldn't clutter Create
 // with 10 separate buttons" (direct user request, CLAUDE.md, 2026-09-12):
 // replaced the old "big-button icon grid + With people/With businesses/
@@ -315,7 +316,7 @@ export default function CreateHubScreen({ navigation, route }) {
 
               {whoFor !== 'me' && (
                 <View style={styles.whoForDetailBox}>
-                  {loadingFriends && <ActivityIndicator color={colors.primary} />}
+                  {loadingFriends && <NLoader fullScreen={false} size="inline" caption="Loading friends…" />}
                   {!loadingFriends && friends.length > 0 && (
                     <>
                       <Text style={styles.sublabel}>Pick a real friend (optional)</Text>

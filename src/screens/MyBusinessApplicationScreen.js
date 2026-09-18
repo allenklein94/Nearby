@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { NLoader } from '../motion';
+import { NLoader, showSuccessToast } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyBusinessPartnerRequest, resubmitBusinessPartnerRequest } from '../services/businessPartnerApply';
 import { checkTextModeration } from '../services/textModeration';
@@ -103,7 +103,7 @@ export default function MyBusinessApplicationScreen({ navigation }) {
         address: form.address.trim(),
         requestedFeatures: form.requestedFeatures,
       });
-      Alert.alert('Sent', "We'll take another look and let you know.");
+      showSuccessToast('Sent', "We'll take another look and let you know.");
       await load();
     } catch (e) {
       Alert.alert('Error', e.message);

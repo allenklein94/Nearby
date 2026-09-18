@@ -21,6 +21,7 @@ const HAIR_COLOR_OPTIONS = BASICS_FIELDS.find((f) => f.key === 'hair_color')?.op
 const EYE_COLOR_OPTIONS = BASICS_FIELDS.find((f) => f.key === 'eye_color')?.options ?? [];
 import { typography, spacing, radius, shadow } from '../theme';
 
+import { showSuccessToast } from '../motion';
 // Aug 30 2026 (CLAUDE.md, external product-critique reply): "Dating should
 // own the dating-specific information" -- the real, dedicated home for
 // what's genuinely dating-specific (what you're looking for, age range,
@@ -165,7 +166,7 @@ export default function DatingPreferencesScreen({ navigation }) {
       })
       .eq('id', userId);
     if (error) return Alert.alert('Error', error.message);
-    Alert.alert('Saved');
+    showSuccessToast('Saved');
   }
 
   async function showStrengths() {
@@ -234,7 +235,7 @@ export default function DatingPreferencesScreen({ navigation }) {
                   key={option.value}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleIntention(option.value)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                   accessibilityLabel={option.label}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
@@ -283,7 +284,7 @@ export default function DatingPreferencesScreen({ navigation }) {
                   key={option}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleEthnicityPreference(option)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                   accessibilityLabel={option}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
@@ -304,7 +305,7 @@ export default function DatingPreferencesScreen({ navigation }) {
                   key={option}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleHairColorPreference(option)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                   accessibilityLabel={option}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
@@ -325,7 +326,7 @@ export default function DatingPreferencesScreen({ navigation }) {
                   key={option}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleEyeColorPreference(option)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                   accessibilityLabel={option}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}

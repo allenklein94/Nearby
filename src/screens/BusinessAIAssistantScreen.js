@@ -4,6 +4,7 @@ import { askBusinessAssistant } from '../services/businessAI';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
+import { NLoader } from '../motion';
 const SUGGESTIONS = ['Why did attendance drop this month?', 'What should I promote right now?', 'How am I doing compared to last month?', 'Suggest a new offer'];
 
 export default function BusinessAIAssistantScreen({ route }) {
@@ -56,7 +57,7 @@ export default function BusinessAIAssistantScreen({ route }) {
               <Text style={item.role === 'question' ? styles.bubbleQuestionText : styles.bubbleAnswerText}>{item.text}</Text>
             </View>
           )}
-          ListFooterComponent={loading ? <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} /> : null}
+          ListFooterComponent={loading ? <NLoader fullScreen={false} size="inline" caption="Thinking…" /> : null}
         />
 
         <View style={styles.inputWrap}>

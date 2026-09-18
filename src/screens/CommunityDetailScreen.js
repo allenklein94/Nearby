@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Image, Modal } from 'react-native';
-import { NLoader, SuccessAnimation } from '../motion';
+import { NLoader, SuccessAnimation, modalAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { supabase } from '../services/supabase';
@@ -810,7 +810,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
         targetTitle={community.name}
       />
 
-      <Modal visible={areaModalVisible} animationType="slide" transparent onRequestClose={() => setAreaModalVisible(false)}>
+      <Modal visible={areaModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setAreaModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>Community Area</Text>

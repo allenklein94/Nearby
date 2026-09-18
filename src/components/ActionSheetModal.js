@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'rea
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { modalAnimation } from '../motion';
 // Real bottom-sheet menu component, not a native Alert.alert — RN's
 // Alert.alert is documented as unreliable with more than ~3 buttons on
 // Android (some/all extra buttons silently don't render), so anything
@@ -20,7 +21,7 @@ export default function ActionSheetModal({ visible, onClose, title, message, opt
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} accessibilityLabel="Close menu" />
         <View style={styles.sheet}>

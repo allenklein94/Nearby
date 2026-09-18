@@ -5,6 +5,7 @@ import { radius, spacing, typography } from '../theme';
 import { NearbyMark } from './brand';
 import useReduceMotion from '../hooks/useReduceMotion';
 
+import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 // Shared "couldn't load, try again" state for screens whose initial data
 // fetch has no error handling at all — previously a thrown error (e.g. no
 // connection) left the screen showing its loading spinner forever, with no
@@ -36,7 +37,7 @@ export default function LoadErrorState({ message, onRetry }) {
       opacity.setValue(1);
       return;
     }
-    Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: true }).start();
+    Animated.timing(opacity, { toValue: 1, duration: MOTION_BUDGET.small.ms, useNativeDriver: true }).start();
   }, [reduceMotion]);
 
   return (

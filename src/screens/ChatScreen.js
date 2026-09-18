@@ -86,7 +86,7 @@ function VoiceBubble({ audioPath, isMe, colors }) {
     <TouchableOpacity
       style={[voiceStyles.bubble, isMe ? { backgroundColor: colors.primary } : { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}
       onPress={togglePlay}
-      activeOpacity={0.8}
+      activeOpacity={0.85}
       accessibilityLabel={`${isMe ? 'Your' : 'Their'} voice message, ${playing ? 'playing, tap to pause' : 'tap to play'}`}
       accessibilityRole="button"
     >
@@ -1264,7 +1264,7 @@ export default function ChatScreen({ route, navigation }) {
                     <VoiceBubble audioPath={item.audio_url} isMe={isMe} colors={colors} />
                   </TouchableOpacity>
                 ) : item.media_url ? (
-                  <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={0.9}>
+                  <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={0.85}>
                     {mediaUrls[item.id] === undefined ? (
                       <View style={[styles.gifBubble, { justifyContent: 'center', alignItems: 'center' }]}>
                         <ActivityIndicator color={colors.primary} />
@@ -1299,7 +1299,7 @@ export default function ChatScreen({ route, navigation }) {
                     )}
                   </TouchableOpacity>
                 ) : item.gif_url ? (
-                  <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={0.9}>
+                  <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={0.85}>
                     <Image
                       source={{ uri: item.gif_url }}
                       style={styles.gifBubble}

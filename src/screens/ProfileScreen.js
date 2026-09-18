@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, LayoutAnimation, UIManager, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, UIManager, Switch } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -19,6 +19,7 @@ import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS } from '../constants/busine
 import VoicePlayButton from '../components/VoicePlayButton';
 import { typography, spacing, radius } from '../theme';
 
+import { modalAnimation, showSuccessToast, animateLayout } from '../motion';
 const MAX_VOICE_INTRO_SECONDS = 30;
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -62,7 +63,7 @@ function AccordionField({ field, value, expanded, onToggle, children }) {
       <TouchableOpacity
         style={styles.header}
         onPress={onToggle}
-        activeOpacity={0.7}
+        activeOpacity={0.85}
         accessibilityLabel={`${field.label}${value ? `, currently ${value}` : ', not set'}`}
         accessibilityRole="button"
         accessibilityState={{ expanded }}
@@ -277,7 +278,7 @@ export default function ProfileScreen({ navigation, route }) {
   // unrelated screens with no stated relationship between them.
 
   function toggleFieldExpanded(key) {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    animateLayout();
     setExpandedField((prev) => (prev === key ? null : key));
   }
 
@@ -328,7 +329,7 @@ export default function ProfileScreen({ navigation, route }) {
       }
       return next;
     });
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    animateLayout();
     setExpandedField(null);
   }
 
@@ -537,7 +538,7 @@ export default function ProfileScreen({ navigation, route }) {
       })
       .eq('id', userId);
     if (error) return Alert.alert('Error', error.message);
-    Alert.alert('Saved');
+    showSuccessToast('Saved');
   }
 
   async function changePhoto() {
@@ -547,7 +548,7 @@ export default function ProfileScreen({ navigation, route }) {
       setUploading(true);
       await uploadProfilePhoto(userId, asset);
       setUploading(false);
-      Alert.alert('Photo updated', 'Your new photo is being reviewed before it appears to others.');
+      showSuccessToast('Photo updated', 'Your new photo is being reviewed before it appears to others.');
       load();
     } catch (e) {
       setUploading(false);
@@ -759,7 +760,7 @@ export default function ProfileScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.plansOccasionRow}
             onPress={() => navigation.navigate('Occasions')}
-            activeOpacity={0.7}
+            activeOpacity={0.85}
             accessibilityLabel="View your saved occasions"
             accessibilityRole="button"
           >
@@ -1097,7 +1098,7 @@ export default function ProfileScreen({ navigation, route }) {
                 key={goal}
                 style={[styles.chip, selected && styles.chipSelected]}
                 onPress={() => setConnectionGoal(selected ? '' : goal)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 accessibilityLabel={goal}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
@@ -1120,7 +1121,7 @@ export default function ProfileScreen({ navigation, route }) {
                   key={option}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleGenderIdentity(option)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                   accessibilityLabel={option}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
@@ -1141,7 +1142,7 @@ export default function ProfileScreen({ navigation, route }) {
                   key={option}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleInterestedInGender(option)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                   accessibilityLabel={option}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
@@ -1173,7 +1174,7 @@ export default function ProfileScreen({ navigation, route }) {
                 key={option}
                 style={[styles.chip, myEthnicity === option && styles.chipSelected]}
                 onPress={() => setMyEthnicity(myEthnicity === option ? null : option)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 accessibilityLabel={option}
                 accessibilityRole="button"
                 accessibilityState={{ selected: myEthnicity === option }}
@@ -1284,7 +1285,7 @@ export default function ProfileScreen({ navigation, route }) {
                       key={option}
                       style={[styles.chip, selected && styles.chipSelected]}
                       onPress={() => setBasicField(field.key, option)}
-                      activeOpacity={0.8}
+                      activeOpacity={0.85}
                       accessibilityLabel={option}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
@@ -1309,7 +1310,7 @@ export default function ProfileScreen({ navigation, route }) {
                 key={interest}
                 style={[styles.chip, selected && styles.chipSelected]}
                 onPress={() => toggleInterest(interest)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 accessibilityLabel={interest}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
@@ -1337,7 +1338,7 @@ export default function ProfileScreen({ navigation, route }) {
                 key={o.key}
                 style={[styles.chip, selected && styles.chipSelected]}
                 onPress={() => toggleCuisinePreference(o.key)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 accessibilityLabel={o.label}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
@@ -1355,7 +1356,7 @@ export default function ProfileScreen({ navigation, route }) {
                 key={o.key}
                 style={[styles.chip, selected && styles.chipSelected]}
                 onPress={() => toggleVenuePreference(o.key)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 accessibilityLabel={o.label}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
@@ -1377,7 +1378,7 @@ export default function ProfileScreen({ navigation, route }) {
         </TouchableOpacity>
       </ScrollView>
 
-      <Modal visible={questionPickerVisible} animationType="slide" onRequestClose={() => setQuestionPickerVisible(false)}>
+      <Modal visible={questionPickerVisible} animationType={modalAnimation('slide')} onRequestClose={() => setQuestionPickerVisible(false)}>
         <SafeAreaView style={styles.container}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle} accessibilityRole="header">Choose a Prompt</Text>
@@ -1408,7 +1409,7 @@ export default function ProfileScreen({ navigation, route }) {
         </SafeAreaView>
       </Modal>
 
-      <Modal visible={answerModalVisible} animationType="slide" transparent onRequestClose={() => setAnswerModalVisible(false)}>
+      <Modal visible={answerModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setAnswerModalVisible(false)}>
         <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.sheet}>
             <Text style={styles.sheetQuestion} accessibilityRole="header">{draftQuestion}</Text>

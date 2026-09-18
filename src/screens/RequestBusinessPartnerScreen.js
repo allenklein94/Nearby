@@ -235,7 +235,7 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
                   {!isSearching && !loadingBrowsable && browsablePartners.length > 0 && (
                     <Text style={styles.browseLabel}>Businesses on Nearby</Text>
                   )}
-                  {busy && <ActivityIndicator style={{ marginTop: spacing.md }} color={colors.primary} />}
+                  {busy && <NLoader fullScreen={false} size="inline" kind="businesses" />}
                   <FlatList
                     data={listData}
                     keyExtractor={(p) => p.id}

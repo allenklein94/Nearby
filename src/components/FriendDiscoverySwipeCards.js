@@ -13,6 +13,7 @@ import { typography, spacing, radius } from '../theme';
 import { REASON_CATEGORIES, REASON_CATEGORY_ICONS } from '../constants/recommendationReasonVocabulary';
 import { gatheringReasonText, formatCrossedPathsTimeShort } from '../services/crossedPathsSignals';
 
+import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
 
@@ -52,7 +53,7 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
   function forceSwipe(direction) {
     const x = direction === 'right' ? SCREEN_WIDTH * 1.2 : -SCREEN_WIDTH * 1.2;
     Haptics.impactAsync(direction === 'right' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
-    Animated.timing(position, { toValue: { x, y: 0 }, duration: 220, useNativeDriver: false }).start(() => {
+    Animated.timing(position, { toValue: { x, y: 0 }, duration: MOTION_BUDGET.small.ms, useNativeDriver: false }).start(() => {
       const item = data[currentIndex];
       position.setValue({ x: 0, y: 0 });
       setCurrentIndex((i) => i + 1);
@@ -136,7 +137,7 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
             change from today's plain, non-tappable avatar. */}
         {storyGroup ? (
           <TouchableOpacity
-            activeOpacity={0.95}
+            activeOpacity={0.85}
             onPress={() => onViewStory(storyGroup)}
             accessibilityLabel={`View ${item.display_name}'s story`}
             accessibilityRole="button"

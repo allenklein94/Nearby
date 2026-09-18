@@ -17,7 +17,7 @@ import {
   StyleSheet, SafeAreaView, Alert, ActivityIndicator, Modal, KeyboardAvoidingView,
   Platform, TouchableWithoutFeedback, Keyboard,
 } from 'react-native';
-import { NLoader } from '../motion';
+import { NLoader, modalAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -455,7 +455,7 @@ export default function BusinessAIAutomationScreen({ route }) {
             </Text>
 
             {loadingPolicies ? (
-              <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} />
+              <NLoader fullScreen={false} size="inline" kind="content" />
             ) : policies.length === 0 ? (
               <Text style={styles.emptyText}>No policies yet — create one to let Level {trustLevel >= 3 ? '2 or 3' : '2'} automation actually respond to requests.</Text>
             ) : (
@@ -500,7 +500,7 @@ export default function BusinessAIAutomationScreen({ route }) {
         </Text>
 
         {loadingLog ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} />
+          <NLoader fullScreen={false} size="inline" kind="content" />
         ) : activityLog.length === 0 ? (
           <Text style={styles.emptyText}>No AI activity yet.</Text>
         ) : (
@@ -508,7 +508,7 @@ export default function BusinessAIAutomationScreen({ route }) {
         )}
       </ScrollView>
 
-      <Modal visible={policyModalVisible} animationType="slide" transparent onRequestClose={() => setPolicyModalVisible(false)}>
+      <Modal visible={policyModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setPolicyModalVisible(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalOverlay}>
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={styles.modalSheet}>

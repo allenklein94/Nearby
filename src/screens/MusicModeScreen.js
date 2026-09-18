@@ -6,6 +6,7 @@ import { useSpotifyAuthRequest, exchangeCodeForToken, saveSpotifyTokens, fetchTo
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { showSuccessToast } from '../motion';
 WebBrowser.maybeCompleteAuthSession();
 
 const MAX_FAVORITE_TRACKS = 5;
@@ -74,7 +75,7 @@ export default function MusicModeScreen({ navigation }) {
 
       if (error) throw error;
 
-      Alert.alert('Saved', 'Your favorite tracks now show on your profile.');
+      showSuccessToast('Saved', 'Your favorite tracks now show on your profile.');
       navigation.goBack();
     } catch (e) {
       Alert.alert('Error', e.message);

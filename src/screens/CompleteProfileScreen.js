@@ -354,7 +354,7 @@ export default function CompleteProfileScreen() {
                     key={interest}
                     style={[styles.chip, selected && styles.chipSelected]}
                     onPress={() => toggleInterest(interest)}
-                    activeOpacity={0.8}
+                    activeOpacity={0.85}
                     accessibilityLabel={interest}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
@@ -368,7 +368,7 @@ export default function CompleteProfileScreen() {
             <TouchableOpacity
               style={styles.consentRow}
               onPress={() => setAgreedToTerms(!agreedToTerms)}
-              activeOpacity={0.7}
+              activeOpacity={0.85}
               accessibilityLabel="Agree to Terms of Service and Privacy Policy"
               accessibilityRole="checkbox"
               accessibilityState={{ checked: agreedToTerms }}

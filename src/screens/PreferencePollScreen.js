@@ -96,7 +96,7 @@ export default function PreferencePollScreen() {
                       key={o.key}
                       style={[styles.chip, isSelected && styles.chipSelected]}
                       onPress={() => toggleOption(poll.id, o.key)}
-                      activeOpacity={0.8}
+                      activeOpacity={0.85}
                       accessibilityLabel={o.label}
                       accessibilityRole="button"
                       accessibilityState={{ selected: isSelected }}

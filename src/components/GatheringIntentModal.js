@@ -4,6 +4,7 @@ import { setGatheringIntent, getMyGatheringIntent } from '../services/gatherings
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { modalAnimation } from '../motion';
 const INTENT_OPTIONS = [
   { value: 'meet_someone_new', emoji: '👋', label: 'Meet someone new' },
   { value: 'get_out_of_house', emoji: '🚪', label: 'Get out of the house' },
@@ -48,7 +49,7 @@ export default function GatheringIntentModal({ visible, gathering, onClose, onCo
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>What are you hoping for tonight?</Text>

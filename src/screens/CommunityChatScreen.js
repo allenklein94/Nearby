@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, ActivityIndicator, Modal } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import { NLoader } from '../motion';
+import { NLoader, modalAnimation } from '../motion';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { getCommunityMessagesPage, getCommunityMessageById, sendCommunityMessage, getCommunitySummary } from '../services/communities';
@@ -246,11 +246,11 @@ export default function CommunityChatScreen({ route, navigation }) {
         reportedUserName={reportTarget?.name}
       />
 
-      <Modal visible={infoVisible} animationType="slide" transparent onRequestClose={() => setInfoVisible(false)}>
+      <Modal visible={infoVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setInfoVisible(false)}>
         <View style={styles.infoOverlay}>
           <View style={styles.infoSheet}>
             {loadingSummary && !communitySummary ? (
-              <ActivityIndicator color={colors.primary} style={{ paddingVertical: spacing.xl }} />
+              <NLoader fullScreen={false} size="compact" kind="recommendations" />
             ) : (
               <>
                 <Text style={styles.infoTitle}>{communitySummary?.name ?? communityName ?? 'Community'}</Text>

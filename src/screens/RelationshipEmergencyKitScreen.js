@@ -89,7 +89,7 @@ export default function RelationshipEmergencyKitScreen() {
               <TouchableOpacity
                 style={styles.cardHeader}
                 onPress={() => toggleExpand(index, section.key)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 accessibilityLabel={`${title}, ${expanded ? 'double tap to collapse' : 'double tap to expand'}`}
                 accessibilityRole="button"
                 accessibilityState={{ expanded }}

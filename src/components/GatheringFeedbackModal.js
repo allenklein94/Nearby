@@ -5,6 +5,7 @@ import { maybeRequestAppReview } from '../services/appReview';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { modalAnimation } from '../motion';
 const SATISFACTION_OPTIONS = [
   { value: 'loved_it', emoji: '😊', label: 'Loved it' },
   { value: 'good', emoji: '🙂', label: 'Good' },
@@ -105,7 +106,7 @@ export default function GatheringFeedbackModal({ visible, gatheringId, navigatio
 
   if (step === 'next') {
     return (
-      <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+      <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={handleClose}>
         <View style={styles.overlay}>
           <View style={styles.sheet}>
             <Text style={styles.title}>Anything you'd like to do next?</Text>
@@ -140,7 +141,7 @@ export default function GatheringFeedbackModal({ visible, gatheringId, navigatio
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleSkip}>
+    <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={handleSkip}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>How was it?</Text>

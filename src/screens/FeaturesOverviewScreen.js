@@ -85,7 +85,7 @@ export default function FeaturesOverviewScreen() {
               <TouchableOpacity
                 style={styles.categoryHeader}
                 onPress={() => toggleCategory(category.key)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 accessibilityLabel={`${category.title}, ${expanded ? 'tap to collapse' : 'tap to expand'}`}
                 accessibilityRole="button"
                 accessibilityState={{ expanded }}

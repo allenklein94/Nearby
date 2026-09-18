@@ -1,3 +1,11 @@
+# Item 137 (2026-09-18) - Animation consistency audit
+Swept for spinners, durations, loading indicators, icon animations, transitions, modals, success states,
+button feedback, pull-to-refresh, empty states. Replaced literal durations with budget tokens, modals with
+`modalAnimation()`, and (final pass) ProfileScreen's raw LayoutAnimation -> `animateLayout()`, AdminReports'
+bare onRefresh -> `PullToRefresh`, tab-bar 1.15x overshoot bounce -> tiny-tier 0.92 press, Business
+redemption "Confirmed" Alert -> `showSuccessToast`. Added `consistencyAudit.test.js`. Jest 646/646.
+Not done: docs/business web export regeneration (BusinessDashboardScreen changed); device verification.
+
 ## Sep 18 2026 — Item 136 (product personality: "Nearby is quietly working for you") — GUIDING THESIS, no build
 
 Logged, like Item 112, as a north-star tiebreaker rather than a build item (feature-freeze convention:

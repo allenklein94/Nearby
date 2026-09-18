@@ -12,6 +12,7 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 // Replaces the old plain Alert.alert('Posted!', ...) dead end with two
 // real actions — a working shareable deep link (needs the `linking`
 // config added to RootNavigator.js; a "shareable link" that silently
@@ -69,7 +70,7 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Animated.parallel([
       Animated.spring(markScale, { toValue: 1, friction: 6, useNativeDriver: true }),
-      Animated.timing(markOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.timing(markOpacity, { toValue: 1, duration: MOTION_BUDGET.medium.ms, useNativeDriver: true }),
     ]).start();
     load();
     isFirstGatheringHosted().then(setIsFirstHosted);
@@ -289,7 +290,7 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
               </Text>
             )}
             {loadingFriends ? (
-              <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />
+              <NLoader fullScreen={false} size="inline" caption="Loading friends…" />
             ) : friends.length === 0 ? (
               <Text style={styles.emptyText}>Add some friends first to be able to invite them here.</Text>
             ) : (

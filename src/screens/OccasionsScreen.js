@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import { NLoader, SurpriseRevealAnimation } from '../motion';
+import { NLoader, SurpriseRevealAnimation, modalAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getMyOccasions, addOccasion, deleteOccasion, setOccasionReminderEnabled, setOccasionRecallShareable, revealOccasion } from '../services/occasions';
@@ -504,7 +504,7 @@ export default function OccasionsScreen({ navigation }) {
                   style={styles.card}
                   onPress={handleConnectCalendarPress}
                   disabled={connectingCalendar}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                   accessibilityRole="button"
                   accessibilityLabel="Connect your calendar"
                 >
@@ -532,7 +532,7 @@ export default function OccasionsScreen({ navigation }) {
                     details stay on this device unless you choose to act on one below.
                   </Text>
                   {loadingCalendarEvents ? (
-                    <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
+                    <NLoader fullScreen={false} size="inline" caption="Checking your calendars…" />
                   ) : calendarEvents.length === 0 ? (
                     <Text style={styles.helperText}>Nothing new on your shared calendars right now.</Text>
                   ) : (
@@ -583,7 +583,7 @@ export default function OccasionsScreen({ navigation }) {
                     key={plan.id}
                     style={styles.card}
                     onPress={() => navigation.navigate('GroupOccasionPlan', { planId: plan.id })}
-                    activeOpacity={0.8}
+                    activeOpacity={0.85}
                     accessibilityLabel={plan.title}
                     accessibilityRole="button"
                   >
@@ -666,7 +666,7 @@ export default function OccasionsScreen({ navigation }) {
                             <TouchableOpacity
                               onPress={() => confirmReveal(occasion)}
                               disabled={revealingId === occasion.id}
-                              activeOpacity={0.8}
+                              activeOpacity={0.85}
                               accessibilityRole="button"
                               accessibilityLabel={`Reveal the surprise for ${occasion.title}`}
                             >
@@ -899,7 +899,7 @@ export default function OccasionsScreen({ navigation }) {
 
       <Modal
         visible={showCalendarPicker}
-        animationType="slide"
+        animationType={modalAnimation('slide')}
         transparent
         onRequestClose={() => setShowCalendarPicker(false)}
       >

@@ -38,7 +38,7 @@ import PlaceCard from '../components/PlaceCard';
 import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
-import { ModeTransition, FilterTransition, TapActiveChip, NearbyPickBadge, NLoader, FoundLine } from '../motion';
+import { ModeTransition, FilterTransition, TapActiveChip, NearbyPickBadge, NLoader, FoundLine, modalAnimation } from '../motion';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -1211,7 +1211,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
              context. The CTA below is its own nested touchable and
              still navigates, because joining is a real task change. */
           onPress={() => openContextFor(g)}
-          activeOpacity={0.9}
+          activeOpacity={0.85}
           accessibilityLabel={`${g.title}, ${heroEyebrow(g)}${reasonLine ? `, ${reasonLine}` : ''}. Shows more like this.`}
           accessibilityRole="button"
         >
@@ -2257,7 +2257,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       )}
       </ModeTransition>
 
-      <Modal visible={!!gatheringStoryViewer} animationType="slide" onRequestClose={() => setGatheringStoryViewer(null)}>
+      <Modal visible={!!gatheringStoryViewer} animationType={modalAnimation('slide')} onRequestClose={() => setGatheringStoryViewer(null)}>
         <SafeAreaView style={styles.container}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', margin: spacing.lg }}>
             <Text style={styles.title}>{gatheringStoryViewer?.title}</Text>

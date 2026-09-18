@@ -18,6 +18,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+import { NLoader } from '../motion';
 // Real Free/$/$$/$$$ chip labels for the new Price field -- mirrors the
 // visual convention services/places.js's own priceLevelLabel() already
 // established for Google Places results, without reusing that function
@@ -437,7 +438,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                           isSelected && { backgroundColor: style.color, borderColor: style.color },
                         ]}
                         onPress={() => setInterestTag(interestTag === option ? null : option)}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityLabel={`Category: ${option}`}
                         accessibilityRole="button"
                         accessibilityState={{ selected: isSelected }}
@@ -495,7 +496,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
             {visibility === 'community' && (
               loadingCommunities ? (
-                <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} />
+                <NLoader fullScreen={false} size="inline" caption="Loading communities…" />
               ) : myCommunities.length === 0 ? (
                 <Text style={styles.helperText}>You're not a member of any community yet.</Text>
               ) : (
@@ -606,8 +607,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 <Text style={styles.subLabel}>Popular Nearby</Text>
                 {loadingPlaces ? (
                   <View style={{ marginTop: spacing.sm }}>
-                    <ActivityIndicator color={colors.primary} />
-                    <Text style={styles.helperText}>Finding places nearby…</Text>
+                    <NLoader fullScreen={false} size="inline" kind="places" />
                   </View>
                 ) : (popularPlaces ?? []).length === 0 ? (
                   <Text style={styles.helperText}>No nearby places found — try "Near Me" instead, or drop a pin below.</Text>
@@ -695,7 +695,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                         key={option.label}
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => setRecurrenceRule(option.key)}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityLabel={option.label}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
@@ -715,7 +715,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                         key={option.key}
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => { Haptics.selectionAsync(); setCapacityOption(option.key); }}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityLabel={option.label}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
@@ -759,7 +759,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                         key={option.label}
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => { Haptics.selectionAsync(); setPriceLevel(option.key); }}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityLabel={option.label}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
@@ -779,7 +779,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                         key={option.label}
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => { Haptics.selectionAsync(); setPartyType(option.key); }}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                         accessibilityLabel={option.label}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}

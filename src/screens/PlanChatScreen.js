@@ -12,6 +12,7 @@ import { spacing, radius } from '../theme';
 import useChatComposer from '../hooks/useChatComposer';
 import usePaginatedMessages from '../hooks/usePaginatedMessages';
 
+import { NLoader } from '../motion';
 const ROLE_LABEL = { host: 'Host', organizer: 'Co-organizer', guest: 'Guest' };
 
 // Item 89 (CLAUDE.md, "Give the occasion a single shared conversation"):
@@ -121,7 +122,7 @@ export default function PlanChatScreen({ route, navigation }) {
   if (resolving || !planId) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
+        <NLoader fullScreen={false} size="compact" kind="content" />
       </SafeAreaView>
     );
   }
@@ -151,7 +152,7 @@ export default function PlanChatScreen({ route, navigation }) {
         {loadError ? (
           <LoadErrorState message="Couldn't load this chat." onRetry={loadInitial} />
         ) : loadingInitial ? (
-          <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
+          <NLoader fullScreen={false} size="compact" kind="content" />
         ) : messages.length === 0 ? (
           <FadeInState style={[styles.emptyState, { flex: 1, justifyContent: 'center' }]}>
             <Text style={styles.emptyEmoji}>💬</Text>

@@ -8,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+import { showSuccessToast } from '../motion';
 const SIGNALS = [
   { key: 'felt_relaxed', icon: '😌', labelKey: 'relaxed' },
   { key: 'felt_curious', icon: '🤔', labelKey: 'curious' },
@@ -44,7 +45,7 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
      await submitChemistryEntry(aboutDisplayName, signals, noteText);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('chemistry_diary_entry_saved');
-      Alert.alert('Saved privately', 'Only you can see this — it helps build a picture of what actually feels good to you over time.');
+      showSuccessToast('Saved privately', 'Only you can see this — it helps build a picture of what actually feels good to you over time.');
       navigation.goBack();
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -69,7 +70,7 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
                 key={signal.key}
                 style={[styles.signalRow, active && styles.signalRowActive]}
                 onPress={() => toggleSignal(signal.key)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 accessibilityLabel={label}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: active }}

@@ -94,3 +94,20 @@ export function installReducedMotionPolicy(Animated) {
     return createInertAnimation();
   };
 }
+
+// Item 137: one place decides how a native <Modal> transitions. Screens pass their intended type
+// (`animationType={modalAnimation('slide')}`); under Reduce Motion a slide becomes a plain fade.
+// Read at render time, so the next open after the OS setting changes picks it up.
+export function modalAnimation(type = 'slide') {
+  if (type === 'none') return 'none';
+  return getReduceMotion() ? 'fade' : type;
+}
+
+// Item 137: one place decides how a layout change (an accordion expanding) animates. Small-tier
+// ease (220ms, matching MOTION_BUDGET.small) instead of RN's 300ms preset; under Reduce Motion the
+// layout simply snaps. Call immediately before the setState that changes the layout.
+export function animateLayout() {
+  if (getReduceMotion()) return;
+  const { LayoutAnimation } = require('react-native');
+  LayoutAnimation.configureNext(LayoutAnimation.create(220, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity));
+}

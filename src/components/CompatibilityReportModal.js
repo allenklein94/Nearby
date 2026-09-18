@@ -6,6 +6,7 @@ import { BASICS_FIELDS } from '../constants/basicsFields';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { NLoader, modalAnimation } from '../motion';
 function fieldLabel(key) {
   const field = BASICS_FIELDS.find((f) => f.key === key);
   return field ? `${field.icon} ${field.label}` : key;
@@ -69,7 +70,7 @@ export default function CompatibilityReportModal({ visible, onClose, report, the
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={resetAndClose}>
+    <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={resetAndClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>{report.score}% Match with {theirName}</Text>
@@ -111,7 +112,7 @@ export default function CompatibilityReportModal({ visible, onClose, report, the
               <Text style={styles.introButtonText}>✨ Why you two might connect</Text>
             </TouchableOpacity>
           )}
-          {view === 'score' && loadingIntro && <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />}
+          {view === 'score' && loadingIntro && <NLoader fullScreen={false} size="inline" kind="recommendations" />}
           {view === 'score' && introduction && (
             <View style={styles.introCard}>
               <Text style={styles.introText}>{introduction}</Text>

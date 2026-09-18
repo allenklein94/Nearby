@@ -212,7 +212,7 @@ function FriendVariant({ haptic = false, visible, theirPhotoUrl, theirName, onSa
           <TouchableOpacity style={styles.primaryButton} onPress={onSayHi} activeOpacity={0.85}>
             <Text style={styles.primaryButtonText}>Say Hi →</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryButton} onPress={onDismiss} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.secondaryButton} onPress={onDismiss} activeOpacity={0.85}>
             <Text style={styles.secondaryButtonText}>Keep Browsing</Text>
           </TouchableOpacity>
         </Animated.View>

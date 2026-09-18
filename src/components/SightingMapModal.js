@@ -4,6 +4,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { modalAnimation } from '../motion';
 // A single-pin map for one specific Crossed Paths encounter, using
 // only the fuzzed coordinate (~0.24 mile jitter, same protection as
 // gatherings) — never the actual precise location either person was
@@ -17,7 +18,7 @@ export default function SightingMapModal({ visible, onClose, latitude, longitude
   const hasCoords = latitude != null && longitude != null;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>Roughly where you crossed paths</Text>

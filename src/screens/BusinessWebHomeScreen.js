@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing } from '../theme';
 import NearbyMark from '../components/brand/NearbyMark';
 
+import { NLoader } from '../motion';
 // Phase 7 (Business Web, CLAUDE.md) -- the entire gate for Business Web:
 // a signed-in visitor only ever reaches BusinessDashboard here if they
 // really do manage a real, approved partner (same getMyManagedPartner()
@@ -36,7 +37,7 @@ export default function BusinessWebHomeScreen({ navigation }) {
   if (checking) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator color={colors.primary} size="large" />
+        <NLoader />
       </SafeAreaView>
     );
   }
