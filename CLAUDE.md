@@ -221,6 +221,23 @@ covered. Full Jest suite 580/580 passing (unchanged); `CommunityDetailScreen.js`
 clean via `@babel/core` + `babel-preset-expo`. Not exercised on a real device (standing note) —
 same as the prior two follow-ups, a pure import-path change with no expected visual difference.
 
+**Same-day follow-up ("do the same for OccasionAnimation on the surprise reveal").** The one real
+consumer of the `OccasionSelectAnimation` shim is `CelebrateSomethingScreen.js`'s occasion-step
+micro-celebration — a single `<OccasionSelectAnimation>` instance parameterized by whichever real
+key was tapped (`OCCASION_SELECT_ANIMATIONS`), including the "Surprise" quick-pick tile's own
+🔓→🔒 "reveal" moment named here. Migrated the import from
+`../components/OccasionSelectAnimation` to `import { OccasionAnimation, OCCASION_SELECT_ANIMATIONS
+} from '../motion'` (both already exported from the same barrel entry) and renamed the JSX usage
+to `<OccasionAnimation>` — same component, no behavior change, so every occasion this shared
+instance already animates (Birthday/Anniversary/Celebration/Surprise) keeps working identically,
+not just the Surprise case. Distinct from `SurpriseRevealAnimation` (the separate 🔒→✨→🎉
+component used on `OccasionsScreen.js`/`GroupOccasionPlanScreen.js` for actually revealing an
+already-created surprise plan) — that shim's two consumers are untouched, a real, disclosed
+candidate for the same migration later, not silently assumed done. Full Jest suite 580/580 passing
+(unchanged); `CelebrateSomethingScreen.js` transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised on a real device (standing note) — pure import-path change,
+same as the prior three follow-ups.
+
 No DB migration, no new pure functions (a component library + three wiring sites). Full Jest suite
 580/580 passing (unchanged); all 18 touched/new files (10 new `src/motion/` files, 6 shim files, 2
 wired screens) transform-checked clean via `@babel/core` + `babel-preset-expo` — plus a full

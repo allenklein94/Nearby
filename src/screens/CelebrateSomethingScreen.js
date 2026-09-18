@@ -37,7 +37,7 @@ import {
   buildAutoPlanSuggestion,
 } from '../services/celebrateSomething';
 import { experienceTemplateForOccasion } from '../constants/experienceTemplates';
-import OccasionSelectAnimation, { OCCASION_SELECT_ANIMATIONS } from '../components/OccasionSelectAnimation';
+import { OccasionAnimation, OCCASION_SELECT_ANIMATIONS } from '../motion';
 import FindingOptionsLoader from '../components/FindingOptionsLoader';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
@@ -1216,7 +1216,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     used. `key` forces a clean remount if a second
                     selection lands before the first animation finishes. */}
                 {occasionAnimTrigger && (
-                  <OccasionSelectAnimation
+                  <OccasionAnimation
                     key={occasionAnimTrigger}
                     triggerKey={occasionAnimTrigger}
                     onDone={() => setOccasionAnimTrigger(null)}
