@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
-import { PullToRefresh } from '../motion';
+import { PullToRefresh, FilterTransition } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, searchGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering, stopRecurringSeries } from '../services/gatherings';
@@ -526,6 +526,20 @@ export default function GatheringsScreen({ navigation, route }) {
           ? '☀️ Great weather — showing outdoor options first'
           : null)
     : null;
+  // FilterTransition (the Nearby Motion System, CLAUDE.md Item 116): a
+  // results-reorganizing cue on the nearby tab whenever a real filter chip
+  // changes (When/category/trending/environment/price/party-type) -- these
+  // are all pure client-side re-filters of already-fetched data (see
+  // filteredNearby below), so there's no reload to wait on. Deliberately
+  // excludes isSearchingGatherings/searchQuery -- that path already has its
+  // own real "Searching gatherings…" loading state above (a genuine network
+  // round trip, not a client-side reorganize) and its own tab/viewStyle
+  // gates, so mixing it into this key would fire the cue twice for one
+  // action.
+  const nearbyFilterKey = JSON.stringify({
+    interestFilter, forYouActive, trendingActive, dateFilter, environmentFilter, priceFilter, partyTypeFilter,
+  });
+
   const filteredNearby = (isSearchingGatherings ? searchedNearby : nearby)
     .filter((g) => forYouActive ? topCategories.includes(g.interest_tag) : (!interestFilter || g.interest_tag === interestFilter))
     .filter((g) => !trendingActive || trendingIds.includes(g.id))
@@ -943,6 +957,7 @@ export default function GatheringsScreen({ navigation, route }) {
           <Text style={styles.emptyText}>Searching gatherings…</Text>
         </View>
       ) : tab === 'nearby' && (
+        <FilterTransition activeKey={nearbyFilterKey} style={{ flex: 1 }}>
         <FlatList
           data={filteredNearby}
           keyExtractor={(item) => item.id}
@@ -1145,6 +1160,7 @@ export default function GatheringsScreen({ navigation, route }) {
             );
           }}
         />
+        </FilterTransition>
       )}
 
       {tab === 'attending' && viewStyle === 'map' ? (

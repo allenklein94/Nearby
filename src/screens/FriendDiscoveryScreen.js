@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Switch, Alert } from 'react-native';
-import { NLoader, MatchAnimation } from '../motion';
+import { NLoader, MatchAnimation, FilterTransition } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   isOpenToFriendDiscovery,
@@ -254,6 +254,12 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
   });
   const filtersActive = interestFilters.length > 0 || !!distanceFilter || verifiedOnlyFilter || onlineOnlyFilter;
 
+  // FilterTransition (the Nearby Motion System, CLAUDE.md Item 116): the
+  // same results-reorganizing cue DiscoveryScreen's own quick filters just
+  // got, for Dating/Friends parity (Item 115's "siblings" framing) --
+  // filteredCandidates is already a pure client-side re-filter, no reload.
+  const friendFilterKey = JSON.stringify({ interestFilters, distanceFilter, verifiedOnlyFilter, onlineOnlyFilter });
+
   // Real values only, never an invented distance number -- distanceFilter
   // is already one of DISTANCE_BUCKETS' own real strings ("Nearby", "A few
   // miles away", "In the wider area"), matching this screen's own
@@ -503,6 +509,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
         </View>
       )}
 
+      <FilterTransition activeKey={friendFilterKey} style={{ flex: 1 }}>
       {filtersActive && filteredCandidates.length === 0 ? (
         <View style={styles.centered}>
           <Text style={styles.explainerBody}>
@@ -537,6 +544,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
           navigation={navigation}
         />
       )}
+      </FilterTransition>
 
       <MatchAnimation
         kind="friend"

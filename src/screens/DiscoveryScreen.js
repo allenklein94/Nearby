@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Animated, ScrollView } from 'react-native';
-import { PullToRefresh } from '../motion';
+import { PullToRefresh, FilterTransition } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyMatches, getBrowseMatches, reportPresence } from '../services/proximity';
@@ -490,6 +490,18 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
     return true;
   });
 
+  // FilterTransition (the Nearby Motion System, CLAUDE.md Item 116): a
+  // results-reorganizing cue whenever the actual filter selection changes
+  // (never on pagination/refresh, which don't touch any of these values) --
+  // filteredNearby is already a pure client-side re-filter of already-fetched
+  // data, so there's no network reload to wait on; this just makes that
+  // already-instant reorganization visually read as "results changed"
+  // instead of an abrupt swap.
+  const quickFilterKey = JSON.stringify({
+    verifiedOnly, highCompatOnly, matchThreshold, onlineOnly, sharedInterestsOnly,
+    intentionFilter, ageRangeFilter, advancedFilters,
+  });
+
   const filtersSummaryCount = intentionFilter.length + activeQuickCount + totalActiveCount;
   const filtersSummaryModeLabel = discoveryMode === 'browse' ? 'Browse' : 'Crossed Paths';
   const filtersSummaryText = filtersSummaryCount > 0
@@ -593,7 +605,9 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
           <SkeletonCard />
           <SkeletonCard />
         </View>
-      ) : viewStyle === 'cards' ? (
+      ) : (
+      <FilterTransition activeKey={quickFilterKey} style={{ flex: 1 }}>
+      {viewStyle === 'cards' ? (
         filteredNearby.length === 0 ? (
           renderPeopleEmptyState()
         ) : (
@@ -757,6 +771,8 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
         );
         }}
       />
+      )}
+      </FilterTransition>
       )}
 
       {undoState && (
