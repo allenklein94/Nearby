@@ -1554,13 +1554,21 @@ export default function DiscoverHubScreen({ navigation, route }) {
               </TouchableOpacity>
             </View>
           </View>
-          <View style={{ flex: 1 }}>
+          {/* ModeTransition (the Nearby Motion System, CLAUDE.md Item 113/115):
+              the same dip-and-recover cue as the outer Things-to-Do<->People
+              toggle above, now also on this inner Dating<->Friends switch, so
+              the two read as siblings under one Discover rather than one
+              abruptly replacing the other with unrelated content. Keyed on
+              peopleSubMode specifically (not the outer mode, which already has
+              its own ModeTransition above) so switching Dating<->Friends fires
+              its own cue independent of the outer one. */}
+          <ModeTransition activeKey={peopleSubMode} style={{ flex: 1 }}>
             {peopleSubMode === 'dating' ? (
               <DiscoveryScreen navigation={navigation} embedded />
             ) : (
               <FriendDiscoveryScreen navigation={navigation} embedded />
             )}
-          </View>
+          </ModeTransition>
         </View>
       ) : (
         // FilterTransition (the Nearby Motion System, CLAUDE.md Item 113): a
