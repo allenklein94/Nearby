@@ -957,7 +957,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             confirmed. ✓" phrasing GroupPlanScreen already uses for this exact same real
             moment, with tone="business" (skips the ✨ discovery beat, settles fast, no
             springy bounce). */}
-        {justAccepted && <SuccessAnimation text="Reservation confirmed. ✓" tone="business" />}
+        {justAccepted && <SuccessAnimation haptic text="Reservation confirmed. ✓" tone="business" />}
         {planSummary && (
           <View style={styles.planSummaryCard}>
             <View style={styles.planSummaryHeaderRow}>
@@ -1132,7 +1132,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                 justSubmitted param (AskBusinessScreen, the Occasion
                 wizard's business-destined submit, GroupOccasionPlanScreen's
                 "Book It") -- one shared success moment, not three copies. */}
-            {!isDuplicate && notifiedCount > 0 && <SuccessAnimation />}
+            {!isDuplicate && notifiedCount > 0 && <SuccessAnimation haptic />}
             <Text style={styles.bannerText}>
               {isDuplicate
                 ? "You already have an open request just like this — here it is, no need to ask twice."

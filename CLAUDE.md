@@ -88,7 +88,12 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   Item 129: haptics accompany only IMPORTANT state changes, via the named beats in
   `src/motion/haptics.js` (`playHaptic`): match/friendAccepted = subtle light impact, success (plan/
   reservation confirmed, plan created, surprise revealed) = success notification. Never per-tap;
-  independent of Reduce Motion; never call expo-haptics directly from a motion component. Aesthetic target: modern + polished
+  independent of Reduce Motion; never call expo-haptics directly from a motion component.
+  Item 130: haptics are for USER-INITIATED moments only. Motion components take an opt-in
+  `haptic` prop (default false); pass it only when the animation is the direct result of the user's
+  own tap. Arrival-driven states (realtime update, refocus discovery, a push) get the animation but
+  no haptic, and `services/notifications.js` never touches expo-haptics -- a background push keeps
+  normal OS notification behavior. Guarded by `src/motion/hapticsRespect.test.js`. Aesthetic target: modern + polished
   + alive + restrained — a premium social product, not a children's app; no confetti-everywhere.
 - **Motion intensity varies by context (Item 122, locked 2026-09-18).** Occasion-creation moments
   (a plan being born, a birthday/anniversary pick, a community going live) can stay fully

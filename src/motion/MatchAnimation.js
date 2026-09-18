@@ -100,15 +100,16 @@ export default function MatchAnimation(props) {
 }
 
 function DatingVariant({
-  visible, myPhotoUrl, theirPhotoUrl, theirName, gatheringTitle, wasWave, isFirstMatch,
+  haptic = false, visible, myPhotoUrl, theirPhotoUrl, theirName, gatheringTitle, wasWave, isFirstMatch,
   onSendMessage, onPlanTogether, onDismiss,
 }) {
   const { colors, shadow } = useTheme();
   const styles = getDatingStyles(colors, shadow);
   const reduceMotion = useReduceMotion();
   const intro = useHeartToMarkIntro(visible);
-  // Item 129: one subtle haptic when the match appears -- independent of Reduce Motion.
-  useEffect(() => { if (visible) playHaptic(HAPTIC_MOMENTS.match); }, [visible]);
+  // Item 129/130: one subtle haptic when the match appears -- independent of Reduce Motion, and
+  // ONLY when the caller says this celebration is the direct result of the user's own action.
+  useEffect(() => { if (visible && haptic) playHaptic(HAPTIC_MOMENTS.match); }, [visible]);
   // Delay computed directly from reduceMotion (known synchronously) rather than intro.show
   // (which only flips true a render later, inside an effect) -- avoids a race where the content's
   // own entrance would briefly start with delay=0 before the intro's own effect has a chance to
@@ -184,12 +185,12 @@ function DatingVariant({
 // now friends," never "it's a match!" (per the locked design: a mutual
 // friend-discovery swipe reads as a clean new-friend moment, not a
 // dating-style event with different semantics).
-function FriendVariant({ visible, theirPhotoUrl, theirName, onSayHi, onDismiss }) {
+function FriendVariant({ haptic = false, visible, theirPhotoUrl, theirName, onSayHi, onDismiss }) {
   const { colors, shadow } = useTheme();
   const styles = getFriendStyles(colors, shadow);
   const { scaleAnim, opacityAnim } = useModalEntrance(visible);
   // Item 129: one subtle haptic when a friendship becomes real.
-  useEffect(() => { if (visible) playHaptic(HAPTIC_MOMENTS.friendAccepted); }, [visible]);
+  useEffect(() => { if (visible && haptic) playHaptic(HAPTIC_MOMENTS.friendAccepted); }, [visible]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>

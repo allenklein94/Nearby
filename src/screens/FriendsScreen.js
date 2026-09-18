@@ -512,7 +512,7 @@ export default function FriendsScreen({ navigation }) {
         </KeyboardAvoidingView>
       </Modal>
 
-      <MatchAnimation
+      <MatchAnimation haptic
         kind="friend"
         visible={!!celebratingFriend}
         theirName={celebratingFriend?.display_name}

@@ -550,7 +550,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
       )}
       </FilterTransition>
 
-      <MatchAnimation
+      <MatchAnimation haptic
         kind="friend"
         visible={!!matchModal}
         theirName={matchModal?.theirName}

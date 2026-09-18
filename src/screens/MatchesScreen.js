@@ -473,6 +473,8 @@ export default function MatchesScreen({ navigation }) {
       />
       )}
 
+      {/* Item 130: no `haptic` -- this match is discovered on load/refocus, so it may have arrived
+          from the OTHER person's action; a haptic is reserved for the user's own taps. */}
       <MatchAnimation
         kind="dating"
         visible={!!celebrationMatch}

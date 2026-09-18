@@ -20,7 +20,8 @@ export const SURPRISE_REVEAL_TOTAL_MS = STAGE_MS * 2 + HOLD_MS;
 // cross-fade through the lock/sparkle stages, held just long enough to register.
 const REDUCED_HOLD_MS = 450;
 
-export default function SurpriseRevealAnimation({ text, onDone }) {
+// `haptic` (Item 130): opt-in; true only when the user's own tap triggered the reveal.
+export default function SurpriseRevealAnimation({ text, onDone, haptic = false }) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const styles = getStyles(colors);
@@ -30,7 +31,7 @@ export default function SurpriseRevealAnimation({ text, onDone }) {
   const textOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    playHaptic(HAPTIC_MOMENTS.success);
+    if (haptic) playHaptic(HAPTIC_MOMENTS.success);
     const timers = [];
 
     if (reduceMotion) {

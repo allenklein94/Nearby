@@ -1,3 +1,19 @@
+## Sep 18 2026 — Item 130 ("Don't use haptics for notifications that aren't user-initiated") — DONE
+
+Audit of Item 129's haptics: `services/notifications.js` (push handling) never used expo-haptics --
+a background push already gets normal OS behavior, nothing to change. But two Item 129 haptics
+fired on arrival, not on a user action: ConnectionGlyphSwap (requester discovering an accepted
+friend request on refocus) and the dating MatchAnimation on MatchesScreen (a new match discovered
+on load, possibly caused by the other person). Fix: SuccessAnimation, MatchAnimation (both
+variants), SurpriseRevealAnimation and ConnectionGlyphSwap now take an opt-in `haptic` prop
+(default false). Passed only where the user's own tap causes it: friend-accept modals
+(Activity/Friends/ViewProfile), FriendDiscovery swipe match, business offer accept / request
+submit, GroupPlan confirm banners, community created, both surprise reveals. Deliberately NOT
+passed: MatchesScreen dating modal and the ViewProfile glyph swap (animation kept, haptic
+dropped). `hapticsRespect.test.js` (3 tests) source-guards all of this; suite 619/619. Not felt on
+a device. Note: MatchesScreen's dating match, when caused by the user's own swipe, now has no
+haptic there -- DiscoveryScreen's own swipe haptic already covers that action.
+
 ## Sep 18 2026 — Item 129 ("Haptics could complement the animations") — DONE
 
 Audit: expo-haptics was already used widely for input ticks (chip selection, swipes, sends) --

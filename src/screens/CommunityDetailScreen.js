@@ -372,7 +372,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        {showJustCreated && <SuccessAnimation text="Your community is live. 🎉" />}
+        {showJustCreated && <SuccessAnimation haptic text="Your community is live. 🎉" />}
         {showReasonBanner && notificationReason && (
           <View style={styles.notificationReasonBanner}>
             <Text style={styles.notificationReasonText}>{notificationReason}</Text>

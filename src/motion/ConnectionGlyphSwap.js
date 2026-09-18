@@ -16,15 +16,15 @@ import { playHaptic, HAPTIC_MOMENTS } from './haptics';
 // happened; a caller showing the plain static final label the rest of the time is the correct,
 // simpler choice, not a gap this component needs to cover. Reduce Motion skips straight to the
 // final label with no animation, same as every other decorative beat in this codebase.
-export default function ConnectionGlyphSwap({ style, textStyle, fromGlyph = '+', label }) {
+// `haptic` (Item 130): opt-in. Its one real caller (the requester discovering an acceptance on
+// refocus) is NOT user-initiated, so it passes nothing and stays silent.
+export default function ConnectionGlyphSwap({ style, textStyle, fromGlyph = '+', label, haptic = false }) {
   const reduceMotion = useReduceMotion();
   const opacity = useRef(new Animated.Value(1)).current;
   const scale = useRef(new Animated.Value(1)).current;
   const [showFinal, setShowFinal] = useState(reduceMotion);
 
-  // Item 129: the requester's own "they accepted" beat gets the same subtle haptic; mounted only
-  // on a genuine transition, so this fires once per real acceptance.
-  useEffect(() => { playHaptic(HAPTIC_MOMENTS.friendAccepted); }, []);
+  useEffect(() => { if (haptic) playHaptic(HAPTIC_MOMENTS.friendAccepted); }, []);
 
   useEffect(() => {
     if (reduceMotion) {

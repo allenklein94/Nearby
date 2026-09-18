@@ -27,7 +27,10 @@ import useReduceMotion from '../hooks/useReduceMotion';
 // Content/meaning are identical either way; only the intensity changes.
 const STAGE_MS = { celebratory: 340, business: 160 };
 
-export default function SuccessAnimation({ text = "It's happening. 🎉", tone = 'celebratory' }) {
+// `haptic` (Item 130): opt-in, pass true ONLY when this plays as the direct result of the user's
+// own action (they tapped Confirm/Submit). A state change that merely arrived (a realtime update,
+// a background refresh) gets the animation but never a haptic.
+export default function SuccessAnimation({ text = "It's happening. 🎉", tone = 'celebratory', haptic = false }) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const styles = getStyles(colors);
@@ -39,7 +42,7 @@ export default function SuccessAnimation({ text = "It's happening. 🎉", tone =
   const textOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    playHaptic(HAPTIC_MOMENTS.success);
+    if (haptic) playHaptic(HAPTIC_MOMENTS.success);
     const timers = [];
 
     // Reduce Motion: land directly on the real settled state (✓ + the real success

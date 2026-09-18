@@ -626,7 +626,7 @@ export default function OccasionsScreen({ navigation }) {
                       // speculative" reveal discipline as
                       // GroupOccasionPlanScreen's own version.
                       <View style={{ flex: 1 }}>
-                        <SurpriseRevealAnimation
+                        <SurpriseRevealAnimation haptic
                           text={`🎉 ${occasion.who_for_name || 'They'} can see it now!`}
                           onDone={() => handleRevealAnimationDone(occasion.id)}
                         />

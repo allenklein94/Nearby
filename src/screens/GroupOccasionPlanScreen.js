@@ -619,7 +619,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
               // succeeded by the time this renders (performReveal awaits
               // it first) -- this is celebrating a fact that's already
               // true server-side, never a speculative animation.
-              <SurpriseRevealAnimation
+              <SurpriseRevealAnimation haptic
                 text={`🎉 ${detail.whoForName || 'They'} can see it now!`}
                 onDone={handleRevealAnimationDone}
               />

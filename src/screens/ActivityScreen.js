@@ -704,7 +704,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
         />
       )}
 
-      <MatchAnimation
+      <MatchAnimation haptic
         kind="friend"
         visible={!!celebratingFriend}
         theirName={celebratingFriend?.display_name}

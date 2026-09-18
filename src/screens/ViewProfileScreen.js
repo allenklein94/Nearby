@@ -479,6 +479,8 @@ export default function ViewProfileScreen({ route, navigation }) {
                   🤝 You're friends now
                 </Animated.Text>
               )}
+              {/* Item 130: ConnectionGlyphSwap gets no `haptic` -- discovered on refocus, not something
+                  this user just did. */}
               {justBecameFriends ? (
                 <ConnectionGlyphSwap
                   style={[styles.addFriendButton, styles.addFriendButtonSent]}
@@ -787,7 +789,7 @@ export default function ViewProfileScreen({ route, navigation }) {
         myUserId={myUserId}
       />
 
-      <MatchAnimation
+      <MatchAnimation haptic
         kind="friend"
         visible={showFriendCelebration}
         theirName={profile.display_name}
