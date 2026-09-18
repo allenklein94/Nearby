@@ -59,11 +59,21 @@ export function buildUpcomingWorldItems({ occasions = [], birthdays = [], skip =
 // of the title itself ("Sarah's Birthday 🎂") -- prepending item.icon
 // unconditionally would double it ("🎂 Sarah's Birthday 🎂"). Only
 // prepends when the label doesn't already end with that exact icon.
-export function formatUpcomingWorldItemLine(item) {
-  if (!item) return '';
+// Split into {prefix, days} -- Item 123 ("Use 'anticipation' animations") needs the real day
+// count as its own fragment so a caller can give it AnticipationText's subtle, proximity-scaled
+// treatment without re-deriving the day text itself (one place computes "today"/"tomorrow"/"N
+// days", not two that could drift). formatUpcomingWorldItemLine below is now a thin join of this.
+export function formatUpcomingWorldItemParts(item) {
+  if (!item) return { prefix: '', days: '' };
   const days = item.daysUntil === 0 ? 'today' : item.daysUntil === 1 ? 'tomorrow' : `${item.daysUntil} days`;
   const label = item.label ?? '';
   const alreadyIconSuffixed = !!item.icon && label.trim().endsWith(item.icon);
   const prefix = alreadyIconSuffixed ? label : `${item.icon} ${label}`.trim();
+  return { prefix, days };
+}
+
+export function formatUpcomingWorldItemLine(item) {
+  const { prefix, days } = formatUpcomingWorldItemParts(item);
+  if (!prefix && !days) return '';
   return `${prefix} — ${days}`;
 }

@@ -770,6 +770,53 @@ the business-tone flash genuinely reads as faster/calmer than the celebratory on
 and that "Reservation confirmed. ✓" on `BusinessRequestDetailScreen` doesn't feel redundant next
 to the achievement card's own "🎉 You're booked"-equivalent confirmed state directly below it.
 
+**Item 123 ("Use 'anticipation' animations") — fully DONE (2026-09-18), same-day direct follow-up
+to Item 122.** User's own example: "Sarah's Birthday / 10 days" — a subtle progress/anticipation
+treatment could appear as the date approaches, but "don't create a countdown on everything. Use it
+where the date itself matters."
+
+Audited every real place `days_until` (the server-computed countdown field) is actually rendered
+before building anything — a repo-wide grep confirmed it renders in exactly one file,
+`HomeScreen.js`, across 4 spots: the `birthdayNudge`/`occasionNudge` (×2) single-item cards and
+the "📅 Upcoming in Your World" widget rows (Item 104) — the literal "Sarah's Birthday — 10 days"
+shape. Every other date-shaped display in the app (`OccasionsScreen`'s own reminder list,
+`ViewProfileScreen`'s "Upcoming" section, any plan/gathering date) renders a real calendar date,
+never a day-count — correctly left untouched, since retrofitting a countdown onto a surface that
+was deliberately built to show an exact date (a durable record, not an anticipation cue) would be
+exactly the "countdown on everything" this item warns against.
+
+Shipped `anticipationTier()` (`src/utils/anticipationTier.js`, 5 new Jest tests) — a real,
+deterministic day-count bucket (`none` >14 days/unknown, `building` 4-14, `close` 1-3, `today` 0),
+disclosed as a judgment call rather than a fabricated continuous progress percentage: most
+occasions have no honest "started N days ago" baseline to compute a true progress ring from, so a
+literal ring/bar would imply a precision that doesn't exist. New `src/motion/AnticipationText.js`
+wraps just the real day-count fragment (never the whole card) and warms its color from the
+default text tone through amber ("close," the same tint Item 91 already established for
+"in progress") to the app's own primary coral ("today") as the count shrinks — rendering
+completely unstyled for `tier === 'none'`, so a far-off occasion gets no treatment at all. Plays
+one brief dip-and-recover (`useKeyChangeFade`, the same mechanic `ModeTransition`/`FilterTransition`
+already use) only when the tier itself changes during a mounted session, never a continuous/
+looping pulse — this app's motion discipline reserves ambient looping for genuine in-flight
+loading, and a countdown sitting on screen for a whole session is not that. Reduce Motion:
+re-colors with no dip, consistent with every other piece in `src/motion/`.
+
+Wired into all 4 real call sites: `birthdayNudge`'s "today"/"tomorrow"/"in N days" fragment,
+both `occasionNudge` variants' `occasionDueLabel()` output (still applies even for a fuzzy-
+precision occasion like "weekend of Oct 17," since the real underlying `days_until` anchor is
+just as real regardless of display precision), and the Upcoming-in-Your-World rows — which needed
+a small refactor first: `upcomingWorld.js`'s `formatUpcomingWorldItemLine()` used to return one
+joined string with no way to isolate the day-count fragment; split into a new
+`formatUpcomingWorldItemParts()` (returns `{prefix, days}`, 0 new tests needed since the existing
+11 already cover the shared logic it was extracted from) with `formatUpcomingWorldItemLine()` now
+a thin join of the two, so nothing drifts between the two representations.
+
+No DB migration, no new schema (the `days_until` field these all consume already exists on every
+row). Full Jest suite 600/600 passing (5 new); all six touched/new files transform-checked clean
+via `@babel/core` + `babel-preset-expo`. Not exercised on a real device (standing note) — next
+session should confirm the amber/coral warming reads as a genuine "getting close" cue rather than
+an alarming color change, and that the one-shot dip correctly fires if the app is left open across
+a tier boundary (e.g. midnight, 4→3 days) rather than only ever showing the static end color.
+
 **"Nearby Motion & Microinteraction System" — first real increment shipped (2026-09-18), same
 day, direct "build it now" override of the earlier "queue for Thursday" call.** User's own scope:
 audit and standardize every real interaction moment in the app into one cohesive motion language
@@ -6054,6 +6101,12 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   springy scale-pop for a plain settle. Same content/meaning either way — only the intensity
   changes with context. Apply this same judgment to any future animated business-transaction
   moment (a payment confirming, an offer being made), not just the two call sites fixed here.
+- **Anticipation treatments are scoped to real countdowns, not added to every date (Item 123,
+  locked 2026-09-18).** Use `AnticipationText`/`anticipationTier()` (`src/motion/`,
+  `src/utils/anticipationTier.js`) only where a real `days_until`-shaped countdown already exists
+  and the date itself is genuinely the point (an occasion reminder) — never retrofit a countdown
+  onto a surface built to show an exact date (a reminder list, a plan's own date line). Discrete
+  tiers derived from a real day count, not a fabricated progress percentage.
 - **Calendar = when, Nearby = what + who + where + how (Item 76, locked 2026-09-13; narrow
   export exception added by Item 121, 2026-09-18).** Nearby may read device calendar context
   (Item 75) to inform suggestions, plans, occasions, and Surprise Me, but must never become a

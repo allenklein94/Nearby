@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
-import { NLoader, PullToRefresh } from '../motion';
+import { NLoader, PullToRefresh, AnticipationText } from '../motion';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -16,7 +16,7 @@ import { formatPlaceStatusLabel } from '../utils/planCompletion';
 import { getUpcomingConnectedBirthdays } from '../services/friends';
 import { getUpcomingOccasions, getOccasionRecall, setOccasionRecallShareable } from '../services/occasions';
 import { formatOccasionRecallSummary, occasionRecallLikedText } from '../utils/occasionRecall';
-import { buildUpcomingWorldItems, formatUpcomingWorldItemLine } from '../utils/upcomingWorld';
+import { buildUpcomingWorldItems, formatUpcomingWorldItemParts } from '../utils/upcomingWorld';
 import { getMyPendingPreferencePolls } from '../services/preferencePolls';
 import { occasionDueLabel } from '../utils/occasionDatePrecision';
 import { isCalendarIntegrationEnabled, getUpcomingCalendarEvents } from '../services/deviceCalendar';
@@ -1939,9 +1939,14 @@ export default function HomeScreen({ navigation }) {
             {birthdayNudge && (
               <View style={styles.outcomePromptCard}>
                 <View style={styles.outcomePromptHeaderRow}>
+                  {/* Item 123 ("Use 'anticipation' animations"): the literal "Sarah's Birthday /
+                      10 days" example -- a subtle, proximity-scaled treatment on just the
+                      day-count fragment, not the whole card. */}
                   <Text style={styles.outcomePromptText} numberOfLines={2}>
                     🎂 {birthdayNudge.display_name}'s birthday is{' '}
-                    {birthdayNudge.days_until === 0 ? 'today' : birthdayNudge.days_until === 1 ? 'tomorrow' : `in ${birthdayNudge.days_until} days`}
+                    <AnticipationText daysUntil={birthdayNudge.days_until}>
+                      {birthdayNudge.days_until === 0 ? 'today' : birthdayNudge.days_until === 1 ? 'tomorrow' : `in ${birthdayNudge.days_until} days`}
+                    </AnticipationText>
                     {' '}— want to plan something?
                   </Text>
                   <TouchableOpacity onPress={handleBirthdayDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -1958,7 +1963,9 @@ export default function HomeScreen({ navigation }) {
                 <View style={styles.outcomePromptHeaderRow}>
                   <Text style={styles.outcomePromptText} numberOfLines={2}>
                     {occasionTypeIcon(occasionNudge.occasion_type)} {occasionNudge.title}{' '}
-                    {occasionDueLabel(occasionNudge.date_precision, occasionNudge.occasion_date, occasionNudge.days_until)}
+                    <AnticipationText daysUntil={occasionNudge.days_until}>
+                      {occasionDueLabel(occasionNudge.date_precision, occasionNudge.occasion_date, occasionNudge.days_until)}
+                    </AnticipationText>
                   </Text>
                   <TouchableOpacity onPress={handleOccasionDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="close" size={16} color={colors.textTertiary} />
@@ -2019,7 +2026,9 @@ export default function HomeScreen({ navigation }) {
                 <View style={styles.outcomePromptHeaderRow}>
                   <Text style={styles.outcomePromptText} numberOfLines={2}>
                     {occasionTypeIcon(occasionNudge.occasion_type)} {occasionNudge.title}{' '}
-                    {occasionDueLabel(occasionNudge.date_precision, occasionNudge.occasion_date, occasionNudge.days_until)}
+                    <AnticipationText daysUntil={occasionNudge.days_until}>
+                      {occasionDueLabel(occasionNudge.date_precision, occasionNudge.occasion_date, occasionNudge.days_until)}
+                    </AnticipationText>
                     {' '}— want to plan something?
                   </Text>
                   <TouchableOpacity onPress={handleOccasionDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -2055,7 +2064,15 @@ export default function HomeScreen({ navigation }) {
                     accessibilityLabel={`Plan something for ${item.label}`}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.outcomePromptSubtext} numberOfLines={1}>{formatUpcomingWorldItemLine(item)}</Text>
+                    <Text style={styles.outcomePromptSubtext} numberOfLines={1}>
+                      {formatUpcomingWorldItemParts(item).prefix}
+                      {' — '}
+                      {/* Item 123 ("Use 'anticipation' animations"): the exact "Sarah's Birthday
+                          / 10 days" mock, live here row-by-row. */}
+                      <AnticipationText daysUntil={item.daysUntil}>
+                        {formatUpcomingWorldItemParts(item).days}
+                      </AnticipationText>
+                    </Text>
                     <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
                   </TouchableOpacity>
                 ))}
