@@ -1,3 +1,21 @@
+## Sep 18 2026 — Item 132 ("The N should become the universal loading language") — DONE
+
+Deliberate reversal of Item 13's/Motion System's earlier "keep SkeletonCard for in-list loading"
+call, per direct ask: N -> sweep -> content, one recognizable "Nearby is working" treatment.
+`NLoader` gained `size` (default/compact/inline), `kind`/`caption` (vocabulary in new
+`loadingLanguage.js`: people, activities, businesses, places, availability, recommendations, search,
+content) and `captions` (cycling narration; keeps cycling under Reduce Motion). Replaced every
+content-loading spinner-with-caption and every skeleton: Discover (7 sites incl. the "Understanding
+..." search row), Home (finding/surprise), Places, Gatherings (search + initial), Timeline, Friends,
+Plans, OnboardingRecommendations, CelebrateSomething custom search, Matches, Discovery (initial +
+load-more footer), Activity. `FindingOptionsLoader` is now a thin wrapper over NLoader with the
+planning captions; `SkeletonCard`/`SkeletonGridCard` deleted (no remaining references). Left as plain
+ActivityIndicators: ~100 in-button / in-flight control spinners (not Nearby loading content).
+"Content" half of N -> sweep -> content is the existing StaggeredReveal/FadeIn settle. 4 new tests
+(`loadingLanguage.test.js`); suite 636/636; 15 files transform-checked. Not seen on a device --
+check the compact N doesn't feel oversized inside short sections (Discover perks/communities) and
+that a list footer (Discovery load-more) reads fine at inline size.
+
 ## Sep 18 2026 — Item 131 ("Create a motion budget") — DONE
 
 Defined the budget once in `src/motion/motionBudget.js`: tiny 50-150ms, small 150-300, medium

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, SafeAreaView, ActivityIndicator, Linking } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import { FilterTransition, TapActiveChip } from '../motion';
+import { FilterTransition, TapActiveChip, NLoader } from '../motion';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, getGoogleMapsRequestHeaders } from '../services/places';
@@ -171,8 +171,7 @@ export default function PlacesScreen({ navigation }) {
 
       {loading ? (
         <View style={{ marginTop: spacing.xl }}>
-          <ActivityIndicator color={colors.primary} />
-          <Text style={styles.emptyText}>{isSearching ? `Searching for "${searchQuery.trim()}"…` : 'Finding places nearby…'}</Text>
+          <NLoader fullScreen={false} size="compact" caption={isSearching ? `Searching for "${searchQuery.trim()}"…` : undefined} kind="places" />
         </View>
       ) : locationDenied ? (
         <FadeInState style={styles.emptyState}>

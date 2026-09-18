@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
-import { PullToRefresh, FilterTransition, TapActiveChip } from '../motion';
+import { PullToRefresh, FilterTransition, TapActiveChip, NLoader } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, searchGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering, stopRecurringSeries } from '../services/gatherings';
@@ -22,7 +22,6 @@ import { getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
 import ReportBlockModal from '../components/ReportBlockModal';
-import SkeletonCard from '../components/SkeletonCard';
 import GatheringsMapView from '../components/GatheringsMapView';
 import StoryViewerModal from '../components/StoryViewerModal';
 import * as Location from 'expo-location';
@@ -916,11 +915,7 @@ export default function GatheringsScreen({ navigation, route }) {
       )}
 
       {tab === 'nearby' && initialLoading ? (
-        <View>
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-        </View>
+        <NLoader fullScreen={false} size="compact" kind="activities" />
       ) : tab === 'nearby' && viewStyle === 'map' ? (
         <View style={{ flex: 1 }}>
           <GatheringsMapView
@@ -958,8 +953,7 @@ export default function GatheringsScreen({ navigation, route }) {
         </View>
       ) : tab === 'nearby' && isSearchingGatherings && loadingGatheringSearch ? (
         <View style={{ marginVertical: spacing.lg }}>
-          <ActivityIndicator color={colors.primary} />
-          <Text style={styles.emptyText}>Searching gatherings…</Text>
+          <NLoader fullScreen={false} size="compact" caption="Searching gatherings…" />
         </View>
       ) : tab === 'nearby' && (
         <FilterTransition activeKey={nearbyFilterKey} style={{ flex: 1 }}>

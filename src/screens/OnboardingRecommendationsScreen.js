@@ -8,6 +8,7 @@ import { typography, spacing, radius } from '../theme';
 import { getGreeting } from '../utils/timeContext';
 import LoadErrorState from '../components/LoadErrorState';
 
+import { NLoader } from '../motion';
 export default function OnboardingRecommendationsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -50,8 +51,7 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
 
         {loading ? (
           <>
-            <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
-            <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Finding things nearby for you...</Text>
+            <NLoader fullScreen={false} size="compact" caption="Finding things nearby for you…" />
           </>
         ) : loadError ? (
           <LoadErrorState message="Couldn't load recommendations." onRetry={load} />

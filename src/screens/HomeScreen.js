@@ -1466,15 +1466,13 @@ export default function HomeScreen({ navigation }) {
 
           {intentThinking && (
             <View style={styles.intentResults}>
-              <ActivityIndicator color={colors.primary} />
-              <Text style={styles.intentLoadingText}>Finding things nearby…</Text>
+              <NLoader fullScreen={false} size="compact" kind="activities" />
             </View>
           )}
 
           {surpriseLoading && (
             <View style={styles.intentResults}>
-              <ActivityIndicator color={colors.primary} />
-              <Text style={styles.intentLoadingText}>Building your options…</Text>
+              <NLoader fullScreen={false} size="compact" kind="recommendations" />
             </View>
           )}
 

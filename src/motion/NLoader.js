@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, Easing } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, Animated, StyleSheet, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
-import { spacing } from '../theme';
+import { spacing, typography } from '../theme';
+import { resolveLoadingCaption } from './loadingLanguage';
 import useReduceMotion from '../hooks/useReduceMotion';
 
 // NLoader -- N = system intelligence (loading/searching/finding/matching/
@@ -10,16 +11,29 @@ import useReduceMotion from '../hooks/useReduceMotion';
 // (assets/branding/splash-mark.png -- the same image the native splash screen
 // shows, so this reads as a continuation of it rather than a jarring image
 // swap) plus a subtle coral sweep, in place of a generic spinner/blank screen.
-// Deliberately not a wholesale SkeletonCard replacement -- SkeletonCard's
-// content-shaped bars are still the right treatment for "a list is loading
-// more items"; this is for "the app itself is still figuring out where to
-// put you" or "the screen's initial fetch hasn't resolved yet."
-const ICON_SIZE = 88;
+// Item 132: this is now THE loading language for the whole app (SkeletonCard/SkeletonGridCard
+// are gone). Same N + sweep everywhere = "Nearby is working"; only the caption (loadingLanguage.js)
+// says what on. Small inline spinners inside buttons/footers stay plain ActivityIndicators --
+// those are in-flight feedback on a control, not Nearby loading content.
+const ICON_SIZES = { default: 88, compact: 56, inline: 32 };
+const CAPTION_STEP_MS = 900;
 const BAR_WIDTH = 120;
 const BAR_HEIGHT = 3;
 const SWEEP_WIDTH = 46;
 
-export default function NLoader({ fullScreen = true }) {
+// Item 132: THE loading treatment. `kind`/`caption` say what Nearby is working on (see
+// loadingLanguage.js); `captions` cycles a multi-stage narration; `size` is 'default' (a whole
+// screen / boot), 'compact' (a content area), or 'inline' (a small row).
+export default function NLoader({ fullScreen = true, kind, caption, captions, size = 'default' }) {
+  const iconSize = ICON_SIZES[size] ?? ICON_SIZES.default;
+  const [captionIndex, setCaptionIndex] = useState(0);
+  useEffect(() => {
+    if (!captions || captions.length < 2) return undefined;
+    // Caption rotation is real informational content, so it keeps cycling under Reduce Motion.
+    const id = setInterval(() => setCaptionIndex((i) => (i + 1) % captions.length), CAPTION_STEP_MS);
+    return () => clearInterval(id);
+  }, [captions]);
+  const captionText = captions?.length ? captions[captionIndex % captions.length] : resolveLoadingCaption({ kind, caption });
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const sweep = useRef(new Animated.Value(0)).current;
@@ -67,9 +81,9 @@ export default function NLoader({ fullScreen = true }) {
     <View style={styles.center}>
       <Animated.Image
         source={require('../../assets/branding/splash-mark.png')}
-        style={[styles.icon, { opacity, transform: [{ scale }] }]}
+        style={[styles.icon, { width: iconSize, height: iconSize, marginBottom: size === 'inline' ? spacing.sm : spacing.lg, opacity, transform: [{ scale }] }]}
         resizeMode="contain"
-        accessibilityLabel="Nearby is loading"
+        accessibilityLabel={captionText ?? 'Nearby is loading'}
       />
       <View style={[styles.barTrack, { backgroundColor: colors.border }]}>
         <Animated.View style={[styles.sweepClip, { transform: [{ translateX }] }]}>
@@ -81,6 +95,7 @@ export default function NLoader({ fullScreen = true }) {
           />
         </Animated.View>
       </View>
+      {captionText ? <Text style={[styles.caption, { color: colors.textSecondary }]}>{captionText}</Text> : null}
     </View>
   );
 
@@ -91,7 +106,8 @@ export default function NLoader({ fullScreen = true }) {
 const styles = StyleSheet.create({
   fullScreen: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   center: { alignItems: 'center', justifyContent: 'center' },
-  icon: { width: ICON_SIZE, height: ICON_SIZE, marginBottom: spacing.lg },
+  icon: { width: ICON_SIZES.default, height: ICON_SIZES.default, marginBottom: spacing.lg },
+  caption: { ...typography.caption, marginTop: spacing.sm, textAlign: 'center' },
   barTrack: { width: BAR_WIDTH, height: BAR_HEIGHT, borderRadius: BAR_HEIGHT / 2, overflow: 'hidden' },
   sweepClip: { width: SWEEP_WIDTH, height: BAR_HEIGHT },
   sweepGradient: { flex: 1, height: '100%' },

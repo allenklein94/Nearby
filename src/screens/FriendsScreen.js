@@ -9,7 +9,7 @@ import PersonCard from '../components/PersonCard';
 import { Share } from 'react-native';
 import { getSignedPhotoUrl } from '../services/photos';
 import LoadErrorState from '../components/LoadErrorState';
-import { MatchAnimation } from '../motion';
+import { MatchAnimation, NLoader } from '../motion';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -175,8 +175,7 @@ export default function FriendsScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       {loading ? (
         <View style={{ marginTop: spacing.xl, alignItems: 'center' }}>
-          <ActivityIndicator color={colors.primary} />
-          <Text style={{ marginTop: spacing.sm, color: colors.textTertiary, fontSize: 13 }}>Loading your friends...</Text>
+          <NLoader fullScreen={false} size="compact" caption="Loading your friends…" />
         </View>
       ) : loadError ? (
         <LoadErrorState message="Couldn't load your friends." onRetry={load} />

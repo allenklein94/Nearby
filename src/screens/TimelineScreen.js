@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 
+import { NLoader } from '../motion';
 // This screen is reached as a top-level stack push (not a bottom tab),
 // headerShown: false in RootNavigator -- the same "reachable, but no
 // visible way back" shape found and fixed on FriendDiscoveryScreen for a
@@ -57,8 +58,7 @@ export default function TimelineScreen({ navigation }) {
 
       {loading ? (
         <>
-          <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
-          <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your timeline...</Text>
+          <NLoader fullScreen={false} size="compact" caption="Loading your timeline…" />
         </>
       ) : loadError ? (
         <LoadErrorState message="Couldn't load your timeline." onRetry={load} />

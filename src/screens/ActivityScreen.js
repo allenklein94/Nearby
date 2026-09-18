@@ -9,13 +9,12 @@ import { calculateCompatibility } from '../services/compatibility';
 import { sendNoticeTo } from '../services/noticeActions';
 import { getNearbyMatches } from '../services/proximity';
 import { getPendingFriendRequests, respondToFriendRequest } from '../services/friends';
-import { MatchAnimation, PullToRefresh } from '../motion';
+import { MatchAnimation, PullToRefresh, NLoader } from '../motion';
 import { getFollowedBusinessUpdates } from '../services/brandOffers';
 import { getMyBusinessEcosystemActivity, formatOfferSummary } from '../services/businessFulfillment';
 import { getAllPendingRequests, approveInterest, getUpcomingReminders } from '../services/gatherings';
 import { getMyReceivedInvites, respondToInvite } from '../services/invites';
 import { getMyPendingGroupPlanInvites } from '../services/groupPlans';
-import SkeletonGridCard from '../components/SkeletonGridCard';
 import LoadErrorState from '../components/LoadErrorState';
 import TabHeaderActions from '../components/TabHeaderActions';
 import * as Haptics from 'expo-haptics';
@@ -552,9 +551,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
       )}
 
       {loading ? (
-        <View style={styles.skeletonGrid}>
-          {[...Array(4)].map((_, i) => <SkeletonGridCard key={i} />)}
-        </View>
+        <NLoader fullScreen={false} size="compact" caption="Loading your activity…" />
       ) : loadError ? (
         <LoadErrorState message="Couldn't load your activity." onRetry={load} />
       ) : (
@@ -733,7 +730,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   upsellTitle: { color: '#fff', fontWeight: '700', fontSize: 15 },
   upsellText: { color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 1 },
   upsellArrow: { color: '#fff', fontSize: 22, fontWeight: '700' },
-  skeletonGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.lg },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl, width: '100%', paddingHorizontal: spacing.xl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center', lineHeight: 20 },

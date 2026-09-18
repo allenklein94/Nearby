@@ -10,9 +10,8 @@ import { generateCompatibilityReport } from '../services/compatibility';
 import { getMyActivePlansByMatch } from '../services/dateProposals';
 import { getMatchPlanCompletion, hasStartedMatchPlan, formatPlaceStatusLabel } from '../utils/planCompletion';
 import PlanCompletionRow from '../components/PlanCompletionRow';
-import { MatchAnimation, PullToRefresh } from '../motion';
+import { MatchAnimation, PullToRefresh, NLoader } from '../motion';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
-import SkeletonCard from '../components/SkeletonCard';
 import LoadErrorState from '../components/LoadErrorState';
 import { getActiveOffers, getMyRedemptions } from '../services/brandOffers';
 import * as Haptics from 'expo-haptics';
@@ -294,12 +293,7 @@ export default function MatchesScreen({ navigation }) {
       )}
 
       {loading ? (
-        <View>
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-        </View>
+        <NLoader fullScreen={false} size="compact" kind="people" />
       ) : loadError ? (
         <LoadErrorState message="Couldn't load your messages." onRetry={load} />
       ) : (

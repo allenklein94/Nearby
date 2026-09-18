@@ -37,7 +37,7 @@ import {
   buildAutoPlanSuggestion,
 } from '../services/celebrateSomething';
 import { experienceTemplateForOccasion } from '../constants/experienceTemplates';
-import { OccasionAnimation, OCCASION_SELECT_ANIMATIONS, NearbyPickBadge } from '../motion';
+import { OccasionAnimation, OCCASION_SELECT_ANIMATIONS, NearbyPickBadge, NLoader } from '../motion';
 import FindingOptionsLoader from '../components/FindingOptionsLoader';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
@@ -1325,8 +1325,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
                 {customSearching && (
                   <View style={styles.customSearchLoadingRow}>
-                    <ActivityIndicator color={colors.primary} size="small" />
-                    <Text style={styles.helperText}>Understanding what you're planning…</Text>
+                    <NLoader fullScreen={false} size="inline" caption="Understanding what you're planning…" />
                   </View>
                 )}
 

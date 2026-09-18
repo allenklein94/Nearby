@@ -38,7 +38,7 @@ import PlaceCard from '../components/PlaceCard';
 import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
-import { ModeTransition, FilterTransition, TapActiveChip, NearbyPickBadge } from '../motion';
+import { ModeTransition, FilterTransition, TapActiveChip, NearbyPickBadge, NLoader } from '../motion';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -1649,8 +1649,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </>
           ) : loadingContextPlaces ? (
             <View style={{ marginVertical: spacing.md }}>
-              <ActivityIndicator color={colors.primary} />
-              <Text style={styles.loadingCaption}>Finding places nearby…</Text>
+              <NLoader fullScreen={false} size="compact" kind="places" />
             </View>
           ) : contextPlaces.length === 0 ? (
             <>
@@ -1770,8 +1769,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
           {loadingCore && (
             <View style={{ marginVertical: spacing.lg }}>
-              <ActivityIndicator color={colors.primary} />
-              <Text style={styles.loadingCaption}>Finding things nearby…</Text>
+              <NLoader fullScreen={false} size="compact" kind="activities" />
             </View>
           )}
 
@@ -1887,8 +1885,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               there too. */}
           {isSearching && intentSearching && (
             <View style={styles.intentSearchLoadingRow}>
-              <ActivityIndicator color={colors.primary} size="small" />
-              <Text style={styles.intentSearchLoadingText}>Understanding "{searchQuery.trim()}"…</Text>
+              <NLoader fullScreen={false} size="inline" caption={`Understanding "${searchQuery.trim()}"…`} />
             </View>
           )}
           {isSearching && !intentSearching && intentSearch?.outcome === 'results' && (
@@ -1940,8 +1937,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {showFlatGatheringsSection && isSearching && loadingSearch && (
             <>
               <Text style={styles.sectionHeader}>Gatherings</Text>
-              <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
-              <Text style={styles.loadingCaption}>Searching gatherings…</Text>
+              <NLoader fullScreen={false} size="compact" caption="Searching gatherings…" />
             </>
           )}
 
@@ -2006,8 +2002,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {showCommunities && isSearching && loadingSearch && (
             <>
               <Text style={styles.sectionHeader}>Communities</Text>
-              <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
-              <Text style={styles.loadingCaption}>Searching communities…</Text>
+              <NLoader fullScreen={false} size="compact" caption="Searching communities…" />
             </>
           )}
 
@@ -2076,8 +2071,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 </>
               ) : loadingPlaces ? (
                 <View style={{ marginVertical: spacing.md }}>
-                  <ActivityIndicator color={colors.primary} />
-                  <Text style={styles.loadingCaption}>Finding places nearby…</Text>
+                  <NLoader fullScreen={false} size="compact" kind="places" />
                 </View>
               ) : placesToShow.length === 0 ? (
                 <>
@@ -2140,8 +2134,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {showPerks && isSearching && loadingSearch && (
             <>
               <Text style={styles.sectionHeader}>Perks</Text>
-              <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
-              <Text style={styles.loadingCaption}>Searching perks…</Text>
+              <NLoader fullScreen={false} size="compact" caption="Searching perks…" />
             </>
           )}
 

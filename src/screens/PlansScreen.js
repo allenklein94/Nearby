@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
-import { PullToRefresh } from '../motion';
+import { PullToRefresh, NLoader } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyAttendingGatherings, getMyGatherings } from '../services/gatherings';
@@ -256,8 +256,7 @@ export default function PlansScreen({ navigation, route }) {
 
       {loading ? (
         <View>
-          <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
-          <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your plans...</Text>
+          <NLoader fullScreen={false} size="compact" caption="Loading your plans…" />
         </View>
       ) : loadError ? (
         <LoadErrorState message="Couldn't load your plans." onRetry={load} />

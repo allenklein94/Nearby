@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Animated, ScrollView } from 'react-native';
-import { PullToRefresh, FilterTransition } from '../motion';
+import { PullToRefresh, FilterTransition, NLoader } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyMatches, getBrowseMatches, reportPresence } from '../services/proximity';
@@ -25,7 +25,6 @@ import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import DatingPreferencesPromptModal from '../components/DatingPreferencesPromptModal';
 import ConfidenceModeBanner from '../components/ConfidenceModeBanner';
 import FiltersModal from '../components/FiltersModal';
-import SkeletonCard from '../components/SkeletonCard';
 import SwipeableDiscoveryCards from '../components/SwipeableDiscoveryCards';
 import SightingMapModal from '../components/SightingMapModal';
 import SightingsOverviewMap from '../components/SightingsOverviewMap';
@@ -599,11 +598,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
       </TouchableOpacity>
 
       {initialLoading ? (
-        <View>
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-        </View>
+        <NLoader fullScreen={false} size="compact" kind="people" />
       ) : (
       <FilterTransition activeKey={quickFilterKey} style={{ flex: 1 }}>
       {viewStyle === 'cards' ? (
@@ -637,7 +632,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
         ListFooterComponent={
           discoveryMode === 'browse' && loadingMoreBrowse ? (
             <View style={{ paddingVertical: spacing.lg }}>
-              <SkeletonCard />
+              <NLoader fullScreen={false} size="inline" kind="people" />
             </View>
           ) : null
         }
