@@ -41,6 +41,11 @@ const DESSERT_CATEGORIES = ['Bakeries', 'Coffee'];
 const FAMILY_FOOD_CATEGORIES = ['Brunch', 'Foodie', 'Cooking', 'Food Trucks'];
 const FAMILY_FUN_CATEGORIES = ['Family Playdate', 'Kids Activity', 'Zoos', 'Aquariums', 'Amusement Park'];
 
+const FRIENDS_ACTIVITY_CATEGORIES = ['Sports', 'Bowling', 'Pickleball', 'Climbing', 'Karaoke', 'Trivia', 'Gaming', 'Comedy', 'Music', 'Dancing'];
+const FRIENDS_FOOD_CATEGORIES = ['Foodie', 'Brunch', 'Food Trucks', 'Cooking'];
+const FRIENDS_DRINKS_CATEGORIES = ['Bars & Lounges', 'Breweries', 'Wine', 'Happy Hour'];
+const FAMILY_OUTDOOR_CATEGORIES = ['Hiking', 'Outdoors', 'Fishing', 'Kayaking', 'Family Playdate', 'Kids Activity', 'Zoos', 'Aquariums', 'Amusement Park'];
+
 const DATE_NIGHT_COMPONENTS = [
   { key: 'dinner', label: '🍽️ Dinner', categories: DINNER_CATEGORIES },
   { key: 'something_to_do', label: '🎵 Something to Do', categories: NIGHT_OUT_CATEGORIES },
@@ -65,6 +70,49 @@ export const EXPERIENCE_TEMPLATES = {
   celebration: { title: '✨ Time to Celebrate', components: CELEBRATION_COMPONENTS },
   family_gathering: { title: '✨ Family Time', components: FAMILY_GATHERING_COMPONENTS },
 };
+
+// Context-triggered recipes (no explicit occasion needed). Same shape as the occasion templates above: a recipe of
+// components over real category tags, dropped when there is no real inventory. `contextTitle` is the optional, softer
+// framing used when the experience is only SUGGESTED from context ("Make it a night") rather than asked for.
+export const CONTEXT_TEMPLATES = {
+  date_night: { title: '✨ Make it a night', components: DATE_NIGHT_COMPONENTS },
+  friends_out: {
+    title: '✨ Make it a day out',
+    components: [
+      { key: 'activity', label: '🎯 Something to Do', categories: FRIENDS_ACTIVITY_CATEGORIES },
+      { key: 'food', label: '🍽️ Food', categories: FRIENDS_FOOD_CATEGORIES },
+      { key: 'drinks', label: '🍻 Drinks', categories: FRIENDS_DRINKS_CATEGORIES },
+    ],
+  },
+  family_day: {
+    title: '✨ Make it a family day',
+    components: [
+      { key: 'outdoor_fun', label: '🌳 Get Out and Play', categories: FAMILY_OUTDOOR_CATEGORIES },
+      { key: 'food', label: '🍽️ Food', categories: FAMILY_FOOD_CATEGORIES },
+    ],
+  },
+};
+
+// A planning moment, not "right now" and not undated: only these windows can suggest a multi-part outing.
+const PLANNING_WINDOWS = ['today', 'tonight', 'tomorrow', 'weekend'];
+
+// Deterministic map from signals the extractor ALREADY returns to a context template (never new AI inference). Returns
+// null unless the ask genuinely looks like a multi-part outing: a date-type party in a planning window -> date night;
+// friends in a planning window -> a day out; a kid-friendly ask in a planning window -> a family day. An explicit
+// occasion with its own template always wins upstream, so this is only consulted when there is none.
+export function experienceContextKey(context) {
+  const { partyType = null, dateWindow = null, attributes = [] } = context ?? {};
+  if (!PLANNING_WINDOWS.includes(dateWindow)) return null;
+  if (partyType === 'date') return 'date_night';
+  if (Array.isArray(attributes) && attributes.includes('kid_friendly')) return 'family_day';
+  if (partyType === 'friends') return 'friends_out';
+  return null;
+}
+
+export function experienceTemplateForContext(context) {
+  const key = experienceContextKey(context);
+  return key ? { key, template: CONTEXT_TEMPLATES[key] } : null;
+}
 
 export function experienceTemplateForOccasion(occasion) {
   return EXPERIENCE_TEMPLATES[occasion] ?? null;

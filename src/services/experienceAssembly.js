@@ -47,7 +47,7 @@
 // keys (a posting that only ticked one box is just a normal candidate for
 // that one component -- no special casing needed, the per-component loop
 // already handles it via its own category/subcategory/categories match).
-import { experienceTemplateForOccasion } from '../constants/experienceTemplates';
+import { experienceTemplateForOccasion, experienceTemplateForContext } from '../constants/experienceTemplates';
 
 const EXPERIENCE_ELIGIBLE_TYPES = ['business_availability', 'gathering'];
 
@@ -60,9 +60,18 @@ const EXPERIENCE_ELIGIBLE_TYPES = ['business_availability', 'gathering'];
 // occasion, or not a single component found genuine matching inventory --
 // callers should only ever render an Experience section when this is
 // truthy, so an absent Experience never becomes an empty UI shell.
-export function assembleExperience(occasion, candidates) {
-  const template = experienceTemplateForOccasion(occasion);
-  if (!template || !Array.isArray(candidates) || candidates.length === 0) return null;
+//
+// `context` ({ partyType, dateWindow, attributes }) is consulted ONLY when the ask carries no occasion with its own
+// template. A context-triggered experience is a SUGGESTION ("Make it a night"), not an answer: it needs real inventory in
+// at least TWO components (one component is just the flat list again), it has no bundles (those are occasion-declared),
+// and it never claims items, so the flat results underneath stay exactly as they were.
+export function assembleExperience(occasion, candidates, context = null) {
+  if (!Array.isArray(candidates) || candidates.length === 0) return null;
+  const occasionTemplate = experienceTemplateForOccasion(occasion);
+  const fromContext = occasionTemplate ? null : experienceTemplateForContext(context);
+  const template = occasionTemplate ?? fromContext?.template ?? null;
+  if (!template) return null;
+  const suggested = !occasionTemplate;
 
   const componentKeys = template.components.map((c) => c.key);
   const claimed = new Set();
@@ -72,7 +81,7 @@ export function assembleExperience(occasion, candidates) {
   // per-component matching below, so a genuine bundle is claimed as one
   // whole unit and never also independently competes for a single
   // component under its own row.category.
-  for (const c of candidates) {
+  for (const c of suggested ? [] : candidates) {
     if (c.type !== 'business_availability' || claimed.has(c.id)) continue;
     if (c.bundleOccasion !== occasion) continue;
     const coveredKeys = (Array.isArray(c.bundleComponents) ? c.bundleComponents : []).filter((k) => componentKeys.includes(k));
@@ -106,5 +115,9 @@ export function assembleExperience(occasion, candidates) {
   }
 
   if (components.length === 0 && bundles.length === 0) return null;
+  if (suggested) {
+    if (components.length < 2) return null;
+    return { title: template.title, occasion: null, suggested: true, contextKey: fromContext.key, bundles: [], components, claimedIds: [] };
+  }
   return { title: template.title, occasion, bundles, components, claimedIds: Array.from(claimed) };
 }

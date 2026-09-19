@@ -183,3 +183,59 @@ describe('assembleExperience', () => {
     });
   });
 });
+
+describe('context-triggered "Make it a night" (no explicit occasion)', () => {
+  const { experienceContextKey } = require('../constants/experienceTemplates');
+  const dinner = businessCandidate({ id: 'd1', category: 'Foodie', score: 5 });
+  const music = businessCandidate({ id: 'm1', category: 'Music', score: 4 });
+  const dessert = businessCandidate({ id: 's1', category: 'Bakeries', score: 3 });
+  const ctx = { partyType: 'date', dateWindow: 'tonight' };
+
+  it('maps only planning-window asks with a real who-for signal to a context template', () => {
+    expect(experienceContextKey({ partyType: 'date', dateWindow: 'tonight' })).toBe('date_night');
+    expect(experienceContextKey({ partyType: 'friends', dateWindow: 'weekend' })).toBe('friends_out');
+    expect(experienceContextKey({ attributes: ['kid_friendly'], dateWindow: 'today' })).toBe('family_day');
+    expect(experienceContextKey({ partyType: 'date', dateWindow: 'now' })).toBeNull();
+    expect(experienceContextKey({ partyType: 'date', dateWindow: 'flexible' })).toBeNull();
+    expect(experienceContextKey({ partyType: 'date', dateWindow: null })).toBeNull();
+    expect(experienceContextKey({ partyType: 'solo', dateWindow: 'tonight' })).toBeNull();
+    expect(experienceContextKey({})).toBeNull();
+  });
+  it('suggests an experience from real inventory in two or more components, without claiming the flat results', () => {
+    const exp = assembleExperience(null, [dinner, music, dessert], ctx);
+    expect(exp.title).toBe('✨ Make it a night');
+    expect(exp.suggested).toBe(true);
+    expect(exp.components.map((c) => c.key)).toEqual(['dinner', 'something_to_do', 'finish_the_night']);
+    expect(exp.claimedIds).toEqual([]);
+    expect(exp.bundles).toEqual([]);
+  });
+  it('never forces a component: a missing one is simply absent', () => {
+    const exp = assembleExperience(null, [dinner, music], ctx);
+    expect(exp.components.map((c) => c.key)).toEqual(['dinner', 'something_to_do']);
+  });
+  it('shows nothing when only one component has real inventory (that is just the flat list again)', () => {
+    expect(assembleExperience(null, [dinner], ctx)).toBeNull();
+    expect(assembleExperience(null, [dinner, businessCandidate({ id: 'x', category: 'Foodie' })], ctx)).toBeNull();
+  });
+  it('an explicit occasion with its own template still wins and behaves exactly as before', () => {
+    const exp = assembleExperience('birthday', [dinner, music, dessert], ctx);
+    expect(exp.suggested).toBeUndefined();
+    expect(exp.title).toBe('✨ Make It a Birthday');
+    expect(exp.claimedIds.length).toBeGreaterThan(0);
+  });
+  it('builds a friends day out and a family day from their own recipes', () => {
+    const friends = assembleExperience(null, [
+      businessCandidate({ id: 'a', category: 'Bowling' }), businessCandidate({ id: 'f', category: 'Foodie' }),
+    ], { partyType: 'friends', dateWindow: 'weekend' });
+    expect(friends.title).toBe('✨ Make it a day out');
+    expect(friends.components.map((c) => c.key)).toEqual(['activity', 'food']);
+    const family = assembleExperience(null, [
+      businessCandidate({ id: 'h', category: 'Hiking' }), businessCandidate({ id: 'b', category: 'Brunch' }),
+    ], { attributes: ['kid_friendly'], dateWindow: 'today' });
+    expect(family.components.map((c) => c.key)).toEqual(['outdoor_fun', 'food']);
+  });
+  it('is null with no context and no occasion', () => {
+    expect(assembleExperience(null, [dinner, music], null)).toBeNull();
+    expect(assembleExperience(null, [dinner, music])).toBeNull();
+  });
+});

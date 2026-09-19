@@ -636,7 +636,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // occasion, the occasion has no defined template, or no component found
   // genuine matching inventory; callers only ever render an Experience
   // section when this is truthy.
-  const experience = assembleExperience(occasion, deduped);
+  const experience = assembleExperience(occasion, deduped, { partyType, dateWindow, attributes });
 
   return { items: deduped.slice(0, RESULT_CAP), experience };
 }
