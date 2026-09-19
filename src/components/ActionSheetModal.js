@@ -9,7 +9,7 @@ import { modalAnimation } from '../motion';
 // Android (some/all extra buttons silently don't render), so anything
 // with more than a couple of real options should render its own list,
 // not stack onto Alert's fixed-size button row.
-export default function ActionSheetModal({ visible, onClose, title, message, options }) {
+export default function ActionSheetModal({ visible, onClose, title, message, options, dismissLabel = 'Cancel' }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
@@ -40,8 +40,8 @@ export default function ActionSheetModal({ visible, onClose, title, message, opt
               </TouchableOpacity>
             ))}
           </ScrollView>
-          <TouchableOpacity onPress={onClose} style={styles.cancelRow} accessibilityLabel="Cancel" accessibilityRole="button">
-            <Text style={styles.cancelText}>Cancel</Text>
+          <TouchableOpacity onPress={onClose} style={styles.cancelRow} accessibilityLabel={dismissLabel} accessibilityRole="button">
+            <Text style={styles.cancelText}>{dismissLabel}</Text>
           </TouchableOpacity>
         </View>
       </View>

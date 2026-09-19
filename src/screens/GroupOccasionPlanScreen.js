@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput, Platform, Share } from 'react-native';
 import FadeInState from '../components/FadeInState';
+import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { NLoader, SurpriseRevealAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
@@ -113,6 +114,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [acting, setActing] = useState(false);
+  const [reasonAsk, setReasonAsk] = useState(null);
   const [proposeType, setProposeType] = useState(null);
   const [proposeLabel, setProposeLabel] = useState('');
   // Item 112 follow-up (CLAUDE.md, "the lock opens... and the plan
@@ -418,7 +420,10 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
       ? 'Everyone will be told. Anything booked for it, like a reservation, is cancelled too.'
       : 'Everyone will be told this plan is cancelled.', [
       { text: 'Never mind', style: 'cancel' },
-      { text: 'Cancel Plan', style: 'destructive', onPress: () => runAction(() => cancelOccasionGroupPlan(planId)) },
+      { text: 'Cancel Plan', style: 'destructive', onPress: () => runAction(async () => {
+        await cancelOccasionGroupPlan(planId);
+        setReasonAsk({ entityType: 'occasion_group_plan', entityId: planId, role: 'host' });
+      }) },
     ]);
   }
 
@@ -1146,6 +1151,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
           </TouchableOpacity>
         )}
       </ScrollView>
+      <CancellationReasonSheet ask={reasonAsk} onClose={() => setReasonAsk(null)} />
     </SafeAreaView>
   );
 }

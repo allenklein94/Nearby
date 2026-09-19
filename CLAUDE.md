@@ -44,7 +44,11 @@ plan; the request does not reopen); completing one sets the Plan `completed`; th
 state, cascading downstream and notifying participants; the occasion "Planned" badge follows the Plan's live status. Gap 6 is a derived
 outcome (`utils/requestOutcome.js`, no stored status): the decline that leaves no live offer sends one `business_request_all_declined`
 push and the detail screen shows a wider-radius banner; a last *withdrawal* shows the banner but sends no push. Gap 5: a trigger recomputes an `occasion` parent plan's status from its child plans (match plans deliberately excluded --
-long-lived containers; group_occasion already follows its group plan). Still open (no ask yet): no cancellation-reason analytics. Not exercised on real data (prod has no reservations).
+long-lived containers; group_occasion already follows its group plan). Cancellation reason analytics (`20261213_cancellation_events`): every root cancel (reservation, request, gathering, occasion group plan)
+is recorded automatically in `cancellation_events` (cascades not double-counted); the reason is OPTIONAL, asked after the cancel via
+`CancellationReasonSheet` -> `set_cancellation_reason` (never gates a cancel); the business owner sees aggregates in the dashboard's
+"Cancelled Reservations" (`get_partner_cancellation_patterns`), owner-visible insight only, never auto-reweights matching. Not covered:
+`cancel_community`, `stopRecurringSeries`, `cancel_group_plan` (legacy) record no event. Nothing else open from this audit. Not exercised on real data (prod has no reservations).
 
 ## Backlog (v2 candidates — not started, do not build without a direct ask)
 

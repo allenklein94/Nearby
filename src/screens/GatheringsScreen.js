@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { PullToRefresh, FilterTransition, TapActiveChip, NLoader, SkeletonFeed } from '../motion';
 import FadeInState from '../components/FadeInState';
+import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, searchGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering, stopRecurringSeries } from '../services/gatherings';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
@@ -68,6 +69,7 @@ export default function GatheringsScreen({ navigation, route }) {
   const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [tab, setTab] = useState(route?.params?.initialTab ?? 'nearby');
+  const [reasonAsk, setReasonAsk] = useState(null);
   const [radiusTier, setRadiusTier] = useState('local');
   const [nearby, setNearby] = useState([]);
   const [hosting, setHosting] = useState({ upcoming: [], past: [] });
@@ -391,6 +393,7 @@ export default function GatheringsScreen({ navigation, route }) {
             onPress: async () => {
               try {
                 await cancelGathering(gathering.id);
+                setReasonAsk({ entityType: 'gathering', entityId: gathering.id, role: 'host' });
                 load();
               } catch (e) {
                 Alert.alert('Error', e.message);
@@ -432,6 +435,7 @@ export default function GatheringsScreen({ navigation, route }) {
           onPress: async () => {
             try {
               await cancelGathering(gathering.id);
+              setReasonAsk({ entityType: 'gathering', entityId: gathering.id, role: 'host' });
               load();
             } catch (e) {
               Alert.alert('Error', e.message);
@@ -1540,6 +1544,7 @@ export default function GatheringsScreen({ navigation, route }) {
         group={mapStoryViewerTarget}
         onClose={() => setMapStoryViewerTarget(null)}
       />
+      <CancellationReasonSheet ask={reasonAsk} onClose={() => setReasonAsk(null)} />
     </SafeAreaView>
   );
 }

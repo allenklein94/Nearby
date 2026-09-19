@@ -36,6 +36,7 @@ import {
 } from '../services/businessFulfillment';
 import { getMyPartnershipRequestForTarget } from '../services/businessPartnerships';
 import GatheringQnA from '../components/GatheringQnA';
+import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import GatheringIntentModal from '../components/GatheringIntentModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
@@ -67,6 +68,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const posthog = usePostHog();
 
   const [gathering, setGathering] = useState(null);
+  const [reasonAsk, setReasonAsk] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [coverUrl, setCoverUrl] = useState(null);
@@ -382,7 +384,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
             onPress: async () => {
               try {
                 await cancelGathering(gatheringId);
-                navigation.goBack();
+                setReasonAsk({ entityType: 'gathering', entityId: gatheringId, role: 'host' });
               } catch (e) {
                 Alert.alert('Error', e.message);
               }
@@ -417,7 +419,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
           onPress: async () => {
             try {
               await cancelGathering(gatheringId);
-              navigation.goBack();
+              setReasonAsk({ entityType: 'gathering', entityId: gatheringId, role: 'host' });
             } catch (e) {
               Alert.alert('Error', e.message);
             }
@@ -1167,6 +1169,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
         gatheringId={gatheringId}
         gatheringTitle={gathering.title}
       />
+      <CancellationReasonSheet ask={reasonAsk} onClose={() => { setReasonAsk(null); navigation.goBack(); }} />
     </View>
   );
 }

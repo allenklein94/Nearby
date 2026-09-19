@@ -13,6 +13,9 @@ import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage
 // target-type label map rather than a second, drifting copy.
 import { TARGET_TYPE_LABELS } from './AdminContentReviewScreen';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
+import CancellationReasonSheet from '../components/CancellationReasonSheet';
+import { CANCELLATION_REASONS, CANCELLATION_ACTOR_LABELS } from '../constants/cancellationReasons';
+import { getPartnerCancellationPatterns } from '../services/cancellationReasons';
 import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
@@ -322,6 +325,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [declineReasonInput, setDeclineReasonInput] = useState(null);
   const [declineNoteInput, setDeclineNoteInput] = useState('');
   const [declinePatterns, setDeclinePatterns] = useState([]);
+  const [cancellationPatterns, setCancellationPatterns] = useState([]);
+  const [reasonAsk, setReasonAsk] = useState(null);
   // "Business Web as an Operating System" Phase 3 -- the real per-template
   // offer-performance rollup shown on the Insights tab.
   const [offerPerformance, setOfferPerformance] = useState([]);
@@ -1372,6 +1377,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadMissedMatchSummary(selectedPartner.id);
         loadCategoryOutcomes(selectedPartner.id);
         loadDeclinePatterns(selectedPartner.id);
+        loadCancellationPatterns(selectedPartner.id);
         loadOfferPerformance(selectedPartner.id);
         loadCommunities(selectedPartner.id);
         loadGrowth(selectedPartner.id);
@@ -1684,6 +1690,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
           try {
             await cancelBusinessReservation(offerId);
             await loadOpportunities(selectedPartner.id);
+            loadCancellationPatterns(selectedPartner.id);
+            setReasonAsk({ entityType: 'business_reservation', entityId: offerId, role: 'business' });
           } catch (e) {
             Alert.alert('Error', e.message);
           }
@@ -2295,6 +2303,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // entitlement-gated (per the locked plan: "owner-only... never exposed
   // to anyone but the business itself"), so no locked-state branch is
   // needed here the way missed-match/category-outcomes have one.
+  async function loadCancellationPatterns(partnerId) {
+    try {
+      setCancellationPatterns(await getPartnerCancellationPatterns(partnerId));
+    } catch (e) {
+      console.error('loadCancellationPatterns failed', e);
+    }
+  }
+
   async function loadDeclinePatterns(partnerId) {
     try {
       const result = await getPartnerDeclinePatterns(partnerId);
@@ -3930,6 +3946,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </View>
                   );
                 })
+              )}
+
+              {/* Cancellation reason analytics: the owner's own view of reservation cancellations (theirs and their customers'),
+                  aggregated only, reasons are optional so "no reason given" is shown honestly. Never auto-reweights matching. */}
+              <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Cancelled Reservations</Text>
+              {cancellationPatterns.length === 0 ? (
+                <Text style={styles.emptyText}>No reservations cancelled in the last 30 days.</Text>
+              ) : (
+                cancellationPatterns.map((c) => (
+                  <View key={`${c.actor_role}-${c.reason_code}`} style={styles.offerCard}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.offerTitle}>
+                        {CANCELLATION_ACTOR_LABELS[c.actor_role] ?? c.actor_role} · {CANCELLATION_REASONS[c.reason_code] ?? 'No reason given'} · {c.cancel_count}x
+                      </Text>
+                    </View>
+                  </View>
+                ))
               )}
 
               {/* "Business Web as an Operating System" Phase 3 -- a real
@@ -6197,6 +6230,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </Modal>
+      <CancellationReasonSheet ask={reasonAsk} onClose={() => setReasonAsk(null)} />
     </SafeAreaView>
   );
 }

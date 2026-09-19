@@ -5,6 +5,7 @@ import { NLoader, SuccessAnimation, ModeTransition } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { useStripe, initStripe } from '@stripe/stripe-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { isAllDeclined } from '../utils/requestOutcome';
 import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon, setPlanItemTime, getPlanOrganizers, addPlanOrganizer, removePlanOrganizer } from '../services/businessFulfillment';
 import { getPlanChatInfo } from '../services/planChat';
@@ -284,6 +285,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // success -- never before, matching GatheringFeedbackModal's own "only
   // ask after it actually happened" convention.
   const [outcomeModalOfferId, setOutcomeModalOfferId] = useState(null);
+  const [reasonAsk, setReasonAsk] = useState(null);
 
   // "Nearby V3/V4" plan, Phase C: order the consumer's own offer list by
   // the same real completion-rate signal Phase C's fan-out now prefers,
@@ -744,6 +746,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           try {
             await cancelBusinessReservation(offerId);
             await load();
+            setReasonAsk({ entityType: 'business_reservation', entityId: offerId, role: 'requester' });
           } catch (e) {
             Alert.alert('Error', e.message);
           }
@@ -762,6 +765,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           try {
             await cancelBusinessRequest(requestId);
             await load();
+            setReasonAsk({ entityType: 'business_request', entityId: requestId, role: 'requester' });
           } catch (e) {
             Alert.alert('Error', e.message);
           }
@@ -1756,6 +1760,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         offerId={outcomeModalOfferId}
         onClose={() => setOutcomeModalOfferId(null)}
       />
+      <CancellationReasonSheet ask={reasonAsk} onClose={() => setReasonAsk(null)} />
     </SafeAreaView>
   );
 }
