@@ -34,7 +34,7 @@ import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 // Item 70 (CLAUDE.md): a real, honest "when" label for a pending request's
 // own date/time window, shown on the business's opportunity card.
-import { formatRequestWhen } from '../utils/businessRequestWhen';
+import { buildOpportunityCard } from '../utils/businessOpportunityCard';
 import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
 // already-deployed async submit-then-poll weather RPC every other
@@ -45,7 +45,7 @@ import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import DemandNearYouCard from '../components/DemandNearYouCard';
 import { describeDemandSignals } from '../utils/demandSignals';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, occasionLabel, dietaryLabel } from '../constants/businessAttributes';
-import { planAddonIcon, planAddonLabel } from '../constants/planAddons';
+import { planAddonLabel } from '../constants/planAddons';
 import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
 import { bundleableOccasions, experienceComponentOptionsForOccasion } from '../constants/experienceTemplates';
@@ -3407,11 +3407,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     // time_window_start) and already used for scoring, but
                     // never actually shown to the business deciding
                     // whether to respond. Real gap, now closed.
-                    const requestWhen = formatRequestWhen(
-                      o.business_requests?.date,
-                      o.business_requests?.time_window_start,
-                      o.business_requests?.time_window_end
-                    );
                     // Item 80 ("Make it special," CLAUDE.md): a real,
                     // independent add-on to a bigger occasion plan --
                     // shown first so it reads as a distinct request type,
@@ -3419,9 +3414,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     // it (which is already the closest matching leaf tag
                     // for 5 of 6 add-on types, but Transportation has no
                     // leaf tag at all, so this is its only visible cue).
-                    const addonTag = o.business_requests?.addon_type
-                      ? `${planAddonIcon(o.business_requests.addon_type)} ${planAddonLabel(o.business_requests.addon_type)} add-on`
-                      : null;
                     // Item 81 ("One Plan can contain multiple businesses,"
                     // CLAUDE.md): plan_time is when, within the WHOLE
                     // plan's own timeline, this specific engagement
@@ -3446,48 +3438,27 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     // reveals who the surprise is for -- Item 69's privacy
                     // boundary stays intact.
                     const surpriseTag = o.business_requests?.surprise_mode ? '🎁 Surprise!' : null;
-                    const lookingForTags = [
-                      surpriseTag,
-                      addonTag,
-                      o.business_requests?.category,
-                      reqOccasion ? `${reqOccasion.icon} ${reqOccasion.label}` : null,
-                      o.business_requests?.party_size ? `${o.business_requests.party_size} people` : null,
-                      requestWhen ? `📅 ${requestWhen}` : null,
-                      planTimeLabel ? `🕐 ${planTimeLabel}` : null,
-                      expLevelOpt ? `${expLevelOpt.icon} ${expLevelOpt.label}` : null,
-                      o.business_requests?.budget_max ? `up to $${o.business_requests.budget_max}` : null,
-                      o.business_requests?.cuisine ? cuisineLabel(o.business_requests.cuisine) : null,
-                      ...reqAttrs.map((key) => businessAttributeLabel(key)),
-                    ].filter(Boolean);
+                    const card = buildOpportunityCard(o.business_requests, {
+                      occasionLabel: reqOccasion?.label,
+                      experienceLabel: expLevelOpt?.label,
+                      addonLabel: o.business_requests?.addon_type ? planAddonLabel(o.business_requests.addon_type) : null,
+                      attributeLabels: reqAttrs.map((key) => businessAttributeLabel(key)),
+                      cuisineLabel: o.business_requests?.cuisine ? cuisineLabel(o.business_requests.cuisine) : null,
+                    });
+                    // Context that changes how the request should be read stays, but as one quiet line, not chips.
+                    const contextLine = [surpriseTag, planTimeLabel ? `🕐 ${planTimeLabel}` : null].filter(Boolean).join(' · ');
                     return (
                     <View key={o.id} style={styles.gatheringRow}>
-                      {o.opportunityReasons.length > 0 && (
-                        <View style={{ marginBottom: spacing.xs }}>
-                          {o.opportunityReasons.map((r) => (
-                            <Text key={r.label} style={[styles.breakdownText, { color: colors.primary, fontWeight: '600' }]}>
-                              🎯 {r.label}
-                            </Text>
-                          ))}
-                        </View>
-                      )}
-                      <Text style={styles.offerTitle}>{o.business_requests?.summary}</Text>
-                      {(o.business_requests?.dietary ?? []).length > 0 && (
+                      {o.status === 'pending' && <Text style={[styles.breakdownText, { color: colors.primary, fontWeight: '700' }]}>✨ New opportunity</Text>}
+                      <Text style={styles.offerTitle}>{card.title}</Text>
+                      {card.whenLine !== '' && <Text style={styles.breakdownText}>{card.whenLine}</Text>}
+                      {card.feelLine !== '' && <Text style={styles.breakdownText}>{card.feelLine}</Text>}
+                      {contextLine !== '' && <Text style={styles.breakdownText}>{contextLine}</Text>}
+                      {(card.lookingFor.length > 0 || (o.business_requests?.dietary ?? []).length > 0) && (
                         <View style={{ marginTop: spacing.xs }}>
-                          <Text style={styles.notesLabel}>Dietary needs</Text>
+                          <Text style={styles.notesLabel}>Customer is looking for</Text>
                           <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                            {o.business_requests.dietary.map((k) => (
-                              <View key={k} style={styles.chip}>
-                                <Text style={styles.chipText}>{dietaryLabel(k)}</Text>
-                              </View>
-                            ))}
-                          </View>
-                        </View>
-                      )}
-                      {lookingForTags.length > 0 && (
-                        <View style={{ marginTop: spacing.xs }}>
-                          <Text style={styles.notesLabel}>What they're looking for</Text>
-                          <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                            {lookingForTags.map((tag) => (
+                            {[...card.lookingFor, ...(o.business_requests?.dietary ?? []).map((k) => dietaryLabel(k))].map((tag) => (
                               <View key={tag} style={styles.chip}>
                                 <Text style={styles.chipText}>{tag}</Text>
                               </View>
@@ -3501,10 +3472,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             style={[styles.smallActionButton, { backgroundColor: colors.primary, marginRight: spacing.sm }]}
                             onPress={() => openOfferModal(o.request_id)}
                             disabled={respondingOpportunityId === o.request_id}
-                            accessibilityLabel="Make an offer"
+                            accessibilityLabel="Send offer"
                             accessibilityRole="button"
                           >
-                            <Text style={styles.smallActionButtonText}>Make an Offer</Text>
+                            <Text style={styles.smallActionButtonText}>Send Offer</Text>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}

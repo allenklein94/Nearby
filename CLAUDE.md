@@ -76,6 +76,8 @@ MakeAPlan, Places, CelebrateSomething, BrandOffers); nothing renders for anyone 
 `supabase/postgres:15.1.0.147` public schema with `ON_ERROR_STOP`; every function touched this session has exactly one overload, both new
 tables/the parent-plan trigger exist, and the public function count matches production (364 = 364).
 
+**Business opportunity card simplified (2026-09-19):** the pending-opportunity card on the business dashboard is now "✨ New opportunity" -> title (occasion · category) -> one who/when line ("6 people · Fri, Sep 25 · 7–8 PM") -> one feel/budget line -> "Customer is looking for" (cuisine/attributes/dietary) -> Send Offer / Can't accommodate. Built by `utils/businessOpportunityCard.js` from structured fields only (no invented "$$$"/"Upscale" tier; the per-reason "🎯 why you match" lines were dropped from the card, scoring/sort unchanged). Web export regenerated. Not device/browser-tested.
+
 ## Backlog (v2 candidates — not started, do not build without a direct ask)
 
 Deliberately out of scope for "Group planning for an Occasion" (archived in CLAUDE_HISTORY.md) per the user's own
