@@ -210,13 +210,6 @@ export default function BrandOffersScreen({ navigation, route }) {
                     <Text style={styles.offerTitle}>{offer.title}</Text>
                   </View>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => navigation.navigate('BusinessConversation', { partnerId: offer.partner_id, partnerName: offer.brand_partners?.name })}
-                  accessibilityLabel={`Message ${offer.brand_partners?.name}`}
-                  accessibilityRole="button"
-                >
-                  <Text style={{ fontSize: 20 }}>💬</Text>
-                </TouchableOpacity>
               </View>
               {offer.description ? <Text style={styles.description}>{offer.description}</Text> : null}
               {offer.redemption_limit != null && (

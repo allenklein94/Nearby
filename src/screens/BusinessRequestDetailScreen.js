@@ -321,6 +321,14 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     return result;
   }, [offers, partnerStats]);
 
+  // Nearby's pick: only when the first offered card is there on real evidence (an established reliability record, the
+  // same rule that orders the list). With no such record nothing is called a pick.
+  const pickOfferId = useMemo(() => {
+    const first = displayOffers.find((o) => o.status === 'offered');
+    const rep = first ? partnerStats[first.partner_id]?.reputation : null;
+    return displayOffers.filter((o) => o.status === 'offered').length >= 2 && rep && rep.total_opportunities >= 5 ? first.id : null;
+  }, [displayOffers, partnerStats]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -1262,9 +1270,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           )}
           {showComparison && (
             <View style={styles.comparisonHeaderRow}>
-              <Text style={styles.comparisonHeaderText}>🔍 Compare Your Options</Text>
+              <Text style={styles.comparisonHeaderText}>✨ Nearby found {offeredCount} options for you</Text>
               <Text style={styles.comparisonHeaderSubtext}>
-                {offeredCount} businesses want to make this happen — ranked by reliability
+                {pickOfferId ? "Here's what each can do. Our pick is first." : "Here's what each business can do."}
               </Text>
             </View>
           )}
@@ -1284,6 +1292,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   Birthday Offer" -- rendered as its own headline, distinct from
                   the business's own name above it. Null for a plain generic
                   offer with no title, same as it always rendered before. */}
+              {pickOfferId === o.id && o.status === 'offered' ? <Text style={styles.offerReputationLine}>✨ Our pick</Text> : null}
               {o.offer_title ? <Text style={styles.offerTitleHeadline}>{o.offer_title}</Text> : null}
               {reputationLine && (o.status === 'offered' || o.status === 'accepted') ? (
                 <Text style={styles.offerReputationLine}>{reputationLine}</Text>
@@ -1332,7 +1341,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                       accessibilityLabel={`Accept offer from ${o.brand_partners?.name ?? 'this business'}`}
                       accessibilityRole="button"
                     >
-                      {actingOfferId === o.id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>Accept This Offer</Text>}
+                      {actingOfferId === o.id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>I'll take this one</Text>}
                     </TouchableOpacity>
                   )}
                 </>

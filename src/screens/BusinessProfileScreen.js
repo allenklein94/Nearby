@@ -15,6 +15,7 @@ import {
   getMyManagedPartner,
   logBusinessProfileView,
   getBusinessExperiences,
+  getBusinessMessagesPage,
 } from '../services/brandOffers';
 import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
 import { getCommunityMemberCount } from '../services/communities';
@@ -89,6 +90,8 @@ export default function BusinessProfileScreen({ route, navigation }) {
   const [fulfillmentResponseTime, setFulfillmentResponseTime] = useState(null);
   // "Business Story" plan, Phase 6 -- Signature Experiences.
   const [experiences, setExperiences] = useState([]);
+  // An existing thread stays reachable (a business may have replied); starting one is no longer offered here.
+  const [hasThread, setHasThread] = useState(false);
   // Business Partner acquisition experience, Milestone 4 (see CLAUDE.md): log at most one real
   // view per screen visit (this ref is scoped to this one mounted instance -- a fresh push of
   // this screen is a fresh instance, a re-focus of the same instance, e.g. returning from
@@ -135,6 +138,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
       // hidden (RLS alone would show it to them since they're the owner).
       setExperiences((signatureExperiences ?? []).filter((e) => e.active));
       setLoadError(false);
+      getBusinessMessagesPage(partnerId, null, { limit: 1 }).then((rows) => setHasThread(rows.length > 0)).catch(() => {});
 
       if (activeOffers.length > 0) {
         getRedemptionCounts(activeOffers.map((o) => o.id)).then(setRedemptionCounts);
@@ -345,15 +349,28 @@ export default function BusinessProfileScreen({ route, navigation }) {
               {following ? '✓ Following' : '+ Follow'}
             </Text>
           </TouchableOpacity>
+          {/* Nearby does the arranging: the person says what they want and Nearby finds businesses (this one included)
+              that can do it, instead of opening a chat to negotiate one-on-one. */}
           <TouchableOpacity
             style={styles.messageButton}
-            onPress={() => navigation.navigate('BusinessConversation', { partnerId, partnerName: partner.name })}
+            onPress={() => navigation.navigate('AskBusiness', { prefillCategory: partner.subcategory ?? null })}
             activeOpacity={0.85}
-            accessibilityLabel={`Message ${partner.name}`}
+            accessibilityLabel="Ask Nearby to set something up like this"
             accessibilityRole="button"
           >
-            <Text style={styles.messageButtonText}>💬 Message</Text>
+            <Text style={styles.messageButtonText}>✨ Plan something</Text>
           </TouchableOpacity>
+          {hasThread && (
+            <TouchableOpacity
+              style={styles.messageButton}
+              onPress={() => navigation.navigate('BusinessConversation', { partnerId, partnerName: partner.name })}
+              activeOpacity={0.85}
+              accessibilityLabel={`Your conversation with ${partner.name}`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.messageButtonText}>💬 Your conversation</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* "Business Story" plan, Phase 6 -- the actual consumer-facing
@@ -491,7 +508,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   attributeChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.lg },
   attributeChip: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderWidth: 1, borderColor: colors.border },
   attributeChipText: { ...typography.small, color: colors.textSecondary },
-  actionRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
+  actionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg },
   // Item 37: Follow is a passive subscribe action, not the primary CTA --
   // outlined in both states, never filled coral. "Plan Here" (below) is
   // the real primary action on this screen.
