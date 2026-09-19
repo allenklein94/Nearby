@@ -47,6 +47,9 @@ import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
 // necessarily be excluded" instruction.
 const BUDGET_BONUS_REFERENCE = 150;
 
+// Party size at which a request counts as a "large group" (the demand card's '7+' bucket).
+export const LARGE_GROUP_MIN = 7;
+
 export function scoreBusinessOpportunity({
   requestAttributes = [],
   requestCuisine = null,
@@ -191,6 +194,12 @@ export function scoreBusinessOpportunity({
         reasons.push({ key: 'last_minute', label: 'A last-minute booking, which you want more of', points: SCORE_HAPPENING_NOW });
       }
     }
+  }
+
+  // "Large groups": the request's own party size, same "7 or more" bucket the demand card uses. No new field.
+  if (businessPriorityTimeWindows.includes('large_group') && requestPartySize != null && requestPartySize >= LARGE_GROUP_MIN) {
+    score += SCORE_HAPPENING_NOW;
+    reasons.push({ key: 'large_group', label: 'A large group, which you want more of', points: SCORE_HAPPENING_NOW });
   }
 
   // P1 item 7 (CLAUDE.md, Aug 28 2026 Full Coherence Audit): a real

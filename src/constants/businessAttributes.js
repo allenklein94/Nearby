@@ -168,6 +168,7 @@ export const PRIORITY_TIME_WINDOW_OPTIONS = [
   { key: 'weekend', label: '📅 Weekends' },
   { key: 'weekday', label: '🗓️ Weekdays' },
   { key: 'last_minute', label: '⚡ Last-minute bookings' },
+  { key: 'large_group', label: '👥 Large groups' },
 ];
 
 export function priorityTimeWindowLabel(key) {

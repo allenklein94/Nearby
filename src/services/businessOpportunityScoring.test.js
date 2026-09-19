@@ -287,3 +287,15 @@ describe('scoreBusinessOpportunity weather bonus', () => {
     });
   });
 });
+
+describe('large groups preference', () => {
+  const { LARGE_GROUP_MIN } = require('./businessOpportunityScoring');
+  it('credits a party of 7+ only when the business wants large groups', () => {
+    const r = scoreBusinessOpportunity({ requestPartySize: LARGE_GROUP_MIN, businessPriorityTimeWindows: ['large_group'] });
+    expect(r.reasons.map((x) => x.key)).toEqual(['large_group']);
+    expect(scoreBusinessOpportunity({ requestPartySize: LARGE_GROUP_MIN - 1, businessPriorityTimeWindows: ['large_group'] }).reasons).toEqual([]);
+    expect(scoreBusinessOpportunity({ requestPartySize: 12 }).reasons).toEqual([]);
+    expect(scoreBusinessOpportunity({ requestPartySize: null, businessPriorityTimeWindows: ['large_group'] }).reasons).toEqual([]);
+  });
+});
+

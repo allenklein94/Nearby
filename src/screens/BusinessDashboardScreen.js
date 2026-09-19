@@ -617,6 +617,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // packageIncludedItemDraft below) -- one input pattern, not two.
   const [offerTitleInput, setOfferTitleInput] = useState('');
   const [offerIncludedItemsInput, setOfferIncludedItemsInput] = useState([]);
+  // Name of the owner's own package the editor was pre-filled from (null = nothing pre-filled).
+  const [offerPrefilledFrom, setOfferPrefilledFrom] = useState(null);
   const [offerIncludedItemDraft, setOfferIncludedItemDraft] = useState('');
   // Only meaningful when offerTypeInput === 'alt_time' -- proposedTime
   // stays null for every other offer type, matching submit_business_
@@ -1582,6 +1584,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferTitleInput('');
     setOfferIncludedItemsInput([]);
     setOfferIncludedItemDraft('');
+    // One-tap smart offer: Nearby does the work first. If the owner already published a package that fits this exact
+    // request (same occasion, party clears min_guests), start from it -- title, price per person, included items --
+    // never a price of Nearby's own. Everything stays editable and nothing is sent until Send.
+    const req = opportunities.find((o) => o.request_id === requestId)?.business_requests ?? null;
+    const pkg = req ? findMatchingOccasionPackage({ occasion: req.occasion ?? null, partySize: req.party_size ?? null, packages: myOccasionPackages }) : null;
+    if (pkg) {
+      applyOccasionPackageToOffer(pkg);
+      setOfferPrefilledFrom(pkg.name);
+    } else {
+      setOfferPrefilledFrom(null);
+    }
   }
 
   // Item 92: one explicit tap copies the business's own already-built
@@ -5693,6 +5706,24 @@ export default function BusinessDashboardScreen({ navigation, route }) {
           <View style={styles.overlay}>
             <ScrollView style={styles.sheet} keyboardShouldPersistTaps="handled">
               <Text style={styles.sheetTitle}>Make an Offer</Text>
+              {offerModalRequest && (() => {
+                const ctx = buildOpportunityCard(offerModalRequest, {
+                  occasionLabel: offerModalRequest.occasion ? occasionLabel(offerModalRequest.occasion) : null,
+                });
+                return (
+                  <View style={{ marginBottom: spacing.md }}>
+                    <Text style={styles.notesLabel}>For this request</Text>
+                    <Text style={styles.offerTitle}>{ctx.title}</Text>
+                    {ctx.whenLine !== '' && <Text style={styles.breakdownText}>{ctx.whenLine}</Text>}
+                    {ctx.feelLine !== '' && <Text style={styles.breakdownText}>{ctx.feelLine}</Text>}
+                  </View>
+                );
+              })()}
+              {offerPrefilledFrom && (
+                <Text style={[styles.breakdownText, { color: colors.primary, fontWeight: '600', marginBottom: spacing.md }]}>
+                  ✨ Started from your "{offerPrefilledFrom}" package -- edit anything, then send.
+                </Text>
+              )}
               <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
                 Never just a discount -- offer whatever fits: your normal price, a discount, a
                 perk, an upgrade, or a different time that works better.

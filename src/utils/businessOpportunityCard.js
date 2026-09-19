@@ -46,9 +46,10 @@ const REASON_LINES = {
   time_window: () => 'It fits the hours you want to fill',
   weekday: () => 'A weekday request, which you want more of',
   last_minute: () => 'A last-minute booking, which you want more of',
+  large_group: () => 'A large group, which you want more of',
   boost: () => "You're actively boosting this category",
 };
-const REASON_ORDER = ['offered_occasion', 'want_occasion', 'priority_attribute', 'offers_attribute', 'cuisine', 'party_size', 'time_window', 'weekday', 'last_minute', 'boost'];
+const REASON_ORDER = ['offered_occasion', 'want_occasion', 'priority_attribute', 'offers_attribute', 'cuisine', 'party_size', 'time_window', 'weekday', 'last_minute', 'large_group', 'boost'];
 
 // True only when one of the business's own active postings really covers the request: same category (or an uncategorized
 // posting), and the posted window contains the requested time -- or, with no requested time, overlaps the requested day.
