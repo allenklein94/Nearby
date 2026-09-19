@@ -16,7 +16,7 @@ import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRe
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { CANCELLATION_REASONS, CANCELLATION_ACTOR_LABELS } from '../constants/cancellationReasons';
 import { getPartnerCancellationPatterns } from '../services/cancellationReasons';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview } from '../services/businessFulfillment';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
@@ -37,6 +37,7 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 import { buildOpportunityCard } from '../utils/businessOpportunityCard';
 import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardAvailabilityText } from '../utils/quickOfferResponse';
 import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
+import { defaultScheduledWindow, resolveAvailabilityWindow, scheduledWindowProblem, shiftEndAfterStart, demandPreviewLine } from '../utils/availabilityWindow';
 import { activeDiscountCap, parseDiscountPct, discountCapProblem } from '../utils/discountCap';
 // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
 // already-deployed async submit-then-poll weather RPC every other
@@ -483,6 +484,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [availabilityDiscountInput, setAvailabilityDiscountInput] = useState('');
   const [availabilityCapacityInput, setAvailabilityCapacityInput] = useState('');
   const [availabilityDurationKey, setAvailabilityDurationKey] = useState('2h');
+  // 'now' = the existing "live for N hours"; 'scheduled' = an explicit picked window (e.g. Friday 6-8 PM).
+  const [availabilityWhenMode, setAvailabilityWhenMode] = useState('now');
+  const [availabilityStart, setAvailabilityStart] = useState(null);
+  const [availabilityEnd, setAvailabilityEnd] = useState(null);
+  const [showAvailabilityPicker, setShowAvailabilityPicker] = useState(null); // 'start' | 'end' | null
+  const [availabilityDemandPeople, setAvailabilityDemandPeople] = useState(null);
   // Business-side Experience Bundles (2026-09-10, direct user request): both
   // optional, and only meaningful together -- clearing the occasion also
   // clears any ticked components (enforced client-side here, and again by
@@ -2016,6 +2023,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setAvailabilityDiscountInput('');
     setAvailabilityCapacityInput('');
     setAvailabilityDurationKey('2h');
+    setAvailabilityWhenMode('now');
+    setAvailabilityStart(null);
+    setAvailabilityEnd(null);
+    setShowAvailabilityPicker(null);
+    setAvailabilityDemandPeople(null);
     setAvailabilityBundleOccasionInput(null);
     setAvailabilityBundleComponentsInput([]);
     setPostAvailabilityModalVisible(true);
@@ -2037,6 +2049,42 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     );
   }
 
+  // "Supply first": while the Post Availability sheet is open, ask the server how many people nearby
+  // have an open request this window would match. The count is DISTINCT PEOPLE and comes back null
+  // below the 5-person privacy floor -- null shows nothing (never "0"). Debounced; failure is silent
+  // (the preview is a nicety, posting never depends on it).
+  useEffect(() => {
+    if (!postAvailabilityModalVisible || !selectedPartner?.id) {
+      setAvailabilityDemandPeople(null);
+      return undefined;
+    }
+    const duration = AVAILABILITY_DURATION_OPTIONS.find((d) => d.key === availabilityDurationKey);
+    const win = resolveAvailabilityWindow({ mode: availabilityWhenMode, start: availabilityStart, end: availabilityEnd, durationHours: duration?.hours ?? null });
+    if (!win || win.endsAt <= win.startsAt) {
+      setAvailabilityDemandPeople(null);
+      return undefined;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const capacityNum = availabilityCapacityInput.trim() ? parseInt(availabilityCapacityInput.trim(), 10) : null;
+        const preview = await getAvailabilityDemandPreview({
+          category: availabilityCategoryInput,
+          startsAt: win.startsAt.toISOString(),
+          endsAt: win.endsAt.toISOString(),
+          capacity: Number.isFinite(capacityNum) && capacityNum > 0 ? capacityNum : null,
+        });
+        if (!cancelled) setAvailabilityDemandPeople(preview.people);
+      } catch (e) {
+        if (!cancelled) setAvailabilityDemandPeople(null);
+      }
+    }, 450);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [postAvailabilityModalVisible, selectedPartner?.id, availabilityWhenMode, availabilityStart, availabilityEnd, availabilityDurationKey, availabilityCategoryInput, availabilityCapacityInput]);
+
   // Decision 6, Phase 3 -- same three-branch screening shape as the other
   // three handlers in this file. Deliberately no longer computes
   // startsAt/endsAt client-side -- durationHours (null meaning "rest of
@@ -2054,6 +2102,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       Alert.alert('Discount above your limit', availCapProblem);
       return;
     }
+    if (availabilityWhenMode === 'scheduled') {
+      const windowProblem = scheduledWindowProblem({ start: availabilityStart, end: availabilityEnd });
+      if (windowProblem) {
+        Alert.alert('Pick a time', windowProblem);
+        return;
+      }
+    }
     setPostingAvailability(true);
     try {
       const duration = AVAILABILITY_DURATION_OPTIONS.find((d) => d.key === availabilityDurationKey);
@@ -2070,6 +2125,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         bundleOccasion: availabilityBundleOccasionInput,
         bundleComponents: availabilityBundleComponentsInput,
         discountPct: parseDiscountPct(availabilityDiscountInput),
+        startsAt: availabilityWhenMode === 'scheduled' ? availabilityStart.toISOString() : null,
+        endsAt: availabilityWhenMode === 'scheduled' ? availabilityEnd.toISOString() : null,
       });
 
       if (result.published) {
@@ -6028,9 +6085,76 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 keyboardType="number-pad"
                 accessibilityLabel="Capacity, optional"
               />
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>When do you have space?</Text>
+              <View style={styles.chipRow}>
+                <TouchableOpacity
+                  style={[styles.chip, availabilityWhenMode === 'now' && styles.chipSelected]}
+                  onPress={() => setAvailabilityWhenMode('now')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Available now"
+                  accessibilityState={{ selected: availabilityWhenMode === 'now' }}
+                >
+                  <Text style={[styles.chipText, availabilityWhenMode === 'now' && styles.chipTextSelected]}>Now</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.chip, availabilityWhenMode === 'scheduled' && styles.chipSelected]}
+                  onPress={() => {
+                    setAvailabilityWhenMode('scheduled');
+                    if (!availabilityStart) {
+                      const w = defaultScheduledWindow();
+                      setAvailabilityStart(w.start);
+                      setAvailabilityEnd(w.end);
+                    }
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Pick a day and time"
+                  accessibilityState={{ selected: availabilityWhenMode === 'scheduled' }}
+                >
+                  <Text style={[styles.chipText, availabilityWhenMode === 'scheduled' && styles.chipTextSelected]}>Pick a day & time</Text>
+                </TouchableOpacity>
+              </View>
+              {availabilityWhenMode === 'scheduled' && (
+                <>
+                  {[['start', 'Starts', availabilityStart], ['end', 'Ends', availabilityEnd]].map(([which, label, value]) => (
+                    <TouchableOpacity
+                      key={which}
+                      style={[styles.input, { marginTop: spacing.sm, justifyContent: 'center' }]}
+                      onPress={() => setShowAvailabilityPicker(showAvailabilityPicker === which ? null : which)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${label}: pick a day and time`}
+                    >
+                      <Text style={{ color: value ? colors.textPrimary : colors.textTertiary }}>
+                        {label}: {value ? value.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Pick a time…'}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                  {showAvailabilityPicker && (
+                    <PlatformDateTimeInput
+                      value={(showAvailabilityPicker === 'start' ? availabilityStart : availabilityEnd) ?? new Date()}
+                      mode="datetime"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      themeVariant={isDark ? 'dark' : 'light'}
+                      minimumDate={new Date()}
+                      onChange={(event, selectedDate) => {
+                        const which = showAvailabilityPicker;
+                        setShowAvailabilityPicker(Platform.OS === 'ios' ? which : null);
+                        if (!selectedDate) return;
+                        if (which === 'start') {
+                          setAvailabilityStart(selectedDate);
+                          setAvailabilityEnd((prev) => shiftEndAfterStart(selectedDate, prev));
+                        } else {
+                          setAvailabilityEnd(selectedDate);
+                        }
+                      }}
+                    />
+                  )}
+                </>
+              )}
+              {availabilityWhenMode === 'now' && (
+                <>
               <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>How long should this stay live?</Text>
               <View style={styles.chipRow}>
-                {AVAILABILITY_DURATION_OPTIONS.map((d) => (
+                {AVAILABILITY_DURATION_OPTIONS.map((
                   <TouchableOpacity
                     key={d.key}
                     style={[styles.chip, availabilityDurationKey === d.key && styles.chipSelected]}
@@ -6043,6 +6167,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 ))}
               </View>
+              </>
+              )}
+              {(() => {
+                const line = demandPreviewLine({
+                  people: availabilityDemandPeople,
+                  category: availabilityCategoryInput,
+                  startsAt: (availabilityWhenMode === 'scheduled' ? availabilityStart : new Date()) ?? new Date(),
+                });
+                return line ? (
+                  <Text style={[styles.offerDescription, { marginTop: spacing.sm, color: colors.textPrimary }]} accessibilityLiveRegion="polite">
+                    {line}
+                  </Text>
+                ) : null;
+              })()}
               {/* Business-side Experience Bundles (2026-09-10, direct user
                   request): entirely optional -- posting a normal single-
                   category availability (the existing flow above) is
@@ -6105,7 +6243,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 accessibilityLabel={postingAvailability ? 'Posting' : 'Post availability'}
                 accessibilityRole="button"
               >
-                <Text style={styles.submitButtonText}>{postingAvailability ? 'Posting...' : 'Post Availability'}</Text>
+                <Text style={styles.submitButtonText}>{postingAvailability ? 'Posting...' : availabilityDemandPeople != null ? 'Send Offer' : 'Post Availability'}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setPostAvailabilityModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
                 <Text style={styles.modalCloseText}>Cancel</Text>

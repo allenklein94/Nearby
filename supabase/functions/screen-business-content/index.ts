@@ -629,6 +629,18 @@ Description: ${description || '(none)'}`;
       const capacity = Number.isFinite(body.capacity) ? body.capacity : null;
       const durationHours = Number.isFinite(body.durationHours) ? body.durationHours : null;
       const discountPct = Number.isFinite(body.discountPct) ? body.discountPct : null;
+      // Scheduled window (e.g. Friday 6-8 PM): both ISO timestamps or neither. Picked through
+      // deterministic UI, re-validated here; without them the window is "now + durationHours".
+      const parseIso = (v: unknown) => {
+        if (typeof v !== 'string' || !v) return null;
+        const d = new Date(v);
+        return Number.isNaN(d.getTime()) ? null : d;
+      };
+      const scheduledStart = parseIso(body.startsAt);
+      const scheduledEnd = parseIso(body.endsAt);
+      const scheduled = scheduledStart && scheduledEnd ? { startsAt: scheduledStart, endsAt: scheduledEnd } : null;
+      if (scheduled && scheduled.endsAt <= scheduled.startsAt) return json({ error: 'End time must be after the start time.' }, 400);
+      if (scheduled && scheduled.endsAt <= new Date()) return json({ error: 'That time window has already passed.' }, 400);
       // max_discount_pct is enforced in the database (offer trigger + post_business_availability);
       // checked here too so an over-cap posting is refused up front instead of being held for
       // review and only failing on approval.
@@ -657,6 +669,8 @@ Description: ${description || '(none)'}`;
       const contentSnapshot = {
         title, description: description || null, category, offerType, price, capacity, durationHours, radiusMiles,
         bundleOccasion, bundleComponents, discountPct,
+        startsAt: scheduled ? scheduled.startsAt.toISOString() : null,
+        endsAt: scheduled ? scheduled.endsAt.toISOString() : null,
       };
 
       const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
@@ -675,8 +689,8 @@ Description: ${description || '(none)'}`;
       }
 
       if (riskTier === 'low') {
-        const startsAt = new Date();
-        const endsAt = durationHours != null
+        const startsAt = scheduled ? scheduled.startsAt : new Date();
+        const endsAt = scheduled ? scheduled.endsAt : durationHours != null
           ? new Date(startsAt.getTime() + durationHours * 60 * 60 * 1000)
           : new Date(Date.UTC(startsAt.getUTCFullYear(), startsAt.getUTCMonth(), startsAt.getUTCDate(), 23, 59, 59));
         const { data: writeResult, error: writeError } = await supabaseAsUser.rpc('post_business_availability', {

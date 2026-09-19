@@ -858,7 +858,7 @@ export async function postBusinessAvailability({ category = null, title, descrip
 // publish, whether that's this call's own LOW-tier path or a later admin
 // approval -- avoids ever baking a submission-time window that would go
 // stale during a MEDIUM/UNCERTAIN hold.
-export async function submitBusinessAvailabilityForScreening(partnerId, { category = null, title, description = null, offerType = null, price = null, capacity = null, durationHours = null, radiusMiles = 15, bundleOccasion = null, bundleComponents = [] , discountPct = null}) {
+export async function submitBusinessAvailabilityForScreening(partnerId, { category = null, title, description = null, offerType = null, price = null, capacity = null, durationHours = null, radiusMiles = 15, bundleOccasion = null, bundleComponents = [] , discountPct = null, startsAt = null, endsAt = null}) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -883,6 +883,8 @@ export async function submitBusinessAvailabilityForScreening(partnerId, { catego
       bundleOccasion,
       bundleComponents,
       discountPct,
+      startsAt,
+      endsAt,
     }),
   });
 
@@ -1338,4 +1340,19 @@ export async function getMyBusinessEcosystemActivity(myId) {
   }
 
   return events;
+}
+
+// "Supply first": how many people nearby have an open request a scheduled window would match.
+// Returns { people, floor }; people is null below the privacy floor (demand_min_people(), 5) --
+// the database enforces it, callers must treat null as "no count to show", never as zero.
+export async function getAvailabilityDemandPreview({ category = null, startsAt, endsAt, capacity = null, radiusMiles = 15 }) {
+  const { data, error } = await supabase.rpc('get_availability_demand_preview', {
+    category_param: category,
+    starts_at_param: startsAt,
+    ends_at_param: endsAt,
+    capacity_param: capacity,
+    radius_miles_param: radiusMiles,
+  });
+  if (error) throw new Error(error.message);
+  return { people: data?.people ?? null, floor: data?.floor ?? 5 };
 }
