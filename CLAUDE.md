@@ -142,7 +142,7 @@ Not browser-tested (no browser available); web export regenerated; Jest 856.
 
 Deferred from "Why this matches" (2026-09-19, business opportunity cards; no ask yet):
 - **"Your typical price range matches"** -- needs a decision on what `business_requests.budget_max` means (total vs per-person) before comparing it to the business's `min_spend_per_person`; until then no price line is shown.
-- **"You have availability"** -- no per-business hours data exists. Could be shown only for businesses with a live availability posting that covers the request's date/time (real, from `business_availability`).
+- **"You have availability"** -- BUILT (2026-09-19) as "You have space posted for that time": only when the owner's own ACTIVE `business_availability` posting covers the request (same category or uncategorized; window contains the requested time, else overlaps the day; `availabilityCoversRequest`). No standing hours exist, so no claim otherwise. Jest 864; web export regenerated; not browser-tested.
 
 **Pending user action (not a build item):** connect Resend so the business email fallback (Item 147/148) actually sends.
 Needs the user: verify a sending domain in Resend, create a Sending-access API key, then set Edge secrets `RESEND_API_KEY`,

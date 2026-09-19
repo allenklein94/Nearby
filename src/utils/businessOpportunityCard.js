@@ -33,7 +33,8 @@ export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addo
 // area line, to the fact that fan-out only reaches businesses inside the request's radius). Nothing is invented: a
 // signal that did not fire simply does not appear, and with no reasons the card falls back to "New opportunity".
 // Deliberately absent: a price-range line (budget_max is not established as per-person, so "matches your price range"
-// would be a claim we cannot back) and an availability line (no per-business hours data exists).
+// would be a claim we cannot back). The availability line is real but narrow: it only appears when the business has an
+// ACTIVE posted slot (business_availability) covering the request's date/time -- there are no standing opening hours.
 const REASON_LINES = {
   offered_occasion: (ctx) => `You offer ${ctx.occasionPhrase ?? 'this occasion'}`,
   want_occasion: (ctx) => `You've said you want more ${ctx.occasionPhrase ?? 'requests like this'}`,
@@ -48,9 +49,32 @@ const REASON_LINES = {
 };
 const REASON_ORDER = ['offered_occasion', 'want_occasion', 'priority_attribute', 'offers_attribute', 'cuisine', 'party_size', 'time_window', 'weekday', 'last_minute', 'boost'];
 
-export function buildMatchReasons(reasons = [], { occasionPhrase = null } = {}) {
+// True only when one of the business's own active postings really covers the request: same category (or an uncategorized
+// posting), and the posted window contains the requested time -- or, with no requested time, overlaps the requested day.
+export function availabilityCoversRequest(req, postings = [], now = new Date()) {
+  if (!req?.date) return false;
+  const dayStart = new Date(`${req.date}T00:00:00`);
+  if (Number.isNaN(dayStart.getTime())) return false;
+  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+  let at = null;
+  if (req.time_window_start) {
+    const [h, m] = req.time_window_start.split(':').map((n) => parseInt(n, 10));
+    if (Number.isInteger(h) && Number.isInteger(m)) at = new Date(dayStart.getFullYear(), dayStart.getMonth(), dayStart.getDate(), h, m);
+  }
+  return (postings ?? []).some((a) => {
+    if (a.status !== 'active') return false;
+    const start = new Date(a.starts_at);
+    const end = new Date(a.ends_at);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= now) return false;
+    if (a.category && req.category && a.category !== req.category) return false;
+    return at ? start <= at && at <= end : start < dayEnd && end > dayStart;
+  });
+}
+
+export function buildMatchReasons(reasons = [], { occasionPhrase = null, hasAvailability = false } = {}) {
   const keys = new Set((reasons ?? []).map((r) => r.key));
   const lines = REASON_ORDER.filter((k) => keys.has(k)).map((k) => REASON_LINES[k]({ occasionPhrase }));
+  if (hasAvailability) lines.push('You have space posted for that time');
   // Fan-out only creates an opportunity for a business inside the request's radius, so this is true by construction.
   lines.push('You are within the area they asked for');
   return lines.length > 1 ? lines : [];

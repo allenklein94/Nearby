@@ -34,7 +34,7 @@ import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 // Item 70 (CLAUDE.md): a real, honest "when" label for a pending request's
 // own date/time window, shown on the business's opportunity card.
-import { buildOpportunityCard, buildMatchReasons } from '../utils/businessOpportunityCard';
+import { buildOpportunityCard, buildMatchReasons, availabilityCoversRequest } from '../utils/businessOpportunityCard';
 import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardAvailabilityText } from '../utils/quickOfferResponse';
 import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 import { defaultScheduledWindow, resolveAvailabilityWindow, scheduledWindowProblem, shiftEndAfterStart, demandPreviewLine } from '../utils/availabilityWindow';
@@ -3652,6 +3652,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     // Context that changes how the request should be read stays, but as one quiet line, not chips.
                     const matchReasons = buildMatchReasons(o.opportunityReasons, {
                       occasionPhrase: reqOccasion?.label ? `${reqOccasion.label.toLowerCase()} experiences` : null,
+                      hasAvailability: availabilityCoversRequest(o.business_requests, myAvailability),
                     });
                     const contextLine = [surpriseTag, planTimeLabel ? `🕐 ${planTimeLabel}` : null].filter(Boolean).join(' · ');
                     return (
