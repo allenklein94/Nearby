@@ -4,22 +4,15 @@ import * as Location from 'expo-location';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
-const OPTIONS = [
-  { key: 'near_me', icon: '📍', label: 'Near me' },
-  { key: 'around_city', icon: '🏙️', label: 'Around my city' },
-  { key: 'traveling', icon: '🌎', label: "I'm traveling" },
-];
-
 export default function OnboardingLocationScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [requesting, setRequesting] = useState(false);
 
-  async function handleSelect(key) {
-    // Every option genuinely needs location access to actually work
-    // (proximity-based discovery is the app's whole premise) — this
-    // just changes what someone expects the app is being used for,
-    // not whether permission gets requested.
+  // One honest ask. The old three options ("Near me" / "Around my city" / "I'm traveling") all did the same thing -- the
+  // choice was never stored or read by anything -- so they're gone. Location is asked once and used everywhere
+  // (userLocation.js); declining just continues, and the permission can be granted later where it's needed.
+  async function handleAllow() {
     setRequesting(true);
     await Location.requestForegroundPermissionsAsync().catch(() => null);
     setRequesting(false);
@@ -29,22 +22,28 @@ export default function OnboardingLocationScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Where should we start?</Text>
+        <Text style={styles.title}>Find what's happening near you</Text>
+        <Text style={styles.subtitle}>Nearby uses your location to show gatherings, places and people close by. Your exact position is never shown to anyone.</Text>
         <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
-          {OPTIONS.map((o) => (
-            <TouchableOpacity
-              key={o.key}
-              style={styles.option}
-              onPress={() => handleSelect(o.key)}
-              disabled={requesting}
-              activeOpacity={0.85}
-              accessibilityLabel={o.label}
-              accessibilityRole="button"
-            >
-              <Text style={styles.optionIcon}>{o.icon}</Text>
-              <Text style={styles.optionText}>{o.label}</Text>
-            </TouchableOpacity>
-          ))}
+          <TouchableOpacity
+            style={styles.primary}
+            onPress={handleAllow}
+            disabled={requesting}
+            activeOpacity={0.85}
+            accessibilityLabel="Use my location"
+            accessibilityRole="button"
+          >
+            <Text style={styles.primaryText}>📍 Use my location</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('OnboardingNotifications')}
+            disabled={requesting}
+            style={styles.skip}
+            accessibilityLabel="Not now"
+            accessibilityRole="button"
+          >
+            <Text style={styles.skipText}>Not now</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -55,10 +54,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing.lg },
   title: { ...typography.title, color: colors.textPrimary, textAlign: 'center' },
-  option: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.border, padding: spacing.lg, ...shadow.card,
-  },
-  optionIcon: { fontSize: 24, marginRight: spacing.md },
-  optionText: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
+  subtitle: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm },
+  primary: { backgroundColor: colors.primary, borderRadius: radius.lg, padding: spacing.lg, alignItems: 'center' },
+  primaryText: { ...typography.body, color: '#fff', fontWeight: '700' },
+  skip: { padding: spacing.md, alignItems: 'center' },
+  skipText: { ...typography.body, color: colors.textSecondary },
 });

@@ -44,3 +44,13 @@ test('behaviorNudge: dampened for new accounts, full for mature, none without be
   expect(behaviorNudge('Hiking', { behavior, maturity: 1 })).toBe(BEHAVIOR_MAX_POINTS);
   expect(behaviorNudge('Coffee', { behavior, maturity: 1 })).toBe(0);
 });
+
+describe('comfort lift', () => {
+  const { rankByBlend } = require('./blendedRanking');
+  it('lifts a gathering that fits stated comfort, stably, below interests', () => {
+    const a = { id: 'a', interest_tag: null, group_size_feel: 5 };
+    const b = { id: 'b', interest_tag: null, group_size_feel: 1 };
+    expect(rankByBlend([a, b], { socialComfort: 'one_on_one' }).map((x) => x.id)).toEqual(['b', 'a']);
+    expect(rankByBlend([a, b], { socialComfort: 'open' }).map((x) => x.id)).toEqual(['a', 'b']);
+  });
+});

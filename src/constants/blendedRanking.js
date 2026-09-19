@@ -1,6 +1,7 @@
 // Progressive personalization: "explicit preferences > behavior" for a new account, "behavior + explicit + context" later.
 // Built on signalSourceMaturity.js (one maturity number; explicit is never dampened, behavior is). Ranking only ever
 // REORDERS -- nothing is hidden -- and it is stable, so with no signals the original order is kept.
+import { comfortFits } from './socialComfort';
 import { SIGNAL_SOURCES, weightSignal } from './signalSourceMaturity';
 import { canonicalizeInterests } from './interestGraph';
 
@@ -23,8 +24,10 @@ export function blendedCategoryScore(category, { declared = [], behavior = {}, m
 }
 
 // Stable descending sort by blended score; equal scores keep their incoming order.
+export const COMFORT_POINTS = 1; // a small lift: below any declared interest (5) and any real behavior signal
+
 export function rankByBlend(items, ctx, tagOf = (x) => x.interest_tag) {
-  const scored = items.map((it, i) => ({ it, i, s: blendedCategoryScore(tagOf(it), ctx) }));
+  const scored = items.map((it, i) => ({ it, i, s: blendedCategoryScore(tagOf(it), ctx) + (comfortFits(it.group_size_feel, ctx?.socialComfort) ? COMFORT_POINTS : 0) }));
   if (scored.every((x) => x.s === 0)) return items;
   return scored.sort((a, b) => b.s - a.s || a.i - b.i).map((x) => x.it);
 }

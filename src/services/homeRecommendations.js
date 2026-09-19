@@ -9,6 +9,7 @@
 // machine-learned weight, matching this file's oldest and most
 // consistently-enforced rule (see CLAUDE.md's own repeated "no premature
 // universal/AI-driven matching algorithm" constraint).
+import { comfortFits } from '../constants/socialComfort';
 import { SCORE_INTEREST_MATCH, SCORE_CLOSE_DISTANCE, SCORE_HAPPENING_NOW, SCORE_OWN_NETWORK } from './intentResolverScoring';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
@@ -80,21 +81,10 @@ function weatherAdjustment(interestTag, weather) {
 // no group_size_feel set at all is never penalized or credited -- absence
 // of data is never used against (or for) a candidate, matching this
 // file's own repeated convention.
-const COMFORT_LEVEL_RANGES = {
-  one_on_one: [1, 2],
-  small_groups: [2, 3],
-  large_gatherings: [4, 5],
-};
-
 function socialComfortBonus(groupSizeFeel, socialComfortLevel) {
-  if (!socialComfortLevel || socialComfortLevel === 'open') return null;
-  if (groupSizeFeel === null || groupSizeFeel === undefined) return null;
-  const range = COMFORT_LEVEL_RANGES[socialComfortLevel];
-  if (!range) return null;
-  if (groupSizeFeel >= range[0] && groupSizeFeel <= range[1]) {
-    return { points: SCORE_INTEREST_MATCH, reason: 'Matches how you like to hang out' };
-  }
-  return null;
+  return comfortFits(groupSizeFeel, socialComfortLevel)
+    ? { points: SCORE_INTEREST_MATCH, reason: 'Matches how you like to hang out' }
+    : null;
 }
 
 function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel, maturity) {
