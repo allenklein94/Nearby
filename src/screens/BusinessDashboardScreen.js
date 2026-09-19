@@ -20,7 +20,7 @@ import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, decl
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
-import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
+import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured, stripeMode } from '../services/stripeConnect';
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
 import { getBusinessEntitlements, hasEntitlement, entitlementLimit, checkLimit, parseEntitlementError, tierDisplayLabel, ENTITLEMENT_FEATURE_LABELS } from '../services/entitlements';
 import { captureStoryMedia, uploadBusinessMoment } from '../services/stories';
@@ -3023,7 +3023,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   {/* Phase 7 (Business Web, CLAUDE.md) -- real device camera
                       capture has no web equivalent worth building for a v1;
                       hidden on web, native behavior untouched. */}
-                  {Platform.OS !== 'web' && (
+                  {(
                     <TouchableOpacity
                       style={[styles.postUpdateButton, { marginTop: spacing.sm, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.primary }]}
                       onPress={handlePostMoment}
@@ -3125,11 +3125,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <TouchableOpacity
                     style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm }]}
                     onPress={() => {
-                      // Business Web: CreateGathering isn't in the web navigator (consumer-sized screen); say so instead of a dead tap.
-                      if (Platform.OS === 'web') {
-                        window.alert('Open the Nearby app to host a gathering.');
-                        return;
-                      }
                       navigation.navigate('CreateGathering');
                     }}
                     accessibilityLabel="Host a gathering"
@@ -3148,14 +3143,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       key={g.id}
                       style={styles.gatheringRow}
                       onPress={() => {
-                        // Phase 7 (Business Web, CLAUDE.md) -- GatheringDetail
-                        // is a large consumer screen out of Business Web's
-                        // scope; a real, honest message beats a silent
-                        // navigation-to-nowhere on web.
-                        if (Platform.OS === 'web') {
-                          window.alert('Open the Nearby app to view full gathering details.');
-                          return;
-                        }
                         navigation.navigate('GatheringDetail', { gatheringId: g.id });
                       }}
                       activeOpacity={0.85}
@@ -3239,11 +3226,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <TouchableOpacity
                       style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm }]}
                       onPress={() => {
-                        // Business Web: CreateCommunity isn't in the web navigator; say so instead of a dead tap.
-                        if (Platform.OS === 'web') {
-                          window.alert('Open the Nearby app to create a community.');
-                          return;
-                        }
                         navigation.navigate('CreateCommunity');
                       }}
                       accessibilityLabel="Create a community"
@@ -3258,13 +3240,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       key={c.id}
                       style={styles.gatheringRow}
                       onPress={() => {
-                        // Phase 7 (Business Web, CLAUDE.md) -- same rationale
-                        // as the GatheringDetail guard above: CommunityDetail
-                        // is out of Business Web's scope.
-                        if (Platform.OS === 'web') {
-                          window.alert('Open the Nearby app to view full community details.');
-                          return;
-                        }
                         navigation.navigate('CommunityDetail', { communityId: c.id, communityName: c.name });
                       }}
                       activeOpacity={0.85}
@@ -5004,9 +4979,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     background getMyStripeConnectStatus() read that feeds
                     stripeStatus above keeps running unconditionally --
                     only this action UI is hidden. */}
-                {Platform.OS !== 'web' && (
+                {(
                 <>
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Get Paid via Stripe</Text>
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Get Paid via Stripe{stripeMode() === 'test' ? ' (test mode)' : ''}</Text>
                 <View style={styles.gatheringRow}>
                   {!isStripeConfigured() ? (
                     <Text style={styles.offerDescription}>
@@ -5024,6 +4999,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <>
                       <Text style={styles.offerTitle}>
                         {stripeStatus?.hasAccount ? 'Finish setting up payments' : 'Connect Stripe to get paid'}
+                      </Text>
+                      {stripeMode() === 'test' && (
+                        <Text style={styles.breakdownText}>Test mode: no real money moves and nothing you enter here is a real account.</Text>
+                      )}
+                      <Text style={styles.breakdownText}>
+                        You'll finish on Stripe's own secure page: identity, terms and bank details are entered there by you, never through Nearby.
                       </Text>
                       <Text style={styles.offerDescription}>
                         {stripeStatus?.hasAccount

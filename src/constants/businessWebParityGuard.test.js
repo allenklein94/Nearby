@@ -6,8 +6,7 @@ const path = require('path');
 
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', '..', p), 'utf8');
 
-// Documented, disclosed app-only screens (hosting a gathering / community). Each must be guarded by a web check.
-const APP_ONLY = ['CreateGathering', 'GatheringDetail', 'CreateCommunity', 'CommunityDetail'];
+// No exemptions: a business owner must never be sent "to the app" for a core operation.
 
 describe('business web parity', () => {
   const dashboard = read('src/screens/BusinessDashboardScreen.js');
@@ -18,14 +17,20 @@ describe('business web parity', () => {
     expect(app).toMatch(/installWebAlert\(Alert\)/);
   });
 
-  it('every screen the dashboard navigates to is web-registered or a guarded app-only screen', () => {
+  it('every screen the dashboard navigates to is registered on the business website', () => {
     const targets = [...dashboard.matchAll(/navigation\.navigate\('(\w+)'/g)].map((m) => m[1]);
-    for (const t of new Set(targets)) {
-      if (APP_ONLY.includes(t)) {
-        expect(dashboard).toMatch(new RegExp(`Platform\\.OS === 'web'[\\s\\S]{0,400}navigation\\.navigate\\('${t}'`));
-      } else {
-        expect(webNav).toMatch(new RegExp(`name="${t}"`));
-      }
+    for (const t of new Set(targets)) expect(webNav).toMatch(new RegExp(`name="${t}"`));
+  });
+
+  it('the website never tells an owner to go use the app', () => {
+    expect(dashboard).not.toMatch(/Open the Nearby app to/);
+  });
+
+  it('a live Stripe key is inert until the owner sets STRIPE_LIVE_APPROVED (hard gate), in every function that uses the key', () => {
+    for (const fn of ['business-stripe-connect-onboarding', 'create-business-payment-intent']) {
+      const src = read(`supabase/functions/${fn}/index.ts`);
+      expect(src).toMatch(/\(sk\|rk\)_live_/);
+      expect(src).toMatch(/STRIPE_LIVE_APPROVED'\) !== 'true'/);
     }
   });
 });

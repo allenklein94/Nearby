@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase, functionUrl } from './supabase';
@@ -16,6 +17,13 @@ export const STRIPE_PUBLISHABLE_KEY = Constants.expoConfig?.extra?.stripePublish
 // configured yet — gates whether the payment-collection UI can even
 // attempt to initialize the Stripe SDK, so an unconfigured platform never
 // shows a broken "Pay" button.
+// 'test' | 'live' | null, from the publishable key's own prefix. Lets the UI say plainly which mode an owner is in.
+export function stripeMode() {
+  if (STRIPE_PUBLISHABLE_KEY.startsWith('pk_test_')) return 'test';
+  if (STRIPE_PUBLISHABLE_KEY.startsWith('pk_live_')) return 'live';
+  return null;
+}
+
 export function isStripeConfigured() {
   return !!STRIPE_PUBLISHABLE_KEY;
 }
@@ -78,7 +86,13 @@ export async function getMyStripeConnectStatus() {
 // already signed in and already on their own dashboard (see the
 // business-stripe-connect-onboarding function's own comment).
 export async function startStripeOnboarding() {
-  const { url } = await callFunction('business-stripe-connect-onboarding');
+  const { url } = await callFunction('business-stripe-connect-onboarding', { platform: Platform.OS === 'web' ? 'web' : 'native' });
+  if (Platform.OS === 'web') {
+    // Stripe-hosted onboarding (the owner completes identity, terms and bank details there themselves). Stripe sends
+    // them back to the business site, which re-reads real account status on load. Nothing is submitted by Nearby.
+    window.location.assign(url);
+    return getMyStripeConnectStatus();
+  }
   await WebBrowser.openAuthSessionAsync(url, 'nearby://business-stripe-return');
   return getMyStripeConnectStatus();
 }

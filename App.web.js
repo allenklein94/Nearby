@@ -5,6 +5,7 @@ import { installReducedMotionPolicy } from './src/motion/motionPolicy';
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { LanguageProvider } from './src/context/LanguageContext';
+import { PostHogProvider } from 'posthog-react-native';
 import { installWebAlert } from './src/utils/webAlert';
 import BusinessWebNavigator from './src/navigation/BusinessWebNavigator';
 
@@ -28,6 +29,9 @@ function StatusBarWithTheme() {
 
 export default function App() {
   return (
+    // The shared gathering screens call usePostHog(); outside a provider its client is undefined and capture() would throw.
+    // A disabled client keeps them working without sending any analytics from the business website.
+    <PostHogProvider apiKey="disabled" options={{ disabled: true }}>
     <ThemeProvider>
       <LanguageProvider>
         <AuthProvider>
@@ -36,5 +40,6 @@ export default function App() {
         </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>
+    </PostHogProvider>
   );
 }

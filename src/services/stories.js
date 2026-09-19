@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from './supabase';
@@ -18,6 +19,14 @@ function base64ToUint8Array(base64) {
 }
 
 export async function captureStoryMedia() {
+  // Business website: no camera-permission API to gate on; the browser's own picker takes a fresh photo/video on a
+  // phone or lets a desktop owner choose a file. Same result shape, same downstream upload.
+  if (Platform.OS === 'web') {
+    const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.All, quality: 0.7 });
+    if (picked.canceled || !picked.assets?.[0]) return null;
+    const a = picked.assets[0];
+    return { uri: a.uri, type: a.type === 'video' ? 'video' : 'image' };
+  }
   const permission = await ImagePicker.requestCameraPermissionsAsync();
   if (!permission.granted) {
     throw new Error('Camera access is needed to post a story.');
@@ -35,16 +44,29 @@ export async function captureStoryMedia() {
 }
 
 export async function uploadStory(userId, uri, mediaType, isPublic = false, gatheringId = null, partnerId = null) {
-  const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
-  if (!base64 || base64.length === 0) {
-    throw new Error('Could not read the selected media. Please try again.');
+  let bytes;
+  let contentType = mediaType === 'video' ? 'video/quicktime' : 'image/jpeg';
+  let fileExt = mediaType === 'video' ? 'mov' : 'jpg';
+  if (Platform.OS === 'web') {
+    // The 0-byte fetch(uri).blob() problem is iOS-native only; on the web a blob URL is the normal way to read a pick.
+    const blob = await (await fetch(uri)).blob();
+    if (!blob.size) throw new Error('Could not read the selected media. Please try again.');
+    bytes = blob;
+    if (blob.type) {
+      contentType = blob.type;
+      fileExt = blob.type.split('/')[1]?.split(';')[0] || fileExt;
+    }
+  } else {
+    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+    if (!base64 || base64.length === 0) {
+      throw new Error('Could not read the selected media. Please try again.');
+    }
+    bytes = base64ToUint8Array(base64);
   }
-  const bytes = base64ToUint8Array(base64);
-  const fileExt = mediaType === 'video' ? 'mov' : 'jpg';
   const path = `${userId}/${Date.now()}.${fileExt}`;
   const { error } = await supabase.storage
     .from('stories')
-    .upload(path, bytes, { contentType: mediaType === 'video' ? 'video/quicktime' : 'image/jpeg' });
+    .upload(path, bytes, { contentType });
   if (error) throw error;
 
   // Only public stories (and business moments, which are always real,

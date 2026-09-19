@@ -52,6 +52,18 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Payments aren't set up yet. Check back soon." }), { status: 503 });
     }
 
+    // HARD GATE (live-money approval). A live-mode Stripe key does nothing here until the owner deliberately sets the
+    // STRIPE_LIVE_APPROVED=true secret themselves. Test keys (sk_test_) always work. No code path sets this secret.
+    if (/^(sk|rk)_live_/.test(STRIPE_SECRET_KEY) && Deno.env.get('STRIPE_LIVE_APPROVED') !== 'true') {
+      return new Response(JSON.stringify({ error: "Live payments aren't approved yet. Check back soon." }), { status: 503 });
+    }
+
+    // The website can't use the native deep link. The return page is server-decided (never taken from the client, so
+    // there is no open redirect): only the business web app URL, overridable by the BUSINESS_WEB_URL secret.
+    let isWeb = false;
+    try { isWeb = (await req.clone().json())?.platform === 'web'; } catch (_e) { /* no body = native */ }
+    const webBase = (Deno.env.get('BUSINESS_WEB_URL') || 'https://allenklein94.github.io/Nearby/business/').replace(/\/?$/, '/');
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Missing auth' }), { status: 401 });
@@ -107,8 +119,8 @@ serve(async (req) => {
     // signed in, already on their own dashboard, mid-flow).
     const accountLink = await stripeRequest('account_links', {
       account: accountId,
-      refresh_url: 'nearby://business-stripe-return?status=refresh',
-      return_url: 'nearby://business-stripe-return?status=complete',
+      refresh_url: isWeb ? `${webBase}?stripe=refresh` : 'nearby://business-stripe-return?status=refresh',
+      return_url: isWeb ? `${webBase}?stripe=complete` : 'nearby://business-stripe-return?status=complete',
       type: 'account_onboarding',
     });
 

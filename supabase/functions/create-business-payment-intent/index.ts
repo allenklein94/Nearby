@@ -82,6 +82,12 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Payments aren't set up yet. Check back soon." }), { status: 503 });
     }
 
+    // HARD GATE (live-money approval). A live-mode Stripe key does nothing here until the owner deliberately sets the
+    // STRIPE_LIVE_APPROVED=true secret themselves. Test keys (sk_test_) always work. No code path sets this secret.
+    if (/^(sk|rk)_live_/.test(STRIPE_SECRET_KEY) && Deno.env.get('STRIPE_LIVE_APPROVED') !== 'true') {
+      return new Response(JSON.stringify({ error: "Live payments aren't approved yet. Check back soon." }), { status: 503 });
+    }
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Missing auth' }), { status: 401 });
