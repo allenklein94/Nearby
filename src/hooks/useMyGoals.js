@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { goalShortcuts } from '../constants/onboardingGoals';
 
 // The onboarding goals as Home shortcuts. [] until loaded / signed out / none saved, so Home renders exactly as before.
 export default function useMyGoals() {
   const [shortcuts, setShortcuts] = useState([]);
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let cancelled = false;
     (async () => {
       try {
@@ -19,6 +20,6 @@ export default function useMyGoals() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, []));
   return shortcuts;
 }

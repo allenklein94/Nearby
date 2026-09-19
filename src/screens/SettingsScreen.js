@@ -10,6 +10,7 @@ import { requestDataExport } from '../services/dataExport';
 import { clearNotificationArea } from '../services/notificationArea';
 import { clearMyBehaviorHistory } from '../services/behaviorSignals';
 import RecommendationCustomizePanel from '../components/RecommendationCustomizePanel';
+import { ONBOARDING_GOALS, goalLabelsFrom, motivationsWithGoals } from '../constants/onboardingGoals';
 import { typography, spacing, radius } from '../theme';
 
 import { showSuccessToast } from '../motion';
@@ -152,6 +153,20 @@ export default function SettingsScreen({ navigation, route }) {
     Linking.openSettings();
   }
 
+  const [motivations, setMotivations] = useState([]);
+
+  async function toggleGoal(label) {
+    const has = motivations.includes(label);
+    const next = motivationsWithGoals(motivations, has ? goalLabelsFrom(motivations).filter((l) => l !== label) : [...goalLabelsFrom(motivations), label]);
+    const previous = motivations;
+    setMotivations(next);
+    const { error } = await supabase.from('profiles').update({ onboarding_motivations: next }).eq('id', userId);
+    if (error) {
+      setMotivations(previous);
+      Alert.alert('Error', error.message);
+    }
+  }
+
   async function load() {
     const { data: sessionData } = await supabase.auth.getSession();
     const id = sessionData?.session?.user?.id;
@@ -167,6 +182,7 @@ export default function SettingsScreen({ navigation, route }) {
       setNotifyBusiness(data.notify_business ?? true);
       setNotifyCommunity(data.notify_community ?? true);
       setMyInterests(data.interests ?? []);
+      setMotivations(data.onboarding_motivations ?? []);
       setTtdFrequency(data.notify_things_to_do_frequency ?? 'few_per_day');
       setTtdDistance(data.notify_things_to_do_max_distance_miles === undefined ? 15 : data.notify_things_to_do_max_distance_miles);
       setTtdTimePref(data.notify_things_to_do_time_pref ?? 'anytime');
@@ -777,6 +793,27 @@ export default function SettingsScreen({ navigation, route }) {
               accessibilityLabel="Notify me about activity in my communities"
             />
           </View>
+        </View>
+
+        <Text style={styles.sectionLabel} accessibilityRole="header">What you're here to do</Text>
+        <View style={styles.card}>
+          <Text style={styles.helperText}>Shapes the shortcuts on your Home screen.</Text>
+          {ONBOARDING_GOALS.map((g) => {
+            const selected = motivations.includes(g.label);
+            return (
+              <TouchableOpacity
+                key={g.key}
+                style={styles.settingRow}
+                onPress={() => toggleGoal(g.label)}
+                accessibilityLabel={g.label}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}
+              >
+                <Text style={styles.settingLabel}>{g.icon}  {g.label}</Text>
+                <Text style={styles.settingLabel}>{selected ? '☑' : '☐'}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         <Text style={styles.groupHeader} accessibilityRole="header">Privacy & Safety</Text>

@@ -66,7 +66,7 @@ Nearby keep you posted about?" -> account -> "You're ready ... Let's see what's 
 existing `onboarding_motivations` (looking-for as the tokens 'Go on dates' / 'Make new friends' that People sub-mode and Friend Discovery
 already read; no schema change). The celebrations step now shows only for people who picked "Plan celebrations". Home now reflects the goals: a "What you're here to do" shortcut
 row above Quick Picks (`goalShortcuts` in `onboardingGoals.js`, `useMyGoals`), one chip per picked goal to an existing screen (Discover people/things,
-MakeAPlan, Places, CelebrateSomething, BrandOffers); nothing renders for anyone with no saved goals. No way to edit goals yet. Not device-tested.
+MakeAPlan, Places, CelebrateSomething, BrandOffers); nothing renders for anyone with no saved goals. Goals are editable in Settings ("What you're here to do", saves per tap via `motivationsWithGoals`, keeps looking-for tokens); Home refetches on focus. Not device-tested.
 
 **Full from-scratch Docker replay (2026-09-19):** all 209 migrations (through `20261215_behavior_events`) applied cleanly to an empty
 `supabase/postgres:15.1.0.147` public schema with `ON_ERROR_STOP`; every function touched this session has exactly one overload, both new

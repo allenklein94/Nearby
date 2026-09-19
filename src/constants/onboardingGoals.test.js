@@ -34,3 +34,13 @@ test('goalShortcuts: only picked goals, canonical order, each with a real route;
   expect(s[0].params).toEqual({ initialMode: 'people' });
   expect(goalShortcuts(ONBOARDING_GOALS.map((g) => g.label))).toHaveLength(6);
 });
+
+describe('motivationsWithGoals', () => {
+  const { motivationsWithGoals, goalLabelsFrom } = require('./onboardingGoals');
+  it('replaces goals, keeps looking-for tokens', () => {
+    const out = motivationsWithGoals(['Meet people', 'Go on dates'], ['Make plans']);
+    expect(out).toEqual(['Make plans', 'Go on dates']);
+    expect(goalLabelsFrom(out)).toEqual(['Make plans']);
+  });
+  it('handles null', () => expect(motivationsWithGoals(null, [])).toEqual([]));
+});

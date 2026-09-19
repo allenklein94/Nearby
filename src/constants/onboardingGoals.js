@@ -50,3 +50,14 @@ export function goalShortcuts(motivations) {
     .filter((g) => motivations.includes(g.label) && GOAL_DESTINATIONS[g.label])
     .map((g) => ({ key: g.key, icon: g.icon, label: GOAL_DESTINATIONS[g.label].action, ...GOAL_DESTINATIONS[g.label] }));
 }
+
+// Editing goals later (Settings) changes only the goal labels; the looking-for tokens and any other stored values stay as they are.
+const GOAL_LABELS = ONBOARDING_GOALS.map((g) => g.label);
+export function motivationsWithGoals(existing, goalLabels) {
+  const kept = (Array.isArray(existing) ? existing : []).filter((m) => !GOAL_LABELS.includes(m));
+  return [...new Set([...goalLabels.filter((l) => GOAL_LABELS.includes(l)), ...kept])];
+}
+
+export function goalLabelsFrom(motivations) {
+  return Array.isArray(motivations) ? motivations.filter((m) => GOAL_LABELS.includes(m)) : [];
+}
