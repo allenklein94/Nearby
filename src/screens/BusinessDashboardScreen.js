@@ -2776,7 +2776,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   } else if (!isAvailabilityPulseFresh(selectedPartner.availability_pulse_updated_at)) {
                     suggestion = { text: "Set your availability so people know you're open right now.", onPress: () => setSection('business') };
                   } else if (pendingCount > 0) {
-                    suggestion = { text: `${pendingCount} request${pendingCount === 1 ? ' is' : 's are'} waiting for a reply.`, onPress: () => setSection('requests') };
+                    suggestion = { text: `${pendingCount} new opportunit${pendingCount === 1 ? 'y fits' : 'ies fit'} your business — view ${pendingCount === 1 ? 'it' : 'them'}.`, onPress: () => setSection('requests') };
                   } else if (bestGap) {
                     const realCount = Number(bestGap.request_count);
                     const gapText = realCount > 0
@@ -3371,13 +3371,25 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   ))
                 )}
 
-                <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Business Opportunities</Text>
+                {(() => {
+                  // Nearby does the matching: the business never browses customers, it gets the ones that fit.
+                  const newCount = scoredOpportunities.filter((o) => o.status === 'pending' && o.business_requests?.status === 'open').length;
+                  return (
+                    <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>
+                      {newCount > 0 ? `${newCount} new opportunit${newCount === 1 ? 'y' : 'ies'} that fit your business` : 'Opportunities'}
+                    </Text>
+                  );
+                })()}
                 <Text style={styles.helperText}>
-                  Real customers asking for something nearby -- respond with a real offer, or let
-                  a low-fit one pass.
+                  Nearby matched these to your business. Open one to see the request, then send an offer or
+                  let it pass.
                 </Text>
                 {scoredOpportunities.length === 0 ? (
-                  <Text style={styles.emptyText}>No requests yet.</Text>
+                  <TouchableOpacity onPress={() => openPostAvailabilityModal()} accessibilityRole="button" accessibilityLabel="Post availability so Nearby can match you">
+                    <Text style={styles.emptyText}>
+                      Nothing new right now. Nearby is watching for requests that fit — post your availability and more will find you. <Text style={{ color: colors.primary, fontWeight: '700' }}>Post availability</Text>
+                    </Text>
+                  </TouchableOpacity>
                 ) : (
                   scoredOpportunities.map((o) => {
                     // "Business Story" plan, Phase 4: closes the real,

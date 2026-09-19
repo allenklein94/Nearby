@@ -78,6 +78,8 @@ tables/the parent-plan trigger exist, and the public function count matches prod
 
 **Business opportunity card simplified (2026-09-19):** the pending-opportunity card on the business dashboard is now "✨ New opportunity" -> title (occasion · category) -> one who/when line ("6 people · Fri, Sep 25 · 7–8 PM") -> one feel/budget line -> "Customer is looking for" (cuisine/attributes/dietary) -> Send Offer / Can't accommodate. Built by `utils/businessOpportunityCard.js` from structured fields only (no invented "$$$"/"Upscale" tier; the per-reason "🎯 why you match" lines were dropped from the card, scoring/sort unchanged). Web export regenerated. Not device/browser-tested.
 
+**Business side = Nearby matches, business responds (2026-09-19):** matching was already server-side (fanout + scoring/sort); this framed it that way. The Opportunities section now headlines "N new opportunities that fit your business" (real count of open pending), helper says Nearby matched them, the Brief card line reads "N new opportunities fit your business — view them", and the empty state is an invitation to Post availability (no dead end). The flow after View (request card -> offer with availability/details -> accept/decline) already existed and is unchanged. Not built (no ask): a periodic digest push ("3 new opportunities"); pushes stay per-request. Web export regenerated; not browser-tested.
+
 ## Backlog (v2 candidates — not started, do not build without a direct ask)
 
 Deliberately out of scope for "Group planning for an Occasion" (archived in CLAUDE_HISTORY.md) per the user's own
