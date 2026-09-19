@@ -105,6 +105,27 @@ describe('buildHomeRecommendations', () => {
     expect(noBonus[0].reasons).not.toContain('You loved a gathering with this host before');
   });
 
+  it('credits a loved KIND of experience once, never stacked on a repeat host', () => {
+    const today = new Date().toISOString();
+    const kind = buildHomeRecommendations({
+      gatherings: [gathering({ host_id: 'other', interest_tag: 'Outdoor Dining', scheduled_at: today })],
+      positiveCategories: new Set(['Outdoor Dining']),
+    });
+    expect(kind[0].reasons).toContain('You loved this kind of experience last time');
+    const both = buildHomeRecommendations({
+      gatherings: [gathering({ host_id: 'host1', interest_tag: 'Outdoor Dining', scheduled_at: today })],
+      positiveHostIds: new Set(['host1']),
+      positiveCategories: new Set(['Outdoor Dining']),
+    });
+    expect(both[0].reasons).toContain('You loved a gathering with this host before');
+    expect(both[0].reasons).not.toContain('You loved this kind of experience last time');
+    const none = buildHomeRecommendations({
+      gatherings: [gathering({ host_id: 'other', interest_tag: 'Board Games', scheduled_at: today })],
+      positiveCategories: new Set(['Outdoor Dining']),
+    });
+    expect(none[0]?.reasons ?? []).not.toContain('You loved this kind of experience last time');
+  });
+
   it('adds a real "loved this business before" bonus only when the offer\'s partner is in positivePartnerIds', () => {
     const withBonus = buildHomeRecommendations({
       offers: [offer({ partner_id: 'partner1' })],

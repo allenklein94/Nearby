@@ -89,7 +89,7 @@ function socialComfortBonus(groupSizeFeel, socialComfortLevel) {
     : null;
 }
 
-function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel, maturity, interestGroups = []) {
+function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel, maturity, interestGroups = [], positiveCategories = new Set()) {
   let score = 0;
   const reasons = [];
 
@@ -137,6 +137,11 @@ function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel,
   if (gathering.host_id && positiveHostIds?.has(gathering.host_id)) {
     score += weightSignal(SCORE_OWN_NETWORK, SIGNAL_SOURCES.TRANSACTIONAL, maturity);
     reasons.push('You loved a gathering with this host before');
+  } else if (gathering.interest_tag && positiveCategories?.has(gathering.interest_tag)) {
+    // The feedback loop at the level of a KIND of experience (the same real feedback, not a repeat host): weaker than a
+    // repeat host, never stacked on it. TRANSACTIONAL like the host bonus, so a low-maturity account is dampened the same.
+    score += weightSignal(SCORE_INTEREST_MATCH, SIGNAL_SOURCES.TRANSACTIONAL, maturity);
+    reasons.push('You loved this kind of experience last time');
   }
   const comfortBonus = socialComfortBonus(gathering.group_size_feel, socialComfortLevel);
   if (comfortBonus) {
@@ -198,6 +203,7 @@ export function buildHomeRecommendations({
   excludeIds = new Set(),
   positiveHostIds = new Set(),
   positivePartnerIds = new Set(),
+  positiveCategories = new Set(),
   socialComfortLevel = null,
   interestGroups = [],
   accountAgeDays = null,
@@ -208,7 +214,7 @@ export function buildHomeRecommendations({
 
   for (const gathering of gatherings) {
     if (excludeIds.has(gathering.id)) continue;
-    const { score, reasons } = scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel, maturity, interestGroups);
+    const { score, reasons } = scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel, maturity, interestGroups, positiveCategories);
     if (reasons.length === 0) continue;
     candidates.push({ type: 'gathering', id: gathering.id, title: gathering.title, reasons, score, data: gathering });
   }

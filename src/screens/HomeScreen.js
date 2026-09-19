@@ -654,9 +654,10 @@ export default function HomeScreen({ navigation }) {
         // back into this same scoring pass. Supplementary, non-fatal --
         // falls back to two empty Sets (no bonus applied) on failure,
         // matching this whole block's own established convention.
-        const { positiveHostIds, positivePartnerIds } = await getMyPositiveExperienceSignals().catch(() => ({
+        const { positiveHostIds, positivePartnerIds, positiveCategories } = await getMyPositiveExperienceSignals().catch(() => ({
           positiveHostIds: new Set(),
           positivePartnerIds: new Set(),
+          positiveCategories: new Set(),
         }));
         // Phase J (CLAUDE.md) -- both real, zero-new-query: accountAgeDays
         // from profile.created_at (this same load() call's own already-
@@ -682,6 +683,7 @@ export default function HomeScreen({ navigation }) {
             excludeIds: new Set(result?.upcomingPlanIds ?? []),
             positiveHostIds,
             positivePartnerIds,
+            positiveCategories,
             // Sep 3 2026 ("global onboarding -> product wiring" master
             // plan, CLAUDE.md, Phase A) -- `profile` is the same select
             // from earlier in this same load() call (closure, not a

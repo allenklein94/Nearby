@@ -15,6 +15,13 @@ const SATISFACTION_OPTIONS = [
   { value: 'not_for_me', emoji: '🙁', label: 'Not for me' },
 ];
 
+// "Good match?": did what Nearby found actually fit what they asked for. Optional, so it never slows the two core answers.
+const MATCH_OPTIONS = [
+  { value: 'yes', label: 'Yes' },
+  { value: 'somewhat', label: 'Somewhat' },
+  { value: 'no', label: 'Not really' },
+];
+
 const REPEAT_OPTIONS = [
   { value: 'yes', label: 'Yes' },
   { value: 'maybe', label: 'Maybe' },
@@ -34,12 +41,14 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
   const styles = getStyles(colors, shadow);
   const [satisfaction, setSatisfaction] = useState(null);
   const [wouldRepeat, setWouldRepeat] = useState(null);
+  const [matchFit, setMatchFit] = useState(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   function handleClose() {
     setSatisfaction(null);
     setWouldRepeat(null);
+    setMatchFit(null);
     setFeedbackText('');
     onClose();
   }
@@ -47,7 +56,7 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
   async function handleSubmit() {
     setSubmitting(true);
     try {
-      await submitOfferOutcome(offerId, { satisfactionRating: satisfaction, wouldRepeat, feedbackText: feedbackText.trim() || null });
+      await submitOfferOutcome(offerId, { satisfactionRating: satisfaction, wouldRepeat, matchFit, feedbackText: feedbackText.trim() || null });
     } catch (e) {
       console.error('Failed to submit offer outcome', e);
       // Fails quietly, same philosophy as GatheringFeedbackModal -- this
@@ -93,6 +102,25 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => setWouldRepeat(o.value)}
                   accessibilityLabel={o.label}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <Text style={styles.subtitle}>Was it a good match for what you wanted? (optional)</Text>
+          <View style={styles.chipsWrap}>
+            {MATCH_OPTIONS.map((o) => {
+              const selected = matchFit === o.value;
+              return (
+                <TouchableOpacity
+                  key={o.value}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => setMatchFit(selected ? null : o.value)}
+                  accessibilityLabel={`Good match: ${o.label}`}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >

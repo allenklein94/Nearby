@@ -1440,11 +1440,12 @@ export async function getMyPositiveExperienceSignals() {
   const { data, error } = await supabase.rpc('get_my_positive_experience_signals');
   if (error) {
     console.error('getMyPositiveExperienceSignals error', error);
-    return { positiveHostIds: new Set(), positivePartnerIds: new Set() };
+    return { positiveHostIds: new Set(), positivePartnerIds: new Set(), positiveCategories: new Set() };
   }
   const row = Array.isArray(data) ? data[0] : data;
   return {
     positiveHostIds: new Set(row?.host_ids ?? []),
     positivePartnerIds: new Set(row?.partner_ids ?? []),
+    positiveCategories: new Set(row?.category_names ?? []),
   };
 }

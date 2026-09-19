@@ -625,12 +625,13 @@ export async function cancelBusinessReservation(offerId) {
 // trusted from the client. Private feedback, never shown to the business
 // as raw text -- only feeds the aggregate satisfaction/would-repeat
 // percentages get_partner_offer_reputation() computes.
-export async function submitOfferOutcome(offerId, { satisfactionRating, wouldRepeat, feedbackText = null } = {}) {
+export async function submitOfferOutcome(offerId, { satisfactionRating, wouldRepeat, feedbackText = null, matchFit = null } = {}) {
   const { data, error } = await supabase.rpc('submit_offer_outcome', {
     offer_id_param: offerId,
     satisfaction_rating_param: satisfactionRating,
     would_repeat_param: wouldRepeat,
     feedback_text_param: feedbackText,
+    match_fit_param: matchFit,
   });
   if (error) throw new Error(error.message);
   return data;
