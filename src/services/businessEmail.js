@@ -35,6 +35,18 @@ export async function setBusinessEmailEnabled(enabled) {
   if (error) throw new Error(error.message);
 }
 
+// Muted business notification groups (business_notification_prefs); [] when nothing is muted, null for a non-owner.
+export async function getMyBusinessNotificationPrefs() {
+  const { data, error } = await supabase.rpc('get_my_business_notification_prefs');
+  if (error) throw new Error(error.message);
+  return data ?? null;
+}
+
+export async function setBusinessNotificationGroupMuted(group, muted) {
+  const { error } = await supabase.rpc('set_my_business_notification_group', { group_param: group, muted_param: muted });
+  if (error) throw new Error(error.message);
+}
+
 const REASON_COPY = {
   email_not_configured: "Email alerts aren't switched on for Nearby yet. Phone notifications still work.",
   wrong_code: "That code doesn't match. Check it and try again.",

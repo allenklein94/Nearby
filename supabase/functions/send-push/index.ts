@@ -27,6 +27,22 @@ const RECOMMENDATION_TYPES = new Set([
   'community_area_demand_growing',
   'group_intent_signal'
 ]);
+// Business-owner mute groups (business_notification_prefs). MUST match
+// src/constants/businessNotificationGroups.js BUSINESS_NOTIFICATION_GROUP_BY_TYPE (Jest asserts equality).
+const BUSINESS_NOTIFICATION_GROUP_BY_TYPE = {
+  business_opportunity_received: 'requests',
+  business_request_cancelled: 'requests',
+  business_offer_accepted: 'offers',
+  business_offer_declined: 'offers',
+  business_offer_withdrawn: 'offers',
+  business_reservation_confirmed: 'reservations',
+  business_reservation_cancelled: 'reservations',
+  reservation_cancelled_by_customer: 'reservations',
+  aggregated_demand_growing: 'demand',
+  occasion_demand_growing: 'demand'
+};
+// A new request is recommendation-tier (quiet push) but it is THE alert a web-only owner needs, so it is also emailed.
+const EMAIL_EXTRA_TYPES = new Set(['business_opportunity_received']);
 function notificationTier(type) {
   return RECOMMENDATION_TYPES.has(type) ? 'recommendation' : 'important';
 }
@@ -58,13 +74,26 @@ serve(async (req)=>{
     }
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
     const { data: profile } = await admin.from('profiles').select('expo_push_token').eq('id', recipient_id).maybeSingle();
+    // Owner mute preferences apply to push AND email. Only owners have a row; account events map to no group.
+    const muteGroup = BUSINESS_NOTIFICATION_GROUP_BY_TYPE[data?.type];
+    if (muteGroup) {
+      const { data: prefs } = await admin.from('business_notification_prefs').select('muted_groups').eq('user_id', recipient_id).maybeSingle();
+      if (prefs?.muted_groups?.includes(muteGroup)) {
+        return new Response(JSON.stringify({
+          ok: true,
+          skipped: 'muted'
+        }), {
+          status: 200
+        });
+      }
+    }
     const tier = notificationTier(data?.type);
     if (!profile?.expo_push_token) {
       // Business Web parity: an owner who only uses the website has no push token. If they have a verified, enabled
-      // email address (business_email_settings) send the same alert there -- Important-tier only, so a web-only
-      // owner isn't flooded with recommendations. No-op (and never an error) until the email provider is configured.
+      // email address (business_email_settings) send the same alert there -- Important-tier plus new requests, so a
+      // web-only owner isn't flooded with recommendations. No-op (and never an error) until the email provider is configured.
       let emailed = false;
-      if (tier === 'important') {
+      if (tier === 'important' || EMAIL_EXTRA_TYPES.has(data?.type)) {
         const { data: es } = await admin.from('business_email_settings').select('email, verified_at, enabled').eq('user_id', recipient_id).maybeSingle();
         if (es?.email && es.verified_at && es.enabled) {
           const webUrl = Deno.env.get('BUSINESS_WEB_URL');

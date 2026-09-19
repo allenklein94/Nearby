@@ -1,3 +1,18 @@
+# Item 148 (2026-09-19) - Business owner notification preferences + dead web buttons
+Gap 1: owners got every alert with no control. Migration `20261209_business_notification_prefs.sql` (`business_notification_prefs`,
+RPC-only; `get_my_business_notification_prefs`, `set_my_business_notification_group`, owner-only). Four mute groups in owner words --
+requests, offers, reservations, demand -- defined in `src/constants/businessNotificationGroups.js` (type -> group map, mirrored in
+`send-push`, Jest asserts the two are identical). `send-push` skips a muted group for push AND email (`skipped: 'muted'`); account
+events (partner approved, partnership response) are in no group and can't be muted. Only owners have rows, consumer pushes untouched
+(an owner acting as a consumer would have the same type strings muted -- accepted edge). Card `BusinessNotificationPreferences` on the
+dashboard, web and native. CORRECTION to Item 147: `business_opportunity_received` (a new request) is recommendation-tier, so the
+email fallback would never have emailed it; `send-push` now emails it explicitly (EMAIL_EXTRA_TYPES) alongside Important-tier.
+Gap 2: "Host a gathering" / "Create a community" empty-state buttons targeted screens absent from the web navigator (dead taps); on web
+they now say "Open the Nearby app to ..." like the sibling rows. Deployed send-push (v13). Verified live: muted request -> `skipped:
+muted`, unmuted offer and account event pass (no_token for the test profile, temp row deleted); DB verified in a rolled-back
+transaction. NOT exercised: a real push/email being suppressed for a real owner, the cards in a browser. Web export rebuilt.
+Remaining known Business Web gaps: post-a-moment (camera) and Stripe payout setup hidden on web (Stripe needs the user present).
+
 # Item 147 (2026-09-19) - Business Web parity: email fallback for business notifications
 Gap found in the website/app audit: every business alert is a phone push through the single `send-push` Edge Function (all ~60
 notify_* triggers call it), and it returned `skipped: no_token` for a website-only owner. Now: migration

@@ -48,6 +48,7 @@ import { classifyBusinessCategory } from '../constants/businessCategoryClassifie
 import { extractAttributesFromText } from '../constants/businessAttributeExtraction';
 import { INTEREST_OPTIONS, subcategoryOptionsFor } from '../constants/gatheringCategories';
 import LoadErrorState from '../components/LoadErrorState';
+import BusinessNotificationPreferences from '../components/BusinessNotificationPreferences';
 import BusinessEmailNotifications from '../components/BusinessEmailNotifications';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -2908,7 +2909,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <Text style={styles.emptyText}>No gatherings hosted yet.</Text>
                   <TouchableOpacity
                     style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm }]}
-                    onPress={() => navigation.navigate('CreateGathering')}
+                    onPress={() => {
+                      // Business Web: CreateGathering isn't in the web navigator (consumer-sized screen); say so instead of a dead tap.
+                      if (Platform.OS === 'web') {
+                        window.alert('Open the Nearby app to host a gathering.');
+                        return;
+                      }
+                      navigation.navigate('CreateGathering');
+                    }}
                     accessibilityLabel="Host a gathering"
                     accessibilityRole="button"
                   >
@@ -3015,7 +3023,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <Text style={styles.emptyText}>No communities yet.</Text>
                     <TouchableOpacity
                       style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm }]}
-                      onPress={() => navigation.navigate('CreateCommunity')}
+                      onPress={() => {
+                        // Business Web: CreateCommunity isn't in the web navigator; say so instead of a dead tap.
+                        if (Platform.OS === 'web') {
+                          window.alert('Open the Nearby app to create a community.');
+                          return;
+                        }
+                        navigation.navigate('CreateCommunity');
+                      }}
                       accessibilityLabel="Create a community"
                       accessibilityRole="button"
                     >
@@ -4648,6 +4663,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </>
                 )}
 
+                <BusinessNotificationPreferences />
                 {Platform.OS === 'web' && <BusinessEmailNotifications />}
 
                 {/* Phase 7 (Business Web, CLAUDE.md) -- Stripe Connect
