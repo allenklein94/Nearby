@@ -16,7 +16,7 @@ describe('buildMatchReasons', () => {
       'You are within the area they asked for',
     ]);
   });
-  it('never claims price, and availability only when told a posting covers it', () => {
+  it('never claims price or availability unless the caller says it holds', () => {
     const { reasons } = scoreBusinessOpportunity({ requestBudgetMax: 200, requestOccasion: 'birthday', businessOfferedOccasions: ['birthday'] });
     const text = buildMatchReasons(reasons).join(' ').toLowerCase();
     expect(text).not.toMatch(/price|budget|availab/);

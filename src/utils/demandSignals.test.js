@@ -4,7 +4,7 @@ describe('describeDemandSignal', () => {
   it('describes a category signal with party size and budget from real values', () => {
     const d = describeDemandSignal({ kind: 'category', category: 'Foodie', people_count: 14, party_bucket: '5-6', budget_low: 40, budget_high: 60 });
     expect(d.headline).toBe('Foodie for 5–6 people is being searched nearby');
-    expect(d.detail).toBe('Budget $40–$60 · 14 people · last 14 days');
+    expect(d.detail).toBe('Budget $40–$60/person · 14 people · last 14 days');
     expect(d.action).toEqual({ type: 'availability', category: 'Foodie' });
   });
 

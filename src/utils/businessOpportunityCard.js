@@ -1,4 +1,5 @@
 import { formatDateLabel, formatTimeOfDay } from './businessRequestWhen';
+import { formatBudgetLine } from './budgetTier';
 
 // The business-facing "opportunity card": what a business needs to decide in two seconds whether it can do this.
 // Built ONLY from the structured fields get_business_opportunities already returns (never raw text, never invented
@@ -23,7 +24,7 @@ export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addo
     timeLabel,
   ].filter(Boolean).join(' · ');
 
-  const feelLine = [experienceLabel, r.budget_max ? `up to $${r.budget_max}` : null].filter(Boolean).join(' · ');
+  const feelLine = [experienceLabel, formatBudgetLine(r.budget_max, r.party_size)].filter(Boolean).join(' · ');
 
   const lookingFor = [cuisineLabel, ...attributeLabels].filter(Boolean);
   return { title, whenLine, feelLine, lookingFor };
@@ -32,8 +33,8 @@ export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addo
 // "Why this matches": the trust line on a pending opportunity. Every line traces to a real scoring reason (or, for the
 // area line, to the fact that fan-out only reaches businesses inside the request's radius). Nothing is invented: a
 // signal that did not fire simply does not appear, and with no reasons the card falls back to "New opportunity".
-// Deliberately absent: a price-range line (budget_max is not established as per-person, so "matches your price range"
-// would be a claim we cannot back). The availability line is real but narrow: it only appears when the business has an
+// Price fit is real now that budget_max is locked as per person (see budgetTier.js): it fires only when the request's
+// per-person budget >= the business's own active per-person minimum spend. The availability line is real but narrow: it only appears when the business has an
 // ACTIVE posted slot (business_availability) covering the request's date/time -- there are no standing opening hours.
 const REASON_LINES = {
   offered_occasion: (ctx) => `You offer ${ctx.occasionPhrase ?? 'this occasion'}`,
@@ -71,9 +72,10 @@ export function availabilityCoversRequest(req, postings = [], now = new Date()) 
   });
 }
 
-export function buildMatchReasons(reasons = [], { occasionPhrase = null, hasAvailability = false } = {}) {
+export function buildMatchReasons(reasons = [], { occasionPhrase = null, hasAvailability = false, priceFits = false } = {}) {
   const keys = new Set((reasons ?? []).map((r) => r.key));
   const lines = REASON_ORDER.filter((k) => keys.has(k)).map((k) => REASON_LINES[k]({ occasionPhrase }));
+  if (priceFits) lines.push('Their budget fits your price range');
   if (hasAvailability) lines.push('You have space posted for that time');
   // Fan-out only creates an opportunity for a business inside the request's radius, so this is true by construction.
   lines.push('You are within the area they asked for');

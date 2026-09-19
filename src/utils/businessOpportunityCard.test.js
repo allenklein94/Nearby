@@ -8,7 +8,7 @@ describe('buildOpportunityCard', () => {
     );
     expect(c.title).toBe('Anniversary · Foodie');
     expect(c.whenLine).toMatch(/^6 people · .+ · 7–8 PM$/);
-    expect(c.feelLine).toBe('Make it special · up to $80');
+    expect(c.feelLine).toBe('Make it special · Up to $80/person · $480 for the party · $$$');
     expect(c.lookingFor).toEqual(['Italian', 'Romantic']);
   });
   it('omits anything not actually set instead of inventing it', () => {

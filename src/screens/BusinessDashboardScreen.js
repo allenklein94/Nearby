@@ -34,6 +34,7 @@ import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 // Item 70 (CLAUDE.md): a real, honest "when" label for a pending request's
 // own date/time window, shown on the business's opportunity card.
+import { budgetMeetsMinSpend } from '../utils/budgetTier';
 import { buildOpportunityCard, buildMatchReasons, availabilityCoversRequest } from '../utils/businessOpportunityCard';
 import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardAvailabilityText } from '../utils/quickOfferResponse';
 import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
@@ -3653,6 +3654,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     const matchReasons = buildMatchReasons(o.opportunityReasons, {
                       occasionPhrase: reqOccasion?.label ? `${reqOccasion.label.toLowerCase()} experiences` : null,
                       hasAvailability: availabilityCoversRequest(o.business_requests, myAvailability),
+                      priceFits: fulfillmentPolicy?.active === true && budgetMeetsMinSpend(o.business_requests?.budget_max, fulfillmentPolicy?.min_spend_per_person),
                     });
                     const contextLine = [surpriseTag, planTimeLabel ? `🕐 ${planTimeLabel}` : null].filter(Boolean).join(' · ');
                     return (

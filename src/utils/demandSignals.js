@@ -31,7 +31,7 @@ export function describeDemandSignal(signal, { minPeople = 5, windowDays = 14 } 
     const low = Number(signal.budget_low);
     const high = Number(signal.budget_high);
     const hasBudget = signal.budget_low != null && signal.budget_high != null && Number.isFinite(low) && Number.isFinite(high);
-    const budget = hasBudget ? (low === high ? `Budget around $${low}` : `Budget $${low}–$${high}`) : null;
+    const budget = hasBudget ? (low === high ? `Budget around $${low}/person` : `Budget $${low}–$${high}/person`) : null;
     // Unfulfilled demand: only when the server returned it (it applies its own >= 5 floor), re-checked here.
     const waiting = Number(signal.unfulfilled_count);
     const hasWaiting = signal.unfulfilled_count != null && Number.isFinite(waiting) && waiting >= minPeople;
