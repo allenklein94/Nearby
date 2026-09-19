@@ -31,3 +31,22 @@ export function motivationsFromAnswers({ goals = [], lookingFor = null } = {}) {
 export function wantsCelebrationsStep(motivations) {
   return Array.isArray(motivations) && motivations.includes(CELEBRATIONS_GOAL_LABEL);
 }
+
+// Home reflects the saved goals: one shortcut per goal the user picked, each going to a screen that already exists (no new
+// destinations). Shown in the canonical goal order; empty for anyone who picked none (older accounts, or a skipped step), so
+// Home is unchanged for them and no placeholder is invented.
+const GOAL_DESTINATIONS = {
+  'Meet people': { route: 'Discover', params: { initialMode: 'people' }, action: 'Meet someone new' },
+  'Find things to do': { route: 'Discover', params: { initialMode: 'things' }, action: 'Find something to do' },
+  'Make plans': { route: 'MakeAPlan', params: undefined, action: 'Make a plan' },
+  'Discover places': { route: 'Places', params: undefined, action: 'Discover places' },
+  'Plan celebrations': { route: 'CelebrateSomething', params: undefined, action: 'Plan a celebration' },
+  'Find businesses and offers': { route: 'BrandOffers', params: undefined, action: 'Offers from businesses' },
+};
+
+export function goalShortcuts(motivations) {
+  if (!Array.isArray(motivations)) return [];
+  return ONBOARDING_GOALS
+    .filter((g) => motivations.includes(g.label) && GOAL_DESTINATIONS[g.label])
+    .map((g) => ({ key: g.key, icon: g.icon, label: GOAL_DESTINATIONS[g.label].action, ...GOAL_DESTINATIONS[g.label] }));
+}

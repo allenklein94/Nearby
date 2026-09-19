@@ -24,3 +24,13 @@ test('the six goals and four looking-for options are the specified set', () => {
   expect(ONBOARDING_GOALS.map((g) => g.label)).toEqual(['Meet people', 'Find things to do', 'Make plans', 'Discover places', 'Plan celebrations', 'Find businesses and offers']);
   expect(LOOKING_FOR_OPTIONS.map((o) => o.key)).toEqual(['dating', 'friends', 'both', 'skip']);
 });
+
+test('goalShortcuts: only picked goals, canonical order, each with a real route; none -> empty', () => {
+  const { goalShortcuts } = require('./onboardingGoals');
+  expect(goalShortcuts(null)).toEqual([]);
+  expect(goalShortcuts(['Go on dates', 'Make new friends'])).toEqual([]); // looking-for tokens are not goals
+  const s = goalShortcuts(['Plan celebrations', 'Meet people', 'Go on dates']);
+  expect(s.map((x) => x.route)).toEqual(['Discover', 'CelebrateSomething']);
+  expect(s[0].params).toEqual({ initialMode: 'people' });
+  expect(goalShortcuts(ONBOARDING_GOALS.map((g) => g.label))).toHaveLength(6);
+});

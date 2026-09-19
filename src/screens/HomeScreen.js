@@ -34,6 +34,7 @@ import QuickPicksEditModal from '../components/QuickPicksEditModal';
 import DiningPreferencesPromptModal from '../components/DiningPreferencesPromptModal';
 import { shouldOfferDiningPrompt, personalizeQuickOptions } from '../constants/interestGraph';
 import useMyInterests from '../hooks/useMyInterests';
+import useMyGoals from '../hooks/useMyGoals';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { iconNameForCategory } from '../constants/quickPickIcons';
 import LoadErrorState from '../components/LoadErrorState';
@@ -222,6 +223,7 @@ export default function HomeScreen({ navigation }) {
   const [pinnedQuickPicks, setPinnedQuickPicks] = useState(null);
   // Progressive dining-taste prompt (Preference wiring Phase 4): a permanent, per-user dismissable Home card.
   const myDeclaredInterests = useMyInterests();
+  const goalRow = useMyGoals();
   const [diningNudge, setDiningNudge] = useState(false);
   const [diningModalVisible, setDiningModalVisible] = useState(false);
   const [quickPicksEditVisible, setQuickPicksEditVisible] = useState(false);
@@ -2324,6 +2326,27 @@ export default function HomeScreen({ navigation }) {
               </View>
             )}
           </View>
+        )}
+
+        {goalRow.length > 0 && (
+          <>
+            <Text style={styles.sectionHeader}>What you're here to do</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
+              {goalRow.map((g) => (
+                <TouchableOpacity
+                  key={g.key}
+                  style={styles.quickActionChip}
+                  onPress={() => navigation.navigate(g.route, g.params)}
+                  activeOpacity={0.85}
+                  accessibilityLabel={g.label}
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.quickActionIcon, { fontSize: 20 }]}>{g.icon}</Text>
+                  <Text style={styles.quickActionLabel}>{g.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </>
         )}
 
         <View style={styles.quickPicksHeaderRow}>
