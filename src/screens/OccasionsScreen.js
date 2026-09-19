@@ -663,7 +663,7 @@ export default function OccasionsScreen({ navigation, route }) {
                           <Text style={styles.detail}>
                             {formatOccasionDateForPrecision(occasion.date_precision, occasion.occasion_date)}
                             {occasion.recurs_annually ? ' · Repeats every year' : ' · One time'}
-                            {occasion.resulting_plan_id ? ' · ✅ Planned' : ''}
+                            {occasion.resulting_plan_id && !occasion.plan_cancelled ? ' · ✅ Planned' : ''}
                             {occasion.imported_from_calendar ? ' · 📅 From your calendar' : ''}
                           </Text>
                           {/* Item 109 (CLAUDE.md, "make the visibility model
@@ -706,7 +706,7 @@ export default function OccasionsScreen({ navigation, route }) {
                             -- a plan that turned out to be gathering-destined
                             (no business) just means consenting has no real
                             effect, never a privacy leak either way. */}
-                        {occasion.recurs_annually && occasion.resulting_plan_id && (
+                        {occasion.recurs_annually && occasion.resulting_plan_id && !occasion.plan_cancelled && (
                           <TouchableOpacity
                             style={styles.iconButton}
                             onPress={() => handleToggleRecallShare(occasion)}

@@ -413,7 +413,10 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   }
 
   function handleCancel() {
-    Alert.alert('Cancel this group plan?', 'Everyone will be told voting is closed.', [
+    const booked = detail.status === 'fulfilled';
+    Alert.alert('Cancel this plan?', booked
+      ? 'Everyone will be told. Anything booked for it, like a reservation, is cancelled too.'
+      : 'Everyone will be told this plan is cancelled.', [
       { text: 'Never mind', style: 'cancel' },
       { text: 'Cancel Plan', style: 'destructive', onPress: () => runAction(() => cancelOccasionGroupPlan(planId)) },
     ]);
@@ -1135,12 +1138,12 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
               </View>
             )}
 
-            {detail.isHost && (
-              <TouchableOpacity style={styles.cancelLink} onPress={handleCancel} disabled={acting} accessibilityRole="button" accessibilityLabel="Cancel this plan">
-                <Text style={styles.cancelLinkText}>Cancel This Plan</Text>
-              </TouchableOpacity>
-            )}
           </>
+        )}
+        {detail.isHost && ['voting', 'voting_business', 'decided', 'fulfilled'].includes(detail.status) && (
+          <TouchableOpacity style={styles.cancelLink} onPress={handleCancel} disabled={acting} accessibilityRole="button" accessibilityLabel="Cancel this plan">
+            <Text style={styles.cancelLinkText}>Cancel This Plan</Text>
+          </TouchableOpacity>
         )}
       </ScrollView>
     </SafeAreaView>

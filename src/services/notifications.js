@@ -554,6 +554,8 @@ export async function routeNotificationTap(data) {
     // to Occasion plans): a non-Nearby guest RSVP'd via their own real
     // invite link (respond_to_occasion_group_plan_guest_invite) -- same
     // real detail screen, which already shows that guest's own status.
+    // State-machine audit gap 3: the host cancelled the plan -- same detail screen, which renders "This plan was cancelled."
+    case 'occasion_group_plan_cancelled':
     case 'occasion_group_plan_guest_rsvp':
       if (data.plan_id) {
         navigationRef.navigate('GroupOccasionPlan', { planId: data.plan_id });

@@ -15,7 +15,13 @@ export async function getMyOccasions() {
     console.error('getMyOccasions error', error);
     return [];
   }
-  return data ?? [];
+  const occasions = data ?? [];
+  // State-machine audit gap 4: "Planned" must follow the Plan's live status, not merely that a plan was ever made.
+  const planIds = occasions.map((o) => o.resulting_plan_id).filter(Boolean);
+  if (planIds.length === 0) return occasions;
+  const { data: plans } = await supabase.from('plans').select('id, status').in('id', planIds);
+  const cancelled = new Set((plans ?? []).filter((pl) => pl.status === 'cancelled').map((pl) => pl.id));
+  return occasions.map((o) => (o.resulting_plan_id && cancelled.has(o.resulting_plan_id) ? { ...o, plan_cancelled: true } : o));
 }
 
 export async function addOccasion({ occasionType, title, occasionDate, recursAnnually = true, connectedUserId = null, whoForName = null, whoForFriendId = null, surpriseMode = false, importedFromCalendar = false, datePrecision = 'exact' }) {

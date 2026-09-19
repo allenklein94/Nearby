@@ -39,10 +39,12 @@ BusinessRequestDetail invite pickers (server enforces it); Cuisine as a browse f
 destined occasion co-organizers; push for `plan_messages`; anon `is_match_participant` grant
 error on `business_requests` reads (fails closed).
 
-**State-machine audit (2026-09-19, `PRODUCT_AUDIT/STATE_MACHINE_AUDIT_2026-09-19.md`): findings delivered, fixes NOT built --
-awaiting the user's go-ahead.** Decline is already a real, guarded state. Real gaps: a cancelled reservation leaves the Plan
-`confirmed`; `plans.status='completed'` is never written; group occasion plans are cancellable only while `voting` and send no
-cancel notification; personal occasions keep a stale "Planned" badge; no terminal state when every business declines.
+**State-machine audit (2026-09-19, `PRODUCT_AUDIT/STATE_MACHINE_AUDIT_2026-09-19.md`): gaps 1-4 FIXED and live
+(migration `20261210_reservation_plan_lifecycle`).** A cancelled primary reservation ends the request + Plan (+ fulfilled group
+plan; the request does not reopen); completing one sets the Plan `completed`; the host can cancel a group plan in any non-terminal
+state, cascading downstream and notifying participants; the occasion "Planned" badge follows the Plan's live status. Still open
+(no ask yet): gap 6 "all businesses declined" has no terminal state/nudge; gap 5 parent plan has no stored child-cancelled state;
+no cancellation-reason analytics. Not exercised on real data (prod has no reservations).
 
 ## Backlog (v2 candidates — not started, do not build without a direct ask)
 
