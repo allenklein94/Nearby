@@ -3,8 +3,9 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Scro
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity, searchActiveBusinessAvailability } from '../services/businessFulfillment';
 import { createBusinessRequestForMatch } from '../services/dateProposals';
+import DietaryPicker from '../components/DietaryPicker';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
-import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, OCCASION_OPTIONS, businessAttributeLabel, cuisineLabel, occasionLabel, DIETARY_OPTIONS, dietaryLabel } from '../constants/businessAttributes';
+import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, OCCASION_OPTIONS, businessAttributeLabel, cuisineLabel, occasionLabel, dietaryLabel } from '../constants/businessAttributes';
 import { BUDGET_LEVEL_OPTIONS, resolveBudgetMax, initialBudgetSelectionFromMax, EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { useTheme } from '../context/ThemeContext';
@@ -795,31 +796,7 @@ export default function AskBusinessScreen({ navigation, route }) {
             </>
           )}
 
-          {category === 'Foodie' && (
-            <>
-              <Text style={styles.label}>Dietary needs (optional)</Text>
-              <View style={styles.chipRow}>
-                {DIETARY_OPTIONS.map((d) => {
-                  const on = dietaryInput.includes(d.key);
-                  return (
-                    <TouchableOpacity
-                      key={d.key}
-                      style={[styles.chip, on && styles.chipSelected]}
-                      onPress={() => setDietaryInput((prev) => (on ? prev.filter((k) => k !== d.key) : [...prev, d.key]))}
-                      accessibilityLabel={d.label}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: on }}
-                    >
-                      <Text style={[styles.chipText, on && styles.chipTextSelected]}>{d.label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              <Text style={[styles.matchedAvailabilityDescription, { marginTop: spacing.xs }]}>
-                Shared only with businesses that respond to this request, so they can plan your meal.
-              </Text>
-            </>
-          )}
+          {category === 'Foodie' && <DietaryPicker selected={dietaryInput} onChange={setDietaryInput} />}
 
           <Text style={styles.label}>Search radius</Text>
           <View style={styles.chipRow}>

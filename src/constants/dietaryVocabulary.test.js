@@ -46,3 +46,22 @@ describe('dietary on gathering / match / community requests (20261225)', () => {
     expect(ext).toMatch(/revoke all on function public\.normalize_dietary\(text\[\]\) from public, anon, authenticated/);
   });
 });
+
+describe('every consumer entry point that creates a match business request offers the same picker', () => {
+  const read = (f) => fs.readFileSync(path.join(__dirname, f), 'utf8');
+  it('AskBusiness and DateProposal use the shared DietaryPicker and pass dietary through', () => {
+    for (const f of ['../screens/AskBusinessScreen.js', '../screens/DateProposalScreen.js']) {
+      const src = read(f);
+      expect(src).toMatch(/<DietaryPicker /);
+      expect(src).toMatch(/dietary: .*Foodie.*dietaryInput/);
+    }
+  });
+  it('the accept flow only shows it for a Foodie plan with a chosen place, where a request is auto-created', () => {
+    expect(read('../screens/DateProposalScreen.js')).toMatch(/proposal\.availability_id && proposal\.category === 'Foodie'/);
+  });
+  it('the picker offers exactly the closed vocabulary and no free-text input', () => {
+    const src = read('../components/DietaryPicker.js');
+    expect(src).toMatch(/DIETARY_OPTIONS\.map/);
+    expect(src).not.toMatch(/TextInput/);
+  });
+});

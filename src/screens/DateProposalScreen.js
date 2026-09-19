@@ -14,6 +14,7 @@ import {
 } from '../services/dateProposals';
 import { getAcceptedOfferForRequest, getOpenOfferCounts } from '../services/businessFulfillment';
 import LoadErrorState from '../components/LoadErrorState';
+import DietaryPicker from '../components/DietaryPicker';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import PlanCompletionRow from '../components/PlanCompletionRow';
 import { getMatchPlanCompletion, formatPlaceStatusLabel } from '../utils/planCompletion';
@@ -88,6 +89,8 @@ export default function DateProposalScreen({ navigation, route }) {
   // ever set from a genuine searchNearbyForPlan() result the user tapped.
   const [selectedAvailabilityId, setSelectedAvailabilityId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  // Dietary needs for the request auto-created when this plan (already tied to a specific place) is accepted.
+  const [dietaryInput, setDietaryInput] = useState([]);
 
   const load = useCallback(async () => {
     try {
@@ -211,11 +214,13 @@ export default function DateProposalScreen({ navigation, route }) {
             matchId,
             text: proposal.plan_text,
             category: proposal.category,
+            dietary: proposal.category === 'Foodie' && dietaryInput.length > 0 ? dietaryInput : null,
           });
         } catch (e) {
           console.error('auto-create business request for accepted plan failed', e);
         }
       }
+      setDietaryInput([]);
       await load();
     } catch (e) {
       Alert.alert('Something went wrong', e.message);
@@ -319,6 +324,10 @@ export default function DateProposalScreen({ navigation, route }) {
                   </TouchableOpacity>
                 </>
               ) : (
+                <>
+                {proposal.availability_id && proposal.category === 'Foodie' && (
+                  <DietaryPicker selected={dietaryInput} onChange={setDietaryInput} />
+                )}
                 <View style={styles.respondRow}>
                   <TouchableOpacity
                     style={[styles.respondButton, styles.acceptButton]}
@@ -339,6 +348,7 @@ export default function DateProposalScreen({ navigation, route }) {
                     <Text style={styles.declineButtonText}>Not This Time</Text>
                   </TouchableOpacity>
                 </View>
+                </>
               )}
             </View>
           )}
