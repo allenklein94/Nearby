@@ -115,6 +115,10 @@ specifically said not to build yet:
 - Complicated calendars (recurring sub-events, multi-day itineraries, etc. — beyond the single
   `scheduled_date` the occasion already has)
 
+Deferred from "Why this matches" (2026-09-19, business opportunity cards; no ask yet):
+- **"Your typical price range matches"** -- needs a decision on what `business_requests.budget_max` means (total vs per-person) before comparing it to the business's `min_spend_per_person`; until then no price line is shown.
+- **"You have availability"** -- no per-business hours data exists. Could be shown only for businesses with a live availability posting that covers the request's date/time (real, from `business_availability`).
+
 **Pending user action (not a build item):** connect Resend so the business email fallback (Item 147/148) actually sends.
 Needs the user: verify a sending domain in Resend, create a Sending-access API key, then set Edge secrets `RESEND_API_KEY`,
 `EMAIL_FROM` (verified domain), optional `BUSINESS_WEB_URL` via `supabase secrets set --project-ref enmosvippabmuqslzrox`
