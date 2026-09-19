@@ -48,13 +48,13 @@ describe('dashboard-wide privacy floor', () => {
   });
 });
 
-describe('community leader demand push floor', () => {
-  const comm = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20261219_community_demand_push_floor.sql'), 'utf8');
-  it('fires only at the shared floor, on distinct people', () => {
-    expect(comm).toMatch(/notify_community_area_demand_threshold/i);
-    expect(comm).toMatch(/count\(distinct br\.requester_id\)/);
-    expect(comm).toMatch(/public\.demand_min_people\(\) - 1 and not v_requester_counted/);
-    expect(comm).not.toMatch(/if v_prior_count = 1 then/);
-    expect(comm).not.toMatch(/'2 or more/);
+// Decision: the floor of 5 governs business-facing demand about unconnected people only. The community
+// leader push is a coordination mechanism and stays at 2 (20261220 restores it after 20261219 floored it).
+describe('community leader demand push stays a coordination trigger', () => {
+  const restore = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20261220_community_demand_push_restore.sql'), 'utf8');
+  it('is restored to fire at the 2nd nearby request', () => {
+    expect(restore).toMatch(/create or replace function public\.notify_community_area_demand_threshold/i);
+    expect(restore).toMatch(/if v_prior_count = 1 then/);
+    expect(restore).not.toMatch(/demand_min_people/);
   });
 });

@@ -350,6 +350,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [visitFrequency, setVisitFrequency] = useState(null);
   const [discoveryStats, setDiscoveryStats] = useState(null);
   const [partnershipRequests, setPartnershipRequests] = useState([]);
+  // "The Offer System" Phase 2 (see CLAUDE.md's own plan, Gap 2): a real,
+  // standing fulfillment policy the owner sets once, instead of a
+  // one-time availability posting.
+  // Declared up here (not next to its loader) because the opportunity-scoring useMemo below reads it in
+  // its dependency array during render; a later `const` is a TDZ ReferenceError in a real browser.
+  const [fulfillmentPolicy, setFulfillmentPolicy] = useState(null);
+  // (Also declared early for the same reason: the opportunity-scoring useMemo reads it during render.)
+  // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): supplementary,
+  // non-blocking -- null until the business's own real coordinates are
+  // known AND the async weather request resolves. scoreBusinessOpportunity()
+  // already treats a null weather as "no bonus, ever," so a business with
+  // no address set (or before this resolves) sees the ranking exactly as
+  // it always has, never a stuck/loading state.
+  const [businessWeather, setBusinessWeather] = useState(null);
   const [opportunities, setOpportunities] = useState([]);
   const [aggregatedDemand, setAggregatedDemand] = useState([]);
   // "Demand near you" card: null = not loaded yet; otherwise the privacy-floored RPC payload.
@@ -477,10 +491,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [availabilityBundleComponentsInput, setAvailabilityBundleComponentsInput] = useState([]);
   const [postingAvailability, setPostingAvailability] = useState(false);
   const [cancelingAvailabilityId, setCancelingAvailabilityId] = useState(null);
-  // "The Offer System" Phase 2 (see CLAUDE.md's own plan, Gap 2): a real,
-  // standing fulfillment policy the owner sets once, instead of a
-  // one-time availability posting.
-  const [fulfillmentPolicy, setFulfillmentPolicy] = useState(null);
   // The request the "Make an Offer" modal is currently open for --
   // looked up from the already-loaded `opportunities` list, not a second
   // fetch. Business Intelligence & Opportunity Engine, Phase 3 (see
@@ -637,13 +647,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // convention elsewhere -- e.g. TabHeaderActions' first-open hint), always
   // dismissible, never blocking anything below it.
   const [showWelcomeCard, setShowWelcomeCard] = useState(false);
-  // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): supplementary,
-  // non-blocking -- null until the business's own real coordinates are
-  // known AND the async weather request resolves. scoreBusinessOpportunity()
-  // already treats a null weather as "no bonus, ever," so a business with
-  // no address set (or before this resolves) sees the ranking exactly as
-  // it always has, never a stuck/loading state.
-  const [businessWeather, setBusinessWeather] = useState(null);
 
   useEffect(() => {
     loadMyPartner();
