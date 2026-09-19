@@ -38,6 +38,8 @@ export const BUSINESS_ATTRIBUTE_OPTIONS = [
   { key: 'book_lovers', label: 'Book Lovers', icon: '📚' },
   { key: 'craft_friendly', label: 'Craft-Friendly', icon: '🧶' },
   { key: 'fitness_focused', label: 'Fitness-Focused', icon: '💪' },
+  { key: 'private_dining', label: 'Private Dining', icon: '🥂' },
+  { key: 'corporate_events', label: 'Corporate Events', icon: '💼' },
 ];
 
 export const CUISINE_OPTIONS = [

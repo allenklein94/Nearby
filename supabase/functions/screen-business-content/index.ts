@@ -70,7 +70,7 @@ const CATEGORY_OPTIONS = [
 // Intent engine vision, layer 3 (semantic tags) -- widened per
 // 20260927_business_semantic_tags_expansion.sql; keep in sync with that
 // migration and businessAttributes.js's BUSINESS_ATTRIBUTE_OPTIONS.
-const ATTRIBUTE_OPTIONS = ['outdoor_seating', 'date_friendly', 'group_friendly', 'live_music', 'kid_friendly', 'quiet', 'casual', 'upscale', 'specialty_coffee', 'laptop_friendly', 'dog_friendly', 'waterfront', 'late_night', 'board_game_friendly', 'photography_friendly', 'book_lovers', 'craft_friendly', 'fitness_focused'];
+const ATTRIBUTE_OPTIONS = ['outdoor_seating', 'date_friendly', 'group_friendly', 'live_music', 'kid_friendly', 'quiet', 'casual', 'upscale', 'specialty_coffee', 'laptop_friendly', 'dog_friendly', 'waterfront', 'late_night', 'board_game_friendly', 'photography_friendly', 'book_lovers', 'craft_friendly', 'fitness_focused', 'private_dining', 'corporate_events'];
 const CUISINE_OPTIONS = ['italian', 'mexican', 'japanese', 'chinese', 'american', 'french', 'mediterranean', 'indian', 'thai', 'seafood', 'other'];
 // Intent engine vision, layer 2 (subcategory) first increment
 // (2026-09-06): the same real per-major leaf-tag sets

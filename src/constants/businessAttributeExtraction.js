@@ -28,6 +28,8 @@ const KEYWORDS_BY_ATTRIBUTE = {
   book_lovers: ['bookstore', 'book club', 'reading nook', 'book lovers'],
   craft_friendly: ['craft', 'crafting', 'diy workshop', 'make your own'],
   fitness_focused: ['fitness', 'workout', 'gym', 'training session', 'active lifestyle'],
+  private_dining: ['private dining', 'private room', 'private event space', 'semi-private', "chef's table", 'buyout'],
+  corporate_events: ['corporate event', 'corporate events', 'team dinner', 'company event', 'client dinner', 'offsite', 'team building'],
 };
 
 // Returns real attribute keys (a subset of BUSINESS_ATTRIBUTE_OPTIONS)

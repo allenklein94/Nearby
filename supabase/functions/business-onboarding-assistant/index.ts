@@ -43,6 +43,7 @@ const VALID_ATTRIBUTES = [
   'specialty_coffee', 'laptop_friendly', 'dog_friendly', 'waterfront',
   'late_night', 'board_game_friendly', 'photography_friendly',
   'book_lovers', 'craft_friendly', 'fitness_focused',
+  'private_dining', 'corporate_events',
 ];
 const VALID_CUISINES = [
   'italian', 'mexican', 'japanese', 'chinese', 'american', 'french',
