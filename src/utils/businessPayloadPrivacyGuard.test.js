@@ -66,3 +66,16 @@ describe('client does not read or collect what a business must not receive', () 
     expect(ask).not.toMatch(/sharedInterests|Share my interests with businesses|Anything else\?/);
   });
 });
+
+describe('the Stripe PaymentIntent (created on the business\'s connected account) never carries consumer text', () => {
+  const edge = fs.readFileSync(path.join(__dirname, '../../supabase/functions/create-business-payment-intent/index.ts'), 'utf8');
+  it('does not read or send raw_text, and uses the business-safe summary', () => {
+    expect(edge).not.toMatch(/raw_text|shared_interests|plan_label/);
+    expect(edge).toMatch(/business_safe_request_summary/);
+    expect(edge).toMatch(/description,\n/);
+  });
+  it('service role can call the helper explicitly', () => {
+    const g = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20261224_summary_helper_service_role.sql'), 'utf8');
+    expect(g).toMatch(/grant execute on function public\.business_safe_request_summary\(uuid\) to service_role/);
+  });
+});

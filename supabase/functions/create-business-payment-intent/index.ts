@@ -112,7 +112,7 @@ serve(async (req) => {
 
     const { data: request } = await admin
       .from('business_requests')
-      .select('id, requester_id, raw_text')
+      .select('id, requester_id')
       .eq('id', offer.request_id)
       .single();
     if (!request || request.requester_id !== myId) {
@@ -185,6 +185,11 @@ serve(async (req) => {
     const amountCents = Math.round(Number(payment.amount) * 100);
     const applicationFeeCents = Math.round((amountCents * PLATFORM_FEE_BPS) / 10000);
 
+    // The PaymentIntent lives on the BUSINESS's connected Stripe account, so this description is visible to the business
+    // (dashboard, receipts). Use the structured, business-safe summary -- never the consumer's own typed text.
+    const { data: summary } = await admin.rpc('business_safe_request_summary', { request_id_param: request.id });
+    const description = `Nearby offer: ${typeof summary === 'string' && summary ? summary : 'reservation'}`.slice(0, 200);
+
     const paymentIntent = await stripeRequest(
       'POST',
       'payment_intents',
@@ -198,7 +203,7 @@ serve(async (req) => {
           offer_id: offerId,
           request_id: request.id,
         },
-        description: `Nearby offer: ${(request.raw_text || '').slice(0, 100)}`,
+        description,
       },
       partner.stripe_account_id
     );
