@@ -54,3 +54,21 @@ describe('comfort lift', () => {
     expect(rankByBlend([a, b], { socialComfort: 'open' }).map((x) => x.id)).toEqual(['a', 'b']);
   });
 });
+
+describe('broad group interest', () => {
+  const { blendedCategoryScore, broadGroupNudge, EXPLICIT_POINTS, BROAD_GROUP_POINTS } = require('./blendedRanking');
+  const { CATEGORY_GROUPS } = require('./gatheringCategories');
+  const g = CATEGORY_GROUPS.find((x) => x.tags.length > 1);
+  const [t1, t2] = g.tags;
+  it('group-only is weak, a declared tag is stronger, no group is nothing', () => {
+    expect(blendedCategoryScore(t1, { declaredGroups: [g.key] })).toBe(BROAD_GROUP_POINTS);
+    expect(blendedCategoryScore(t1, { declared: [t1], declaredGroups: [g.key] })).toBe(EXPLICIT_POINTS);
+    expect(blendedCategoryScore(t2, { declared: [t1], declaredGroups: [g.key] })).toBe(BROAD_GROUP_POINTS);
+    expect(blendedCategoryScore(t1, {})).toBe(0);
+    expect(BROAD_GROUP_POINTS).toBeLessThan(EXPLICIT_POINTS);
+  });
+  it('discover nudge skips already-declared tags', () => {
+    expect(broadGroupNudge(t1, { declaredGroups: [g.key] })).toBe(BROAD_GROUP_POINTS);
+    expect(broadGroupNudge(t1, { declared: [t1], declaredGroups: [g.key] })).toBe(0);
+  });
+});

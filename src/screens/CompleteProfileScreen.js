@@ -5,7 +5,7 @@ import { supabase } from '../services/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { notificationOptOuts } from '../constants/notificationCategories';
 import { ONBOARDING_ANSWERS_KEY } from './OnboardingQuestionsScreen';
-import { canonicalizeInterests } from '../constants/interestGraph';
+import { canonicalizeInterests, sanitizeInterestGroups } from '../constants/interestGraph';
 import { pickProfilePhoto, uploadProfilePhoto } from '../services/photos';
 import { checkTextModeration } from '../services/textModeration';
 import { useAuth } from '../context/AuthContext';
@@ -237,6 +237,7 @@ export default function CompleteProfileScreen() {
         ...(onboardingAnswers.onboarding_motivations ? { onboarding_motivations: onboardingAnswers.onboarding_motivations } : {}),
         ...(onboardingAnswers.social_comfort_level ? { social_comfort_level: onboardingAnswers.social_comfort_level } : {}),
         ...(canonicalizeInterests(onboardingAnswers.monthly_interests).length ? { monthly_interests: canonicalizeInterests(onboardingAnswers.monthly_interests), monthly_interests_updated_at: new Date().toISOString() } : {}),
+        ...(sanitizeInterestGroups(onboardingAnswers.interest_groups).length ? { interest_groups: sanitizeInterestGroups(onboardingAnswers.interest_groups) } : {}),
         ...(wantsFriends ? { open_to_friend_discovery: true } : {}),
         ...notificationOptOuts(onboardingAnswers.notification_choices),
       });

@@ -108,7 +108,7 @@ export default function GatheringsScreen({ navigation, route }) {
   const personalization = usePersonalization();
   // "For You": declared interests from day one; behavior joins in as the account matures (blendedRanking.js). Falls back to the
   // older behavior-then-declared list while personalization is still loading.
-  const blendedForYou = forYouBlend(personalization.declared, personalization.behavior, personalization.maturity, 50);
+  const blendedForYou = forYouBlend(personalization.declared, personalization.behavior, personalization.maturity, 50, personalization.declaredGroups);
   const forYouCategories = blendedForYou.length > 0 ? blendedForYou : becauseYouLikeCategories(topCategories, myInterests, [], 50);
   const [initialLoading, setInitialLoading] = useState(true);
   const [newOfferCount, setNewOfferCount] = useState(0);

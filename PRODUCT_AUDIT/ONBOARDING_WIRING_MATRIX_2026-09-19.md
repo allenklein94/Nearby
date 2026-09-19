@@ -23,9 +23,15 @@ Rule: if a user gives Nearby information, something must use it. ✓ = a real re
    (`comfortFits` in `constants/socialComfort.js`, shared with Home; small lift, never hides, 'open' and unset group size neutral).
 
 ## Gaps disclosed, not fixed
-- **"What are you into?" groups with no tags picked are discarded** (only tags persist to `interests`). Fix needs a decision:
-  seeding every tag of a chosen group would over-commit the user.
 - Goals other than the looking-for tokens only drive Home shortcuts (no ranking/notification use). Deliberate: a goal says what
   they want to *do*, and the signals that rank content are interests + behavior.
 - Occasions/Plans and Reservations don't read `interests` (they're keyed to a person and date).
 - Not verified on a device; live check limited to columns/constraints existing.
+
+## Follow-up: broad interest groups (2026-09-19)
+Groups are now saved as their own signal (`profiles.interest_groups`, migration `20261216`), never expanded into tags. Hierarchy:
+no interest = nothing; group only = weak (`BROAD_GROUP_POINTS` 2) on any tag in that group; declared tag = strong (5, so group + tags is
+naturally stronger). Read by the Gatherings Nearby + For You ranking (`blendedCategoryScore`/`forYouBlend`) and Discover
+(`broadGroupNudge`, reason "In a category you like"). Editable in Settings ("Broad interests"); removing one never touches tags.
+Deliberately NOT read by push notifications (server predicate stays tag-exact), Plans, Occasions or Reservations. Home's own
+recommendation scorer also doesn't read it yet.

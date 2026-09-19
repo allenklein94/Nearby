@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
-import { ONBOARDING_INTEREST_GROUPS, tagsForGroups } from '../constants/interestGraph';
+import { ONBOARDING_INTEREST_GROUPS, tagsForGroups, sanitizeInterestGroups } from '../constants/interestGraph';
 import { ONBOARDING_GOALS, LOOKING_FOR_OPTIONS, motivationsFromAnswers } from '../constants/onboardingGoals';
 
 // This screen runs before signup — there's no account yet to save
@@ -68,6 +68,8 @@ export default function OnboardingQuestionsScreen({ navigation }) {
           // Canonical tags (see interestGraph.js): seed CompleteProfile's interests step and this
           // month's mood, so onboarding never introduces a vocabulary of its own.
           monthly_interests: tags,
+          // Broad interest: the groups themselves, saved even when no tag was picked (never expanded into tags).
+          interest_groups: sanitizeInterestGroups(groupKeys),
         })
       );
     } catch (e) {

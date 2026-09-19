@@ -10,6 +10,7 @@ import { requestDataExport } from '../services/dataExport';
 import { clearNotificationArea } from '../services/notificationArea';
 import { clearMyBehaviorHistory } from '../services/behaviorSignals';
 import RecommendationCustomizePanel from '../components/RecommendationCustomizePanel';
+import { ONBOARDING_INTEREST_GROUPS, sanitizeInterestGroups } from '../constants/interestGraph';
 import { ONBOARDING_GOALS, goalLabelsFrom, motivationsWithGoals } from '../constants/onboardingGoals';
 import { typography, spacing, radius } from '../theme';
 
@@ -155,6 +156,20 @@ export default function SettingsScreen({ navigation, route }) {
 
   const [motivations, setMotivations] = useState([]);
 
+  const [interestGroups, setInterestGroups] = useState([]);
+
+  // Broad interest groups: independent of specific tags (removing one never touches your tags, adding one never adds any).
+  async function toggleInterestGroup(key) {
+    const previous = interestGroups;
+    const next = sanitizeInterestGroups(previous.includes(key) ? previous.filter((k) => k !== key) : [...previous, key]);
+    setInterestGroups(next);
+    const { error } = await supabase.from('profiles').update({ interest_groups: next }).eq('id', userId);
+    if (error) {
+      setInterestGroups(previous);
+      Alert.alert('Error', error.message);
+    }
+  }
+
   async function toggleGoal(label) {
     const has = motivations.includes(label);
     const next = motivationsWithGoals(motivations, has ? goalLabelsFrom(motivations).filter((l) => l !== label) : [...goalLabelsFrom(motivations), label]);
@@ -183,6 +198,7 @@ export default function SettingsScreen({ navigation, route }) {
       setNotifyCommunity(data.notify_community ?? true);
       setMyInterests(data.interests ?? []);
       setMotivations(data.onboarding_motivations ?? []);
+      setInterestGroups(data.interest_groups ?? []);
       setTtdFrequency(data.notify_things_to_do_frequency ?? 'few_per_day');
       setTtdDistance(data.notify_things_to_do_max_distance_miles === undefined ? 15 : data.notify_things_to_do_max_distance_miles);
       setTtdTimePref(data.notify_things_to_do_time_pref ?? 'anytime');
@@ -810,6 +826,27 @@ export default function SettingsScreen({ navigation, route }) {
                 accessibilityState={{ checked: selected }}
               >
                 <Text style={styles.settingLabel}>{g.icon}  {g.label}</Text>
+                <Text style={styles.settingLabel}>{selected ? '☑' : '☐'}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <Text style={styles.sectionLabel} accessibilityRole="header">Broad interests</Text>
+        <View style={styles.card}>
+          <Text style={styles.helperText}>Categories you like in general. Nearby uses them as a gentle hint; the specific interests you pick on your profile count for more.</Text>
+          {ONBOARDING_INTEREST_GROUPS.map((g) => {
+            const selected = interestGroups.includes(g.key);
+            return (
+              <TouchableOpacity
+                key={g.key}
+                style={styles.settingRow}
+                onPress={() => toggleInterestGroup(g.key)}
+                accessibilityLabel={g.label}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}
+              >
+                <Text style={styles.settingLabel}>{g.icon ? `${g.icon}  ` : ''}{g.label}</Text>
                 <Text style={styles.settingLabel}>{selected ? '☑' : '☐'}</Text>
               </TouchableOpacity>
             );

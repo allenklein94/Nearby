@@ -23,6 +23,17 @@ export function tagsForGroups(groupKeys) {
   return CATEGORY_GROUPS.filter((g) => keys.has(g.key)).flatMap((g) => g.tags);
 }
 
+// Group of a canonical tag (null when unknown). Used to give a group-only ("broad") interest a weak match on its tags.
+export function groupKeyForTag(tag) {
+  return CATEGORY_GROUPS.find((g) => g.tags.includes(tag))?.key ?? null;
+}
+
+// Only real onboarding groups are stored; anything else is dropped so the column can't collect stray values.
+export function sanitizeInterestGroups(keys) {
+  const valid = new Set(ONBOARDING_INTEREST_GROUPS.map((g) => g.key));
+  return [...new Set((Array.isArray(keys) ? keys : []).filter((k) => valid.has(k)))];
+}
+
 // `monthly_interests` rows written before the canonical graph held free-form onboarding labels.
 // Map each to the canonical tag it meant; 'Beach' has no canonical equivalent, so it maps to nothing
 // rather than a guess.
