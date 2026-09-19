@@ -49,7 +49,7 @@ import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiences
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import DemandNearYouCard from '../components/DemandNearYouCard';
 import TellNearbyBusinessCard from '../components/TellNearbyBusinessCard';
-import { describeDemandSignals, describeMatchSummary } from '../utils/demandSignals';
+import { describeDemandSignals } from '../utils/demandSignals';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, OFFERED_OCCASION_OPTIONS, occasionLabel, occasionPhrase, dietaryLabel } from '../constants/businessAttributes';
 import { planAddonLabel } from '../constants/planAddons';
 import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
@@ -69,7 +69,7 @@ const SECTIONS = [
   { key: 'home', icon: '🏠', label: 'Home' },
   { key: 'opportunities', icon: '🎯', label: 'Opportunities' },
   { key: 'bookings', icon: '📅', label: 'Bookings' },
-  { key: 'offers', icon: '🎁', label: 'Offers' },
+  { key: 'offers', icon: '🗓️', label: 'Availability' },
   { key: 'profile', icon: '🏪', label: 'Profile', accessibilityLabel: 'Business Profile' },
 ];
 
@@ -227,6 +227,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   };
   const on = (...tabs) => tabs.includes(section);
   const tool = (key) => section === 'home' && openTool === key;
+  // Secondary areas stay collapsed: Availability leads with "tell us when you have room", Profile with "tell us what you offer".
+  const [moreOffersOpen, setMoreOffersOpen] = useState(false);
+  const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
@@ -2896,26 +2899,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <Text style={styles.discoveryTeaserChevron}>›</Text>
                   </TouchableOpacity>
                 )}
-                {selectedPartner && (
-                  <DemandNearYouCard
-                    loaded={demandSignals !== null}
-                    windowDays={demandSignals?.window_days ?? 14}
-                    signals={describeDemandSignals(demandSignals, {
-                      // The owner's own open opportunities per category (first-party data, never floored).
-                      openByCategory: opportunities
-                        .filter((o) => o.status === 'pending' && o.business_requests?.status === 'open' && o.business_requests?.category)
-                        .reduce((acc, o) => ({ ...acc, [o.business_requests.category]: (acc[o.business_requests.category] ?? 0) + 1 }), {}),
-                    })}
-                    matchSummary={describeMatchSummary(
-                      opportunities.filter((o) => o.status === 'pending' && o.business_requests?.status === 'open').length
-                    )}
-                    onAction={(action) => {
-                      if (action.type === 'package') openPackageModal({ occasion_type: action.occasion });
-                      else if (action.type === 'opportunities') setSection('opportunities');
-                      else openPostAvailabilityModal({ category: action.category ?? undefined });
-                    }}
-                  />
-                )}
                 {/* "Business Story" plan, Phase 5 -- "Nearby Brief": no new
                     queries, purely a reorganization of aggregatedDemand/
                     opportunities/selectedPartner, all already fetched by
@@ -3431,77 +3414,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     value, including real non-celebratory ones (a farewell,
                     a move, a new job) -- "What They're Celebrating" read
                     wrong the moment one of those showed up here. */}
-{on('offers') && (
-<>
-                {/* "Occasions we offer": an explicit capability, separate from "want more" above. Saves on
-                    tap (no Save button); Nearby then routes matching occasion requests here first, and a
-                    package (if any) is still what gets offered -- nothing is invented for this list alone. */}
-                <Text style={styles.sectionHeader}>Occasions we offer</Text>
-                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {OFFERED_OCCASION_OPTIONS.map((o) => {
-                    const selected = (selectedPartner?.offered_occasions ?? []).includes(o.key);
-                    return (
-                      <TouchableOpacity
-                        key={o.key}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => handleToggleOfferedOccasion(o.key)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${o.label}${selected ? ', offered' : ''}`}
-                        accessibilityState={{ selected }}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                <Text style={styles.helperText}>
-                  Requests for these occasions reach you first. Add a package under Occasion Packages to offer one automatically.
-                </Text>
-</>
-)}
-{on('opportunities') && (
-<>
-                <Text style={styles.sectionHeader}>🎉 What They're Planning</Text>
-                <Text style={styles.helperText}>
-                  Real open requests nearby, grouped by occasion instead of category -- a
-                  different cut of the same real signal below, made to answer "what should
-                  I offer" rather than "who wants what." A group is shown only when at least 5 people are behind it.
-                </Text>
-                {occasionDemand.length === 0 ? (
-                  <Text style={styles.emptyText}>No occasion-based demand nearby yet.</Text>
-                ) : (
-                  occasionDemand.map((d) => {
-                    const emoji = OCCASION_OPTIONS.find((o) => o.key === d.occasion_type)?.icon ?? '🎉';
-                    const noun = occasionLabel(d.occasion_type);
-                    return (
-                      <View key={d.occasion_type} style={styles.gatheringRow}>
-                        <Text style={styles.offerTitle}>
-                          {emoji} {d.request_count} nearby {Number(d.request_count) === 1 ? 'customer is' : 'customers are'} planning {occasionPhrase(d.occasion_type)}
-                        </Text>
-                        <Text style={styles.breakdownText}>
-                          {[
-                            Number(d.weekend_request_count) > 0 ? `${d.weekend_request_count} of them this weekend` : null,
-                            (selectedPartner?.offered_occasions ?? []).includes(d.occasion_type) ? 'You offer this' : null,
-                            d.dominant_category ? `mostly looking for ${d.dominant_category} (${d.dominant_category_count} of ${d.request_count})` : null,
-                            d.total_party_size ? `${d.total_party_size} total ${Number(d.total_party_size) === 1 ? 'guest' : 'guests'}` : null,
-                            d.soonest_date ? `soonest ${new Date(d.soonest_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : null,
-                          ].filter(Boolean).join(' · ')}
-                        </Text>
-                        <TouchableOpacity
-                          style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm, alignSelf: 'flex-start' }]}
-                          onPress={() => openPackageModal({ occasion_type: d.occasion_type })}
-                          accessibilityLabel={`Create a ${noun} package`}
-                          accessibilityRole="button"
-                        >
-                          <Text style={styles.smallActionButtonText}>→ Create a {noun} Package</Text>
-                        </TouchableOpacity>
-                      </View>
-                    );
-                  })
-                )}
-
-</>
-)}
 {tool('demand') && (
 <>
                 {/* Business Intelligence & Opportunity Engine, Phase 2 --
@@ -3779,6 +3691,70 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
 </>
 )}
+{on('opportunities') && (
+<>
+                {selectedPartner && (
+                  <DemandNearYouCard
+                    loaded={demandSignals !== null}
+                    windowDays={demandSignals?.window_days ?? 14}
+                    signals={describeDemandSignals(demandSignals, {
+                      // The owner's own open opportunities per category (first-party data, never floored).
+                      openByCategory: opportunities
+                        .filter((o) => o.status === 'pending' && o.business_requests?.status === 'open' && o.business_requests?.category)
+                        .reduce((acc, o) => ({ ...acc, [o.business_requests.category]: (acc[o.business_requests.category] ?? 0) + 1 }), {}),
+                    })}
+                    onAction={(action) => {
+                      if (action.type === 'package') openPackageModal({ occasion_type: action.occasion });
+                      else if (action.type === 'opportunities') setSection('opportunities');
+                      else openPostAvailabilityModal({ category: action.category ?? undefined });
+                    }}
+                  />
+                )}
+</>
+)}
+{on('opportunities') && (
+<>
+                <Text style={styles.sectionHeader}>🎉 What They're Planning</Text>
+                <Text style={styles.helperText}>
+                  Real open requests nearby, grouped by occasion instead of category -- a
+                  different cut of the same real signal below, made to answer "what should
+                  I offer" rather than "who wants what." A group is shown only when at least 5 people are behind it.
+                </Text>
+                {occasionDemand.length === 0 ? (
+                  <Text style={styles.emptyText}>No occasion-based demand nearby yet.</Text>
+                ) : (
+                  occasionDemand.map((d) => {
+                    const emoji = OCCASION_OPTIONS.find((o) => o.key === d.occasion_type)?.icon ?? '🎉';
+                    const noun = occasionLabel(d.occasion_type);
+                    return (
+                      <View key={d.occasion_type} style={styles.gatheringRow}>
+                        <Text style={styles.offerTitle}>
+                          {emoji} {d.request_count} nearby {Number(d.request_count) === 1 ? 'customer is' : 'customers are'} planning {occasionPhrase(d.occasion_type)}
+                        </Text>
+                        <Text style={styles.breakdownText}>
+                          {[
+                            Number(d.weekend_request_count) > 0 ? `${d.weekend_request_count} of them this weekend` : null,
+                            (selectedPartner?.offered_occasions ?? []).includes(d.occasion_type) ? 'You offer this' : null,
+                            d.dominant_category ? `mostly looking for ${d.dominant_category} (${d.dominant_category_count} of ${d.request_count})` : null,
+                            d.total_party_size ? `${d.total_party_size} total ${Number(d.total_party_size) === 1 ? 'guest' : 'guests'}` : null,
+                            d.soonest_date ? `soonest ${new Date(d.soonest_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : null,
+                          ].filter(Boolean).join(' · ')}
+                        </Text>
+                        <TouchableOpacity
+                          style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm, alignSelf: 'flex-start' }]}
+                          onPress={() => openPackageModal({ occasion_type: d.occasion_type })}
+                          accessibilityLabel={`Create a ${noun} package`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.smallActionButtonText}>→ Create a {noun} Package</Text>
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })
+                )}
+
+</>
+)}
 {on('offers') && (
 <>
                 {lastPostedAvailability && (
@@ -3822,6 +3798,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <Text style={styles.smallActionButtonText}>+ Post Availability</Text>
                   </TouchableOpacity>
                 </View>
+                <Text style={styles.helperText}>Tell us when you have room. Nearby sends it to the requests that fit.</Text>
                 <Text style={styles.helperText}>
                   Have open seats or a quiet night? Post it and we'll match it against open
                   requests nearby automatically -- no need to wait for someone to ask.
@@ -3855,6 +3832,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   ))
                 )}
 
+                <TouchableOpacity onPress={() => setMoreOffersOpen((v) => !v)} style={[styles.gatheringRow, { marginTop: spacing.lg }]} accessibilityRole="button" accessibilityLabel="More ways to offer" accessibilityState={{ expanded: moreOffersOpen }}>
+                  <Text style={styles.offerTitle}>More ways to offer {moreOffersOpen ? '⌄' : '›'}</Text>
+                  {!moreOffersOpen && <Text style={styles.breakdownText}>Packages · Rewards · Signature experiences</Text>}
+                </TouchableOpacity>
+                {moreOffersOpen && (
+                <>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
                   <Text style={styles.sectionHeader}>Occasion Packages</Text>
                   <TouchableOpacity
@@ -3915,6 +3898,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   ))
                 )}
 
+                </>
+                )}
 </>
 )}
 {on('bookings') && (
@@ -4017,62 +4002,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   })
                 )}
 
-</>
-)}
-{on('profile') && (
-<>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
-                  <Text style={styles.sectionHeader}>Fulfillment Policy</Text>
-                  <TouchableOpacity
-                    style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
-                    onPress={openPolicyModal}
-                    accessibilityLabel={fulfillmentPolicy ? 'Edit fulfillment policy' : 'Set a fulfillment policy'}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.smallActionButtonText}>{fulfillmentPolicy ? 'Edit' : '+ Set a Policy'}</Text>
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.helperText}>
-                  A standing rule that governs EVERY future request, not just one posting -- set
-                  it once and requests within your own bounds get auto-accepted automatically.
-                </Text>
-                {!fulfillmentPolicy ? (
-                  <Text style={styles.emptyText}>No standing policy set yet.</Text>
-                ) : (
-                  <View style={styles.gatheringRow}>
-                    <Text style={styles.breakdownText}>
-                      {fulfillmentPolicy.active ? '🟢 Active' : '⚪️ Paused'}
-                      {fulfillmentPolicy.party_size_min != null || fulfillmentPolicy.party_size_max != null
-                        ? ` · Party size ${fulfillmentPolicy.party_size_min ?? '1'}-${fulfillmentPolicy.party_size_max ?? '∞'}`
-                        : ''}
-                      {fulfillmentPolicy.active_hours_start && fulfillmentPolicy.active_hours_end
-                        ? ` · ${fulfillmentPolicy.active_hours_start.slice(0, 5)}-${fulfillmentPolicy.active_hours_end.slice(0, 5)}`
-                        : ''}
-                    </Text>
-                    <Text style={styles.breakdownText}>
-                      {fulfillmentPolicy.auto_accept_party_size_max != null
-                        ? `Auto-accepts parties of ${fulfillmentPolicy.auto_accept_party_size_max} or fewer`
-                        : 'Auto-accept off -- every request needs your own manual review'}
-                    </Text>
-                    {fulfillmentPolicy.weather_dependent && (
-                      <Text style={styles.breakdownText}>
-                        {fulfillmentPolicy.last_rain_risk === 'high'
-                          ? `🌧️ Weather-dependent -- paused right now for real rain/storms (checked ${formatWeatherCheckAge(fulfillmentPolicy.last_weather_checked_at)})`
-                          : `☀️ Weather-dependent -- conditions look fine (checked ${formatWeatherCheckAge(fulfillmentPolicy.last_weather_checked_at)})`}
-                      </Text>
-                    )}
-                    {(fulfillmentPolicy.min_spend_per_person != null || fulfillmentPolicy.max_discount_pct != null || fulfillmentPolicy.deposit_amount != null || fulfillmentPolicy.cancellation_window_hours != null) && (
-                      <Text style={styles.breakdownText}>
-                        {[
-                          fulfillmentPolicy.min_spend_per_person != null ? `$${Number(fulfillmentPolicy.min_spend_per_person).toFixed(2)}/person min` : null,
-                          fulfillmentPolicy.max_discount_pct != null ? `up to ${Number(fulfillmentPolicy.max_discount_pct)}% off` : null,
-                          fulfillmentPolicy.deposit_amount != null ? `$${Number(fulfillmentPolicy.deposit_amount).toFixed(2)} deposit` : null,
-                          fulfillmentPolicy.cancellation_window_hours != null ? `${fulfillmentPolicy.cancellation_window_hours}h cancellation window` : null,
-                        ].filter(Boolean).join(' · ')}
-                      </Text>
-                    )}
-                  </View>
-                )}
 </>
 )}
               </>
@@ -4300,29 +4229,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 </>
 )}
 
-{on('profile') && (
-<>
-              {/* Business Intelligence Phase 6 -- the real AI Trust Engine
-                  settings surface (level selector, named policies, the
-                  real Activity Log). A dedicated screen, not more inline
-                  UI here, matching this exact "AI Assistant" button's own
-                  precedent. */}
-              <TouchableOpacity
-                style={[styles.createOfferButton, { marginTop: spacing.md, backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.border }]}
-                onPress={() => navigation.navigate('BusinessAIAutomation', { partnerId: selectedPartner.id, partnerName: selectedPartner.name })}
-                accessibilityLabel="Manage AI automation for your business"
-                accessibilityRole="button"
-              >
-                <Text style={[styles.createOfferButtonText, { color: colors.textPrimary }]}>🤖 AI Automation Settings</Text>
-              </TouchableOpacity>
-</>
-)}
               </>
             )}
 
             {section !== 'inbox_modal' && (
               <>
-{on('offers') && (
+{on('offers') && moreOffersOpen && (
 <>
                 <Text style={styles.sectionHeader}>Rewards & Offers</Text>
                 <TouchableOpacity
@@ -4397,6 +4309,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 )}
 {on('profile') && (
 <>
+                <Text style={[styles.helperText, { marginTop: spacing.md }]}>Tell us what you offer. Nearby handles the rest.</Text>
                 {selectedPartner && (
                   <View style={{ marginTop: spacing.md }}>
                     <TellNearbyBusinessCard
@@ -4841,7 +4754,35 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
 </>
 )}
-{on('offers') && (
+{on('profile') && (
+<>
+                {/* "Occasions we offer": an explicit capability, separate from "want more" above. Saves on
+                    tap (no Save button); Nearby then routes matching occasion requests here first, and a
+                    package (if any) is still what gets offered -- nothing is invented for this list alone. */}
+                <Text style={styles.sectionHeader}>Occasions we offer</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {OFFERED_OCCASION_OPTIONS.map((o) => {
+                    const selected = (selectedPartner?.offered_occasions ?? []).includes(o.key);
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handleToggleOfferedOccasion(o.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${o.label}${selected ? ', offered' : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <Text style={styles.helperText}>
+                  Requests for these occasions reach you first. Add a package under Occasion Packages to offer one automatically.
+                </Text>
+</>
+)}
+{on('offers') && moreOffersOpen && (
 <>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xl }}>
                   <Text style={styles.sectionHeader}>Your Signature Experiences</Text>
@@ -5008,6 +4949,77 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </>
                 )}
 
+                <TouchableOpacity onPress={() => setProfileSettingsOpen((v) => !v)} style={[styles.gatheringRow, { marginTop: spacing.xl }]} accessibilityRole="button" accessibilityLabel="Settings" accessibilityState={{ expanded: profileSettingsOpen }}>
+                  <Text style={styles.offerTitle}>Settings {profileSettingsOpen ? '⌄' : '›'}</Text>
+                  {!profileSettingsOpen && <Text style={styles.breakdownText}>Terms · Notifications · Payments · AI automation</Text>}
+                </TouchableOpacity>
+                {profileSettingsOpen && (
+                <>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
+                  <Text style={styles.sectionHeader}>Fulfillment Policy</Text>
+                  <TouchableOpacity
+                    style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
+                    onPress={openPolicyModal}
+                    accessibilityLabel={fulfillmentPolicy ? 'Edit fulfillment policy' : 'Set a fulfillment policy'}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.smallActionButtonText}>{fulfillmentPolicy ? 'Edit' : '+ Set a Policy'}</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.helperText}>
+                  A standing rule that governs EVERY future request, not just one posting -- set
+                  it once and requests within your own bounds get auto-accepted automatically.
+                </Text>
+                {!fulfillmentPolicy ? (
+                  <Text style={styles.emptyText}>No standing policy set yet.</Text>
+                ) : (
+                  <View style={styles.gatheringRow}>
+                    <Text style={styles.breakdownText}>
+                      {fulfillmentPolicy.active ? '🟢 Active' : '⚪️ Paused'}
+                      {fulfillmentPolicy.party_size_min != null || fulfillmentPolicy.party_size_max != null
+                        ? ` · Party size ${fulfillmentPolicy.party_size_min ?? '1'}-${fulfillmentPolicy.party_size_max ?? '∞'}`
+                        : ''}
+                      {fulfillmentPolicy.active_hours_start && fulfillmentPolicy.active_hours_end
+                        ? ` · ${fulfillmentPolicy.active_hours_start.slice(0, 5)}-${fulfillmentPolicy.active_hours_end.slice(0, 5)}`
+                        : ''}
+                    </Text>
+                    <Text style={styles.breakdownText}>
+                      {fulfillmentPolicy.auto_accept_party_size_max != null
+                        ? `Auto-accepts parties of ${fulfillmentPolicy.auto_accept_party_size_max} or fewer`
+                        : 'Auto-accept off -- every request needs your own manual review'}
+                    </Text>
+                    {fulfillmentPolicy.weather_dependent && (
+                      <Text style={styles.breakdownText}>
+                        {fulfillmentPolicy.last_rain_risk === 'high'
+                          ? `🌧️ Weather-dependent -- paused right now for real rain/storms (checked ${formatWeatherCheckAge(fulfillmentPolicy.last_weather_checked_at)})`
+                          : `☀️ Weather-dependent -- conditions look fine (checked ${formatWeatherCheckAge(fulfillmentPolicy.last_weather_checked_at)})`}
+                      </Text>
+                    )}
+                    {(fulfillmentPolicy.min_spend_per_person != null || fulfillmentPolicy.max_discount_pct != null || fulfillmentPolicy.deposit_amount != null || fulfillmentPolicy.cancellation_window_hours != null) && (
+                      <Text style={styles.breakdownText}>
+                        {[
+                          fulfillmentPolicy.min_spend_per_person != null ? `$${Number(fulfillmentPolicy.min_spend_per_person).toFixed(2)}/person min` : null,
+                          fulfillmentPolicy.max_discount_pct != null ? `up to ${Number(fulfillmentPolicy.max_discount_pct)}% off` : null,
+                          fulfillmentPolicy.deposit_amount != null ? `$${Number(fulfillmentPolicy.deposit_amount).toFixed(2)} deposit` : null,
+                          fulfillmentPolicy.cancellation_window_hours != null ? `${fulfillmentPolicy.cancellation_window_hours}h cancellation window` : null,
+                        ].filter(Boolean).join(' · ')}
+                      </Text>
+                    )}
+                  </View>
+                )}
+              {/* Business Intelligence Phase 6 -- the real AI Trust Engine
+                  settings surface (level selector, named policies, the
+                  real Activity Log). A dedicated screen, not more inline
+                  UI here, matching this exact "AI Assistant" button's own
+                  precedent. */}
+              <TouchableOpacity
+                style={[styles.createOfferButton, { marginTop: spacing.md, backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.border }]}
+                onPress={() => navigation.navigate('BusinessAIAutomation', { partnerId: selectedPartner.id, partnerName: selectedPartner.name })}
+                accessibilityLabel="Manage AI automation for your business"
+                accessibilityRole="button"
+              >
+                <Text style={[styles.createOfferButtonText, { color: colors.textPrimary }]}>🤖 AI Automation Settings</Text>
+              </TouchableOpacity>
                 <BusinessNotificationPreferences />
                 {Platform.OS === 'web' && <BusinessEmailNotifications />}
 
@@ -5169,6 +5181,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </>
                   )}
                 </View>
+                </>
+                )}
 </>
 )}
               </>
