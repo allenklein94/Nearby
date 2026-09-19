@@ -47,6 +47,7 @@ import { getSocialForecast } from '../services/homeDashboard';
 import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiencesForOpportunity, buildOfferTitleScaffold, buildOccasionOfferTitle } from '../services/businessOfferRecommendation';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import DemandNearYouCard from '../components/DemandNearYouCard';
+import TellNearbyBusinessCard from '../components/TellNearbyBusinessCard';
 import { describeDemandSignals, describeMatchSummary } from '../utils/demandSignals';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, OFFERED_OCCASION_OPTIONS, occasionLabel, occasionPhrase, dietaryLabel } from '../constants/businessAttributes';
 import { planAddonLabel } from '../constants/planAddons';
@@ -4379,6 +4380,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 )}
 {on('profile') && (
 <>
+                {selectedPartner && (
+                  <View style={{ marginTop: spacing.md }}>
+                    <TellNearbyBusinessCard
+                      partner={selectedPartner}
+                      onApplied={(applied) => setSelectedPartner((prev) => ({ ...prev, ...applied }))}
+                    />
+                  </View>
+                )}
                 <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Business Profile</Text>
                 <View style={styles.gatheringRow}>
                   <Text style={styles.offerTitle}>{selectedPartner?.name}</Text>

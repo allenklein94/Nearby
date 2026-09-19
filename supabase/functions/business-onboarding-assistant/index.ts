@@ -62,6 +62,11 @@ const VALID_OCCASIONS = [
   'business_meal', 'family_gathering', 'graduation', 'baby_shower',
   'engagement', 'housewarming', 'promotion', 'farewell', 'milestone', 'other',
 ];
+// "Occasions we offer" (brand_partners.offered_occasions) -- the six keys a business can explicitly offer; must equal
+// OFFERED_OCCASION_KEYS in src/constants/businessAttributes.js (guarded by a test).
+const VALID_OFFERED_OCCASIONS = ['birthday', 'anniversary', 'date_night', 'celebration', 'graduation', 'family_gathering'];
+// brand_partners.accommodates_party_types vocabulary (ACCOMMODATE_PARTY_TYPE_OPTIONS).
+const VALID_PARTY_TYPES = ['solo', 'friends', 'groups', 'date'];
 // Intent engine vision, layer 2 (subcategory) -- second increment
 // (2026-09-06): the same real per-major leaf-tag sets update_business_
 // profile's own subcategory_param validation enforces
@@ -146,8 +151,10 @@ Extract these fields, each best-effort and optional -- never guess a value the t
 - priorityOccasions: an array of zero or more values from this exact list: ${JSON.stringify(VALID_OCCASIONS)} -- only include one when the text genuinely says this business caters to or wants more of that specific occasion (e.g. "great for birthday parties" implies "birthday", "perfect for anniversaries" implies "anniversary", "date night spot" implies "date_night", "we host celebrations" with no more specific reason named implies "celebration", "casual hangout"/"come relax" implies "casual_hangout", "corporate events"/"business lunches" implies "business_meal", "family gatherings"/"reunions" implies "family_gathering", "graduation parties"/"grad season" implies "graduation", "baby showers" implies "baby_shower", "engagement parties" implies "engagement", "housewarmings" implies "housewarming", "office parties"/"promotion celebrations" implies "promotion", "farewell parties"/"going away parties" implies "farewell", "retirement parties"/"milestone celebrations" implies "milestone"). An empty array is the common, correct answer when no specific occasion was named -- never guess to fill this in.
 - subcategory: a real, more specific single value describing exactly what kind of business this is, ONLY from the list matching whatever value you picked for category above, from this exact map (each key is a possible category value, each value is its own allowed subcategory list): ${JSON.stringify(SUBCATEGORY_OPTIONS_BY_CATEGORY)}. Pick the one entry from that specific category's own list that the text most clearly and specifically names (e.g. category "food_drink" with a description naming espresso/lattes/coffee shop is subcategory "Coffee" from that category's list; a description just saying "restaurant" with nothing more specific stays null). Leave this null whenever category is null, or category has no list above (a handful of categories genuinely have none), or nothing in the text is specific enough to confidently pick one real entry -- never guess just to fill this in, and never pick a value from a different category's list than the one you chose above.
 - categories: an array of zero or more ADDITIONAL, genuinely different real values from this exact flat list (spanning every major, not just the one you picked above): ${JSON.stringify(ALL_LEAF_TAGS)} -- this is for a business that authentically spans more than one kind of thing (e.g. a bar that also hosts live music nights is both "food_drink" for category and additionally "Music" or "Nightlife" here; a bookstore that's also a coffee shop is "shopping" for category and additionally "Coffee" here). Only include a value when the text itself genuinely and specifically names that other, distinct thing the business also is -- never restate the same subcategory value you already picked above, never pad this out with loosely related guesses, and leave it an empty array (the common, correct answer) when the business is really just the one thing category/subcategory already describe.
+- offeredOccasions: an array of zero or more values from this exact list: ${JSON.stringify(VALID_OFFERED_OCCASIONS)} -- only when the text says the business actually DOES, hosts or offers that occasion (e.g. "we do birthday dinners" implies "birthday", "anniversary dinners" implies "anniversary", "date night" specials imply "date_night", "we host celebrations" implies "celebration", "graduation parties" implies "graduation", "family gatherings"/"family-style parties" implies "family_gathering"). An empty array is the common, correct answer.
+- partyTypes: an array of zero or more values from this exact list: ${JSON.stringify(VALID_PARTY_TYPES)} -- the kinds of parties the business says it can accommodate ("groups"/"large parties" implies "groups", "date nights"/"couples" implies "date", "friends"/"hangouts" implies "friends", "solo diners"/"counter seating for one" implies "solo"). Only when genuinely stated; never guess.
 
-Reply with ONLY valid JSON in this exact shape, nothing else: {"category":<string or null>,"attributes":<array of strings>,"cuisine":<string or null>,"priorityOccasions":<array of strings>,"subcategory":<string or null>,"categories":<array of strings>}`;
+Reply with ONLY valid JSON in this exact shape, nothing else: {"category":<string or null>,"attributes":<array of strings>,"cuisine":<string or null>,"priorityOccasions":<array of strings>,"subcategory":<string or null>,"categories":<array of strings>,"offeredOccasions":<array of strings>,"partyTypes":<array of strings>}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -158,7 +165,7 @@ Reply with ONLY valid JSON in this exact shape, nothing else: {"category":<strin
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
+        max_tokens: 400,
         messages: [{ role: 'user', content: promptText }],
       }),
     });
@@ -208,8 +215,15 @@ Reply with ONLY valid JSON in this exact shape, nothing else: {"category":<strin
       ? Array.from(new Set(parsed.categories.filter((c) => ALL_LEAF_TAGS.includes(c) && c !== subcategory))).slice(0, 5)
       : [];
 
+    const offeredOccasions = Array.isArray(parsed?.offeredOccasions)
+      ? Array.from(new Set(parsed.offeredOccasions.filter((o) => VALID_OFFERED_OCCASIONS.includes(o)))).slice(0, 6)
+      : [];
+    const partyTypes = Array.isArray(parsed?.partyTypes)
+      ? Array.from(new Set(parsed.partyTypes.filter((t) => VALID_PARTY_TYPES.includes(t)))).slice(0, 4)
+      : [];
+
     return new Response(
-      JSON.stringify({ category, attributes, cuisine, priorityOccasions, subcategory, categories }),
+      JSON.stringify({ category, attributes, cuisine, priorityOccasions, subcategory, categories, offeredOccasions, partyTypes }),
       { headers: { 'Content-Type': 'application/json' } },
     );
   } catch (err) {

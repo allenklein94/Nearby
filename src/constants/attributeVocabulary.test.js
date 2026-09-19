@@ -43,3 +43,15 @@ describe('business attribute vocabulary (one list, everywhere it is enforced)', 
     }
   });
 });
+
+describe('business-onboarding-assistant occasions-we-offer and party types', () => {
+  const { OFFERED_OCCASION_KEYS, ACCOMMODATE_PARTY_TYPE_OPTIONS } = require('./businessAttributes');
+  const src = read('supabase/functions/business-onboarding-assistant/index.ts');
+  it('accepts exactly the six offerable occasions and the four party types', () => {
+    expect(quoted(src.match(/VALID_OFFERED_OCCASIONS = \[([^\]]*)\]/)[1])).toEqual([...OFFERED_OCCASION_KEYS].sort());
+    expect(quoted(src.match(/VALID_PARTY_TYPES = \[([^\]]*)\]/)[1])).toEqual(ACCOMMODATE_PARTY_TYPE_OPTIONS.map((o) => o.key).sort());
+  });
+  it('never asks the model for availability or price', () => {
+    expect(src).not.toMatch(/"availability"|"priceRange"|min_spend/);
+  });
+});
