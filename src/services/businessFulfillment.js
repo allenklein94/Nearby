@@ -674,7 +674,7 @@ export async function getBusinessOpportunities(partnerId) {
   return data ?? [];
 }
 
-export async function submitBusinessOfferResponse(requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false }) {
+export async function submitBusinessOfferResponse(requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null}) {
   const { data, error } = await supabase.rpc('submit_business_offer', {
     request_id_param: requestId,
     offer_type_param: offerType,
@@ -687,6 +687,7 @@ export async function submitBusinessOfferResponse(requestId, { offerType, offerD
     offer_title_param: offerTitle,
     included_items_param: includedItems,
     price_is_per_person_param: priceIsPerPerson,
+    discount_pct_param: discountPct,
   });
   if (error) throw new Error(error.message);
   return data;
@@ -699,7 +700,7 @@ export async function submitBusinessOfferResponse(requestId, { offerType, offerD
 // submitBusinessOfferResponse() above, whose underlying RPC derives
 // ownership internally from request_id_param) since the Edge Function's
 // top-level ownership gate needs it explicitly for every target_type.
-export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false }) {
+export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null}) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -724,6 +725,7 @@ export async function submitBusinessOfferResponseForScreening(partnerId, request
       offerTitle,
       includedItems,
       priceIsPerPerson,
+      discountPct,
     }),
   });
 
@@ -831,7 +833,7 @@ export async function getConnectedOpenBusinessRequests({ category = null, dateSt
 // screen was built, since the match happens automatically and the
 // consumer just sees a real offer show up on BusinessRequestDetailScreen,
 // same as if a business had responded manually.
-export async function postBusinessAvailability({ category = null, title, description = null, offerType = null, price = null, capacity = null, startsAt, endsAt, radiusMiles = 15 }) {
+export async function postBusinessAvailability({ category = null, title, description = null, offerType = null, price = null, capacity = null, startsAt, endsAt, radiusMiles = 15 , discountPct = null}) {
   const { data, error } = await supabase.rpc('post_business_availability', {
     category_param: category,
     title_param: title,
@@ -842,6 +844,7 @@ export async function postBusinessAvailability({ category = null, title, descrip
     starts_at_param: startsAt,
     ends_at_param: endsAt,
     radius_miles_param: radiusMiles,
+    discount_pct_param: discountPct,
   });
   if (error) throw new Error(error.message);
   return { availabilityId: data.availabilityId, matchedCount: data.matchedCount };
@@ -855,7 +858,7 @@ export async function postBusinessAvailability({ category = null, title, descrip
 // publish, whether that's this call's own LOW-tier path or a later admin
 // approval -- avoids ever baking a submission-time window that would go
 // stale during a MEDIUM/UNCERTAIN hold.
-export async function submitBusinessAvailabilityForScreening(partnerId, { category = null, title, description = null, offerType = null, price = null, capacity = null, durationHours = null, radiusMiles = 15, bundleOccasion = null, bundleComponents = [] }) {
+export async function submitBusinessAvailabilityForScreening(partnerId, { category = null, title, description = null, offerType = null, price = null, capacity = null, durationHours = null, radiusMiles = 15, bundleOccasion = null, bundleComponents = [] , discountPct = null}) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -879,6 +882,7 @@ export async function submitBusinessAvailabilityForScreening(partnerId, { catego
       radiusMiles,
       bundleOccasion,
       bundleComponents,
+      discountPct,
     }),
   });
 

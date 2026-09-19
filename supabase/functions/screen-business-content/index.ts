@@ -628,6 +628,16 @@ Description: ${description || '(none)'}`;
       const price = Number.isFinite(body.price) ? body.price : null;
       const capacity = Number.isFinite(body.capacity) ? body.capacity : null;
       const durationHours = Number.isFinite(body.durationHours) ? body.durationHours : null;
+      const discountPct = Number.isFinite(body.discountPct) ? body.discountPct : null;
+      // max_discount_pct is enforced in the database (offer trigger + post_business_availability);
+      // checked here too so an over-cap posting is refused up front instead of being held for
+      // review and only failing on approval.
+      {
+        const { data: capMsg } = await admin.rpc('_discount_cap_violation', {
+          partner_id_param: partnerId, offer_type_param: offerType, discount_pct_param: discountPct,
+        });
+        if (capMsg) return json({ error: capMsg }, 400);
+      }
       const radiusMiles = Number.isFinite(body.radiusMiles) ? body.radiusMiles : 15;
       // Business-side Experience Bundles (2026-09-10): optional, business-
       // typed (no AI involved), re-validated the same way every other
@@ -646,7 +656,7 @@ Description: ${description || '(none)'}`;
 
       const contentSnapshot = {
         title, description: description || null, category, offerType, price, capacity, durationHours, radiusMiles,
-        bundleOccasion, bundleComponents,
+        bundleOccasion, bundleComponents, discountPct,
       };
 
       const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
@@ -674,6 +684,7 @@ Description: ${description || '(none)'}`;
           offer_type_param: offerType, price_param: price, capacity_param: capacity,
           starts_at_param: startsAt.toISOString(), ends_at_param: endsAt.toISOString(), radius_miles_param: radiusMiles,
           bundle_occasion_param: bundleOccasion, bundle_components_param: bundleComponents,
+          discount_pct_param: discountPct,
         });
         if (writeError) {
           console.error('screen-business-content: low-tier availability write failed', writeError);
@@ -759,6 +770,15 @@ Body: ${updateBody || '(none)'}`;
     const offerDescription = typeof body.offerDescription === 'string' ? body.offerDescription.trim().slice(0, 1000) : '';
     if (!offerDescription) return json({ error: 'Say what you can offer.' }, 400);
     const offerPrice = Number.isFinite(body.offerPrice) ? body.offerPrice : null;
+    // Structured discount percentage, checked against the business's max_discount_pct (enforced
+    // in the database by the offer trigger; pre-checked here so it is never held for review).
+    const discountPct = Number.isFinite(body.discountPct) ? body.discountPct : null;
+    {
+      const { data: capMsg } = await admin.rpc('_discount_cap_violation', {
+        partner_id_param: partnerId, offer_type_param: offerType, discount_pct_param: discountPct,
+      });
+      if (capMsg) return json({ error: capMsg }, 400);
+    }
     // Item 93 follow-up (CLAUDE.md): a real boolean, not user-authored
     // text -- no moderation-injection risk, so it never enters contentBlock
     // below, just the write-path params/snapshot.
@@ -808,7 +828,7 @@ Body: ${updateBody || '(none)'}`;
     if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
     const { riskTier, matchedCategories, reasoning } = result;
 
-    const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, priceIsPerPerson, proposedTime, experienceId, mediaPath, mediaType };
+    const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, priceIsPerPerson, discountPct, proposedTime, experienceId, mediaPath, mediaType };
 
     const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
       partner_id_param: partnerId,
@@ -832,6 +852,7 @@ Body: ${updateBody || '(none)'}`;
         media_path_param: mediaPath, media_type_param: mediaType,
         offer_title_param: offerTitle, included_items_param: includedItems,
         price_is_per_person_param: priceIsPerPerson,
+        discount_pct_param: discountPct,
       });
       if (writeError) {
         console.error('screen-business-content: low-tier offer_response write failed', writeError);

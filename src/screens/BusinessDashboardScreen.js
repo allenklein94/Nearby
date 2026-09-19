@@ -37,6 +37,7 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 import { buildOpportunityCard } from '../utils/businessOpportunityCard';
 import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardAvailabilityText } from '../utils/quickOfferResponse';
 import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
+import { activeDiscountCap, parseDiscountPct, discountCapProblem } from '../utils/discountCap';
 // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
 // already-deployed async submit-then-poll weather RPC every other
 // weather-aware surface already calls -- never a new one.
@@ -479,6 +480,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [availabilityCategoryInput, setAvailabilityCategoryInput] = useState(null);
   const [availabilityOfferTypeInput, setAvailabilityOfferTypeInput] = useState('standard');
   const [availabilityPriceInput, setAvailabilityPriceInput] = useState('');
+  const [availabilityDiscountInput, setAvailabilityDiscountInput] = useState('');
   const [availabilityCapacityInput, setAvailabilityCapacityInput] = useState('');
   const [availabilityDurationKey, setAvailabilityDurationKey] = useState('2h');
   // Business-side Experience Bundles (2026-09-10, direct user request): both
@@ -569,6 +571,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [offerTypeInput, setOfferTypeInput] = useState('standard');
   const [offerDescriptionInput, setOfferDescriptionInput] = useState('');
   const [offerPriceInput, setOfferPriceInput] = useState('');
+  const [offerDiscountInput, setOfferDiscountInput] = useState('');
+  const discountCap = activeDiscountCap(fulfillmentPolicy);
   // Item 93 follow-up (CLAUDE.md): an explicit, business-set flag -- never
   // inferred -- so the consumer's own comparison card can honestly render
   // "$70/person" instead of a bare, ambiguous "$70." Defaults false (a
@@ -1526,6 +1530,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferTypeInput('standard');
     setOfferDescriptionInput('');
     setOfferPriceInput('');
+    setOfferDiscountInput('');
     setOfferPriceIsPerPerson(false);
     setOfferProposedTime(null);
     setShowOfferTimePicker(false);
@@ -1660,6 +1665,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       Alert.alert('Pick a time', 'Choose the time you’re proposing instead.');
       return;
     }
+    const capProblem = discountCapProblem({ offerType: offerTypeInput, pctInput: offerDiscountInput, cap: discountCap });
+    if (capProblem) {
+      Alert.alert('Discount above your limit', capProblem);
+      return;
+    }
     setRespondingOpportunityId(offerModalRequestId);
     try {
       let mediaPath = null;
@@ -1682,6 +1692,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         offerTitle: offerTitleInput.trim() || null,
         includedItems: offerIncludedItemsInput,
         priceIsPerPerson: offerPriceIsPerPerson,
+        discountPct: parseDiscountPct(offerDiscountInput),
       });
 
       await handleOfferResult(result, () => setOfferModalRequestId(null));
@@ -2002,6 +2013,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setAvailabilityCategoryInput(category);
     setAvailabilityOfferTypeInput('standard');
     setAvailabilityPriceInput('');
+    setAvailabilityDiscountInput('');
     setAvailabilityCapacityInput('');
     setAvailabilityDurationKey('2h');
     setAvailabilityBundleOccasionInput(null);
@@ -2037,6 +2049,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       Alert.alert('Add a title', 'Say what you have available, e.g. "4 empty tables tonight".');
       return;
     }
+    const availCapProblem = discountCapProblem({ offerType: availabilityOfferTypeInput, pctInput: availabilityDiscountInput, cap: discountCap });
+    if (availCapProblem) {
+      Alert.alert('Discount above your limit', availCapProblem);
+      return;
+    }
     setPostingAvailability(true);
     try {
       const duration = AVAILABILITY_DURATION_OPTIONS.find((d) => d.key === availabilityDurationKey);
@@ -2052,6 +2069,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         durationHours: duration?.hours ?? null,
         bundleOccasion: availabilityBundleOccasionInput,
         bundleComponents: availabilityBundleComponentsInput,
+        discountPct: parseDiscountPct(availabilityDiscountInput),
       });
 
       if (result.published) {
@@ -5633,6 +5651,24 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 multiline
                 accessibilityLabel="Offer description"
               />
+              {offerTypeInput === 'discount' && (
+                <>
+                  <TextInput
+                    style={[styles.input, { marginTop: spacing.sm }]}
+                    placeholder={discountCap != null ? `Discount % (max ${discountCap}%)` : 'Discount % (optional)'}
+                    placeholderTextColor={colors.textTertiary}
+                    value={offerDiscountInput}
+                    onChangeText={(t) => setOfferDiscountInput(t.replace(/[^0-9.]/g, ''))}
+                    keyboardType="decimal-pad"
+                    accessibilityLabel="Discount percent"
+                  />
+                  {discountCap != null && (
+                    <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>
+                      Your policy caps discounts at {discountCap}% -- Nearby won't send anything higher.
+                    </Text>
+                  )}
+                </>
+              )}
               {/* Item 92: a real included-items checklist -- "✓ Private table,
                   ✓ Birthday dessert, ✓ Complimentary champagne alternative" --
                   same add-one-at-a-time editor shape the Occasion Package
@@ -5965,6 +6001,24 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 keyboardType="decimal-pad"
                 accessibilityLabel="Price, optional"
               />
+              {availabilityOfferTypeInput === 'discount' && (
+                <>
+                  <TextInput
+                    style={[styles.input, { marginTop: spacing.sm }]}
+                    placeholder={discountCap != null ? `Discount % (max ${discountCap}%)` : 'Discount % (optional)'}
+                    placeholderTextColor={colors.textTertiary}
+                    value={availabilityDiscountInput}
+                    onChangeText={(t) => setAvailabilityDiscountInput(t.replace(/[^0-9.]/g, ''))}
+                    keyboardType="decimal-pad"
+                    accessibilityLabel="Discount percent"
+                  />
+                  {discountCap != null && (
+                    <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>
+                      Your policy caps discounts at {discountCap}% -- Nearby won't send anything higher.
+                    </Text>
+                  )}
+                </>
+              )}
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm }]}
                 placeholder="How many spots? (optional, e.g. 4)"
