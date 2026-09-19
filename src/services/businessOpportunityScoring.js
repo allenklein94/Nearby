@@ -90,7 +90,7 @@ export function scoreBusinessOpportunity({
   const priorityMatches = requestAttributes.filter((a) => businessPriorityAttributes.includes(a));
   if (priorityMatches.length > 0) {
     score += SCORE_OWN_NETWORK;
-    reasons.push({ label: 'Matches what you said you want more of', points: SCORE_OWN_NETWORK });
+    reasons.push({ key: 'priority_attribute', label: 'Matches what you said you want more of', points: SCORE_OWN_NETWORK });
   }
 
   // "Intelligent demand inbox" Phase 2: the same "the business explicitly
@@ -102,14 +102,14 @@ export function scoreBusinessOpportunity({
   // value (no fabricated match from an absent signal).
   if (requestOccasion && businessPriorityOccasions.includes(requestOccasion)) {
     score += SCORE_OWN_NETWORK;
-    reasons.push({ label: `Matches an occasion you want more of (${requestOccasion.replace(/_/g, ' ')})`, points: SCORE_OWN_NETWORK });
+    reasons.push({ key: 'want_occasion', label: `Matches an occasion you want more of (${requestOccasion.replace(/_/g, ' ')})`, points: SCORE_OWN_NETWORK });
   }
 
   // Explicitly offers this occasion (a capability, not an appetite): a real match, counted once and
   // never on top of the stronger want-more credit above. Like the attribute case, the weaker weight.
   if (requestOccasion && businessOfferedOccasions.includes(requestOccasion) && !businessPriorityOccasions.includes(requestOccasion)) {
     score += SCORE_INTEREST_MATCH;
-    reasons.push({ label: `You offer this occasion (${requestOccasion.replace(/_/g, ' ')})`, points: SCORE_INTEREST_MATCH });
+    reasons.push({ key: 'offered_occasion', label: `You offer this occasion (${requestOccasion.replace(/_/g, ' ')})`, points: SCORE_INTEREST_MATCH });
   }
 
   // A weaker, still-real signal: the business already offers this, even
@@ -120,12 +120,12 @@ export function scoreBusinessOpportunity({
   );
   if (generalMatches.length > 0) {
     score += SCORE_INTEREST_MATCH;
-    reasons.push({ label: 'You already offer this', points: SCORE_INTEREST_MATCH });
+    reasons.push({ key: 'offers_attribute', label: 'You already offer this', points: SCORE_INTEREST_MATCH });
   }
 
   if (requestCuisine && businessCuisine && requestCuisine === businessCuisine) {
     score += SCORE_INTEREST_MATCH;
-    reasons.push({ label: 'Matches your cuisine', points: SCORE_INTEREST_MATCH });
+    reasons.push({ key: 'cuisine', label: 'Matches your cuisine', points: SCORE_INTEREST_MATCH });
   }
 
   // Finding 5 (audit): a real, explicitly-typed dollar amount that
@@ -137,7 +137,7 @@ export function scoreBusinessOpportunity({
     const budgetBonus = Math.min(SCORE_OWN_NETWORK, Math.round((requestBudgetMax / BUDGET_BONUS_REFERENCE) * SCORE_OWN_NETWORK));
     if (budgetBonus > 0) {
       score += budgetBonus;
-      reasons.push({ label: `Offers up to $${requestBudgetMax}`, points: budgetBonus });
+      reasons.push({ key: 'budget', label: `Offers up to $${requestBudgetMax}`, points: budgetBonus });
     }
   }
 
@@ -160,7 +160,7 @@ export function scoreBusinessOpportunity({
     requestPartySize <= fulfillmentPolicy.party_size_max
   ) {
     score += SCORE_CLOSE_DISTANCE;
-    reasons.push({ label: 'Within your usual party size range', points: SCORE_CLOSE_DISTANCE });
+    reasons.push({ key: 'party_size', label: 'Within your usual party size range', points: SCORE_CLOSE_DISTANCE });
   }
 
   // Timing fit -- reuses the exact same morning/afternoon/evening/weekend
@@ -171,7 +171,7 @@ export function scoreBusinessOpportunity({
     const period = getTimePeriod(new Date(`${requestDate}T${requestTimeWindowStart}`));
     if (businessPriorityTimeWindows.includes(period)) {
       score += SCORE_HAPPENING_NOW;
-      reasons.push({ label: `Fits your usual ${period} hours`, points: SCORE_HAPPENING_NOW });
+      reasons.push({ key: 'time_window', label: `Fits your usual ${period} hours`, points: SCORE_HAPPENING_NOW });
     }
   }
 
@@ -181,14 +181,14 @@ export function scoreBusinessOpportunity({
     const day = new Date(`${requestDate}T00:00:00`).getDay();
     if (businessPriorityTimeWindows.includes('weekday') && day >= 1 && day <= 5) {
       score += SCORE_HAPPENING_NOW;
-      reasons.push({ label: 'A weekday request, which you want more of', points: SCORE_HAPPENING_NOW });
+      reasons.push({ key: 'weekday', label: 'A weekday request, which you want more of', points: SCORE_HAPPENING_NOW });
     }
     if (businessPriorityTimeWindows.includes('last_minute')) {
       const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const daysAway = Math.round((new Date(`${requestDate}T00:00:00`) - startOfToday) / 86400000);
       if (daysAway >= 0 && daysAway <= 1) {
         score += SCORE_HAPPENING_NOW;
-        reasons.push({ label: 'A last-minute booking, which you want more of', points: SCORE_HAPPENING_NOW });
+        reasons.push({ key: 'last_minute', label: 'A last-minute booking, which you want more of', points: SCORE_HAPPENING_NOW });
       }
     }
   }
@@ -208,10 +208,10 @@ export function scoreBusinessOpportunity({
   if (requestCategory && weather) {
     if (isWeatherIndoorBiased(weather) && isIndoorCategory(requestCategory)) {
       score += SCORE_HAPPENING_NOW;
-      reasons.push({ label: REASON_TEXT.WEATHER_GOOD_INDOOR.text, points: SCORE_HAPPENING_NOW });
+      reasons.push({ key: 'weather', label: REASON_TEXT.WEATHER_GOOD_INDOOR.text, points: SCORE_HAPPENING_NOW });
     } else if (isWeatherOutdoorBiased(weather) && isOutdoorCategory(requestCategory)) {
       score += SCORE_HAPPENING_NOW;
-      reasons.push({ label: REASON_TEXT.WEATHER_GOOD_OUTDOOR.text, points: SCORE_HAPPENING_NOW });
+      reasons.push({ key: 'weather', label: REASON_TEXT.WEATHER_GOOD_OUTDOOR.text, points: SCORE_HAPPENING_NOW });
     }
   }
 
@@ -225,7 +225,7 @@ export function scoreBusinessOpportunity({
       const points = Math.round((activeSignal.strength ?? 1) * SCORE_OWN_NETWORK);
       if (points > 0) {
         score += points;
-        reasons.push({ label: `You're actively boosting ${requestCategory} this week`, points });
+        reasons.push({ key: 'boost', label: `You're actively boosting ${requestCategory} this week`, points });
       }
     }
   }

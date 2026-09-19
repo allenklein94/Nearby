@@ -5,7 +5,7 @@ describe('scoreBusinessOpportunity', () => {
   it('returns 0 and no reasons when nothing overlaps', () => {
     const result = scoreBusinessOpportunity({});
     expect(result.score).toBe(0);
-    expect(result.reasons).toEqual([]);
+    expect(result.reasons.map(({ key, ...r }) => r)).toEqual([]);
   });
 
   it('scores a real priority-attribute match at SCORE_OWN_NETWORK', () => {
@@ -14,7 +14,7 @@ describe('scoreBusinessOpportunity', () => {
       businessPriorityAttributes: ['date_friendly'],
     });
     expect(result.score).toBe(SCORE_OWN_NETWORK);
-    expect(result.reasons).toEqual([
+    expect(result.reasons.map(({ key, ...r }) => r)).toEqual([
       { label: 'Matches what you said you want more of', points: SCORE_OWN_NETWORK },
     ]);
   });
@@ -26,7 +26,7 @@ describe('scoreBusinessOpportunity', () => {
       businessPriorityAttributes: [],
     });
     expect(result.score).toBe(SCORE_INTEREST_MATCH);
-    expect(result.reasons).toEqual([{ label: 'You already offer this', points: SCORE_INTEREST_MATCH }]);
+    expect(result.reasons.map(({ key, ...r }) => r)).toEqual([{ label: 'You already offer this', points: SCORE_INTEREST_MATCH }]);
   });
 
   it('never double-counts an attribute that is both a priority and a general attribute', () => {
@@ -46,7 +46,7 @@ describe('scoreBusinessOpportunity', () => {
       businessCuisine: 'italian',
     });
     expect(result.score).toBe(SCORE_INTEREST_MATCH);
-    expect(result.reasons).toEqual([{ label: 'Matches your cuisine', points: SCORE_INTEREST_MATCH }]);
+    expect(result.reasons.map(({ key, ...r }) => r)).toEqual([{ label: 'Matches your cuisine', points: SCORE_INTEREST_MATCH }]);
   });
 
   it('does not credit a cuisine mismatch', () => {
@@ -64,7 +64,7 @@ describe('scoreBusinessOpportunity', () => {
       businessPriorityTimeWindows: ['weekend'],
     });
     expect(result.score).toBe(SCORE_HAPPENING_NOW);
-    expect(result.reasons).toEqual([{ label: 'Fits your usual weekend hours', points: SCORE_HAPPENING_NOW }]);
+    expect(result.reasons.map(({ key, ...r }) => r)).toEqual([{ label: 'Fits your usual weekend hours', points: SCORE_HAPPENING_NOW }]);
   });
 
   it('does not credit timing when the business has no matching priority window', () => {
@@ -81,7 +81,7 @@ describe('scoreBusinessOpportunity', () => {
       businessPriorityTimeWindows: ['morning', 'afternoon', 'evening', 'weekend'],
     });
     expect(result.score).toBe(0);
-    expect(result.reasons).toEqual([]);
+    expect(result.reasons.map(({ key, ...r }) => r)).toEqual([]);
   });
 
   it('scales a real active temporary priority signal by its own real strength', () => {
@@ -90,7 +90,7 @@ describe('scoreBusinessOpportunity', () => {
       activePrioritySignals: [{ category: 'Coffee', strength: 0.5 }],
     });
     expect(result.score).toBe(Math.round(0.5 * SCORE_OWN_NETWORK));
-    expect(result.reasons).toEqual([
+    expect(result.reasons.map(({ key, ...r }) => r)).toEqual([
       { label: "You're actively boosting Coffee this week", points: Math.round(0.5 * SCORE_OWN_NETWORK) },
     ]);
   });
@@ -138,7 +138,7 @@ describe('scoreBusinessOpportunity', () => {
       fulfillmentPolicy: { party_size_min: 2, party_size_max: 6 },
     });
     expect(result.score).toBe(SCORE_CLOSE_DISTANCE);
-    expect(result.reasons).toEqual([
+    expect(result.reasons.map(({ key, ...r }) => r)).toEqual([
       { label: 'Within your usual party size range', points: SCORE_CLOSE_DISTANCE },
     ]);
   });
@@ -172,7 +172,7 @@ describe('scoreBusinessOpportunity', () => {
       businessPriorityOccasions: ['birthday', 'anniversary'],
     });
     expect(result.score).toBe(SCORE_OWN_NETWORK);
-    expect(result.reasons).toEqual([
+    expect(result.reasons.map(({ key, ...r }) => r)).toEqual([
       { label: 'Matches an occasion you want more of (birthday)', points: SCORE_OWN_NETWORK },
     ]);
   });
@@ -229,7 +229,7 @@ describe('scoreBusinessOpportunity weather bonus', () => {
       weather: { forecast_label: 'Quiet' },
     });
     expect(result.score).toBe(SCORE_HAPPENING_NOW);
-    expect(result.reasons).toEqual([
+    expect(result.reasons.map(({ key, ...r }) => r)).toEqual([
       { label: 'A good indoor option with weather coming in', points: SCORE_HAPPENING_NOW },
     ]);
   });
@@ -240,7 +240,7 @@ describe('scoreBusinessOpportunity weather bonus', () => {
       weather: { forecast_label: 'Excellent' },
     });
     expect(result.score).toBe(SCORE_HAPPENING_NOW);
-    expect(result.reasons).toEqual([{ label: 'Great weather for this', points: SCORE_HAPPENING_NOW }]);
+    expect(result.reasons.map(({ key, ...r }) => r)).toEqual([{ label: 'Great weather for this', points: SCORE_HAPPENING_NOW }]);
   });
 
   it('awards nothing for a genuinely ambiguous category, even with a real weather signal', () => {
@@ -269,7 +269,7 @@ describe('scoreBusinessOpportunity weather bonus', () => {
     const now = new Date(2026, 8, 23, 12, 0); // Wed 2026-09-23, local
     it('credits a weekday request only when the business wants weekdays', () => {
       const r = scoreBusinessOpportunity({ requestDate: '2026-09-24', businessPriorityTimeWindows: ['weekday'], now });
-      expect(r.reasons).toEqual([{ label: 'A weekday request, which you want more of', points: SCORE_HAPPENING_NOW }]);
+      expect(r.reasons.map(({ key, ...r2 }) => r2)).toEqual([{ label: 'A weekday request, which you want more of', points: SCORE_HAPPENING_NOW }]);
       expect(scoreBusinessOpportunity({ requestDate: '2026-09-24', now }).score).toBe(0);
     });
     it('does not credit a weekend date as a weekday', () => {

@@ -34,7 +34,7 @@ import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 // Item 70 (CLAUDE.md): a real, honest "when" label for a pending request's
 // own date/time window, shown on the business's opportunity card.
-import { buildOpportunityCard } from '../utils/businessOpportunityCard';
+import { buildOpportunityCard, buildMatchReasons } from '../utils/businessOpportunityCard';
 import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardAvailabilityText } from '../utils/quickOfferResponse';
 import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 import { defaultScheduledWindow, resolveAvailabilityWindow, scheduledWindowProblem, shiftEndAfterStart, demandPreviewLine } from '../utils/availabilityWindow';
@@ -3601,10 +3601,27 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       cuisineLabel: o.business_requests?.cuisine ? cuisineLabel(o.business_requests.cuisine) : null,
                     });
                     // Context that changes how the request should be read stays, but as one quiet line, not chips.
+                    const matchReasons = buildMatchReasons(o.opportunityReasons, {
+                      occasionPhrase: reqOccasion?.label ? `${reqOccasion.label.toLowerCase()} experiences` : null,
+                    });
                     const contextLine = [surpriseTag, planTimeLabel ? `🕐 ${planTimeLabel}` : null].filter(Boolean).join(' · ');
                     return (
                     <View key={o.id} style={styles.gatheringRow}>
-                      {o.status === 'pending' && <Text style={[styles.breakdownText, { color: colors.primary, fontWeight: '700' }]}>✨ New opportunity</Text>}
+                      {o.status === 'pending' && (
+                        <>
+                          <Text style={[styles.breakdownText, { color: colors.primary, fontWeight: '700' }]}>
+                            {matchReasons.length > 0 ? '✨ Good match for your business' : '✨ New opportunity'}
+                          </Text>
+                          {matchReasons.length > 0 && (
+                            <View style={{ marginTop: spacing.xs }}>
+                              <Text style={styles.notesLabel}>Why</Text>
+                              {matchReasons.map((line) => (
+                                <Text key={line} style={styles.breakdownText}>• {line}</Text>
+                              ))}
+                            </View>
+                          )}
+                        </>
+                      )}
                       <Text style={styles.offerTitle}>{card.title}</Text>
                       {card.whenLine !== '' && <Text style={styles.breakdownText}>{card.whenLine}</Text>}
                       {card.feelLine !== '' && <Text style={styles.breakdownText}>{card.feelLine}</Text>}
