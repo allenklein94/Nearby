@@ -42,7 +42,7 @@ const OFFER_STATUS_COPY = {
   // just happens to auto-confirm immediately today since Nearby itself
   // is the only reservation provider so far). Neither screen should
   // promise more than the data actually does.
-  accepted: 'Accepted — your reservation',
+  accepted: "You're booked",
   declined: "Can't help with this one",
   // Item 50 (state consistency audit, Finding 4): withdraw_business_offer()
   // is a real, live transition this map was missing -- fell through to the
@@ -366,7 +366,7 @@ export default function GroupPlanScreen({ navigation, route }) {
             occasion-creation moment -- tone="business" for a fast, professional settle rather
             than the full celebratory production. */}
         {successBanner === 'plan' && <SuccessAnimation haptic text="Plan confirmed. ✓" tone="business" />}
-        {successBanner === 'reservation' && <SuccessAnimation haptic text="Reservation confirmed. ✓" tone="business" />}
+        {successBanner === 'reservation' && <SuccessAnimation haptic text="You're booked. ✓" tone="business" />}
         <Text style={styles.title}>{proposal.category} — Group Plan</Text>
         <Text style={styles.statusLine}>
           {proposal.status === 'pending' && 'Deciding together'}

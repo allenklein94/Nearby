@@ -45,7 +45,7 @@ const STATUS_COPY = {
 const OFFER_STATUS_COPY = {
   pending: 'Waiting for a response',
   offered: 'Made you an offer',
-  accepted: 'Accepted — your reservation',
+  accepted: "You're booked",
   declined: "Can't help with this one",
   // Item 50 (state consistency audit, Finding 4): withdraw_business_offer()
   // is a real, live transition this map was missing -- fell through to the
@@ -694,7 +694,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     if (!isStripeConfigured()) {
       Alert.alert(
         'Payment not yet available',
-        "This business collects payment through Nearby, but that isn't fully set up yet — reach out to them directly to arrange payment for now. Your reservation is still confirmed."
+        "You're still booked. Paying through Nearby isn't available yet, so you'll settle up with the business directly."
       );
       return;
     }
@@ -972,7 +972,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             confirmed. ✓" phrasing GroupPlanScreen already uses for this exact same real
             moment, with tone="business" (skips the ✨ discovery beat, settles fast, no
             springy bounce). */}
-        {justAccepted && <SuccessAnimation haptic text="Reservation confirmed. ✓" tone="business" />}
+        {justAccepted && <SuccessAnimation haptic text="You're booked. ✓" tone="business" />}
         {request && (
           <TouchableOpacity onPress={openPlanDetail} accessibilityRole="button" accessibilityLabel="View the whole plan">
             <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: spacing.sm }}>View the whole plan →</Text>
