@@ -63,12 +63,21 @@ import { spacing, radius, typography } from '../theme';
 
 import { NLoader, modalAnimation, showSuccessToast } from '../motion';
 const SECTIONS = [
-  { key: 'home', icon: '🏠', label: 'Dashboard' },
-  { key: 'gatherings', icon: '🎉', label: 'Gatherings' },
-  { key: 'community', icon: '🏘️', label: 'Community' },
-  { key: 'requests', icon: '🎯', label: 'Opportunities' },
-  { key: 'insights', icon: '📊', label: 'Insights' },
-  { key: 'business', icon: '⚙️', label: 'Business' },
+  { key: 'home', icon: '🏠', label: 'Home' },
+  { key: 'opportunities', icon: '🎯', label: 'Opportunities' },
+  { key: 'bookings', icon: '📅', label: 'Bookings' },
+  { key: 'offers', icon: '🎁', label: 'Offers' },
+  { key: 'profile', icon: '🏪', label: 'Profile', accessibilityLabel: 'Business Profile' },
+];
+
+// Older names for these places (push routing's initialSection, "view it" links) still resolve, to the tab that now
+// holds that content. 'inbox_modal' is not a tab; it stays a full-screen conversation view.
+const LEGACY_SECTION_TAB = { requests: 'opportunities', gatherings: 'bookings', community: 'bookings', insights: 'home', business: 'profile' };
+const MORE_TOOLS = [
+  { key: 'ai', icon: '🤖', label: 'AI Assistant' },
+  { key: 'analytics', icon: '📊', label: 'Analytics' },
+  { key: 'weather', icon: '🌦️', label: 'Weather' },
+  { key: 'demand', icon: '📈', label: 'Demand Signals' },
 ];
 
 const OFFER_TYPE_OPTIONS = [
@@ -203,7 +212,18 @@ function BusinessOfferMediaPreview({ path, type, colors }) {
 export default function BusinessDashboardScreen({ navigation, route }) {
   const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
-  const [section, setSection] = useState(route?.params?.initialSection ?? 'home');
+  const [section, setSectionRaw] = useState(() => {
+    const initial = route?.params?.initialSection ?? 'home';
+    return LEGACY_SECTION_TAB[initial] ?? initial;
+  });
+  // "More tools" (bottom of Home): which supporting tool is expanded in place. Never a tab of its own.
+  const [openTool, setOpenTool] = useState(route?.params?.initialSection === 'insights' ? 'analytics' : null);
+  const setSection = (key) => {
+    setSectionRaw(LEGACY_SECTION_TAB[key] ?? key);
+    setOpenTool(key === 'insights' ? 'analytics' : null);
+  };
+  const on = (...tabs) => tabs.includes(section);
+  const tool = (key) => section === 'home' && openTool === key;
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
@@ -2736,7 +2756,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
             key={s.key}
             style={[styles.sectionTab, section === s.key && styles.sectionTabActive]}
             onPress={() => setSection(s.key)}
-            accessibilityLabel={s.label}
+            accessibilityLabel={s.accessibilityLabel ?? s.label}
             accessibilityRole="button"
             accessibilityState={{ selected: section === s.key }}
           >
@@ -3044,10 +3064,46 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               ) : (
                 <Text style={styles.emptyText}>No data yet for this business.</Text>
               )}
+              {selectedPartner && (
+                <View style={[styles.gatheringRow, { marginTop: spacing.lg }]}>
+                  <TouchableOpacity
+                    onPress={() => setOpenTool(openTool ? null : 'menu')}
+                    accessibilityLabel="More tools"
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: !!openTool }}
+                  >
+                    <Text style={styles.offerTitle}>More tools {openTool ? '⌄' : '›'}</Text>
+                    {!openTool && <Text style={styles.breakdownText}>AI Assistant · Analytics · Weather · Demand Signals</Text>}
+                  </TouchableOpacity>
+                  {!!openTool && MORE_TOOLS.map((t) => (
+                    <TouchableOpacity
+                      key={t.key}
+                      style={{ paddingVertical: spacing.sm }}
+                      onPress={() => {
+                        if (t.key === 'ai') {
+                          navigation.navigate('BusinessAIAssistant', { partnerId: selectedPartner.id, partnerName: selectedPartner.name });
+                        } else {
+                          setOpenTool(openTool === t.key ? 'menu' : t.key);
+                        }
+                      }}
+                      accessibilityLabel={t.label}
+                      accessibilityRole="button"
+                      accessibilityState={t.key === 'ai' ? undefined : { expanded: openTool === t.key }}
+                    >
+                      <Text style={[styles.breakdownText, { color: colors.textPrimary, fontWeight: openTool === t.key ? '700' : '400' }]}>
+                        {t.icon} {t.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+              {tool('weather') && !(businessWeather && (isWeatherIndoorBiased(businessWeather) || isWeatherOutdoorBiased(businessWeather))) && (
+                <Text style={styles.emptyText}>Nothing about today's weather changes what you should do right now.</Text>
+              )}
               </>
             )}
 
-            {section === 'gatherings' && (
+            {section === 'bookings' && (
               gatherings.length === 0 ? (
                 <View style={{ alignItems: 'center' }}>
                   {/* Thursday plan item 25: the original copy claimed
@@ -3133,7 +3189,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               )
             )}
 
-            {section === 'community' && (
+            {section === 'bookings' && (
               <>
                 {partnershipRequests.length > 0 && (
                   <>
@@ -3290,8 +3346,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               </>
             )}
 
-            {section === 'requests' && (
+            {section !== 'inbox_modal' && (
               <>
+{on('bookings') && (
+<>
                 {opportunities.filter((o) => o.status === 'accepted').length > 0 && (
                   <View style={{ marginBottom: spacing.lg }}>
                     <Text style={styles.sectionHeader}>📅 Upcoming Nearby Visits</Text>
@@ -3343,6 +3401,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     })}
                   </View>
                 )}
+</>
+)}
 
                 {/* Item 79 (CLAUDE.md, "businesses get a new demand
                     signal"): the occasion-primary sibling of Match Radar
@@ -3356,6 +3416,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     value, including real non-celebratory ones (a farewell,
                     a move, a new job) -- "What They're Celebrating" read
                     wrong the moment one of those showed up here. */}
+{on('offers') && (
+<>
                 {/* "Occasions we offer": an explicit capability, separate from "want more" above. Saves on
                     tap (no Save button); Nearby then routes matching occasion requests here first, and a
                     package (if any) is still what gets offered -- nothing is invented for this list alone. */}
@@ -3380,6 +3442,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.helperText}>
                   Requests for these occasions reach you first. Add a package under Occasion Packages to offer one automatically.
                 </Text>
+</>
+)}
+{on('opportunities') && (
+<>
                 <Text style={styles.sectionHeader}>🎉 What They're Planning</Text>
                 <Text style={styles.helperText}>
                   Real open requests nearby, grouped by occasion instead of category -- a
@@ -3419,6 +3485,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   })
                 )}
 
+</>
+)}
+{tool('demand') && (
+<>
                 {/* Business Intelligence & Opportunity Engine, Phase 2 --
                     "Match Radar" (spec item 13) reframe: get_aggregated_
                     demand_for_partner() already IS Match Radar (locked
@@ -3514,6 +3584,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   ))
                 )}
 
+</>
+)}
+{on('opportunities') && (
+<>
                 {(() => {
                   // Nearby does the matching: the business never browses customers, it gets the ones that fit.
                   const newCount = scoredOpportunities.filter((o) => o.status === 'pending' && o.business_requests?.status === 'open').length;
@@ -3686,6 +3760,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   })
                 )}
 
+</>
+)}
+{on('offers') && (
+<>
                 {lastPostedAvailability && (
                   // Phase 4(c): a real, persistent card -- reuses the same
                   // neutral pendingReviewCard treatment (colors.surface/
@@ -3810,6 +3888,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   ))
                 )}
 
+</>
+)}
+{on('bookings') && (
+<>
                 {/* Item 102 (CLAUDE.md, "Businesses can participate in
                     recurring occasions"): real, consented returning
                     customers with a genuine next occurrence coming up soon
@@ -3908,6 +3990,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   })
                 )}
 
+</>
+)}
+{on('profile') && (
+<>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
                   <Text style={styles.sectionHeader}>Fulfillment Policy</Text>
                   <TouchableOpacity
@@ -3960,11 +4046,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     )}
                   </View>
                 )}
+</>
+)}
               </>
             )}
 
-            {section === 'insights' && (
+            {(section === 'home' || section === 'profile') && (
               <>
+{tool('analytics') && (
+<>
               <Text style={styles.sectionHeader}>How People Find You</Text>
               {discoveryStats && discoveryStats.total_views > 0 ? (
                 <View style={[styles.insightsCard, { marginBottom: spacing.lg }]}>
@@ -4018,6 +4108,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.emptyText}>Not enough activity yet to show real insights.</Text>
               )}
 
+</>
+)}
+{tool('weather') && (
+<>
               {/* Phase 5 (CLAUDE.md) -- a pure presentational digest over
                   an already-real, already-live signal (Business
                   Intelligence Phase 7's weather bonus inside
@@ -4045,6 +4139,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 </>
               )}
 
+</>
+)}
+{tool('analytics') && (
+<>
               {/* Business Intelligence & Opportunity Engine, Phase 4 --
                   "Learning" (see CLAUDE.md's own plan). A real,
                   aggregated-only view -- never a raw per-request dump --
@@ -4171,15 +4269,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 ))
               )}
 
-              <TouchableOpacity
-                style={[styles.createOfferButton, { marginTop: spacing.lg }]}
-                onPress={() => navigation.navigate('BusinessAIAssistant', { partnerId: selectedPartner.id, partnerName: selectedPartner.name })}
-                accessibilityLabel="Ask the AI Assistant about your business"
-                accessibilityRole="button"
-              >
-                <Text style={styles.createOfferButtonText}>✨ Ask the AI Assistant</Text>
-              </TouchableOpacity>
+</>
+)}
 
+{on('profile') && (
+<>
               {/* Business Intelligence Phase 6 -- the real AI Trust Engine
                   settings surface (level selector, named policies, the
                   real Activity Log). A dedicated screen, not more inline
@@ -4193,11 +4287,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               >
                 <Text style={[styles.createOfferButtonText, { color: colors.textPrimary }]}>🤖 AI Automation Settings</Text>
               </TouchableOpacity>
+</>
+)}
               </>
             )}
 
-            {section === 'business' && (
+            {section !== 'inbox_modal' && (
               <>
+{on('offers') && (
+<>
                 <Text style={styles.sectionHeader}>Rewards & Offers</Text>
                 <TouchableOpacity
                   style={styles.createOfferButton}
@@ -4233,6 +4331,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   ))
                 )}
 
+</>
+)}
+{on('bookings') && (
+<>
                 <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Confirm a Redemption</Text>
                 <Text style={styles.offerDescription}>
                   Ask the customer for the 6-digit code they were shown when they redeemed, and enter it here to confirm the visit really happened. Only confirmed redemptions count toward billing.
@@ -4263,6 +4365,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 </View>
 
+</>
+)}
+{on('profile') && (
+<>
                 <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Business Profile</Text>
                 <View style={styles.gatheringRow}>
                   <Text style={styles.offerTitle}>{selectedPartner?.name}</Text>
@@ -4718,6 +4824,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   );
                 })()}
 
+</>
+)}
+{on('offers') && (
+<>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xl }}>
                   <Text style={styles.sectionHeader}>Your Signature Experiences</Text>
                   <TouchableOpacity
@@ -4772,6 +4882,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   ))
                 )}
 
+</>
+)}
+{on('profile') && (
+<>
                 {/* "Business Profile Phase 1" addendum -- "Teach Nearby."
                     A real, deterministic keyword extraction against the
                     existing attributes vocabulary, never an LLM call and
@@ -5034,6 +5148,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </>
                   )}
                 </View>
+</>
+)}
               </>
             )}
 

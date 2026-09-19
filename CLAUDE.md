@@ -115,6 +115,8 @@ specifically said not to build yet:
 - Complicated calendars (recurring sub-events, multi-day itineraries, etc. — beyond the single
   `scheduled_date` the occasion already has)
 
+**Business dashboard = five tabs (2026-09-19):** Home / Opportunities / Bookings / Offers / Profile (was six: Dashboard, Gatherings, Community, Opportunities, Insights, Business). Regrouped by gating existing sub-blocks per tab in `BusinessDashboardScreen` (`on()`/`tool()`), nothing rewritten or removed. Home = brief, demand-near-you, community health; Opportunities = opportunity cards + What They're Planning; Bookings = upcoming visits, gatherings, community/top members, returning customers, confirm a redemption; Offers = occasions we offer, availability, packages, rewards, signature experiences; Profile = fulfillment policy, business profile/preferences, notifications, Stripe, AI Automation Settings. **"More tools"** is a collapsed row at the bottom of Home (never a tab): AI Assistant (navigates), Analytics, Weather, Demand Signals (Match Radar) expand in place. Old names (`requests`, `business`, `insights`, ...) still route via `LEGACY_SECTION_TAB` (push taps use `initialSection: 'requests'`). Not browser-tested; web export regenerated.
+
 Deferred from "Why this matches" (2026-09-19, business opportunity cards; no ask yet):
 - **"Your typical price range matches"** -- needs a decision on what `business_requests.budget_max` means (total vs per-person) before comparing it to the business's `min_spend_per_person`; until then no price line is shown.
 - **"You have availability"** -- no per-business hours data exists. Could be shown only for businesses with a live availability posting that covers the request's date/time (real, from `business_availability`).
