@@ -47,6 +47,19 @@ $t$;`;
   assert(r.no_location === 0 && r.no_occasion === 0, 'no location or no occasion returns nothing (never an unscoped list)');
   assert(r.inactive === 0, 'an inactive business is never returned');
   assert(JSON.stringify(r.availability_offered) === '["birthday"]', 'search_active_business_availability now carries offered_occasions');
+  // ---- privacy / vocabulary: checked against the live catalog ----
+  const acl = await runSql(`select proname, proacl::text a from pg_proc where proname in ('search_occasion_offering_businesses');`);
+  const grantees = acl[0].a.replace(/[{}]/g, '').split(',').map((g) => g.split('=')[0]);
+  assert(acl.length === 1 && !grantees.includes('anon') && !grantees.includes(''), 'search_occasion_offering_businesses is not executable by anon/public');
+  const cols = await runSql(`select pg_get_function_result(oid) r from pg_proc where proname = 'search_occasion_offering_businesses';`);
+  assert(cols[0].r === 'TABLE(partner_id uuid, partner_name text, distance_miles double precision)', 'it returns only the business id, name and distance -- no people, no demand');
+  const six = ['birthday', 'anniversary', 'date_night', 'celebration', 'graduation', 'family_gathering'];
+  const checks = await runSql(`select conrelid::regclass::text t, pg_get_constraintdef(oid) d from pg_constraint where conname in ('brand_partners_offered_occasions_check', 'business_occasion_packages_occasion_type_check', 'business_requests_occasion_check', 'brand_partners_priority_occasions_check');`);
+  assert(checks.length === 4, 'all four occasion constraints exist');
+  for (const c of checks) {
+    assert(six.every((k) => c.d.includes(`'${k}'`)), `${c.t}: the constraint accepts all six offerable occasion keys (one vocabulary)`);
+  }
+
   const [after] = await runSql(`select (select count(*) from business_availability where title = 'lv posting') a, (select offered_occasions from brand_partners where id = '${owner.managed_partner_id}') o;`);
   assert(after.a === 0 && JSON.stringify(after.o) === '[]', 'nothing was committed');
   summarize('consumer-occasion-offering-discovery');

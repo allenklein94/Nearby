@@ -97,3 +97,22 @@ describe('consumer-side: the offers-this-occasion tier', () => {
     expect(dedupeBusinessTiers([offering, other, gathering])).toEqual([offering, other, gathering]);
   });
 });
+
+// ---- one occasion vocabulary across the product ----
+describe('occasion vocabulary is shared, not duplicated', () => {
+  const { ONBOARDING_OCCASION_KEYS, CELEBRATE_OCCASION_KEYS } = require('./businessAttributes');
+  const allKeys = OCCASION_OPTIONS.map((o) => o.key);
+  it('onboarding and the celebrate wizard only use keys from the one list', () => {
+    ONBOARDING_OCCASION_KEYS.forEach((k) => expect(allKeys).toContain(k));
+    CELEBRATE_OCCASION_KEYS.forEach((k) => expect(allKeys).toContain(k));
+  });
+  it('the consumer intent extractor (create-assistant) can produce every offerable occasion', () => {
+    const src = read('supabase/functions/create-assistant/index.ts');
+    const list = /const VALID_OCCASIONS = \[([\s\S]*?)\];/.exec(src)[1];
+    OFFERED_OCCASION_KEYS.forEach((k) => expect(list).toContain(`'${k}'`));
+  });
+  it('no offerable occasion key exists outside OCCASION_OPTIONS', () => {
+    const keys = OFFERED_OCCASION_KEYS.filter((k) => !allKeys.includes(k));
+    expect(keys).toEqual([]);
+  });
+});
