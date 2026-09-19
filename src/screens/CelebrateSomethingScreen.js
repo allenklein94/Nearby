@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import ExperiencePerkLine from '../components/ExperiencePerkLine';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
@@ -1348,7 +1349,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                           ? customSearchResult.experience.components.map((component) => (
                               <View key={component.key} style={{ marginBottom: spacing.sm }}>
                                 <Text style={styles.optionHint}>{component.label}</Text>
-                                {component.items.map(renderCustomResultRow)}
+                                {component.items.map((item, i) => (<React.Fragment key={`${item.type}-${item.id}`}>{renderCustomResultRow(item, i)}<ExperiencePerkLine item={item} /></React.Fragment>))}
                               </View>
                             ))
                           : customSearchResult.items.map(renderCustomResultRow)}
@@ -1846,7 +1847,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         {optionsResult.experience.components.map((comp) => (
                           <View key={comp.key} style={{ marginBottom: spacing.md }}>
                             <Text style={styles.sublabel}>{comp.label}</Text>
-                            {comp.items.map((item, i) => renderOptionCard(item, i))}
+                            {comp.items.map((item, i) => (<React.Fragment key={`${item.type}-${item.id}`}>{renderOptionCard(item, i)}<ExperiencePerkLine item={item} /></React.Fragment>))}
                           </View>
                         ))}
                       </>

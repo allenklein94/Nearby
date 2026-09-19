@@ -239,3 +239,34 @@ describe('context-triggered "Make it a night" (no explicit occasion)', () => {
     expect(assembleExperience(null, [dinner, music])).toBeNull();
   });
 });
+
+describe('perks as an add-on line (never a component)', () => {
+  const perk = (o) => ({ type: 'perk', id: 'perk-1', partnerId: 'partner-1', targetTag: 'Foodie', title: '10% off dessert', score: 5, ...o });
+  const pool = (perks) => [
+    businessCandidate({ id: 'dinner-1', category: 'Foodie', score: 5 }),
+    businessCandidate({ id: 'music-1', partnerId: 'partner-2', category: 'Music', score: 4 }),
+    ...perks,
+  ];
+  const dinner = (r) => r.components.find((c) => c.key === 'dinner').items[0];
+
+  it('attaches a targeted perk to the same business item when its tag exactly matches', () => {
+    expect(dinner(assembleExperience('date_night', pool([perk()]))).perk).toEqual({ id: 'perk-1', title: '10% off dessert' });
+  });
+  it('never attaches an untargeted perk, a different business, or a non-matching tag', () => {
+    for (const p of [perk({ targetTag: null }), perk({ partnerId: 'partner-9' }), perk({ targetTag: 'Music' })]) {
+      expect(dinner(assembleExperience('date_night', pool([p]))).perk).toBeUndefined();
+    }
+  });
+  it('never fills a component, changes order, or lets a perk-only pool form an experience', () => {
+    expect(assembleExperience('date_night', [perk()])).toBeNull();
+    const withPerk = assembleExperience('date_night', pool([perk({ score: 99 })]));
+    const without = assembleExperience('date_night', pool([]));
+    expect(withPerk.components.map((c) => c.items.map((i) => i.id))).toEqual(without.components.map((c) => c.items.map((i) => i.id)));
+    expect(withPerk.claimedIds).toEqual(without.claimedIds);
+  });
+  it('does not mutate the flat candidate list', () => {
+    const candidates = pool([perk()]);
+    assembleExperience('date_night', candidates);
+    expect(candidates[0].perk).toBeUndefined();
+  });
+});

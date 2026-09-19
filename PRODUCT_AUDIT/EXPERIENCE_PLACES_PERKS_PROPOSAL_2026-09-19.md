@@ -1,6 +1,6 @@
 # PROPOSAL (not built): Places and Perks as Experience components -- for review
 
-Status: **held pending your review.** Nothing in this document is implemented.
+Status: **Perks-as-add-on BUILT (2026-09-19, on "build 2"); Places NOT built** (recommendation to decline stands; an optional "Also nearby" row remains an open, separate decision).
 
 ## What exists today
 `assembleExperience` (src/services/experienceAssembly.js) fills template components ("Dinner", "Live music", ...) only from

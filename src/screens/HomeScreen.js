@@ -38,6 +38,7 @@ import useMyGoals from '../hooks/useMyGoals';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { iconNameForCategory } from '../constants/quickPickIcons';
 import LoadErrorState from '../components/LoadErrorState';
+import ExperiencePerkLine from '../components/ExperiencePerkLine';
 import TabHeaderActions from '../components/TabHeaderActions';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -1541,7 +1542,8 @@ export default function HomeScreen({ navigation }) {
                         <View key={component.key} style={{ marginBottom: spacing.sm }}>
                           <Text style={styles.intentGroupLabel}>{component.label}</Text>
                           {component.items.map((item) => (
-                            <TouchableOpacity key={`${item.type}-${item.id}`} style={styles.intentResultRow} onPress={() => handleSurpriseResultTap(item)}>
+                            <React.Fragment key={`${item.type}-${item.id}`}>
+                            <TouchableOpacity style={styles.intentResultRow} onPress={() => handleSurpriseResultTap(item)}>
                               <Ionicons name={INTENT_RESULT_ICONS[item.type] ?? 'sparkles-outline'} size={18} color={colors.primary} style={styles.intentResultIcon} />
                               <View style={styles.intentResultTextCol}>
                                 <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
@@ -1549,6 +1551,8 @@ export default function HomeScreen({ navigation }) {
                               </View>
                               <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                             </TouchableOpacity>
+                            <ExperiencePerkLine item={item} />
+                            </React.Fragment>
                           ))}
                         </View>
                       ))}
@@ -1670,7 +1674,7 @@ export default function HomeScreen({ navigation }) {
                   {intentResults.experience.components.map((component) => (
                     <View key={component.key} style={{ marginBottom: spacing.sm }}>
                       <Text style={styles.intentGroupLabel}>{component.label}</Text>
-                      {component.items.map((item, index) => renderIntentResultItem(item, index))}
+                      {component.items.map((item, index) => (<React.Fragment key={`${item.type}-${item.id}`}>{renderIntentResultItem(item, index)}<ExperiencePerkLine item={item} /></React.Fragment>))}
                     </View>
                   ))}
                 </View>

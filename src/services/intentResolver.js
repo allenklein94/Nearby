@@ -259,6 +259,8 @@ async function resolvePerks(category, location) {
     // 'intent_match' business_profile_views row when this result is
     // tapped, without a second query.
     partnerId: offer.partner_id,
+    // Carried so assembleExperience() can attach this perk to the SAME business's item, exact-tag match only.
+    targetTag: offer.target_interest_tag ?? null,
     title: offer.title,
     subtitle: offer.brand_partners?.name ?? null,
     // A perk with no target_interest_tag is visible to everyone (no real

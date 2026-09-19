@@ -51,6 +51,18 @@ import { experienceTemplateForOccasion, experienceTemplateForContext } from '../
 
 const EXPERIENCE_ELIGIBLE_TYPES = ['business_availability', 'gathering'];
 
+// Perks are an ADD-ON line, never a component item (see PRODUCT_AUDIT/EXPERIENCE_PLACES_PERKS_PROPOSAL_2026-09-19.md):
+// a perk attaches only to a business_availability item of the SAME business, only when the perk is targeted and its
+// target tag exactly equals one of that item's own categories (an untargeted perk never attaches), and only the first
+// (nearest-first, as fetched) is shown. It has no score, never changes item order, never fills or counts toward a
+// component, and never claims the perk candidate (the flat results stay as they were).
+function attachPerk(item, perks) {
+  if (item.type !== 'business_availability' || !item.partnerId) return item;
+  const tags = [item.category, item.subcategory, ...(Array.isArray(item.categories) ? item.categories : [])].filter(Boolean);
+  const perk = perks.find((p) => p.partnerId === item.partnerId && p.targetTag && tags.includes(p.targetTag));
+  return perk ? { ...item, perk: { id: perk.id, title: perk.title } } : item;
+}
+
 // candidates: resolveIntent()'s own full, already-scored, already-deduped
 // candidate pool (before the RESULT_CAP slice -- a real match further down
 // the flat ranking should still get a real chance to fill a component,
@@ -73,6 +85,7 @@ export function assembleExperience(occasion, candidates, context = null) {
   if (!template) return null;
   const suggested = !occasionTemplate;
 
+  const perks = candidates.filter((c) => c.type === 'perk');
   const componentKeys = template.components.map((c) => c.key);
   const claimed = new Set();
   const bundles = [];
@@ -110,7 +123,7 @@ export function assembleExperience(occasion, candidates, context = null) {
     components.push({
       key: component.key,
       label: component.label,
-      items: matches.sort((a, b) => b.score - a.score).slice(0, 3),
+      items: matches.sort((a, b) => b.score - a.score).slice(0, 3).map((m) => attachPerk(m, perks)),
     });
   }
 
