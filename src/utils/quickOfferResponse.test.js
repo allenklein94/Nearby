@@ -35,9 +35,15 @@ describe('quickOfferResponse', () => {
         .toBe(`${STANDARD_AVAILABILITY_TEXT} Our usual terms: $35.50 per person minimum spend.`);
       expect(usualTermsLine({ cancellation_window_hours: 1 })).toBe('Our usual terms: cancellation window: 1 hour.');
     });
-    it('never sends the deposit (not charged) or the discount ceiling (not an offer)', () => {
-      const text = standardAvailabilityText({ deposit_amount: 50, max_discount_pct: 20, min_spend_per_person: 40 });
-      expect(text).not.toMatch(/deposit|discount|50|20%/i);
+    it('includes the deposit, worded as arranged directly (Nearby does not collect it)', () => {
+      expect(usualTermsLine({ deposit_amount: '50.00' })).toBe('Our usual terms: $50 deposit, arranged directly with us.');
+      expect(usualTermsLine({ min_spend_per_person: 40, deposit_amount: 25, cancellation_window_hours: 24 }))
+        .toBe('Our usual terms: $40 per person minimum spend; $25 deposit, arranged directly with us; cancellation window: 24 hours.');
+      expect(usualTermsLine({ deposit_amount: 0 })).toBeNull();
+    });
+    it('never sends the discount ceiling (it is not an offer)', () => {
+      const text = standardAvailabilityText({ max_discount_pct: 20, min_spend_per_person: 40 });
+      expect(text).not.toMatch(/discount|20%/i);
       expect(text).toMatch(/\$40/);
     });
   });

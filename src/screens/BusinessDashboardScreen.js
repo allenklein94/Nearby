@@ -6306,7 +6306,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 keyboardType="decimal-pad"
                 accessibilityLabel="Maximum discount percent"
               />
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Deposit (optional, stored only -- not charged)</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Deposit (optional; included in your standard offer, not collected by Nearby)</Text>
               <TextInput
                 style={styles.input}
                 placeholder="$"

@@ -6,13 +6,16 @@ export const STANDARD_AVAILABILITY_TEXT = 'We can accommodate this as requested.
 const money = (n) => `$${Number(n).toFixed(2).replace(/\.00$/, '')}`;
 
 // The owner's usual terms from their standing fulfillment policy, as a customer-facing sentence -- or null when they have
-// none worth sending. Deliberately ONLY terms that are honest to send: minimum spend per person and the cancellation window.
-// NOT the deposit (the policy editor says it is "stored only -- not charged", so promising it to a customer would claim
-// something the app does not do) and NOT max_discount_pct (a ceiling the business will go to, not something it is offering).
+// none worth sending: minimum spend per person, deposit, and the cancellation window. The deposit is worded as arranged
+// directly with the business because Nearby does not collect it (no charge fires). NOT max_discount_pct: that is a ceiling
+// the business will go to, not something it is offering.
 export function usualTermsLine(policy) {
   const parts = [];
   if (policy?.min_spend_per_person != null && Number(policy.min_spend_per_person) > 0) {
     parts.push(`${money(policy.min_spend_per_person)} per person minimum spend`);
+  }
+  if (policy?.deposit_amount != null && Number(policy.deposit_amount) > 0) {
+    parts.push(`${money(policy.deposit_amount)} deposit, arranged directly with us`);
   }
   if (policy?.cancellation_window_hours != null && Number(policy.cancellation_window_hours) > 0) {
     parts.push(`cancellation window: ${Number(policy.cancellation_window_hours)} hour${Number(policy.cancellation_window_hours) === 1 ? '' : 's'}`);
