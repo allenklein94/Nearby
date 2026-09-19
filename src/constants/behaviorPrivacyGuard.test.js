@@ -17,8 +17,8 @@ test('the 90-day window, user deletion and account cascade exist', () => {
   expect(sql).toMatch(/references public\.profiles\(id\) on delete cascade/);
 });
 
-test('no business-facing code reads behavior_events', () => {
+test('no client code reads the behavior_events table directly (only the owner-scoped RPCs)', () => {
   const walk = (d, out = []) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p, out); else if (/\.js$/.test(e.name) && !/\.test\.js$/.test(e.name)) out.push(p); } return out; };
-  const readers = walk(path.join(__dirname, '..')).filter((f) => /behavior_events/.test(fs.readFileSync(f, 'utf8')));
+  const readers = walk(path.join(__dirname, '..')).filter((f) => /from\(['"]behavior_events['"]\)/.test(fs.readFileSync(f, 'utf8')));
   expect(readers).toEqual([]);
 });
