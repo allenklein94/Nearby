@@ -22,6 +22,7 @@ export default function DemandNearYouCard({ signals, loaded, onAction, windowDay
           <View key={s.key} style={[styles.row, i > 0 && styles.rowDivider]}>
             <Text style={styles.headline}>{s.headline}</Text>
             <Text style={styles.detail}>{s.detail}</Text>
+            {s.matchLine ? <Text style={styles.match}>{s.matchLine}</Text> : null}
             <TouchableOpacity
               style={styles.action}
               onPress={() => onAction(s.action)}
@@ -30,6 +31,16 @@ export default function DemandNearYouCard({ signals, loaded, onAction, windowDay
             >
               <Text style={styles.actionText}>{s.actionLabel} →</Text>
             </TouchableOpacity>
+            {s.secondaryAction ? (
+              <TouchableOpacity
+                style={styles.action}
+                onPress={() => onAction(s.secondaryAction)}
+                accessibilityLabel={s.secondaryActionLabel}
+                accessibilityRole="button"
+              >
+                <Text style={styles.actionText}>{s.secondaryActionLabel} →</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         ))
       )}
@@ -46,6 +57,7 @@ const getStyles = (colors) => StyleSheet.create({
   rowDivider: { borderTopWidth: 1, borderTopColor: colors.border },
   headline: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
   detail: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
+  match: { color: colors.textPrimary, fontSize: 13, fontWeight: '600', marginTop: 2 },
   action: { alignSelf: 'flex-start', marginTop: spacing.sm },
   actionText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
 });

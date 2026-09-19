@@ -19,7 +19,7 @@ export function partyBucketLabel(bucket) {
   return PARTY_LABELS[bucket] ?? null;
 }
 
-export function describeDemandSignal(signal, { minPeople = 5, windowDays = 14 } = {}) {
+export function describeDemandSignal(signal, { minPeople = 5, windowDays = 14, openByCategory = {} } = {}) {
   const people = Number(signal?.people_count);
   if (!signal || !Number.isFinite(people) || people < minPeople) return null;
   const since = `last ${windowDays} days`;
@@ -32,6 +32,16 @@ export function describeDemandSignal(signal, { minPeople = 5, windowDays = 14 } 
       detail: `${people} people · ${since}`,
       actionLabel: `Create a ${noun} package`,
       action: { type: 'package', occasion: signal.occasion },
+    };
+  }
+
+  if (signal.kind === 'group' && Number(signal.min_party) >= 2) {
+    return {
+      key: 'group',
+      headline: `Groups of ${signal.min_party}+ are looking nearby`,
+      detail: `${people} people · ${since}`,
+      actionLabel: 'Post availability',
+      action: { type: 'availability', category: null },
     };
   }
 
@@ -56,12 +66,19 @@ export function describeDemandSignal(signal, { minPeople = 5, windowDays = 14 } 
       detail: [whenLabel(signal.when_day, signal.when_period), signal.outdoor === true ? 'Outdoor seating' : null, budget, `${people} people · ${since}`, unmet].filter(Boolean).join(' · '),
       actionLabel: 'Post availability',
       action: { type: 'availability', category: signal.category },
+      ...(Number.isInteger(openByCategory[signal.category]) && openByCategory[signal.category] > 0
+        ? {
+            matchLine: `You have ${openByCategory[signal.category]} open ${openByCategory[signal.category] === 1 ? 'opportunity' : 'opportunities'} in this category`,
+            secondaryActionLabel: 'View opportunities',
+            secondaryAction: { type: 'opportunities' },
+          }
+        : {}),
     };
   }
   return null;
 }
 
-export function describeDemandSignals(payload) {
-  const opts = { minPeople: payload?.min_people ?? 5, windowDays: payload?.window_days ?? 14 };
+export function describeDemandSignals(payload, { openByCategory = {} } = {}) {
+  const opts = { minPeople: payload?.min_people ?? 5, windowDays: payload?.window_days ?? 14, openByCategory };
   return (payload?.signals ?? []).map((s) => describeDemandSignal(s, opts)).filter(Boolean);
 }

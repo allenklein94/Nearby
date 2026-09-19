@@ -78,3 +78,24 @@ describe('when / outdoor dimensions', () => {
   });
 });
 
+describe('groups row and open-opportunity match line', () => {
+  it('describes a Groups of 6+ row from a floored count only', () => {
+    const d = describeDemandSignal({ kind: 'group', min_party: 6, people_count: 11 });
+    expect(d.headline).toBe('Groups of 6+ are looking nearby');
+    expect(d.detail).toBe('11 people · last 14 days');
+    expect(d.action).toEqual({ type: 'availability', category: null });
+    expect(describeDemandSignal({ kind: 'group', min_party: 6, people_count: 4 })).toBeNull();
+    expect(describeDemandSignal({ kind: 'group', people_count: 11 })).toBeNull();
+  });
+  it('adds "You have N open opportunities" only for a real positive count for that category', () => {
+    const sig = { kind: 'category', category: 'Foodie', people_count: 9 };
+    const withN = describeDemandSignal(sig, { openByCategory: { Foodie: 3 } });
+    expect(withN.matchLine).toBe('You have 3 open opportunities in this category');
+    expect(withN.secondaryAction).toEqual({ type: 'opportunities' });
+    expect(describeDemandSignal(sig, { openByCategory: { Foodie: 1 } }).matchLine).toBe('You have 1 open opportunity in this category');
+    expect(describeDemandSignal(sig, { openByCategory: { Foodie: 0 } }).matchLine).toBeUndefined();
+    expect(describeDemandSignal(sig, { openByCategory: { Coffee: 5 } }).matchLine).toBeUndefined();
+    expect(describeDemandSignal(sig).matchLine).toBeUndefined();
+  });
+});
+

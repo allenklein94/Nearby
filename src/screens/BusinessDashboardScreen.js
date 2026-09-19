@@ -2883,10 +2883,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <DemandNearYouCard
                     loaded={demandSignals !== null}
                     windowDays={demandSignals?.window_days ?? 14}
-                    signals={describeDemandSignals(demandSignals)}
+                    signals={describeDemandSignals(demandSignals, {
+                      // The owner's own open opportunities per category (first-party data, never floored).
+                      openByCategory: opportunities
+                        .filter((o) => o.status === 'pending' && o.business_requests?.status === 'open' && o.business_requests?.category)
+                        .reduce((acc, o) => ({ ...acc, [o.business_requests.category]: (acc[o.business_requests.category] ?? 0) + 1 }), {}),
+                    })}
                     onAction={(action) => {
                       if (action.type === 'package') openPackageModal({ occasion_type: action.occasion });
-                      else openPostAvailabilityModal({ category: action.category });
+                      else if (action.type === 'opportunities') setSection('opportunities');
+                      else openPostAvailabilityModal({ category: action.category ?? undefined });
                     }}
                   />
                 )}
@@ -3773,6 +3779,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         ? `Nearby found ${lastPostedAvailability.matchedCount} matching request${lastPostedAvailability.matchedCount === 1 ? '' : 's'} nearby -- they'll see your offer right away.`
                         : "No open requests match this right now, but it stays live for anyone who asks while it's active."}
                     </Text>
+                    {lastPostedAvailability.matchedCount > 0 && (
+                      <TouchableOpacity
+                        onPress={() => { setLastPostedAvailability(null); setSection('opportunities'); }}
+                        style={{ alignSelf: 'flex-start', marginTop: spacing.sm }}
+                        accessibilityLabel="View opportunities"
+                        accessibilityRole="button"
+                      >
+                        <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>View opportunities →</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
