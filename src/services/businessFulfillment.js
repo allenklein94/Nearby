@@ -1057,6 +1057,21 @@ export async function getMyBusinessAffinitySignals() {
   return { followedPartnerIds, pastPartnerIds };
 }
 
+// "Occasions we offer" (20270102): businesses near the caller that explicitly offer this occasion,
+// whether or not they have a package or a live posting.
+export async function searchOccasionOfferingBusinesses({ occasion, latitude: lat = null, longitude: lng = null, radiusMiles = 15 } = {}) {
+  if (!occasion) return [];
+  const { latitude, longitude } = await coordsOrShared(lat, lng);
+  const { data, error } = await supabase.rpc('search_occasion_offering_businesses', {
+    occasion_param: occasion,
+    latitude_param: latitude,
+    longitude_param: longitude,
+    radius_miles_param: radiusMiles,
+  });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 export async function searchPolicyOnlyBusinesses({ latitude: lat = null, longitude: lng = null, radiusMiles = 15, partySize = null } = {}) {
   const { latitude, longitude } = await coordsOrShared(lat, lng);
   const { data, error } = await supabase.rpc('search_policy_only_businesses', {

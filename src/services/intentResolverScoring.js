@@ -193,8 +193,48 @@ export function accommodatesPartyTypeBonus(row, partyType) {
 // occasion (occasion null is the common case).
 export function occasionBonus(row, occasion) {
   if (!occasion) return 0;
-  const priorityOccasions = Array.isArray(row.priority_occasions) ? row.priority_occasions : [];
-  return priorityOccasions.includes(occasion) ? SCORE_HAPPENING_NOW : 0;
+  return businessFitsOccasion(row, occasion) ? SCORE_HAPPENING_NOW : 0;
+}
+
+// A business fits an occasion if it EXPLICITLY offers it (offered_occasions, "Occasions we offer") or
+// says it wants more of it (priority_occasions). Either is a real declared signal; never both stacked.
+export function businessFitsOccasion(row, occasion) {
+  if (!occasion) return false;
+  const offered = Array.isArray(row.offered_occasions) ? row.offered_occasions : [];
+  const priority = Array.isArray(row.priority_occasions) ? row.priority_occasions : [];
+  return offered.includes(occasion) || priority.includes(occasion);
+}
+
+// The weak "explicitly offers this occasion" tier (no package, no live posting): it may never outrank
+// confirmed inventory, so its ceiling (HAPPENING_NOW + 1 for a close business) stays under the
+// confirmed-availability / package floor. Guarded by a test.
+export function occasionOfferingScore(distanceMiles) {
+  return SCORE_HAPPENING_NOW + (distanceMiles != null && distanceMiles < 2 ? 1 : 0);
+}
+
+// One card per business, at its strongest tier: live posting > package > offers-this-occasion > policy-only.
+// The offers-this-occasion tier reuses the 'business_policy_match' candidate type (same "may be able to
+// help" rendering and routing everywhere) and is marked with viaOccasionOffering.
+function businessTierRank(c) {
+  if (c.type === 'business_availability') return 4;
+  if (c.type === 'business_occasion_package') return 3;
+  if (c.type === 'business_policy_match') return c.viaOccasionOffering ? 2 : 1;
+  return 0;
+}
+export function dedupeBusinessTiers(candidates) {
+  const best = new Map();
+  for (const c of candidates) {
+    const rank = businessTierRank(c);
+    if (!rank || !c.partnerId) continue;
+    if (!best.has(c.partnerId) || rank > best.get(c.partnerId)) best.set(c.partnerId, rank);
+  }
+  return candidates.filter((c) => {
+    const rank = businessTierRank(c);
+    // Only the WEAKER tiers are ever dropped for a stronger one; a package and a live slot from the
+    // same business are different products and both stay (the existing behavior).
+    if (!rank || !c.partnerId || rank > 2) return true;
+    return rank >= best.get(c.partnerId);
+  });
 }
 
 // Intent engine vision, layer 2 (subcategory) -- third increment
@@ -329,8 +369,7 @@ export function getBusinessAvailabilityReasons(row, { category, attributes, cuis
     if (accommodates.includes(partyType)) reasons.push('Accommodates your group');
   }
   if (occasion) {
-    const priorityOccasions = Array.isArray(row.priority_occasions) ? row.priority_occasions : [];
-    if (priorityOccasions.includes(occasion)) reasons.push('Great fit for the occasion');
+    if (businessFitsOccasion(row, occasion)) reasons.push('Great fit for the occasion');
   }
   if (row.partner_id && pastPartnerIds && pastPartnerIds.has(row.partner_id)) reasons.push("You've been here before");
   if (row.partner_id && followedPartnerIds && followedPartnerIds.has(row.partner_id)) reasons.push('A business you follow');

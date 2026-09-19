@@ -2,7 +2,8 @@ import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
 import { getActiveOffers, logBusinessProfileView } from './brandOffers';
-import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, getMyBusinessAffinitySignals } from './businessFulfillment';
+import { occasionLabel } from '../constants/businessAttributes';
+import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, searchOccasionOfferingBusinesses, getMyBusinessAffinitySignals } from './businessFulfillment';
 import { getWhoForPreferenceSignals } from './preferencePolls';
 import { searchOccasionPackages, formatOccasionPackageDetail } from './occasionPackages';
 import { getSocialForecast } from './homeDashboard';
@@ -36,6 +37,8 @@ import {
   attributeAndCuisineBonus,
   accommodatesPartyTypeBonus,
   occasionBonus,
+  occasionOfferingScore,
+  dedupeBusinessTiers,
   subcategoryBonus,
   secondaryCategoryBonus,
   favoriteBusinessBonus,
@@ -437,6 +440,28 @@ async function resolvePolicyOnlyBusinesses(location, partySize) {
   }));
 }
 
+// "Occasions we offer" (20270102): a business that EXPLICITLY offers the ask's occasion but has neither a
+// package nor a live posting. Same honest framing as the policy-only tier -- never "available", always
+// "confirm with the business" -- and never outranks confirmed inventory (occasionOfferingScore's ceiling
+// sits under the confirmed floor). Only searched when the ask carries a real occasion.
+async function resolveOccasionOfferingBusinesses(location, occasion) {
+  if (!location || !occasion) return [];
+  const rows = await searchOccasionOfferingBusinesses({
+    occasion,
+    latitude: location.latitude,
+    longitude: location.longitude,
+  });
+  return rows.map((row) => ({
+    type: 'business_policy_match',
+    viaOccasionOffering: true,
+    id: row.partner_id,
+    partnerId: row.partner_id,
+    title: `${row.partner_name} offers ${occasionLabel(occasion)} experiences`,
+    subtitle: 'Ask what they can do — business confirmation required',
+    score: occasionOfferingScore(row.distance_miles),
+  }));
+}
+
 // Item 68 ("Businesses could create occasion-specific offers," CLAUDE.md):
 // a business's own durable, named occasion package -- e.g. a restaurant's
 // "Birthday Package" (dessert + a group table, minimum 6 guests, available
@@ -579,6 +604,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName),
     resolvePolicyOnlyBusinesses(location, partySize),
     resolveOccasionPackages(location, occasion, partySize),
+    resolveOccasionOfferingBusinesses(location, occasion),
   ]);
 
   const candidates = [];
@@ -595,12 +621,9 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // twice at two confidence levels. Deterministic, per direct instruction:
   // confirmed live always outranks policy-only, so the policy-only
   // duplicate is the one dropped, not decided by score.
-  const confirmedPartnerIds = new Set(
-    candidates.filter((c) => c.type === 'business_availability' && c.partnerId).map((c) => c.partnerId)
-  );
-  const deduped = candidates.filter(
-    (c) => !(c.type === 'business_policy_match' && confirmedPartnerIds.has(c.partnerId))
-  );
+  // The same rule now spans all four business tiers (live posting > package > offers-this-occasion >
+  // policy-only): a weaker tier is dropped when the same business has a stronger one.
+  const deduped = dedupeBusinessTiers(candidates);
 
   deduped.sort((a, b) => b.score - a.score);
 

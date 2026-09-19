@@ -55,3 +55,45 @@ describe('scoring an offered occasion', () => {
     expect(both.score).toBe(wantOnly.score);
   });
 });
+
+// ---- consumer-side discovery (migration 20270102) ----
+import {
+  businessFitsOccasion, occasionBonus, occasionOfferingScore, dedupeBusinessTiers,
+  SCORE_CONFIRMED_AVAILABILITY_FLOOR, SCORE_HAPPENING_NOW,
+} from '../services/intentResolverScoring';
+
+describe('consumer-side: businessFitsOccasion / occasionBonus', () => {
+  it('an explicit offering counts, and so does want-more; neither stacks', () => {
+    expect(businessFitsOccasion({ offered_occasions: ['birthday'] }, 'birthday')).toBe(true);
+    expect(businessFitsOccasion({ priority_occasions: ['birthday'] }, 'birthday')).toBe(true);
+    expect(occasionBonus({ offered_occasions: ['birthday'], priority_occasions: ['birthday'] }, 'birthday')).toBe(SCORE_HAPPENING_NOW);
+  });
+  it('is silent without a real occasion or a real declaration', () => {
+    expect(occasionBonus({ offered_occasions: ['birthday'] }, null)).toBe(0);
+    expect(occasionBonus({ offered_occasions: ['anniversary'] }, 'birthday')).toBe(0);
+    expect(occasionBonus({}, 'birthday')).toBe(0);
+  });
+});
+
+describe('consumer-side: the offers-this-occasion tier', () => {
+  it('can never outrank confirmed availability or a package', () => {
+    expect(occasionOfferingScore(0.5)).toBeLessThan(SCORE_CONFIRMED_AVAILABILITY_FLOOR);
+    expect(occasionOfferingScore(null)).toBeLessThan(SCORE_CONFIRMED_AVAILABILITY_FLOOR);
+  });
+  it('keeps one card per business at its strongest tier', () => {
+    const avail = { type: 'business_availability', partnerId: 'a' };
+    const pkg = { type: 'business_occasion_package', partnerId: 'a' };
+    const offering = { type: 'business_policy_match', viaOccasionOffering: true, partnerId: 'a' };
+    const policy = { type: 'business_policy_match', partnerId: 'a' };
+    // live slot + package both stay (different products); the weaker two are dropped
+    expect(dedupeBusinessTiers([avail, pkg, offering, policy])).toEqual([avail, pkg]);
+    // no live slot/package: offering beats policy-only
+    expect(dedupeBusinessTiers([policy, offering])).toEqual([offering]);
+    // a package beats offering
+    expect(dedupeBusinessTiers([offering, pkg])).toEqual([pkg]);
+    // different businesses are untouched, other candidate types pass through
+    const other = { type: 'business_policy_match', partnerId: 'b' };
+    const gathering = { type: 'gathering', id: 'g' };
+    expect(dedupeBusinessTiers([offering, other, gathering])).toEqual([offering, other, gathering]);
+  });
+});
