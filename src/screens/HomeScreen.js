@@ -874,6 +874,7 @@ export default function HomeScreen({ navigation }) {
         const submissionId = await recordIntentSubmission({
           rawText: typedText, category: result.category ?? null, dateWindow: result.dateWindow ?? null,
           intentKind: result.intent, hadAnyResult: items.length > 0, reachedBusinessFallback: items.length === 0,
+          partySize: result.partySize ?? null,
         });
         if (items.length > 0) {
           setIntentResults({ items, experience, classifyResult: result, typedText, submissionId });

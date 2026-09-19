@@ -1088,6 +1088,15 @@ export async function getAggregatedDemandForPartner(partnerId) {
   return data ?? [];
 }
 
+// "Demand near you" card: privacy-floored (>= min_people distinct people), explicit demand only
+// (business requests + intent searches), owner-only server-side. Returns
+// { min_people, window_days, signals: [] } -- an empty list is the honest "not enough yet" state.
+export async function getPartnerDemandSignals(partnerId) {
+  const { data, error } = await supabase.rpc('get_partner_demand_signals', { partner_id_param: partnerId });
+  if (error) throw new Error(error.message);
+  return data ?? { signals: [] };
+}
+
 // Item 79 (CLAUDE.md, "businesses get a new demand signal"): the
 // occasion-primary sibling of getAggregatedDemandForPartner() above --
 // same real geo-scoped rollup, grouped by occasion instead of category

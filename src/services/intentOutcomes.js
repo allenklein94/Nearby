@@ -78,7 +78,7 @@ export async function recordIntentSelection({ rawText, category, dateWindow, res
 // no way to recover which real-world local time it corresponds to after
 // the fact. get_cross_user_intent_patterns() groups by this stored value
 // now, not by extract()-ing the UTC-stored created_at.
-export async function recordIntentSubmission({ rawText, category, dateWindow, intentKind, hadAnyResult, reachedBusinessFallback }) {
+export async function recordIntentSubmission({ rawText, category, dateWindow, intentKind, hadAnyResult, reachedBusinessFallback, partySize }) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
@@ -95,6 +95,7 @@ export async function recordIntentSubmission({ rawText, category, dateWindow, in
         reached_business_fallback: !!reachedBusinessFallback,
         local_period: getTimePeriod(),
         wide_area: wideAreaValue,
+        party_size: Number.isInteger(partySize) && partySize > 0 ? partySize : null,
       })
       .select('id')
       .single();

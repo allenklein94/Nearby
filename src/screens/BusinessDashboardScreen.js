@@ -16,7 +16,7 @@ import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRe
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { CANCELLATION_REASONS, CANCELLATION_ACTOR_LABELS } from '../constants/cancellationReasons';
 import { getPartnerCancellationPatterns } from '../services/cancellationReasons';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
@@ -42,6 +42,8 @@ import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 import { getSocialForecast } from '../services/homeDashboard';
 import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiencesForOpportunity, buildOfferTitleScaffold, buildOccasionOfferTitle } from '../services/businessOfferRecommendation';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
+import DemandNearYouCard from '../components/DemandNearYouCard';
+import { describeDemandSignals } from '../utils/demandSignals';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { planAddonIcon, planAddonLabel } from '../constants/planAddons';
 import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
@@ -350,6 +352,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [partnershipRequests, setPartnershipRequests] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [aggregatedDemand, setAggregatedDemand] = useState([]);
+  // "Demand near you" card: null = not loaded yet; otherwise the privacy-floored RPC payload.
+  const [demandSignals, setDemandSignals] = useState(null);
   // Item 79 (CLAUDE.md, "businesses get a new demand signal"): the
   // occasion-primary sibling of aggregatedDemand above.
   const [occasionDemand, setOccasionDemand] = useState([]);
@@ -1391,6 +1395,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadPartnershipRequests(selectedPartner.id);
         loadOpportunities(selectedPartner.id);
         loadAggregatedDemand(selectedPartner.id);
+        loadDemandSignals(selectedPartner.id);
         loadOccasionDemand(selectedPartner.id);
         loadMyAvailability(selectedPartner.id);
         loadFulfillmentPolicy(selectedPartner.id);
@@ -1478,6 +1483,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // quantified nearby demand rolled up by category, not one-request-at-a-
   // time. Honestly empty until real request volume exists nearby -- never
   // padded to look more populated than it is.
+  async function loadDemandSignals(partnerId) {
+    try {
+      setDemandSignals(await getPartnerDemandSignals(partnerId));
+    } catch (e) {
+      // Non-fatal -- the card just stays hidden if the read fails.
+    }
+  }
+
   async function loadAggregatedDemand(partnerId) {
     try {
       const results = await getAggregatedDemandForPartner(partnerId);
@@ -2712,6 +2725,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </Text>
                     <Text style={styles.discoveryTeaserChevron}>›</Text>
                   </TouchableOpacity>
+                )}
+                {selectedPartner && (
+                  <DemandNearYouCard
+                    loaded={demandSignals !== null}
+                    signals={describeDemandSignals(demandSignals)}
+                    onAction={(action) => {
+                      if (action.type === 'package') openPackageModal({ occasion_type: action.occasion });
+                      else openPostAvailabilityModal({ category: action.category });
+                    }}
+                  />
                 )}
                 {/* "Business Story" plan, Phase 5 -- "Nearby Brief": no new
                     queries, purely a reorganization of aggregatedDemand/

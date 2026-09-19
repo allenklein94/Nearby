@@ -710,6 +710,7 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
   const submissionId = await recordIntentSubmission({
     rawText: typedText, category: classifyResult.category ?? null, dateWindow: classifyResult.dateWindow ?? null,
     intentKind: classifyResult.intent, hadAnyResult: items.length > 0, reachedBusinessFallback: items.length === 0,
+    partySize: classifyResult.partySize ?? null,
   });
   return {
     outcome: items.length > 0 ? 'results' : 'empty',
