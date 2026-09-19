@@ -10,21 +10,35 @@ import { buildSetupPlan } from '../utils/businessSetupPlan';
 // chips, and "Yes, continue" saves it through the existing setters. AI suggests, the owner confirms; nothing is saved
 // before that tap, and the save only ADDS (see utils/businessSetupPlan.js). Availability and price are deliberately never
 // read from text -- there is no per-business hours data, and a price would be a guess.
-export default function TellNearbyBusinessCard({ partner, onApplied }) {
+export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfileEditor }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
-  const [plan, setPlan] = useState(null);
+  const [result, setResult] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [exclude, setExclude] = useState([]);
+  const plan = result ? buildSetupPlan(partner, result, exclude) : null;
   const [saved, setSaved] = useState(false);
+
+  function reset() {
+    setResult(null);
+    setExclude([]);
+    setEditing(false);
+  }
+
+  function toggle(key) {
+    setExclude((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  }
 
   async function understand() {
     if (!text.trim() || busy) return;
     setBusy(true);
     setSaved(false);
     try {
-      const result = await classifyBusinessDescription(text.trim());
-      setPlan(buildSetupPlan(partner, result));
+      setResult(await classifyBusinessDescription(text.trim()));
+      setExclude([]);
+      setEditing(false);
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -62,7 +76,7 @@ export default function TellNearbyBusinessCard({ partner, onApplied }) {
       }
       onApplied?.(applied);
       setSaved(true);
-      setPlan(null);
+      reset();
       setText('');
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -99,13 +113,23 @@ export default function TellNearbyBusinessCard({ partner, onApplied }) {
           <Text style={styles.resultTitle}>We understood your business</Text>
           <View style={styles.chips}>
             {plan.chips.map((c) => (
-              <View key={c.key} style={[styles.chip, c.isNew && styles.chipNew]}>
-                <Text style={styles.chipText}>{c.label}</Text>
-              </View>
+              <TouchableOpacity
+                key={c.key}
+                disabled={!editing || !c.isNew}
+                onPress={() => toggle(c.key)}
+                style={[styles.chip, c.isNew && !c.excluded && styles.chipNew, c.excluded && styles.chipOff]}
+                accessibilityRole={editing && c.isNew ? 'checkbox' : 'text'}
+                accessibilityState={editing && c.isNew ? { checked: !c.excluded } : undefined}
+                accessibilityLabel={c.label}
+              >
+                <Text style={[styles.chipText, c.excluded && styles.chipTextOff]}>{c.label}</Text>
+              </TouchableOpacity>
             ))}
           </View>
           <Text style={styles.helper}>
-            {plan.hasChanges ? 'Looks right? Highlighted items will be added. Nothing you already set is removed.' : 'All of this is already in your profile.'}
+            {editing
+              ? 'Tap a highlighted item to leave it out. Nothing you already set is removed.'
+              : plan.hasChanges ? 'Looks right? Highlighted items will be added. Nothing you already set is removed.' : 'All of this is already in your profile.'}
           </Text>
           <View style={styles.row}>
             {plan.hasChanges ? (
@@ -113,15 +137,25 @@ export default function TellNearbyBusinessCard({ partner, onApplied }) {
                 {busy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.primaryText}>Yes, continue</Text>}
               </TouchableOpacity>
             ) : null}
-            <TouchableOpacity style={styles.secondary} onPress={() => setPlan(null)} accessibilityRole="button" accessibilityLabel="Edit what I wrote">
-              <Text style={styles.secondaryText}>{plan.hasChanges ? 'Edit' : 'Done'}</Text>
+            <TouchableOpacity
+              style={styles.secondary}
+              onPress={() => (plan.hasChanges && !editing ? setEditing(true) : reset())}
+              accessibilityRole="button"
+              accessibilityLabel={plan.hasChanges && !editing ? 'Edit' : 'Done'}
+            >
+              <Text style={styles.secondaryText}>{plan.hasChanges && !editing ? 'Edit' : 'Done'}</Text>
             </TouchableOpacity>
           </View>
+          {editing && onOpenProfileEditor ? (
+            <TouchableOpacity onPress={onOpenProfileEditor} accessibilityRole="button" accessibilityLabel="Open the full profile editor">
+              <Text style={styles.link}>Change category, cuisine or attributes in the full profile editor →</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       ) : (
         <View style={styles.result}>
           <Text style={styles.helper}>We couldn't pick out specifics from that. Try naming what you serve, what the space is good for, or the occasions you host.</Text>
-          <TouchableOpacity style={styles.secondary} onPress={() => setPlan(null)} accessibilityRole="button" accessibilityLabel="Try again">
+          <TouchableOpacity style={styles.secondary} onPress={reset} accessibilityRole="button" accessibilityLabel="Try again">
             <Text style={styles.secondaryText}>Try again</Text>
           </TouchableOpacity>
         </View>
@@ -145,6 +179,9 @@ const getStyles = (colors) => StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap' },
   chip: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.sm, paddingVertical: 4, marginRight: spacing.xs, marginBottom: spacing.xs },
   chipNew: { borderColor: colors.primary },
+  chipOff: { opacity: 0.45 },
+  chipTextOff: { textDecorationLine: 'line-through' },
+  link: { color: colors.primary, fontSize: 13, fontWeight: '600', marginTop: spacing.sm },
   chipText: { color: colors.textPrimary, fontSize: 13 },
   row: { flexDirection: 'row', alignItems: 'center' },
   savedText: { color: colors.textSecondary, fontSize: 13, marginTop: spacing.sm },

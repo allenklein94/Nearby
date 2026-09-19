@@ -13,7 +13,27 @@ function categoryLabel(key) {
   return g ? `${g.icon} ${g.label}` : null;
 }
 
-export function buildSetupPlan(partner, result) {
+// Drops the extractor values the owner un-checked in Edit (chip keys as produced below), so what is saved is exactly what
+// they confirmed. Chips still render for every understood item, marked `excluded`.
+function withoutExcluded(result, exclude) {
+  const r = { ...(result ?? {}) };
+  const out = new Set(exclude);
+  if (out.has(`cat:${r.category}`)) { r.category = null; r.subcategory = null; r.cuisine = null; }
+  if (out.has(`sub:${r.subcategory}`)) r.subcategory = null;
+  if (out.has(`cuisine:${r.cuisine}`)) r.cuisine = null;
+  r.attributes = (r.attributes ?? []).filter((a) => !out.has(`attr:${a}`));
+  r.categories = (r.categories ?? []).filter((c) => !out.has(`also:${c}`));
+  r.offeredOccasions = (r.offeredOccasions ?? []).filter((o) => !out.has(`occ:${o}`));
+  r.partyTypes = (r.partyTypes ?? []).filter((t) => !out.has(`party:${t}`));
+  return r;
+}
+
+export function buildSetupPlan(partner, result, exclude = []) {
+  if (exclude.length > 0) {
+    const full = buildSetupPlan(partner, result);
+    const kept = buildSetupPlan(partner, withoutExcluded(result, exclude));
+    return { ...kept, chips: full.chips.map((c) => ({ ...c, excluded: exclude.includes(c.key) })), understood: full.understood };
+  }
   const p = partner ?? {};
   const r = result ?? {};
   const has = (v) => v !== null && v !== undefined && v !== '';

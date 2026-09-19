@@ -883,6 +883,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // rejected outright, never saved. Only a genuinely published result
   // updates the local, on-screen selectedPartner state -- a held/blocked
   // result must never make the UI claim something changed that didn't.
+  // Opens the existing Edit Profile modal pre-filled from the saved profile (shared by the Profile tab and
+  // "Tell Nearby about your business").
+  function openEditProfileModal() {
+    setEditNameInput(selectedPartner?.name ?? '');
+    setEditDescriptionInput(selectedPartner?.description ?? '');
+    setEditLogoUrlInput(selectedPartner?.logo_url ?? '');
+    setEditCategoryInput(selectedPartner?.category ?? null);
+    setEditAttributesInput(selectedPartner?.attributes ?? []);
+    setEditCuisineInput(selectedPartner?.cuisine ?? null);
+    setEditDifferentiatorInput(selectedPartner?.differentiator ?? '');
+    setEditSubcategoryInput(selectedPartner?.subcategory ?? null);
+    setEditCategoriesInput(selectedPartner?.categories ?? []);
+    setEditProfileModalVisible(true);
+  }
+
   async function handleSaveProfile() {
     if (!editNameInput.trim()) return;
     setSavingProfile(true);
@@ -2843,18 +2858,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.welcomeCardStep}
-                      onPress={() => {
-                        setEditNameInput(selectedPartner?.name ?? '');
-                        setEditDescriptionInput(selectedPartner?.description ?? '');
-                        setEditLogoUrlInput(selectedPartner?.logo_url ?? '');
-                        setEditCategoryInput(selectedPartner?.category ?? null);
-                        setEditAttributesInput(selectedPartner?.attributes ?? []);
-                        setEditCuisineInput(selectedPartner?.cuisine ?? null);
-                        setEditDifferentiatorInput(selectedPartner?.differentiator ?? '');
-                        setEditSubcategoryInput(selectedPartner?.subcategory ?? null);
-                        setEditCategoriesInput(selectedPartner?.categories ?? []);
-                        setEditProfileModalVisible(true);
-                      }}
+                      onPress={openEditProfileModal}
                       accessibilityLabel="Complete your business profile"
                       accessibilityRole="button"
                     >
@@ -4385,6 +4389,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <TellNearbyBusinessCard
                       partner={selectedPartner}
                       onApplied={(applied) => setSelectedPartner((prev) => ({ ...prev, ...applied }))}
+                      onOpenProfileEditor={openEditProfileModal}
                     />
                   </View>
                 )}
@@ -4427,18 +4432,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </View>
                   ) : null}
                   <TouchableOpacity
-                    onPress={() => {
-                      setEditNameInput(selectedPartner?.name ?? '');
-                      setEditDescriptionInput(selectedPartner?.description ?? '');
-                      setEditLogoUrlInput(selectedPartner?.logo_url ?? '');
-                      setEditCategoryInput(selectedPartner?.category ?? null);
-                      setEditAttributesInput(selectedPartner?.attributes ?? []);
-                      setEditCuisineInput(selectedPartner?.cuisine ?? null);
-                      setEditDifferentiatorInput(selectedPartner?.differentiator ?? '');
-                      setEditSubcategoryInput(selectedPartner?.subcategory ?? null);
-                      setEditCategoriesInput(selectedPartner?.categories ?? []);
-                      setEditProfileModalVisible(true);
-                    }}
+                    onPress={openEditProfileModal}
                     style={{ marginTop: spacing.sm }}
                     accessibilityLabel="Edit business profile"
                     accessibilityRole="button"
@@ -4548,18 +4542,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       : 'Not currently listed.'}
                   </Text>
                   <TouchableOpacity
-                    onPress={() => {
-                      setEditNameInput(selectedPartner?.name ?? '');
-                      setEditDescriptionInput(selectedPartner?.description ?? '');
-                      setEditLogoUrlInput(selectedPartner?.logo_url ?? '');
-                      setEditCategoryInput(selectedPartner?.category ?? null);
-                      setEditAttributesInput(selectedPartner?.attributes ?? []);
-                      setEditCuisineInput(selectedPartner?.cuisine ?? null);
-                      setEditDifferentiatorInput(selectedPartner?.differentiator ?? '');
-                      setEditSubcategoryInput(selectedPartner?.subcategory ?? null);
-                      setEditCategoriesInput(selectedPartner?.categories ?? []);
-                      setEditProfileModalVisible(true);
-                    }}
+                    onPress={openEditProfileModal}
                     accessibilityLabel="Edit space and amenities"
                     accessibilityRole="button"
                   >

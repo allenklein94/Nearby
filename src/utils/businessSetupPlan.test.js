@@ -54,3 +54,45 @@ describe('buildSetupPlan', () => {
     plan.patch.offeredOccasions.forEach((o) => expect(OFFERED_OCCASION_KEYS).toContain(o));
   });
 });
+
+describe('Edit: owner-confirmed exclusions', () => {
+  it('saves only what was left checked, while every understood chip is still shown', () => {
+    const plan = buildSetupPlan({}, result, ['occ:birthday', 'attr:live_music', 'party:groups']);
+    expect(plan.patch.offeredOccasions).toEqual(['date_night']);
+    expect(plan.patch.profile.attributes).not.toContain('live_music');
+    expect(plan.patch.partyTypes).toEqual(['date']);
+    expect(plan.chips.find((c) => c.key === 'occ:birthday')).toMatchObject({ excluded: true });
+    expect(plan.chips.find((c) => c.key === 'attr:outdoor_seating').excluded).toBe(false);
+  });
+  it('excluding the category also drops its subcategory and cuisine (they only make sense together)', () => {
+    const plan = buildSetupPlan({}, { ...result, subcategory: 'Brunch' }, ['cat:food_drink']);
+    expect(plan.patch.profile?.category ?? null).toBeNull();
+    expect(plan.patch.profile?.subcategory ?? null).toBeNull();
+    expect(plan.patch.profile?.cuisine ?? null).toBeNull();
+  });
+  it('excluding everything new leaves nothing to save', () => {
+    const keys = buildSetupPlan({}, result).chips.map((c) => c.key);
+    expect(buildSetupPlan({}, result, keys).hasChanges).toBe(false);
+  });
+});
+
+// The saved values are the same fields the existing matching already reads: no new matching path.
+describe('confirmed values feed existing matching', () => {
+  const { occasionBonus, accommodatesPartyTypeBonus } = require('../services/intentResolverScoring');
+  const { scoreBusinessOpportunity } = require('../services/businessOpportunityScoring');
+  const plan = buildSetupPlan({}, result);
+  const row = { offered_occasions: plan.patch.offeredOccasions, accommodates_party_types: plan.patch.partyTypes };
+  it('a consumer occasion ask matches an explicitly offered occasion', () => {
+    expect(occasionBonus(row, 'birthday')).toBeGreaterThan(0);
+    expect(occasionBonus(row, 'graduation')).toBe(0);
+  });
+  it('a consumer party type matches the supported group-size capability', () => {
+    expect(accommodatesPartyTypeBonus(row, 'groups')).toBeGreaterThan(0);
+    expect(accommodatesPartyTypeBonus(row, 'solo')).toBe(0);
+  });
+  it('the business-side opportunity score credits an offered occasion', () => {
+    const withOffer = scoreBusinessOpportunity({ requestOccasion: 'birthday', businessOfferedOccasions: plan.patch.offeredOccasions });
+    const without = scoreBusinessOpportunity({ requestOccasion: 'birthday', businessOfferedOccasions: [] });
+    expect(withOffer.score).toBeGreaterThan(without.score);
+  });
+});
