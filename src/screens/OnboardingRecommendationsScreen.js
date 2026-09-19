@@ -5,7 +5,7 @@ import { getOnboardingRecommendations } from '../services/homeDashboard';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
-import { getGreeting } from '../utils/timeContext';
+import { wantsCelebrationsStep } from '../constants/onboardingGoals';
 import LoadErrorState from '../components/LoadErrorState';
 
 import { NLoader } from '../motion';
@@ -14,6 +14,7 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
   const styles = getStyles(colors, shadow);
   const [recommendations, setRecommendations] = useState([]);
   const [myName, setMyName] = useState('');
+  const [wantsCelebrations, setWantsCelebrations] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -27,8 +28,9 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
       const { data: sessionData } = await supabase.auth.getSession();
       const myId = sessionData?.session?.user?.id;
       if (myId) {
-        const { data: profile } = await supabase.from('profiles').select('display_name').eq('id', myId).single();
+        const { data: profile } = await supabase.from('profiles').select('display_name, onboarding_motivations').eq('id', myId).single();
         setMyName(profile?.display_name?.split(' ')[0] ?? '');
+        setWantsCelebrations(wantsCelebrationsStep(profile?.onboarding_motivations));
       }
       const results = await getOnboardingRecommendations().catch(() => []);
       setRecommendations(results);
@@ -46,8 +48,8 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ flex: 1, padding: spacing.lg }}>
-        <Text style={styles.greeting}>{getGreeting()}{myName ? `, ${myName}` : ''}.</Text>
-        <Text style={styles.subtitle}>Based on what you told us...</Text>
+        <Text style={styles.greeting}>You're ready{myName ? `, ${myName}` : ''}.</Text>
+        <Text style={styles.subtitle}>Based on what you told us, here's what's happening nearby.</Text>
 
         {loading ? (
           <>
@@ -91,12 +93,12 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
         </View>
         <TouchableOpacity
           style={styles.button}
-          onPress={() => navigation.navigate('OnboardingOccasions')}
+          onPress={() => navigation.navigate(wantsCelebrations ? 'OnboardingOccasions' : 'MainTabs')}
           activeOpacity={0.85}
-          accessibilityLabel="Continue to the app"
+          accessibilityLabel="Let's see what's happening nearby"
           accessibilityRole="button"
         >
-          <Text style={styles.buttonText}>Let's Go</Text>
+          <Text style={styles.buttonText}>Let's see what's happening nearby →</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

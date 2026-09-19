@@ -18,8 +18,8 @@ export default function OnboardingScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <NearbyMark size={88} style={styles.mark} />
-        <Text style={styles.headline}>Your next favorite memory could start today.</Text>
-        <Text style={styles.subtext}>Meet people, discover gatherings, and create experiences together.</Text>
+        <Text style={styles.headline}>Welcome to Nearby</Text>
+        <Text style={styles.subtext}>Tell us what you want to make happen. We'll help you find the people, places and plans.</Text>
       </View>
 
       <View style={styles.footer}>

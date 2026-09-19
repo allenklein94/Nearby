@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { ONBOARDING_INTEREST_GROUPS, tagsForGroups } from '../constants/interestGraph';
+import { ONBOARDING_GOALS, LOOKING_FOR_OPTIONS, motivationsFromAnswers } from '../constants/onboardingGoals';
 
 // This screen runs before signup — there's no account yet to save
 // these answers to. They're held in AsyncStorage temporarily and
@@ -11,18 +12,6 @@ import { ONBOARDING_INTEREST_GROUPS, tagsForGroups } from '../constants/interest
 // exists, the same pattern already used elsewhere in the app for
 // state that needs to survive across this part of the flow.
 export const ONBOARDING_ANSWERS_KEY = 'pending_onboarding_answers';
-
-const MOTIVATIONS = [
-  { icon: '👥', label: 'Meet new people' },
-  { icon: '🎉', label: 'Find things to do' },
-  { icon: '🤝', label: 'Make new friends' },
-  { icon: '🏃', label: 'Find activity partners' },
-  { icon: '🌎', label: 'Explore my city' },
-  { icon: '💼', label: 'Network professionally' },
-  { icon: '❤️', label: 'Go on dates' },
-  { icon: '🌱', label: 'Get out more often' },
-  { icon: '😊', label: 'Just curious' },
-];
 
 const COMFORT_LEVELS = [
   { value: 'one_on_one', label: 'I like one-on-one conversations' },
@@ -34,19 +23,16 @@ const COMFORT_LEVELS = [
 export default function OnboardingQuestionsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
-  const [step, setStep] = useState(0);
-  const [motivations, setMotivations] = useState([]);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [goals, setGoals] = useState([]);
+  const [lookingFor, setLookingFor] = useState(null);
   const [comfortLevel, setComfortLevel] = useState(null);
   const [groupKeys, setGroupKeys] = useState([]);
   const [tags, setTags] = useState([]);
   const [saving, setSaving] = useState(false);
 
-  function toggleMotivation(label) {
-    setMotivations((prev) => {
-      if (prev.includes(label)) return prev.filter((m) => m !== label);
-      if (prev.length >= 3) return prev;
-      return [...prev, label];
-    });
+  function toggleGoal(label) {
+    setGoals((prev) => (prev.includes(label) ? prev.filter((g) => g !== label) : [...prev, label]));
   }
 
   function toggleGroup(key) {
@@ -61,12 +47,15 @@ export default function OnboardingQuestionsScreen({ navigation }) {
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   }
 
-  // Step 3 (refine to tags) only exists when at least one group was picked.
-  const lastStep = groupKeys.length > 0 ? 3 : 2;
+  // Flow: what Nearby should help with -> what you're into (-> favorites, only if a group was picked) -> what you're looking for
+  // -> relevant preferences. Every step is skippable; nothing here gates signup.
+  const steps = ['goals', 'groups', ...(groupKeys.length > 0 ? ['tags'] : []), 'lookingFor', 'comfort'];
+  const step = steps[stepIndex];
+  const lastStep = steps.length - 1;
 
   async function handleContinue() {
-    if (step < lastStep) {
-      setStep((s) => s + 1);
+    if (stepIndex < lastStep) {
+      setStepIndex((i) => i + 1);
       return;
     }
     setSaving(true);
@@ -74,7 +63,7 @@ export default function OnboardingQuestionsScreen({ navigation }) {
       await AsyncStorage.setItem(
         ONBOARDING_ANSWERS_KEY,
         JSON.stringify({
-          onboarding_motivations: motivations,
+          onboarding_motivations: motivationsFromAnswers({ goals, lookingFor }),
           social_comfort_level: comfortLevel,
           // Canonical tags (see interestGraph.js): seed CompleteProfile's interests step and this
           // month's mood, so onboarding never introduces a vocabulary of its own.
@@ -91,52 +80,30 @@ export default function OnboardingQuestionsScreen({ navigation }) {
     navigation.navigate('OnboardingLocation');
   }
 
-  const canContinue = step === 0 ? motivations.length > 0 : step === 1 ? !!comfortLevel : true; // interest steps are skippable
+  const canContinue = true; // every step is skippable
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, flexGrow: 1 }}>
-        {step === 0 && (
+        {step === 'goals' && (
           <>
-            <Text style={styles.title}>What brought you here today?</Text>
-            <Text style={styles.subtitle}>Choose up to 3.</Text>
-            <View style={styles.grid}>
-              {MOTIVATIONS.map((m) => {
-                const selected = motivations.includes(m.label);
-                return (
-                  <TouchableOpacity
-                    key={m.label}
-                    style={[styles.chip, selected && styles.chipSelected]}
-                    onPress={() => toggleMotivation(m.label)}
-                    accessibilityLabel={m.label}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                  >
-                    <Text style={styles.chipIcon}>{m.icon}</Text>
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{m.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </>
-        )}
-
-        {step === 1 && (
-          <>
-            <Text style={styles.title}>What sounds most like you?</Text>
+            <Text style={styles.title}>What do you want Nearby to help you do?</Text>
+            <Text style={styles.subtitle}>Pick any that fit.</Text>
             <View style={{ gap: spacing.sm }}>
-              {COMFORT_LEVELS.map((c) => {
-                const selected = comfortLevel === c.value;
+              {ONBOARDING_GOALS.map((g) => {
+                const selected = goals.includes(g.label);
                 return (
                   <TouchableOpacity
-                    key={c.value}
-                    style={[styles.option, selected && styles.optionSelected]}
-                    onPress={() => setComfortLevel(c.value)}
-                    accessibilityLabel={c.label}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
+                    key={g.key}
+                    style={[styles.option, styles.optionRow, selected && styles.optionSelected]}
+                    onPress={() => toggleGoal(g.label)}
+                    accessibilityLabel={g.label}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}
                   >
-                    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{c.label}</Text>
+                    <Text style={styles.optionIcon}>{selected ? '☑' : '☐'}</Text>
+                    <Text style={styles.chipIcon}>{g.icon}</Text>
+                    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{g.label}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -144,7 +111,7 @@ export default function OnboardingQuestionsScreen({ navigation }) {
           </>
         )}
 
-        {step === 2 && (
+        {step === 'groups' && (
           <>
             <Text style={styles.title}>What are you into?</Text>
             <Text style={styles.subtitle}>Pick any that fit — you can skip this.</Text>
@@ -169,7 +136,7 @@ export default function OnboardingQuestionsScreen({ navigation }) {
           </>
         )}
 
-        {step === 3 && (
+        {step === 'tags' && (
           <>
             <Text style={styles.title}>Any favorites?</Text>
             <Text style={styles.subtitle}>Optional — the more specific, the better we can find things for you.</Text>
@@ -192,14 +159,72 @@ export default function OnboardingQuestionsScreen({ navigation }) {
             </View>
           </>
         )}
+
+        {step === 'lookingFor' && (
+          <>
+            <Text style={styles.title}>What are you looking for?</Text>
+            <Text style={styles.subtitle}>This just decides what we show you first. You can change it any time.</Text>
+            <View style={{ gap: spacing.sm }}>
+              {LOOKING_FOR_OPTIONS.map((o) => {
+                const selected = lookingFor === o.key;
+                return (
+                  <TouchableOpacity
+                    key={o.key}
+                    style={[styles.option, styles.optionRow, selected && styles.optionSelected]}
+                    onPress={() => setLookingFor(o.key)}
+                    accessibilityLabel={o.label}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                  >
+                    <Text style={styles.chipIcon}>{o.icon}</Text>
+                    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{o.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
+
+        {step === 'comfort' && (
+          <>
+            <Text style={styles.title}>What sounds most like you?</Text>
+            <Text style={styles.subtitle}>
+              {lookingFor === 'dating' || lookingFor === 'both'
+                ? "It helps us suggest the right kind of plans. You can fine-tune dating preferences later, when you first open Dating."
+                : 'It helps us suggest the right kind of plans. Optional.'}
+            </Text>
+            <View style={{ gap: spacing.sm }}>
+              {COMFORT_LEVELS.map((c) => {
+                const selected = comfortLevel === c.value;
+                return (
+                  <TouchableOpacity
+                    key={c.value}
+                    style={[styles.option, selected && styles.optionSelected]}
+                    onPress={() => setComfortLevel(c.value)}
+                    accessibilityLabel={c.label}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                  >
+                    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{c.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
       </ScrollView>
 
       <View style={styles.footer}>
         <View style={styles.dots}>
           {Array.from({ length: lastStep + 1 }, (_, i) => i).map((i) => (
-            <View key={i} style={[styles.dot, i === step && styles.dotActive]} />
+            <View key={i} style={[styles.dot, i === stepIndex && styles.dotActive]} />
           ))}
         </View>
+        {stepIndex > 0 && (
+          <TouchableOpacity onPress={() => setStepIndex((i) => i - 1)} style={styles.backLink} accessibilityLabel="Back" accessibilityRole="button">
+            <Text style={styles.backLinkText}>Back</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[styles.button, !canContinue && styles.buttonDisabled]}
           onPress={handleContinue}
@@ -228,6 +253,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chipIcon: { fontSize: 16, marginRight: 6 },
   chipText: { color: colors.textSecondary, fontWeight: '700', fontSize: 13 },
   chipTextSelected: { color: colors.primary },
+  optionRow: { flexDirection: 'row', alignItems: 'center' },
+  optionIcon: { fontSize: 18, marginRight: spacing.sm, color: colors.primary },
   option: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.md },
   optionSelected: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
   optionText: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
@@ -238,5 +265,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   dotActive: { backgroundColor: colors.primary, width: 20 },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 18, alignItems: 'center', ...shadow.button },
   buttonDisabled: { opacity: 0.5 },
+  backLink: { alignSelf: 'center', paddingVertical: spacing.sm, marginBottom: spacing.xs },
+  backLinkText: { color: colors.textSecondary, fontSize: 15, fontWeight: '600' },
   buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
 });

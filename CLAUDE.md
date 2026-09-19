@@ -59,6 +59,14 @@ behavior x maturity). `usePersonalization()` feeds Gatherings Nearby + For You (
 (`behaviorNudge` on `fit.score`). Home already used the maturity model. No "save" feature exists, so saves are not tracked (build the
 surface first). Social/transaction signals are unchanged (already in the resolver / positive-experience signals). Not device-tested.
 
+**Onboarding flow reshaped (2026-09-19, requirement: onboarding leads naturally into the product).** Welcome -> "What do you want Nearby
+to help you do?" (6 goals, multi-select, `constants/onboardingGoals.js`) -> "What are you into?" (groups, then favorites) -> "What are you
+looking for?" (Dating / Friends / Both / Skip) -> relevant preferences (comfort; every step skippable, with Back) -> Location -> "What should
+Nearby keep you posted about?" -> account -> "You're ready ... Let's see what's happening nearby ->". Goals and looking-for are stored in the
+existing `onboarding_motivations` (looking-for as the tokens 'Go on dates' / 'Make new friends' that People sub-mode and Friend Discovery
+already read; no schema change). The celebrations step now shows only for people who picked "Plan celebrations". Goals other than that
+one are captured (they feed the explicit signal profile) but do not yet reorder Home; not device-tested.
+
 ## Backlog (v2 candidates — not started, do not build without a direct ask)
 
 Deliberately out of scope for "Group planning for an Occasion" (archived in CLAUDE_HISTORY.md) per the user's own
