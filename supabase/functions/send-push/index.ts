@@ -95,18 +95,23 @@ serve(async (req)=>{
       // email address (business_email_settings) send the same alert there -- Important-tier plus new requests, so a
       // web-only owner isn't flooded with recommendations. No-op (and never an error) until the email provider is configured.
       let emailed = false;
+      let emailReason;
       if (tier === 'important' || EMAIL_EXTRA_TYPES.has(data?.type)) {
         const { data: es } = await admin.from('business_email_settings').select('email, verified_at, enabled').eq('user_id', recipient_id).maybeSingle();
         if (es?.email && es.verified_at && es.enabled) {
           const webUrl = Deno.env.get('BUSINESS_WEB_URL');
           const sent = await sendEmail(es.email, title, `${body ?? ''}${webUrl ? `\n\nOpen your Nearby business dashboard: ${webUrl}` : ''}`);
           emailed = sent.sent;
+          emailReason = sent.reason;
+          // Never a silent failure: a verified owner is waiting on this alert, so an unconfigured/failed provider shows up in the function logs.
+          if (!sent.sent) console.warn(`business email alert NOT sent (${sent.reason}) for ${data?.type}; set RESEND_API_KEY and EMAIL_FROM secrets`);
         }
       }
       return new Response(JSON.stringify({
         ok: true,
         skipped: 'no_token',
-        emailed
+        emailed,
+        emailReason
       }), {
         status: 200
       });

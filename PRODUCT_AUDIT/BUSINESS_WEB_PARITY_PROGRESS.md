@@ -11,4 +11,4 @@ Also: audit every remaining "Open the Nearby app to..." on web.
 | 1 | Stripe onboarding on web (test-mode only; server hard gate on live keys; functions deployed) | done, untested with a real Stripe test key (none configured) |
 | 2 | QR scanner — CORRECTION: no QR scanner exists in the app; the web-hidden camera item was "Post a Moment", now works on web (file/camera picker) | done (untested in browser) |
 | 3 | Gatherings + communities on web (screens registered, web location picker, PostHog stub) | done, bundles; not browser-tested |
-| 4 | Email fallback / Resend | not started |
+| 4 | Email fallback / Resend | built; loud logging added; BLOCKED on owner creating Resend key + domain |
