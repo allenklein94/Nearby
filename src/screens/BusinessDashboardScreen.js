@@ -35,6 +35,7 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 // Item 70 (CLAUDE.md): a real, honest "when" label for a pending request's
 // own date/time window, shown on the business's opportunity card.
 import { buildOpportunityCard } from '../utils/businessOpportunityCard';
+import { STANDARD_AVAILABILITY_TEXT, buildAlternativeText, alternativePickerStart } from '../utils/quickOfferResponse';
 import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
 // already-deployed async submit-then-poll weather RPC every other
@@ -559,6 +560,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // convention.
   const [policyActiveDaysInput, setPolicyActiveDaysInput] = useState([]);
   const [savingPolicy, setSavingPolicy] = useState(false);
+  // Effortless response: Accept -> standard availability / special offer, and Offer Alternative (another time).
+  const [acceptSheetRequestId, setAcceptSheetRequestId] = useState(null);
+  const [altSheetRequestId, setAltSheetRequestId] = useState(null);
+  const [altTime, setAltTime] = useState(null);
+  const [altNote, setAltNote] = useState('');
+  const [showAltPicker, setShowAltPicker] = useState(false);
   const [offerTypeInput, setOfferTypeInput] = useState('standard');
   const [offerDescriptionInput, setOfferDescriptionInput] = useState('');
   const [offerPriceInput, setOfferPriceInput] = useState('');
@@ -1609,6 +1616,41 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // calls the real underlying RPC, MEDIUM/UNCERTAIN holds the response
   // for a real admin decision (nothing sent to the customer yet), HIGH is
   // rejected outright.
+  // Shared by the full offer editor and the one-tap paths: what to do with the screening result.
+  async function handleOfferResult(result, close) {
+    if (result.published) {
+      close();
+      await loadOpportunities(selectedPartner.id);
+    } else if (result.blocked) {
+      Alert.alert(
+        "Couldn't Send",
+        "This content couldn't be sent — it was flagged during a routine content check. If you think this is a mistake, please reach out to support."
+      );
+    } else {
+      close();
+      Alert.alert('Submitted for Review', 'Your response is being reviewed before it’s sent — this is usually quick.');
+    }
+  }
+
+  function openAlternativeSheet(requestId) {
+    setAltSheetRequestId(requestId);
+    setAltTime(null);
+    setAltNote('');
+    setShowAltPicker(false);
+  }
+
+  // One-tap responses. Each is the business's own real response (Accept -> an Offer); never a silent commit of anything else.
+  async function submitQuickResponse(requestId, { offerType, offerDescription, proposedTime = null }) {
+    setRespondingOpportunityId(requestId);
+    try {
+      const result = await submitBusinessOfferResponseForScreening(selectedPartner.id, requestId, { offerType, offerDescription, proposedTime });
+      await handleOfferResult(result, () => { setAcceptSheetRequestId(null); setAltSheetRequestId(null); });
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setRespondingOpportunityId(null);
+  }
+
   async function handleSubmitOffer() {
     if (!offerDescriptionInput.trim()) {
       Alert.alert('Add a description', 'Say what you can offer.');
@@ -1642,21 +1684,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         priceIsPerPerson: offerPriceIsPerPerson,
       });
 
-      if (result.published) {
-        setOfferModalRequestId(null);
-        await loadOpportunities(selectedPartner.id);
-      } else if (result.blocked) {
-        Alert.alert(
-          "Couldn't Send",
-          "This content couldn't be sent — it was flagged during a routine content check. If you think this is a mistake, please reach out to support."
-        );
-      } else {
-        setOfferModalRequestId(null);
-        Alert.alert(
-          'Submitted for Review',
-          'Your response is being reviewed before it’s sent — this is usually quick.'
-        );
-      }
+      await handleOfferResult(result, () => setOfferModalRequestId(null));
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -3479,29 +3507,39 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         </View>
                       )}
                       {o.status === 'pending' && o.business_requests?.status === 'open' && (
-                        <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
-                          <TouchableOpacity
-                            style={[styles.smallActionButton, { backgroundColor: colors.primary, marginRight: spacing.sm }]}
-                            onPress={() => openOfferModal(o.request_id)}
-                            disabled={respondingOpportunityId === o.request_id}
-                            accessibilityLabel="Send offer"
-                            accessibilityRole="button"
-                          >
-                            <Text style={styles.smallActionButtonText}>Send Offer</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
-                            onPress={() => openDeclineModal(o.request_id)}
-                            disabled={respondingOpportunityId === o.request_id}
-                            accessibilityLabel="Can't accommodate this request"
-                            accessibilityRole="button"
-                          >
-                            {/* Phase 1: opens a real reason picker instead of a silent
-                                one-tap decline -- see openDeclineModal/handleSubmitDecline
-                                and the Decline Reason modal below. */}
-                            {respondingOpportunityId === o.request_id ? <ActivityIndicator color={colors.textPrimary} size="small" /> : <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Can't accommodate</Text>}
-                          </TouchableOpacity>
-                        </View>
+                        <>
+                          <Text style={[styles.offerTitle, { marginTop: spacing.sm }]}>Can you accommodate this?</Text>
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.xs }}>
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { backgroundColor: colors.primary, marginRight: spacing.sm, marginBottom: spacing.xs }]}
+                              onPress={() => setAcceptSheetRequestId(o.request_id)}
+                              disabled={respondingOpportunityId === o.request_id}
+                              accessibilityLabel="Accept this request"
+                              accessibilityRole="button"
+                            >
+                              <Text style={styles.smallActionButtonText}>Accept</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated, marginRight: spacing.sm, marginBottom: spacing.xs }]}
+                              onPress={() => openAlternativeSheet(o.request_id)}
+                              disabled={respondingOpportunityId === o.request_id}
+                              accessibilityLabel="Offer an alternative time"
+                              accessibilityRole="button"
+                            >
+                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Offer Alternative</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated, marginBottom: spacing.xs }]}
+                              onPress={() => openDeclineModal(o.request_id)}
+                              disabled={respondingOpportunityId === o.request_id}
+                              accessibilityLabel="Decline this request"
+                              accessibilityRole="button"
+                            >
+                              {/* Opens a real reason picker (Phase 1), never a silent one-tap decline. */}
+                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Decline</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </>
                       )}
                       {o.status !== 'pending' && (
                         <>
@@ -5696,6 +5734,104 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.modalCloseText}>Cancel</Text>
               </TouchableOpacity>
             </ScrollView>
+          </View>
+        </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Modal>
+      <Modal visible={!!acceptSheetRequestId} animationType={modalAnimation('slide')} transparent onRequestClose={() => setAcceptSheetRequestId(null)}>
+        <View style={styles.overlay}>
+          <View style={styles.sheet}>
+            <Text style={styles.sheetTitle}>What's your offer?</Text>
+            <View style={styles.offerCard}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.offerTitle}>Standard availability</Text>
+                <Text style={styles.breakdownText}>Yes, you can host them as requested.</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
+                onPress={() => submitQuickResponse(acceptSheetRequestId, { offerType: 'standard', offerDescription: STANDARD_AVAILABILITY_TEXT })}
+                disabled={respondingOpportunityId === acceptSheetRequestId}
+                accessibilityLabel="Send standard availability"
+                accessibilityRole="button"
+              >
+                {respondingOpportunityId === acceptSheetRequestId ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.smallActionButtonText}>Send</Text>}
+              </TouchableOpacity>
+            </View>
+            <View style={[styles.offerCard, { marginTop: spacing.sm }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.offerTitle}>Special offer</Text>
+                <Text style={styles.breakdownText}>Add a price, perk, discount or what's included.</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
+                onPress={() => { const id = acceptSheetRequestId; setAcceptSheetRequestId(null); openOfferModal(id); }}
+                accessibilityLabel="Create a special offer"
+                accessibilityRole="button"
+              >
+                <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Customize</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity onPress={() => setAcceptSheetRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
+              <Text style={styles.modalCloseText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      <Modal visible={!!altSheetRequestId} animationType={modalAnimation('slide')} transparent onRequestClose={() => setAltSheetRequestId(null)}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.overlay}>
+            <View style={styles.sheet}>
+              <Text style={styles.sheetTitle}>Offer another time</Text>
+              <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
+                Pick the time that works for you. They'll see it and can accept.
+              </Text>
+              <TouchableOpacity
+                style={[styles.input, { justifyContent: 'center' }]}
+                onPress={() => setShowAltPicker(true)}
+                accessibilityLabel="Pick the time you're proposing"
+                accessibilityRole="button"
+              >
+                <Text style={{ color: altTime ? colors.textPrimary : colors.textTertiary }}>
+                  {altTime
+                    ? altTime.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+                    : 'Pick a time…'}
+                </Text>
+              </TouchableOpacity>
+              {showAltPicker && (
+                <PlatformDateTimeInput
+                  value={altTime ?? alternativePickerStart(opportunities.find((x) => x.request_id === altSheetRequestId)?.business_requests)}
+                  mode="datetime"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  themeVariant={isDark ? 'dark' : 'light'}
+                  minimumDate={new Date()}
+                  onChange={(event, selectedDate) => {
+                    setShowAltPicker(Platform.OS === 'ios');
+                    if (selectedDate) setAltTime(selectedDate);
+                  }}
+                />
+              )}
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm }]}
+                placeholder="Add a note (optional)"
+                placeholderTextColor={colors.textTertiary}
+                value={altNote}
+                onChangeText={setAltNote}
+                accessibilityLabel="Note about the alternative time, optional"
+              />
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={() => submitQuickResponse(altSheetRequestId, { offerType: 'alt_time', offerDescription: buildAlternativeText(altNote), proposedTime: altTime.toISOString() })}
+                disabled={!altTime || respondingOpportunityId === altSheetRequestId}
+                accessibilityLabel="Send alternative time"
+                accessibilityRole="button"
+              >
+                <Text style={styles.submitButtonText}>{respondingOpportunityId === altSheetRequestId ? 'Sending...' : 'Send'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setAltSheetRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
+                <Text style={styles.modalCloseText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
