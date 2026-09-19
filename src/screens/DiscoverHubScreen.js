@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import usePersonalization from '../hooks/usePersonalization';
+import { behaviorNudge } from '../constants/blendedRanking';
 import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Linking, Alert, BackHandler } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Video } from 'expo-av';
@@ -197,6 +199,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // People > Dating|Friends toggle every other People entry point already
   // uses, pre-selected to Dating (still the same real destination content)
   // but with Friends one tap away -- see HomeScreen.js's own call site.
+  const personalization = usePersonalization();
   const [mode, setMode] = useState(() => route.params?.initialMode ?? 'things');
   const [peopleSubMode, setPeopleSubMode] = useState(() => route.params?.initialPeopleSubMode ?? 'dating');
 
@@ -694,6 +697,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
     } else if (weatherOutdoorBias && isOutdoorCategory(g.interest_tag)) {
       fit.score += WEATHER_BONUS;
       fit.reasons = [...fit.reasons, 'Great weather for it'];
+    }
+    // Behavior (what this user actually opens/creates/joins) nudges the score as the account matures; declared interests are
+    // already inside fit.score, so only the behavioral part is added here.
+    const nudge = behaviorNudge(g.interest_tag, personalization);
+    if (nudge > 0) {
+      fit.score += nudge;
+      fit.reasons = [...fit.reasons, 'Like what you\'ve joined'];
     }
     return { ...g, fit };
   }

@@ -4,6 +4,7 @@ import FadeInState from '../components/FadeInState';
 import { NLoader, PullToRefresh } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyCommunities, getPublicCommunities, joinCommunity, getCommunityMemberCount } from '../services/communities';
+import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import BusinessHostBadge from '../components/BusinessHostBadge';
 import LoadErrorState from '../components/LoadErrorState';
@@ -64,6 +65,7 @@ export default function CommunitiesScreen({ navigation }) {
   async function handleJoin(communityId) {
     try {
       await joinCommunity(communityId);
+      recordBehaviorEvent('join', 'community', communityId, [...myCommunities, ...discoverCommunities].find((c) => c.id === communityId)?.interest_tag);
       load();
     } catch (e) {
       Alert.alert('Error', e.message);

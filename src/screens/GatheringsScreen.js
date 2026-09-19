@@ -5,6 +5,7 @@ import FadeInState from '../components/FadeInState';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, searchGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering, stopRecurringSeries } from '../services/gatherings';
+import { recordBehaviorEvent } from '../services/behaviorSignals';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import { getMyFriends } from '../services/friends';
 import { getPublicStoriesOnMap } from '../services/stories';
@@ -37,7 +38,9 @@ import { DATE_OPTIONS, matchesDateFilter } from '../utils/gatheringDateFilter';
 import { gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { useTheme } from '../context/ThemeContext';
 import useMyInterests from '../hooks/useMyInterests';
-import { rankByInterests, becauseYouLikeCategories } from '../constants/interestGraph';
+import { becauseYouLikeCategories } from '../constants/interestGraph';
+import { rankByBlend, forYouBlend } from '../constants/blendedRanking';
+import usePersonalization from '../hooks/usePersonalization';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { getUserLocation } from '../services/userLocation';
@@ -102,8 +105,11 @@ export default function GatheringsScreen({ navigation, route }) {
   const [trendingIds, setTrendingIds] = useState([]);
   const [topCategories, setTopCategories] = useState([]);
   const myInterests = useMyInterests();
-  // "For You": real behavior first, else what the user declared (so it works from day one).
-  const forYouCategories = becauseYouLikeCategories(topCategories, myInterests, [], 50);
+  const personalization = usePersonalization();
+  // "For You": declared interests from day one; behavior joins in as the account matures (blendedRanking.js). Falls back to the
+  // older behavior-then-declared list while personalization is still loading.
+  const blendedForYou = forYouBlend(personalization.declared, personalization.behavior, personalization.maturity, 50);
+  const forYouCategories = blendedForYou.length > 0 ? blendedForYou : becauseYouLikeCategories(topCategories, myInterests, [], 50);
   const [initialLoading, setInitialLoading] = useState(true);
   const [newOfferCount, setNewOfferCount] = useState(0);
   const [viewStyle, setViewStyle] = useState('list');
@@ -350,6 +356,7 @@ export default function GatheringsScreen({ navigation, route }) {
 
     try {
       const result = await expressInterest(gatheringId);
+      recordBehaviorEvent('join', 'gathering', gatheringId, nearby.find((g) => g.id === gatheringId)?.interest_tag);
       posthog.capture('gathering_interest_expressed');
       if (result?.status === 'waitlisted') {
         Alert.alert("You're on the waitlist", "This gathering is full right now — we'll let you know if a spot opens up.");
@@ -560,9 +567,9 @@ export default function GatheringsScreen({ navigation, route }) {
       }
       return Number(weatherFits(b)) - Number(weatherFits(a));
     });
-  // Declared interests make matching gatherings rise (stable: distance order kept within each group);
+  // Declared interests make matching gatherings rise first; behavior adds a smaller nudge as the account matures (stable: distance order kept within ties);
   // "For You" already orders by its own category rank, so it's left alone.
-  const filteredNearby = forYouActive ? filteredNearbyUnranked : rankByInterests(filteredNearbyUnranked, myInterests);
+  const filteredNearby = forYouActive ? filteredNearbyUnranked : rankByBlend(filteredNearbyUnranked, personalization);
 
   return (
     <SafeAreaView style={styles.container}>

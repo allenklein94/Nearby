@@ -50,6 +50,15 @@ is recorded automatically in `cancellation_events` (cascades not double-counted)
 "Cancelled Reservations" (`get_partner_cancellation_patterns`), owner-visible insight only, never auto-reweights matching. `cancel_community` and legacy `cancel_group_plan` record too (`20261214`); `stopRecurringSeries` only sets a flag, deliberately not
 recorded. Nothing else open from this audit. Not exercised on real data (prod has no reservations).
 
+**Progressive personalization (2026-09-19, requirement: onboarding sets up the engine; explicit > behavior early, blended later).**
+The five signal classes already existed as `signalSourceMaturity.js` (explicit/contextual never dampened; behavioral/social/
+transactional scaled by account maturity). New: a private behavioral signal (`behavior_events`, `20261215`: open/create/join per
+canonical category; owner-only RLS, RPC-only writes, 1h dedupe, 90-day window, Settings "Clear my activity history", never read by
+businesses, guarded by `behaviorPrivacyGuard.test.js`) and `src/constants/blendedRanking.js` (explicit 5 pts > behavior max 4,
+behavior x maturity). `usePersonalization()` feeds Gatherings Nearby + For You (`rankByBlend`/`forYouBlend`) and Discover
+(`behaviorNudge` on `fit.score`). Home already used the maturity model. No "save" feature exists, so saves are not tracked (build the
+surface first). Social/transaction signals are unchanged (already in the resolver / positive-experience signals). Not device-tested.
+
 ## Backlog (v2 candidates — not started, do not build without a direct ask)
 
 Deliberately out of scope for "Group planning for an Occasion" (archived in CLAUDE_HISTORY.md) per the user's own

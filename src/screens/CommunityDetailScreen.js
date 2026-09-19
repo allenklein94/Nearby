@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAr
 import { NLoader, SuccessAnimation, modalAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
+import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { getMyCommunities, joinCommunity, leaveCommunity, deleteCommunity, pauseCommunity, resumeCommunity, cancelCommunity, getCommunityMemberCount, getCommunityGatherings, getCommunityMembers, setCommunityMemberRole, updateCommunityArea } from '../services/communities';
 import { isFollowingBusiness, followBusiness, unfollowBusiness, getCommunityOffers, getMyRedemptions, redeemOffer, getMyManagedPartner } from '../services/brandOffers';
 import { getBusinessRequestForCommunity, getAcceptedOfferForRequest } from '../services/businessFulfillment';
@@ -97,6 +98,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
 
       const myId = sessionData?.session?.user?.id;
       setCommunity(data);
+      recordBehaviorEvent('open', 'community', communityId, data?.interest_tag);
       setMyId(myId);
       setIsCreator(data?.creator_id === myId);
       setIsMember(mine.some((c) => c.id === communityId));
@@ -267,6 +269,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
         await leaveCommunity(communityId);
       } else {
         await joinCommunity(communityId);
+        recordBehaviorEvent('join', 'community', communityId, community?.interest_tag);
       }
       load();
     } catch (e) {

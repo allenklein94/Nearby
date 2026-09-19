@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Aler
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { createGathering } from '../services/gatherings';
+import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { linkOccasionToPlan } from '../services/occasions';
 import { linkOccasionGroupPlanToPlan } from '../services/occasionGroupPlans';
 import { getMyCommunities } from '../services/communities';
@@ -346,6 +347,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         partyType,
         showGroupInsights,
       });
+      recordBehaviorEvent('create', 'gathering', created.id, interestTag);
 
       // Checking the box only stores real consent/intent on the
       // gathering itself (ask_local_businesses) -- it deliberately does

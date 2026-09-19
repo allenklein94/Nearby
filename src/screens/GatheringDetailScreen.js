@@ -22,6 +22,7 @@ import {
   stopRecurringSeries,
 } from '../services/gatherings';
 import { filterToMyConnections } from '../services/connections';
+import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { visibilityMeta } from '../constants/gatheringVisibility';
 import { formatPreciseBucketLine, formatInterestLine } from '../utils/groupInsightsLabels';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -124,6 +125,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
       return;
     }
     setGathering(g);
+    recordBehaviorEvent('open', 'gathering', g.id, g.interest_tag);
     setLoadError(false);
     setLoading(false);
 
@@ -285,6 +287,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
     setJoining(true);
     try {
       const result = await expressInterest(gatheringId);
+      recordBehaviorEvent('join', 'gathering', gatheringId, gathering?.interest_tag);
       posthog.capture('gathering_interest_expressed', { source: 'detail_screen', status: result.status });
       if (result.status === 'approved') {
         // Auto-approved gatherings land straight in the Gathering Hub —

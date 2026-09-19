@@ -8,6 +8,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { deleteAccount } from '../services/account';
 import { requestDataExport } from '../services/dataExport';
 import { clearNotificationArea } from '../services/notificationArea';
+import { clearMyBehaviorHistory } from '../services/behaviorSignals';
 import RecommendationCustomizePanel from '../components/RecommendationCustomizePanel';
 import { typography, spacing, radius } from '../theme';
 
@@ -782,6 +783,23 @@ export default function SettingsScreen({ navigation, route }) {
 
         <Text style={styles.sectionLabel} accessibilityRole="header">Privacy</Text>
         <View style={styles.card}>
+          <View style={styles.settingRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>Activity that shapes your picks</Text>
+              <Text style={styles.helperText}>Nearby notices which kinds of gatherings and communities you open, create and join, only to order what you see. It's private, kept 90 days, and never shared with anyone or any business.</Text>
+              <TouchableOpacity
+                style={styles.customizeLink}
+                onPress={() => clearMyBehaviorHistory()
+                  .then(() => showSuccessToast('Activity cleared', 'Your picks will rely on what you told us until new activity builds up.'))
+                  .catch((e) => Alert.alert('Error', e.message))}
+                accessibilityLabel="Clear my activity history"
+                accessibilityRole="button"
+              >
+                <Text style={styles.customizeLinkText}>Clear my activity history</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.settingLabel}>Read Receipts</Text>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback, Image } from 'react-native';
 import { createCommunity, seedCommunityFromGathering } from '../services/communities';
+import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { getMyManagedPartner } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
@@ -64,6 +65,7 @@ export default function CreateCommunityScreen({ navigation, route }) {
         isPublic,
       });
 
+      recordBehaviorEvent('create', 'community', community.id, interestTag);
       const seedGatheringId = route?.params?.seedFromGatheringId;
       let seedReason = null;
       if (seedGatheringId) {
