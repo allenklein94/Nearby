@@ -39,6 +39,11 @@ BusinessRequestDetail invite pickers (server enforces it); Cuisine as a browse f
 destined occasion co-organizers; push for `plan_messages`; anon `is_match_participant` grant
 error on `business_requests` reads (fails closed).
 
+**State-machine audit (2026-09-19, `PRODUCT_AUDIT/STATE_MACHINE_AUDIT_2026-09-19.md`): findings delivered, fixes NOT built --
+awaiting the user's go-ahead.** Decline is already a real, guarded state. Real gaps: a cancelled reservation leaves the Plan
+`confirmed`; `plans.status='completed'` is never written; group occasion plans are cancellable only while `voting` and send no
+cancel notification; personal occasions keep a stale "Planned" badge; no terminal state when every business declines.
+
 ## Backlog (v2 candidates — not started, do not build without a direct ask)
 
 Deliberately out of scope for "Group planning for an Occasion" (archived in CLAUDE_HISTORY.md) per the user's own
