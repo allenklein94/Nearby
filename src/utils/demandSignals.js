@@ -6,6 +6,15 @@ import { occasionLabel } from '../constants/businessAttributes';
 // bad row can never render as "2 people".
 const PARTY_LABELS = { '1-2': '1–2 people', '3-4': '3–4 people', '5-6': '5–6 people', '7+': '7 or more people' };
 
+const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const PERIODS = ['morning', 'afternoon', 'evening'];
+const cap = (w) => w.charAt(0).toUpperCase() + w.slice(1);
+
+// "Friday evening" only when the server returned a floored, complement-checked cell with a real day AND period.
+export function whenLabel(day, period) {
+  return DAYS.includes(day) && PERIODS.includes(period) ? `${cap(day)} ${period}` : null;
+}
+
 export function partyBucketLabel(bucket) {
   return PARTY_LABELS[bucket] ?? null;
 }
@@ -43,7 +52,8 @@ export function describeDemandSignal(signal, { minPeople = 5, windowDays = 14 } 
     return {
       key: `category:${signal.category}`,
       headline: `${signal.category}${party ? ` for ${party}` : ''} is being searched nearby`,
-      detail: [budget, `${people} people · ${since}`, unmet].filter(Boolean).join(' · '),
+      // Separate, independently floored facts -- never phrased as one group of people who wanted all of them.
+      detail: [whenLabel(signal.when_day, signal.when_period), signal.outdoor === true ? 'Outdoor seating' : null, budget, `${people} people · ${since}`, unmet].filter(Boolean).join(' · '),
       actionLabel: 'Post availability',
       action: { type: 'availability', category: signal.category },
     };

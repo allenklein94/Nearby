@@ -57,3 +57,24 @@ describe('unfulfilled demand on category rows', () => {
     expect(describeDemandSignal({ ...base, unfulfilled_count: 9, supply_count: 1 }).detail).toMatch(/1 business offers this nearby/);
   });
 });
+
+describe('when / outdoor dimensions', () => {
+  const base = { kind: 'category', category: 'Foodie', people_count: 9 };
+  it('shows "Friday evening" and "Outdoor seating" only from real, present fields', () => {
+    const d = describeDemandSignal({ ...base, when_day: 'friday', when_period: 'evening', outdoor: true });
+    expect(d.detail).toBe('Friday evening · Outdoor seating · 9 people · last 14 days');
+  });
+  it('shows neither when absent (floor/complement withheld them) and never a zero or partial', () => {
+    const d = describeDemandSignal({ ...base, when_day: null, when_period: null, outdoor: null });
+    expect(d.detail).toBe('9 people · last 14 days');
+  });
+  it('needs BOTH a day and a period, and rejects anything outside the fixed vocabulary', () => {
+    expect(describeDemandSignal({ ...base, when_day: 'friday', when_period: null }).detail).toBe('9 people · last 14 days');
+    expect(describeDemandSignal({ ...base, when_day: 'brunch', when_period: 'evening' }).detail).toBe('9 people · last 14 days');
+    expect(describeDemandSignal({ ...base, outdoor: false }).detail).toBe('9 people · last 14 days');
+  });
+  it('still drops the whole row under the floor', () => {
+    expect(describeDemandSignal({ ...base, people_count: 4, when_day: 'friday', when_period: 'evening', outdoor: true })).toBeNull();
+  });
+});
+
