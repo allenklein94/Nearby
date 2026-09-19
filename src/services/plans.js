@@ -154,3 +154,70 @@ export async function getPlanIdForOccasion({ occasionId = null, groupPlanId = nu
   if (error) throw new Error(error.message);
   return data?.id ?? null;
 }
+
+// Experience plans (20270113_experience_plans.sql): one Plan holding the stops a person picked from a "Make it a night" /
+// occasion Experience, one per component. Stops point at REAL supply (an active availability posting or a gathering);
+// titles/partners are resolved server-side. Nothing is booked here -- each stop continues through its own existing flow.
+export async function createExperiencePlan({ title, stops, partySize = null }) {
+  const { data, error } = await supabase.rpc('create_experience_plan', {
+    title_param: title,
+    stops_param: stops.map((s) => ({
+      component_key: s.componentKey,
+      component_label: s.componentLabel,
+      stop_type: s.stopType,
+      ref_id: s.refId,
+    })),
+    party_size_param: partySize,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function getPlanStops(planId) {
+  const { data, error } = await supabase.rpc('get_plan_stops', { plan_id_param: planId });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((s) => ({
+    id: s.id,
+    order: s.sort_order,
+    componentKey: s.component_key,
+    componentLabel: s.component_label,
+    stopType: s.stop_type,
+    refId: s.ref_id,
+    partnerId: s.partner_id,
+    title: s.title,
+    subtitle: s.subtitle,
+    category: s.category,
+  }));
+}
+
+export async function getMyExperiencePlans() {
+  const { data, error } = await supabase
+    .from('plans')
+    .select('id, title, status')
+    .eq('plan_type', 'experience')
+    .neq('status', 'cancelled')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+// What a picked Experience item becomes: only real, plannable supply can be a stop (never a perk/community/etc.).
+export function experienceStopFromItem(component, item) {
+  if (!item || (item.type !== 'business_availability' && item.type !== 'gathering')) return null;
+  const refId = item.type === 'business_availability' ? item.matchedAvailability?.availabilityId ?? item.id : item.id;
+  return { componentKey: component.key, componentLabel: component.label, stopType: item.type, refId, title: item.title };
+}
+
+// Where a stop continues: the same existing flow tapping that supply anywhere else already opens.
+export function navigateToExperienceStop(navigation, stop, { partySize = null } = {}) {
+  if (stop.stopType === 'gathering') {
+    navigation.navigate('GatheringDetail', { gatheringId: stop.refId });
+    return;
+  }
+  navigation.navigate('AskBusiness', {
+    prefillText: '',
+    prefillCategory: stop.category ?? null,
+    prefillPartySize: partySize,
+    matchedAvailability: { availabilityId: stop.refId, partnerName: stop.subtitle ?? stop.title, title: stop.title },
+  });
+}

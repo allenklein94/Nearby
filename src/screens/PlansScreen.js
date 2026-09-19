@@ -5,7 +5,7 @@ import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyAttendingGatherings, getMyGatherings } from '../services/gatherings';
 import { getMyGroupPlans } from '../services/groupPlans';
-import { getMyStandaloneBusinessRequestPlans, getMyDateProposalPlans } from '../services/plans';
+import { getMyStandaloneBusinessRequestPlans, getMyDateProposalPlans, getMyExperiencePlans } from '../services/plans';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { formatHeroDateTime } from '../utils/timeContext';
 import { GATHERING_STATUS_META } from '../components/GatheringStatusBadge';
@@ -55,24 +55,27 @@ export default function PlansScreen({ navigation, route }) {
   // comment for the full scope decision.
   const [businessRequestPlans, setBusinessRequestPlans] = useState([]);
   const [datePlans, setDatePlans] = useState([]);
+  const [experiencePlans, setExperiencePlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [attendingData, hostingData, groupPlanData, businessRequestPlanData, datePlanData] = await Promise.all([
+      const [attendingData, hostingData, groupPlanData, businessRequestPlanData, datePlanData, experiencePlanData] = await Promise.all([
         getMyAttendingGatherings(),
         getMyGatherings(),
         getMyGroupPlans(),
         getMyStandaloneBusinessRequestPlans(),
         getMyDateProposalPlans(),
+        getMyExperiencePlans(),
       ]);
       setAttending(attendingData);
       setHosting(hostingData);
       setGroupPlans(groupPlanData);
       setBusinessRequestPlans(businessRequestPlanData);
       setDatePlans(datePlanData);
+      setExperiencePlans(experiencePlanData);
       setLoadError(false);
     } catch (e) {
       setLoadError(true);
@@ -217,6 +220,9 @@ export default function PlansScreen({ navigation, route }) {
     for (const plan of datePlans) {
       listData.push({ type: 'datePlanRow', key: `date-plan-${plan.id}`, plan });
     }
+    for (const plan of experiencePlans) {
+      listData.push({ type: 'experiencePlanRow', key: `experience-plan-${plan.id}`, plan });
+    }
   }
 
   return (
@@ -318,6 +324,18 @@ export default function PlansScreen({ navigation, route }) {
                   peopleCount={plan.party_size}
                   status={resolvePlanTableStatus(plan.status)}
                   onPress={() => openBusinessRequest(plan.resulting_business_request_id)}
+                  style={styles.planCardSpacing}
+                />
+              );
+            }
+            if (item.type === 'experiencePlanRow') {
+              return (
+                <PlanCard
+                  icon="✨"
+                  title={item.plan.title || 'Your night'}
+                  roleLabel="Night out"
+                  status={resolvePlanTableStatus(item.plan.status)}
+                  onPress={() => navigation.navigate('PlanDetail', { planId: item.plan.id })}
                   style={styles.planCardSpacing}
                 />
               );

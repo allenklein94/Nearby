@@ -39,6 +39,7 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { iconNameForCategory } from '../constants/quickPickIcons';
 import LoadErrorState from '../components/LoadErrorState';
 import ExperiencePerkLine from '../components/ExperiencePerkLine';
+import ExperienceComponentList from '../components/ExperienceComponentList';
 import TabHeaderActions from '../components/TabHeaderActions';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -1671,12 +1672,13 @@ export default function HomeScreen({ navigation }) {
                       {renderIntentResultItem(bundle)}
                     </View>
                   ))}
-                  {intentResults.experience.components.map((component) => (
-                    <View key={component.key} style={{ marginBottom: spacing.sm }}>
-                      <Text style={styles.intentGroupLabel}>{component.label}</Text>
-                      {component.items.map((item, index) => (<React.Fragment key={`${item.type}-${item.id}`}>{renderIntentResultItem(item, index)}<ExperiencePerkLine item={item} /></React.Fragment>))}
-                    </View>
-                  ))}
+                  <ExperienceComponentList
+                    experience={intentResults.experience}
+                    renderItem={renderIntentResultItem}
+                    navigation={navigation}
+                    partySize={intentResults.classifyResult?.partySize ?? null}
+                    labelStyle={styles.intentGroupLabel}
+                  />
                 </View>
               )}
               {(() => {

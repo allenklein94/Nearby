@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import ExperiencePerkLine from '../components/ExperiencePerkLine';
+import ExperienceComponentList from '../components/ExperienceComponentList';
 import usePersonalization from '../hooks/usePersonalization';
 import { behaviorNudge, broadGroupNudge } from '../constants/blendedRanking';
 import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Linking, Alert, BackHandler } from 'react-native';
@@ -1946,12 +1946,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
                       {renderIntentSearchResultRow(bundle)}
                     </View>
                   ))}
-                  {intentSearch.experience.components.map((component) => (
-                    <View key={component.key} style={{ marginBottom: spacing.sm }}>
-                      <Text style={styles.intentSearchGroupLabel}>{component.label}</Text>
-                      {component.items.map((item, i) => (<React.Fragment key={`${item.type}-${item.id}`}>{renderIntentSearchResultRow(item, i)}<ExperiencePerkLine item={item} /></React.Fragment>))}
-                    </View>
-                  ))}
+                  <ExperienceComponentList
+                    experience={intentSearch.experience}
+                    renderItem={renderIntentSearchResultRow}
+                    navigation={navigation}
+                    partySize={intentSearch.classifyResult?.partySize ?? null}
+                    labelStyle={styles.intentSearchGroupLabel}
+                  />
                 </>
               ) : (
                 intentSearch.items.map(renderIntentSearchResultRow)

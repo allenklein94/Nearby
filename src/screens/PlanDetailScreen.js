@@ -5,7 +5,7 @@ import { NLoader } from '../motion';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
-import { getPlanOverview } from '../services/plans';
+import { getPlanOverview, getPlanStops, navigateToExperienceStop } from '../services/plans';
 import { buildPlanJourney } from '../utils/planJourney';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 
@@ -18,13 +18,16 @@ export default function PlanDetailScreen({ navigation, route }) {
   const styles = getStyles(colors, shadow);
   const planId = route.params?.planId;
   const [overview, setOverview] = useState(null);
+  const [stops, setStops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
     setError(false);
     try {
-      setOverview(await getPlanOverview(planId));
+      const ov = await getPlanOverview(planId);
+      setOverview(ov);
+      setStops(ov?.plan?.plan_type === 'experience' ? await getPlanStops(planId) : []);
     } catch (e) {
       setError(true);
     }
@@ -59,6 +62,7 @@ export default function PlanDetailScreen({ navigation, route }) {
     ? `${match.kind === 'friend' ? 'Friends' : 'Matched'} since ${new Date(match.matched_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}`
     : null;
 
+  const isExperiencePlan = plan.plan_type === 'experience';
   const isGatheringPlan = activity?.kind === 'gathering' && (plan.plan_type === 'gathering' || plan.plan_type === 'friend_hangout');
   const isRequestPlan = plan.plan_type === 'business_request' && !!businessRequest;
 
@@ -79,8 +83,33 @@ export default function PlanDetailScreen({ navigation, route }) {
         </Text>
         {parent ? <Text style={styles.muted}>Part of: {parent.title}</Text> : null}
 
-        <Text style={styles.sectionLabel}>The plan so far</Text>
-        <View style={styles.card}>
+        {isExperiencePlan && (
+          <>
+            <Text style={styles.sectionLabel}>Your night</Text>
+            <View style={styles.card}>
+              {stops.map((s, i) => (
+                <View key={s.id} style={[styles.stepRow, i > 0 && styles.stepDivider]}>
+                  <Text style={styles.stepMark}>{s.order}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.stepLabel}>{s.componentLabel}</Text>
+                    <Text style={styles.muted}>{[s.title, s.subtitle && s.subtitle !== s.title ? s.subtitle : null].filter(Boolean).join(' · ')}</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => navigateToExperienceStop(navigation, s, { partySize: plan.party_size })}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Continue with ${s.title}`}
+                  >
+                    <Text style={styles.stopLink}>Continue →</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+            <Text style={styles.muted}>Nothing is booked yet. Continue each stop and the business confirms it with you; the plan keeps them together.</Text>
+          </>
+        )}
+
+        {!isExperiencePlan && <Text style={styles.sectionLabel}>The plan so far</Text>}
+        {!isExperiencePlan && <View style={styles.card}>
           {journey.map((s, i) => (
             <View key={s.key} style={[styles.stepRow, i > 0 && styles.stepDivider]}>
               <Text style={styles.stepMark}>{s.done ? '✓' : '○'}</Text>
@@ -90,7 +119,7 @@ export default function PlanDetailScreen({ navigation, route }) {
               </View>
             </View>
           ))}
-        </View>
+        </View>}
 
         {!isMatchPlan && (who.participants.length > 0 || who.organizers.length > 0) && (
           <>
@@ -160,6 +189,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   stepDivider: { borderTopWidth: 1, borderTopColor: colors.border },
   stepMark: { width: 28, color: colors.primary, fontSize: 16, fontWeight: '700' },
   stepLabel: { color: colors.textPrimary, fontWeight: '600', fontSize: 16 },
+  stopLink: { color: colors.primary, fontWeight: '700' },
   line: { color: colors.textPrimary, paddingVertical: 3 },
   button: { backgroundColor: colors.primary, borderRadius: radius.lg, padding: spacing.md, alignItems: 'center', marginTop: spacing.lg },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
