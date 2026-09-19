@@ -33,4 +33,19 @@ describe('navigateToExperienceStop', () => {
     expect(params.prefillCategory).toBe('Foodie');
     expect(params.prefillPartySize).toBe(2);
   });
+  it('carries the stop id so the ask can link its request back to the stop', () => {
+    const navigate = jest.fn();
+    navigateToExperienceStop({ navigate }, { id: 'stop-1', stopType: 'business_availability', refId: 'a1', title: 'T', state: 'chosen' });
+    expect(navigate.mock.calls[0][1].experienceStopId).toBe('stop-1');
+  });
+  it('sends an already-requested stop to its request instead of asking twice', () => {
+    const navigate = jest.fn();
+    navigateToExperienceStop({ navigate }, { id: 'stop-1', stopType: 'business_availability', refId: 'a1', requestId: 'req-1', state: 'requested' });
+    expect(navigate).toHaveBeenCalledWith('BusinessRequestDetail', { requestId: 'req-1' });
+  });
+  it('lets a cancelled stop be requested again', () => {
+    const navigate = jest.fn();
+    navigateToExperienceStop({ navigate }, { id: 'stop-1', stopType: 'business_availability', refId: 'a1', requestId: 'req-1', state: 'cancelled' });
+    expect(navigate.mock.calls[0][0]).toBe('AskBusiness');
+  });
 });

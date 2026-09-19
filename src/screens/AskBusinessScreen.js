@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity, searchActiveBusinessAvailability } from '../services/businessFulfillment';
+import { linkExperienceStop } from '../services/plans';
 import { createBusinessRequestForMatch } from '../services/dateProposals';
 import DietaryPicker from '../components/DietaryPicker';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
@@ -146,6 +147,7 @@ export default function AskBusinessScreen({ navigation, route }) {
   // capacity) at submit time, so a posting that filled up in the interim
   // correctly falls through to nothing rather than a fabricated match.
   const matchedAvailability = route.params?.matchedAvailability ?? null;
+  const experienceStopId = route.params?.experienceStopId ?? null;
   // "ok do it" (CLAUDE.md): the Occasion wizard's "Skip -- post manually"
   // escape hatch already collected a real "Involve" selection before
   // landing here -- forwarded as-is to the resulting request's own
@@ -389,6 +391,11 @@ export default function AskBusinessScreen({ navigation, route }) {
           experienceLevel,
           surpriseMode,
         });
+      }
+      // Experience stop: bind this request to the stop it was started from so the stop (and the experience Plan's
+      // status) follow it. Best-effort -- the request itself already exists and must never be blocked by this.
+      if (experienceStopId && result?.requestId) {
+        try { await linkExperienceStop(experienceStopId, result.requestId); } catch (_e) { /* the stop just stays unlinked */ }
       }
       // Finding 4: carry the original ask's real prefill fields forward so
       // the "Try a Wider Radius" button on BusinessRequestDetail can push a

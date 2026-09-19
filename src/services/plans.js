@@ -29,7 +29,8 @@ export async function getMyStandaloneBusinessRequestPlans() {
     .from('plans')
     .select(
       'id, title, scheduled_at, party_size, budget_max, status, resulting_business_request_id, ' +
-        'business_requests!plans_resulting_business_request_id_fkey(category, group_plan_id)'
+        'business_requests!plans_resulting_business_request_id_fkey(category, group_plan_id), ' +
+        'parent:plans!plans_parent_plan_id_fkey(plan_type)'
     )
     .eq('plan_type', 'business_request')
     .not('resulting_business_request_id', 'is', null)
@@ -43,7 +44,8 @@ export async function getMyStandaloneBusinessRequestPlans() {
   // onto plans.status (a real, disclosed gap in the Phase G migration's
   // own header comment), so this has to be checked directly rather than
   // inferred from status.
-  return (data ?? []).filter((row) => !row.business_requests?.group_plan_id);
+  // A request that is a stop of an experience Plan is shown under that Plan, not again here.
+  return (data ?? []).filter((row) => !row.business_requests?.group_plan_id && row.parent?.plan_type !== 'experience');
 }
 
 // A date_proposal-sourced plan has no scheduled_at (a proposal is a real
@@ -187,8 +189,26 @@ export async function getPlanStops(planId) {
     title: s.title,
     subtitle: s.subtitle,
     category: s.category,
+    requestId: s.request_id,
+    state: s.stop_state,
   }));
 }
+
+// Called by AskBusiness right after a stop's request is created: binds the request to the stop so the stop (and the
+// experience's status) follow that request. Best-effort by the caller -- a failure never blocks the request itself.
+export async function linkExperienceStop(stopId, requestId) {
+  const { error } = await supabase.rpc('link_experience_stop_request', { stop_id_param: stopId, request_id_param: requestId });
+  if (error) throw new Error(error.message);
+}
+
+export const EXPERIENCE_STOP_STATE_LABEL = {
+  chosen: 'Not requested yet',
+  requested: 'Waiting for the business',
+  offer_received: 'Offer received',
+  booked: "You're booked",
+  done: 'Done',
+  cancelled: 'Cancelled',
+};
 
 export async function getMyExperiencePlans() {
   const { data, error } = await supabase
@@ -214,7 +234,13 @@ export function navigateToExperienceStop(navigation, stop, { partySize = null } 
     navigation.navigate('GatheringDetail', { gatheringId: stop.refId });
     return;
   }
+  // Already requested: go see where it stands rather than asking twice.
+  if (stop.requestId && stop.state && stop.state !== 'chosen' && stop.state !== 'cancelled') {
+    navigation.navigate('BusinessRequestDetail', { requestId: stop.requestId });
+    return;
+  }
   navigation.navigate('AskBusiness', {
+    experienceStopId: stop.id ?? null,
     prefillText: '',
     prefillCategory: stop.category ?? null,
     prefillPartySize: partySize,

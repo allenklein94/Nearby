@@ -5,7 +5,7 @@ import { NLoader } from '../motion';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
-import { getPlanOverview, getPlanStops, navigateToExperienceStop } from '../services/plans';
+import { getPlanOverview, getPlanStops, navigateToExperienceStop, EXPERIENCE_STOP_STATE_LABEL } from '../services/plans';
 import { buildPlanJourney } from '../utils/planJourney';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 
@@ -89,22 +89,23 @@ export default function PlanDetailScreen({ navigation, route }) {
             <View style={styles.card}>
               {stops.map((s, i) => (
                 <View key={s.id} style={[styles.stepRow, i > 0 && styles.stepDivider]}>
-                  <Text style={styles.stepMark}>{s.order}</Text>
+                  <Text style={styles.stepMark}>{s.state === 'booked' || s.state === 'done' ? '✓' : s.order}</Text>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.stepLabel}>{s.componentLabel}</Text>
                     <Text style={styles.muted}>{[s.title, s.subtitle && s.subtitle !== s.title ? s.subtitle : null].filter(Boolean).join(' · ')}</Text>
+                    {s.stopType === 'business_availability' && <Text style={styles.muted}>{EXPERIENCE_STOP_STATE_LABEL[s.state] ?? ''}</Text>}
                   </View>
                   <TouchableOpacity
                     onPress={() => navigateToExperienceStop(navigation, s, { partySize: plan.party_size })}
                     accessibilityRole="button"
                     accessibilityLabel={`Continue with ${s.title}`}
                   >
-                    <Text style={styles.stopLink}>Continue →</Text>
+                    <Text style={styles.stopLink}>{s.requestId && s.state !== 'chosen' && s.state !== 'cancelled' ? 'View →' : 'Continue →'}</Text>
                   </TouchableOpacity>
                 </View>
               ))}
             </View>
-            <Text style={styles.muted}>Nothing is booked yet. Continue each stop and the business confirms it with you; the plan keeps them together.</Text>
+            <Text style={styles.muted}>Each stop is confirmed by its business with you; this plan keeps them together and updates as they do.</Text>
           </>
         )}
 
