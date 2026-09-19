@@ -891,6 +891,16 @@ export async function setBusinessPriorityOccasions(partnerId, occasions) {
   if (error) throw error;
 }
 
+// "Occasions we offer" -- the explicit capability list (migration 20270101), separate from the
+// "want more" appetite signal above.
+export async function setBusinessOfferedOccasions(partnerId, occasions) {
+  const { error } = await supabase.rpc('set_business_offered_occasions', {
+    partner_id_param: partnerId,
+    occasions_param: occasions ?? [],
+  });
+  if (error) throw error;
+}
+
 // "Business Story" plan, Phase 3 -- a real, coarse, self-reported
 // "how's business right now" signal (open/limited/full), deliberately
 // not the deeper capacity-rules business_fulfillment_policies mechanism.

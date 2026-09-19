@@ -6,7 +6,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityOccasions } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityOccasions, setBusinessOfferedOccasions } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
 // P2 remediation item 11 (CLAUDE.md) -- reuse the admin queue's own real
@@ -47,7 +47,7 @@ import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiences
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import DemandNearYouCard from '../components/DemandNearYouCard';
 import { describeDemandSignals } from '../utils/demandSignals';
-import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, occasionLabel, dietaryLabel } from '../constants/businessAttributes';
+import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, OFFERED_OCCASION_OPTIONS, occasionLabel, occasionPhrase, dietaryLabel } from '../constants/businessAttributes';
 import { planAddonLabel } from '../constants/planAddons';
 import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
@@ -401,6 +401,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         businessPriorityAttributes: selectedPartner?.priority_attributes ?? [],
         businessPriorityTimeWindows: selectedPartner?.priority_time_windows ?? [],
         businessPriorityOccasions: selectedPartner?.priority_occasions ?? [],
+        businessOfferedOccasions: selectedPartner?.offered_occasions ?? [],
         activePrioritySignals,
         fulfillmentPolicy,
         weather: businessWeather,
@@ -917,6 +918,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // underneath (each field lives in its own column/RPC since "customers
   // you want," "when you want them," and "why they're coming" are
   // genuinely different vocabularies).
+  // "Occasions we offer": saves per tap, reverting the chip if the save fails.
+  async function handleToggleOfferedOccasion(key) {
+    if (!selectedPartner) return;
+    const current = selectedPartner.offered_occasions ?? [];
+    const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
+    setSelectedPartner((prev) => ({ ...prev, offered_occasions: next }));
+    try {
+      await setBusinessOfferedOccasions(selectedPartner.id, next);
+    } catch (e) {
+      setSelectedPartner((prev) => ({ ...prev, offered_occasions: current }));
+      Alert.alert('Error', e.message);
+    }
+  }
+
   async function handleSavePriorityAttributes() {
     if (!selectedPartner) return;
     setSavingPriorityAttributes(true);
@@ -3341,6 +3356,30 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     value, including real non-celebratory ones (a farewell,
                     a move, a new job) -- "What They're Celebrating" read
                     wrong the moment one of those showed up here. */}
+                {/* "Occasions we offer": an explicit capability, separate from "want more" above. Saves on
+                    tap (no Save button); Nearby then routes matching occasion requests here first, and a
+                    package (if any) is still what gets offered -- nothing is invented for this list alone. */}
+                <Text style={styles.sectionHeader}>Occasions we offer</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {OFFERED_OCCASION_OPTIONS.map((o) => {
+                    const selected = (selectedPartner?.offered_occasions ?? []).includes(o.key);
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handleToggleOfferedOccasion(o.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${o.label}${selected ? ', offered' : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <Text style={styles.helperText}>
+                  Requests for these occasions reach you first. Add a package under Occasion Packages to offer one automatically.
+                </Text>
                 <Text style={styles.sectionHeader}>🎉 What They're Planning</Text>
                 <Text style={styles.helperText}>
                   Real open requests nearby, grouped by occasion instead of category -- a
@@ -3356,11 +3395,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     return (
                       <View key={d.occasion_type} style={styles.gatheringRow}>
                         <Text style={styles.offerTitle}>
-                          {emoji} {d.request_count} {d.request_count === 1 ? 'group is' : 'groups are'} planning a {noun}
-                          {Number(d.weekend_request_count) > 0 ? ' this weekend' : ''}
+                          {emoji} {d.request_count} nearby {Number(d.request_count) === 1 ? 'customer is' : 'customers are'} planning {occasionPhrase(d.occasion_type)}
                         </Text>
                         <Text style={styles.breakdownText}>
                           {[
+                            Number(d.weekend_request_count) > 0 ? `${d.weekend_request_count} of them this weekend` : null,
+                            (selectedPartner?.offered_occasions ?? []).includes(d.occasion_type) ? 'You offer this' : null,
                             d.dominant_category ? `mostly looking for ${d.dominant_category} (${d.dominant_category_count} of ${d.request_count})` : null,
                             d.total_party_size ? `${d.total_party_size} total ${Number(d.total_party_size) === 1 ? 'guest' : 'guests'}` : null,
                             d.soonest_date ? `soonest ${new Date(d.soonest_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : null,

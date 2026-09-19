@@ -284,12 +284,28 @@ export const OCCASION_GROUPS = [
   },
 ];
 
+// "Occasions we offer" (migration 20270101): the six occasions a business can say it offers, an
+// explicit capability separate from "want more" (priority_occasions). Every key is an existing
+// occasion key; family_gathering is labelled "Group/Family" for businesses -- no "group events" key
+// exists or is invented. Must equal brand_partners_offered_occasions_check (guarded by a test).
+export const OFFERED_OCCASION_KEYS = ['birthday', 'anniversary', 'date_night', 'celebration', 'graduation', 'family_gathering'];
+export const OFFERED_OCCASION_OPTIONS = OFFERED_OCCASION_KEYS.map((key) => {
+  const o = OCCASION_OPTIONS.find((x) => x.key === key);
+  return { key, icon: o?.icon, label: key === 'family_gathering' ? 'Group/Family' : o?.label ?? key };
+});
+
 export function occasionGroupOptions() {
   return OCCASION_GROUPS.map((g) => ({
     key: g.key,
     label: g.label,
     options: g.keys.map((key) => OCCASION_OPTIONS.find((o) => o.key === key)).filter(Boolean),
   }));
+}
+
+// "an anniversary" / "a birthday" -- for demand lines ("5 nearby customers are planning an anniversary").
+export function occasionPhrase(key) {
+  const label = occasionLabel(key).toLowerCase();
+  return `${/^[aeiou]/.test(label) ? 'an' : 'a'} ${label}`;
 }
 
 export function occasionLabel(key) {

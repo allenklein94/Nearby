@@ -65,6 +65,8 @@ export function scoreBusinessOpportunity({
   businessPriorityAttributes = [],
   businessPriorityTimeWindows = [],
   businessPriorityOccasions = [],
+  // "Occasions we offer": the business's explicit capability list (separate from the want-more list above).
+  businessOfferedOccasions = [],
   activePrioritySignals = [],
   fulfillmentPolicy = null,
   // Optional -- the real, already-fetched weather object for the
@@ -101,6 +103,13 @@ export function scoreBusinessOpportunity({
   if (requestOccasion && businessPriorityOccasions.includes(requestOccasion)) {
     score += SCORE_OWN_NETWORK;
     reasons.push({ label: `Matches an occasion you want more of (${requestOccasion.replace(/_/g, ' ')})`, points: SCORE_OWN_NETWORK });
+  }
+
+  // Explicitly offers this occasion (a capability, not an appetite): a real match, counted once and
+  // never on top of the stronger want-more credit above. Like the attribute case, the weaker weight.
+  if (requestOccasion && businessOfferedOccasions.includes(requestOccasion) && !businessPriorityOccasions.includes(requestOccasion)) {
+    score += SCORE_INTEREST_MATCH;
+    reasons.push({ label: `You offer this occasion (${requestOccasion.replace(/_/g, ' ')})`, points: SCORE_INTEREST_MATCH });
   }
 
   // A weaker, still-real signal: the business already offers this, even
