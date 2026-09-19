@@ -41,3 +41,19 @@ describe('describeDemandSignal', () => {
     expect(partyBucketLabel('nope')).toBeNull();
   });
 });
+
+describe('unfulfilled demand on category rows', () => {
+  const base = { kind: 'category', category: 'Dinner', people_count: 14, party_bucket: '7+' };
+  it('adds the waiting + supply line only when the server returned a floored count', () => {
+    const d = describeDemandSignal({ ...base, unfulfilled_count: 12, supply_count: 2 });
+    expect(d.detail).toMatch(/12 still waiting for an offer · 2 businesses offer this nearby/);
+    expect(describeDemandSignal({ ...base, unfulfilled_count: null, supply_count: null }).detail).not.toMatch(/waiting/);
+  });
+  it('never shows a sub-floor waiting count or a supply count without one', () => {
+    expect(describeDemandSignal({ ...base, unfulfilled_count: 3, supply_count: 2 }).detail).not.toMatch(/waiting|offer this/);
+    expect(describeDemandSignal({ ...base, unfulfilled_count: null, supply_count: 2 }).detail).not.toMatch(/offer this/);
+  });
+  it('says "business offers" for a single one', () => {
+    expect(describeDemandSignal({ ...base, unfulfilled_count: 9, supply_count: 1 }).detail).toMatch(/1 business offers this nearby/);
+  });
+});

@@ -32,10 +32,18 @@ export function describeDemandSignal(signal, { minPeople = 5, windowDays = 14 } 
     const high = Number(signal.budget_high);
     const hasBudget = signal.budget_low != null && signal.budget_high != null && Number.isFinite(low) && Number.isFinite(high);
     const budget = hasBudget ? (low === high ? `Budget around $${low}` : `Budget $${low}–$${high}`) : null;
+    // Unfulfilled demand: only when the server returned it (it applies its own >= 5 floor), re-checked here.
+    const waiting = Number(signal.unfulfilled_count);
+    const hasWaiting = signal.unfulfilled_count != null && Number.isFinite(waiting) && waiting >= minPeople;
+    const supply = Number(signal.supply_count);
+    const hasSupply = hasWaiting && signal.supply_count != null && Number.isFinite(supply) && supply >= 0;
+    const unmet = hasWaiting
+      ? `${waiting} still waiting for an offer${hasSupply ? ` · ${supply} ${supply === 1 ? 'business offers' : 'businesses offer'} this nearby` : ''}`
+      : null;
     return {
       key: `category:${signal.category}`,
       headline: `${signal.category}${party ? ` for ${party}` : ''} is being searched nearby`,
-      detail: [budget, `${people} people · ${since}`].filter(Boolean).join(' · '),
+      detail: [budget, `${people} people · ${since}`, unmet].filter(Boolean).join(' · '),
       actionLabel: 'Post availability',
       action: { type: 'availability', category: signal.category },
     };
