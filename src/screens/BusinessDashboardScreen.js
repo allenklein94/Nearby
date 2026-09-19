@@ -35,7 +35,7 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 // Item 70 (CLAUDE.md): a real, honest "when" label for a pending request's
 // own date/time window, shown on the business's opportunity card.
 import { buildOpportunityCard } from '../utils/businessOpportunityCard';
-import { STANDARD_AVAILABILITY_TEXT, buildAlternativeText, alternativePickerStart } from '../utils/quickOfferResponse';
+import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardAvailabilityText } from '../utils/quickOfferResponse';
 import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
 // already-deployed async submit-then-poll weather RPC every other
@@ -5746,10 +5746,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.offerTitle}>Standard availability</Text>
                 <Text style={styles.breakdownText}>Yes, you can host them as requested.</Text>
+                {usualTermsLine(fulfillmentPolicy) ? (
+                  <Text style={[styles.breakdownText, { marginTop: spacing.xs }]}>{usualTermsLine(fulfillmentPolicy)}</Text>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => { setAcceptSheetRequestId(null); openPolicyModal(); }}
+                    accessibilityLabel="Set your usual terms"
+                    accessibilityRole="button"
+                  >
+                    <Text style={[styles.messageMemberLink, { marginTop: spacing.xs }]}>Set your usual terms so they're included</Text>
+                  </TouchableOpacity>
+                )}
               </View>
               <TouchableOpacity
                 style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
-                onPress={() => submitQuickResponse(acceptSheetRequestId, { offerType: 'standard', offerDescription: STANDARD_AVAILABILITY_TEXT })}
+                onPress={() => submitQuickResponse(acceptSheetRequestId, { offerType: 'standard', offerDescription: standardAvailabilityText(fulfillmentPolicy) })}
                 disabled={respondingOpportunityId === acceptSheetRequestId}
                 accessibilityLabel="Send standard availability"
                 accessibilityRole="button"
