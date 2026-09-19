@@ -6,7 +6,7 @@ import { DIETARY_OPTIONS } from '../constants/businessAttributes';
 
 // Consumer-picked, closed-vocabulary dietary needs for a food request (never inferred, never free text).
 // Shared by every screen that creates a business request so the wording and the "who sees this" promise stay identical.
-export default function DietaryPicker({ selected, onChange }) {
+export default function DietaryPicker({ selected, onChange, note }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
   return (
@@ -29,7 +29,7 @@ export default function DietaryPicker({ selected, onChange }) {
           );
         })}
       </View>
-      <Text style={styles.note}>Shared only with businesses that respond to this request, so they can plan your meal.</Text>
+      <Text style={styles.note}>{note ?? 'Shared only with businesses that respond to this request, so they can plan your meal.'}</Text>
     </View>
   );
 }

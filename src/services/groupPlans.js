@@ -233,3 +233,27 @@ export async function getGroupPlanDetail(proposalId) {
 
   return { proposal, participants: participants ?? [], offers, confirmations, socialOffers };
 }
+
+// Each participant declares their OWN dietary needs (owner-only table; never visible to other participants). When the
+// initiator confirms, the union of accepted participants' needs goes on the one request businesses see, unattributed.
+export async function getMyGroupPlanDietary(proposalId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return [];
+  const { data, error } = await supabase
+    .from('group_plan_participant_dietary')
+    .select('dietary')
+    .eq('proposal_id', proposalId)
+    .eq('user_id', myId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data?.dietary ?? [];
+}
+
+export async function setMyGroupPlanDietary(proposalId, dietary) {
+  const { error } = await supabase.rpc('set_my_group_plan_dietary', {
+    proposal_id_param: proposalId,
+    dietary_param: dietary,
+  });
+  if (error) throw new Error(error.message);
+}

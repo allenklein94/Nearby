@@ -6,6 +6,8 @@ import { supabase } from '../services/supabase';
 import {
   getGroupPlanDetail,
   respondToGroupPlan,
+  getMyGroupPlanDietary,
+  setMyGroupPlanDietary,
   setGroupPlanBudget,
   confirmGroupPlan,
   cancelGroupPlan,
@@ -15,6 +17,7 @@ import {
 } from '../services/groupPlans';
 import { submitSocialOffer, respondToSocialOffer, markSocialOfferViewed } from '../services/socialOffers';
 import { recordIntentSelection } from '../services/intentOutcomes';
+import DietaryPicker from '../components/DietaryPicker';
 import LoadErrorState from '../components/LoadErrorState';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import StaggeredReveal from '../components/StaggeredReveal';
@@ -82,6 +85,7 @@ export default function GroupPlanScreen({ navigation, route }) {
   const [acting, setActing] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
   const [excludeIds, setExcludeIds] = useState([]);
+  const [myDietary, setMyDietary] = useState([]);
   const [socialOfferInput, setSocialOfferInput] = useState('');
   // Success state (per the Nearby Motion Language): confirming the plan and locking
   // in the group's reservation (CLAUDE.md's own disclosed "group-plan-confirm" gap)
@@ -108,6 +112,9 @@ export default function GroupPlanScreen({ navigation, route }) {
       setExcludeIds([]);
       if (result.proposal.agreed_budget_max !== null) {
         setBudgetInput(String(result.proposal.agreed_budget_max));
+      }
+      if (result.proposal.category === 'Foodie') {
+        getMyGroupPlanDietary(proposalId).then(setMyDietary).catch(() => {});
       }
       setLoadError(false);
 
@@ -331,6 +338,15 @@ export default function GroupPlanScreen({ navigation, route }) {
   if (!detail) return null;
 
   const { proposal, participants, offers, confirmations, socialOffers } = detail;
+  // Optimistic: the picker reflects the tap immediately; a failed save reverts to what the server has.
+  function handleDietaryChange(next) {
+    const previous = myDietary;
+    setMyDietary(next);
+    setMyGroupPlanDietary(proposalId, next).catch(() => {
+      setMyDietary(previous);
+      Alert.alert('Could not save', 'Your dietary needs were not saved. Please try again.');
+    });
+  }
   const isInitiator = proposal.initiator_id === myId;
   const myParticipant = participants.find((p) => p.user_id === myId);
   const acceptedParticipants = participants.filter((p) => p.status === 'accepted');
@@ -407,6 +423,14 @@ export default function GroupPlanScreen({ navigation, route }) {
             )}
           </View>
         ))}
+
+        {proposal.status === 'pending' && proposal.category === 'Foodie' && ['invited', 'accepted'].includes(myParticipant?.status) && (
+          <DietaryPicker
+            selected={myDietary}
+            onChange={handleDietaryChange}
+            note="Only you see your picks. Once the plan is confirmed, the group's needs go to responding businesses combined, without names."
+          />
+        )}
 
         {proposal.status === 'pending' && myParticipant?.status === 'invited' && (
           <View style={styles.actionRow}>
