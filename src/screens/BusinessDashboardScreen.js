@@ -2729,6 +2729,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 {selectedPartner && (
                   <DemandNearYouCard
                     loaded={demandSignals !== null}
+                    windowDays={demandSignals?.window_days ?? 14}
                     signals={describeDemandSignals(demandSignals)}
                     onAction={(action) => {
                       if (action.type === 'package') openPackageModal({ occasion_type: action.occasion });
@@ -3240,7 +3241,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.helperText}>
                   Real open requests nearby, grouped by occasion instead of category -- a
                   different cut of the same real signal below, made to answer "what should
-                  I offer" rather than "who wants what."
+                  I offer" rather than "who wants what." A group is shown only when at least 5 people are behind it.
                 </Text>
                 {occasionDemand.length === 0 ? (
                   <Text style={styles.emptyText}>No occasion-based demand nearby yet.</Text>
@@ -3286,8 +3287,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   🟡 are a softer signal: real recent searches nearby that found nothing, not a
                   confirmed request. A 🆕 marker means real demand exists in a category you've
                   never actually offered (no availability posted, no offer ever accepted there).
-                  Reads near-zero until there's real volume nearby, which is expected this early
-                  on.
+                  A category appears only once at least 5 people are behind it, so this stays empty
+                  until there's real volume nearby, which is expected this early on.
                 </Text>
                 {entitlements && !hasEntitlement(entitlements, 'advanced_match_radar') && (
                   renderLockedFeature('advanced_match_radar', "Unlock the 🟡 unmet-intent signal and 🆕 demand-gap detection above -- see real searches nearby that found nothing, and categories you don't currently offer but people are asking for.")

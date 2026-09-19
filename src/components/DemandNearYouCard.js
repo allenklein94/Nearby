@@ -6,7 +6,7 @@ import { spacing, radius, typography } from '../theme';
 // Top-of-dashboard "Demand near you". `signals` are already-described rows from
 // describeDemandSignals() (privacy floor enforced server-side and re-checked there). `loaded`
 // distinguishes "still fetching" (render nothing) from "not enough activity" (honest empty copy).
-export default function DemandNearYouCard({ signals, loaded, onAction }) {
+export default function DemandNearYouCard({ signals, loaded, onAction, windowDays = 14 }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
   if (!loaded) return null;
@@ -14,6 +14,7 @@ export default function DemandNearYouCard({ signals, loaded, onAction }) {
   return (
     <View style={styles.card} accessibilityLabel="Demand near you">
       <Text style={styles.title}>Demand near you</Text>
+      <Text style={styles.window}>Last {windowDays} days</Text>
       {signals.length === 0 ? (
         <Text style={styles.empty}>We're still gathering enough local activity to show useful demand.</Text>
       ) : (
@@ -38,7 +39,8 @@ export default function DemandNearYouCard({ signals, loaded, onAction }) {
 
 const getStyles = (colors) => StyleSheet.create({
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border },
-  title: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.sm },
+  title: { ...typography.title, color: colors.textPrimary },
+  window: { color: colors.textSecondary, fontSize: 12, marginBottom: spacing.sm },
   empty: { color: colors.textSecondary, fontSize: 14 },
   row: { paddingVertical: spacing.sm },
   rowDivider: { borderTopWidth: 1, borderTopColor: colors.border },
