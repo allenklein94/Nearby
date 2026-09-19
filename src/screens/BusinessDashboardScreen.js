@@ -48,6 +48,7 @@ import { classifyBusinessCategory } from '../constants/businessCategoryClassifie
 import { extractAttributesFromText } from '../constants/businessAttributeExtraction';
 import { INTEREST_OPTIONS, subcategoryOptionsFor } from '../constants/gatheringCategories';
 import LoadErrorState from '../components/LoadErrorState';
+import BusinessEmailNotifications from '../components/BusinessEmailNotifications';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -4646,6 +4647,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     ))}
                   </>
                 )}
+
+                {Platform.OS === 'web' && <BusinessEmailNotifications />}
 
                 {/* Phase 7 (Business Web, CLAUDE.md) -- Stripe Connect
                     onboarding's native-scheme OAuth return has no web

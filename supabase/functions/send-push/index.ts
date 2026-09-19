@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
+import { sendEmail } from '../_shared/email.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -57,15 +58,28 @@ serve(async (req)=>{
     }
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
     const { data: profile } = await admin.from('profiles').select('expo_push_token').eq('id', recipient_id).maybeSingle();
+    const tier = notificationTier(data?.type);
     if (!profile?.expo_push_token) {
+      // Business Web parity: an owner who only uses the website has no push token. If they have a verified, enabled
+      // email address (business_email_settings) send the same alert there -- Important-tier only, so a web-only
+      // owner isn't flooded with recommendations. No-op (and never an error) until the email provider is configured.
+      let emailed = false;
+      if (tier === 'important') {
+        const { data: es } = await admin.from('business_email_settings').select('email, verified_at, enabled').eq('user_id', recipient_id).maybeSingle();
+        if (es?.email && es.verified_at && es.enabled) {
+          const webUrl = Deno.env.get('BUSINESS_WEB_URL');
+          const sent = await sendEmail(es.email, title, `${body ?? ''}${webUrl ? `\n\nOpen your Nearby business dashboard: ${webUrl}` : ''}`);
+          emailed = sent.sent;
+        }
+      }
       return new Response(JSON.stringify({
         ok: true,
-        skipped: 'no_token'
+        skipped: 'no_token',
+        emailed
       }), {
         status: 200
       });
     }
-    const tier = notificationTier(data?.type);
     const isImportant = tier === 'important';
     const pushResponse = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',

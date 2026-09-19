@@ -1,3 +1,19 @@
+# Item 147 (2026-09-19) - Business Web parity: email fallback for business notifications
+Gap found in the website/app audit: every business alert is a phone push through the single `send-push` Edge Function (all ~60
+notify_* triggers call it), and it returned `skipped: no_token` for a website-only owner. Now: migration
+`20261208_business_email_notifications.sql` (`business_email_settings`, no client policies; `get_my_business_email_settings`,
+`set_my_business_email_enabled`, owner-only), Edge Function `business-email` (start/confirm/remove; 6-digit code stored hashed,
+30-min expiry, 5 attempts, 60s resend cooldown, owner-gated via profiles.managed_partner_id), `_shared/email.ts` (Resend REST adapter),
+and `send-push` emails the same title/body to a VERIFIED + ENABLED address only when there is no push token and only for Important-tier
+types (recommendations never emailed). Client: `services/businessEmail.js`, `BusinessEmailNotifications` card in the dashboard,
+web-only (a native owner has push). INERT until the user connects a provider: set Edge secrets RESEND_API_KEY, EMAIL_FROM (must be a
+domain verified in Resend) and optionally BUSINESS_WEB_URL (dashboard link in the email). Until then `start` returns
+`email_not_configured` and the card says so honestly; nothing is stored or promised. Deployed business-email + send-push (v12);
+verified live: send-push with no token -> `{skipped:'no_token', emailed:false}`, bad auth 401, business-email without auth 401. DB
+verified in a rolled-back transaction. NOT exercised: a real email send (no provider), the confirm flow end to end, the card in a
+browser. Not run: from-scratch Docker replay. Convention: any new email-sending path goes through `_shared/email.ts`. Real external
+account (Resend) needs the user present -- per the standing rule it was NOT set up.
+
 # Item 146 (2026-09-18) - Universal Plan, pass D: budget
 Migration `20261207_plan_budget.sql`. Budget is really captured only on `business_requests` and `occasion_group_plans` (min/max);
 `plans` had budget_max only. Added `plans.budget_min`, kept both columns synced from those two sources (create + update triggers,
