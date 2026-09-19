@@ -3699,7 +3699,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                               accessibilityLabel="Accept this request"
                               accessibilityRole="button"
                             >
-                              <Text style={styles.smallActionButtonText}>Accept</Text>
+                              <Text style={styles.smallActionButtonText}>Accept & Offer</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated, marginRight: spacing.sm, marginBottom: spacing.xs }]}
