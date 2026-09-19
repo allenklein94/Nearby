@@ -432,6 +432,8 @@ export async function routeNotificationTap(data) {
     // just the original requester) now gets one of these, all landing on
     // the same real plan-state screen so everyone sees the same thing.
     case 'business_offer_declined':
+    // State-machine audit gap 6: the last business passed -- same screen, which shows the wider-radius next step.
+    case 'business_request_all_declined':
     case 'plan_confirmed':
     case 'plan_reservation_cancelled':
     case 'plan_cancelled':

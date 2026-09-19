@@ -39,11 +39,12 @@ BusinessRequestDetail invite pickers (server enforces it); Cuisine as a browse f
 destined occasion co-organizers; push for `plan_messages`; anon `is_match_participant` grant
 error on `business_requests` reads (fails closed).
 
-**State-machine audit (2026-09-19, `PRODUCT_AUDIT/STATE_MACHINE_AUDIT_2026-09-19.md`): gaps 1-4 FIXED and live
-(migration `20261210_reservation_plan_lifecycle`).** A cancelled primary reservation ends the request + Plan (+ fulfilled group
+**State-machine audit (2026-09-19, `PRODUCT_AUDIT/STATE_MACHINE_AUDIT_2026-09-19.md`): gaps 1-4 (migration `20261210_reservation_plan_lifecycle`) and 6 (`20261211_all_declined_outcome`) FIXED and live.** A cancelled primary reservation ends the request + Plan (+ fulfilled group
 plan; the request does not reopen); completing one sets the Plan `completed`; the host can cancel a group plan in any non-terminal
-state, cascading downstream and notifying participants; the occasion "Planned" badge follows the Plan's live status. Still open
-(no ask yet): gap 6 "all businesses declined" has no terminal state/nudge; gap 5 parent plan has no stored child-cancelled state;
+state, cascading downstream and notifying participants; the occasion "Planned" badge follows the Plan's live status. Gap 6 is a derived
+outcome (`utils/requestOutcome.js`, no stored status): the decline that leaves no live offer sends one `business_request_all_declined`
+push and the detail screen shows a wider-radius banner; a last *withdrawal* shows the banner but sends no push. Still open
+(no ask yet): gap 5 parent plan has no stored child-cancelled state;
 no cancellation-reason analytics. Not exercised on real data (prod has no reservations).
 
 ## Backlog (v2 candidates — not started, do not build without a direct ask)

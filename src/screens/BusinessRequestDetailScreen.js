@@ -5,6 +5,7 @@ import { NLoader, SuccessAnimation, ModeTransition } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { useStripe, initStripe } from '@stripe/stripe-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { isAllDeclined } from '../utils/requestOutcome';
 import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon, setPlanItemTime, getPlanOrganizers, addPlanOrganizer, removePlanOrganizer } from '../services/businessFulfillment';
 import { getPlanChatInfo } from '../services/planChat';
 import { getPlanIdForResource } from '../services/plans';
@@ -1242,6 +1243,19 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           </View>
         ) : (
           <>
+          {isAllDeclined(request, offers) && (
+            <View style={styles.groupPlanBanner}>
+              <Text style={styles.groupPlanBannerText}>Nobody we asked is available for this one. Widening your search may find someone.</Text>
+              <TouchableOpacity
+                style={styles.groupPlanBannerButton}
+                onPress={handleTryWiderRadius}
+                accessibilityLabel={`Try a wider radius, ${widerRadiusMiles} miles`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.groupPlanBannerButtonText}>Try a Wider Radius →</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           {showComparison && (
             <View style={styles.comparisonHeaderRow}>
               <Text style={styles.comparisonHeaderText}>🔍 Compare Your Options</Text>
