@@ -42,6 +42,13 @@ export const BUSINESS_ATTRIBUTE_OPTIONS = [
   { key: 'corporate_events', label: 'Corporate Events', icon: '💼' },
 ];
 
+// Tags a business uses to describe itself / a customer uses to ask for a venue, but that are not a personal dining "vibe"
+// (you don't have a preference for "corporate events" on a night out). Excluded from the consumer dining-preference
+// surfaces via VENUE_PREFERENCE_OPTIONS below; still valid values everywhere else (business profile, requests).
+export const BUSINESS_ONLY_ATTRIBUTE_KEYS = ['private_dining', 'corporate_events'];
+
+export const VENUE_PREFERENCE_OPTIONS = BUSINESS_ATTRIBUTE_OPTIONS.filter((o) => !BUSINESS_ONLY_ATTRIBUTE_KEYS.includes(o.key));
+
 export const CUISINE_OPTIONS = [
   { key: 'italian', label: 'Italian' },
   { key: 'mexican', label: 'Mexican' },

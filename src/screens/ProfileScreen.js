@@ -15,7 +15,7 @@ import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { feetInchesToTotalInches, isBlankHeightPair, totalInchesToFeetInches } from '../utils/heightUnits';
 import { PERSONAL_INTEREST_OPTIONS as INTEREST_OPTIONS } from '../constants/gatheringCategories';
-import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS } from '../constants/businessAttributes';
+import { CUISINE_OPTIONS, VENUE_PREFERENCE_OPTIONS } from '../constants/businessAttributes';
 import VoicePlayButton from '../components/VoicePlayButton';
 import { typography, spacing, radius } from '../theme';
 
@@ -1349,7 +1349,7 @@ export default function ProfileScreen({ navigation, route }) {
           })}
         </View>
         <View style={[styles.chipsWrap, { marginTop: spacing.sm }]}>
-          {BUSINESS_ATTRIBUTE_OPTIONS.map((o) => {
+          {VENUE_PREFERENCE_OPTIONS.map((o) => {
             const selected = venuePreferences.includes(o.key);
             return (
               <TouchableOpacity

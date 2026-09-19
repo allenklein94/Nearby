@@ -7,7 +7,7 @@
 // vocabularies are the same real, curated lists the migration's own CHECK
 // constraints validate against -- reuse CUISINE_OPTIONS/BUSINESS_ATTRIBUTE_
 // OPTIONS directly rather than a third copy of either.
-import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS } from './businessAttributes';
+import { CUISINE_OPTIONS, VENUE_PREFERENCE_OPTIONS } from './businessAttributes';
 
 export const PREFERENCE_POLL_QUESTIONS = [
   {
@@ -20,7 +20,7 @@ export const PREFERENCE_POLL_QUESTIONS = [
     key: 'venue_vibe',
     label: 'Ask about vibe',
     questionText: "What's your ideal night-out vibe?",
-    options: BUSINESS_ATTRIBUTE_OPTIONS,
+    options: VENUE_PREFERENCE_OPTIONS,
   },
 ];
 

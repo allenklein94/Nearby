@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
-import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS } from '../constants/businessAttributes';
+import { CUISINE_OPTIONS, VENUE_PREFERENCE_OPTIONS } from '../constants/businessAttributes';
 import { updateMyDiningPreferences } from '../services/preferencePolls';
 import { modalAnimation } from '../motion';
 
@@ -49,7 +49,7 @@ export default function DiningPreferencesPromptModal({ visible, onClose, onSaved
           <ScrollView style={{ maxHeight: 360 }}>
             <View style={styles.chipWrap}>{CUISINE_OPTIONS.map((o) => chip(o, cuisines.includes(o.key), toggle(setCuisines)))}</View>
             <View style={[styles.chipWrap, { marginTop: spacing.sm }]}>
-              {BUSINESS_ATTRIBUTE_OPTIONS.map((o) => chip(o, venues.includes(o.key), toggle(setVenues), `${o.icon} `))}
+              {VENUE_PREFERENCE_OPTIONS.map((o) => chip(o, venues.includes(o.key), toggle(setVenues), `${o.icon} `))}
             </View>
           </ScrollView>
           <TouchableOpacity

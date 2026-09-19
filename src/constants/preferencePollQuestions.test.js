@@ -1,14 +1,14 @@
 const { PREFERENCE_POLL_QUESTIONS, preferencePollQuestion, preferencePollOptionLabel } = require('./preferencePollQuestions');
-const { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS } = require('./businessAttributes');
+const { CUISINE_OPTIONS, VENUE_PREFERENCE_OPTIONS } = require('./businessAttributes');
 
 describe('PREFERENCE_POLL_QUESTIONS', () => {
   it('has exactly the two real question keys the DB CHECK constraint allows', () => {
     expect(PREFERENCE_POLL_QUESTIONS.map((q) => q.key).sort()).toEqual(['cuisine_mood', 'venue_vibe']);
   });
 
-  it('reuses the real CUISINE_OPTIONS/BUSINESS_ATTRIBUTE_OPTIONS vocabulary, never a third copy', () => {
+  it('reuses the real CUISINE_OPTIONS/VENUE_PREFERENCE_OPTIONS vocabulary, never a third copy', () => {
     expect(preferencePollQuestion('cuisine_mood').options).toBe(CUISINE_OPTIONS);
-    expect(preferencePollQuestion('venue_vibe').options).toBe(BUSINESS_ATTRIBUTE_OPTIONS);
+    expect(preferencePollQuestion('venue_vibe').options).toBe(VENUE_PREFERENCE_OPTIONS);
   });
 });
 

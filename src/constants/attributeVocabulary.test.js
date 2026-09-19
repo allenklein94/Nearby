@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { BUSINESS_ATTRIBUTE_OPTIONS } = require('./businessAttributes');
+const { BUSINESS_ATTRIBUTE_OPTIONS, VENUE_PREFERENCE_OPTIONS } = require('./businessAttributes');
 const { extractAttributesFromText } = require('./businessAttributeExtraction');
 
 const read = (p) => fs.readFileSync(path.join(__dirname, '../..', p), 'utf8');
@@ -31,5 +31,15 @@ describe('business attribute vocabulary (one list, everywhere it is enforced)', 
     expect(extractAttributesFromText('We have a private dining room for parties')).toContain('private_dining');
     expect(extractAttributesFromText('Great spot for a team dinner or client dinner')).toContain('corporate_events');
     expect(extractAttributesFromText('A cozy coffee shop')).not.toContain('private_dining');
+  });
+  it('business-only tags stay out of every consumer dining-preference surface', () => {
+    const venue = VENUE_PREFERENCE_OPTIONS.map((o) => o.key);
+    expect(venue).not.toContain('private_dining');
+    expect(venue).not.toContain('corporate_events');
+    expect(venue).toHaveLength(BUSINESS_ATTRIBUTE_OPTIONS.length - 2);
+    for (const f of ['src/components/DiningPreferencesPromptModal.js', 'src/screens/ProfileScreen.js', 'src/constants/preferencePollQuestions.js']) {
+      expect(read(f)).toMatch(/VENUE_PREFERENCE_OPTIONS/);
+      expect(read(f)).not.toMatch(/\bBUSINESS_ATTRIBUTE_OPTIONS\.map/);
+    }
   });
 });
