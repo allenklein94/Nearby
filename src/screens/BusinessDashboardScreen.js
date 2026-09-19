@@ -16,7 +16,7 @@ import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRe
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { CANCELLATION_REASONS, CANCELLATION_ACTOR_LABELS } from '../constants/cancellationReasons';
 import { getPartnerCancellationPatterns } from '../services/cancellationReasons';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit } from '../services/businessFulfillment';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
@@ -36,6 +36,7 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 // own date/time window, shown on the business's opportunity card.
 import { budgetMeetsMinSpend } from '../utils/budgetTier';
 import { buildOpportunityCard, buildMatchReasons, availabilityCoversRequest } from '../utils/businessOpportunityCard';
+import { matchFitLine } from '../utils/matchFitLine';
 import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardAvailabilityText } from '../utils/quickOfferResponse';
 import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 import { defaultScheduledWindow, resolveAvailabilityWindow, scheduledWindowProblem, shiftEndAfterStart, demandPreviewLine } from '../utils/availabilityWindow';
@@ -353,6 +354,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [declineNoteInput, setDeclineNoteInput] = useState('');
   const [declinePatterns, setDeclinePatterns] = useState([]);
   const [cancellationPatterns, setCancellationPatterns] = useState([]);
+  const [matchFit, setMatchFit] = useState(null);
   const [reasonAsk, setReasonAsk] = useState(null);
   // "Business Web as an Operating System" Phase 3 -- the real per-template
   // offer-performance rollup shown on the Insights tab.
@@ -1456,6 +1458,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadDeclinePatterns(selectedPartner.id);
         loadCancellationPatterns(selectedPartner.id);
         loadOfferPerformance(selectedPartner.id);
+        loadMatchFit(selectedPartner.id);
         loadCommunities(selectedPartner.id);
         loadGrowth(selectedPartner.id);
         // Fetches conversations once and feeds the same result to both
@@ -2490,6 +2493,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setCancellationPatterns(await getPartnerCancellationPatterns(partnerId));
     } catch (e) {
       console.error('loadCancellationPatterns failed', e);
+    }
+  }
+
+  // Owner-only "how well your matches land"; the server returns null below 5 distinct people, so nothing renders.
+  async function loadMatchFit(partnerId) {
+    try {
+      setMatchFit(await getPartnerMatchFit(partnerId));
+    } catch (e) {
+      console.error('loadMatchFit failed', e);
     }
   }
 
@@ -4269,6 +4281,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   entirely over already-tracked data, no new signal
                   invented. */}
               <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Offer Performance</Text>
+              {matchFitLine(matchFit) && <Text style={styles.offerDescription}>{matchFitLine(matchFit)}</Text>}
               {offerPerformance.length === 0 ? (
                 <Text style={styles.emptyText}>No offers sent yet.</Text>
               ) : (

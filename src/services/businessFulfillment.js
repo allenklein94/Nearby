@@ -1148,6 +1148,14 @@ export async function getPartnerOfferReputation(partnerId) {
   return data?.[0] ?? null;
 }
 
+// Owner-only aggregate of the consumer's optional "Good match?" answer. Null until >= 5 distinct people
+// have answered (the server withholds it); percentages only, never a per-person answer.
+export async function getPartnerMatchFit(partnerId) {
+  const { data, error } = await supabase.rpc('get_partner_match_fit', { partner_id_param: partnerId });
+  if (error) throw new Error(error.message);
+  return data?.[0] ?? null;
+}
+
 // Business Intelligence & Opportunity Engine, Phase 4 -- "Learning" (see
 // CLAUDE.md's own plan). A real, aggregated-only view over
 // business_match_exclusions -- never a raw per-event dump, only counts
