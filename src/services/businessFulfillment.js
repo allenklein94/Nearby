@@ -210,7 +210,7 @@ export async function submitBusinessRequest({
 // Host-only. party_size/date/location are all sourced server-side from the
 // gathering's own real data -- never re-collected from the device or
 // typed by the caller, unlike the solo submitBusinessRequest() above.
-export async function submitBusinessRequestForGathering({ gatheringId, text, category = null, budgetMax = null, radiusMiles = 15, occasion = null }) {
+export async function submitBusinessRequestForGathering({ gatheringId, text, category = null, budgetMax = null, radiusMiles = 15, occasion = null, dietary = null }) {
   const { data, error } = await supabase.rpc('create_business_request_for_gathering', {
     gathering_id_param: gatheringId,
     raw_text_param: text,
@@ -218,6 +218,7 @@ export async function submitBusinessRequestForGathering({ gatheringId, text, cat
     budget_max_param: budgetMax,
     radius_miles_param: radiusMiles,
     occasion_param: occasion,
+    dietary_param: dietary && dietary.length > 0 ? dietary : null,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, partySize: data.partySize, duplicate: !!data.duplicate };
@@ -233,7 +234,7 @@ export async function submitBusinessRequestForGathering({ gatheringId, text, cat
 // (area_lat/area_lng) -- the RPC itself raises a clear, actionable error
 // if that hasn't been set yet, rather than silently falling back to
 // nothing.
-export async function submitBusinessRequestForCommunity({ communityId, text, category = null, partySize = null, budgetMax = null, date = null, radiusMiles = 15 }) {
+export async function submitBusinessRequestForCommunity({ communityId, text, category = null, partySize = null, budgetMax = null, date = null, radiusMiles = 15, dietary = null }) {
   const { data, error } = await supabase.rpc('create_business_request_for_community', {
     community_id_param: communityId,
     raw_text_param: text,
@@ -242,6 +243,7 @@ export async function submitBusinessRequestForCommunity({ communityId, text, cat
     budget_max_param: budgetMax,
     date_param: date,
     radius_miles_param: radiusMiles,
+    dietary_param: dietary && dietary.length > 0 ? dietary : null,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, duplicate: !!data.duplicate };

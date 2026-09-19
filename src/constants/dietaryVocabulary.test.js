@@ -27,3 +27,22 @@ describe('dietary vocabulary', () => {
     }
   });
 });
+
+describe('dietary on gathering / match / community requests (20261225)', () => {
+  const ext = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20261225_dietary_all_request_types.sql'), 'utf8');
+  it('the shared validator uses the same closed vocabulary as the CHECK', () => {
+    const keys = DIETARY_OPTIONS.map((o) => o.key).sort();
+    const list = [...ext.match(/not dietary_param <@ array\[([^\]]*)\]/)[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort();
+    expect(list).toEqual(keys);
+  });
+  it.each(['create_business_request_for_gathering', 'create_business_request_for_match', 'create_business_request_for_community'])('%s validates and stores dietary, and re-grants after the drop', (fn) => {
+    const part = ext.split(/create or replace function/i).find((p) => new RegExp(`^\\s+public\\.${fn}\\(`, 'i').test(p));
+    expect(part).toMatch(/dietary_param text\[\] DEFAULT NULL/);
+    expect(part).toMatch(/public\.normalize_dietary\(dietary_param\)/);
+    expect(ext).toMatch(new RegExp(`drop function if exists public\\.${fn}\\(`));
+    expect(ext).toMatch(new RegExp(`grant execute on function public\\.${fn} to authenticated`));
+  });
+  it('the validator is not callable by clients', () => {
+    expect(ext).toMatch(/revoke all on function public\.normalize_dietary\(text\[\]\) from public, anon, authenticated/);
+  });
+});

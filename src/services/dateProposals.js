@@ -182,6 +182,7 @@ export async function createBusinessRequestForMatch({
   timeWindowEnd = null,
   radiusMiles = 15,
   occasion = null,
+  dietary = null,
 }) {
   const location = await requireUserLocation('Location access is needed to find nearby businesses.');
 
@@ -197,6 +198,7 @@ export async function createBusinessRequestForMatch({
     time_window_start_param: timeWindowStart,
     time_window_end_param: timeWindowEnd,
     radius_miles_param: radiusMiles,
+    dietary_param: dietary && dietary.length > 0 ? dietary : null,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, partySize: data.partySize, duplicate: !!data.duplicate };

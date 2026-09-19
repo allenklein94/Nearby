@@ -347,6 +347,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           budgetMax: safeBudgetMax,
           radiusMiles,
           occasion: occasionInput,
+          dietary: category === 'Foodie' && dietaryInput.length > 0 ? dietaryInput : null,
         });
       } else if (matchId) {
         result = await createBusinessRequestForMatch({
@@ -357,6 +358,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           date: resolvedDate,
           radiusMiles,
           occasion: occasionInput,
+          dietary: category === 'Foodie' && dietaryInput.length > 0 ? dietaryInput : null,
         });
       } else if (communityId) {
         result = await submitBusinessRequestForCommunity({
@@ -367,6 +369,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           budgetMax: safeBudgetMax,
           date: resolvedDate,
           radiusMiles,
+          dietary: category === 'Foodie' && dietaryInput.length > 0 ? dietaryInput : null,
         });
       } else {
         result = await submitBusinessRequest({
@@ -448,7 +451,7 @@ export default function AskBusinessScreen({ navigation, route }) {
     }
     if (surpriseMode) recapParts.push('🎁 kept as a surprise');
     if (isSoloMode && category === 'Foodie' && cuisineInput) recapParts.push(cuisineLabel(cuisineInput));
-    if (isSoloMode && category === 'Foodie' && dietaryInput.length > 0) recapParts.push(dietaryInput.map(dietaryLabel).join(', '));
+    if (category === 'Foodie' && dietaryInput.length > 0) recapParts.push(dietaryInput.map(dietaryLabel).join(', '));
     if (isSoloMode && attributesInput.length > 0) recapParts.push(attributesInput.map(businessAttributeLabel).join(', '));
     if (isSoloMode && pickedAvailability) recapParts.push(`at ${pickedAvailability.partner_name}`);
     recapParts.push(`within ${radiusMiles} mi`);
@@ -787,29 +790,34 @@ export default function AskBusinessScreen({ navigation, route }) {
                       </TouchableOpacity>
                     ))}
                   </View>
-                  <Text style={styles.label}>Dietary needs (optional)</Text>
-                  <View style={styles.chipRow}>
-                    {DIETARY_OPTIONS.map((d) => {
-                      const on = dietaryInput.includes(d.key);
-                      return (
-                        <TouchableOpacity
-                          key={d.key}
-                          style={[styles.chip, on && styles.chipSelected]}
-                          onPress={() => setDietaryInput((prev) => (on ? prev.filter((k) => k !== d.key) : [...prev, d.key]))}
-                          accessibilityLabel={d.label}
-                          accessibilityRole="button"
-                          accessibilityState={{ selected: on }}
-                        >
-                          <Text style={[styles.chipText, on && styles.chipTextSelected]}>{d.label}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                  <Text style={[styles.matchedAvailabilityDescription, { marginTop: spacing.xs }]}>
-                    Shared only with businesses that respond to this request, so they can plan your meal.
-                  </Text>
                 </>
               )}
+            </>
+          )}
+
+          {category === 'Foodie' && (
+            <>
+              <Text style={styles.label}>Dietary needs (optional)</Text>
+              <View style={styles.chipRow}>
+                {DIETARY_OPTIONS.map((d) => {
+                  const on = dietaryInput.includes(d.key);
+                  return (
+                    <TouchableOpacity
+                      key={d.key}
+                      style={[styles.chip, on && styles.chipSelected]}
+                      onPress={() => setDietaryInput((prev) => (on ? prev.filter((k) => k !== d.key) : [...prev, d.key]))}
+                      accessibilityLabel={d.label}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: on }}
+                    >
+                      <Text style={[styles.chipText, on && styles.chipTextSelected]}>{d.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={[styles.matchedAvailabilityDescription, { marginTop: spacing.xs }]}>
+                Shared only with businesses that respond to this request, so they can plan your meal.
+              </Text>
             </>
           )}
 
