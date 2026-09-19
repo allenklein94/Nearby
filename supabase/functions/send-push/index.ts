@@ -22,6 +22,7 @@ const RECOMMENDATION_TYPES = new Set([
   'momentum_streak_nudge',
   'reward_tier_nudge',
   'business_opportunity_received',
+  'business_opportunities_digest',
   'aggregated_demand_growing',
   'occasion_demand_growing',
   'community_area_demand_growing',
@@ -31,6 +32,7 @@ const RECOMMENDATION_TYPES = new Set([
 // src/constants/businessNotificationGroups.js BUSINESS_NOTIFICATION_GROUP_BY_TYPE (Jest asserts equality).
 const BUSINESS_NOTIFICATION_GROUP_BY_TYPE = {
   business_opportunity_received: 'requests',
+  business_opportunities_digest: 'requests',
   business_request_cancelled: 'requests',
   business_offer_accepted: 'offers',
   business_offer_declined: 'offers',
@@ -42,7 +44,7 @@ const BUSINESS_NOTIFICATION_GROUP_BY_TYPE = {
   occasion_demand_growing: 'demand'
 };
 // A new request is recommendation-tier (quiet push) but it is THE alert a web-only owner needs, so it is also emailed.
-const EMAIL_EXTRA_TYPES = new Set(['business_opportunity_received']);
+const EMAIL_EXTRA_TYPES = new Set(['business_opportunity_received', 'business_opportunities_digest']);
 function notificationTier(type) {
   return RECOMMENDATION_TYPES.has(type) ? 'recommendation' : 'important';
 }

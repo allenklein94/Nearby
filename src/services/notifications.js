@@ -444,6 +444,7 @@ export async function routeNotificationTap(data) {
       }
       break;
     case 'business_opportunity_received':
+    case 'business_opportunities_digest':
     // Nearby 2.0 vision layer 1 (see CLAUDE.md's "Nearby 2.0 Vision" doc):
     // real aggregated nearby demand crossing a meaningful threshold for
     // this business's own category -- same destination as a single

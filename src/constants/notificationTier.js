@@ -30,6 +30,7 @@ const RECOMMENDATION_TYPES = new Set([
   'momentum_streak_nudge',
   'reward_tier_nudge',
   'business_opportunity_received',
+  'business_opportunities_digest',
   'aggregated_demand_growing',
   'occasion_demand_growing',
   'community_area_demand_growing',

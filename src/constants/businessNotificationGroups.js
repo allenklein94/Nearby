@@ -12,6 +12,7 @@ export const BUSINESS_NOTIFICATION_GROUPS = [
 
 export const BUSINESS_NOTIFICATION_GROUP_BY_TYPE = {
   business_opportunity_received: 'requests',
+  business_opportunities_digest: 'requests',
   business_request_cancelled: 'requests',
   business_offer_accepted: 'offers',
   business_offer_declined: 'offers',
