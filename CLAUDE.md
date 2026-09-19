@@ -105,6 +105,13 @@ dashboard card and confirms the 6-digit code (the only real end-to-end test).
 These are the load-bearing rules distilled from thousands of lines of prior build history. Full
 original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
 
+- **Business-facing payloads carry the minimum needed (2026-09-19, locked).** A business receives only what it needs to evaluate, offer on and
+  fulfill that specific request: structured fields (occasion, category, party size, budget, date/time, closed-vocabulary `attributes`/`cuisine`) plus
+  `summary`, a line built ONLY from those by `business_safe_request_summary()` (migration `20261221`). Never consumer free text (`raw_text`,
+  `plan_label`), profile-derived data (`shared_interests`), or internal ids (`match_id`/`gathering_id`/`requester_id`), in an RPC payload OR a push
+  body to a business. Consumer-side systems keep and use those fields internally. The consumer "share interests" toggle and free-text "Anything else?"
+  note were removed from AskBusiness because they no longer reach businesses. `attributes` is DB-CHECK-constrained (no dietary vocabulary exists).
+  Guarded by `src/utils/businessPayloadPrivacyGuard.test.js`. Any new business-facing payload must be a structured projection, never `select *`/raw text.
 - **No invented numbers, no fabricated signals, ever.** Every metric/count/reason shown anywhere
   in the app must trace to a real query result. An absent signal renders as an honest empty
   state, never a guessed placeholder.

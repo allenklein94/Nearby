@@ -47,12 +47,6 @@ import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
 // necessarily be excluded" instruction.
 const BUDGET_BONUS_REFERENCE = 150;
 
-// Opt-in shared interests (2026-09-18 design): a deliberately SECONDARY nudge. It is 1 point, applied once,
-// strictly below the smallest operational weight (SCORE_HAPPENING_NOW = 2), so shared tags can only break a
-// tie between otherwise-equal requests -- they can never lift a marketing-tag match above a request that
-// materially fits the business's real category/availability/timing/party-size/budget. Guarded by a test.
-export const SCORE_SHARED_INTEREST = 1;
-
 export function scoreBusinessOpportunity({
   requestAttributes = [],
   requestCuisine = null,
@@ -66,8 +60,6 @@ export function scoreBusinessOpportunity({
   // the business's own declared occasion-appetite preferences below.
   requestOccasion = null,
   // The requester's opt-in shared interest tags, and the business's own tag set (subcategory + categories).
-  requestSharedInterests = [],
-  businessInterestTags = [],
   businessAttributes = [],
   businessCuisine = null,
   businessPriorityAttributes = [],
@@ -207,12 +199,6 @@ export function scoreBusinessOpportunity({
         reasons.push({ label: `You're actively boosting ${requestCategory} this week`, points });
       }
     }
-  }
-
-  // Secondary tag-overlap nudge -- see SCORE_SHARED_INTEREST. Silent when either side has no tags.
-  if ((requestSharedInterests ?? []).some((t) => (businessInterestTags ?? []).includes(t))) {
-    score += SCORE_SHARED_INTEREST;
-    reasons.push({ label: 'Matches what they\'re into', points: SCORE_SHARED_INTEREST });
   }
 
   return { score, reasons };

@@ -393,8 +393,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         requestBudgetMax: req.budget_max ?? null,
         requestPartySize: req.party_size ?? null,
         requestOccasion: req.occasion ?? null,
-        requestSharedInterests: req.shared_interests ?? [],
-        businessInterestTags: [selectedPartner?.subcategory, ...(selectedPartner?.categories ?? [])].filter(Boolean),
         businessAttributes: selectedPartner?.attributes ?? [],
         businessCuisine: selectedPartner?.cuisine ?? null,
         businessPriorityAttributes: selectedPartner?.priority_attributes ?? [],
@@ -2393,7 +2391,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       : br?.date
       ? new Date(`${br.date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
       : null;
-    if (br?.gathering_id && br?.gatherings) {
+    if (br?.gatherings) {
       // Item 69 (CLAUDE.md): a gathering's own host-chosen title could
       // just as easily carry a real name as any occasion-composed one --
       // get_business_opportunities() no longer returns it at all, only
@@ -2401,10 +2399,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       const tagLabel = br.gatherings.interest_tag ? `${br.gatherings.interest_tag} Gathering` : 'A Gathering';
       return { kicker: '🎉 A Gathering', title: tagLabel, when: br.gatherings.scheduled_at ? formatDate(br.gatherings.scheduled_at) : soloWhen };
     }
-    if (br?.match_id) {
+    if (br?.is_match_request) {
       return { kicker: '❤️ A Date', title: 'Two people planning to visit', when: soloWhen };
     }
-    return { kicker: '🙋 A Request', title: br?.raw_text ?? 'A visit', when: soloWhen };
+    return { kicker: '🙋 A Request', title: br?.summary ?? 'A visit', when: soloWhen };
   }
 
   // Business moment — CLAUDE.md items 11/13: the real, honest version of
@@ -3472,7 +3470,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           ))}
                         </View>
                       )}
-                      <Text style={styles.offerTitle}>{o.business_requests?.raw_text}</Text>
+                      <Text style={styles.offerTitle}>{o.business_requests?.summary}</Text>
                       {lookingForTags.length > 0 && (
                         <View style={{ marginTop: spacing.xs }}>
                           <Text style={styles.notesLabel}>What they're looking for</Text>
@@ -3483,13 +3481,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                               </View>
                             ))}
                           </View>
-                        </View>
-                      )}
-                      {(o.business_requests?.shared_interests ?? []).length > 0 && (
-                        <View style={{ marginTop: spacing.xs }}>
-                          <Text style={styles.notesLabel}>They're into</Text>
-                          <Text style={styles.breakdownText}>{o.business_requests.shared_interests.join(' · ')}</Text>
-                          <Text style={[styles.breakdownText, { color: colors.textTertiary, fontStyle: 'italic' }]}>They chose to share this to help you tailor your offer.</Text>
                         </View>
                       )}
                       {o.status === 'pending' && o.business_requests?.status === 'open' && (

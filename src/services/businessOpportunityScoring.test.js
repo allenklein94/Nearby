@@ -265,27 +265,3 @@ describe('scoreBusinessOpportunity weather bonus', () => {
     expect(result.reasons).toHaveLength(1);
   });
 });
-
-describe('shared interest tags (opt-in) are a secondary, tie-break-sized signal', () => {
-  const { scoreBusinessOpportunity, SCORE_SHARED_INTEREST } = require('./businessOpportunityScoring');
-  const { SCORE_HAPPENING_NOW } = require('./intentResolverScoring');
-
-  it('adds one point and a reason when tags overlap', () => {
-    const base = scoreBusinessOpportunity({ requestSharedInterests: ['Music'], businessInterestTags: ['Music'] });
-    expect(base.score).toBe(SCORE_SHARED_INTEREST);
-    expect(base.reasons[0].label).toMatch(/into/);
-  });
-
-  it('is silent with no overlap or no tags -- never a penalty', () => {
-    expect(scoreBusinessOpportunity({ requestSharedInterests: ['Music'], businessInterestTags: ['Yoga'] }).score).toBe(0);
-    expect(scoreBusinessOpportunity({ requestSharedInterests: [], businessInterestTags: ['Yoga'] }).score).toBe(0);
-    expect(scoreBusinessOpportunity({}).score).toBe(0);
-  });
-
-  it('is strictly smaller than the smallest operational weight, so it can never outrank a real fit', () => {
-    expect(SCORE_SHARED_INTEREST).toBeLessThan(SCORE_HAPPENING_NOW);
-    const tagsOnly = scoreBusinessOpportunity({ requestSharedInterests: ['Music'], businessInterestTags: ['Music'] });
-    const operationalFit = scoreBusinessOpportunity({ requestPartySize: 4, fulfillmentPolicy: { party_size_min: 2, party_size_max: 6 } });
-    expect(operationalFit.score).toBeGreaterThan(tagsOnly.score);
-  });
-});
