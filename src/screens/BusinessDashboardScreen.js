@@ -44,7 +44,7 @@ import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiences
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import DemandNearYouCard from '../components/DemandNearYouCard';
 import { describeDemandSignals } from '../utils/demandSignals';
-import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
+import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, occasionLabel, dietaryLabel } from '../constants/businessAttributes';
 import { planAddonIcon, planAddonLabel } from '../constants/planAddons';
 import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
@@ -3471,6 +3471,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         </View>
                       )}
                       <Text style={styles.offerTitle}>{o.business_requests?.summary}</Text>
+                      {(o.business_requests?.dietary ?? []).length > 0 && (
+                        <View style={{ marginTop: spacing.xs }}>
+                          <Text style={styles.notesLabel}>Dietary needs</Text>
+                          <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                            {o.business_requests.dietary.map((k) => (
+                              <View key={k} style={styles.chip}>
+                                <Text style={styles.chipText}>{dietaryLabel(k)}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      )}
                       {lookingForTags.length > 0 && (
                         <View style={{ marginTop: spacing.xs }}>
                           <Text style={styles.notesLabel}>What they're looking for</Text>

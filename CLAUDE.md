@@ -110,7 +110,7 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   `summary`, a line built ONLY from those by `business_safe_request_summary()` (migration `20261221`). Never consumer free text (`raw_text`,
   `plan_label`), profile-derived data (`shared_interests`), or internal ids (`match_id`/`gathering_id`/`requester_id`), in an RPC payload OR a push
   body to a business. Consumer-side systems keep and use those fields internally. The consumer "share interests" toggle and free-text "Anything else?"
-  note were removed from AskBusiness because they no longer reach businesses. `attributes` is DB-CHECK-constrained (no dietary vocabulary exists).
+  note were removed from AskBusiness because they no longer reach businesses. `attributes` is DB-CHECK-constrained. Dietary needs are a separate closed vocabulary (`business_requests.dietary`, `DIETARY_OPTIONS`, migration `20261223`): consumer-picked per Foodie request in AskBusiness, never AI-inferred, shown to a business only via `get_business_opportunities` for a request it has an offer on, deliberately NOT in `summary` or any push body. Not carried by `invite_to_business_request`/gathering/match/community requests (solo Foodie only, like cuisine).
   Guarded by `src/utils/businessPayloadPrivacyGuard.test.js`. Any new business-facing payload must be a structured projection, never `select *`/raw text.
 - **No invented numbers, no fabricated signals, ever.** Every metric/count/reason shown anywhere
   in the app must trace to a real query result. An absent signal renders as an honest empty

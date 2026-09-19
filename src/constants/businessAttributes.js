@@ -54,6 +54,23 @@ export const CUISINE_OPTIONS = [
   { key: 'other', label: 'Other' },
 ];
 
+// Structured dietary needs a consumer may attach to a food request (closed vocabulary; mirrors the CHECK in
+// 20261223_business_request_dietary.sql -- guarded by dietaryVocabulary.test.js). Never inferred, never free text.
+export const DIETARY_OPTIONS = [
+  { key: 'vegetarian', label: 'Vegetarian' },
+  { key: 'vegan', label: 'Vegan' },
+  { key: 'gluten_free', label: 'Gluten-free' },
+  { key: 'dairy_free', label: 'Dairy-free' },
+  { key: 'nut_allergy', label: 'Nut allergy' },
+  { key: 'shellfish_allergy', label: 'Shellfish allergy' },
+  { key: 'halal', label: 'Halal' },
+  { key: 'kosher', label: 'Kosher' },
+];
+
+export function dietaryLabel(key) {
+  return DIETARY_OPTIONS.find((o) => o.key === key)?.label ?? key;
+}
+
 export function businessAttributeLabel(key) {
   return BUSINESS_ATTRIBUTE_OPTIONS.find((o) => o.key === key)?.label ?? key;
 }

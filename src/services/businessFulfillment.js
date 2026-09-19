@@ -174,6 +174,8 @@ export async function submitBusinessRequest({
   // Opt-in interest tags shared with businesses for THIS request only (design 2026-09-18). null = not shared.
   // The server keeps only tags the caller declared and never attaches them to a surprise-mode request.
   sharedInterests = null,
+  // Structured dietary needs (closed vocabulary, consumer-picked, Foodie requests only) -- see DIETARY_OPTIONS.
+  dietary = null,
 }) {
   const location = await requireUserLocation('Location access is needed to find nearby businesses.');
 
@@ -198,6 +200,7 @@ export async function submitBusinessRequest({
     experience_level_param: experienceLevel,
     surprise_mode_param: surpriseMode,
     shared_interests_param: sharedInterests && sharedInterests.length > 0 ? sharedInterests : null,
+    dietary_param: dietary && dietary.length > 0 ? dietary : null,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, duplicate: !!data.duplicate };

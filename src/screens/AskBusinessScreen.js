@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity, searchActiveBusinessAvailability } from '../services/businessFulfillment';
 import { createBusinessRequestForMatch } from '../services/dateProposals';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
-import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, OCCASION_OPTIONS, businessAttributeLabel, cuisineLabel, occasionLabel } from '../constants/businessAttributes';
+import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, OCCASION_OPTIONS, businessAttributeLabel, cuisineLabel, occasionLabel, DIETARY_OPTIONS, dietaryLabel } from '../constants/businessAttributes';
 import { BUDGET_LEVEL_OPTIONS, resolveBudgetMax, initialBudgetSelectionFromMax, EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { useTheme } from '../context/ThemeContext';
@@ -206,6 +206,7 @@ export default function AskBusinessScreen({ navigation, route }) {
   const [attributesInput, setAttributesInput] = useState([]);
   // Opt-in interest sharing (design 2026-09-18): OFF by default, per request only, never remembered.
   const [cuisineInput, setCuisineInput] = useState(null);
+  const [dietaryInput, setDietaryInput] = useState([]);
   // "Intelligent demand inbox" Phase 1 (CLAUDE.md, Sep 3 2026): a real
   // WHY signal, genuinely optional in every mode -- unlike attributes/
   // cuisine (solo-only, since party size/budget are already solo-only
@@ -379,6 +380,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           preferredAvailabilityId: matchedAvailability?.availabilityId ?? pickedAvailability?.id ?? null,
           attributes: attributesInput.length > 0 ? attributesInput : null,
           cuisine: category === 'Foodie' ? cuisineInput : null,
+          dietary: category === 'Foodie' && dietaryInput.length > 0 ? dietaryInput : null,
           occasion: occasionInput,
           experienceLevel,
           surpriseMode,
@@ -446,6 +448,7 @@ export default function AskBusinessScreen({ navigation, route }) {
     }
     if (surpriseMode) recapParts.push('🎁 kept as a surprise');
     if (isSoloMode && category === 'Foodie' && cuisineInput) recapParts.push(cuisineLabel(cuisineInput));
+    if (isSoloMode && category === 'Foodie' && dietaryInput.length > 0) recapParts.push(dietaryInput.map(dietaryLabel).join(', '));
     if (isSoloMode && attributesInput.length > 0) recapParts.push(attributesInput.map(businessAttributeLabel).join(', '));
     if (isSoloMode && pickedAvailability) recapParts.push(`at ${pickedAvailability.partner_name}`);
     recapParts.push(`within ${radiusMiles} mi`);
@@ -784,6 +787,27 @@ export default function AskBusinessScreen({ navigation, route }) {
                       </TouchableOpacity>
                     ))}
                   </View>
+                  <Text style={styles.label}>Dietary needs (optional)</Text>
+                  <View style={styles.chipRow}>
+                    {DIETARY_OPTIONS.map((d) => {
+                      const on = dietaryInput.includes(d.key);
+                      return (
+                        <TouchableOpacity
+                          key={d.key}
+                          style={[styles.chip, on && styles.chipSelected]}
+                          onPress={() => setDietaryInput((prev) => (on ? prev.filter((k) => k !== d.key) : [...prev, d.key]))}
+                          accessibilityLabel={d.label}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: on }}
+                        >
+                          <Text style={[styles.chipText, on && styles.chipTextSelected]}>{d.label}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  <Text style={[styles.matchedAvailabilityDescription, { marginTop: spacing.xs }]}>
+                    Shared only with businesses that respond to this request, so they can plan your meal.
+                  </Text>
                 </>
               )}
             </>
