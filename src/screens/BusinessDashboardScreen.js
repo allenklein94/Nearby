@@ -4275,10 +4275,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 {/* "Business Story" plan, Phase 2 -- Business Goals. A real,
                     small, dedicated save distinct from the full profile
                     edit above -- meant to be revisited often. */}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>What You're Looking For</Text>
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>What do you want more of?</Text>
                 <Text style={styles.helperText}>
-                  What would you most like Nearby to send you more of right now? We'll flag
-                  matching opportunities in your inbox.
+                  Tell Nearby once and it does the matching: opportunities like these are ranked first and
+                  flagged in your inbox. Quiet times? Pick the hours you'd like to fill.
                 </Text>
                 <View style={styles.chipRow}>
                   {BUSINESS_ATTRIBUTE_OPTIONS.map((a) => {

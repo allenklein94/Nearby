@@ -74,6 +74,8 @@ export function scoreBusinessOpportunity({
   // request resolves -- this bonus simply doesn't apply, never a
   // fabricated one.
   weather = null,
+  // Injectable clock so "last-minute" is testable; defaults to the real now.
+  now = new Date(),
 } = {}) {
   const reasons = [];
   let score = 0;
@@ -161,6 +163,24 @@ export function scoreBusinessOpportunity({
     if (businessPriorityTimeWindows.includes(period)) {
       score += SCORE_HAPPENING_NOW;
       reasons.push({ label: `Fits your usual ${period} hours`, points: SCORE_HAPPENING_NOW });
+    }
+  }
+
+  // "Weekday customers" / "Last-minute bookings": derived from the request's own date only (no new field). Weekday =
+  // Mon-Fri; last-minute = needed today or tomorrow (the same rule as the server's _opportunity_is_urgent).
+  if (requestDate) {
+    const day = new Date(`${requestDate}T00:00:00`).getDay();
+    if (businessPriorityTimeWindows.includes('weekday') && day >= 1 && day <= 5) {
+      score += SCORE_HAPPENING_NOW;
+      reasons.push({ label: 'A weekday request, which you want more of', points: SCORE_HAPPENING_NOW });
+    }
+    if (businessPriorityTimeWindows.includes('last_minute')) {
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const daysAway = Math.round((new Date(`${requestDate}T00:00:00`) - startOfToday) / 86400000);
+      if (daysAway >= 0 && daysAway <= 1) {
+        score += SCORE_HAPPENING_NOW;
+        reasons.push({ label: 'A last-minute booking, which you want more of', points: SCORE_HAPPENING_NOW });
+      }
     }
   }
 

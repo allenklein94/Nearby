@@ -264,4 +264,26 @@ describe('scoreBusinessOpportunity weather bonus', () => {
     expect(result.score).toBe(SCORE_HAPPENING_NOW);
     expect(result.reasons).toHaveLength(1);
   });
+
+  describe('weekday and last-minute preferences', () => {
+    const now = new Date(2026, 8, 23, 12, 0); // Wed 2026-09-23, local
+    it('credits a weekday request only when the business wants weekdays', () => {
+      const r = scoreBusinessOpportunity({ requestDate: '2026-09-24', businessPriorityTimeWindows: ['weekday'], now });
+      expect(r.reasons).toEqual([{ label: 'A weekday request, which you want more of', points: SCORE_HAPPENING_NOW }]);
+      expect(scoreBusinessOpportunity({ requestDate: '2026-09-24', now }).score).toBe(0);
+    });
+    it('does not credit a weekend date as a weekday', () => {
+      expect(scoreBusinessOpportunity({ requestDate: '2026-09-26', businessPriorityTimeWindows: ['weekday'], now }).score).toBe(0);
+    });
+    it('credits last-minute for today/tomorrow only', () => {
+      const w = { businessPriorityTimeWindows: ['last_minute'], now };
+      expect(scoreBusinessOpportunity({ requestDate: '2026-09-23', ...w }).score).toBe(SCORE_HAPPENING_NOW);
+      expect(scoreBusinessOpportunity({ requestDate: '2026-09-24', ...w }).score).toBe(SCORE_HAPPENING_NOW);
+      expect(scoreBusinessOpportunity({ requestDate: '2026-09-25', ...w }).score).toBe(0);
+      expect(scoreBusinessOpportunity({ requestDate: '2026-09-22', ...w }).score).toBe(0);
+    });
+    it('never scores from an absent date', () => {
+      expect(scoreBusinessOpportunity({ businessPriorityTimeWindows: ['weekday', 'last_minute'], now }).score).toBe(0);
+    });
+  });
 });
