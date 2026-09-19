@@ -56,6 +56,13 @@ specifically said not to build yet:
 - Complicated calendars (recurring sub-events, multi-day itineraries, etc. — beyond the single
   `scheduled_date` the occasion already has)
 
+**Pending user action (not a build item):** connect Resend so the business email fallback (Item 147/148) actually sends.
+Needs the user: verify a sending domain in Resend, create a Sending-access API key, then set Edge secrets `RESEND_API_KEY`,
+`EMAIL_FROM` (verified domain), optional `BUSINESS_WEB_URL` via `supabase secrets set --project-ref enmosvippabmuqslzrox`
+(user runs it themselves; never paste the key in chat). As of 2026-09-19 none are set; the feature is inert and the dashboard
+card says so. Verify by listing secret NAMES only via the Management API `/secrets`, then the user adds an address in the
+dashboard card and confirms the 6-digit code (the only real end-to-end test).
+
 ## Standing Conventions (Locked)
 
 These are the load-bearing rules distilled from thousands of lines of prior build history. Full
