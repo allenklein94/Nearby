@@ -47,3 +47,14 @@ describe('dashboard-wide privacy floor', () => {
     expect(wide).not.toMatch(/behavior_events|raw_text|business_profile_views/i);
   });
 });
+
+describe('community leader demand push floor', () => {
+  const comm = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20261219_community_demand_push_floor.sql'), 'utf8');
+  it('fires only at the shared floor, on distinct people', () => {
+    expect(comm).toMatch(/notify_community_area_demand_threshold/i);
+    expect(comm).toMatch(/count\(distinct br\.requester_id\)/);
+    expect(comm).toMatch(/public\.demand_min_people\(\) - 1 and not v_requester_counted/);
+    expect(comm).not.toMatch(/if v_prior_count = 1 then/);
+    expect(comm).not.toMatch(/'2 or more/);
+  });
+});
