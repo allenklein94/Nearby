@@ -6,7 +6,7 @@ import { spacing, radius, typography } from '../theme';
 // Top-of-dashboard "Demand near you". `signals` are already-described rows from
 // describeDemandSignals() (privacy floor enforced server-side and re-checked there). `loaded`
 // distinguishes "still fetching" (render nothing) from "not enough activity" (honest empty copy).
-export default function DemandNearYouCard({ signals, loaded, onAction, windowDays = 14 }) {
+export default function DemandNearYouCard({ signals, loaded, onAction, windowDays = 14, matchSummary = null }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
   if (!loaded) return null;
@@ -15,6 +15,14 @@ export default function DemandNearYouCard({ signals, loaded, onAction, windowDay
     <View style={styles.card} accessibilityLabel="Demand near you">
       <Text style={styles.title}>Demand near you</Text>
       <Text style={styles.window}>Last {windowDays} days</Text>
+      {matchSummary ? (
+        <View style={styles.summary}>
+          <Text style={styles.summaryText}>{matchSummary.line}</Text>
+          <TouchableOpacity onPress={() => onAction(matchSummary.action)} accessibilityLabel={matchSummary.actionLabel} accessibilityRole="button">
+            <Text style={styles.actionText}>{matchSummary.actionLabel} →</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
       {signals.length === 0 ? (
         <Text style={styles.empty}>We're still gathering enough local activity to show useful demand.</Text>
       ) : (
@@ -53,6 +61,8 @@ const getStyles = (colors) => StyleSheet.create({
   title: { ...typography.title, color: colors.textPrimary },
   window: { color: colors.textSecondary, fontSize: 12, marginBottom: spacing.sm },
   empty: { color: colors.textSecondary, fontSize: 14 },
+  summary: { paddingBottom: spacing.sm, marginBottom: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.border },
+  summaryText: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: 2 },
   row: { paddingVertical: spacing.sm },
   rowDivider: { borderTopWidth: 1, borderTopColor: colors.border },
   headline: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },

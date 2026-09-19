@@ -1,4 +1,4 @@
-import { describeDemandSignal, describeDemandSignals, partyBucketLabel } from './demandSignals';
+import { describeDemandSignal, describeDemandSignals, describeMatchSummary, partyBucketLabel } from './demandSignals';
 
 describe('describeDemandSignal', () => {
   it('describes a category signal with party size and budget from real values', () => {
@@ -99,3 +99,24 @@ describe('groups row and open-opportunity match line', () => {
   });
 });
 
+
+describe('weekend framing and match summary', () => {
+  const cat = { kind: 'category', category: 'Dinner', people_count: 12 };
+  it('adds "N of them this weekend" on category, group and occasion rows only from a floored count', () => {
+    expect(describeDemandSignal({ ...cat, weekend_count: 7 }).detail).toContain('7 of them this weekend');
+    expect(describeDemandSignal({ kind: 'group', min_party: 6, people_count: 9, weekend_count: 5 }).detail).toContain('5 of them this weekend');
+    expect(describeDemandSignal({ kind: 'occasion', occasion: 'anniversary', people_count: 8, weekend_count: 6 }).detail).toContain('6 of them this weekend');
+  });
+  it('says nothing when absent, under the floor, or larger than the row itself', () => {
+    expect(describeDemandSignal(cat).detail).not.toMatch(/weekend/);
+    expect(describeDemandSignal({ ...cat, weekend_count: 3 }).detail).not.toMatch(/weekend/);
+    expect(describeDemandSignal({ ...cat, weekend_count: 0 }).detail).not.toMatch(/weekend/);
+    expect(describeDemandSignal({ ...cat, weekend_count: 40 }).detail).not.toMatch(/weekend/);
+  });
+  it('describes the owner\'s own matched requests only for a real positive count', () => {
+    expect(describeMatchSummary(9).line).toBe('Your business matches 9 open requests right now');
+    expect(describeMatchSummary(1).line).toBe('Your business matches 1 open request right now');
+    expect(describeMatchSummary(9).action).toEqual({ type: 'opportunities' });
+    [0, null, undefined, -2, 2.5].forEach((n) => expect(describeMatchSummary(n)).toBeNull());
+  });
+});

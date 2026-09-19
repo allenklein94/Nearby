@@ -72,3 +72,21 @@ describe('post_business_availability matchedCount floor', () => {
     expect(dash).not.toMatch(/matchedCount: result\.matchedCount \?\? 0/);
   });
 });
+
+// 20270111: weekend framing is requests-only, floored on its own, and complement-checked against the row's people.
+describe('weekend_count on demand rows', () => {
+  const m = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270111_demand_weekend_framing.sql'), 'utf8');
+  it('keeps the floor of 5 and uses requests only', () => {
+    expect(m).toMatch(/k constant integer := 5/);
+    expect(m).toMatch(/source = 'request' and e\.req_date between v_ws and v_we/);
+    expect(m).toMatch(/>= k\s*\n\s*and \(count\(distinct person\) - /);
+  });
+  it('applies the complement rule on category rows and never uses coordinates or ids in the output', () => {
+    expect(m).toMatch(/cat_weekend_ok[\s\S]*c\.people - w\.people = 0 or c\.people - w\.people >= k/);
+    expect(m.slice(m.indexOf('cat_signals as'))).not.toMatch(/requester_id|user_id|latitude|longitude/);
+  });
+  it('stays a single owner-only overload', () => {
+    expect(m).toMatch(/managed_partner_id = partner_id_param/);
+    expect(m).toMatch(/revoke all on function public\.get_partner_demand_signals\(uuid\) from public, anon/);
+  });
+});

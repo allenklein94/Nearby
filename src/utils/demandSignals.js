@@ -19,6 +19,25 @@ export function partyBucketLabel(bucket) {
   return PARTY_LABELS[bucket] ?? null;
 }
 
+// "N of them this weekend": only when the server returned a floored, complement-checked count (requests only), and never
+// more than the row's own people. Re-checked here so a bad row can't render a small or impossible number.
+export function weekendLine(signal, minPeople = 5) {
+  const w = Number(signal?.weekend_count);
+  const total = Number(signal?.people_count);
+  if (signal?.weekend_count == null || !Number.isInteger(w) || w < minPeople || (Number.isFinite(total) && w > total)) return null;
+  return `${w} of them this weekend`;
+}
+
+// The owner's own open matched opportunities (first-party, never floored) as one line at the top of the card.
+export function describeMatchSummary(count) {
+  if (!Number.isInteger(count) || count <= 0) return null;
+  return {
+    line: `Your business matches ${count} open ${count === 1 ? 'request' : 'requests'} right now`,
+    actionLabel: 'View opportunities',
+    action: { type: 'opportunities' },
+  };
+}
+
 export function describeDemandSignal(signal, { minPeople = 5, windowDays = 14, openByCategory = {} } = {}) {
   const people = Number(signal?.people_count);
   if (!signal || !Number.isFinite(people) || people < minPeople) return null;
@@ -29,7 +48,7 @@ export function describeDemandSignal(signal, { minPeople = 5, windowDays = 14, o
     return {
       key: `occasion:${signal.occasion}`,
       headline: `${noun} plans are being requested nearby`,
-      detail: `${people} people · ${since}`,
+      detail: [`${people} people · ${since}`, weekendLine(signal, minPeople)].filter(Boolean).join(' · '),
       actionLabel: `Create a ${noun} package`,
       action: { type: 'package', occasion: signal.occasion },
     };
@@ -39,7 +58,7 @@ export function describeDemandSignal(signal, { minPeople = 5, windowDays = 14, o
     return {
       key: 'group',
       headline: `Groups of ${signal.min_party}+ are looking nearby`,
-      detail: `${people} people · ${since}`,
+      detail: [`${people} people · ${since}`, weekendLine(signal, minPeople)].filter(Boolean).join(' · '),
       actionLabel: 'Post availability',
       action: { type: 'availability', category: null },
     };
@@ -63,7 +82,7 @@ export function describeDemandSignal(signal, { minPeople = 5, windowDays = 14, o
       key: `category:${signal.category}`,
       headline: `${signal.category}${party ? ` for ${party}` : ''} is being searched nearby`,
       // Separate, independently floored facts -- never phrased as one group of people who wanted all of them.
-      detail: [whenLabel(signal.when_day, signal.when_period), signal.outdoor === true ? 'Outdoor seating' : null, budget, `${people} people · ${since}`, unmet].filter(Boolean).join(' · '),
+      detail: [whenLabel(signal.when_day, signal.when_period), signal.outdoor === true ? 'Outdoor seating' : null, budget, `${people} people · ${since}`, weekendLine(signal, minPeople), unmet].filter(Boolean).join(' · '),
       actionLabel: 'Post availability',
       action: { type: 'availability', category: signal.category },
       ...(Number.isInteger(openByCategory[signal.category]) && openByCategory[signal.category] > 0

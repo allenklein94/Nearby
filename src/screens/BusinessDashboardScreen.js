@@ -47,7 +47,7 @@ import { getSocialForecast } from '../services/homeDashboard';
 import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiencesForOpportunity, buildOfferTitleScaffold, buildOccasionOfferTitle } from '../services/businessOfferRecommendation';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import DemandNearYouCard from '../components/DemandNearYouCard';
-import { describeDemandSignals } from '../utils/demandSignals';
+import { describeDemandSignals, describeMatchSummary } from '../utils/demandSignals';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, OFFERED_OCCASION_OPTIONS, occasionLabel, occasionPhrase, dietaryLabel } from '../constants/businessAttributes';
 import { planAddonLabel } from '../constants/planAddons';
 import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
@@ -2889,6 +2889,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         .filter((o) => o.status === 'pending' && o.business_requests?.status === 'open' && o.business_requests?.category)
                         .reduce((acc, o) => ({ ...acc, [o.business_requests.category]: (acc[o.business_requests.category] ?? 0) + 1 }), {}),
                     })}
+                    matchSummary={describeMatchSummary(
+                      opportunities.filter((o) => o.status === 'pending' && o.business_requests?.status === 'open').length
+                    )}
                     onAction={(action) => {
                       if (action.type === 'package') openPackageModal({ occasion_type: action.occasion });
                       else if (action.type === 'opportunities') setSection('opportunities');
