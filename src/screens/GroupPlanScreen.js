@@ -16,6 +16,7 @@ import {
 import { submitSocialOffer, respondToSocialOffer, markSocialOfferViewed } from '../services/socialOffers';
 import { recordIntentSelection } from '../services/intentOutcomes';
 import LoadErrorState from '../components/LoadErrorState';
+import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -74,6 +75,7 @@ export default function GroupPlanScreen({ navigation, route }) {
   const proposalId = route.params?.proposalId;
 
   const [myId, setMyId] = useState(null);
+  const [reasonAsk, setReasonAsk] = useState(null);
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -248,7 +250,10 @@ export default function GroupPlanScreen({ navigation, route }) {
   function handleCancel() {
     Alert.alert('Cancel this group plan?', 'Everyone keeps their own individual request exactly as it was.', [
       { text: 'Never mind', style: 'cancel' },
-      { text: 'Cancel Plan', style: 'destructive', onPress: () => runAction(() => cancelGroupPlan(proposalId)) },
+      { text: 'Cancel Plan', style: 'destructive', onPress: () => runAction(async () => {
+        await cancelGroupPlan(proposalId);
+        setReasonAsk({ entityType: 'group_plan', entityId: proposalId, role: 'host' });
+      }) },
     ]);
   }
 
@@ -562,6 +567,7 @@ export default function GroupPlanScreen({ navigation, route }) {
           </>
         )}
       </ScrollView>
+      <CancellationReasonSheet ask={reasonAsk} onClose={() => setReasonAsk(null)} />
     </SafeAreaView>
   );
 }

@@ -11,6 +11,7 @@ import { CATEGORY_OPTIONS as BUSINESS_REQUEST_CATEGORY_OPTIONS } from './AskBusi
 import { getSignedPhotoUrl } from '../services/photos';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import CommunityCalendar from '../components/CommunityCalendar';
+import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import LoadErrorState from '../components/LoadErrorState';
@@ -32,6 +33,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   // own content already shows below is the obvious next thing to look at.
   const notificationReason = route.params?.notificationReason ?? null;
   const [showReasonBanner, setShowReasonBanner] = useState(!!notificationReason);
+  const [reasonAsk, setReasonAsk] = useState(null);
   // Success state (✓/🎉, per the Nearby Motion Language): the previous "create a
   // community" path landed here with zero feedback at all beyond the screen simply
   // appearing (a real, previously-disclosed gap -- CLAUDE.md Item 57). Consumed once
@@ -336,6 +338,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
           onPress: async () => {
             try {
               await cancelCommunity(communityId);
+              setReasonAsk({ entityType: 'community', entityId: communityId, role: 'host' });
               load();
             } catch (e) {
               Alert.alert('Error', e.message);
@@ -860,6 +863,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
           </View>
         </View>
       </Modal>
+      <CancellationReasonSheet ask={reasonAsk} onClose={() => setReasonAsk(null)} />
     </SafeAreaView>
   );
 }

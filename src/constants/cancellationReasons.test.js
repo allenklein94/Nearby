@@ -13,3 +13,8 @@ test('every root cancel RPC records its event', () => {
   ['business_reservation', 'business_request', 'gathering', 'occasion_group_plan'].forEach((t) =>
     expect(sql).toContain(`_record_cancellation('${t}'`));
 });
+
+test('community and legacy group plan cancels record their event too', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20261214_cancellation_events_community_group_plan.sql'), 'utf8');
+  ['community', 'group_plan'].forEach((t) => expect(sql).toContain(`_record_cancellation('${t}'`));
+});
