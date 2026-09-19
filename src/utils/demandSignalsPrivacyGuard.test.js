@@ -58,3 +58,17 @@ describe('community leader demand push stays a coordination trigger', () => {
     expect(restore).not.toMatch(/demand_min_people/);
   });
 });
+
+// 20270109: the count after posting availability is a demand figure too -- floored on distinct requesters, else null.
+describe('post_business_availability matchedCount floor', () => {
+  const m = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270109_post_availability_matched_count_floor.sql'), 'utf8');
+  it('returns matchedCount only at the shared floor of distinct people', () => {
+    expect(m).toMatch(/array_length\(v_matched_people, 1\).*>= public\.demand_min_people\(\)/);
+    expect(m).toMatch(/v_matched_people := array_append/);
+  });
+  it('the dashboard never turns a withheld count into a number', () => {
+    const dash = fs.readFileSync(path.join(__dirname, '../screens/BusinessDashboardScreen.js'), 'utf8');
+    expect(dash).toMatch(/matchedCount: result\.matchedCount \?\? null/);
+    expect(dash).not.toMatch(/matchedCount: result\.matchedCount \?\? 0/);
+  });
+});

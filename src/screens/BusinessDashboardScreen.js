@@ -2187,7 +2187,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         // availability() already computes -- no new backend logic.
         setLastPostedAvailability({
           title: availabilityTitleInput.trim(),
-          matchedCount: result.matchedCount ?? 0,
+          matchedCount: result.matchedCount ?? null, // null = below the privacy floor (or none): never shown as a number
         });
       } else if (result.blocked) {
         Alert.alert(
@@ -3775,11 +3775,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       </TouchableOpacity>
                     </View>
                     <Text style={styles.pendingReviewRow}>
-                      {lastPostedAvailability.matchedCount > 0
+                      {lastPostedAvailability.matchedCount != null
                         ? `Nearby found ${lastPostedAvailability.matchedCount} matching request${lastPostedAvailability.matchedCount === 1 ? '' : 's'} nearby -- they'll see your offer right away.`
-                        : "No open requests match this right now, but it stays live for anyone who asks while it's active."}
+                        : "It's live. Nearby sends it to matching requests nearby, now and while it's active."}
                     </Text>
-                    {lastPostedAvailability.matchedCount > 0 && (
+                    {lastPostedAvailability.matchedCount != null && (
                       <TouchableOpacity
                         onPress={() => { setLastPostedAvailability(null); setSection('opportunities'); }}
                         style={{ alignSelf: 'flex-start', marginTop: spacing.sm }}
