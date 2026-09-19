@@ -68,7 +68,7 @@ already read; no schema change). The celebrations step now shows only for people
 row above Quick Picks (`goalShortcuts` in `onboardingGoals.js`, `useMyGoals`), one chip per picked goal to an existing screen (Discover people/things,
 MakeAPlan, Places, CelebrateSomething, BrandOffers); nothing renders for anyone with no saved goals. Goals are editable in Settings ("What you're here to do", saves per tap via `motivationsWithGoals`, keeps looking-for tokens); Home refetches on focus. Not device-tested.
 
-**Onboarding wiring audit (2026-09-19, `PRODUCT_AUDIT/ONBOARDING_WIRING_MATRIX_2026-09-19.md`):** matrix of every onboarding input vs its consumers. Fixed two orphans (the UI-only location options; comfort level now also ranks the Gatherings feed). Follow-up: picked interest groups are saved as `profiles.interest_groups` (`20261216`) = a weak broad signal (2 pts vs a declared tag's 5), never expanded into tags; editable in Settings; ranks Gatherings/For You/Discover only.
+**Onboarding wiring audit (2026-09-19, `PRODUCT_AUDIT/ONBOARDING_WIRING_MATRIX_2026-09-19.md`):** matrix of every onboarding input vs its consumers. Fixed two orphans (the UI-only location options; comfort level now also ranks the Gatherings feed). Follow-up: picked interest groups are saved as `profiles.interest_groups` (`20261216`) = a weak broad signal (2 pts vs a declared tag's 5), never expanded into tags; editable in Settings; ranks Gatherings/For You/Discover/Home recommendations only.
 
 **Full from-scratch Docker replay (2026-09-19):** all 209 migrations (through `20261215_behavior_events`) applied cleanly to an empty
 `supabase/postgres:15.1.0.147` public schema with `ON_ERROR_STOP`; every function touched this session has exactly one overload, both new

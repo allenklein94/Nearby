@@ -33,5 +33,4 @@ Groups are now saved as their own signal (`profiles.interest_groups`, migration 
 no interest = nothing; group only = weak (`BROAD_GROUP_POINTS` 2) on any tag in that group; declared tag = strong (5, so group + tags is
 naturally stronger). Read by the Gatherings Nearby + For You ranking (`blendedCategoryScore`/`forYouBlend`) and Discover
 (`broadGroupNudge`, reason "In a category you like"). Editable in Settings ("Broad interests"); removing one never touches tags.
-Deliberately NOT read by push notifications (server predicate stays tag-exact), Plans, Occasions or Reservations. Home's own
-recommendation scorer also doesn't read it yet.
+Deliberately NOT read by push notifications (server predicate stays tag-exact), Plans, Occasions or Reservations. Home's recommendation scorer reads it too (weak, reason "In a category you like").

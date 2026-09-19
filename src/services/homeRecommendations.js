@@ -9,6 +9,8 @@
 // machine-learned weight, matching this file's oldest and most
 // consistently-enforced rule (see CLAUDE.md's own repeated "no premature
 // universal/AI-driven matching algorithm" constraint).
+import { groupKeyForTag } from '../constants/interestGraph';
+import { BROAD_GROUP_POINTS } from '../constants/blendedRanking';
 import { comfortFits } from '../constants/socialComfort';
 import { SCORE_INTEREST_MATCH, SCORE_CLOSE_DISTANCE, SCORE_HAPPENING_NOW, SCORE_OWN_NETWORK } from './intentResolverScoring';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
@@ -87,7 +89,7 @@ function socialComfortBonus(groupSizeFeel, socialComfortLevel) {
     : null;
 }
 
-function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel, maturity) {
+function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel, maturity, interestGroups = []) {
   let score = 0;
   const reasons = [];
 
@@ -96,6 +98,10 @@ function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel,
     // weight, weightSignal() never dampens this class.
     score += weightSignal(SCORE_INTEREST_MATCH, SIGNAL_SOURCES.EXPLICIT, maturity);
     reasons.push(REASON_TEXT.MATCHES_INTERESTS.text);
+  } else if (interestGroups.length > 0 && interestGroups.includes(groupKeyForTag(gathering.interest_tag))) {
+    // EXPLICIT but broad: a group picked without specific tags -- a weaker match than a declared tag, never a stand-in for one.
+    score += weightSignal(BROAD_GROUP_POINTS, SIGNAL_SOURCES.EXPLICIT, maturity);
+    reasons.push('In a category you like');
   }
   if (gathering.distanceMiles !== null && gathering.distanceMiles !== undefined && gathering.distanceMiles < 2) {
     // CONTEXTUAL: a fact about the world (how far away this is), not
@@ -193,6 +199,7 @@ export function buildHomeRecommendations({
   positiveHostIds = new Set(),
   positivePartnerIds = new Set(),
   socialComfortLevel = null,
+  interestGroups = [],
   accountAgeDays = null,
   hasBehavioralHistory = false,
 } = {}) {
@@ -201,7 +208,7 @@ export function buildHomeRecommendations({
 
   for (const gathering of gatherings) {
     if (excludeIds.has(gathering.id)) continue;
-    const { score, reasons } = scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel, maturity);
+    const { score, reasons } = scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel, maturity, interestGroups);
     if (reasons.length === 0) continue;
     candidates.push({ type: 'gathering', id: gathering.id, title: gathering.title, reasons, score, data: gathering });
   }

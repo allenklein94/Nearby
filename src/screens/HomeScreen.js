@@ -334,7 +334,7 @@ export default function HomeScreen({ navigation }) {
         // Phase J (CLAUDE.md) -- created_at is the one new column this
         // whole phase needs; a plain, already-fetched real timestamp, zero
         // new query, used below to compute real account-age maturity.
-        const { data: profile } = await supabase.from('profiles').select('display_name, home_quick_pick_categories, seen_home_first_run_moment, social_comfort_level, created_at, interests, cuisine_preferences, venue_preferences').eq('id', myId).single();
+        const { data: profile } = await supabase.from('profiles').select('display_name, home_quick_pick_categories, seen_home_first_run_moment, social_comfort_level, created_at, interests, cuisine_preferences, venue_preferences, interest_groups').eq('id', myId).single();
         setMyName(profile?.display_name?.split(' ')[0] ?? '');
         setPinnedQuickPicks(Array.isArray(profile?.home_quick_pick_categories) ? profile.home_quick_pick_categories : null);
         setSeenFirstRunMoment(profile?.seen_home_first_run_moment ?? true);
@@ -688,6 +688,7 @@ export default function HomeScreen({ navigation }) {
             // second fetch); social_comfort_level was a real, confirmed
             // orphaned onboarding field until this line.
             socialComfortLevel: profile?.social_comfort_level ?? null,
+            interestGroups: profile?.interest_groups ?? [],
             accountAgeDays,
             hasBehavioralHistory,
           })

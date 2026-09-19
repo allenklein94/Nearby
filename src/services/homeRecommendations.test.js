@@ -186,3 +186,16 @@ describe('buildHomeRecommendations', () => {
     expect(results).toHaveLength(MAX_HOME_RECOMMENDATIONS);
   });
 });
+
+describe('broad interest group', () => {
+  const { buildHomeRecommendations } = require('./homeRecommendations');
+  const { CATEGORY_GROUPS } = require('../constants/gatheringCategories');
+  const g = CATEGORY_GROUPS[0];
+  it('gives a weak reason for a tag in a picked group, none otherwise', () => {
+    const gath = { id: 'x', title: 'T', interest_tag: g.tags[0], matchesYourInterests: false };
+    const withGroup = buildHomeRecommendations({ gatherings: [gath], interestGroups: [g.key] });
+    expect(withGroup[0]?.reasons).toContain('In a category you like');
+    const without = buildHomeRecommendations({ gatherings: [gath] });
+    expect(without.length).toBe(0);
+  });
+});
