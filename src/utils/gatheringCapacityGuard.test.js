@@ -32,7 +32,15 @@ describe('host controls are centralized (item 73)', () => {
     order.forEach((n) => expect(n).toBeGreaterThan(-1));
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
-  it('does not invent settings that have no data behind them', () => {
-    expect(edit).not.toMatch(/Allow guests to invite/);
+  it('every listed setting is backed by a real column', () => {
+    const svc = fs.readFileSync(path.join(__dirname, '../services/gatherings.js'), 'utf8');
+    const m2 = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270170_host_gathering_settings.sql'), 'utf8');
+    expect(edit).toMatch(/Allow guests to invite/);
+    expect(edit).toMatch(/Notify me about joins and requests/);
+    expect(m2).toMatch(/add column if not exists host_notifications/);
+    expect(m2).toMatch(/add column if not exists allow_attendee_invites/);
+    expect(svc).toMatch(/host_notifications, allow_attendee_invites/);
+    // enforced server-side on BOTH invite paths, not just hidden in the UI
+    expect(m2.match(/turned off invitations/g).length).toBeGreaterThanOrEqual(2);
   });
 });

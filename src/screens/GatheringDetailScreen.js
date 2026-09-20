@@ -97,6 +97,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
+  // The host can turn invitations off for everyone but themselves (allow_attendee_invites; also enforced server-side).
+  const canInvite = !!gathering && (gathering.isHost || gathering.allow_attendee_invites !== false);
   const [countdownStats, setCountdownStats] = useState(null);
   const [businessRequest, setBusinessRequest] = useState(null);
   const [acceptedBusinessOffer, setAcceptedBusinessOffer] = useState(null);
@@ -567,7 +569,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
             <View style={styles.notificationReasonBanner}>
               <Text style={styles.notificationReasonText}>{notificationReason}</Text>
               <View style={styles.notificationReasonActions}>
-                {notificationSuggestsInvite && (
+                {notificationSuggestsInvite && canInvite && (
                   <TouchableOpacity
                     onPress={() => setInviteModalVisible(true)}
                     style={styles.notificationReasonInviteButton}
@@ -1148,6 +1150,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
               >
                 <Text style={styles.sayHelloLink}>💬 Say Hello</Text>
               </TouchableOpacity>
+{canInvite && (
               <TouchableOpacity
                 onPress={() => setInviteModalVisible(true)}
                 style={{ marginTop: spacing.sm }}
@@ -1156,6 +1159,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
               >
                 <Text style={styles.sayHelloLink}>🤝 Invite friends</Text>
               </TouchableOpacity>
+              )}
               <TouchableOpacity
                 onPress={confirmLeave}
                 disabled={leaving}
@@ -1259,6 +1263,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
               )}
                 </>
               )}
+{canInvite && (
               <TouchableOpacity
                 onPress={() => setInviteModalVisible(true)}
                 style={{ marginTop: spacing.sm, alignItems: 'center' }}
@@ -1267,6 +1272,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
               >
                 <Text style={styles.sayHelloLink}>🤝 Invite a friend</Text>
               </TouchableOpacity>
+              )}
             </>
           )}
         </View>

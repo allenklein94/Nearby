@@ -38,6 +38,8 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [showGroupInsights, setShowGroupInsights] = useState(gathering.show_group_insights ?? true);
   const [requiresApproval, setRequiresApproval] = useState(gathering.requires_approval ?? false);
   const [askLocalBusinesses, setAskLocalBusinesses] = useState(gathering.ask_local_businesses ?? false);
+  const [hostNotifications, setHostNotifications] = useState(gathering.host_notifications ?? true);
+  const [allowAttendeeInvites, setAllowAttendeeInvites] = useState(gathering.allow_attendee_invites ?? true);
   const [limitAttendees, setLimitAttendees] = useState(gathering.capacity != null);
   const [capacity, setCapacity] = useState(gathering.capacity ?? 10);
   // A gathering made before the category became required has none; the host can fill it in (never change one).
@@ -124,6 +126,8 @@ export default function EditGatheringScreen({ route, navigation }) {
         showGroupInsights,
         ...(gathering.is_public === false ? {} : { requiresApproval }),
         askLocalBusinesses,
+        hostNotifications,
+        allowAttendeeInvites,
       });
       const nextCapacity = limitAttendees ? capacity : null;
       if ((gathering.capacity ?? null) !== nextCapacity) await setGatheringCapacity(gathering.id, nextCapacity);
@@ -309,6 +313,16 @@ export default function EditGatheringScreen({ route, navigation }) {
             <Switch value={askLocalBusinesses} onValueChange={setAskLocalBusinesses} accessibilityLabel="Allow business requests" />
           </View>
           <Text style={styles.subheader}>On: Nearby can look for a business to help with this gathering once you say so. Nothing is sent until you tap "Yes, look now". Turning it off doesn't cancel a request you already made.</Text>
+          <View style={styles.toggleRow}>
+            <Text style={styles.label}>Allow guests to invite</Text>
+            <Switch value={allowAttendeeInvites} onValueChange={setAllowAttendeeInvites} accessibilityLabel="Allow guests to invite" />
+          </View>
+          <Text style={styles.subheader}>Off: only you can send invitations to this gathering. Invitations already sent stay.</Text>
+          <View style={styles.toggleRow}>
+            <Text style={styles.label}>Notify me about joins and requests</Text>
+            <Switch value={hostNotifications} onValueChange={setHostNotifications} accessibilityLabel="Notify me about joins and requests" />
+          </View>
+          <Text style={styles.subheader}>Off: no push when someone joins, asks to join or joins the waitlist for this gathering. Other Plans notifications are unchanged.</Text>
 
           <Text style={styles.subheader}>Shared interests and an age/gender-makeup summary, shown to attendees once there's enough people to keep it anonymous.</Text>
 

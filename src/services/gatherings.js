@@ -50,7 +50,7 @@ const WIDE_TIER_MAX_MILES = 15;
 // unknown, never a guessed value" convention. Added here (the one shared
 // select list every gathering-fetching function already reads from) so
 // every caller starts returning them for free, no per-call-site change.
-const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity, ask_local_businesses, price_level, party_type, show_group_insights, requires_approval';
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity, ask_local_businesses, price_level, party_type, show_group_insights, requires_approval, host_notifications, allow_attendee_invites';
 
 // ask_local_businesses only ever stores the host's real consent/intent at
 // creation time -- it does NOT itself create a business_requests row. A
@@ -787,12 +787,14 @@ export async function setGatheringCapacity(gatheringId, capacity) {
   return data;
 }
 
-export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps, showGroupInsights, requiresApproval, askLocalBusinesses }) {
+export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps, showGroupInsights, requiresApproval, askLocalBusinesses, hostNotifications, allowAttendeeInvites }) {
   const { error } = await supabase
     .from('gatherings')
     .update({
       ...(requiresApproval === undefined ? {} : { requires_approval: requiresApproval }),
       ...(askLocalBusinesses === undefined ? {} : { ask_local_businesses: askLocalBusinesses }),
+      ...(hostNotifications === undefined ? {} : { host_notifications: hostNotifications }),
+      ...(allowAttendeeInvites === undefined ? {} : { allow_attendee_invites: allowAttendeeInvites }),
       title,
       description,
       scheduled_at: scheduledAt,
