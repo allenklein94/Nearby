@@ -1,4 +1,4 @@
-import { gatheringPrimaryAction } from './primaryAction';
+import { gatheringPrimaryAction, peoplePrimaryAction } from './primaryAction';
 
 const NOW = new Date('2026-09-20T12:00:00Z').getTime();
 const base = { id: 'g', host_id: 'host', scheduled_at: '2026-09-20T23:00:00Z', is_public: true, capacity: null, attendees: [] };
@@ -31,4 +31,10 @@ test('lowCommitment (Trending): open join -> I\'m Interested toggle; attending/p
   expect(gatheringPrimaryAction(base, 'me', NOW, { ...o, interestedIds: new Set(['g']) }).on).toBe(true);
   expect(gatheringPrimaryAction({ ...base, attendees: [{ user_id: 'me', status: 'approved' }] }, 'me', NOW, o).kind).toBe('view_plan');
   expect(gatheringPrimaryAction(base, 'me', NOW).kind).toBe('join');
+});
+
+test('Meet People only with real people nearby', () => {
+  expect(peoplePrimaryAction(3).label).toBe('Meet People');
+  expect(peoplePrimaryAction(0)).toBeNull();
+  expect(peoplePrimaryAction(undefined)).toBeNull();
 });

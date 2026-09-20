@@ -43,3 +43,9 @@ export function gatheringPrimaryAction(gathering, myUserId, now = Date.now(), op
 }
 
 export { needsApproval };
+
+// People nearby (dating/friends recommendation surface): "Meet People" only when there is real supply to meet.
+// Which sub-mode opens (Dating vs Friends) is Discover's own personalization, so callers pass no sub-mode.
+export function peoplePrimaryAction(nearbyPeopleCount) {
+  return nearbyPeopleCount > 0 ? { kind: 'meet_people', label: 'Meet People' } : null;
+}

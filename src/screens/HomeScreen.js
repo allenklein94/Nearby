@@ -51,7 +51,7 @@ import { lightenHex } from '../utils/colorUtils';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { getUserLocation } from '../services/userLocation';
 import { placeDistanceLabel } from '../services/places';
-import { gatheringPrimaryAction } from '../utils/primaryAction';
+import { gatheringPrimaryAction, peoplePrimaryAction } from '../utils/primaryAction';
 
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
@@ -2559,13 +2559,17 @@ export default function HomeScreen({ navigation }) {
               Quick Stats row (no new caption line). */}
           <TouchableOpacity
             style={styles.cardRow}
-            onPress={() => navigation.navigate('Discover', { initialMode: 'people', initialPeopleSubMode: 'dating' })}
+            onPress={() => navigation.navigate('Discover', { initialMode: 'people' })}
             accessibilityLabel={`${dashboard?.nearbyPeopleCount ?? 0} people nearby to meet, tap to view`}
             accessibilityRole="button"
           >
             <Ionicons name="people-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
             <Text style={styles.cardText}>{dashboard?.nearbyPeopleCount ?? 0} people nearby to meet</Text>
-            <Text style={styles.cardChevron}>›</Text>
+            {peoplePrimaryAction(dashboard?.nearbyPeopleCount) ? (
+              <View style={styles.rowCta}><Text style={styles.rowCtaText}>{peoplePrimaryAction(dashboard.nearbyPeopleCount).label}</Text></View>
+            ) : (
+              <Text style={styles.cardChevron}>›</Text>
+            )}
           </TouchableOpacity>
 
           <View style={styles.divider} />
