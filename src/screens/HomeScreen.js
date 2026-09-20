@@ -46,6 +46,7 @@ import { spacing, radius, typography } from '../theme';
 import { isGatheringPast } from '../utils/objectState';
 import { recommendationFacts, recommendationRow } from '../utils/recommendationFacts';
 import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
+import { homeLoadNotice } from '../utils/homeLoadNotice';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime, describeFriendGatheringTiming } from '../utils/timeContext';
 import { homeWeatherCard } from '../constants/weatherRelevance';
 import { gatheringFullnessLabel } from '../utils/gatheringFullness';
@@ -1536,6 +1537,15 @@ export default function HomeScreen({ navigation }) {
           </View>
           <TabHeaderActions navigation={navigation} />
         </View>
+
+        {homeLoadNotice(dashboard?.loadFailures) && (
+          <View style={styles.outcomePromptCard}>
+            <Text style={styles.outcomePromptText}>{homeLoadNotice(dashboard.loadFailures)}</Text>
+            <TouchableOpacity style={styles.predictiveActButton} onPress={onRefresh} accessibilityLabel="Try loading Home again" accessibilityRole="button">
+              <Text style={styles.predictiveActButtonText}>Try again →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={[styles.intentSection, shadow.card]}>
           <Text style={styles.intentHeading}>What do you want to do?</Text>

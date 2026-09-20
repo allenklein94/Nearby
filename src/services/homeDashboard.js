@@ -428,10 +428,14 @@ export async function getHomeDashboard() {
   const lastVisit = profileData?.last_home_visit ? new Date(profileData.last_home_visit) : null;
   await supabase.from('profiles').update({ last_home_visit: new Date().toISOString() }).eq('id', myId);
 
+  // A failed load is NOT an empty result (global rule 7): each source that throws is recorded in `loadFailures` so the
+  // screen can say "didn't load, try again" instead of reading like there is nothing nearby.
+  const loadFailures = [];
+  const settle = (promise, key) => promise.catch((e) => { loadFailures.push(key); console.error(`home dashboard: ${key} failed`, e); return []; });
   const [nearbyPeople, nearbyGatherings, topCategories, { count: friendsCount }] = await Promise.all([
-    getNearbyMatches().catch(() => []),
-    getNearbyGatherings('wide').catch(() => []),
-    getMyTopGatheringCategories().catch(() => []),
+    settle(getNearbyMatches(), 'people'),
+    settle(getNearbyGatherings('wide'), 'gatherings'),
+    settle(getMyTopGatheringCategories(), 'interests'),
     supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('status', 'accepted').or(`user_a.eq.${myId},user_b.eq.${myId}`),
   ]);
 
@@ -567,7 +571,7 @@ export async function getHomeDashboard() {
     }
   }
   // "Interested" (I might go): saved but not committed -- shown inline under Your Plans, never merged into Going.
-  const allInterested = await getMyInterestedGatherings().catch(() => []);
+  const allInterested = await settle(getMyInterestedGatherings(), 'interested');
   const plansInterested = allInterested.slice(0, 3);
   const interestedIds = allInterested.map((g) => g.id);
   const plansGoing = plansGoingRaw.map((p) => ({ ...p, peopleCount: approvedCountByGathering[p.id] ?? 0 }));
@@ -583,7 +587,7 @@ export async function getHomeDashboard() {
   // does on gatherings (date + a time window instead), so this stays a
   // third, separate group rather than being merged into plansGoing/
   // plansHosting.
-  const plansGroupAll = await getMyGroupPlans().catch(() => []);
+  const plansGroupAll = await settle(getMyGroupPlans(), 'groupPlans');
   const plansGroup = [...plansGroupAll].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')).slice(0, 3);
 
   // "Because you're into X/Y/Z" — real nearby gatherings matching the
@@ -731,6 +735,7 @@ export async function getHomeDashboard() {
     plansGroup,
     friendsActivity,
     friendIds,
+    loadFailures,
     becauseYouLike,
     becauseYouLikeCategories: topInterestCategories,
     indoorGatheringsToday,
