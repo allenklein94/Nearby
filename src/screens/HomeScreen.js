@@ -46,7 +46,7 @@ import { spacing, radius, typography } from '../theme';
 import { isGatheringPast } from '../utils/objectState';
 import { recommendationFacts, recommendationRow } from '../utils/recommendationFacts';
 import { categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
-import { selectHomeAttention, weatherCardWithoutLead } from '../utils/homeAttention';
+import { selectHomeAttention, cardWithoutIds } from '../utils/homeAttention';
 import { gatheringCardModel } from '../utils/recommendationCard';
 import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { homeLoadNotice } from '../utils/homeLoadNotice';
@@ -375,8 +375,13 @@ export default function HomeScreen({ navigation }) {
   // A starting-soon gathering that Picked For You already shows carries "Starting soon" as one of its reasons there,
   // so it is not repeated as a chip (one object, one place).
   const shownInMergeIds = new Set([homeMerge.hero?.id, ...homeMerge.cards.map((c) => c.gathering.id)].filter(Boolean));
-  // The weather card renders ABOVE Picked For You, so a gathering it lists is not rendered again below: the list below
-  // hands over its reasons instead (attention.absorbed) and the weather row shows them.
+  // A gathering appears ONCE on Home (utils/homeAttention.js HOME_SECTION_PRIORITY: firstRun > yourPlans > weather > bestPick >
+  // pickedForYou). `above` collects what higher placements already render; lower ones suppress it and refill.
+  const firstRunIds = seenFirstRunMoment === false ? homeRecommendations.slice(0, 2).filter((r) => r.type === 'gathering').map((r) => r.id) : [];
+  const yourPlansIds = [
+    ...(dashboard?.plansGoing ?? []), ...(dashboard?.plansHosting ?? []), ...(dashboard?.plansInterested ?? []),
+  ].map((g) => g?.id).filter(Boolean);
+  const aboveWeather = new Set([...firstRunIds, ...yourPlansIds]);
   const weatherCardRaw = socialForecast ? (() => {
     const nowMs = Date.now();
     const upcomingOnly = (list) => (list ?? []).filter((g) => new Date(g.scheduled_at).getTime() > nowMs);
@@ -387,15 +392,10 @@ export default function HomeScreen({ navigation }) {
       intentActive: intentThinking || !!intentResults || !!surprise,
     });
   })() : null;
-  const weatherCard = weatherCardWithoutLead(weatherCardRaw, homeMerge.hero?.id);
+  const weatherCard = cardWithoutIds(weatherCardRaw, aboveWeather);
   // Every engine feeds ONE capped list (utils/homeAttention.js): Home shows the few things that deserve attention now.
   const attention = selectHomeAttention({
-    // Objects already rendered above: the weather card's rows and "Your interest" in Your Plans (attending/hosting are
-    // already left out of every list by the dashboard).
-    exclude: new Set([
-      ...(weatherCard ? weatherCard.gatherings.map((g) => g.id) : []),
-      ...(dashboard?.plansInterested ?? []).map((g) => g?.id).filter(Boolean),
-    ]),
+    exclude: new Set([...aboveWeather, ...(weatherCard ? weatherCard.gatherings.map((g) => g.id) : [])]),
     hero: homeMerge.hero,
     cards: homeMerge.cards,
     recommended: homeRecommendations,
@@ -2606,7 +2606,7 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.sectionHeaderText}>Picked For You</Text>
             </View>
 
-            {homeMerge.hero && (() => {
+            {attention.hero && (() => {
               // Phase 8 section H (CLAUDE.md) -- Home's one hero moment,
               // same visual language as Discover's own hero tier (full-bleed
               // cover image or a category-color gradient fallback, dark
@@ -2619,14 +2619,14 @@ export default function HomeScreen({ navigation }) {
               // Everything below (Trending, Friends' Activity, Nearby Right
               // Now) stays plain text rows, per the "not a wall of imagery"
               // instruction.
-              const categoryStyle = categoryStyleFor(homeMerge.hero.interest_tag);
-              const fullness = gatheringFullnessLabel(homeMerge.hero);
+              const categoryStyle = categoryStyleFor(attention.hero.interest_tag);
+              const fullness = gatheringFullnessLabel(attention.hero);
               return (
                 <TouchableOpacity
                   style={[styles.heroCard, shadow.card]}
-                  onPress={() => navigation.navigate('GatheringDetail', { gatheringId: homeMerge.hero.id })}
+                  onPress={() => navigation.navigate('GatheringDetail', { gatheringId: attention.hero.id })}
                   activeOpacity={0.85}
-                  accessibilityLabel={`Best Pick${gatheringTimeBadge(homeMerge.hero.scheduled_at) === 'TONIGHT' ? ' Tonight' : ''}: ${homeMerge.hero.title}, ${homeMerge.hero.reasons.join(', ')}`}
+                  accessibilityLabel={`Best Pick${gatheringTimeBadge(attention.hero.scheduled_at) === 'TONIGHT' ? ' Tonight' : ''}: ${attention.hero.title}, ${attention.hero.reasons.join(', ')}`}
                   accessibilityRole="button"
                 >
                   {bestPickCoverUrl ? (
@@ -2646,12 +2646,12 @@ export default function HomeScreen({ navigation }) {
                     style={styles.heroScrim}
                     pointerEvents="none"
                   />
-                  <Text style={styles.heroEyebrow}>{gatheringTimeBadge(homeMerge.hero.scheduled_at) ?? 'BEST PICK'}</Text>
+                  <Text style={styles.heroEyebrow}>{gatheringTimeBadge(attention.hero.scheduled_at) ?? 'BEST PICK'}</Text>
                   <View style={styles.heroBody}>
                     <View style={{ flex: 1, marginRight: spacing.sm }}>
-                      <Text style={styles.heroTitle} numberOfLines={1}>{homeMerge.hero.title}</Text>
+                      <Text style={styles.heroTitle} numberOfLines={1}>{attention.hero.title}</Text>
                       <Text style={styles.heroMeta} numberOfLines={1}>
-                        {homeMerge.hero.reasons.filter((r) => categorizeReasonText(r) !== REASON_CATEGORIES.TIME).join(' · ')}
+                        {attention.hero.reasons.filter((r) => categorizeReasonText(r) !== REASON_CATEGORIES.TIME).join(' · ')}
                       </Text>
                       {/* P1 remediation (CLAUDE.md, Aug 28 Full Coherence
                           Audit): the same real fullness signal every
@@ -2662,7 +2662,7 @@ export default function HomeScreen({ navigation }) {
                         <Text style={[styles.heroMeta, fullness.startsWith('🔒') && { color: '#FFB4B4' }]}>{fullness}</Text>
                       )}
                     </View>
-                    {renderGatheringCta(homeMerge.hero, 'hero')}
+                    {renderGatheringCta(attention.hero, 'hero')}
                   </View>
                 </TouchableOpacity>
               );

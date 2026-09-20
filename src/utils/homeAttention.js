@@ -23,17 +23,23 @@ function urgency(g, now) {
 // hero/cards come from mergeHomeGatheringSignals; recommended = buildHomeRecommendations rows ({type,id,title,reasons,data});
 // soon = gatherings starting soon that the merge did not already show.
 //
-// Global dedupe (item 51): `exclude` = ids of objects ALREADY rendered above on Home (e.g. the weather card's rows). An
-// excluded object is not rendered again; instead its real reasons are returned in `absorbed` (id -> [reason text]) so the
-// earlier surface can show the richer explanation ("Because you like Coffee · Trending nearby"). The lead is never excluded.
+// Global dedupe (items 51 + 52, LOCKED): a gathering appears only ONCE anywhere on Home. `exclude` = ids of objects
+// already rendered in a HIGHER-priority placement (see HOME_SECTION_PRIORITY). An excluded object is not rendered again;
+// its real reasons come back in `absorbed` (id -> [reason text]) so an earlier surface that has room can show them. The
+// Best Pick lead is NOT exempt: if its gathering is already above, the lead is dropped (hero = null) and the freed slot
+// is refilled by the next eligible candidate like any other.
 export function selectHomeAttention({ hero = null, cards = [], recommended = [], soon = [], exclude = null, now = new Date(), max = MAX_HOME_ATTENTION } = {}) {
   const absorbed = new Map();
-  const isAbove = (id) => !!exclude && exclude.has(id) && id !== hero?.id;
+  const isAbove = (id) => !!exclude && exclude.has(id);
   const absorb = (id, texts) => {
     const list = absorbed.get(id) ?? [];
     for (const t of texts) if (t && !list.includes(t)) list.push(t);
     absorbed.set(id, list);
   };
+  if (hero && isAbove(hero.id)) {
+    absorb(hero.id, hero.reasons ?? []);
+    hero = null;
+  }
   const visibleCards = [];
   for (const c of cards) {
     if (isAbove(c.gathering?.id)) absorb(c.gathering.id, c.reasons ?? []);
@@ -78,10 +84,17 @@ export function selectHomeAttention({ hero = null, cards = [], recommended = [],
   return { hero, items, absorbed, total: (hero ? 1 : 0) + candidates.length, shown: (hero ? 1 : 0) + items.length };
 }
 
-// The weather card is a statement with rows as its evidence, and it renders above Picked For You. The lead is never
-// shown twice, so it is taken out of the card's rows; a card left with no rows does not render (it has nothing to point at).
-export function weatherCardWithoutLead(card, leadId) {
+// Rows of a card (the weather card) minus objects already rendered in a higher placement; a card left with no rows does
+// not render (it has nothing to point at).
+export function cardWithoutIds(card, ids) {
   if (!card) return null;
-  const gatherings = (card.gatherings ?? []).filter((g) => g.id !== leadId);
+  const gatherings = (card.gatherings ?? []).filter((g) => !ids?.has(g.id));
   return gatherings.length > 0 ? { ...card, gatherings } : null;
 }
+
+// Home placements, highest priority first. A gathering is rendered in the FIRST section (top of this list) that would
+// surface it; every later section suppresses it and refills. Sections that list gatherings are all covered here.
+// Deliberately outside the rule (not "a listing of a gathering"): intent-search results (the person's own query),
+// action nudges about a plan they already own (venue needed, RSVPs outstanding, poll), group plans (different object),
+// and the non-gathering sections (invites, occasions, communities, Quick Picks, goal shortcuts, Quick Stats).
+export const HOME_SECTION_PRIORITY = ['firstRun', 'yourPlans', 'weather', 'bestPick', 'pickedForYou'];
