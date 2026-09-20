@@ -41,6 +41,7 @@ Consumer request -> business opportunity appears on web -> Accept/Offer on web -
 
 ## F. Sponsored placement (2026-09-20; only after `SPONSORED_TEST_MODE_RUNBOOK_2026-09-20.md` steps 1-3)
 - Web + phone: Promotions panel layout (chips wrap, date chips, payment button, released hold), Stripe test checkout return.
+- Web + phone: terms checkbox gates the payment button; "Read the terms" expands; "Cancel for a full refund" appears only for a paid, not-yet-started spotlight.
 - Phone: Sponsored card on Discover Places/Perks (label visible, Hide/Report/Why work, appears once, never in All/search); Settings switch + Reset.
 - Admin: Settings > Sponsored Refunds (Admin): list, confirm sheet, refund, then placement stops serving.
 
