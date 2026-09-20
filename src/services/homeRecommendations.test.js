@@ -43,7 +43,7 @@ describe('buildHomeRecommendations', () => {
   it('scores a gathering only on real, itemized signals -- never a bare number with no reason', () => {
     const results = buildHomeRecommendations({ gatherings: [gathering({ matchesYourInterests: true })] });
     expect(results).toHaveLength(1);
-    expect(results[0].reasons).toContain('Matches your interests');
+    expect(results[0].reasons.some((r) => /^(Matches your interests|Because you like .+)$/.test(r))).toBe(true);
     expect(results[0].score).toBeGreaterThan(0);
   });
 
@@ -107,7 +107,7 @@ describe('buildHomeRecommendations', () => {
 
   it('scores an offer on real target-interest and business-name signals only', () => {
     const results = buildHomeRecommendations({ offers: [offer({ target_interest_tag: 'Coffee' })] });
-    expect(results[0].reasons).toEqual(['Matches your interests', 'At Coastal Coffee']);
+    expect(results[0].reasons).toEqual(['Because you like Coffee', 'At Coastal Coffee']);
   });
 
   it('still surfaces an untargeted offer, just with a smaller reason set', () => {

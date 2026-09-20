@@ -1,6 +1,7 @@
 jest.mock('./supabase', () => ({ supabase: {} }));
 jest.mock('./proximity', () => ({}));
 jest.mock('./gatherings', () => ({}));
+jest.mock('./userLocation', () => ({ getUserLocation: jest.fn() }));
 import { nearestThenSoonest } from './homeDashboard';
 
 test('nearest first, soonest breaks ties, unknown distance last', () => {

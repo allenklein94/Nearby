@@ -58,6 +58,14 @@ export const REASON_TEXT = {
   WEATHER_GOOD_OUTDOOR: { text: 'Great weather for this', category: REASON_CATEGORIES.CONTEXT },
 };
 
+// "Matches your interests" says nothing checkable. When the matched interest is known (it is the gathering's own
+// interest_tag / the offer's target_interest_tag, which is what the match was computed from) say which one.
+// Falls back to the generic text only when there is no tag to name.
+export function becauseYouLikeReason(tag) {
+  const clean = typeof tag === 'string' ? tag.trim() : '';
+  return clean ? `Because you like ${clean}` : REASON_TEXT.MATCHES_INTERESTS.text;
+}
+
 // A real, deterministic classifier over every reason string already in
 // use somewhere in this app today (grepped, not guessed) -- exact
 // matches first, then a small set of real parameterized patterns (an
@@ -86,6 +94,7 @@ const EXACT_MATCHES = new Map([
 ]);
 
 const PATTERN_MATCHES = [
+  { pattern: /^Because you like .+$/, category: REASON_CATEGORIES.INTEREST },
   // getGatheringFitReasons()'s real attendee-count reason.
   { pattern: /^\d+ (person|people) attending$/, category: REASON_CATEGORIES.POPULARITY },
   // getGatheringFitReasons()'s real first-timer-count reason.

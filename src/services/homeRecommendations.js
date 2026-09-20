@@ -20,7 +20,7 @@ import { gatheringWeatherWindow } from '../utils/weatherWindow';
 // weather strings were independently re-typed, verbatim, in
 // intentResolver.js's own resolveGatherings() (see that file's own
 // weatherBonus block).
-import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
+import { REASON_TEXT, becauseYouLikeReason } from '../constants/recommendationReasonVocabulary';
 // Phase J (CLAUDE.md, Sep 3 2026 audit finding 8 / locked "Phase J" text) --
 // the real signal-source-priority-by-maturity model. Every bonus below is
 // tagged with its real provenance class; weightSignal() only ever scales
@@ -96,7 +96,7 @@ function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel,
     // EXPLICIT: profiles.interests is a direct self-report -- always full
     // weight, weightSignal() never dampens this class.
     score += weightSignal(SCORE_INTEREST_MATCH, SIGNAL_SOURCES.EXPLICIT, maturity);
-    reasons.push(REASON_TEXT.MATCHES_INTERESTS.text);
+    reasons.push(becauseYouLikeReason(gathering.interest_tag));
   } else if (interestGroups.length > 0 && interestGroups.includes(groupKeyForTag(gathering.interest_tag))) {
     // EXPLICIT but broad: a group picked without specific tags -- a weaker match than a declared tag, never a stand-in for one.
     score += weightSignal(BROAD_GROUP_POINTS, SIGNAL_SOURCES.EXPLICIT, maturity);
@@ -165,7 +165,7 @@ function scoreOffer(offer, positivePartnerIds, maturity) {
   // interests -- always full weight.
   if (offer.target_interest_tag) {
     score += weightSignal(SCORE_INTEREST_MATCH, SIGNAL_SOURCES.EXPLICIT, maturity);
-    reasons.push(REASON_TEXT.MATCHES_INTERESTS.text);
+    reasons.push(becauseYouLikeReason(offer.target_interest_tag));
   }
   if (offer.brand_partners?.name) {
     reasons.push(`At ${offer.brand_partners.name}`);

@@ -6,6 +6,7 @@ import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { wantsCelebrationsStep } from '../constants/onboardingGoals';
+import { recommendationFacts } from '../utils/recommendationFacts';
 import LoadErrorState from '../components/LoadErrorState';
 
 import { NLoader } from '../motion';
@@ -41,10 +42,6 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
     }
   }
 
-  function formatDate(iso) {
-    return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ flex: 1, padding: spacing.lg }}>
@@ -60,23 +57,26 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
         ) : recommendations.length > 0 ? (
           <>
             <Text style={styles.foundText}>I found {recommendations.length} great opportunit{recommendations.length === 1 ? 'y' : 'ies'}.</Text>
-            {recommendations.map((r) => (
+            {recommendations.map((r) => {
+              const facts = recommendationFacts(r);
+              return (
               <TouchableOpacity
                 key={r.id}
                 style={styles.card}
                 onPress={() => navigation.navigate('GatheringDetail', { gatheringId: r.id })}
                 activeOpacity={0.85}
-                accessibilityLabel={`${r.title}, ${formatDate(r.scheduled_at)}`}
+                accessibilityLabel={`${r.title}, ${[facts.why, facts.meta].filter(Boolean).join(', ')}`}
                 accessibilityRole="button"
               >
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cardTitle}>{r.title}</Text>
-                  <Text style={styles.cardDate}>{formatDate(r.scheduled_at)}</Text>
-                  {r.matchScore > 0 && <Text style={styles.cardMatch}>⭐ Matches your interests</Text>}
+                  {facts.why ? <Text style={styles.cardMatch}>⭐ {facts.why}</Text> : null}
+                  <Text style={styles.cardDate}>{facts.meta}</Text>
                 </View>
                 <Text style={styles.cardChevron}>›</Text>
               </TouchableOpacity>
-            ))}
+              );
+            })}
           </>
         ) : (
           <FadeInState style={styles.emptyState}>

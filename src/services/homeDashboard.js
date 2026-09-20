@@ -4,6 +4,7 @@ import { getNearbyGatherings, getMyInterestedGatherings, getGatheringFitReasons,
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { createWeatherLoader } from './weatherLoader';
 import { getMyGroupPlans } from './groupPlans';
+import { getUserLocation } from './userLocation';
 import { canonicalizeInterests, becauseYouLikeCategories } from '../constants/interestGraph';
 
 function isToday(iso) {
@@ -371,9 +372,27 @@ export async function getOnboardingRecommendations() {
     return { ...g, matchScore: matchesInterest ? 1 : 0 };
   });
 
-  return scored
+  const top = scored
     .sort((a, b) => b.matchScore - a.matchScore || new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 3);
+
+  // How far: measured server-side (get_gathering_distances never exposes a host's precise position) from the
+  // device's own position. No permission or no fix = no distance shown, never a guess.
+  try {
+    const location = await getUserLocation({ ask: false });
+    if (location && top.length > 0) {
+      const { data: distances } = await supabase.rpc('get_gathering_distances', {
+        my_lat: location.coords.latitude,
+        my_lng: location.coords.longitude,
+        gathering_ids: top.map((g) => g.id),
+      });
+      const byId = Object.fromEntries((distances ?? []).map((d) => [d.id, d.distance_miles]));
+      return top.map((g) => ({ ...g, distanceMiles: byId[g.id] ?? null }));
+    }
+  } catch (e) {
+    // distance is optional; the cards still render without it
+  }
+  return top;
 }
 
 export async function getUnlockedPerksCount() {

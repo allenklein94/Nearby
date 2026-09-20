@@ -43,6 +43,7 @@ import ExperienceComponentList from '../components/ExperienceComponentList';
 import TabHeaderActions from '../components/TabHeaderActions';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { recommendationFacts } from '../utils/recommendationFacts';
 import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime, describeFriendGatheringTiming } from '../utils/timeContext';
 import { homeWeatherCard } from '../constants/weatherRelevance';
@@ -2695,9 +2696,9 @@ export default function HomeScreen({ navigation }) {
                   <Text style={styles.trendingTitle}>{categoryStyleFor(g.interest_tag).icon} {g.title}</Text>
                   <Text style={styles.trendingMeta}>{reasons.join(' · ')}</Text>
                   <Text style={styles.trendingMeta}>
-                    {[g.scheduled_at ? (past ? `${timing.text} · Already happened` : formatHeroDateTime(g.scheduled_at)) : null,
-                      g.approvedAttendees ? `${g.approvedAttendees.length} attending` : null,
-                      g.distanceLabel].filter(Boolean).join(' · ')}
+                    {[recommendationFacts(g).distance,
+                      g.scheduled_at ? (past ? `${timing.text} · Already happened` : formatHeroDateTime(g.scheduled_at)) : null,
+                      g.approvedAttendees ? `${g.approvedAttendees.length} attending` : null].filter(Boolean).join(' · ')}
                   </Text>
                   {gatheringFullnessLabel(g) && (
                     <Text style={[styles.trendingMeta, gatheringFullnessLabel(g).startsWith('🔒') && { color: colors.danger }]}>

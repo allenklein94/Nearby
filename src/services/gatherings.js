@@ -5,7 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { getMyFriends } from './friends';
 import { getMyCommunities } from './communities';
-import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
+import { REASON_TEXT, becauseYouLikeReason } from '../constants/recommendationReasonVocabulary';
 import { getUserLocation, requireUserLocation } from './userLocation';
 
 function localArea(latitude, longitude) {
@@ -1088,7 +1088,7 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendA
     // P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): shared,
     // canonical text -- reused verbatim by homeRecommendations.js's own
     // scoreGathering(), so the two surfaces can never silently drift.
-    reasons.push(REASON_TEXT.MATCHES_INTERESTS.text);
+    reasons.push(becauseYouLikeReason(gathering.interest_tag));
   }
   if (friendAttendeeCount > 0) {
     // Group Insights plan (2026-09-18): a real, already-connected-only
