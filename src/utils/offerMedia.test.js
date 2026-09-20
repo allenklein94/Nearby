@@ -72,3 +72,29 @@ test('creative library + validity are enforced in the database, and the library 
   expect(fn).toMatch(/reused without re-screening/);
   expect(fn).toMatch(/if \(m\.tier === 'low'\)/); // only cleanly-screened media is saved for reuse
 });
+
+describe('available window', () => {
+  const { availableWindowFromChoice, availableWindowLabel } = require('./offerMedia');
+  const t = (h, m = 0) => new Date(2026, 8, 20, h, m);
+  it('needs both ends or neither, and the end after the start', () => {
+    expect(availableWindowFromChoice(null, null)).toEqual({ from: null, until: null });
+    expect(availableWindowFromChoice(t(18), null).error).toBeTruthy();
+    expect(availableWindowFromChoice(t(20), t(18)).error).toBeTruthy();
+    expect(availableWindowFromChoice(t(18), t(20))).toEqual({ from: '18:00', until: '20:00' });
+  });
+  it('labels a real window only', () => {
+    expect(availableWindowLabel('18:00:00', '20:00:00')).toBe('Available 6–8 PM');
+    expect(availableWindowLabel('11:30:00', '13:00:00')).toBe('Available 11:30 AM–1 PM');
+    expect(availableWindowLabel('18:00:00', null)).toBeNull();
+    expect(availableWindowLabel(null, null)).toBeNull();
+  });
+  it('is carried by the edge function, the service and the review path', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const edge = fs.readFileSync(path.join(__dirname, '../../supabase/functions/screen-business-content/index.ts'), 'utf8');
+    expect(edge).toMatch(/available_from_param: availableFrom/);
+    expect(edge).toMatch(/validUntil, availableFrom, availableUntil \}/);
+    const mig = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270152_offer_available_window.sql'), 'utf8');
+    expect(mig).toMatch(/content_snapshot->>'availableFrom'/);
+  });
+});

@@ -19,7 +19,7 @@ import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRe
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { CANCELLATION_REASONS, CANCELLATION_ACTOR_LABELS } from '../constants/cancellationReasons';
 import { getPartnerCancellationPatterns } from '../services/cancellationReasons';
-import { videoLimitProblem, MAX_REDEMPTION_LENGTH, validUntilFromChoice } from '../utils/offerMedia';
+import { videoLimitProblem, MAX_REDEMPTION_LENGTH, validUntilFromChoice, availableWindowFromChoice } from '../utils/offerMedia';
 import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, getMyCreatives, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit } from '../services/businessFulfillment';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
@@ -662,6 +662,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [offerValidDay, setOfferValidDay] = useState(null); // null = no end time | 'today' | 'tomorrow'
   const [offerValidTime, setOfferValidTime] = useState(null);
   const [showValidTimePicker, setShowValidTimePicker] = useState(false);
+  const [offerAvailFrom, setOfferAvailFrom] = useState(null); // Date | null -- start of the "Available" window
+  const [offerAvailUntil, setOfferAvailUntil] = useState(null);
+  const [availPicker, setAvailPicker] = useState(null); // null | 'from' | 'until'
   // Name of the owner's own package the editor was pre-filled from (null = nothing pre-filled).
   const [offerPrefilledFrom, setOfferPrefilledFrom] = useState(null);
   const [offerIncludedItemDraft, setOfferIncludedItemDraft] = useState('');
@@ -1648,6 +1651,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferCreativeId(null);
     setOfferValidDay(null);
     setOfferValidTime(null);
+    setOfferAvailFrom(null);
+    setOfferAvailUntil(null);
+    setAvailPicker(null);
     setShowValidTimePicker(false);
     if (selectedPartner?.id) getMyCreatives(selectedPartner.id).then(setCreatives).catch(() => setCreatives([]));
     setOfferIncludedItemDraft('');
@@ -1798,6 +1804,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       Alert.alert('End time', validity.error);
       return;
     }
+    const availWindow = availableWindowFromChoice(offerAvailFrom, offerAvailUntil);
+    if (availWindow.error) {
+      Alert.alert('Available window', availWindow.error);
+      return;
+    }
     setRespondingOpportunityId(offerModalRequestId);
     try {
       let mediaPath = null;
@@ -1828,6 +1839,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         redemptionInstructions: offerRedemptionInput.trim() || null,
         creativeId: offerCreativeId,
         validUntil: validity.iso,
+        availableFrom: availWindow.from,
+        availableUntil: availWindow.until,
       });
 
       await handleOfferResult(result, () => setOfferModalRequestId(null));
@@ -6192,6 +6205,43 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 multiline
                 accessibilityLabel="How to redeem, optional. Shown to the customer once they accept."
               />
+              <Text style={[styles.notesLabel, { marginTop: spacing.sm }]}>Available (optional)</Text>
+              <View style={styles.chipRow}>
+                {[['from', offerAvailFrom, 'From'], ['until', offerAvailUntil, 'To']].map(([key, val, label]) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.chip, val && styles.chipSelected]}
+                    onPress={() => {
+                      if (!val) { const d = new Date(); d.setHours(key === 'from' ? 18 : 20, 0, 0, 0); (key === 'from' ? setOfferAvailFrom : setOfferAvailUntil)(d); }
+                      setAvailPicker(key);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Available ${label.toLowerCase()}`}
+                  >
+                    <Text style={[styles.chipText, val && styles.chipTextSelected]}>
+                      {label}{val ? ` ${val.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+                {(offerAvailFrom || offerAvailUntil) ? (
+                  <TouchableOpacity style={styles.chip} onPress={() => { setOfferAvailFrom(null); setOfferAvailUntil(null); setAvailPicker(null); }} accessibilityRole="button" accessibilityLabel="Clear the available window">
+                    <Text style={styles.chipText}>Clear</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+              {availPicker ? (
+                <PlatformDateTimeInput
+                  value={(availPicker === 'from' ? offerAvailFrom : offerAvailUntil) ?? new Date()}
+                  mode="time"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  themeVariant={isDark ? 'dark' : 'light'}
+                  onChange={(event, selected) => {
+                    const which = availPicker;
+                    setAvailPicker(Platform.OS === 'ios' ? which : null);
+                    if (selected && event?.type !== 'dismissed') (which === 'from' ? setOfferAvailFrom : setOfferAvailUntil)(selected);
+                  }}
+                />
+              ) : null}
               <Text style={[styles.notesLabel, { marginTop: spacing.sm }]}>Valid until (optional)</Text>
               <View style={styles.chipRow}>
                 {[['none', 'No end time'], ['today', 'Today'], ['tomorrow', 'Tomorrow']].map(([key, label]) => {

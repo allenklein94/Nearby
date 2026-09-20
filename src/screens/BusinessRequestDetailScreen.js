@@ -22,7 +22,7 @@ import CelebrationHeaderIcon from '../components/CelebrationHeaderIcon';
 import StaggeredReveal from '../components/StaggeredReveal';
 import OfferMedia from '../components/OfferMedia';
 import OfferReveal from '../components/OfferReveal';
-import { visibleRedemption, validityLabel, isOfferExpired } from '../utils/offerMedia';
+import { visibleRedemption, validityLabel, isOfferExpired, availableWindowLabel } from '../utils/offerMedia';
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -1308,6 +1308,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   ))}
                   {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
                   {offerPriceLabel(o.offer_price, o.price_is_per_person) ? <Text style={styles.offerPrice}>{offerPriceLabel(o.offer_price, o.price_is_per_person)}</Text> : null}
+                  {availableWindowLabel(o.available_from, o.available_until) ? <Text style={styles.offerProposedTime}>🕒 {availableWindowLabel(o.available_from, o.available_until)}</Text> : null}
                   {o.valid_until ? <Text style={styles.offerProposedTime}>⏳ {isOfferExpired(o) ? 'This offer has expired' : validityLabel(o.valid_until)}</Text> : null}
                   <OfferMedia path={o.media_path} type={o.media_type} posterPath={o.media_poster_path} />
                   {showComparison && o.viewed_at ? (

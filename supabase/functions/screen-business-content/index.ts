@@ -893,6 +893,13 @@ Body: ${updateBody || '(none)'}`;
       }
       validUntil = new Date(t).toISOString();
     }
+    // Owner-set available window ("Available 6:00-8:00 PM"): both HH:MM ends or neither, end after start. Structured, never inferred.
+    const hhmm = /^([01]\d|2[0-3]):[0-5]\d$/;
+    const availableFrom = typeof body.availableFrom === 'string' && hhmm.test(body.availableFrom) ? body.availableFrom : null;
+    const availableUntil = typeof body.availableUntil === 'string' && hhmm.test(body.availableUntil) ? body.availableUntil : null;
+    if ((availableFrom === null) !== (availableUntil === null) || (availableFrom !== null && availableUntil !== null && availableUntil <= availableFrom)) {
+      return json({ error: 'Set both a start and an end for the available window (the end after the start), or neither.' }, 400);
+    }
     // A saved creative from the owner's own library (already screened when it was first sent): its file replaces any media sent.
     let creativeId: string | null = typeof body.creativeId === 'string' && body.creativeId ? body.creativeId : null;
     let creativeRow: { media_path: string; media_type: string; poster_path: string | null } | null = null;
@@ -972,7 +979,7 @@ Body: ${updateBody || '(none)'}`;
     }
     const { riskTier, matchedCategories, reasoning } = result;
 
-    const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, priceIsPerPerson, discountPct, proposedTime, experienceId, mediaPath, mediaType, posterPath, framePaths, redemptionInstructions, creativeId, validUntil };
+    const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, priceIsPerPerson, discountPct, proposedTime, experienceId, mediaPath, mediaType, posterPath, framePaths, redemptionInstructions, creativeId, validUntil, availableFrom, availableUntil };
 
     const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
       partner_id_param: partnerId,
@@ -1001,6 +1008,8 @@ Body: ${updateBody || '(none)'}`;
         media_poster_path_param: posterPath,
         creative_id_param: creativeId,
         valid_until_param: validUntil,
+        available_from_param: availableFrom,
+        available_until_param: availableUntil,
       });
       if (writeError) {
         console.error('screen-business-content: low-tier offer_response write failed', writeError);

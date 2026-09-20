@@ -2,6 +2,8 @@
 // A video offer is screened through up to three preview frames sampled from it (the first becomes its poster); the server
 // enforces the same size cap and refuses a video with no frames.
 
+import { formatTimeOfDay } from './businessRequestWhen';
+
 export const MAX_OFFER_VIDEO_MS = 30 * 1000;
 export const MAX_OFFER_VIDEO_BYTES = 25 * 1024 * 1024;
 export const MAX_REDEMPTION_LENGTH = 500;
@@ -50,6 +52,28 @@ export function validityLabel(validUntil, now = new Date()) {
   const time = end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   const sameDay = end.toDateString() === now.toDateString();
   return sameDay ? `Valid until ${time}` : `Valid until ${end.toLocaleDateString([], { weekday: 'short' })} ${time}`;
+}
+
+// Owner-set available window ("Available 6-8 PM"): a time-of-day range for the day the visit is for. Both ends or neither.
+// from/to are Dates whose local hours/minutes are the chosen times. Returns { from, until } as 'HH:MM' (nulls = no window)
+// or { error }. The server (submit_business_offer, edge function) enforces the same rule.
+export function availableWindowFromChoice(from, to) {
+  if (!from && !to) return { from: null, until: null };
+  if (!from || !to) return { error: 'Set both a start and an end for the available window, or clear it.' };
+  const hhmm = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const f = hhmm(from);
+  const u = hhmm(to);
+  if (u <= f) return { error: 'The available window must end after it starts.' };
+  return { from: f, until: u };
+}
+
+// "Available 6-8 PM" from the stored 'HH:MM[:SS]' values; null when there is no complete window.
+export function availableWindowLabel(from, until) {
+  if (!from || !until) return null;
+  const a = formatTimeOfDay(from);
+  const b = formatTimeOfDay(until);
+  if (!a || !b) return null;
+  return a.slice(-2) === b.slice(-2) ? `Available ${a.slice(0, -3)}–${b}` : `Available ${a}–${b}`;
 }
 
 // Derived Expired state lives in utils/objectState.js; re-exported so imports keep working.

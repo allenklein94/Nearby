@@ -341,7 +341,7 @@ export async function getAcceptedOfferForRequest(requestId) {
   if (!requestId) return null;
   const { data, error } = await supabase
     .from('business_request_offers')
-    .select('id, offer_type, offer_price, price_is_per_person, offer_description, proposed_time, status, partner_id, media_path, media_type, media_poster_path, redemption_instructions, valid_until, brand_partners(name, logo_url, address, latitude, longitude)')
+    .select('id, offer_type, offer_price, price_is_per_person, offer_description, proposed_time, status, partner_id, media_path, media_type, media_poster_path, redemption_instructions, valid_until, available_from, available_until, brand_partners(name, logo_url, address, latitude, longitude)')
     .eq('request_id', requestId)
     .in('status', ['accepted', 'completed'])
     .maybeSingle();
@@ -744,7 +744,7 @@ export async function submitBusinessOfferResponse(requestId, { offerType, offerD
 // submitBusinessOfferResponse() above, whose underlying RPC derives
 // ownership internally from request_id_param) since the Edge Function's
 // top-level ownership gate needs it explicitly for every target_type.
-export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null, framePaths = [], redemptionInstructions = null, creativeId = null, validUntil = null}) {
+export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null, framePaths = [], redemptionInstructions = null, creativeId = null, validUntil = null, availableFrom = null, availableUntil = null}) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -762,6 +762,8 @@ export async function submitBusinessOfferResponseForScreening(partnerId, request
       redemptionInstructions,
       creativeId,
       validUntil,
+      availableFrom,
+      availableUntil,
       requestId,
       offerType,
       offerDescription,
