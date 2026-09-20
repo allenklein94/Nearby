@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import useFormDraft from '../hooks/useFormDraft';
+import DraftBanner from '../components/DraftBanner';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { formatDistance } from '../utils/formatDistance';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
@@ -258,6 +260,36 @@ export default function AskBusinessScreen({ navigation, route }) {
   // new toggle here.
   const surpriseMode = !!route.params?.prefillSurpriseMode;
 
+  // Item 82: an unfinished ask survives a failed send, leaving the screen and an app restart. Only a plain solo or
+  // targeted ask (gathering/match/community asks take their facts from that object, and an ask prefilled from Home's
+  // intent box already has its own starting point, so neither is offered a stale draft).
+  const askDraft = useFormDraft(
+    `business-request:${targetPartner?.id ?? 'nearby'}`,
+    {
+      text, category, partySize, budgetRangeKey, budgetMaxOverride, dateWindow, pickedDate: pickedDate instanceof Date && !isNaN(pickedDate) ? pickedDate.toISOString() : null,
+      startTime: startTime instanceof Date && !isNaN(startTime) ? startTime.toISOString() : null,
+      radiusMiles, attributesInput, cuisineInput, dietaryInput, itemsInput, occasionInput, experienceLevel, noteToBusiness,
+    },
+    {
+      enabled: isSoloMode && !route.params?.prefillText && !route.params?.prefillCategory && !route.params?.prefillOccasion,
+      isEmpty: (d) => !String(d.text ?? '').trim() && !String(d.noteToBusiness ?? '').trim(),
+    }
+  );
+  function applyAskDraft(d) {
+    setText(d.text ?? ''); setCategory(d.category ?? null); setPartySize(d.partySize ?? '');
+    setBudgetRangeKey(d.budgetRangeKey ?? initialBudgetSelection.key); setBudgetMaxOverride(d.budgetMaxOverride ?? null);
+    setShowBudgetMaxOverride(!!d.budgetMaxOverride);
+    const picked = d.pickedDate ? new Date(d.pickedDate) : null;
+    if (d.dateWindow === PICK_DATE_KEY) {
+      if (picked && picked.getTime() > Date.now()) { setPickedDate(picked); setDateWindow(PICK_DATE_KEY); }
+    } else setDateWindow(d.dateWindow ?? 'flexible');
+    setStartTime(d.startTime ? new Date(d.startTime) : null);
+    setRadiusMiles(RADIUS_OPTIONS.includes(d.radiusMiles) ? d.radiusMiles : 15);
+    setAttributesInput(Array.isArray(d.attributesInput) ? d.attributesInput : []); setCuisineInput(d.cuisineInput ?? null);
+    setDietaryInput(Array.isArray(d.dietaryInput) ? d.dietaryInput : []); setItemsInput(Array.isArray(d.itemsInput) ? d.itemsInput : []);
+    setOccasionInput(d.occasionInput ?? null); setExperienceLevel(d.experienceLevel ?? 'special'); setNoteToBusiness(d.noteToBusiness ?? '');
+  }
+
   // Item 53 ("The business relationship should attach to the Plan",
   // CLAUDE.md): "Allen + Claude + Dinner + Friday 7PM" should let Nearby
   // find real restaurant options right away, not only after a business
@@ -438,6 +470,7 @@ export default function AskBusinessScreen({ navigation, route }) {
       // Finding 4: carry the original ask's real prefill fields forward so
       // the "Try a Wider Radius" button on BusinessRequestDetail can push a
       // fresh AskBusiness pre-filled from them, rather than a dead end.
+      askDraft.clear();
       navigation.replace('BusinessRequestDetail', {
         requestId: result.requestId,
         justSubmitted: true,
@@ -508,6 +541,14 @@ export default function AskBusinessScreen({ navigation, route }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+          {askDraft.draft && (
+            <DraftBanner
+              what="request"
+              savedAt={askDraft.draft.savedAt}
+              onContinue={() => askDraft.restore(applyAskDraft)}
+              onDiscard={askDraft.discard}
+            />
+          )}
           <Text style={styles.heading}>
             {targetPartner
               ? `Ask ${targetPartner.name}`

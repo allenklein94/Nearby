@@ -1,6 +1,9 @@
 import { canRespondToOpportunity } from '../utils/objectLifecycle';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
+import DraftBanner from '../components/DraftBanner';
+import useFormDraft from '../hooks/useFormDraft';
+import { serializableAsset, assetStillExists } from '../services/formDrafts';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -1659,6 +1662,37 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     }
   }
 
+  // Item 82: an unfinished offer (text, prices, times and the picked photo/video) survives a failed send, closing the
+  // sheet and an app restart, kept per request. Restored only on "Continue editing"; cleared once sent or sent for review.
+  const iso = (d) => (d instanceof Date && !isNaN(d) ? d.toISOString() : null);
+  const fromIso = (v) => (v ? new Date(v) : null);
+  const offerDraft = useFormDraft(
+    offerModalRequestId && selectedPartner?.id ? `offer:${selectedPartner.id}:${offerModalRequestId}` : null,
+    {
+      offerType: offerTypeInput, description: offerDescriptionInput, price: offerPriceInput, discount: offerDiscountInput,
+      perPerson: offerPriceIsPerPerson, title: offerTitleInput, items: offerIncludedItemsInput, redemption: offerRedemptionInput,
+      validDay: offerValidDay, validTime: iso(offerValidTime), availFrom: iso(offerAvailFrom), availUntil: iso(offerAvailUntil),
+      proposedTime: iso(offerProposedTime), experienceId: selectedExperienceIdInput, creativeId: offerCreativeId,
+      media: serializableAsset(offerPickedMediaAsset, Platform.OS),
+    },
+    {
+      enabled: !!offerModalRequestId && !!selectedPartner?.id,
+      isEmpty: (d) => !String(d.description ?? '').trim() && !String(d.title ?? '').trim() && !d.media && !d.creativeId,
+    }
+  );
+  async function applyOfferDraft(d) {
+    setOfferTypeInput(d.offerType ?? 'standard'); setOfferDescriptionInput(d.description ?? ''); setOfferPriceInput(d.price ?? '');
+    setOfferDiscountInput(d.discount ?? ''); setOfferPriceIsPerPerson(!!d.perPerson); setOfferTitleInput(d.title ?? '');
+    setOfferIncludedItemsInput(Array.isArray(d.items) ? d.items : []); setOfferRedemptionInput(d.redemption ?? '');
+    setOfferValidDay(d.validDay ?? null); setOfferValidTime(fromIso(d.validTime));
+    setOfferAvailFrom(fromIso(d.availFrom)); setOfferAvailUntil(fromIso(d.availUntil));
+    const proposed = fromIso(d.proposedTime);
+    setOfferProposedTime(proposed && proposed.getTime() > Date.now() ? proposed : null);
+    setSelectedExperienceIdInput(d.experienceId ?? null); setOfferCreativeId(d.creativeId ?? null);
+    if (d.media && (await assetStillExists(d.media))) setOfferPickedMediaAsset(d.media);
+    else if (d.media) Alert.alert('Photo or video not restored', 'The file you picked is no longer on this device. Your text was restored; please pick the media again.');
+  }
+
   function openOfferModal(requestId) {
     setOfferModalRequestId(requestId);
     setOfferTypeInput('standard');
@@ -1967,7 +2001,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         availableUntil: availWindow.until,
       });
 
-      await handleOfferResult(result, () => setOfferModalRequestId(null));
+      await handleOfferResult(result, () => { offerDraft.clear(); setOfferModalRequestId(null); });
     } catch (e) {
       presentRecoverableError(Alert, { what: 'send this offer', error: e, draftKept: true, onRetry: () => handleSubmitOffer() });
     }
@@ -6019,6 +6053,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
           <View style={styles.overlay}>
             <ScrollView style={styles.sheet} keyboardShouldPersistTaps="handled">
               <Text style={styles.sheetTitle}>Make an Offer</Text>
+              {offerDraft.draft && (
+                <DraftBanner
+                  what="offer"
+                  savedAt={offerDraft.draft.savedAt}
+                  onContinue={() => offerDraft.restore(applyOfferDraft)}
+                  onDiscard={offerDraft.discard}
+                />
+              )}
               {offerModalRequest && (() => {
                 const ctx = buildOpportunityCard(offerModalRequest, {
                   occasionLabel: offerModalRequest.occasion ? occasionLabel(offerModalRequest.occasion) : null,

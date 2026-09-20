@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import useFormDraft from '../hooks/useFormDraft';
+import DraftBanner from '../components/DraftBanner';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform, ScrollView, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Image } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -168,6 +170,31 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [allowAttendeeInvites, setAllowAttendeeInvites] = useState(true);
   const [hostNotifications, setHostNotifications] = useState(true);
   const [requiresApproval, setRequiresApproval] = useState(false);
+
+  // Item 82: an unfinished gathering survives a failed publish, leaving the screen and an app restart.
+  const gatheringSnapshot = {
+    step, title, description, interestTag, visibility, discoverable, communityId,
+    scheduledAt: scheduledAt instanceof Date ? scheduledAt.toISOString() : null, whenPreset,
+    locationMode, customLocation, placeName, showOnMap, womenOnly, recurrenceRule, capacityOption, capacityCustom,
+    askLocalBusinesses, priceLevel, partyType, showGroupInsights, allowAttendeeInvites, hostNotifications, requiresApproval,
+  };
+  const gatheringDraft = useFormDraft('gathering', gatheringSnapshot, {
+    isEmpty: (d) => !String(d.title ?? '').trim() && !String(d.description ?? '').trim(),
+    enabled: !route.params?.quickStartTitle && !route.params?.quickStartCategory,
+  });
+  function applyGatheringDraft(d) {
+    setStep(Number.isInteger(d.step) ? d.step : 0);
+    setTitle(d.title ?? ''); setDescription(d.description ?? ''); setInterestTag(d.interestTag ?? null);
+    setVisibility(d.visibility ?? 'everyone'); setDiscoverable(d.discoverable !== false); setCommunityId(d.communityId ?? null);
+    const when = d.scheduledAt ? new Date(d.scheduledAt) : null;
+    if (when && when.getTime() > Date.now()) { setScheduledAt(when); setWhenPreset(d.whenPreset ?? null); }
+    setLocationMode(d.locationMode ?? 'near_me'); setCustomLocation(d.customLocation ?? null); setPlaceName(d.placeName ?? null);
+    setShowOnMap(d.showOnMap !== false); setWomenOnly(!!d.womenOnly); setRecurrenceRule(d.recurrenceRule ?? null);
+    setCapacityOption(d.capacityOption ?? 'no_limit'); setCapacityCustom(d.capacityCustom ?? 15);
+    setAskLocalBusinesses(!!d.askLocalBusinesses); setPriceLevel(d.priceLevel ?? null); setPartyType(d.partyType ?? null);
+    setShowGroupInsights(d.showGroupInsights !== false); setAllowAttendeeInvites(d.allowAttendeeInvites !== false);
+    setHostNotifications(d.hostNotifications !== false); setRequiresApproval(!!d.requiresApproval);
+  }
 
   useEffect(() => {
     if (route.params?.selectedLat && route.params?.selectedLng) {
@@ -364,6 +391,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         allowAttendeeInvites,
         hostNotifications,
       });
+      gatheringDraft.clear();
       recordBehaviorEvent('create', 'gathering', created.id, interestTag);
 
       // Checking the box only stores real consent/intent on the
@@ -415,6 +443,15 @@ export default function CreateGatheringScreen({ navigation, route }) {
       <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
         <Text style={styles.header} accessibilityRole="header">{t('gatherings.createHeader')}</Text>
         <Text style={styles.subheader}>{t('gatherings.createSubheader')}</Text>
+
+        {gatheringDraft.draft && (
+          <DraftBanner
+            what="gathering"
+            savedAt={gatheringDraft.draft.savedAt}
+            onContinue={() => gatheringDraft.restore(applyGatheringDraft)}
+            onDiscard={gatheringDraft.discard}
+          />
+        )}
 
         <View style={styles.progressRow} accessibilityLabel={`Step ${step + 1} of ${STEP_DEFS.length}: ${STEP_DEFS[step].label}`}>
           {STEP_DEFS.map((s, i) => (
