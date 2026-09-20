@@ -637,7 +637,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                 <Text style={styles.surpriseBannerText}>
                   🔒 Surprise mode — {detail.whoForName || 'the person this is for'} isn't part of this plan and won't be notified. Keep it quiet!
                 </Text>
-                {detail.isHost && (
+                {detail.isHost && detail.status !== 'cancelled' && (
                   <View style={styles.surpriseRevealRow}>
                     <Text style={styles.surpriseRevealLabel}>🎁 Ready to reveal?</Text>
                     <TouchableOpacity

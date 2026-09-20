@@ -3664,9 +3664,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <View key={o.id} style={styles.gatheringRow}>
                       {o.status === 'pending' && (
                         <>
-                          <Text style={[styles.breakdownText, { color: colors.primary, fontWeight: '700' }]}>
-                            {matchReasons.length > 0 ? '✨ Good match for your business' : '✨ New opportunity'}
-                          </Text>
+                          {o.business_requests?.status === 'open' ? (
+                            <Text style={[styles.breakdownText, { color: colors.primary, fontWeight: '700' }]}>
+                              {matchReasons.length > 0 ? '✨ Good match for your business' : '✨ New opportunity'}
+                            </Text>
+                          ) : (
+                            // Not open any more (cancelled, expired, fulfilled or merged): no
+                            // "new opportunity" claim and no action buttons (those need 'open').
+                            <Text style={[styles.breakdownText, { fontWeight: '700' }]}>No longer open</Text>
+                          )}
                           {matchReasons.length > 0 && (
                             <View style={{ marginTop: spacing.xs }}>
                               <Text style={styles.notesLabel}>Why</Text>

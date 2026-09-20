@@ -1301,7 +1301,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   {showComparison && o.viewed_at ? (
                     <Text style={styles.offerViewedIndicator}>👁 You've seen this</Text>
                   ) : null}
-                  {!hasWinner && isGroupPlanRequest && (
+                  {request.status === 'open' && !hasWinner && isGroupPlanRequest && (
                     <TouchableOpacity
                       style={styles.acceptButton}
                       onPress={() => navigation.navigate('GroupPlan', { proposalId: request.group_plan_id })}
@@ -1311,7 +1311,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                       <Text style={styles.acceptButtonText}>Confirm With the Group →</Text>
                     </TouchableOpacity>
                   )}
-                  {!hasWinner && !isGroupPlanRequest && !isOfferExpired(o) && (
+                  {request.status === 'open' && !hasWinner && !isGroupPlanRequest && !isOfferExpired(o) && (
                     <TouchableOpacity
                       style={styles.acceptButton}
                       onPress={() => handleAccept(o.id)}
