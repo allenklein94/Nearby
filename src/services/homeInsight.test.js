@@ -23,8 +23,11 @@ describe('getHomeInsight', () => {
     expect(getHomeInsight({ ...d, motivations: [] }, evening)).toBeNull();
   });
 
-  test('friends planning and starting-soon lines are unchanged and have no CTA', () => {
-    expect(getHomeInsight({ friendsActivity: [1, 2] }, evening)).toEqual({ kind: 'friends_planning', text: '2 of your friends are already making plans.' });
+  test('every insight line carries a CTA with a destination', () => {
+    const f = getHomeInsight({ friendsActivity: [1, 2] }, evening);
+    expect(f.text).toBe('2 of your friends are already making plans.');
+    expect(f.cta.params.initialTypeTab).toBe('gatherings');
+    expect(getHomeInsight({ happeningNow: [1] }, evening).cta.screen).toBe('Discover');
     expect(getHomeInsight({ happeningNow: [1] }, evening).text).toBe('1 thing starts near you in the next 30 minutes.');
   });
 

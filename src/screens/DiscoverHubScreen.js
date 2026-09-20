@@ -318,7 +318,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const [intentPhase, setIntentPhase] = useState(null); // Item 135: real pipeline phase
 
   const intentSearchRequestId = useRef(0);
-  const [typeFilter, setTypeFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState(() => route.params?.initialTypeTab ?? 'all');
   function setTypeTab(key) {
     setTypeFilter(key);
   }

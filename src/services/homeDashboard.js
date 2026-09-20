@@ -757,14 +757,14 @@ export function getHomeInsight(dashboard, now = new Date()) {
   if (!dashboard) return null;
 
   if (dashboard.friendsActivity?.length >= 2) {
-    return { kind: 'friends_planning', text: `${dashboard.friendsActivity.length} of your friends are already making plans.` };
+    return { kind: 'friends_planning', text: `${dashboard.friendsActivity.length} of your friends are already making plans.`, cta: { label: 'See gatherings', screen: 'Discover', params: { initialMode: 'things', initialTypeTab: 'gatherings' } } };
   }
   // Previously ANY Best Pick produced "a great night to meet someone new" -- a People claim with a gathering as its
   // only evidence. It now needs the substantiated People trigger (utils/meetTonight.js), else nothing is said.
   const meet = meetSomeoneTonight({ now, nearbyPeopleCount: dashboard.nearbyPeopleCount, motivations: dashboard.motivations });
   if (meet) return meet;
   if (dashboard.happeningNow?.length > 0) {
-    return { kind: 'starting_soon', text: `${dashboard.happeningNow.length} ${dashboard.happeningNow.length === 1 ? 'thing starts' : 'things start'} near you in the next 30 minutes.` };
+    return { kind: 'starting_soon', text: `${dashboard.happeningNow.length} ${dashboard.happeningNow.length === 1 ? 'thing starts' : 'things start'} near you in the next 30 minutes.`, cta: { label: 'See what\'s starting', screen: 'Discover', params: { initialMode: 'things', initialTypeTab: 'gatherings' } } };
   }
   return null;
 }

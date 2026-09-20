@@ -2368,6 +2368,14 @@ export default function HomeScreen({ navigation }) {
                   </View>
                   <Text style={styles.forecastValue}>{card.label}</Text>
                   {!!card.detail && <Text style={styles.forecastDetail}>{card.detail}</Text>}
+                  <TouchableOpacity
+                    style={[styles.rowCta, { alignSelf: 'flex-start', marginTop: spacing.xs }]}
+                    onPress={() => navigation.navigate('Discover', { initialMode: 'things', initialTypeTab: 'gatherings' })}
+                    accessibilityRole="button"
+                    accessibilityLabel="See more things to do"
+                  >
+                    <Text style={styles.rowCtaText}>See more things to do →</Text>
+                  </TouchableOpacity>
                   {showIndoor && (
                     <View style={styles.weatherSuggestions}>
                       <View style={styles.weatherSuggestionsHeaderRow}>
