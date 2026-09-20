@@ -1,0 +1,18 @@
+const fs = require('fs');
+const path = require('path');
+
+// Attendee reads must respect blocks in BOTH directions server-side (the blocks table's own RLS hides
+// blocks made AGAINST the caller, so a client filter alone can never cover that direction).
+describe('attendee read respects blocks (migration 20270138)', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270138_attendee_read_respects_blocks.sql'), 'utf8');
+  test('helper checks both directions as SECURITY DEFINER and is single-arg', () => {
+    expect(sql).toMatch(/security definer/i);
+    expect(sql).toMatch(/b\.blocker_id = auth\.uid\(\) and b\.blocked_id = other_user/);
+    expect(sql).toMatch(/b\.blocker_id = other_user and b\.blocked_id = auth\.uid\(\)/);
+    expect(sql).toMatch(/revoke all on function public\.viewer_blocked_either_way\(uuid\) from public/);
+  });
+  test('the approved-attendee read policy uses it; the host policy is untouched', () => {
+    expect(sql).toMatch(/using \(status = 'approved' and not public\.viewer_blocked_either_way\(user_id\)\)/);
+    expect(sql).not.toMatch(/Users see own interest or gatherings they host/);
+  });
+});
