@@ -1042,6 +1042,7 @@ export async function getBusinessPublicGatherings(partnerId) {
     .select('id, title, scheduled_at, interest_tag, cover_photo_path')
     .eq('hosting_partner_id', partnerId)
     .eq('is_public', true)
+    .eq('discoverable', true)
     .gte('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true });
   if (error) {

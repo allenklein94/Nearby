@@ -362,6 +362,7 @@ export async function getOnboardingRecommendations() {
     .select('id, title, interest_tag, scheduled_at, host_id, profiles!gatherings_host_id_fkey(display_name)')
     .eq('wide_area', myProfile.wide_area)
     .eq('is_public', true)
+    .eq('discoverable', true)
     .gte('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true })
     .limit(30);

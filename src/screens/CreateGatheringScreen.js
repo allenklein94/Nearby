@@ -124,6 +124,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [submitting, setSubmitting] = useState(false);
 
   const [visibility, setVisibility] = useState('everyone');
+  const [discoverable, setDiscoverable] = useState(true);
   const [communityId, setCommunityId] = useState(null);
   const [myCommunities, setMyCommunities] = useState([]);
   const [loadingCommunities, setLoadingCommunities] = useState(false);
@@ -265,6 +266,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
   function pickVisibility(key) {
     Haptics.selectionAsync();
     setVisibility(key);
+    if (key !== 'everyone') setDiscoverable(true); // Link only exists only for Everyone
     if (key === 'community') loadCommunities();
   }
 
@@ -350,6 +352,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         womenOnly,
         recurrenceRule: recurrenceRule || null,
         visibility,
+        discoverable: visibility === 'everyone' ? discoverable : true,
         communityId: visibility === 'community' ? communityId : null,
         capacity: capacityValue,
         askLocalBusinesses,
@@ -779,9 +782,37 @@ export default function CreateGatheringScreen({ navigation, route }) {
               )
             )}
 
+            {visibility === 'everyone' && (
+              <>
+                <Text style={[styles.label, { marginTop: spacing.lg }]}>How can people find it?</Text>
+                {[
+                  { key: true, title: 'Discoverable', hint: 'People can find this in Nearby.' },
+                  { key: false, title: 'Link only', hint: 'Only people with the link can find it. It is not listed anywhere.' },
+                ].map((opt) => {
+                  const selected = discoverable === opt.key;
+                  return (
+                    <TouchableOpacity
+                      key={opt.title}
+                      style={[styles.optionCard, selected && styles.optionCardActive]}
+                      onPress={() => { Haptics.selectionAsync(); setDiscoverable(opt.key); }}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`${opt.title} — ${opt.hint}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.optionCardTitle, selected && styles.optionCardTitleActive]}>{opt.title}</Text>
+                        <Text style={styles.optionCardHint}>{opt.hint}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
+            )}
+
             {visibility !== 'invite_only' && (
               <>
-                <Text style={[styles.label, { marginTop: spacing.lg }]}>Who can join?</Text>
+                <Text style={[styles.label, { marginTop: spacing.lg }]}>Who can join it?</Text>
                 {[
                   { key: false, title: 'Anyone', hint: 'One tap to join. You can still remove people.' },
                   { key: true, title: 'Require approval', hint: 'People request to join and you approve or decline.' },

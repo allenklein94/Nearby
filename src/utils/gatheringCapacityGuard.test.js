@@ -54,7 +54,7 @@ describe('the Create wizard centralizes the same settings (item 73)', () => {
     expect(create).not.toMatch(/key: 'who'/);
     expect(create.indexOf("key: 'details'")).toBeLessThan(create.indexOf("key: 'settings'"));
   });
-  it.each(['Visibility', 'Who can join?', 'Capacity', 'Business requests', 'Women-Only', 'Allow guests to invite', 'Notify me about joins and requests'])('Settings holds %s', (t) => {
+  it.each(['Visibility', 'How can people find it?', 'Who can join it?', 'Capacity', 'Business requests', 'Women-Only', 'Allow guests to invite', 'Notify me about joins and requests'])('Settings holds %s', (t) => {
     expect(settings).toContain(t);
   });
   it('More options no longer scatters those controls', () => {

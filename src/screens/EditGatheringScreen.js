@@ -26,6 +26,8 @@ export default function EditGatheringScreen({ route, navigation }) {
   const { gathering } = route.params;
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
+  // Item 74: Link only exists only for an Everyone gathering (also a DB CHECK).
+  const canBeLinkOnly = (gathering.visibility ?? 'everyone') === 'everyone' && gathering.is_public !== false;
   const [title, setTitle] = useState(gathering.title);
   const [description, setDescription] = useState(gathering.description || '');
   const [scheduledAt, setScheduledAt] = useState(new Date(gathering.scheduled_at));
@@ -37,6 +39,7 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [beginnerFriendly, setBeginnerFriendly] = useState(gathering.beginner_friendly ?? true);
   const [showGroupInsights, setShowGroupInsights] = useState(gathering.show_group_insights ?? true);
   const [requiresApproval, setRequiresApproval] = useState(gathering.requires_approval ?? false);
+  const [discoverable, setDiscoverable] = useState(gathering.discoverable ?? true);
   const [askLocalBusinesses, setAskLocalBusinesses] = useState(gathering.ask_local_businesses ?? false);
   const [hostNotifications, setHostNotifications] = useState(gathering.host_notifications ?? true);
   const [allowAttendeeInvites, setAllowAttendeeInvites] = useState(gathering.allow_attendee_invites ?? true);
@@ -125,6 +128,7 @@ export default function EditGatheringScreen({ route, navigation }) {
         timelineSteps: cleanedTimelineSteps.length > 0 ? cleanedTimelineSteps : null,
         showGroupInsights,
         ...(gathering.is_public === false ? {} : { requiresApproval }),
+        ...(canBeLinkOnly ? { discoverable } : {}),
         askLocalBusinesses,
         hostNotifications,
         allowAttendeeInvites,
@@ -278,6 +282,15 @@ export default function EditGatheringScreen({ route, navigation }) {
           </View>
           <Text style={styles.sectionHeader}>Gathering settings</Text>
           <Text style={styles.subheader}>Visibility: {visibilityLabel(gathering)}. Set when the gathering was created.</Text>
+          {canBeLinkOnly && (
+            <>
+              <View style={styles.toggleRow}>
+                <Text style={styles.label}>Link only</Text>
+                <Switch value={!discoverable} onValueChange={(v) => setDiscoverable(!v)} accessibilityLabel="Link only" />
+              </View>
+              <Text style={styles.subheader}>How can people find it? Off: discoverable, people can find this in Nearby. On: only people with the link can find it. It is not listed in Nearby, Discover, Home or Trending. Who can join it is unchanged.</Text>
+            </>
+          )}
           {gathering.is_public !== false && (
             <>
               <View style={styles.toggleRow}>
