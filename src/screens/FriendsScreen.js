@@ -13,6 +13,7 @@ import { MatchAnimation, SkeletonFeed, modalAnimation } from '../motion';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { countLabel } from '../utils/plural';
 export default function FriendsScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -341,7 +342,7 @@ export default function FriendsScreen({ navigation }) {
                         style={[styles.circleChip, active && styles.circleChipActive]}
                         onPress={() => setSelectedCircleId(active ? null : circle.id)}
                         onLongPress={() => confirmDeleteCircle(circle)}
-                        accessibilityLabel={`${circle.name}, ${circle.memberIds.length} friends. Long press to delete.`}
+                        accessibilityLabel={`${circle.name}, ${countLabel(circle.memberIds.length, 'friend')}. Long press to delete.`}
                         accessibilityRole="button"
                         accessibilityState={{ selected: active }}
                       >

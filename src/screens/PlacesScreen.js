@@ -10,6 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { getUserLocation } from '../services/userLocation';
 
+import { countLabel } from '../utils/plural';
 // This screen is reached as a top-level stack push (not a bottom tab),
 // headerShown: false in RootNavigator -- the same "reachable, but no
 // visible way back" shape found and fixed on FriendDiscoveryScreen for a
@@ -219,7 +220,7 @@ export default function PlacesScreen({ navigation }) {
               style={styles.placeCard}
               onPress={() => Linking.openURL(buildDirectionsUrl(item))}
               activeOpacity={0.85}
-              accessibilityLabel={`${item.name}${item.openNow !== null ? (item.openNow ? ', open now' : ', closed now') : ''}${item.gatheringCount > 0 ? `, ${item.gatheringCount} gatherings hosted here` : ''}`}
+              accessibilityLabel={`${item.name}${item.openNow !== null ? (item.openNow ? ', open now' : ', closed now') : ''}${item.gatheringCount > 0 ? `, ${countLabel(item.gatheringCount, 'gathering')} hosted here` : ''}`}
               accessibilityRole="button"
             >
               {item.photoRef ? (

@@ -26,6 +26,7 @@ import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { getBusinessExperiences } from '../services/brandOffers';
 import { withdrawBusinessOffer } from '../services/businessFulfillment';
 import { getBusinessEntitlements, hasEntitlement } from '../services/entitlements';
+import { countLabel } from '../utils/plural';
 import {
   getBusinessAiTrustLevel, setBusinessAiTrustLevel,
   getBusinessAiPolicies, upsertBusinessAiPolicy, deleteBusinessAiPolicy,
@@ -464,7 +465,7 @@ export default function BusinessAIAutomationScreen({ route }) {
                     </View>
                     <Text style={styles.policyMeta}>
                       Level {p.trust_level} · {p.conditions?.category || 'any category'}
-                      {p.conditions?.party_size_max ? ` · up to ${p.conditions.party_size_max} people` : ''}
+                      {p.conditions?.party_size_max ? ` · up to ${countLabel(p.conditions.party_size_max, 'person', 'people')}` : ''}
                       {p.conditions?.hours_start && p.conditions?.hours_end
                         ? ` · ${String(p.conditions.hours_start).slice(0, 5)}-${String(p.conditions.hours_end).slice(0, 5)}`
                         : ''}

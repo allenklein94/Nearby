@@ -13,6 +13,7 @@ import useChatComposer from '../hooks/useChatComposer';
 import usePaginatedMessages from '../hooks/usePaginatedMessages';
 
 import { NLoader } from '../motion';
+import { countLabel } from '../utils/plural';
 const ROLE_LABEL = { host: 'Host', organizer: 'Co-organizer', guest: 'Guest' };
 
 // Item 89 (CLAUDE.md, "Give the occasion a single shared conversation"):
@@ -132,7 +133,7 @@ export default function PlanChatScreen({ route, navigation }) {
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => setShowRoster((v) => !v)}
-          accessibilityLabel={`${participants.length} people in this plan, tap to ${showRoster ? 'hide' : 'view'} the list`}
+          accessibilityLabel={`${countLabel(participants.length, 'person', 'people')} in this plan, tap to ${showRoster ? 'hide' : 'view'} the list`}
           accessibilityRole="button"
         >
           <Text style={styles.headerSubtitle}>👥 {participants.length} {participants.length === 1 ? 'person' : 'people'} {showRoster ? '▲' : '▼'}</Text>

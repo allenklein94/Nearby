@@ -11,6 +11,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import { NearbyMark } from '../components/brand';
 import { formatDay, parseDate } from '../utils/timeLabels';
 
+import { countLabel } from '../utils/plural';
 // Convergence pass P2 (CLAUDE.md, "Insights vs. Momentum -- one user-facing
 // 'how am I doing?' concept"): this screen used to be Momentum-only (the
 // streak/weekly-chart/month-deltas content below); InsightsScreen.js used
@@ -239,7 +240,7 @@ export default function MomentumScreen({ navigation }) {
                     const style = categoryStyleFor(tag);
                     const pct = maxVibeCount > 0 ? count / maxVibeCount : 0;
                     return (
-                      <View key={tag} style={styles.vibeRow} accessibilityLabel={`${tag}, ${count} gatherings`}>
+                      <View key={tag} style={styles.vibeRow} accessibilityLabel={`${tag}, ${countLabel(count, 'gathering')}`}>
                         <Text style={styles.vibeIcon}>{style.icon}</Text>
                         <View style={styles.vibeBarTrack}>
                           <View style={[styles.vibeBarFill, { width: `${Math.max(pct * 100, 8)}%`, backgroundColor: style.color }]} />

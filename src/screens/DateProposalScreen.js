@@ -22,6 +22,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { moneyLabel } from '../utils/outcomeDisplay';
 
+import { countLabel } from '../utils/plural';
 const TERMINAL_STATUS_COPY = {
   declined: "Didn't work out that time",
   withdrawn: 'Withdrawn',
@@ -470,7 +471,7 @@ export default function DateProposalScreen({ navigation, route }) {
                               result.offer_type,
                               result.price != null ? `${moneyLabel(result.price)}` : null,
                               result.distance_miles != null ? `${result.distance_miles.toFixed(1)} mi` : null,
-                              result.remaining_capacity != null ? `${result.remaining_capacity} spots left` : null,
+                              result.remaining_capacity != null ? `${countLabel(result.remaining_capacity, 'spot')} left` : null,
                             ]
                               .filter(Boolean)
                               .join(' · ')}

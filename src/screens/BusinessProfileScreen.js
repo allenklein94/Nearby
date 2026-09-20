@@ -444,7 +444,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
                   {offer.description ? <Text style={styles.offerDesc}>{offer.description}</Text> : null}
                   {offer.redemption_limit != null && (
                     <Text style={styles.scarcityText}>
-                      {Math.max(0, offer.redemption_limit - (redemptionCounts[offer.id] ?? 0))} of {offer.redemption_limit} spots left
+                      {Math.max(0, offer.redemption_limit - (redemptionCounts[offer.id] ?? 0))} of {offer.redemption_limit} {offer.redemption_limit === 1 ? 'spot' : 'spots'} left
                     </Text>
                   )}
                   {offer.unlock_scope != null && (

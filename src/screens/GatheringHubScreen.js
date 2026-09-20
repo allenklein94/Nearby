@@ -29,6 +29,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import * as Haptics from 'expo-haptics';
 
+import { countLabel } from '../utils/plural';
 // The live, day-of screen for people who already joined — distinct from
 // GatheringDetailScreen (which is the persuade-you-to-join page). Built
 // against the Aug 7 "Gathering Hub" vision doc; see the migration comment
@@ -440,7 +441,7 @@ export default function GatheringHubScreen({ route, navigation }) {
                   </View>
                 ))}
                 {others.length > 5 && (
-                  <TouchableOpacity onPress={() => setShowAllAttendees((v) => !v)} accessibilityRole="button" accessibilityLabel={showAllAttendees ? 'Show fewer people' : `Show all ${others.length} people`}>
+                  <TouchableOpacity onPress={() => setShowAllAttendees((v) => !v)} accessibilityRole="button" accessibilityLabel={showAllAttendees ? 'Show fewer people' : `Show all ${countLabel(others.length, 'person', 'people')}`}>
                     <Text style={styles.showAllText}>{showAllAttendees ? 'Show fewer' : `Show all ${others.length}`}</Text>
                   </TouchableOpacity>
                 )}

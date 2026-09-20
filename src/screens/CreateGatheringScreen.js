@@ -22,6 +22,7 @@ import { typography, spacing, radius } from '../theme';
 
 import { NLoader } from '../motion';
 import { getUserLocation } from '../services/userLocation';
+import { countLabel } from '../utils/plural';
 // Real Free/$/$$/$$$ chip labels for the new Price field -- mirrors the
 // visual convention services/places.js's own priceLevelLabel() already
 // established for Google Places results, without reusing that function
@@ -769,7 +770,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                     >
                       <Text style={styles.stepperButtonText}>−</Text>
                     </TouchableOpacity>
-                    <Text style={styles.stepperValue}>{capacityCustom} people</Text>
+                    <Text style={styles.stepperValue}>{countLabel(capacityCustom, 'person', 'people') ?? `${capacityCustom} people`}</Text>
                     <TouchableOpacity
                       onPress={() => { Haptics.selectionAsync(); setCapacityCustom((n) => n + 1); }}
                       style={styles.stepperButton}
@@ -934,7 +935,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
             {capacityValue != null && (
               <View style={styles.previewRow}>
                 <Text style={styles.previewRowIcon}>👥</Text>
-                <Text style={styles.previewRowText}>Up to {capacityValue} people — waitlist after that</Text>
+                <Text style={styles.previewRowText}>Up to {countLabel(capacityValue, 'person', 'people') ?? `${capacityValue} people`} — waitlist after that</Text>
               </View>
             )}
             {askLocalBusinesses && (

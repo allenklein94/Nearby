@@ -20,6 +20,7 @@ import VoicePlayButton from '../components/VoicePlayButton';
 import { typography, spacing, radius } from '../theme';
 
 import { modalAnimation, showSuccessToast, animateLayout } from '../motion';
+import { countLabel } from '../utils/plural';
 const MAX_VOICE_INTRO_SECONDS = 30;
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -774,11 +775,11 @@ export default function ProfileScreen({ navigation, route }) {
 
         <Text style={styles.sectionLabel} accessibilityRole="header">Your Connections</Text>
         <View style={styles.quickStatsRow}>
-          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Communities')} accessibilityLabel={`${quickStats.communities} communities`} accessibilityRole="button">
+          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Communities')} accessibilityLabel={countLabel(quickStats.communities, 'community', 'communities')} accessibilityRole="button">
             <Text style={styles.quickStatNumber}>{quickStats.communities}</Text>
             <Text style={styles.quickStatLabel}>Communities</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Friends')} accessibilityLabel={`${quickStats.friends} friends`} accessibilityRole="button">
+          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Friends')} accessibilityLabel={countLabel(quickStats.friends, 'friend')} accessibilityRole="button">
             <Text style={styles.quickStatNumber}>{quickStats.friends}</Text>
             <Text style={styles.quickStatLabel}>Friends</Text>
           </TouchableOpacity>

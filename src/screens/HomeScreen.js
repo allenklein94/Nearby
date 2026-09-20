@@ -57,6 +57,7 @@ import { getUserLocation } from '../services/userLocation';
 import { placeDistanceLabel } from '../services/places';
 import { gatheringPrimaryAction, peoplePrimaryAction } from '../utils/primaryAction';
 
+import { countLabel } from '../utils/plural';
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
 const PERIOD_SECTION_LABELS = { morning: 'Good Morning', afternoon: 'This Afternoon', evening: 'Tonight', weekend: 'This Weekend' };
@@ -2609,11 +2610,11 @@ export default function HomeScreen({ navigation }) {
           <TouchableOpacity
             style={styles.cardRow}
             onPress={() => navigation.navigate('Discover', { initialMode: 'people' })}
-            accessibilityLabel={`${dashboard?.nearbyPeopleCount ?? 0} people nearby to meet, tap to view`}
+            accessibilityLabel={`${countLabel(dashboard?.nearbyPeopleCount ?? 0, 'person', 'people')} nearby to meet, tap to view`}
             accessibilityRole="button"
           >
             <Ionicons name="people-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
-            <Text style={styles.cardText}>{dashboard?.nearbyPeopleCount ?? 0} people nearby to meet</Text>
+            <Text style={styles.cardText}>{countLabel(dashboard?.nearbyPeopleCount ?? 0, 'person', 'people')} nearby to meet</Text>
             {peoplePrimaryAction(dashboard?.nearbyPeopleCount) ? (
               <View style={styles.rowCta}><Text style={styles.rowCtaText}>{peoplePrimaryAction(dashboard.nearbyPeopleCount).label}</Text></View>
             ) : (
@@ -2623,9 +2624,9 @@ export default function HomeScreen({ navigation }) {
 
           <View style={styles.divider} />
 
-          <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'today' })} accessibilityLabel={`${dashboard?.gatheringsTodayCount ?? 0} gatherings today, tap to view`} accessibilityRole="button">
+          <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'today' })} accessibilityLabel={`${countLabel(dashboard?.gatheringsTodayCount ?? 0, 'gathering')} today, tap to view`} accessibilityRole="button">
             <Ionicons name="calendar-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
-            <Text style={styles.cardText}>{dashboard?.gatheringsTodayCount ?? 0} gatherings today</Text>
+            <Text style={styles.cardText}>{countLabel(dashboard?.gatheringsTodayCount ?? 0, 'gathering')} today</Text>
             <Text style={styles.cardChevron}>›</Text>
           </TouchableOpacity>
 
@@ -2650,7 +2651,7 @@ export default function HomeScreen({ navigation }) {
 
           <View style={styles.divider} />
 
-          <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Friends')} accessibilityLabel={`${dashboard?.friendsCount ?? 0} friends, tap to view`} accessibilityRole="button">
+          <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Friends')} accessibilityLabel={`${countLabel(dashboard?.friendsCount ?? 0, 'friend')}, tap to view`} accessibilityRole="button">
             <Ionicons name="people-circle-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
             <Text style={styles.cardText}>{dashboard?.friendsCount ?? 0} friend{dashboard?.friendsCount === 1 ? '' : 's'}</Text>
             <Text style={styles.cardChevron}>›</Text>

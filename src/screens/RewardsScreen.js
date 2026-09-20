@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 
+import { countLabel } from '../utils/plural';
 export default function RewardsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -103,7 +104,7 @@ export default function RewardsScreen({ navigation }) {
           {status.allTiers.map((t) => {
             const reached = status.points >= t.min;
             return (
-              <View key={t.name} style={styles.tierRow} accessibilityLabel={`${t.name}, ${t.min} redemptions, ${reached ? 'reached' : 'not reached yet'}`}>
+              <View key={t.name} style={styles.tierRow} accessibilityLabel={`${t.name}, ${countLabel(t.min, 'redemption')}, ${reached ? 'reached' : 'not reached yet'}`}>
                 <Text style={[styles.tierRowEmoji, !reached && styles.tierRowDim]}>{t.emoji}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.tierRowName, !reached && styles.tierRowDim]}>{t.name}</Text>

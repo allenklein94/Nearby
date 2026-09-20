@@ -38,6 +38,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
 
+import { countLabel } from '../utils/plural';
 const STATUS_COPY = {
   open: { label: 'Open — waiting for responses', color: null },
   fulfilled: { label: 'You accepted an offer', color: 'primary' },
@@ -1009,7 +1010,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               </Text>
             )}
             {planSummary.location && <Text style={styles.planSummaryLine}>📍 {planSummary.location}</Text>}
-            {planSummary.partySize != null && <Text style={styles.planSummaryLine}>👥 {planSummary.partySize} people</Text>}
+            {planSummary.partySize != null && <Text style={styles.planSummaryLine}>👥 {countLabel(planSummary.partySize, 'person', 'people')}</Text>}
             {planSummary.statusKind === 'confirmed' && (
               <View style={styles.planSummaryActionsRow}>
                 {planOrganizerInfo?.isHost && (
@@ -1246,7 +1247,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           )}
           {showComparison && (
             <View style={styles.comparisonHeaderRow}>
-              <Text style={styles.comparisonHeaderText}>✨ Nearby found {offeredCount} options for you</Text>
+              <Text style={styles.comparisonHeaderText}>✨ Nearby found {countLabel(offeredCount, 'option')} for you</Text>
               <Text style={styles.comparisonHeaderSubtext}>
                 {pickOfferId ? "Here's what each can do. Our pick is first." : "Here's what each business can do."}
               </Text>
@@ -1429,7 +1430,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.groupChatLink}
             onPress={() => navigation.navigate('PlanChat', { businessRequestId: requestId, initialTitle: planChatInfo.title })}
-            accessibilityLabel={`Open group chat, ${planChatInfo.participants?.length ?? 0} people`}
+            accessibilityLabel={`Open group chat, ${countLabel(planChatInfo.participants?.length ?? 0, 'person', 'people')}`}
             accessibilityRole="button"
           >
             <Text style={styles.groupChatLinkText}>💬 Group Chat ({planChatInfo.participants?.length ?? 0})</Text>

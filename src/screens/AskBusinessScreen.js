@@ -18,6 +18,7 @@ import { typography, spacing, radius } from '../theme';
 import { requireUserLocation } from '../services/userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
 
+import { countLabel } from '../utils/plural';
 // Same canonical 26-tag list business_requests.category's own (now-widened)
 // CHECK constraint validates against -- was a separate, independently-
 // drifting 24-tag copy (missing 'Faith & Spirituality' and 'Dating') before
@@ -481,7 +482,7 @@ export default function AskBusinessScreen({ navigation, route }) {
         : DATE_OPTIONS.find((d) => d.key === dateWindow)?.label;
       if (dateLabel) recapParts.push(dateLabel);
     }
-    if (!gatheringId && !matchId && partySize.trim()) recapParts.push(`${partySize.trim()} people`);
+    if (!gatheringId && !matchId && partySize.trim()) recapParts.push(countLabel(partySize.trim(), 'person', 'people') ?? `${partySize.trim()} people`);
     const recapBudgetMax = resolveBudgetMax(budgetRangeKey, budgetMaxOverride);
     if (recapBudgetMax) recapParts.push(`up to ${moneyLabel(recapBudgetMax)}`);
     if (occasionInput) recapParts.push(occasionLabel(occasionInput));
@@ -784,7 +785,7 @@ export default function AskBusinessScreen({ navigation, route }) {
                           result.offer_type,
                           result.price != null ? `${moneyLabel(result.price)}` : null,
                           result.distance_miles != null ? `${result.distance_miles.toFixed(1)} mi` : null,
-                          result.remaining_capacity != null ? `${result.remaining_capacity} spots left` : null,
+                          result.remaining_capacity != null ? `${countLabel(result.remaining_capacity, 'spot')} left` : null,
                         ]
                           .filter(Boolean)
                           .join(' · ')}

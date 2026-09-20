@@ -72,6 +72,7 @@ import { spacing, radius, typography } from '../theme';
 import { NLoader, modalAnimation, showSuccessToast } from '../motion';
 import { isGatheringUpcoming } from '../utils/objectState';
 import { categoryOutcomeLine, categoryRatingLine, offerPriceLabel } from '../utils/outcomeDisplay';
+import { countLabel } from '../utils/plural';
 const SECTIONS = [
   { key: 'home', icon: '🏠', label: 'Home' },
   { key: 'opportunities', icon: '🎯', label: 'Opportunities' },
@@ -2946,7 +2947,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <TouchableOpacity
                     style={styles.discoveryTeaser}
                     onPress={() => setSection('insights')}
-                    accessibilityLabel={`${discoveryStats.views_last_30_days} people found you in the last 30 days — tap for the full breakdown`}
+                    accessibilityLabel={`${countLabel(discoveryStats.views_last_30_days, 'person', 'people')} found you in the last 30 days — tap for the full breakdown`}
                     accessibilityRole="button"
                   >
                     <Text style={styles.discoveryTeaserText}>
@@ -3340,7 +3341,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         key={m.user_id}
                         style={styles.gatheringRow}
                         onPress={() => handleToggleMemberHistory(m)}
-                        accessibilityLabel={`${m.display_name}, ${m.gatherings_attended} gatherings attended, tap to see visit history`}
+                        accessibilityLabel={`${m.display_name}, ${countLabel(m.gatherings_attended, 'gathering')} attended, tap to see visit history`}
                         accessibilityRole="button"
                       >
                         <Text style={styles.offerTitle}>{i + 1}. {m.display_name}</Text>
@@ -5371,7 +5372,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             key={c.id}
                             style={[styles.chip, unlockCommunityId === c.id && styles.chipSelected]}
                             onPress={() => setUnlockCommunityId(c.id)}
-                            accessibilityLabel={`${c.name}, ${c.memberCount} members${unlockCommunityId === c.id ? ', selected' : ''}`}
+                            accessibilityLabel={`${c.name}, ${countLabel(c.memberCount, 'member')}${unlockCommunityId === c.id ? ', selected' : ''}`}
                             accessibilityRole="button"
                           >
                             <Text style={[styles.chipText, unlockCommunityId === c.id && styles.chipTextSelected]}>{c.name} ({c.memberCount})</Text>
