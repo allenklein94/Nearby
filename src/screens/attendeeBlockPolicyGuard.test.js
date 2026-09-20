@@ -76,3 +76,29 @@ describe('authenticated TRUNCATE/MAINTAIN revoked (migration 20270143)', () => {
     expect(sql).toMatch(/server_version_num'\)::int >= 170000/);
   });
 });
+
+// Prod restricts client UPDATE to a short column list on these tables; a rebuilt database must not be wider.
+describe('column-level UPDATE grants match prod (migration 20270144)', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270144_column_update_grants_match_prod.sql'), 'utf8');
+  const expected = {
+    brand_offers: 'active',
+    business_partner_requests: 'reviewed_at, status',
+    communities: 'cover_photo_url, description, interest_tag, is_public, name',
+    gathering_interest: 'status',
+    id_verification_submissions: 'reviewed_at, reviewed_by, status',
+    live_tracking_sessions: 'active, current_lat, current_lng, updated_at',
+    matches: 'disappearing_messages_enabled, disappearing_mode, first_message_sent',
+    message_reactions: 'emoji',
+    profile_photos: 'photo_url, position',
+    reports: 'resolved',
+  };
+  test.each(Object.entries(expected))('%s: table-wide UPDATE revoked, only the listed columns granted', (table, cols) => {
+    const revoke = sql.indexOf(`revoke update on public.${table} from authenticated;`);
+    const grant = sql.indexOf(`grant update (${cols}) on public.${table} to authenticated;`);
+    expect(revoke).toBeGreaterThanOrEqual(0);
+    expect(grant).toBeGreaterThan(revoke);
+  });
+  test('anon has no SELECT on live_tracking_sessions', () => {
+    expect(sql).toMatch(/revoke select on public\.live_tracking_sessions from anon;/);
+  });
+});
