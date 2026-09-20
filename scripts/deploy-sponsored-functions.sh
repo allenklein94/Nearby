@@ -6,3 +6,4 @@ REF=enmosvippabmuqslzrox
 npx --yes supabase functions deploy create-sponsored-checkout --project-ref "$REF"
 npx --yes supabase functions deploy sponsored-stripe-webhook --project-ref "$REF"
 npx --yes supabase functions deploy admin-sponsored-refund --project-ref "$REF"
+npx --yes supabase functions deploy cancel-sponsored-placement --project-ref "$REF"

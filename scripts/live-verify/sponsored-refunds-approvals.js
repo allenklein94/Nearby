@@ -22,7 +22,7 @@ begin
   insert into brand_partners (name, active, latitude, longitude, category) values ('lv-sp3-a', true, 40.0, -75.0, 'food_drink') returning id into pa;
   update profiles set managed_partner_id = pa where id = v_u;
   insert into sponsorable_category_groups (group_key) values ('food_drink');
-  select * into b from sponsored_begin_purchase(v_u, 'business', null, tomorrow + interval '3 days', 'lv refund', null, 'low');
+  select * into b from sponsored_begin_purchase(v_u, 'business', null, tomorrow + interval '3 days', 'lv refund', null, 'low', 'v1-draft-1');
   perform sponsored_attach_checkout_session(b.payment_id, 'cs_test_r1');
   perform sponsored_mark_paid('cs_test_r1', 'pi_r1', 2500, 'usd');
   pay := b.payment_id;

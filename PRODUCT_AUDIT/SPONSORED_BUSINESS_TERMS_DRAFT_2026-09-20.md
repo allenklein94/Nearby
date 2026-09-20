@@ -51,7 +51,17 @@ totals only (views, taps), never who saw or tapped it.
 [Counsel: right to change price/terms for future purchases with notice, category changes, limitation of liability,
 governing law, entire agreement.]
 
-## Open decisions for the owner
-1. Can a business request a pre-start cancellation itself in the app? (Today: contact Nearby; refunds are an admin action.)
-2. Is the 10-mile radius and "one per category per area" wording final for the terms?
-3. Who signs for the business (owner vs authorized representative) at purchase, and is acceptance recorded (a checkbox + timestamp table is NOT built yet).
+## Owner decisions, LOCKED for v1 (2026-09-20) and implemented
+1. **Pre-start cancellation: in-app.** A business cancels its own PAID placement before the start date for a full refund
+   (no contact with Nearby). `owner_request_sponsored_cancel` + edge function `cancel-sponsored-placement`; the database
+   checks ownership, paid, not started and computes the amount, pauses the placement while Stripe runs, restores it if
+   Stripe fails. After start: no refund for elapsed days; material failure: prorated (admin refund, unchanged).
+2. **10-mile radius: final for v1.** 3. **One placement per category (the 19 groups) per ~10-mile area: final for v1.**
+4. **Who accepts:** the signed-in business user making the purchase, on behalf of the business they manage. No separate
+   signature workflow.
+5. **Acceptance record:** a ticked box (never a default), stored per purchase in `sponsored_terms_acceptances`:
+   purchaser user id, business id, placement id, payment id, terms version, accepted timestamp and the Stripe Checkout
+   session id. Terms text lives in `src/constants/sponsoredTerms.js`; each version's sha256 is stored in
+   `sponsored_terms_versions` (immutable rows; acceptances cannot be edited or deleted). A Jest test fails if the text
+   and its recorded hash diverge. Current version: `v1-draft-1` (NOT counsel-approved; live stays blocked).
+Counsel-only items in brackets above remain counsel's, not product decisions.

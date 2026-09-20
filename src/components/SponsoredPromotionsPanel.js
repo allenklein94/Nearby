@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, TextInput, StyleSheet, Linking, Alert } f
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing, typography } from '../theme';
 import { SPONSORED_LABEL } from '../constants/sponsored';
-import { checkMySponsoredSlot, getMySponsoredPlacements, cancelMySponsoredHold, startSponsoredCheckout } from '../services/sponsored';
+import { checkMySponsoredSlot, getMySponsoredPlacements, cancelMySponsoredHold, startSponsoredCheckout, cancelPaidSponsoredPlacement } from '../services/sponsored';
+import { SPONSORED_TERMS_VERSION, SPONSORED_TERMS_SECTIONS } from '../constants/sponsoredTerms';
 import { placementStatusLine, statsLine, priceLabel, startDateOptions, dayLabel } from '../utils/sponsoredPromotions';
 
 // Owner-side "Promotions" (design section 7). A paid, clearly labeled spotlight; never an Opportunity, never in Demand.
@@ -29,6 +30,8 @@ export default function SponsoredPromotionsPanel({ offers = [] }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(null);
   const [slotProblem, setSlotProblem] = useState(null);
+  const [accepted, setAccepted] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const load = useCallback(async () => {
     const [el, rows] = await Promise.all([checkMySponsoredSlot(null), getMySponsoredPlacements()]);
@@ -47,7 +50,7 @@ export default function SponsoredPromotionsPanel({ offers = [] }) {
   const buy = async () => {
     setBusy(true);
     setMessage(null);
-    const res = await startSponsoredCheckout({ itemKind: kind, itemId: kind === 'offer' ? offerId : null, startDate, title, description });
+    const res = await startSponsoredCheckout({ itemKind: kind, itemId: kind === 'offer' ? offerId : null, startDate, title, description, termsVersion: SPONSORED_TERMS_VERSION, acceptedTerms: accepted });
     setBusy(false);
     if (res.error) { setMessage(res.error); return; }
     Linking.openURL(res.url).catch(() => setMessage("Couldn't open checkout. You have not been charged."));
@@ -61,8 +64,25 @@ export default function SponsoredPromotionsPanel({ offers = [] }) {
     ]);
   };
 
+  const cancelPaid = (p) => {
+    Alert.alert(
+      'Cancel this spotlight?',
+      `It hasn't started, so you'll be refunded in full (${priceLabel(p.amount_cents, p.currency) || 'the full amount'}) to your original payment method.`,
+      [
+        { text: 'Keep it', style: 'cancel' },
+        { text: 'Cancel and refund', style: 'destructive', onPress: async () => {
+          setBusy(true); setMessage(null);
+          const res = await cancelPaidSponsoredPlacement(p.placement_id);
+          setBusy(false);
+          setMessage(res.error || 'Cancelled. Your refund is on its way.');
+          load();
+        } },
+      ]
+    );
+  };
+
   const price = eligibility ? priceLabel(eligibility.amount_cents, eligibility.currency) : null;
-  const canSubmit = !busy && startDate && !slotProblem && title.trim().length > 0 && (kind === 'business' || offerId);
+  const canSubmit = !busy && startDate && !slotProblem && title.trim().length > 0 && accepted && (kind === 'business' || offerId);
   const hasHeld = (placements || []).some((p) => p.status === 'awaiting_payment');
 
   return (
@@ -123,9 +143,18 @@ export default function SponsoredPromotionsPanel({ offers = [] }) {
           <TouchableOpacity style={[styles.cta, !canSubmit && { opacity: 0.5 }]} disabled={!canSubmit} onPress={buy} accessibilityRole="button" accessibilityLabel="Continue to payment">
             <Text style={styles.ctaText}>{price ? `Continue to payment · ${price}` : 'Continue to payment'}</Text>
           </TouchableOpacity>
-          <Text style={styles.helper}>
-            Your headline is reviewed first. Refund in full any time before it starts; after it starts, no refund for days already shown. Views are approximate.
-          </Text>
+          <View style={[styles.row, { alignItems: 'center', marginTop: spacing.md }]}>
+            <TouchableOpacity onPress={() => setAccepted((v) => !v)} accessibilityRole="checkbox" accessibilityState={{ checked: accepted }} accessibilityLabel="I accept the spotlight terms on behalf of my business">
+              <Text style={styles.ctaCheck}>{accepted ? '☑' : '☐'}</Text>
+            </TouchableOpacity>
+            <Text style={[styles.helper, { flex: 1, marginTop: 0 }]}>I accept the spotlight terms on behalf of my business.</Text>
+          </View>
+          <TouchableOpacity onPress={() => setTermsOpen((v) => !v)} accessibilityRole="button" accessibilityLabel="Read the spotlight terms">
+            <Text style={styles.link}>{termsOpen ? 'Hide the terms' : 'Read the terms'}</Text>
+          </TouchableOpacity>
+          {termsOpen ? SPONSORED_TERMS_SECTIONS.map(([h, b]) => (
+            <View key={h}><Text style={styles.label}>{h}</Text><Text style={styles.helper}>{b}</Text></View>
+          )) : null}
         </View>
       ) : null}
       {hasHeld && eligibility?.ok ? <Text style={styles.helper}>You have a spotlight waiting for payment. Finish or release it below to start another.</Text> : null}
@@ -142,6 +171,11 @@ export default function SponsoredPromotionsPanel({ offers = [] }) {
                 <Text style={styles.helper}>{dayLabel(p.starts_at)} – {dayLabel(p.ends_at)}{priceLabel(p.amount_cents, p.currency) ? ` · ${priceLabel(p.amount_cents, p.currency)}` : ''}</Text>
                 {status ? <Text style={styles.helper}>{status}</Text> : null}
                 {stats ? <Text style={styles.helper}>{stats}</Text> : null}
+                {p.status === 'scheduled' && p.payment_status === 'paid' && new Date(p.starts_at) > new Date() ? (
+                  <TouchableOpacity onPress={() => cancelPaid(p)} disabled={busy} accessibilityRole="button" accessibilityLabel="Cancel this spotlight for a full refund">
+                    <Text style={styles.link}>Cancel for a full refund</Text>
+                  </TouchableOpacity>
+                ) : null}
                 {p.status === 'awaiting_payment' ? (
                   <TouchableOpacity onPress={() => cancelHold(p)} accessibilityRole="button" accessibilityLabel="Release this slot">
                     <Text style={styles.link}>Release this slot</Text>
@@ -172,5 +206,6 @@ const getStyles = (colors) => StyleSheet.create({
   ctaText: { ...typography.body, color: '#fff', fontWeight: '600' },
   item: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm, marginTop: spacing.xs },
   itemTitle: { ...typography.body, color: colors.text, fontWeight: '600' },
+  ctaCheck: { fontSize: 22, color: colors.primary, marginRight: spacing.sm },
   link: { ...typography.caption, color: colors.primary, marginTop: spacing.xs },
 });

@@ -30,7 +30,7 @@ begin
   c := check_my_sponsored_slot(tomorrow);
   v_out := v_out || jsonb_build_object('empty_allow_list_problem', c->>'problem', 'price', c->>'amount_cents');
   begin
-    perform * from sponsored_begin_purchase(v_u, 'business', null, tomorrow, 'lv headline', null, 'low');
+    perform * from sponsored_begin_purchase(v_u, 'business', null, tomorrow, 'lv headline', null, 'low', 'v1-draft-1');
     v_out := v_out || jsonb_build_object('purchase_with_empty_allow_list', 'ALLOWED');
   exception when raise_exception then v_out := v_out || jsonb_build_object('purchase_with_empty_allow_list', sqlerrm); end;
 
@@ -43,15 +43,15 @@ begin
     'not_midnight_problem', check_my_sponsored_slot(tomorrow + interval '3 hours')->>'problem');
 
   -- screening gate + start date + item
-  begin perform * from sponsored_begin_purchase(v_u, 'business', null, tomorrow, 'lv', null, 'pending');
+  begin perform * from sponsored_begin_purchase(v_u, 'business', null, tomorrow, 'lv', null, 'pending', 'v1-draft-1');
     v_out := v_out || jsonb_build_object('unscreened', 'ALLOWED');
   exception when raise_exception then v_out := v_out || jsonb_build_object('unscreened', sqlerrm); end;
-  begin perform * from sponsored_begin_purchase(v_u, 'offer', gen_random_uuid(), tomorrow, 'lv', null, 'low');
+  begin perform * from sponsored_begin_purchase(v_u, 'offer', gen_random_uuid(), tomorrow, 'lv', null, 'low', 'v1-draft-1');
     v_out := v_out || jsonb_build_object('foreign_offer', 'ALLOWED');
   exception when raise_exception then v_out := v_out || jsonb_build_object('foreign_offer', sqlerrm); end;
 
   -- a held purchase
-  select * into b from sponsored_begin_purchase(v_u, 'offer', oa, tomorrow, '  lv Headline  ', 'lv desc', 'low');
+  select * into b from sponsored_begin_purchase(v_u, 'offer', oa, tomorrow, '  lv Headline  ', 'lv desc', 'low', 'v1-draft-1');
   v_out := v_out || jsonb_build_object(
     'held_amount', b.amount_cents, 'held_currency', b.currency,
     'held_status', (select status from sponsored_placements where id = b.placement_id),
@@ -103,7 +103,7 @@ begin
   update sponsored_placements set status = 'completed' where id = b.placement_id;
 
   -- a new hold: owner can cancel an unpaid hold (and a stranger cannot)
-  select * into b2 from sponsored_begin_purchase(v_u, 'business', null, tomorrow + interval '20 days', 'lv second', null, 'low');
+  select * into b2 from sponsored_begin_purchase(v_u, 'business', null, tomorrow + interval '20 days', 'lv second', null, 'low', 'v1-draft-1');
   perform set_config('request.jwt.claims', json_build_object('sub', gen_random_uuid(), 'role', 'authenticated')::text, true);
   v_out := v_out || jsonb_build_object('stranger_cancel', cancel_my_sponsored_hold(b2.placement_id));
   perform set_config('request.jwt.claims', json_build_object('sub', v_u, 'role', 'authenticated')::text, true);
@@ -114,7 +114,7 @@ begin
     'cancel_again', cancel_my_sponsored_hold(b2.placement_id));
 
   -- abandoned hold expires by sweep, then a LATE payment is recorded but never served and flagged for refund
-  select * into b2 from sponsored_begin_purchase(v_u, 'business', null, tomorrow + interval '30 days', 'lv third', null, 'low');
+  select * into b2 from sponsored_begin_purchase(v_u, 'business', null, tomorrow + interval '30 days', 'lv third', null, 'low', 'v1-draft-1');
   perform sponsored_attach_checkout_session(b2.payment_id, 'cs_test_lv3');
   update sponsored_placements set created_at = now() - interval '25 hours' where id = b2.placement_id;
   perform sponsored_sweep();
@@ -125,13 +125,13 @@ begin
     'late_placement', (select status from sponsored_placements where id = b2.placement_id));
 
   -- checkout session expired / async failure free the slot
-  select * into b2 from sponsored_begin_purchase(v_u, 'business', null, tomorrow + interval '40 days', 'lv fourth', null, 'low');
+  select * into b2 from sponsored_begin_purchase(v_u, 'business', null, tomorrow + interval '40 days', 'lv fourth', null, 'low', 'v1-draft-1');
   perform sponsored_attach_checkout_session(b2.payment_id, 'cs_test_lv4');
   perform sponsored_mark_unpaid('cs_test_lv4', false);
   v_out := v_out || jsonb_build_object('expired_placement', (select status from sponsored_placements where id = b2.placement_id),
     'expired_payment', (select status from sponsored_payments where id = b2.payment_id),
     'slot_free_again', coalesce(check_my_sponsored_slot(tomorrow + interval '40 days')->>'problem', 'ok'));
-  select * into b2 from sponsored_begin_purchase(v_u, 'business', null, tomorrow + interval '40 days', 'lv fifth', null, 'low');
+  select * into b2 from sponsored_begin_purchase(v_u, 'business', null, tomorrow + interval '40 days', 'lv fifth', null, 'low', 'v1-draft-1');
   perform sponsored_attach_checkout_session(b2.payment_id, 'cs_test_lv5');
   perform sponsored_mark_unpaid('cs_test_lv5', true);
   perform sponsored_release_hold(b2.payment_id);
@@ -149,7 +149,7 @@ begin
   exception when insufficient_privilege then v_out := v_out || jsonb_build_object('client_mark_paid', 'refused'); end;
   begin
     set local role authenticated;
-    perform * from sponsored_begin_purchase(v_u, 'business', null, tomorrow + interval '50 days', 'x', null, 'low');
+    perform * from sponsored_begin_purchase(v_u, 'business', null, tomorrow + interval '50 days', 'x', null, 'low', 'v1-draft-1');
     v_out := v_out || jsonb_build_object('client_begin_purchase', 'ALLOWED');
   exception when insufficient_privilege then v_out := v_out || jsonb_build_object('client_begin_purchase', 'refused'); end;
   begin

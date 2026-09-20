@@ -147,12 +147,26 @@ function makeCheckout({ env = {}, check = { ok: true }, classify = { riskTier: '
   const call = async (body = {}, auth = 'Bearer tok') => {
     const res = await handler({
       headers: { get: () => auth },
-      json: async () => ({ itemKind: 'business', startDate: tomorrow(), title: 'Fresh pastries', description: 'Baked daily', ...body }),
+      json: async () => ({ itemKind: 'business', startDate: tomorrow(), title: 'Fresh pastries', description: 'Baked daily', acceptedTerms: true, termsVersion: 'v1-draft-1', ...body }),
     });
     return { status: res.status, json: res.json() };
   };
   return { call, rpcs, stripeCalls, classifyCalls: () => classifyCalls };
 }
+
+describe('create-sponsored-checkout: terms', () => {
+  it('refuses a purchase without an explicit acceptance, before screening, a hold or Stripe', async () => {
+    for (const body of [{ acceptedTerms: false }, { acceptedTerms: undefined }, { termsVersion: '' }, { acceptedTerms: 'true' }]) {
+      const t = makeCheckout();
+      const r = await t.call(body);
+      expect(r.status).toBe(422);
+      expect(r.json.code).toBe('terms_not_accepted');
+      expect(t.classifyCalls()).toBe(0);
+      expect(t.stripeCalls).toHaveLength(0);
+      expect(t.rpcs.find((x) => x.name === 'sponsored_begin_purchase')).toBeUndefined();
+    }
+  });
+});
 
 describe('create-sponsored-checkout', () => {
   it('needs a Stripe key (503)', async () => {
@@ -215,6 +229,7 @@ describe('create-sponsored-checkout', () => {
     expect(r.json.url).toMatch(/^https:\/\/checkout\.stripe\.com\//);
     const begin = t.rpcs.find((x) => x.name === 'sponsored_begin_purchase');
     expect(begin.args.screening_tier_param).toBe('low');
+    expect(begin.args.terms_version_param).toBe('v1-draft-1');
     expect(begin.args.user_id_param).toBe('user-1');
     const call = t.stripeCalls[0];
     expect(call.url).toBe('https://api.stripe.com/v1/checkout/sessions');
@@ -302,5 +317,52 @@ describe('admin-sponsored-refund', () => {
   });
   it('the source never edits placement or payment state directly', () => {
     expect(SRC).not.toMatch(/sponsored_mark_|\.from\(/);
+  });
+});
+
+describe('cancel-sponsored-placement', () => {
+  const SRC = load('cancel-sponsored-placement');
+  function make({ env = {}, reqError, stripe } = {}) {
+    const rpcs = []; const fetches = []; let handler;
+    const e = { SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'svc', SUPABASE_ANON_KEY: 'anon', STRIPE_SECRET_KEY: 'sk_test_1', ...env };
+    const client = (asUser) => ({ rpc: async (name, args) => {
+      rpcs.push({ name, args, asUser });
+      if (name === 'owner_request_sponsored_cancel') return { data: [{ action_id: 'act9', amount_cents: 2500, currency: 'usd', payment_intent_id: 'pi_9' }], error: reqError ? { message: reqError } : null };
+      return { data: null, error: null };
+    } });
+    const fakeFetch = async (url, init) => { fetches.push({ url, init }); const r = stripe ?? { ok: true, body: { id: 're_9' } }; return { ok: r.ok, status: r.ok ? 200 : 400, json: async () => r.body }; };
+    // eslint-disable-next-line no-new-func
+    new Function('serve', 'createClient', 'Deno', 'Response', 'fetch', SRC)(
+      (h) => { handler = h; }, (_u, _k, opts) => client(!!opts), { env: { get: (k) => e[k] } }, Res, fakeFetch);
+    const call = async (body, auth = 'Bearer t') => { const res = await handler({ headers: { get: () => auth }, json: async () => body }); return { status: res.status, body: res.json() }; };
+    return { call, rpcs, fetches };
+  }
+  it('gates: Stripe key, live approvals, session', async () => {
+    expect((await make({ env: { STRIPE_SECRET_KEY: undefined } }).call({ placementId: 'p' })).status).toBe(503);
+    expect((await make({ env: { STRIPE_SECRET_KEY: 'sk_live_1', STRIPE_LIVE_APPROVED: 'true' } }).call({ placementId: 'p' })).status).toBe(503);
+    expect((await make().call({ placementId: 'p' }, null)).status).toBe(401);
+  });
+  it('someone else\'s or a started/unpaid placement is refused by the database and Stripe is never called', async () => {
+    for (const [err, status] of [['sponsored_cancel:not_yours', 403], ['sponsored_cancel:not_cancellable', 409]]) {
+      const m = make({ reqError: err });
+      expect((await m.call({ placementId: 'p' })).status).toBe(status);
+      expect(m.fetches).toHaveLength(0);
+    }
+  });
+  it('runs as the caller, refunds the database amount in full, and records success', async () => {
+    const m = make();
+    const r = await m.call({ placementId: 'p', amount: 1 });
+    expect(r.status).toBe(200);
+    expect(m.rpcs[0]).toMatchObject({ name: 'owner_request_sponsored_cancel', asUser: true });
+    expect(m.fetches[0].init.body).toContain('amount=2500');
+    expect(m.fetches[0].init.headers['Idempotency-Key']).toBe('sponsored-refund-act9');
+    expect(m.rpcs.find((x) => x.name === 'sponsored_admin_record_refund').args).toMatchObject({ ok_param: true, stripe_refund_id_param: 're_9' });
+  });
+  it('a Stripe failure is recorded as failed (the database restores the placement) and says so', async () => {
+    const m = make({ stripe: { ok: false, body: { error: { message: 'no' } } } });
+    const r = await m.call({ placementId: 'p' });
+    expect(r.status).toBe(502);
+    expect(r.body.error).toMatch(/unchanged/);
+    expect(m.rpcs.find((x) => x.name === 'sponsored_admin_record_refund').args).toMatchObject({ ok_param: false });
   });
 });

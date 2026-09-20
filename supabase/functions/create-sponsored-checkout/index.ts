@@ -28,6 +28,7 @@ const PROBLEMS: Record<string, [number, string]> = {
   already_holding: [409, 'You already have a spotlight booked or in checkout.'],
   slot_taken: [409, 'That week is already taken in your area for your category. Try another start date.'],
   bad_item: [422, 'That item cannot be promoted.'],
+  terms_not_accepted: [422, 'Please accept the current spotlight terms to continue.'],
   screening_not_clean: [422, "We can't run that text as an ad. Please edit it and try again."],
 };
 
@@ -63,6 +64,9 @@ serve(async (req) => {
     const startDate = typeof body?.startDate === 'string' ? body.startDate : '';
     const title = typeof body?.title === 'string' ? body.title.trim() : '';
     const description = typeof body?.description === 'string' ? body.description.trim() : '';
+    // Acceptance is explicit (a ticked box, not a default) and is recorded against the terms version the person saw.
+    const termsVersion = typeof body?.termsVersion === 'string' ? body.termsVersion : '';
+    if (body?.acceptedTerms !== true || !termsVersion) return json({ error: PROBLEMS.terms_not_accepted[1], code: 'terms_not_accepted' }, 422);
     if (!itemKind || (itemKind === 'offer' && !itemId)) return json({ error: 'Choose what to promote.' }, 400);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return json({ error: PROBLEMS.bad_start[1] }, 422);
     const startsAt = new Date(`${startDate}T00:00:00Z`);
@@ -88,7 +92,7 @@ serve(async (req) => {
 
     const { data: begun, error: beginError } = await admin.rpc('sponsored_begin_purchase', {
       user_id_param: userId, item_kind_param: itemKind, item_id_param: itemId, starts_param: startsAt.toISOString(),
-      title_param: title, description_param: description || null, screening_tier_param: 'low',
+      title_param: title, description_param: description || null, screening_tier_param: 'low', terms_version_param: termsVersion,
     });
     if (beginError) {
       const code = /sponsored:(\w+)/.exec(beginError.message || '')?.[1];

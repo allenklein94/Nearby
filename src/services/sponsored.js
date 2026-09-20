@@ -81,9 +81,9 @@ export async function cancelMySponsoredHold(placementId) {
 }
 
 // Returns { url } to open Stripe Checkout, or { error }. The server decides the price and screens the text.
-export async function startSponsoredCheckout({ itemKind, itemId, startDate, title, description }) {
+export async function startSponsoredCheckout({ itemKind, itemId, startDate, title, description, termsVersion, acceptedTerms }) {
   const { data, error } = await supabase.functions.invoke('create-sponsored-checkout', {
-    body: { itemKind, itemId, startDate, title, description },
+    body: { itemKind, itemId, startDate, title, description, termsVersion, acceptedTerms: acceptedTerms === true },
   });
   if (error) {
     let message = "Couldn't start checkout. You have not been charged.";
@@ -110,4 +110,15 @@ export async function requestSponsoredRefund({ paymentId, kind, undeliveredDays 
     return { error: message };
   }
   return data?.refunded ? { amountCents: data.amountCents } : { error: data?.error || 'Nothing was refunded.' };
+}
+
+// A business cancels its own PAID spotlight before it starts (full refund). The database decides eligibility and amount.
+export async function cancelPaidSponsoredPlacement(placementId) {
+  const { data, error } = await supabase.functions.invoke('cancel-sponsored-placement', { body: { placementId } });
+  if (error) {
+    let message = 'The cancellation could not be completed. Your spotlight is unchanged.';
+    try { const b = await error.context?.json?.(); if (b?.error) message = b.error; } catch (e) { /* keep default */ }
+    return { error: message };
+  }
+  return data?.cancelled ? { amountCents: data.amountCents } : { error: data?.error || 'Your spotlight is unchanged.' };
 }
