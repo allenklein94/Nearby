@@ -43,6 +43,7 @@ import {
 } from '../services/celebrateSomething';
 import { OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { WHEN_PRESETS } from '../utils/whenPresets';
+import { isOccasionInviteExpired, expiredDateLabel } from '../utils/inviteExpiry';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -786,7 +787,19 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
           </FadeInState>
         )}
 
-        {detail.myStatus === 'invited' && detail.status === 'voting' && (
+        {detail.myStatus === 'invited' && detail.status === 'voting' && isOccasionInviteExpired(detail.scheduledDate) && (
+          <View style={styles.inviteRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.declineButtonText}>Invitation expired</Text>
+              <Text style={styles.subheader}>{expiredDateLabel(detail.scheduledDate)}</Text>
+            </View>
+            <TouchableOpacity style={styles.declineButton} onPress={() => handleRespond(false)} disabled={acting} accessibilityRole="button" accessibilityLabel="Dismiss expired invitation">
+              <Text style={styles.declineButtonText}>Dismiss</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {detail.myStatus === 'invited' && detail.status === 'voting' && !isOccasionInviteExpired(detail.scheduledDate) && (
           <View style={styles.inviteRow}>
             <TouchableOpacity style={styles.declineButton} onPress={() => handleRespond(false)} disabled={acting} accessibilityRole="button" accessibilityLabel="Decline invite">
               <Text style={styles.declineButtonText}>Can't Make It</Text>

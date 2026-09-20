@@ -54,6 +54,7 @@ import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { needsApproval, joinLabel } from '../utils/gatheringJoinMode';
+import { isGatheringRequestExpired, expiredDateLabel } from '../utils/inviteExpiry';
 
 const VIBE_SCALES = [
   { key: 'energy_level', label: 'Energy', lowLabel: 'Chill', highLabel: 'High energy' },
@@ -1145,7 +1146,14 @@ export default function GatheringDetailScreen({ route, navigation }) {
             </View>
           ) : gathering.myStatus === 'pending' ? (
             <View style={styles.pendingPanel}>
-              <Text style={styles.pendingText}>Request sent — the host will review and let you know.</Text>
+              {isGatheringRequestExpired(gathering) ? (
+                <>
+                  <Text style={styles.pendingText}>Request expired</Text>
+                  <Text style={styles.pendingText}>{expiredDateLabel(gathering.scheduled_at)}</Text>
+                </>
+              ) : (
+                <Text style={styles.pendingText}>Request sent — the host will review and let you know.</Text>
+              )}
               <TouchableOpacity
                 onPress={confirmLeave}
                 disabled={leaving}
@@ -1153,7 +1161,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 accessibilityLabel="Withdraw your request to join"
                 accessibilityRole="button"
               >
-                <Text style={styles.leaveLink}>{leaving ? 'Withdrawing...' : 'Withdraw Request'}</Text>
+                <Text style={styles.leaveLink}>{leaving ? 'Withdrawing...' : isGatheringRequestExpired(gathering) ? 'Dismiss' : 'Withdraw Request'}</Text>
               </TouchableOpacity>
             </View>
           ) : gathering.visibility === 'invite_only' && !gathering.hasInviteOnlyAccess ? (
