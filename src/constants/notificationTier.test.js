@@ -51,3 +51,11 @@ describe('notificationTier', () => {
     }
   });
 });
+
+describe('a business response completes the loop the person started (item 68)', () => {
+  it('business_offer_received is an important (loud) push and taps route to the request', () => {
+    const { notificationTier } = require('./notificationTier');
+    expect(notificationTier('business_offer_received')).toBe('important');
+    expect(require('fs').readFileSync('src/services/notifications.js', 'utf8')).toMatch(/case 'business_offer_received':/);
+  });
+});
