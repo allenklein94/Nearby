@@ -1,4 +1,5 @@
 import { peopleTonightBanner, countTonightSupply } from '../utils/meetTonight';
+import EmptyCopy from '../components/EmptyCopy';
 import { getNearbyMatches } from '../services/proximity';
 import { getFriendDiscoveryCandidates } from '../services/friendDiscovery';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
@@ -2160,7 +2161,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 </View>
               ) : placesToShow.length === 0 ? (
                 <>
-                  <Text style={styles.emptyTextTight}>Nothing found nearby{typeFilter === 'places' ? ' in this category' : ''}.</Text>
+                  <EmptyCopy id={isSearching ? 'places_search' : 'places_category'} vars={{ query: (searchQuery ?? '').trim() }} />
                   {isSearching ? (
                     <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
                       <Text style={styles.emptyActionText}>Clear Search →</Text>

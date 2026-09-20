@@ -1,4 +1,5 @@
 import { canRespondToOpportunity } from '../utils/objectLifecycle';
+import EmptyCopy from '../components/EmptyCopy';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -3312,7 +3313,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   )}
                 </>
               ) : (
-                <Text style={styles.emptyText}>No data yet for this business.</Text>
+                <EmptyCopy id="business_stats" />
               )}
               {selectedPartner && (
                 <View style={[styles.gatheringRow, { marginTop: spacing.lg }]}>
@@ -3756,11 +3757,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   let it pass.
                 </Text>
                 {scoredOpportunities.length === 0 ? (
-                  <TouchableOpacity onPress={() => openPostAvailabilityModal()} accessibilityRole="button" accessibilityLabel="Post availability so Nearby can match you">
-                    <Text style={styles.emptyText}>
-                      Nothing new right now. Nearby is watching for requests that fit — post your availability and more will find you. <Text style={{ color: colors.primary, fontWeight: '700' }}>Post availability</Text>
-                    </Text>
-                  </TouchableOpacity>
+                  <View style={{ alignItems: 'center', paddingVertical: spacing.md }}>
+                    <EmptyCopy id="business_opportunities" />
+                    <TouchableOpacity onPress={() => openPostAvailabilityModal()} accessibilityRole="button" accessibilityLabel="Post availability so Nearby can match you" style={{ marginTop: spacing.sm }}>
+                      <Text style={{ color: colors.primary, fontWeight: '700' }}>Post availability →</Text>
+                    </TouchableOpacity>
+                  </View>
                 ) : (
                   scoredOpportunities.map((o) => {
                     // "Business Story" plan, Phase 4: closes the real,

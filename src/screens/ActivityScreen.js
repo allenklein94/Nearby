@@ -1,4 +1,5 @@
 import { businessReplyTitle } from '../utils/offerCopy';
+import EmptyCopy from '../components/EmptyCopy';
 import { canDo, inviteLifecycleState } from '../utils/objectLifecycle';
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Image, Alert } from 'react-native';
@@ -598,9 +599,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
           ListEmptyComponent={hasAnyGroupContent ? null : (
             <FadeInState opportunity style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🔔</Text>
-              <Text style={styles.emptyText}>
-                Nothing new yet — notices, crossed paths, and other activity will show up here.
-              </Text>
+              <EmptyCopy id="activity" />
               {/* Thursday plan item 25: a real next action instead of a
                   dead end while waiting for something to show up here. */}
               <View style={styles.emptyActionsRow}>

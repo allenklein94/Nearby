@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, SafeAreaView, ActivityIndicator, Linking } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { FilterTransition, TapActiveChip, NLoader } from '../motion';
@@ -185,9 +186,7 @@ export default function PlacesScreen({ navigation }) {
           ListEmptyComponent={
             <FadeInState opportunity style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🔍</Text>
-              <Text style={styles.emptyText}>
-                {isSearching ? `No places match "${searchQuery.trim()}" nearby.` : 'Nothing found nearby in this category.'}
-              </Text>
+              <EmptyCopy id={isSearching ? 'places_search' : 'places_category'} vars={{ query: searchQuery.trim() }} />
               {/* Item 26 escape hatch: a real place can't be "created" the
                   way a gathering/community can, but a user can ask
                   businesses directly -- same AskBusinessScreen the Create

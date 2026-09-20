@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import { PullToRefresh, SkeletonFeed } from '../motion';
 import FadeInState from '../components/FadeInState';
@@ -190,11 +191,7 @@ export default function PlansScreen({ navigation, route }) {
     return null;
   };
 
-  const emptyCopy = {
-    upcoming: "Nothing on your calendar yet — join or host something to see it here.",
-    hosting: "You're not hosting anything yet.",
-    past: "No past gatherings yet.",
-  }[tab];
+  const emptyId = { upcoming: 'plans_upcoming', hosting: 'plans_hosting', past: 'plans_past' }[tab];
 
   const listData = [];
   if (tab === 'hosting') {
@@ -271,7 +268,7 @@ export default function PlansScreen({ navigation, route }) {
           ListEmptyComponent={
             <FadeInState opportunity style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📅</Text>
-              <Text style={styles.emptyText}>{emptyCopy}</Text>
+              <EmptyCopy id={emptyId} />
               {/* Item 56 ("no dead ends"): a real next action per tab
                   instead of leaving the user with nothing to do. */}
               <View style={styles.emptyActionsRow}>
