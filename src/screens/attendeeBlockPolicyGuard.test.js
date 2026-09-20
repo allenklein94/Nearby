@@ -42,3 +42,24 @@ describe('legacy entries view is read-only (migration 20270140)', () => {
     expect(sql).not.toMatch(/security_invoker/i);
   });
 });
+
+describe('anon write privileges revoked (migrations 20270141 / 20270142)', () => {
+  const strip = (f) => fs.readFileSync(path.join(__dirname, '../../supabase/migrations', f), 'utf8').replace(/--.*$/gm, '');
+  const writes = strip('20270141_anon_write_privileges_revoked.sql');
+  const maintain = strip('20270142_anon_maintain_privilege_revoked.sql');
+  test('every write-class privilege is revoked from anon on all public tables, and defaults are closed', () => {
+    expect(writes).toMatch(/revoke insert, update, delete, truncate, references, trigger on public\.%I from anon/);
+    expect(writes).toMatch(/alter default privileges in schema public revoke insert, update, delete, truncate, references, trigger on tables from anon/);
+  });
+  test('the ONLY anon write grant is INSERT on business_acquisition_events (public landing page)', () => {
+    const grants = writes.match(/grant [^;]*;/gi) ?? [];
+    expect(grants).toEqual(['grant insert on public.business_acquisition_events to anon;']);
+  });
+  test('anon SELECT is never revoked (cross-table policies subquery these tables)', () => {
+    expect(writes).not.toMatch(/revoke[^;]*\bselect\b/i);
+    expect(maintain).not.toMatch(/revoke[^;]*\bselect\b/i);
+  });
+  test('MAINTAIN revoke is guarded by server version (replay image is PG15)', () => {
+    expect(maintain).toMatch(/server_version_num'\)::int >= 170000/);
+  });
+});
