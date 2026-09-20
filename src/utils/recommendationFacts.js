@@ -5,11 +5,10 @@
 // Each part appears only when it is real: no distance without a measured distance, no reason without a real signal.
 import { becauseYouLikeReason, categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
 import { formatHeroDateTime } from './timeContext';
+import { formatDistance } from './formatDistance';
 
-export function formatDistance(miles) {
-  if (typeof miles !== 'number' || !Number.isFinite(miles) || miles < 0) return null;
-  return miles < 0.1 ? 'Very close' : `${miles.toFixed(1)} mi`;
-}
+// The one distance format lives in utils/formatDistance.js (re-exported for existing callers).
+export { formatDistance };
 
 export function recommendationFacts(g) {
   if (!g) return { why: null, distance: null, when: null, meta: null };

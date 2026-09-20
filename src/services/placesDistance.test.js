@@ -11,7 +11,7 @@ test('straightLineMiles is real and null-safe', () => {
 });
 test('placeDistanceLabel', () => {
   expect(placeDistanceLabel(null)).toBeNull();
-  expect(placeDistanceLabel(0.05)).toBe('Very close');
+  expect(placeDistanceLabel(0.05)).toBe('250 ft away');
   expect(placeDistanceLabel(1.234)).toBe('1.2 mi away');
 });
 test('directions url keeps the place id when known', () => {

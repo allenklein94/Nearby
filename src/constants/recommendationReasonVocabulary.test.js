@@ -36,7 +36,7 @@ describe('categorizeReasonText', () => {
     expect(categorizeReasonText('1 attendee is also first-timers')).toBe(REASON_CATEGORIES.CONTEXT);
     expect(categorizeReasonText('3 attendees are also first-timers')).toBe(REASON_CATEGORIES.CONTEXT);
     expect(categorizeReasonText('Beginner friendly')).toBe(REASON_CATEGORIES.CONTEXT);
-    expect(categorizeReasonText('Very close')).toBe(REASON_CATEGORIES.DISTANCE);
+    expect(categorizeReasonText('800 ft away')).toBe(REASON_CATEGORIES.DISTANCE);
     expect(categorizeReasonText('0.3 mi away')).toBe(REASON_CATEGORIES.DISTANCE);
     expect(categorizeReasonText('12.7 mi away')).toBe(REASON_CATEGORIES.DISTANCE);
   });

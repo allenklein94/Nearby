@@ -1,3 +1,4 @@
+import { formatDistanceAway } from '../utils/formatDistance';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { supabase } from './supabase';
@@ -31,7 +32,7 @@ export function straightLineMiles(lat1, lng1, lat2, lng2) {
 
 export function placeDistanceLabel(miles) {
   if (miles == null) return null;
-  return miles < 0.1 ? 'Very close' : `${miles.toFixed(1)} mi away`;
+  return formatDistanceAway(miles);
 }
 
 export async function searchNearbyPlaces(latitude, longitude, category, keyword = null) {

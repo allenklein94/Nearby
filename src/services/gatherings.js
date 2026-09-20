@@ -1,3 +1,4 @@
+import { formatDistanceAway } from '../utils/formatDistance';
 import { supabase } from './supabase';
 import { randomUUID } from 'expo-crypto';
 import * as Location from 'expo-location';
@@ -193,7 +194,7 @@ async function enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, myInt
         ...gathering,
         matchesYourInterests: gathering.interest_tag ? myInterests.includes(gathering.interest_tag) : false,
         distanceLabel: distanceMiles !== null
-          ? (distanceMiles < 0.1 ? 'Very close' : `${distanceMiles.toFixed(1)} mi away`)
+          ? formatDistanceAway(distanceMiles)
           : 'Nearby',
         distanceMiles,
         latitude: gathering.show_on_map ? (dist?.fuzzed_lat ?? null) : null,
@@ -1020,7 +1021,7 @@ export async function getGatheringById(gatheringId) {
       });
       distanceMiles = distances?.[0]?.distance_miles ?? null;
       distanceLabel = distanceMiles !== null
-        ? (distanceMiles < 0.1 ? 'Very close' : `${distanceMiles.toFixed(1)} mi away`)
+        ? formatDistanceAway(distanceMiles)
         : null;
       // Same fuzzed coordinates the map view already uses (never the
       // real precise_lat/lng) — good enough for a local weather lookup,

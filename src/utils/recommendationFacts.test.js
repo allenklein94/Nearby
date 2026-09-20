@@ -28,7 +28,7 @@ describe('recommendationFacts (why / how far / when)', () => {
   });
 
   test('distance formatting', () => {
-    expect(formatDistance(0.04)).toBe('Very close');
+    expect(formatDistance(0.04)).toBe('200 ft');
     expect(formatDistance(null)).toBeNull();
     expect(formatDistance(-1)).toBeNull();
   });

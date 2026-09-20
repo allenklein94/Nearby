@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { formatDistance } from '../utils/formatDistance';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
@@ -470,7 +471,7 @@ export default function DateProposalScreen({ navigation, route }) {
                             {[
                               result.offer_type,
                               result.price != null ? `${moneyLabel(result.price)}` : null,
-                              result.distance_miles != null ? `${result.distance_miles.toFixed(1)} mi` : null,
+                              formatDistance(result.distance_miles),
                               result.remaining_capacity != null ? `${countLabel(result.remaining_capacity, 'spot')} left` : null,
                             ]
                               .filter(Boolean)

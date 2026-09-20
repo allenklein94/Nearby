@@ -103,9 +103,8 @@ const PATTERN_MATCHES = [
   // Insights plan, 2026-09-18) -- filterToMyConnections() over the
   // gathering's own approved attendees, never a fabricated count.
   { pattern: /^\d+ of your friends (is|are) attending$/, category: REASON_CATEGORIES.CONTEXT },
-  // getGatheringById()'s real formatted distanceLabel ("Very close" or
-  // "0.3 mi away").
-  { pattern: /^(Very close|\d+(\.\d+)? mi away)$/, category: REASON_CATEGORIES.DISTANCE },
+  // The standard distance label (utils/formatDistance.js formatDistanceAway): "1.2 mi away", "800 ft away", "Under 100 ft away".
+  { pattern: /^(\d+(\.\d+)? mi away|\d+ ft away|Under 100 ft away)$/, category: REASON_CATEGORIES.DISTANCE },
   // FriendDiscoverySwipeCards.js's real sharedBits entries.
   { pattern: /^\d+ interests? in common$/, category: REASON_CATEGORIES.INTEREST },
   { pattern: /^in \d+ of your communities$/, category: REASON_CATEGORIES.CONTEXT },

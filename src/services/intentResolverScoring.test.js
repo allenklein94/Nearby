@@ -273,7 +273,7 @@ describe('getBusinessAvailabilityReasons', () => {
   });
 
   it('formats a real distance_miles into a reason, never inventing one when absent or far', () => {
-    expect(getBusinessAvailabilityReasons({ distance_miles: 0.2 })).toEqual(['Very close']);
+    expect(getBusinessAvailabilityReasons({ distance_miles: 0.2 })).toEqual(['0.2 mi away']);
     expect(getBusinessAvailabilityReasons({ distance_miles: 1.4 })).toEqual(['1.4 mi away']);
     expect(getBusinessAvailabilityReasons({ distance_miles: 5 })).toEqual([]);
     expect(getBusinessAvailabilityReasons({})).toEqual([]);

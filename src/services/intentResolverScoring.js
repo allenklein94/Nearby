@@ -1,3 +1,4 @@
+import { formatDistanceAway } from '../utils/formatDistance';
 // 10/10 roadmap Part 8 (see CLAUDE.md's "10/10 roadmap" plan): technical
 // validation. Pure functions extracted out of intentResolver.js verbatim
 // (no behavior change) so they're directly unit-testable without dragging
@@ -350,7 +351,7 @@ export function getBusinessAvailabilityReasons(row, { category, attributes, cuis
   ));
   if (matchesCategory) reasons.push("Matches what you're looking for");
   if (row.distance_miles != null && row.distance_miles < 2) {
-    reasons.push(row.distance_miles < 0.3 ? 'Very close' : `${row.distance_miles.toFixed(1)} mi away`);
+    reasons.push(formatDistanceAway(row.distance_miles));
   }
   if (cuisine && row.cuisine && row.cuisine === cuisine) {
     const label = CUISINE_OPTIONS.find((c) => c.key === cuisine)?.label ?? cuisine;

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatDistance } from '../utils/formatDistance';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity, searchActiveBusinessAvailability } from '../services/businessFulfillment';
@@ -784,7 +785,7 @@ export default function AskBusinessScreen({ navigation, route }) {
                         {[
                           result.offer_type,
                           result.price != null ? `${moneyLabel(result.price)}` : null,
-                          result.distance_miles != null ? `${result.distance_miles.toFixed(1)} mi` : null,
+                          formatDistance(result.distance_miles),
                           result.remaining_capacity != null ? `${countLabel(result.remaining_capacity, 'spot')} left` : null,
                         ]
                           .filter(Boolean)
