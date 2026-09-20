@@ -109,7 +109,7 @@ export async function getActiveOffers(lat = null, lng = null) {
 
   const { data, error } = await supabase
     .from('brand_offers')
-    .select('*, brand_partners(name, logo_url, description, cuisine, attributes)')
+    .select('*, brand_partners(name, logo_url, description, cuisine, attributes, weather_setting)')
     .eq('active', true)
     .is('gathering_id', null)
     .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
@@ -177,7 +177,7 @@ export async function searchOffers(queryText, lat = null, lng = null) {
 
   const { data, error } = await supabase
     .from('brand_offers')
-    .select('*, brand_partners(name, logo_url, description, cuisine, attributes)')
+    .select('*, brand_partners(name, logo_url, description, cuisine, attributes, weather_setting)')
     .in('id', ids)
     .order('created_at', { ascending: false });
   if (error) {
@@ -921,6 +921,15 @@ export async function setBusinessOfferedOccasions(partnerId, occasions) {
   const { error } = await supabase.rpc('set_business_offered_occasions', {
     partner_id_param: partnerId,
     occasions_param: occasions ?? [],
+  });
+  if (error) throw error;
+}
+
+// Item 63: 'indoor' | 'outdoor' | 'weather_dependent' | null (= not said, no weather effect). Migration 20270162.
+export async function setBusinessWeatherSetting(partnerId, setting) {
+  const { error } = await supabase.rpc('set_business_weather_setting', {
+    partner_id_param: partnerId,
+    setting_param: setting ?? null,
   });
   if (error) throw error;
 }

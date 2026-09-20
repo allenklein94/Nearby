@@ -62,3 +62,19 @@ export function isWeatherOutdoorBiased(weather) {
   if (isWeatherIndoorBiased(weather)) return false;
   return weather.outdoor_favorable === true;
 }
+
+// Item 63: a business's own weather_setting ('indoor' | 'outdoor' | 'weather_dependent' | null) against today's weather.
+// A RANKING nudge only -- an offer is never hidden. Points are the caller's `weight` (a positive number); the return is
+// signed. Rules: outdoor = down in indoor-worthy weather, up in a known dry outdoor window; weather_dependent = down in
+// indoor-worthy weather, never promoted; indoor = up in indoor-worthy weather, never penalized; null/unknown weather = 0.
+export const BUSINESS_WEATHER_SETTINGS = ['indoor', 'outdoor', 'weather_dependent'];
+
+export function businessWeatherAdjustment(setting, weather, weight) {
+  if (!BUSINESS_WEATHER_SETTINGS.includes(setting) || !weather || !(weight > 0)) return 0;
+  const indoorWorthy = isWeatherIndoorBiased(weather);
+  const outdoorWindow = isWeatherOutdoorBiased(weather);
+  if (setting === 'indoor') return indoorWorthy ? weight : 0;
+  if (setting === 'weather_dependent') return indoorWorthy ? -weight : 0;
+  if (indoorWorthy) return -weight;
+  return outdoorWindow ? weight : 0;
+}

@@ -9,7 +9,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityOccasions, setBusinessOfferedOccasions } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
 // P2 remediation item 11 (CLAUDE.md) -- reuse the admin queue's own real
@@ -57,7 +57,7 @@ import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import DemandNearYouCard from '../components/DemandNearYouCard';
 import TellNearbyBusinessCard from '../components/TellNearbyBusinessCard';
 import { describeDemandSignals } from '../utils/demandSignals';
-import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, OFFERED_OCCASION_OPTIONS, occasionLabel, occasionPhrase, dietaryLabel } from '../constants/businessAttributes';
+import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, OFFERED_OCCASION_OPTIONS, WEATHER_SETTING_OPTIONS, occasionLabel, occasionPhrase, dietaryLabel } from '../constants/businessAttributes';
 import { planAddonLabel } from '../constants/planAddons';
 import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
@@ -1023,6 +1023,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       await setBusinessOfferedOccasions(selectedPartner.id, next);
     } catch (e) {
       setSelectedPartner((prev) => ({ ...prev, offered_occasions: current }));
+      Alert.alert('Error', e.message);
+    }
+  }
+
+  // Item 63: tap a setting to choose it, tap it again to clear (= not said, no weather effect). Saves per tap.
+  async function handlePickWeatherSetting(key) {
+    if (!selectedPartner) return;
+    const current = selectedPartner.weather_setting ?? null;
+    const next = current === key ? null : key;
+    setSelectedPartner((prev) => ({ ...prev, weather_setting: next }));
+    try {
+      await setBusinessWeatherSetting(selectedPartner.id, next);
+    } catch (e) {
+      setSelectedPartner((prev) => ({ ...prev, weather_setting: current }));
       Alert.alert('Error', e.message);
     }
   }
@@ -5013,6 +5027,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 </View>
                 <Text style={styles.helperText}>
                   Requests for these occasions reach you first. Add a package under Occasion Packages to offer one automatically.
+                </Text>
+                {/* Weather sensitivity (item 63): say it once; Nearby ranks your offers with the weather (never hides them). */}
+                <Text style={styles.sectionHeader}>Is your experience affected by weather?</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {WEATHER_SETTING_OPTIONS.map((o) => {
+                    const selected = (selectedPartner?.weather_setting ?? null) === o.key;
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handlePickWeatherSetting(o.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${o.label}${selected ? ', selected' : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <Text style={styles.helperText}>
+                  Outdoor: shown less when rain is coming, more in good weather. Weather dependent: shown less in bad weather. Indoor: shown more in bad weather. Tap again to clear.
                 </Text>
 </>
 )}

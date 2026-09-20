@@ -383,3 +383,10 @@ export function personalOccasionTypeGroupOptions() {
     g.key === 'custom' && lifeEvent ? { ...g, options: [...g.options, lifeEvent] } : g
   ));
 }
+
+// Item 63: the three weather-sensitivity choices a business can make about what it offers (null = not said).
+export const WEATHER_SETTING_OPTIONS = [
+  { key: 'indoor', label: 'Indoor', icon: '🏠' },
+  { key: 'outdoor', label: 'Outdoor', icon: '☀️' },
+  { key: 'weather_dependent', label: 'Weather dependent', icon: '🌦️' },
+];

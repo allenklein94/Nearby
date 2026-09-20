@@ -15,6 +15,7 @@ import { comfortFits } from '../constants/socialComfort';
 import { SCORE_INTEREST_MATCH, SCORE_CLOSE_DISTANCE, SCORE_HAPPENING_NOW, SCORE_OWN_NETWORK } from './intentResolverScoring';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { gatheringWeatherWindow } from '../utils/weatherWindow';
+import { businessWeatherAdjustment } from '../utils/weatherBias';
 // P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): shared, canonical
 // reason text -- closes a real, confirmed duplication where these exact
 // weather strings were independently re-typed, verbatim, in
@@ -155,7 +156,7 @@ function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel,
   return { score, reasons };
 }
 
-function scoreOffer(offer, positivePartnerIds, maturity) {
+function scoreOffer(offer, positivePartnerIds, maturity, weather = null) {
   let score = 0;
   const reasons = [];
 
@@ -181,6 +182,11 @@ function scoreOffer(offer, positivePartnerIds, maturity) {
     score += weightSignal(SCORE_OWN_NETWORK, SIGNAL_SOURCES.TRANSACTIONAL, maturity);
     reasons.push('You loved this business last time');
   }
+
+  // A business's own indoor/outdoor/weather-dependent declaration against today's weather (item 63). Ranks, never hides,
+  // and adds no reason line (weather stays a quiet signal, item 62). CONTEXTUAL like the gathering weather bonus.
+  const weatherPoints = businessWeatherAdjustment(offer.brand_partners?.weather_setting, weather, SCORE_HAPPENING_NOW);
+  if (weatherPoints !== 0) score += weightSignal(weatherPoints, SIGNAL_SOURCES.CONTEXTUAL, maturity);
 
   return { score, reasons };
 }
@@ -222,7 +228,7 @@ export function buildHomeRecommendations({
 
   for (const offer of offers) {
     if (excludeIds.has(offer.id)) continue;
-    const { score, reasons } = scoreOffer(offer, positivePartnerIds, maturity);
+    const { score, reasons } = scoreOffer(offer, positivePartnerIds, maturity, weather);
     if (reasons.length === 0) continue;
     candidates.push({ type: 'perk', id: offer.id, title: offer.title, reasons, score, data: offer });
   }
