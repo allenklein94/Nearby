@@ -56,8 +56,8 @@ import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { needsApproval, joinLabel } from '../utils/gatheringJoinMode';
-import { isGatheringRequestExpired, expiredDateLabel } from '../utils/inviteExpiry';
-import { isGatheringPast, isGatheringUpcoming } from '../utils/objectState';
+import { expiredDateLabel } from '../utils/inviteExpiry';
+import { gatheringViewerState } from '../utils/objectState';
 
 const VIBE_SCALES = [
   { key: 'energy_level', label: 'Energy', lowLabel: 'Chill', highLabel: 'High energy' },
@@ -117,10 +117,12 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const notificationReason = route.params?.notificationReason ?? null;
   const notificationSuggestsInvite = route.params?.notificationSuggestsInvite ?? false;
   const openJoinHandled = useRef(false);
+  // One explicit viewer state (relation + time) instead of re-combining myStatus/isHost/date per block.
+  const viewer = gathering ? gatheringViewerState(gathering) : null;
   useEffect(() => {
     if (!openJoinRequested || openJoinHandled.current || !gathering) return;
     openJoinHandled.current = true;
-    const blocked = gathering.isHost || gathering.myStatus || isGatheringPast(gathering)
+    const blocked = viewer.relation !== 'none' || gathering.myStatus || !viewer.actionable
       || (gathering.visibility === 'invite_only' && !gathering.hasInviteOnlyAccess);
     if (!blocked) setIntentModalVisible(true);
   }, [openJoinRequested, gathering]);
@@ -530,7 +532,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
     pending: formatPlaceStatusLabel({ place: 'pending', ...placeOfferCounts }),
     todo: 'Find a place',
   };
-  const gatheringIsUpcoming = isGatheringUpcoming(gathering);
+  const gatheringIsUpcoming = viewer?.actionable ?? false;
   const canActOnPlace = Boolean(businessRequest || acceptedBusinessOffer || gatheringIsUpcoming);
   function handlePlaceRowPress() {
     if (businessRequest || acceptedBusinessOffer) {
@@ -607,13 +609,13 @@ export default function GatheringDetailScreen({ route, navigation }) {
             </Text>
           )}
 
-          {gathering.isHost ? (
+          {viewer.relation === 'hosting' ? (
             <GatheringStatusBadge status="hosting" />
-          ) : gathering.myStatus === 'approved' ? (
+          ) : viewer.relation === 'attending' ? (
             <GatheringStatusBadge status="going" />
-          ) : gathering.myStatus === 'waitlisted' ? (
+          ) : viewer.relation === 'waitlisted' ? (
             <GatheringStatusBadge status="waitlisted" />
-          ) : gathering.myStatus === 'pending' ? (
+          ) : viewer.relation === 'requested' ? (
             <GatheringStatusBadge status="interested" />
           ) : null}
 
@@ -659,7 +661,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
           {gathering.description ? <Text style={styles.description}>{gathering.description}</Text> : null}
 
-          {!gathering.isHost && gathering.myStatus === 'approved' && isGatheringPast(gathering) && (
+          {viewer.relation === 'attending' && viewer.time === 'past' && (
             <GatheringFeedbackPrompt gatheringId={gatheringId} />
           )}
 
@@ -939,7 +941,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   "Manage Community" label -- this label makes Gatherings'
                   own equivalent (Edit/Cancel) visually match, same links,
                   same behavior, just now grouped and named to match. */}
-              {isGatheringUpcoming(gathering) && (
+              {viewer.actionable && (
                 <>
                   <Text style={styles.manageSectionLabel}>Manage Gathering</Text>
                   <TouchableOpacity
@@ -968,7 +970,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
               >
                 <Text style={styles.hostBannerLink}>🤝 Invite friends →</Text>
               </TouchableOpacity>
-              {isGatheringUpcoming(gathering) && (
+              {viewer.actionable && (
                 acceptedBusinessOffer ? (
                   // Gap #1: the accepted business offer, shown inline
                   // instead of only ever living on a separate
@@ -1090,7 +1092,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   </View>
                 )
               )}
-              {!gathering.community_id && isGatheringPast(gathering) && (
+              {!gathering.community_id && viewer.time === 'past' && (
                 <TouchableOpacity
                   onPress={() => navigation.navigate('CreateCommunity', {
                     seedFromGatheringId: gatheringId,
@@ -1174,7 +1176,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
             </View>
           ) : gathering.myStatus === 'pending' ? (
             <View style={styles.pendingPanel}>
-              {isGatheringRequestExpired(gathering) ? (
+              {viewer.expired ? (
                 <>
                   <Text style={styles.pendingText}>Request expired</Text>
                   <Text style={styles.pendingText}>{expiredDateLabel(gathering.scheduled_at)}</Text>
@@ -1189,7 +1191,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 accessibilityLabel="Withdraw your request to join"
                 accessibilityRole="button"
               >
-                <Text style={styles.leaveLink}>{leaving ? 'Withdrawing...' : isGatheringRequestExpired(gathering) ? 'Dismiss' : 'Withdraw Request'}</Text>
+                <Text style={styles.leaveLink}>{leaving ? 'Withdrawing...' : viewer.expired ? 'Dismiss' : 'Withdraw Request'}</Text>
               </TouchableOpacity>
             </View>
           ) : gathering.visibility === 'invite_only' && !gathering.hasInviteOnlyAccess ? (
@@ -1210,7 +1212,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   {joining ? 'Joining...' : gathering.isFull ? 'JOIN WAITLIST' : gathering.myInterested ? (needsApproval(gathering) ? 'REQUEST TO JOIN' : "I'M GOING") : (needsApproval(gathering) ? 'REQUEST TO JOIN' : 'JOIN GATHERING')}
                 </Text>
               </TouchableOpacity>
-              {isGatheringUpcoming(gathering) && (
+              {viewer.actionable && (
                 <>
                 <TouchableOpacity
                   onPress={toggleInterested}
