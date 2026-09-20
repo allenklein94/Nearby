@@ -59,10 +59,9 @@ import { lightenHex } from '../utils/colorUtils';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { getUserLocation } from '../services/userLocation';
 import { placeDistanceLabel } from '../services/places';
-import { gatheringPrimaryAction, peoplePrimaryAction } from '../utils/primaryAction';
-import { nearbyToMeetRow } from '../utils/meetTonight';
+import { gatheringPrimaryAction } from '../utils/primaryAction';
+import { homeQuickStatRows } from '../utils/homeQuiet';
 
-import { countLabel } from '../utils/plural';
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
 const PERIOD_SECTION_LABELS = { morning: 'Good Morning', afternoon: 'This Afternoon', evening: 'Tonight', weekend: 'This Weekend' };
@@ -2565,76 +2564,33 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
 
-        {/* Home hierarchy audit recommendation #5: a real, minimal label so
-            this card doesn't read as unexplained dense content -- same
-            caption style every other section already uses. */}
-        <Text style={styles.sectionHeader}>Quick Stats</Text>
-        <View style={styles.card}>
-          {/* Item 41 ("make People about people, not dating"): this count
-              is real, but it's a dating-filtered signal (getNearbyMatches()
-              in homeDashboard.js) -- this used to route straight to the
-              standalone, dating-only DiscoveryScreen ('Nearby'), a walled-
-              off destination with no visible Friends option at all, despite
-              the plain "people nearby" label implying something more
-              general. Now lands on Discover's own real People > Dating|
-              Friends toggle instead (same Dating content pre-selected, so
-              this is the same real destination as before), with Friends
-              one tap away rather than absent.
-              Item 60 (CEO test): reworded "N people nearby" -> "N people
-              nearby to meet" so this row itself signals the meet/connect
-              action instead of reading as a passive stat -- a text-only
-              change, keeps the same single-line row style as every other
-              Quick Stats row (no new caption line). */}
-          <TouchableOpacity
-            style={styles.cardRow}
-            onPress={() => navigation.navigate('Discover', { initialMode: 'people' })}
-            accessibilityLabel={`${nearbyToMeetRow(dashboard?.meetPeopleCount).text}, tap to view`}
-            accessibilityRole="button"
-          >
-            <Ionicons name="people-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
-            <Text style={styles.cardText}>{nearbyToMeetRow(dashboard?.meetPeopleCount).text}</Text>
-            {nearbyToMeetRow(dashboard?.meetPeopleCount).showCta ? (
-              <View style={styles.rowCta}><Text style={styles.rowCtaText}>{peoplePrimaryAction(dashboard.meetPeopleCount).label}</Text></View>
-            ) : (
-              <Text style={styles.cardChevron}>›</Text>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'today' })} accessibilityLabel={`${countLabel(dashboard?.gatheringsTodayCount ?? 0, 'gathering')} today, tap to view`} accessibilityRole="button">
-            <Ionicons name="calendar-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
-            <Text style={styles.cardText}>{countLabel(dashboard?.gatheringsTodayCount ?? 0, 'gathering')} today</Text>
-            <Text style={styles.cardChevron}>›</Text>
-          </TouchableOpacity>
-
-          {dashboard?.mostRecentSighting && (
-            <>
-              <View style={styles.divider} />
-              <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('ViewProfile', { userId: dashboard.mostRecentSighting.otherUserId })} accessibilityLabel={`You crossed paths with ${dashboard.mostRecentSighting.profiles?.display_name}`} accessibilityRole="button">
-                <Ionicons name="location-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
-                <Text style={styles.cardText}>Crossed paths with {dashboard.mostRecentSighting.profiles?.display_name}</Text>
-                <Text style={styles.cardChevron}>›</Text>
-              </TouchableOpacity>
-            </>
-          )}
-
-          <View style={styles.divider} />
-
-          <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Messages')} accessibilityLabel={`${dashboard?.unreadCount ?? 0} unread messages, tap to view`} accessibilityRole="button">
-            <Ionicons name="chatbubble-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
-            <Text style={styles.cardText}>{dashboard?.unreadCount ?? 0} unread message{dashboard?.unreadCount === 1 ? '' : 's'}</Text>
-            <Text style={styles.cardChevron}>›</Text>
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Friends')} accessibilityLabel={`${countLabel(dashboard?.friendsCount ?? 0, 'friend')}, tap to view`} accessibilityRole="button">
-            <Ionicons name="people-circle-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
-            <Text style={styles.cardText}>{dashboard?.friendsCount ?? 0} friend{dashboard?.friendsCount === 1 ? '' : 's'}</Text>
-            <Text style={styles.cardChevron}>›</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Item 79: Quick Stats renders only rows with something real; with none, neither the label nor the card shows. */}
+        {homeQuickStatRows(dashboard).length > 0 && (
+          <>
+            <Text style={styles.sectionHeader}>Quick Stats</Text>
+            <View style={styles.card}>
+              {homeQuickStatRows(dashboard).map((row, i) => (
+                <React.Fragment key={row.key}>
+                  {i > 0 && <View style={styles.divider} />}
+                  <TouchableOpacity
+                    style={styles.cardRow}
+                    onPress={() => navigation.navigate(row.screen, row.params)}
+                    accessibilityLabel={`${row.text}, tap to view`}
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name={row.icon} size={20} color={colors.textPrimary} style={styles.cardIcon} />
+                    <Text style={styles.cardText}>{row.text}</Text>
+                    {row.cta ? (
+                      <View style={styles.rowCta}><Text style={styles.rowCtaText}>{row.cta}</Text></View>
+                    ) : (
+                      <Text style={styles.cardChevron}>›</Text>
+                    )}
+                  </TouchableOpacity>
+                </React.Fragment>
+              ))}
+            </View>
+          </>
+        )}
 
         {(attention.shown > 0) && (
           <>
@@ -2772,13 +2728,6 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.recapSummary}>This week: {formatWeeklyRecap(dashboard.weeklyRecap)}</Text>
             <Text style={styles.recapLink}>View your activity →</Text>
           </TouchableOpacity>
-        )}
-
-        {!locationOff && !dashboard?.bestPick && (!dashboard?.trendingGatherings || dashboard.trendingGatherings.length === 0) && (dashboard?.nearbyPeopleCount ?? 0) === 0 && (
-          <View style={styles.quietCard}>
-            <Text style={styles.quietTitle}>Quiet night nearby</Text>
-            <Text style={styles.quietText}>Nothing notable happening right now — but that can change fast. Browse anyway, or check back later.</Text>
-          </View>
         )}
 
         <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('Discover')} accessibilityLabel="Continue browsing" accessibilityRole="button">
