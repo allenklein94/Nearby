@@ -2005,7 +2005,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionHeaderRowLabel}>Gatherings</Text>
                 {isAll && (
-                  <TouchableOpacity onPress={() => navigation.navigate('Gatherings')} accessibilityLabel="See all gatherings" accessibilityRole="button">
+                  <TouchableOpacity onPress={() => setTypeTab('gatherings')} accessibilityLabel="See all gatherings" accessibilityRole="button">
                     <Text style={styles.seeAllInline}>See all →</Text>
                   </TouchableOpacity>
                 )}
@@ -2070,7 +2070,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionHeaderRowLabel}>Communities</Text>
                 {isAll && (
-                  <TouchableOpacity onPress={() => navigation.navigate('Communities')} accessibilityLabel="See all communities" accessibilityRole="button">
+                  <TouchableOpacity onPress={() => setTypeTab('communities')} accessibilityLabel="See all communities" accessibilityRole="button">
                     <Text style={styles.seeAllInline}>See all →</Text>
                   </TouchableOpacity>
                 )}
@@ -2106,7 +2106,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionHeaderRowLabel}>Places</Text>
                 {isAll && places.length > 0 && (
-                  <TouchableOpacity onPress={() => navigation.navigate('Places')} accessibilityLabel="See all places" accessibilityRole="button">
+                  <TouchableOpacity onPress={() => setTypeTab('places')} accessibilityLabel="See all places" accessibilityRole="button">
                     <Text style={styles.seeAllInline}>See all →</Text>
                   </TouchableOpacity>
                 )}
@@ -2202,7 +2202,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionHeaderRowLabel}>Perks</Text>
                 {isAll && (
-                  <TouchableOpacity onPress={() => navigation.navigate('BrandOffers')} accessibilityLabel="See all perks" accessibilityRole="button">
+                  <TouchableOpacity onPress={() => setTypeTab('perks')} accessibilityLabel="See all perks" accessibilityRole="button">
                     <Text style={styles.seeAllInline}>See all →</Text>
                   </TouchableOpacity>
                 )}
