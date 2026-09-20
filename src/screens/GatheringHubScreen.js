@@ -24,6 +24,7 @@ import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import LoadErrorState from '../components/LoadErrorState';
 import { sendNoticeTo } from '../services/noticeActions';
+import { getMyBlockedUsers } from '../services/blockedUsers';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import * as Haptics from 'expo-haptics';
@@ -69,6 +70,9 @@ export default function GatheringHubScreen({ route, navigation }) {
   const [growthInviteModalVisible, setGrowthInviteModalVisible] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [sentNoticeTo, setSentNoticeTo] = useState({});
+  // People I've blocked never show in the meet list (and get no notice button). Only my own blocks are
+  // readable client-side (blocks RLS); counts elsewhere are unchanged.
+  const [blockedIds, setBlockedIds] = useState(new Set());
   const [showAllAttendees, setShowAllAttendees] = useState(false);
   const [hostStats, setHostStats] = useState(null);
 
@@ -87,7 +91,9 @@ export default function GatheringHubScreen({ route, navigation }) {
     setLoading(false);
     if (!g) return;
 
-    const others = g.approvedAttendees.filter((a) => a.user_id !== g.myAttendee?.user_id);
+    const blocked = new Set((await getMyBlockedUsers()).map((b) => b.blocked_id));
+    setBlockedIds(blocked);
+    const others = g.approvedAttendees.filter((a) => a.user_id !== g.myAttendee?.user_id && !blocked.has(a.user_id));
     if (others.length > 0) {
       Promise.all(
         others.map(async (a) => {
@@ -240,7 +246,7 @@ export default function GatheringHubScreen({ route, navigation }) {
   }
 
   const categoryStyle = categoryStyleFor(gathering.interest_tag);
-  const others = gathering.approvedAttendees.filter((a) => a.user_id !== gathering.myAttendee?.user_id);
+  const others = gathering.approvedAttendees.filter((a) => a.user_id !== gathering.myAttendee?.user_id && !blockedIds.has(a.user_id));
   const onTheWay = gathering.approvedAttendees.filter((a) => a.on_my_way_at);
   const checkedIn = gathering.approvedAttendees.filter((a) => a.checked_in_at);
   const iAmCheckedIn = !!gathering.myAttendee?.checked_in_at;

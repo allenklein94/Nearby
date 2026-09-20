@@ -49,4 +49,9 @@ describe('host controls live on GatheringDetail', () => {
     expect(read('GatheringDetailScreen.js')).toMatch(/<GatheringFeedbackPrompt/);
     expect(read('PlansScreen.js')).toMatch(/getMyAttendingGatherings/);
   });
+  test('the Hub meet list (and its notice button) excludes people I blocked', () => {
+    const h = read('GatheringHubScreen.js');
+    expect(h).toMatch(/getMyBlockedUsers/);
+    expect(h).toMatch(/!blockedIds\.has\(a\.user_id\)/);
+  });
 });
