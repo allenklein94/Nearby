@@ -58,3 +58,37 @@ export async function reportSponsoredPlacement(card) {
   });
   return !error;
 }
+
+// ---- Owner side (Promotions). All through RPCs / the checkout function; payment state is never written from here. ----
+export async function checkMySponsoredSlot(startsAtIso = null) {
+  const { data, error } = await supabase.rpc('check_my_sponsored_slot', { starts_param: startsAtIso });
+  return error ? null : data;
+}
+
+export async function getMySponsoredPlacements() {
+  const [{ data: rows, error }, { data: stats }] = await Promise.all([
+    supabase.rpc('get_my_sponsored_placements'),
+    supabase.rpc('get_my_sponsored_stats'),
+  ]);
+  if (error) return null;
+  const byId = new Map((stats || []).map((s) => [s.placement_id, s]));
+  return (rows || []).map((r) => ({ ...r, impressions: byId.get(r.placement_id)?.impressions ?? null, taps: byId.get(r.placement_id)?.taps ?? null }));
+}
+
+export async function cancelMySponsoredHold(placementId) {
+  const { data, error } = await supabase.rpc('cancel_my_sponsored_hold', { placement_id_param: placementId });
+  return !error && data === true;
+}
+
+// Returns { url } to open Stripe Checkout, or { error }. The server decides the price and screens the text.
+export async function startSponsoredCheckout({ itemKind, itemId, startDate, title, description }) {
+  const { data, error } = await supabase.functions.invoke('create-sponsored-checkout', {
+    body: { itemKind, itemId, startDate, title, description },
+  });
+  if (error) {
+    let message = "Couldn't start checkout. You have not been charged.";
+    try { const b = await error.context?.json?.(); if (b?.error) message = b.error; } catch (e) { /* keep default */ }
+    return { error: message };
+  }
+  return data?.url ? { url: data.url } : { error: data?.error || "Couldn't start checkout. You have not been charged." };
+}

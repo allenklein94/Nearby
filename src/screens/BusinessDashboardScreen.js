@@ -64,6 +64,7 @@ import { bundleableOccasions, experienceComponentOptionsForOccasion } from '../c
 import { classifyBusinessCategory } from '../constants/businessCategoryClassifier';
 import { extractAttributesFromText } from '../constants/businessAttributeExtraction';
 import { INTEREST_OPTIONS, subcategoryOptionsFor } from '../constants/gatheringCategories';
+import SponsoredPromotionsPanel from '../components/SponsoredPromotionsPanel';
 import LoadErrorState from '../components/LoadErrorState';
 import BusinessNotificationPreferences from '../components/BusinessNotificationPreferences';
 import BusinessEmailNotifications from '../components/BusinessEmailNotifications';
@@ -4012,6 +4013,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 </TouchableOpacity>
                 {moreOffersOpen && (
                 <>
+                <SponsoredPromotionsPanel offers={offers} />
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
                   <Text style={styles.sectionHeader}>Occasion Packages</Text>
                   <TouchableOpacity
