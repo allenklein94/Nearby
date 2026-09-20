@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader } from '../motion';
@@ -120,7 +121,7 @@ export default function BusinessConversationScreen({ route, navigation }) {
         {messages.length === 0 ? (
           <FadeInState style={[styles.emptyState, { flex: 1, justifyContent: 'center' }]}>
             <Text style={styles.emptyEmoji}>💬</Text>
-            <Text style={styles.emptyText}>Say hi to {partnerName}!</Text>
+            <EmptyCopy id="chat_business" vars={{ name: partnerName }} />
           </FadeInState>
         ) : (
         <FlatList

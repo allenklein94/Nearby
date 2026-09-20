@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share, Animated } from 'react-native';
 import { NLoader } from '../motion';
 import { getGatheringById, getFriendsWithSharedContext, isFirstGatheringHosted, gatheringInviteShareUrl } from '../services/gatherings';
@@ -293,7 +294,7 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
               <NLoader fullScreen={false} size="inline" caption="Loading friends…" />
             ) : friends.length === 0 ? (
               <View style={{ alignItems: 'center' }}>
-                <Text style={styles.emptyText}>Add some friends first to be able to invite them here.</Text>
+                <EmptyCopy id="no_friends_to_invite" />
                 <TouchableOpacity onPress={() => navigation.navigate('FriendDiscovery')} accessibilityLabel="Discover people to add as friends" accessibilityRole="button">
                   <Text style={styles.emptyActionText}>Discover People →</Text>
                 </TouchableOpacity>

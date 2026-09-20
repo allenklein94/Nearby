@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader, showSuccessToast } from '../motion';
@@ -188,7 +189,7 @@ export default function GatheringChatScreen({ route, navigation }) {
         {messages.length === 0 ? (
           <FadeInState style={[styles.emptyState, { flex: 1, justifyContent: 'center' }]}>
             <Text style={styles.emptyEmoji}>💬</Text>
-            <Text style={styles.emptyText}>Say hi to everyone attending "{gatheringTitle}"!</Text>
+            <EmptyCopy id="chat_gathering" vars={{ name: gatheringTitle }} />
           </FadeInState>
         ) : (
         <FlatList

@@ -36,8 +36,10 @@ describe('empty-state language (item 80)', () => {
     for (const f of files) {
       const src = fs.readFileSync(f, 'utf8');
       for (const m of src.matchAll(/EmptyCopy id=\{?['"]([a-z_]+)['"]/g)) used.add(m[1]);
-      if (f.endsWith('PlansScreen.js')) ['plans_upcoming', 'plans_hosting', 'plans_past'].forEach((i) => used.add(i));
-      if (f.endsWith('PlacesScreen.js') || f.endsWith('DiscoverHubScreen.js')) ['places_search', 'places_category'].forEach((i) => src.includes(i) && used.add(i));
+      if (src.includes('EmptyCopy')) {
+        // ids chosen by a ternary or a lookup table still name registry entries as quoted strings
+        for (const id of Object.keys(EMPTY_STATES)) if (src.includes(`'${id}'`) || src.includes(`"${id}"`)) used.add(id);
+      }
     }
     for (const id of used) expect(EMPTY_STATES[id]).toBeTruthy();
     for (const id of Object.keys(EMPTY_STATES)) expect(used.has(id)).toBe(true);

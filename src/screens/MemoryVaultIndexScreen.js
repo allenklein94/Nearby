@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image, ActivityIndicator } from 'react-native';
 import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
@@ -73,7 +74,7 @@ export default function MemoryVaultIndexScreen({ navigation }) {
         }
         ListEmptyComponent={
           <View style={{ alignItems: 'center' }}>
-            <Text style={styles.emptyText}>No matches yet. Once you match with someone, you'll each get a shared memory vault here.</Text>
+            <EmptyCopy id="memory_vault_index" />
             <TouchableOpacity onPress={() => navigation.navigate('Discover', { initialMode: 'people' })} accessibilityLabel="Meet people" accessibilityRole="button">
               <Text style={styles.emptyActionText}>Meet People →</Text>
             </TouchableOpacity>

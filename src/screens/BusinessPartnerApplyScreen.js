@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
 import { randomUUID } from 'expo-crypto';
@@ -350,7 +351,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
             ))}
 
             {searchedOnce && !searching && searchResults.length === 0 ? (
-              <Text style={styles.emptyText}>No matches found. You can still add your business manually below.</Text>
+              <EmptyCopy id="business_apply_search" />
             ) : null}
 
             <TouchableOpacity onPress={startManualEntry} style={styles.manualLink} accessibilityRole="button">

@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
@@ -155,7 +156,7 @@ export default function MomentumScreen({ navigation }) {
                     it"): a small muted mark on this one real, self-
                     contained empty-state card. */}
                 <NearbyMark size={24} style={{ opacity: 0.3, alignSelf: 'center', marginBottom: spacing.xs }} />
-                <Text style={styles.emptyText}>Nothing in the last {momentum.weeks.length} weeks yet — join or host a gathering to see it here.</Text>
+                <EmptyCopy id="momentum_empty" vars={{ weeks: momentum.weeks.length }} />
                 {/* Item 56 ("no dead ends"): a real next action, same
                     destination ActivityScreen's own empty state already uses. */}
                 <TouchableOpacity onPress={() => navigation.navigate('Discover')} accessibilityLabel="Explore things to do" accessibilityRole="button" style={{ marginTop: spacing.md }}>

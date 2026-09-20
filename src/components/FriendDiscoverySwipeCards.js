@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import EmptyCopy from './EmptyCopy';
 import { View, Text, Image, TouchableOpacity, StyleSheet, PanResponder, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -65,7 +66,7 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
     return (
       <View style={styles.emptyState}>
         <Text style={styles.emptyEmoji}>🤝</Text>
-        <Text style={styles.emptyText}>No one nearby has friend discovery on right now — check back later.</Text>
+        <EmptyCopy id="friend_discovery_empty" />
         {/* Thursday plan item 25: a real next action, not a dead end --
             the same InviteFriends destination every other empty state in
             this pass routes to. */}

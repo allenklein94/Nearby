@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader } from '../motion';
@@ -76,8 +77,7 @@ export default function PreferencePollScreen() {
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         {polls.length === 0 && (
           <FadeInState style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No questions right now</Text>
-            <Text style={styles.emptyText}>When someone you know sends a quick question, it'll show up here.</Text>
+            <EmptyCopy id="preference_polls" />
           </FadeInState>
         )}
         {polls.map((poll) => {

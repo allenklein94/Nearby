@@ -1,4 +1,5 @@
 import { attendeeSummary } from '../utils/gatheringAttendeeDisplay';
+import EmptyCopy from '../components/EmptyCopy';
 import { factsMeta, friendGoingReason } from '../utils/recommendationFacts';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
@@ -844,7 +845,9 @@ export default function GatheringsScreen({ navigation, route }) {
             return (
               <FadeInState opportunity style={styles.emptyState}>
                 <Text style={styles.emptyEmoji}>🎉</Text>
-                <Text style={styles.emptyText}>{isSearchingGatherings ? `No gatherings match "${searchQuery.trim()}".` : (forYouActive ? "Nothing matching your history right now — check back later." : ((interestFilter || dateFilter !== 'anytime') ? 'No gatherings match these filters right now.' : t('gatherings.emptyNearby')))}</Text>
+                {!isSearchingGatherings && !forYouActive && !(interestFilter || dateFilter !== 'anytime')
+                  ? <Text style={styles.emptyText}>{t('gatherings.emptyNearby')}</Text>
+                  : <EmptyCopy id={isSearchingGatherings ? 'gatherings_search' : (forYouActive ? 'gatherings_for_you' : 'gatherings_filtered')} vars={{ query: searchQuery.trim() }} />}
                 {!forYouActive && (
                   <TouchableOpacity
                     style={styles.emptyStateCreateButton}

@@ -452,7 +452,7 @@ export default function BusinessAIAutomationScreen({ route }) {
             {loadingPolicies ? (
               <NLoader fullScreen={false} size="inline" kind="content" />
             ) : policies.length === 0 ? (
-              <Text style={styles.emptyText}>No policies yet — create one to let Level {trustLevel >= 3 ? '2 or 3' : '2'} automation actually respond to requests.</Text>
+              <EmptyCopy id="ai_policies" />
             ) : (
               policies.map((p) => {
                 const exp = experiences.find((e) => e.id === p.conditions?.experience_id);
@@ -551,7 +551,7 @@ export default function BusinessAIAutomationScreen({ route }) {
 
                 <Text style={styles.fieldLabel}>Send This Offer Template</Text>
                 {experiences.length === 0 ? (
-                  <Text style={styles.emptyText}>You have no active Signature Experiences yet — create one first on your Dashboard.</Text>
+                  <EmptyCopy id="ai_signature" />
                 ) : (
                   <View>
                     {experiences.map((e) => (

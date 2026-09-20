@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, Platform } from 'react-native';
 import { NLoader } from '../motion';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -289,7 +290,7 @@ export default function MakeAPlanScreen({ route, navigation }) {
                 a small muted mark on this one real, self-contained empty-
                 state block. */}
             <NearbyMark size={24} style={{ opacity: 0.3, alignSelf: 'center' }} />
-            <Text style={styles.emptyText}>Add some friends first to be able to invite them here.</Text>
+            <EmptyCopy id="no_friends_to_invite" />
             {/* Item 56 ("no dead ends"): a real way to actually go add
                 friends, not just copy telling the user what to do. */}
             <TouchableOpacity

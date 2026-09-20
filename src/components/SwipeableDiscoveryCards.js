@@ -1,4 +1,5 @@
 import { datingCardFacts } from '../utils/datingCardReasons';
+import EmptyCopy from './EmptyCopy';
 import React, { useRef, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, PanResponder, Animated, Dimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -104,7 +105,7 @@ export default function SwipeableDiscoveryCards({
     return (
       <View style={styles.emptyState}>
         <Text style={styles.emptyEmoji}>📍</Text>
-        <Text style={styles.emptyText}>That's everyone for now — check back soon.</Text>
+        <EmptyCopy id="people_all_seen" />
       </View>
     );
   }

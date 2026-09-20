@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import EmptyCopy from './EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Modal, Alert, ActivityIndicator, Share } from 'react-native';
 import { getMyFriends } from '../services/friends';
 import { gatheringInviteShareUrl } from '../services/gatherings';
@@ -115,7 +116,7 @@ export default function InviteFriendsModal({
               keyExtractor={(item) => item.id}
               style={{ maxHeight: 400 }}
               ListEmptyComponent={
-                <Text style={styles.emptyText}>Add some friends first to be able to invite them here.</Text>
+                <EmptyCopy id="no_friends_to_invite" />
               }
               renderItem={({ item }) => (
                 <View style={styles.friendRow}>

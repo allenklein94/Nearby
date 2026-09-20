@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput, Platform, Share } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
@@ -868,7 +869,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
             )}
             {!businessOptionsLoading && detail.options.filter((o) => o.optionKind === 'business').length === 0 && (
               <FadeInState style={styles.emptyState}>
-                <Text style={styles.emptyText}>{businessFetchError ? "Nearby couldn't find real businesses nearby for this." : 'No options yet.'}</Text>
+                <EmptyCopy id={businessFetchError ? 'group_plan_options_error' : 'group_plan_options'} />
                 {detail.isHost && (
                   <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
                     <TouchableOpacity style={styles.declineButton} onPress={fetchAndProposeBusinessOptions} accessibilityRole="button" accessibilityLabel="Try finding options again">

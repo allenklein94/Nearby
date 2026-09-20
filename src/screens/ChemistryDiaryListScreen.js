@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, TextInput, Modal } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader, PullToRefresh, modalAnimation } from '../motion';
@@ -212,7 +213,7 @@ export default function ChemistryDiaryListScreen({ navigation }) {
         {entries.length === 0 && (
           <FadeInState style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📔</Text>
-            <Text style={styles.emptyText}>Nothing here yet. Add an entry any time after spending time with someone — above, or from their profile or a chat.</Text>
+            <EmptyCopy id="chemistry_diary" />
           </FadeInState>
         )}
 

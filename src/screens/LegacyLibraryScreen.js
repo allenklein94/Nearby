@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader, PullToRefresh } from '../motion';
@@ -92,7 +93,7 @@ export default function LegacyLibraryScreen({ navigation }) {
         {entries.length === 0 && (
           <FadeInState style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>💌</Text>
-            <Text style={styles.emptyText}>Nothing shared yet — this library grows as couples choose to leave their reflections.</Text>
+            <EmptyCopy id="legacy_library" />
           </FadeInState>
         )}
 

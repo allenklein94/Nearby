@@ -1675,7 +1675,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           <Text style={styles.sectionHeader}>Gatherings</Text>
           {contextGatherings.length === 0 ? (
             <>
-              <Text style={styles.emptyTextTight}>No {contextTopicLabel.toLowerCase()} gatherings at this time nearby.</Text>
+              <EmptyCopy id="context_gatherings" vars={{ topic: contextTopicLabel.toLowerCase() }} />
               <TouchableOpacity
                 onPress={() => navigation.navigate('CreateGathering', {
                   quickStartTitle: contextTopicLabel,
@@ -1719,7 +1719,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </View>
           ) : contextPlaces.length === 0 ? (
             <>
-              <Text style={styles.emptyTextTight}>No {contextTopicLabel.toLowerCase()} places found nearby.</Text>
+              <EmptyCopy id="context_places" vars={{ topic: contextTopicLabel.toLowerCase() }} />
               <TouchableOpacity onPress={closeContext} accessibilityLabel="Browse other categories" accessibilityRole="button">
                 <Text style={styles.emptyActionText}>← Browse Other Categories</Text>
               </TouchableOpacity>
@@ -1743,7 +1743,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           <Text style={styles.sectionHeader}>Perks</Text>
           {contextOffers.length === 0 ? (
             <>
-              <Text style={styles.emptyTextTight}>No {contextTopicLabel.toLowerCase()} perks nearby right now.</Text>
+              <EmptyCopy id="context_perks" vars={{ topic: contextTopicLabel.toLowerCase() }} />
               <TouchableOpacity onPress={closeContext} accessibilityLabel="Browse other categories" accessibilityRole="button">
                 <Text style={styles.emptyActionText}>← Browse Other Categories</Text>
               </TouchableOpacity>

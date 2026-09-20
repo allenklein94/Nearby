@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, ActivityIndicator, Modal } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader, modalAnimation } from '../motion';
@@ -152,7 +153,7 @@ export default function CommunityChatScreen({ route, navigation }) {
         {messages.length === 0 ? (
           <FadeInState style={[styles.emptyState, { flex: 1, justifyContent: 'center' }]}>
             <Text style={styles.emptyEmoji}>💬</Text>
-            <Text style={styles.emptyText}>Say hi to everyone in "{communityName}"!</Text>
+            <EmptyCopy id="chat_community" vars={{ name: communityName }} />
           </FadeInState>
         ) : (
         <FlatList

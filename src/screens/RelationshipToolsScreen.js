@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image, ActivityIndicator } from 'react-native';
 import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
@@ -120,7 +121,7 @@ export default function RelationshipToolsScreen({ navigation }) {
         }
         ListEmptyComponent={
           <View style={{ alignItems: 'center' }}>
-            <Text style={styles.emptyText}>No matches yet. Once you match with someone, you can use these tools together.</Text>
+            <EmptyCopy id="relationship_tools" />
             <TouchableOpacity onPress={() => navigation.navigate('Discover', { initialMode: 'people' })} accessibilityLabel="Meet people" accessibilityRole="button">
               <Text style={styles.emptyActionText}>Meet People →</Text>
             </TouchableOpacity>
