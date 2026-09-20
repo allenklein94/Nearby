@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
+import { loadCategoryVocab } from '../_shared/categoryTags.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -27,24 +28,8 @@ const DAILY_AI_LIMIT = 150;
 // through the 2026-09-06 taxonomy expansion to 75 tags/19 majors -- widened
 // to match INTEREST_OPTIONS exactly. Keep this array in sync with that file
 // if the taxonomy ever changes again.
-const VALID_CATEGORIES = [
-  'Coffee', 'Foodie', 'Cooking', 'Wine', 'Brunch', 'Bakeries', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour',
-  'Fitness', 'Yoga', 'Sports', 'Running', 'Pickleball', 'Tennis', 'Cycling', 'Swimming', 'Climbing', 'Golf', 'Bowling',
-  'Music', 'Movies', 'Gaming', 'Dancing', 'Concerts', 'Karaoke', 'Comedy', 'Trivia', 'Nightlife',
-  'Dating', 'Speed Dating', 'Singles Events', 'Group Hangouts',
-  'Reading', 'Art', 'Photography', 'Crafts',
-  'Farmers Markets', 'Thrift & Vintage',
-  'Meditation', 'Spa Day', 'Self-Care',
-  'Family Playdate', 'Kids Activity',
-  'Hiking', 'Outdoors', 'Camping', 'Fishing', 'Kayaking',
-  'Dogs', 'Cats', 'Dog Meetup',
-  'Networking', 'Coworking',
-  'Volunteering', 'Faith & Spirituality', 'Fundraiser',
-  'Travel', 'Day Trip',
-  'Weekend Getaway', 'Staycation', 'Road Trip',
-  'Workshops', 'Lectures', 'Cooking Class', 'Study Group', 'Language Exchange', 'Tech Meetup',
-  'Museums', 'Zoos', 'Aquariums', 'Landmarks', 'Amusement Park', 'Sightseeing',
-];
+// Category tags come from public.category_tag_groups (loaded per request, _shared/categoryTags.ts).
+let VALID_CATEGORIES: string[] = [];
 
 // Taxonomy audit Phase 4: real values matching gatherings.price_level/
 // party_type's own live CHECK constraints exactly -- never invented.
@@ -139,6 +124,7 @@ serve(async (req) => {
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    VALID_CATEGORIES = (await loadCategoryVocab(admin)).tags;
 
     const { data: withinLimit } = await admin.rpc('check_and_increment_ai_use', {
       user_id_param: myId,

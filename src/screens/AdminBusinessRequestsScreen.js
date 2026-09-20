@@ -10,6 +10,7 @@ import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import { businessAttributeLabel, cuisineLabel, occasionLabel } from '../constants/businessAttributes';
 import { suggestBusinessCategory } from '../services/businessCategorySuggestion';
 import { subcategoryOptionsFor } from '../constants/gatheringCategories';
+import { adminAddCategoryTag } from '../services/categoryTags';
 
 export default function AdminBusinessRequestsScreen() {
   const { colors, shadow } = useTheme();
@@ -25,6 +26,8 @@ export default function AdminBusinessRequestsScreen() {
   const [mapOpenId, setMapOpenId] = useState(null);
   const [mapCategory, setMapCategory] = useState(null);
   const [mapSub, setMapSub] = useState(null);
+  const [newTagText, setNewTagText] = useState('');
+  const [, bumpTags] = useState(0);
   const [mapRemember, setMapRemember] = useState(true);
   const [suggestions, setSuggestions] = useState({});
   const [notesDrafts, setNotesDrafts] = useState({});
@@ -60,6 +63,32 @@ export default function AdminBusinessRequestsScreen() {
     setMapCategory(request.category ?? guess?.category ?? null);
     setMapSub(request.subcategory ?? guess?.subcategory ?? null);
     setMapRemember(!!request.unlisted_category_text);
+  }
+
+  function handleAddCategory(request) {
+    const name = newTagText.trim();
+    if (!mapCategory || !name) return;
+    const groupLabel = BUSINESS_CATEGORIES.find((c) => c.key === mapCategory)?.label ?? mapCategory;
+    Alert.alert(
+      `Add "${name}" as a new category?`,
+      `It becomes a permanent category under ${groupLabel} that businesses, people and search can all use. It cannot be renamed or removed here.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Add category',
+          onPress: async () => {
+            try {
+              const added = await adminAddCategoryTag(name, mapCategory);
+              setMapSub(added);
+              setNewTagText('');
+              bumpTags((n) => n + 1);
+            } catch (e) {
+              Alert.alert('Could not add it', e.message);
+            }
+          },
+        },
+      ],
+    );
   }
 
   async function handleMapCategory(request) {
@@ -185,6 +214,25 @@ export default function AdminBusinessRequestsScreen() {
                             <Text style={[styles.contact, mapSub === sub && { fontWeight: '800', color: colors.primary }]}>{sub}</Text>
                           </TouchableOpacity>
                         ))}
+                      </View>
+                    ) : null}
+                    {mapCategory ? (
+                      <View style={{ marginTop: spacing.xs }}>
+                        <Text style={styles.contact}>Not in the list? Add it under {BUSINESS_CATEGORIES.find((c) => c.key === mapCategory)?.label ?? mapCategory}:</Text>
+                        <TextInput
+                          style={styles.notesInput}
+                          value={newTagText}
+                          onChangeText={setNewTagText}
+                          placeholder={item.unlisted_category_text ? `e.g. ${item.unlisted_category_text}` : 'New category name'}
+                          placeholderTextColor={colors.textTertiary}
+                          maxLength={40}
+                          accessibilityLabel="New category name"
+                        />
+                        {newTagText.trim().length >= 2 ? (
+                          <TouchableOpacity onPress={() => handleAddCategory(item)} accessibilityRole="button" accessibilityLabel={`Add category ${newTagText.trim()}`}>
+                            <Text style={[styles.contact, { fontWeight: '700', color: colors.primary }]}>＋ Add "{newTagText.trim()}"</Text>
+                          </TouchableOpacity>
+                        ) : null}
                       </View>
                     ) : null}
                     {item.unlisted_category_text ? (

@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
+import { loadCategoryVocab } from '../_shared/categoryTags.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 import { classifyContent, RISK_CATEGORIES } from '../_shared/contentClassifier.ts';
 
@@ -93,24 +94,8 @@ const CUISINE_OPTIONS = ['italian', 'mexican', 'japanese', 'chinese', 'american'
 // enforces (20260925_business_subcategory_layer.sql) -- re-validated here
 // for the same reason CATEGORY_OPTIONS/ATTRIBUTE_OPTIONS/CUISINE_OPTIONS
 // already are, so a malformed/invented value never reaches the RPC.
-const SUBCATEGORY_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
-  food_drink: ['Coffee', 'Foodie', 'Cooking', 'Wine', 'Brunch', 'Bakeries', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour'],
-  activities_recreation: ['Fitness', 'Yoga', 'Sports', 'Running', 'Pickleball', 'Tennis', 'Cycling', 'Swimming', 'Climbing', 'Golf', 'Bowling'],
-  entertainment_nightlife: ['Music', 'Movies', 'Gaming', 'Dancing', 'Concerts', 'Karaoke', 'Comedy', 'Trivia', 'Nightlife'],
-  dating_social: ['Dating', 'Speed Dating', 'Singles Events', 'Group Hangouts'],
-  arts_culture_learning: ['Reading', 'Art', 'Photography', 'Crafts'],
-  shopping: ['Farmers Markets', 'Thrift & Vintage'],
-  wellness_beauty: ['Meditation', 'Spa Day', 'Self-Care'],
-  family_kids: ['Family Playdate', 'Kids Activity'],
-  outdoors_nature: ['Hiking', 'Outdoors', 'Camping', 'Fishing', 'Kayaking'],
-  pets: ['Dogs', 'Cats', 'Dog Meetup'],
-  business_networking: ['Networking', 'Coworking'],
-  community_volunteering: ['Volunteering', 'Faith & Spirituality', 'Fundraiser'],
-  travel_experiences: ['Travel', 'Day Trip'],
-  stay_getaway: ['Weekend Getaway', 'Staycation', 'Road Trip'],
-  education_classes: ['Workshops', 'Lectures', 'Cooking Class', 'Study Group', 'Language Exchange', 'Tech Meetup'],
-  attractions_things_to_see: ['Museums', 'Zoos', 'Aquariums', 'Landmarks', 'Amusement Park', 'Sightseeing'],
-};
+// Per-major leaf tags come from public.category_tag_groups (loaded per request, _shared/categoryTags.ts).
+let SUBCATEGORY_OPTIONS_BY_CATEGORY: Record<string, string[]> = {};
 // Intent engine vision, multi-classification businesses (resumed
 // 2026-09-10): the flat union of every major's own leaf tags above --
 // unlike subcategory (must belong to the business's own primary major),
@@ -119,7 +104,7 @@ const SUBCATEGORY_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
 // validated against the whole vocabulary, not just the current category's
 // own subset. Same 75-tag vocabulary 20260928_business_multi_
 // classification.sql's own CHECK constraint enforces.
-const ALL_LEAF_TAGS: string[] = Object.values(SUBCATEGORY_OPTIONS_BY_CATEGORY).flat();
+let ALL_LEAF_TAGS: string[] = [];
 // Same real vocabularies create_business_experience()/update_business_
 // experience()'s own CHECK constraints already enforce.
 const PRICE_LEVEL_OPTIONS = ['free', '$', '$$', '$$$'];
@@ -315,6 +300,7 @@ serve(async (req) => {
     }
 
     const admin = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!);
+    { const vocab = await loadCategoryVocab(admin); SUBCATEGORY_OPTIONS_BY_CATEGORY = vocab.byGroup; ALL_LEAF_TAGS = vocab.tags; }
 
     // Ownership gate, service-role read -- never trust a client-supplied
     // partnerId claim, same pattern business-ai-assistant already

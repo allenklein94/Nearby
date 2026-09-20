@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
+import { loadCategoryVocab } from '../_shared/categoryTags.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -75,24 +76,8 @@ const VALID_PARTY_TYPES = ['solo', 'friends', 'groups', 'date'];
 // already is. Keyed by the SAME category value this function itself
 // extracts, so subcategory is always validated against whichever category
 // this same call just chose, never a stale/different one.
-const SUBCATEGORY_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
-  food_drink: ['Coffee', 'Foodie', 'Cooking', 'Wine', 'Brunch', 'Bakeries', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour'],
-  activities_recreation: ['Fitness', 'Yoga', 'Sports', 'Running', 'Pickleball', 'Tennis', 'Cycling', 'Swimming', 'Climbing', 'Golf', 'Bowling'],
-  entertainment_nightlife: ['Music', 'Movies', 'Gaming', 'Dancing', 'Concerts', 'Karaoke', 'Comedy', 'Trivia', 'Nightlife'],
-  dating_social: ['Dating', 'Speed Dating', 'Singles Events', 'Group Hangouts'],
-  arts_culture_learning: ['Reading', 'Art', 'Photography', 'Crafts'],
-  shopping: ['Farmers Markets', 'Thrift & Vintage'],
-  wellness_beauty: ['Meditation', 'Spa Day', 'Self-Care'],
-  family_kids: ['Family Playdate', 'Kids Activity'],
-  outdoors_nature: ['Hiking', 'Outdoors', 'Camping', 'Fishing', 'Kayaking'],
-  pets: ['Dogs', 'Cats', 'Dog Meetup'],
-  business_networking: ['Networking', 'Coworking'],
-  community_volunteering: ['Volunteering', 'Faith & Spirituality', 'Fundraiser'],
-  travel_experiences: ['Travel', 'Day Trip'],
-  stay_getaway: ['Weekend Getaway', 'Staycation', 'Road Trip'],
-  education_classes: ['Workshops', 'Lectures', 'Cooking Class', 'Study Group', 'Language Exchange', 'Tech Meetup'],
-  attractions_things_to_see: ['Museums', 'Zoos', 'Aquariums', 'Landmarks', 'Amusement Park', 'Sightseeing'],
-};
+// Per-major leaf tags come from public.category_tag_groups (loaded per request, _shared/categoryTags.ts).
+let SUBCATEGORY_OPTIONS_BY_CATEGORY: Record<string, string[]> = {};
 // Intent engine vision, multi-classification businesses -- AI-suggestion
 // follow-up (2026-09-10, same day the manual-pick feature itself shipped,
 // mirroring subcategory's own "manual pick first, AI suggestion as a
@@ -102,7 +87,7 @@ const SUBCATEGORY_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
 // deliberately cross-major, so it's validated against the whole
 // vocabulary, matching that same real CHECK constraint
 // (20260928_business_multi_classification.sql).
-const ALL_LEAF_TAGS: string[] = Object.values(SUBCATEGORY_OPTIONS_BY_CATEGORY).flat();
+let ALL_LEAF_TAGS: string[] = [];
 
 serve(async (req) => {
   try {
@@ -125,6 +110,7 @@ serve(async (req) => {
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    { const vocab = await loadCategoryVocab(admin); SUBCATEGORY_OPTIONS_BY_CATEGORY = vocab.byGroup; ALL_LEAF_TAGS = vocab.tags; }
 
     const { data: withinLimit } = await admin.rpc('check_and_increment_ai_use', {
       user_id_param: myId,

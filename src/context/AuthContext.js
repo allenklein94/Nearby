@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../services/supabase';
+import { hydrateCategoryTags } from '../services/categoryTags';
 
 const AuthContext = createContext(null);
 
@@ -18,6 +19,7 @@ export function AuthProvider({ children }) {
       return;
     }
     setProfileLoading(true);
+    hydrateCategoryTags().catch(() => {});
     const { data } = await supabase
       .from('profiles')
       .select('display_name, birthdate, photo_url, is_admin')
