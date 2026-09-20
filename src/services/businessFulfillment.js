@@ -211,6 +211,10 @@ export async function submitBusinessRequest({
   sharedInterests = null,
   // Structured dietary needs (closed vocabulary, consumer-picked, Foodie requests only) -- see DIETARY_OPTIONS.
   dietary = null,
+  // Targeted request: ONE chosen business instead of the ranked nearby set. Same request model and validators;
+  // the optional note reaches only that business (server-filtered). Both null = the normal broadcast.
+  targetPartnerId = null,
+  note = null,
 }) {
   const location = await requireUserLocation('Location access is needed to find nearby businesses.');
 
@@ -236,6 +240,8 @@ export async function submitBusinessRequest({
     surprise_mode_param: surpriseMode,
     shared_interests_param: sharedInterests && sharedInterests.length > 0 ? sharedInterests : null,
     dietary_param: dietary && dietary.length > 0 ? dietary : null,
+    target_partner_id_param: targetPartnerId,
+    note_param: targetPartnerId ? note : null,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, duplicate: !!data.duplicate };
@@ -245,7 +251,7 @@ export async function submitBusinessRequest({
 // Host-only. party_size/date/location are all sourced server-side from the
 // gathering's own real data -- never re-collected from the device or
 // typed by the caller, unlike the solo submitBusinessRequest() above.
-export async function submitBusinessRequestForGathering({ gatheringId, text, category = null, budgetMax = null, radiusMiles = 15, occasion = null, dietary = null }) {
+export async function submitBusinessRequestForGathering({ gatheringId, text, category = null, budgetMax = null, radiusMiles = 15, occasion = null, dietary = null, targetPartnerId = null, note = null }) {
   const { data, error } = await supabase.rpc('create_business_request_for_gathering', {
     gathering_id_param: gatheringId,
     raw_text_param: text,
@@ -254,6 +260,8 @@ export async function submitBusinessRequestForGathering({ gatheringId, text, cat
     radius_miles_param: radiusMiles,
     occasion_param: occasion,
     dietary_param: dietary && dietary.length > 0 ? dietary : null,
+    target_partner_id_param: targetPartnerId,
+    note_param: targetPartnerId ? note : null,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, partySize: data.partySize, duplicate: !!data.duplicate };

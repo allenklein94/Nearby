@@ -279,18 +279,40 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
                 <Text style={styles.changeLink}>Change</Text>
               </TouchableOpacity>
             </View>
+            {selectedTarget?.type === 'gathering' ? (
+              <>
+                {/* Same form and request model as asking nearby businesses; the only difference is that it goes to this one business. */}
+                <Text style={styles.rowSubtitle}>Tell {selectedPartner.name} what you're looking for. It uses the same details as any request, and only they will see it.</Text>
+                <TouchableOpacity
+                  style={styles.submitButton}
+                  onPress={() => navigation.navigate('AskBusiness', {
+                    gatheringId: selectedTarget.id,
+                    gatheringTitle: selectedTarget.title,
+                    targetPartner: { id: selectedPartner.id, name: selectedPartner.name },
+                    partnershipTarget: { targetType: 'gathering', targetId: selectedTarget.id },
+                  })}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Ask ${selectedPartner.name}`}
+                >
+                  <Text style={styles.submitButtonText}>Ask {selectedPartner.name}</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
             <TextInput
-              style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
-              placeholder="Add a note for them (optional)"
-              placeholderTextColor={colors.textTertiary}
-              value={message}
-              onChangeText={setMessage}
-              multiline
-              accessibilityLabel="Optional note to the business"
-            />
-            <TouchableOpacity style={styles.submitButton} onPress={submit} disabled={submitting} accessibilityRole="button">
-              {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>Send Request</Text>}
-            </TouchableOpacity>
+                style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
+                placeholder="Add a note for them (optional)"
+                placeholderTextColor={colors.textTertiary}
+                value={message}
+                onChangeText={setMessage}
+                multiline
+                accessibilityLabel="Optional note to the business"
+              />
+              <TouchableOpacity style={styles.submitButton} onPress={submit} disabled={submitting} accessibilityRole="button">
+                {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>Send Request</Text>}
+              </TouchableOpacity>
+                        </>
+            )}
           </>
         )}
       </SafeAreaView>

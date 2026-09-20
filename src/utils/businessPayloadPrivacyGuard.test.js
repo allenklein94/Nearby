@@ -63,7 +63,12 @@ describe('client does not read or collect what a business must not receive', () 
   });
   it('ask-a-business screen no longer offers to share interests or a free-text note with businesses', () => {
     const ask = fs.readFileSync(path.join(__dirname, '../screens/AskBusinessScreen.js'), 'utf8');
-    expect(ask).not.toMatch(/sharedInterests|Share my interests with businesses|Anything else\?/);
+    expect(ask).not.toMatch(/sharedInterests|Share my interests with businesses/);
+    // A free-text note exists ONLY when the request is addressed to one chosen business (item 29); the server drops it otherwise.
+    const idx = ask.indexOf('Anything else?');
+    expect(idx).toBeGreaterThan(-1);
+    expect(ask.slice(Math.max(0, idx - 200), idx)).toMatch(/\{targetPartner && \(/);
+    expect(ask.match(/Anything else\?/g)).toHaveLength(1);
   });
 });
 

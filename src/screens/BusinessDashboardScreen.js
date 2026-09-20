@@ -3682,6 +3682,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       {!!o.business_requests?.gatherings?.title && o.is_directed === true && (
                         <Text style={styles.breakdownText}>“{o.business_requests.gatherings.title}”</Text>
                       )}
+                      {!!o.business_requests?.note && o.is_directed === true && (
+                        <Text style={styles.breakdownText}>Their note: “{o.business_requests.note}”</Text>
+                      )}
                       {card.whenLine !== '' && <Text style={styles.breakdownText}>{card.whenLine}</Text>}
                       {card.feelLine !== '' && <Text style={styles.breakdownText}>{card.feelLine}</Text>}
                       {contextLine !== '' && <Text style={styles.breakdownText}>{contextLine}</Text>}

@@ -360,6 +360,16 @@ export default function BusinessProfileScreen({ route, navigation }) {
           >
             <Text style={styles.messageButtonText}>✨ Plan something</Text>
           </TouchableOpacity>
+          {/* Same request form as asking Nearby, addressed to just this business. */}
+          <TouchableOpacity
+            style={styles.messageButton}
+            onPress={() => navigation.navigate('AskBusiness', { targetPartner: { id: partnerId, name: partner.name }, prefillCategory: partner.subcategory ?? null })}
+            activeOpacity={0.85}
+            accessibilityLabel={`Ask ${partner.name} for something specific`}
+            accessibilityRole="button"
+          >
+            <Text style={styles.messageButtonText}>Ask {partner.name}</Text>
+          </TouchableOpacity>
           {hasThread && (
             <TouchableOpacity
               style={styles.messageButton}

@@ -4,6 +4,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity, searchActiveBusinessAvailability } from '../services/businessFulfillment';
 import { linkExperienceStop } from '../services/plans';
 import { createBusinessRequestForMatch } from '../services/dateProposals';
+import { requestBusinessPartnership } from '../services/businessPartnerships';
+import { checkTextModeration } from '../services/textModeration';
+import PlatformDateTimeInput from '../components/PlatformDateTimeInput';
+import { toTimeParam, timeLabel } from '../utils/requestTime';
 import DietaryPicker from '../components/DietaryPicker';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, OCCASION_OPTIONS, businessAttributeLabel, cuisineLabel, occasionLabel, dietaryLabel } from '../constants/businessAttributes';
@@ -131,6 +135,13 @@ export default function AskBusinessScreen({ navigation, route }) {
   const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
 
+  // "Ask this specific business": the SAME form and request model as asking nearby businesses; only the recipient differs
+  // (one chosen business instead of the ranked nearby set). { id, name }, plus partnershipTarget when it started from a gathering.
+  const targetPartner = route.params?.targetPartner ?? null;
+  const [noteToBusiness, setNoteToBusiness] = useState('');
+  // Optional preferred start time (deterministic picker, never inferred). null = any time.
+  const [startTime, setStartTime] = useState(null);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const gatheringId = route.params?.gatheringId ?? null;
   const gatheringTitle = route.params?.gatheringTitle ?? null;
   const gatheringPartySize = route.params?.gatheringPartySize ?? null;
@@ -326,6 +337,13 @@ export default function AskBusinessScreen({ navigation, route }) {
       Alert.alert(missing.title, missing.body);
       return;
     }
+    if (targetPartner && noteToBusiness.trim()) {
+      const check = await checkTextModeration(noteToBusiness);
+      if (!check.safe) {
+        Alert.alert('Note not allowed', 'Please revise your note and try again.');
+        return;
+      }
+    }
     setSubmitting(true);
     try {
       const safeBudgetMax = resolveBudgetMax(budgetRangeKey, budgetMaxOverride);
@@ -351,7 +369,16 @@ export default function AskBusinessScreen({ navigation, route }) {
           radiusMiles,
           occasion: occasionInput,
           dietary: category === 'Foodie' && dietaryInput.length > 0 ? dietaryInput : null,
+          targetPartnerId: targetPartner?.id ?? null,
+          note: noteToBusiness.trim() || null,
         });
+        // From a gathering's "request a specific business": also send the co-host partnership request. It reuses the request just
+        // made (no second offer). Best-effort -- the business already has the request either way.
+        if (targetPartner && route.params?.partnershipTarget) {
+          try {
+            await requestBusinessPartnership({ ...route.params.partnershipTarget, partnerId: targetPartner.id, message: noteToBusiness.trim() || null });
+          } catch (_e) { /* e.g. already pending */ }
+        }
       } else if (matchId) {
         result = await createBusinessRequestForMatch({
           matchId,
@@ -381,6 +408,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           partySize: safePartySize,
           budgetMax: safeBudgetMax,
           date: resolvedDate,
+          timeWindowStart: toTimeParam(startTime),
           radiusMiles,
           submissionId,
           preferredAvailabilityId: matchedAvailability?.availabilityId ?? pickedAvailability?.id ?? null,
@@ -390,6 +418,8 @@ export default function AskBusinessScreen({ navigation, route }) {
           occasion: occasionInput,
           experienceLevel,
           surpriseMode,
+          targetPartnerId: targetPartner?.id ?? null,
+          note: noteToBusiness.trim() || null,
         });
       }
       // Experience stop: bind this request to the stop it was started from so the stop (and the experience Plan's
@@ -470,7 +500,9 @@ export default function AskBusinessScreen({ navigation, route }) {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           <Text style={styles.heading}>
-            {gatheringId
+            {targetPartner
+              ? `Ask ${targetPartner.name}`
+              : gatheringId
               ? `Find ${gatheringTitle ?? 'your gathering'} somewhere to go`
               : matchId
                 ? `Find something for you and ${matchName ?? 'your match'}`
@@ -479,7 +511,9 @@ export default function AskBusinessScreen({ navigation, route }) {
                   : 'Can Nearby make this happen?'}
           </Text>
           <Text style={styles.subtitle}>
-            {gatheringId
+            {targetPartner
+              ? `Only ${targetPartner.name} will see this — they can answer with a real offer.`
+              : gatheringId
               ? `Asking on behalf of your ${gatheringPartySize ?? ''}-person gathering — real nearby businesses can respond with a real offer for the group.`
               : matchId
                 ? `You both agreed on a plan — real nearby businesses can respond with a real offer for the two of you.`
@@ -594,6 +628,42 @@ export default function AskBusinessScreen({ navigation, route }) {
             </>
           )}
 
+          {isSoloMode && (
+            <>
+              <Text style={styles.label}>Time (optional)</Text>
+              <View style={styles.chipRow}>
+                <TouchableOpacity
+                  style={[styles.chip, !startTime && styles.chipSelected]}
+                  onPress={() => { setStartTime(null); setShowTimePicker(false); }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Any time"
+                >
+                  <Text style={[styles.chipText, !startTime && styles.chipTextSelected]}>Any time</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.chip, !!startTime && styles.chipSelected]}
+                  onPress={() => { if (!startTime) { const d = new Date(); d.setHours(18, 0, 0, 0); setStartTime(d); } setShowTimePicker(true); }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Pick a time"
+                >
+                  <Text style={[styles.chipText, !!startTime && styles.chipTextSelected]}>🕐 {startTime ? timeLabel(startTime) : 'Pick a time'}</Text>
+                </TouchableOpacity>
+              </View>
+              {showTimePicker && (
+                <PlatformDateTimeInput
+                  value={startTime ?? new Date()}
+                  mode="time"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  themeVariant={isDark ? 'dark' : 'light'}
+                  onChange={(event, selected) => {
+                    setShowTimePicker(Platform.OS === 'ios');
+                    if (selected && event?.type !== 'dismissed') setStartTime(selected);
+                  }}
+                />
+              )}
+            </>
+          )}
+
           {!gatheringId && !matchId && (
             <>
               <Text style={styles.label}>Party size</Text>
@@ -652,7 +722,23 @@ export default function AskBusinessScreen({ navigation, route }) {
             </TouchableOpacity>
           )}
 
-          {isSoloMode && !matchedAvailability && (
+          {targetPartner && (
+            <>
+              <Text style={styles.label}>Anything else? (optional)</Text>
+              <TextInput
+                style={styles.textArea}
+                placeholder={`A note for ${targetPartner.name}`}
+                placeholderTextColor={colors.textTertiary}
+                value={noteToBusiness}
+                onChangeText={(t) => setNoteToBusiness(t.slice(0, 300))}
+                multiline
+                accessibilityLabel={`Optional note for ${targetPartner.name}. Only they will see it.`}
+              />
+              <Text style={styles.subtitle}>Only {targetPartner.name} sees this note.</Text>
+            </>
+          )}
+
+          {isSoloMode && !matchedAvailability && !targetPartner && (
             <View style={{ marginTop: spacing.md }}>
               <Text style={styles.label}>See what's actually available first?</Text>
               <TouchableOpacity
