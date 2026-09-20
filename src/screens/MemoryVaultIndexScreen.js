@@ -72,7 +72,12 @@ export default function MemoryVaultIndexScreen({ navigation }) {
           </Text>
         }
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No matches yet. Once you match with someone, you'll each get a shared memory vault here.</Text>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={styles.emptyText}>No matches yet. Once you match with someone, you'll each get a shared memory vault here.</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Discover', { initialMode: 'people' })} accessibilityLabel="Meet people" accessibilityRole="button">
+              <Text style={styles.emptyActionText}>Meet People →</Text>
+            </TouchableOpacity>
+          </View>
         }
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -107,6 +112,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   subtitle: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg, lineHeight: 18 },
   emptyText: { color: colors.textTertiary, fontSize: 14, textAlign: 'center', marginTop: spacing.xl },
+  emptyActionText: { color: colors.primary, fontWeight: '700', fontSize: 14, marginTop: spacing.sm },
   row: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm,

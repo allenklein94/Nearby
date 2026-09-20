@@ -292,7 +292,12 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
             {loadingFriends ? (
               <NLoader fullScreen={false} size="inline" caption="Loading friends…" />
             ) : friends.length === 0 ? (
-              <Text style={styles.emptyText}>Add some friends first to be able to invite them here.</Text>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={styles.emptyText}>Add some friends first to be able to invite them here.</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('FriendDiscovery')} accessibilityLabel="Discover people to add as friends" accessibilityRole="button">
+                  <Text style={styles.emptyActionText}>Discover People →</Text>
+                </TouchableOpacity>
+              </View>
             ) : (
               [...friends]
                 .sort((a, b) => (suggestedIdSet.has(b.id) ? 1 : 0) - (suggestedIdSet.has(a.id) ? 1 : 0))
@@ -369,6 +374,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   circleChipText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
   circleChipTextDone: { color: colors.textTertiary },
   emptyText: { color: colors.textTertiary, textAlign: 'center', paddingVertical: spacing.xl, lineHeight: 20 },
+  emptyActionText: { color: colors.primary, fontWeight: '700', fontSize: 13, marginTop: -spacing.sm, paddingBottom: spacing.md },
   friendRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
   avatar: { width: 40, height: 40, borderRadius: 20, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
   avatarPlaceholder: {},
