@@ -63,3 +63,16 @@ describe('anon write privileges revoked (migrations 20270141 / 20270142)', () =>
     expect(maintain).toMatch(/server_version_num'\)::int >= 170000/);
   });
 });
+
+describe('authenticated TRUNCATE/MAINTAIN revoked (migration 20270143)', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270143_authenticated_truncate_maintain_revoked.sql'), 'utf8').replace(/--.*$/gm, '');
+  test('revokes exactly TRUNCATE and MAINTAIN from authenticated, and closes defaults', () => {
+    expect(sql).toContain('revoke truncate on public.%I from authenticated');
+    expect(sql).toContain('revoke maintain on public.%I from authenticated');
+    expect(sql).toContain('alter default privileges in schema public revoke truncate on tables from authenticated');
+  });
+  test('never touches SELECT/INSERT/UPDATE/DELETE and MAINTAIN is version-guarded', () => {
+    expect(sql).not.toMatch(/revoke[^;]*\b(select|insert|update|delete|all)\b/i);
+    expect(sql).toMatch(/server_version_num'\)::int >= 170000/);
+  });
+});
