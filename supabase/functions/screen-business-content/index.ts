@@ -38,6 +38,21 @@ import { classifyContent, RISK_CATEGORIES } from '../_shared/contentClassifier.t
 // offer_response's real re-validation against a request that may have
 // gone stale during review).
 
+
+// Mirrors src/utils/quickOfferResponse.js (kept identical; a mismatch only means the text is classified instead).
+const STANDARD_AVAILABILITY_TEXT = 'We can accommodate this as requested.';
+const ALTERNATIVE_TIME_TEXT = "We can't do the requested time, but we can do this time instead.";
+const money = (n: number) => `$${Number(n).toFixed(2).replace(/\.00$/, '')}`;
+function usualTermsLine(policy: { min_spend_per_person?: number | null; deposit_amount?: number | null; cancellation_window_hours?: number | null } | null): string | null {
+  const parts: string[] = [];
+  if (policy?.min_spend_per_person != null && Number(policy.min_spend_per_person) > 0) parts.push(`${money(policy.min_spend_per_person)} per person minimum spend`);
+  if (policy?.deposit_amount != null && Number(policy.deposit_amount) > 0) parts.push(`${money(policy.deposit_amount)} deposit, arranged directly with us`);
+  if (policy?.cancellation_window_hours != null && Number(policy.cancellation_window_hours) > 0) {
+    parts.push(`cancellation window: ${Number(policy.cancellation_window_hours)} hour${Number(policy.cancellation_window_hours) === 1 ? '' : 's'}`);
+  }
+  return parts.length > 0 ? `Our usual terms: ${parts.join('; ')}.` : null;
+}
+
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -838,7 +853,27 @@ Body: ${updateBody || '(none)'}`;
       includedItems.length > 0 ? `Included items: ${includedItems.join(', ')}` : null,
     ].filter(Boolean).join('\n');
 
-    const result = await classifyContent(contentBlock);
+    // The one-tap responses (Standard availability / Offer Alternative with no note) carry ONLY text Nearby itself
+    // wrote (src/utils/quickOfferResponse.js) plus the owner's own policy numbers -- no owner-authored free text,
+    // so there is nothing to classify and no AI call is needed (works with no Anthropic credit). Verified by exact
+    // match server-side, never by a client flag; anything else is classified as before (fail closed).
+    let result: { riskTier: string; matchedCategories: string[]; reasoning: string } | null = null;
+    if (!offerTitle && includedItems.length === 0 && !mediaPath) {
+      let terms: string | null = null;
+      const { data: policy } = await admin.from('business_fulfillment_policies')
+        .select('min_spend_per_person, deposit_amount, cancellation_window_hours, active')
+        .eq('partner_id', partnerId).eq('active', true).maybeSingle();
+      terms = usualTermsLine(policy);
+      const fixedTexts = [
+        STANDARD_AVAILABILITY_TEXT,
+        terms ? `${STANDARD_AVAILABILITY_TEXT} ${terms}` : null,
+        ALTERNATIVE_TIME_TEXT,
+      ].filter(Boolean);
+      if (fixedTexts.includes(offerDescription)) {
+        result = { riskTier: 'low', matchedCategories: [], reasoning: 'Fixed Nearby-authored response text; no owner-written content to classify.' };
+      }
+    }
+    if (!result) result = await classifyContent(contentBlock);
     if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
     const { riskTier, matchedCategories, reasoning } = result;
 

@@ -3608,6 +3608,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     // Context that changes how the request should be read stays, but as one quiet line, not chips.
                     const matchReasons = buildMatchReasons(o.opportunityReasons, {
                       occasionPhrase: reqOccasion?.label ? `${reqOccasion.label.toLowerCase()} experiences` : null,
+                      directed: o.is_directed === true,
                       hasAvailability: availabilityCoversRequest(o.business_requests, myAvailability),
                       priceFits: fulfillmentPolicy?.active === true && budgetMeetsMinSpend(o.business_requests?.budget_max, fulfillmentPolicy?.min_spend_per_person),
                     });

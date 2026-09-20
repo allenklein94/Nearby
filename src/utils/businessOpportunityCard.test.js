@@ -1,4 +1,4 @@
-import { buildOpportunityCard } from './businessOpportunityCard';
+import { buildOpportunityCard, buildMatchReasons } from './businessOpportunityCard';
 
 describe('buildOpportunityCard', () => {
   it('builds the simple card from real fields', () => {
@@ -20,5 +20,16 @@ describe('buildOpportunityCard', () => {
   it('labels add-ons and falls back to the safe summary', () => {
     expect(buildOpportunityCard({ category: 'Bakeries' }, { addonLabel: 'Dessert' }).title).toBe('Dessert add-on');
     expect(buildOpportunityCard({ summary: 'A request' }, {}).title).toBe('A request');
+  });
+});
+
+describe('directed gathering request', () => {
+  test('a gathering request is titled as a gathering and never uses the host title', () => {
+    const c = buildOpportunityCard({ category: 'Coffee', gatherings: { interest_tag: 'Coffee' }, party_size: 4, date: '2026-08-30' }, {});
+    expect(c.title).toBe('Coffee gathering');
+  });
+  test('a directed opportunity leads with "They asked for your business specifically"', () => {
+    expect(buildMatchReasons([], { directed: true })[0]).toBe('They asked for your business specifically');
+    expect(buildMatchReasons([], { directed: false })).toEqual([]);
   });
 });

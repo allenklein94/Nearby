@@ -7,7 +7,7 @@ import { formatBudgetLine } from './budgetTier';
 // Labels are injected so this stays dependency-free and unit-testable.
 export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addonLabel, attributeLabels = [], cuisineLabel = null }) {
   const r = req ?? {};
-  const kind = addonLabel ? `${addonLabel} add-on` : r.category;
+  const kind = addonLabel ? `${addonLabel} add-on` : (r.gatherings && r.category ? `${r.category} gathering` : r.gatherings ? 'Gathering' : r.category);
   const title = [occasionLabel, kind].filter(Boolean).join(' · ') || r.summary || 'New request';
 
   const start = r.time_window_start ? formatTimeOfDay(r.time_window_start) : null;
@@ -73,12 +73,14 @@ export function availabilityCoversRequest(req, postings = [], now = new Date()) 
   });
 }
 
-export function buildMatchReasons(reasons = [], { occasionPhrase = null, hasAvailability = false, priceFits = false } = {}) {
+export function buildMatchReasons(reasons = [], { occasionPhrase = null, hasAvailability = false, priceFits = false, directed = false } = {}) {
   const keys = new Set((reasons ?? []).map((r) => r.key));
-  const lines = REASON_ORDER.filter((k) => keys.has(k)).map((k) => REASON_LINES[k]({ occasionPhrase }));
+  // A host who picked THIS business (business_request_offers.is_directed) is the strongest, real reason there is.
+  const lines = (directed ? ['They asked for your business specifically'] : []).concat(REASON_ORDER.filter((k) => keys.has(k)).map((k) => REASON_LINES[k]({ occasionPhrase })));
   if (priceFits) lines.push('Their budget fits your price range');
   if (hasAvailability) lines.push('You have space posted for that time');
   // Fan-out only creates an opportunity for a business inside the request's radius, so this is true by construction.
-  lines.push('You are within the area they asked for');
-  return lines.length > 1 ? lines : [];
+  // (A directed ask named this business, not an area, so the line does not apply.)
+  if (!directed) lines.push('You are within the area they asked for');
+  return directed || lines.length > 1 ? lines : [];
 }
