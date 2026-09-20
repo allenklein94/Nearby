@@ -29,3 +29,16 @@ describe('gathering_interest anon lockdown (migration 20270139)', () => {
     expect(sql).not.toMatch(/revoke[^;]*\bselect\b[^;]*from anon/i);
   });
 });
+
+describe('legacy entries view is read-only (migration 20270140)', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270140_legacy_entries_view_read_only.sql'), 'utf8').replace(/--.*$/gm, '');
+  test('all privileges revoked, then SELECT to authenticated only', () => {
+    expect(sql).toMatch(/revoke all on public\.relationship_legacy_entries_public from anon, authenticated/);
+    expect(sql).toMatch(/grant select on public\.relationship_legacy_entries_public to authenticated;/);
+    expect(sql).not.toMatch(/grant[^;]*\b(insert|update|delete)\b/i);
+    expect(sql).not.toMatch(/to anon/);
+  });
+  test('the view stays owner-rights (the base table SELECT is intentionally closed)', () => {
+    expect(sql).not.toMatch(/security_invoker/i);
+  });
+});
