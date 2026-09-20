@@ -57,7 +57,7 @@ import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import DemandNearYouCard from '../components/DemandNearYouCard';
 import TellNearbyBusinessCard from '../components/TellNearbyBusinessCard';
 import { describeDemandSignals } from '../utils/demandSignals';
-import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, OFFERED_OCCASION_OPTIONS, WEATHER_SETTING_OPTIONS, occasionLabel, occasionPhrase, dietaryLabel } from '../constants/businessAttributes';
+import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, OFFERED_OCCASION_OPTIONS, WEATHER_SETTING_OPTIONS, occasionLabel, occasionPhrase, dietaryLabel, requestedItemLabel } from '../constants/businessAttributes';
 import { planAddonLabel } from '../constants/planAddons';
 import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
@@ -3827,6 +3827,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       addonLabel: o.business_requests?.addon_type ? planAddonLabel(o.business_requests.addon_type) : null,
                       attributeLabels: reqAttrs.map((key) => businessAttributeLabel(key)),
                       cuisineLabel: o.business_requests?.cuisine ? cuisineLabel(o.business_requests.cuisine) : null,
+                      itemLabels: (o.business_requests?.requested_items ?? []).map((k) => requestedItemLabel(k)),
                     });
                     // Context that changes how the request should be read stays, but as one quiet line, not chips.
                     const matchReasons = buildMatchReasons(o.opportunityReasons, {
@@ -3860,6 +3861,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       )}
                       {card.whenLine !== '' && <Text style={styles.opportunityWhen}>{card.whenLine}</Text>}
                       {card.feelLine !== '' && <Text style={styles.breakdownText}>{card.feelLine}</Text>}
+                      {card.requestedLine !== '' && <Text style={styles.opportunityWhen}>Requested: {card.requestedLine}</Text>}
                       {contextLine !== '' && <Text style={styles.breakdownText}>{contextLine}</Text>}
                       {(card.lookingFor.length > 0 || (o.business_requests?.dietary ?? []).length > 0) && (
                         <View style={{ marginTop: spacing.xs }}>

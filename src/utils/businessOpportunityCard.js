@@ -5,7 +5,7 @@ import { formatBudgetLine } from './budgetTier';
 // Built ONLY from the structured fields get_business_opportunities already returns (never raw text, never invented
 // tiers): a title, one "who / when" line, one "how special / how much" line, and what the customer is looking for.
 // Labels are injected so this stays dependency-free and unit-testable.
-export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addonLabel, attributeLabels = [], cuisineLabel = null }) {
+export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addonLabel, attributeLabels = [], cuisineLabel = null, itemLabels = [] }) {
   const r = req ?? {};
   const kind = addonLabel ? `${addonLabel} add-on` : (r.gatherings && r.category ? `${r.category} gathering` : r.gatherings ? 'Gathering' : r.category);
   const title = [occasionLabel, kind].filter(Boolean).join(' · ') || r.summary || 'New request';
@@ -27,7 +27,9 @@ export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addo
   const feelLine = [experienceLabel, formatBudgetLine(r.budget_max, r.party_size)].filter(Boolean).join(' · ');
 
   const lookingFor = [cuisineLabel, ...attributeLabels].filter(Boolean);
-  return { title, whenLine, feelLine, lookingFor };
+  // "Coffee + Pastries": what the customer picked from the closed list; absent when they picked nothing.
+  const requestedLine = itemLabels.length > 0 ? itemLabels.join(' + ') : '';
+  return { title, whenLine, feelLine, lookingFor, requestedLine };
 }
 
 // "Why this matches": the trust line on a pending opportunity. Every line traces to a real scoring reason (or, for the

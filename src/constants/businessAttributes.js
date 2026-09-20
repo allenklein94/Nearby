@@ -76,6 +76,26 @@ export const DIETARY_OPTIONS = [
   { key: 'kosher', label: 'Kosher' },
 ];
 
+// What the customer wants on hand for a food/coffee request (closed list, customer-picked, never typed or inferred;
+// mirrors business_requests_requested_items_check in 20270167_request_requested_items.sql -- guarded by requestedItems.test.js).
+export const REQUESTED_ITEM_OPTIONS = [
+  { key: 'coffee', label: 'Coffee' },
+  { key: 'tea', label: 'Tea' },
+  { key: 'pastries', label: 'Pastries' },
+  { key: 'cake', label: 'Cake' },
+  { key: 'sandwiches', label: 'Sandwiches' },
+  { key: 'appetizers', label: 'Appetizers' },
+  { key: 'full_meal', label: 'Full meal' },
+  { key: 'desserts', label: 'Desserts' },
+  { key: 'soft_drinks', label: 'Soft drinks' },
+];
+// Categories where the list is offered: the food and coffee asks.
+export const REQUESTED_ITEM_CATEGORIES = ['Coffee', 'Foodie'];
+
+export function requestedItemLabel(key) {
+  return REQUESTED_ITEM_OPTIONS.find((o) => o.key === key)?.label ?? key;
+}
+
 export function dietaryLabel(key) {
   return DIETARY_OPTIONS.find((o) => o.key === key)?.label ?? key;
 }

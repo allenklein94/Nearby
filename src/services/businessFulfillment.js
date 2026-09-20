@@ -228,6 +228,8 @@ export async function submitBusinessRequest({
   sharedInterests = null,
   // Structured dietary needs (closed vocabulary, consumer-picked, Foodie requests only) -- see DIETARY_OPTIONS.
   dietary = null,
+  // What the customer wants on hand (closed list, REQUESTED_ITEM_OPTIONS).
+  items = null,
   // Targeted request: ONE chosen business instead of the ranked nearby set. Same request model and validators;
   // the optional note reaches only that business (server-filtered). Both null = the normal broadcast.
   targetPartnerId = null,
@@ -259,6 +261,7 @@ export async function submitBusinessRequest({
     dietary_param: dietary && dietary.length > 0 ? dietary : null,
     target_partner_id_param: targetPartnerId,
     note_param: targetPartnerId ? note : null,
+    items_param: items && items.length > 0 ? items : null,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, duplicate: !!data.duplicate };

@@ -10,8 +10,9 @@ import { checkTextModeration } from '../services/textModeration';
 import PlatformDateTimeInput from '../components/PlatformDateTimeInput';
 import { toTimeParam, timeLabel } from '../utils/requestTime';
 import DietaryPicker from '../components/DietaryPicker';
+import RequestedItemsPicker from '../components/RequestedItemsPicker';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
-import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, OCCASION_OPTIONS, businessAttributeLabel, cuisineLabel, occasionLabel, dietaryLabel } from '../constants/businessAttributes';
+import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, OCCASION_OPTIONS, businessAttributeLabel, cuisineLabel, occasionLabel, dietaryLabel, REQUESTED_ITEM_CATEGORIES, requestedItemLabel } from '../constants/businessAttributes';
 import { BUDGET_LEVEL_OPTIONS, resolveBudgetMax, initialBudgetSelectionFromMax, EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { useTheme } from '../context/ThemeContext';
@@ -224,6 +225,7 @@ export default function AskBusinessScreen({ navigation, route }) {
   // Opt-in interest sharing (design 2026-09-18): OFF by default, per request only, never remembered.
   const [cuisineInput, setCuisineInput] = useState(null);
   const [dietaryInput, setDietaryInput] = useState([]);
+  const [itemsInput, setItemsInput] = useState([]);
   // "Intelligent demand inbox" Phase 1 (CLAUDE.md, Sep 3 2026): a real
   // WHY signal, genuinely optional in every mode -- unlike attributes/
   // cuisine (solo-only, since party size/budget are already solo-only
@@ -239,6 +241,7 @@ export default function AskBusinessScreen({ navigation, route }) {
   // fully editable/deselectable, the user still reviews before submitting.
   const [occasionInput, setOccasionInput] = useState(route.params?.prefillOccasion ?? null);
   const isSoloMode = !gatheringId && !matchId && !communityId;
+  const showItems = isSoloMode && REQUESTED_ITEM_CATEGORIES.includes(category);
   // Item 95 (CLAUDE.md, "Ask 'How important is the occasion?'"): solo mode
   // only, same gating as attributes/cuisine above -- a real, explicit,
   // never-inferred 'simple'/'special'/'go_all_out' answer that adjusts
@@ -418,6 +421,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           attributes: attributesInput.length > 0 ? attributesInput : null,
           cuisine: category === 'Foodie' ? cuisineInput : null,
           dietary: category === 'Foodie' && dietaryInput.length > 0 ? dietaryInput : null,
+          items: showItems && itemsInput.length > 0 ? itemsInput : null,
           occasion: occasionInput,
           experienceLevel,
           surpriseMode,
@@ -492,6 +496,7 @@ export default function AskBusinessScreen({ navigation, route }) {
     }
     if (surpriseMode) recapParts.push('🎁 kept as a surprise');
     if (isSoloMode && category === 'Foodie' && cuisineInput) recapParts.push(cuisineLabel(cuisineInput));
+    if (showItems && itemsInput.length > 0) recapParts.push(itemsInput.map(requestedItemLabel).join(' + '));
     if (category === 'Foodie' && dietaryInput.length > 0) recapParts.push(dietaryInput.map(dietaryLabel).join(', '));
     if (isSoloMode && attributesInput.length > 0) recapParts.push(attributesInput.map(businessAttributeLabel).join(', '));
     if (isSoloMode && pickedAvailability) recapParts.push(`at ${pickedAvailability.partner_name}`);
@@ -892,6 +897,7 @@ export default function AskBusinessScreen({ navigation, route }) {
             </>
           )}
 
+          {showItems && <RequestedItemsPicker selected={itemsInput} onChange={setItemsInput} />}
           {category === 'Foodie' && <DietaryPicker selected={dietaryInput} onChange={setDietaryInput} />}
 
           <Text style={styles.label}>Search radius</Text>
