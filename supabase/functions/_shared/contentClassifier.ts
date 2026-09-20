@@ -46,7 +46,10 @@ Reply with ONLY valid JSON in this exact shape, nothing else:
 
 Guidance: "low" means this reads as ordinary, legitimate content with no concerning signal -- this should be the overwhelming majority of real submissions, never a de facto bottleneck for normal content. "high" means a clear, unambiguous match to one or more prohibited categories -- reserve this for genuinely obvious cases. "medium" means a real but ambiguous or partial signal a human should look at. "uncertain" means you genuinely cannot tell either way from the text given -- treat this the same as medium, never as low.`;
 
-  const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+  let anthropicResponse: Response;
+  try {
+    anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+    signal: AbortSignal.timeout(20000),
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -58,12 +61,18 @@ Guidance: "low" means this reads as ordinary, legitimate content with no concern
       max_tokens: 300,
       messages: [{ role: 'user', content: promptText }],
     }),
-  });
+    });
+  } catch (e) {
+    // Screening SERVICE failure (network/timeout), not a verdict on the content.
+    console.error('contentClassifier: SERVICE_FAILURE request failed', String(e));
+    return null;
+  }
 
-  const anthropicData = await anthropicResponse.json();
+  const anthropicData = await anthropicResponse.json().catch(() => null);
   const raw = anthropicData?.content?.[0]?.text?.trim();
   if (!raw) {
-    console.error('contentClassifier: unexpected Anthropic response', JSON.stringify(anthropicData));
+    // Screening SERVICE failure (e.g. 401/402 credit/429/5xx), not a verdict on the content.
+    console.error('contentClassifier: SERVICE_FAILURE unexpected Anthropic response', anthropicResponse.status, JSON.stringify(anthropicData));
     return null;
   }
 

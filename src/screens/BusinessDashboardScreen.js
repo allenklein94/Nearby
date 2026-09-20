@@ -2871,10 +2871,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <TouchableOpacity
                       style={styles.welcomeCardStep}
                       onPress={() => setCreateModalVisible(true)}
-                      accessibilityLabel="Post your first offer"
+                      accessibilityLabel={offers.length > 0 ? 'Post an offer' : 'Post your first offer'}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.welcomeCardStepText}>🎁 Post your first offer →</Text>
+                      <Text style={styles.welcomeCardStepText}>🎁 {offers.length > 0 ? 'Post an offer' : 'Post your first offer'} →</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.welcomeCardStep}

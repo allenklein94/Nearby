@@ -136,6 +136,13 @@ const BUNDLE_OCCASION_OPTIONS = ['date_night', 'anniversary', 'birthday', 'celeb
 const BUNDLE_COMPONENT_OPTIONS = ['dinner', 'something_to_do', 'finish_the_night', 'something_fun', 'sweet_treat', 'food', 'family_fun'];
 const TARGET_TYPES = ['business_profile', 'experience', 'offer', 'availability', 'update', 'offer_response'];
 
+// The screening SERVICE failed (classifier unreachable/out of credit/bad reply, or the audit log write failed) -- not a
+// verdict on the content and not a validation problem (those return 400 with their own message, and a real policy hit is a
+// normal riskTier response). Nothing was published or saved; the technical cause is already in the function logs.
+function screeningUnavailable() {
+  return json({ error: "We couldn't review this right now. Please try again in a bit.", code: 'screening_unavailable' }, 503);
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
@@ -216,8 +223,8 @@ Guidance: "low" means this reads as an ordinary, legitimate business logo with n
   const anthropicData = await anthropicResponse.json();
   const raw = anthropicData?.content?.[0]?.text?.trim();
   if (!raw) {
-    console.error('screen-business-content: unexpected Anthropic vision response', JSON.stringify(anthropicData));
-    return { error: 'Could not screen this image right now.' };
+    console.error('screen-business-content: SERVICE_FAILURE unexpected Anthropic vision response', anthropicResponse.status, JSON.stringify(anthropicData));
+    return { error: "We couldn't review this image right now. Please try again in a bit." };
   }
 
   let parsed: any;
@@ -225,7 +232,7 @@ Guidance: "low" means this reads as an ordinary, legitimate business logo with n
     parsed = JSON.parse(raw);
   } catch (_e) {
     console.error('screen-business-content: model did not return valid JSON for image', raw);
-    return { error: 'Could not screen this image right now.' };
+    return { error: "We couldn't review this image right now. Please try again in a bit." };
   }
 
   const riskTier = ['low', 'medium', 'high', 'uncertain'].includes(parsed?.risk_tier) ? parsed.risk_tier : 'uncertain';
@@ -331,7 +338,7 @@ Description: ${description || '(none)'}
 What makes them different: ${differentiator || '(none)'}`;
 
       const textResult = await classifyContent(contentBlock);
-      if (!textResult) return json({ error: 'Could not screen this content right now.' }, 500);
+      if (!textResult) return screeningUnavailable();
 
       // Decision 6, Phase 4 -- a real, separate vision classification, only
       // when logoUrl is genuinely present and has actually changed from
@@ -371,7 +378,7 @@ What makes them different: ${differentiator || '(none)'}`;
       });
       if (logError) {
         console.error('screen-business-content: failed to log screening result', logError);
-        return json({ error: 'Could not screen this content right now.' }, 500);
+        return screeningUnavailable();
       }
 
       if (riskTier === 'low') {
@@ -458,7 +465,7 @@ What makes them different: ${differentiator || '(none)'}`;
 Description: ${description || '(none)'}`;
 
       const result = await classifyContent(contentBlock);
-      if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
+      if (!result) return screeningUnavailable();
       const { riskTier, matchedCategories, reasoning } = result;
 
       const contentSnapshot = {
@@ -478,7 +485,7 @@ Description: ${description || '(none)'}`;
       });
       if (logError) {
         console.error('screen-business-content: failed to log screening result', logError);
-        return json({ error: 'Could not screen this content right now.' }, 500);
+        return screeningUnavailable();
       }
 
       if (riskTier === 'low') {
@@ -565,7 +572,7 @@ Description: ${description || '(none)'}`;
 Description: ${description || '(none)'}`;
 
       const result = await classifyContent(contentBlock);
-      if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
+      if (!result) return screeningUnavailable();
       const { riskTier, matchedCategories, reasoning } = result;
 
       const contentSnapshot = {
@@ -585,7 +592,7 @@ Description: ${description || '(none)'}`;
       });
       if (logError) {
         console.error('screen-business-content: failed to log screening result', logError);
-        return json({ error: 'Could not screen this content right now.' }, 500);
+        return screeningUnavailable();
       }
 
       if (riskTier === 'low') {
@@ -678,7 +685,7 @@ Description: ${description || '(none)'}`;
 Description: ${description || '(none)'}`;
 
       const result = await classifyContent(contentBlock);
-      if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
+      if (!result) return screeningUnavailable();
       const { riskTier, matchedCategories, reasoning } = result;
 
       const contentSnapshot = {
@@ -700,7 +707,7 @@ Description: ${description || '(none)'}`;
       });
       if (logError) {
         console.error('screen-business-content: failed to log screening result', logError);
-        return json({ error: 'Could not screen this content right now.' }, 500);
+        return screeningUnavailable();
       }
 
       if (riskTier === 'low') {
@@ -746,7 +753,7 @@ Description: ${description || '(none)'}`;
 Body: ${updateBody || '(none)'}`;
 
       const result = await classifyContent(contentBlock);
-      if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
+      if (!result) return screeningUnavailable();
       const { riskTier, matchedCategories, reasoning } = result;
 
       const contentSnapshot = { title, body: updateBody || null };
@@ -763,7 +770,7 @@ Body: ${updateBody || '(none)'}`;
       });
       if (logError) {
         console.error('screen-business-content: failed to log screening result', logError);
-        return json({ error: 'Could not screen this content right now.' }, 500);
+        return screeningUnavailable();
       }
 
       if (riskTier === 'low') {
@@ -874,7 +881,7 @@ Body: ${updateBody || '(none)'}`;
       }
     }
     if (!result) result = await classifyContent(contentBlock);
-    if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
+    if (!result) return screeningUnavailable();
     const { riskTier, matchedCategories, reasoning } = result;
 
     const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, priceIsPerPerson, discountPct, proposedTime, experienceId, mediaPath, mediaType };
@@ -891,7 +898,7 @@ Body: ${updateBody || '(none)'}`;
     });
     if (logError) {
       console.error('screen-business-content: failed to log screening result', logError);
-      return json({ error: 'Could not screen this content right now.' }, 500);
+      return screeningUnavailable();
     }
 
     if (riskTier === 'low') {
