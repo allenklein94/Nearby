@@ -46,6 +46,7 @@ import { typography, spacing, radius } from '../theme';
 import { getUserLocation } from '../services/userLocation';
 
 
+import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 // Real Free/$/$$/$$$ filter options, backed by gatherings.price_level --
 // mirrors CreateGatheringScreen's own PRICE_OPTIONS chip labels.
 const PRICE_FILTER_OPTIONS = [
@@ -425,7 +426,7 @@ export default function GatheringsScreen({ navigation, route }) {
 
   const filteredNearbyUnranked = (isSearchingGatherings ? searchedNearby : nearby)
     .filter((g) => forYouActive ? forYouCategories.includes(g.interest_tag) : (!interestFilter || g.interest_tag === interestFilter))
-    .filter((g) => !trendingActive || trendingIds.includes(g.id))
+    .filter((g) => !trendingActive || (trendingIds.includes(g.id) && attendeeTotal(g) >= TRENDING_ATTENDANCE_MIN))
     .filter((g) => matchesDateFilter(g.scheduled_at, dateFilter))
     .filter((g) => !environmentFilter || (environmentFilter === 'indoor' ? isIndoorCategory(g.interest_tag) : isOutdoorCategory(g.interest_tag)))
     .filter((g) => !priceFilter || g.price_level === priceFilter)

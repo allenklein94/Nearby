@@ -39,3 +39,12 @@ export function formatAgo(iso, now = Date.now()) {
   if (hours < 24) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
 }
+
+// "5 PM" for the local hour of a real timestamp (never an hour taken in the
+// database's timezone and shown as the reader's clock).
+export function formatLocalHour(iso) {
+  const d = parseDate(iso);
+  if (!d) return null;
+  const h = d.getHours();
+  return `${h % 12 === 0 ? 12 : h % 12} ${h >= 12 ? 'PM' : 'AM'}`;
+}

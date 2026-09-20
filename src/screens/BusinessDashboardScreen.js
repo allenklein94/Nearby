@@ -73,6 +73,7 @@ import { NLoader, modalAnimation, showSuccessToast } from '../motion';
 import { isGatheringUpcoming } from '../utils/objectState';
 import { categoryOutcomeLine, categoryRatingLine, offerPriceLabel } from '../utils/outcomeDisplay';
 import { countLabel } from '../utils/plural';
+import { bestTimeLine } from '../utils/bestTime';
 const SECTIONS = [
   { key: 'home', icon: '🏠', label: 'Home' },
   { key: 'opportunities', icon: '🎯', label: 'Opportunities' },
@@ -2812,13 +2813,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     }
   }
 
-  function formatHour(hour) {
-    if (hour === null || hour === undefined) return null;
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 === 0 ? 12 : hour % 12;
-    return `${displayHour}:00 ${period}`;
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -4099,7 +4093,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   No profile views yet — share your QR code or link (Dashboard tab) to start seeing how people find you.
                 </Text>
               )}
-              {(insights && (insights.top_interests?.length > 0 || insights.best_hour_of_day !== null)) || visitFrequency !== null ? (
+              {(insights && (insights.top_interests?.length > 0 || bestTimeLine(insights))) || visitFrequency !== null ? (
                 <View style={styles.insightsCard}>
                   {estimatedOwed.billingModel && estimatedOwed.billingModel !== 'custom' && (
                     <View style={styles.estimatedOwedBanner}>
@@ -4124,8 +4118,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   {insights?.top_interests?.length > 0 && (
                     <Text style={styles.insightLine}>Your community's top interests: {insights.top_interests.join(', ')}</Text>
                   )}
-                  {insights?.best_hour_of_day !== null && insights?.best_hour_of_day !== undefined && (
-                    <Text style={styles.insightLine}>Best-performing time: {formatHour(insights.best_hour_of_day)}</Text>
+                  {bestTimeLine(insights) && (
+                    <Text style={styles.insightLine}>{bestTimeLine(insights)}</Text>
                   )}
                   {visitFrequency !== null && (
                     <Text style={styles.insightLine}>Attendees average {visitFrequency} gathering{visitFrequency === 1 ? '' : 's'} with you</Text>
