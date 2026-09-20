@@ -9,6 +9,7 @@
 //   dating recommendation-> Meet People
 //   business opportunity -> View Offer
 import { needsApproval, joinLabel } from './gatheringJoinMode';
+import { gatheringViewerState } from './objectState';
 
 // Returns { kind, label, showView }.
 //   kind: 'interested' (private maybe, toggles) | 'join' (opens the normal join confirmation on the detail screen) | 'view_plan' | 'requested' | 'view'
@@ -17,17 +18,22 @@ import { needsApproval, joinLabel } from './gatheringJoinMode';
 export function gatheringPrimaryAction(gathering, myUserId, now = Date.now(), opts = {}) {
   const view = { kind: 'view', label: 'View', showView: false };
   if (!gathering) return view;
-  const started = gathering.scheduled_at && new Date(gathering.scheduled_at).getTime() <= now;
-  if (started) return view;
+  // Attendance rows tell us the viewer's state; without them we cannot know it: offer only View, never a wrong "Join".
+  const known = Boolean(myUserId) && Array.isArray(gathering.attendees);
+  const mine = known ? gathering.attendees.find((a) => a.user_id === myUserId) : null;
+  const { relation, actionable } = gatheringViewerState({
+    isHost: Boolean(myUserId) && gathering.host_id === myUserId,
+    myStatus: mine?.status ?? null,
+    scheduled_at: gathering.scheduled_at,
+  }, now);
+  // Started or unknown date: nothing can be done from a card.
+  if (!actionable) return view;
 
-  if (myUserId && gathering.host_id === myUserId) return { kind: 'view_plan', label: 'View Plan', showView: false };
-
-  // Without the viewer's own attendance rows we cannot know their state: offer only View, never a wrong "Join".
-  if (!myUserId || !Array.isArray(gathering.attendees)) return view;
-  const mine = gathering.attendees.find((a) => a.user_id === myUserId);
-  if (mine?.status === 'approved') return { kind: 'view_plan', label: 'View Plan', showView: false };
-  if (mine?.status === 'pending') return { kind: 'requested', label: 'Requested', showView: true };
-  if (mine?.status === 'waitlisted') return { kind: 'requested', label: 'On waitlist', showView: true };
+  if (relation === 'hosting') return { kind: 'view_plan', label: 'View Plan', showView: false };
+  if (!known) return view;
+  if (relation === 'attending') return { kind: 'view_plan', label: 'View Plan', showView: false };
+  if (relation === 'requested') return { kind: 'requested', label: 'Requested', showView: true };
+  if (relation === 'waitlisted') return { kind: 'requested', label: 'On waitlist', showView: true };
 
   // Invite-only: only invited people can join, and that access is resolved on the detail screen.
   if (gathering.visibility === 'invite_only') return view;
