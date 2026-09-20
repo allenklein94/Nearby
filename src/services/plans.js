@@ -247,3 +247,16 @@ export function navigateToExperienceStop(navigation, stop, { partySize = null } 
     matchedAvailability: { availabilityId: stop.refId, partnerName: stop.subtitle ?? stop.title, title: stop.title },
   });
 }
+
+// Owner-only edits to a night's stops. Reorder is cosmetic (never touches a request). Remove cancels only that stop's own
+// request/reservation through the existing cancellation path, server-side (remove_experience_stop, migration 20270131).
+export async function reorderExperienceStops(planId, orderedStopIds) {
+  const { error } = await supabase.rpc('reorder_experience_stops', { plan_id_param: planId, ordered_stop_ids: orderedStopIds });
+  if (error) throw new Error(error.message);
+}
+
+export async function removeExperienceStop(stopId) {
+  const { data, error } = await supabase.rpc('remove_experience_stop', { stop_id_param: stopId });
+  if (error) throw new Error(error.message);
+  return { removed: !!data?.removed, cancelledRequest: !!data?.cancelled_request };
+}
