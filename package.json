@@ -7,7 +7,8 @@
     "ios": "expo run:ios",
     "android": "expo run:android",
     "web": "expo start --web",
-    "test": "jest"
+    "test": "jest",
+    "journeys": "jest --testMatch \"**/*.journey.js\" --runInBand"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
