@@ -356,7 +356,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
-  businessContextLine: { ...typography.small, color: colors.primary, fontWeight: '600', marginBottom: spacing.lg },
+  businessContextLine: { ...typography.small, color: colors.textSecondary, fontWeight: '600', marginBottom: spacing.lg },
   label: { ...typography.body, fontWeight: '700', color: colors.textPrimary, marginTop: spacing.lg, marginBottom: spacing.sm },
   helperText: { ...typography.small, color: colors.textTertiary, marginBottom: spacing.sm },
   input: {

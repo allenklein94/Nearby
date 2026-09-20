@@ -307,7 +307,7 @@ const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   historyStartText: { color: colors.textTertiary, fontSize: 12, textAlign: 'center', paddingVertical: spacing.md },
-  historyErrorText: { color: colors.primary, fontSize: 12, fontWeight: '600', textAlign: 'center', paddingVertical: spacing.md },
+  historyErrorText: { color: colors.danger, fontSize: 12, fontWeight: '600', textAlign: 'center', paddingVertical: spacing.md },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },
   messageRow: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: spacing.sm, gap: spacing.xs },

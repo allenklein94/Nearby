@@ -617,7 +617,7 @@ const getStyles = (colors) => StyleSheet.create({
   participantStatus: { ...typography.caption, color: colors.textTertiary, marginTop: 1 },
   excludeLink: { ...typography.caption, color: colors.textTertiary, textDecorationLine: 'underline' },
   removeLink: { ...typography.caption, color: colors.danger, textDecorationLine: 'underline', marginTop: 4 },
-  excludedTag: { ...typography.caption, color: colors.primary, fontWeight: '700' },
+  excludedTag: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
   actionRow: { marginTop: spacing.lg },
   primaryButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center' },
   primaryButtonText: { color: '#fff', fontWeight: '700' },

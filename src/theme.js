@@ -7,7 +7,7 @@ export const lightColors = {
   textPrimary: '#2D2420',
   textSecondary: '#6B5D54',
   textTertiary: '#A69B92',
-  success: '#4CAF7D',
+  success: '#2F8A5B',
   danger: '#C62F3B',
   warning: '#9A6210',
   info: '#3B6EA5',

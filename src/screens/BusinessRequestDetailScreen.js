@@ -43,10 +43,10 @@ import { offerPriceLabel } from '../utils/outcomeDisplay';
 import { countLabel } from '../utils/plural';
 const STATUS_COPY = {
   open: { label: 'Open — waiting for responses', color: null },
-  fulfilled: { label: 'You accepted an offer', color: 'primary' },
+  fulfilled: { label: 'You accepted an offer', color: 'success' },
   expired: { label: 'This request expired', color: null },
   cancelled: { label: 'You cancelled this request', color: null },
-  merged: { label: 'Combined into a group plan', color: 'primary' },
+  merged: { label: 'Combined into a group plan', color: 'info' },
 };
 
 const OFFER_STATUS_COPY = {
@@ -1161,7 +1161,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         )}
 
         <Text style={styles.rawText}>{request.raw_text}</Text>
-        <Text style={[styles.statusLine, statusCopy.color === 'primary' && { color: colors.primary }]}>{statusCopy.label}</Text>
+        <Text style={[styles.statusLine, statusCopy.color !== 'muted' && colors[statusCopy.color] && { color: colors[statusCopy.color] }]}>{statusCopy.label}</Text>
 
         {/* Request sent -> Offer received -> Offer accepted: only steps that really happened, no "viewed" step. */}
         <View style={styles.timeline} accessibilityLabel="Request progress">
@@ -1795,7 +1795,7 @@ const getStyles = (colors) => StyleSheet.create({
   planSummaryTitleRow: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: spacing.sm },
   planSummaryTitleIcon: { marginRight: spacing.xs },
   planSummaryStatusPill: { backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  planSummaryStatusPillConfirmed: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
+  planSummaryStatusPillConfirmed: { backgroundColor: colors.surfaceElevated, borderColor: colors.success },
   planSummaryStatusPillCancelled: { backgroundColor: colors.dangerMuted ?? colors.surface, borderColor: colors.danger },
   // Item 91 ("Add a 'Plan Status'" -- CLAUDE.md): two more real tones for
   // the two new mid-progression states (Option Selected / Booking
@@ -1839,7 +1839,7 @@ const getStyles = (colors) => StyleSheet.create({
   offerTitleHeadline: { ...typography.headline, color: colors.textPrimary, marginTop: 2 },
   offerReputationLine: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
   offerStatus: { ...typography.caption, color: colors.textTertiary, marginTop: 2, marginBottom: spacing.xs },
-  offerTypeLabel: { ...typography.caption, color: colors.primary, fontWeight: '700', marginBottom: spacing.xs },
+  offerTypeLabel: { ...typography.caption, color: colors.info, fontWeight: '700', marginBottom: spacing.xs },
   offerDescription: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xs },
   offerIncludedItem: { ...typography.body, color: colors.textPrimary, marginBottom: 2 },
   offerProposedTime: { ...typography.body, color: colors.textPrimary, fontWeight: '600', marginBottom: spacing.xs },

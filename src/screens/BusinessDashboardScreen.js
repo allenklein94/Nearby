@@ -3827,7 +3827,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       {o.status === 'pending' && (
                         <>
                           {canRespondToOpportunity(o) ? (
-                            <Text style={[styles.breakdownText, { color: colors.primary, fontWeight: '700' }]}>
+                            <Text style={[styles.breakdownText, { color: colors.info, fontWeight: '700' }]}>
                               {matchReasons.length > 0 ? '✨ Good match for your business' : '✨ New opportunity'}
                             </Text>
                           ) : (
@@ -5033,7 +5033,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   Real, curated things people can come to you for -- shown on your public profile.
                 </Text>
                 {entitlements && entitlementLimit(entitlements, 'signature_experiences') !== null && (
-                  <Text style={[styles.helperText, checkLimit(entitlements, 'signature_experiences', experiences.length).atLimit && { color: colors.primary, fontWeight: '700' }]}>
+                  <Text style={[styles.helperText, checkLimit(entitlements, 'signature_experiences', experiences.length).atLimit && { color: colors.warning, fontWeight: '700' }]}>
                     {experiences.length} of {entitlementLimit(entitlements, 'signature_experiences')} used
                     {checkLimit(entitlements, 'signature_experiences', experiences.length).atLimit ? ' -- upgrade for unlimited' : ''}
                   </Text>
@@ -5992,7 +5992,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 );
               })()}
               {offerPrefilledFrom && (
-                <Text style={[styles.breakdownText, { color: colors.primary, fontWeight: '600', marginBottom: spacing.md }]}>
+                <Text style={[styles.breakdownText, { color: colors.info, fontWeight: '600', marginBottom: spacing.md }]}>
                   ✨ Started from your "{offerPrefilledFrom}" package -- edit anything, then send.
                 </Text>
               )}
@@ -6043,7 +6043,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       <View style={{ flex: 1 }}>
                         <Text style={styles.offerTitle}>{s.title}</Text>
                         {s.reasons.map((r) => (
-                          <Text key={r.label} style={[styles.breakdownText, { color: colors.primary, fontWeight: '600' }]}>
+                          <Text key={r.label} style={[styles.breakdownText, { color: colors.info, fontWeight: '600' }]}>
                             🎯 {r.label}
                           </Text>
                         ))}
@@ -6367,7 +6367,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               ) : null}
               {offerValidDay && !offerValidTime ? (
                 <TouchableOpacity onPress={() => setShowValidTimePicker(true)} accessibilityRole="button" accessibilityLabel="Pick the end time">
-                  <Text style={{ color: colors.primary, marginTop: spacing.xs }}>Pick an end time for {offerValidDay} (or choose No end time)</Text>
+                  <Text style={{ color: colors.warning, marginTop: spacing.xs }}>Pick an end time for {offerValidDay} (or choose No end time)</Text>
                 </TouchableOpacity>
               ) : null}
               {showValidTimePicker && offerValidDay ? (

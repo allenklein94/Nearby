@@ -295,7 +295,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   statusNeedsInfo: { color: colors.warning },
   description: { color: colors.textSecondary, fontSize: 13, marginBottom: spacing.xs, lineHeight: 18 },
   contact: { color: colors.textTertiary, fontSize: 12, marginBottom: spacing.sm },
-  needsInfoNote: { color: colors.primary, fontSize: 12, fontWeight: '600', marginBottom: spacing.sm },
+  needsInfoNote: { color: colors.warning, fontSize: 12, fontWeight: '600', marginBottom: spacing.sm },
   actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   approveButton: { flex: 1, backgroundColor: colors.success, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center' },
   approveButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },

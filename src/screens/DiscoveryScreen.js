@@ -988,7 +988,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   overviewTitle: { ...typography.headline, color: colors.textPrimary },
   overviewClose: { color: colors.textTertiary, fontSize: 20 },
   bio: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
-  sharedText: { color: colors.primary, fontSize: 12, fontWeight: '600', marginBottom: spacing.md },
+  sharedText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginBottom: spacing.md },
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   noticeButton: {
     backgroundColor: colors.primary,

@@ -1319,7 +1319,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   title: { ...typography.title, color: colors.textPrimary, flex: 1 },
   metaLine: { color: colors.textSecondary, fontSize: 14, marginTop: spacing.xs },
   capacityLine: { color: colors.textTertiary, fontSize: 13, fontWeight: '600', marginTop: 2 },
-  almostFullNudge: { color: colors.primary, fontSize: 13, fontWeight: '700', marginTop: spacing.sm },
+  almostFullNudge: { color: colors.warning, fontSize: 13, fontWeight: '700', marginTop: spacing.sm },
   hostLineRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm, gap: spacing.xs },
   hostAvatarSmall: { width: 22, height: 22, borderRadius: 11 },
   hostAvatarPlaceholder: { backgroundColor: colors.border },
