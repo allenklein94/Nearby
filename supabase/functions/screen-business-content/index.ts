@@ -292,7 +292,7 @@ serve(async (req) => {
     if (userError || !userData?.user) return json({ error: 'Invalid session' }, 401);
     const myId = userData.user.id;
 
-    const body = await req.json();
+    let body = await req.json();
     const { partnerId, targetType } = body;
     if (!partnerId || typeof partnerId !== 'string') return json({ error: 'Missing partnerId' }, 400);
     if (!TARGET_TYPES.includes(targetType)) {
@@ -827,6 +827,22 @@ Body: ${updateBody || '(none)'}`;
     // covered by the weaker generic checkTextModeration() before this
     // phase, per the locked design's own text -- upgraded to real policy
     // classification here, not left as the narrower check.
+    // Item 83: "Try again" on a submission whose screening could not finish. The saved payload is re-run through the
+    // exact same validation and screening below; the claim is atomic so two taps cannot run it twice.
+    let submissionId: string | null = null;
+    if (typeof body.retrySubmissionId === 'string' && body.retrySubmissionId) {
+      const { data: sub } = await admin.from('business_offer_submissions').select('*').eq('id', body.retrySubmissionId).eq('partner_id', partnerId).maybeSingle();
+      if (!sub) return json({ error: 'That offer is not available anymore.' }, 404);
+      const stale = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+      const { data: claimed } = await admin.from('business_offer_submissions')
+        .update({ status: 'reviewing', reason: null, matched_categories: [], attempts: (sub.attempts ?? 1) + 1, updated_at: new Date().toISOString() })
+        .eq('id', sub.id)
+        .or(`status.eq.unavailable,and(status.eq.reviewing,updated_at.lt.${stale})`)
+        .select('id').maybeSingle();
+      if (!claimed) return json({ error: 'This offer is already being reviewed.' }, 409);
+      submissionId = sub.id;
+      body = { ...sub.payload, partnerId, targetType, async: true };
+    }
     const requestId = typeof body.requestId === 'string' && body.requestId ? body.requestId : null;
     if (!requestId) return json({ error: 'Missing requestId' }, 400);
     const offerType = OFFER_TYPE_OPTIONS.includes(body.offerType) ? body.offerType : 'standard';
@@ -911,107 +927,153 @@ Body: ${updateBody || '(none)'}`;
       }
     }
 
-    const contentBlock = [
-      offerTitle ? `Offer title: ${offerTitle}` : null,
-      `Offer description: ${offerDescription}`,
-      includedItems.length > 0 ? `Included items: ${includedItems.join(', ')}` : null,
-      redemptionInstructions ? `Redemption instructions: ${redemptionInstructions}` : null,
-    ].filter(Boolean).join('\n');
+    const UNAVAILABLE = { status: 503, body: { error: "We couldn't review this right now. Please try again in a bit.", code: 'screening_unavailable' } };
+    const runOfferScreening = async (): Promise<{ status: number; body: any }> => {
+      const contentBlock = [
+        offerTitle ? `Offer title: ${offerTitle}` : null,
+        `Offer description: ${offerDescription}`,
+        includedItems.length > 0 ? `Included items: ${includedItems.join(', ')}` : null,
+        redemptionInstructions ? `Redemption instructions: ${redemptionInstructions}` : null,
+      ].filter(Boolean).join('\n');
 
-    // The one-tap responses (Standard availability / Offer Alternative with no note) carry ONLY text Nearby itself
-    // wrote (src/utils/quickOfferResponse.js) plus the owner's own policy numbers -- no owner-authored free text,
-    // so there is nothing to classify and no AI call is needed (works with no Anthropic credit). Verified by exact
-    // match server-side, never by a client flag; anything else is classified as before (fail closed).
-    let result: { riskTier: string; matchedCategories: string[]; reasoning: string } | null = null;
-    if (!offerTitle && includedItems.length === 0 && (!mediaPath || creativeRow) && !redemptionInstructions) {
-      let terms: string | null = null;
-      const { data: policy } = await admin.from('business_fulfillment_policies')
-        .select('min_spend_per_person, deposit_amount, cancellation_window_hours, active')
-        .eq('partner_id', partnerId).eq('active', true).maybeSingle();
-      terms = usualTermsLine(policy);
-      const fixedTexts = [
-        STANDARD_AVAILABILITY_TEXT,
-        terms ? `${STANDARD_AVAILABILITY_TEXT} ${terms}` : null,
-        ALTERNATIVE_TIME_TEXT,
-      ].filter(Boolean);
-      if (fixedTexts.includes(offerDescription)) {
-        result = { riskTier: 'low', matchedCategories: [], reasoning: 'Fixed Nearby-authored response text; no owner-written content to classify.' };
+      // The one-tap responses (Standard availability / Offer Alternative with no note) carry ONLY text Nearby itself
+      // wrote (src/utils/quickOfferResponse.js) plus the owner's own policy numbers -- no owner-authored free text,
+      // so there is nothing to classify and no AI call is needed (works with no Anthropic credit). Verified by exact
+      // match server-side, never by a client flag; anything else is classified as before (fail closed).
+      let result: { riskTier: string; matchedCategories: string[]; reasoning: string } | null = null;
+      if (!offerTitle && includedItems.length === 0 && (!mediaPath || creativeRow) && !redemptionInstructions) {
+        let terms: string | null = null;
+        const { data: policy } = await admin.from('business_fulfillment_policies')
+          .select('min_spend_per_person, deposit_amount, cancellation_window_hours, active')
+          .eq('partner_id', partnerId).eq('active', true).maybeSingle();
+        terms = usualTermsLine(policy);
+        const fixedTexts = [
+          STANDARD_AVAILABILITY_TEXT,
+          terms ? `${STANDARD_AVAILABILITY_TEXT} ${terms}` : null,
+          ALTERNATIVE_TIME_TEXT,
+        ].filter(Boolean);
+        if (fixedTexts.includes(offerDescription)) {
+          result = { riskTier: 'low', matchedCategories: [], reasoning: 'Fixed Nearby-authored response text; no owner-written content to classify.' };
+        }
       }
-    }
-    if (!result) result = await classifyContent(contentBlock);
-    if (!result) return screeningUnavailable();
+      if (!result) result = await classifyContent(contentBlock);
+      if (!result) return UNAVAILABLE;
 
-    // Rich offers, Phase 2: screen the attached media too; the worst tier across text and media wins.
-    let posterPath: string | null = null;
-    if (creativeRow) {
-      posterPath = creativeRow.poster_path; // already screened when saved: reused without re-screening
-    } else if (mediaPath) {
-      const m: any = await screenOfferMedia(admin, partnerId, mediaPath, mediaType!, framePaths);
-      if (m.service) return screeningUnavailable();
-      if (m.error) return json({ error: m.error }, m.status);
-      result = {
-        riskTier: worseTier(result.riskTier, m.tier),
-        matchedCategories: Array.from(new Set([...result.matchedCategories, ...m.categories])),
-        reasoning: `${result.reasoning} ${m.reasoning}`,
-      };
-      posterPath = m.posterPath;
-      // The media itself passed cleanly: save it to the owner's library so the next offer can reuse it (no re-upload, no re-screen).
-      if (m.tier === 'low') {
-        const { data: saved } = await admin.from('business_creatives')
-          .upsert({ partner_id: partnerId, media_type: mediaType, media_path: mediaPath, poster_path: posterPath }, { onConflict: 'partner_id,media_path' })
-          .select('id').maybeSingle();
-        creativeId = saved?.id ?? null;
+      // Rich offers, Phase 2: screen the attached media too; the worst tier across text and media wins.
+      let posterPath: string | null = null;
+      if (creativeRow) {
+        posterPath = creativeRow.poster_path; // already screened when saved: reused without re-screening
+      } else if (mediaPath) {
+        const m: any = await screenOfferMedia(admin, partnerId, mediaPath, mediaType!, framePaths);
+        if (m.service) return UNAVAILABLE;
+        if (m.error) return { status: m.status, body: { error: m.error } };
+        result = {
+          riskTier: worseTier(result.riskTier, m.tier),
+          matchedCategories: Array.from(new Set([...result.matchedCategories, ...m.categories])),
+          reasoning: `${result.reasoning} ${m.reasoning}`,
+        };
+        posterPath = m.posterPath;
+        // The media itself passed cleanly: save it to the owner's library so the next offer can reuse it (no re-upload, no re-screen).
+        if (m.tier === 'low') {
+          const { data: saved } = await admin.from('business_creatives')
+            .upsert({ partner_id: partnerId, media_type: mediaType, media_path: mediaPath, poster_path: posterPath }, { onConflict: 'partner_id,media_path' })
+            .select('id').maybeSingle();
+          creativeId = saved?.id ?? null;
+        }
       }
-    }
-    const { riskTier, matchedCategories, reasoning } = result;
+      const { riskTier, matchedCategories, reasoning } = result;
 
-    const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, priceIsPerPerson, discountPct, proposedTime, experienceId, mediaPath, mediaType, posterPath, framePaths, redemptionInstructions, creativeId, validUntil, availableFrom, availableUntil };
+      const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, priceIsPerPerson, discountPct, proposedTime, experienceId, mediaPath, mediaType, posterPath, framePaths, redemptionInstructions, creativeId, validUntil, availableFrom, availableUntil };
 
-    const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
-      partner_id_param: partnerId,
-      target_type_param: 'offer_response',
-      target_id_param: null,
-      submitted_by_param: myId,
-      content_snapshot_param: contentSnapshot,
-      risk_tier_param: riskTier,
-      matched_categories_param: matchedCategories,
-      model_reasoning_param: reasoning,
-    });
-    if (logError) {
-      console.error('screen-business-content: failed to log screening result', logError);
-      return screeningUnavailable();
-    }
-
-    if (riskTier === 'low') {
-      const { data: writeResult, error: writeError } = await supabaseAsUser.rpc('submit_business_offer', {
-        request_id_param: requestId, offer_type_param: offerType, offer_description_param: offerDescription,
-        offer_price_param: offerPrice, proposed_time_param: proposedTime, experience_id_param: experienceId,
-        media_path_param: mediaPath, media_type_param: mediaType,
-        offer_title_param: offerTitle, included_items_param: includedItems,
-        price_is_per_person_param: priceIsPerPerson,
-        discount_pct_param: discountPct,
-        redemption_instructions_param: redemptionInstructions,
-        media_poster_path_param: posterPath,
-        creative_id_param: creativeId,
-        valid_until_param: validUntil,
-        available_from_param: availableFrom,
-        available_until_param: availableUntil,
+      const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
+        partner_id_param: partnerId,
+        target_type_param: 'offer_response',
+        target_id_param: null,
+        submitted_by_param: myId,
+        content_snapshot_param: contentSnapshot,
+        risk_tier_param: riskTier,
+        matched_categories_param: matchedCategories,
+        model_reasoning_param: reasoning,
       });
-      if (writeError) {
-        console.error('screen-business-content: low-tier offer_response write failed', writeError);
-        return json({ error: writeError.message || 'Could not send your response.' }, 500);
+      if (logError) {
+        console.error('screen-business-content: failed to log screening result', logError);
+        return UNAVAILABLE;
       }
-      return json({ riskTier, published: true, blocked: false, screeningId, offerId: writeResult?.offerId });
+
+      if (riskTier === 'low') {
+        const { data: writeResult, error: writeError } = await supabaseAsUser.rpc('submit_business_offer', {
+          request_id_param: requestId, offer_type_param: offerType, offer_description_param: offerDescription,
+          offer_price_param: offerPrice, proposed_time_param: proposedTime, experience_id_param: experienceId,
+          media_path_param: mediaPath, media_type_param: mediaType,
+          offer_title_param: offerTitle, included_items_param: includedItems,
+          price_is_per_person_param: priceIsPerPerson,
+          discount_pct_param: discountPct,
+          redemption_instructions_param: redemptionInstructions,
+          media_poster_path_param: posterPath,
+          creative_id_param: creativeId,
+          valid_until_param: validUntil,
+          available_from_param: availableFrom,
+          available_until_param: availableUntil,
+        });
+        if (writeError) {
+          console.error('screen-business-content: low-tier offer_response write failed', writeError);
+          return { status: 500, body: { error: writeError.message || 'Could not send your response.' } };
+        }
+        return { status: 200, body: { riskTier, published: true, blocked: false, screeningId, offerId: writeResult?.offerId } };
+      }
+
+      if (riskTier === 'high') {
+        return { status: 200, body: {
+          riskTier, published: false, blocked: true, matchedCategories, screeningId,
+          error: "This content couldn't be sent — it was flagged during a routine content check.",
+        } };
+      }
+
+      return { status: 200, body: { riskTier, published: false, blocked: false, screeningId } };
+    };
+
+    if (body.async === true) {
+      // Item 83: save the submission, answer immediately, screen in the background. Nothing is published until it
+      // clears; a screening outage leaves it 'unavailable' (retryable), never published and never silently lost.
+      if (!submissionId) {
+        const { data: created, error: createError } = await admin.from('business_offer_submissions').insert({
+          partner_id: partnerId, request_id: requestId, submitted_by: myId, status: 'reviewing',
+          payload: { requestId, offerType, offerDescription, offerPrice, proposedTime, experienceId, mediaPath, mediaType, offerTitle, includedItems, priceIsPerPerson, discountPct, framePaths, redemptionInstructions, creativeId, validUntil, availableFrom, availableUntil },
+        }).select('id').single();
+        if (createError) {
+          if ((createError as any).code === '23505') return json({ error: 'You already have an offer being reviewed for this request.', code: 'already_reviewing' }, 409);
+          console.error('screen-business-content: could not save the submission', createError);
+          return json({ error: "We couldn't save your offer right now. Please try again.", code: 'screening_unavailable' }, 503);
+        }
+        submissionId = created.id;
+      }
+      const id = submissionId!;
+      const work = (async () => {
+        let patch: Record<string, unknown>;
+        try {
+          const o = await runOfferScreening();
+          const b = o.body ?? {};
+          if (o.status === 503) patch = { status: 'unavailable', reason: null };
+          else if (b.published) patch = { status: 'published', offer_id: b.offerId ?? null, screening_id: b.screeningId ?? null };
+          else if (b.blocked) patch = { status: 'needs_changes', matched_categories: b.matchedCategories ?? [], screening_id: b.screeningId ?? null };
+          else if (o.status === 200) patch = { status: 'in_review', screening_id: b.screeningId ?? null };
+          else if (o.status === 400) patch = { status: 'needs_changes', reason: String(b.error ?? 'Please review your offer and send it again.').slice(0, 300) };
+          else patch = { status: 'not_sent', reason: String(b.error ?? 'It could not be sent.').slice(0, 300) };
+        } catch (e) {
+          console.error('screen-business-content: background screening crashed', e);
+          patch = { status: 'unavailable', reason: null };
+        }
+        const { error: upErr } = await admin.from('business_offer_submissions').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+        if (upErr) console.error('screen-business-content: could not record the submission result', upErr);
+      })();
+      // deno-lint-ignore no-explicit-any
+      const rt = (globalThis as any).EdgeRuntime;
+      if (rt?.waitUntil) rt.waitUntil(work); else await work;
+      return json({ submissionId: id, status: 'reviewing', queued: true }, 202);
     }
 
-    if (riskTier === 'high') {
-      return json({
-        riskTier, published: false, blocked: true, matchedCategories, screeningId,
-        error: "This content couldn't be sent — it was flagged during a routine content check.",
-      }, 200);
-    }
-
-    return json({ riskTier, published: false, blocked: false, screeningId });
+    const outcome = await runOfferScreening();
+    return json(outcome.body, outcome.status);
   } catch (err) {
     console.error('screen-business-content error:', err);
     return json({ error: String(err) }, 500);

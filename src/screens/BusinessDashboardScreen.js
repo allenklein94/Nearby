@@ -26,7 +26,8 @@ import { CANCELLATION_REASONS, CANCELLATION_ACTOR_LABELS } from '../constants/ca
 import { getPartnerCancellationPatterns } from '../services/cancellationReasons';
 import { creativeFormPatch, detectedSummary, extractedDiscountWarning, canReadCreative, hasAnySuggestion, sanitizeCreativeSuggestions } from '../utils/creativeExtraction';
 import { videoLimitProblem, MAX_REDEMPTION_LENGTH, validUntilFromChoice, availableWindowFromChoice } from '../utils/offerMedia';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, getMyCreatives, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, getMyCreatives, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit, getMyOfferSubmissions, dismissOfferSubmission, retryOfferSubmission } from '../services/businessFulfillment';
+import { submissionView, inFlightRequestIds, payloadToForm } from '../utils/offerSubmission';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
@@ -435,6 +436,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // it always has, never a stuck/loading state.
   const [businessWeather, setBusinessWeather] = useState(null);
   const [opportunities, setOpportunities] = useState([]);
+  // Item 83: offers being screened in the background / recently decided ("Reviewing your offer…").
+  const [offerSubmissions, setOfferSubmissions] = useState([]);
+  const [resendingSubmissionId, setResendingSubmissionId] = useState(null);
+  const [busySubmissionId, setBusySubmissionId] = useState(null);
+  const offerInFlight = useMemo(() => inFlightRequestIds(offerSubmissions), [offerSubmissions]);
   const [aggregatedDemand, setAggregatedDemand] = useState([]);
   // "Demand near you" card: null = not loaded yet; otherwise the privacy-floored RPC payload.
   const [demandSignals, setDemandSignals] = useState(null);
@@ -1543,6 +1549,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadDiscoveryStats(selectedPartner.id);
         loadPartnershipRequests(selectedPartner.id);
         loadOpportunities(selectedPartner.id);
+        loadOfferSubmissions(selectedPartner.id);
         loadAggregatedDemand(selectedPartner.id);
         loadDemandSignals(selectedPartner.id);
         loadOccasionDemand(selectedPartner.id);
@@ -1693,8 +1700,54 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     else if (d.media) Alert.alert('Photo or video not restored', 'The file you picked is no longer on this device. Your text was restored; please pick the media again.');
   }
 
+  // Item 83: background screening progress. Polls only while something is actually being reviewed, and reloads the
+  // opportunities the moment a submission turns into a sent offer.
+  async function loadOfferSubmissions(partnerId) {
+    try {
+      const rows = await getMyOfferSubmissions(partnerId);
+      setOfferSubmissions((prev) => {
+        const wasWaiting = (prev ?? []).some((x) => x.status === 'reviewing' || x.status === 'in_review');
+        const nowSent = rows.some((x) => x.status === 'published' && (prev ?? []).some((o) => o.id === x.id && o.status !== 'published'));
+        if (wasWaiting && nowSent) loadOpportunities(partnerId);
+        return rows;
+      });
+    } catch (e) {
+      // Non-fatal -- the list just stays as it was.
+    }
+  }
+
+  useEffect(() => {
+    if (!selectedPartner?.id) return undefined;
+    if (!offerSubmissions.some((x) => x.status === 'reviewing' || x.status === 'in_review')) return undefined;
+    const timer = setInterval(() => loadOfferSubmissions(selectedPartner.id), 5000);
+    return () => clearInterval(timer);
+  }, [offerSubmissions, selectedPartner?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleSubmissionAction(sub, action) {
+    setBusySubmissionId(sub.id);
+    try {
+      if (action === 'dismiss') {
+        await dismissOfferSubmission(sub.id);
+      } else if (action === 'retry') {
+        await retryOfferSubmission(selectedPartner.id, sub.id);
+      } else if (action === 'edit') {
+        const form = payloadToForm(sub.payload);
+        openOfferModal(sub.request_id);
+        setOfferTypeInput(form.offerType); setOfferDescriptionInput(form.description); setOfferPriceInput(form.price);
+        setOfferDiscountInput(form.discount); setOfferPriceIsPerPerson(form.perPerson); setOfferTitleInput(form.title);
+        setOfferIncludedItemsInput(form.items); setOfferRedemptionInput(form.redemption); setSelectedExperienceIdInput(form.experienceId);
+        setResendingSubmissionId(sub.id);
+      }
+      await loadOfferSubmissions(selectedPartner.id);
+    } catch (e) {
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSubmissionAction(sub, action) });
+    }
+    setBusySubmissionId(null);
+  }
+
   function openOfferModal(requestId) {
     setOfferModalRequestId(requestId);
+    setResendingSubmissionId(null);
     setOfferTypeInput('standard');
     setOfferDescriptionInput('');
     setOfferPriceInput('');
@@ -1999,9 +2052,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         validUntil: validity.iso,
         availableFrom: availWindow.from,
         availableUntil: availWindow.until,
+        queue: true,
       });
 
-      await handleOfferResult(result, () => { offerDraft.clear(); setOfferModalRequestId(null); });
+      if (result.queued) {
+        // Saved on the server and screening in the background: the form is done, the draft is no longer needed.
+        offerDraft.clear();
+        setOfferModalRequestId(null);
+        if (resendingSubmissionId) { try { await dismissOfferSubmission(resendingSubmissionId); } catch (_e) { /* the old note just stays listed */ } setResendingSubmissionId(null); }
+        await loadOfferSubmissions(selectedPartner.id);
+      } else {
+        await handleOfferResult(result, () => { offerDraft.clear(); setOfferModalRequestId(null); });
+      }
     } catch (e) {
       presentRecoverableError(Alert, { what: 'send this offer', error: e, draftKept: true, onRetry: () => handleSubmitOffer() });
     }
@@ -3778,6 +3840,38 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 )}
 {on('opportunities') && (
 <>
+                {offerSubmissions.length > 0 && (
+                  <View style={{ marginTop: spacing.lg }}>
+                    <Text style={styles.sectionHeader}>Your offers</Text>
+                    {offerSubmissions.map((sub) => {
+                      const v = submissionView(sub);
+                      if (!v) return null;
+                      const toneColor = v.tone === 'success' ? colors.success : v.tone === 'danger' ? colors.danger : v.tone === 'warning' ? colors.warning : colors.textPrimary;
+                      return (
+                        <View key={sub.id} style={styles.gatheringRow}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            {v.tone === 'progress' && <ActivityIndicator size="small" color={colors.textSecondary} style={{ marginRight: spacing.sm }} />}
+                            <Text style={[styles.offerTitle, { color: toneColor }]} accessibilityRole="header">{v.headline}</Text>
+                          </View>
+                          {!!sub.payload?.offerTitle && <Text style={styles.breakdownText}>{sub.payload.offerTitle}</Text>}
+                          <Text style={styles.breakdownText}>{v.detail}</Text>
+                          {v.actions.length > 0 && (
+                            <View style={{ flexDirection: 'row', gap: spacing.lg, marginTop: spacing.xs }}>
+                              {v.actions.map((a) => (
+                                <TouchableOpacity key={a} disabled={busySubmissionId === sub.id} onPress={() => handleSubmissionAction(sub, a)} accessibilityRole="button"
+                                  accessibilityLabel={a === 'retry' ? 'Try again' : a === 'edit' ? 'Edit and resend' : 'Dismiss'}>
+                                  <Text style={{ color: a === 'dismiss' ? colors.textSecondary : colors.primary, fontWeight: '700' }}>
+                                    {a === 'retry' ? 'Try again' : a === 'edit' ? 'Edit and resend' : 'Dismiss'}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))}
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
                 {(() => {
                   // Nearby does the matching: the business never browses customers, it gets the ones that fit.
                   const newCount = scoredOpportunities.filter((o) => canRespondToOpportunity(o)).length;
@@ -3878,7 +3972,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <View key={o.id} style={styles.gatheringRow}>
                       {o.status === 'pending' && (
                         <>
-                          {canRespondToOpportunity(o) ? (
+                          {offerInFlight.has(o.request_id) ? (
+                            <Text style={[styles.breakdownText, { fontWeight: '700' }]}>Reviewing your offer…</Text>
+                          ) : canRespondToOpportunity(o) ? (
                             <Text style={[styles.breakdownText, { color: colors.info, fontWeight: '700' }]}>
                               {matchReasons.length > 0 ? '✨ Good match for your business' : '✨ New opportunity'}
                             </Text>
@@ -3920,7 +4016,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           ))}
                         </View>
                       )}
-                      {canRespondToOpportunity(o) && (
+                      {canRespondToOpportunity(o) && !offerInFlight.has(o.request_id) && (
                         <>
                           <Text style={[styles.offerTitle, { marginTop: spacing.sm }]}>Can you accommodate this?</Text>
                           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.xs }}>

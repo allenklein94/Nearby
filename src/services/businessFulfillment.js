@@ -782,7 +782,7 @@ export async function submitBusinessOfferResponse(requestId, { offerType, offerD
 // submitBusinessOfferResponse() above, whose underlying RPC derives
 // ownership internally from request_id_param) since the Edge Function's
 // top-level ownership gate needs it explicitly for every target_type.
-export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null, framePaths = [], redemptionInstructions = null, creativeId = null, validUntil = null, availableFrom = null, availableUntil = null}) {
+export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null, framePaths = [], redemptionInstructions = null, creativeId = null, validUntil = null, availableFrom = null, availableUntil = null, queue = false}) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -796,6 +796,8 @@ export async function submitBusinessOfferResponseForScreening(partnerId, request
     body: JSON.stringify({
       partnerId,
       targetType: 'offer_response',
+      // Item 83: queue = save the offer and screen it in the background (answers 202 { queued, submissionId }).
+      async: queue === true,
       framePaths,
       redemptionInstructions,
       creativeId,
@@ -1466,4 +1468,31 @@ export async function getAvailabilityDemandPreview({ category = null, startsAt, 
   });
   if (error) throw new Error(error.message);
   return { people: data?.people ?? null, floor: data?.floor ?? 5 };
+}
+
+// Item 83: the owner's offers being screened / recently decided.
+export async function getMyOfferSubmissions(partnerId) {
+  const { data, error } = await supabase.rpc('get_my_offer_submissions', { partner_id_param: partnerId });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function dismissOfferSubmission(submissionId) {
+  const { error } = await supabase.rpc('dismiss_offer_submission', { submission_id_param: submissionId });
+  if (error) throw error;
+}
+
+// Re-runs the saved offer's screening ("Try again" after the service could not finish). Nothing is retyped.
+export async function retryOfferSubmission(partnerId, submissionId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('You need to be signed in to do that.');
+  const response = await fetch(functionUrl('screen-business-content'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ partnerId, targetType: 'offer_response', async: true, retrySubmissionId: submissionId }),
+  });
+  const result = await response.json();
+  if (!response.ok) throw serviceError(response, result, 'Could not retry right now.');
+  return result;
 }
