@@ -4,20 +4,20 @@
 // The selector invents nothing: each candidate keeps only the reasons it really earned, one object appears once
 // (rule 3), and anything that does not make the cut simply is not on Home (it lives on Discover / Gatherings).
 //
-// Ranking of the non-lead candidates, all from real fields:
-//   +3 starts inside the Right Now window (time-sensitive beats evergreen)
-//   +2 a friend is hosting or going
-//   +1 per additional real reason (signals)
-//   ties: the order the engines already ranked them (merged cards, then the ranked list, then starting-soon)
+// Ranking of the non-lead candidates follows the signal priority (constants/signalPriority.js): each candidate is placed
+// by its STRONGEST real signal -- explicit current intent, then plan/friend activity, time relevance, personal interest,
+// business offer, local popularity, weather, general discovery -- so a trending event cannot outrank something the person
+// asked for. Ties: more real reasons, then the order the engines already ranked them.
 // Not covered here on purpose: Your Plans, invites, Quick Picks and Start Something are the person's OWN things and
 // actions, not recommendations, so they are not competing for these slots.
 import { isWithinRightNowWindow } from './rightNowWindow';
 import { recommendationRow } from './recommendationFacts';
+import { bestTier } from '../constants/signalPriority';
 
 export const MAX_HOME_ATTENTION = 5;
 
-function urgency(g, now) {
-  return g?.scheduled_at && isWithinRightNowWindow(g.scheduled_at, now) ? 3 : 0;
+function isUrgent(g, now) {
+  return !!g?.scheduled_at && isWithinRightNowWindow(g.scheduled_at, now);
 }
 
 // hero/cards come from mergeHomeGatheringSignals; recommended = buildHomeRecommendations rows ({type,id,title,reasons,data});
@@ -28,7 +28,7 @@ function urgency(g, now) {
 // its real reasons come back in `absorbed` (id -> [reason text]) so an earlier surface that has room can show them. The
 // Best Pick lead is NOT exempt: if its gathering is already above, the lead is dropped (hero = null) and the freed slot
 // is refilled by the next eligible candidate like any other.
-export function selectHomeAttention({ hero = null, cards = [], recommended = [], soon = [], exclude = null, now = new Date(), max = MAX_HOME_ATTENTION } = {}) {
+export function selectHomeAttention({ hero = null, cards = [], recommended = [], soon = [], exclude = null, intentTags = null, now = new Date(), max = MAX_HOME_ATTENTION } = {}) {
   const absorbed = new Map();
   const isAbove = (id) => !!exclude && exclude.has(id);
   const absorb = (id, texts) => {
@@ -69,16 +69,16 @@ export function selectHomeAttention({ hero = null, cards = [], recommended = [],
     const signals = [{ kind: 'soon', text: 'Starting soon' }];
     candidates.push({ kind: 'gathering', gathering: g, signals, reasons: ['Starting soon'], hasFriend: false, trendingOnly: false, order: order++ });
   }
-  const score = (c) => {
-    if (c.kind === 'perk') return 0;
-    const extra = Math.max(0, (c.signals?.length ?? 0) - 1);
-    const friend = c.hasFriend || c.signals?.some((s) => s.kind === 'going') ? 2 : 0;
-    return urgency(c.gathering, now) + friend + extra;
-  };
+  // `intentTags`: the interest categories of the active Ask-Nearby search (lower-cased), or null when none is active.
+  const matchesIntent = (g) => !!intentTags && intentTags.size > 0 && typeof g?.interest_tag === 'string' && intentTags.has(g.interest_tag.toLowerCase());
+  const tierOf = (c) => (c.kind === 'perk'
+    ? bestTier([], { business: true })
+    : bestTier(c.signals ?? [], { intent: matchesIntent(c.gathering), urgent: isUrgent(c.gathering, now) }));
+  const strength = (c) => (c.signals?.length ?? 0);
   const room = Math.max(0, max - (hero ? 1 : 0));
   const ranked = candidates
-    .map((c) => ({ c, s: score(c) }))
-    .sort((a, b) => b.s - a.s || a.c.order - b.c.order)
+    .map((c) => ({ c, tier: tierOf(c) }))
+    .sort((a, b) => a.tier - b.tier || strength(b.c) - strength(a.c) || a.c.order - b.c.order)
     .map(({ c }) => c);
   const items = ranked.slice(0, room);
   return { hero, items, absorbed, total: (hero ? 1 : 0) + candidates.length, shown: (hero ? 1 : 0) + items.length };

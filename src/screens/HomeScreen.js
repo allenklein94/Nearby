@@ -396,6 +396,8 @@ export default function HomeScreen({ navigation }) {
   // Every engine feeds ONE capped list (utils/homeAttention.js): Home shows the few things that deserve attention now.
   const attention = selectHomeAttention({
     exclude: new Set([...aboveWeather, ...(weatherCard ? weatherCard.gatherings.map((g) => g.id) : [])]),
+    // The active Ask-Nearby search is the strongest signal (constants/signalPriority.js): matching gatherings rank first.
+    intentTags: typeof intentResults?.classifyResult?.category === 'string' ? new Set([intentResults.classifyResult.category.toLowerCase()]) : null,
     hero: homeMerge.hero,
     cards: homeMerge.cards,
     recommended: homeRecommendations,
