@@ -1,3 +1,4 @@
+import { canDo, inviteLifecycleState } from '../utils/objectLifecycle';
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Image, Alert } from 'react-native';
 import FadeInState from '../components/FadeInState';
@@ -14,7 +15,7 @@ import { getFollowedBusinessUpdates } from '../services/brandOffers';
 import { getMyBusinessEcosystemActivity, formatOfferSummary } from '../services/businessFulfillment';
 import { getAllPendingRequests, approveInterest, getUpcomingReminders } from '../services/gatherings';
 import { getMyReceivedInvites, respondToInvite } from '../services/invites';
-import { isInviteExpired, expiredInviteLabel } from '../utils/inviteExpiry';
+import { expiredInviteLabel } from '../utils/inviteExpiry';
 import { getMyPendingGroupPlanInvites } from '../services/groupPlans';
 import LoadErrorState from '../components/LoadErrorState';
 import TabHeaderActions from '../components/TabHeaderActions';
@@ -451,7 +452,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                 <Text style={styles.textButtonLabel}>Accept</Text>
               </TouchableOpacity>
             </View>
-          ) : isInviteExpired(item) ? (
+          ) : canDo('invite', inviteLifecycleState(item), 'dismiss') ? (
             <View key={`social-${item.id}`} style={styles.row}>
               <View style={[styles.rowAvatar, styles.avatarPlaceholder]} />
               <View style={{ flex: 1 }}>

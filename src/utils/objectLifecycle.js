@@ -7,7 +7,7 @@
 // Gathering (viewer): none -> requested/waitlisted -> attending; past/expired are derived (objectState.js).
 // Request: open | fulfilled | expired | cancelled | merged.   Offer: pending | offered | accepted | completed |
 // declined | expired | cancelled | withdrawn.   Invite: pending | accepted | declined | expired.
-import { gatheringViewerState, isOfferExpired } from './objectState';
+import { gatheringViewerState, isOfferExpired, isSocialInviteExpired } from './objectState';
 
 export const LIFECYCLE = {
   gathering: {
@@ -24,14 +24,14 @@ export const LIFECYCLE = {
     unknown: ['view'],
   },
   request: {
-    open: ['view', 'cancel', 'accept_offer'],
+    open: ['view', 'cancel', 'accept_offer', 'respond'],
     fulfilled: ['view'],
     expired: ['view'],
     cancelled: ['view'],
     merged: ['view'],
   },
   offer: {
-    pending: ['view'],
+    pending: ['view', 'respond'],
     offered: ['view', 'accept', 'decline'],
     accepted: ['view', 'cancel', 'redeem'],
     completed: ['view'],
@@ -63,4 +63,15 @@ export function gatheringLifecycleState(input, now) {
 export function offerLifecycleState(offer, now) {
   if (!offer?.status) return 'unknown';
   return offer.status === 'offered' && isOfferExpired(offer, now) ? 'expired' : offer.status;
+}
+
+// Business side: an opportunity (offer row, status pending) can be answered (Send Offer / Accept / Decline) only
+// while the customer's request is still open.
+export function canRespondToOpportunity(opportunity) {
+  return canDo('request', opportunity?.business_requests?.status, 'respond') && canDo('offer', opportunity?.status, 'respond');
+}
+
+// A social invite is expired when its gathering has passed, otherwise its stored status (pending when absent).
+export function inviteLifecycleState(invite, now) {
+  return isSocialInviteExpired(invite, now) ? 'expired' : (invite?.status ?? 'pending');
 }

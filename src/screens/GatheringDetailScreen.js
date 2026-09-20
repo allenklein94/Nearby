@@ -61,6 +61,7 @@ import { spacing, radius, typography } from '../theme';
 import { needsApproval, joinLabel } from '../utils/gatheringJoinMode';
 import { expiredDateLabel } from '../utils/inviteExpiry';
 import { gatheringViewerState } from '../utils/objectState';
+import { canDo, gatheringLifecycleState } from '../utils/objectLifecycle';
 
 const VIBE_SCALES = [
   { key: 'energy_level', label: 'Energy', lowLabel: 'Chill', highLabel: 'High energy' },
@@ -121,10 +122,12 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const openJoinHandled = useRef(false);
   // One explicit viewer state (relation + time) instead of re-combining myStatus/isHost/date per block.
   const viewer = gathering ? gatheringViewerState(gathering) : null;
+  // What this state allows comes from the lifecycle table, not re-derived per block.
+  const can = (action) => (gathering ? canDo('gathering', gatheringLifecycleState(gathering), action) : false);
   useEffect(() => {
     if (!openJoinRequested || openJoinHandled.current || !gathering) return;
     openJoinHandled.current = true;
-    const blocked = viewer.relation !== 'none' || gathering.myStatus || !viewer.actionable
+    const blocked = !can('join') || gathering.myStatus
       || (gathering.visibility === 'invite_only' && !gathering.hasInviteOnlyAccess);
     if (!blocked) setIntentModalVisible(true);
   }, [openJoinRequested, gathering]);
@@ -943,7 +946,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   "Manage Community" label -- this label makes Gatherings'
                   own equivalent (Edit/Cancel) visually match, same links,
                   same behavior, just now grouped and named to match. */}
-              {viewer.actionable && (
+              {can('edit') && (
                 <>
                   <Text style={styles.manageSectionLabel}>Manage Gathering</Text>
                   <TouchableOpacity
@@ -1178,7 +1181,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
             </View>
           ) : gathering.myStatus === 'pending' ? (
             <View style={styles.pendingPanel}>
-              {viewer.expired ? (
+              {can('dismiss') ? (
                 <>
                   <Text style={styles.pendingText}>Request expired</Text>
                   <Text style={styles.pendingText}>{expiredDateLabel(gathering.scheduled_at)}</Text>
@@ -1214,7 +1217,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   {joining ? 'Joining...' : gathering.isFull ? 'JOIN WAITLIST' : gathering.myInterested ? (needsApproval(gathering) ? 'REQUEST TO JOIN' : "I'M GOING") : (needsApproval(gathering) ? 'REQUEST TO JOIN' : 'JOIN GATHERING')}
                 </Text>
               </TouchableOpacity>
-              {viewer.actionable && (
+              {can('interested') && (
                 <>
                 <TouchableOpacity
                   onPress={toggleInterested}

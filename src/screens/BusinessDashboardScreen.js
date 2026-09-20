@@ -1,3 +1,4 @@
+import { canRespondToOpportunity } from '../utils/objectLifecycle';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -466,7 +467,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       });
       return { ...o, opportunityScore: score, opportunityReasons: reasons };
     });
-    const isAwaitingDecision = (o) => o.status === 'pending' && o.business_requests?.status === 'open';
+    const isAwaitingDecision = (o) => canRespondToOpportunity(o);
     const awaiting = withScores.filter(isAwaitingDecision).sort((a, b) => b.opportunityScore - a.opportunityScore);
     const resolved = withScores.filter((o) => !isAwaitingDecision(o));
     return [...awaiting, ...resolved];
@@ -482,8 +483,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     if (!businessWeather) return null;
     return scoredOpportunities.filter(
       (o) =>
-        o.status === 'pending' &&
-        o.business_requests?.status === 'open' &&
+        canRespondToOpportunity(o) &&
         o.opportunityReasons?.some(
           (r) => r.label === REASON_TEXT.WEATHER_GOOD_INDOOR.text || r.label === REASON_TEXT.WEATHER_GOOD_OUTDOOR.text
         )
@@ -2957,7 +2957,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     is real; the one suggestion is a fixed, deterministic
                     priority order, never an LLM call. */}
                 {selectedPartner && (() => {
-                  const pendingCount = opportunities.filter((o) => o.status === 'pending' && o.business_requests?.status === 'open').length;
+                  const pendingCount = opportunities.filter((o) => canRespondToOpportunity(o)).length;
                   const totalDemand = aggregatedDemand.reduce((sum, d) => sum + (Number(d.request_count) || 0), 0);
                   const bestDemand = [...aggregatedDemand].sort((a, b) => (Number(b.request_count) || 0) - (Number(a.request_count) || 0))[0];
                   // Business Intelligence Phase 5 (Intelligence): a real
@@ -3568,7 +3568,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 <>
                 {(() => {
                   // Nearby does the matching: the business never browses customers, it gets the ones that fit.
-                  const newCount = scoredOpportunities.filter((o) => o.status === 'pending' && o.business_requests?.status === 'open').length;
+                  const newCount = scoredOpportunities.filter((o) => canRespondToOpportunity(o)).length;
                   return (
                     <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>
                       {newCount > 0 ? `${newCount} new opportunit${newCount === 1 ? 'y' : 'ies'} that fit your business` : 'Opportunities'}
@@ -3664,7 +3664,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <View key={o.id} style={styles.gatheringRow}>
                       {o.status === 'pending' && (
                         <>
-                          {o.business_requests?.status === 'open' ? (
+                          {canRespondToOpportunity(o) ? (
                             <Text style={[styles.breakdownText, { color: colors.primary, fontWeight: '700' }]}>
                               {matchReasons.length > 0 ? '✨ Good match for your business' : '✨ New opportunity'}
                             </Text>
@@ -3705,7 +3705,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           </View>
                         </View>
                       )}
-                      {o.status === 'pending' && o.business_requests?.status === 'open' && (
+                      {canRespondToOpportunity(o) && (
                         <>
                           <Text style={[styles.offerTitle, { marginTop: spacing.sm }]}>Can you accommodate this?</Text>
                           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.xs }}>
@@ -3764,7 +3764,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     signals={describeDemandSignals(demandSignals, {
                       // The owner's own open opportunities per category (first-party data, never floored).
                       openByCategory: opportunities
-                        .filter((o) => o.status === 'pending' && o.business_requests?.status === 'open' && o.business_requests?.category)
+                        .filter((o) => canRespondToOpportunity(o) && o.business_requests?.category)
                         .reduce((acc, o) => ({ ...acc, [o.business_requests.category]: (acc[o.business_requests.category] ?? 0) + 1 }), {}),
                     })}
                     onAction={(action) => {

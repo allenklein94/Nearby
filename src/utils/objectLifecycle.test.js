@@ -37,3 +37,19 @@ describe('object lifecycle', () => {
     for (const s of ['fulfilled', 'expired', 'cancelled', 'merged']) expect(canDo('request', s, 'accept_offer')).toBe(false);
   });
 });
+
+describe('opportunity and invite helpers', () => {
+  const { canRespondToOpportunity, inviteLifecycleState } = require('./objectLifecycle');
+  it('a pending opportunity is answerable only while its request is open', () => {
+    expect(canRespondToOpportunity({ status: 'pending', business_requests: { status: 'open' } })).toBe(true);
+    expect(canRespondToOpportunity({ status: 'pending', business_requests: { status: 'cancelled' } })).toBe(false);
+    expect(canRespondToOpportunity({ status: 'offered', business_requests: { status: 'open' } })).toBe(false);
+    expect(canRespondToOpportunity({ status: 'pending' })).toBe(false);
+  });
+  it('an invite for a past gathering is expired and only dismissable', () => {
+    expect(inviteLifecycleState({ inviteType: 'gathering', scheduledAt: '2020-01-01T00:00:00Z' }, now)).toBe('expired');
+    expect(inviteLifecycleState({ inviteType: 'community' }, now)).toBe('pending');
+    expect(canDo('invite', 'expired', 'accept')).toBe(false);
+    expect(canDo('invite', 'expired', 'dismiss')).toBe(true);
+  });
+});

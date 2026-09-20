@@ -1,3 +1,4 @@
+import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput } from 'react-native';
 import { NLoader, SuccessAnimation } from '../motion';
@@ -505,7 +506,7 @@ export default function GroupPlanScreen({ navigation, route }) {
                     <Text style={styles.offerStatus}>{OFFER_STATUS_COPY[o.status] ?? o.status}</Text>
                     {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
                     {offerPriceLabel(o.offer_price, o.price_is_per_person) ? <Text style={styles.offerPrice}>{offerPriceLabel(o.offer_price, o.price_is_per_person)}</Text> : null}
-                    {o.status === 'offered' && amActiveParticipant && (
+                    {canDo('offer', offerLifecycleState(o), 'accept') && amActiveParticipant && (
                       <>
                         <Text style={styles.confirmCountLine}>{confirmedForThisOffer.length} of {acceptedParticipants.length} confirmed</Text>
                         <TouchableOpacity
@@ -536,7 +537,7 @@ export default function GroupPlanScreen({ navigation, route }) {
                   <Text style={styles.offerPartnerName}>{o.profiles?.display_name ?? 'Someone'}</Text>
                   <Text style={styles.offerStatus}>{SOCIAL_OFFER_STATUS_COPY[o.status] ?? o.status}</Text>
                   <Text style={styles.offerDescription}>{o.offer_description}</Text>
-                  {isInitiator && o.status === 'offered' && (
+                  {isInitiator && canDo('offer', offerLifecycleState(o), 'accept') && (
                     <View style={styles.socialOfferActionRow}>
                       <TouchableOpacity
                         style={[styles.acceptButton, { flex: 1 }]}

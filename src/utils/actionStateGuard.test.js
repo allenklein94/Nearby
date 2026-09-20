@@ -16,7 +16,7 @@ test('consumer offer actions require an open request', () => {
 test('a closed pending opportunity is labelled, not called new', () => {
   const src = read('BusinessDashboardScreen.js');
   expect(src).toMatch(/No longer open/);
-  expect(src).toMatch(/o\.business_requests\?\.status === 'open' \? \(\s*<Text[^>]*>\s*\{matchReasons\.length > 0/);
+  expect(src).toMatch(/canRespondToOpportunity\(o\) \? \(\s*<Text[^>]*>\s*\{matchReasons\.length > 0/);
 });
 
 test('surprise reveal is not offered on a cancelled plan', () => {
