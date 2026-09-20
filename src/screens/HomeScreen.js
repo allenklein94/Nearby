@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
 import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge, FoundLine, showSuccessToast } from '../motion';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -368,7 +369,7 @@ export default function HomeScreen({ navigation }) {
       await setGatheringInterested(g.id, !on);
     } catch (e) {
       setInterestedOverride((o) => ({ ...o, [g.id]: on }));
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => toggleCardInterested(g, on) });
     }
   }
 
@@ -1022,7 +1023,7 @@ export default function HomeScreen({ navigation }) {
         }
       }
     } catch (e) {
-      Alert.alert('Something went wrong', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleHomeIntentSubmit(overrideText) });
     }
     setIntentThinking(false);
   }

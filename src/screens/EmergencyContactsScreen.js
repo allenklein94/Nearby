@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import FadeInState from '../components/FadeInState';
@@ -52,7 +53,7 @@ export default function EmergencyContactsScreen() {
       setRelationship('');
       load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAdd() });
     }
     setSubmitting(false);
   }
@@ -72,7 +73,7 @@ export default function EmergencyContactsScreen() {
               await deleteEmergencyContact(contact.id);
               load();
             } catch (e) {
-              Alert.alert('Error', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmDelete(contact) });
             }
             setDeletingId(null);
           },

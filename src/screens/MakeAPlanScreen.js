@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, Platform } from 'react-native';
 import { NLoader } from '../motion';
@@ -203,7 +204,7 @@ export default function MakeAPlanScreen({ route, navigation }) {
       // Partial failure surfaces honestly rather than a fake all-or-
       // nothing guarantee — matches this whole phase's own locked
       // decision not to build a single atomic transaction/RPC for this.
-      Alert.alert('Something went wrong', e.message || 'Could not create your plan. Please try again.');
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleConfirm() });
     }
     setConfirming(false);
   }

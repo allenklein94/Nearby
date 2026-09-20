@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -40,7 +41,7 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
       setExclude([]);
       setEditing(false);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => understand() });
     }
     setBusy(false);
   }
@@ -79,7 +80,7 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
       reset();
       setText('');
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirm() });
     }
     setBusy(false);
   }

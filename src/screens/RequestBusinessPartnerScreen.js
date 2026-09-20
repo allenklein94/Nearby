@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ScrollView, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader } from '../motion';
@@ -120,7 +121,7 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (e) {
-      Alert.alert('Could not send request', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => submit() });
     }
     setSubmitting(false);
   }

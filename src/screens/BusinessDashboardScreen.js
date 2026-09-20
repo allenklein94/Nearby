@@ -866,7 +866,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       const status = await startStripeOnboarding();
       setStripeStatus(status);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleConnectStripe() });
     }
     setConnectingStripe(false);
   }
@@ -890,7 +890,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setReservationProviderStatus(status);
       setEditingReservationProvider(false);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSaveReservationProvider() });
     }
     setSavingReservationProvider(false);
   }
@@ -907,7 +907,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
             await updateReservationProvider(selectedPartner.id, null, null);
             setReservationProviderStatus({ ...reservationProviderStatus, provider: null, venueId: null, connectedAt: null });
           } catch (e) {
-            Alert.alert('Error', e.message);
+            presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleDisconnectReservationProvider() });
           }
         },
       },
@@ -923,7 +923,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setAddressModalVisible(false);
       showSuccessToast('Saved', 'Your business address is now set — offers will show to people nearby, and your business will now appear on the map.');
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleUpdateAddress() });
     }
     setSavingAddress(false);
   }
@@ -1025,7 +1025,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       await setBusinessOfferedOccasions(selectedPartner.id, next);
     } catch (e) {
       setSelectedPartner((prev) => ({ ...prev, offered_occasions: current }));
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleToggleOfferedOccasion(key) });
     }
   }
 
@@ -1039,7 +1039,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       await setBusinessWeatherSetting(selectedPartner.id, next);
     } catch (e) {
       setSelectedPartner((prev) => ({ ...prev, weather_setting: current }));
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePickWeatherSetting(key) });
     }
   }
 
@@ -1060,7 +1060,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       }));
       showSuccessToast('Saved', "We'll flag opportunities that match what you're looking for.");
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSavePriorityAttributes() });
     }
     setSavingPriorityAttributes(false);
   }
@@ -1102,7 +1102,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setActivePrioritySignals(await getActiveBusinessPrioritySignals(selectedPartner.id));
       setBoostCategoryInput(null);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSetBoost() });
     }
     setSavingBoost(false);
   }
@@ -1112,7 +1112,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       await clearBusinessPrioritySignal(signalId);
       setActivePrioritySignals((prev) => prev.filter((s) => s.id !== signalId));
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleClearBoost(signalId) });
     }
   }
 
@@ -1124,7 +1124,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       await setBusinessAccommodations(selectedPartner.id, accommodatePartyTypesInput);
       setSelectedPartner((prev) => ({ ...prev, accommodates_party_types: accommodatePartyTypesInput }));
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSaveAccommodations() });
     }
     setSavingAccommodations(false);
   }
@@ -1165,7 +1165,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       }
       getBusinessAttributeSuggestions(selectedPartner.id).then(setRecentSuggestions).catch(() => {});
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleConfirmCategorySuggestion() });
     }
     setSavingCategorySuggestion(false);
   }
@@ -1284,7 +1284,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       getBusinessAttributeSuggestions(selectedPartner.id).then(setRecentSuggestions).catch(() => {});
       Alert.alert('Added to your profile', 'These now show up under "Why People Choose Us."');
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleConfirmTeachNearby() });
     }
     setSavingTeachNearby(false);
   }
@@ -1304,7 +1304,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         availability_pulse_updated_at: new Date().toISOString(),
       }));
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSavePulse(pulse) });
     }
     setSavingPulse(false);
   }
@@ -1441,7 +1441,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       if (entitlementError?.kind === 'limit') {
         showUpgradePlaceholder(entitlementError.feature);
       } else {
-        Alert.alert('Error', e.message);
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleKeepSuggestion(suggestion) });
       }
     }
   }
@@ -1465,7 +1465,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       });
       await loadExperiences(selectedPartner.id);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleToggleExperienceActive(experience) });
     }
   }
 
@@ -1480,7 +1480,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
             await deleteBusinessExperience(experience.id);
             await loadExperiences(selectedPartner.id);
           } catch (e) {
-            Alert.alert('Error', e.message);
+            presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleDeleteExperience(experience) });
           }
         },
       },
@@ -1898,7 +1898,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         warning: extractedDiscountWarning(suggestions, discountCap),
       });
     } catch (e) {
-      Alert.alert('Could not read this', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleReadCreative() });
     } finally {
       setReadingCreative(false);
     }
@@ -1997,7 +1997,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       await loadOpportunities(selectedPartner.id);
       loadDeclinePatterns(selectedPartner.id);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSubmitDecline() });
     }
     setRespondingOpportunityId(null);
   }
@@ -2018,7 +2018,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
             loadCancellationPatterns(selectedPartner.id);
             setReasonAsk({ entityType: 'business_reservation', entityId: offerId, role: 'business' });
           } catch (e) {
-            Alert.alert('Error', e.message);
+            presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleCancelReservation(offerId) });
           }
           setCancellingReservationOfferId(null);
         },
@@ -2081,7 +2081,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setOutreachExpandedOccasionId(null);
       setOutreachPackageChoice(null);
     } catch (e) {
-      Alert.alert('Could not send', e.message || 'Please try again.');
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSendOutreach(occasionId, partnerId) });
     }
     setSendingOutreachOccasionId(null);
   }
@@ -2146,7 +2146,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setPackageModalVisible(false);
       await loadMyOccasionPackages();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSavePackage() });
     }
     setSavingPackage(false);
   }
@@ -2166,7 +2166,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               await setOccasionPackageActive(pkg.id, !pkg.active);
               await loadMyOccasionPackages();
             } catch (e) {
-              Alert.alert('Error', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleTogglePackageActive(pkg) });
             }
           },
         },
@@ -2183,7 +2183,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
             await deleteOccasionPackage(pkg.id);
             await loadMyOccasionPackages();
           } catch (e) {
-            Alert.alert('Error', e.message);
+            presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleDeletePackage(pkg) });
           }
         },
       },
@@ -2253,7 +2253,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setPolicyModalVisible(false);
       await loadFulfillmentPolicy(selectedPartner.id);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSavePolicy() });
     }
     setSavingPolicy(false);
   }
@@ -2425,7 +2425,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       await cancelBusinessAvailability(availabilityId);
       await loadMyAvailability(selectedPartner.id);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleCancelAvailability(availabilityId) });
     }
     setCancelingAvailabilityId(null);
   }
@@ -2436,7 +2436,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       await respondToBusinessPartnershipRequest(requestId, approve);
       setPartnershipRequests((prev) => prev.filter((r) => r.id !== requestId));
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRespondToPartnershipRequest(requestId, approve) });
     }
     setRespondingToRequestId(null);
   }
@@ -2584,7 +2584,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       const tags = tagsDraft.split(',').map((t) => t.trim()).filter(Boolean);
       await saveBusinessCustomerNote(selectedPartner.id, member.user_id, noteDraft.trim() || null, tags);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSaveNote(member) });
     }
     setSavingNote(false);
   }
@@ -2633,7 +2633,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setReplyText('');
       await loadConversationMessages(activeConversation.userId);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => sendReply() });
     }
   }
 
@@ -2816,7 +2816,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       if (entitlementError) {
         showUpgradePlaceholder(entitlementError.feature);
       } else {
-        Alert.alert('Error', e.message);
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePostMoment() });
       }
     }
     setPostingMoment(false);
@@ -2929,7 +2929,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       await toggleOfferActive(offer.id, !offer.active);
       loadOffers(selectedPartner.id);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleToggleActive(offer) });
     }
   }
 
@@ -2946,7 +2946,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         Alert.alert('Not confirmed', result.error || "That code doesn't match a pending redemption.");
       }
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleConfirmRedemption() });
     } finally {
       setConfirmingCode(false);
     }
@@ -5919,7 +5919,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     const asset = await pickBusinessOfferMedia();
                     if (asset) setExpPickedMediaAsset(asset);
                   } catch (e) {
-                    Alert.alert('Error', e.message);
+                    presentRecoverableError(Alert, { what: 'complete that', error: e });
                   }
                 }}
                 onRemove={() => {
@@ -6318,7 +6318,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <TouchableOpacity
                       onPress={async () => {
                         try { await archiveBusinessCreative(offerCreativeId); setCreatives((list) => list.filter((c) => c.id !== offerCreativeId)); setOfferCreativeId(null); }
-                        catch (e) { Alert.alert('Error', e.message); }
+                        catch (e) { presentRecoverableError(Alert, { what: 'complete that', error: e }); }
                       }}
                       accessibilityRole="button"
                       accessibilityLabel="Remove this creative from your saved list"
@@ -6341,7 +6341,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     if (problem) { Alert.alert('Video too big', problem); return; }
                     if (asset) { setOfferPickedMediaAsset(asset); setCreativeDetected(null); }
                   } catch (e) {
-                    Alert.alert('Error', e.message);
+                    presentRecoverableError(Alert, { what: 'complete that', error: e });
                   }
                 }}
                 onRemove={() => { setOfferPickedMediaAsset(null); setCreativeUpload(null); setCreativeDetected(null); }}

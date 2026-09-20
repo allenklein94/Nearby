@@ -1,4 +1,5 @@
 import { attendeeSummary } from '../utils/gatheringAttendeeDisplay';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { factsMeta, friendGoingReason } from '../utils/recommendationFacts';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
@@ -324,7 +325,7 @@ export default function GatheringsScreen({ navigation, route }) {
       }
       load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleExpressInterest(gatheringId) });
     }
   }
 

@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { NLoader } from '../motion';
@@ -40,7 +41,7 @@ export default function SharedNightScreen({ navigation, route }) {
             await leaveSharedExperience(planId);
             navigation.goBack();
           } catch (e) {
-            Alert.alert("Couldn't leave", e.message);
+            presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmLeave() });
           }
         },
       },

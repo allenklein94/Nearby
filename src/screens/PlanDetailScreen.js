@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
@@ -89,7 +90,7 @@ export default function PlanDetailScreen({ navigation, route }) {
       await setExperienceNightDate(planId, dateStr);
       await load();
     } catch (e) {
-      Alert.alert("Couldn't set the date", e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => changeNightDate(dateStr) });
     }
     setBusy(false);
   }
@@ -102,7 +103,7 @@ export default function PlanDetailScreen({ navigation, route }) {
       await reorderExperienceStops(planId, ids);
       setStops(await getPlanStops(planId));
     } catch (e) {
-      Alert.alert("Couldn't reorder", e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => moveStop(index, delta) });
     }
     setBusy(false);
   }
@@ -121,7 +122,7 @@ export default function PlanDetailScreen({ navigation, route }) {
             await removeExperienceStop(stop.id);
             await load();
           } catch (e) {
-            Alert.alert("Couldn't remove it", e.message);
+            presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmRemove(stop) });
           }
           setBusy(false);
         },

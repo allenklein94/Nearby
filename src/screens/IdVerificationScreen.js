@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ActivityIndicator } from 'react-native';
 import { NLoader } from '../motion';
 import { takeVerificationPhoto, submitVerification, getMyVerificationStatus } from '../services/idVerification';
@@ -41,7 +42,7 @@ export default function IdVerificationScreen() {
       const asset = await takeVerificationPhoto();
       if (asset) setSelfieAsset(asset);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleTakeSelfie() });
     }
   }
 
@@ -50,7 +51,7 @@ export default function IdVerificationScreen() {
       const asset = await takeVerificationPhoto();
       if (asset) setIdAsset(asset);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleTakeIdPhoto() });
     }
   }
 
@@ -69,7 +70,7 @@ export default function IdVerificationScreen() {
       setIdAsset(null);
       load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSubmit() });
     }
     setSubmitting(false);
   }

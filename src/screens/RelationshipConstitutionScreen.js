@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { addConstitutionEntry, getConstitutionEntries } from '../services/relationshipConstitution';
 import { checkTextModeration } from '../services/textModeration';
@@ -68,7 +69,7 @@ export default function RelationshipConstitutionScreen({ route }) {
       setDrafts((prev) => ({ ...prev, [articleKey]: '' }));
       load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAdd(articleKey) });
     }
     setSubmittingArticle(null);
   }

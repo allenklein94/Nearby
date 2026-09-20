@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback, Image } from 'react-native';
 import { updateCommunity } from '../services/communities';
 import { checkTextModeration } from '../services/textModeration';
@@ -46,7 +47,7 @@ export default function EditCommunityScreen({ route, navigation }) {
       showSuccessToast('Updated', 'Your changes are saved.');
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => submit() });
     }
     setSubmitting(false);
   }

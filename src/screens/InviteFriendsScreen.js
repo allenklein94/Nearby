@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Share, ActivityIndicator, TextInput } from 'react-native';
 import { NLoader, showSuccessToast } from '../motion';
 import { getMyReferralCode, getMyReferralStats, redeemReferralCode } from '../services/referrals';
@@ -73,7 +74,7 @@ export default function InviteFriendsScreen() {
       setRedeemInput('');
       load();
     } catch (e) {
-      Alert.alert('Could not redeem', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRedeem() });
     }
     setRedeeming(false);
   }

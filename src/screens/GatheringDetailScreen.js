@@ -1,4 +1,5 @@
 import { attendeeSummary } from '../utils/gatheringAttendeeDisplay';
+import { presentRecoverableError } from '../utils/recoverableError';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
 import { NLoader } from '../motion';
@@ -312,7 +313,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
       }
       await load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => toggleInterested() });
     }
     setTogglingInterested(false);
   }
@@ -355,7 +356,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleConfirmIntent() });
     }
     setJoining(false);
   }
@@ -385,7 +386,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
       posthog.capture('gathering_business_help_fired', { gatheringId });
       await load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAskBusinessesNow() });
     }
     setFiringBusinessRequest(false);
   }
@@ -411,7 +412,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
               posthog.capture(isPending ? 'gathering_request_withdrawn' : 'gathering_left');
               await load();
             } catch (e) {
-              Alert.alert('Error', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmLeave() });
             }
             setLeaving(false);
           },
@@ -438,7 +439,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 await cancelGathering(gatheringId);
                 setReasonAsk({ entityType: 'gathering', entityId: gatheringId, role: 'host' });
               } catch (e) {
-                Alert.alert('Error', e.message);
+                presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmCancelGatheringInDetail() });
               }
             },
           },
@@ -451,7 +452,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 await load();
                 Alert.alert('Series Stopped', "This one will still happen as scheduled, but no future ones will be created.");
               } catch (e) {
-                Alert.alert('Error', e.message);
+                presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmCancelGatheringInDetail() });
               }
             },
           },
@@ -473,7 +474,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
               await cancelGathering(gatheringId);
               setReasonAsk({ entityType: 'gathering', entityId: gatheringId, role: 'host' });
             } catch (e) {
-              Alert.alert('Error', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmCancelGatheringInDetail() });
             }
           },
         },

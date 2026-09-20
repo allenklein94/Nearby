@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { getGatheringRequestsForHost, approveInterest, hostRemoveAttendee } from '../services/gatherings';
 import { useTheme } from '../context/ThemeContext';
@@ -35,7 +36,7 @@ export default function HostAttendeeManager({ gatheringId, onChanged }) {
       }
       refresh();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleApprove(row) });
     }
   }
 
@@ -54,7 +55,7 @@ export default function HostAttendeeManager({ gatheringId, onChanged }) {
               await hostRemoveAttendee(row.id);
               refresh();
             } catch (e) {
-              Alert.alert('Error', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmRemove(row, isRequest) });
             }
           },
         },

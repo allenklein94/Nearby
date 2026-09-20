@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import TabHeaderActions from '../components/TabHeaderActions';
@@ -221,7 +222,7 @@ export default function CreateHubScreen({ navigation, route }) {
       }
       closeSomethingElse();
     } catch (e) {
-      Alert.alert('Something went wrong', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAskAssistant() });
     }
     setThinking(false);
   }

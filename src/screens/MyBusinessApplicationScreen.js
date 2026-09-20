@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { NLoader, showSuccessToast } from '../motion';
@@ -107,7 +108,7 @@ export default function MyBusinessApplicationScreen({ navigation }) {
       showSuccessToast('Sent', "We'll take another look and let you know.");
       await load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleResubmit() });
     } finally {
       setResubmitting(false);
     }

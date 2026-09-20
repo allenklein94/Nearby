@@ -244,7 +244,7 @@ export default function DateProposalScreen({ navigation, route }) {
             await withdrawDateProposal(proposal.id);
             await load();
           } catch (e) {
-            Alert.alert('Something went wrong', e.message);
+            presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleWithdraw() });
           }
           setSubmitting(false);
         },

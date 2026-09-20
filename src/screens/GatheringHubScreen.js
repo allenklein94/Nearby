@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share } from 'react-native';
 import { NLoader } from '../motion';
 import MapView, { Marker } from 'react-native-maps';
@@ -181,7 +182,7 @@ export default function GatheringHubScreen({ route, navigation }) {
       }
       await load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleOnMyWay() });
     }
     setOnMyWayBusy(false);
   }
@@ -192,7 +193,7 @@ export default function GatheringHubScreen({ route, navigation }) {
       await checkInToGathering(gatheringId);
       await load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleCheckIn() });
     }
     setCheckInBusy(false);
   }
@@ -222,7 +223,7 @@ export default function GatheringHubScreen({ route, navigation }) {
       if (e.message === 'ALREADY_SENT') {
         Alert.alert('Already sent', "You've already noticed this person.");
       } else {
-        Alert.alert('Error', e.message);
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSendNotice(userId) });
       }
     }
   }

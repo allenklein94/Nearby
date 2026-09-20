@@ -1,4 +1,5 @@
 import { businessReplyTitle } from '../utils/offerCopy';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { canDo, inviteLifecycleState } from '../utils/objectLifecycle';
 import React, { useState, useCallback } from 'react';
@@ -300,7 +301,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
       }
       loadConnectionRequests();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleApproveConnectionRequest(request) });
     }
   }
 
@@ -316,7 +317,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
         navigation.navigate(screen, params);
       }
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRespondSocialInvite(invite, accept) });
     }
   }
 
@@ -352,7 +353,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
       if (e.message === 'ALREADY_SENT') {
         load();
       } else {
-        Alert.alert('Error', e.message);
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleNoticeBack(item) });
       }
     }
   }
@@ -367,7 +368,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
       if (accept) setCelebratingFriend(friendReq);
       loadInvitations();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleFriendRespond(friendReq, accept) });
     }
   }
 

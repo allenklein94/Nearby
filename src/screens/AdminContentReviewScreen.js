@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { PullToRefresh } from '../motion';
@@ -108,7 +109,7 @@ export default function AdminContentReviewScreen() {
       });
       setItems((prev) => prev.filter((i) => i.id !== item.id));
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleReview(item, approve) });
     }
     setProcessingIds((prev) => ({ ...prev, [item.id]: false }));
   }

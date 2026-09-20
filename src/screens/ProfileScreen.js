@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, UIManager, Switch } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
@@ -304,7 +305,7 @@ export default function ProfileScreen({ navigation, route }) {
     const { error } = await supabase.from('profiles').update({ [key]: value }).eq('id', userId);
     if (error) {
       setter(!value);
-      Alert.alert('Error', error.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => toggleHiddenPref(key, value, setter) });
     }
   }
 
@@ -413,7 +414,7 @@ export default function ProfileScreen({ navigation, route }) {
         });
       }, 1000);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => startVoiceIntroRecording() });
     }
   }
 
@@ -442,14 +443,14 @@ export default function ProfileScreen({ navigation, route }) {
       setUploadingIntro(false);
 
       if (error) {
-        Alert.alert('Error', error.message);
+        presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => stopVoiceIntroRecording() });
         return;
       }
       setVoiceIntroPath(path);
       if (previousPath) deleteVoiceIntro(previousPath).catch(() => {});
     } catch (e) {
       setUploadingIntro(false);
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => stopVoiceIntroRecording() });
     }
   }
 
@@ -464,7 +465,7 @@ export default function ProfileScreen({ navigation, route }) {
           setVoiceIntroPath(null);
           const { error } = await supabase.from('profiles').update({ voice_intro_path: null }).eq('id', userId);
           if (error) {
-            Alert.alert('Error', error.message);
+            presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => removeVoiceIntro() });
             setVoiceIntroPath(pathToDelete);
             return;
           }
@@ -538,7 +539,7 @@ export default function ProfileScreen({ navigation, route }) {
         connection_goal: connectionGoal || null,
       })
       .eq('id', userId);
-    if (error) return Alert.alert('Error', error.message);
+    if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => save() });
     showSuccessToast('Saved');
   }
 
@@ -553,7 +554,7 @@ export default function ProfileScreen({ navigation, route }) {
       load();
     } catch (e) {
       setUploading(false);
-      Alert.alert('Upload failed', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => changePhoto() });
     }
   }
 
@@ -570,7 +571,7 @@ export default function ProfileScreen({ navigation, route }) {
       load();
     } catch (e) {
       setUploadingExtra(false);
-      Alert.alert('Upload failed', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => addExtraPhoto() });
     }
   }
 
@@ -584,7 +585,7 @@ export default function ProfileScreen({ navigation, route }) {
             await setAsMainPhoto(userId, photo.id);
             load();
           } catch (e) {
-            Alert.alert('Error', e.message);
+            presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmDeleteExtraPhoto(photo) });
           }
         },
       },
@@ -596,7 +597,7 @@ export default function ProfileScreen({ navigation, route }) {
             await deleteExtraPhoto(photo.id, photo.photo_url);
             load();
           } catch (e) {
-            Alert.alert('Error', e.message);
+            presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmDeleteExtraPhoto(photo) });
           }
         },
       },

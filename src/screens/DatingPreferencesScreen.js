@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { supabase, functionUrl } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
@@ -107,7 +108,7 @@ export default function DatingPreferencesScreen({ navigation }) {
       .from('profiles')
       .update({ relationship_intention: newValue.length > 0 ? newValue : null })
       .eq('id', userId);
-    if (error) Alert.alert('Error', error.message);
+    if (error) presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => toggleIntention(value) });
   }
 
   function toggleEthnicityPreference(option) {
@@ -165,7 +166,7 @@ export default function DatingPreferencesScreen({ navigation }) {
         dating_preferences_set: true,
       })
       .eq('id', userId);
-    if (error) return Alert.alert('Error', error.message);
+    if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => savePreferences() });
     showSuccessToast('Saved');
   }
 
@@ -196,7 +197,7 @@ export default function DatingPreferencesScreen({ navigation }) {
         Alert.alert('✨ A note for you', result.summary, [{ text: 'Thanks' }]);
       }
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => showStrengths() });
     }
     setLoadingStrengths(false);
   }

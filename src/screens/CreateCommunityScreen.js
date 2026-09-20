@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback, Image } from 'react-native';
 import { createCommunity, seedCommunityFromGathering } from '../services/communities';
 import { recordBehaviorEvent } from '../services/behaviorSignals';
@@ -94,7 +95,7 @@ export default function CreateCommunityScreen({ navigation, route }) {
         notificationReason: seedReason,
       });
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => submit() });
     }
     setSubmitting(false);
   }

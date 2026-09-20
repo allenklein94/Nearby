@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Image, Modal } from 'react-native';
 import { NLoader, SuccessAnimation, modalAnimation } from '../motion';
@@ -187,7 +188,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
       } else if (e.message === 'OFFER_LOCKED') {
         Alert.alert('Not unlocked yet', "This community needs more members to unlock this perk.");
       } else {
-        Alert.alert('Error', e.message);
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRedeemOffer(offer) });
       }
     }
     setRedeemingOfferId(null);
@@ -238,7 +239,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
       setAreaModalVisible(false);
       load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSaveArea() });
     }
     setSavingArea(false);
   }
@@ -252,7 +253,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
       }
       setFollowingBusiness(!followingBusiness);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleToggleFollowBusiness() });
     }
   }
 
@@ -263,7 +264,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
       await setCommunityMemberRole(communityId, member.user_id, newRole);
       setMembers((prev) => prev.map((m) => (m.user_id === member.user_id ? { ...m, role: newRole } : m)));
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleToggleLeader(member) });
     }
     setChangingRoleFor(null);
   }
@@ -278,7 +279,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
       }
       load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleJoinLeave() });
     }
   }
 
@@ -296,7 +297,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
               await deleteCommunity(communityId);
               navigation.goBack();
             } catch (e) {
-              Alert.alert('Error', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmDeleteCommunity() });
             }
           },
         },
@@ -317,7 +318,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
               await pauseCommunity(communityId);
               load();
             } catch (e) {
-              Alert.alert('Error', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmPauseCommunity() });
             }
           },
         },
@@ -330,7 +331,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
       await resumeCommunity(communityId);
       load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleResumeCommunity() });
     }
   }
 
@@ -349,7 +350,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
               setReasonAsk({ entityType: 'community', entityId: communityId, role: 'host' });
               load();
             } catch (e) {
-              Alert.alert('Error', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmCancelCommunity() });
             }
           },
         },

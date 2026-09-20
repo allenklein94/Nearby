@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import FadeInState from '../components/FadeInState';
@@ -442,7 +443,7 @@ export default function OccasionsScreen({ navigation, route }) {
               // so it doesn't unmount the animation mid-play.
               setRevealAnimatingId(occasion.id);
             } catch (e) {
-              Alert.alert('Something went wrong', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmReveal(occasion) });
             }
             setRevealingId(null);
           },

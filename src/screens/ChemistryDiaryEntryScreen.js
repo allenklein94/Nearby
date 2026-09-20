@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { submitChemistryEntry } from '../services/chemistryDiary';
 import { checkTextModeration } from '../services/textModeration';
@@ -48,7 +49,7 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
       showSuccessToast('Saved privately', 'Only you can see this — it helps build a picture of what actually feels good to you over time.');
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSubmit() });
     }
     setSubmitting(false);
   }

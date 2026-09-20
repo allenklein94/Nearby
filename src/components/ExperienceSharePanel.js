@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Share } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -30,7 +31,7 @@ export default function ExperienceSharePanel({ planId, planTitle }) {
       const [friends, matches] = await Promise.all([getMyFriends(), getMyMatches()]);
       setPeople(shareCandidates(friends, matches, shares));
     } catch (e) {
-      Alert.alert("Couldn't load your friends", e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => openPicker() });
     }
   }
 
@@ -42,7 +43,7 @@ export default function ExperienceSharePanel({ planId, planTitle }) {
       setPeople(null);
       await load();
     } catch (e) {
-      Alert.alert("Couldn't share", e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => shareWith(person) });
     }
     setBusy(false);
   }
@@ -63,7 +64,7 @@ export default function ExperienceSharePanel({ planId, planTitle }) {
       await load();
       await sendLink(link.guestToken);
     } catch (e) {
-      Alert.alert("Couldn't make the link", e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => makeLink() });
     }
     setBusy(false);
   }
@@ -74,7 +75,7 @@ export default function ExperienceSharePanel({ planId, planTitle }) {
       share.kind === 'guest' ? 'The link stops working right away.' : "They won't see this night anymore.",
       [
         { text: 'Keep', style: 'cancel' },
-        { text: 'Stop sharing', style: 'destructive', onPress: async () => { try { await revokeExperienceShare(share.id); await load(); } catch (e) { Alert.alert("Couldn't update", e.message); } } },
+        { text: 'Stop sharing', style: 'destructive', onPress: async () => { try { await revokeExperienceShare(share.id); await load(); } catch (e) { presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmRemove(share) }); } } },
       ]
     );
   }

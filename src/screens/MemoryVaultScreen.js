@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { NLoader } from '../motion';
 import { addMemoryItem, getMemoryItems } from '../services/memoryVault';
@@ -70,7 +71,7 @@ export default function MemoryVaultScreen({ route }) {
       setDrafts((prev) => ({ ...prev, [categoryKey]: '' }));
       load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAdd(categoryKey) });
     }
     setSubmittingCategory(null);
   }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { submitGoodbyeEntry } from '../services/goodbyeArchive';
 import { checkTextModeration } from '../services/textModeration';
@@ -49,7 +50,7 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
       showSuccessToast('Saved privately', 'Only you can see this. It\u2019s yours whenever you want to look back.');
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSubmit() });
     }
     setSubmitting(false);
   }

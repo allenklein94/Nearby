@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image, Platform, Linking } from 'react-native';
 import * as Calendar from 'expo-calendar';
@@ -479,7 +480,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       });
       navigation.replace('GroupPlan', { proposalId });
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleProposeGroupPlan() });
     }
     setProposingGroupPlan(false);
   }
@@ -503,7 +504,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       });
       navigation.navigate('GroupPlan', { proposalId });
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleInviteSomeone() });
     }
     setInvitingSomeone(false);
   }
@@ -521,7 +522,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       const refreshed = await getPlanOrganizers(requestId);
       setPlanOrganizerInfo(refreshed);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAddOrganizer() });
     }
     setOrganizerActionBusy(false);
   }
@@ -542,7 +543,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               const refreshed = await getPlanOrganizers(requestId);
               setPlanOrganizerInfo(refreshed);
             } catch (e) {
-              Alert.alert('Error', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRemoveOrganizer(userId, displayName) });
             }
             setOrganizerActionBusy(false);
           },
@@ -610,7 +611,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       }
       closeTimelineForm();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => submitTimelineForm() });
     }
     setAddonActionKey(null);
   }
@@ -622,7 +623,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       const rows = await getPlanAddons(requestId);
       setAddons(rows);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRemoveEntry(entry) });
     }
     setAddonActionKey(null);
   }
@@ -643,7 +644,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         Alert.alert('Added', "We couldn't find a nearby business for this yet — we'll keep it open in case one joins.");
       }
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRetryEntry(entry) });
     }
     setAddonActionKey(null);
   }
@@ -666,7 +667,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         await collectPayment(offerId);
       }
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAccept(offerId) });
     }
     setActingOfferId(null);
   }
@@ -717,7 +718,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       await load();
       setOutcomeModalOfferId(offerId);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleComplete(offerId) });
     }
     setActingOfferId(null);
   }
@@ -736,7 +737,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             await load();
             setReasonAsk({ entityType: 'business_reservation', entityId: offerId, role: 'requester' });
           } catch (e) {
-            Alert.alert('Error', e.message);
+            presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleCancelReservation(offerId) });
           }
           setActingOfferId(null);
         },
@@ -750,7 +751,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       await reopenBusinessRequest(requestId);
       await load();
     } catch (e) {
-      Alert.alert("Couldn't reopen", e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleReopen() });
     }
     setCancelling(false);
   }
@@ -766,7 +767,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             await load();
             setReasonAsk({ entityType: 'business_request', entityId: requestId, role: 'requester' });
           } catch (e) {
-            Alert.alert('Error', e.message);
+            presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleCancel() });
           }
           setCancelling(false);
         },

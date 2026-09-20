@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { submitLegacyEntry } from '../services/relationshipLegacy';
 import { checkTextModeration } from '../services/textModeration';
@@ -48,7 +49,7 @@ export default function RelationshipLegacyScreen({ route, navigation }) {
       Alert.alert('Thank you', 'Your wisdom is now part of the library for others to learn from.');
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSubmit() });
     }
     setSubmitting(false);
   }

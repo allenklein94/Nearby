@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TouchableOpacity, Image, FlatList, StyleSheet, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../services/supabase';
@@ -43,7 +44,7 @@ export default function MusicModeScreen({ navigation }) {
       const tracks = await fetchTopTracks(tokenResult.accessToken);
       setTopTracks(tracks);
     } catch (e) {
-      Alert.alert('Error', e.message || 'Could not connect to Spotify.');
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAuthSuccess(code) });
     }
     setConnecting(false);
   }
@@ -78,7 +79,7 @@ export default function MusicModeScreen({ navigation }) {
       showSuccessToast('Saved', 'Your favorite tracks now show on your profile.');
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSave() });
     }
     setSaving(false);
   }

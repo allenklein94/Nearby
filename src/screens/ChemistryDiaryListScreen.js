@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, TextInput, Modal } from 'react-native';
 import FadeInState from '../components/FadeInState';
@@ -99,7 +100,7 @@ export default function ChemistryDiaryListScreen({ navigation }) {
               posthog.capture('chemistry_diary_entry_deleted');
               load();
             } catch (e) {
-              Alert.alert('Error', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmDelete(entryId) });
             }
           },
         },

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from './EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Modal, Alert, ActivityIndicator, Share } from 'react-native';
 import { getMyFriends } from '../services/friends';
@@ -73,7 +74,7 @@ export default function InviteFriendsModal({
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setInvitedIds((prev) => ({ ...prev, [friendId]: true }));
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleInvite(friendId) });
     }
     setInvitingId(null);
   }

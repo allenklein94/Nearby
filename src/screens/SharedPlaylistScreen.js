@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TextInput, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert, Linking, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
@@ -79,7 +80,7 @@ export default function SharedPlaylistScreen({ route }) {
       setSearchResults([]);
       load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAddTrack(track) });
     }
     setAdding(null);
   }

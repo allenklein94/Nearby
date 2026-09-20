@@ -1,4 +1,5 @@
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
+import { presentRecoverableError } from '../utils/recoverableError';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput } from 'react-native';
 import { NLoader, SuccessAnimation } from '../motion';
@@ -165,7 +166,7 @@ export default function GroupPlanScreen({ navigation, route }) {
       await load();
       if (onSuccess) onSuccess(result);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => runAction(fn, onSuccess) });
     }
     setActing(false);
   }

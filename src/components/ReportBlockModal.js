@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput, Alert } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
@@ -38,7 +39,7 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
 
     setSubmitting(false);
     if (error) {
-      Alert.alert('Error', error.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => submitReport() });
       return;
     }
     Alert.alert('Report submitted', 'Thank you — our team will review this.');
@@ -59,7 +60,7 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
           onPress: async () => {
             const { error } = await supabase.rpc('block_and_unmatch', { blocked_user_id: reportedUserId });
             if (error) {
-              Alert.alert('Error', error.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => blockUser() });
               return;
             }
             onBlocked && onBlocked();

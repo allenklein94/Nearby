@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
@@ -70,7 +71,7 @@ export default function CommunitiesScreen({ navigation }) {
       recordBehaviorEvent('join', 'community', communityId, [...myCommunities, ...discoverCommunities].find((c) => c.id === communityId)?.interest_tag);
       load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleJoin(communityId) });
     }
   }
 

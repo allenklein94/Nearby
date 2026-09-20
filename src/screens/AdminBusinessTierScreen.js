@@ -3,6 +3,7 @@
 // marked as development tooling. Real, admin-gated (both client-side
 // here and, more importantly, server-side inside every RPC this screen
 // calls) -- never a surface a real business ever sees.
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
@@ -29,7 +30,7 @@ export default function AdminBusinessTierScreen() {
       const results = await adminListBusinesses(term || null);
       setBusinesses(results);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => load(term) });
     }
   }, []);
 
@@ -62,7 +63,7 @@ export default function AdminBusinessTierScreen() {
       await adminSetBusinessTier(business.id, tier);
       setBusinesses((prev) => prev.map((b) => (b.id === business.id ? { ...b, tier } : b)));
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSetTier(business, tier) });
     }
     setChangingId(null);
   }

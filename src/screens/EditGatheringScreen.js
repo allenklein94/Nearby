@@ -88,7 +88,7 @@ export default function EditGatheringScreen({ route, navigation }) {
       const path = await uploadGatheringCoverPhoto(gathering.id, asset);
       setCoverPhotoPath(path);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePickCoverPhoto() });
     }
     setUploadingCover(false);
   }

@@ -40,4 +40,18 @@ describe('errors always offer a way forward and never lose the draft (item 81)',
       expect(fs.readFileSync(`${__dirname}/../screens/${f}.js`, 'utf8')).toContain('presentRecoverableError');
     }
   });
+  it('no bare "Error" + raw message alert is left anywhere in the app', () => {
+    const path = require('path');
+    const hits = [];
+    const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).forEach((e) => {
+      const full = path.join(d, e.name);
+      if (e.isDirectory()) walk(full);
+      else if (/\.js$/.test(e.name) && !/\.test\.js$/.test(e.name)) {
+        const src = fs.readFileSync(full, 'utf8');
+        if (/Alert\.alert\('(Error|Something went wrong)', (e|err|error)\.message/.test(src)) hits.push(full);
+      }
+    });
+    walk(`${__dirname}/..`);
+    expect(hits).toEqual([]);
+  });
 });

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from './EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { getGatheringQuestions, askGatheringQuestion, answerGatheringQuestion } from '../services/gatherings';
@@ -46,7 +47,7 @@ export default function GatheringQnA({ gatheringId, isHost }) {
       setQuestionDraft('');
       await load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAsk() });
     }
     setAsking(false);
   }
@@ -67,7 +68,7 @@ export default function GatheringQnA({ gatheringId, isHost }) {
       setAnswerDrafts((prev) => ({ ...prev, [questionId]: '' }));
       await load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAnswer(questionId) });
     }
     setAnsweringId(null);
   }

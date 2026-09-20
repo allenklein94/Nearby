@@ -1,4 +1,5 @@
 import { peopleTonightBanner, countTonightSupply } from '../utils/meetTonight';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { getNearbyMatches } from '../services/proximity';
 import { getFriendDiscoveryCandidates } from '../services/friendDiscovery';
@@ -1053,7 +1054,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       const result = await classifyCreateRequest(typedText);
       routeClassifiedIntentToCreation(navigation, result, typedText);
     } catch (e) {
-      Alert.alert('Something went wrong', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleCreateItFromSearch() });
     }
     setCreatingFromSearch(false);
   }
@@ -1093,7 +1094,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         ]
       );
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePostStory() });
       setPostingStory(false);
     }
   }

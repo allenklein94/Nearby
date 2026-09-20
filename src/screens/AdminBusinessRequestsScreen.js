@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { PullToRefresh } from '../motion';
@@ -84,7 +85,7 @@ export default function AdminBusinessRequestsScreen() {
               setNewTagText('');
               bumpTags((n) => n + 1);
             } catch (e) {
-              Alert.alert('Could not add it', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAddCategory(request) });
             }
           },
         },
@@ -102,7 +103,7 @@ export default function AdminBusinessRequestsScreen() {
       alias_phrase_param: mapRemember && request.unlisted_category_text ? request.unlisted_category_text : null,
     });
     setProcessingIds((prev) => ({ ...prev, [request.id]: false }));
-    if (error) return Alert.alert('Error', error.message);
+    if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => handleMapCategory(request) });
     setMapOpenId(null);
     load();
   }
@@ -114,7 +115,7 @@ export default function AdminBusinessRequestsScreen() {
       Alert.alert('Approved', `${request.business_name} is now a business partner.`);
       load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleApprove(request) });
     }
     setProcessingIds((prev) => ({ ...prev, [request.id]: false }));
   }
@@ -125,7 +126,7 @@ export default function AdminBusinessRequestsScreen() {
       await supabase.rpc('deny_business_partner_request', { request_id_param: request.id });
       load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleDeny(request) });
     }
     setProcessingIds((prev) => ({ ...prev, [request.id]: false }));
   }
@@ -143,7 +144,7 @@ export default function AdminBusinessRequestsScreen() {
       setNotesDrafts((prev) => ({ ...prev, [request.id]: '' }));
       load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRequestMoreInfo(request) });
     }
     setProcessingIds((prev) => ({ ...prev, [request.id]: false }));
   }

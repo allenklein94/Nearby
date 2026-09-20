@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import FadeInState from '../components/FadeInState';
@@ -72,7 +73,7 @@ export default function GatheringChatScreen({ route, navigation }) {
       const suggestionText = `💡 Group ideas, since a few of you like ${sharedInterests.slice(0, 3).join(', ')}:\n${offersData.map((o) => `• ${o.title} at ${o.brand_partners?.name ?? 'a local spot'}`).join('\n')}`;
       await sendGatheringMessage(gatheringId, suggestionText);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSuggestOffers() });
     }
     setSuggestingOffers(false);
   }
@@ -87,7 +88,7 @@ export default function GatheringChatScreen({ route, navigation }) {
       await uploadStory(myId, media.uri, media.type, false, gatheringId);
       showSuccessToast('Posted!', `Your story is now shared with everyone at ${gatheringTitle}.`);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePostStory() });
     }
     setPostingStory(false);
   }

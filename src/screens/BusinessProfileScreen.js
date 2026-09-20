@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
@@ -186,7 +187,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
       }
       setFollowing(!following);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleToggleFollow() });
     }
   }
 
@@ -204,7 +205,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
       } else if (e.message === 'OFFER_LOCKED') {
         Alert.alert('Not unlocked yet', 'This offer needs more people to join first — check back soon.');
       } else {
-        Alert.alert('Error', e.message);
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRedeem(offer) });
       }
     } finally {
       setRedeemingId(null);

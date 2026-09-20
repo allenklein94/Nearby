@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
@@ -174,7 +175,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
       setCategories(result.categories ?? []);
       setAiSummary(result);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => runBusinessOnboardingAssistant() });
     }
     setClassifying(false);
   }
@@ -297,7 +298,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => submit() });
     }
     setSubmitting(false);
   }

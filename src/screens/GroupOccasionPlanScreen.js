@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput, Platform, Share } from 'react-native';
 import FadeInState from '../components/FadeInState';
@@ -206,7 +207,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
       await load();
       return result;
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => runAction(fn) });
       return null;
     } finally {
       setActing(false);
@@ -411,7 +412,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
         prefillPartySize: Math.max(joinedCount, 1),
       });
     } catch (e) {
-      Alert.alert('Something went wrong', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleBookWinningBusiness(option) });
     }
     setBooking(false);
   }
@@ -455,7 +456,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
       await revealOccasionGroupPlan(planId);
       setRevealAnimating(true);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => performReveal() });
       setActing(false);
     }
   }
@@ -526,7 +527,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
       setInviteMoreOpen(false);
       await load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleInviteMore() });
     }
     setInvitingMore(false);
   }
@@ -547,7 +548,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
         message: `You're invited to ${detail?.title ?? 'a plan'} on Nearby — ${occasionGroupPlanGuestInviteShareUrl(result.guestToken)}`,
       });
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleInviteGuest() });
     }
     setInvitingGuest(false);
   }

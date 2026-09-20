@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, Platform, Linking, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../services/supabase';
@@ -262,7 +263,7 @@ export default function CompleteProfileScreen() {
         await uploadProfilePhoto(userId, photoAsset);
       } catch (e) {
         setSubmitting(false);
-        return Alert.alert('Photo upload failed', e.message);
+        return presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => submit() });
       }
 
       setSubmitting(false);
@@ -273,7 +274,7 @@ export default function CompleteProfileScreen() {
       refreshProfile();
     } catch (e) {
       setSubmitting(false);
-      Alert.alert('Error', e.message || 'Something went wrong saving your profile. Please try again.');
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => submit() });
     }
   }
 

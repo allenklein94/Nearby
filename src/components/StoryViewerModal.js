@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions, FlatList, Share, Alert } from 'react-native';
 import { Video } from 'expo-av';
 import { getSignedStoryUrl, markStoryViewed, getStoryViewers, deleteStory } from '../services/stories';
@@ -122,7 +123,7 @@ export default function StoryViewerModal({ visible, group, onClose }) {
                 advance();
               }
             } catch (e) {
-              Alert.alert('Error', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleDeleteStory() });
             }
           },
         },
@@ -225,7 +226,7 @@ export default function StoryViewerModal({ visible, group, onClose }) {
                           await sendFriendRequest(item.viewer_id);
                           setRequestedViewerIds((prev) => ({ ...prev, [item.viewer_id]: true }));
                         } catch (e) {
-                          Alert.alert('Error', e.message);
+                          presentRecoverableError(Alert, { what: 'complete that', error: e });
                         }
                       }}
                       disabled={requestedViewerIds[item.viewer_id]}

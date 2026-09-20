@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader, PullToRefresh } from '../motion';
@@ -142,7 +143,7 @@ export default function BrandOffersScreen({ navigation, route }) {
       } else if (e.message === 'OFFER_LOCKED') {
         Alert.alert('Not unlocked yet', "This offer needs more people to join first — check back soon.");
       } else {
-        Alert.alert('Error', e.message);
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRedeem(offer) });
       }
     }
     setRedeemingId(null);
@@ -244,7 +245,7 @@ export default function BrandOffersScreen({ navigation, route }) {
                     }
                     setFollowingStatus((prev) => ({ ...prev, [offer.partner_id]: !currentlyFollowing }));
                   } catch (e) {
-                    Alert.alert('Error', e.message);
+                    presentRecoverableError(Alert, { what: 'complete that', error: e });
                   }
                 }}
                 accessibilityLabel={followingStatus[offer.partner_id] ? `Unfollow ${offer.brand_partners?.name}` : `Follow ${offer.brand_partners?.name}`}

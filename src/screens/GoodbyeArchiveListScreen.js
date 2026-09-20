@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, TextInput, Modal, ScrollView } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader, PullToRefresh, modalAnimation } from '../motion';
@@ -67,7 +68,7 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
               await deleteGoodbyeEntry(entryId);
               load();
             } catch (e) {
-              Alert.alert('Error', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmDelete(entryId) });
             }
           },
         },

@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import FadeInState from '../components/FadeInState';
@@ -81,7 +82,7 @@ export default function FriendsScreen({ navigation }) {
       if (accept && person) setCelebratingFriend(person);
       load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRespond(friendshipId, accept, person) });
     }
   }
 
@@ -107,7 +108,7 @@ export default function FriendsScreen({ navigation }) {
         Alert.alert('No new matches', "We didn't find any new people from your contacts.");
       }
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleFindFromContacts() });
     }
     setSearchingContacts(false);
   }
@@ -127,7 +128,7 @@ export default function FriendsScreen({ navigation }) {
       await sendFriendRequest(personId);
       setRequestedIds((prev) => ({ ...prev, [personId]: true }));
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSendRequest(personId) });
     }
   }
 
@@ -140,7 +141,7 @@ export default function FriendsScreen({ navigation }) {
       setNewCircleModalVisible(false);
       loadCircles();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleCreateCircle() });
     }
   }
 
@@ -169,7 +170,7 @@ export default function FriendsScreen({ navigation }) {
       }
       loadCircles();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleToggleCircleMembership(circle, friendId) });
     }
   }
 

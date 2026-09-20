@@ -13,14 +13,14 @@ export function serviceError(response, result, fallback) {
 }
 
 const NETWORK = /network request failed|failed to fetch|network error|timed? ?out|offline|internet|connection/i;
-const RETRYABLE_TEXT = /try again|right now|unavailable|temporar/i;
 
 export function isServiceFailure(e) {
   if (!e) return false;
   if (e.code === 'screening_unavailable') return true;
   if (typeof e.status === 'number' && (e.status >= 500 || e.status === 429 || e.status === 408)) return true;
   const msg = String(e.message ?? '');
-  return NETWORK.test(msg) || (e.name === 'TypeError' && /fetch|network/i.test(msg)) || RETRYABLE_TEXT.test(msg);
+  // Deliberately NOT text-guessed beyond a lost connection: a server message like "Try again tomorrow" is real information.
+  return NETWORK.test(msg) || (e.name === 'TypeError' && /fetch|network/i.test(msg));
 }
 
 export function isOffline(e) {

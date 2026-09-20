@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch, Linking, Platform, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../services/supabase';
@@ -169,7 +170,7 @@ export default function SettingsScreen({ navigation, route }) {
     const { error } = await supabase.from('profiles').update({ interest_groups: next }).eq('id', userId);
     if (error) {
       setInterestGroups(previous);
-      Alert.alert('Error', error.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => toggleInterestGroup(key) });
     }
   }
 
@@ -181,7 +182,7 @@ export default function SettingsScreen({ navigation, route }) {
     const { error } = await supabase.from('profiles').update({ onboarding_motivations: next }).eq('id', userId);
     if (error) {
       setMotivations(previous);
-      Alert.alert('Error', error.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => toggleGoal(label) });
     }
   }
 
@@ -223,7 +224,7 @@ export default function SettingsScreen({ navigation, route }) {
     setDiscoveryViewStyle(style);
     const { error } = await supabase.from('profiles').update({ discovery_view_style: style }).eq('id', userId);
     if (error) {
-      Alert.alert('Error', error.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => updateDiscoveryViewStyle(style) });
     }
   }
 
@@ -237,7 +238,7 @@ export default function SettingsScreen({ navigation, route }) {
     const { error } = await supabase.from('profiles').update({ intent_visibility: value }).eq('id', userId);
     if (error) {
       setIntentVisibility(previous);
-      Alert.alert('Error', error.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => updateIntentVisibility(value) });
     }
   }
 
@@ -246,7 +247,7 @@ export default function SettingsScreen({ navigation, route }) {
     const { error } = await supabase.from('profiles').update({ [key]: value }).eq('id', userId);
     if (error) {
       setter(!value);
-      Alert.alert('Error', error.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => toggleNotifPref(key, value, setter) });
     }
   }
 
@@ -254,7 +255,7 @@ export default function SettingsScreen({ navigation, route }) {
     setter(value);
     const { error } = await supabase.from('profiles').update({ [column]: value }).eq('id', userId);
     if (error) {
-      Alert.alert('Error', error.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => saveRecPref(column, value, setter) });
     }
   }
 
@@ -271,7 +272,7 @@ export default function SettingsScreen({ navigation, route }) {
       return Alert.alert('Invalid number', 'Enter a 10-digit US phone number.');
     }
     const { error } = await supabase.auth.updateUser({ phone: formatted });
-    if (error) return Alert.alert('Error', error.message);
+    if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => sendPhoneChangeOtp() });
     setE164NewPhone(formatted);
     setOtpSent(true);
   }
@@ -282,7 +283,7 @@ export default function SettingsScreen({ navigation, route }) {
       token: otp,
       type: 'phone_change',
     });
-    if (error) return Alert.alert('Error', error.message);
+    if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => verifyPhoneChange() });
     showSuccessToast('Phone number updated', 'Your new number is now linked to your account.');
     setChangingPhone(false);
     setOtpSent(false);
@@ -295,7 +296,7 @@ export default function SettingsScreen({ navigation, route }) {
     try {
       await requestDataExport();
     } catch (e) {
-      Alert.alert('Export failed', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleDataExport() });
     }
     setExporting(false);
   }
@@ -702,7 +703,7 @@ export default function SettingsScreen({ navigation, route }) {
                 style={styles.customizeLink}
                 onPress={() => clearNotificationArea()
                   .then(() => showSuccessToast('Saved area cleared', 'Nearby will save a fresh one next time you use it.'))
-                  .catch((e) => Alert.alert('Error', e.message))}
+                  .catch((e) => presentRecoverableError(Alert, { what: 'complete that', error: e }))}
                 accessibilityLabel="Clear my saved area"
                 accessibilityRole="button"
               >
@@ -870,7 +871,7 @@ export default function SettingsScreen({ navigation, route }) {
                 style={styles.customizeLink}
                 onPress={() => clearMyBehaviorHistory()
                   .then(() => showSuccessToast('Activity cleared', 'Your picks will rely on what you told us until new activity builds up.'))
-                  .catch((e) => Alert.alert('Error', e.message))}
+                  .catch((e) => presentRecoverableError(Alert, { what: 'complete that', error: e }))}
                 accessibilityLabel="Clear my activity history"
                 accessibilityRole="button"
               >

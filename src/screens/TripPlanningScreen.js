@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { addTripIdea, getTripIdeas } from '../services/tripPlanning';
@@ -65,7 +66,7 @@ export default function TripPlanningScreen({ route }) {
       setDrafts((prev) => ({ ...prev, [categoryKey]: '' }));
       load();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAdd(categoryKey) });
     }
     setSubmittingCategory(null);
   }

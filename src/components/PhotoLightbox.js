@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { Modal, View, Image, TouchableOpacity, Text, StyleSheet, Dimensions, PanResponder, Animated, TextInput, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { getPhotoComments, addPhotoComment, deletePhotoComment } from '../services/photoComments';
 import { checkTextModeration } from '../services/textModeration';
@@ -94,7 +95,7 @@ export default function PhotoLightbox({ visible, photoUri, onClose, photoOwnerId
       setComments((prev) => [...prev, added]);
       setDraft('');
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSend() });
     }
     setSending(false);
   }
@@ -110,7 +111,7 @@ export default function PhotoLightbox({ visible, photoUri, onClose, photoOwnerId
             await deletePhotoComment(commentId);
             setComments((prev) => prev.filter((c) => c.id !== commentId));
           } catch (e) {
-            Alert.alert('Error', e.message);
+            presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleDelete(commentId) });
           }
         },
       },

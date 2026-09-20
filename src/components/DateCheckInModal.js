@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Platform, Alert, Share, Linking, ActivityIndicator } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Location from 'expo-location';
@@ -58,7 +59,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
       setActiveLiveSession({ id: sessionId, expires_at: expiresAt });
       await shareWithContact(`I'm sharing my live location with you for the next few hours as a safety check-in: ${shareUrl}`);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleStartLiveTracking() });
     }
     setStartingTracking(false);
   }
@@ -69,7 +70,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
       await stopLiveTracking(activeLiveSession.id);
       setActiveLiveSession(null);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleStopLiveTracking() });
     }
     setStoppingTracking(false);
   }
@@ -90,7 +91,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
       );
       onClose();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleCreate() });
     }
     setSubmitting(false);
   }
@@ -116,7 +117,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
 
       await shareWithContact(`I'm currently here — sharing my location while I'm out with ${matchName || 'someone'}: ${mapsUrl}`);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleShareLocationNow() });
     }
     setSharingLocation(false);
   }

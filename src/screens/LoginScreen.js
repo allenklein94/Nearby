@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { supabase, functionUrl } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
@@ -44,12 +45,12 @@ export default function LoginScreen({ navigation }) {
     try {
       const { error } = await supabase.auth.signInWithOtp({ phone: formatted });
       setLoading(false);
-      if (error) return Alert.alert('Error', error.message);
+      if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => sendOtp() });
       setE164Phone(formatted);
       setOtpSent(true);
     } catch (e) {
       setLoading(false);
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => sendOtp() });
     }
   }
 
@@ -80,7 +81,7 @@ export default function LoginScreen({ navigation }) {
         if (verifyError) return Alert.alert('Error', verifyError.message);
       } catch (e) {
         setLoading(false);
-        Alert.alert('Error', e.message);
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => verifyOtp() });
       }
       return;
     }
@@ -92,10 +93,10 @@ export default function LoginScreen({ navigation }) {
         type: 'sms',
       });
       setLoading(false);
-      if (error) return Alert.alert('Error', error.message);
+      if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => verifyOtp() });
     } catch (e) {
       setLoading(false);
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => verifyOtp() });
     }
   }
 

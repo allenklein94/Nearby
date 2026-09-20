@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, FlatList, Dimensions, TouchableOpacity, Alert, Animated } from 'react-native';
 import { NLoader, MatchAnimation, ConnectionGlyphSwap, showSuccessToast } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
@@ -265,7 +266,7 @@ export default function ViewProfileScreen({ route, navigation }) {
       prevFriendshipStatusRef.current = 'pending_sent';
       showSuccessToast('Friend request sent', `${profile.display_name} will see your request.`);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAddFriend() });
     }
     setSendingFriendRequest(false);
   }
@@ -296,7 +297,7 @@ export default function ViewProfileScreen({ route, navigation }) {
         setFriendshipId(null);
       }
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRespondToFriendRequest(accept) });
     }
     setRespondingToFriendRequest(false);
   }

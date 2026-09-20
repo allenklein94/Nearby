@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, Image, ActivityIndicator, AppState } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader } from '../motion';
@@ -620,7 +621,7 @@ export default function ChatScreen({ route, navigation }) {
       setMessages((prev) => (prev.some((m) => m.id === data.id) ? prev : [data, ...prev]));
       posthog.capture('date_night_suggested');
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => suggestDateNight() });
     }
   }
 
@@ -679,7 +680,7 @@ export default function ChatScreen({ route, navigation }) {
         { text: 'Use This', onPress: () => setText(result.message) },
       ]);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => getCourageMessage(goal) });
     }
   }
 
@@ -717,7 +718,7 @@ export default function ChatScreen({ route, navigation }) {
   async function updateDisappearingMode(mode) {
     const { error } = await supabase.from('matches').update({ disappearing_mode: mode }).eq('id', matchId);
     if (error) {
-      Alert.alert('Error', error.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => updateDisappearingMode(mode) });
       return;
     }
     setDisappearingMode(mode);
@@ -765,7 +766,7 @@ export default function ChatScreen({ route, navigation }) {
                 );
               }, 400);
             } catch (e) {
-              Alert.alert('Error', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmUnmatch() });
             }
           },
         },
@@ -794,7 +795,7 @@ export default function ChatScreen({ route, navigation }) {
       await toggleReaction(messageId, emoji);
       loadReactions();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleReact(messageId, emoji) });
     }
   }
 
@@ -820,7 +821,7 @@ export default function ChatScreen({ route, navigation }) {
 
       Alert.alert(t('chat.translationTitle'), result.translation);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleTranslate(messageText) });
     }
   }
 
@@ -867,7 +868,7 @@ export default function ChatScreen({ route, navigation }) {
         });
       }, 1000);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleStartRecording() });
     }
   }
 
@@ -922,7 +923,7 @@ export default function ChatScreen({ route, navigation }) {
       replaceOptimisticMessage(optimisticMessage.id, data);
     } catch (e) {
       setUploadingVoice(false);
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleStopRecording() });
     }
   }
 
@@ -952,7 +953,7 @@ export default function ChatScreen({ route, navigation }) {
         { text: 'Use This', onPress: () => setText(result.icebreaker) },
       ]);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => getIcebreaker() });
     }
     setLoadingIcebreaker(false);
   }
@@ -1082,7 +1083,7 @@ export default function ChatScreen({ route, navigation }) {
       replaceOptimisticMessage(optimisticMessage.id, data);
     } catch (e) {
       setUploadingPhoto(false);
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePickVideo() });
     }
   }
 
@@ -1127,7 +1128,7 @@ export default function ChatScreen({ route, navigation }) {
       replaceOptimisticMessage(optimisticMessage.id, data);
     } catch (e) {
       setUploadingPhoto(false);
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePickPhoto() });
     }
   }
 

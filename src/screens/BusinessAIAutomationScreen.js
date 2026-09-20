@@ -11,6 +11,7 @@
 // renderLockedFeature() elsewhere -- the actual enforcement is always
 // the server-side entitlement check inside set_business_ai_trust_level()/
 // upsert_business_ai_policy() themselves.
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import React, { useState, useCallback } from 'react';
 import {
@@ -112,7 +113,7 @@ export default function BusinessAIAutomationScreen({ route }) {
       setTrustLevel(level);
       setEntitlements(ent);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => load() });
     }
     setLoading(false);
   }, [partnerId]);
@@ -205,7 +206,7 @@ export default function BusinessAIAutomationScreen({ route }) {
       await setBusinessAiTrustLevel(partnerId, level);
       setTrustLevel(level);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmSetLevel(level) });
     }
     setChangingLevel(false);
   }
@@ -279,7 +280,7 @@ export default function BusinessAIAutomationScreen({ route }) {
       setPolicyModalVisible(false);
       await loadPolicies();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSavePolicy() });
     }
     setSavingPolicy(false);
   }
@@ -295,7 +296,7 @@ export default function BusinessAIAutomationScreen({ route }) {
             await deleteBusinessAiPolicy(policy.id);
             await loadPolicies();
           } catch (e) {
-            Alert.alert('Error', e.message);
+            presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleDeletePolicy(policy) });
           }
         },
       },
@@ -308,7 +309,7 @@ export default function BusinessAIAutomationScreen({ route }) {
       await undoAiAction(actionId);
       await loadActivityLog();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleUndo(actionId) });
     }
     setBusyActionId(null);
   }
@@ -328,7 +329,7 @@ export default function BusinessAIAutomationScreen({ route }) {
               await withdrawBusinessOffer(action.offerId);
               await loadActivityLog();
             } catch (e) {
-              Alert.alert('Error', e.message);
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleWithdraw(action) });
             }
             setBusyActionId(null);
           },

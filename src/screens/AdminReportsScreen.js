@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../services/supabase';
@@ -43,7 +44,7 @@ export default function AdminReportsScreen({ navigation }) {
 
   async function markResolved(id) {
     const { error } = await supabase.from('reports').update({ resolved: true }).eq('id', id);
-    if (error) return Alert.alert('Error', error.message);
+    if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => markResolved(id) });
     load();
   }
 

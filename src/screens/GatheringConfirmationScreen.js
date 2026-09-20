@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share, Animated } from 'react-native';
 import { NLoader } from '../motion';
@@ -126,7 +127,7 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setInvitedIds((prev) => ({ ...prev, [friendId]: true }));
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleInvite(friendId) });
     }
     setInvitingId(null);
   }

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { supabase, functionUrl } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
@@ -80,7 +81,7 @@ export default function RehearsalRoomScreen({ navigation }) {
       posthog.capture('rehearsal_room_message_sent', { scenario: scenario.key });
       setMessages((prev) => [...prev, { role: 'ai', text: result.reply }]);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => sendMessage() });
       setMessages(messages);
       setText(messageText);
     }
