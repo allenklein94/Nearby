@@ -29,3 +29,15 @@ export function homeWeatherCard({ weather, indoorUpcoming = [], outdoorUpcoming 
   }
   return null;
 }
+
+// Once-per-day cap on the good-weather card (item 62): ordinary weather never repeats it. `storedDay` = the local day it was
+// last shown (from storage; null until loaded = not shown yet, so nothing flashes), `shownThisSession` keeps it on screen
+// after it is first shown today. Only the good-weather (outdoor) card is capped; bad weather changes plans and always shows.
+export function localDayKey(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export function goodWeatherCardAllowed({ loaded, storedDay, todayKey, shownThisSession }) {
+  if (!loaded) return false;
+  return shownThisSession || storedDay !== todayKey;
+}

@@ -72,3 +72,16 @@ describe('weather ranks, it does not repeat (item 62)', () => {
     expect(homeWeatherCard({ weather: wx({ pop: 0.8, id: 501 }), indoorUpcoming: [g()] })).not.toBeNull();
   });
 });
+
+describe('good-weather card cap (item 62)', () => {
+  const { goodWeatherCardAllowed, localDayKey } = require('./weatherRelevance');
+  it('shows once per local day, never before storage is read', () => {
+    const today = localDayKey(new Date(2026, 8, 20));
+    expect(today).toBe('2026-09-20');
+    expect(goodWeatherCardAllowed({ loaded: false, storedDay: null, todayKey: today, shownThisSession: false })).toBe(false);
+    expect(goodWeatherCardAllowed({ loaded: true, storedDay: null, todayKey: today, shownThisSession: false })).toBe(true);
+    expect(goodWeatherCardAllowed({ loaded: true, storedDay: '2026-09-19', todayKey: today, shownThisSession: false })).toBe(true);
+    expect(goodWeatherCardAllowed({ loaded: true, storedDay: today, todayKey: today, shownThisSession: false })).toBe(false);
+    expect(goodWeatherCardAllowed({ loaded: true, storedDay: today, todayKey: today, shownThisSession: true })).toBe(true);
+  });
+});

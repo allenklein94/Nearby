@@ -52,7 +52,7 @@ import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { homeLoadNotice } from '../utils/homeLoadNotice';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime, describeFriendGatheringTiming } from '../utils/timeContext';
 import { firstRunInterestLine } from '../utils/firstRunInterests';
-import { homeWeatherCard } from '../constants/weatherRelevance';
+import { homeWeatherCard, goodWeatherCardAllowed, localDayKey } from '../constants/weatherRelevance';
 import { attendeeTotal, gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { lightenHex } from '../utils/colorUtils';
@@ -231,6 +231,17 @@ export default function HomeScreen({ navigation }) {
   // Progressive dining-taste prompt (Preference wiring Phase 4): a permanent, per-user dismissable Home card.
   const goalRow = useMyGoals();
   const [diningNudge, setDiningNudge] = useState(false);
+  // Good-weather card cap (item 62): shown at most once per local day.
+  const GOOD_WEATHER_DAY_KEY = 'home_good_weather_card_day';
+  const [goodWeatherDay, setGoodWeatherDay] = useState({ loaded: false, day: null });
+  const [goodWeatherShownNow, setGoodWeatherShownNow] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(GOOD_WEATHER_DAY_KEY)
+      .then((day) => { if (!cancelled) setGoodWeatherDay({ loaded: true, day }); })
+      .catch(() => { if (!cancelled) setGoodWeatherDay({ loaded: true, day: null }); });
+    return () => { cancelled = true; };
+  }, []);
   const [myDeclaredInterests, setMyDeclaredInterests] = useState([]);
   const [diningModalVisible, setDiningModalVisible] = useState(false);
   const [quickPicksEditVisible, setQuickPicksEditVisible] = useState(false);
@@ -395,7 +406,14 @@ export default function HomeScreen({ navigation }) {
       intentActive: intentThinking || !!intentResults || !!surprise,
     });
   })() : null;
-  const weatherCard = cardWithoutIds(weatherCardRaw, aboveWeather);
+  const goodWeatherOk = goodWeatherCardAllowed({ loaded: goodWeatherDay.loaded, storedDay: goodWeatherDay.day, todayKey: localDayKey(), shownThisSession: goodWeatherShownNow });
+  const weatherCard = cardWithoutIds(weatherCardRaw && weatherCardRaw.bias === 'outdoor' && !goodWeatherOk ? null : weatherCardRaw, aboveWeather);
+  const goodWeatherShowing = !!weatherCard && weatherCard.bias === 'outdoor';
+  useEffect(() => {
+    if (!goodWeatherShowing || goodWeatherShownNow) return;
+    setGoodWeatherShownNow(true);
+    AsyncStorage.setItem(GOOD_WEATHER_DAY_KEY, localDayKey()).catch(() => {});
+  }, [goodWeatherShowing, goodWeatherShownNow]);
   // Every engine feeds ONE capped list (utils/homeAttention.js): Home shows the few things that deserve attention now.
   const attention = selectHomeAttention({
     exclude: new Set([...aboveWeather, ...(weatherCard ? weatherCard.gatherings.map((g) => g.id) : [])]),
