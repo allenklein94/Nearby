@@ -29,6 +29,7 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [groupSizeFeel, setGroupSizeFeel] = useState(gathering.group_size_feel ?? null);
   const [beginnerFriendly, setBeginnerFriendly] = useState(gathering.beginner_friendly ?? true);
   const [showGroupInsights, setShowGroupInsights] = useState(gathering.show_group_insights ?? true);
+  const [requiresApproval, setRequiresApproval] = useState(gathering.requires_approval ?? false);
   const [timelineSteps, setTimelineSteps] = useState(gathering.timeline_steps ?? []);
   const [coverPhotoPath, setCoverPhotoPath] = useState(gathering.cover_photo_path ?? null);
   const [coverPhotoUrl, setCoverPhotoUrl] = useState(null);
@@ -108,6 +109,7 @@ export default function EditGatheringScreen({ route, navigation }) {
         beginnerFriendly,
         timelineSteps: cleanedTimelineSteps.length > 0 ? cleanedTimelineSteps : null,
         showGroupInsights,
+        ...(gathering.is_public === false ? {} : { requiresApproval }),
       });
       showSuccessToast('Updated', 'Your changes are saved.');
       navigation.goBack();
@@ -224,6 +226,20 @@ export default function EditGatheringScreen({ route, navigation }) {
               accessibilityLabel="Show group insights to attendees"
             />
           </View>
+          {gathering.is_public !== false && (
+            <>
+              <View style={styles.toggleRow}>
+                <Text style={styles.label}>Require approval to join</Text>
+                <Switch
+                  value={requiresApproval}
+                  onValueChange={setRequiresApproval}
+                  accessibilityLabel="Require approval to join"
+                />
+              </View>
+              <Text style={styles.subheader}>Off: anyone can join in one tap. On: new people request to join and you approve or decline. Changing this doesn't affect people already in.</Text>
+            </>
+          )}
+
           <Text style={styles.subheader}>Shared interests and an age/gender-makeup summary, shown to attendees once there's enough people to keep it anonymous.</Text>
 
           <Text style={styles.sectionHeader}>Timeline</Text>

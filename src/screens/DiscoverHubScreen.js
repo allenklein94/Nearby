@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { joinLabel } from '../utils/gatheringJoinMode';
 import ExperienceComponentList from '../components/ExperienceComponentList';
 import usePersonalization from '../hooks/usePersonalization';
 import { behaviorNudge, broadGroupNudge } from '../constants/blendedRanking';
@@ -1117,9 +1118,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const status = myAttendeeStatus(g);
     if (status === 'approved') return { kind: 'state', label: 'Going' };
     if (status === 'waitlisted') return { kind: 'state', label: 'Waitlisted' };
-    if (status === 'pending') return { kind: 'state', label: 'Interested' };
+    if (status === 'pending') return { kind: 'state', label: 'Requested' };
     const isFull = g.capacity != null && (g.approvedAttendees?.length ?? 0) >= g.capacity;
-    return { kind: 'cta', label: isFull ? 'Join Waitlist' : (g.is_public ? 'Join Gathering' : 'Request to Join') };
+    return { kind: 'cta', label: joinLabel(g, { isFull }) };
   }
 
   // "TONIGHT" -> "Tonight". gatheringTimeBadge's own words, cased for a

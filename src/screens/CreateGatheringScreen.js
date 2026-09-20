@@ -160,6 +160,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [priceLevel, setPriceLevel] = useState(null);
   const [partyType, setPartyType] = useState(null);
   const [showGroupInsights, setShowGroupInsights] = useState(true);
+  const [requiresApproval, setRequiresApproval] = useState(false);
 
   useEffect(() => {
     if (route.params?.selectedLat && route.params?.selectedLng) {
@@ -346,6 +347,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         priceLevel,
         partyType,
         showGroupInsights,
+        requiresApproval: visibility !== 'invite_only' && requiresApproval,
       });
       recordBehaviorEvent('create', 'gathering', created.id, interestTag);
 
@@ -524,6 +526,34 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   })}
                 </View>
               )
+            )}
+
+            {visibility !== 'invite_only' && (
+              <>
+                <Text style={[styles.label, { marginTop: spacing.lg }]}>Who can join?</Text>
+                {[
+                  { key: false, title: 'Anyone', hint: 'One tap to join. You can still remove people.' },
+                  { key: true, title: 'Require approval', hint: 'People request to join and you approve or decline.' },
+                ].map((opt) => {
+                  const selected = requiresApproval === opt.key;
+                  return (
+                    <TouchableOpacity
+                      key={opt.title}
+                      style={[styles.optionCard, selected && styles.optionCardActive]}
+                      onPress={() => { Haptics.selectionAsync(); setRequiresApproval(opt.key); }}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`${opt.title} — ${opt.hint}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.optionCardTitle, selected && styles.optionCardTitleActive]}>{opt.title}</Text>
+                        <Text style={styles.optionCardHint}>{opt.hint}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
             )}
           </>
         )}

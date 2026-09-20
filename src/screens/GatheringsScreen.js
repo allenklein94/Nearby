@@ -4,7 +4,8 @@ import { PullToRefresh, FilterTransition, TapActiveChip, NLoader, SkeletonFeed }
 import FadeInState from '../components/FadeInState';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { useFocusEffect } from '@react-navigation/native';
-import { getNearbyGatherings, searchGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering, stopRecurringSeries } from '../services/gatherings';
+import { joinLabel } from '../utils/gatheringJoinMode';
+import { getNearbyGatherings, searchGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, hostRemoveAttendee, getMyTopGatheringCategories, cancelGathering, stopRecurringSeries } from '../services/gatherings';
 import { recordBehaviorEvent } from '../services/behaviorSignals';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import { getMyFriends } from '../services/friends';
@@ -366,12 +367,35 @@ export default function GatheringsScreen({ navigation, route }) {
           { text: 'Send a Message', onPress: () => navigation.navigate('Messages') },
         ]);
       } else {
-        Alert.alert("You're interested!", "The host will review and let you know.");
+        Alert.alert('Request sent', "The host will review and let you know.");
       }
       load();
     } catch (e) {
       Alert.alert('Error', e.message);
     }
+  }
+
+  function confirmRemoveInterest(interest, isRequest) {
+    const name = interest.profiles?.display_name ?? 'this person';
+    Alert.alert(
+      isRequest ? `Decline ${name}?` : `Remove ${name}?`,
+      isRequest ? "They'll be told you couldn't approve their request." : "They'll be taken off the list and a waitlisted person, if any, moves up.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: isRequest ? 'Decline' : 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await hostRemoveAttendee(interest.id);
+              load();
+            } catch (e) {
+              Alert.alert('Error', e.message);
+            }
+          },
+        },
+      ]
+    );
   }
 
   async function handleApprove(interest) {
@@ -1148,7 +1172,7 @@ export default function GatheringsScreen({ navigation, route }) {
                     accessibilityLabel={
                       item.capacity != null && (item.approvedAttendees?.length ?? 0) >= item.capacity
                         ? 'Join Waitlist'
-                        : (item.is_public ? 'Join Gathering' : 'Request to Join')
+                        : joinLabel(item)
                     }
                     accessibilityRole="button"
                   >
@@ -1162,7 +1186,7 @@ export default function GatheringsScreen({ navigation, route }) {
                     <Text style={styles.interestButtonText}>
                       {item.capacity != null && (item.approvedAttendees?.length ?? 0) >= item.capacity
                         ? 'Join Waitlist'
-                        : (item.is_public ? 'Join Gathering' : 'Request to Join')}
+                        : joinLabel(item)}
                     </Text>
                   </TouchableOpacity>
                   {myFriendIds.size > 0 && (
@@ -1485,16 +1509,34 @@ export default function GatheringsScreen({ navigation, route }) {
                       {isPast ? (
                         <Text style={styles.approvedLabel}>{interest.status === 'approved' ? '✓ Attended' : 'Did not attend'}</Text>
                       ) : interest.status === 'pending' ? (
-                        <TouchableOpacity
-                          style={styles.approveButton}
-                          onPress={() => handleApprove(interest)}
-                          accessibilityLabel={`Approve ${interest.profiles?.display_name}'s interest`}
-                          accessibilityRole="button"
-                        >
-                          <Text style={styles.approveButtonText}>{t('gatherings.approve')}</Text>
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                          <TouchableOpacity
+                            onPress={() => confirmRemoveInterest(interest, true)}
+                            accessibilityLabel={`Decline ${interest.profiles?.display_name}'s request`}
+                            accessibilityRole="button"
+                          >
+                            <Text style={styles.declineLink}>Decline</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.approveButton}
+                            onPress={() => handleApprove(interest)}
+                            accessibilityLabel={`Approve ${interest.profiles?.display_name}'s request`}
+                            accessibilityRole="button"
+                          >
+                            <Text style={styles.approveButtonText}>{t('gatherings.approve')}</Text>
+                          </TouchableOpacity>
+                        </View>
                       ) : (
-                        <Text style={styles.approvedLabel}>{t('gatherings.approved')}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                          <Text style={styles.approvedLabel}>{interest.status === 'waitlisted' ? 'Waitlisted' : t('gatherings.approved')}</Text>
+                          <TouchableOpacity
+                            onPress={() => confirmRemoveInterest(interest, false)}
+                            accessibilityLabel={`Remove ${interest.profiles?.display_name}`}
+                            accessibilityRole="button"
+                          >
+                            <Text style={styles.declineLink}>Remove</Text>
+                          </TouchableOpacity>
+                        </View>
                       )}
                     </View>
                   ))
@@ -1543,7 +1585,7 @@ export default function GatheringsScreen({ navigation, route }) {
           intentModalGathering?.capacity != null &&
           (intentModalGathering?.approvedAttendees?.length ?? 0) >= intentModalGathering.capacity
             ? 'Join Waitlist'
-            : (intentModalGathering?.is_public ? 'Join Gathering' : 'Request to Join')
+            : joinLabel(intentModalGathering)
         }
       />
       <StoryViewerModal
@@ -1742,6 +1784,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   interestName: { color: colors.textPrimary, fontSize: 14 },
   approveButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6 },
   approveButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  declineLink: { color: colors.danger, fontSize: 12, fontWeight: '600' },
   approvedLabel: { color: colors.success, fontSize: 12, fontWeight: '700' },
   noInterestText: { color: colors.textTertiary, fontSize: 13 },
   cancelGatheringText: { color: colors.danger, fontSize: 12, opacity: 0.7, fontWeight: '600' },

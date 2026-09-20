@@ -46,7 +46,7 @@ const WIDE_TIER_MAX_MILES = 15;
 // unknown, never a guessed value" convention. Added here (the one shared
 // select list every gathering-fetching function already reads from) so
 // every caller starts returning them for free, no per-call-site change.
-const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity, ask_local_businesses, price_level, party_type, show_group_insights';
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity, ask_local_businesses, price_level, party_type, show_group_insights, requires_approval';
 
 // ask_local_businesses only ever stores the host's real consent/intent at
 // creation time -- it does NOT itself create a business_requests row. A
@@ -60,7 +60,7 @@ const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, sc
 // exists, from GatheringDetailScreen's own "Ready to see what's
 // available?" banner (or the existing manual "Ask Local Businesses" link)
 // -- see submitBusinessRequestForGathering() in businessFulfillment.js.
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null, showGroupInsights = true }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null, showGroupInsights = true, requiresApproval = false }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -88,6 +88,7 @@ export async function createGathering({ title, description, interestTag, schedul
       precise_lng: lng,
       scheduled_at: scheduledAt,
       is_public: isPublic,
+      requires_approval: requiresApproval,
       show_on_map: showOnMap,
       women_only: womenOnly,
       recurrence_rule: recurrenceRule,
@@ -577,6 +578,13 @@ export async function expressInterest(gatheringId) {
   return { status: data.status, matchId: data.match_id, autoApproved: data.status === 'approved' };
 }
 
+// Host declines a pending/waitlisted request or removes an attendee (host-only RPC; promotes the waitlist if a spot frees).
+export async function hostRemoveAttendee(interestId) {
+  const { data, error } = await supabase.rpc('host_remove_gathering_attendee', { interest_id_param: interestId });
+  if (error) throw error;
+  return data;
+}
+
 // Return shape changed from a bare match-id uuid to { status, match_id } —
 // approving a pending request can now honestly result in 'waitlisted'
 // (the gathering filled up between the request and the host's review),
@@ -740,10 +748,11 @@ export async function getAllPendingRequests() {
   return data ?? [];
 }
 
-export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps, showGroupInsights }) {
+export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps, showGroupInsights, requiresApproval }) {
   const { error } = await supabase
     .from('gatherings')
     .update({
+      ...(requiresApproval === undefined ? {} : { requires_approval: requiresApproval }),
       title,
       description,
       scheduled_at: scheduledAt,

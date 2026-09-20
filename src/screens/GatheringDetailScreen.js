@@ -53,6 +53,7 @@ import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gathe
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { needsApproval, joinLabel } from '../utils/gatheringJoinMode';
 
 const VIBE_SCALES = [
   { key: 'energy_level', label: 'Energy', lowLabel: 'Chill', highLabel: 'High energy' },
@@ -1144,7 +1145,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
             </View>
           ) : gathering.myStatus === 'pending' ? (
             <View style={styles.pendingPanel}>
-              <Text style={styles.pendingText}>You're interested — the host will review and let you know.</Text>
+              <Text style={styles.pendingText}>Request sent — the host will review and let you know.</Text>
               <TouchableOpacity
                 onPress={confirmLeave}
                 disabled={leaving}
@@ -1166,11 +1167,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 onPress={() => setIntentModalVisible(true)}
                 disabled={joining}
                 activeOpacity={0.85}
-                accessibilityLabel={gathering.isFull ? 'Join Waitlist' : (gathering.is_public ? 'Join Gathering' : 'Request to Join')}
+                accessibilityLabel={joinLabel(gathering, { isFull: gathering.isFull })}
                 accessibilityRole="button"
               >
                 <Text style={styles.joinButtonText}>
-                  {joining ? 'Joining...' : gathering.isFull ? 'JOIN WAITLIST' : gathering.myInterested ? (gathering.is_public ? "I'M GOING" : 'REQUEST TO JOIN') : (gathering.is_public ? 'JOIN GATHERING' : 'REQUEST TO JOIN')}
+                  {joining ? 'Joining...' : gathering.isFull ? 'JOIN WAITLIST' : gathering.myInterested ? (needsApproval(gathering) ? 'REQUEST TO JOIN' : "I'M GOING") : (needsApproval(gathering) ? 'REQUEST TO JOIN' : 'JOIN GATHERING')}
                 </Text>
               </TouchableOpacity>
               {new Date(gathering.scheduled_at) >= new Date() && (
@@ -1233,7 +1234,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
         gathering={gathering}
         onClose={() => setIntentModalVisible(false)}
         onConfirm={handleConfirmIntent}
-        confirmLabel={gathering.isFull ? 'Join Waitlist' : (gathering.is_public ? 'Join Gathering' : 'Request to Join')}
+        confirmLabel={joinLabel(gathering, { isFull: gathering.isFull })}
       />
 
       <InviteFriendsModal
