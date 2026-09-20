@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { stopDatePrefill } from '../utils/nightDate';
 
 // Item 52 ("Build a universal Plan object", CLAUDE.md) -- the first real
 // client consumer of the `plans` table (Phase G,
@@ -229,7 +230,7 @@ export function experienceStopFromItem(component, item) {
 }
 
 // Where a stop continues: the same existing flow tapping that supply anywhere else already opens.
-export function navigateToExperienceStop(navigation, stop, { partySize = null } = {}) {
+export function navigateToExperienceStop(navigation, stop, { partySize = null, nightDate = null } = {}) {
   if (stop.stopType === 'gathering') {
     navigation.navigate('GatheringDetail', { gatheringId: stop.refId });
     return;
@@ -244,6 +245,7 @@ export function navigateToExperienceStop(navigation, stop, { partySize = null } 
     prefillText: '',
     prefillCategory: stop.category ?? null,
     prefillPartySize: partySize,
+    ...stopDatePrefill(nightDate),
     matchedAvailability: { availabilityId: stop.refId, partnerName: stop.subtitle ?? stop.title, title: stop.title },
   });
 }
@@ -252,6 +254,12 @@ export function navigateToExperienceStop(navigation, stop, { partySize = null } 
 // request/reservation through the existing cancellation path, server-side (remove_experience_stop, migration 20270131).
 export async function reorderExperienceStops(planId, orderedStopIds) {
   const { error } = await supabase.rpc('reorder_experience_stops', { plan_id_param: planId, ordered_stop_ids: orderedStopIds });
+  if (error) throw new Error(error.message);
+}
+
+// One owner-set date for the whole night ('YYYY-MM-DD', or null to clear). Each stop's request starts from it (prefill only).
+export async function setExperienceNightDate(planId, dateStr) {
+  const { error } = await supabase.rpc('set_experience_night_date', { plan_id_param: planId, date_param: dateStr });
   if (error) throw new Error(error.message);
 }
 

@@ -6,6 +6,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { getSharedNight, leaveSharedExperience, EXPERIENCE_STOP_STATE_LABEL } from '../services/plans';
+import { nightDateLabel } from '../utils/nightDate';
 
 const STATUS_LABEL = { draft: 'Planning', confirmed: 'Confirmed', completed: 'Done', cancelled: 'Cancelled' };
 
@@ -66,7 +67,7 @@ export default function SharedNightScreen({ navigation, route }) {
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         <Text style={styles.title}>✨ {night.title || 'A night out'}</Text>
         <Text style={styles.muted}>
-          {[STATUS_LABEL[night.status] || night.status, night.hostDisplayName ? `Shared by ${night.hostDisplayName}` : null].filter(Boolean).join(' · ')}
+          {[STATUS_LABEL[night.status] || night.status, nightDateLabel(night.nightDate), night.hostDisplayName ? `Shared by ${night.hostDisplayName}` : null].filter(Boolean).join(' · ')}
         </Text>
 
         <Text style={styles.sectionLabel}>The night</Text>

@@ -167,7 +167,12 @@
   function render(n) {
     document.getElementById('night-title').textContent = n.title || 'A night out';
     document.getElementById('night-host').textContent = n.hostDisplayName ? 'Shared by ' + n.hostDisplayName : '';
-    document.getElementById('night-status').textContent = STATUS_LABEL[n.status] || '';
+    var when = '';
+    if (n.nightDate && /^\d{4}-\d{2}-\d{2}$/.test(n.nightDate)) {
+      var p = n.nightDate.split('-');
+      when = new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    }
+    document.getElementById('night-status').textContent = [STATUS_LABEL[n.status] || '', when].filter(Boolean).join(' · ');
     var box = document.getElementById('stops');
     (n.stops || []).forEach(function (s) {
       var row = el('div', 'stop');

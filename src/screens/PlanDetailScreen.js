@@ -1,14 +1,16 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import { NLoader } from '../motion';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
-import { getPlanOverview, getPlanStops, navigateToExperienceStop, reorderExperienceStops, removeExperienceStop, EXPERIENCE_STOP_STATE_LABEL } from '../services/plans';
+import { getPlanOverview, getPlanStops, navigateToExperienceStop, reorderExperienceStops, removeExperienceStop, setExperienceNightDate, EXPERIENCE_STOP_STATE_LABEL } from '../services/plans';
 import { supabase } from '../services/supabase';
 import ExperienceSharePanel from '../components/ExperienceSharePanel';
 import { canEditNight, canRemoveStop, moveStopIds, removeStopCopy } from '../utils/experienceStopEdit';
+import { localDateParam, nightDateFromScheduledAt, nightDateToLocal, nightDateLabel } from '../utils/nightDate';
 import { buildPlanJourney } from '../utils/planJourney';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 
@@ -17,7 +19,7 @@ const STATUS_LABEL = { draft: 'Planning', confirmed: 'Confirmed', completed: 'Do
 // One Plan, read through get_plan_overview (20261203_plan_read_layer.sql): the whole Occasion -> People -> Activity ->
 // Business -> Offer -> Reservation picture in one place. Read-only; every action hands off to an existing screen.
 export default function PlanDetailScreen({ navigation, route }) {
-  const { colors, shadow } = useTheme();
+  const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
   const planId = route.params?.planId;
   const [overview, setOverview] = useState(null);
@@ -27,6 +29,7 @@ export default function PlanDetailScreen({ navigation, route }) {
   const [myId, setMyId] = useState(null);
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const load = useCallback(async () => {
     setError(false);
@@ -75,6 +78,20 @@ export default function PlanDetailScreen({ navigation, route }) {
   const isRequestPlan = plan.plan_type === 'business_request' && !!businessRequest;
 
   const canEdit = isExperiencePlan && canEditNight(plan.status, !!myId && who.host?.id === myId);
+
+  const nightDate = isExperiencePlan ? nightDateFromScheduledAt(plan.scheduled_at) : null;
+
+  async function changeNightDate(dateStr) {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await setExperienceNightDate(planId, dateStr);
+      await load();
+    } catch (e) {
+      Alert.alert("Couldn't set the date", e.message);
+    }
+    setBusy(false);
+  }
 
   async function moveStop(index, delta) {
     const ids = moveStopIds(stops, index, delta);
@@ -138,6 +155,34 @@ export default function PlanDetailScreen({ navigation, route }) {
                 </TouchableOpacity>
               )}
             </View>
+            <View style={styles.dateRow}>
+              <Text style={styles.muted}>{nightDate ? `📅 ${nightDateLabel(nightDate)}` : 'No date picked yet'}</Text>
+              {canEdit && (
+                <View style={styles.editControls}>
+                  <TouchableOpacity disabled={busy} onPress={() => setShowDatePicker(true)} accessibilityRole="button" accessibilityLabel={nightDate ? 'Change the date of your night' : 'Pick a date for your night'}>
+                    <Text style={styles.stopLink}>{nightDate ? 'Change date' : 'Pick a date'}</Text>
+                  </TouchableOpacity>
+                  {nightDate ? (
+                    <TouchableOpacity disabled={busy} onPress={() => changeNightDate(null)} accessibilityRole="button" accessibilityLabel="Clear the date">
+                      <Text style={styles.muted}>Clear</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              )}
+            </View>
+            {canEdit && showDatePicker && (
+              <DateTimePicker
+                value={nightDateToLocal(nightDate) ?? new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                themeVariant={isDark ? 'dark' : 'light'}
+                minimumDate={new Date()}
+                onChange={(event, selected) => {
+                  setShowDatePicker(Platform.OS === 'ios');
+                  if (selected && event?.type !== 'dismissed') changeNightDate(localDateParam(selected));
+                }}
+              />
+            )}
             <View style={styles.card}>
               {stops.map((s, i) => (
                 <View key={s.id} style={[styles.stepRow, i > 0 && styles.stepDivider]}>
@@ -163,7 +208,7 @@ export default function PlanDetailScreen({ navigation, route }) {
                     </View>
                   ) : (
                   <TouchableOpacity
-                    onPress={() => navigateToExperienceStop(navigation, s, { partySize: plan.party_size })}
+                    onPress={() => navigateToExperienceStop(navigation, s, { partySize: plan.party_size, nightDate })}
                     accessibilityRole="button"
                     accessibilityLabel={`Continue with ${s.title}`}
                   >
@@ -173,7 +218,7 @@ export default function PlanDetailScreen({ navigation, route }) {
                 </View>
               ))}
             </View>
-            <Text style={styles.muted}>Each stop is confirmed by its business with you; this plan keeps them together and updates as they do.</Text>
+            <Text style={styles.muted}>Each stop is confirmed by its business with you; this plan keeps them together and updates as they do.{nightDate ? ' Your date is filled in when you ask each stop; you can change it there.' : ''}</Text>
             {canEdit && <ExperienceSharePanel planId={planId} planTitle={plan.title} />}
           </>
         )}
@@ -261,6 +306,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   stepLabel: { color: colors.textPrimary, fontWeight: '600', fontSize: 16 },
   stopLink: { color: colors.primary, fontWeight: '700' },
   nightHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg, marginBottom: spacing.sm },
+  dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
   editControls: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   editIcon: { color: colors.textPrimary, fontWeight: '700', fontSize: 18, paddingHorizontal: spacing.xs },
   editIconOff: { opacity: 0.3 },
