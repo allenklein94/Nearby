@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 import { joinLabel } from '../utils/gatheringJoinMode';
 import ExperienceComponentList from '../components/ExperienceComponentList';
+import SponsoredSpotlightSlot from '../components/SponsoredSpotlightSlot';
 import usePersonalization from '../hooks/usePersonalization';
 import { behaviorNudge, broadGroupNudge } from '../constants/blendedRanking';
 import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Linking, Alert, BackHandler } from 'react-native';
@@ -2101,6 +2102,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </>
           )}
 
+          {/* Sponsored slot (item 44): Places tab only, its own card above the organic list; never in the blended All view or a search. */}
+          {typeFilter === 'places' && !isSearching && (
+            <SponsoredSpotlightSlot
+              userLocation={userLocation}
+              categoryGroup={placesCategory}
+              categoryLabel={PLACE_CATEGORIES.find((c) => c.key === placesCategory)?.label}
+              navigation={navigation}
+            />
+          )}
           {showPlaces && (
             <>
               <View style={styles.sectionHeaderRow}>
@@ -2195,6 +2205,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 <Text style={styles.emptyActionText}>Clear Search →</Text>
               </TouchableOpacity>
             </>
+          )}
+
+          {/* Sponsored slot (item 44): Perks tab only (no category filter here, so any allow-listed category in range). */}
+          {typeFilter === 'perks' && !isSearching && (
+            <SponsoredSpotlightSlot userLocation={userLocation} categoryGroup={null} navigation={navigation} />
           )}
 
           {showPerks && !(isSearching && loadingSearch) && offersToShow.length > 0 && (

@@ -15,6 +15,7 @@ import { ONBOARDING_GOALS, goalLabelsFrom, motivationsWithGoals } from '../const
 import { typography, spacing, radius } from '../theme';
 
 import { showSuccessToast } from '../motion';
+import { clearHiddenSponsors } from '../services/sponsored';
 function toE164(rawInput) {
   const digits = rawInput.replace(/\D/g, '');
   if (digits.length === 10) return `+1${digits}`;
@@ -66,6 +67,7 @@ export default function SettingsScreen({ navigation, route }) {
   const [discoveryViewStyle, setDiscoveryViewStyle] = useState('list');
   const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
   const [shareInterestInDemand, setShareInterestInDemand] = useState(true);
+  const [showSponsoredPlaces, setShowSponsoredPlaces] = useState(true);
   const [womenMessageFirst, setWomenMessageFirst] = useState(false);
   const [intentVisibility, setIntentVisibility] = useState('friends_and_matches');
 
@@ -211,6 +213,7 @@ export default function SettingsScreen({ navigation, route }) {
       setDiscoveryViewStyle(data.discovery_view_style ?? 'list');
       setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
       setShareInterestInDemand(data.share_interest_in_demand ?? true);
+      setShowSponsoredPlaces(data.show_sponsored_places ?? true);
       setWomenMessageFirst(data.women_message_first ?? false);
       setIntentVisibility(data.intent_visibility ?? 'friends_and_matches');
     }
@@ -886,6 +889,29 @@ export default function SettingsScreen({ navigation, route }) {
               onValueChange={(v) => toggleNotifPref('share_interest_in_demand', v, setShareInterestInDemand)}
               trackColor={{ true: colors.primary, false: colors.border }}
               accessibilityLabel="Include my Interested activity in anonymous local demand trends"
+            />
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.settingRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>Show sponsored places</Text>
+              <Text style={styles.helperText}>Businesses can pay to be shown in Perks and Places. They're always labeled Sponsored, and it doesn't change your other results. We keep a short-lived record (7 days) of which sponsor was shown to you so none repeats more than once a week; "Clear my activity history" doesn't clear it.</Text>
+              <TouchableOpacity
+                onPress={async () => {
+                  const ok = await clearHiddenSponsors();
+                  Alert.alert(ok ? 'Done' : 'Error', ok ? 'Sponsors you hid can appear again.' : 'Could not reset. Please try again.');
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Reset hidden sponsors"
+              >
+                <Text style={[styles.helperText, { textDecorationLine: 'underline' }]}>Reset hidden sponsors</Text>
+              </TouchableOpacity>
+            </View>
+            <Switch
+              value={showSponsoredPlaces}
+              onValueChange={(v) => toggleNotifPref('show_sponsored_places', v, setShowSponsoredPlaces)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Show sponsored places"
             />
           </View>
           <View style={styles.divider} />
