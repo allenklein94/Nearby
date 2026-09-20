@@ -47,13 +47,14 @@ export async function getMyReceivedInvites() {
 
   const [gatherings, communities] = await Promise.all([
     gatheringIds.length
-      ? supabase.from('gatherings').select('id, title').in('id', gatheringIds).then((r) => r.data ?? [])
+      ? supabase.from('gatherings').select('id, title, scheduled_at').in('id', gatheringIds).then((r) => r.data ?? [])
       : Promise.resolve([]),
     communityIds.length
       ? supabase.from('communities').select('id, name').in('id', communityIds).then((r) => r.data ?? [])
       : Promise.resolve([]),
   ]);
   const gatheringTitles = Object.fromEntries(gatherings.map((g) => [g.id, g.title]));
+  const gatheringTimes = Object.fromEntries(gatherings.map((g) => [g.id, g.scheduled_at]));
   const communityNames = Object.fromEntries(communities.map((c) => [c.id, c.name]));
 
   return invites.map((i) => ({
@@ -63,6 +64,7 @@ export async function getMyReceivedInvites() {
     createdAt: i.created_at,
     inviterName: i.inviter?.display_name,
     inviterPhotoUrl: i.inviter?.photo_url,
+    scheduledAt: i.invite_type === 'gathering' ? gatheringTimes[i.target_id] ?? null : null,
     targetTitle: i.invite_type === 'gathering' ? gatheringTitles[i.target_id] : communityNames[i.target_id],
   }));
 }

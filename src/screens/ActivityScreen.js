@@ -14,6 +14,7 @@ import { getFollowedBusinessUpdates } from '../services/brandOffers';
 import { getMyBusinessEcosystemActivity, formatOfferSummary } from '../services/businessFulfillment';
 import { getAllPendingRequests, approveInterest, getUpcomingReminders } from '../services/gatherings';
 import { getMyReceivedInvites, respondToInvite } from '../services/invites';
+import { isInviteExpired, expiredInviteLabel } from '../utils/inviteExpiry';
 import { getMyPendingGroupPlanInvites } from '../services/groupPlans';
 import LoadErrorState from '../components/LoadErrorState';
 import TabHeaderActions from '../components/TabHeaderActions';
@@ -444,6 +445,22 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                 accessibilityRole="button"
               >
                 <Text style={styles.textButtonLabel}>Accept</Text>
+              </TouchableOpacity>
+            </View>
+          ) : isInviteExpired(item) ? (
+            <View key={`social-${item.id}`} style={styles.row}>
+              <View style={[styles.rowAvatar, styles.avatarPlaceholder]} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>{expiredInviteLabel(item).title}</Text>
+                <Text style={styles.rowSubtitle}>{item.targetTitle} · {expiredInviteLabel(item).detail}</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.textButton, styles.declineTextButton]}
+                onPress={() => handleRespondSocialInvite(item, false)}
+                accessibilityLabel={`Dismiss expired invite to ${item.targetTitle}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.declineTextButtonLabel}>Dismiss</Text>
               </TouchableOpacity>
             </View>
           ) : (

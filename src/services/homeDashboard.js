@@ -124,14 +124,30 @@ export async function getActivityBadgeCount() {
 // unread chat messages. Group plans were previously invisible here entirely — the
 // only way to discover a pending invite/re-consent/offer-confirmation was
 // tapping the one real push notification for it; this closes that gap.
+// Pending social invites the person can still act on: an invite to a gathering
+// that has already happened is expired (view/dismiss only) and not counted.
+async function countActionableSocialInvites(myId) {
+  const { data: invites } = await supabase
+    .from('social_invites')
+    .select('id, invite_type, target_id')
+    .eq('invitee_id', myId)
+    .eq('status', 'pending');
+  const rows = invites ?? [];
+  const gatheringIds = rows.filter((i) => i.invite_type === 'gathering').map((i) => i.target_id);
+  if (gatheringIds.length === 0) return rows.length;
+  const { data: gs } = await supabase.from('gatherings').select('id, scheduled_at').in('id', gatheringIds);
+  const pastIds = new Set((gs ?? []).filter((g) => new Date(g.scheduled_at).getTime() < Date.now()).map((g) => g.id));
+  return rows.filter((i) => !(i.invite_type === 'gathering' && pastIds.has(i.target_id))).length;
+}
+
 export async function getPendingInvitesCount(myIdParam) {
   const myId = myIdParam ?? (await supabase.auth.getSession()).data?.session?.user?.id;
   if (!myId) return 0;
 
-  const [{ count: pendingRequestCount }, { count: pendingFriendRequestCount }, { count: pendingInviteCount }, pendingGroupPlanCount] = await Promise.all([
+  const [{ count: pendingRequestCount }, { count: pendingFriendRequestCount }, pendingInviteCount, pendingGroupPlanCount] = await Promise.all([
     supabase.from('gathering_interest').select('id, gatherings!inner(host_id)', { count: 'exact', head: true }).eq('status', 'pending').eq('gatherings.host_id', myId),
     supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('status', 'pending').neq('requested_by', myId).or(`user_a.eq.${myId},user_b.eq.${myId}`),
-    supabase.from('social_invites').select('id', { count: 'exact', head: true }).eq('invitee_id', myId).eq('status', 'pending'),
+    countActionableSocialInvites(myId),
     getPendingGroupPlanActionCount(myId),
   ]);
 
