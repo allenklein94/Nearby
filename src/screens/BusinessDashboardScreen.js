@@ -3673,14 +3673,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             // "new opportunity" claim and no action buttons (those need 'open').
                             <Text style={[styles.breakdownText, { fontWeight: '700' }]}>No longer open</Text>
                           )}
-                          {matchReasons.length > 0 && (
-                            <View style={{ marginTop: spacing.xs }}>
-                              <Text style={styles.notesLabel}>Why</Text>
-                              {matchReasons.map((line) => (
-                                <Text key={line} style={styles.breakdownText}>• {line}</Text>
-                              ))}
-                            </View>
-                          )}
                         </>
                       )}
                       <Text style={styles.offerTitle}>{card.title}</Text>
@@ -3690,12 +3682,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       {!!o.business_requests?.note && o.is_directed === true && (
                         <Text style={styles.breakdownText}>Their note: “{o.business_requests.note}”</Text>
                       )}
-                      {card.whenLine !== '' && <Text style={styles.breakdownText}>{card.whenLine}</Text>}
+                      {card.whenLine !== '' && <Text style={styles.opportunityWhen}>{card.whenLine}</Text>}
                       {card.feelLine !== '' && <Text style={styles.breakdownText}>{card.feelLine}</Text>}
                       {contextLine !== '' && <Text style={styles.breakdownText}>{contextLine}</Text>}
                       {(card.lookingFor.length > 0 || (o.business_requests?.dietary ?? []).length > 0) && (
                         <View style={{ marginTop: spacing.xs }}>
-                          <Text style={styles.notesLabel}>Customer is looking for</Text>
+                          <Text style={styles.notesLabel}>Looking for</Text>
                           <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                             {[...card.lookingFor, ...(o.business_requests?.dietary ?? []).map((k) => dietaryLabel(k))].map((tag) => (
                               <View key={tag} style={styles.chip}>
@@ -3703,6 +3695,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                               </View>
                             ))}
                           </View>
+                        </View>
+                      )}
+                      {o.status === 'pending' && matchReasons.length > 0 && (
+                        <View style={{ marginTop: spacing.xs }}>
+                          <Text style={styles.notesLabel}>Why this fits</Text>
+                          {matchReasons.map((line) => (
+                            <Text key={line} style={styles.breakdownText}>• {line}</Text>
+                          ))}
                         </View>
                       )}
                       {canRespondToOpportunity(o) && (
@@ -7071,6 +7071,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     padding: spacing.md, marginBottom: spacing.md,
   },
   insightLine: { color: colors.textPrimary, fontSize: 13, marginBottom: 4, lineHeight: 18 },
+  opportunityWhen: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 13, marginTop: 4 },
   breakdownText: { color: colors.textSecondary, fontSize: 11, fontWeight: '700', marginTop: 4 },
   taskRow: { backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.xs },
   taskText: { color: colors.textPrimary, fontSize: 13 },
