@@ -425,17 +425,16 @@ export async function getHomeDashboard() {
     .sort((a, b) => (b.approvedAttendees?.length ?? 0) - (a.approvedAttendees?.length ?? 0))
     .slice(0, 3);
 
-  // Genuinely in-progress or about to start — not "today" broadly, but
-  // right now. No end time exists on gatherings, so "in progress" is
-  // approximated as started within the last 2 hours; "about to start"
-  // is the next 30 minutes.
-  const HAPPENING_NOW_AFTER_MS = 30 * 60 * 1000;
-  const HAPPENING_NOW_BEFORE_MS = 2 * 60 * 60 * 1000;
+  // Starting within the next 30 minutes. Gatherings that already started are
+  // not in nearbyGatherings (the RPC requires scheduled_at > now()) and
+  // join_gathering refuses them ("already happened"), so an "in progress"
+  // lookback was dead code and would only lead to a dead-end tap.
+  const STARTING_SOON_MS = 30 * 60 * 1000;
   const nowMs = Date.now();
   const happeningNow = nearbyGatherings
     .filter((g) => {
       const startMs = new Date(g.scheduled_at).getTime();
-      return startMs - nowMs <= HAPPENING_NOW_AFTER_MS && nowMs - startMs <= HAPPENING_NOW_BEFORE_MS;
+      return startMs > nowMs && startMs - nowMs <= STARTING_SOON_MS;
     })
     .sort(nearestThenSoonest)
     .slice(0, 6);
@@ -699,7 +698,7 @@ export function getHomeInsight(dashboard) {
     return 'Tonight looks like a great night to meet someone new.';
   }
   if (dashboard.happeningNow?.length > 0) {
-    return `${dashboard.happeningNow.length} ${dashboard.happeningNow.length === 1 ? 'thing is' : 'things are'} happening near you right now.`;
+    return `${dashboard.happeningNow.length} ${dashboard.happeningNow.length === 1 ? 'thing starts' : 'things start'} near you in the next 30 minutes.`;
   }
   return null;
 }

@@ -2421,7 +2421,7 @@ export default function HomeScreen({ navigation }) {
           <>
             <View style={styles.sectionHeaderRow}>
               <Ionicons name="flame-outline" size={14} color={colors.textTertiary} style={styles.bannerIcon} />
-              <Text style={styles.sectionHeaderText}>Happening Near You</Text>
+              <Text style={styles.sectionHeaderText}>Starting Soon Near You</Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
               {dashboard.happeningNow.map((g) => {
