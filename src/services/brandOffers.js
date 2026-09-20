@@ -41,6 +41,23 @@ export async function getEstimatedAmountOwed(partnerId) {
   };
 }
 
+// Past invoices for the owner's own business (RLS: business_invoices is
+// owner-SELECT only). Newest first; these are the finalized/settled figures,
+// separate from the still-open month's estimate.
+export async function getMyInvoices(partnerId, limit = 6) {
+  const { data, error } = await supabase
+    .from('business_invoices')
+    .select('id, period_start, period_end, redemption_count, amount_due, status, paid_at')
+    .eq('partner_id', partnerId)
+    .order('period_start', { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error('getMyInvoices error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function getRedemptionCounts(offerIds) {
   if (!offerIds || offerIds.length === 0) return {};
   // offer_redemptions' own RLS scopes SELECT to each person's own

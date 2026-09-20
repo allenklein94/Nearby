@@ -7,7 +7,8 @@ import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityOccasions, setBusinessOfferedOccasions } from '../services/brandOffers';
+import { invoiceRow } from '../utils/invoiceDisplay';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityOccasions, setBusinessOfferedOccasions } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
 // P2 remediation item 11 (CLAUDE.md) -- reuse the admin queue's own real
@@ -235,6 +236,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [offerRedemptionCounts, setOfferRedemptionCounts] = useState({});
+  const [pastInvoices, setPastInvoices] = useState([]);
   const [estimatedOwed, setEstimatedOwed] = useState({ redemptionCount: 0, estimatedAmount: 0, billingModel: null, includedUnits: 0, billableCount: 0 });
   const [addressInput, setAddressInput] = useState('');
   const [savingAddress, setSavingAddress] = useState(false);
@@ -2449,6 +2451,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setInsights(result);
       const owed = await getEstimatedAmountOwed(partnerId).catch(() => ({ redemptionCount: 0, estimatedAmount: 0 }));
       setEstimatedOwed(owed);
+      getMyInvoices(partnerId).then(setPastInvoices).catch(() => setPastInvoices([]));
     } catch (e) {
       // Non-fatal -- the rest of the dashboard already loaded independently.
       console.error('loadInsights failed', e);
@@ -4045,6 +4048,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       {billingBreakdownLines(estimatedOwed).map((line) => (
                         <Text key={line} style={styles.estimatedOwedDetail}>{line}</Text>
                       ))}
+                      {pastInvoices.length > 0 && (
+                        <View style={{ marginTop: spacing.sm }}>
+                          <Text style={styles.estimatedOwedLabel}>Past invoices</Text>
+                          {pastInvoices.map((inv) => {
+                            const row = invoiceRow(inv);
+                            return (
+                              <Text key={row.id} style={styles.estimatedOwedDetail}>{row.text} · {row.status}</Text>
+                            );
+                          })}
+                        </View>
+                      )}
                     </View>
                   )}
                   {insights?.top_interests?.length > 0 && (
