@@ -12,6 +12,7 @@ import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { CATEGORY_GROUPS, groupForTag } from '../constants/gatheringCategories';
+import { whatStepProblem, canSkipWhatStep } from '../utils/gatheringStructure';
 import useMyInterests from '../hooks/useMyInterests';
 import { orderGroupsByInterests } from '../constants/interestGraph';
 import { VISIBILITY_OPTIONS } from '../constants/gatheringVisibility';
@@ -105,7 +106,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const myInterests = useMyInterests();
   const styles = getStyles(colors, shadow);
 
-  const skipWhat = !!route.params?.fromQuickPick && !!route.params?.quickStartTitle;
+  const skipWhat = canSkipWhatStep(route.params);
   const STEP_DEFS = [
     { key: 'what', label: 'What' },
     { key: 'who', label: 'Who' },
@@ -289,8 +290,12 @@ export default function CreateGatheringScreen({ navigation, route }) {
       : CAPACITY_OPTIONS.find((c) => c.key === capacityOption)?.capacity ?? null;
 
   function goNext() {
-    if (stepKey === 'what' && !title.trim()) {
-      return Alert.alert('Title required', 'Give your gathering a short title.');
+    if (stepKey === 'what') {
+      const problem = whatStepProblem({ title, interestTag });
+      if (problem === 'title') return Alert.alert('Title required', 'Give your gathering a short title.');
+      // Item 64: the category is structured input everything downstream reads (business requests, recommendations,
+      // weather, demand), so it is asked for here rather than guessed later from the title.
+      if (problem === 'category') return Alert.alert('Pick a category', 'Choose what kind of gathering this is, so the right people and businesses can find it.');
     }
     if (stepKey === 'who' && visibility === 'community' && !communityId) {
       if (!loadingCommunities && myCommunities.length === 0) {
