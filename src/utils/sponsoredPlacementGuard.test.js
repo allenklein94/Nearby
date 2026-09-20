@@ -62,7 +62,7 @@ describe('organic code never touches the sponsored system', () => {
   it('no other migration references the sponsored tables (organic SQL never reads them)', () => {
     const dir = path.join(root, 'supabase/migrations');
     const offenders = fs.readdirSync(dir)
-      .filter((f) => !['20270154_sponsored_placements.sql', '20270155_sponsored_purchase_and_payments.sql', '20270156_sponsored_owner_stats.sql'].includes(f))
+      .filter((f) => !['20270154_sponsored_placements.sql', '20270155_sponsored_purchase_and_payments.sql', '20270156_sponsored_owner_stats.sql', '20270157_sponsored_refunds_and_approvals.sql'].includes(f))
       .filter((f) => /sponsored_(placements|payments|seen|hidden|daily_stats|price)|sponsorable_category|get_sponsored|show_sponsored_places/.test(fs.readFileSync(path.join(dir, f), 'utf8')));
     expect(offenders).toEqual([]);
   });
