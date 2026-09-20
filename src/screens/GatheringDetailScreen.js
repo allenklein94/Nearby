@@ -11,6 +11,7 @@ import {
   getGatheringFitReasons,
   getGatheringGroupInsights,
   expressInterest,
+  setGatheringInterested,
   leaveGathering,
   getHostStats,
   getHostReputation,
@@ -266,6 +267,20 @@ export default function GatheringDetailScreen({ route, navigation }) {
     } catch (e) {
       Alert.alert('Error', 'Could not open this plan.');
     }
+  }
+
+  const [togglingInterested, setTogglingInterested] = useState(false);
+  async function toggleInterested() {
+    if (togglingInterested) return;
+    const next = !gathering.myInterested;
+    setTogglingInterested(true);
+    try {
+      await setGatheringInterested(gatheringId, next);
+      await load();
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setTogglingInterested(false);
   }
 
   async function handleConfirmIntent() {
@@ -823,6 +838,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
           {gathering.isHost ? (
             <View style={styles.hostBanner}>
               <Text style={styles.hostBannerText}>You're hosting this gathering.</Text>
+              {gathering.interestedCount > 0 && (
+                <Text style={styles.hostBannerText}>
+                  ☆ {gathering.interestedCount} {gathering.interestedCount === 1 ? 'person is' : 'people are'} interested but haven't joined yet.
+                </Text>
+              )}
               <PlanCompletionRow
                 people={planCompletion.people}
                 time={planCompletion.time}
@@ -1142,9 +1162,23 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 accessibilityRole="button"
               >
                 <Text style={styles.joinButtonText}>
-                  {joining ? 'Joining...' : gathering.isFull ? 'JOIN WAITLIST' : (gathering.is_public ? 'JOIN GATHERING' : 'REQUEST TO JOIN')}
+                  {joining ? 'Joining...' : gathering.isFull ? 'JOIN WAITLIST' : gathering.myInterested ? (gathering.is_public ? "I'M GOING" : 'REQUEST TO JOIN') : (gathering.is_public ? 'JOIN GATHERING' : 'REQUEST TO JOIN')}
                 </Text>
               </TouchableOpacity>
+              {new Date(gathering.scheduled_at) >= new Date() && (
+                <TouchableOpacity
+                  onPress={toggleInterested}
+                  disabled={togglingInterested}
+                  style={{ marginTop: spacing.sm, alignItems: 'center' }}
+                  accessibilityLabel={gathering.myInterested ? 'Remove from Interested' : 'Mark as Interested'}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: !!gathering.myInterested }}
+                >
+                  <Text style={styles.sayHelloLink}>
+                    {gathering.myInterested ? "★ Interested — I might go (tap to undo)" : '☆ Interested — I might go'}
+                  </Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 onPress={() => setInviteModalVisible(true)}
                 style={{ marginTop: spacing.sm, alignItems: 'center' }}

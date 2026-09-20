@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Activ
 import { PullToRefresh, SkeletonFeed } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
-import { getMyAttendingGatherings, getMyGatherings } from '../services/gatherings';
+import { getMyAttendingGatherings, getMyGatherings, getMyInterestedGatherings } from '../services/gatherings';
 import { getMyGroupPlans } from '../services/groupPlans';
 import { getMyStandaloneBusinessRequestPlans, getMyDateProposalPlans, getMyExperiencePlans } from '../services/plans';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
@@ -17,6 +17,7 @@ import { spacing, radius, typography } from '../theme';
 
 const TABS = [
   { key: 'upcoming', label: 'Upcoming' },
+  { key: 'interested', label: 'Interested' },
   { key: 'hosting', label: 'My Hosting' },
   { key: 'past', label: 'Past' },
 ];
@@ -42,6 +43,7 @@ export default function PlansScreen({ navigation, route }) {
   const [tab, setTab] = useState(route?.params?.initialTab ?? 'upcoming');
   const [attending, setAttending] = useState({ upcoming: [], past: [] });
   const [hosting, setHosting] = useState({ upcoming: [], past: [] });
+  const [interestedList, setInterestedList] = useState([]);
   // Finding G.1 (Aug 15 2026 connectivity audit): group plans (real
   // jointly-owned business_requests rows) were entirely absent from this
   // screen even though it's meant to be "the caller's own complete
@@ -62,14 +64,16 @@ export default function PlansScreen({ navigation, route }) {
 
   const load = useCallback(async () => {
     try {
-      const [attendingData, hostingData, groupPlanData, businessRequestPlanData, datePlanData, experiencePlanData] = await Promise.all([
+      const [attendingData, hostingData, groupPlanData, businessRequestPlanData, datePlanData, experiencePlanData, interestedData] = await Promise.all([
         getMyAttendingGatherings(),
         getMyGatherings(),
         getMyGroupPlans(),
         getMyStandaloneBusinessRequestPlans(),
         getMyDateProposalPlans(),
         getMyExperiencePlans(),
+        getMyInterestedGatherings(),
       ]);
+      setInterestedList(interestedData);
       setAttending(attendingData);
       setHosting(hostingData);
       setGroupPlans(groupPlanData);
@@ -89,14 +93,16 @@ export default function PlansScreen({ navigation, route }) {
       let cancelled = false;
       (async () => {
         try {
-          const [attendingData, hostingData, groupPlanData, businessRequestPlanData, datePlanData] = await Promise.all([
+          const [attendingData, hostingData, groupPlanData, businessRequestPlanData, datePlanData, interestedData] = await Promise.all([
             getMyAttendingGatherings(),
             getMyGatherings(),
             getMyGroupPlans(),
             getMyStandaloneBusinessRequestPlans(),
             getMyDateProposalPlans(),
+            getMyInterestedGatherings(),
           ]);
           if (cancelled) return;
+          setInterestedList(interestedData);
           setAttending(attendingData);
           setHosting(hostingData);
           setGroupPlans(groupPlanData);
@@ -132,6 +138,9 @@ export default function PlansScreen({ navigation, route }) {
         ...attending.upcoming.map((g) => ({ gathering: g, status: 'going' })),
         ...hosting.upcoming.map((g) => ({ gathering: g, status: 'hosting' })),
       ].sort((a, b) => new Date(a.gathering.scheduled_at) - new Date(b.gathering.scheduled_at));
+    }
+    if (activeTab === 'interested') {
+      return interestedList.map((g) => ({ gathering: g, status: 'maybe' }));
     }
     if (activeTab === 'hosting') {
       return [
@@ -183,6 +192,7 @@ export default function PlansScreen({ navigation, route }) {
 
   const emptyCopy = {
     upcoming: "Nothing on your calendar yet — join or host something to see it here.",
+    interested: "Nothing saved yet — tap Interested on a gathering to keep it here without committing.",
     hosting: "You're not hosting anything yet.",
     past: "No past gatherings yet.",
   }[tab];
@@ -373,7 +383,7 @@ export default function PlansScreen({ navigation, route }) {
                 dateTimeText={formatHeroDateTime(g.scheduled_at)}
                 peopleCount={peopleCountFor(item)}
                 hostingPartnerId={g.hosting_partner_id}
-                status={resolveGatheringPlanStatus(legacy)}
+                status={item.status === 'maybe' ? null : resolveGatheringPlanStatus(legacy)}
                 onPress={() => openGathering(g.id)}
                 style={styles.planCardSpacing}
               />

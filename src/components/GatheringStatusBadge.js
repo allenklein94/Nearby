@@ -18,6 +18,7 @@ export const GATHERING_STATUS_META = {
   hosting: { icon: '🎤', label: 'Hosting', tone: 'active' },
   going: { icon: '✓', label: 'Going', tone: 'active' },
   interested: { icon: '🕒', label: 'Requested', tone: 'pending' },
+  maybe: { icon: '☆', label: 'Interested', tone: 'pending' },
   waitlisted: { icon: '⏳', label: 'Waitlisted', tone: 'pending' },
   attended: { icon: '✓', label: 'Attended', tone: 'past' },
   hosted: { icon: '🎤', label: 'Hosted', tone: 'past' },

@@ -409,6 +409,54 @@ async function attachApprovedAttendees(gatheringList) {
   return gatheringList.map((g) => ({ ...g, approvedAttendees: byGathering[g.id] ?? [] }));
 }
 
+// "Interested" (I might go): private, non-committal, separate from attendance (gathering_interest). It never counts
+// toward capacity or shows in attendee lists; joining supersedes it server-side (see 20270115_gathering_interested.sql).
+export async function setGatheringInterested(gatheringId, interested) {
+  const { data, error } = await supabase.rpc('set_gathering_interested', { gathering_id_param: gatheringId, interested_param: interested });
+  if (error) throw error;
+  return { interested: !!data?.interested, alreadyJoined: !!data?.already_joined };
+}
+
+export async function isGatheringInterested(gatheringId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) return false;
+  const { data } = await supabase
+    .from('gathering_interested')
+    .select('gathering_id')
+    .eq('gathering_id', gatheringId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  return !!data;
+}
+
+// Host-only count, no identities.
+export async function getGatheringInterestedCount(gatheringId) {
+  const { data, error } = await supabase.rpc('get_gathering_interested_count', { gathering_id_param: gatheringId });
+  if (error) return null;
+  return data ?? 0;
+}
+
+// Upcoming gatherings the caller marked Interested and has not (yet) joined.
+export async function getMyInterestedGatherings() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) return [];
+  const { data, error } = await supabase
+    .from('gathering_interested')
+    .select('created_at, gatherings(id, title, description, interest_tag, scheduled_at, show_on_map, host_id, hosting_partner_id)')
+    .eq('user_id', userId);
+  if (error) {
+    console.error('getMyInterestedGatherings error', error);
+    return [];
+  }
+  const now = new Date();
+  return (data ?? [])
+    .map((row) => row.gatherings)
+    .filter((g) => g && new Date(g.scheduled_at) >= now)
+    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
+}
+
 export async function getMyAttendingGatherings() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
@@ -926,9 +974,14 @@ export async function getGatheringById(gatheringId) {
     }
   }
 
+  const myInterested = !isHost && !myInterest ? await isGatheringInterested(gatheringId) : false;
+  const interestedCount = isHost ? await getGatheringInterestedCount(gatheringId) : null;
+
   return {
     ...data,
     approvedAttendees,
+    myInterested,
+    interestedCount,
     myStatus: myInterest?.status ?? null,
     myAttendee: myInterest,
     isHost,
