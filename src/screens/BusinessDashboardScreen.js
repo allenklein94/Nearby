@@ -43,7 +43,7 @@ import { businessLocationNotice } from '../utils/businessLocationNotice';
 import { dashboardGlance } from '../utils/dashboardGlance';
 import { buildOpportunityCard, buildMatchReasons, availabilityCoversRequest } from '../utils/businessOpportunityCard';
 import { matchFitLine } from '../utils/matchFitLine';
-import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardAvailabilityText } from '../utils/quickOfferResponse';
+import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardAvailabilityText, requestedWindowDefaults } from '../utils/quickOfferResponse';
 import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 import { defaultScheduledWindow, resolveAvailabilityWindow, scheduledWindowProblem, shiftEndAfterStart, demandPreviewLine } from '../utils/availabilityWindow';
 import { activeDiscountCap, parseDiscountPct, discountCapProblem } from '../utils/discountCap';
@@ -665,6 +665,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [offerAvailFrom, setOfferAvailFrom] = useState(null); // Date | null -- start of the "Available" window
   const [offerAvailUntil, setOfferAvailUntil] = useState(null);
   const [availPicker, setAvailPicker] = useState(null); // null | 'from' | 'until'
+  const [quickFrom, setQuickFrom] = useState(null); // one-tap Standard availability window (prefilled from the request)
+  const [quickUntil, setQuickUntil] = useState(null);
+  const [quickPicker, setQuickPicker] = useState(null);
   // Name of the owner's own package the editor was pre-filled from (null = nothing pre-filled).
   const [offerPrefilledFrom, setOfferPrefilledFrom] = useState(null);
   const [offerIncludedItemDraft, setOfferIncludedItemDraft] = useState('');
@@ -1774,10 +1777,63 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }
 
   // One-tap responses. Each is the business's own real response (Accept -> an Offer); never a silent commit of anything else.
-  async function submitQuickResponse(requestId, { offerType, offerDescription, proposedTime = null }) {
+  // The optional "Available From / To" control, shared by the full offer editor and the one-tap Standard availability
+  // sheet (one model, one validation: utils/offerMedia.js availableWindowFromChoice).
+  function renderAvailabilityWindow({ from, until, setFrom, setUntil, picker, setPicker }) {
+    return (
+      <>
+        <View style={styles.chipRow}>
+          {[['from', from, 'From', setFrom], ['until', until, 'To', setUntil]].map(([key, val, label, setter]) => (
+            <TouchableOpacity
+              key={key}
+              style={[styles.chip, val && styles.chipSelected]}
+              onPress={() => {
+                if (!val) { const d = new Date(); d.setHours(key === 'from' ? 18 : 20, 0, 0, 0); setter(d); }
+                setPicker(key);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Available ${label.toLowerCase()}`}
+            >
+              <Text style={[styles.chipText, val && styles.chipTextSelected]}>
+                {label}{val ? ` ${val.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          {(from || until) ? (
+            <TouchableOpacity style={styles.chip} onPress={() => { setFrom(null); setUntil(null); setPicker(null); }} accessibilityRole="button" accessibilityLabel="Clear the available window">
+              <Text style={styles.chipText}>Clear</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+        {picker ? (
+          <PlatformDateTimeInput
+            value={(picker === 'from' ? from : until) ?? new Date()}
+            mode="time"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            themeVariant={isDark ? 'dark' : 'light'}
+            onChange={(event, selected) => {
+              const which = picker;
+              setPicker(Platform.OS === 'ios' ? which : null);
+              if (selected && event?.type !== 'dismissed') (which === 'from' ? setFrom : setUntil)(selected);
+            }}
+          />
+        ) : null}
+      </>
+    );
+  }
+
+  // Opening the Standard availability sheet: prefill the window the customer asked for (only when the request really has a
+  // start AND end), so one tap confirms exactly that; otherwise no window (plain "as requested").
+  useEffect(() => {
+    if (!acceptSheetRequestId) { setQuickFrom(null); setQuickUntil(null); setQuickPicker(null); return; }
+    const w = requestedWindowDefaults(opportunities.find((o) => o.request_id === acceptSheetRequestId)?.business_requests);
+    setQuickFrom(w.from); setQuickUntil(w.until); setQuickPicker(null);
+  }, [acceptSheetRequestId]);
+
+  async function submitQuickResponse(requestId, { offerType, offerDescription, proposedTime = null, availableFrom = null, availableUntil = null }) {
     setRespondingOpportunityId(requestId);
     try {
-      const result = await submitBusinessOfferResponseForScreening(selectedPartner.id, requestId, { offerType, offerDescription, proposedTime });
+      const result = await submitBusinessOfferResponseForScreening(selectedPartner.id, requestId, { offerType, offerDescription, proposedTime, availableFrom, availableUntil });
       await handleOfferResult(result, () => { setAcceptSheetRequestId(null); setAltSheetRequestId(null); });
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -6206,42 +6262,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 accessibilityLabel="How to redeem, optional. Shown to the customer once they accept."
               />
               <Text style={[styles.notesLabel, { marginTop: spacing.sm }]}>Available (optional)</Text>
-              <View style={styles.chipRow}>
-                {[['from', offerAvailFrom, 'From'], ['until', offerAvailUntil, 'To']].map(([key, val, label]) => (
-                  <TouchableOpacity
-                    key={key}
-                    style={[styles.chip, val && styles.chipSelected]}
-                    onPress={() => {
-                      if (!val) { const d = new Date(); d.setHours(key === 'from' ? 18 : 20, 0, 0, 0); (key === 'from' ? setOfferAvailFrom : setOfferAvailUntil)(d); }
-                      setAvailPicker(key);
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Available ${label.toLowerCase()}`}
-                  >
-                    <Text style={[styles.chipText, val && styles.chipTextSelected]}>
-                      {label}{val ? ` ${val.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-                {(offerAvailFrom || offerAvailUntil) ? (
-                  <TouchableOpacity style={styles.chip} onPress={() => { setOfferAvailFrom(null); setOfferAvailUntil(null); setAvailPicker(null); }} accessibilityRole="button" accessibilityLabel="Clear the available window">
-                    <Text style={styles.chipText}>Clear</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-              {availPicker ? (
-                <PlatformDateTimeInput
-                  value={(availPicker === 'from' ? offerAvailFrom : offerAvailUntil) ?? new Date()}
-                  mode="time"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  themeVariant={isDark ? 'dark' : 'light'}
-                  onChange={(event, selected) => {
-                    const which = availPicker;
-                    setAvailPicker(Platform.OS === 'ios' ? which : null);
-                    if (selected && event?.type !== 'dismissed') (which === 'from' ? setOfferAvailFrom : setOfferAvailUntil)(selected);
-                  }}
-                />
-              ) : null}
+              {renderAvailabilityWindow({ from: offerAvailFrom, until: offerAvailUntil, setFrom: setOfferAvailFrom, setUntil: setOfferAvailUntil, picker: availPicker, setPicker: setAvailPicker })}
               <Text style={[styles.notesLabel, { marginTop: spacing.sm }]}>Valid until (optional)</Text>
               <View style={styles.chipRow}>
                 {[['none', 'No end time'], ['today', 'Today'], ['tomorrow', 'Tomorrow']].map(([key, label]) => {
@@ -6308,6 +6329,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.offerTitle}>Standard availability</Text>
                 <Text style={styles.breakdownText}>Yes, you can host them as requested.</Text>
+                <Text style={[styles.notesLabel, { marginTop: spacing.xs }]}>Available (optional)</Text>
+                {renderAvailabilityWindow({ from: quickFrom, until: quickUntil, setFrom: setQuickFrom, setUntil: setQuickUntil, picker: quickPicker, setPicker: setQuickPicker })}
                 {usualTermsLine(fulfillmentPolicy) ? (
                   <Text style={[styles.breakdownText, { marginTop: spacing.xs }]}>{usualTermsLine(fulfillmentPolicy)}</Text>
                 ) : (
@@ -6322,7 +6345,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               </View>
               <TouchableOpacity
                 style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
-                onPress={() => submitQuickResponse(acceptSheetRequestId, { offerType: 'standard', offerDescription: standardAvailabilityText(fulfillmentPolicy) })}
+                onPress={() => {
+                  const win = availableWindowFromChoice(quickFrom, quickUntil);
+                  if (win.error) { Alert.alert('Available window', win.error); return; }
+                  submitQuickResponse(acceptSheetRequestId, { offerType: 'standard', offerDescription: standardAvailabilityText(fulfillmentPolicy), availableFrom: win.from, availableUntil: win.until });
+                }}
                 disabled={respondingOpportunityId === acceptSheetRequestId}
                 accessibilityLabel="Send standard availability"
                 accessibilityRole="button"

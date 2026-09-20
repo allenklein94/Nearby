@@ -48,3 +48,24 @@ describe('quickOfferResponse', () => {
     });
   });
 });
+
+describe('requestedWindowDefaults (one-tap Standard availability prefill)', () => {
+  const { requestedWindowDefaults } = require('./quickOfferResponse');
+  const { availableWindowFromChoice, availableWindowLabel } = require('./offerMedia');
+  it('prefills only a complete, ordered requested window', () => {
+    const w = requestedWindowDefaults({ time_window_start: '18:00:00', time_window_end: '20:00:00' });
+    expect(availableWindowFromChoice(w.from, w.until)).toEqual({ from: '18:00', until: '20:00' });
+    expect(availableWindowLabel('18:00', '20:00')).toBe('Available 6–8 PM');
+  });
+  it('a request with a start only, nothing, or a backwards window gets no window', () => {
+    expect(requestedWindowDefaults({ time_window_start: '18:00:00' })).toEqual({ from: null, until: null });
+    expect(requestedWindowDefaults({})).toEqual({ from: null, until: null });
+    expect(requestedWindowDefaults(null)).toEqual({ from: null, until: null });
+    expect(requestedWindowDefaults({ time_window_start: '20:00:00', time_window_end: '18:00:00' })).toEqual({ from: null, until: null });
+  });
+  it('the sheet sends the window with the fixed text (structured, so the AI-free path is unchanged)', () => {
+    const fs = require('fs');
+    const src = fs.readFileSync(require('path').join(__dirname, '../screens/BusinessDashboardScreen.js'), 'utf8');
+    expect(src).toMatch(/offerType: 'standard', offerDescription: standardAvailabilityText\(fulfillmentPolicy\), availableFrom: win\.from, availableUntil: win\.until/);
+  });
+});

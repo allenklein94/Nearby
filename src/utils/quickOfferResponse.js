@@ -44,3 +44,21 @@ export function alternativePickerStart(request, now = new Date()) {
   }
   return now;
 }
+
+// One-tap Standard availability prefill: the window the customer actually asked for, as local-time Dates (today's date,
+// only the hours/minutes matter), or nulls. Only when the request has BOTH a start and an end and the end is after the
+// start -- a request with just a start, or none, gets no window (plain "as requested"). Nothing is invented.
+export function requestedWindowDefaults(request) {
+  const parse = (t) => {
+    if (!t) return null;
+    const [h, m] = String(t).split(':').map((n) => parseInt(n, 10));
+    if (!Number.isInteger(h) || !Number.isInteger(m)) return null;
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d;
+  };
+  const from = parse(request?.time_window_start);
+  const until = parse(request?.time_window_end);
+  if (!from || !until || until.getTime() <= from.getTime()) return { from: null, until: null };
+  return { from, until };
+}
