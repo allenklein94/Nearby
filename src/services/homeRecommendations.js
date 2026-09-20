@@ -14,7 +14,7 @@ import { BROAD_GROUP_POINTS } from '../constants/blendedRanking';
 import { comfortFits } from '../constants/socialComfort';
 import { SCORE_INTEREST_MATCH, SCORE_CLOSE_DISTANCE, SCORE_HAPPENING_NOW, SCORE_OWN_NETWORK } from './intentResolverScoring';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
-import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
+import { gatheringWeatherWindow } from '../utils/weatherWindow';
 // P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): shared, canonical
 // reason text -- closes a real, confirmed duplication where these exact
 // weather strings were independently re-typed, verbatim, in
@@ -51,19 +51,18 @@ function isToday(iso) {
 // conservative map) — a genuinely ambiguous category (Sports, Music,
 // Fitness, ...) never gets a weather-driven bonus either way.
 //
-// P2 item 7 (Universal Signal Remediation Pass, CLAUDE.md, Aug 28 2026):
-// now reuses the one shared isWeatherIndoorBiased/isWeatherOutdoorBiased
-// definition (utils/weatherBias.js) instead of this file's own local
-// forecast-fields-only check — a real, disclosed widening: this bonus now
-// also fires on a genuinely bad forecast_label ('Quiet') right now, not
-// just a bad forecast for later today, closing the exact inconsistency
-// the audit found between this file and HomeScreen's own weather card.
-function weatherAdjustment(interestTag, weather) {
-  if (!weather) return null;
-  if (isWeatherIndoorBiased(weather) && isIndoorCategory(interestTag)) {
+// Since 2026-09-20 the weather is judged AT the gathering's own start time
+// (utils/weatherWindow.js) from forecast-block facts, not from a single
+// right-now label; an unknown forecast or uncovered time is no nudge.
+function weatherAdjustment(interestTag, weather, scheduledAt) {
+  // Judged at the gathering's own start time (utils/weatherWindow.js); no
+  // covering forecast block / unknown forecast = no nudge.
+  const w = gatheringWeatherWindow(weather, scheduledAt);
+  if (!w) return null;
+  if (w.bias === 'indoor' && isIndoorCategory(interestTag)) {
     return { points: SCORE_HAPPENING_NOW, reason: REASON_TEXT.WEATHER_GOOD_INDOOR.text };
   }
-  if (isWeatherOutdoorBiased(weather) && isOutdoorCategory(interestTag)) {
+  if (w.bias === 'outdoor' && isOutdoorCategory(interestTag)) {
     return { points: SCORE_HAPPENING_NOW, reason: REASON_TEXT.WEATHER_GOOD_OUTDOOR.text };
   }
   return null;
@@ -118,7 +117,7 @@ function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel,
     score += weightSignal(SCORE_HAPPENING_NOW, SIGNAL_SOURCES.CONTEXTUAL, maturity);
     reasons.push(REASON_TEXT.HAPPENING_TODAY.text);
   }
-  const weatherBonus = weatherAdjustment(gathering.interest_tag, weather);
+  const weatherBonus = weatherAdjustment(gathering.interest_tag, weather, gathering.scheduled_at);
   if (weatherBonus) {
     // CONTEXTUAL: today's real weather, always full weight.
     score += weightSignal(weatherBonus.points, SIGNAL_SOURCES.CONTEXTUAL, maturity);

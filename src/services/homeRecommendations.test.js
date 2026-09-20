@@ -4,6 +4,17 @@
 // intentResolverScoring.test.js.
 const { buildHomeRecommendations, MAX_HOME_RECOMMENDATIONS } = require('./homeRecommendations');
 
+// Forecast facts covering "now" (weather is judged at each gathering's own time).
+const H = 3600;
+const wx = (block, sun = true) => {
+  const nowS = Math.floor(Date.now() / 1000);
+  return {
+    forecast_blocks: [{ dt: nowS - H, temp: 70, pop: 0, id: 800, ...block }],
+    sunrise: sun ? nowS - 2 * H : null,
+    sunset: sun ? nowS + 2 * H : null,
+  };
+};
+
 const gathering = (overrides = {}) => ({
   id: 'g1',
   title: 'Coffee Chat',
@@ -60,7 +71,7 @@ describe('buildHomeRecommendations', () => {
     // Coffee is a real indoor category (constants/gatheringIndoorOutdoor.js)
     const withRisk = buildHomeRecommendations({
       gatherings: [gathering({ scheduled_at: new Date().toISOString() })],
-      weather: { rain_risk: 'high' },
+      weather: wx({ pop: 0.8, id: 501 }),
     });
     expect(withRisk[0].reasons).toContain('A good indoor option with weather coming in');
 
@@ -68,7 +79,7 @@ describe('buildHomeRecommendations', () => {
     // with the identical weather signal.
     const noBonusForAmbiguous = buildHomeRecommendations({
       gatherings: [gathering({ interest_tag: 'Sports', scheduled_at: new Date().toISOString() })],
-      weather: { rain_risk: 'high' },
+      weather: wx({ pop: 0.8, id: 501 }),
     });
     expect(noBonusForAmbiguous[0].reasons).not.toContain('A good indoor option with weather coming in');
   });
@@ -76,9 +87,22 @@ describe('buildHomeRecommendations', () => {
   it('adds a real outdoor-favorable bonus for a real outdoor category', () => {
     const results = buildHomeRecommendations({
       gatherings: [gathering({ interest_tag: 'Hiking', scheduled_at: new Date().toISOString() })],
-      weather: { outdoor_favorable: true },
+      weather: wx({}),
     });
     expect(results[0].reasons).toContain('Great weather for this');
+  });
+
+  it('gives no outdoor bonus with an unknown forecast, at night, or with no covering block', () => {
+    const g = () => [gathering({ interest_tag: 'Hiking', scheduled_at: new Date().toISOString() })];
+    const reasons = (weather) => (buildHomeRecommendations({ gatherings: g(), weather })[0]?.reasons ?? []);
+    expect(reasons({ forecast_blocks: null, sunrise: 1, sunset: 2 })).not.toContain('Great weather for this');
+    expect(reasons(wx({}, false))).not.toContain('Great weather for this'); // no sun times
+    const night = wx({});
+    night.sunrise += 6 * H; night.sunset += 6 * H; // now is before sunrise
+    expect(reasons(night)).not.toContain('Great weather for this');
+    const far = wx({});
+    far.forecast_blocks[0].dt += 10 * H; // block does not cover the gathering
+    expect(reasons(far)).not.toContain('Great weather for this');
   });
 
   it('scores an offer on real target-interest and business-name signals only', () => {
