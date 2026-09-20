@@ -509,7 +509,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowTitle}>{item.title}</Text>
                 <Text style={styles.rowSubtitle}>{item.role} · {formatTimeUntil(item.scheduledAt)}</Text>
-                <Text style={styles.viewLink}>View gathering →</Text>
+                <Text style={styles.viewLink}>View Plan →</Text>
               </View>
             </TouchableOpacity>
           ))}

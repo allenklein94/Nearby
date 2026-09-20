@@ -365,10 +365,10 @@ export default function BusinessProfileScreen({ route, navigation }) {
             style={styles.messageButton}
             onPress={() => navigation.navigate('AskBusiness', { targetPartner: { id: partnerId, name: partner.name }, prefillCategory: partner.subcategory ?? null })}
             activeOpacity={0.85}
-            accessibilityLabel={`Ask ${partner.name} for something specific`}
+            accessibilityLabel={`Get an offer from ${partner.name}`}
             accessibilityRole="button"
           >
-            <Text style={styles.messageButtonText}>Ask {partner.name}</Text>
+            <Text style={styles.messageButtonText}>Get an offer</Text>
           </TouchableOpacity>
           {hasThread && (
             <TouchableOpacity
