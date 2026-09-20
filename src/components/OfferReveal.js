@@ -1,3 +1,4 @@
+import { offerRevealHeader } from '../utils/offerCopy';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Text } from 'react-native';
 import useReduceMotion from '../hooks/useReduceMotion';
@@ -35,7 +36,7 @@ export default function OfferReveal({ offerId, partnerName, enabled, children })
     <>
       {animate ? (
         <Animated.View style={{ opacity: headerOpacity }}>
-          <Text style={{ ...typography.caption, color: colors.textSecondary, marginBottom: spacing.xs }}>{partnerName} sent you an offer</Text>
+          <Text style={{ ...typography.caption, color: colors.textSecondary, marginBottom: spacing.xs }}>{offerRevealHeader(partnerName)}</Text>
         </Animated.View>
       ) : null}
       <Animated.View style={{ opacity: bodyOpacity }}>{children}</Animated.View>

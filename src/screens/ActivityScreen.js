@@ -1,3 +1,4 @@
+import { businessReplyTitle } from '../utils/offerCopy';
 import { canDo, inviteLifecycleState } from '../utils/objectLifecycle';
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Image, Alert } from 'react-native';
@@ -637,7 +638,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
               const { offer, request, partnerName } = item.raw;
               const icon = item.type === 'business_reply' ? '💬' : item.type === 'business_offer_accepted' ? '✅' : '📅';
               const title = item.type === 'business_reply'
-                ? `${partnerName} responded to your request`
+                ? businessReplyTitle(partnerName, offer)
                 : item.type === 'business_offer_accepted'
                   ? `You accepted ${partnerName}'s offer`
                   : `${partnerName} confirmed your reservation`;
