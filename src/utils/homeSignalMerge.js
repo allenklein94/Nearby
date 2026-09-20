@@ -6,10 +6,16 @@
 // Placement: Best Pick keeps the hero slot and absorbs the other reasons; every other gathering becomes one card in a
 // single list, ordered by how many reasons it has (then by first appearance: interest, trending, friend).
 import { friendGoingReason } from './recommendationFacts';
+import { attendeeTotal } from './gatheringFullness';
+import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 
 export const SIGNAL_TEXT = {
   interest: (g) => (g?.interest_tag ? `Because you like ${g.interest_tag}` : 'Because of your interests'),
-  trending: () => 'Trending nearby',
+  // Popular, not personal: says how many are really going (approved attendees; Interested is private and never counted).
+  trending: (g) => {
+    const n = attendeeTotal(g);
+    return n >= TRENDING_ATTENDANCE_MIN ? `Trending nearby · ${n} going` : 'Trending nearby';
+  },
   soon: () => 'Starting soon',
   friend: (g, isPast) => {
     const name = g?.profiles?.display_name;

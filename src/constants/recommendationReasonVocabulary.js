@@ -84,6 +84,7 @@ const EXACT_MATCHES = new Map([
   // deliberately different string from getGatheringFitReasons()'s
   // formatted distanceLabel (see this module's own header comment for
   // why the two aren't collapsed into one shared literal).
+  ['Starting soon', REASON_CATEGORIES.TIME],
   ['Close by', REASON_CATEGORIES.DISTANCE],
   ['Beginner friendly', REASON_CATEGORIES.CONTEXT],
   ['You loved a gathering with this host before', REASON_CATEGORIES.CONTEXT],
@@ -94,6 +95,7 @@ const EXACT_MATCHES = new Map([
 ]);
 
 const PATTERN_MATCHES = [
+  { pattern: /^Trending nearby( · \d+ going)?$/, category: REASON_CATEGORIES.POPULARITY },
   { pattern: /^Because you like .+$/, category: REASON_CATEGORIES.INTEREST },
   // getGatheringFitReasons()'s real attendee-count reason.
   { pattern: /^\d+ (person|people) attending$/, category: REASON_CATEGORIES.POPULARITY },

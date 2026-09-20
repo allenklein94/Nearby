@@ -59,3 +59,20 @@ export function bestTier(signals = [], { intent = false, urgent = false, busines
   if (business) best = Math.min(best, SIGNAL_TIERS.business);
   return best;
 }
+
+// Owner item 59: the four things a reason can MEAN, never blurred. personalized = because of you (a declared/matched
+// interest); popular = because many people are going (attendance, trending); social = because of someone you are
+// connected to (a friend hosting or going); time = because of when (starting soon, happening today). Anything else
+// (distance, weather, capacity, business availability) is null: a fact about the thing, not one of the four claims.
+export const REASON_KINDS = { PERSONALIZED: 'personalized', POPULAR: 'popular', SOCIAL: 'social', TIME: 'time' };
+
+export function reasonKind(signalOrText) {
+  const signal = typeof signalOrText === 'string' ? { text: signalOrText } : signalOrText;
+  switch (signalTier(signal)) {
+    case SIGNAL_TIERS.planFriend: return REASON_KINDS.SOCIAL;
+    case SIGNAL_TIERS.time: return REASON_KINDS.TIME;
+    case SIGNAL_TIERS.interest: return REASON_KINDS.PERSONALIZED;
+    case SIGNAL_TIERS.popularity: return REASON_KINDS.POPULAR;
+    default: return null;
+  }
+}

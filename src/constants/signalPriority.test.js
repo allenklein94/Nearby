@@ -77,3 +77,25 @@ describe('Home ranking follows the priority', () => {
     expect(order(cards, { intentTags: new Set() })).toEqual(order(cards));
   });
 });
+
+describe('reasonKind (item 59): personalized / popular / social / time stay distinct', () => {
+  const { reasonKind, REASON_KINDS } = require('./signalPriority');
+  it('classifies each real reason into exactly one kind', () => {
+    expect(reasonKind('Because you like Coffee')).toBe(REASON_KINDS.PERSONALIZED);
+    expect(reasonKind('Trending nearby · 12 going')).toBe(REASON_KINDS.POPULAR);
+    expect(reasonKind('Trending nearby')).toBe(REASON_KINDS.POPULAR);
+    expect(reasonKind('8 people attending')).toBe(REASON_KINDS.POPULAR);
+    expect(reasonKind('Sam is going')).toBe(REASON_KINDS.SOCIAL);
+    expect(reasonKind('Sam is hosting this')).toBe(REASON_KINDS.SOCIAL);
+    expect(reasonKind('Starting soon')).toBe(REASON_KINDS.TIME);
+    expect(reasonKind('Happening today')).toBe(REASON_KINDS.TIME);
+  });
+  it('never labels facts or unknown text as one of the four', () => {
+    expect(reasonKind('1.2 mi away')).toBeNull();
+    expect(reasonKind('Great weather for this')).toBeNull();
+    expect(reasonKind('something invented')).toBeNull();
+  });
+  it('trending never reads as personal', () => {
+    expect(reasonKind({ kind: 'trending', text: 'Trending nearby' })).not.toBe(REASON_KINDS.PERSONALIZED);
+  });
+});
