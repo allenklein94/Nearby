@@ -1,23 +1,42 @@
 const { dashboardGlance } = require('./dashboardGlance');
 
-const now = new Date('2026-09-20T12:00:00Z');
+const now = new Date(2026, 8, 20, 12, 0, 0); // local noon, Sep 20 2026
 const opp = (status, extra = {}) => ({ status, business_requests: { status: 'open' }, ...extra });
 
 describe('dashboardGlance', () => {
-  it('counts only real, actionable rows', () => {
+  it('Today counts only respondable opportunities and visits happening today', () => {
     const g = dashboardGlance([
       opp('pending'), opp('pending'),
       { status: 'pending', business_requests: { status: 'cancelled' } },
-      opp('offered'), opp('offered', { valid_until: '2026-09-19T00:00:00Z' }),
-      opp('accepted'), opp('declined'),
+      opp('accepted', { business_requests: { status: 'open', date: '2026-09-20' } }),
+      opp('accepted', { business_requests: { status: 'open', date: '2026-09-25' } }),
+      opp('accepted', { business_requests: { status: 'open', date: '2026-09-18' } }),
+      opp('completed', { business_requests: { status: 'open', date: '2026-09-20' } }),
+      opp('declined', { business_requests: { status: 'open', date: '2026-09-20' } }),
     ], null, now);
     const by = Object.fromEntries(g.today.map((i) => [i.key, i.text]));
     expect(by.new).toBe('2 new opportunities');
-    expect(by.offers).toBe('1 active offer');
-    expect(by.confirmed).toBe('1 confirmed');
+    expect(by.confirmed).toBe('1 confirmed today');
   });
-  it('shows zero honestly as zero rows, singular correctly', () => {
-    expect(dashboardGlance([], null, now).today[0].text).toBe('0 new opportunities');
+  it('an accepted alternative time or a gathering start decides the day, before the request date', () => {
+    const alt = opp('accepted', { proposed_time: new Date(2026, 8, 20, 19, 0).toISOString(), business_requests: { status: 'open', date: '2026-09-25' } });
+    const gath = opp('accepted', { business_requests: { status: 'open', date: '2026-09-25', gatherings: { scheduled_at: new Date(2026, 8, 20, 18, 0).toISOString() } } });
+    const later = opp('accepted', { proposed_time: new Date(2026, 8, 27, 19, 0).toISOString(), business_requests: { status: 'open', date: '2026-09-20' } });
+    expect(dashboardGlance([alt, gath, later], null, now).today[1].text).toBe('2 confirmed today');
+  });
+  it('future and undated confirmed visits go under Upcoming, never Today; awaiting offers too', () => {
+    const g = dashboardGlance([
+      opp('accepted', { business_requests: { status: 'open', date: '2026-09-25' } }),
+      opp('accepted'),
+      opp('offered'), opp('offered', { valid_until: '2026-09-19T00:00:00Z' }),
+    ], null, now);
+    expect(g.today[1].text).toBe('0 confirmed today');
+    expect(g.upcoming.map((i) => i.text)).toEqual(['2 confirmed visits coming up', '1 offer awaiting a reply']);
+  });
+  it('zero-state: Today shows real zeros; Upcoming is absent when empty', () => {
+    const g = dashboardGlance([], null, now);
+    expect(g.today.map((i) => i.text)).toEqual(['0 new opportunities', '0 confirmed today']);
+    expect(g.upcoming).toEqual([]);
     expect(dashboardGlance([opp('pending')], null, now).today[0].text).toBe('1 new opportunity');
   });
   it('this month: unknown is absent, never $0; custom contracts show no amount', () => {

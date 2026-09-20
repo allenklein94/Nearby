@@ -3019,6 +3019,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                                 </TouchableOpacity>
                               ))}
                             </View>
+                            {glance.upcoming.length > 0 && (
+                              <>
+                                <Text style={styles.notesLabel}>Upcoming</Text>
+                                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                                  {glance.upcoming.map((item) => (
+                                    <TouchableOpacity key={item.key} style={styles.chip} onPress={() => setSection(item.section)} accessibilityLabel={item.text} accessibilityRole="button">
+                                      <Text style={styles.chipText}>{item.text}</Text>
+                                    </TouchableOpacity>
+                                  ))}
+                                </View>
+                              </>
+                            )}
                             {glance.month.length > 0 && (
                               <>
                                 <Text style={styles.notesLabel}>This month</Text>
