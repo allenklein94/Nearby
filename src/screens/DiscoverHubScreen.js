@@ -2020,7 +2020,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {showFlatGatheringsSection && isSearching && !loadingSearch && gatheringsToShow.length === 0 && (
             <>
               <Text style={styles.sectionHeader}>Gatherings</Text>
-              <Text style={styles.emptyTextTight}>No gatherings match "{searchQuery.trim()}".</Text>
+              <EmptyCopy id="gatherings_search" vars={{ query: searchQuery.trim() }} />
               <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
                 <Text style={styles.emptyActionText}>Clear Search →</Text>
               </TouchableOpacity>
@@ -2085,7 +2085,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {showCommunities && isSearching && !loadingSearch && communitiesToShow.length === 0 && (
             <>
               <Text style={styles.sectionHeader}>Communities</Text>
-              <Text style={styles.emptyTextTight}>No communities match "{searchQuery.trim()}".</Text>
+              <EmptyCopy id="communities_search" vars={{ query: searchQuery.trim() }} />
               <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
                 <Text style={styles.emptyActionText}>Clear Search →</Text>
               </TouchableOpacity>
@@ -2227,7 +2227,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {showPerks && isSearching && !loadingSearch && offersToShow.length === 0 && (
             <>
               <Text style={styles.sectionHeader}>Perks</Text>
-              <Text style={styles.emptyTextTight}>No perks match "{searchQuery.trim()}".</Text>
+              <EmptyCopy id="perks_search" vars={{ query: searchQuery.trim() }} />
               <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
                 <Text style={styles.emptyActionText}>Clear Search →</Text>
               </TouchableOpacity>

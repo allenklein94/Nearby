@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
@@ -469,7 +470,7 @@ export default function FriendsScreen({ navigation }) {
                   <Text style={styles.modalTitle}>Circles for {manageCirclesFor?.display_name}</Text>
                   {circles.length === 0 && (
                     <View>
-                      <Text style={styles.emptyText}>No circles yet.</Text>
+                      <EmptyCopy id="friend_circles" />
                       {/* Thursday plan item 25: this modal used to point
                           the user back at "the Friends screen" they're
                           already on -- a self-referential dead end. Opens

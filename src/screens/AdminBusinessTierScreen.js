@@ -3,6 +3,7 @@
 // marked as development tooling. Real, admin-gated (both client-side
 // here and, more importantly, server-side inside every RPC this screen
 // calls) -- never a surface a real business ever sees.
+import EmptyCopy from '../components/EmptyCopy';
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { PullToRefresh, NLoader } from '../motion';
@@ -92,7 +93,7 @@ export default function AdminBusinessTierScreen() {
           refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <FadeInState style={styles.emptyState}>
-              <Text style={styles.emptyText}>No businesses match.</Text>
+              <EmptyCopy id="admin_businesses" />
             </FadeInState>
           }
           renderItem={({ item }) => (

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { addSharedDecisionNote, getSharedDecisionNotes } from '../services/sharedDecisions';
 import { checkTextModeration } from '../services/textModeration';
@@ -92,7 +93,7 @@ export default function SharedDecisionsScreen({ route }) {
                   </View>
                 ))}
                 {categoryNotes.length === 0 && (
-                  <Text style={styles.emptyText}>No thoughts shared yet.</Text>
+                  <EmptyCopy id="shared_thoughts" />
                 )}
 
                 <View style={styles.addRow}>

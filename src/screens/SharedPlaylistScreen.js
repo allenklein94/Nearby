@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TextInput, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert, Linking, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { addPlaylistItem, getPlaylistItems } from '../services/sharedPlaylist';
@@ -159,7 +160,7 @@ export default function SharedPlaylistScreen({ route }) {
           ListEmptyComponent={
             <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🎧</Text>
-              <Text style={styles.emptyText}>No songs added yet. Search above to add the first one!</Text>
+              <EmptyCopy id="playlist" />
             </FadeInState>
           }
           renderItem={({ item }) => (

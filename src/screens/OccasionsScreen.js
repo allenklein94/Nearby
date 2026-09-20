@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader, SurpriseRevealAnimation, modalAnimation } from '../motion';
@@ -621,7 +622,7 @@ export default function OccasionsScreen({ navigation, route }) {
           {occasions.length === 0 && (
             <FadeInState opportunity style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📅</Text>
-              <Text style={styles.emptyText}>No occasions saved yet.</Text>
+              <EmptyCopy id="occasions" />
               {/* Item 134: an empty state that animates into an invitation needs a real action. */}
               <TouchableOpacity
                 style={styles.emptyPlanButton}

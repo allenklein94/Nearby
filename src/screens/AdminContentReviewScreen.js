@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { PullToRefresh } from '../motion';
 import FadeInState from '../components/FadeInState';
@@ -121,7 +122,7 @@ export default function AdminContentReviewScreen() {
         refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <FadeInState style={styles.emptyState}>
-            <Text style={styles.emptyText}>Nothing awaiting review — every recent submission was either published automatically or blocked outright.</Text>
+            <EmptyCopy id="admin_content_review" />
           </FadeInState>
         }
         renderItem={({ item }) => {

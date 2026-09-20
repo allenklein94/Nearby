@@ -11,6 +11,7 @@
 // renderLockedFeature() elsewhere -- the actual enforcement is always
 // the server-side entitlement check inside set_business_ai_trust_level()/
 // upsert_business_ai_policy() themselves.
+import EmptyCopy from '../components/EmptyCopy';
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, Switch,
@@ -496,7 +497,7 @@ export default function BusinessAIAutomationScreen({ route }) {
         {loadingLog ? (
           <NLoader fullScreen={false} size="inline" kind="content" />
         ) : activityLog.length === 0 ? (
-          <Text style={styles.emptyText}>No AI activity yet.</Text>
+          <EmptyCopy id="ai_activity" />
         ) : (
           activityLog.map(renderActivityRow)
         )}

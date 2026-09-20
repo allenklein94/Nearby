@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { addTripIdea, getTripIdeas } from '../services/tripPlanning';
 import { checkTextModeration } from '../services/textModeration';
@@ -89,7 +90,7 @@ export default function TripPlanningScreen({ route }) {
                   </View>
                 ))}
                 {categoryIdeas.length === 0 && (
-                  <Text style={styles.emptyText}>No ideas yet.</Text>
+                  <EmptyCopy id="trip_ideas" />
                 )}
 
                 <View style={styles.addRow}>

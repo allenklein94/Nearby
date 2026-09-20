@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import EmptyCopy from './EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, FlatList, Image, ActivityIndicator } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
@@ -84,7 +85,7 @@ export default function GifPickerModal({ visible, onClose, onSelect }) {
               </TouchableOpacity>
             )}
             ListEmptyComponent={
-              <Text style={styles.emptyText}>No GIFs found — try another search.</Text>
+              <EmptyCopy id="gif_search" />
             }
           />
         )}

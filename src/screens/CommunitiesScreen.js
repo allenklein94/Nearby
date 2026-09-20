@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader, PullToRefresh } from '../motion';
@@ -145,7 +146,7 @@ export default function CommunitiesScreen({ navigation }) {
           !loading && (
             <FadeInState opportunity style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🏘️</Text>
-              <Text style={styles.emptyText}>No public communities to discover right now — start your own!</Text>
+              <EmptyCopy id="communities_discover" />
               <TouchableOpacity
                 onPress={() => navigation.navigate('CreateCommunity')}
                 accessibilityLabel="Create a community"

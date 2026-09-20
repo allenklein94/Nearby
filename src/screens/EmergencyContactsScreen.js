@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader } from '../motion';
@@ -111,7 +112,7 @@ export default function EmergencyContactsScreen() {
           {contacts.length === 0 && (
             <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🛡️</Text>
-              <Text style={styles.emptyText}>No emergency contacts yet.</Text>
+              <EmptyCopy id="emergency_contacts" />
             </FadeInState>
           )}
 

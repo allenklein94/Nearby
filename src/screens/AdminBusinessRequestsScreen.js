@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { PullToRefresh } from '../motion';
 import FadeInState from '../components/FadeInState';
@@ -156,7 +157,7 @@ export default function AdminBusinessRequestsScreen() {
         refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <FadeInState style={styles.emptyState}>
-            <Text style={styles.emptyText}>No pending business partner requests.</Text>
+            <EmptyCopy id="admin_business_requests" />
           </FadeInState>
         }
         renderItem={({ item }) => (

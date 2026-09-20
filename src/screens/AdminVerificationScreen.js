@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader } from '../motion';
@@ -98,7 +99,7 @@ export default function AdminVerificationScreen() {
 
         {submissions.length === 0 && (
           <FadeInState style={styles.emptyState}>
-            <Text style={styles.emptyText}>No pending submissions.</Text>
+            <EmptyCopy id="admin_verification" />
           </FadeInState>
         )}
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import EmptyCopy from './EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { getGatheringQuestions, askGatheringQuestion, answerGatheringQuestion } from '../services/gatherings';
 import { checkTextModeration } from '../services/textModeration';
@@ -76,7 +77,7 @@ export default function GatheringQnA({ gatheringId, isHost }) {
       <Text style={styles.label}>Questions</Text>
 
       {loading && <Text style={styles.emptyText}>Loading...</Text>}
-      {!loading && questions.length === 0 && <Text style={styles.emptyText}>No questions yet.</Text>}
+      {!loading && questions.length === 0 && <EmptyCopy id="gathering_questions" />}
 
       {questions.map((q) => (
         <View key={q.id} style={styles.questionRow}>

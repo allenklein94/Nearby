@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { NLoader, showSuccessToast } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
@@ -141,7 +142,7 @@ export default function MyBusinessApplicationScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>No application on file yet.</Text>
+          <EmptyCopy id="business_application" />
           <TouchableOpacity
             style={styles.button}
             onPress={() => navigation.navigate('BusinessPartnerApply')}

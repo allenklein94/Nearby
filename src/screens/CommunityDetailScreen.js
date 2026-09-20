@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Image, Modal } from 'react-native';
 import { NLoader, SuccessAnimation, modalAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
@@ -725,7 +726,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
         {members.length === 0 && (
           <>
             <Text style={styles.sectionHeader}>Leaders & Members</Text>
-            <Text style={styles.emptyText}>No members to show yet.</Text>
+            <EmptyCopy id="community_members" />
           </>
         )}
         {members.length > 0 && (
@@ -767,7 +768,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
         {gatherings.length === 0 && (
           <>
             <Text style={styles.sectionHeader}>Upcoming Gatherings</Text>
-            <Text style={styles.emptyText}>Nothing on the calendar yet — be the first to plan something.</Text>
+            <EmptyCopy id="community_calendar" />
           </>
         )}
         {gatherings.length > 0 && (

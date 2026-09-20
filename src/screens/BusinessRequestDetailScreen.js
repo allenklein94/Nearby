@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image, Platform, Linking } from 'react-native';
 import * as Calendar from 'expo-calendar';
 import { NLoader, SuccessAnimation, ModeTransition } from '../motion';
@@ -1233,7 +1234,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                 state block -- not the many inline single-line empty texts
                 elsewhere in this app that don't read as their own moment. */}
             <NearbyMark size={24} style={{ opacity: 0.3, marginBottom: spacing.xs }} />
-            <Text style={styles.emptyText}>No businesses have responded yet.</Text>
+            <EmptyCopy id="request_no_responses" />
             {/* Item 56 ("no dead ends"): the original justSubmitted banner
                 only ever offered this retry once, right after submitting,
                 and only when notifiedCount was already 0 -- a request that

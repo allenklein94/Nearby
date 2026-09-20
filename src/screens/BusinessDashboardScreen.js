@@ -3372,7 +3372,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       Wiring an actual business-hosted-gathering create
                       path is a separate, bigger feature, not an empty-
                       state copy fix -- flagged, not silently built. */}
-                  <Text style={styles.emptyText}>No gatherings hosted yet.</Text>
+                  <EmptyCopy id="business_gatherings" />
                   <TouchableOpacity
                     style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm }]}
                     onPress={() => {
@@ -3473,7 +3473,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         included) ever sets that column, so "it'll show up
                         here" was already an unfulfillable promise. Softened
                         copy, real action to a real destination. */}
-                    <Text style={styles.emptyText}>No communities yet.</Text>
+                    <EmptyCopy id="business_communities" />
                     <TouchableOpacity
                       style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm }]}
                       onPress={() => {
@@ -3663,7 +3663,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   renderLockedFeature('advanced_match_radar', "Unlock the 🟡 unmet-intent signal and 🆕 demand-gap detection above -- see real searches nearby that found nothing, and categories you don't currently offer but people are asking for.")
                 )}
                 {aggregatedDemand.length === 0 ? (
-                  <Text style={styles.emptyText}>No aggregated demand nearby yet.</Text>
+                  <EmptyCopy id="business_demand" />
                 ) : (
                   aggregatedDemand.map((d) => (
                     <View key={d.category} style={styles.gatheringRow}>
@@ -3965,7 +3965,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   I offer" rather than "who wants what." A group is shown only when at least 5 people are behind it.
                 </Text>
                 {occasionDemand.length === 0 ? (
-                  <Text style={styles.emptyText}>No occasion-based demand nearby yet.</Text>
+                  <EmptyCopy id="business_occasion_demand" />
                 ) : (
                   occasionDemand.map((d) => {
                     const emoji = OCCASION_OPTIONS.find((o) => o.key === d.occasion_type)?.icon ?? '🎉';
@@ -4048,7 +4048,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   requests nearby automatically -- no need to wait for someone to ask.
                 </Text>
                 {myAvailability.length === 0 ? (
-                  <Text style={styles.emptyText}>Nothing posted yet.</Text>
+                  <EmptyCopy id="business_postings" />
                 ) : (
                   myAvailability.map((a) => (
                     <View key={a.id} style={styles.gatheringRow}>
@@ -4100,7 +4100,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   directly against real requests for that occasion, no waiting on you.
                 </Text>
                 {myOccasionPackages.length === 0 ? (
-                  <Text style={styles.emptyText}>No packages yet.</Text>
+                  <EmptyCopy id="business_packages" />
                 ) : (
                   myOccasionPackages.map((pkg) => (
                     <TouchableOpacity
@@ -4164,7 +4164,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   at most once per occurrence -- never automatic.
                 </Text>
                 {returningCustomers.length === 0 ? (
-                  <Text style={styles.emptyText}>No returning customers yet.</Text>
+                  <EmptyCopy id="business_returning" />
                 ) : (
                   returningCustomers.map((c) => {
                     const daysUntil = Math.round((new Date(c.next_occasion_date + 'T00:00:00') - new Date()) / (24 * 60 * 60 * 1000));
@@ -4313,7 +4313,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   )}
                 </View>
               ) : (
-                <Text style={styles.emptyText}>Not enough activity yet to show real insights.</Text>
+                <EmptyCopy id="business_insights" />
               )}
 
 </>
@@ -4361,7 +4361,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               {missedMatchLocked ? (
                 renderLockedFeature('missed_match_reporting', "See exactly why nearby requests slipped past your fulfillment policy or availability postings -- party size out of range, hours mismatch, category mismatch, and more.")
               ) : missedMatchSummary.length === 0 ? (
-                <Text style={styles.emptyText}>Nothing missed in the last 30 days.</Text>
+                <EmptyCopy id="business_missed" />
               ) : (
                 missedMatchSummary.map((m) => {
                   const info = MISSED_MATCH_REASON_LABELS[m.reason] ?? { label: m.reason, hint: null };
@@ -4420,7 +4420,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   what to do with their own pattern (see CLAUDE.md's Decision 2). */}
               <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>What You've Declined</Text>
               {declinePatterns.length === 0 ? (
-                <Text style={styles.emptyText}>Nothing declined in the last 30 days.</Text>
+                <EmptyCopy id="business_declined" />
               ) : (
                 declinePatterns.map((d) => {
                   const info = DECLINE_REASON_LABELS[d.decline_reason] ?? { label: d.decline_reason, hint: null };
@@ -4441,7 +4441,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   aggregated only, reasons are optional so "no reason given" is shown honestly. Never auto-reweights matching. */}
               <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Cancelled Reservations</Text>
               {cancellationPatterns.length === 0 ? (
-                <Text style={styles.emptyText}>No reservations cancelled in the last 30 days.</Text>
+                <EmptyCopy id="business_cancelled" />
               ) : (
                 cancellationPatterns.map((c) => (
                   <View key={`${c.actor_role}-${c.reason_code}`} style={styles.offerCard}>
@@ -4464,7 +4464,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Offer Performance</Text>
               {matchFitLine(matchFit) && <Text style={styles.offerDescription}>{matchFitLine(matchFit)}</Text>}
               {offerPerformance.length === 0 ? (
-                <Text style={styles.emptyText}>No offers sent yet.</Text>
+                <EmptyCopy id="business_offers_sent" />
               ) : (
                 offerPerformance.map((row) => (
                   <View key={row.group_key} style={styles.offerCard}>
@@ -4498,7 +4498,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <Text style={styles.createOfferButtonText}>+ Create Offer</Text>
                 </TouchableOpacity>
                 {offers.length === 0 ? (
-                  <Text style={styles.emptyText}>No offers yet — create one to give your community a reason to visit.</Text>
+                  <EmptyCopy id="business_offers" />
                 ) : (
                   offers.map((offer) => (
                     <View key={offer.id} style={styles.offerCard}>
@@ -5081,7 +5081,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 {loadingExperiences ? (
                   <NLoader fullScreen={false} size="inline" caption="Loading experiences…" />
                 ) : experiences.length === 0 ? (
-                  <Text style={styles.emptyText}>No signature experiences yet.</Text>
+                  <EmptyCopy id="business_signature" />
                 ) : (
                   experiences.map((exp) => (
                     <View key={exp.id} style={[styles.gatheringRow, !exp.active && { opacity: 0.5 }]}>
@@ -5245,7 +5245,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   it once and requests within your own bounds get auto-accepted automatically.
                 </Text>
                 {!fulfillmentPolicy ? (
-                  <Text style={styles.emptyText}>No standing policy set yet.</Text>
+                  <EmptyCopy id="business_policy" />
                 ) : (
                   <View style={styles.gatheringRow}>
                     <Text style={styles.breakdownText}>
@@ -5489,7 +5489,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </View>
                 </View>
               ) : conversations.length === 0 ? (
-                <Text style={styles.emptyText}>No messages yet from your community.</Text>
+                <EmptyCopy id="business_messages" />
               ) : (
                 conversations.map((c) => (
                   <TouchableOpacity key={c.userId} style={styles.gatheringRow} onPress={() => openConversation(c)} accessibilityLabel={`Conversation with ${c.displayName}`} accessibilityRole="button">
