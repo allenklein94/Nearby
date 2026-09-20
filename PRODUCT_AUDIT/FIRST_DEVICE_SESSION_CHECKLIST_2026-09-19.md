@@ -39,6 +39,11 @@ has a phone and a browser. **Stop-and-fix any failure before moving on; each ste
 ## D. Needs both surfaces (state-machine parity)
 Consumer request -> business opportunity appears on web -> Accept/Offer on web -> consumer sees offer on phone -> accept -> reservation on both -> cancel from either side (reason sheet is optional) -> both show the same status.
 
+## F. Sponsored placement (2026-09-20; only after `SPONSORED_TEST_MODE_RUNBOOK_2026-09-20.md` steps 1-3)
+- Web + phone: Promotions panel layout (chips wrap, date chips, payment button, released hold), Stripe test checkout return.
+- Phone: Sponsored card on Discover Places/Perks (label visible, Hide/Report/Why work, appears once, never in All/search); Settings switch + Reset.
+- Admin: Settings > Sponsored Refunds (Admin): list, confirm sheet, refund, then placement stops serving.
+
 ## E. Blocked on the owner, not on testing
 - **Anthropic API credit**: the project's `ANTHROPIC_API_KEY` returned "credit balance is too low" on 2026-09-19, so *every* AI edge function (Tell Nearby, create-assistant, screening) currently 500s. Top up before any AI step above.
 - **Resend** secrets (`RESEND_API_KEY`, `EMAIL_FROM`, optional `BUSINESS_WEB_URL`) for the email fallback; then add an address on the dashboard card and confirm the 6-digit code -- the only real end-to-end test.
