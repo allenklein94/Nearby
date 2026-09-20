@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Platform, Keyboard, TouchableWithoutFeedback, Image, Switch } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { updateGathering, setGatheringCategoryIfMissing, pickGatheringCoverPhoto, uploadGatheringCoverPhoto, getSignedGatheringPhotoUrl } from '../services/gatherings';
+import { updateGathering, setGatheringCapacity, setGatheringCategoryIfMissing, pickGatheringCoverPhoto, uploadGatheringCoverPhoto, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -31,6 +31,8 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [beginnerFriendly, setBeginnerFriendly] = useState(gathering.beginner_friendly ?? true);
   const [showGroupInsights, setShowGroupInsights] = useState(gathering.show_group_insights ?? true);
   const [requiresApproval, setRequiresApproval] = useState(gathering.requires_approval ?? false);
+  const [limitAttendees, setLimitAttendees] = useState(gathering.capacity != null);
+  const [capacity, setCapacity] = useState(gathering.capacity ?? 10);
   // A gathering made before the category became required has none; the host can fill it in (never change one).
   const missingCategory = !gathering.interest_tag;
   const [newCategory, setNewCategory] = useState(null);
@@ -115,6 +117,8 @@ export default function EditGatheringScreen({ route, navigation }) {
         showGroupInsights,
         ...(gathering.is_public === false ? {} : { requiresApproval }),
       });
+      const nextCapacity = limitAttendees ? capacity : null;
+      if ((gathering.capacity ?? null) !== nextCapacity) await setGatheringCapacity(gathering.id, nextCapacity);
       if (missingCategory && newCategory) await setGatheringCategoryIfMissing(gathering.id, newCategory);
       showSuccessToast('Updated', 'Your changes are saved.');
       navigation.goBack();
@@ -260,6 +264,22 @@ export default function EditGatheringScreen({ route, navigation }) {
               accessibilityLabel="Show group insights to attendees"
             />
           </View>
+          <View style={styles.toggleRow}>
+            <Text style={styles.label}>Limit attendees</Text>
+            <Switch value={limitAttendees} onValueChange={setLimitAttendees} accessibilityLabel="Limit attendees" />
+          </View>
+          {limitAttendees && (
+            <View style={styles.toggleRow}>
+              <TouchableOpacity onPress={() => setCapacity((n) => Math.max(1, n - 1))} accessibilityLabel="Decrease maximum attendees" accessibilityRole="button">
+                <Text style={styles.label}>−</Text>
+              </TouchableOpacity>
+              <Text style={styles.label}>{capacity} max</Text>
+              <TouchableOpacity onPress={() => setCapacity((n) => n + 1)} accessibilityLabel="Increase maximum attendees" accessibilityRole="button">
+                <Text style={styles.label}>+</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          <Text style={styles.subheader}>When you're at the limit, new people join the waitlist. Raising or removing the limit lets the waitlist in, in order. You can't go below the people already attending.</Text>
           {gathering.is_public !== false && (
             <>
               <View style={styles.toggleRow}>

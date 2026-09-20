@@ -779,6 +779,14 @@ export async function getAllPendingRequests() {
   return data ?? [];
 }
 
+// Host changes the maximum attendees (null = no limit). Raising or removing the limit seats the waitlist server-side;
+// lowering below the people already attending is refused with a clear message.
+export async function setGatheringCapacity(gatheringId, capacity) {
+  const { data, error } = await supabase.rpc('set_gathering_capacity', { gathering_id_param: gatheringId, capacity_param: capacity });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps, showGroupInsights, requiresApproval }) {
   const { error } = await supabase
     .from('gatherings')
