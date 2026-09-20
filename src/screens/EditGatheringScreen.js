@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Platform, Keyboard, TouchableWithoutFeedback, Image, Switch } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { updateGathering, pickGatheringCoverPhoto, uploadGatheringCoverPhoto, getSignedGatheringPhotoUrl } from '../services/gatherings';
+import { updateGathering, setGatheringCategoryIfMissing, pickGatheringCoverPhoto, uploadGatheringCoverPhoto, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { showSuccessToast } from '../motion';
+import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 const VIBE_SCALES = [
   { key: 'energyLevel', label: 'Energy', lowLabel: 'Chill', highLabel: 'High energy' },
   { key: 'conversationLevel', label: 'Conversation', lowLabel: 'Quiet', highLabel: 'Chatty' },
@@ -30,6 +31,9 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [beginnerFriendly, setBeginnerFriendly] = useState(gathering.beginner_friendly ?? true);
   const [showGroupInsights, setShowGroupInsights] = useState(gathering.show_group_insights ?? true);
   const [requiresApproval, setRequiresApproval] = useState(gathering.requires_approval ?? false);
+  // A gathering made before the category became required has none; the host can fill it in (never change one).
+  const missingCategory = !gathering.interest_tag;
+  const [newCategory, setNewCategory] = useState(null);
   const [timelineSteps, setTimelineSteps] = useState(gathering.timeline_steps ?? []);
   const [coverPhotoPath, setCoverPhotoPath] = useState(gathering.cover_photo_path ?? null);
   const [coverPhotoUrl, setCoverPhotoUrl] = useState(null);
@@ -111,6 +115,7 @@ export default function EditGatheringScreen({ route, navigation }) {
         showGroupInsights,
         ...(gathering.is_public === false ? {} : { requiresApproval }),
       });
+      if (missingCategory && newCategory) await setGatheringCategoryIfMissing(gathering.id, newCategory);
       showSuccessToast('Updated', 'Your changes are saved.');
       navigation.goBack();
     } catch (e) {
@@ -134,6 +139,35 @@ export default function EditGatheringScreen({ route, navigation }) {
             placeholderTextColor={colors.textTertiary}
             accessibilityLabel="Gathering title"
           />
+
+          {missingCategory && (
+            <>
+              <Text style={styles.label}>Category</Text>
+              <Text style={styles.helper}>This gathering has no category yet. Pick one so the right people and businesses can find it. It can't be changed once set.</Text>
+              {CATEGORY_GROUPS.map((group) => (
+                <View key={group.key} style={{ marginTop: spacing.sm }}>
+                  <Text style={styles.helper}>{group.icon} {group.label}</Text>
+                  <View style={styles.chipsWrap}>
+                    {group.tags.map((tag) => {
+                      const selected = newCategory === tag;
+                      return (
+                        <TouchableOpacity
+                          key={tag}
+                          style={[styles.chip, selected && styles.chipSelected]}
+                          onPress={() => setNewCategory(selected ? null : tag)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Category: ${tag}`}
+                          accessibilityState={{ selected }}
+                        >
+                          <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{tag}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
+            </>
+          )}
 
           <Text style={styles.label}>Description</Text>
           <TextInput
@@ -298,6 +332,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   header: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.xs },
   subheader: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg, lineHeight: 18 },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
+  helper: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.xs },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full ?? 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { color: colors.textPrimary, fontSize: 14 },
+  chipTextSelected: { color: '#fff', fontWeight: '600' },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
   dateButton: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border },
   dateButtonText: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },

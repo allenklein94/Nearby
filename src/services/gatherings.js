@@ -1,3 +1,4 @@
+import { groupForTag } from '../constants/gatheringCategories';
 import { formatDistanceAway } from '../utils/formatDistance';
 import { supabase } from './supabase';
 import { randomUUID } from 'expo-crypto';
@@ -796,6 +797,22 @@ export async function updateGathering(gatheringId, { title, description, schedul
     .eq('id', gatheringId);
 
   if (error) throw error;
+}
+
+// Item 64 follow-up: fill in a MISSING category (5 of 25 gatherings predate the required category). Only ever sets it when
+// it is currently NULL (an atomic `is null` guard), never changes an existing one: a change would silently rewrite the
+// gathering's Interested demand, the business request already routed by category, and the reasons people were shown.
+// Returns true when it set one, false when there was nothing to fill (already tagged, or not the host).
+export async function setGatheringCategoryIfMissing(gatheringId, interestTag) {
+  if (!groupForTag(interestTag)) throw new Error('Pick a real category.');
+  const { data, error } = await supabase
+    .from('gatherings')
+    .update({ interest_tag: interestTag })
+    .eq('id', gatheringId)
+    .is('interest_tag', null)
+    .select('id');
+  if (error) throw error;
+  return (data ?? []).length > 0;
 }
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
