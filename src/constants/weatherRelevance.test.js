@@ -42,7 +42,7 @@ describe('gatheringWeatherWindow', () => {
 describe('homeWeatherCard', () => {
   it('renders only with a real thing to point at, from the gathering-time window', () => {
     expect(homeWeatherCard({ weather: wx(), outdoorUpcoming: [] })).toBeNull();
-    expect(homeWeatherCard({ weather: wx(), outdoorUpcoming: [g()] }).label).toBe('Good outdoor window');
+    expect(homeWeatherCard({ weather: wx(), outdoorUpcoming: [g()] }).label).toBe('Perfect weather for outdoor plans');
   });
   it('indoor gatherings only under an indoor window; outdoor ones never appear then', () => {
     const rain = wx({ pop: 0.8, id: 501 });
@@ -52,5 +52,23 @@ describe('homeWeatherCard', () => {
   it('is suppressed while an intent result is active or the forecast is unknown', () => {
     expect(homeWeatherCard({ weather: wx(), outdoorUpcoming: [g()], intentActive: true })).toBeNull();
     expect(homeWeatherCard({ weather: null, outdoorUpcoming: [g()] })).toBeNull();
+  });
+});
+
+describe('weather ranks, it does not repeat (item 62)', () => {
+  it('an ordinary dry window is still favorable for ranking but not exceptional, so no card', () => {
+    const warm = wx({ temp: 90, pop: 0.05 }); // dry, but not comfortable
+    expect(gatheringWeatherWindow(warm, g().scheduled_at)).toMatchObject({ bias: 'outdoor', exceptional: false });
+    expect(homeWeatherCard({ weather: warm, outdoorUpcoming: [g()] })).toBeNull();
+    const breezy = wx({ temp: 70, pop: 0.25 }); // some chance of rain
+    expect(gatheringWeatherWindow(breezy, g().scheduled_at)).toMatchObject({ exceptional: false });
+    expect(homeWeatherCard({ weather: breezy, outdoorUpcoming: [g()] })).toBeNull();
+  });
+  it('comfortable and clearly dry in daylight is exceptional and earns the card', () => {
+    expect(gatheringWeatherWindow(wx({ temp: 78, pop: 0.02 }), g().scheduled_at).exceptional).toBe(true);
+    expect(homeWeatherCard({ weather: wx({ temp: 78, pop: 0.02 }), outdoorUpcoming: [g()] })).not.toBeNull();
+  });
+  it('bad weather still surfaces (it changes plans)', () => {
+    expect(homeWeatherCard({ weather: wx({ pop: 0.8, id: 501 }), indoorUpcoming: [g()] })).not.toBeNull();
   });
 });

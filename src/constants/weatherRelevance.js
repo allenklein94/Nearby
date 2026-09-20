@@ -21,9 +21,11 @@ export function homeWeatherCard({ weather, indoorUpcoming = [], outdoorUpcoming 
     const worst = indoor.reduce((a, b) => (SEVERITY[b.w.kind] > SEVERITY[a.w.kind] ? b : a));
     return { bias: 'indoor', kind: worst.w.kind, label: worst.w.label, gatherings: indoor.map(({ g }) => g), detail: null };
   }
-  const outdoor = withWindow(outdoorUpcoming, 'outdoor');
+  // Ordinary good weather only nudges ranking (weatherAdjustment); it earns a card only when it is exceptional
+  // (item 62), so the card stays rare instead of repeating every fine day.
+  const outdoor = withWindow(outdoorUpcoming, 'outdoor').filter(({ w }) => w.exceptional);
   if (outdoor.length > 0) {
-    return { bias: 'outdoor', kind: 'outdoor_window', label: 'Good outdoor window', gatherings: outdoor.map(({ g }) => g), detail: null };
+    return { bias: 'outdoor', kind: 'outdoor_window', label: 'Perfect weather for outdoor plans', gatherings: outdoor.map(({ g }) => g), detail: null };
   }
   return null;
 }

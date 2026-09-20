@@ -5,6 +5,9 @@
 // indoor-worthy = pop >= 0.6 or a thunder/snow code at pop >= 0.3, heat > 95F,
 // cold < 45F. Unknown (no forecast blocks, no block covering the time, no sun
 // times for an outdoor claim) is null, never favorable.
+export const EXCEPTIONAL_MIN_F = 65;
+export const EXCEPTIONAL_MAX_F = 82;
+export const EXCEPTIONAL_MAX_POP = 0.1;
 const BLOCK_MS = 3 * 60 * 60 * 1000;
 
 export function blockAt(weather, whenMs) {
@@ -38,5 +41,9 @@ export function gatheringWeatherWindow(weather, scheduledAt) {
   const t = mod(whenMs), r = mod(sunrise), s = mod(sunset);
   const daylight = r <= s ? t >= r && t < s : t >= r || t < s;
   if (!daylight) return null;
-  return { bias: 'outdoor', kind: 'outdoor_window', label: 'Good outdoor window' };
+  // Weather is a ranking signal first (any dry daylight window nudges outdoor plans up quietly). It is only
+  // "exceptional" -- worth saying out loud -- when it is comfortable AND clearly dry (item 62). These cut-offs are
+  // product defaults, not measured norms: 65-82F and pop <= 0.1.
+  const exceptional = temp >= EXCEPTIONAL_MIN_F && temp <= EXCEPTIONAL_MAX_F && pop <= EXCEPTIONAL_MAX_POP;
+  return { bias: 'outdoor', kind: 'outdoor_window', label: 'Good outdoor window', exceptional };
 }

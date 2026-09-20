@@ -63,7 +63,9 @@ function weatherAdjustment(interestTag, weather, scheduledAt) {
     return { points: SCORE_HAPPENING_NOW, reason: REASON_TEXT.WEATHER_GOOD_INDOOR.text };
   }
   if (w.bias === 'outdoor' && isOutdoorCategory(interestTag)) {
-    return { points: SCORE_HAPPENING_NOW, reason: REASON_TEXT.WEATHER_GOOD_OUTDOOR.text };
+    // Ordinary good weather ranks outdoor plans up silently (no reason line on every card); the reason is spoken only when
+    // the weather is exceptional (item 62).
+    return { points: SCORE_HAPPENING_NOW, reason: w.exceptional ? REASON_TEXT.WEATHER_GOOD_OUTDOOR.text : null };
   }
   return null;
 }
@@ -121,7 +123,7 @@ function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel,
   if (weatherBonus) {
     // CONTEXTUAL: today's real weather, always full weight.
     score += weightSignal(weatherBonus.points, SIGNAL_SOURCES.CONTEXTUAL, maturity);
-    reasons.push(weatherBonus.reason);
+    if (weatherBonus.reason) reasons.push(weatherBonus.reason);
   }
   // "The Plan Engine" Phase 4 (CLAUDE.md) -- closes the doc's own VISIT ->
   // FEEDBACK -> NEXT PLAN loop: a real, itemized bonus when the caller has
