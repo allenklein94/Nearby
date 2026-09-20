@@ -613,7 +613,7 @@ export async function getHomeDashboard() {
     // that could (and did) drift from that established rule.
     const { data: friendGatherings } = await supabase
       .from('gatherings')
-      .select('id, title, host_id, created_at, scheduled_at, visibility, community_id, women_only, profiles!gatherings_host_id_fkey(display_name)')
+      .select('id, title, host_id, created_at, scheduled_at, visibility, community_id, women_only, is_public, requires_approval, capacity, attendees:gathering_interest(status, user_id), profiles!gatherings_host_id_fkey(display_name)')
       .in('host_id', friendIds)
       .gte('created_at', threeDaysAgo)
       .order('created_at', { ascending: false })

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
 import { NLoader } from '../motion';
 import * as Haptics from 'expo-haptics';
@@ -102,6 +102,9 @@ export default function GatheringDetailScreen({ route, navigation }) {
   // the same as null -- try again), or a real 'pending'/'approved' row.
   const [myPartnershipRequest, setMyPartnershipRequest] = useState(null);
   const [businessHelpChooserOpen, setBusinessHelpChooserOpen] = useState(false);
+  // Home's contextual "Join" CTA lands here and opens the normal join confirmation once (limits, approval,
+  // women-only and invite-only all still apply; nothing is joined without the confirmation).
+  const openJoinRequested = route.params?.openJoin === true;
   // Item 55 ("deep links should preserve context, too" -- CLAUDE.md): a
   // notification tap can carry the real reason the user landed here (the
   // exact push body text, see notifications.js's routeNotificationTap) and,
@@ -110,6 +113,14 @@ export default function GatheringDetailScreen({ route, navigation }) {
   // forced for every notification type, only the ones where it's real.
   const notificationReason = route.params?.notificationReason ?? null;
   const notificationSuggestsInvite = route.params?.notificationSuggestsInvite ?? false;
+  const openJoinHandled = useRef(false);
+  useEffect(() => {
+    if (!openJoinRequested || openJoinHandled.current || !gathering) return;
+    openJoinHandled.current = true;
+    const blocked = gathering.isHost || gathering.myStatus || new Date(gathering.scheduled_at) < new Date()
+      || (gathering.visibility === 'invite_only' && !gathering.hasInviteOnlyAccess);
+    if (!blocked) setIntentModalVisible(true);
+  }, [openJoinRequested, gathering]);
   const [showReasonBanner, setShowReasonBanner] = useState(!!notificationReason);
 
   const load = useCallback(async () => {

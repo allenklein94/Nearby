@@ -51,6 +51,7 @@ import { lightenHex } from '../utils/colorUtils';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { getUserLocation } from '../services/userLocation';
 import { placeDistanceLabel } from '../services/places';
+import { gatheringPrimaryAction } from '../utils/primaryAction';
 
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
@@ -210,6 +211,7 @@ export default function HomeScreen({ navigation }) {
   // map -- Home has exactly one hero candidate, never a list of them.
   const [bestPickCoverUrl, setBestPickCoverUrl] = useState(null);
   const [myName, setMyName] = useState('');
+  const [myUserId, setMyUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -328,10 +330,44 @@ export default function HomeScreen({ navigation }) {
     [allUpcomingOccasions, allUpcomingBirthdays]
   );
 
+  // Contextual primary CTA (utils/primaryAction.js): "Join | View", never a wall of buttons. Join opens the normal
+  // confirmation on the detail screen (limits, approval, women-only all live there), so nothing is bypassed.
+  function renderGatheringCta(g, variant) {
+    const action = gatheringPrimaryAction(g, myUserId);
+    const openDetail = (extra = {}) => navigation.navigate('GatheringDetail', { gatheringId: g.id, ...extra });
+    const hero = variant === 'hero';
+    const primaryStyle = hero ? styles.heroCta : styles.rowCta;
+    const primaryText = hero ? styles.heroCtaText : styles.rowCtaText;
+    const viewStyle = hero ? [styles.heroCta, styles.heroCtaGhost] : styles.rowCtaGhost;
+    const viewText = hero ? styles.heroCtaText : styles.rowCtaGhostText;
+    if (action.kind === 'view' || action.kind === 'view_plan') {
+      return (
+        <TouchableOpacity style={primaryStyle} onPress={() => openDetail()} accessibilityRole="button" accessibilityLabel={`${action.label} ${g.title}`}>
+          <Text style={primaryText}>{action.label} →</Text>
+        </TouchableOpacity>
+      );
+    }
+    return (
+      <View style={styles.ctaRow}>
+        {action.kind === 'join' ? (
+          <TouchableOpacity style={primaryStyle} onPress={() => openDetail({ openJoin: true })} accessibilityRole="button" accessibilityLabel={`${action.label}: ${g.title}`}>
+            <Text style={primaryText}>{action.label}</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={hero ? styles.heroMeta : styles.trendingMeta}>{action.label}</Text>
+        )}
+        <TouchableOpacity style={viewStyle} onPress={() => openDetail()} accessibilityRole="button" accessibilityLabel={`View ${g.title}`}>
+          <Text style={viewText}>View</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   const load = useCallback(async () => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const myId = sessionData?.session?.user?.id;
+      setMyUserId(myId ?? null);
       if (myId) {
         // Phase J (CLAUDE.md) -- created_at is the one new column this
         // whole phase needs; a plain, already-fetched real timestamp, zero
@@ -2625,9 +2661,7 @@ export default function HomeScreen({ navigation }) {
                         <Text style={[styles.heroMeta, fullness.startsWith('🔒') && { color: '#FFB4B4' }]}>{fullness}</Text>
                       )}
                     </View>
-                    <View style={styles.heroCta}>
-                      <Text style={styles.heroCtaText}>View →</Text>
-                    </View>
+                    {renderGatheringCta(dashboard.bestPick, 'hero')}
                   </View>
                 </TouchableOpacity>
               );
@@ -2654,6 +2688,7 @@ export default function HomeScreen({ navigation }) {
                         {gatheringFullnessLabel(g)}
                       </Text>
                     )}
+                    <View style={{ marginTop: spacing.xs }}>{renderGatheringCta(g, 'row')}</View>
                   </TouchableOpacity>
                 ))}
               </>
@@ -2683,6 +2718,7 @@ export default function HomeScreen({ navigation }) {
                           {timing.isPast ? `${timing.text} · Already happened` : timing.text}
                         </Text>
                       )}
+                      {!timing?.isPast && <View style={{ marginTop: spacing.xs }}>{renderGatheringCta(g, 'row')}</View>}
                     </TouchableOpacity>
                   );
                 })}
@@ -3019,6 +3055,12 @@ const getStyles = (colors) => StyleSheet.create({
     paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2,
   },
   heroCtaText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
+  heroCtaGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(255,255,255,0.85)' },
+  ctaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  rowCta: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, alignSelf: 'flex-start' },
+  rowCtaText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
+  rowCtaGhost: { borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2 },
+  rowCtaGhostText: { color: colors.textPrimary, fontWeight: '600', fontSize: 12 },
   recapCard: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg,
