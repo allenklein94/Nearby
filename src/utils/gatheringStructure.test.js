@@ -28,3 +28,15 @@ describe('filling a missing category (item 64 follow-up)', () => {
     expect(edit).toMatch(/\{missingCategory && \(/);
   });
 });
+
+describe('localWhenParts (item 65)', () => {
+  const { localWhenParts } = require('./gatheringStructure');
+  it('gives the local wall-clock date and start time', () => {
+    expect(localWhenParts(new Date(2030, 7, 30, 21, 5))).toEqual({ date: '2030-08-30', time: '21:05:00' });
+    expect(localWhenParts(new Date(2030, 0, 2, 9, 0))).toEqual({ date: '2030-01-02', time: '09:00:00' });
+  });
+  it('unusable dates give null, never a made-up time', () => {
+    expect(localWhenParts('nope')).toBeNull();
+    expect(localWhenParts(undefined)).toBeNull();
+  });
+});

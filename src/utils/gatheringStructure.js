@@ -16,3 +16,15 @@ export function whatStepProblem({ title, interestTag }) {
 export function canSkipWhatStep(params) {
   return !!params?.fromQuickPick && whatStepProblem({ title: params?.quickStartTitle, interestTag: params?.quickStartCategory }) === null;
 }
+
+// Item 65: the gathering's WHEN as the host's own local wall-clock date ('YYYY-MM-DD') and start time ('HH:MM:SS'), which the
+// business request stores as structured fields (the server cannot know the device timezone). null for an unusable date.
+export function localWhenParts(scheduledAt) {
+  const d = scheduledAt instanceof Date ? scheduledAt : new Date(scheduledAt);
+  if (Number.isNaN(d.getTime())) return null;
+  const p = (n) => String(n).padStart(2, '0');
+  return {
+    date: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`,
+    time: `${p(d.getHours())}:${p(d.getMinutes())}:00`,
+  };
+}

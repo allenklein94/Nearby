@@ -1,3 +1,4 @@
+import { localWhenParts } from '../utils/gatheringStructure';
 import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -268,7 +269,17 @@ export async function submitBusinessRequest({
 // gathering's own real data -- never re-collected from the device or
 // typed by the caller, unlike the solo submitBusinessRequest() above.
 export async function submitBusinessRequestForGathering({ gatheringId, text, category = null, budgetMax = null, radiusMiles = 15, occasion = null, dietary = null, targetPartnerId = null, note = null }) {
+  // Item 65: the request stores the gathering's structured WHEN (local date + start time). The device knows its own
+  // timezone, the server does not, so read the gathering's start and send it as local wall-clock parts. Best-effort:
+  // without it the server falls back to the host's stored timezone, then to the UTC date with no time.
+  let when = null;
+  try {
+    const { data: g } = await supabase.from('gatherings').select('scheduled_at').eq('id', gatheringId).single();
+    when = g?.scheduled_at ? localWhenParts(g.scheduled_at) : null;
+  } catch { when = null; }
   const { data, error } = await supabase.rpc('create_business_request_for_gathering', {
+    date_param: when?.date ?? null,
+    time_start_param: when?.time ?? null,
     gathering_id_param: gatheringId,
     raw_text_param: text,
     category_param: category,
