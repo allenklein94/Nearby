@@ -20,4 +20,16 @@ describe('host controls live on GatheringDetail', () => {
     const mgr = read('../components/HostAttendeeManager.js');
     for (const s of ['approveInterest', 'hostRemoveAttendee', 'Decline', 'Remove']) expect(mgr).toContain(s);
   });
+  test('the Gatherings screen has no hosting tab / hosted-gatherings collection', () => {
+    const g = read('GatheringsScreen.js');
+    expect(g).not.toMatch(/tab === 'hosting'/);
+    expect(g).not.toMatch(/setTab\('hosting'\)/);
+    expect(g).not.toMatch(/getMyGatherings/);
+  });
+  test('nothing navigates to a Gatherings hosting tab', () => {
+    const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? walk(path.join(d, e.name)) : /\.js$/.test(e.name) && !/\.test\.js$/.test(e.name) ? [path.join(d, e.name)] : []);
+    const bad = walk(path.join(__dirname, '..')).filter((f) => /navigate\('Gatherings',\s*\{\s*initialTab:\s*'hosting'/.test(fs.readFileSync(f, 'utf8')));
+    expect(bad).toEqual([]);
+  });
 });

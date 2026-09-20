@@ -2,10 +2,9 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { PullToRefresh, FilterTransition, TapActiveChip, NLoader, SkeletonFeed } from '../motion';
 import FadeInState from '../components/FadeInState';
-import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { useFocusEffect } from '@react-navigation/native';
 import { joinLabel } from '../utils/gatheringJoinMode';
-import { getNearbyGatherings, searchGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, hostRemoveAttendee, getMyTopGatheringCategories, cancelGathering, stopRecurringSeries } from '../services/gatherings';
+import { getNearbyGatherings, searchGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, getMyTopGatheringCategories } from '../services/gatherings';
 import { recordBehaviorEvent } from '../services/behaviorSignals';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import { getMyFriends } from '../services/friends';
@@ -72,11 +71,9 @@ export default function GatheringsScreen({ navigation, route }) {
   const { t } = useLanguage();
   const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
-  const [tab, setTab] = useState(route?.params?.initialTab ?? 'nearby');
-  const [reasonAsk, setReasonAsk] = useState(null);
+  const [tab, setTab] = useState(route?.params?.initialTab === 'attending' ? 'attending' : 'nearby');
   const [radiusTier, setRadiusTier] = useState('local');
   const [nearby, setNearby] = useState([]);
-  const [hosting, setHosting] = useState({ upcoming: [], past: [] });
   const [attending, setAttending] = useState({ upcoming: [], past: [] });
   const [refreshing, setRefreshing] = useState(false);
   const [photoUrls, setPhotoUrls] = useState({});
@@ -139,21 +136,17 @@ export default function GatheringsScreen({ navigation, route }) {
   const [mapStoryDisplayNames, setMapStoryDisplayNames] = useState({});
   const [mapStoryViewerTarget, setMapStoryViewerTarget] = useState(null);
   const [attendingPastExpanded, setAttendingPastExpanded] = useState(false);
-  const [hostingPastExpanded, setHostingPastExpanded] = useState(false);
   const [attendingPastSort, setAttendingPastSort] = useState('newest');
-  const [hostingPastSort, setHostingPastSort] = useState('newest');
   const [intentModalGathering, setIntentModalGathering] = useState(null);
   const [coverPhotoUrls, setCoverPhotoUrls] = useState({});
 
   const load = useCallback(async () => {
-    const [nearbyResults, hostingResults, attendingResults, topCats] = await Promise.all([
+    const [nearbyResults, attendingResults, topCats] = await Promise.all([
       getNearbyGatherings(radiusTier),
-      getMyGatherings(),
       getMyAttendingGatherings(),
       getMyTopGatheringCategories(),
     ]);
     setNearby(nearbyResults);
-    setHosting(hostingResults);
     setAttending(attendingResults);
     setTopCategories(topCats);
 
@@ -197,7 +190,7 @@ export default function GatheringsScreen({ navigation, route }) {
     );
     setAttendeePhotoUrls(Object.fromEntries(attendeeUrlEntries.filter(Boolean)));
 
-    const coverPhotoGatherings = [...nearbyResults, ...hostingResults.upcoming, ...attendingResults.upcoming];
+    const coverPhotoGatherings = [...nearbyResults, ...attendingResults.upcoming];
     const coverUrlEntries = await Promise.all(
       coverPhotoGatherings.map(async (g) => {
         if (!g.cover_photo_path) return null;
@@ -375,108 +368,6 @@ export default function GatheringsScreen({ navigation, route }) {
     }
   }
 
-  function confirmRemoveInterest(interest, isRequest) {
-    const name = interest.profiles?.display_name ?? 'this person';
-    Alert.alert(
-      isRequest ? `Decline ${name}?` : `Remove ${name}?`,
-      isRequest ? "They'll be told you couldn't approve their request." : "They'll be taken off the list and a waitlisted person, if any, moves up.",
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: isRequest ? 'Decline' : 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await hostRemoveAttendee(interest.id);
-              load();
-            } catch (e) {
-              Alert.alert('Error', e.message);
-            }
-          },
-        },
-      ]
-    );
-  }
-
-  async function handleApprove(interest) {
-    try {
-      const result = await approveInterest(interest.id);
-      if (result?.status === 'waitlisted') {
-        Alert.alert('Gathering full', "This gathering is already at capacity — they've been added to the waitlist instead.");
-      } else {
-        Alert.alert('Approved!', 'A match was created — you can now chat with them.');
-      }
-      load();
-    } catch (e) {
-      Alert.alert('Error', e.message);
-    }
-  }
-
-  function confirmCancelGathering(gathering) {
-    if (gathering.recurrence_rule) {
-      Alert.alert(
-        `Cancel "${gathering.title}"?`,
-        'This is a recurring gathering. Do you want to cancel just this one, or stop the whole series?',
-        [
-          { text: 'Keep It', style: 'cancel' },
-          {
-            text: 'Just This One',
-            onPress: async () => {
-              try {
-                await cancelGathering(gathering.id);
-                setReasonAsk({ entityType: 'gathering', entityId: gathering.id, role: 'host' });
-                load();
-              } catch (e) {
-                Alert.alert('Error', e.message);
-              }
-            },
-          },
-          {
-            text: 'Stop The Whole Series',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                // Deliberately not cancelling this specific instance
-                // too — doing so would delete the very row carrying
-                // the stop flag, silently undoing the request and
-                // letting the series keep generating anyway. This
-                // instance still happens as planned; nothing new
-                // gets created after it.
-                await stopRecurringSeries(gathering.id);
-                load();
-                Alert.alert('Series Stopped', "This one will still happen as scheduled, but no future ones will be created.");
-              } catch (e) {
-                Alert.alert('Error', e.message);
-              }
-            },
-          },
-        ]
-      );
-      return;
-    }
-
-    Alert.alert(
-      `Cancel "${gathering.title}"?`,
-      "This cancels the gathering and notifies everyone who's approved to attend. Any open business requests tied to it are cancelled too. This can't be undone.",
-      [
-        { text: 'Keep It', style: 'cancel' },
-        {
-          text: 'Cancel Gathering',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await cancelGathering(gathering.id);
-              setReasonAsk({ entityType: 'gathering', entityId: gathering.id, role: 'host' });
-              load();
-            } catch (e) {
-              Alert.alert('Error', e.message);
-            }
-          },
-        },
-      ]
-    );
-  }
-
   function formatDate(iso) {
     const d = new Date(iso);
     return d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -602,7 +493,7 @@ export default function GatheringsScreen({ navigation, route }) {
           {tab === 'nearby' && interestFilter && !forYouActive ? `${interestFilter} Near You` : t('gatherings.title')}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {(tab === 'nearby' || tab === 'attending' || tab === 'hosting') && (
+          {(tab === 'nearby' || tab === 'attending') && (
             <TouchableOpacity
               style={styles.viewToggleButton}
               onPress={() => setViewStyle(viewStyle === 'map' ? 'list' : 'map')}
@@ -655,15 +546,6 @@ export default function GatheringsScreen({ navigation, route }) {
           accessibilityState={{ selected: tab === 'attending' }}
         >
           <Text style={[styles.tabText, tab === 'attending' && styles.tabTextActive]}>{t('gatherings.attendingTab')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, tab === 'hosting' && styles.tabActive]}
-          onPress={() => setTab('hosting')}
-          accessibilityRole="tab"
-          accessibilityLabel="Gatherings you're hosting"
-          accessibilityState={{ selected: tab === 'hosting' }}
-        >
-          <Text style={[styles.tabText, tab === 'hosting' && styles.tabTextActive]}>{t('gatherings.hostingTab')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -1370,187 +1252,6 @@ export default function GatheringsScreen({ navigation, route }) {
         />
       )}
 
-      {/* Explicit decision (Aug 23 2026 Product Coherence Audit P1,
-          CLAUDE.md): this tab's own real rows genuinely overlap with
-          PlansScreen's "My Hosting" tab -- kept as two separate screens on
-          purpose, not a duplicate. This tab is the real active-management
-          surface (approve/edit/cancel/invite, below); PlansScreen is a
-          pure tap-through calendar glance with a real link back into this
-          exact tab for anyone who needs to act. */}
-      {tab === 'hosting' && viewStyle === 'map' ? (
-        <View style={{ flex: 1 }}>
-          <GatheringsMapView
-            gatherings={hosting.upcoming}
-            userLocation={userLocation}
-            onSelectGathering={(gathering) => navigation.navigate('GatheringDetail', { gatheringId: gathering.id })}
-          />
-        </View>
-      ) : tab === 'hosting' && (
-        <FlatList
-          data={[
-            ...(hosting.upcoming.length > 0 ? [{ type: 'header', key: 'hosting-upcoming-header', label: 'Upcoming' }] : []),
-            ...hosting.upcoming.map((g) => ({ type: 'gathering', key: g.id, gathering: g })),
-            ...(hosting.past.length > 0 ? [{ type: 'header', key: 'hosting-past-header', label: `Past (${hosting.past.length})`, collapsible: true, expanded: hostingPastExpanded, onToggle: () => setHostingPastExpanded((v) => !v), sortable: true, sortValue: hostingPastSort, onSortToggle: () => setHostingPastSort((v) => v === 'newest' ? 'oldest' : 'newest') }] : []),
-            ...(hostingPastExpanded ? [...hosting.past].sort((a, b) => hostingPastSort === 'newest' ? new Date(b.scheduled_at) - new Date(a.scheduled_at) : new Date(a.scheduled_at) - new Date(b.scheduled_at)).map((g) => ({ type: 'gathering', key: `past-${g.id}`, gathering: g, isPast: true })) : []),
-          ]}
-          keyExtractor={(row) => row.key}
-          contentContainerStyle={{ padding: spacing.lg }}
-          refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
-          ListEmptyComponent={
-            <FadeInState opportunity style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>📅</Text>
-              <Text style={styles.emptyText}>{t('gatherings.emptyHosting')}</Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('CreateGathering')}
-                accessibilityLabel="Host a gathering"
-                accessibilityRole="button"
-                style={styles.emptyStateCreateButton}
-              >
-                <Text style={styles.emptyStateCreateButtonText}>+ Host a Gathering</Text>
-              </TouchableOpacity>
-            </FadeInState>
-          }
-          renderItem={({ item: row }) => {
-            if (row.type === 'header') {
-             if (row.collapsible) {
-                return (
-                  <View>
-                    <TouchableOpacity onPress={row.onToggle} style={styles.collapsibleHeaderRow} accessibilityLabel={`${row.label}, ${row.expanded ? 'tap to collapse' : 'tap to expand'}`} accessibilityRole="button">
-                      <Text style={styles.attendingSectionHeader}>{row.label}</Text>
-                      <Text style={styles.collapsibleChevron}>{row.expanded ? '⌃' : '⌄'}</Text>
-                    </TouchableOpacity>
-                    {row.expanded && row.sortable && (
-                      <TouchableOpacity onPress={row.onSortToggle} accessibilityLabel={`Sorted ${row.sortValue}, tap to switch`} accessibilityRole="button">
-                        <Text style={styles.sortToggleText}>Sort: {row.sortValue === 'newest' ? 'Newest first' : 'Oldest first'} ⇅</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                );
-              }
-              return <Text style={styles.attendingSectionHeader}>{row.label}</Text>;
-            }
-            const item = row.gathering;
-            const isPast = row.isPast;
-            const categoryStyle = categoryStyleFor(item.interest_tag);
-            return (
-              <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }, isPast && styles.pastCard]}>
-                {coverPhotoUrls[item.id] ? (
-                  <Image source={{ uri: coverPhotoUrls[item.id] }} style={styles.coverPhoto} accessibilityLabel={`${item.title} cover photo`} />
-                ) : curatedCoverPhotoFor(item.interest_tag) ? (
-                  <Image source={{ uri: curatedCoverPhotoFor(item.interest_tag) }} style={styles.coverPhoto} accessibilityLabel={`${item.interest_tag} cover photo`} />
-                ) : null}
-                <View style={styles.cardTopRow}>
-                  <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
-                    <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={{ flex: 1 }}
-                    onPress={() => navigation.navigate('GatheringDetail', { gatheringId: item.id })}
-                    accessibilityLabel={`View details for ${item.title}`}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.title}>{item.title}</Text>
-                  </TouchableOpacity>
-                  {!isPast && myFriendIds.size > 0 && (
-                    <TouchableOpacity
-                      onPress={() => setInviteModalGathering(item)}
-                      style={{ marginRight: spacing.sm }}
-                      accessibilityLabel={`Invite friends to ${item.title}`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={{ fontSize: 18 }}>🤝</Text>
-                    </TouchableOpacity>
-                  )}
-                  {!isPast && (
-                    <TouchableOpacity
-                      onPress={() => navigation.navigate('EditGathering', { gathering: item })}
-                      style={{ marginRight: spacing.sm }}
-                      accessibilityLabel={`Edit ${item.title}`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={{ fontSize: 16 }}>✏️</Text>
-                    </TouchableOpacity>
-                  )}
-                  {!isPast && (
-                    <TouchableOpacity
-                      onPress={() => confirmCancelGathering(item)}
-                      accessibilityLabel={`Cancel ${item.title}`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.cancelGatheringText}>Cancel</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
-                {!isPast && (
-                  <View style={styles.hostingHubRow}>
-                    <TouchableOpacity
-                      style={[styles.groupChatButton, { flex: 1 }]}
-                      onPress={() => navigation.navigate('GatheringChat', { gatheringId: item.id, gatheringTitle: item.title })}
-                      accessibilityLabel={`Open group chat for ${item.title}`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.groupChatButtonText}>💬 Group Chat</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.groupChatButton, { flex: 1 }]}
-                      onPress={() => navigation.navigate('GatheringHub', { gatheringId: item.id })}
-                      accessibilityLabel={`Open the Gathering Hub for ${item.title}`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.groupChatButtonText}>🚀 Hub</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-                {item.interested?.length > 0 ? (
-                  item.interested.map((interest) => (
-                    <View key={interest.id} style={styles.interestRow}>
-                      <Text style={styles.interestName}>{interest.profiles?.display_name}</Text>
-                      {isPast ? (
-                        <Text style={styles.approvedLabel}>{interest.status === 'approved' ? '✓ Attended' : 'Did not attend'}</Text>
-                      ) : interest.status === 'pending' ? (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                          <TouchableOpacity
-                            onPress={() => confirmRemoveInterest(interest, true)}
-                            accessibilityLabel={`Decline ${interest.profiles?.display_name}'s request`}
-                            accessibilityRole="button"
-                          >
-                            <Text style={styles.declineLink}>Decline</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.approveButton}
-                            onPress={() => handleApprove(interest)}
-                            accessibilityLabel={`Approve ${interest.profiles?.display_name}'s request`}
-                            accessibilityRole="button"
-                          >
-                            <Text style={styles.approveButtonText}>{t('gatherings.approve')}</Text>
-                          </TouchableOpacity>
-                        </View>
-                      ) : (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                          <Text style={styles.approvedLabel}>{interest.status === 'waitlisted' ? 'Waitlisted' : t('gatherings.approved')}</Text>
-                          <TouchableOpacity
-                            onPress={() => confirmRemoveInterest(interest, false)}
-                            accessibilityLabel={`Remove ${interest.profiles?.display_name}`}
-                            accessibilityRole="button"
-                          >
-                            <Text style={styles.declineLink}>Remove</Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
-                  ))
-                ) : (
-                  <Text style={styles.noInterestText}>{t('gatherings.noInterestYet')}</Text>
-                )}
-                {!isPast && renderVibeDetails(item)}
-                {!isPast && <GatheringQnA gatheringId={item.id} isHost />}
-              </View>
-            );
-          }}
-        />
-      )}
-
       <ReportBlockModal
         visible={!!reportTarget}
         onClose={() => {
@@ -1593,7 +1294,6 @@ export default function GatheringsScreen({ navigation, route }) {
         group={mapStoryViewerTarget}
         onClose={() => setMapStoryViewerTarget(null)}
       />
-      <CancellationReasonSheet ask={reasonAsk} onClose={() => setReasonAsk(null)} />
     </SafeAreaView>
   );
 }
@@ -1757,7 +1457,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm, borderWidth: 1, borderColor: colors.border,
   },
   groupChatButtonText: { color: colors.textPrimary, fontSize: 12, fontWeight: '700', textAlign: 'center' },
-  hostingHubRow: { flexDirection: 'row', gap: spacing.sm },
   fellowSection: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
   fellowSectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
   fellowEmptyText: { color: colors.textTertiary, fontSize: 13 },
@@ -1780,12 +1479,4 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     width: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border,
   },
   inviteFriendsButtonText: { fontSize: 16 },
-  interestRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs },
-  interestName: { color: colors.textPrimary, fontSize: 14 },
-  approveButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6 },
-  approveButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  declineLink: { color: colors.danger, fontSize: 12, fontWeight: '600' },
-  approvedLabel: { color: colors.success, fontSize: 12, fontWeight: '700' },
-  noInterestText: { color: colors.textTertiary, fontSize: 13 },
-  cancelGatheringText: { color: colors.danger, fontSize: 12, opacity: 0.7, fontWeight: '600' },
 });
