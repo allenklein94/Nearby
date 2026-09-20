@@ -32,3 +32,17 @@ export function offerPriceLabel(price, perPerson = false) {
   if (!Number.isFinite(n)) return null;
   return `$${n.toFixed(2)}${perPerson ? '/person' : ''}`;
 }
+
+// One way to print a dollar amount that is a plain number in a template: whole dollars without cents ("$45"), anything
+// else with exactly two decimals ("$12.50") -- never a raw float ("$12.5", "$0.30000000000000004") or "$NaN". An unknown
+// or non-numeric value is "—", never an invented $0.
+export function moneyNumber(n) {
+  if (n === null || n === undefined || n === '') return '—';
+  const v = Number(n);
+  if (!Number.isFinite(v)) return '—';
+  return Number.isInteger(v) ? String(v) : v.toFixed(2);
+}
+export const moneyLabel = (n) => {
+  const s = moneyNumber(n);
+  return s === '—' ? s : `$${s}`;
+};

@@ -16,6 +16,7 @@ import StaggeredReveal from '../components/StaggeredReveal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { requireUserLocation } from '../services/userLocation';
+import { moneyLabel } from '../utils/outcomeDisplay';
 
 // Same canonical 26-tag list business_requests.category's own (now-widened)
 // CHECK constraint validates against -- was a separate, independently-
@@ -482,7 +483,7 @@ export default function AskBusinessScreen({ navigation, route }) {
     }
     if (!gatheringId && !matchId && partySize.trim()) recapParts.push(`${partySize.trim()} people`);
     const recapBudgetMax = resolveBudgetMax(budgetRangeKey, budgetMaxOverride);
-    if (recapBudgetMax) recapParts.push(`up to $${recapBudgetMax}`);
+    if (recapBudgetMax) recapParts.push(`up to ${moneyLabel(recapBudgetMax)}`);
     if (occasionInput) recapParts.push(occasionLabel(occasionInput));
     if (isSoloMode && experienceLevel && experienceLevel !== 'special') {
       recapParts.push(EXPERIENCE_LEVEL_OPTIONS.find((o) => o.key === experienceLevel)?.label ?? null);
@@ -529,7 +530,7 @@ export default function AskBusinessScreen({ navigation, route }) {
               <Text style={styles.matchedAvailabilityTitle}>{matchedAvailability.partnerName}</Text>
               <Text style={styles.matchedAvailabilityText}>
                 {matchedAvailability.title}
-                {matchedAvailability.price != null ? ` · $${matchedAvailability.price}` : ''}
+                {matchedAvailability.price != null ? ` · ${moneyLabel(matchedAvailability.price)}` : ''}
               </Text>
               {matchedAvailability.description ? (
                 <Text style={styles.matchedAvailabilityDescription}>{matchedAvailability.description}</Text>
@@ -781,7 +782,7 @@ export default function AskBusinessScreen({ navigation, route }) {
                       <Text style={styles.nearbyResultMeta}>
                         {[
                           result.offer_type,
-                          result.price != null ? `$${result.price}` : null,
+                          result.price != null ? `${moneyLabel(result.price)}` : null,
                           result.distance_miles != null ? `${result.distance_miles.toFixed(1)} mi` : null,
                           result.remaining_capacity != null ? `${result.remaining_capacity} spots left` : null,
                         ]
@@ -799,7 +800,7 @@ export default function AskBusinessScreen({ navigation, route }) {
                   <Text style={styles.matchedAvailabilityTitle}>✓ {pickedAvailability.partner_name}</Text>
                   <Text style={styles.matchedAvailabilityText}>
                     {pickedAvailability.title}
-                    {pickedAvailability.price != null ? ` · $${pickedAvailability.price}` : ''}
+                    {pickedAvailability.price != null ? ` · ${moneyLabel(pickedAvailability.price)}` : ''}
                   </Text>
                 </View>
               )}

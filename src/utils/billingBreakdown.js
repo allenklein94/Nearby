@@ -2,7 +2,8 @@
 // server returns (get_partner_billing_estimate, migration 20270124), so a fixed
 // monthly fee is never shown as if it were redemption-driven. Pure; the amounts
 // are the server's own (never recomputed here).
-const money = (n) => `$${Number(n ?? 0).toFixed(2)}`;
+// An amount the server did not return is "—", never an invented $0.00.
+const money = (n) => (n === null || n === undefined || !Number.isFinite(Number(n)) ? '—' : `$${Number(n).toFixed(2)}`);
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 // owed: { billingModel, redemptionCount, includedUnits, billableCount, monthlyFee,

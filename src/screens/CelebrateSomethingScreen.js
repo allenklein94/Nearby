@@ -45,6 +45,7 @@ import StaggeredReveal from '../components/StaggeredReveal';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { moneyLabel } from '../utils/outcomeDisplay';
 
 // Item 61 ("Celebrate Something" life-events planning layer, CLAUDE.md):
 // occasion -> who's it for -> what to do -> when -> who's involved, then
@@ -1798,7 +1799,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                           <View style={styles.autoPlanRow}>
                             <Text style={styles.autoPlanRowLabel}>{item.label}</Text>
                             <Text style={styles.autoPlanRowDetail}>
-                              {item.businessName}{item.price != null ? ` · $${item.price}` : ' · price varies'}
+                              {item.businessName}{item.price != null ? ` · ${moneyLabel(item.price)}` : ' · price varies'}
                             </Text>
                           </View>
                         </StaggeredReveal>

@@ -19,7 +19,7 @@ export function invoiceRow(invoice) {
   const n = Number(invoice.redemption_count ?? 0);
   return {
     id: invoice.id,
-    text: `${month} \u00b7 ${n} redemption${n === 1 ? '' : 's'} \u00b7 $${Number(invoice.amount_due ?? 0).toFixed(2)}`,
+    text: `${month} \u00b7 ${n} redemption${n === 1 ? '' : 's'} \u00b7 ${invoice.amount_due == null || !Number.isFinite(Number(invoice.amount_due)) ? '—' : `$${Number(invoice.amount_due).toFixed(2)}`}`,
     status: invoiceStatusLabel(invoice.status),
   };
 }

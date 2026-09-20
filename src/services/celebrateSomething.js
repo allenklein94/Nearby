@@ -6,6 +6,7 @@
 import { occasionLabel, occasionIcon, CALENDAR_SAVEABLE_OCCASION_KEYS } from '../constants/businessAttributes';
 import { experienceTemplateForOccasion } from '../constants/experienceTemplates';
 import { relevantAddonTypesForOccasion } from '../constants/planAddons';
+import { moneyLabel, moneyNumber } from '../utils/outcomeDisplay';
 
 // The wizard's own 7 real activity types (CelebrateSomethingScreen.js's
 // 'activity' step) -- exported so occasion_group_plan_options' own
@@ -75,9 +76,9 @@ export function initialBudgetSelectionFromMax(max) {
 // ever passes one bound directly rather than through the chip list above).
 export function formatBudgetRange(min, max) {
   if (min == null && max == null) return null;
-  if (min != null && max != null) return `$${min}–${max}/person`;
-  if (min != null) return `$${min}+/person`;
-  return `Up to $${max}/person`;
+  if (min != null && max != null) return `${moneyLabel(min)}–${moneyNumber(max)}/person`;
+  if (min != null) return `${moneyLabel(min)}+/person`;
+  return `Up to ${moneyLabel(max)}/person`;
 }
 
 // Item 95 (CLAUDE.md, "Ask 'How important is the occasion?'") -- a real,
@@ -397,7 +398,7 @@ export function formatBusinessOptionDetail({ price, startsAt }) {
       parts.push(d.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
     }
   }
-  if (price != null) parts.push(`$${price}`);
+  if (price != null) parts.push(`${moneyLabel(price)}`);
   return parts.join(' · ') || null;
 }
 

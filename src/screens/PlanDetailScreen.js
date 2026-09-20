@@ -13,6 +13,7 @@ import { canEditNight, canRemoveStop, moveStopIds, removeStopCopy } from '../uti
 import { localDateParam, nightDateFromScheduledAt, nightDateToLocal, nightDateLabel } from '../utils/nightDate';
 import { buildPlanJourney } from '../utils/planJourney';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
+import { moneyLabel } from '../utils/outcomeDisplay';
 
 const STATUS_LABEL = { draft: 'Planning', confirmed: 'Confirmed', completed: 'Done', cancelled: 'Cancelled' };
 
@@ -256,7 +257,7 @@ export default function PlanDetailScreen({ navigation, route }) {
             <View style={styles.card}>
               {offers.map((o) => (
                 <Text key={o.id} style={styles.line}>
-                  {o.business_name || 'A business'}{o.title ? ` · ${o.title}` : ''}{o.price != null ? ` · $${o.price}${o.price_is_per_person ? '/person' : ''}` : ''} · {o.status}
+                  {o.business_name || 'A business'}{o.title ? ` · ${o.title}` : ''}{o.price != null ? ` · ${moneyLabel(o.price)}${o.price_is_per_person ? '/person' : ''}` : ''} · {o.status}
                 </Text>
               ))}
               {reservation && <Text style={styles.line}>Reservation: {reservation.status}</Text>}

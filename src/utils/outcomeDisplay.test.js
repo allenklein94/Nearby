@@ -21,3 +21,16 @@ test('offer price never renders NaN or an invented zero', () => {
   expect(offerPriceLabel(45, true)).toBe('$45.00/person');
   expect(offerPriceLabel(0)).toBe('$0.00');
 });
+
+test('moneyLabel: whole dollars plain, cents to two places, unknown is a dash', () => {
+  const { moneyLabel, moneyNumber } = require('./outcomeDisplay');
+  expect(moneyLabel(45)).toBe('$45');
+  expect(moneyLabel('45')).toBe('$45');
+  expect(moneyLabel(12.5)).toBe('$12.50');
+  expect(moneyLabel(0.1 + 0.2)).toBe('$0.30');
+  expect(moneyLabel(0)).toBe('$0');
+  expect(moneyLabel(null)).toBe('—');
+  expect(moneyLabel(undefined)).toBe('—');
+  expect(moneyLabel('abc')).toBe('—');
+  expect(moneyNumber(50)).toBe('50');
+});

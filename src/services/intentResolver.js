@@ -49,6 +49,7 @@ import {
   SCORE_OCCASION_PACKAGE_FLOOR,
 } from './intentResolverScoring';
 import { getUserLocation } from './userLocation';
+import { moneyLabel } from '../utils/outcomeDisplay';
 
 const RESULT_CAP = 4;
 
@@ -363,7 +364,7 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
       pastPartnerIds: affinitySignals?.pastPartnerIds,
       whoForSignals, whoForName,
     });
-    const baseSubtitle = row.price != null ? `${row.title} · $${row.price}` : row.title;
+    const baseSubtitle = row.price != null ? `${row.title} · ${moneyLabel(row.price)}` : row.title;
     return {
       type: 'business_availability',
       id: row.id,

@@ -20,6 +20,7 @@ import PlanCompletionRow from '../components/PlanCompletionRow';
 import { getMatchPlanCompletion, formatPlaceStatusLabel } from '../utils/planCompletion';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { moneyLabel } from '../utils/outcomeDisplay';
 
 const TERMINAL_STATUS_COPY = {
   declined: "Didn't work out that time",
@@ -467,7 +468,7 @@ export default function DateProposalScreen({ navigation, route }) {
                           <Text style={styles.nearbyResultMeta}>
                             {[
                               result.offer_type,
-                              result.price != null ? `$${result.price}` : null,
+                              result.price != null ? `${moneyLabel(result.price)}` : null,
                               result.distance_miles != null ? `${result.distance_miles.toFixed(1)} mi` : null,
                               result.remaining_capacity != null ? `${result.remaining_capacity} spots left` : null,
                             ]

@@ -24,6 +24,7 @@ import StaggeredReveal from '../components/StaggeredReveal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
+import { moneyLabel } from '../utils/outcomeDisplay';
 
 const PARTICIPANT_STATUS_COPY = {
   invited: 'Invited — waiting for a response',
@@ -353,10 +354,10 @@ export default function GroupPlanScreen({ navigation, route }) {
   const acceptedParticipants = participants.filter((p) => p.status === 'accepted');
   const totalPartySize = acceptedParticipants.reduce((sum, p) => sum + p.party_size + p.guest_count, 0);
   const budgetRangeLine =
-    proposal.proposed_budget_min !== null && proposal.proposed_budget_max !== null
+    proposal.proposed_budget_min != null && proposal.proposed_budget_max != null
       ? proposal.proposed_budget_min === proposal.proposed_budget_max
-        ? `$${proposal.proposed_budget_min}/person`
-        : `$${proposal.proposed_budget_min}–$${proposal.proposed_budget_max}/person`
+        ? `${moneyLabel(proposal.proposed_budget_min)}/person`
+        : `${moneyLabel(proposal.proposed_budget_min)}–${moneyLabel(proposal.proposed_budget_max)}/person`
       : null;
 
   return (
@@ -388,7 +389,7 @@ export default function GroupPlanScreen({ navigation, route }) {
           <Text style={styles.summaryLine}>👥 {totalPartySize} {totalPartySize === 1 ? 'person' : 'people'} in so far</Text>
           {budgetRangeLine && <Text style={styles.summaryLine}>💰 Group's comfortable range: {budgetRangeLine}</Text>}
           <Text style={styles.summaryLine}>
-            {proposal.agreed_budget_max !== null ? `Agreed budget: $${proposal.agreed_budget_max}/person` : 'No agreed budget yet'}
+            {proposal.agreed_budget_max != null ? `Agreed budget: ${moneyLabel(proposal.agreed_budget_max)}/person` : 'No agreed budget yet'}
           </Text>
           {proposal.date && <Text style={styles.summaryLine}>📅 {proposal.date}</Text>}
         </View>
