@@ -37,6 +37,7 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 // Item 70 (CLAUDE.md): a real, honest "when" label for a pending request's
 // own date/time window, shown on the business's opportunity card.
 import { budgetMeetsMinSpend } from '../utils/budgetTier';
+import { businessLocationNotice } from '../utils/businessLocationNotice';
 import { buildOpportunityCard, buildMatchReasons, availabilityCoversRequest } from '../utils/businessOpportunityCard';
 import { matchFitLine } from '../utils/matchFitLine';
 import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardAvailabilityText } from '../utils/quickOfferResponse';
@@ -868,8 +869,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     if (!addressInput.trim()) return;
     setSavingAddress(true);
     try {
-      await updateBusinessAddress(selectedPartner.id, addressInput.trim());
-      setSelectedPartner((prev) => ({ ...prev, address: addressInput.trim() }));
+      const coords = await updateBusinessAddress(selectedPartner.id, addressInput.trim());
+      setSelectedPartner((prev) => ({ ...prev, address: addressInput.trim(), latitude: coords?.latitude ?? prev.latitude, longitude: coords?.longitude ?? prev.longitude }));
       setAddressModalVisible(false);
       showSuccessToast('Saved', 'Your business address is now set — offers will show to people nearby, and your business will now appear on the map.');
     } catch (e) {
@@ -2785,17 +2786,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       </View>
       {selectedPartner && (
         <TouchableOpacity
-          style={styles.addressBanner}
+          style={[styles.addressBanner, businessLocationNotice(selectedPartner) && { borderColor: colors.primary }]}
           onPress={() => {
             setAddressInput(selectedPartner.address ?? '');
             setAddressModalVisible(true);
           }}
           activeOpacity={0.85}
-          accessibilityLabel={selectedPartner.address ? `Address: ${selectedPartner.address}, tap to edit` : 'Set your business address so offers show to people nearby'}
+          accessibilityLabel={businessLocationNotice(selectedPartner)?.text ?? `Address: ${selectedPartner.address}, tap to edit`}
           accessibilityRole="button"
         >
-          <Text style={styles.addressBannerText}>
-            {selectedPartner.address ? `📍 ${selectedPartner.address}` : '📍 Set your address so offers reach people nearby'}
+          <Text style={[styles.addressBannerText, businessLocationNotice(selectedPartner) && { color: colors.textPrimary }]}>
+            {businessLocationNotice(selectedPartner)?.text ?? `📍 ${selectedPartner.address}`}
           </Text>
         </TouchableOpacity>
       )}

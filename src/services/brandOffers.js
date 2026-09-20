@@ -628,6 +628,7 @@ export async function updateBusinessAddress(partnerId, address) {
     categories_param: current?.categories ?? [],
   });
   if (error) throw error;
+  return { latitude, longitude };
 }
 
 export async function updateBusinessProfile(partnerId, { name, description, address, logoUrl, category, attributes, cuisine, differentiator, subcategory, categories }) {
