@@ -33,7 +33,6 @@ import SurpriseMeSheet from '../components/SurpriseMeSheet';
 import QuickPicksEditModal from '../components/QuickPicksEditModal';
 import DiningPreferencesPromptModal from '../components/DiningPreferencesPromptModal';
 import { shouldOfferDiningPrompt, personalizeQuickOptions } from '../constants/interestGraph';
-import useMyInterests from '../hooks/useMyInterests';
 import useMyGoals from '../hooks/useMyGoals';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { iconNameForCategory } from '../constants/quickPickIcons';
@@ -230,7 +229,6 @@ export default function HomeScreen({ navigation }) {
   const [unratedGathering, setUnratedGathering] = useState(null);
   const [pinnedQuickPicks, setPinnedQuickPicks] = useState(null);
   // Progressive dining-taste prompt (Preference wiring Phase 4): a permanent, per-user dismissable Home card.
-  const myDeclaredInterests = useMyInterests();
   const goalRow = useMyGoals();
   const [diningNudge, setDiningNudge] = useState(false);
   const [myDeclaredInterests, setMyDeclaredInterests] = useState([]);
