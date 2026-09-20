@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import OnboardingTopBar from '../components/OnboardingTopBar';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { ONBOARDING_INTEREST_GROUPS, tagsForGroups, sanitizeInterestGroups } from '../constants/interestGraph';
@@ -12,6 +13,9 @@ import { ONBOARDING_GOALS, LOOKING_FOR_OPTIONS, motivationsFromAnswers } from '.
 // exists, the same pattern already used elsewhere in the app for
 // state that needs to survive across this part of the flow.
 export const ONBOARDING_ANSWERS_KEY = 'pending_onboarding_answers';
+// Raw in-progress selections, so going Back out of onboarding and returning never loses them.
+// Removed with the answers key once the account is created (CompleteProfileScreen).
+export const ONBOARDING_DRAFT_KEY = 'pending_onboarding_questions_draft';
 
 const COMFORT_LEVELS = [
   { value: 'one_on_one', label: 'I like one-on-one conversations' },
@@ -30,6 +34,28 @@ export default function OnboardingQuestionsScreen({ navigation }) {
   const [groupKeys, setGroupKeys] = useState([]);
   const [tags, setTags] = useState([]);
   const [saving, setSaving] = useState(false);
+
+  const hydrated = useRef(false);
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(ONBOARDING_DRAFT_KEY)
+      .then((raw) => {
+        if (cancelled || !raw) return;
+        const d = JSON.parse(raw);
+        if (Array.isArray(d.goals)) setGoals(d.goals);
+        if (typeof d.lookingFor === 'string') setLookingFor(d.lookingFor);
+        if (typeof d.comfortLevel === 'string') setComfortLevel(d.comfortLevel);
+        if (Array.isArray(d.groupKeys)) setGroupKeys(sanitizeInterestGroups(d.groupKeys));
+        if (Array.isArray(d.tags)) setTags(d.tags);
+      })
+      .catch(() => {})
+      .finally(() => { hydrated.current = true; });
+    return () => { cancelled = true; };
+  }, []);
+  useEffect(() => {
+    if (!hydrated.current) return;
+    AsyncStorage.setItem(ONBOARDING_DRAFT_KEY, JSON.stringify({ goals, lookingFor, comfortLevel, groupKeys, tags })).catch(() => {});
+  }, [goals, lookingFor, comfortLevel, groupKeys, tags]);
 
   function toggleGoal(label) {
     setGoals((prev) => (prev.includes(label) ? prev.filter((g) => g !== label) : [...prev, label]));
@@ -86,6 +112,7 @@ export default function OnboardingQuestionsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <OnboardingTopBar navigation={navigation} onBack={stepIndex > 0 ? () => setStepIndex((i) => i - 1) : undefined} />
       <ScrollView contentContainerStyle={{ padding: spacing.lg, flexGrow: 1 }}>
         {step === 'goals' && (
           <>
@@ -222,11 +249,6 @@ export default function OnboardingQuestionsScreen({ navigation }) {
             <View key={i} style={[styles.dot, i === stepIndex && styles.dotActive]} />
           ))}
         </View>
-        {stepIndex > 0 && (
-          <TouchableOpacity onPress={() => setStepIndex((i) => i - 1)} style={styles.backLink} accessibilityLabel="Back" accessibilityRole="button">
-            <Text style={styles.backLinkText}>Back</Text>
-          </TouchableOpacity>
-        )}
         <TouchableOpacity
           style={[styles.button, !canContinue && styles.buttonDisabled]}
           onPress={handleContinue}

@@ -15,7 +15,7 @@ function toE164(rawInput) {
   return null;
 }
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
@@ -101,6 +101,16 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {navigation?.canGoBack?.() && !otpSent && (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.topBack}
+          accessibilityLabel="Back"
+          accessibilityRole="button"
+        >
+          <Text style={styles.topBackText}>← Back</Text>
+        </TouchableOpacity>
+      )}
       <NearbyMark size={48} style={styles.mark} />
       <Text style={styles.icon}>{otpSent ? '💬' : '📱'}</Text>
       <Text style={styles.title} accessibilityRole="header">{otpSent ? t('login.enterCode') : t('login.signIn')}</Text>
@@ -185,5 +195,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button },
   buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  topBack: { position: 'absolute', top: spacing.lg, left: spacing.lg, paddingVertical: spacing.sm, minHeight: 44, justifyContent: 'center' },
+  topBackText: { color: colors.textSecondary, fontSize: 15, fontWeight: '600' },
   backText: { color: colors.textTertiary, fontSize: 13, textAlign: 'center' },
 });

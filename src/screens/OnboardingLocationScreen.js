@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import * as Location from 'expo-location';
+import OnboardingTopBar from '../components/OnboardingTopBar';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -21,6 +22,7 @@ export default function OnboardingLocationScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <OnboardingTopBar navigation={navigation} />
       <View style={styles.content}>
         <Text style={styles.title}>Find what's happening near you</Text>
         <Text style={styles.subtitle}>Nearby uses your location to show gatherings, places and people close by. Your exact position is never shown to anyone.</Text>

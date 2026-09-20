@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Switch, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import OnboardingTopBar from '../components/OnboardingTopBar';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { NOTIFICATION_CATEGORIES } from '../constants/notificationCategories';
@@ -10,6 +11,16 @@ export default function OnboardingNotificationsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [choices, setChoices] = useState(() => Object.fromEntries(NOTIFICATION_CATEGORIES.map((c) => [c.column, true])));
+
+  // Coming Back to this screen keeps what was already chosen.
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_ANSWERS_KEY)
+      .then((raw) => {
+        const saved = raw ? JSON.parse(raw).notification_choices : null;
+        if (saved) setChoices((prev) => ({ ...prev, ...saved }));
+      })
+      .catch(() => {});
+  }, []);
 
   async function handleContinue() {
     try {
@@ -24,6 +35,7 @@ export default function OnboardingNotificationsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <OnboardingTopBar navigation={navigation} />
       <ScrollView contentContainerStyle={{ padding: spacing.lg, flexGrow: 1, justifyContent: 'center' }}>
         <Text style={styles.title}>What would you like Nearby to keep you posted about?</Text>
         <Text style={styles.subtitle}>You can fine-tune all of this later in Settings.</Text>

@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../services/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { notificationOptOuts } from '../constants/notificationCategories';
-import { ONBOARDING_ANSWERS_KEY } from './OnboardingQuestionsScreen';
+import { ONBOARDING_ANSWERS_KEY, ONBOARDING_DRAFT_KEY } from './OnboardingQuestionsScreen';
 import { canonicalizeInterests, sanitizeInterestGroups } from '../constants/interestGraph';
 import { pickProfilePhoto, uploadProfilePhoto } from '../services/photos';
 import { checkTextModeration } from '../services/textModeration';
@@ -202,6 +202,7 @@ export default function CompleteProfileScreen() {
       // account somehow ending up here), so this is genuinely optional.
       let onboardingAnswers = {};
       try {
+        await AsyncStorage.removeItem(ONBOARDING_DRAFT_KEY);
         const stored = await AsyncStorage.getItem(ONBOARDING_ANSWERS_KEY);
         if (stored) {
           onboardingAnswers = JSON.parse(stored);
