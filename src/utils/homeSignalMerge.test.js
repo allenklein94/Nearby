@@ -71,3 +71,25 @@ describe('Home renders merged cards, not one list per signal', () => {
     expect(home).not.toMatch(/dashboard\.becauseYouLike\.map/);
   });
 });
+
+describe('friend-going reason on Home', () => {
+  const att = (id, name) => ({ user_id: id, profiles: { display_name: name } });
+  const friendIds = new Set(['f1']);
+  test('a card whose approved attendees include a friend gains "Sam is going"', () => {
+    const { cards } = mergeHomeGatheringSignals({
+      trending: [g(1, { host_id: 'h', approvedAttendees: [att('x', 'Stranger'), att('f1', 'Sam')] })],
+      friendIds,
+    });
+    expect(cards[0].reasons).toEqual(['Trending nearby', 'Sam is going']);
+  });
+  test('the hero absorbs it, with or without another list carrying the gathering', () => {
+    const bp = g(1, { host_id: 'h', reasons: ['Close by'], approvedAttendees: [att('f1', 'Sam')] });
+    expect(mergeHomeGatheringSignals({ bestPick: bp, friendIds }).hero.reasons).toEqual(['Close by', 'Sam is going']);
+    expect(mergeHomeGatheringSignals({ bestPick: bp, trending: [g(1)], friendIds }).hero.reasons).toEqual(['Close by', 'Trending nearby', 'Sam is going']);
+  });
+  test('a friend who is only the host is not also "going"; no friends = no reason', () => {
+    const hosted = g(1, { host_id: 'f1', approvedAttendees: [att('f1', 'Sam')] });
+    expect(mergeHomeGatheringSignals({ trending: [hosted], friendIds }).cards[0].reasons).toEqual(['Trending nearby']);
+    expect(mergeHomeGatheringSignals({ trending: [g(1, { approvedAttendees: [att('f1', 'Sam')] })] }).cards[0].reasons).toEqual(['Trending nearby']);
+  });
+});

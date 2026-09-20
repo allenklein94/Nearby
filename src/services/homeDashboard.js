@@ -713,6 +713,7 @@ export async function getHomeDashboard() {
     plansHosting,
     plansGroup,
     friendsActivity,
+    friendIds,
     becauseYouLike,
     becauseYouLikeCategories: topInterestCategories,
     indoorGatheringsToday,

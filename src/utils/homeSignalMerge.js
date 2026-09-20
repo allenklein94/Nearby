@@ -5,6 +5,8 @@
 //
 // Placement: Best Pick keeps the hero slot and absorbs the other reasons; every other gathering becomes one card in a
 // single list, ordered by how many reasons it has (then by first appearance: interest, trending, friend).
+import { friendGoingReason } from './recommendationFacts';
+
 export const SIGNAL_TEXT = {
   interest: (g) => (g?.interest_tag ? `Because you like ${g.interest_tag}` : 'Because of your interests'),
   trending: () => 'Trending nearby',
@@ -14,7 +16,7 @@ export const SIGNAL_TEXT = {
   },
 };
 
-export function mergeHomeGatheringSignals({ bestPick = null, becauseYouLike = [], trending = [], friends = [], isPast = () => false } = {}) {
+export function mergeHomeGatheringSignals({ bestPick = null, becauseYouLike = [], trending = [], friends = [], friendIds = null, isPast = () => false } = {}) {
   const byId = new Map();
   const order = [];
   function add(g, kind) {
@@ -35,12 +37,25 @@ export function mergeHomeGatheringSignals({ bestPick = null, becauseYouLike = []
   for (const g of trending ?? []) add(g, 'trending');
   for (const g of friends ?? []) add(g, 'friend');
 
+  // "Sam is going": a connected friend among the approved attendees (accepted friends only, from the attendee rows the
+  // gathering already carries). The host is left out -- "Sam is hosting this" already says it.
+  const goingText = (g) => friendGoingReason(
+    { approvedAttendees: (g?.approvedAttendees ?? []).filter((a) => a.user_id !== g?.host_id) },
+    friendIds,
+  );
+  for (const entry of byId.values()) {
+    const text = goingText(entry.gathering);
+    if (text) entry.signals.push({ kind: 'going', text });
+  }
+
   let hero = null;
   if (bestPick?.id) {
     const extra = byId.get(bestPick.id);
     const reasons = [...(bestPick.reasons ?? [])];
     for (const s of extra?.signals ?? []) if (!reasons.includes(s.text)) reasons.push(s.text);
     hero = { ...(extra?.gathering ?? {}), ...bestPick, reasons };
+    const going = goingText(hero);
+    if (going && !reasons.includes(going)) reasons.push(going);
   }
 
   const cards = order

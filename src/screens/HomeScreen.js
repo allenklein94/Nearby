@@ -361,6 +361,7 @@ export default function HomeScreen({ navigation }) {
     becauseYouLike: dashboard?.becauseYouLike,
     trending: dashboard?.trendingGatherings,
     friends: dashboard?.friendsActivity,
+    friendIds: dashboard?.friendIds ? new Set(dashboard.friendIds) : null,
     isPast: (g) => isGatheringPast(g),
   });
 
