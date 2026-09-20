@@ -16,10 +16,12 @@ describe('surface vocabulary', () => {
     const labels = Object.values(SURFACES).map((s) => s.label);
     expect(new Set(labels).size).toBe(labels.length);
   });
-  it('Home does not call a ranked recommendation list "Right Now"', () => {
+  it('Home has no separate recommendation sections: one capped Picked For You list', () => {
     const home = read('screens/HomeScreen.js');
-    expect(home).not.toMatch(/sectionHeaderText\}>Nearby Right Now</);
-    expect(home).toMatch(/>Recommended Nearby</);
+    for (const gone of ['Nearby Right Now', 'Recommended Nearby', 'Starting Soon Near You']) expect(home).not.toContain(`sectionHeaderText}>${gone}<`);
+    expect(home).toMatch(/selectHomeAttention\(/);
+    expect(home).toMatch(/attention\.items\.map/);
+    expect(home).not.toMatch(/homeMerge\.cards\.map\(\(\{/);
   });
   it('the Gatherings feed (any date) is not titled "Happening Nearby"', () => {
     const t = read('i18n/translations.js');

@@ -46,6 +46,7 @@ import { spacing, radius, typography } from '../theme';
 import { isGatheringPast } from '../utils/objectState';
 import { recommendationFacts, recommendationRow } from '../utils/recommendationFacts';
 import { categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
+import { selectHomeAttention } from '../utils/homeAttention';
 import { gatheringCardModel } from '../utils/recommendationCard';
 import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { homeLoadNotice } from '../utils/homeLoadNotice';
@@ -374,7 +375,13 @@ export default function HomeScreen({ navigation }) {
   // A starting-soon gathering that Picked For You already shows carries "Starting soon" as one of its reasons there,
   // so it is not repeated as a chip (one object, one place).
   const shownInMergeIds = new Set([homeMerge.hero?.id, ...homeMerge.cards.map((c) => c.gathering.id)].filter(Boolean));
-  const startingSoonChips = (dashboard?.happeningNow ?? []).filter((g) => !shownInMergeIds.has(g.id));
+  // Every engine feeds ONE capped list (utils/homeAttention.js): Home shows the few things that deserve attention now.
+  const attention = selectHomeAttention({
+    hero: homeMerge.hero,
+    cards: homeMerge.cards,
+    recommended: homeRecommendations,
+    soon: (dashboard?.happeningNow ?? []).filter((g) => !shownInMergeIds.has(g.id)),
+  });
 
   function renderGatheringCta(g, variant) {
     const action = gatheringPrimaryAction(g, myUserId, Date.now(), variant === 'trending' ? { lowCommitment: true, interestedIds: interestedSet } : {});
@@ -2027,62 +2034,6 @@ export default function HomeScreen({ navigation }) {
             business-availability fetch is a real new query this pass
             didn't add). Deliberately not a replacement for Best Pick/
             Trending/Because You Like -- one more section, same data. */}
-        {homeRecommendations.length > 0 && (
-          <>
-            <View style={styles.sectionHeaderRow}>
-              <Ionicons name="flash-outline" size={14} color={colors.textTertiary} style={styles.bannerIcon} />
-              <Text style={styles.sectionHeaderText}>Recommended Nearby</Text>
-            </View>
-            <View style={[styles.plansCard, { marginBottom: spacing.lg }]}>
-              {homeRecommendations.map((item) => {
-                const row = recommendationRow(item);
-                return (
-                <TouchableOpacity
-                  key={`${item.type}-${item.id}`}
-                  style={styles.planRow}
-                  onPress={() => handleRecommendationTap(item)}
-                  activeOpacity={0.85}
-                  accessibilityLabel={`${item.title}, ${[row.why, row.meta].filter(Boolean).join(', ')}`}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.planIcon}>{item.type === 'perk' ? '🎁' : categoryStyleFor(item.data?.interest_tag).icon}</Text>
-                  <View style={styles.planInfo}>
-                    <Text style={styles.planTitle}>{item.title}</Text>
-                    {row.why ? <Text style={styles.planMeta}>{row.why}</Text> : null}
-                    {row.meta ? <Text style={styles.planMeta}>{row.meta}</Text> : null}
-                    {item.type === 'gathering' && gatheringFullnessLabel(item.data) && (
-                      <Text style={[styles.planMeta, gatheringFullnessLabel(item.data).startsWith('🔒') && { color: colors.danger }]}>
-                        {gatheringFullnessLabel(item.data)}
-                      </Text>
-                    )}
-                    {/* Phase 4 (see CLAUDE.md's "build everything" plan):
-                        "Make a plan" is deliberately perk-only, not also
-                        offered on a gathering-type recommendation — that
-                        one already names a real, existing event someone
-                        else is running; join (the row's own tap-through
-                        above) is the honest one-tap action there, not a
-                        second, duplicate gathering. A perk has no event
-                        around it yet, which is exactly where creating one
-                        is a real value-add. */}
-                    {item.type === 'perk' && (
-                      <TouchableOpacity
-                        onPress={() => navigation.navigate('MakeAPlan', { offerId: item.id })}
-                        activeOpacity={0.85}
-                        accessibilityLabel={`Make a plan around ${item.title}`}
-                        accessibilityRole="button"
-                      >
-                        <Text style={styles.makePlanLink}>📅 Make a plan →</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  <Text style={styles.planChevron}>›</Text>
-                </TouchableOpacity>
-                );
-              })}
-            </View>
-          </>
-        )}
-
         {(diningNudge || pendingInvitesCount > 0 || perksCount > 0 || socialForecast || outcomePrompt || predictivePattern || groupIntentSignal || birthdayNudge || occasionNudge || pendingPollsCount > 0 || venueNeededGathering || rsvpsOutstandingGathering || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
           <View style={{ marginBottom: spacing.md }}>
             {predictivePattern && (
@@ -2535,36 +2486,6 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
-        {startingSoonChips.length > 0 && (
-          <>
-            <View style={styles.sectionHeaderRow}>
-              <Ionicons name="flame-outline" size={14} color={colors.textTertiary} style={styles.bannerIcon} />
-              <Text style={styles.sectionHeaderText}>Starting Soon Near You</Text>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
-              {startingSoonChips.map((g) => {
-                const style = categoryStyleFor(g.interest_tag);
-                return (
-                  <TouchableOpacity
-                    key={g.id}
-                    style={[styles.happeningNowChip, { borderColor: style.color }]}
-                    onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
-                    activeOpacity={0.85}
-                    accessibilityLabel={`${g.title}, ${g.interest_tag ?? 'General'}, happening now${placeDistanceLabel(g.distanceMiles) ? `, ${placeDistanceLabel(g.distanceMiles)}` : ''}`}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.happeningNowIcon}>{style.icon}</Text>
-                    <Text style={styles.happeningNowLabel} numberOfLines={1}>
-                      {g.title}
-                      {placeDistanceLabel(g.distanceMiles) ? <Text style={styles.happeningNowDistance}>{`  ${placeDistanceLabel(g.distanceMiles)}`}</Text> : null}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </>
-        )}
-
         {continueCommunities.length > 0 && (
           <>
             <View style={styles.continueCommunityLabelRow}>
@@ -2660,7 +2581,7 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {(dashboard?.bestPick || dashboard?.becauseYouLike?.length > 0 || dashboard?.trendingGatherings?.length > 0 || dashboard?.friendsActivity?.length > 0) && (
+        {(attention.shown > 0) && (
           <>
             <View style={styles.sectionHeaderRow}>
               <Ionicons name="sparkles-outline" size={14} color={colors.textTertiary} style={styles.bannerIcon} />
@@ -2729,7 +2650,28 @@ export default function HomeScreen({ navigation }) {
               );
             })()}
 
-            {homeMerge.cards.map(({ gathering: g, signals, reasons, hasFriend, trendingOnly }) => {
+            {attention.items.map((entry) => {
+              if (entry.kind === 'perk') {
+                const item = entry.item;
+                const row = recommendationRow(item);
+                return (
+                  <TouchableOpacity
+                    key={`perk-${item.id}`}
+                    style={styles.trendingCard}
+                    onPress={() => handleRecommendationTap(item)}
+                    accessibilityLabel={`${item.title}, ${[row.why, row.meta].filter(Boolean).join(', ')}`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.trendingTitle}>🎁 {item.title}</Text>
+                    {row.why ? <Text style={styles.trendingMeta}>{row.why}</Text> : null}
+                    {row.meta ? <Text style={styles.trendingMeta}>{row.meta}</Text> : null}
+                    <TouchableOpacity onPress={() => navigation.navigate('MakeAPlan', { offerId: item.id })} accessibilityLabel={`Make a plan around ${item.title}`} accessibilityRole="button">
+                      <Text style={styles.makePlanLink}>📅 Make a plan →</Text>
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                );
+              }
+              const { gathering: g, signals, reasons, hasFriend, trendingOnly } = entry;
               const card = gatheringCardModel(g, { signals });
               const timing = hasFriend && g.scheduled_at ? describeFriendGatheringTiming(g.scheduled_at) : null;
               const past = !!timing?.isPast;

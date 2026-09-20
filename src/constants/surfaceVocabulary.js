@@ -18,11 +18,6 @@ export const SURFACES = {
     means: 'Time-sensitive local activity that expires: live 24-hour moments from gatherings and local businesses near you.',
     where: 'Discover (All view).',
   },
-  startingSoon: {
-    label: 'Starting Soon Near You',
-    means: 'Nearby gatherings that start within the next 30 minutes (not yet started; a started gathering is not joinable).',
-    where: 'Home.',
-  },
   trendingNearYou: {
     label: 'Trending',
     means: 'Things gaining real engagement locally: gatherings with at least TRENDING_ATTENDANCE_MIN (5) approved attendees. No attendance, no "trending".',
@@ -40,12 +35,7 @@ export const SURFACES = {
   },
   pickedForYou: {
     label: 'Picked For You',
-    means: 'Personalized gatherings, each shown once with every real reason it qualified (interest, trending, friend hosting or going, starting soon).',
-    where: 'Home.',
-  },
-  recommendedNearby: {
-    label: 'Recommended Nearby',
-    means: 'A ranked mix of nearby gatherings and perks scored on interest, distance, timing, weather and your network. It is a recommendation, not a claim that everything is happening right now.',
+    means: 'Home\'s ONE capped list (utils/homeAttention.js, at most 5 with the Best Pick lead): every recommendation engine feeds it and each object shows once with every real reason it qualified (interest, trending, friend hosting or going, starting soon, ranked match). There are no separate Recommended / Starting Soon / Trending sections on Home.',
     where: 'Home.',
   },
 };
