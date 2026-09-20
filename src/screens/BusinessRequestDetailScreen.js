@@ -7,6 +7,7 @@ import { useStripe, initStripe } from '@stripe/stripe-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { isAllDeclined } from '../utils/requestOutcome';
+import { requestTimeline, timelineStepLine } from '../utils/requestTimeline';
 import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon, setPlanItemTime, getPlanOrganizers, addPlanOrganizer, removePlanOrganizer } from '../services/businessFulfillment';
 import { getPlanChatInfo } from '../services/planChat';
 import { getPlanIdForResource } from '../services/plans';
@@ -1162,6 +1163,16 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         <Text style={styles.rawText}>{request.raw_text}</Text>
         <Text style={[styles.statusLine, statusCopy.color === 'primary' && { color: colors.primary }]}>{statusCopy.label}</Text>
 
+        {/* Request sent -> Offer received -> Offer accepted: only steps that really happened, no "viewed" step. */}
+        <View style={styles.timeline} accessibilityLabel="Request progress">
+          {requestTimeline(request, offers).map((step) => (
+            <View key={step.key} style={styles.timelineStep}>
+              <Text style={styles.timelineLabel}>✓ {step.label}</Text>
+              {timelineStepLine(step) ? <Text style={styles.timelineDetail}>{timelineStepLine(step)}</Text> : null}
+            </View>
+          ))}
+        </View>
+
         {myPendingGroupPlanId && (
           <View style={styles.groupPlanBanner}>
             <Text style={styles.groupPlanBannerText}>👥 Someone wants to make this a group plan with you.</Text>
@@ -1805,6 +1816,10 @@ const getStyles = (colors) => StyleSheet.create({
   sharePlanCardLinkText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   hiddenShareCardWrap: { position: 'absolute', top: -9999, left: -9999, opacity: 0 },
   rawText: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
+  timeline: { marginBottom: spacing.lg },
+  timelineStep: { marginBottom: spacing.xs },
+  timelineLabel: { ...typography.body, color: colors.text, fontWeight: '600' },
+  timelineDetail: { ...typography.caption, color: colors.textSecondary, marginLeft: spacing.lg },
   statusLine: { ...typography.caption, color: colors.textTertiary, fontWeight: '600', marginBottom: spacing.lg },
   emptyText: { ...typography.body, color: colors.textSecondary },
   comparisonHeaderRow: { marginBottom: spacing.md },
