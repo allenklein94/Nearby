@@ -1883,7 +1883,23 @@ export default function HomeScreen({ navigation }) {
 
         {(() => {
           const insight = getHomeInsight(dashboard);
-          return insight ? <Text style={styles.insightLine}>{insight}</Text> : null;
+          if (!insight) return null;
+          return (
+            <View style={{ marginBottom: spacing.lg }}>
+              <Text style={[styles.insightLine, { marginBottom: insight.basis ? 2 : 0 }]}>{insight.text}</Text>
+              {insight.basis ? <Text style={styles.trendingMeta}>{insight.basis}</Text> : null}
+              {insight.cta ? (
+                <TouchableOpacity
+                  style={[styles.rowCta, { alignSelf: 'flex-start', marginTop: spacing.xs }]}
+                  onPress={() => navigation.navigate(insight.cta.screen, insight.cta.params)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${insight.cta.label}. ${insight.basis ?? ''}`}
+                >
+                  <Text style={styles.rowCtaText}>{insight.cta.label} →</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          );
         })()}
 
         {(dashboard?.plansGoing?.length > 0 || dashboard?.plansHosting?.length > 0 || dashboard?.plansGroup?.length > 0 || dashboard?.plansInterested?.length > 0) && (

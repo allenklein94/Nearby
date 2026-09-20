@@ -5,6 +5,7 @@ import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoo
 import { createWeatherLoader } from './weatherLoader';
 import { getMyGroupPlans } from './groupPlans';
 import { getUserLocation } from './userLocation';
+import { meetSomeoneTonight } from '../utils/meetTonight';
 import { canonicalizeInterests, becauseYouLikeCategories } from '../constants/interestGraph';
 
 function isToday(iso) {
@@ -421,7 +422,7 @@ export async function getHomeDashboard() {
   const myId = sessionData?.session?.user?.id;
   if (!myId) return null;
 
-  const { data: profileData } = await supabase.from('profiles').select('last_home_visit, interests, monthly_interests').eq('id', myId).single();
+  const { data: profileData } = await supabase.from('profiles').select('last_home_visit, interests, monthly_interests, onboarding_motivations').eq('id', myId).single();
   const lastVisit = profileData?.last_home_visit ? new Date(profileData.last_home_visit) : null;
   await supabase.from('profiles').update({ last_home_visit: new Date().toISOString() }).eq('id', myId);
 
@@ -684,6 +685,7 @@ export async function getHomeDashboard() {
 
   return {
     nearbyPeopleCount: nearbyPeople.length,
+    motivations: profileData?.onboarding_motivations ?? null,
     gatheringsTodayCount: gatheringsToday.length,
     friendsCount: friendsCount ?? 0,
     mostRecentSighting,
@@ -726,17 +728,18 @@ export async function getHomeDashboard() {
 // AI-flavored sentence up here saying the same thing in fuzzier words
 // would just be a synthetic-feeling line for a card that already
 // explains itself. Don't generate one just because the card exists.
-export function getHomeInsight(dashboard) {
+export function getHomeInsight(dashboard, now = new Date()) {
   if (!dashboard) return null;
 
   if (dashboard.friendsActivity?.length >= 2) {
-    return `${dashboard.friendsActivity.length} of your friends are already making plans.`;
+    return { kind: 'friends_planning', text: `${dashboard.friendsActivity.length} of your friends are already making plans.` };
   }
-  if (dashboard.bestPick) {
-    return 'Tonight looks like a great night to meet someone new.';
-  }
+  // Previously ANY Best Pick produced "a great night to meet someone new" -- a People claim with a gathering as its
+  // only evidence. It now needs the substantiated People trigger (utils/meetTonight.js), else nothing is said.
+  const meet = meetSomeoneTonight({ now, nearbyPeopleCount: dashboard.nearbyPeopleCount, motivations: dashboard.motivations });
+  if (meet) return meet;
   if (dashboard.happeningNow?.length > 0) {
-    return `${dashboard.happeningNow.length} ${dashboard.happeningNow.length === 1 ? 'thing starts' : 'things start'} near you in the next 30 minutes.`;
+    return { kind: 'starting_soon', text: `${dashboard.happeningNow.length} ${dashboard.happeningNow.length === 1 ? 'thing starts' : 'things start'} near you in the next 30 minutes.` };
   }
   return null;
 }
