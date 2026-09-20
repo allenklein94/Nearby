@@ -8,6 +8,8 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import { businessAttributeLabel, cuisineLabel, occasionLabel } from '../constants/businessAttributes';
+import { suggestBusinessCategory } from '../services/businessCategorySuggestion';
+import { subcategoryOptionsFor } from '../constants/gatheringCategories';
 
 export default function AdminBusinessRequestsScreen() {
   const { colors, shadow } = useTheme();
@@ -19,6 +21,12 @@ export default function AdminBusinessRequestsScreen() {
   // when this screen first shipped, closed later. expandedNotesId tracks
   // which single card currently has its notes field open.
   const [expandedNotesId, setExpandedNotesId] = useState(null);
+  // Category mapping for an application whose applicant could not find a category (or any pending/approved one).
+  const [mapOpenId, setMapOpenId] = useState(null);
+  const [mapCategory, setMapCategory] = useState(null);
+  const [mapSub, setMapSub] = useState(null);
+  const [mapRemember, setMapRemember] = useState(true);
+  const [suggestions, setSuggestions] = useState({});
   const [notesDrafts, setNotesDrafts] = useState({});
 
   const load = useCallback(async () => {
@@ -42,6 +50,31 @@ export default function AdminBusinessRequestsScreen() {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+  }
+
+  async function openMapper(request) {
+    if (mapOpenId === request.id) { setMapOpenId(null); return; }
+    setMapOpenId(request.id);
+    const guess = suggestions[request.id] ?? await suggestBusinessCategory(request.unlisted_category_text || request.business_description);
+    setSuggestions((prev) => ({ ...prev, [request.id]: guess }));
+    setMapCategory(request.category ?? guess?.category ?? null);
+    setMapSub(request.subcategory ?? guess?.subcategory ?? null);
+    setMapRemember(!!request.unlisted_category_text);
+  }
+
+  async function handleMapCategory(request) {
+    if (!mapCategory) return Alert.alert('Pick a category', 'Choose the category this business belongs to.');
+    setProcessingIds((prev) => ({ ...prev, [request.id]: true }));
+    const { error } = await supabase.rpc('admin_map_business_category', {
+      request_id_param: request.id,
+      category_param: mapCategory,
+      subcategory_param: mapSub,
+      alias_phrase_param: mapRemember && request.unlisted_category_text ? request.unlisted_category_text : null,
+    });
+    setProcessingIds((prev) => ({ ...prev, [request.id]: false }));
+    if (error) return Alert.alert('Error', error.message);
+    setMapOpenId(null);
+    load();
   }
 
   async function handleApprove(request) {
@@ -117,6 +150,54 @@ export default function AdminBusinessRequestsScreen() {
               <Text style={styles.category}>
                 {BUSINESS_CATEGORIES.find((c) => c.key === item.category)?.label ?? item.category}
               </Text>
+            ) : null}
+            {item.unlisted_category_text ? (
+              <Text style={styles.contact}>🏷️ Couldn't find a category — they said: "{item.unlisted_category_text}"</Text>
+            ) : null}
+            {item.status === 'pending' || item.status === 'approved' ? (
+              <>
+                <TouchableOpacity
+                  onPress={() => openMapper(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Set category for ${item.business_name}`}
+                >
+                  <Text style={styles.category}>{item.category ? 'Change category' : 'Set category'}</Text>
+                </TouchableOpacity>
+                {mapOpenId === item.id ? (
+                  <View style={{ marginBottom: spacing.sm }}>
+                    {suggestions[item.id] ? (
+                      <Text style={styles.contact}>
+                        Suggested: {BUSINESS_CATEGORIES.find((c) => c.key === suggestions[item.id].category)?.label ?? suggestions[item.id].category}
+                        {suggestions[item.id].source === 'remembered' ? ' (from a phrase you mapped before)' : ''}
+                      </Text>
+                    ) : null}
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                      {BUSINESS_CATEGORIES.map((c) => (
+                        <TouchableOpacity key={c.key} onPress={() => { setMapCategory(c.key); setMapSub(null); }} accessibilityRole="button" accessibilityState={{ selected: mapCategory === c.key }} accessibilityLabel={c.label}>
+                          <Text style={[styles.contact, mapCategory === c.key && { fontWeight: '800', color: colors.primary }]}>{c.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    {mapCategory && subcategoryOptionsFor(mapCategory).length > 0 ? (
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs }}>
+                        {subcategoryOptionsFor(mapCategory).map((sub) => (
+                          <TouchableOpacity key={sub} onPress={() => setMapSub(mapSub === sub ? null : sub)} accessibilityRole="button" accessibilityState={{ selected: mapSub === sub }} accessibilityLabel={sub}>
+                            <Text style={[styles.contact, mapSub === sub && { fontWeight: '800', color: colors.primary }]}>{sub}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    ) : null}
+                    {item.unlisted_category_text ? (
+                      <TouchableOpacity onPress={() => setMapRemember(!mapRemember)} accessibilityRole="checkbox" accessibilityState={{ checked: mapRemember }}>
+                        <Text style={styles.contact}>{mapRemember ? '☑' : '☐'} Remember "{item.unlisted_category_text.toLowerCase().trim()}" for next time</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                    <TouchableOpacity style={styles.approveButton} onPress={() => handleMapCategory(item)} disabled={processingIds[item.id]} accessibilityRole="button" accessibilityLabel="Save category">
+                      <Text style={styles.approveButtonText}>Save category</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+              </>
             ) : null}
             {item.business_description ? <Text style={styles.description}>{item.business_description}</Text> : null}
             {item.contact_info ? <Text style={styles.contact}>📞 {item.contact_info}</Text> : null}

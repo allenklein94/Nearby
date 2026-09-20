@@ -7,6 +7,7 @@ import { checkTextModeration } from '../services/textModeration';
 import { searchPlacesByText, getPlaceDetails } from '../services/places';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { classifyBusinessDescription } from '../services/businessOnboardingAssistant';
+import { suggestBusinessCategory } from '../services/businessCategorySuggestion';
 import { BUSINESS_ATTRIBUTE_OPTIONS, businessAttributeLabel, CUISINE_OPTIONS, cuisineLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { CATEGORY_GROUPS, subcategoryOptionsFor, INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
@@ -72,6 +73,9 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
   const [description, setDescription] = useState('');
   const [contactInfo, setContactInfo] = useState('');
   const [category, setCategory] = useState(null);
+  // "Can't find your category?" -- own words; never blocks signup (category may stay empty).
+  const [unlistedText, setUnlistedText] = useState('');
+  const [categorySuggestion, setCategorySuggestion] = useState(null);
   // Intent engine vision, layer 2 (subcategory) first increment
   // (2026-09-06): the business's own real, finer self-classification --
   // reuses gatheringCategories.js's existing leaf-tag vocabulary per
@@ -224,6 +228,19 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
     setStep('form');
   }
 
+  useEffect(() => {
+    if (category || unlistedText.trim().length < 3) {
+      setCategorySuggestion(null);
+      return undefined;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const guess = await suggestBusinessCategory(unlistedText);
+      if (!cancelled) setCategorySuggestion(guess);
+    }, 500);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [unlistedText, category]);
+
   async function submit() {
     if (!businessName.trim()) {
       return Alert.alert('Business name required', "Tell us your business's name.");
@@ -232,6 +249,12 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
     const nameCheck = await checkTextModeration(businessName);
     if (!nameCheck.safe) {
       return Alert.alert('Name not allowed', 'Please revise and try again.');
+    }
+    if (!category && unlistedText.trim()) {
+      const textCheck = await checkTextModeration(unlistedText);
+      if (!textCheck.safe) {
+        return Alert.alert('Description not allowed', 'Please revise and try again.');
+      }
     }
 
     setSubmitting(true);
@@ -246,6 +269,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
         contact_info: contactInfo.trim() || null,
         category,
         subcategory,
+        unlisted_category_text: !category && unlistedText.trim() ? unlistedText.trim() : null,
         categories,
         website: website.trim() || null,
         phone: phone.trim() || null,
@@ -434,6 +458,36 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
               </TouchableOpacity>
             ))}
           </View>
+
+          {!category ? (
+            <>
+              <Text style={styles.label}>Can't find your category? (optional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Tell us what kind of business it is, e.g. small-batch coffee roaster"
+                placeholderTextColor={colors.textTertiary}
+                value={unlistedText}
+                onChangeText={setUnlistedText}
+                maxLength={200}
+                accessibilityLabel="What kind of business is it, optional"
+              />
+              {categorySuggestion ? (
+                <TouchableOpacity
+                  style={[styles.chip, styles.chipActive]}
+                  onPress={() => {
+                    setCategory(categorySuggestion.category);
+                    setSubcategory(categorySuggestion.subcategory);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Use the suggested category"
+                >
+                  <Text style={styles.chipTextActive}>
+                    Suggested: {BUSINESS_CATEGORIES.find((c) => c.key === categorySuggestion.category)?.label ?? categorySuggestion.category} · tap to use
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </>
+          ) : null}
 
           {subcategoryOptionsFor(category).length > 0 ? (
             <>

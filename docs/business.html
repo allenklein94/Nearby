@@ -828,6 +828,11 @@
       </div>
 
       <div class="apply-field">
+        <label for="apply-category-text">Can't find your category? <span style="font-weight:400">(optional)</span></label>
+        <input type="text" id="apply-category-text" name="categoryText" placeholder="Tell us what kind of business it is, e.g. small-batch coffee roaster" maxlength="200">
+      </div>
+
+      <div class="apply-field">
         <label for="apply-address">Business Address</label>
         <input type="text" id="apply-address" name="address" placeholder="Street, city, state" maxlength="300" required>
       </div>
@@ -997,12 +1002,25 @@
   // business owner install the consumer app just to submit an application. The three CTA
   // buttons now reveal a real, inline application form instead of attempting a deep link.
   var APPLY_CATEGORIES = [
-    { key: 'food_drink', label: '☕ Food & Drink' },
-    { key: 'fitness_wellness', label: '💪 Fitness & Wellness' },
-    { key: 'retail_shopping', label: '🛍️ Retail & Shopping' },
-    { key: 'arts_entertainment', label: '🎨 Arts & Entertainment' },
-    { key: 'professional_services', label: '💼 Professional Services' },
-    { key: 'other', label: '✨ Other' },
+    { key: 'food_drink', label: '🍔 Food & Drink' },
+    { key: 'activities_recreation', label: '🏃 Activities & Recreation' },
+    { key: 'entertainment_nightlife', label: '🎵 Entertainment & Nightlife' },
+    { key: 'dating_social', label: '❤️ Dating & Social' },
+    { key: 'arts_culture_learning', label: '🎨 Arts, Culture & Learning' },
+    { key: 'shopping', label: '🛍️ Shopping' },
+    { key: 'wellness_beauty', label: '💆 Wellness & Beauty' },
+    { key: 'family_kids', label: '👨‍👩‍👧 Family & Kids' },
+    { key: 'outdoors_nature', label: '🌳 Outdoors & Nature' },
+    { key: 'pets', label: '🐕 Pets' },
+    { key: 'home_local_services', label: '🏠 Home & Local Services' },
+    { key: 'auto_transportation', label: '🚗 Auto & Transportation' },
+    { key: 'business_networking', label: '💼 Business & Networking' },
+    { key: 'community_volunteering', label: '🤝 Community & Volunteering' },
+    { key: 'travel_experiences', label: '✈️ Travel & Experiences' },
+    { key: 'stay_getaway', label: '🏨 Stay & Getaway' },
+    { key: 'health_personal_care', label: '🩺 Health & Personal Care' },
+    { key: 'education_classes', label: '🎓 Education & Classes' },
+    { key: 'attractions_things_to_see', label: '🎟️ Attractions & Things to See' },
   ];
   var selectedApplyCategory = null;
   var applyCategoryRow = document.getElementById('apply-category-row');
@@ -1013,9 +1031,9 @@
     chip.textContent = c.label;
     chip.setAttribute('data-key', c.key);
     chip.addEventListener('click', function () {
-      selectedApplyCategory = c.key;
+      selectedApplyCategory = selectedApplyCategory === c.key ? null : c.key;
       Array.prototype.forEach.call(applyCategoryRow.children, function (el) {
-        el.classList.toggle('selected', el === chip);
+        el.classList.toggle('selected', el === chip && selectedApplyCategory !== null);
       });
     });
     applyCategoryRow.appendChild(chip);
@@ -1059,7 +1077,8 @@
     var websiteConfirm = document.getElementById('apply-website-confirm').value;
 
     if (!businessName) return showApplyError("Tell us your business's name.");
-    if (!selectedApplyCategory) return showApplyError('Pick a category for your business.');
+    var categoryText = document.getElementById('apply-category-text').value.trim();
+    if (!selectedApplyCategory && categoryText.length < 3) return showApplyError("Pick a category, or tell us what kind of business it is.");
     if (!address) return showApplyError("Tell us your business's address.");
     if (!applicantName) return showApplyError('Tell us your name.');
     if (!applicantEmail) return showApplyError('Enter your email address.');
@@ -1075,6 +1094,7 @@
       body: JSON.stringify({
         businessName: businessName,
         category: selectedApplyCategory,
+        categoryText: categoryText,
         address: address,
         website: website,
         businessPhone: businessPhone,

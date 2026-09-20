@@ -53,7 +53,6 @@ const VALID_CATEGORIES = [
   'health_personal_care',
   'education_classes',
   'attractions_things_to_see',
-  'other',
 ];
 
 const MAX_RATE_LIMIT_PER_HOUR = 3;
@@ -113,6 +112,9 @@ serve(async (req) => {
 
   const businessName = typeof body.businessName === 'string' ? body.businessName.trim() : '';
   const category = typeof body.category === 'string' ? body.category.trim() : '';
+  // "Can't find your category?" -- the applicant's own words. Signup is never rejected for lacking a listed
+  // category; an admin maps it later (admin_map_business_category).
+  const categoryText = typeof body.categoryText === 'string' ? body.categoryText.trim() : '';
   const address = typeof body.address === 'string' ? body.address.trim() : '';
   const website = typeof body.website === 'string' ? body.website.trim() : '';
   const businessPhone = typeof body.businessPhone === 'string' ? body.businessPhone.trim() : '';
@@ -125,8 +127,11 @@ serve(async (req) => {
   if (!businessName || businessName.length > 200) {
     return jsonResponse({ error: "Tell us your business's name." }, 400);
   }
-  if (!VALID_CATEGORIES.includes(category)) {
+  if (category && !VALID_CATEGORIES.includes(category)) {
     return jsonResponse({ error: 'Pick a real category for your business.' }, 400);
+  }
+  if (!category && (categoryText.length < 3 || categoryText.length > 200)) {
+    return jsonResponse({ error: 'Pick a category, or tell us what kind of business it is.' }, 400);
   }
   if (!address || address.length > 300) {
     return jsonResponse({ error: "Tell us your business's address." }, 400);
@@ -170,7 +175,8 @@ serve(async (req) => {
     .insert({
       business_name: businessName,
       business_description: description || null,
-      category,
+      category: category || null,
+      unlisted_category_text: category ? null : categoryText,
       address,
       website: website || null,
       phone: businessPhone || null,
