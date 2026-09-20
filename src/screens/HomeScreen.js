@@ -44,7 +44,7 @@ import TabHeaderActions from '../components/TabHeaderActions';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime, describeFriendGatheringTiming } from '../utils/timeContext';
-import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
+import { homeWeatherCard } from '../constants/weatherRelevance';
 import { gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { lightenHex } from '../utils/colorUtils';
@@ -2261,34 +2261,30 @@ export default function HomeScreen({ navigation }) {
               </TouchableOpacity>
             )}
             {socialForecast && (() => {
-              // P2 item 7 (Universal Signal Remediation Pass, CLAUDE.md,
-              // Aug 28 2026): this card's own indoor/outdoor bias check --
-              // previously its own local definition, now the one shared
-              // isWeatherIndoorBiased/isWeatherOutdoorBiased (utils/
-              // weatherBias.js), which was itself modeled on this exact
-              // block since it was already the most complete of the three
-              // independent versions the audit found. showOutdoor now also
-              // fires on a genuinely 'Excellent' forecast_label right now,
-              // not just a favorable forecast for later -- a real,
-              // disclosed widening, symmetric to this block's own existing
-              // "broaden beyond current-conditions" reasoning for the
-              // indoor case. The two stay mutually exclusive so the card
-              // never suggests both at once.
-              // Re-checked at render: never suggest a gathering that has since started.
+              // Weather is a nudge, never a creator (constants/weatherRelevance.js): the card
+              // renders only when a structured rule fires AND there is a real, still-upcoming,
+              // classified gathering to point at, and never over an active intent/Surprise result.
               const nowMs = Date.now();
               const upcomingOnly = (list) => (list ?? []).filter((g) => new Date(g.scheduled_at).getTime() > nowMs);
-              const indoorUpcoming = upcomingOnly(dashboard?.indoorGatheringsToday);
-              const outdoorUpcoming = upcomingOnly(dashboard?.outdoorGatheringsToday);
-              const showIndoor = isWeatherIndoorBiased(socialForecast) && indoorUpcoming?.length > 0;
-              const showOutdoor = isWeatherOutdoorBiased(socialForecast) && outdoorUpcoming?.length > 0;
+              const card = homeWeatherCard({
+                weather: socialForecast,
+                indoorUpcoming: upcomingOnly(dashboard?.indoorGatheringsToday),
+                outdoorUpcoming: upcomingOnly(dashboard?.outdoorGatheringsToday),
+                intentActive: intentThinking || !!intentResults || !!surprise,
+              });
+              if (!card) return null;
+              const showIndoor = card.bias === 'indoor';
+              const showOutdoor = card.bias === 'outdoor';
+              const indoorUpcoming = showIndoor ? card.gatherings : [];
+              const outdoorUpcoming = showOutdoor ? card.gatherings : [];
               return (
                 <View style={styles.forecastCard}>
                   <View style={styles.forecastLabelRow}>
                     <Ionicons name="partly-sunny-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
                     <Text style={styles.forecastLabel}>Right Now</Text>
                   </View>
-                  <Text style={styles.forecastValue}>{socialForecast.forecast_label}</Text>
-                  <Text style={styles.forecastDetail}>{socialForecast.forecast_detail}</Text>
+                  <Text style={styles.forecastValue}>{card.label}</Text>
+                  {!!card.detail && <Text style={styles.forecastDetail}>{card.detail}</Text>}
                   {showIndoor && (
                     <View style={styles.weatherSuggestions}>
                       <View style={styles.weatherSuggestionsHeaderRow}>
