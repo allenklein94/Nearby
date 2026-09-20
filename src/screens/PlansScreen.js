@@ -17,7 +17,6 @@ import { spacing, radius, typography } from '../theme';
 
 const TABS = [
   { key: 'upcoming', label: 'Upcoming' },
-  { key: 'interested', label: 'Interested' },
   { key: 'hosting', label: 'My Hosting' },
   { key: 'past', label: 'Past' },
 ];
@@ -137,10 +136,8 @@ export default function PlansScreen({ navigation, route }) {
       return [
         ...attending.upcoming.map((g) => ({ gathering: g, status: 'going' })),
         ...hosting.upcoming.map((g) => ({ gathering: g, status: 'hosting' })),
+        ...interestedList.map((g) => ({ gathering: g, status: 'maybe' })),
       ].sort((a, b) => new Date(a.gathering.scheduled_at) - new Date(b.gathering.scheduled_at));
-    }
-    if (activeTab === 'interested') {
-      return interestedList.map((g) => ({ gathering: g, status: 'maybe' }));
     }
     if (activeTab === 'hosting') {
       return [
@@ -192,7 +189,6 @@ export default function PlansScreen({ navigation, route }) {
 
   const emptyCopy = {
     upcoming: "Nothing on your calendar yet — join or host something to see it here.",
-    interested: "Nothing saved yet — tap Interested on a gathering to keep it here without committing.",
     hosting: "You're not hosting anything yet.",
     past: "No past gatherings yet.",
   }[tab];

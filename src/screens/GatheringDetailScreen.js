@@ -1177,6 +1177,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   <Text style={styles.sayHelloLink}>
                     {gathering.myInterested ? "★ Interested — I might go (tap to undo)" : '☆ Interested — I might go'}
                   </Text>
+                  {gathering.myInterested && (
+                    <Text style={{ color: colors.textTertiary, fontSize: 12, marginTop: 2, textAlign: 'center' }}>
+                      We'll let you know if the time or place changes, or it's cancelled.
+                    </Text>
+                  )}
                 </TouchableOpacity>
               )}
               <TouchableOpacity

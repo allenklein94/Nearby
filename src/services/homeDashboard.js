@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { getNearbyMatches } from './proximity';
-import { getNearbyGatherings, getGatheringFitReasons, getMyTopGatheringCategories, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
+import { getNearbyGatherings, getMyInterestedGatherings, getGatheringFitReasons, getMyTopGatheringCategories, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { getMyGroupPlans } from './groupPlans';
 import { canonicalizeInterests, becauseYouLikeCategories } from '../constants/interestGraph';
@@ -518,6 +518,8 @@ export async function getHomeDashboard() {
       approvedCountByGathering[row.gathering_id] = (approvedCountByGathering[row.gathering_id] ?? 0) + 1;
     }
   }
+  // "Interested" (I might go): saved but not committed -- shown inline under Your Plans, never merged into Going.
+  const plansInterested = (await getMyInterestedGatherings().catch(() => [])).slice(0, 3);
   const plansGoing = plansGoingRaw.map((p) => ({ ...p, peopleCount: approvedCountByGathering[p.id] ?? 0 }));
   const plansHosting = plansHostingRaw.map((p) => ({ ...p, peopleCount: approvedCountByGathering[p.id] ?? 0 }));
 
@@ -657,6 +659,7 @@ export async function getHomeDashboard() {
     sinceAway,
     weeklyRecap,
     plansGoing,
+    plansInterested,
     plansHosting,
     plansGroup,
     friendsActivity,

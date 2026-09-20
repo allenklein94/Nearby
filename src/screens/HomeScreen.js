@@ -1811,7 +1811,7 @@ export default function HomeScreen({ navigation }) {
           return insight ? <Text style={styles.insightLine}>{insight}</Text> : null;
         })()}
 
-        {(dashboard?.plansGoing?.length > 0 || dashboard?.plansHosting?.length > 0 || dashboard?.plansGroup?.length > 0) && (
+        {(dashboard?.plansGoing?.length > 0 || dashboard?.plansHosting?.length > 0 || dashboard?.plansGroup?.length > 0 || dashboard?.plansInterested?.length > 0) && (
           <>
             {/* Home hierarchy audit recommendation #3 (PRODUCT_AUDIT/
                 HOME_VISUAL_HIERARCHY_AUDIT_2026-08-14.md): a real, heavier
@@ -1859,9 +1859,26 @@ export default function HomeScreen({ navigation }) {
                   ))}
                 </>
               )}
+              {dashboard.plansInterested?.length > 0 && (
+                <>
+                  <Text style={[styles.subLabel, (dashboard.plansGoing.length > 0 || dashboard.plansHosting.length > 0) && styles.subLabelSpaced]}>Your interest</Text>
+                  {dashboard.plansInterested.map((plan) => (
+                    <PlanCard
+                      key={plan.id}
+                      icon={categoryStyleFor(plan.interest_tag).icon}
+                      iconColor={categoryStyleFor(plan.interest_tag).color}
+                      title={plan.title}
+                      roleLabel="Interested"
+                      dateTimeText={formatHeroDateTime(plan.scheduled_at)}
+                      hostingPartnerId={plan.hosting_partner_id}
+                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: plan.id })}
+                    />
+                  ))}
+                </>
+              )}
               {dashboard.plansGroup?.length > 0 && (
                 <>
-                  <Text style={[styles.subLabel, (dashboard.plansGoing.length > 0 || dashboard.plansHosting.length > 0) && styles.subLabelSpaced]}>Group Plans</Text>
+                  <Text style={[styles.subLabel, (dashboard.plansGoing.length > 0 || dashboard.plansHosting.length > 0 || dashboard.plansInterested?.length > 0) && styles.subLabelSpaced]}>Group Plans</Text>
                   {dashboard.plansGroup.map((plan) => (
                     <PlanCard
                       key={plan.id}
