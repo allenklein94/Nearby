@@ -19,6 +19,9 @@ import { stripTrailingCelebrationIcon, buildPlanHeaderChangeKey } from '../utils
 import OccasionPlanShareCard from '../components/OccasionPlanShareCard';
 import CelebrationHeaderIcon from '../components/CelebrationHeaderIcon';
 import StaggeredReveal from '../components/StaggeredReveal';
+import OfferMedia from '../components/OfferMedia';
+import OfferReveal from '../components/OfferReveal';
+import { visibleRedemption } from '../utils/offerMedia';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
@@ -87,34 +90,6 @@ function formatProposedTime(iso) {
 // standalone card. Video shown as an honest label, not a fabricated
 // inline player -- no video player component exists elsewhere in this
 // codebase to mirror.
-function OfferMediaPreview({ path, type, colors }) {
-  const [signedUrl, setSignedUrl] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (path) {
-      getSignedBusinessOfferMediaUrl(path).then((url) => {
-        if (!cancelled) setSignedUrl(url);
-      });
-    }
-    return () => {
-      cancelled = true;
-    };
-  }, [path]);
-
-  if (!path) return null;
-  if (type === 'video') {
-    return <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs }}>🎬 Video attached</Text>;
-  }
-  if (!signedUrl) return null;
-  return (
-    <Image
-      source={{ uri: signedUrl }}
-      style={{ width: '100%', height: 140, borderRadius: radius.md, marginTop: spacing.xs }}
-      resizeMode="cover"
-    />
-  );
-}
 
 
 // The consumer-side offer-review/accept screen -- Phase 2 of the Intent
@@ -1306,7 +1281,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               <ModeTransition activeKey={o.status}>
               <Text style={styles.offerStatus}>{OFFER_STATUS_COPY[o.status] ?? o.status}</Text>
               {o.status === 'offered' && (
-                <>
+                <OfferReveal offerId={o.id} partnerName={o.brand_partners?.name ?? 'A business'} enabled={!!(o.media_path || o.offer_title)}>
                   {showComparison && (
                     <Text style={styles.offerTypeLabel}>{OFFER_TYPE_LABELS[o.offer_type] ?? o.offer_type}</Text>
                   )}
@@ -1319,7 +1294,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   ))}
                   {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
                   {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}{o.price_is_per_person ? '/person' : ''}</Text> : null}
-                  <OfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
+                  <OfferMedia path={o.media_path} type={o.media_type} posterPath={o.media_poster_path} />
                   {showComparison && o.viewed_at ? (
                     <Text style={styles.offerViewedIndicator}>👁 You've seen this</Text>
                   ) : null}
@@ -1344,7 +1319,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                       {actingOfferId === o.id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>I'll take this one</Text>}
                     </TouchableOpacity>
                   )}
-                </>
+                </OfferReveal>
               )}
               {o.status === 'accepted' && (
                 <>
@@ -1354,7 +1329,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   ))}
                   {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
                   {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}{o.price_is_per_person ? '/person' : ''}</Text> : null}
-                  <OfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
+                  <OfferMedia path={o.media_path} type={o.media_type} posterPath={o.media_poster_path} />
+                  {visibleRedemption(o) ? <Text style={styles.offerDescription}>🎟️ How to redeem: {visibleRedemption(o)}</Text> : null}
                   {o.brand_partners?.latitude != null && o.brand_partners?.longitude != null && (
                     <TouchableOpacity
                       onPress={() => openUberToDestination({

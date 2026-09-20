@@ -18,6 +18,6 @@ test('terms wording matches the client', () => {
   expect(src).toContain('cancellation window: ');
 });
 test('the classifier is skipped only for exact fixed text with no owner-authored fields', () => {
-  expect(src).toContain('if (!offerTitle && includedItems.length === 0 && !mediaPath) {');
+  expect(src).toContain('if (!offerTitle && includedItems.length === 0 && !mediaPath && !redemptionInstructions) {');
   expect(src).toContain('if (fixedTexts.includes(offerDescription)) {');
 });

@@ -18,7 +18,8 @@ import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRe
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { CANCELLATION_REASONS, CANCELLATION_ACTOR_LABELS } from '../constants/cancellationReasons';
 import { getPartnerCancellationPatterns } from '../services/cancellationReasons';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit } from '../services/businessFulfillment';
+import { videoLimitProblem, MAX_REDEMPTION_LENGTH } from '../utils/offerMedia';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit } from '../services/businessFulfillment';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
@@ -627,6 +628,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // packageIncludedItemDraft below) -- one input pattern, not two.
   const [offerTitleInput, setOfferTitleInput] = useState('');
   const [offerIncludedItemsInput, setOfferIncludedItemsInput] = useState([]);
+  const [offerRedemptionInput, setOfferRedemptionInput] = useState('');
   // Name of the owner's own package the editor was pre-filled from (null = nothing pre-filled).
   const [offerPrefilledFrom, setOfferPrefilledFrom] = useState(null);
   const [offerIncludedItemDraft, setOfferIncludedItemDraft] = useState('');
@@ -1609,6 +1611,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferPickedMediaAsset(null);
     setOfferTitleInput('');
     setOfferIncludedItemsInput([]);
+    setOfferRedemptionInput('');
     setOfferIncludedItemDraft('');
     // One-tap smart offer: Nearby does the work first. If the owner already published a package that fits this exact
     // request (same occasion, party clears min_guests), start from it -- title, price per person, included items --
@@ -1756,10 +1759,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     try {
       let mediaPath = null;
       let mediaType = null;
+      let framePaths = [];
       if (offerPickedMediaAsset) {
         const uploaded = await uploadBusinessOfferMedia(selectedPartner.id, offerPickedMediaAsset, 'offer');
         mediaPath = uploaded.path;
         mediaType = uploaded.mediaType;
+        // A video is screened through preview frames sampled on the device; the first becomes its poster.
+        if (mediaType === 'video') framePaths = await uploadOfferVideoFrames(selectedPartner.id, offerPickedMediaAsset);
       }
 
       const priceNum = offerPriceInput.trim() ? parseFloat(offerPriceInput.trim()) : null;
@@ -1775,6 +1781,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         includedItems: offerIncludedItemsInput,
         priceIsPerPerson: offerPriceIsPerPerson,
         discountPct: parseDiscountPct(offerDiscountInput),
+        framePaths,
+        redemptionInstructions: offerRedemptionInput.trim() || null,
       });
 
       await handleOfferResult(result, () => setOfferModalRequestId(null));
@@ -6048,13 +6056,25 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 existingType={null}
                 onPick={async () => {
                   try {
-                    const asset = await pickBusinessOfferMedia();
+                    // The website sends photos only (video frames are sampled on the device); videos are capped at 30s / 25MB.
+                    const asset = await pickBusinessOfferMedia({ imagesOnly: Platform.OS === 'web' });
+                    const problem = videoLimitProblem(asset);
+                    if (problem) { Alert.alert('Video too big', problem); return; }
                     if (asset) setOfferPickedMediaAsset(asset);
                   } catch (e) {
                     Alert.alert('Error', e.message);
                   }
                 }}
                 onRemove={() => setOfferPickedMediaAsset(null)}
+              />
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm }]}
+                placeholder="How to redeem (optional), e.g. show this at the counter"
+                placeholderTextColor={colors.textTertiary}
+                value={offerRedemptionInput}
+                onChangeText={(t) => setOfferRedemptionInput(t.slice(0, MAX_REDEMPTION_LENGTH))}
+                multiline
+                accessibilityLabel="How to redeem, optional. Shown to the customer once they accept."
               />
               <TouchableOpacity
                 style={styles.submitButton}

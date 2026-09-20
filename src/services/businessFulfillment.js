@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase, functionUrl } from './supabase';
 import { requireUserLocation, getUserLocation } from './userLocation';
+import { videoFrameTimes } from '../utils/offerMedia';
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -29,14 +30,14 @@ function base64ToUint8Array(base64) {
 // Single picker (mediaTypes: All) rather than separate photo/video
 // pickers -- the resulting asset.type ('image'|'video') tells us which
 // it was, matching the media_type CHECK the schema already enforces.
-export async function pickBusinessOfferMedia() {
+export async function pickBusinessOfferMedia({ imagesOnly = false } = {}) {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) {
     throw new Error('Photo library access is needed to add a photo or video.');
   }
 
   const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.All,
+    mediaTypes: imagesOnly ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.All,
     quality: 0.7,
     videoMaxDuration: 30,
   });
@@ -94,6 +95,22 @@ export async function uploadBusinessOfferMedia(partnerId, asset, kind) {
 
   if (error) throw error;
   return { path, mediaType: isVideo ? 'video' : 'image' };
+}
+
+// Rich offers, Phase 2: a video is screened through preview frames sampled from it (never the whole clip), so the sender
+// pulls up to three stills on the device and uploads them beside the video. The server classifies them before any customer
+// can see the video, and the first becomes its poster. Native only (the website sends photos, not video).
+export async function uploadOfferVideoFrames(partnerId, asset) {
+  if (Platform.OS === 'web') throw new Error('Videos can be added from the Nearby app. Photos work here.');
+  const VideoThumbnails = require('expo-video-thumbnails');
+  const paths = [];
+  for (const time of videoFrameTimes(asset.duration)) {
+    const frame = await VideoThumbnails.getThumbnailAsync(asset.uri, { time, quality: 0.6 });
+    const uploaded = await uploadBusinessOfferMedia(partnerId, { uri: frame.uri, type: 'image' }, 'offer');
+    paths.push(uploaded.path);
+  }
+  if (paths.length === 0) throw new Error('We could not read that video. Try a different one.');
+  return paths;
 }
 
 export async function getSignedBusinessOfferMediaUrl(path) {
@@ -298,7 +315,7 @@ export async function getAcceptedOfferForRequest(requestId) {
   if (!requestId) return null;
   const { data, error } = await supabase
     .from('business_request_offers')
-    .select('id, offer_type, offer_price, price_is_per_person, offer_description, proposed_time, status, partner_id, media_path, media_type, brand_partners(name, logo_url, address, latitude, longitude)')
+    .select('id, offer_type, offer_price, price_is_per_person, offer_description, proposed_time, status, partner_id, media_path, media_type, media_poster_path, redemption_instructions, brand_partners(name, logo_url, address, latitude, longitude)')
     .eq('request_id', requestId)
     .in('status', ['accepted', 'completed'])
     .maybeSingle();
@@ -701,7 +718,7 @@ export async function submitBusinessOfferResponse(requestId, { offerType, offerD
 // submitBusinessOfferResponse() above, whose underlying RPC derives
 // ownership internally from request_id_param) since the Edge Function's
 // top-level ownership gate needs it explicitly for every target_type.
-export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null}) {
+export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null, framePaths = [], redemptionInstructions = null}) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -715,6 +732,8 @@ export async function submitBusinessOfferResponseForScreening(partnerId, request
     body: JSON.stringify({
       partnerId,
       targetType: 'offer_response',
+      framePaths,
+      redemptionInstructions,
       requestId,
       offerType,
       offerDescription,

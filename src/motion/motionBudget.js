@@ -48,6 +48,9 @@ export const SEQUENCES = {
   matchIntro: { tier: 'medium', stageMs: 140, stages: 2, entranceMs: 200 },
   // Empty state -> invitation: the N appears, then the invitation + action settle in.
   emptyInvitation: { tier: 'medium', markMs: 200, delayMs: 180, invitationMs: 220 },
+  // A rich offer opening: "<business> sent you an offer" fades in, then the offer body settles under it (business tone:
+  // no glyph beat, no haptic, plain fades).
+  offerReveal: { tier: 'medium', headerMs: 140, bodyDelayMs: 100, bodyMs: 200 },
   // Result cascades.
   cascade: { tier: 'medium', maxDelayMs: 200, itemMs: 250 },
 };
@@ -73,6 +76,8 @@ export function settleMs(name) {
       return s.delayMs + s.invitationMs;
     case 'cascade':
       return s.maxDelayMs + s.itemMs;
+    case 'offerReveal':
+      return Math.max(s.headerMs, s.bodyDelayMs + s.bodyMs);
     default:
       return NaN;
   }

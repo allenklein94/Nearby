@@ -162,6 +162,47 @@ function json(body: unknown, status = 200) {
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // Anthropic's own documented per-image cap
 const SUPPORTED_IMAGE_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
+
+// Rich offers, Phase 2: offer media reaches a CONSUMER, so it is screened before it can. An image offer classifies the image
+// itself; a video offer classifies the (up to 3) preview frames the client sampled from it, and the first frame becomes its
+// poster. Limits, disclosed: the audio track and moments between sampled frames are not reviewed (playback is muted by
+// default). A screening-service failure is a 503 (fail closed), never a pass.
+const OFFER_MEDIA_BUCKET = 'business-offer-media';
+const MAX_OFFER_VIDEO_BYTES = 25 * 1024 * 1024;
+
+async function screenOfferMedia(admin: any, partnerId: string, mediaPath: string, mediaType: string, framePaths: string[]) {
+  const folder = `${partnerId}/`;
+  const own = (p: string) => typeof p === 'string' && p.startsWith(folder) && !p.includes('..') && p.length < 300;
+  if (!own(mediaPath)) return { status: 400, error: 'That photo or video is not available to send.' };
+  if (mediaType === 'video') {
+    if (framePaths.length < 1 || framePaths.length > 3 || !framePaths.every(own)) {
+      return { status: 400, error: 'A video needs preview images. Please attach it again.' };
+    }
+    const name = mediaPath.slice(folder.length);
+    const { data: listed } = await admin.storage.from(OFFER_MEDIA_BUCKET).list(partnerId, { search: name, limit: 5 });
+    const size = listed?.find((f: any) => f.name === name)?.metadata?.size;
+    if (!Number.isFinite(size)) return { status: 400, error: 'We could not read that video. Please attach it again.' };
+    if (size > MAX_OFFER_VIDEO_BYTES) return { status: 400, error: 'That video is too large (max 25MB). Try a shorter clip.' };
+  }
+  const toCheck = mediaType === 'video' ? framePaths : [mediaPath];
+  let tier = 'low';
+  const categories: string[] = [];
+  const notes: string[] = [];
+  for (const path of toCheck) {
+    const { data: signed } = await admin.storage.from(OFFER_MEDIA_BUCKET).createSignedUrl(path, 300);
+    if (!signed?.signedUrl) return { status: 400, error: 'We could not read that photo or video. Please attach it again.' };
+    const r: any = await classifyImage(signed.signedUrl);
+    if ('error' in r) {
+      if (r.service) return { status: 503, service: true };
+      return { status: 400, error: "That photo or video preview couldn't be read. Try a different one." };
+    }
+    tier = worseTier(tier, r.riskTier);
+    for (const c of r.matchedCategories) if (!categories.includes(c)) categories.push(c);
+    notes.push(r.reasoning);
+  }
+  return { tier, categories, reasoning: `Media (${mediaType}${mediaType === 'video' ? `, ${toCheck.length} sampled frame(s)` : ''}): ${notes.join(' ')}`, posterPath: mediaType === 'video' ? framePaths[0] : null };
+}
+
 async function classifyImage(imageUrl: string) {
   let imageResponse: Response;
   try {
@@ -224,7 +265,7 @@ Guidance: "low" means this reads as an ordinary, legitimate business logo with n
   const raw = anthropicData?.content?.[0]?.text?.trim();
   if (!raw) {
     console.error('screen-business-content: SERVICE_FAILURE unexpected Anthropic vision response', anthropicResponse.status, JSON.stringify(anthropicData));
-    return { error: "We couldn't review this image right now. Please try again in a bit." };
+    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true };
   }
 
   let parsed: any;
@@ -232,7 +273,7 @@ Guidance: "low" means this reads as an ordinary, legitimate business logo with n
     parsed = JSON.parse(raw);
   } catch (_e) {
     console.error('screen-business-content: model did not return valid JSON for image', raw);
-    return { error: "We couldn't review this image right now. Please try again in a bit." };
+    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true };
   }
 
   const riskTier = ['low', 'medium', 'high', 'uncertain'].includes(parsed?.risk_tier) ? parsed.risk_tier : 'uncertain';
@@ -840,6 +881,9 @@ Body: ${updateBody || '(none)'}`;
     // posture as the `experience` branch above.
     const mediaPath = typeof body.mediaPath === 'string' && body.mediaPath.trim() ? body.mediaPath.trim() : null;
     const mediaType = body.mediaType === 'image' || body.mediaType === 'video' ? body.mediaType : null;
+    if (mediaPath && !mediaType) return json({ error: 'Invalid media type' }, 400);
+    const framePaths: string[] = Array.isArray(body.framePaths) ? body.framePaths.filter((f: unknown) => typeof f === 'string').slice(0, 3) : [];
+    const redemptionInstructions = typeof body.redemptionInstructions === 'string' ? body.redemptionInstructions.trim().slice(0, 500) || null : null;
     // Business Web as an Operating System, Phase 3 -- which real Signature
     // Experience (if any) a suggestion this offer was built from actually
     // came from, so the per-template performance funnel has something real
@@ -858,6 +902,7 @@ Body: ${updateBody || '(none)'}`;
       offerTitle ? `Offer title: ${offerTitle}` : null,
       `Offer description: ${offerDescription}`,
       includedItems.length > 0 ? `Included items: ${includedItems.join(', ')}` : null,
+      redemptionInstructions ? `Redemption instructions: ${redemptionInstructions}` : null,
     ].filter(Boolean).join('\n');
 
     // The one-tap responses (Standard availability / Offer Alternative with no note) carry ONLY text Nearby itself
@@ -865,7 +910,7 @@ Body: ${updateBody || '(none)'}`;
     // so there is nothing to classify and no AI call is needed (works with no Anthropic credit). Verified by exact
     // match server-side, never by a client flag; anything else is classified as before (fail closed).
     let result: { riskTier: string; matchedCategories: string[]; reasoning: string } | null = null;
-    if (!offerTitle && includedItems.length === 0 && !mediaPath) {
+    if (!offerTitle && includedItems.length === 0 && !mediaPath && !redemptionInstructions) {
       let terms: string | null = null;
       const { data: policy } = await admin.from('business_fulfillment_policies')
         .select('min_spend_per_person, deposit_amount, cancellation_window_hours, active')
@@ -882,9 +927,23 @@ Body: ${updateBody || '(none)'}`;
     }
     if (!result) result = await classifyContent(contentBlock);
     if (!result) return screeningUnavailable();
+
+    // Rich offers, Phase 2: screen the attached media too; the worst tier across text and media wins.
+    let posterPath: string | null = null;
+    if (mediaPath) {
+      const m: any = await screenOfferMedia(admin, partnerId, mediaPath, mediaType!, framePaths);
+      if (m.service) return screeningUnavailable();
+      if (m.error) return json({ error: m.error }, m.status);
+      result = {
+        riskTier: worseTier(result.riskTier, m.tier),
+        matchedCategories: Array.from(new Set([...result.matchedCategories, ...m.categories])),
+        reasoning: `${result.reasoning} ${m.reasoning}`,
+      };
+      posterPath = m.posterPath;
+    }
     const { riskTier, matchedCategories, reasoning } = result;
 
-    const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, priceIsPerPerson, discountPct, proposedTime, experienceId, mediaPath, mediaType };
+    const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, priceIsPerPerson, discountPct, proposedTime, experienceId, mediaPath, mediaType, posterPath, framePaths, redemptionInstructions };
 
     const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
       partner_id_param: partnerId,
@@ -909,6 +968,8 @@ Body: ${updateBody || '(none)'}`;
         offer_title_param: offerTitle, included_items_param: includedItems,
         price_is_per_person_param: priceIsPerPerson,
         discount_pct_param: discountPct,
+        redemption_instructions_param: redemptionInstructions,
+        media_poster_path_param: posterPath,
       });
       if (writeError) {
         console.error('screen-business-content: low-tier offer_response write failed', writeError);
