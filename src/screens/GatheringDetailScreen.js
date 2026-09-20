@@ -40,6 +40,7 @@ import {
 } from '../services/businessFulfillment';
 import { getMyPartnershipRequestForTarget } from '../services/businessPartnerships';
 import GatheringQnA from '../components/GatheringQnA';
+import HostAttendeeManager from '../components/HostAttendeeManager';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import GatheringIntentModal from '../components/GatheringIntentModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
@@ -910,12 +911,22 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   ) : null;
                 })()
               )}
+              <HostAttendeeManager gatheringId={gatheringId} onChanged={load} />
               <TouchableOpacity
-                onPress={() => navigation.navigate('Gatherings', { initialTab: 'hosting' })}
-                accessibilityLabel="Manage attendees"
+                onPress={() => navigation.navigate('GatheringChat', { gatheringId, gatheringTitle: gathering.title })}
+                style={{ marginTop: spacing.sm }}
+                accessibilityLabel="Open group chat"
                 accessibilityRole="button"
               >
-                <Text style={styles.hostBannerLink}>Manage attendees →</Text>
+                <Text style={styles.hostBannerLink}>💬 Group Chat →</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('GatheringHub', { gatheringId })}
+                style={{ marginTop: spacing.xs }}
+                accessibilityLabel="Open the Gathering Hub"
+                accessibilityRole="button"
+              >
+                <Text style={styles.hostBannerLink}>🚀 Open Gathering Hub →</Text>
               </TouchableOpacity>
               {/* Host cancellation lifecycle parity (2026-09-10 follow-up):
                   Communities already group Edit/Pause/Cancel under a

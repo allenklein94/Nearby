@@ -578,6 +578,30 @@ export async function expressInterest(gatheringId) {
   return { status: data.status, matchId: data.match_id, autoApproved: data.status === 'approved' };
 }
 
+// Host-only read of one gathering's join requests + attendees (same
+// gathering_interest rows the Gatherings hosting list reads, minus blocked users).
+export async function getGatheringRequestsForHost(gatheringId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  const [{ data: blockedByMe }, { data: blockedMe }] = await Promise.all([
+    supabase.from('blocks').select('blocked_id').eq('blocker_id', userId),
+    supabase.from('blocks').select('blocker_id').eq('blocked_id', userId),
+  ]);
+  const excluded = new Set([
+    ...(blockedByMe ?? []).map((b) => b.blocked_id),
+    ...(blockedMe ?? []).map((b) => b.blocker_id),
+  ]);
+  const { data, error } = await supabase
+    .from('gathering_interest')
+    .select('id, user_id, status, profiles(display_name)')
+    .eq('gathering_id', gatheringId);
+  if (error) {
+    console.error('getGatheringRequestsForHost error', error);
+    return [];
+  }
+  return (data ?? []).filter((i) => !excluded.has(i.user_id));
+}
+
 // Host declines a pending/waitlisted request or removes an attendee (host-only RPC; promotes the waitlist if a spot frees).
 export async function hostRemoveAttendee(interestId) {
   const { data, error } = await supabase.rpc('host_remove_gathering_attendee', { interest_id_param: interestId });
