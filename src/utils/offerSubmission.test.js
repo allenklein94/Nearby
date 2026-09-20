@@ -37,6 +37,10 @@ describe('async offer screening (item 83)', () => {
     expect(src.match(/rpc\('submit_business_offer'/g)).toHaveLength(1);
     expect(src).toContain("status: 'in_review'");
   });
+  test('edit and resend brings back already-uploaded media without re-uploading', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../screens/BusinessDashboardScreen.js'), 'utf8');
+    expect(src).toContain('setCreativeUpload({ asset, mediaPath: pl.mediaPath');
+  });
   test('the dashboard sends the full offer editor through the queue and blocks a second send', () => {
     const src = fs.readFileSync(path.join(__dirname, '../screens/BusinessDashboardScreen.js'), 'utf8');
     expect(src).toContain('queue: true');

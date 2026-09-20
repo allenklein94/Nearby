@@ -1737,6 +1737,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         setOfferDiscountInput(form.discount); setOfferPriceIsPerPerson(form.perPerson); setOfferTitleInput(form.title);
         setOfferIncludedItemsInput(form.items); setOfferRedemptionInput(form.redemption); setSelectedExperienceIdInput(form.experienceId);
         setResendingSubmissionId(sub.id);
+        // Bring the media back too. It is already uploaded, so it is reused (not uploaded again); it is screened afresh on send.
+        const pl = sub.payload ?? {};
+        if (pl.creativeId) {
+          setOfferCreativeId(pl.creativeId);
+        } else if (pl.mediaPath && (pl.mediaType === 'image' || pl.mediaType === 'video')) {
+          const url = await getSignedBusinessOfferMediaUrl(pl.mediaPath);
+          if (url) {
+            const asset = { uri: url, type: pl.mediaType, mimeType: pl.mediaType === 'video' ? 'video/mp4' : 'image/jpeg' };
+            setOfferPickedMediaAsset(asset);
+            setCreativeUpload({ asset, mediaPath: pl.mediaPath, mediaType: pl.mediaType, framePaths: Array.isArray(pl.framePaths) ? pl.framePaths : [] });
+          }
+        }
       }
       await loadOfferSubmissions(selectedPartner.id);
     } catch (e) {
