@@ -19,3 +19,9 @@ export function recommendationFacts(g) {
   const when = g.scheduled_at ? formatHeroDateTime(g.scheduled_at) : null;
   return { why, distance, when, meta: [distance, when].filter(Boolean).join(' · ') || null };
 }
+
+// "1.3 mi · Today · 6:30 PM" for surfaces that already format their own time wording (e.g. Discover's "Tonight").
+export function factsMeta(g, when = null) {
+  const parts = [formatDistance(g?.distanceMiles), when ?? (g?.scheduled_at ? formatHeroDateTime(g.scheduled_at) : null)].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
+}

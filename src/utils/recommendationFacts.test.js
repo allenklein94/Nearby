@@ -55,3 +55,26 @@ describe('the wizard and Home cards use the why / how far / when rule', () => {
     }
   });
 });
+
+describe('Discover and Gatherings cards use the same rule', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const read = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
+  const { factsMeta } = require('./recommendationFacts');
+  test('factsMeta puts distance first and honours a surface\'s own time wording', () => {
+    expect(factsMeta({ distanceMiles: 1.3 }, 'Tonight · 6:30 PM')).toBe('1.3 mi · Tonight · 6:30 PM');
+    expect(factsMeta({}, 'Tonight · 6:30 PM')).toBe('Tonight · 6:30 PM');
+    expect(factsMeta({}, null)).toBeNull();
+  });
+  test('Discover names the interest and no longer prints the raw distance label', () => {
+    const src = read('../screens/DiscoverHubScreen.js');
+    expect(src).not.toMatch(/Matches your \$\{/);
+    expect(src).not.toMatch(/timeLine, g\.distanceLabel/);
+    expect(src).toMatch(/factsMeta\(g, timeLine\)/);
+  });
+  test('Gatherings feed badge names the interest; every locale has the key', () => {
+    expect(read('../screens/GatheringsScreen.js')).toMatch(/gatherings\.becauseYouLike/);
+    const tr = read('../i18n/translations.js');
+    expect((tr.match(/becauseYouLike:/g) ?? []).length).toBe((tr.match(/matchesInterests:/g) ?? []).length);
+  });
+});

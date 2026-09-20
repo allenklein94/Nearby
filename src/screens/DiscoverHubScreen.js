@@ -34,6 +34,8 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { PLACE_CATEGORIES } from '../constants/placeCategories';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
+import { factsMeta } from '../utils/recommendationFacts';
+import { becauseYouLikeReason, categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
 import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
 import { matchesDateFilter } from '../utils/gatheringDateFilter';
 import { lightenHex } from '../utils/colorUtils';
@@ -1079,10 +1081,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // still cleared STANDARD_SCORE (e.g. "Very close" / "0.3 mi away" /
   // "Happening today").
   function primaryReasonLine(g) {
-    if (g.matchesYourInterests && g.interest_tag) return `Matches your ${g.interest_tag} interest`;
+    if (g.matchesYourInterests && g.interest_tag) return becauseYouLikeReason(g.interest_tag);
     const attendeeCount = g.approvedAttendees?.length ?? 0;
     if (attendeeCount >= TRENDING_ATTENDANCE_MIN) return `${attendeeCount} attending`;
-    return g.fit.reasons[0] ?? null;
+    // Distance and time are the card's own "how far / when" line; repeating them as the reason would say them twice.
+    return (g.fit.reasons ?? []).find((r) => ![REASON_CATEGORIES.DISTANCE, REASON_CATEGORIES.TIME].includes(categorizeReasonText(r))) ?? null;
   }
 
   // The hero card's small eyebrow label -- same three real signals as
@@ -1177,7 +1180,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         style={[styles.card, isSource && styles.cardSourceHighlight]}
         onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
         activeOpacity={0.85}
-        accessibilityLabel={`${g.title}, ${g.distanceLabel}`}
+        accessibilityLabel={`${g.title}, ${factsMeta(g, gatheringTimeLine(g.scheduled_at)) ?? ''}`}
         accessibilityRole="button"
       >
         {coverPhotoUrls[g.id] ? (
@@ -1187,9 +1190,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
         )}
         <View style={{ flex: 1 }}>
           <Text style={styles.cardTitle}>{g.title}</Text>
-          {(timeLine || g.distanceLabel) && (
+          {factsMeta(g, timeLine) && (
             <Text style={styles.cardSubtitle} numberOfLines={1}>
-              {[timeLine, g.distanceLabel].filter(Boolean).join(' · ')}
+              {factsMeta(g, timeLine)}
             </Text>
           )}
           {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
@@ -1270,7 +1273,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <View style={{ flex: 1, marginRight: spacing.sm }}>
               <Text style={styles.heroTitle} numberOfLines={1}>{g.title}</Text>
               <Text style={styles.heroMeta} numberOfLines={1}>
-                {[reasonLine, timeLine, g.distanceLabel].filter(Boolean).join(' · ')}
+                {[reasonLine, factsMeta(g, timeLine)].filter(Boolean).join(' · ')}
               </Text>
             </View>
             {action.kind === 'cta' ? (
@@ -1313,9 +1316,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
         )}
         <View style={{ flex: 1 }}>
           <Text style={styles.cardTitle}>{g.title}</Text>
-          {(reasonLine || timeLine || g.distanceLabel) && (
+          {(reasonLine || factsMeta(g, timeLine)) && (
             <Text style={styles.cardSubtitle} numberOfLines={1}>
-              {[reasonLine, timeLine, g.distanceLabel].filter(Boolean).join(' · ')}
+              {[reasonLine, factsMeta(g, timeLine)].filter(Boolean).join(' · ')}
             </Text>
           )}
           {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
@@ -1358,7 +1361,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         style={styles.nowCard}
         onPress={() => openContextFor(g)}
         activeOpacity={0.85}
-        accessibilityLabel={`${g.title}, ${[timeLine, g.distanceLabel].filter(Boolean).join(', ')}. Shows more like this.`}
+        accessibilityLabel={`${g.title}, ${factsMeta(g, timeLine)}. Shows more like this.`}
         accessibilityRole="button"
       >
         {coverPhotoUrls[g.id] ? (
@@ -1369,9 +1372,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
           </View>
         )}
         <Text style={styles.nowCardTitle} numberOfLines={1}>{g.title}</Text>
-        {(timeLine || g.distanceLabel) && (
+        {factsMeta(g, timeLine) && (
           <Text style={styles.nowCardSubtitle} numberOfLines={1}>
-            {[timeLine, g.distanceLabel].filter(Boolean).join(' · ')}
+            {factsMeta(g, timeLine)}
           </Text>
         )}
       </TouchableOpacity>
@@ -2006,7 +2009,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   style={styles.card}
                   onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
                   activeOpacity={0.85}
-                  accessibilityLabel={`${g.title}, ${g.distanceLabel}`}
+                  accessibilityLabel={`${g.title}, ${factsMeta(g, gatheringTimeLine(g.scheduled_at)) ?? ''}`}
                   accessibilityRole="button"
                 >
                   {coverPhotoUrls[g.id] ? (
@@ -2016,7 +2019,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   )}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{g.title}</Text>
-                    <Text style={styles.cardSubtitle}>{g.distanceLabel}</Text>
+                    <Text style={styles.cardSubtitle}>{factsMeta(g, gatheringTimeLine(g.scheduled_at))}</Text>
                     {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
                       <Text
                         style={[styles.cardSubtitle, gatheringFullnessLabel(g)?.startsWith('🔒') && { color: colors.danger }]}
@@ -2214,7 +2217,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                       // names the real matched tag, not the generic shared
                       // "Matches your interests" string (o.target_interest_tag
                       // is already the actual tag value on this row).
-                      o.target_interest_tag ? `Matches your ${o.target_interest_tag} interest` : null,
+                      o.target_interest_tag ? becauseYouLikeReason(o.target_interest_tag) : null,
                     ].filter(Boolean).join(' · ')}
                     onPress={() => navigation.navigate('BrandOffers', { highlightOfferId: o.id })}
                     accessibilityLabel={`${o.title}, ${o.brand_partners?.name}, ${isRedeemed ? 'already redeemed' : 'Redeem'}`}

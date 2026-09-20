@@ -1,3 +1,4 @@
+import { factsMeta } from '../utils/recommendationFacts';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { PullToRefresh, FilterTransition, TapActiveChip, NLoader, SkeletonFeed } from '../motion';
@@ -906,7 +907,7 @@ export default function GatheringsScreen({ navigation, route }) {
                 )}
                 {item.matchesYourInterests && (
                   <View style={styles.matchBadge}>
-                    <Text style={styles.matchBadgeText}>{t('gatherings.matchesInterests')}</Text>
+                    <Text style={styles.matchBadgeText}>{item.interest_tag ? `${t('gatherings.becauseYouLike')} ${item.interest_tag}` : t('gatherings.matchesInterests')}</Text>
                   </View>
                 )}
                 {(() => {
@@ -938,8 +939,7 @@ export default function GatheringsScreen({ navigation, route }) {
                 <GatheringOfferBadge gatheringId={item.id} />
                 {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
                 <View style={styles.metaRow}>
-                  <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
-                  {item.distanceLabel && <Text style={styles.distance}>· {item.distanceLabel}</Text>}
+                  <Text style={styles.time}>{factsMeta(item) ?? formatDate(item.scheduled_at)}</Text>
                 </View>
 
                 <TouchableOpacity
