@@ -22,6 +22,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import { offerPrimaryAction } from '../utils/primaryAction';
 
 // A genuinely unified feed — notices/waves, recent crossed paths,
 // and other activity all interleaved by recency into one
@@ -645,6 +646,9 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                     <Text style={styles.rowTitle}>{title}</Text>
                     {subtitleParts.length > 0 && <Text style={styles.rowSubtitle}>{subtitleParts.join(' · ')}</Text>}
                   </View>
+                  {item.type === 'business_reply' && offerPrimaryAction(offer) && (
+                    <View style={styles.offerCta}><Text style={styles.offerCtaText}>{offerPrimaryAction(offer).label}</Text></View>
+                  )}
                 </TouchableOpacity>
               );
             }
@@ -736,6 +740,8 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  offerCta: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, marginLeft: spacing.sm },
+  offerCtaText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headerTitle: { ...typography.title, color: colors.textPrimary },

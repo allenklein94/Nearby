@@ -49,3 +49,9 @@ export { needsApproval };
 export function peoplePrimaryAction(nearbyPeopleCount) {
   return nearbyPeopleCount > 0 ? { kind: 'meet_people', label: 'Meet People' } : null;
 }
+
+// Business offer received (consumer side): "View Offer" only while the offer is still open to act on. Once accepted,
+// declined or completed the row is history and keeps its plain tap-through with no button.
+export function offerPrimaryAction(offer) {
+  return offer?.status === 'offered' ? { kind: 'view_offer', label: 'View Offer' } : null;
+}

@@ -1,4 +1,4 @@
-import { gatheringPrimaryAction, peoplePrimaryAction } from './primaryAction';
+import { gatheringPrimaryAction, peoplePrimaryAction, offerPrimaryAction } from './primaryAction';
 
 const NOW = new Date('2026-09-20T12:00:00Z').getTime();
 const base = { id: 'g', host_id: 'host', scheduled_at: '2026-09-20T23:00:00Z', is_public: true, capacity: null, attendees: [] };
@@ -37,4 +37,10 @@ test('Meet People only with real people nearby', () => {
   expect(peoplePrimaryAction(3).label).toBe('Meet People');
   expect(peoplePrimaryAction(0)).toBeNull();
   expect(peoplePrimaryAction(undefined)).toBeNull();
+});
+
+test('View Offer only while the offer is still open', () => {
+  expect(offerPrimaryAction({ status: 'offered' }).label).toBe('View Offer');
+  ['accepted', 'declined', 'completed', 'withdrawn', undefined].forEach((st) => expect(offerPrimaryAction({ status: st })).toBeNull());
+  expect(offerPrimaryAction(null)).toBeNull();
 });
