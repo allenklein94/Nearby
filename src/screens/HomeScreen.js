@@ -45,6 +45,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { isGatheringPast } from '../utils/objectState';
 import { recommendationFacts, recommendationRow } from '../utils/recommendationFacts';
+import { gatheringCardModel } from '../utils/recommendationCard';
 import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { homeLoadNotice } from '../utils/homeLoadNotice';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime, describeFriendGatheringTiming } from '../utils/timeContext';
@@ -2727,7 +2728,8 @@ export default function HomeScreen({ navigation }) {
               );
             })()}
 
-            {homeMerge.cards.map(({ gathering: g, reasons, hasFriend, trendingOnly }) => {
+            {homeMerge.cards.map(({ gathering: g, signals, reasons, hasFriend, trendingOnly }) => {
+              const card = gatheringCardModel(g, { signals });
               const timing = hasFriend && g.scheduled_at ? describeFriendGatheringTiming(g.scheduled_at) : null;
               const past = !!timing?.isPast;
               return (
@@ -2739,12 +2741,13 @@ export default function HomeScreen({ navigation }) {
                   accessibilityRole="button"
                 >
                   <Text style={styles.trendingTitle}>{categoryStyleFor(g.interest_tag).icon} {g.title}</Text>
-                  <Text style={styles.trendingMeta}>{reasons.join(' · ')}</Text>
+                  {card.why ? <Text style={styles.trendingMeta}>{card.why}</Text> : null}
                   <Text style={styles.trendingMeta}>
                     {[recommendationFacts(g).distance,
                       g.scheduled_at ? (past ? `${timing.text} · Already happened` : formatHeroDateTime(g.scheduled_at)) : null,
                       g.approvedAttendees ? `${attendeeTotal(g)} attending` : null].filter(Boolean).join(' · ')}
                   </Text>
+                  {card.social ? <Text style={styles.trendingMeta}>{card.social}</Text> : null}
                   {gatheringFullnessLabel(g) && (
                     <Text style={[styles.trendingMeta, gatheringFullnessLabel(g).startsWith('🔒') && { color: colors.danger }]}>
                       {gatheringFullnessLabel(g)}
