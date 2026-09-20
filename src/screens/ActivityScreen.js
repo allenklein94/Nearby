@@ -23,6 +23,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { offerPrimaryAction } from '../utils/primaryAction';
+import { activityLoadNotice } from '../utils/homeLoadNotice';
 
 // A genuinely unified feed — notices/waves, recent crossed paths,
 // and other activity all interleaved by recency into one
@@ -66,6 +67,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
   const [photoUrls, setPhotoUrls] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [loadFailures, setLoadFailures] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [compatScores, setCompatScores] = useState({});
   const [noticedBackIds, setNoticedBackIds] = useState({});
@@ -115,6 +117,9 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
     // Fired together instead; the filtering/scoring/sorting that combines
     // their results stays as synchronous logic below, once they've all
     // resolved.
+    // A failed source is recorded, not turned into "nothing happened" (global rule 7).
+    const failed = [];
+    const settle = (promise, key) => promise.catch((e) => { failed.push(key); console.error(`activity: ${key} failed`, e); return []; });
     const [
       premiumStatus,
       { data: myProfile },
@@ -140,14 +145,14 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
         .eq('to_user', myId)
         .order('created_at', { ascending: false })
         .limit(200),
-      getNearbyMatches().catch(() => []),
-      getFollowedBusinessUpdates().catch(() => []),
+      settle(getNearbyMatches(), 'people'),
+      settle(getFollowedBusinessUpdates(), 'businessUpdates'),
       // Phase 6 of the "build everything" plan (CLAUDE.md): "Activity as
       // ecosystem memory" — real business-request/offer status-change
       // events (a business's own reply, an accepted offer, a confirmed
       // reservation), interleaved into the same chronological feed as
       // every other real signal here, not a separate section.
-      getMyBusinessEcosystemActivity(myId).catch(() => []),
+      settle(getMyBusinessEcosystemActivity(myId), 'businessActivity'),
     ]);
     setPremium(premiumStatus);
 
@@ -204,6 +209,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
     const scoreEntries = noticeItems.map((item) => [item.key, calculateCompatibility(myProfile, item.raw.profiles)]);
     setCompatScores(Object.fromEntries(scoreEntries));
 
+    setLoadFailures(failed);
     setLoadError(false);
     } catch (e) {
       setLoadError(true);
@@ -565,6 +571,12 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
             <Text style={styles.upsellText}>{t('notices.unlockPremiumText')}</Text>
           </View>
           <Text style={styles.upsellArrow}>›</Text>
+        </TouchableOpacity>
+      )}
+
+      {!loading && !loadError && activityLoadNotice(loadFailures) && (
+        <TouchableOpacity onPress={load} style={{ marginHorizontal: spacing.lg, marginBottom: spacing.sm }} accessibilityRole="button" accessibilityLabel="Try loading Activity again">
+          <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{activityLoadNotice(loadFailures)} <Text style={{ color: colors.primary, fontWeight: '700' }}>Try again →</Text></Text>
         </TouchableOpacity>
       )}
 

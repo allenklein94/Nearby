@@ -211,6 +211,7 @@ export default function HomeScreen({ navigation }) {
   const [myUserId, setMyUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [offersLoadFailed, setOffersLoadFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [startModalVisible, setStartModalVisible] = useState(false);
   const [socialForecast, setSocialForecast] = useState(null);
@@ -730,7 +731,8 @@ export default function HomeScreen({ navigation }) {
       // non-fatal — a failure here shouldn't affect anything else on the
       // screen.
       try {
-        const offers = await getActiveOffers(myLocation?.coords?.latitude ?? null, myLocation?.coords?.longitude ?? null).catch(() => []);
+        setOffersLoadFailed(false);
+        const offers = await getActiveOffers(myLocation?.coords?.latitude ?? null, myLocation?.coords?.longitude ?? null).catch((e) => { console.error('home offers failed', e); setOffersLoadFailed(true); return []; });
         // "The Plan Engine" Phase 4 (CLAUDE.md) -- real post-visit
         // feedback (gathering_feedback/business_offer_outcomes) feeding
         // back into this same scoring pass. Supplementary, non-fatal --
@@ -1538,9 +1540,9 @@ export default function HomeScreen({ navigation }) {
           <TabHeaderActions navigation={navigation} />
         </View>
 
-        {homeLoadNotice(dashboard?.loadFailures) && (
+        {homeLoadNotice([...(dashboard?.loadFailures ?? []), ...(offersLoadFailed ? ['offers'] : [])]) && (
           <View style={styles.outcomePromptCard}>
-            <Text style={styles.outcomePromptText}>{homeLoadNotice(dashboard.loadFailures)}</Text>
+            <Text style={styles.outcomePromptText}>{homeLoadNotice([...(dashboard?.loadFailures ?? []), ...(offersLoadFailed ? ['offers'] : [])])}</Text>
             <TouchableOpacity style={styles.predictiveActButton} onPress={onRefresh} accessibilityLabel="Try loading Home again" accessibilityRole="button">
               <Text style={styles.predictiveActButtonText}>Try again →</Text>
             </TouchableOpacity>

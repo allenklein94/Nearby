@@ -13,3 +13,15 @@ test('home dashboard never swallows a failed load as an empty list', () => {
   expect(src).not.toMatch(/\.catch\(\(\) => \[\]\)/);
   expect(src).toContain('loadFailures');
 });
+
+test('no bare swallowed-load catch remains in the audited screens/services', () => {
+  const fs = require('fs');
+  const path = require('path');
+  for (const f of ['screens/ActivityScreen.js', 'screens/OnboardingRecommendationsScreen.js', 'screens/BusinessDashboardScreen.js', 'screens/HomeScreen.js', 'services/surpriseMe.js', 'services/homeDashboard.js']) {
+    const src = fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+    expect(`${f}: ${/\.catch\(\(\) => \[\]\)/.test(src)}`).toBe(`${f}: false`);
+  }
+  const { activityLoadNotice } = require('./homeLoadNotice');
+  expect(activityLoadNotice([])).toBeNull();
+  expect(activityLoadNotice(['businessUpdates'])).toMatch(/Activity didn't load \(updates from businesses you follow\)/);
+});

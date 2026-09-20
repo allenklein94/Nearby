@@ -2475,8 +2475,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // getBusinessMessagesPage returns newest-first; reversed here since this
   // screen renders its thread oldest-to-newest in a plain (non-inverted) list.
   async function loadConversationMessages(userId) {
-    const page = await getBusinessMessagesPage(selectedPartner.id, userId).catch(() => []);
-    setConversationMessages([...page].reverse());
+    try {
+      const page = await getBusinessMessagesPage(selectedPartner.id, userId);
+      setConversationMessages([...page].reverse());
+    } catch (e) {
+      // A failed load must not read as an empty conversation.
+      Alert.alert("Couldn't load this conversation", 'Please try again.');
+    }
   }
 
   async function openConversation(convo) {

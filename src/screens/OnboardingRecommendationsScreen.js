@@ -33,7 +33,7 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
         setMyName(profile?.display_name?.split(' ')[0] ?? '');
         setWantsCelebrations(wantsCelebrationsStep(profile?.onboarding_motivations));
       }
-      const results = await getOnboardingRecommendations().catch(() => []);
+      const results = await getOnboardingRecommendations();
       setRecommendations(results);
     } catch (e) {
       setLoadError(true);

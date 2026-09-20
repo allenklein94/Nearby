@@ -42,6 +42,10 @@ export {
   findConnectedPerson,
 } from './surpriseMeLogic';
 
+// Connected people only ADD an optional "your friend likes this" line to a suggestion; when they cannot be loaded the
+// suggestion is shown without it (no claim about friends is made either way), and the failure is logged, not silent.
+const logSoftFailure = (what) => (e) => { console.error(`${what} failed`, e); return []; };
+
 // Real accepted friends + real matches, deduped by id (someone can be both
 // a friend and a match), each carrying their own real declared interests --
 // reads `profiles.interests` the same already-open way DiscoveryScreen's
@@ -49,8 +53,8 @@ export {
 // getBrowseMatches), not a new privileged read path.
 export async function getConnectedPeopleWithInterests() {
   const [friends, matches] = await Promise.all([
-    getMyFriends().catch(() => []),
-    getMyMatches().catch(() => []),
+    getMyFriends().catch(logSoftFailure('surprise friends')),
+    getMyMatches().catch(logSoftFailure('surprise matches')),
   ]);
   const byId = new Map();
   for (const f of friends) if (f.id) byId.set(f.id, { id: f.id, name: f.display_name, photo_url: f.photo_url });
@@ -134,7 +138,7 @@ export async function runSurpriseMe({ when, mood }) {
   const experience = results.find((r) => r.experience)?.experience ?? null;
 
   const suggestion = pickSuggestion(experience, merged);
-  const connectedPeople = suggestion ? await getConnectedPeopleWithInterests().catch(() => []) : [];
+  const connectedPeople = suggestion ? await getConnectedPeopleWithInterests().catch(logSoftFailure('surprise connected people')) : [];
   const connectedPerson = suggestion ? findConnectedPerson(suggestion, connectedPeople) : null;
 
   return { suggestion, pool: merged, connectedPeople, connectedPerson, calendarHint };
