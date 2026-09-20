@@ -177,9 +177,16 @@ export default function BrandOffersScreen({ navigation, route }) {
         </Text>
 
         {offers.length === 0 && (
-          <FadeInState style={styles.emptyState}>
+          <FadeInState opportunity style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>🎁</Text>
             <Text style={styles.emptyText}>{t('brandOffers.noOffers')}</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Discover')}
+              accessibilityLabel="Explore what's happening nearby"
+              accessibilityRole="button"
+            >
+              <Text style={styles.emptyActionText}>Explore what's nearby →</Text>
+            </TouchableOpacity>
           </FadeInState>
         )}
 
@@ -280,6 +287,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary, textAlign: 'center', lineHeight: 20 },
+  emptyActionText: { ...typography.body, color: colors.primary, fontWeight: '700', marginTop: spacing.md },
   card: {
     backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,
