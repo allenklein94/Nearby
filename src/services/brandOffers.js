@@ -33,6 +33,11 @@ export async function getEstimatedAmountOwed(partnerId) {
     billingModel: row?.billing_model ?? null,
     includedUnits: row?.included_units ?? 0,
     billableCount: row?.billable_count ?? 0,
+    monthlyFee: row?.monthly_fee ?? null,
+    redemptionFee: row?.redemption_fee ?? null,
+    baseFeeAmount: row?.base_fee_amount ?? 0,
+    redemptionAmount: row?.redemption_amount ?? 0,
+    capped: row?.capped ?? false,
   };
 }
 

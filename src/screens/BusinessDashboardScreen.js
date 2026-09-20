@@ -6,6 +6,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
+import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityOccasions, setBusinessOfferedOccasions } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
@@ -4041,13 +4042,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <View style={styles.estimatedOwedBanner}>
                       <Text style={styles.estimatedOwedLabel}>Estimated this month</Text>
                       <Text style={styles.estimatedOwedValue}>${Number(estimatedOwed.estimatedAmount ?? 0).toFixed(2)}</Text>
-                      <Text style={styles.estimatedOwedDetail}>
-                        {estimatedOwed.billingModel === 'flat_monthly'
-                          ? 'Flat monthly rate — final invoice may differ slightly'
-                          : estimatedOwed.includedUnits > 0
-                          ? `${estimatedOwed.redemptionCount} redemption${estimatedOwed.redemptionCount === 1 ? '' : 's'} this month (${Math.min(estimatedOwed.redemptionCount, estimatedOwed.includedUnits)} of ${estimatedOwed.includedUnits} included free) — final invoice may differ slightly`
-                          : `${estimatedOwed.redemptionCount} redemption${estimatedOwed.redemptionCount === 1 ? '' : 's'} this month so far — final invoice may differ slightly`}
-                      </Text>
+                      {billingBreakdownLines(estimatedOwed).map((line) => (
+                        <Text key={line} style={styles.estimatedOwedDetail}>{line}</Text>
+                      ))}
                     </View>
                   )}
                   {insights?.top_interests?.length > 0 && (
