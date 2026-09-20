@@ -9,6 +9,7 @@ import { getUserLocation } from './userLocation';
 import { meetSomeoneTonight } from '../utils/meetTonight';
 import { canonicalizeInterests, becauseYouLikeCategories } from '../constants/interestGraph';
 import { isGatheringPast } from '../utils/objectState';
+import { attendeeTotal } from '../utils/gatheringFullness';
 
 function isToday(iso) {
   const d = new Date(iso);
@@ -464,8 +465,8 @@ export async function getHomeDashboard() {
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 4);
   let trendingGatherings = nearbyGatherings
-    .filter((g) => (g.approvedAttendees?.length ?? 0) >= TRENDING_ATTENDANCE_MIN)
-    .sort((a, b) => (b.approvedAttendees?.length ?? 0) - (a.approvedAttendees?.length ?? 0))
+    .filter((g) => attendeeTotal(g) >= TRENDING_ATTENDANCE_MIN)
+    .sort((a, b) => attendeeTotal(b) - attendeeTotal(a))
     .slice(0, 3);
 
   // Starting within the next 30 minutes. Gatherings that already started are
@@ -607,8 +608,8 @@ export async function getHomeDashboard() {
     const notMine = (g) => !upcomingPlanIds.has(g.id);
     const pool = nearbyGatherings.filter(notMine);
     trendingGatherings = pool
-      .filter((g) => (g.approvedAttendees?.length ?? 0) >= TRENDING_ATTENDANCE_MIN)
-      .sort((a, b) => (b.approvedAttendees?.length ?? 0) - (a.approvedAttendees?.length ?? 0))
+      .filter((g) => attendeeTotal(g) >= TRENDING_ATTENDANCE_MIN)
+      .sort((a, b) => attendeeTotal(b) - attendeeTotal(a))
       .slice(0, 3);
     happeningNow = happeningNow.filter(notMine);
     bestPick = null;

@@ -8,6 +8,7 @@ import { getMyCommunities } from './communities';
 import { REASON_TEXT, becauseYouLikeReason } from '../constants/recommendationReasonVocabulary';
 import { getUserLocation, requireUserLocation } from './userLocation';
 import { isGatheringPast, isGatheringUpcoming } from '../utils/objectState';
+import { attendeeTotal } from '../utils/gatheringFullness';
 
 function localArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 100) / 100;
@@ -179,6 +180,7 @@ async function enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, myInt
   }
 
   const maxMiles = tier === 'local' ? LOCAL_TIER_MAX_MILES : WIDE_TIER_MAX_MILES;
+  const approvedCounts = await getApprovedCounts(gatheringIds);
 
   return filtered
     .map((gathering) => {
@@ -197,6 +199,7 @@ async function enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, myInt
         latitude: gathering.show_on_map ? (dist?.fuzzed_lat ?? null) : null,
         longitude: gathering.show_on_map ? (dist?.fuzzed_lng ?? null) : null,
         approvedAttendees,
+        approvedCount: approvedCounts[gathering.id] ?? null,
       };
     })
     .filter((gathering) => gathering.is_public || gathering.distanceMiles === null || gathering.distanceMiles <= maxMiles)
@@ -408,7 +411,8 @@ async function attachApprovedAttendees(gatheringList) {
     byGathering[row.gathering_id].push(row);
   }
 
-  return gatheringList.map((g) => ({ ...g, approvedAttendees: byGathering[g.id] ?? [] }));
+  const approvedCounts = await getApprovedCounts(gatheringList.map((g) => g.id));
+  return gatheringList.map((g) => ({ ...g, approvedAttendees: byGathering[g.id] ?? [], approvedCount: approvedCounts[g.id] ?? null }));
 }
 
 // "Interested" (I might go): private, non-committal, separate from attendance (gathering_interest). It never counts
@@ -969,7 +973,9 @@ export async function getGatheringById(gatheringId) {
 
   const myInterest = (data.attendees ?? []).find((a) => a.user_id === userId) ?? null;
   const isHost = data.host_id === userId;
-  const isFull = data.capacity != null && approvedAttendees.length >= data.capacity;
+  const approvedCounts = await getApprovedCounts([gatheringId]);
+  const approvedCount = approvedCounts[gatheringId] ?? null;
+  const isFull = data.capacity != null && (approvedCount ?? approvedAttendees.length) >= data.capacity;
   // Only accurate for the host or the caller's own row — RLS only
   // surfaces other people's non-approved rows to the host (see
   // "Users see own interest or gatherings they host" on gathering_interest),
@@ -1030,6 +1036,7 @@ export async function getGatheringById(gatheringId) {
   return {
     ...data,
     approvedAttendees,
+    approvedCount,
     myInterested,
     interestedCount,
     myStatus: myInterest?.status ?? null,
@@ -1078,7 +1085,7 @@ export async function getFirstTimerAttendeeIds(gatheringId, attendeeUserIds) {
 export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendAttendeeCount = 0 } = {}) {
   const reasons = [];
   let score = 0;
-  const attendeeCount = gathering.approvedAttendees?.length ?? 0;
+  const attendeeCount = attendeeTotal(gathering);
 
   if (attendeeCount > 0) {
     score += Math.min(attendeeCount, 10);
@@ -1283,15 +1290,28 @@ export async function getGatheringGroupInsights(gatheringId) {
   return data?.[0] ?? null;
 }
 
-export async function getApprovedAttendeeCount(gatheringId) {
-  const { count, error } = await supabase
-    .from('gathering_interest')
-    .select('id', { count: 'exact', head: true })
-    .eq('gathering_id', gatheringId)
-    .eq('status', 'approved');
+// The true approved-attendee counts, by gathering id. Server-side because a
+// client read of gathering_interest hides a blocked person (RLS), so a count
+// taken from the visible rows can be short; join_gathering counts every
+// approved row. A failed lookup returns {} -- callers then fall back to the
+// visible rows (see utils/gatheringFullness.js `attendeeTotal`).
+export async function getApprovedCounts(gatheringIds) {
+  const ids = [...new Set((gatheringIds ?? []).filter(Boolean))];
+  if (ids.length === 0) return {};
+  const { data, error } = await supabase.rpc('get_gathering_approved_counts', { gathering_ids: ids });
+  if (error) {
+    console.error('get_gathering_approved_counts error', error);
+    return {};
+  }
+  const counts = Object.fromEntries((data ?? []).map((r) => [r.gathering_id, r.approved_count]));
+  // A gathering with no approved rows is simply absent from the RPC result.
+  return Object.fromEntries(ids.map((id) => [id, counts[id] ?? 0]));
+}
 
-  if (error) return 0;
-  return count ?? 0;
+// null (unknown) when the lookup fails, never a fabricated 0.
+export async function getApprovedAttendeeCount(gatheringId) {
+  const counts = await getApprovedCounts([gatheringId]);
+  return counts[gatheringId] ?? null;
 }
 
 // A genuine "is this really your first one" check for the join-success

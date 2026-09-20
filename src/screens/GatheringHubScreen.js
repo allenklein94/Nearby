@@ -30,6 +30,7 @@ import { spacing, radius, typography } from '../theme';
 import * as Haptics from 'expo-haptics';
 
 import { countLabel } from '../utils/plural';
+import { attendeeTotal } from '../utils/gatheringFullness';
 // The live, day-of screen for people who already joined — distinct from
 // GatheringDetailScreen (which is the persuade-you-to-join page). Built
 // against the Aug 7 "Gathering Hub" vision doc; see the migration comment
@@ -324,7 +325,7 @@ export default function GatheringHubScreen({ route, navigation }) {
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{gathering.title}</Text>
             <Text style={styles.metaLine}>
-              {countdown ?? 'This gathering has wrapped up'} · {gathering.approvedAttendees.length} attending
+              {countdown ?? 'This gathering has wrapped up'} · {attendeeTotal(gathering)} attending
             </Text>
             {!gathering.isHost && (
               // Aug 30 2026 -- a real, previously-missing link back to

@@ -33,9 +33,10 @@ import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { getSocialForecast } from '../services/homeDashboard';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { DATE_OPTIONS, matchesDateFilter } from '../utils/gatheringDateFilter';
-import { gatheringFullnessLabel } from '../utils/gatheringFullness';
+import { attendeeTotal, gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { useTheme } from '../context/ThemeContext';
 import { formatDateTime } from '../utils/timeLabels';
+import { countLabel } from '../utils/plural';
 import useMyInterests from '../hooks/useMyInterests';
 import { becauseYouLikeCategories } from '../constants/interestGraph';
 import { rankByBlend, forYouBlend } from '../constants/blendedRanking';
@@ -970,9 +971,9 @@ export default function GatheringsScreen({ navigation, route }) {
                       })}
                     </View>
                     <Text style={styles.attendeesText}>
-                      {item.approvedAttendees.length === 1
+                      {attendeeTotal(item) === 1 && item.approvedAttendees.length === 1
                         ? `${item.approvedAttendees[0].profiles?.display_name} is attending`
-                        : `${item.approvedAttendees.length} people attending`}
+                        : `${countLabel(attendeeTotal(item), 'person', 'people')} attending`}
                     </Text>
                   </View>
                 )}
@@ -983,7 +984,7 @@ export default function GatheringsScreen({ navigation, route }) {
                     onPress={() => setIntentModalGathering(item)}
                     activeOpacity={0.85}
                     accessibilityLabel={
-                      item.capacity != null && (item.approvedAttendees?.length ?? 0) >= item.capacity
+                      item.capacity != null && attendeeTotal(item) >= item.capacity
                         ? 'Join Waitlist'
                         : joinLabel(item)
                     }
@@ -997,7 +998,7 @@ export default function GatheringsScreen({ navigation, route }) {
                         for the exact same underlying gathering_interest
                         insert -- same computation now applied here too. */}
                     <Text style={styles.interestButtonText}>
-                      {item.capacity != null && (item.approvedAttendees?.length ?? 0) >= item.capacity
+                      {item.capacity != null && attendeeTotal(item) >= item.capacity
                         ? 'Join Waitlist'
                         : joinLabel(item)}
                     </Text>
@@ -1053,7 +1054,7 @@ export default function GatheringsScreen({ navigation, route }) {
         }}
         confirmLabel={
           intentModalGathering?.capacity != null &&
-          (intentModalGathering?.approvedAttendees?.length ?? 0) >= intentModalGathering.capacity
+          attendeeTotal(intentModalGathering ?? {}) >= intentModalGathering.capacity
             ? 'Join Waitlist'
             : joinLabel(intentModalGathering)
         }

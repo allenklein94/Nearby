@@ -18,10 +18,19 @@ const ALMOST_FULL_MIN = 2;
 // gathering.isFull field -- only getGatheringById() computes that field
 // today; getNearbyGatherings()/searchGatherings() don't, so relying on it
 // would silently read as "not full" everywhere except one screen.
+// How many people are really going. Prefers the server's `approvedCount`
+// (join_gathering counts every approved row) over the visible attendee rows,
+// which are short by any blocked person RLS hides. Falls back to the visible
+// rows only when the server count was not fetched.
+export function attendeeTotal(gathering) {
+  if (typeof gathering?.approvedCount === 'number') return gathering.approvedCount;
+  if (Array.isArray(gathering?.approvedAttendees)) return gathering.approvedAttendees.length;
+  return typeof gathering?.attendeeCount === 'number' ? gathering.attendeeCount : 0;
+}
+
 export function getGatheringFullness(gathering) {
   if (gathering?.capacity == null) return null;
-  const attendeeCount = gathering.approvedAttendees?.length
-    ?? (typeof gathering.attendeeCount === 'number' ? gathering.attendeeCount : 0);
+  const attendeeCount = attendeeTotal(gathering);
   const spotsLeft = Math.max(gathering.capacity - attendeeCount, 0);
   const isFull = spotsLeft <= 0;
   const almostFullThreshold = Math.max(ALMOST_FULL_MIN, Math.ceil(gathering.capacity * ALMOST_FULL_THRESHOLD_RATIO));

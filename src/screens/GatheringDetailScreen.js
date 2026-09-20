@@ -55,6 +55,8 @@ import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gathe
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
 import { formatDateTime } from '../utils/timeLabels';
+import { attendeeTotal } from '../utils/gatheringFullness';
+import { countLabel } from '../utils/plural';
 import { spacing, radius, typography } from '../theme';
 import { needsApproval, joinLabel } from '../utils/gatheringJoinMode';
 import { expiredDateLabel } from '../utils/inviteExpiry';
@@ -174,7 +176,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
           getPendingInterestCount(gatheringId),
           getGatheringMessageCount(gatheringId),
         ]);
-        setCountdownStats({ going, interested, messages, waitlisted: g.waitlistCount });
+        setCountdownStats({ going: going ?? attendeeTotal(g), interested, messages, waitlisted: g.waitlistCount });
 
         // Gap #1 (CLAUDE.md, "vision doc describes a fully merged
         // gathering/date <-> business UX"): the gathering's own linked
@@ -518,7 +520,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   // needs a second query and can never say something different from the
   // detailed banner right underneath it.
   const planCompletion = getGatheringPlanCompletion({
-    approvedAttendeeCount: gathering.approvedAttendees?.length ?? 0,
+    approvedAttendeeCount: attendeeTotal(gathering),
     businessRequest,
     acceptedOffer: acceptedBusinessOffer,
   });
@@ -622,8 +624,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
           {gathering.capacity != null && (
             <Text style={styles.capacityLine}>
               {gathering.isFull
-                ? `🔒 Full — ${gathering.approvedAttendees.length}/${gathering.capacity} spots taken`
-                : `${gathering.approvedAttendees.length}/${gathering.capacity} spots filled`}
+                ? `🔒 Full — ${attendeeTotal(gathering)}/${gathering.capacity} spots taken`
+                : `${attendeeTotal(gathering)}/${gathering.capacity} spots filled`}
             </Text>
           )}
           <TouchableOpacity
@@ -687,9 +689,9 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   })}
                 </View>
                 <Text style={styles.attendeesText}>
-                  {gathering.approvedAttendees.length === 1
+                  {attendeeTotal(gathering) === 1 && gathering.approvedAttendees.length === 1
                     ? `${gathering.approvedAttendees[0].profiles?.display_name} is going`
-                    : `${gathering.approvedAttendees.length} people going`}
+                    : countLabel(attendeeTotal(gathering), 'person', 'people') + ' going'}
                   {gathering.approvedAttendees.length > 6 ? ` (+${gathering.approvedAttendees.length - 6} more)` : ''}
                 </Text>
               </View>
@@ -910,7 +912,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
               )}
               {gathering.capacity != null && !gathering.isFull && (
                 (() => {
-                  const spotsLeft = gathering.capacity - gathering.approvedAttendees.length;
+                  const spotsLeft = gathering.capacity - attendeeTotal(gathering);
                   const almostFullThreshold = Math.max(2, Math.ceil(gathering.capacity * 0.2));
                   return spotsLeft > 0 && spotsLeft <= almostFullThreshold ? (
                     <Text style={styles.almostFullNudge}>
@@ -1077,7 +1079,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                             navigation.navigate('AskBusiness', {
                               gatheringId,
                               gatheringTitle: gathering.title,
-                              gatheringPartySize: (gathering.approvedAttendees?.length ?? 0) + 1,
+                              gatheringPartySize: attendeeTotal(gathering) + 1,
                               prefillCategory: gathering.interest_tag ?? null,
                             });
                           }}

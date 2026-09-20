@@ -50,6 +50,7 @@ import {
 } from './intentResolverScoring';
 import { getUserLocation } from './userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
+import { attendeeTotal } from '../utils/gatheringFullness';
 
 const RESULT_CAP = 4;
 
@@ -82,7 +83,7 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
     // a waitlist spot can open), but the caller can now render an honest
     // "Full -- Join Waitlist" state on the result card itself instead of
     // only discovering it one screen later on GatheringDetailScreen.
-    const attendeeCount = gathering.approvedAttendees?.length ?? 0;
+    const attendeeCount = attendeeTotal(gathering);
     const isFull = gathering.capacity != null && attendeeCount >= gathering.capacity;
     let weatherBonus = 0;
     if (weather) {

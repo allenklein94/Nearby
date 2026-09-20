@@ -51,7 +51,7 @@ import StaggeredReveal from '../components/StaggeredReveal';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import { gatheringFullnessLabel } from '../utils/gatheringFullness';
+import { attendeeTotal, gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { gatheringSignalLine } from '../constants/gatheringDisplaySignals';
 // P2 remediation item 8 (CLAUDE.md, "Discover information parity") --
 // the business/perk half of the same fix.
@@ -1093,7 +1093,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const friendReason = friendGoingReason(g, myFriendIds, myUserId);
     if (friendReason) return friendReason;
     if (g.matchesYourInterests && g.interest_tag) return becauseYouLikeReason(g.interest_tag);
-    const attendeeCount = g.approvedAttendees?.length ?? 0;
+    const attendeeCount = attendeeTotal(g);
     if (attendeeCount >= TRENDING_ATTENDANCE_MIN) return `${attendeeCount} attending`;
     // Distance and time are the card's own "how far / when" line; repeating them as the reason would say them twice.
     return (g.fit.reasons ?? []).find((r) => ![REASON_CATEGORIES.DISTANCE, REASON_CATEGORIES.TIME].includes(categorizeReasonText(r))) ?? null;
@@ -1106,7 +1106,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // this gathering its spot (e.g. it qualified purely on distance/today).
   function heroEyebrow(g) {
     if (g.matchesYourInterests) return 'PERSONALIZED';
-    if ((g.approvedAttendees?.length ?? 0) >= TRENDING_ATTENDANCE_MIN) return 'TRENDING';
+    if (attendeeTotal(g) >= TRENDING_ATTENDANCE_MIN) return 'TRENDING';
     return gatheringTimeBadge(g.scheduled_at) ?? 'RECOMMENDED';
   }
 
@@ -1133,7 +1133,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     if (status === 'approved') return { kind: 'state', label: 'Going' };
     if (status === 'waitlisted') return { kind: 'state', label: 'Waitlisted' };
     if (status === 'pending') return { kind: 'state', label: 'Requested' };
-    const isFull = g.capacity != null && (g.approvedAttendees?.length ?? 0) >= g.capacity;
+    const isFull = g.capacity != null && attendeeTotal(g) >= g.capacity;
     return { kind: 'cta', label: joinLabel(g, { isFull }) };
   }
 

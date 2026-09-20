@@ -49,7 +49,7 @@ import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { homeLoadNotice } from '../utils/homeLoadNotice';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime, describeFriendGatheringTiming } from '../utils/timeContext';
 import { homeWeatherCard } from '../constants/weatherRelevance';
-import { gatheringFullnessLabel } from '../utils/gatheringFullness';
+import { attendeeTotal, gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { lightenHex } from '../utils/colorUtils';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
@@ -2743,7 +2743,7 @@ export default function HomeScreen({ navigation }) {
                   <Text style={styles.trendingMeta}>
                     {[recommendationFacts(g).distance,
                       g.scheduled_at ? (past ? `${timing.text} · Already happened` : formatHeroDateTime(g.scheduled_at)) : null,
-                      g.approvedAttendees ? `${g.approvedAttendees.length} attending` : null].filter(Boolean).join(' · ')}
+                      g.approvedAttendees ? `${attendeeTotal(g)} attending` : null].filter(Boolean).join(' · ')}
                   </Text>
                   {gatheringFullnessLabel(g) && (
                     <Text style={[styles.trendingMeta, gatheringFullnessLabel(g).startsWith('🔒') && { color: colors.danger }]}>

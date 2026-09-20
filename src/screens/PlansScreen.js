@@ -15,6 +15,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { attendeeTotal } from '../utils/gatheringFullness';
 const TABS = [
   { key: 'upcoming', label: 'Upcoming' },
   { key: 'hosting', label: 'My Hosting' },
@@ -180,7 +181,7 @@ export default function PlansScreen({ navigation, route }) {
   // neither fetched (this pass didn't add a new query for it) -- PlanCard
   // already renders correctly with peopleCount omitted.
   const peopleCountFor = (item) => {
-    if (item.status === 'going') return item.gathering.approvedAttendees?.length ?? null;
+    if (item.status === 'going') return Array.isArray(item.gathering.approvedAttendees) || typeof item.gathering.approvedCount === 'number' ? attendeeTotal(item.gathering) : null;
     if (item.status === 'hosting' || item.status === 'hosted') {
       return Array.isArray(item.gathering.interested)
         ? item.gathering.interested.filter((i) => i.status === 'approved').length
