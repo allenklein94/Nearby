@@ -49,5 +49,4 @@ describe('host controls live on GatheringDetail', () => {
     expect(read('GatheringDetailScreen.js')).toMatch(/<GatheringFeedbackPrompt/);
     expect(read('PlansScreen.js')).toMatch(/getMyAttendingGatherings/);
   });
-  });
 });
