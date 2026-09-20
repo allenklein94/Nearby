@@ -178,6 +178,7 @@ export async function routeNotificationTap(data) {
     case 'gathering_business_reminder':
     case 'gathering_waitlisted':
     case 'gathering_updated':
+    case 'friend_joined_gathering':
     case 'recurring_gathering':
       if (data.gathering_id) {
         navigationRef.navigate('GatheringDetail', { gatheringId: data.gathering_id, notificationReason: data.body ?? null });
