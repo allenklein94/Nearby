@@ -89,8 +89,9 @@ function walkTimeLabel(miles) {
 }
 
 // The conversational, one-decision-per-screen rebuild ("Create 2.0") —
-// What (skippable via fromQuickPick) → Who should discover this? → When
-// → Where → Anything people should know? (+ More options) → Publish.
+// What (skippable via fromQuickPick) → When → Where → Anything people should know?
+// (+ More options) → Settings (visibility, who can join, capacity, business requests, guest invites,
+// notifications: the same controls Edit shows under "Gathering settings") → Publish.
 // Same route, same createGathering() call, every existing caller
 // (StartSomethingModal, CreateHubScreen's grid, the Create Assistant)
 // keeps working unmodified. See CLAUDE.md's "Create 2.0" section for
@@ -109,10 +110,10 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const skipWhat = canSkipWhatStep(route.params);
   const STEP_DEFS = [
     { key: 'what', label: 'What' },
-    { key: 'who', label: 'Who' },
     { key: 'when', label: 'When' },
     { key: 'where', label: 'Where' },
     { key: 'details', label: 'Details' },
+    { key: 'settings', label: 'Settings' },
     { key: 'publish', label: 'Publish' },
   ].filter((s) => !(s.key === 'what' && skipWhat));
 
@@ -162,6 +163,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [priceLevel, setPriceLevel] = useState(null);
   const [partyType, setPartyType] = useState(null);
   const [showGroupInsights, setShowGroupInsights] = useState(true);
+  const [allowAttendeeInvites, setAllowAttendeeInvites] = useState(true);
+  const [hostNotifications, setHostNotifications] = useState(true);
   const [requiresApproval, setRequiresApproval] = useState(false);
 
   useEffect(() => {
@@ -297,7 +300,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
       // weather, demand), so it is asked for here rather than guessed later from the title.
       if (problem === 'category') return Alert.alert('Pick a category', 'Choose what kind of gathering this is, so the right people and businesses can find it.');
     }
-    if (stepKey === 'who' && visibility === 'community' && !communityId) {
+    if (stepKey === 'settings' && visibility === 'community' && !communityId) {
       if (!loadingCommunities && myCommunities.length === 0) {
         return Alert.alert('No communities yet', "You're not a member of any community yet — pick a different option, or join a community first.");
       }
@@ -354,6 +357,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
         partyType,
         showGroupInsights,
         requiresApproval: visibility !== 'invite_only' && requiresApproval,
+        allowAttendeeInvites,
+        hostNotifications,
       });
       recordBehaviorEvent('create', 'gathering', created.id, interestTag);
 
@@ -479,88 +484,6 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 </View>
               </View>
             ))}
-          </>
-        )}
-
-        {stepKey === 'who' && (
-          <>
-            <Text style={styles.label}>Who should discover this?</Text>
-            {VISIBILITY_OPTIONS.map((opt) => {
-              const selected = visibility === opt.key;
-              return (
-                <TouchableOpacity
-                  key={opt.key}
-                  style={[styles.optionCard, selected && styles.optionCardActive]}
-                  onPress={() => pickVisibility(opt.key)}
-                  activeOpacity={0.85}
-                  accessibilityLabel={`${opt.label} — ${opt.hint}`}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                >
-                  <Text style={styles.optionCardIcon}>{opt.icon}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.optionCardTitle, selected && styles.optionCardTitleActive]}>{opt.label}</Text>
-                    <Text style={styles.optionCardHint}>{opt.hint}</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-
-            {visibility === 'community' && (
-              loadingCommunities ? (
-                <NLoader fullScreen={false} size="inline" caption="Loading communities…" />
-              ) : myCommunities.length === 0 ? (
-                <Text style={styles.helperText}>You're not a member of any community yet.</Text>
-              ) : (
-                <View style={{ marginTop: spacing.sm }}>
-                  {myCommunities.map((c) => {
-                    const selected = communityId === c.id;
-                    return (
-                      <TouchableOpacity
-                        key={c.id}
-                        style={[styles.communityRow, selected && styles.optionCardActive]}
-                        onPress={() => { Haptics.selectionAsync(); setCommunityId(c.id); }}
-                        activeOpacity={0.85}
-                        accessibilityLabel={c.name}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected }}
-                      >
-                        <Text style={[styles.communityRowText, selected && styles.optionCardTitleActive]}>{c.name}</Text>
-                        {selected && <Text style={styles.checkmark}>✓</Text>}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              )
-            )}
-
-            {visibility !== 'invite_only' && (
-              <>
-                <Text style={[styles.label, { marginTop: spacing.lg }]}>Who can join?</Text>
-                {[
-                  { key: false, title: 'Anyone', hint: 'One tap to join. You can still remove people.' },
-                  { key: true, title: 'Require approval', hint: 'People request to join and you approve or decline.' },
-                ].map((opt) => {
-                  const selected = requiresApproval === opt.key;
-                  return (
-                    <TouchableOpacity
-                      key={opt.title}
-                      style={[styles.optionCard, selected && styles.optionCardActive]}
-                      onPress={() => { Haptics.selectionAsync(); setRequiresApproval(opt.key); }}
-                      activeOpacity={0.85}
-                      accessibilityLabel={`${opt.title} — ${opt.hint}`}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.optionCardTitle, selected && styles.optionCardTitleActive]}>{opt.title}</Text>
-                        <Text style={styles.optionCardHint}>{opt.hint}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </>
-            )}
           </>
         )}
 
@@ -746,7 +669,145 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   })}
                 </View>
 
-                <Text style={styles.label}>How many people?</Text>
+                <Text style={styles.label}>Price</Text>
+                <View style={styles.chipsWrap}>
+                  {PRICE_OPTIONS.map((option) => {
+                    const selected = priceLevel === option.key;
+                    return (
+                      <TouchableOpacity
+                        key={option.label}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => { Haptics.selectionAsync(); setPriceLevel(option.key); }}
+                        activeOpacity={0.85}
+                        accessibilityLabel={option.label}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <Text style={styles.label}>Who's this for?</Text>
+                <View style={styles.chipsWrap}>
+                  {PARTY_TYPE_OPTIONS.map((option) => {
+                    const selected = partyType === option.key;
+                    return (
+                      <TouchableOpacity
+                        key={option.label}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => { Haptics.selectionAsync(); setPartyType(option.key); }}
+                        activeOpacity={0.85}
+                        accessibilityLabel={option.label}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <TouchableOpacity
+                  style={styles.womenOnlyToggle}
+                  onPress={() => { Haptics.selectionAsync(); setShowGroupInsights((v) => !v); }}
+                  activeOpacity={0.85}
+                  accessibilityLabel={showGroupInsights ? 'Group insights shown to attendees, tap to hide' : 'Group insights hidden, tap to show'}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: showGroupInsights }}
+                >
+                  <Text style={styles.womenOnlyToggleText}>{showGroupInsights ? '✓ ' : ''}Show Group Insights</Text>
+                </TouchableOpacity>
+                <Text style={styles.helperText}>
+                  Lets attendees see a shared-interests and age/gender-makeup summary once there are enough people — never anyone's individual info, and never shown at all below a minimum group size.
+                </Text>
+              </>
+            )}
+          </>
+        )}
+
+        {stepKey === 'settings' && (
+          <>
+            <Text style={styles.label}>Visibility</Text>
+            {VISIBILITY_OPTIONS.map((opt) => {
+              const selected = visibility === opt.key;
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[styles.optionCard, selected && styles.optionCardActive]}
+                  onPress={() => pickVisibility(opt.key)}
+                  activeOpacity={0.85}
+                  accessibilityLabel={`${opt.label} — ${opt.hint}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={styles.optionCardIcon}>{opt.icon}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.optionCardTitle, selected && styles.optionCardTitleActive]}>{opt.label}</Text>
+                    <Text style={styles.optionCardHint}>{opt.hint}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+
+            {visibility === 'community' && (
+              loadingCommunities ? (
+                <NLoader fullScreen={false} size="inline" caption="Loading communities…" />
+              ) : myCommunities.length === 0 ? (
+                <Text style={styles.helperText}>You're not a member of any community yet.</Text>
+              ) : (
+                <View style={{ marginTop: spacing.sm }}>
+                  {myCommunities.map((c) => {
+                    const selected = communityId === c.id;
+                    return (
+                      <TouchableOpacity
+                        key={c.id}
+                        style={[styles.communityRow, selected && styles.optionCardActive]}
+                        onPress={() => { Haptics.selectionAsync(); setCommunityId(c.id); }}
+                        activeOpacity={0.85}
+                        accessibilityLabel={c.name}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.communityRowText, selected && styles.optionCardTitleActive]}>{c.name}</Text>
+                        {selected && <Text style={styles.checkmark}>✓</Text>}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )
+            )}
+
+            {visibility !== 'invite_only' && (
+              <>
+                <Text style={[styles.label, { marginTop: spacing.lg }]}>Who can join?</Text>
+                {[
+                  { key: false, title: 'Anyone', hint: 'One tap to join. You can still remove people.' },
+                  { key: true, title: 'Require approval', hint: 'People request to join and you approve or decline.' },
+                ].map((opt) => {
+                  const selected = requiresApproval === opt.key;
+                  return (
+                    <TouchableOpacity
+                      key={opt.title}
+                      style={[styles.optionCard, selected && styles.optionCardActive]}
+                      onPress={() => { Haptics.selectionAsync(); setRequiresApproval(opt.key); }}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`${opt.title} — ${opt.hint}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.optionCardTitle, selected && styles.optionCardTitleActive]}>{opt.title}</Text>
+                        <Text style={styles.optionCardHint}>{opt.hint}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
+            )}
+
+            <Text style={[styles.label, { marginTop: spacing.lg }]}>Capacity</Text>
                 <View style={styles.chipsWrap}>
                   {CAPACITY_OPTIONS.map((option) => {
                     const selected = capacityOption === option.key;
@@ -790,45 +851,33 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   <Text style={styles.helperText}>Once full, new joins go to a waitlist — if a spot opens, the next person in line is added automatically.</Text>
                 )}
 
-                <Text style={styles.label}>Price</Text>
-                <View style={styles.chipsWrap}>
-                  {PRICE_OPTIONS.map((option) => {
-                    const selected = priceLevel === option.key;
-                    return (
-                      <TouchableOpacity
-                        key={option.label}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => { Haptics.selectionAsync(); setPriceLevel(option.key); }}
-                        activeOpacity={0.85}
-                        accessibilityLabel={option.label}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected }}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
 
-                <Text style={styles.label}>Who's this for?</Text>
-                <View style={styles.chipsWrap}>
-                  {PARTY_TYPE_OPTIONS.map((option) => {
-                    const selected = partyType === option.key;
-                    return (
-                      <TouchableOpacity
-                        key={option.label}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => { Haptics.selectionAsync(); setPartyType(option.key); }}
-                        activeOpacity={0.85}
-                        accessibilityLabel={option.label}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected }}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
+            <Text style={[styles.label, { marginTop: spacing.lg }]}>Business requests</Text>
+                <TouchableOpacity
+                  style={styles.womenOnlyToggle}
+                  onPress={() => { Haptics.selectionAsync(); setAskLocalBusinesses((v) => !v); }}
+                  activeOpacity={0.85}
+                  accessibilityLabel={askLocalBusinesses ? 'Ask local businesses about this gathering, tap to turn off' : "Let relevant local businesses know about this gathering, so they can potentially offer options"}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: askLocalBusinesses }}
+                >
+                  <Text style={styles.womenOnlyToggleText}>{askLocalBusinesses ? '✓ ' : ''}Ask Local Businesses</Text>
+                </TouchableOpacity>
+                <Text style={styles.helperText}>
+                  Let relevant local businesses know about this gathering so they can potentially offer options — never contacted on your behalf beyond that.
+                </Text>
+
+
+                <TouchableOpacity
+                  style={styles.womenOnlyToggle}
+                  onPress={() => { Haptics.selectionAsync(); setWomenOnly(!womenOnly); }}
+                  activeOpacity={0.85}
+                  accessibilityLabel={womenOnly ? 'Women-only gathering, tap to make open to everyone' : 'Open to everyone, tap to make women-only'}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: womenOnly }}
+                >
+                  <Text style={styles.womenOnlyToggleText}>{womenOnly ? '✓ ' : ''}Women-Only Gathering</Text>
+                </TouchableOpacity>
 
                 {visibility === 'invite_only' && (
                   <>
@@ -860,46 +909,28 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   </>
                 )}
 
-                <TouchableOpacity
-                  style={styles.womenOnlyToggle}
-                  onPress={() => { Haptics.selectionAsync(); setWomenOnly(!womenOnly); }}
-                  activeOpacity={0.85}
-                  accessibilityLabel={womenOnly ? 'Women-only gathering, tap to make open to everyone' : 'Open to everyone, tap to make women-only'}
-                  accessibilityRole="switch"
-                  accessibilityState={{ checked: womenOnly }}
-                >
-                  <Text style={styles.womenOnlyToggleText}>{womenOnly ? '✓ ' : ''}Women-Only Gathering</Text>
-                </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.womenOnlyToggle}
-                  onPress={() => { Haptics.selectionAsync(); setAskLocalBusinesses((v) => !v); }}
-                  activeOpacity={0.85}
-                  accessibilityLabel={askLocalBusinesses ? 'Ask local businesses about this gathering, tap to turn off' : "Let relevant local businesses know about this gathering, so they can potentially offer options"}
-                  accessibilityRole="switch"
-                  accessibilityState={{ checked: askLocalBusinesses }}
-                >
-                  <Text style={styles.womenOnlyToggleText}>{askLocalBusinesses ? '✓ ' : ''}Ask Local Businesses</Text>
-                </TouchableOpacity>
-                <Text style={styles.helperText}>
-                  Let relevant local businesses know about this gathering so they can potentially offer options — never contacted on your behalf beyond that.
-                </Text>
-
-                <TouchableOpacity
-                  style={styles.womenOnlyToggle}
-                  onPress={() => { Haptics.selectionAsync(); setShowGroupInsights((v) => !v); }}
-                  activeOpacity={0.85}
-                  accessibilityLabel={showGroupInsights ? 'Group insights shown to attendees, tap to hide' : 'Group insights hidden, tap to show'}
-                  accessibilityRole="switch"
-                  accessibilityState={{ checked: showGroupInsights }}
-                >
-                  <Text style={styles.womenOnlyToggleText}>{showGroupInsights ? '✓ ' : ''}Show Group Insights</Text>
-                </TouchableOpacity>
-                <Text style={styles.helperText}>
-                  Lets attendees see a shared-interests and age/gender-makeup summary once there are enough people — never anyone's individual info, and never shown at all below a minimum group size.
-                </Text>
-              </>
-            )}
+            <Text style={[styles.label, { marginTop: spacing.lg }]}>Invitations & notifications</Text>
+            <TouchableOpacity
+              style={styles.womenOnlyToggle}
+              onPress={() => { Haptics.selectionAsync(); setAllowAttendeeInvites((v) => !v); }}
+              activeOpacity={0.85}
+              accessibilityLabel={allowAttendeeInvites ? 'Guests can invite friends, tap to turn off' : 'Only you can invite, tap to let guests invite'}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: allowAttendeeInvites }}
+            >
+              <Text style={styles.womenOnlyToggleText}>{allowAttendeeInvites ? '✓ ' : ''}Allow guests to invite</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.womenOnlyToggle}
+              onPress={() => { Haptics.selectionAsync(); setHostNotifications((v) => !v); }}
+              activeOpacity={0.85}
+              accessibilityLabel={hostNotifications ? 'Notify me about joins and requests, tap to turn off' : 'Not notifying about joins and requests, tap to turn on'}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: hostNotifications }}
+            >
+              <Text style={styles.womenOnlyToggleText}>{hostNotifications ? '✓ ' : ''}Notify me about joins and requests</Text>
+            </TouchableOpacity>
           </>
         )}
 

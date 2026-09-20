@@ -44,3 +44,24 @@ describe('host controls are centralized (item 73)', () => {
     expect(m2.match(/turned off invitations/g).length).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('the Create wizard centralizes the same settings (item 73)', () => {
+  const create = fs.readFileSync(path.join(__dirname, '../screens/CreateGatheringScreen.js'), 'utf8');
+  const settings = create.slice(create.indexOf("stepKey === 'settings' && ("), create.indexOf("stepKey === 'publish' && ("));
+  const details = create.slice(create.indexOf("stepKey === 'details' && ("), create.indexOf("stepKey === 'settings' && ("));
+  it('has one Settings step after Details and no separate Who step', () => {
+    expect(create).toMatch(/key: 'settings', label: 'Settings'/);
+    expect(create).not.toMatch(/key: 'who'/);
+    expect(create.indexOf("key: 'details'")).toBeLessThan(create.indexOf("key: 'settings'"));
+  });
+  it.each(['Visibility', 'Who can join?', 'Capacity', 'Business requests', 'Women-Only', 'Allow guests to invite', 'Notify me about joins and requests'])('Settings holds %s', (t) => {
+    expect(settings).toContain(t);
+  });
+  it('More options no longer scatters those controls', () => {
+    ['How many people?', 'Ask Local Businesses', 'Women-Only', 'Map Visibility'].forEach((t) => expect(details).not.toContain(t));
+  });
+  it('the new settings reach the insert', () => {
+    expect(create).toMatch(/allowAttendeeInvites,\s*hostNotifications,/);
+    expect(fs.readFileSync(path.join(__dirname, '../services/gatherings.js'), 'utf8')).toMatch(/allow_attendee_invites: allowAttendeeInvites/);
+  });
+});
