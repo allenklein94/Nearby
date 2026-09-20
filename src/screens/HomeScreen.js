@@ -43,7 +43,7 @@ import ExperienceComponentList from '../components/ExperienceComponentList';
 import TabHeaderActions from '../components/TabHeaderActions';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import { recommendationFacts } from '../utils/recommendationFacts';
+import { recommendationFacts, recommendationRow } from '../utils/recommendationFacts';
 import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime, describeFriendGatheringTiming } from '../utils/timeContext';
 import { homeWeatherCard } from '../constants/weatherRelevance';
@@ -1851,15 +1851,19 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.firstRunBody}>
                   We looked at what's real nearby right now — here's {homeRecommendations.length === 1 ? 'what we found' : 'a couple of things we found'}:
                 </Text>
-                {homeRecommendations.slice(0, 2).map((item) => (
+                {homeRecommendations.slice(0, 2).map((item) => {
+                  const row = recommendationRow(item);
+                  return (
                   <View key={`firstrun-${item.type}-${item.id}`} style={styles.firstRunItemRow}>
                     <Text style={styles.firstRunItemIcon}>{item.type === 'perk' ? '🎁' : categoryStyleFor(item.data?.interest_tag).icon}</Text>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.firstRunItemTitle}>{item.title}</Text>
-                      <Text style={styles.firstRunItemMeta}>{item.reasons.join(' · ')}</Text>
+                      {row.why ? <Text style={styles.firstRunItemMeta}>{row.why}</Text> : null}
+                      {row.meta ? <Text style={styles.firstRunItemMeta}>{row.meta}</Text> : null}
                     </View>
                   </View>
-                ))}
+                  );
+                })}
                 <Text style={styles.firstRunFooter}>
                   That's the idea — real things nearby, with a real reason attached. Ask for
                   anything up top, or scroll down for more.
@@ -1991,19 +1995,22 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.sectionHeaderText}>Nearby Right Now</Text>
             </View>
             <View style={[styles.plansCard, { marginBottom: spacing.lg }]}>
-              {homeRecommendations.map((item) => (
+              {homeRecommendations.map((item) => {
+                const row = recommendationRow(item);
+                return (
                 <TouchableOpacity
                   key={`${item.type}-${item.id}`}
                   style={styles.planRow}
                   onPress={() => handleRecommendationTap(item)}
                   activeOpacity={0.85}
-                  accessibilityLabel={`${item.title}, ${item.reasons.join(', ')}`}
+                  accessibilityLabel={`${item.title}, ${[row.why, row.meta].filter(Boolean).join(', ')}`}
                   accessibilityRole="button"
                 >
                   <Text style={styles.planIcon}>{item.type === 'perk' ? '🎁' : categoryStyleFor(item.data?.interest_tag).icon}</Text>
                   <View style={styles.planInfo}>
                     <Text style={styles.planTitle}>{item.title}</Text>
-                    <Text style={styles.planMeta}>{item.reasons.join(' · ')}</Text>
+                    {row.why ? <Text style={styles.planMeta}>{row.why}</Text> : null}
+                    {row.meta ? <Text style={styles.planMeta}>{row.meta}</Text> : null}
                     {item.type === 'gathering' && gatheringFullnessLabel(item.data) && (
                       <Text style={[styles.planMeta, gatheringFullnessLabel(item.data).startsWith('🔒') && { color: colors.danger }]}>
                         {gatheringFullnessLabel(item.data)}
@@ -2031,7 +2038,8 @@ export default function HomeScreen({ navigation }) {
                   </View>
                   <Text style={styles.planChevron}>›</Text>
                 </TouchableOpacity>
-              ))}
+                );
+              })}
             </View>
           </>
         )}

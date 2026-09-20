@@ -3,7 +3,7 @@
 //   Because you like Coffee
 //   1.3 mi · Today · 6:30 PM
 // Each part appears only when it is real: no distance without a measured distance, no reason without a real signal.
-import { becauseYouLikeReason } from '../constants/recommendationReasonVocabulary';
+import { becauseYouLikeReason, categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
 import { formatHeroDateTime } from './timeContext';
 
 export function formatDistance(miles) {
@@ -24,4 +24,17 @@ export function recommendationFacts(g) {
 export function factsMeta(g, when = null) {
   const parts = [formatDistance(g?.distanceMiles), when ?? (g?.scheduled_at ? formatHeroDateTime(g.scheduled_at) : null)].filter(Boolean);
   return parts.length ? parts.join(' · ') : null;
+}
+
+// A "Nearby Right Now" row ({ type, reasons, data }): reasons that are only distance/time ("Close by", "Happening
+// today") are the HOW-FAR / WHEN facts, so they show once as the measured meta line rather than as a reason too.
+// Every other reason is the WHY. With nothing measured to show, the reasons are shown as they are. A perk has a
+// measured distance but no event time, so it never shows a time.
+export function recommendationRow(item) {
+  const reasons = item?.reasons ?? [];
+  const meta = factsMeta(item?.data);
+  if (!meta) return { why: reasons.join(' · ') || null, meta: null };
+  const restated = [REASON_CATEGORIES.DISTANCE, REASON_CATEGORIES.TIME];
+  const why = reasons.filter((r) => !restated.includes(categorizeReasonText(r)));
+  return { why: why.join(' · ') || null, meta };
 }

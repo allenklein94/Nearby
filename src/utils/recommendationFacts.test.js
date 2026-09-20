@@ -78,3 +78,42 @@ describe('Discover and Gatherings cards use the same rule', () => {
     expect((tr.match(/becauseYouLike:/g) ?? []).length).toBe((tr.match(/matchesInterests:/g) ?? []).length);
   });
 });
+
+describe('recommendationRow (Nearby Right Now)', () => {
+  const { recommendationRow } = require('./recommendationFacts');
+  const at = new Date(Date.now() + 3600e3).toISOString();
+
+  test('distance/time reasons become the measured meta line, not a second reason', () => {
+    const r = recommendationRow({
+      type: 'gathering',
+      reasons: ['Because you like Coffee', 'Close by', 'Happening today'],
+      data: { distanceMiles: 1.3, scheduled_at: at },
+    });
+    expect(r.why).toBe('Because you like Coffee');
+    expect(r.meta).toMatch(/^1\.3 mi · Today/);
+  });
+
+  test('only distance/time reasons: the meta line carries them, nothing is said twice', () => {
+    const r = recommendationRow({ type: 'gathering', reasons: ['Close by', 'Happening today'], data: { distanceMiles: 0.6, scheduled_at: at } });
+    expect(r.why).toBeNull();
+    expect(r.meta).toMatch(/^0\.6 mi · Today/);
+  });
+
+  test('a perk shows distance only, never an invented time', () => {
+    const r = recommendationRow({ type: 'perk', reasons: ['Because you like Coffee', 'At Coastal Coffee'], data: { distanceMiles: 2.1 } });
+    expect(r.why).toBe('Because you like Coffee · At Coastal Coffee');
+    expect(r.meta).toBe('2.1 mi');
+  });
+
+  test('nothing measured: the reasons are shown as they are', () => {
+    const r = recommendationRow({ type: 'perk', reasons: ['At Coastal Coffee'], data: {} });
+    expect(r).toEqual({ why: 'At Coastal Coffee', meta: null });
+  });
+
+  test('Home renders the rows through it', () => {
+    const fs = require('fs');
+    const home = fs.readFileSync(require('path').join(__dirname, '../screens/HomeScreen.js'), 'utf8');
+    expect(home).toMatch(/recommendationRow\(item\)/);
+    expect(home).not.toMatch(/item\.reasons\.join/);
+  });
+});
