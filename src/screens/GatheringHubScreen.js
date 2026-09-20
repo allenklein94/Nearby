@@ -339,7 +339,7 @@ export default function GatheringHubScreen({ route, navigation }) {
               // this link existed, a non-host approved attendee who
               // landed on Hub via either path had no way to leave at
               // all short of checking in first (which unlocks a
-              // Questions button that also routes to Detail, but
+              // Details button that also routes to Detail, but
               // shouldn't be a prerequisite for finding the exit).
               <TouchableOpacity
                 onPress={() => navigation.navigate('GatheringDetail', { gatheringId })}
@@ -385,10 +385,10 @@ export default function GatheringHubScreen({ route, navigation }) {
               <TouchableOpacity
                 style={styles.duringAction}
                 onPress={() => navigation.navigate('GatheringDetail', { gatheringId })}
-                accessibilityLabel="Questions"
+                accessibilityLabel="Gathering details"
                 accessibilityRole="button"
               >
-                <Text style={styles.duringActionText}>❓ Questions</Text>
+                <Text style={styles.duringActionText}>ℹ️ Details</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.duringAction}
