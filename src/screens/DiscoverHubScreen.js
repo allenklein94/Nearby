@@ -1,3 +1,6 @@
+import { peopleTonightBanner } from '../utils/meetTonight';
+import { getNearbyMatches } from '../services/proximity';
+import { getFriendDiscoveryCandidates } from '../services/friendDiscovery';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 import { joinLabel } from '../utils/gatheringJoinMode';
@@ -251,6 +254,21 @@ export default function DiscoverHubScreen({ navigation, route }) {
       });
     }
   }, []);
+
+  // Item 76: opened from Home's "meet someone new tonight" claim -> lead with what it promised, counted from the pool
+  // this screen is showing (Dating deck or friend-discovery), never a generic list.
+  const meetTonightContext = route.params?.context === 'meet_tonight';
+  const [meetTonightCount, setMeetTonightCount] = useState(null);
+  useEffect(() => {
+    if (!meetTonightContext || mode !== 'people') return undefined;
+    let cancelled = false;
+    setMeetTonightCount(null);
+    (peopleSubMode === 'friends' ? getFriendDiscoveryCandidates(20) : getNearbyMatches())
+      .then((list) => { if (!cancelled) setMeetTonightCount(Array.isArray(list) ? list.length : null); })
+      .catch(() => { if (!cancelled) setMeetTonightCount(null); });
+    return () => { cancelled = true; };
+  }, [meetTonightContext, mode, peopleSubMode]);
+  const meetBanner = meetTonightContext && mode === 'people' ? peopleTonightBanner({ subMode: peopleSubMode, count: meetTonightCount }) : null;
 
   function selectMode(key) {
     setMode(key);
@@ -1564,6 +1582,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
         // embedded screens in a flex sibling, not inside a ScrollView.
         <View style={{ flex: 1 }}>
           <View style={styles.peopleFixedArea}>
+            {meetBanner && (
+              <View style={{ marginBottom: spacing.sm }} accessibilityRole="header">
+                <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 16 }}>{meetBanner.title}</Text>
+                {meetBanner.line ? <Text style={{ color: colors.textSecondary, marginTop: 2 }}>{meetBanner.line}</Text> : null}
+              </View>
+            )}
             {/* Aug 30 2026 (CLAUDE.md, external UX critique response): this
                 inner Dating/Friends choice used to reuse the outer
                 Things-to-Do/People toggle's own full-width equal-weight

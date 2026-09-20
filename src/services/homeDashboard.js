@@ -6,6 +6,8 @@ import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoo
 import { createWeatherLoader } from './weatherLoader';
 import { getMyGroupPlans } from './groupPlans';
 import { getUserLocation } from './userLocation';
+import { subModeFromMotivations } from '../utils/peopleSubModePreference';
+import { getFriendDiscoveryCandidates } from './friendDiscovery';
 import { meetSomeoneTonight } from '../utils/meetTonight';
 import { canonicalizeInterests, becauseYouLikeCategories } from '../constants/interestGraph';
 import { isGatheringPast } from '../utils/objectState';
@@ -707,8 +709,19 @@ export async function getHomeDashboard() {
       }
     : null;
 
+  // Item 76: a friends-only intent lands on the Friends pool, so the "people worth meeting" claim counts THAT pool.
+  let meetPeopleCount = nearbyPeople.length;
+  if (subModeFromMotivations(profileData?.onboarding_motivations) === 'friends') {
+    try {
+      meetPeopleCount = (await getFriendDiscoveryCandidates(20)).length;
+    } catch (e) {
+      meetPeopleCount = null;
+    }
+  }
+
   return {
     nearbyPeopleCount: nearbyPeople.length,
+    meetPeopleCount,
     motivations: profileData?.onboarding_motivations ?? null,
     gatheringsTodayCount: gatheringsToday.length,
     friendsCount: friendsCount ?? 0,
@@ -763,7 +776,10 @@ export function getHomeInsight(dashboard, now = new Date()) {
   }
   // Previously ANY Best Pick produced "a great night to meet someone new" -- a People claim with a gathering as its
   // only evidence. It now needs the substantiated People trigger (utils/meetTonight.js), else nothing is said.
-  const meet = meetSomeoneTonight({ now, nearbyPeopleCount: dashboard.nearbyPeopleCount, motivations: dashboard.motivations });
+  // The count for THIS claim is the pool the People screen opens on (Dating for a dating intent, friend discovery for a
+  // friends-only intent); an unknown count (null) means no claim.
+  const meetCount = 'meetPeopleCount' in dashboard ? dashboard.meetPeopleCount : dashboard.nearbyPeopleCount;
+  const meet = meetSomeoneTonight({ now, nearbyPeopleCount: meetCount, motivations: dashboard.motivations });
   if (meet) return meet;
   if (dashboard.happeningNow?.length > 0) {
     return { kind: 'starting_soon', text: `${dashboard.happeningNow.length} ${dashboard.happeningNow.length === 1 ? 'thing starts' : 'things start'} near you in the next 30 minutes.`, cta: { label: 'See what\'s starting', screen: 'Discover', params: { initialMode: 'things', initialTypeTab: 'gatherings' } } };
