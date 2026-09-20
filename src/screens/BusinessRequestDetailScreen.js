@@ -36,6 +36,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import OfferOutcomeModal from '../components/OfferOutcomeModal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { offerPriceLabel } from '../utils/outcomeDisplay';
 
 const STATUS_COPY = {
   open: { label: 'Open — waiting for responses', color: null },
@@ -1293,7 +1294,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     <Text key={index} style={styles.offerIncludedItem}>✓ {item}</Text>
                   ))}
                   {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
-                  {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}{o.price_is_per_person ? '/person' : ''}</Text> : null}
+                  {offerPriceLabel(o.offer_price, o.price_is_per_person) ? <Text style={styles.offerPrice}>{offerPriceLabel(o.offer_price, o.price_is_per_person)}</Text> : null}
                   {o.valid_until ? <Text style={styles.offerProposedTime}>⏳ {isOfferExpired(o) ? 'This offer has expired' : validityLabel(o.valid_until)}</Text> : null}
                   <OfferMedia path={o.media_path} type={o.media_type} posterPath={o.media_poster_path} />
                   {showComparison && o.viewed_at ? (
@@ -1329,7 +1330,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     <Text key={index} style={styles.offerIncludedItem}>✓ {item}</Text>
                   ))}
                   {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
-                  {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}{o.price_is_per_person ? '/person' : ''}</Text> : null}
+                  {offerPriceLabel(o.offer_price, o.price_is_per_person) ? <Text style={styles.offerPrice}>{offerPriceLabel(o.offer_price, o.price_is_per_person)}</Text> : null}
                   <OfferMedia path={o.media_path} type={o.media_type} posterPath={o.media_poster_path} />
                   {visibleRedemption(o) ? <Text style={styles.offerDescription}>🎟️ How to redeem: {visibleRedemption(o)}</Text> : null}
                   {o.brand_partners?.latitude != null && o.brand_partners?.longitude != null && (

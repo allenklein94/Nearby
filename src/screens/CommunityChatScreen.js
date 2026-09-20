@@ -13,6 +13,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import useChatComposer from '../hooks/useChatComposer';
 import usePaginatedMessages from '../hooks/usePaginatedMessages';
+import { memberCountLabel } from '../utils/outcomeDisplay';
 
 export default function CommunityChatScreen({ route, navigation }) {
   const { communityId, communityName } = route.params;
@@ -255,8 +256,7 @@ export default function CommunityChatScreen({ route, navigation }) {
               <>
                 <Text style={styles.infoTitle}>{communitySummary?.name ?? communityName ?? 'Community'}</Text>
                 <Text style={styles.infoMeta}>
-                  {communitySummary?.memberCount ?? 0} member{communitySummary?.memberCount === 1 ? '' : 's'}
-                  {communitySummary?.interest_tag ? ` · ${communitySummary.interest_tag}` : ''}
+                  {[memberCountLabel(communitySummary?.memberCount), communitySummary?.interest_tag].filter(Boolean).join(' · ')}
                   {communitySummary && !communitySummary.is_public ? ' · Private' : ''}
                 </Text>
                 {communitySummary?.description ? (

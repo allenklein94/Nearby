@@ -11,6 +11,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { placeDistanceLabel } from '../services/places';
 import { spacing, radius, typography } from '../theme';
+import { memberCountLabel } from '../utils/outcomeDisplay';
 
 // "Boca Raton, FL · 2.3 mi away" -- the distance part only when the row carries a real one (public communities
 // ordered by the shared position); a community you're a member of, or with no map point, just shows its area.
@@ -120,13 +121,13 @@ export default function CommunitiesScreen({ navigation }) {
                       key={c.id}
                       style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }]}
                       onPress={() => navigation.navigate('CommunityDetail', { communityId: c.id, communityName: c.name })}
-                      accessibilityLabel={`${c.name}, ${memberCounts[c.id] ?? 0} members`}
+                      accessibilityLabel={`${c.name}, ${memberCountLabel(memberCounts[c.id]) ?? 'community'}`}
                       accessibilityRole="button"
                     >
                       <Text style={styles.cardIcon}>{categoryStyle.icon}</Text>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.cardTitle}>{c.name}</Text>
-                        <Text style={styles.cardMeta}>{memberCounts[c.id] ?? 0} members</Text>
+                        {memberCountLabel(memberCounts[c.id]) ? <Text style={styles.cardMeta}>{memberCountLabel(memberCounts[c.id])}</Text> : null}
                         {areaLine(c) ? <Text style={styles.cardArea}>📍 {areaLine(c)}</Text> : null}
                       </View>
                       <Text style={styles.cardChevron}>›</Text>
@@ -163,13 +164,13 @@ export default function CommunitiesScreen({ navigation }) {
               <TouchableOpacity
                 style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => navigation.navigate('CommunityDetail', { communityId: item.id, communityName: item.name })}
-                accessibilityLabel={`${item.name}, ${memberCounts[item.id] ?? 0} members`}
+                accessibilityLabel={`${item.name}, ${memberCountLabel(memberCounts[item.id]) ?? 'community'}`}
                 accessibilityRole="button"
               >
                 <Text style={styles.cardIcon}>{categoryStyle.icon}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cardTitle}>{item.name}</Text>
-                  <Text style={styles.cardMeta}>{memberCounts[item.id] ?? 0} members</Text>
+                  {memberCountLabel(memberCounts[item.id]) ? <Text style={styles.cardMeta}>{memberCountLabel(memberCounts[item.id])}</Text> : null}
                   {areaLine(item) ? <Text style={styles.cardArea}>📍 {areaLine(item)}</Text> : null}
                   <BusinessHostBadge hostingPartnerId={item.hosting_partner_id} navigation={navigation} />
                 </View>

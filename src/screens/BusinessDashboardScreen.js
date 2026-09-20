@@ -70,6 +70,7 @@ import { spacing, radius, typography } from '../theme';
 
 import { NLoader, modalAnimation, showSuccessToast } from '../motion';
 import { isGatheringUpcoming } from '../utils/objectState';
+import { categoryOutcomeLine, categoryRatingLine, offerPriceLabel } from '../utils/outcomeDisplay';
 const SECTIONS = [
   { key: 'home', icon: '🏠', label: 'Home' },
   { key: 'opportunities', icon: '🎯', label: 'Opportunities' },
@@ -4100,7 +4101,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   {estimatedOwed.billingModel && estimatedOwed.billingModel !== 'custom' && (
                     <View style={styles.estimatedOwedBanner}>
                       <Text style={styles.estimatedOwedLabel}>Estimated this month</Text>
-                      <Text style={styles.estimatedOwedValue}>${Number(estimatedOwed.estimatedAmount ?? 0).toFixed(2)}</Text>
+                      <Text style={styles.estimatedOwedValue}>{offerPriceLabel(estimatedOwed.estimatedAmount) ?? '—'}</Text>
                       {billingBreakdownLines(estimatedOwed).map((line) => (
                         <Text key={line} style={styles.estimatedOwedDetail}>{line}</Text>
                       ))}
@@ -4212,11 +4213,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       <View style={{ flex: 1 }}>
                         <Text style={styles.offerTitle}>{c.category}</Text>
                         <Text style={styles.offerDescription}>
-                          {c.total_opportunities} opportunit{c.total_opportunities === 1 ? 'y' : 'ies'} · {c.acceptance_rate ?? 0}% accepted · {c.completion_rate ?? 0}% completed
+                          {categoryOutcomeLine(c)}
                         </Text>
-                        {c.rated_count >= 3 && (
+                        {c.rated_count >= 3 && categoryRatingLine(c) && (
                           <Text style={styles.offerDescription}>
-                            ⭐ {c.pct_satisfied ?? 0}% satisfied · {c.pct_would_repeat ?? 0}% would repeat
+                            {categoryRatingLine(c)}
                           </Text>
                         )}
                       </View>
