@@ -4,7 +4,7 @@
 // gathering is now an actual business transaction.  Rolled back.
 // PRODUCT RULE checked on purpose (item 37, LOCKED): Interested is private. It never creates a business request, never
 // shows the interested person any business offer, and reaches a business only as an anonymous aggregate (count + category).
-// Disclosed: the floor of 5 is lowered to 1 INSIDE the transaction (prod has 4 profiles); AI screening not included.
+// Disclosed: demand_min_people() (5) is lowered to 1 INSIDE the transaction (prod has 4 profiles); AI screening not included.
 const { runSql } = require('../../scripts/live-verify/lib/db');
 const { runJourney, stepMap, hasToken } = require('./journeyHarness');
 import { canDo, offerLifecycleState, gatheringLifecycleState } from '../utils/objectLifecycle';
@@ -21,8 +21,8 @@ d('journey: gathering -> interested -> anonymous demand -> ask business -> offer
       v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_host uuid := '${others[0].id}'; v_fan uuid := '${others[1].id}';
       v_g uuid; v_res jsonb; v_req uuid; v_offer uuid; v_rev uuid; v_n int; v_demand jsonb; v_row jsonb; v_seen_req int; v_seen_off int; v_att int;`, `
   update brand_partners set active = true, latitude = 40.3, longitude = -75.2 where id = v_partner;
-  -- lower the floor of 5 to 1 for THIS transaction only (prod has 4 profiles): redefine the function from its own live body
-  execute replace(pg_get_functiondef('public.get_partner_demand_signals(uuid)'::regprocedure), 'k constant integer := 5;', 'k constant integer := 1;');
+  -- lower the floor of 5 to 1 for THIS transaction only (prod has 4 profiles)
+  execute 'create or replace function public.demand_min_people() returns integer language sql immutable as ''select 1''';
 
   -- 1. SOCIAL: the host creates a coffee gathering for 4
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
@@ -108,8 +108,8 @@ d('journey: gathering -> interested -> anonymous demand -> ask business -> offer
     expect(s.business_sees_anonymous_demand.data.row).toMatchObject({ kind: 'gathering_interest', category: 'Coffee', people_count: 1 });
   });
   test('the request ends fulfilled with a confirmed reservation tied to the gathering', () => {
-    // OPEN PRODUCT QUESTION (not asserted): a gathering created for 4 with only the host attending produces party_size 1
-    // (the request uses the approved-attendee count, not capacity). See CLAUDE.md, item 58 note.
+    // a gathering made for 4 with only the host attending asks the business for a party of 4 (larger of attendees, capacity)
+    expect(s.request_created_from_gathering.data.party_size).toBe(4);
     expect(s.host_accepts_reservation_confirmed.data).toMatchObject({ offer: 'accepted', request: 'fulfilled', reservation: 'confirmed', linked_to_gathering: true });
   });
   test('the client states agree: Interested is not attending; an accepted offer offers no second Accept', () => {
