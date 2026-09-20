@@ -44,3 +44,19 @@ test('View Offer only while the offer is still open', () => {
   ['accepted', 'declined', 'completed', 'withdrawn', undefined].forEach((st) => expect(offerPrimaryAction({ status: st })).toBeNull());
   expect(offerPrimaryAction(null)).toBeNull();
 });
+
+describe('finished and unknown-date cards', () => {
+  const now = new Date('2026-08-31T12:00:00Z').getTime();
+  it('a finished gathering reads View Past Event, never Join', () => {
+    const a = gatheringPrimaryAction({ id: 'g', host_id: 'h', scheduled_at: '2026-08-30T19:00:00Z', attendees: [] }, 'me', now);
+    expect(a).toMatchObject({ kind: 'view', label: 'View Past Event' });
+  });
+  it('an unknown date stays a plain View', () => {
+    const a = gatheringPrimaryAction({ id: 'g', host_id: 'h', scheduled_at: null, attendees: [] }, 'me', now);
+    expect(a.label).toBe('View');
+  });
+  it('an expired request is not labelled as a finished event', () => {
+    const a = gatheringPrimaryAction({ id: 'g', host_id: 'h', scheduled_at: '2026-08-30T19:00:00Z', attendees: [{ user_id: 'me', status: 'pending' }] }, 'me', now);
+    expect(a.label).toBe('View');
+  });
+});
