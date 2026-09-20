@@ -405,7 +405,7 @@ export default function GroupPlanScreen({ navigation, route }) {
               </Text>
               <Text style={styles.participantStatus}>{PARTICIPANT_STATUS_COPY[p.status] ?? p.status}</Text>
             </View>
-            {isInitiator && proposal.status === 'pending' && p.status === 'accepted' && p.user_id !== myId && (
+            {isInitiator && canDo('group_plan', proposal.status, 'manage') && p.status === 'accepted' && p.user_id !== myId && (
               <TouchableOpacity
                 onPress={() => toggleExclude(p.user_id)}
                 accessibilityLabel={excludeIds.includes(p.user_id) ? `Include ${p.profiles?.display_name ?? 'this person'} again` : `Continue without ${p.profiles?.display_name ?? 'this person'}`}
@@ -416,7 +416,7 @@ export default function GroupPlanScreen({ navigation, route }) {
                 </Text>
               </TouchableOpacity>
             )}
-            {isInitiator && proposal.status === 'pending' && (p.status === 'accepted' || p.status === 'invited') && p.user_id !== myId && (
+            {isInitiator && canDo('group_plan', proposal.status, 'manage') && (p.status === 'accepted' || p.status === 'invited') && p.user_id !== myId && (
               <TouchableOpacity
                 onPress={() => handleRemove(p.user_id, p.profiles?.display_name)}
                 accessibilityLabel={`Remove ${p.profiles?.display_name ?? 'this person'} from the group plan now`}
@@ -428,7 +428,7 @@ export default function GroupPlanScreen({ navigation, route }) {
           </View>
         ))}
 
-        {proposal.status === 'pending' && proposal.category === 'Foodie' && ['invited', 'accepted'].includes(myParticipant?.status) && (
+        {proposal.category === 'Foodie' && canDo('group_plan', proposal.status, 'dietary') && canDo('group_participant', myParticipant?.status, 'dietary') && (
           <DietaryPicker
             selected={myDietary}
             onChange={handleDietaryChange}
@@ -436,7 +436,7 @@ export default function GroupPlanScreen({ navigation, route }) {
           />
         )}
 
-        {proposal.status === 'pending' && myParticipant?.status === 'invited' && (
+        {canDo('group_plan', proposal.status, 'respond') && canDo('group_participant', myParticipant?.status, 'join') && (
           <View style={styles.actionRow}>
             <TouchableOpacity style={styles.primaryButton} onPress={handleAccept} disabled={acting} accessibilityLabel="Join this group plan" accessibilityRole="button">
               {acting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.primaryButtonText}>Join Shared Request</Text>}
@@ -447,13 +447,13 @@ export default function GroupPlanScreen({ navigation, route }) {
           </View>
         )}
 
-        {proposal.status === 'pending' && !isInitiator && myParticipant?.status === 'accepted' && (
+        {!isInitiator && canDo('group_plan', proposal.status, 'respond') && canDo('group_participant', myParticipant?.status, 'leave') && (
           <TouchableOpacity onPress={handleLeave} disabled={acting} accessibilityLabel="Leave this group plan" accessibilityRole="button">
             <Text style={styles.declineLink}>Leave Group Plan</Text>
           </TouchableOpacity>
         )}
 
-        {proposal.status === 'pending' && isInitiator && (
+        {isInitiator && canDo('group_plan', proposal.status, 'manage') && (
           <View style={styles.organizerSection}>
             <Text style={styles.sectionHeader}>Set the budget</Text>
             <Text style={styles.helperText}>Pick one real number the whole group can agree on{budgetRangeLine ? ` (within ${budgetRangeLine})` : ''}.</Text>

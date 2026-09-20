@@ -103,3 +103,22 @@ describe('request deadline (item 66)', () => {
     expect(canDo('request', 'cancelled', 'reopen')).toBe(false);
   });
 });
+
+describe('group plan states (item 87)', () => {
+  const { canDo: can } = require('./objectLifecycle');
+  test('only a pending proposal lets the organizer manage or a person respond', () => {
+    expect(can('group_plan', 'pending', 'manage')).toBe(true);
+    expect(can('group_plan', 'pending', 'respond')).toBe(true);
+    for (const st of ['confirmed', 'cancelled', 'expired']) {
+      expect(can('group_plan', st, 'manage')).toBe(false);
+      expect(can('group_plan', st, 'respond')).toBe(false);
+    }
+  });
+  test('participant actions follow their own state; unknown = nothing', () => {
+    expect(can('group_participant', 'invited', 'join')).toBe(true);
+    expect(can('group_participant', 'accepted', 'join')).toBe(false);
+    expect(can('group_participant', 'accepted', 'leave')).toBe(true);
+    expect(can('group_participant', 'left', 'join')).toBe(false);
+    expect(can('group_participant', undefined, 'join')).toBe(false);
+  });
+});

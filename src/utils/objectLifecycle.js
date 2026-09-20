@@ -46,6 +46,21 @@ export const LIFECYCLE = {
     declined: ['view'],
     expired: ['view', 'dismiss'],
   },
+  // Group plan proposal (group_plan_proposals.status CHECK): the whole group deciding together. 'manage' = the
+  // organizer's decisions (budget, confirm, remove someone); the caller still checks WHO is asking (organizer or not).
+  group_plan: {
+    pending: ['view', 'manage', 'respond', 'dietary'],
+    confirmed: ['view'],
+    cancelled: ['view'],
+    expired: ['view'],
+  },
+  // A person inside a group plan (group_plan_participants.status CHECK).
+  group_participant: {
+    invited: ['view', 'join', 'decline', 'dietary'],
+    accepted: ['view', 'leave', 'dietary'],
+    declined: ['view'],
+    left: ['view'],
+  },
 };
 
 export function canDo(kind, state, action) {
