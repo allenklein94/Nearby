@@ -1,15 +1,36 @@
-// "Today · 7:15 PM" / "Tomorrow · 7:15 PM" / "Fri, Aug 14 · 7:15 PM" — real
-// calendar-relative formatting, not a generic date string.
-export function formatHeroDateTime(iso) {
+// The clearest honest temporal wording for an upcoming/current scheduled time (owner item 47). One function decides:
+//   started <= 30 min ago         -> "Happening now"     (the canonical Right Now past window; no duration is invented,
+//                                                          so anything that started earlier just shows its start time)
+//   starts within the next hour   -> "Starts in 45 min"
+//   later today                   -> "Today · 6:30 PM"   ("Tonight · 8 PM" from 6 PM on)
+//   tomorrow                      -> "Tomorrow · 7 PM"
+//   otherwise                     -> "Fri, Aug 14 · 7:15 PM"
+// Whole-hour times drop ":00" ("7 PM"). Bare "Happening today" is never used: a time is always stronger.
+export const STARTS_IN_WINDOW_MIN = 60;
+const HAPPENING_NOW_PAST_MS = 30 * 60 * 1000;
+
+function shortTime(d) {
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/^(\d{1,2}):00(\s?[AP]M)$/i, '$1$2');
+}
+
+export function whenLabel(iso, now = new Date()) {
   const d = new Date(iso);
-  const now = new Date();
+  if (Number.isNaN(d.getTime())) return null;
+  const diffMs = d.getTime() - now.getTime();
+  if (diffMs <= 0 && -diffMs <= HAPPENING_NOW_PAST_MS) return 'Happening now';
+  if (diffMs > 0 && diffMs <= STARTS_IN_WINDOW_MIN * 60000) return `Starts in ${Math.max(1, Math.ceil(diffMs / 60000))} min`;
   const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   const tomorrow = new Date(now);
   tomorrow.setDate(now.getDate() + 1);
-  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  if (isSameDay(d, now)) return `Today · ${time}`;
+  const time = shortTime(d);
+  if (isSameDay(d, now)) return `${d.getHours() >= 18 ? 'Tonight' : 'Today'} · ${time}`;
   if (isSameDay(d, tomorrow)) return `Tomorrow · ${time}`;
   return `${d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} · ${time}`;
+}
+
+// Kept as the shared name every card already calls; it now picks the clearest wording (see whenLabel).
+export function formatHeroDateTime(iso, now = new Date()) {
+  return whenLabel(iso, now) ?? '';
 }
 
 // Aug 30 2026 (CLAUDE.md) -- Home's "Friends' Activity" cards used to show

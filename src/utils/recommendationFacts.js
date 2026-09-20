@@ -14,7 +14,10 @@ export function formatDistance(miles) {
 export function recommendationFacts(g) {
   if (!g) return { why: null, distance: null, when: null, meta: null };
   const interestMatched = g.matchesYourInterests === true || (typeof g.matchScore === 'number' && g.matchScore > 0);
-  const why = interestMatched ? becauseYouLikeReason(g.interest_tag) : (g.reasons?.[0] ?? null);
+  // A distance/time reason ("Happening today") is the WHEN/WHERE fact, shown once as the measured meta line, never as the WHY.
+  const restated = [REASON_CATEGORIES.DISTANCE, REASON_CATEGORIES.TIME];
+  const firstWhy = (g.reasons ?? []).find((r) => !restated.includes(categorizeReasonText(r))) ?? null;
+  const why = interestMatched ? becauseYouLikeReason(g.interest_tag) : firstWhy;
   const distance = formatDistance(g.distanceMiles);
   const when = g.scheduled_at ? formatHeroDateTime(g.scheduled_at) : null;
   return { why, distance, when, meta: [distance, when].filter(Boolean).join(' · ') || null };

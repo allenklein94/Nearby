@@ -1,5 +1,5 @@
 import { isWithinRightNowWindow } from './rightNowWindow';
-import { formatHeroDateTime } from './timeContext';
+import { whenLabel } from './timeContext';
 
 function isSameCalendarDay(a, b) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -44,19 +44,9 @@ export function gatheringTimeBadge(scheduledAt, now = new Date()) {
   return 'UPCOMING';
 }
 
-// The full "Tonight · 7:30 PM" line for card copy -- reuses
-// formatHeroDateTime's own real Today/Tomorrow/calendar-date formatting
-// verbatim (utils/timeContext.js, already used for Home's hero cards),
-// just swapping "Today" for "Tonight" when the gathering's own hour-of-day
-// is genuinely evening (see isEveningHour above for why this isn't
-// getTimePeriod).
+// The full "Tonight · 7:30 PM" line for card copy: the shared clearest-wording rule (timeContext.js whenLabel), which
+// also says "Happening now" / "Starts in 45 min" and uses Tonight from 6 PM.
 export function gatheringTimeLine(scheduledAt, now = new Date()) {
   if (!scheduledAt) return null;
-  const date = new Date(scheduledAt);
-  if (Number.isNaN(date.getTime())) return null;
-  const full = formatHeroDateTime(scheduledAt);
-  if (isSameCalendarDay(date, now) && isEveningHour(date)) {
-    return full.replace(/^Today/, 'Tonight');
-  }
-  return full;
+  return whenLabel(scheduledAt, now);
 }

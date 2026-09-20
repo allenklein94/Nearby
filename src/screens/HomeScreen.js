@@ -45,6 +45,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { isGatheringPast } from '../utils/objectState';
 import { recommendationFacts, recommendationRow } from '../utils/recommendationFacts';
+import { categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
 import { gatheringCardModel } from '../utils/recommendationCard';
 import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { homeLoadNotice } from '../utils/homeLoadNotice';
@@ -2711,7 +2712,7 @@ export default function HomeScreen({ navigation }) {
                     <View style={{ flex: 1, marginRight: spacing.sm }}>
                       <Text style={styles.heroTitle} numberOfLines={1}>{homeMerge.hero.title}</Text>
                       <Text style={styles.heroMeta} numberOfLines={1}>
-                        {homeMerge.hero.reasons.join(' · ')}
+                        {homeMerge.hero.reasons.filter((r) => categorizeReasonText(r) !== REASON_CATEGORIES.TIME).join(' · ')}
                       </Text>
                       {/* P1 remediation (CLAUDE.md, Aug 28 Full Coherence
                           Audit): the same real fullness signal every

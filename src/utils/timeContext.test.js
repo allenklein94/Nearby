@@ -13,7 +13,7 @@ describe('formatHeroDateTime', () => {
   it('reads "Today" for a timestamp on today\'s calendar date', () => {
     const now = new Date();
     now.setHours(19, 15, 0, 0);
-    expect(formatHeroDateTime(now.toISOString())).toMatch(/^Today · /);
+    expect(formatHeroDateTime(now.toISOString(), new Date(now.getTime() - 5 * 3600000))).toMatch(/^(Today|Tonight) · /);
   });
 
   it('reads "Tomorrow" for a timestamp exactly one calendar day out', () => {
@@ -106,5 +106,34 @@ describe('getPinnedQuickPicks', () => {
     const picks = getPinnedQuickPicks(['Foodie', 'Hiking'], 'evening', styleForCategory);
     expect(picks[0]).toEqual({ icon: '🍽️', label: 'Dinner', category: 'Foodie', searchTerm: 'dinner' });
     expect(picks[1]).toEqual({ icon: '🏷️', label: 'Hiking', category: 'Hiking' });
+  });
+});
+
+describe('whenLabel (clearest temporal wording)', () => {
+  const { whenLabel } = require('./timeContext');
+  const now = new Date(2026, 8, 20, 15, 0, 0);
+  const at = (dayOffset, h, m = 0) => new Date(2026, 8, 20 + dayOffset, h, m).toISOString();
+  it('says Happening now within 30 min after the start', () => {
+    expect(whenLabel(new Date(now.getTime() - 10 * 60000).toISOString(), now)).toBe('Happening now');
+    expect(whenLabel(now.toISOString(), now)).toBe('Happening now');
+  });
+  it('does not claim now for something that started long ago (no invented duration)', () => {
+    expect(whenLabel(at(0, 13), now)).toBe('Today · 1 PM');
+  });
+  it('says Starts in N min within the hour', () => {
+    expect(whenLabel(new Date(now.getTime() + 45 * 60000).toISOString(), now)).toBe('Starts in 45 min');
+    expect(whenLabel(new Date(now.getTime() + 20 * 1000).toISOString(), now)).toBe('Starts in 1 min');
+    expect(whenLabel(new Date(now.getTime() + 61 * 60000).toISOString(), now)).toMatch(/^Today · /);
+  });
+  it('uses Today before 6 PM, Tonight from 6 PM, with the time', () => {
+    expect(whenLabel(at(0, 16, 30), now)).toBe('Today · 4:30 PM');
+    expect(whenLabel(at(0, 18, 30), now)).toBe('Tonight · 6:30 PM');
+  });
+  it('tomorrow and later show the day and a clean time', () => {
+    expect(whenLabel(at(1, 19), now)).toBe('Tomorrow · 7 PM');
+    expect(whenLabel(at(10, 19, 15), now)).toMatch(/· 7:15 PM$/);
+  });
+  it('invalid input is null, never "Invalid Date"', () => {
+    expect(whenLabel('nope', now)).toBeNull();
   });
 });

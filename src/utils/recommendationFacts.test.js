@@ -90,13 +90,13 @@ describe('recommendationRow (Nearby Right Now)', () => {
       data: { distanceMiles: 1.3, scheduled_at: at },
     });
     expect(r.why).toBe('Because you like Coffee');
-    expect(r.meta).toMatch(/^1\.3 mi · Today/);
+    expect(r.meta).toMatch(/^1\.3 mi · (Today|Tonight|Tomorrow|Starts in|Happening now)/);
   });
 
   test('only distance/time reasons: the meta line carries them, nothing is said twice', () => {
     const r = recommendationRow({ type: 'gathering', reasons: ['Close by', 'Happening today'], data: { distanceMiles: 0.6, scheduled_at: at } });
     expect(r.why).toBeNull();
-    expect(r.meta).toMatch(/^0\.6 mi · Today/);
+    expect(r.meta).toMatch(/^0\.6 mi · (Today|Tonight|Tomorrow|Starts in|Happening now)/);
   });
 
   test('a perk shows distance only, never an invented time', () => {
