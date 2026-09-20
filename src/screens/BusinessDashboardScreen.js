@@ -2,6 +2,8 @@ import { canRespondToOpportunity } from '../utils/objectLifecycle';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import DraftBanner from '../components/DraftBanner';
+import OfferCustomerBody from '../components/OfferCustomerBody';
+import { offerRevealHeader } from '../utils/offerCopy';
 import useFormDraft from '../hooks/useFormDraft';
 import { serializableAsset, assetStillExists } from '../services/formDrafts';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -440,6 +442,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [offerSubmissions, setOfferSubmissions] = useState([]);
   const [resendingSubmissionId, setResendingSubmissionId] = useState(null);
   const [busySubmissionId, setBusySubmissionId] = useState(null);
+  const [offerPreviewing, setOfferPreviewing] = useState(false); // Item 84: the owner's "Customer preview" step
   const offerInFlight = useMemo(() => inFlightRequestIds(offerSubmissions), [offerSubmissions]);
   const [aggregatedDemand, setAggregatedDemand] = useState([]);
   // "Demand near you" card: null = not loaded yet; otherwise the privacy-floored RPC payload.
@@ -1759,6 +1762,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
   function openOfferModal(requestId) {
     setOfferModalRequestId(requestId);
+    setOfferPreviewing(false);
     setResendingSubmissionId(null);
     setOfferTypeInput('standard');
     setOfferDescriptionInput('');
@@ -2003,30 +2007,43 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     }
   }
 
-  async function handleSubmitOffer() {
+  // One validation for both Preview and Send, so a preview can never show something Send would refuse. null = invalid (already alerted).
+  function validateOfferForm() {
     if (!offerDescriptionInput.trim()) {
       Alert.alert('Add a description', 'Say what you can offer.');
-      return;
+      return null;
     }
     if (offerTypeInput === 'alt_time' && !offerProposedTime) {
       Alert.alert('Pick a time', 'Choose the time you’re proposing instead.');
-      return;
+      return null;
     }
     const capProblem = discountCapProblem({ offerType: offerTypeInput, pctInput: offerDiscountInput, cap: discountCap });
     if (capProblem) {
       Alert.alert('Discount above your limit', capProblem);
-      return;
+      return null;
     }
     const validity = validUntilFromChoice(offerValidDay, offerValidTime);
     if (validity.error) {
       Alert.alert('End time', validity.error);
-      return;
+      return null;
     }
     const availWindow = availableWindowFromChoice(offerAvailFrom, offerAvailUntil);
     if (availWindow.error) {
       Alert.alert('Available window', availWindow.error);
-      return;
+      return null;
     }
+    return { validity, availWindow };
+  }
+
+  // Item 84: check, then show the customer's view before anything is sent.
+  function handlePreviewOffer() {
+    if (validateOfferForm()) setOfferPreviewing(true);
+  }
+
+  async function handleSubmitOffer() {
+    const checked = validateOfferForm();
+    if (!checked) return;
+    const { validity, availWindow } = checked;
     setRespondingOpportunityId(offerModalRequestId);
     try {
       let mediaPath = null;
@@ -6169,6 +6186,55 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   onDiscard={offerDraft.discard}
                 />
               )}
+              {offerPreviewing && (() => {
+                const priceNum = offerPriceInput.trim() ? parseFloat(offerPriceInput.trim()) : null;
+                const checked = { validity: validUntilFromChoice(offerValidDay, offerValidTime), win: availableWindowFromChoice(offerAvailFrom, offerAvailUntil) };
+                const creative = offerCreativeId ? creatives.find((c) => c.id === offerCreativeId) : null;
+                const previewOffer = {
+                  offer_description: offerDescriptionInput.trim(),
+                  included_items: offerIncludedItemsInput,
+                  proposed_time: offerTypeInput === 'alt_time' && offerProposedTime ? offerProposedTime.toISOString() : null,
+                  offer_price: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
+                  price_is_per_person: offerPriceIsPerPerson,
+                  available_from: checked.win.from ?? null,
+                  available_until: checked.win.until ?? null,
+                  valid_until: checked.validity.iso ?? null,
+                  media_path: creative?.media_path ?? null,
+                  media_type: creative?.media_type ?? null,
+                  media_poster_path: creative?.poster_path ?? null,
+                };
+                const localMedia = !creative && offerPickedMediaAsset?.uri ? { uri: offerPickedMediaAsset.uri, type: offerPickedMediaAsset.type === 'video' ? 'video' : 'image' } : null;
+                return (
+                  <View>
+                    <Text style={styles.notesLabel}>Customer preview</Text>
+                    <Text style={styles.helperText}>This is what the customer will see. Nothing is sent until you tap Send Offer.</Text>
+                    <View style={styles.gatheringRow}>
+                      <Text style={styles.offerTitle}>{selectedPartner?.name}</Text>
+                      <Text style={styles.breakdownText}>{offerRevealHeader(selectedPartner?.name ?? 'A business')}</Text>
+                      {!!offerTitleInput.trim() && <Text style={[styles.offerTitle, { marginTop: spacing.xs }]}>{offerTitleInput.trim()}</Text>}
+                      <OfferCustomerBody offer={previewOffer} localMedia={localMedia} />
+                      <View style={[styles.submitButton, { opacity: 0.45, marginTop: spacing.sm }]} accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel="Preview of the customer's accept button">
+                        <Text style={styles.submitButtonText}>I'll take this one</Text>
+                      </View>
+                    </View>
+                    {!!offerRedemptionInput.trim() && <Text style={styles.helperText}>"How to redeem" is shown to the customer once they accept.</Text>}
+                    <Text style={styles.helperText}>Text, photos and videos are checked before an offer is sent. You'll see the result under Your offers.</Text>
+                    <TouchableOpacity
+                      style={styles.submitButton}
+                      onPress={handleSubmitOffer}
+                      disabled={respondingOpportunityId === offerModalRequestId}
+                      accessibilityRole="button"
+                      accessibilityLabel={respondingOpportunityId === offerModalRequestId ? 'Sending' : 'Send offer'}
+                    >
+                      <Text style={styles.submitButtonText}>{respondingOpportunityId === offerModalRequestId ? 'Sending...' : 'Send Offer'}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setOfferPreviewing(false)} style={{ marginTop: spacing.md }} accessibilityRole="button" accessibilityLabel="Back to edit">
+                      <Text style={styles.modalCloseText}>Back to edit</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })()}
+              <View style={offerPreviewing ? { display: 'none' } : undefined}>
               {offerModalRequest && (() => {
                 const ctx = buildOpportunityCard(offerModalRequest, {
                   occasionLabel: offerModalRequest.occasion ? occasionLabel(offerModalRequest.occasion) : null,
@@ -6575,16 +6641,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               ) : null}
               <TouchableOpacity
                 style={styles.submitButton}
-                onPress={handleSubmitOffer}
+                onPress={handlePreviewOffer}
                 disabled={respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime)}
-                accessibilityLabel={respondingOpportunityId === offerModalRequestId ? 'Sending' : 'Send offer'}
+                accessibilityLabel="Preview what the customer will see"
                 accessibilityRole="button"
               >
-                <Text style={styles.submitButtonText}>{respondingOpportunityId === offerModalRequestId ? 'Sending...' : 'Send Offer'}</Text>
+                <Text style={styles.submitButtonText}>Preview offer</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setOfferModalRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
                 <Text style={styles.modalCloseText}>Cancel</Text>
               </TouchableOpacity>
+              </View>
             </ScrollView>
           </View>
         </TouchableWithoutFeedback>

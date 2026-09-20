@@ -9,7 +9,7 @@ import { typography, spacing, radius } from '../theme';
 // Video plays only when it has a poster: a poster exists only for videos whose sampled frames Nearby screened (Phase 2), so an
 // older, unscreened video stays an honest "Video attached" label. Never autoplays: it shows the poster, the person taps play,
 // and it starts MUTED (native controls let them unmute). Nothing plays inside a list.
-export default function OfferMedia({ path, type, posterPath }) {
+export default function OfferMedia({ path, type, posterPath, localUri = null }) {
   const { colors } = useTheme();
   const [url, setUrl] = useState(null);
   const [poster, setPoster] = useState(null);
@@ -25,8 +25,20 @@ export default function OfferMedia({ path, type, posterPath }) {
     return () => { cancelled = true; };
   }, [path, type, posterPath]);
 
-  if (!path) return null;
+  if (!path && !localUri) return null;
   const frame = { width: '100%', height: 180, borderRadius: radius.md, marginTop: spacing.xs, overflow: 'hidden' };
+
+  // Owner preview only: the file the owner just picked, shown as-is before anything is uploaded.
+  if (localUri) {
+    if (type === 'video') {
+      return (
+        <View style={frame}>
+          <Video source={{ uri: localUri }} style={{ width: '100%', height: '100%' }} resizeMode={ResizeMode.CONTAIN} useNativeControls isMuted accessibilityLabel="Offer video preview, muted" />
+        </View>
+      );
+    }
+    return <Image source={{ uri: localUri }} style={frame} resizeMode="cover" />;
+  }
 
   if (type === 'video') {
     if (!posterPath) {

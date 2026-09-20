@@ -24,6 +24,7 @@ import CelebrationHeaderIcon from '../components/CelebrationHeaderIcon';
 import StaggeredReveal from '../components/StaggeredReveal';
 import OfferMedia from '../components/OfferMedia';
 import OfferReveal from '../components/OfferReveal';
+import OfferCustomerBody, { formatProposedTime } from '../components/OfferCustomerBody';
 import { visibleRedemption, validityLabel, isOfferExpired, availableWindowLabel } from '../utils/offerMedia';
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { captureRef } from 'react-native-view-shot';
@@ -85,11 +86,6 @@ const OFFER_TYPE_LABELS = {
 // INTENT_LAYER_UX_WALKTHROUGH_2026-08-14.md, finding 3. Now that
 // BusinessDashboardScreen's "Make an Offer" modal actually collects it,
 // render it here too, both before and after acceptance.
-function formatProposedTime(iso) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-}
 
 // Phase 4 (media upload, CLAUDE.md) -- a real uploaded offer photo,
 // rendered INSIDE this screen's own existing offer card, never as a
@@ -1309,21 +1305,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               <Text style={styles.offerStatus}>{OFFER_STATUS_COPY[o.status] ?? o.status}</Text>
               {o.status === 'offered' && (
                 <OfferReveal offerId={o.id} partnerName={o.brand_partners?.name ?? 'A business'} enabled={!!(o.media_path || o.offer_title)}>
-                  {showComparison && (
-                    <Text style={styles.offerTypeLabel}>{OFFER_TYPE_LABELS[o.offer_type] ?? o.offer_type}</Text>
-                  )}
-                  {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
-                  {/* Item 92: a real included-items checklist, "✓ Private table" /
-                      "✓ Birthday dessert" per row -- absent entirely for a plain
-                      offer with no items, never a fabricated placeholder list. */}
-                  {(o.included_items ?? []).map((item, index) => (
-                    <Text key={index} style={styles.offerIncludedItem}>✓ {item}</Text>
-                  ))}
-                  {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
-                  {offerPriceLabel(o.offer_price, o.price_is_per_person) ? <Text style={styles.offerPrice}>{offerPriceLabel(o.offer_price, o.price_is_per_person)}</Text> : null}
-                  {availableWindowLabel(o.available_from, o.available_until) ? <Text style={styles.offerProposedTime}>🕒 {availableWindowLabel(o.available_from, o.available_until)}</Text> : null}
-                  {o.valid_until ? <Text style={styles.offerProposedTime}>⏳ {isOfferExpired(o) ? 'This offer has expired' : validityLabel(o.valid_until)}</Text> : null}
-                  <OfferMedia path={o.media_path} type={o.media_type} posterPath={o.media_poster_path} />
+                  <OfferCustomerBody offer={o} showTypeLabel={showComparison} typeLabel={OFFER_TYPE_LABELS[o.offer_type] ?? o.offer_type} />
                   {showComparison && o.viewed_at ? (
                     <Text style={styles.offerViewedIndicator}>👁 You've seen this</Text>
                   ) : null}
