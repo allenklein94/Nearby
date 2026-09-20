@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { getNearbyMatches } from './proximity';
+import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 import { getNearbyGatherings, getMyInterestedGatherings, getGatheringFitReasons, getMyTopGatheringCategories, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { createWeatherLoader } from './weatherLoader';
@@ -458,7 +459,8 @@ export async function getHomeDashboard() {
     .filter((g) => isOutdoorCategory(g.interest_tag))
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 4);
-  let trendingGatherings = [...nearbyGatherings]
+  let trendingGatherings = nearbyGatherings
+    .filter((g) => (g.approvedAttendees?.length ?? 0) >= TRENDING_ATTENDANCE_MIN)
     .sort((a, b) => (b.approvedAttendees?.length ?? 0) - (a.approvedAttendees?.length ?? 0))
     .slice(0, 3);
 
@@ -600,7 +602,8 @@ export async function getHomeDashboard() {
   {
     const notMine = (g) => !upcomingPlanIds.has(g.id);
     const pool = nearbyGatherings.filter(notMine);
-    trendingGatherings = [...pool]
+    trendingGatherings = pool
+      .filter((g) => (g.approvedAttendees?.length ?? 0) >= TRENDING_ATTENDANCE_MIN)
       .sort((a, b) => (b.approvedAttendees?.length ?? 0) - (a.approvedAttendees?.length ?? 0))
       .slice(0, 3);
     happeningNow = happeningNow.filter(notMine);

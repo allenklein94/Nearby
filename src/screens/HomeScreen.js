@@ -2672,7 +2672,7 @@ export default function HomeScreen({ navigation }) {
                   style={[styles.heroCard, shadow.card]}
                   onPress={() => navigation.navigate('GatheringDetail', { gatheringId: homeMerge.hero.id })}
                   activeOpacity={0.85}
-                  accessibilityLabel={`Best Pick Tonight: ${homeMerge.hero.title}, ${homeMerge.hero.reasons.join(', ')}`}
+                  accessibilityLabel={`Best Pick${gatheringTimeBadge(homeMerge.hero.scheduled_at) === 'TONIGHT' ? ' Tonight' : ''}: ${homeMerge.hero.title}, ${homeMerge.hero.reasons.join(', ')}`}
                   accessibilityRole="button"
                 >
                   {bestPickCoverUrl ? (
@@ -2692,7 +2692,7 @@ export default function HomeScreen({ navigation }) {
                     style={styles.heroScrim}
                     pointerEvents="none"
                   />
-                  <Text style={styles.heroEyebrow}>{gatheringTimeBadge(homeMerge.hero.scheduled_at) ?? 'BEST PICK TONIGHT'}</Text>
+                  <Text style={styles.heroEyebrow}>{gatheringTimeBadge(homeMerge.hero.scheduled_at) ?? 'BEST PICK'}</Text>
                   <View style={styles.heroBody}>
                     <View style={{ flex: 1, marginRight: spacing.sm }}>
                       <Text style={styles.heroTitle} numberOfLines={1}>{homeMerge.hero.title}</Text>

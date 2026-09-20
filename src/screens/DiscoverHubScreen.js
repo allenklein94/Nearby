@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 import { joinLabel } from '../utils/gatheringJoinMode';
 import ExperienceComponentList from '../components/ExperienceComponentList';
 import usePersonalization from '../hooks/usePersonalization';
@@ -74,7 +75,6 @@ const NOTABLE_DISPLAY_CAP = 6;
 // approved-attendee count is 100% real data; only the cutoff itself is a
 // UI decision) -- half of the fit-score formula's own attendance cap, so
 // it's grounded in an existing number rather than invented from nothing.
-const TRENDING_ATTENDANCE_MIN = 5;
 
 // P1 UX critique reply item 14 (CLAUDE.md, "Things To Do needs a UX pass"):
 // real caps for the new Happening Now / Today / This Weekend hierarchy that

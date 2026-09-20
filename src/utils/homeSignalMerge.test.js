@@ -106,3 +106,15 @@ describe('starting-soon is a reason, not a second card', () => {
     expect(cards).toEqual([]);
   });
 });
+
+describe('trending is a real-attendance claim (global rule 7)', () => {
+  test('the shared floor is used by both Home and Discover', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const home = fs.readFileSync(path.join(__dirname, '../services/homeDashboard.js'), 'utf8');
+    const discover = fs.readFileSync(path.join(__dirname, '../screens/DiscoverHubScreen.js'), 'utf8');
+    expect(home).toContain("from '../constants/trending'");
+    expect(discover).toContain("from '../constants/trending'");
+    expect(require('../constants/trending').TRENDING_ATTENDANCE_MIN).toBe(5);
+  });
+});
