@@ -15,7 +15,7 @@ import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { CATEGORY_GROUPS, groupForTag } from '../constants/gatheringCategories';
-import { whatStepProblem, canSkipWhatStep } from '../utils/gatheringStructure';
+import { whatStepProblem, canSkipWhatStep, capacityForPartySize } from '../utils/gatheringStructure';
 import useMyInterests from '../hooks/useMyInterests';
 import { orderGroupsByInterests } from '../constants/interestGraph';
 import { VISIBILITY_OPTIONS } from '../constants/gatheringVisibility';
@@ -212,6 +212,16 @@ export default function CreateGatheringScreen({ navigation, route }) {
       setInterestTag(route.params.quickStartCategory);
     }
   }, [route.params?.quickStartTitle, route.params?.quickStartCategory]);
+
+  // "Planning for 4?": a headcount from the person's own words, suggested (visible + editable) rather than committed.
+  const [suggestedPartySize, setSuggestedPartySize] = useState(null);
+  useEffect(() => {
+    const cap = capacityForPartySize(route.params?.quickStartPartySize);
+    if (!cap) return;
+    setCapacityOption(cap.option);
+    setCapacityCustom(cap.custom);
+    setSuggestedPartySize(cap.size);
+  }, [route.params?.quickStartPartySize]);
 
   // Item 61 ("Celebrate Something", CLAUDE.md): the first caller of
   // quickStartTitle that also already knows a real When answer (the
@@ -877,6 +887,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
             )}
 
             <Text style={[styles.label, { marginTop: spacing.lg }]}>Capacity</Text>
+                {suggestedPartySize ? <Text style={styles.helperText}>Planning for {suggestedPartySize}? We set this from what you told us. Change it any time.</Text> : null}
                 <View style={styles.chipsWrap}>
                   {CAPACITY_OPTIONS.map((option) => {
                     const selected = capacityOption === option.key;

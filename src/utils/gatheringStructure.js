@@ -28,3 +28,14 @@ export function localWhenParts(scheduledAt) {
     time: `${p(d.getHours())}:${p(d.getMinutes())}:00`,
   };
 }
+
+// "Planning for 4?": a headcount Nearby read from what the person said becomes a SUGGESTED capacity chip (never a
+// silent commit: the Settings step says so and the chip stays editable). Maps onto the existing chips only -- 2-4, 5-10,
+// or 10+ with the number as the stepper default. A headcount of 1, or anything unreadable, suggests nothing.
+export function capacityForPartySize(n) {
+  const size = Number(n);
+  if (!Number.isInteger(size) || size < 2 || size > 200) return null;
+  if (size <= 4) return { option: '2-4', custom: 15, size };
+  if (size <= 10) return { option: '5-10', custom: 15, size };
+  return { option: '10+', custom: size, size };
+}

@@ -985,6 +985,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   // hand-copied blocks.
                   <AcceptedBusinessOfferCard
                     offer={acceptedBusinessOffer}
+                    groupCare
                     partySize={businessRequest?.party_size ?? null}
                     onViewRequest={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
                     style={{ marginTop: spacing.xs }}
@@ -1126,6 +1127,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 // own decision-making context.
                 <AcceptedBusinessOfferCard
                   offer={acceptedBusinessOffer}
+                  groupCare
                   partySize={businessRequest?.party_size ?? null}
                   style={{ marginBottom: spacing.sm }}
                 />

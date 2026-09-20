@@ -34,6 +34,7 @@ export default function AcceptedBusinessOfferCard({
   kicker = '🍽️ Local Business Confirmed',
   partySize = null,
   onViewRequest,
+  groupCare = false,
   bordered = true,
   style,
 }) {
@@ -46,6 +47,7 @@ export default function AcceptedBusinessOfferCard({
     <View style={[styles.container, style]}>
       <Text style={styles.kicker}>{kicker}</Text>
       <Text style={styles.venue}>{offer.brand_partners?.name ?? 'A local business'}</Text>
+      {groupCare ? <Text style={styles.sub}>{offer.brand_partners?.name ?? 'A local business'} is taking care of your group</Text> : null}
       {offer.proposed_time && <Text style={styles.sub}>{formatOfferTime(offer.proposed_time)}</Text>}
       {partySize != null && (
         <Text style={styles.sub}>

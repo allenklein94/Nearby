@@ -3,6 +3,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import DraftBanner from '../components/DraftBanner';
 import OfferCustomerBody from '../components/OfferCustomerBody';
+import { offerValueLines } from '../utils/offerValue';
 import { offerRevealHeader } from '../utils/offerCopy';
 import useFormDraft from '../hooks/useFormDraft';
 import { serializableAsset, assetStillExists } from '../services/formDrafts';
@@ -28,7 +29,7 @@ import { CANCELLATION_REASONS, CANCELLATION_ACTOR_LABELS } from '../constants/ca
 import { getPartnerCancellationPatterns } from '../services/cancellationReasons';
 import { creativeFormPatch, detectedSummary, extractedDiscountWarning, canReadCreative, hasAnySuggestion, sanitizeCreativeSuggestions } from '../utils/creativeExtraction';
 import { videoLimitProblem, MAX_REDEMPTION_LENGTH, validUntilFromChoice, availableWindowFromChoice } from '../utils/offerMedia';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, getMyCreatives, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit, getMyOfferSubmissions, dismissOfferSubmission, retryOfferSubmission } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, getMyCreatives, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit, getMyOfferSubmissions, dismissOfferSubmission, retryOfferSubmission, getPartnerOfferValue } from '../services/businessFulfillment';
 import { submissionView, inFlightRequestIds, payloadToForm } from '../utils/offerSubmission';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
@@ -405,6 +406,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // "Business Web as an Operating System" Phase 3 -- the real per-template
   // offer-performance rollup shown on the Insights tab.
   const [offerPerformance, setOfferPerformance] = useState([]);
+  const [offerValue, setOfferValue] = useState(null); // Item 85: redemptions + the owner's own prices on them
   const [entitlements, setEntitlements] = useState(null);
   const [communities, setCommunities] = useState([]);
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
@@ -2848,6 +2850,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     try {
       const result = await getPartnerOfferPerformance(partnerId);
       setOfferPerformance(result);
+      getPartnerOfferValue(partnerId).then(setOfferValue).catch(() => setOfferValue(null));
     } catch (e) {
       console.error('loadOfferPerformance failed', e);
     }
@@ -4622,6 +4625,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   entirely over already-tracked data, no new signal
                   invented. */}
               <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Offer Performance</Text>
+              {(() => {
+                const v = offerValueLines(offerValue, 'month');
+                return v ? (
+                  <View style={{ marginBottom: spacing.sm }}>
+                    <Text style={styles.offerTitle}>This month: {v.headline}</Text>
+                    <Text style={styles.breakdownText}>{v.note}</Text>
+                  </View>
+                ) : null;
+              })()}
               {matchFitLine(matchFit) && <Text style={styles.offerDescription}>{matchFitLine(matchFit)}</Text>}
               {offerPerformance.length === 0 ? (
                 <EmptyCopy id="business_offers_sent" />

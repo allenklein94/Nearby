@@ -19,10 +19,12 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
     const log = await runJourney(`
       v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_host uuid := '${host.id}';
       v_g uuid; v_res jsonb; v_req uuid; v_offer uuid; v_rev uuid; v_opps jsonb; v_row jsonb; v_o record; v_perf_before bigint; v_perf_after bigint;
-      v_comp_before bigint; v_comp_after bigint; v_seen int;`, `
+      v_comp_before bigint; v_comp_after bigint; v_seen int; v_val_before numeric; v_val_after numeric; v_red_before bigint; v_val record;`, `
   update brand_partners set active = true, latitude = 40.0, longitude = -75.0 where id = v_partner;
   select coalesce(sum(accepted_count),0), coalesce(sum(completed_count),0) into v_perf_before, v_comp_before from (
     select * from (select set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true)) x, lateral get_partner_offer_performance(v_partner)) p;
+
+  select all_value, all_redemptions into v_val_before, v_red_before from get_partner_offer_value(v_partner);
 
   -- 1. the host creates a gathering
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
@@ -76,6 +78,11 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
   select coalesce(sum(accepted_count),0), coalesce(sum(completed_count),0) into v_perf_after, v_comp_after from get_partner_offer_performance(v_partner);
   log := log || jsonb_build_array(jsonb_build_object('step','analytics_updated','ok', v_perf_after = v_perf_before + 1 and v_comp_after = v_comp_before + 1,
      'data', jsonb_build_object('accepted', jsonb_build_array(v_perf_before, v_perf_after), 'completed', jsonb_build_array(v_comp_before, v_comp_after))));
+
+  -- 9. the offer's own price shows up as value redeemed (the owner's price x real party size only when per person)
+  select * into v_val from get_partner_offer_value(v_partner);
+  log := log || jsonb_build_array(jsonb_build_object('step','value_generated','ok', v_val.all_value = v_val_before + 12.5 and v_val.all_redemptions = v_red_before + 1 and v_val.month_redemptions >= 1,
+     'data', jsonb_build_object('delta', v_val.all_value - v_val_before, 'redemptions_delta', v_val.all_redemptions - v_red_before)));
 `);
     s = stepMap(log);
     offerRow = s.host_accepts?.data;
@@ -83,7 +90,7 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
 
   test.each([
     'gathering_created', 'request_created', 'business_sees_opportunity', 'offer_submitted',
-    'offer_reaches_host', 'host_accepts', 'visit_completed', 'analytics_updated',
+    'offer_reaches_host', 'host_accepts', 'visit_completed', 'analytics_updated', 'value_generated',
   ])('step %s', (name) => {
     expect(s[name]).toBeDefined();
     expect(s[name].ok).toBe(true);

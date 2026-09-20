@@ -63,7 +63,7 @@ export async function classifyCreateRequest(text) {
 // back into meaning something they aren't.
 export function routeClassifiedIntentToCreation(navigation, result, typedText) {
   if (result.intent === 'gathering') {
-    navigation.navigate('CreateGathering', { quickStartTitle: result.title, quickStartCategory: result.category });
+    navigation.navigate('CreateGathering', { quickStartTitle: result.title, quickStartCategory: result.category, quickStartPartySize: result.partySize ?? null });
   } else if (result.intent === 'community') {
     navigation.navigate('CreateCommunity', { quickStartTitle: result.title, quickStartCategory: result.category });
   } else if (result.intent === 'business_partner') {
