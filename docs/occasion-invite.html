@@ -207,6 +207,14 @@
       });
   }
 
+  function isPast(dateStr) {
+    if (!dateStr) return false;
+    var d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return false;
+    var now = new Date();
+    return d.getTime() < new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  }
+
   function renderPreview(preview) {
     document.getElementById('preview-emoji').textContent = OCCASION_EMOJI[preview.occasionType] || '🎉';
     document.getElementById('preview-title').textContent = "You're invited to " + preview.title;
@@ -243,6 +251,10 @@
       rsvpRowEl.style.display = 'none';
     } else if (preview.planStatus === 'cancelled') {
       statusEl.textContent = 'This plan was cancelled.';
+      rsvpRowEl.style.display = 'none';
+    } else if (preview.guestStatus === 'expired' || isPast(preview.scheduledDate)) {
+      // Past plan: viewable, never acceptable (the server refuses it too).
+      statusEl.textContent = 'Invitation expired · ' + whenText + ' • Past';
       rsvpRowEl.style.display = 'none';
     } else {
       statusEl.style.display = 'none';
