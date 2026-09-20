@@ -447,6 +447,8 @@ export async function routeNotificationTap(data) {
       break;
     case 'business_opportunity_received':
     case 'business_opportunities_digest':
+    // Item 83: an offer's background review finished -- the "Your offers" list is on the same tab.
+    case 'business_offer_review_result':
     // Nearby 2.0 vision layer 1 (see CLAUDE.md's "Nearby 2.0 Vision" doc):
     // real aggregated nearby demand crossing a meaningful threshold for
     // this business's own category -- same destination as a single
