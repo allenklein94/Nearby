@@ -52,7 +52,7 @@ describe('no organic-response language inside the sponsored components', () => {
 describe('organic code never touches the sponsored system', () => {
   const allowed = [
     'src/components/SponsoredCard.js', 'src/components/SponsoredSpotlightSlot.js', 'src/services/sponsored.js',
-    'src/constants/sponsored.js', 'src/components/SponsoredPromotionsPanel.js', 'src/utils/sponsoredPromotions.js', 'src/screens/DiscoverHubScreen.js', 'src/screens/SettingsScreen.js',
+    'src/constants/sponsored.js', 'src/components/SponsoredPromotionsPanel.js', 'src/utils/sponsoredPromotions.js', 'src/screens/AdminSponsoredRefundsScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/screens/SettingsScreen.js',
   ].map((p) => path.join(root, p));
   const pattern = /sponsored_|get_sponsored|record_sponsored|SponsoredCard|SponsoredSpotlight|services\/sponsored|constants\/sponsored|show_sponsored_places/;
   it('no other source file references it', () => {
@@ -62,7 +62,7 @@ describe('organic code never touches the sponsored system', () => {
   it('no other migration references the sponsored tables (organic SQL never reads them)', () => {
     const dir = path.join(root, 'supabase/migrations');
     const offenders = fs.readdirSync(dir)
-      .filter((f) => !['20270154_sponsored_placements.sql', '20270155_sponsored_purchase_and_payments.sql', '20270156_sponsored_owner_stats.sql', '20270157_sponsored_refunds_and_approvals.sql'].includes(f))
+      .filter((f) => !['20270154_sponsored_placements.sql', '20270155_sponsored_purchase_and_payments.sql', '20270156_sponsored_owner_stats.sql', '20270157_sponsored_refunds_and_approvals.sql', '20270158_sponsored_admin_payment_list.sql'].includes(f))
       .filter((f) => /sponsored_(placements|payments|seen|hidden|daily_stats|price)|sponsorable_category|get_sponsored|show_sponsored_places/.test(fs.readFileSync(path.join(dir, f), 'utf8')));
     expect(offenders).toEqual([]);
   });

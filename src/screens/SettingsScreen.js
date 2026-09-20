@@ -1043,6 +1043,17 @@ export default function SettingsScreen({ navigation, route }) {
 
             <TouchableOpacity
               style={styles.rowButtonCard}
+              onPress={() => navigation.navigate('AdminSponsoredRefunds')}
+              activeOpacity={0.85}
+              accessibilityLabel="Sponsored refunds, admin"
+              accessibilityRole="button"
+            >
+              <Text style={styles.rowButtonText}>Sponsored Refunds (Admin)</Text>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.rowButtonCard}
               onPress={() => navigation.navigate('AdminVerification')}
               activeOpacity={0.85}
               accessibilityLabel="Review pending verifications, admin"

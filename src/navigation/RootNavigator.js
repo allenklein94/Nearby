@@ -44,6 +44,7 @@ import BusinessRequestDetailScreen from '../screens/BusinessRequestDetailScreen'
 import GroupPlanScreen from '../screens/GroupPlanScreen';
 import GroupOccasionPlanScreen from '../screens/GroupOccasionPlanScreen';
 import DateProposalScreen from '../screens/DateProposalScreen';
+import AdminSponsoredRefundsScreen from '../screens/AdminSponsoredRefundsScreen';
 import AdminBusinessRequestsScreen from '../screens/AdminBusinessRequestsScreen';
 import AdminBusinessTierScreen from '../screens/AdminBusinessTierScreen';
 import AdminContentReviewScreen from '../screens/AdminContentReviewScreen';
@@ -596,6 +597,7 @@ export default function RootNavigator() {
             <Stack.Screen name="GroupOccasionPlan" component={GroupOccasionPlanScreen} options={{ headerShown: true, title: 'Group Plan', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="DateProposal" component={DateProposalScreen} options={{ headerShown: true, title: 'Plan Something Together', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminBusinessRequests" component={AdminBusinessRequestsScreen} options={{ headerShown: true, title: 'Business Requests (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="AdminSponsoredRefunds" component={AdminSponsoredRefundsScreen} options={{ headerShown: true, title: 'Sponsored Refunds (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminBusinessTier" component={AdminBusinessTierScreen} options={{ headerShown: true, title: 'Business Tier Switch (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminContentReview" component={AdminContentReviewScreen} options={{ headerShown: true, title: 'Content Review Queue (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen

@@ -92,3 +92,22 @@ export async function startSponsoredCheckout({ itemKind, itemId, startDate, titl
   }
   return data?.url ? { url: data.url } : { error: data?.error || "Couldn't start checkout. You have not been charged." };
 }
+
+// ---- Finance approver (refunds). The database decides who may and how much; this only relays the choice. ----
+export async function listSponsoredPaymentsForApprover() {
+  const { data, error } = await supabase.rpc('admin_list_sponsored_payments');
+  if (error) return { error: /not_an_approver/.test(error.message || '') ? 'not_an_approver' : 'failed' };
+  return { rows: data || [] };
+}
+
+export async function requestSponsoredRefund({ paymentId, kind, undeliveredDays = null, reason }) {
+  const { data, error } = await supabase.functions.invoke('admin-sponsored-refund', {
+    body: { paymentId, kind, undeliveredDays, reason },
+  });
+  if (error) {
+    let message = 'The refund could not be started. Nothing was refunded.';
+    try { const b = await error.context?.json?.(); if (b?.error) message = b.error; } catch (e) { /* keep default */ }
+    return { error: message };
+  }
+  return data?.refunded ? { amountCents: data.amountCents } : { error: data?.error || 'Nothing was refunded.' };
+}
