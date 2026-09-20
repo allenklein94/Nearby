@@ -37,7 +37,7 @@ begin
   select count(*) into n from net.http_request_queue where convert_from(body,'utf8')::jsonb->>'recipient_id' = b::text;
   v_out := v_out || jsonb_build_object('decline_push', n);
 
-  -- capacity 1: a is approved and full; c requests -> waitlisted (capacity beats approval); host removes a -> c promoted
+  -- capacity 1: a is approved and full; c requests -> waitlisted (capacity beats approval); host removes a -> c becomes pending
   update gatherings set capacity = 1 where id = g;
   perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
   r := join_gathering(g); v_out := v_out || jsonb_build_object('full_join', r->>'status');
@@ -60,7 +60,7 @@ $t$;`;
   assert(r.nonhost_remove === 'refused', 'only the host can decline/remove');
   assert(r.declined_row_gone === 0 && r.decline_push === 1, 'decline removes the request and notifies neutrally');
   assert(r.full_join === 'waitlisted', 'capacity still waitlists');
-  assert(r.c_after_remove === 'approved', 'removing an approved attendee promotes the waitlist');
+  assert(r.c_after_remove === 'pending', 'removing an approved attendee promotes the waitlist to PENDING on an approval-required gathering (20270120)');
   assert(r.removed_attendee_push === 0, 'removed attendee gets no push');
   summarize();
 }
