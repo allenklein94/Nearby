@@ -8,7 +8,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { isAllDeclined } from '../utils/requestOutcome';
 import { requestTimeline, timelineStepLine } from '../utils/requestTimeline';
-import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon, setPlanItemTime, getPlanOrganizers, addPlanOrganizer, removePlanOrganizer } from '../services/businessFulfillment';
+import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, reopenBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon, setPlanItemTime, getPlanOrganizers, addPlanOrganizer, removePlanOrganizer } from '../services/businessFulfillment';
 import { getPlanChatInfo } from '../services/planChat';
 import { getPlanIdForResource } from '../services/plans';
 import { relevantAddonTypesForOccasion, planAddonIcon, planAddonLabel } from '../constants/planAddons';
@@ -741,6 +741,17 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         },
       },
     ]);
+  }
+
+  async function handleReopen() {
+    setCancelling(true);
+    try {
+      await reopenBusinessRequest(requestId);
+      await load();
+    } catch (e) {
+      Alert.alert("Couldn't reopen", e.message);
+    }
+    setCancelling(false);
   }
 
   async function handleCancel() {
@@ -1746,6 +1757,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               accessibilityRole="button"
             >
               {invitingSomeone ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.groupPlanButtonText}>Send Invite →</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {canDo('request', request.status, 'reopen') && request.requester_id === myId && (
+          <View style={{ alignItems: 'center', marginBottom: 12 }}>
+            <Text style={styles.cancelLink}>This request expired before a business answered.</Text>
+            <TouchableOpacity onPress={handleReopen} disabled={cancelling} accessibilityLabel="Reopen this request" accessibilityRole="button">
+              <Text style={[styles.cancelLink, { color: colors.primary, fontWeight: '700' }]}>{cancelling ? 'Reopening…' : 'Reopen Request'}</Text>
             </TouchableOpacity>
           </View>
         )}

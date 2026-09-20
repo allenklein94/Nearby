@@ -560,6 +560,13 @@ export async function cancelBusinessRequest(requestId) {
   return data;
 }
 
+// Item 66: the requester brings back an expired request whose time has not passed (server refuses otherwise).
+export async function reopenBusinessRequest(requestId) {
+  const { data, error } = await supabase.rpc('reopen_business_request', { request_id_param: requestId });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 // Item 80 ("Make it special," CLAUDE.md) -- an add-on is a real,
 // independent business_requests row (same lifecycle, same offer/accept/
 // decline/reservation machinery as any other request), pointed back at

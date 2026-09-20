@@ -69,7 +69,7 @@ describe('view vs action classes', () => {
     for (const [kind, states] of Object.entries(LIFECYCLE)) {
       for (const st of Object.keys(states)) {
         if (['expired', 'completed', 'cancelled', 'declined', 'withdrawn'].includes(st) || st.startsWith('past_')) {
-          const acts = states[st].filter((a) => a !== 'view' && a !== 'dismiss');
+          const acts = states[st].filter((a) => a !== 'view' && a !== 'dismiss' && a !== 'reopen');
           if (lifecycleClass(kind, st) === 'actionable') throw new Error(`${kind}.${st} is actionable: ${acts}`);
         }
       }
@@ -80,5 +80,26 @@ describe('view vs action classes', () => {
     expect(viewLabel('gathering', 'upcoming_attending')).toBe('View Plan');
     expect(viewLabel('gathering', 'past_requested')).toBe('Expired');
     expect(viewLabel('request', 'open')).toBe('View');
+  });
+});
+
+describe('request deadline (item 66)', () => {
+  const { requestLifecycleState, canRespondToOpportunity, canDo } = require('./objectLifecycle');
+  const now = new Date('2030-01-10T12:00:00Z');
+  it('an open request past its deadline is expired before the sweep runs', () => {
+    expect(requestLifecycleState({ status: 'open', expires_at: '2030-01-10T11:59:00Z' }, now)).toBe('expired');
+    expect(requestLifecycleState({ status: 'open', expires_at: '2030-01-10T12:01:00Z' }, now)).toBe('open');
+    expect(requestLifecycleState({ status: 'open' }, now)).toBe('open');
+    expect(requestLifecycleState({ status: 'cancelled', expires_at: '2020-01-01' }, now)).toBe('cancelled');
+  });
+  it('a business cannot respond to a lapsed request but can still see it', () => {
+    const o = (exp) => ({ status: 'pending', business_requests: { status: 'open', expires_at: exp } });
+    expect(canRespondToOpportunity(o('2030-01-10T11:00:00Z'), now)).toBe(false);
+    expect(canRespondToOpportunity(o('2030-01-10T13:00:00Z'), now)).toBe(true);
+  });
+  it('only an expired request can be reopened', () => {
+    expect(canDo('request', 'expired', 'reopen')).toBe(true);
+    expect(canDo('request', 'open', 'reopen')).toBe(false);
+    expect(canDo('request', 'cancelled', 'reopen')).toBe(false);
   });
 });

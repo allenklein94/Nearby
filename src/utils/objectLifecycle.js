@@ -26,7 +26,7 @@ export const LIFECYCLE = {
   request: {
     open: ['view', 'cancel', 'accept_offer', 'respond'],
     fulfilled: ['view'],
-    expired: ['view'],
+    expired: ['view', 'reopen'],
     cancelled: ['view'],
     merged: ['view'],
   },
@@ -67,8 +67,17 @@ export function offerLifecycleState(offer, now) {
 
 // Business side: an opportunity (offer row, status pending) can be answered (Send Offer / Accept / Decline) only
 // while the customer's request is still open.
-export function canRespondToOpportunity(opportunity) {
-  return canDo('request', opportunity?.business_requests?.status, 'respond') && canDo('offer', opportunity?.status, 'respond');
+// A request whose own deadline has passed is expired even while the hourly sweep has not yet flipped its status
+// (item 66; submit_business_offer refuses it server-side the same way). No/unparseable deadline = the stored status.
+export function requestLifecycleState(request, now = new Date()) {
+  if (!request?.status) return 'unknown';
+  if (request.status !== 'open') return request.status;
+  const t = request.expires_at ? new Date(request.expires_at).getTime() : NaN;
+  return Number.isFinite(t) && t <= new Date(now).getTime() ? 'expired' : 'open';
+}
+
+export function canRespondToOpportunity(opportunity, now) {
+  return canDo('request', requestLifecycleState(opportunity?.business_requests, now), 'respond') && canDo('offer', opportunity?.status, 'respond');
 }
 
 // A social invite is expired when its gathering has passed, otherwise its stored status (pending when absent).
@@ -88,7 +97,8 @@ const EXPIRED = new Set(['expired', 'past_requested', 'past_waitlisted', 'cancel
 export function lifecycleClass(kind, state) {
   const actions = LIFECYCLE[kind]?.[state];
   if (!Array.isArray(actions)) return 'view';
-  if (actions.some((a) => a !== 'view' && a !== 'dismiss')) return 'actionable';
+  // 'reopen' is the requester's deliberate way back from an expired request; the state itself is still expired.
+  if (actions.some((a) => a !== 'view' && a !== 'dismiss' && a !== 'reopen')) return 'actionable';
   if (EXPIRED.has(state)) return 'expired';
   if (COMPLETED.has(state) || state === 'accepted') return 'completed';
   return 'view';
