@@ -40,6 +40,7 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 // own date/time window, shown on the business's opportunity card.
 import { budgetMeetsMinSpend } from '../utils/budgetTier';
 import { businessLocationNotice } from '../utils/businessLocationNotice';
+import { dashboardGlance } from '../utils/dashboardGlance';
 import { buildOpportunityCard, buildMatchReasons, availabilityCoversRequest } from '../utils/businessOpportunityCard';
 import { matchFitLine } from '../utils/matchFitLine';
 import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardAvailabilityText } from '../utils/quickOfferResponse';
@@ -2503,7 +2504,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     try {
       const result = await getBusinessInsights(partnerId);
       setInsights(result);
-      const owed = await getEstimatedAmountOwed(partnerId).catch(() => ({ redemptionCount: 0, estimatedAmount: 0 }));
+      // A failed lookup is UNKNOWN (null), never a fabricated 0 redemptions / $0.
+      const owed = await getEstimatedAmountOwed(partnerId).catch(() => ({ redemptionCount: null, estimatedAmount: null, billingModel: null }));
       setEstimatedOwed(owed);
       getMyInvoices(partnerId).then(setPastInvoices).catch(() => setPastInvoices([]));
     } catch (e) {
@@ -2999,6 +3001,33 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   return (
                     <View style={styles.briefCard}>
                       <Text style={styles.sectionHeader}>Today at {selectedPartner.name}</Text>
+                      {(() => {
+                        const glance = dashboardGlance(opportunities, estimatedOwed);
+                        return (
+                          <View style={{ marginBottom: spacing.sm }}>
+                            <Text style={styles.notesLabel}>Today</Text>
+                            <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                              {glance.today.map((item) => (
+                                <TouchableOpacity
+                                  key={item.key}
+                                  style={[styles.chip, item.key === 'new' && item.count > 0 && { borderColor: colors.primary }]}
+                                  onPress={() => setSection(item.section)}
+                                  accessibilityLabel={item.text}
+                                  accessibilityRole="button"
+                                >
+                                  <Text style={styles.chipText}>{item.text}</Text>
+                                </TouchableOpacity>
+                              ))}
+                            </View>
+                            {glance.month.length > 0 && (
+                              <>
+                                <Text style={styles.notesLabel}>This month</Text>
+                                <Text style={styles.offerDescription}>{glance.month.map((m) => m.text).join(' · ')}</Text>
+                              </>
+                            )}
+                          </View>
+                        );
+                      })()}
                       {(totalDemand > 0 || pendingCount > 0) ? (
                         <>
                           {totalDemand > 0 && (
