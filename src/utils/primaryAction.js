@@ -10,7 +10,7 @@
 //   business opportunity -> View Offer
 import { needsApproval, joinLabel } from './gatheringJoinMode';
 import { gatheringViewerState } from './objectState';
-import { canDo, gatheringLifecycleState, offerLifecycleState } from './objectLifecycle';
+import { canDo, gatheringLifecycleState, offerLifecycleState, lifecycleClass, viewLabel } from './objectLifecycle';
 
 // Returns { kind, label, showView }.
 //   kind: 'interested' (private maybe, toggles) | 'join' (opens the normal join confirmation on the detail screen) | 'view_plan' | 'requested' | 'view'
@@ -30,7 +30,10 @@ export function gatheringPrimaryAction(gathering, myUserId, now = Date.now(), op
   const { relation } = gatheringViewerState(viewerInput, now);
   const lifecycle = gatheringLifecycleState(viewerInput, now);
   // Started or unknown date: the lifecycle table allows View only, so nothing can be done from a card.
-  if (!lifecycle.startsWith('upcoming_')) return view;
+  if (!lifecycle.startsWith('upcoming_')) {
+    // A finished event says what it was; an expired request or unknown date stays a plain View.
+    return lifecycleClass('gathering', lifecycle) === 'completed' ? { ...view, label: viewLabel('gathering', lifecycle) } : view;
+  }
 
   if (relation === 'hosting') return { kind: 'view_plan', label: 'View Plan', showView: false };
   if (!known) return view;

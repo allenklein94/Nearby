@@ -75,3 +75,35 @@ export function canRespondToOpportunity(opportunity) {
 export function inviteLifecycleState(invite, now) {
   return isSocialInviteExpired(invite, now) ? 'expired' : (invite?.status ?? 'pending');
 }
+
+// Every state belongs to exactly one class (global rule "view vs action"):
+//   actionable  something beyond View can be done (Join, Interested, Accept, Invite, Redeem, Request ...)
+//   completed   it happened or is settled: the surface says what it was (View Past Event / View Plan)
+//   expired     the window closed or it ended unfulfilled: View, marked Expired / Closed
+//   view        nothing can be done but it is not over (waiting on someone else)
+// Derived from the table above, so a state that gains an action becomes actionable with no second edit.
+const COMPLETED = new Set(['past_none', 'past_attending', 'past_hosting', 'fulfilled', 'completed']);
+const EXPIRED = new Set(['expired', 'past_requested', 'past_waitlisted', 'cancelled', 'merged', 'withdrawn', 'declined']);
+
+export function lifecycleClass(kind, state) {
+  const actions = LIFECYCLE[kind]?.[state];
+  if (!Array.isArray(actions)) return 'view';
+  if (actions.some((a) => a !== 'view' && a !== 'dismiss')) return 'actionable';
+  if (EXPIRED.has(state)) return 'expired';
+  if (COMPLETED.has(state) || state === 'accepted') return 'completed';
+  return 'view';
+}
+
+// The label for the non-action button on a card. Only wording that is true: there are no receipts in the product,
+// so no "View Receipt".
+export function viewLabel(kind, state) {
+  const cls = lifecycleClass(kind, state);
+  if (kind === 'gathering') {
+    if (state.startsWith('past_') && cls === 'completed') return 'View Past Event';
+    if (cls === 'expired') return 'Expired';
+    if (state === 'upcoming_attending' || state === 'upcoming_hosting') return 'View Plan';
+  }
+  if (cls === 'expired') return 'Expired';
+  if (kind === 'offer' && state === 'completed') return 'View Plan';
+  return 'View';
+}

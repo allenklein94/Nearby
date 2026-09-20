@@ -53,3 +53,32 @@ describe('opportunity and invite helpers', () => {
     expect(canDo('invite', 'expired', 'dismiss')).toBe(true);
   });
 });
+
+describe('view vs action classes', () => {
+  const { lifecycleClass, viewLabel } = require('./objectLifecycle');
+  it('classifies the four kinds of state', () => {
+    expect(lifecycleClass('gathering', 'upcoming_none')).toBe('actionable');
+    expect(lifecycleClass('offer', 'offered')).toBe('actionable');
+    expect(lifecycleClass('gathering', 'past_attending')).toBe('completed');
+    expect(lifecycleClass('offer', 'completed')).toBe('completed');
+    expect(lifecycleClass('gathering', 'past_requested')).toBe('expired');
+    expect(lifecycleClass('offer', 'expired')).toBe('expired');
+    expect(lifecycleClass('nope', 'x')).toBe('view');
+  });
+  it('an expired or completed state never classes as actionable', () => {
+    for (const [kind, states] of Object.entries(LIFECYCLE)) {
+      for (const st of Object.keys(states)) {
+        if (['expired', 'completed', 'cancelled', 'declined', 'withdrawn'].includes(st) || st.startsWith('past_')) {
+          const acts = states[st].filter((a) => a !== 'view' && a !== 'dismiss');
+          if (lifecycleClass(kind, st) === 'actionable') throw new Error(`${kind}.${st} is actionable: ${acts}`);
+        }
+      }
+    }
+  });
+  it('labels only what is true', () => {
+    expect(viewLabel('gathering', 'past_attending')).toBe('View Past Event');
+    expect(viewLabel('gathering', 'upcoming_attending')).toBe('View Plan');
+    expect(viewLabel('gathering', 'past_requested')).toBe('Expired');
+    expect(viewLabel('request', 'open')).toBe('View');
+  });
+});
