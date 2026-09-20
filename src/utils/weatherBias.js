@@ -78,3 +78,22 @@ export function businessWeatherAdjustment(setting, weather, weight) {
   if (indoorWorthy) return -weight;
   return outdoorWindow ? weight : 0;
 }
+
+// Stable re-rank of offers (each carrying brand_partners.weather_setting) by the business weather nudge. Same order when the
+// weather is unknown or no business declared anything; nothing is removed.
+export function rankOffersByBusinessWeather(offers, weather, weight = 1) {
+  if (!Array.isArray(offers) || !weather) return offers;
+  const scored = offers.map((o, i) => ({ o, i, a: businessWeatherAdjustment(o?.brand_partners?.weather_setting, weather, weight) }));
+  if (scored.every((x) => x.a === 0)) return offers;
+  return scored.sort((x, y) => y.a - x.a || x.i - y.i).map((x) => x.o);
+}
+
+// Adds the business weather nudge to resolver candidates that belong to a business (partnerId), given a map of
+// partnerId -> weather_setting. Returns new objects; candidates without a partner or a setting are untouched.
+export function applyBusinessWeatherToCandidates(candidates, settingByPartnerId, weather, weight) {
+  if (!weather || !settingByPartnerId) return candidates;
+  return candidates.map((c) => {
+    const adj = c?.partnerId ? businessWeatherAdjustment(settingByPartnerId.get(c.partnerId), weather, weight) : 0;
+    return adj === 0 ? c : { ...c, score: (c.score ?? 0) + adj };
+  });
+}

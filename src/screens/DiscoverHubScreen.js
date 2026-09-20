@@ -31,7 +31,7 @@ import {
   SCORE_HAPPENING_NOW as WEATHER_BONUS,
   INTENT_SEARCH_TYPE_EMOJI, intentSearchDateLabel, intentSearchFallbackTitle, intentPhaseCaption,
 } from '../services/intentResolverScoring';
-import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
+import { isWeatherIndoorBiased, isWeatherOutdoorBiased, rankOffersByBusinessWeather } from '../utils/weatherBias';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { PLACE_CATEGORIES } from '../constants/placeCategories';
@@ -658,7 +658,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // over brand_offers.title/description and brand_partners.name via the new
   // search_offer_ids() RPC) once actively searching, instead of the
   // client-side .filter().includes() this used before.
-  const filteredOffers = isSearching ? searchedOffers : offers;
+  // A business's own weather setting re-ranks perks (item 63): ranks, never hides; unchanged order without a weather signal.
+  const filteredOffers = rankOffersByBusinessWeather(isSearching ? searchedOffers : offers, weatherSignal);
 
   // Weather-aware re-ranking (CLAUDE.md, 14-item UX review item 9) --
   // reuses isIndoorCategory/isOutdoorCategory (Home's own weather card

@@ -934,6 +934,16 @@ export async function setBusinessWeatherSetting(partnerId, setting) {
   if (error) throw error;
 }
 
+// partnerId -> weather_setting for the intent resolver's business results (item 63). Best-effort: a failure is an empty map
+// (no weather effect), never a broken search. brand_partners is publicly readable for active partners.
+export async function getPartnerWeatherSettings(partnerIds) {
+  const ids = [...new Set((partnerIds ?? []).filter(Boolean))];
+  if (ids.length === 0) return new Map();
+  const { data, error } = await supabase.from('brand_partners').select('id, weather_setting').in('id', ids);
+  if (error) return new Map();
+  return new Map((data ?? []).filter((r) => r.weather_setting).map((r) => [r.id, r.weather_setting]));
+}
+
 // "Business Story" plan, Phase 3 -- a real, coarse, self-reported
 // "how's business right now" signal (open/limited/full), deliberately
 // not the deeper capacity-rules business_fulfillment_policies mechanism.

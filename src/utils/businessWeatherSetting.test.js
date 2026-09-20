@@ -34,3 +34,21 @@ describe('business weather setting (item 63)', () => {
     expect(fine).toHaveLength(3);
   });
 });
+
+describe('business weather setting on Discover and the intent resolver', () => {
+  const { rankOffersByBusinessWeather, applyBusinessWeatherToCandidates } = require('./weatherBias');
+  const o = (id, s) => ({ id, brand_partners: { weather_setting: s } });
+  it('re-ranks perks stably and removes nothing; unchanged without weather or settings', () => {
+    const list = [o('a', 'outdoor'), o('b', null), o('c', 'indoor')];
+    expect(rankOffersByBusinessWeather(list, rain).map((x) => x.id)).toEqual(['c', 'b', 'a']);
+    expect(rankOffersByBusinessWeather(list, null)).toBe(list);
+    expect(rankOffersByBusinessWeather([o('x', null), o('y', null)], rain).map((x) => x.id)).toEqual(['x', 'y']);
+  });
+  it('adds the nudge to business candidates only', () => {
+    const settings = new Map([['p1', 'outdoor']]);
+    const out = applyBusinessWeatherToCandidates(
+      [{ id: 1, partnerId: 'p1', score: 5 }, { id: 2, partnerId: 'p2', score: 5 }, { id: 3, score: 5 }], settings, rain, 3);
+    expect(out.map((c) => c.score)).toEqual([2, 5, 5]);
+    expect(applyBusinessWeatherToCandidates([{ partnerId: 'p1', score: 5 }], settings, null, 3)[0].score).toBe(5);
+  });
+});

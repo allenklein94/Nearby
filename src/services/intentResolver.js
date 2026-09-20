@@ -1,7 +1,8 @@
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
-import { getActiveOffers, logBusinessProfileView } from './brandOffers';
+import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings } from './brandOffers';
+import { applyBusinessWeatherToCandidates } from '../utils/weatherBias';
 import { occasionLabel } from '../constants/businessAttributes';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, searchOccasionOfferingBusinesses, getMyBusinessAffinitySignals } from './businessFulfillment';
 import { getWhoForPreferenceSignals } from './preferencePolls';
@@ -627,7 +628,19 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // duplicate is the one dropped, not decided by score.
   // The same rule now spans all four business tiers (live posting > package > offers-this-occasion >
   // policy-only): a weaker tier is dropped when the same business has a stronger one.
-  const deduped = dedupeBusinessTiers(candidates);
+  let deduped = dedupeBusinessTiers(candidates);
+
+  // Item 63: a business's own indoor/outdoor/weather-dependent declaration nudges its result with today's weather (ranks,
+  // never hides; same weight as the gathering weather bonus). Best-effort: no weather or no settings = unchanged order.
+  try {
+    const weather = await weatherPromise;
+    if (weather) {
+      const settings = await getPartnerWeatherSettings(deduped.map((c) => c.partnerId));
+      deduped = applyBusinessWeatherToCandidates(deduped, settings, weather, SCORE_HAPPENING_NOW);
+    }
+  } catch (e) {
+    console.error('business weather nudge skipped', e);
+  }
 
   deduped.sort((a, b) => b.score - a.score);
 
