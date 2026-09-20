@@ -23,6 +23,23 @@ export function hasMeetIntent(motivations) {
   return Array.isArray(motivations) && motivations.some((m) => MEET_INTENT_TOKENS.includes(m));
 }
 
+// Item 78: the claim needs real INVENTORY behind it, not just an evening and an intent. Supply is counted from the pool the
+// person will actually land on, and only people who really fit "meet someone tonight":
+//   Dating pool  -> seen near you in the last 24 h (a real sighting `last_seen_at`; an old crossing or a person known only
+//                   from a past shared gathering is not "nearby tonight");
+//   Friends pool -> friend-discovery candidates whose real distance bucket is 'Nearby' (under ~3 miles), not "In the wider area".
+// Nothing about the day of the week is used: a Friday with no supply says nothing.
+export const TONIGHT_SIGHTING_WINDOW_MS = 24 * 60 * 60 * 1000;
+export function countTonightSupply({ subMode = 'dating', list = null, now = new Date() } = {}) {
+  if (!Array.isArray(list)) return null;
+  if (subMode === 'friends') return list.filter((c) => c?.distance_bucket === 'Nearby').length;
+  const cutoff = now.getTime() - TONIGHT_SIGHTING_WINDOW_MS;
+  return list.filter((p) => {
+    const t = p?.last_seen_at ? new Date(p.last_seen_at).getTime() : NaN;
+    return Number.isFinite(t) && t >= cutoff && t <= now.getTime() + 60 * 1000;
+  }).length;
+}
+
 export function meetSomeoneTonight({ now = new Date(), nearbyPeopleCount = 0, motivations = null } = {}) {
   if (!isEveningNow(now)) return null;
   if (!hasMeetIntent(motivations)) return null;
@@ -34,8 +51,8 @@ export function meetSomeoneTonight({ now = new Date(), nearbyPeopleCount = 0, mo
     kind: 'meet_tonight',
     text: 'Tonight looks like a great night to meet someone new.',
     basis: subMode === 'friends'
-      ? `You're here to make friends, and ${nearbyPeopleCount} people nearby could be new friends.`
-      : `You're here to meet people, and ${nearbyPeopleCount} are nearby this evening.`,
+      ? `You're here to make friends, and ${nearbyPeopleCount} people within a few miles could be new friends.`
+      : `You're here to meet people, and ${nearbyPeopleCount} ${nearbyPeopleCount === 1 ? 'was' : 'were'} near you in the last day.`,
     cta: { label: 'Meet People', screen: 'Discover', params: { initialMode: 'people', initialPeopleSubMode: subMode, context: 'meet_tonight' } },
   };
 }
@@ -44,14 +61,15 @@ export function meetSomeoneTonight({ now = new Date(), nearbyPeopleCount = 0, mo
 // and what is really there right now, measured from the same pool the screen shows. Unknown count (still loading or
 // failed) says nothing about people; zero says so plainly and offers the other pool instead of an empty deck.
 export function peopleTonightBanner({ subMode = 'dating', count = null } = {}) {
+  // `count` must come from countTonightSupply (same rule as the Home claim), so the two can never disagree.
   const title = 'People worth meeting tonight';
   if (typeof count !== 'number') return { title, line: null, empty: false };
   if (count === 0) {
     return {
       title,
       line: subMode === 'friends'
-        ? 'Nobody new to meet nearby right now. Check back later, or see what is happening nearby.'
-        : 'Nobody nearby fits your preferences right now. Try Friends, or check back later.',
+        ? 'Nobody new within a few miles right now. Check back later, or see what is happening nearby.'
+        : 'Nobody who fits your preferences was near you in the last day. Try Friends, or check back later.',
       empty: true,
     };
   }
@@ -59,8 +77,8 @@ export function peopleTonightBanner({ subMode = 'dating', count = null } = {}) {
   return {
     title,
     line: subMode === 'friends'
-      ? `${people} nearby could be new friends. Swipe through, or say hi.`
-      : `${people} nearby who fit your dating preferences.`,
+      ? `${people} within a few miles could be new friends.`
+      : `${people} near you in the last day who fit your dating preferences.`,
     empty: false,
   };
 }

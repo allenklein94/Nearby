@@ -18,7 +18,7 @@ describe('getHomeInsight', () => {
     expect(r.kind).toBe('meet_tonight');
     expect(r.cta.label).toBe('Meet People');
     expect(r.cta.params).toEqual({ initialMode: 'people', initialPeopleSubMode: 'dating', context: 'meet_tonight' });
-    expect(r.basis).toMatch(/5 are nearby/);
+    expect(r.basis).toMatch(/5 were near you in the last day/);
     expect(getHomeInsight(d, morning)).toBeNull();
     expect(getHomeInsight({ ...d, motivations: [] }, evening)).toBeNull();
   });

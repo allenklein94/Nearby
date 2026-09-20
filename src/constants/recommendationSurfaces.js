@@ -20,6 +20,6 @@ export const RECOMMENDATION_SURFACES = [
   { surface: 'Business opportunity card', file: 'utils/businessOpportunityCard.js', marker: 'buildMatchReasons', status: 'reasoned' },
   { surface: 'Activity: business response', file: 'utils/offerCopy.js', marker: 'made you an offer', status: 'reasoned' },
   { surface: 'Discover: Places list', file: 'screens/DiscoverHubScreen.js', marker: 'PlaceCard', status: 'gap', note: 'shows category/open-now/rating facts, not a personal reason' },
-  { surface: 'Dating people cards', file: 'screens/DiscoveryScreen.js', marker: null, status: 'gap', note: 'people are never explained by proximity/interest alone (no-stranger-discovery rule); a shared-context line exists only for Friends' },
+  { surface: 'Dating people cards', file: 'screens/DiscoveryScreen.js', marker: 'datingCardFacts', status: 'reasoned' },
   { surface: 'Search results the person typed', file: 'screens/DiscoverHubScreen.js', marker: null, status: 'unpersonalized' },
 ];

@@ -1,4 +1,4 @@
-import { peopleTonightBanner } from '../utils/meetTonight';
+import { peopleTonightBanner, countTonightSupply } from '../utils/meetTonight';
 import { getNearbyMatches } from '../services/proximity';
 import { getFriendDiscoveryCandidates } from '../services/friendDiscovery';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
@@ -264,7 +264,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     let cancelled = false;
     setMeetTonightCount(null);
     (peopleSubMode === 'friends' ? getFriendDiscoveryCandidates(20) : getNearbyMatches())
-      .then((list) => { if (!cancelled) setMeetTonightCount(Array.isArray(list) ? list.length : null); })
+      .then((list) => { if (!cancelled) setMeetTonightCount(countTonightSupply({ subMode: peopleSubMode, list })); })
       .catch(() => { if (!cancelled) setMeetTonightCount(null); });
     return () => { cancelled = true; };
   }, [meetTonightContext, mode, peopleSubMode]);

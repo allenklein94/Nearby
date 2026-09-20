@@ -1,3 +1,4 @@
+import { datingCardFacts } from '../utils/datingCardReasons';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Animated, ScrollView } from 'react-native';
@@ -660,6 +661,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
         renderItem={({ item }) => {
           const crossedPathsTime = discoveryMode === 'browse' ? null : formatCrossedPathsTime(item.last_seen_at);
           const gatheringText = discoveryMode === 'browse' ? null : gatheringReasonText(item.crossedPathsReason, formatCrossedPathsTime);
+          const facts = datingCardFacts(item, { mode: discoveryMode, gatheringText, crossedPathsTime });
           const storyGroup = storyByUserId[item.otherUserId] ?? null;
           return (
           // Item 126 ("Don't animate every card"): removed this card's own per-index
@@ -726,37 +728,26 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
                   </TouchableOpacity>
                 )}
               </View>
-              {discoveryMode === 'browse' ? (
-                <View style={styles.proximityRow}>
-                  <Text style={styles.proximityText}>🔎 Matches your filters</Text>
-                </View>
-              ) : gatheringText ? (
-                <View style={styles.proximityRow}>
-                  <Text style={styles.proximityText}>🗓️ {gatheringText}</Text>
-                </View>
-              ) : (
-                <View style={styles.proximityRow}>
-                  <Text style={styles.proximityText}>
-                    📍 Within about 35 feet{crossedPathsTime ? ` · Crossed paths ${crossedPathsTime}` : ''}
-                  </Text>
-                  {(item.sightingLat != null) && (
-                    <TouchableOpacity
-                      onPress={() => setSightingMapTarget(item)}
-                      accessibilityLabel="View roughly where you crossed paths, on a map"
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.viewOnMapText}>View on map</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-              <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
-              {item.sharedInterests?.length > 0 && (
+              {facts.reason && (
                 <Text style={styles.sharedText}>
-                  ✨ {t('discovery.youBothLike')} {item.sharedInterests.slice(0, 3).join(', ')}
-                  {item.sharedInterests.length > 3 ? ` +${item.sharedInterests.length - 3} ${t('discovery.moreCount')}` : ''}
+                  {facts.reason.kind === 'shared_interests'
+                    ? `✨ ${t('discovery.youBothLike')} ${facts.reason.tags.slice(0, 3).join(', ')}${facts.reason.tags.length > 3 ? ` +${facts.reason.tags.length - 3} ${t('discovery.moreCount')}` : ''}`
+                    : `✨ ${facts.reason.text}`}
                 </Text>
               )}
+              <View style={styles.proximityRow}>
+                <Text style={styles.proximityText}>{facts.where}</Text>
+                {discoveryMode !== 'browse' && !gatheringText && item.sightingLat != null && (
+                  <TouchableOpacity
+                    onPress={() => setSightingMapTarget(item)}
+                    accessibilityLabel="View roughly where you crossed paths, on a map"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.viewOnMapText}>View on map</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
               <View style={styles.cardActions}>
                 <ScaleButton
                   style={styles.noticeButton}

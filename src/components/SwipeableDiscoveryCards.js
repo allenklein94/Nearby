@@ -1,3 +1,4 @@
+import { datingCardFacts } from '../utils/datingCardReasons';
 import React, { useRef, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, PanResponder, Animated, Dimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -20,7 +21,7 @@ const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
 // even when the data passed in was actually Browse-mode data (no real
 // proximity signal at all) -- a fabricated-signal bug. Now branches the
 // same way the list view (DiscoveryScreen.js) already does: Browse mode
-// shows "🔎 Matches your filters", Crossed Paths mode shows the real
+// shows "In your area" (item 77, datingCardFacts), Crossed Paths mode shows the real
 // per-candidate reason (shared gathering attendance when it exists,
 // proximity sighting otherwise) -- never both, never a guess.
 export default function SwipeableDiscoveryCards({
@@ -112,6 +113,7 @@ export default function SwipeableDiscoveryCards({
   const nextItem = data[currentIndex + 1];
   const crossedPathsTime = formatCrossedPathsTimeShort(item.last_seen_at);
   const gatheringText = discoveryMode === 'browse' ? null : gatheringReasonText(item.crossedPathsReason);
+  const facts = datingCardFacts(item, { mode: discoveryMode, gatheringText, crossedPathsTime: discoveryMode === 'browse' ? null : crossedPathsTime });
   const storyGroup = storyByUserId[item.otherUserId] ?? null;
 
   const cardStyle = {
@@ -183,20 +185,15 @@ export default function SwipeableDiscoveryCards({
               )
             )}
           </View>
-          <Text style={styles.proximityText}>
-            {discoveryMode === 'browse'
-              ? '🔎 Matches your filters'
-              : gatheringText
-                ? `🗓️ ${gatheringText}`
-                : `📍 Within about 35 feet${crossedPathsTime ? ` · ${crossedPathsTime}` : ''}`}
-          </Text>
-          <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
-          {item.sharedInterests?.length > 0 && (
+          {facts.reason && (
             <Text style={styles.sharedText}>
-              ✨ {t('discovery.youBothLike')} {item.sharedInterests.slice(0, 3).join(', ')}
-              {item.sharedInterests.length > 3 ? ` +${item.sharedInterests.length - 3} ${t('discovery.moreCount')}` : ''}
+              {facts.reason.kind === 'shared_interests'
+                ? `✨ ${t('discovery.youBothLike')} ${facts.reason.tags.slice(0, 3).join(', ')}${facts.reason.tags.length > 3 ? ` +${facts.reason.tags.length - 3} ${t('discovery.moreCount')}` : ''}`
+                : `✨ ${facts.reason.text}`}
             </Text>
           )}
+          <Text style={styles.proximityText}>{facts.where}</Text>
+          <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
         </TouchableOpacity>
       </Animated.View>
 

@@ -8,7 +8,7 @@ import { getMyGroupPlans } from './groupPlans';
 import { getUserLocation } from './userLocation';
 import { subModeFromMotivations } from '../utils/peopleSubModePreference';
 import { getFriendDiscoveryCandidates } from './friendDiscovery';
-import { meetSomeoneTonight } from '../utils/meetTonight';
+import { meetSomeoneTonight, countTonightSupply } from '../utils/meetTonight';
 import { canonicalizeInterests, becauseYouLikeCategories } from '../constants/interestGraph';
 import { isGatheringPast } from '../utils/objectState';
 import { attendeeTotal } from '../utils/gatheringFullness';
@@ -710,10 +710,12 @@ export async function getHomeDashboard() {
     : null;
 
   // Item 76: a friends-only intent lands on the Friends pool, so the "people worth meeting" claim counts THAT pool.
-  let meetPeopleCount = nearbyPeople.length;
-  if (subModeFromMotivations(profileData?.onboarding_motivations) === 'friends') {
+  // Item 78: only people who really fit "tonight" count (countTonightSupply), not every candidate in the pool.
+  const meetSubMode = subModeFromMotivations(profileData?.onboarding_motivations);
+  let meetPeopleCount = countTonightSupply({ subMode: 'dating', list: nearbyPeople });
+  if (meetSubMode === 'friends') {
     try {
-      meetPeopleCount = (await getFriendDiscoveryCandidates(20)).length;
+      meetPeopleCount = countTonightSupply({ subMode: 'friends', list: await getFriendDiscoveryCandidates(20) });
     } catch (e) {
       meetPeopleCount = null;
     }
