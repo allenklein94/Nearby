@@ -21,7 +21,7 @@ import CelebrationHeaderIcon from '../components/CelebrationHeaderIcon';
 import StaggeredReveal from '../components/StaggeredReveal';
 import OfferMedia from '../components/OfferMedia';
 import OfferReveal from '../components/OfferReveal';
-import { visibleRedemption } from '../utils/offerMedia';
+import { visibleRedemption, validityLabel, isOfferExpired } from '../utils/offerMedia';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
@@ -1294,6 +1294,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   ))}
                   {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
                   {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}{o.price_is_per_person ? '/person' : ''}</Text> : null}
+                  {o.valid_until ? <Text style={styles.offerProposedTime}>⏳ {isOfferExpired(o) ? 'This offer has expired' : validityLabel(o.valid_until)}</Text> : null}
                   <OfferMedia path={o.media_path} type={o.media_type} posterPath={o.media_poster_path} />
                   {showComparison && o.viewed_at ? (
                     <Text style={styles.offerViewedIndicator}>👁 You've seen this</Text>
@@ -1308,7 +1309,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                       <Text style={styles.acceptButtonText}>Confirm With the Group →</Text>
                     </TouchableOpacity>
                   )}
-                  {!hasWinner && !isGroupPlanRequest && (
+                  {!hasWinner && !isGroupPlanRequest && !isOfferExpired(o) && (
                     <TouchableOpacity
                       style={styles.acceptButton}
                       onPress={() => handleAccept(o.id)}

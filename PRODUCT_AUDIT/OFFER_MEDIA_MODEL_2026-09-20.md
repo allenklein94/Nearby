@@ -26,3 +26,18 @@ No schema change was needed to reach the decision; this records what already exi
 - No invented numbers: price/savings lines come only from `offer_price`/`discount_pct`; never a computed "you save".
 - The business owner never gets a free-text CTA or link; Nearby owns the action wording.
 - AI-free quick response (standard availability) stays media-free and unchanged.
+
+## Existing creative as the creative layer (item 28, 2026-09-20)
+The business's own ad/video is the CREATIVE; the offer stays the structured object ("2 drinks + pastry for $12, valid until 7 PM,
+Accept"). Nearby never turns a creative into the offer.
+
+| Option asked for     | Decision |
+|----------------------|----------|
+| Upload photo / video | Built in Phase 2 (screened; video through sampled frames). |
+| Use existing creative | Built: `business_creatives` library. Media that passes screening in an offer is saved automatically; the next offer picks it as a thumbnail ("Use your saved creative"): no re-upload, no re-screening (a creative is an immutable, already-screened file). Owner-read only; archive = remove from the list. |
+| Paste supported media/content (link) | NOT built, on purpose: an external link cannot be screened by Nearby, can change after approval, and would play or send the customer off-app (breaks "never feels a marketplace"). To reuse an ad, the owner uploads the file once. A future "import from a link" would have to download + store + screen the file itself before it could become a creative. |
+| Create simple offer | Unchanged (fixed-text quick response stays AI- and media-free). |
+| "Valid today until 7 PM" | Built: `business_request_offers.valid_until`, owner-picked (Today/Tomorrow + time picker, never inferred), <= 30 days, enforced by `accept_business_offer` and swept by `expire_stale_business_requests`; the customer sees "Valid until 7:00 PM" and no Accept once it passes. |
+
+The library only ever holds media whose OWN screening tier was low (a held/blocked media is never saved). Held offers approved by a
+reviewer carry `creative_id` and `valid_until` (refused if the end time has since passed).

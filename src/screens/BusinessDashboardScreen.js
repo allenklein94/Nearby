@@ -18,8 +18,8 @@ import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRe
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { CANCELLATION_REASONS, CANCELLATION_ACTOR_LABELS } from '../constants/cancellationReasons';
 import { getPartnerCancellationPatterns } from '../services/cancellationReasons';
-import { videoLimitProblem, MAX_REDEMPTION_LENGTH } from '../utils/offerMedia';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit } from '../services/businessFulfillment';
+import { videoLimitProblem, MAX_REDEMPTION_LENGTH, validUntilFromChoice } from '../utils/offerMedia';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, getMyCreatives, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit } from '../services/businessFulfillment';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
@@ -184,6 +184,27 @@ function BusinessMediaPicker({ pickedAsset, existingPath, existingType, onPick, 
 // Video is intentionally not rendered inline here (no video player
 // component exists elsewhere in this codebase to mirror) -- shown as a
 // small honest "🎬 Video attached" label instead of a fabricated player.
+// A saved creative in the offer form: a small thumbnail (a video shows its screened poster) the owner taps to reuse.
+function CreativeThumb({ creative, selected, colors, onPress }) {
+  const [uri, setUri] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    getSignedBusinessOfferMediaUrl(creative.media_type === 'video' ? creative.poster_path : creative.media_path).then((u) => { if (!cancelled) setUri(u); });
+    return () => { cancelled = true; };
+  }, [creative]);
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={{ marginRight: spacing.sm, borderRadius: radius.md, borderWidth: 2, borderColor: selected ? colors.primary : colors.border, overflow: 'hidden', width: 72, height: 72, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      accessibilityLabel={creative.media_type === 'video' ? 'Saved video creative' : 'Saved photo creative'}
+    >
+      {uri ? <Image source={{ uri }} style={{ width: 72, height: 72 }} /> : <Text>{creative.media_type === 'video' ? '🎬' : '🖼️'}</Text>}
+    </TouchableOpacity>
+  );
+}
+
 function BusinessOfferMediaPreview({ path, type, colors }) {
   const [signedUrl, setSignedUrl] = useState(null);
 
@@ -629,6 +650,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [offerTitleInput, setOfferTitleInput] = useState('');
   const [offerIncludedItemsInput, setOfferIncludedItemsInput] = useState([]);
   const [offerRedemptionInput, setOfferRedemptionInput] = useState('');
+  // Saved creative (reuse) + structured end time ("Valid today until 7 PM").
+  const [creatives, setCreatives] = useState([]);
+  const [offerCreativeId, setOfferCreativeId] = useState(null);
+  const [offerValidDay, setOfferValidDay] = useState(null); // null = no end time | 'today' | 'tomorrow'
+  const [offerValidTime, setOfferValidTime] = useState(null);
+  const [showValidTimePicker, setShowValidTimePicker] = useState(false);
   // Name of the owner's own package the editor was pre-filled from (null = nothing pre-filled).
   const [offerPrefilledFrom, setOfferPrefilledFrom] = useState(null);
   const [offerIncludedItemDraft, setOfferIncludedItemDraft] = useState('');
@@ -1612,6 +1639,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferTitleInput('');
     setOfferIncludedItemsInput([]);
     setOfferRedemptionInput('');
+    setOfferCreativeId(null);
+    setOfferValidDay(null);
+    setOfferValidTime(null);
+    setShowValidTimePicker(false);
+    if (selectedPartner?.id) getMyCreatives(selectedPartner.id).then(setCreatives).catch(() => setCreatives([]));
     setOfferIncludedItemDraft('');
     // One-tap smart offer: Nearby does the work first. If the owner already published a package that fits this exact
     // request (same occasion, party clears min_guests), start from it -- title, price per person, included items --
@@ -1755,12 +1787,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       Alert.alert('Discount above your limit', capProblem);
       return;
     }
+    const validity = validUntilFromChoice(offerValidDay, offerValidTime);
+    if (validity.error) {
+      Alert.alert('End time', validity.error);
+      return;
+    }
     setRespondingOpportunityId(offerModalRequestId);
     try {
       let mediaPath = null;
       let mediaType = null;
       let framePaths = [];
-      if (offerPickedMediaAsset) {
+      if (offerPickedMediaAsset && !offerCreativeId) {
         const uploaded = await uploadBusinessOfferMedia(selectedPartner.id, offerPickedMediaAsset, 'offer');
         mediaPath = uploaded.path;
         mediaType = uploaded.mediaType;
@@ -1783,6 +1820,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         discountPct: parseDiscountPct(offerDiscountInput),
         framePaths,
         redemptionInstructions: offerRedemptionInput.trim() || null,
+        creativeId: offerCreativeId,
+        validUntil: validity.iso,
       });
 
       await handleOfferResult(result, () => setOfferModalRequestId(null));
@@ -6049,6 +6088,34 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 </View>
               ) : null}
+              {creatives.length > 0 && !offerPickedMediaAsset ? (
+                <View style={{ marginTop: spacing.sm }}>
+                  <Text style={styles.notesLabel}>Use your saved creative</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {creatives.map((c) => (
+                      <CreativeThumb
+                        key={c.id}
+                        creative={c}
+                        selected={offerCreativeId === c.id}
+                        colors={colors}
+                        onPress={() => setOfferCreativeId(offerCreativeId === c.id ? null : c.id)}
+                      />
+                    ))}
+                  </ScrollView>
+                  {offerCreativeId ? (
+                    <TouchableOpacity
+                      onPress={async () => {
+                        try { await archiveBusinessCreative(offerCreativeId); setCreatives((list) => list.filter((c) => c.id !== offerCreativeId)); setOfferCreativeId(null); }
+                        catch (e) { Alert.alert('Error', e.message); }
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Remove this creative from your saved list"
+                    >
+                      <Text style={{ color: colors.danger, fontWeight: '600', marginTop: spacing.xs }}>Remove from saved creative</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              ) : null}
               <BusinessMediaPicker
                 colors={colors}
                 pickedAsset={offerPickedMediaAsset}
@@ -6076,6 +6143,47 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 multiline
                 accessibilityLabel="How to redeem, optional. Shown to the customer once they accept."
               />
+              <Text style={[styles.notesLabel, { marginTop: spacing.sm }]}>Valid until (optional)</Text>
+              <View style={styles.chipRow}>
+                {[['none', 'No end time'], ['today', 'Today'], ['tomorrow', 'Tomorrow']].map(([key, label]) => {
+                  const selected = (offerValidDay ?? 'none') === key;
+                  return (
+                    <TouchableOpacity
+                      key={key}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => {
+                        if (key === 'none') { setOfferValidDay(null); setOfferValidTime(null); setShowValidTimePicker(false); return; }
+                        setOfferValidDay(key);
+                        if (!offerValidTime) { const d = new Date(); d.setHours(19, 0, 0, 0); setOfferValidTime(d); }
+                        setShowValidTimePicker(true);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Valid until: ${label}`}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {offerValidDay && offerValidTime ? (
+                <TouchableOpacity onPress={() => setShowValidTimePicker(true)} accessibilityRole="button" accessibilityLabel="Change the end time">
+                  <Text style={{ color: colors.textPrimary, marginTop: spacing.xs }}>
+                    Until {offerValidTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} {offerValidDay} · tap to change
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+              {showValidTimePicker && offerValidDay ? (
+                <PlatformDateTimeInput
+                  value={offerValidTime ?? new Date()}
+                  mode="time"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  themeVariant={isDark ? 'dark' : 'light'}
+                  onChange={(event, selected) => {
+                    setShowValidTimePicker(Platform.OS === 'ios');
+                    if (selected && event?.type !== 'dismissed') setOfferValidTime(selected);
+                  }}
+                />
+              ) : null}
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleSubmitOffer}

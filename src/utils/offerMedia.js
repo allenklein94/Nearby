@@ -28,3 +28,30 @@ export function visibleRedemption(offer) {
   if (!text) return null;
   return offer.status === 'accepted' || offer.status === 'completed' ? text : null;
 }
+
+// ---- Structured offer validity ("Valid today until 7 PM"): owner-picked, deterministic, never inferred. ----
+
+// day: 'today' | 'tomorrow'; time: a Date whose local hours/minutes are the chosen end time. Returns { iso } or { error }.
+export function validUntilFromChoice(day, time, now = new Date()) {
+  if (!day || !time) return { iso: null };
+  const end = new Date(now);
+  end.setHours(time.getHours(), time.getMinutes(), 0, 0);
+  if (day === 'tomorrow') end.setDate(end.getDate() + 1);
+  if (end.getTime() <= now.getTime()) return { error: 'Pick an end time that is later than now.' };
+  return { iso: end.toISOString() };
+}
+
+// "Valid until 7 PM" (same day), "Valid until Sat 7 PM" (another day); 'expired' once it has passed; null with no end time.
+export function validityLabel(validUntil, now = new Date()) {
+  if (!validUntil) return null;
+  const end = new Date(validUntil);
+  if (Number.isNaN(end.getTime())) return null;
+  if (end.getTime() <= now.getTime()) return 'expired';
+  const time = end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const sameDay = end.toDateString() === now.toDateString();
+  return sameDay ? `Valid until ${time}` : `Valid until ${end.toLocaleDateString([], { weekday: 'short' })} ${time}`;
+}
+
+export function isOfferExpired(offer, now = new Date()) {
+  return validityLabel(offer?.valid_until, now) === 'expired';
+}

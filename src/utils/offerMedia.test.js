@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { videoFrameTimes, videoLimitProblem, visibleRedemption, MAX_OFFER_VIDEO_BYTES } = require('./offerMedia');
+const { videoFrameTimes, videoLimitProblem, visibleRedemption, MAX_OFFER_VIDEO_BYTES, validUntilFromChoice, validityLabel, isOfferExpired } = require('./offerMedia');
 const { settleMs, isWithinBudget, SEQUENCES } = require('../motion/motionBudget');
 const read = (p) => fs.readFileSync(path.join(__dirname, '../..', p), 'utf8');
 
@@ -32,7 +32,7 @@ test('the server screens media before a customer sees it and refuses a video wit
   expect(fn).toMatch(/A video needs preview images/);
   expect(fn).toMatch(/MAX_OFFER_VIDEO_BYTES/);
   expect(fn).toMatch(/if \(m\.service\) return screeningUnavailable\(\)/);
-  expect(fn).toMatch(/!mediaPath && !redemptionInstructions/); // owner-typed instructions are never fast-pathed
+  expect(fn).toMatch(/\(!mediaPath \|\| creativeRow\) && !redemptionInstructions/); // owner-typed instructions are never fast-pathed
   const sql = read('supabase/migrations/20270134_rich_offer_media_redemption.sql');
   expect(sql).toMatch(/A video needs a preview image/);
   expect(sql).toMatch(/drop function if exists public\.submit_business_offer/);
@@ -43,4 +43,32 @@ test('a video only plays when it has a screened poster; it never autoplays with 
   expect(c).toMatch(/if \(!posterPath\)/);
   expect(c).toMatch(/isMuted/);
   expect(c).toMatch(/onPress=\{\(\) => setPlaying\(true\)\}/);
+});
+
+test('validity: owner-picked day + time becomes a real future timestamp; a past time is refused, none means no end time', () => {
+  const now = new Date(2026, 8, 20, 15, 0);
+  const at = (h, m = 0) => new Date(2026, 8, 20, h, m);
+  expect(validUntilFromChoice(null, null, now)).toEqual({ iso: null });
+  expect(validUntilFromChoice('today', at(19), now).iso).toBe(new Date(2026, 8, 20, 19, 0).toISOString());
+  expect(validUntilFromChoice('tomorrow', at(9), now).iso).toBe(new Date(2026, 8, 21, 9, 0).toISOString());
+  expect(validUntilFromChoice('today', at(14), now).error).toMatch(/later than now/);
+});
+test('validity label reads "Valid until 7 PM", flags expired, and is null with no end time', () => {
+  const now = new Date(2026, 8, 20, 15, 0);
+  expect(validityLabel(null, now)).toBeNull();
+  expect(validityLabel(new Date(2026, 8, 20, 19, 0).toISOString(), now)).toMatch(/^Valid until .*7:00/);
+  expect(validityLabel(new Date(2026, 8, 20, 14, 0).toISOString(), now)).toBe('expired');
+  expect(isOfferExpired({ valid_until: new Date(2026, 8, 20, 14, 0).toISOString() }, now)).toBe(true);
+  expect(isOfferExpired({}, now)).toBe(false);
+});
+test('creative library + validity are enforced in the database, and the library is owner-read only', () => {
+  const sql = read('supabase/migrations/20270136_creative_library_offer_validity.sql');
+  expect(sql).toMatch(/create policy "Owners read their creatives"/);
+  expect(sql).not.toMatch(/grant (insert|update|delete)[^;]*business_creatives/i);
+  expect(sql).toMatch(/This offer has expired\./);
+  expect(sql).toMatch(/v_offer\.valid_until <= now\(\)/);
+  expect(sql).toMatch(/That saved creative is not available/);
+  const fn = read('supabase/functions/screen-business-content/index.ts');
+  expect(fn).toMatch(/reused without re-screening/);
+  expect(fn).toMatch(/if \(m\.tier === 'low'\)/); // only cleanly-screened media is saved for reuse
 });

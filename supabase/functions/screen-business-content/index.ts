@@ -879,11 +879,31 @@ Body: ${updateBody || '(none)'}`;
     // Phase 4 (media upload, CLAUDE.md) -- a real, already-uploaded photo/
     // video for this specific offer, same re-validation/unscreened-media
     // posture as the `experience` branch above.
-    const mediaPath = typeof body.mediaPath === 'string' && body.mediaPath.trim() ? body.mediaPath.trim() : null;
-    const mediaType = body.mediaType === 'image' || body.mediaType === 'video' ? body.mediaType : null;
+    let mediaPath = typeof body.mediaPath === 'string' && body.mediaPath.trim() ? body.mediaPath.trim() : null;
+    let mediaType = body.mediaType === 'image' || body.mediaType === 'video' ? body.mediaType : null;
     if (mediaPath && !mediaType) return json({ error: 'Invalid media type' }, 400);
     const framePaths: string[] = Array.isArray(body.framePaths) ? body.framePaths.filter((f: unknown) => typeof f === 'string').slice(0, 3) : [];
     const redemptionInstructions = typeof body.redemptionInstructions === 'string' ? body.redemptionInstructions.trim().slice(0, 500) || null : null;
+    // Owner-set end time ("Valid today until 7 PM"): a real timestamp the owner picked, never inferred. Future, within 30 days.
+    let validUntil: string | null = null;
+    if (typeof body.validUntil === 'string' && body.validUntil) {
+      const t = new Date(body.validUntil).getTime();
+      if (!Number.isFinite(t) || t <= Date.now() || t > Date.now() + 30 * 24 * 3600 * 1000) {
+        return json({ error: 'Pick an end time that is later than now (within 30 days).' }, 400);
+      }
+      validUntil = new Date(t).toISOString();
+    }
+    // A saved creative from the owner's own library (already screened when it was first sent): its file replaces any media sent.
+    let creativeId: string | null = typeof body.creativeId === 'string' && body.creativeId ? body.creativeId : null;
+    let creativeRow: { media_path: string; media_type: string; poster_path: string | null } | null = null;
+    if (creativeId) {
+      const { data: c } = await admin.from('business_creatives').select('media_path, media_type, poster_path')
+        .eq('id', creativeId).eq('partner_id', partnerId).is('archived_at', null).maybeSingle();
+      if (!c) return json({ error: 'That saved creative is not available anymore. Pick another or attach it again.' }, 400);
+      creativeRow = c;
+      mediaPath = c.media_path;
+      mediaType = c.media_type;
+    }
     // Business Web as an Operating System, Phase 3 -- which real Signature
     // Experience (if any) a suggestion this offer was built from actually
     // came from, so the per-template performance funnel has something real
@@ -910,7 +930,7 @@ Body: ${updateBody || '(none)'}`;
     // so there is nothing to classify and no AI call is needed (works with no Anthropic credit). Verified by exact
     // match server-side, never by a client flag; anything else is classified as before (fail closed).
     let result: { riskTier: string; matchedCategories: string[]; reasoning: string } | null = null;
-    if (!offerTitle && includedItems.length === 0 && !mediaPath && !redemptionInstructions) {
+    if (!offerTitle && includedItems.length === 0 && (!mediaPath || creativeRow) && !redemptionInstructions) {
       let terms: string | null = null;
       const { data: policy } = await admin.from('business_fulfillment_policies')
         .select('min_spend_per_person, deposit_amount, cancellation_window_hours, active')
@@ -930,7 +950,9 @@ Body: ${updateBody || '(none)'}`;
 
     // Rich offers, Phase 2: screen the attached media too; the worst tier across text and media wins.
     let posterPath: string | null = null;
-    if (mediaPath) {
+    if (creativeRow) {
+      posterPath = creativeRow.poster_path; // already screened when saved: reused without re-screening
+    } else if (mediaPath) {
       const m: any = await screenOfferMedia(admin, partnerId, mediaPath, mediaType!, framePaths);
       if (m.service) return screeningUnavailable();
       if (m.error) return json({ error: m.error }, m.status);
@@ -940,10 +962,17 @@ Body: ${updateBody || '(none)'}`;
         reasoning: `${result.reasoning} ${m.reasoning}`,
       };
       posterPath = m.posterPath;
+      // The media itself passed cleanly: save it to the owner's library so the next offer can reuse it (no re-upload, no re-screen).
+      if (m.tier === 'low') {
+        const { data: saved } = await admin.from('business_creatives')
+          .upsert({ partner_id: partnerId, media_type: mediaType, media_path: mediaPath, poster_path: posterPath }, { onConflict: 'partner_id,media_path' })
+          .select('id').maybeSingle();
+        creativeId = saved?.id ?? null;
+      }
     }
     const { riskTier, matchedCategories, reasoning } = result;
 
-    const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, priceIsPerPerson, discountPct, proposedTime, experienceId, mediaPath, mediaType, posterPath, framePaths, redemptionInstructions };
+    const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, priceIsPerPerson, discountPct, proposedTime, experienceId, mediaPath, mediaType, posterPath, framePaths, redemptionInstructions, creativeId, validUntil };
 
     const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
       partner_id_param: partnerId,
@@ -970,6 +999,8 @@ Body: ${updateBody || '(none)'}`;
         discount_pct_param: discountPct,
         redemption_instructions_param: redemptionInstructions,
         media_poster_path_param: posterPath,
+        creative_id_param: creativeId,
+        valid_until_param: validUntil,
       });
       if (writeError) {
         console.error('screen-business-content: low-tier offer_response write failed', writeError);
