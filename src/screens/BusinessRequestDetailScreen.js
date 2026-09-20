@@ -1290,9 +1290,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   Birthday Offer" -- rendered as its own headline, distinct from
                   the business's own name above it. Null for a plain generic
                   offer with no title, same as it always rendered before. */}
-              {pickOfferId === o.id && o.status === 'offered' ? <Text style={styles.offerReputationLine}>✨ Our pick</Text> : null}
+              {pickOfferId === o.id && offerLifecycleState(o) === 'offered' ? <Text style={styles.offerReputationLine}>✨ Our pick</Text> : null}
               {o.offer_title ? <Text style={styles.offerTitleHeadline}>{o.offer_title}</Text> : null}
-              {reputationLine && (o.status === 'offered' || o.status === 'accepted') ? (
+              {reputationLine && (offerLifecycleState(o) === 'offered' || o.status === 'accepted') ? (
                 <Text style={styles.offerReputationLine}>{reputationLine}</Text>
               ) : null}
               {/* Item 121 ("Business offer acceptance should feel equally tangible"): "Offer
@@ -1302,7 +1302,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   switches (Items 114-117), applied here to a single offer card's own real state
                   transition. */}
               <ModeTransition activeKey={o.status}>
-              <Text style={styles.offerStatus}>{OFFER_STATUS_COPY[o.status] ?? o.status}</Text>
+              <Text style={styles.offerStatus}>{offerLifecycleState(o) === 'expired' ? 'This offer has expired' : (OFFER_STATUS_COPY[o.status] ?? o.status)}</Text>
               {o.status === 'offered' && (
                 <OfferReveal offerId={o.id} partnerName={o.brand_partners?.name ?? 'A business'} enabled={!!(o.media_path || o.offer_title)}>
                   <OfferCustomerBody offer={o} showTypeLabel={showComparison} typeLabel={OFFER_TYPE_LABELS[o.offer_type] ?? o.offer_type} />

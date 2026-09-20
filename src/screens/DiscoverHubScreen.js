@@ -1,4 +1,5 @@
 import { peopleTonightBanner, countTonightSupply } from '../utils/meetTonight';
+import { gatheringViewerState } from '../utils/objectState';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { getNearbyMatches } from '../services/proximity';
@@ -1151,10 +1152,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // vs. capacity. Tapping either kind still opens GatheringDetailScreen to
   // actually perform the join -- a real task change, not just more info.
   function gatheringActionInfo(g) {
-    const status = myAttendeeStatus(g);
-    if (status === 'approved') return { kind: 'state', label: 'Going' };
-    if (status === 'waitlisted') return { kind: 'state', label: 'Waitlisted' };
-    if (status === 'pending') return { kind: 'state', label: 'Requested' };
+    // One state from the shared helper (objectState.js), so an over gathering
+    // or a lapsed request never reads as live here while Detail says otherwise.
+    const viewer = gatheringViewerState({ myStatus: myAttendeeStatus(g), scheduled_at: g.scheduled_at });
+    if (viewer.expired) return { kind: 'state', label: 'Request expired' };
+    if (viewer.relation === 'attending') return { kind: 'state', label: 'Going' };
+    if (viewer.relation === 'waitlisted') return { kind: 'state', label: 'Waitlisted' };
+    if (viewer.relation === 'requested') return { kind: 'state', label: 'Requested' };
+    if (viewer.time === 'past') return { kind: 'state', label: 'Past' };
     const isFull = g.capacity != null && attendeeTotal(g) >= g.capacity;
     return { kind: 'cta', label: joinLabel(g, { isFull }) };
   }
