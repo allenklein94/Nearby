@@ -48,6 +48,7 @@ import { recommendationFacts, recommendationRow } from '../utils/recommendationF
 import { categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
 import { selectHomeAttention, cardWithoutIds } from '../utils/homeAttention';
 import { gatheringCardModel } from '../utils/recommendationCard';
+import { confidenceHeadline } from '../utils/recommendationConfidence';
 import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { homeLoadNotice } from '../utils/homeLoadNotice';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime, describeFriendGatheringTiming } from '../utils/timeContext';
@@ -2669,6 +2670,9 @@ export default function HomeScreen({ navigation }) {
                   <View style={styles.heroBody}>
                     <View style={{ flex: 1, marginRight: spacing.sm }}>
                       <Text style={styles.heroTitle} numberOfLines={1}>{attention.hero.title}</Text>
+                      {confidenceHeadline(attention.hero.reasons.map((text) => ({ text }))) ? (
+                        <Text style={styles.heroMeta} numberOfLines={1}>{confidenceHeadline(attention.hero.reasons.map((text) => ({ text })))}</Text>
+                      ) : null}
                       <Text style={styles.heroMeta} numberOfLines={1}>
                         {attention.hero.reasons.filter((r) => categorizeReasonText(r) !== REASON_CATEGORIES.TIME).join(' · ')}
                       </Text>
@@ -2721,6 +2725,7 @@ export default function HomeScreen({ navigation }) {
                   accessibilityRole="button"
                 >
                   <Text style={styles.trendingTitle}>{categoryStyleFor(g.interest_tag).icon} {g.title}</Text>
+                  {confidenceHeadline(signals) ? <Text style={styles.trendingMeta}>{confidenceHeadline(signals)}</Text> : null}
                   {card.why ? <Text style={styles.trendingMeta}>{card.why}</Text> : null}
                   <Text style={styles.trendingMeta}>
                     {[recommendationFacts(g).distance,
