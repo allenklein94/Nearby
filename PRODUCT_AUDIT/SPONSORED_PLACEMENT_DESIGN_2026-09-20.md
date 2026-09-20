@@ -1,6 +1,6 @@
 # Sponsored Placement — Paid Product Design (PROPOSAL, nothing built)
 
-Status: proposal for owner approval. **Revision 2 (2026-09-20): owner parameters applied** ($25/slot-week, 10 mi, 1 per category per area, per-business cap, allow-list categories, default-on switch, refund terms, legal gate). Companion to CLAUDE.md item 44 (locked rule). No code, migration or Stripe
+Status: proposal for owner approval. **Revision 3 (2026-09-20): owner parameters applied and the four open points CONFIRMED (locked v1)** ($25/slot-week, 10 mi, 1 per category per area, per-business cap, allow-list categories, default-on switch, refund terms, legal gate). Companion to CLAUDE.md item 44 (locked rule). No code, migration or Stripe
 change exists for this. Numbers are the owner's (section 15); anything still open is marked there.
 
 ## 0. Locked rules this design must satisfy
@@ -217,14 +217,19 @@ only with a separate attribution table that no organic function reads.
 3. Reporting + refunds/admin actions.
 4. Live enablement, only via the checkpoint approvals.
 
-## 15. Decisions
-**Decided by the owner (2026-09-20):** $25 per slot-week; max 1 impression per person per business per 7 days (keyed on
-the business); 10-mile max radius; 1 sponsored placement per category per local area; no auctions/bidding/paid ranking;
-regulated/high-risk categories excluded; "Show sponsored places" ON by default with a consumer off switch; refund terms
-as in section 8; v1 surface = Perks/Places browse only; legal review before live payments.
-**Still open (my recommendations):** (a) confirm the per-person cap uses the small `sponsored_seen` table (section 2);
-(b) confirm "category" = the 19 category groups and "area" = the ~10-mile grid cell (section 4); (c) who fills the
-allow-list after review; (d) the daily-stats "approximate" wording for the business.
+## 15. Decisions (LOCKED for v1, 2026-09-20)
+$25 per slot-week; max 1 impression per person per business per 7 days (keyed on the business); 10-mile delivery
+radius; 1 sponsored placement per category per local area; no auctions/bidding/paid ranking; regulated/high-risk
+categories excluded; "Show sponsored places" ON by default with a consumer off switch; refund terms as in section 8;
+v1 surface = Perks/Places browse only; legal review before live payments. Confirmed by the owner:
+1. **Per-person exposure table (`sponsored_seen`): APPROVED.** Enforces the cap across devices and reinstalls. Purged
+   after 7 days. **No device-local fallback.** Used only for sponsored-frequency enforcement (section 17).
+2. **`profiles.show_sponsored_places`: APPROVED.** Used only to suppress sponsored cards; never affects organic content,
+   matching, routing, ranking or recommendations.
+3. **"Category" = the 19 top-level category groups.** Subcategories/leaf tags are not separate sponsored inventory in v1.
+4. **"Area" = the roughly 10-mile inventory grid**, used only for slot allocation. Delivery radius stays 10 miles
+   (great-circle from the business). The grid and any consumer location are never exposed to businesses.
+The category allow-list (section 3) stays EMPTY until the legal/policy review; the owner adds groups after it.
 
 ## 16. Live-payment launch gate (advertising-disclosure / legal review)
 Live payments stay blocked (Stripe test mode, `STRIPE_LIVE_APPROVED` unset) until ALL of these are recorded done:
@@ -240,3 +245,35 @@ Live payments stay blocked (Stripe test mode, `STRIPE_LIVE_APPROVED` unset) unti
    checkpoint 6 by the platform owner/admin.
 Engineering can build and test everything in test mode ahead of this; nothing live turns on by default.
 
+## 17. Cap counting behavior and retention/privacy safeguards
+**How the 7-day cap counts (exact rules):**
+1. Unit = one row per (person, business) in `sponsored_seen` with the time it was last served. Not per placement, per
+   category, per surface or per device, so a business cannot exceed the cap by holding several placements or by the
+   person switching devices/reinstalling.
+2. An "impression" is counted when the server returns the card, not when it is scrolled into view (the server cannot
+   see the screen; this is deliberately conservative: it may count a card the person never looked at, never fewer).
+3. The window is rolling: a business may be served to a person again only when the last served time is 7 days or more
+   in the past. The check and the write are ONE atomic statement (insert-or-update-only-if-expired), so two
+   simultaneous requests cannot both serve.
+4. A request that returns nothing, errors, or is blocked (switch off, hidden, out of range, capped, category mismatch)
+   writes NO `sponsored_seen` row. When the top candidate is capped the next eligible business is tried (still at most
+   one card).
+5. A repeat call inside the same session does not re-serve: the client keeps the card it already received for that
+   screen state, so scrolling, tab switches and re-renders do not consume more exposure or hide the card.
+6. Taps never reset or extend the cap. Hiding a sponsor does not write the exposure table.
+7. Only the sponsored product's own daily aggregate (`sponsored_daily_stats.impressions`) is incremented, and only when a
+   card is actually served.
+**Retention and privacy safeguards:**
+- `sponsored_seen` rows older than 7 days are deleted by a daily cron, and the serving function ignores anything older
+  than 7 days regardless of whether the purge has run. Rows also cascade-delete with the account.
+- The table holds only user id, business id and one timestamp: no location, no category, no device id, no surface, no
+  count history. Consumer coordinates are never stored anywhere in this feature.
+- No grants and no RLS policies for anon or authenticated: not readable or writable by clients, and not readable by
+  any organic function, RPC, analytics or recommendation code (Jest guard scans them). Businesses never receive it in
+  any form, including aggregated by person; their reporting comes only from `sponsored_daily_stats`.
+- `sponsored_hidden` (the person's own choices) is kept until the person removes it or deletes the account; Settings
+  gets "Reset hidden sponsors". "Clear my activity history" does NOT clear `sponsored_seen` (it would reset the cap and
+  the rows expire within 7 days anyway), and this is stated in the Settings text.
+- `show_sponsored_places` is read only by the serving function to suppress; turning it off writes nothing to the
+  exposure table and returns no card.
+- Any data export or account-deletion routine must include/cascade these person-linked rows.
