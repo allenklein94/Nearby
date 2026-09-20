@@ -1,4 +1,5 @@
 import { localWhenParts } from '../utils/gatheringStructure';
+import { serviceError } from '../utils/recoverableError';
 import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -818,7 +819,7 @@ export async function submitBusinessOfferResponseForScreening(partnerId, request
 
   const result = await response.json();
   if (!response.ok && !result?.riskTier) {
-    throw new Error(result?.error || 'Could not send your response right now.');
+    throw serviceError(response, result, 'Could not send your response right now.');
   }
   return result;
 }
@@ -977,7 +978,7 @@ export async function submitBusinessAvailabilityForScreening(partnerId, { catego
 
   const result = await response.json();
   if (!response.ok && !result?.riskTier) {
-    throw new Error(result?.error || 'Could not post your availability right now.');
+    throw serviceError(response, result, 'Could not post your availability right now.');
   }
   return result;
 }

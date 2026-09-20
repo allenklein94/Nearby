@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { formatDistance } from '../utils/formatDistance';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -319,7 +320,7 @@ export default function AskBusinessScreen({ navigation, route }) {
       });
       setNearbyResults(results);
     } catch (e) {
-      Alert.alert('Something went wrong', e.message);
+      presentRecoverableError(Alert, { what: 'find businesses for you', error: e, draftKept: true, onRetry: () => handleFindNearby() });
     }
     setSearchingNearby(false);
   }
@@ -464,7 +465,7 @@ export default function AskBusinessScreen({ navigation, route }) {
         suggestedInviteeLabel,
       });
     } catch (e) {
-      Alert.alert('Something went wrong', e.message);
+      presentRecoverableError(Alert, { what: 'send your request', error: e, draftKept: true, onRetry: () => handleSubmit() });
     }
     setSubmitting(false);
   }

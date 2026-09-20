@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { formatDistance } from '../utils/formatDistance';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { NLoader } from '../motion';
@@ -169,7 +170,7 @@ export default function DateProposalScreen({ navigation, route }) {
       setSelectedAvailabilityId(null);
       await load();
     } catch (e) {
-      Alert.alert('Something went wrong', e.message);
+      presentRecoverableError(Alert, { what: 'send your proposal', error: e, draftKept: true, onRetry: () => handlePropose() });
     }
     setSubmitting(false);
   }
@@ -186,7 +187,7 @@ export default function DateProposalScreen({ navigation, route }) {
       const results = await searchNearbyForPlan(selectedCategory);
       setNearbyResults(results);
     } catch (e) {
-      Alert.alert('Something went wrong', e.message);
+      presentRecoverableError(Alert, { what: 'find places nearby', error: e, draftKept: true, onRetry: () => handleFindNearby() });
     }
     setSearchingNearby(false);
   }
@@ -226,7 +227,7 @@ export default function DateProposalScreen({ navigation, route }) {
       setDietaryInput([]);
       await load();
     } catch (e) {
-      Alert.alert('Something went wrong', e.message);
+      presentRecoverableError(Alert, { what: 'send your reply', error: e, draftKept: true, onRetry: () => handleRespond(accept) });
     }
     setSubmitting(false);
   }

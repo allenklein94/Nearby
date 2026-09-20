@@ -1,4 +1,5 @@
 import { supabase, functionUrl } from './supabase';
+import { serviceError } from '../utils/recoverableError';
 import Constants from 'expo-constants';
 import { getGoogleMapsRequestHeaders } from './places';
 import { getUserLocation } from './userLocation';
@@ -731,7 +732,7 @@ export async function submitBusinessProfileForScreening(partnerId, { name, descr
 
   const result = await response.json();
   if (!response.ok && !result?.riskTier) {
-    throw new Error(result?.error || 'Could not save your changes right now.');
+    throw serviceError(response, result, 'Could not save your changes right now.');
   }
   return result;
 }
@@ -779,7 +780,7 @@ export async function submitBusinessExperienceForScreening(partnerId, { experien
     // RPC's own cap check fires on a LOW-tier direct write) surfaces here
     // un-mangled -- parseEntitlementError() already recognizes it, no new
     // error shape introduced by routing through screening.
-    throw new Error(result?.error || 'Could not save your changes right now.');
+    throw serviceError(response, result, 'Could not save your changes right now.');
   }
   return result;
 }
@@ -820,7 +821,7 @@ export async function submitBusinessOfferForScreening(partnerId, { title, descri
 
   const result = await response.json();
   if (!response.ok && !result?.riskTier) {
-    throw new Error(result?.error || 'Could not save your offer right now.');
+    throw serviceError(response, result, 'Could not save your offer right now.');
   }
   return result;
 }
@@ -850,7 +851,7 @@ export async function submitBusinessUpdateForScreening(partnerId, title, body) {
 
   const result = await response.json();
   if (!response.ok && !result?.riskTier) {
-    throw new Error(result?.error || 'Could not send your update right now.');
+    throw serviceError(response, result, 'Could not send your update right now.');
   }
   return result;
 }

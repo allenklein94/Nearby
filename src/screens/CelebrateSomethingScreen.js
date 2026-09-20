@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import ExperiencePerkLine from '../components/ExperiencePerkLine';
 import ExperienceComponentList from '../components/ExperienceComponentList';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback } from 'react-native';
@@ -468,7 +469,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       setAskedPollKeys((prev) => new Set(prev).add(questionKey));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
-      Alert.alert("Couldn't send", e.message || 'Please try again.');
+      presentRecoverableError(Alert, { what: 'send that question', error: e, draftKept: true, onRetry: () => handleSendPreferencePoll(questionKey) });
     }
     setAskPollSending(false);
   }
@@ -689,7 +690,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       }
       setCustomSearchResult(result);
     } catch (e) {
-      Alert.alert('Something went wrong', e.message);
+      presentRecoverableError(Alert, { what: 'send your request', error: e, draftKept: true, onRetry: () => submitCustomDescription() });
     }
     setCustomSearching(false);
   }

@@ -1,4 +1,5 @@
 import { canRespondToOpportunity } from '../utils/objectLifecycle';
+import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share, Image } from 'react-native';
@@ -1000,7 +1001,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         );
       }
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'save your changes', error: e, draftKept: true, onRetry: () => handleSaveProfile() });
     }
     setSavingProfile(false);
   }
@@ -1412,7 +1413,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       if (entitlementError?.kind === 'limit') {
         showUpgradePlaceholder(entitlementError.feature);
       } else {
-        Alert.alert('Error', e.message);
+        presentRecoverableError(Alert, { what: 'save this experience', error: e, draftKept: true, onRetry: () => handleSaveExperience() });
       }
     }
     setSavingExperience(false);
@@ -1859,7 +1860,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       const result = await submitBusinessOfferResponseForScreening(selectedPartner.id, requestId, { offerType, offerDescription, proposedTime, availableFrom, availableUntil });
       await handleOfferResult(result, () => { setAcceptSheetRequestId(null); setAltSheetRequestId(null); });
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'send your response', error: e, draftKept: true, onRetry: () => submitQuickResponse(requestId, { offerType, offerDescription, proposedTime, availableFrom, availableUntil }) });
     }
     setRespondingOpportunityId(null);
   }
@@ -1968,7 +1969,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
       await handleOfferResult(result, () => setOfferModalRequestId(null));
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'send this offer', error: e, draftKept: true, onRetry: () => handleSubmitOffer() });
     }
     setRespondingOpportunityId(null);
   }
@@ -2413,7 +2414,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         );
       }
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'post your availability', error: e, draftKept: true, onRetry: () => handlePostAvailability() });
     }
     setPostingAvailability(false);
   }
@@ -2851,7 +2852,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         );
       }
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'send your update', error: e, draftKept: true, onRetry: () => handlePostUpdate() });
     }
     setPostingUpdate(false);
   }
@@ -2918,7 +2919,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         );
       }
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'save your offer', error: e, draftKept: true, onRetry: () => handleCreateOffer() });
     }
     setSubmitting(false);
   }

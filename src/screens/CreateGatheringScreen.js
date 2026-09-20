@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform, ScrollView, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Image } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
@@ -399,7 +400,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         suggestedInviteeLabel: route.params?.suggestedInviteeLabel ?? null,
       });
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'create your gathering', error: e, draftKept: true, onRetry: () => submit() });
     }
     setSubmitting(false);
   }

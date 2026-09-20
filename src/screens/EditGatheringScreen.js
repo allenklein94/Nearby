@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Platform, Keyboard, TouchableWithoutFeedback, Image, Switch } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { updateGathering, setGatheringCapacity, setGatheringCategoryIfMissing, pickGatheringCoverPhoto, uploadGatheringCoverPhoto, getSignedGatheringPhotoUrl } from '../services/gatherings';
@@ -139,7 +140,7 @@ export default function EditGatheringScreen({ route, navigation }) {
       showSuccessToast('Updated', 'Your changes are saved.');
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Error', e.message);
+      presentRecoverableError(Alert, { what: 'save your changes', error: e, draftKept: true, onRetry: () => submit() });
     }
     setSubmitting(false);
   }
