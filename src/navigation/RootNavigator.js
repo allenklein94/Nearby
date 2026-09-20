@@ -90,6 +90,7 @@ import BusinessAIAutomationScreen from '../screens/BusinessAIAutomationScreen';
 import EmergencyContactsScreen from '../screens/EmergencyContactsScreen';
 import OccasionsScreen from '../screens/OccasionsScreen';
 import PlanDetailScreen from '../screens/PlanDetailScreen';
+import SharedNightScreen from '../screens/SharedNightScreen';
 import ChemistryDiaryEntryScreen from '../screens/ChemistryDiaryEntryScreen';
 import ChemistryDiaryListScreen from '../screens/ChemistryDiaryListScreen';
 import StressTestScreen from '../screens/StressTestScreen';
@@ -591,6 +592,7 @@ export default function RootNavigator() {
             />
             <Stack.Screen name="GroupPlan" component={GroupPlanScreen} options={{ headerShown: true, title: 'Group Plan', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="PlanDetail" component={PlanDetailScreen} options={{ headerShown: true, title: 'Plan', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="SharedNight" component={SharedNightScreen} options={{ headerShown: true, title: 'Shared night', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="GroupOccasionPlan" component={GroupOccasionPlanScreen} options={{ headerShown: true, title: 'Group Plan', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="DateProposal" component={DateProposalScreen} options={{ headerShown: true, title: 'Plan Something Together', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminBusinessRequests" component={AdminBusinessRequestsScreen} options={{ headerShown: true, title: 'Business Requests (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

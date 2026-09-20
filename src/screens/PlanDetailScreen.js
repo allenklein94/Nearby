@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { getPlanOverview, getPlanStops, navigateToExperienceStop, reorderExperienceStops, removeExperienceStop, EXPERIENCE_STOP_STATE_LABEL } from '../services/plans';
 import { supabase } from '../services/supabase';
+import ExperienceSharePanel from '../components/ExperienceSharePanel';
 import { canEditNight, canRemoveStop, moveStopIds, removeStopCopy } from '../utils/experienceStopEdit';
 import { buildPlanJourney } from '../utils/planJourney';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
@@ -173,6 +174,7 @@ export default function PlanDetailScreen({ navigation, route }) {
               ))}
             </View>
             <Text style={styles.muted}>Each stop is confirmed by its business with you; this plan keeps them together and updates as they do.</Text>
+            {canEdit && <ExperienceSharePanel planId={planId} planTitle={plan.title} />}
           </>
         )}
 

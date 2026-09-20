@@ -569,6 +569,10 @@ export async function routeNotificationTap(data) {
     // reveal_occasion() also turns on sharing with this recipient, so the
     // real place to see it is the host's own profile (Item 87's own
     // "Upcoming" section already surfaces a shared occasion there).
+    // A friend shared their "Your night" with me (view-only): the read-only shared screen.
+    case 'experience_shared':
+      if (data.plan_id) navigationRef.navigate('SharedNight', { planId: data.plan_id });
+      break;
     case 'occasion_surprise_revealed':
       if (data.owner_id) {
         navigationRef.navigate('ViewProfile', { userId: data.owner_id });

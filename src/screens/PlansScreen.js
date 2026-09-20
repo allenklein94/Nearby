@@ -5,7 +5,7 @@ import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyAttendingGatherings, getMyGatherings, getMyInterestedGatherings } from '../services/gatherings';
 import { getMyGroupPlans } from '../services/groupPlans';
-import { getMyStandaloneBusinessRequestPlans, getMyDateProposalPlans, getMyExperiencePlans } from '../services/plans';
+import { getMyStandaloneBusinessRequestPlans, getMyDateProposalPlans, getMyExperiencePlans, getSharedExperiencePlans } from '../services/plans';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { formatHeroDateTime } from '../utils/timeContext';
 import { GATHERING_STATUS_META } from '../components/GatheringStatusBadge';
@@ -57,6 +57,7 @@ export default function PlansScreen({ navigation, route }) {
   const [businessRequestPlans, setBusinessRequestPlans] = useState([]);
   const [datePlans, setDatePlans] = useState([]);
   const [experiencePlans, setExperiencePlans] = useState([]);
+  const [sharedNights, setSharedNights] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -72,6 +73,7 @@ export default function PlansScreen({ navigation, route }) {
         getMyExperiencePlans(),
         getMyInterestedGatherings(),
       ]);
+      getSharedExperiencePlans().then(setSharedNights).catch(() => {});
       setInterestedList(interestedData);
       setAttending(attendingData);
       setHosting(hostingData);
@@ -107,6 +109,7 @@ export default function PlansScreen({ navigation, route }) {
           setGroupPlans(groupPlanData);
           setBusinessRequestPlans(businessRequestPlanData);
           setDatePlans(datePlanData);
+          getSharedExperiencePlans().then((r) => { if (!cancelled) setSharedNights(r); }).catch(() => {});
           setLoadError(false);
         } catch (e) {
           if (!cancelled) setLoadError(true);
@@ -229,6 +232,9 @@ export default function PlansScreen({ navigation, route }) {
     for (const plan of experiencePlans) {
       listData.push({ type: 'experiencePlanRow', key: `experience-plan-${plan.id}`, plan });
     }
+    for (const plan of sharedNights) {
+      listData.push({ type: 'sharedNightRow', key: `shared-night-${plan.id}`, plan });
+    }
   }
 
   return (
@@ -330,6 +336,18 @@ export default function PlansScreen({ navigation, route }) {
                   peopleCount={plan.party_size}
                   status={resolvePlanTableStatus(plan.status)}
                   onPress={() => openBusinessRequest(plan.resulting_business_request_id)}
+                  style={styles.planCardSpacing}
+                />
+              );
+            }
+            if (item.type === 'sharedNightRow') {
+              return (
+                <PlanCard
+                  icon="✨"
+                  title={item.plan.title || 'A night out'}
+                  roleLabel={`Night out (shared)${item.plan.hostName ? ` · ${item.plan.hostName}` : ''}`}
+                  status={resolvePlanTableStatus(item.plan.status)}
+                  onPress={() => navigation.navigate('SharedNight', { planId: item.plan.id })}
                   style={styles.planCardSpacing}
                 />
               );

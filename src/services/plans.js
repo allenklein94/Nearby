@@ -260,3 +260,62 @@ export async function removeExperienceStop(stopId) {
   if (error) throw new Error(error.message);
   return { removed: !!data?.removed, cancelledRequest: !!data?.cancelled_request };
 }
+
+// ---- Sharing a night (view-only; migration 20270132) ----
+// Owner: share with a friend/match (server refuses anyone not already connected), or make a named, expiring, revocable
+// guest link for someone not on Nearby. Viewers and guests can only READ a narrow projection of the night.
+const SHARE_PAGES_BASE = 'https://allenklein94.github.io/Nearby';
+export function sharedNightGuestUrl(guestToken) {
+  return `${SHARE_PAGES_BASE}/shared-night.html?t=${guestToken}`;
+}
+
+export async function shareExperienceWithFriend(planId, friendId) {
+  const { data, error } = await supabase.rpc('share_experience_with_friend', { plan_id_param: planId, friend_id_param: friendId });
+  if (error) throw new Error(error.message);
+  return { alreadyShared: !!data?.alreadyShared };
+}
+
+export async function createExperienceGuestLink(planId, guestName) {
+  const { data, error } = await supabase.rpc('create_experience_guest_link', { plan_id_param: planId, guest_name_param: guestName });
+  if (error) throw new Error(error.message);
+  return { shareId: data.shareId, guestToken: data.guestToken, guestName: data.guestName, expiresAt: data.expiresAt };
+}
+
+export async function revokeExperienceShare(shareId) {
+  const { data, error } = await supabase.rpc('revoke_experience_share', { share_id_param: shareId });
+  if (error) throw new Error(error.message);
+  return !!data;
+}
+
+export async function leaveSharedExperience(planId) {
+  const { data, error } = await supabase.rpc('leave_shared_experience', { plan_id_param: planId });
+  if (error) throw new Error(error.message);
+  return !!data;
+}
+
+export async function getExperienceShares(planId) {
+  const { data, error } = await supabase.rpc('get_experience_shares', { plan_id_param: planId });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    kind: r.kind,
+    userId: r.user_id,
+    displayName: r.display_name,
+    guestName: r.guest_name,
+    guestToken: r.guest_token,
+    expiresAt: r.expires_at,
+  }));
+}
+
+// null = not shared with you (or the connection ended).
+export async function getSharedNight(planId) {
+  const { data, error } = await supabase.rpc('get_shared_night', { plan_id_param: planId });
+  if (error) throw new Error(error.message);
+  return data ?? null;
+}
+
+export async function getSharedExperiencePlans() {
+  const { data, error } = await supabase.rpc('get_shared_experience_plans');
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => ({ id: r.id, title: r.title, status: r.status, hostName: r.host_display_name }));
+}
