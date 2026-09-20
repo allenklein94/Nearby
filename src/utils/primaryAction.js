@@ -11,8 +11,10 @@
 import { needsApproval, joinLabel } from './gatheringJoinMode';
 
 // Returns { kind, label, showView }.
-//   kind: 'join' (opens the normal join confirmation on the detail screen) | 'view_plan' | 'requested' | 'view'
-export function gatheringPrimaryAction(gathering, myUserId, now = Date.now()) {
+//   kind: 'interested' (private maybe, toggles) | 'join' (opens the normal join confirmation on the detail screen) | 'view_plan' | 'requested' | 'view'
+// opts.lowCommitment (Trending: popular nearby, not personal): an open join becomes the private "I'm Interested"
+// (opts.interestedIds = the viewer's own Interested gathering ids); Join stays reachable through View.
+export function gatheringPrimaryAction(gathering, myUserId, now = Date.now(), opts = {}) {
   const view = { kind: 'view', label: 'View', showView: false };
   if (!gathering) return view;
   const started = gathering.scheduled_at && new Date(gathering.scheduled_at).getTime() <= now;
@@ -29,6 +31,11 @@ export function gatheringPrimaryAction(gathering, myUserId, now = Date.now()) {
 
   // Invite-only: only invited people can join, and that access is resolved on the detail screen.
   if (gathering.visibility === 'invite_only') return view;
+
+  if (opts.lowCommitment && opts.interestedIds) {
+    const on = opts.interestedIds.has(gathering.id);
+    return { kind: 'interested', label: on ? '★ Interested' : "I'm Interested", on, showView: true };
+  }
 
   const approved = gathering.attendees.filter((a) => a.status === 'approved').length;
   const isFull = gathering.capacity != null && approved >= gathering.capacity;

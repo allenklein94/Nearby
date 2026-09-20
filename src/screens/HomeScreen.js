@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
-import { getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getMyPositiveExperienceSignals, getSignedGatheringPhotoUrl } from '../services/gatherings';
+import { setGatheringInterested, getInterestedDemandPrefs, getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getMyPositiveExperienceSignals, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent, navigateToIntentResultItem, buildFriendDiscoveryResultItem } from '../services/intentResolver';
 import { runSurpriseMe, pickNextFromPool, findConnectedPerson, suggestionCandidateKeys, moodToParams } from '../services/surpriseMe';
@@ -332,8 +332,34 @@ export default function HomeScreen({ navigation }) {
 
   // Contextual primary CTA (utils/primaryAction.js): "Join | View", never a wall of buttons. Join opens the normal
   // confirmation on the detail screen (limits, approval, women-only all live there), so nothing is bypassed.
+  // Private "I might go" toggled straight from the card. Optimistic; the first-ever Interested goes through the
+  // detail screen instead so the one-time anonymous-demand disclosure is shown there (never skipped).
+  const [interestedOverride, setInterestedOverride] = useState({});
+  const interestedSet = useMemo(() => {
+    const set = new Set(dashboard?.interestedIds ?? []);
+    Object.entries(interestedOverride).forEach(([id, on]) => (on ? set.add(id) : set.delete(id)));
+    return set;
+  }, [dashboard?.interestedIds, interestedOverride]);
+  async function toggleCardInterested(g, on) {
+    if (!on) {
+      const prefs = await getInterestedDemandPrefs().catch(() => null);
+      if (prefs && prefs.share && !prefs.acknowledged) {
+        navigation.navigate('GatheringDetail', { gatheringId: g.id });
+        showSuccessToast('One quick step', 'Tap ☆ Interested there. We\'ll explain how it works once.');
+        return;
+      }
+    }
+    setInterestedOverride((o) => ({ ...o, [g.id]: !on }));
+    try {
+      await setGatheringInterested(g.id, !on);
+    } catch (e) {
+      setInterestedOverride((o) => ({ ...o, [g.id]: on }));
+      Alert.alert('Error', e.message);
+    }
+  }
+
   function renderGatheringCta(g, variant) {
-    const action = gatheringPrimaryAction(g, myUserId);
+    const action = gatheringPrimaryAction(g, myUserId, Date.now(), variant === 'trending' ? { lowCommitment: true, interestedIds: interestedSet } : {});
     const openDetail = (extra = {}) => navigation.navigate('GatheringDetail', { gatheringId: g.id, ...extra });
     const hero = variant === 'hero';
     const primaryStyle = hero ? styles.heroCta : styles.rowCta;
@@ -349,7 +375,11 @@ export default function HomeScreen({ navigation }) {
     }
     return (
       <View style={styles.ctaRow}>
-        {action.kind === 'join' ? (
+        {action.kind === 'interested' ? (
+          <TouchableOpacity style={action.on ? styles.rowCtaGhost : primaryStyle} onPress={() => toggleCardInterested(g, action.on)} accessibilityRole="button" accessibilityState={{ selected: action.on }} accessibilityLabel={action.on ? `Remove Interested: ${g.title}` : `Mark Interested: ${g.title}`}>
+            <Text style={action.on ? styles.rowCtaGhostText : primaryText}>{action.label}</Text>
+          </TouchableOpacity>
+        ) : action.kind === 'join' ? (
           <TouchableOpacity style={primaryStyle} onPress={() => openDetail({ openJoin: true })} accessibilityRole="button" accessibilityLabel={`${action.label}: ${g.title}`}>
             <Text style={primaryText}>{action.label}</Text>
           </TouchableOpacity>
@@ -2688,7 +2718,7 @@ export default function HomeScreen({ navigation }) {
                         {gatheringFullnessLabel(g)}
                       </Text>
                     )}
-                    <View style={{ marginTop: spacing.xs }}>{renderGatheringCta(g, 'row')}</View>
+                    <View style={{ marginTop: spacing.xs }}>{renderGatheringCta(g, 'trending')}</View>
                   </TouchableOpacity>
                 ))}
               </>

@@ -24,3 +24,11 @@ test('unknown viewer state, invite-only, or started -> View only', () => {
   expect(gatheringPrimaryAction({ ...base, scheduled_at: '2026-09-20T10:00:00Z' }, 'me', NOW).kind).toBe('view');
   expect(gatheringPrimaryAction(base, null, NOW).kind).toBe('view');
 });
+
+test('lowCommitment (Trending): open join -> I\'m Interested toggle; attending/pending unchanged', () => {
+  const o = { lowCommitment: true, interestedIds: new Set() };
+  expect(gatheringPrimaryAction(base, 'me', NOW, o)).toEqual({ kind: 'interested', label: "I'm Interested", on: false, showView: true });
+  expect(gatheringPrimaryAction(base, 'me', NOW, { ...o, interestedIds: new Set(['g']) }).on).toBe(true);
+  expect(gatheringPrimaryAction({ ...base, attendees: [{ user_id: 'me', status: 'approved' }] }, 'me', NOW, o).kind).toBe('view_plan');
+  expect(gatheringPrimaryAction(base, 'me', NOW).kind).toBe('join');
+});
