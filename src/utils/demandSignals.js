@@ -64,6 +64,17 @@ export function describeDemandSignal(signal, { minPeople = 5, windowDays = 14, o
     };
   }
 
+  // Interested-in-gatherings: its own row and floor, never combined with request counts. Category + count only.
+  if (signal.kind === 'gathering_interest' && signal.category) {
+    return {
+      key: `gathering_interest:${signal.category}`,
+      headline: `${people} people nearby are interested in ${signal.category} gatherings`,
+      detail: `Anonymous · ${since}`,
+      actionLabel: 'Post availability',
+      action: { type: 'availability', category: signal.category },
+    };
+  }
+
   if (signal.kind === 'category' && signal.category) {
     const party = partyBucketLabel(signal.party_bucket);
     const low = Number(signal.budget_low);

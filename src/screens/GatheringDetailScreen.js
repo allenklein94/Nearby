@@ -12,6 +12,8 @@ import {
   getGatheringGroupInsights,
   expressInterest,
   setGatheringInterested,
+  getInterestedDemandPrefs,
+  acknowledgeInterestedDisclosure,
   leaveGathering,
   getHostStats,
   getHostReputation,
@@ -270,12 +272,18 @@ export default function GatheringDetailScreen({ route, navigation }) {
   }
 
   const [togglingInterested, setTogglingInterested] = useState(false);
+  const [showDemandDisclosure, setShowDemandDisclosure] = useState(false);
   async function toggleInterested() {
     if (togglingInterested) return;
     const next = !gathering.myInterested;
     setTogglingInterested(true);
     try {
       await setGatheringInterested(gatheringId, next);
+      if (next) {
+        // One-time, inline (no screen): interest may feed anonymous local demand trends. Never repeats once acknowledged.
+        const prefs = await getInterestedDemandPrefs().catch(() => null);
+        if (prefs && prefs.share && !prefs.acknowledged) setShowDemandDisclosure(true);
+      }
       await load();
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -1166,6 +1174,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 </Text>
               </TouchableOpacity>
               {new Date(gathering.scheduled_at) >= new Date() && (
+                <>
                 <TouchableOpacity
                   onPress={toggleInterested}
                   disabled={togglingInterested}
@@ -1183,6 +1192,28 @@ export default function GatheringDetailScreen({ route, navigation }) {
                     </Text>
                   )}
                 </TouchableOpacity>
+              {gathering.myInterested && showDemandDisclosure && (
+                <View style={styles.pendingPanel}>
+                  <Text style={styles.pendingText}>Your interest may be included in anonymous local demand trends. Businesses won't see you or your profile.</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.lg, marginTop: spacing.sm }}>
+                    <TouchableOpacity
+                      onPress={() => { setShowDemandDisclosure(false); acknowledgeInterestedDisclosure(); }}
+                      accessibilityLabel="Got it"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.sayHelloLink}>Got it</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => { setShowDemandDisclosure(false); acknowledgeInterestedDisclosure(); navigation.navigate('Settings'); }}
+                      accessibilityLabel="Change in Settings"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.leaveLink}>Change in Settings</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+                </>
               )}
               <TouchableOpacity
                 onPress={() => setInviteModalVisible(true)}

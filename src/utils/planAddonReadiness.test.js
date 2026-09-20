@@ -202,11 +202,15 @@ describe('summarizePlanTimelineReadiness', () => {
 });
 
 describe('buildPlanSummary', () => {
+  // Always a future date (a fixed calendar date eventually becomes "past" and flips the plan to Completed).
+  const future = new Date(Date.now() + 30 * 86400000);
+  const FUTURE_DATE = `${future.getFullYear()}-${String(future.getMonth() + 1).padStart(2, '0')}-${String(future.getDate()).padStart(2, '0')}`;
+  const FUTURE_LABEL = future.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const basePrimary = {
     status: 'open',
     category: 'Restaurants',
     plan_label: null,
-    date: '2026-09-19',
+    date: FUTURE_DATE,
     time_window_start: '19:00:00',
     time_window_end: null,
     party_size: 8,
@@ -220,7 +224,7 @@ describe('buildPlanSummary', () => {
     const summary = buildPlanSummary({ primary: basePrimary, primaryOffers: [] });
     expect(summary.statusKind).toBe('planning');
     expect(summary.statusLabel).toBe('Planning');
-    expect(summary.dateLabel).toMatch(/Sep 19/);
+    expect(summary.dateLabel).toContain(FUTURE_LABEL);
     expect(summary.timeLabel).toBe('7 PM');
     expect(summary.location).toBeNull();
     expect(summary.partySize).toBe(8);
@@ -229,7 +233,7 @@ describe('buildPlanSummary', () => {
   test('an accepted offer -> Confirmed, with the real business name as location', () => {
     const summary = buildPlanSummary({
       primary: basePrimary,
-      primaryOffers: [{ status: 'accepted', proposed_time: '2026-09-19T19:30:00Z', brand_partners: { name: 'Il Forno' } }],
+      primaryOffers: [{ status: 'accepted', proposed_time: `${FUTURE_DATE}T19:30:00Z`, brand_partners: { name: 'Il Forno' } }],
       planTitle: "Sarah's Birthday 🎂",
     });
     expect(summary.statusKind).toBe('confirmed');
@@ -242,11 +246,11 @@ describe('buildPlanSummary', () => {
       primary: basePrimary,
       primaryOffers: [{
         status: 'accepted',
-        proposed_time: '2026-09-19T19:30:00Z',
+        proposed_time: `${FUTURE_DATE}T19:30:00Z`,
         brand_partners: { name: 'Il Forno', address: '123 Main St', latitude: 40.7, longitude: -74.0 },
       }],
     });
-    expect(summary.rawDate).toBe('2026-09-19');
+    expect(summary.rawDate).toBe(FUTURE_DATE);
     expect(summary.rawTime).toMatch(/^\d{2}:\d{2}$/);
     expect(summary.businessAddress).toBe('123 Main St');
     expect(summary.businessLatitude).toBe(40.7);

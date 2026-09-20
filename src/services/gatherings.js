@@ -430,6 +430,22 @@ export async function isGatheringInterested(gatheringId) {
   return !!data;
 }
 
+// Anonymous-demand disclosure + opt-out (profiles.share_interest_in_demand / interested_demand_disclosure_ack_at).
+export async function getInterestedDemandPrefs() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) return { share: true, acknowledged: true };
+  const { data } = await supabase.from('profiles').select('share_interest_in_demand, interested_demand_disclosure_ack_at').eq('id', userId).single();
+  return { share: data?.share_interest_in_demand ?? true, acknowledged: !!data?.interested_demand_disclosure_ack_at };
+}
+
+export async function acknowledgeInterestedDisclosure() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) return;
+  await supabase.from('profiles').update({ interested_demand_disclosure_ack_at: new Date().toISOString() }).eq('id', userId);
+}
+
 // Host-only count, no identities.
 export async function getGatheringInterestedCount(gatheringId) {
   const { data, error } = await supabase.rpc('get_gathering_interested_count', { gathering_id_param: gatheringId });

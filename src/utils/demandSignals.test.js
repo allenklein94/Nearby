@@ -120,3 +120,15 @@ describe('weekend framing and match summary', () => {
     [0, null, undefined, -2, 2.5].forEach((n) => expect(describeMatchSummary(n)).toBeNull());
   });
 });
+
+describe('gathering_interest rows', () => {
+  test('renders category + distinct-people count only, with an anonymous label', () => {
+    const c = describeDemandSignal({ kind: 'gathering_interest', category: 'Coffee', people_count: 7 });
+    expect(c.headline).toBe('7 people nearby are interested in Coffee gatherings');
+    expect(c.detail).toBe('Anonymous · last 14 days');
+    expect(c.action).toEqual({ type: 'availability', category: 'Coffee' });
+  });
+  test('below the floor renders nothing, never "3 people"', () => {
+    expect(describeDemandSignal({ kind: 'gathering_interest', category: 'Coffee', people_count: 4 })).toBeNull();
+  });
+});

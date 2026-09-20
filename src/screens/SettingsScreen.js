@@ -65,6 +65,7 @@ export default function SettingsScreen({ navigation, route }) {
   const [userId, setUserId] = useState(null);
   const [discoveryViewStyle, setDiscoveryViewStyle] = useState('list');
   const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
+  const [shareInterestInDemand, setShareInterestInDemand] = useState(true);
   const [womenMessageFirst, setWomenMessageFirst] = useState(false);
   const [intentVisibility, setIntentVisibility] = useState('friends_and_matches');
 
@@ -209,6 +210,7 @@ export default function SettingsScreen({ navigation, route }) {
       setNoCategories(data.notify_nearby_opportunities_categories ?? null);
       setDiscoveryViewStyle(data.discovery_view_style ?? 'list');
       setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
+      setShareInterestInDemand(data.share_interest_in_demand ?? true);
       setWomenMessageFirst(data.women_message_first ?? false);
       setIntentVisibility(data.intent_visibility ?? 'friends_and_matches');
     }
@@ -872,6 +874,19 @@ export default function SettingsScreen({ navigation, route }) {
                 <Text style={styles.customizeLinkText}>Clear my activity history</Text>
               </TouchableOpacity>
             </View>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.settingRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>Include my "Interested" in anonymous local trends</Text>
+              <Text style={styles.helperText}>When you tap Interested on a public gathering, it can count toward anonymous, area-level demand that local businesses see, only when at least 5 different people are interested. Businesses never see you, your profile or which gathering. Turning this off removes you from those counts.</Text>
+            </View>
+            <Switch
+              value={shareInterestInDemand}
+              onValueChange={(v) => toggleNotifPref('share_interest_in_demand', v, setShareInterestInDemand)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Include my Interested activity in anonymous local demand trends"
+            />
           </View>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
