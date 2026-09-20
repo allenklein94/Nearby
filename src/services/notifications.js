@@ -175,6 +175,7 @@ export async function routeNotificationTap(data) {
       break;
     case 'gathering_invite':
     case 'gathering_reminder':
+    case 'gathering_business_reminder':
     case 'gathering_waitlisted':
     case 'gathering_updated':
     case 'recurring_gathering':
