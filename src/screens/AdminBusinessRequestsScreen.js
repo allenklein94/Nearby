@@ -292,7 +292,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   statusBadge: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
   statusApproved: { color: colors.success },
   statusDenied: { color: colors.textTertiary },
-  statusNeedsInfo: { color: colors.primary },
+  statusNeedsInfo: { color: colors.warning },
   description: { color: colors.textSecondary, fontSize: 13, marginBottom: spacing.xs, lineHeight: 18 },
   contact: { color: colors.textTertiary, fontSize: 12, marginBottom: spacing.sm },
   needsInfoNote: { color: colors.primary, fontSize: 12, fontWeight: '600', marginBottom: spacing.sm },

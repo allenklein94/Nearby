@@ -8,7 +8,10 @@ export const lightColors = {
   textSecondary: '#6B5D54',
   textTertiary: '#A69B92',
   success: '#4CAF7D',
-  danger: '#FF6B5B',
+  danger: '#C62F3B',
+  warning: '#9A6210',
+  info: '#3B6EA5',
+  expired: '#8A7F77',
   border: '#F0E0D4',
   // Item 112 follow-up (CLAUDE.md, "Surprise Mode could have its own
   // visual language"): a deliberate, small, contained addition -- a real
@@ -34,7 +37,10 @@ export const darkColors = {
   textSecondary: '#a8a8c0',
   textTertiary: '#6e6e8a',
   success: '#4ade80',
-  danger: '#ff4d6d',
+  danger: '#f2555f',
+  warning: '#E0A84A',
+  info: '#6FA3E0',
+  expired: '#8a8aa3',
   border: 'rgba(255, 255, 255, 0.08)',
   surprise: '#9B8CFF',
   surpriseMuted: 'rgba(155, 140, 255, 0.18)',

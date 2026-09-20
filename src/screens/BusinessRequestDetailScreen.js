@@ -1807,7 +1807,7 @@ const getStyles = (colors) => StyleSheet.create({
   planSummaryStatusPillInProgress: { backgroundColor: 'rgba(230, 168, 46, 0.14)', borderColor: 'rgba(230, 168, 46, 0.4)' },
   planSummaryStatusPillCompleted: { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
   planSummaryStatusText: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
-  planSummaryStatusTextConfirmed: { color: colors.primary },
+  planSummaryStatusTextConfirmed: { color: colors.success },
   planSummaryStatusTextCancelled: { color: colors.danger },
   planSummaryStatusTextInProgress: { color: colors.inProgress },
   planSummaryStatusTextCompleted: { color: colors.textTertiary },

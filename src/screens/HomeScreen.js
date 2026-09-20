@@ -2820,7 +2820,7 @@ const getStyles = (colors) => StyleSheet.create({
   greeting: { ...typography.title, color: colors.textPrimary, marginBottom: 2 },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
   loadingText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md },
-  insightLine: { color: colors.primary, fontSize: 14, fontWeight: '600', marginBottom: spacing.lg, lineHeight: 19 },
+  insightLine: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: spacing.lg, lineHeight: 19 },
   // Home Visual Hierarchy Audit, recommendation #1 (2026-08-14): this is
   // Home's one hero element -- "This is where I start," not "here's
   // another card." primaryMuted + a colors.primary border is the same
