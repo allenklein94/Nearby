@@ -22,6 +22,7 @@ import StaggeredReveal from '../components/StaggeredReveal';
 import OfferMedia from '../components/OfferMedia';
 import OfferReveal from '../components/OfferReveal';
 import { visibleRedemption, validityLabel, isOfferExpired } from '../utils/offerMedia';
+import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
@@ -1311,7 +1312,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                       <Text style={styles.acceptButtonText}>Confirm With the Group →</Text>
                     </TouchableOpacity>
                   )}
-                  {request.status === 'open' && !hasWinner && !isGroupPlanRequest && !isOfferExpired(o) && (
+                  {!hasWinner && !isGroupPlanRequest && canDo('request', request.status, 'accept_offer') && canDo('offer', offerLifecycleState(o), 'accept') && (
                     <TouchableOpacity
                       style={styles.acceptButton}
                       onPress={() => handleAccept(o.id)}

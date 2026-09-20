@@ -10,7 +10,7 @@ const read = (f) => fs.readFileSync(path.join(__dirname, '..', 'screens', f), 'u
 test('consumer offer actions require an open request', () => {
   const src = read('BusinessRequestDetailScreen.js');
   expect(src).toMatch(/request\.status === 'open' && !hasWinner && isGroupPlanRequest/);
-  expect(src).toMatch(/request\.status === 'open' && !hasWinner && !isGroupPlanRequest && !isOfferExpired\(o\)/);
+  expect(src).toMatch(/canDo\('request', request\.status, 'accept_offer'\) && canDo\('offer', offerLifecycleState\(o\), 'accept'\)/);
 });
 
 test('a closed pending opportunity is labelled, not called new', () => {

@@ -10,6 +10,7 @@
 //   business opportunity -> View Offer
 import { needsApproval, joinLabel } from './gatheringJoinMode';
 import { gatheringViewerState } from './objectState';
+import { canDo, gatheringLifecycleState, offerLifecycleState } from './objectLifecycle';
 
 // Returns { kind, label, showView }.
 //   kind: 'interested' (private maybe, toggles) | 'join' (opens the normal join confirmation on the detail screen) | 'view_plan' | 'requested' | 'view'
@@ -21,19 +22,23 @@ export function gatheringPrimaryAction(gathering, myUserId, now = Date.now(), op
   // Attendance rows tell us the viewer's state; without them we cannot know it: offer only View, never a wrong "Join".
   const known = Boolean(myUserId) && Array.isArray(gathering.attendees);
   const mine = known ? gathering.attendees.find((a) => a.user_id === myUserId) : null;
-  const { relation, actionable } = gatheringViewerState({
+  const viewerInput = {
     isHost: Boolean(myUserId) && gathering.host_id === myUserId,
     myStatus: mine?.status ?? null,
     scheduled_at: gathering.scheduled_at,
-  }, now);
-  // Started or unknown date: nothing can be done from a card.
-  if (!actionable) return view;
+  };
+  const { relation } = gatheringViewerState(viewerInput, now);
+  const lifecycle = gatheringLifecycleState(viewerInput, now);
+  // Started or unknown date: the lifecycle table allows View only, so nothing can be done from a card.
+  if (!lifecycle.startsWith('upcoming_')) return view;
 
   if (relation === 'hosting') return { kind: 'view_plan', label: 'View Plan', showView: false };
   if (!known) return view;
   if (relation === 'attending') return { kind: 'view_plan', label: 'View Plan', showView: false };
   if (relation === 'requested') return { kind: 'requested', label: 'Requested', showView: true };
   if (relation === 'waitlisted') return { kind: 'requested', label: 'On waitlist', showView: true };
+
+  if (!canDo('gathering', lifecycle, 'join') && !canDo('gathering', lifecycle, 'request')) return view;
 
   // Invite-only: only invited people can join, and that access is resolved on the detail screen.
   if (gathering.visibility === 'invite_only') return view;
@@ -59,5 +64,5 @@ export function peoplePrimaryAction(nearbyPeopleCount) {
 // Business offer received (consumer side): "View Offer" only while the offer is still open to act on. Once accepted,
 // declined or completed the row is history and keeps its plain tap-through with no button.
 export function offerPrimaryAction(offer) {
-  return offer?.status === 'offered' ? { kind: 'view_offer', label: 'View Offer' } : null;
+  return canDo('offer', offerLifecycleState(offer), 'accept') ? { kind: 'view_offer', label: 'View Offer' } : null;
 }
