@@ -124,3 +124,15 @@ describe('claim -> inventory check (item 78)', () => {
     expect(src).not.toMatch(/getDay\(/);
   });
 });
+
+describe('nearbyToMeetRow (item 78)', () => {
+  const { nearbyToMeetRow } = require('./meetTonight');
+  it('states a real supply count and offers the CTA only when > 0', () => {
+    expect(nearbyToMeetRow(4)).toEqual({ text: '4 people nearby to meet', count: 4, showCta: true });
+    expect(nearbyToMeetRow(1).text).toBe('1 person nearby to meet');
+    expect(nearbyToMeetRow(0)).toEqual({ text: '0 people nearby to meet', count: 0, showCta: false });
+  });
+  it('an unknown count claims nothing about people', () => {
+    for (const v of [null, undefined, NaN]) expect(nearbyToMeetRow(v)).toEqual({ text: "See who's nearby", count: null, showCta: false });
+  });
+});

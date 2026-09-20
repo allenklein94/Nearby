@@ -82,3 +82,17 @@ export function peopleTonightBanner({ subMode = 'dating', count = null } = {}) {
     empty: false,
   };
 }
+
+// Item 78, finished: Home's "N people nearby to meet" row is the same kind of claim, so it uses the same inventory
+// count (countTonightSupply: seen in the last day / really 'Nearby'), never the whole candidate pool. An unknown count
+// (failed lookup) says nothing about people -- no "0" -- and offers no Meet People pill.
+export function nearbyToMeetRow(meetPeopleCount) {
+  if (typeof meetPeopleCount !== 'number' || !Number.isFinite(meetPeopleCount)) {
+    return { text: "See who's nearby", count: null, showCta: false };
+  }
+  return {
+    text: `${meetPeopleCount === 1 ? '1 person' : `${meetPeopleCount} people`} nearby to meet`,
+    count: meetPeopleCount,
+    showCta: meetPeopleCount > 0,
+  };
+}

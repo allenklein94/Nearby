@@ -25,7 +25,7 @@ const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
 // per-candidate reason (shared gathering attendance when it exists,
 // proximity sighting otherwise) -- never both, never a guess.
 export default function SwipeableDiscoveryCards({
-  data, photoUrls, onlineStatuses, storyByUserId = {}, onViewStory, onNotice, onWave, onViewProfile, onReport, compatibilityColor, onNeedMore, discoveryMode = 'crossedPaths', onShowCompatibility,
+  data, photoUrls, onlineStatuses, storyByUserId = {}, onViewStory, onNotice, onWave, onViewProfile, onReport, compatibilityColor, onNeedMore, discoveryMode = 'crossedPaths', onShowCompatibility, freeTonightIds = null,
 }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
@@ -113,7 +113,7 @@ export default function SwipeableDiscoveryCards({
   const nextItem = data[currentIndex + 1];
   const crossedPathsTime = formatCrossedPathsTimeShort(item.last_seen_at);
   const gatheringText = discoveryMode === 'browse' ? null : gatheringReasonText(item.crossedPathsReason);
-  const facts = datingCardFacts(item, { mode: discoveryMode, gatheringText, crossedPathsTime: discoveryMode === 'browse' ? null : crossedPathsTime });
+  const facts = datingCardFacts(item, { mode: discoveryMode, gatheringText, crossedPathsTime: discoveryMode === 'browse' ? null : crossedPathsTime, mutualFreeTonight: !!freeTonightIds?.has(item.otherUserId) });
   const storyGroup = storyByUserId[item.otherUserId] ?? null;
 
   const cardStyle = {
@@ -193,6 +193,7 @@ export default function SwipeableDiscoveryCards({
             </Text>
           )}
           <Text style={styles.proximityText}>{facts.where}</Text>
+          {facts.availability && <Text style={styles.sharedText}>{facts.availability}</Text>}
           <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
         </TouchableOpacity>
       </Animated.View>

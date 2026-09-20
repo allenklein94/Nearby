@@ -1,7 +1,7 @@
 import { datingCardFacts } from '../utils/datingCardReasons';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Feather } from '@expo/vector-icons';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Animated, ScrollView } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Animated, ScrollView, Switch } from 'react-native';
 import { PullToRefresh, FilterTransition, SkeletonFeed } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
@@ -36,6 +36,8 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import { getMyFreeTonight, setFreeTonight, getMutualFreeTonightIds } from '../services/freeTonight';
+import { endOfTonight } from '../utils/freeTonight';
 
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 const UNDO_WINDOW_SECONDS = 5;
@@ -115,6 +117,9 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
   const [quickFilterConfig, setQuickFilterConfig] = useState(DATING_DEFAULT_CONFIG);
   // No position: nearby/browse can't fill, so say that instead of implying nobody is around.
   const [locationOff, setLocationOff] = useState(false);
+  // Opt-in "Free tonight" (item 77): mine (an ISO end time or null) and which of the people shown are ALSO free.
+  const [myFreeTonight, setMyFreeTonight] = useState(null);
+  const [freeTonightIds, setFreeTonightIds] = useState(() => new Set());
   const undoTimeoutRef = useRef(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
 
@@ -166,6 +171,31 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
       }
     }
   }, []);
+
+  useEffect(() => {
+    getMyFreeTonight().then(setMyFreeTonight).catch(() => setMyFreeTonight(null));
+  }, []);
+
+  // Only ask who else is free when I am (the server returns nothing otherwise). A failed lookup shows nothing.
+  useEffect(() => {
+    if (!myFreeTonight) { setFreeTonightIds(new Set()); return; }
+    let cancelled = false;
+    getMutualFreeTonightIds(nearby.map((n) => n.otherUserId))
+      .then((ids) => { if (!cancelled) setFreeTonightIds(new Set(ids)); })
+      .catch(() => { if (!cancelled) setFreeTonightIds(new Set()); });
+    return () => { cancelled = true; };
+  }, [myFreeTonight, nearby]);
+
+  async function toggleFreeTonight(on) {
+    const previous = myFreeTonight;
+    setMyFreeTonight(on ? endOfTonight().toISOString() : null);
+    try {
+      setMyFreeTonight(await setFreeTonight(on ? endOfTonight().toISOString() : null));
+    } catch {
+      setMyFreeTonight(previous);
+      Alert.alert('Could not update', 'Please try again.');
+    }
+  }
 
   const loadBrowseBatch = useCallback(async (offset) => {
     const results = await getBrowseMatches(offset);
@@ -607,6 +637,18 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
           "Filters" chip. All of that content now lives inside FiltersModal
           (extended below), reached from this one honest summary line --
           real state, never a fabricated count. */}
+      <View style={styles.freeTonightRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.freeTonightTitle}>🌙 Free tonight</Text>
+          <Text style={styles.freeTonightHint}>
+            {myFreeTonight
+              ? 'On until late tonight. Only people who are also free tonight can see this, and only on their suggestions to you.'
+              : 'Optional. Turn on to see who else is free tonight. It is never shown to anyone who has not turned it on too.'}
+          </Text>
+        </View>
+        <Switch value={!!myFreeTonight} onValueChange={toggleFreeTonight} accessibilityLabel="Free tonight" />
+      </View>
+
       <TouchableOpacity
         style={[styles.filtersButton, filtersSummaryCount > 0 && styles.filtersButtonActive]}
         onPress={openFilters}
@@ -640,6 +682,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
             onNeedMore={discoveryMode === 'browse' ? loadMoreBrowse : undefined}
             discoveryMode={discoveryMode}
             onShowCompatibility={showCompatibilityReport}
+            freeTonightIds={freeTonightIds}
           />
         )
       ) : (
@@ -661,7 +704,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
         renderItem={({ item }) => {
           const crossedPathsTime = discoveryMode === 'browse' ? null : formatCrossedPathsTime(item.last_seen_at);
           const gatheringText = discoveryMode === 'browse' ? null : gatheringReasonText(item.crossedPathsReason, formatCrossedPathsTime);
-          const facts = datingCardFacts(item, { mode: discoveryMode, gatheringText, crossedPathsTime });
+          const facts = datingCardFacts(item, { mode: discoveryMode, gatheringText, crossedPathsTime, mutualFreeTonight: freeTonightIds.has(item.otherUserId) });
           const storyGroup = storyByUserId[item.otherUserId] ?? null;
           return (
           // Item 126 ("Don't animate every card"): removed this card's own per-index
@@ -735,6 +778,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
                     : `✨ ${facts.reason.text}`}
                 </Text>
               )}
+              {facts.availability && <Text style={styles.sharedText}>{facts.availability}</Text>}
               <View style={styles.proximityRow}>
                 <Text style={styles.proximityText}>{facts.where}</Text>
                 {discoveryMode !== 'browse' && !gatheringText && item.sightingLat != null && (
@@ -925,6 +969,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   // 2-section accordion (Looking For / Quick Filters) + a separate
   // premium-gated "Filters" chip -- all three now live inside the one
   // unified FiltersModal, reached from this single summary button.
+  freeTonightRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginHorizontal: spacing.lg, marginBottom: spacing.sm },
+  freeTonightTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  freeTonightHint: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
   filtersButton: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     marginHorizontal: spacing.lg, marginBottom: spacing.md, alignSelf: 'flex-start',

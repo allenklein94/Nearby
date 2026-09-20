@@ -1,4 +1,6 @@
 import React, { useState, useCallback } from 'react';
+import { getMatchDistanceMiles } from '../services/freeTonight';
+import { matchDistanceLabel } from '../utils/freeTonight';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image, Alert } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
@@ -68,6 +70,8 @@ export default function MatchesScreen({ navigation }) {
   // proposed for yet has no entry, which is what keeps the plain "start a
   // plan" button showing instead of an always-empty status row.
   const [activePlansByMatch, setActivePlansByMatch] = useState({});
+  // Approximate distance, only for people you are matched with (item 77): { [matchId]: whole miles }.
+  const [distanceByMatch, setDistanceByMatch] = useState({});
 
   const load = useCallback(async () => {
     try {
@@ -111,6 +115,10 @@ export default function MatchesScreen({ navigation }) {
       getMyActivePlansByMatch(planEligibleMatchIds)
         .then(setActivePlansByMatch)
         .catch((e) => console.error('getMyActivePlansByMatch failed', e));
+
+      Promise.all(data.filter((m) => !m.source_gathering_id && !m.source_friendship_id).map(async (m) => {
+        try { return [m.id, await getMatchDistanceMiles(m.id)]; } catch { return [m.id, null]; }
+      })).then((pairs) => setDistanceByMatch(Object.fromEntries(pairs.filter(([, v]) => v !== null))));
 
       const seenIds = await getSeenMatchIds(myId);
       const isFirstRunEver = seenIds.length === 0 && data.length > 0;
@@ -339,7 +347,9 @@ export default function MatchesScreen({ navigation }) {
           const report = isRomanticMatch ? generateCompatibilityReport(myProfile, other) : { score: null };
           const gatheringLabel = item.gatherings?.title ? `Met through ${item.gatherings.title}` : null;
           const matchedLabel = formatMatchedTime(item.matched_at);
-          const subLabel = gatheringLabel ? `${gatheringLabel} · ${matchedLabel}` : matchedLabel || t('matches.tapToChat');
+          const distanceLabel = isRomanticMatch ? matchDistanceLabel(distanceByMatch[item.id]) : null;
+          const baseSubLabel = gatheringLabel ? `${gatheringLabel} · ${matchedLabel}` : matchedLabel || t('matches.tapToChat');
+          const subLabel = distanceLabel ? `${baseSubLabel} · ${distanceLabel}` : baseSubLabel;
           // Persistent People/Time/Place status (CLAUDE.md, Aug 29 2026) --
           // only shown once a real plan has actually been started (a
           // proposal or a business request exists), so an untouched match

@@ -60,6 +60,7 @@ import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { getUserLocation } from '../services/userLocation';
 import { placeDistanceLabel } from '../services/places';
 import { gatheringPrimaryAction, peoplePrimaryAction } from '../utils/primaryAction';
+import { nearbyToMeetRow } from '../utils/meetTonight';
 
 import { countLabel } from '../utils/plural';
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
@@ -2587,13 +2588,13 @@ export default function HomeScreen({ navigation }) {
           <TouchableOpacity
             style={styles.cardRow}
             onPress={() => navigation.navigate('Discover', { initialMode: 'people' })}
-            accessibilityLabel={`${countLabel(dashboard?.nearbyPeopleCount ?? 0, 'person', 'people')} nearby to meet, tap to view`}
+            accessibilityLabel={`${nearbyToMeetRow(dashboard?.meetPeopleCount).text}, tap to view`}
             accessibilityRole="button"
           >
             <Ionicons name="people-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
-            <Text style={styles.cardText}>{countLabel(dashboard?.nearbyPeopleCount ?? 0, 'person', 'people')} nearby to meet</Text>
-            {peoplePrimaryAction(dashboard?.nearbyPeopleCount) ? (
-              <View style={styles.rowCta}><Text style={styles.rowCtaText}>{peoplePrimaryAction(dashboard.nearbyPeopleCount).label}</Text></View>
+            <Text style={styles.cardText}>{nearbyToMeetRow(dashboard?.meetPeopleCount).text}</Text>
+            {nearbyToMeetRow(dashboard?.meetPeopleCount).showCta ? (
+              <View style={styles.rowCta}><Text style={styles.rowCtaText}>{peoplePrimaryAction(dashboard.meetPeopleCount).label}</Text></View>
             ) : (
               <Text style={styles.cardChevron}>›</Text>
             )}
