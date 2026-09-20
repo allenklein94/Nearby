@@ -361,9 +361,15 @@ export default function HomeScreen({ navigation }) {
     becauseYouLike: dashboard?.becauseYouLike,
     trending: dashboard?.trendingGatherings,
     friends: dashboard?.friendsActivity,
+    soon: dashboard?.happeningNow,
     friendIds: dashboard?.friendIds ? new Set(dashboard.friendIds) : null,
     isPast: (g) => isGatheringPast(g),
   });
+
+  // A starting-soon gathering that Picked For You already shows carries "Starting soon" as one of its reasons there,
+  // so it is not repeated as a chip (one object, one place).
+  const shownInMergeIds = new Set([homeMerge.hero?.id, ...homeMerge.cards.map((c) => c.gathering.id)].filter(Boolean));
+  const startingSoonChips = (dashboard?.happeningNow ?? []).filter((g) => !shownInMergeIds.has(g.id));
 
   function renderGatheringCta(g, variant) {
     const action = gatheringPrimaryAction(g, myUserId, Date.now(), variant === 'trending' ? { lowCommitment: true, interestedIds: interestedSet } : {});
@@ -2514,14 +2520,14 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
-        {dashboard?.happeningNow?.length > 0 && (
+        {startingSoonChips.length > 0 && (
           <>
             <View style={styles.sectionHeaderRow}>
               <Ionicons name="flame-outline" size={14} color={colors.textTertiary} style={styles.bannerIcon} />
               <Text style={styles.sectionHeaderText}>Starting Soon Near You</Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
-              {dashboard.happeningNow.map((g) => {
+              {startingSoonChips.map((g) => {
                 const style = categoryStyleFor(g.interest_tag);
                 return (
                   <TouchableOpacity

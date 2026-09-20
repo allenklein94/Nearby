@@ -10,13 +10,14 @@ import { friendGoingReason } from './recommendationFacts';
 export const SIGNAL_TEXT = {
   interest: (g) => (g?.interest_tag ? `Because you like ${g.interest_tag}` : 'Because of your interests'),
   trending: () => 'Trending nearby',
+  soon: () => 'Starting soon',
   friend: (g, isPast) => {
     const name = g?.profiles?.display_name;
     return `${name || 'A friend'} ${isPast ? 'hosted' : 'is hosting'} this`;
   },
 };
 
-export function mergeHomeGatheringSignals({ bestPick = null, becauseYouLike = [], trending = [], friends = [], friendIds = null, isPast = () => false } = {}) {
+export function mergeHomeGatheringSignals({ bestPick = null, becauseYouLike = [], trending = [], friends = [], soon = [], friendIds = null, isPast = () => false } = {}) {
   const byId = new Map();
   const order = [];
   function add(g, kind) {
@@ -36,6 +37,8 @@ export function mergeHomeGatheringSignals({ bestPick = null, becauseYouLike = []
   for (const g of becauseYouLike ?? []) add(g, 'interest');
   for (const g of trending ?? []) add(g, 'trending');
   for (const g of friends ?? []) add(g, 'friend');
+  // "Starting soon" only ever adds a reason to a gathering that is already being shown; it never creates a card.
+  for (const g of soon ?? []) if (byId.has(g?.id) || g?.id === bestPick?.id) add(g, 'soon');
 
   // "Sam is going": a connected friend among the approved attendees (accepted friends only, from the attendee rows the
   // gathering already carries). The host is left out -- "Sam is hosting this" already says it.
@@ -53,6 +56,7 @@ export function mergeHomeGatheringSignals({ bestPick = null, becauseYouLike = []
     const extra = byId.get(bestPick.id);
     const reasons = [...(bestPick.reasons ?? [])];
     for (const s of extra?.signals ?? []) if (!reasons.includes(s.text)) reasons.push(s.text);
+    if (!extra && (soon ?? []).some((g) => g?.id === bestPick.id)) reasons.push(SIGNAL_TEXT.soon());
     hero = { ...(extra?.gathering ?? {}), ...bestPick, reasons };
     const going = goingText(hero);
     if (going && !reasons.includes(going)) reasons.push(going);

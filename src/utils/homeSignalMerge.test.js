@@ -93,3 +93,16 @@ describe('friend-going reason on Home', () => {
     expect(mergeHomeGatheringSignals({ trending: [g(1, { approvedAttendees: [att('f1', 'Sam')] })] }).cards[0].reasons).toEqual(['Trending nearby']);
   });
 });
+
+describe('starting-soon is a reason, not a second card', () => {
+  test('adds "Starting soon" to a gathering already shown and never creates a card', () => {
+    const { cards } = mergeHomeGatheringSignals({ trending: [g(1)], soon: [g(1), g(2)] });
+    expect(cards.map((c) => c.gathering.id)).toEqual([1]);
+    expect(cards[0].reasons).toEqual(['Trending nearby', 'Starting soon']);
+  });
+  test('the hero absorbs it', () => {
+    const { hero, cards } = mergeHomeGatheringSignals({ bestPick: g(1, { reasons: ['Close by'] }), soon: [g(1)] });
+    expect(hero.reasons).toEqual(['Close by', 'Starting soon']);
+    expect(cards).toEqual([]);
+  });
+});

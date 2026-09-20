@@ -458,7 +458,7 @@ export async function getHomeDashboard() {
     .filter((g) => isOutdoorCategory(g.interest_tag))
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 4);
-  const trendingGatherings = [...nearbyGatherings]
+  let trendingGatherings = [...nearbyGatherings]
     .sort((a, b) => (b.approvedAttendees?.length ?? 0) - (a.approvedAttendees?.length ?? 0))
     .slice(0, 3);
 
@@ -468,7 +468,7 @@ export async function getHomeDashboard() {
   // lookback was dead code and would only lead to a dead-end tap.
   const STARTING_SOON_MS = 30 * 60 * 1000;
   const nowMs = Date.now();
-  const happeningNow = nearbyGatherings
+  let happeningNow = nearbyGatherings
     .filter((g) => {
       const startMs = new Date(g.scheduled_at).getTime();
       return startMs > nowMs && startMs - nowMs <= STARTING_SOON_MS;
@@ -595,6 +595,19 @@ export async function getHomeDashboard() {
     ...(attendingUpcoming ?? []).map((row) => row.gatherings?.id).filter(Boolean),
     ...(hostingUpcoming ?? []).map((g) => g.id),
   ]);
+  // One object, one place (global rule 3): a gathering already in "Your Plans" (attending or hosting) is not ALSO
+  // recommended as trending, Best Pick or starting soon. Recomputed from the same nearby list, so the slots refill.
+  {
+    const notMine = (g) => !upcomingPlanIds.has(g.id);
+    const pool = nearbyGatherings.filter(notMine);
+    trendingGatherings = [...pool]
+      .sort((a, b) => (b.approvedAttendees?.length ?? 0) - (a.approvedAttendees?.length ?? 0))
+      .slice(0, 3);
+    happeningNow = happeningNow.filter(notMine);
+    bestPick = null;
+    const top = pool.map((g) => ({ gathering: g, ...getGatheringFitReasons(g) })).sort((a, b) => b.score - a.score)[0];
+    if (top && top.score >= 5) bestPick = { ...top.gathering, reasons: top.reasons };
+  }
   const becauseYouLike = topInterestCategories.length > 0
     ? nearbyGatherings
         .filter((g) => topInterestCategories.includes(g.interest_tag) && !upcomingPlanIds.has(g.id))
@@ -645,6 +658,7 @@ export async function getHomeDashboard() {
     const visibleFriendGatherings = applyGatheringVisibilityFilters(friendGatherings ?? [], visibilityContext);
     const seenHosts = new Set();
     friendsActivity = visibleFriendGatherings.filter((g) => {
+      if (upcomingPlanIds.has(g.id)) return false;
       if (seenHosts.has(g.host_id)) return false;
       seenHosts.add(g.host_id);
       return true;
