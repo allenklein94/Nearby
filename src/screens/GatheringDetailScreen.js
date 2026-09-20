@@ -41,6 +41,7 @@ import {
 import { getMyPartnershipRequestForTarget } from '../services/businessPartnerships';
 import GatheringQnA from '../components/GatheringQnA';
 import HostAttendeeManager from '../components/HostAttendeeManager';
+import GatheringFeedbackPrompt from '../components/GatheringFeedbackPrompt';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import GatheringIntentModal from '../components/GatheringIntentModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
@@ -656,6 +657,10 @@ export default function GatheringDetailScreen({ route, navigation }) {
           )}
 
           {gathering.description ? <Text style={styles.description}>{gathering.description}</Text> : null}
+
+          {!gathering.isHost && gathering.myStatus === 'approved' && new Date(gathering.scheduled_at) < new Date() && (
+            <GatheringFeedbackPrompt gatheringId={gatheringId} />
+          )}
 
           {gathering.approvedAttendees?.length > 0 && (
             <View style={styles.section}>

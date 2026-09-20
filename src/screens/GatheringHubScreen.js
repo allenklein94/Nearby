@@ -23,6 +23,7 @@ import { openUberToDestination } from '../utils/uberDeepLink';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import LoadErrorState from '../components/LoadErrorState';
+import { sendNoticeTo } from '../services/noticeActions';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import * as Haptics from 'expo-haptics';
@@ -67,6 +68,8 @@ export default function GatheringHubScreen({ route, navigation }) {
   const [showGrowthPrompt, setShowGrowthPrompt] = useState(false);
   const [growthInviteModalVisible, setGrowthInviteModalVisible] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
+  const [sentNoticeTo, setSentNoticeTo] = useState({});
+  const [showAllAttendees, setShowAllAttendees] = useState(false);
   const [hostStats, setHostStats] = useState(null);
 
   const load = useCallback(async () => {
@@ -201,6 +204,19 @@ export default function GatheringHubScreen({ route, navigation }) {
         <LoadErrorState message="Couldn't load the gathering hub." onRetry={load} />
       </View>
     );
+  }
+
+  async function handleSendNotice(userId) {
+    try {
+      await sendNoticeTo(userId, false);
+      setSentNoticeTo((prev) => ({ ...prev, [userId]: true }));
+    } catch (e) {
+      if (e.message === 'ALREADY_SENT') {
+        Alert.alert('Already sent', "You've already noticed this person.");
+      } else {
+        Alert.alert('Error', e.message);
+      }
+    }
   }
 
   if (!gathering || (!gathering.isHost && gathering.myStatus !== 'approved')) {
@@ -381,27 +397,47 @@ export default function GatheringHubScreen({ route, navigation }) {
             {others.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>Who You'll Meet</Text>
-                {others.slice(0, 5).map((a) => (
-                  <TouchableOpacity
-                    key={a.user_id}
-                    style={styles.meetRow}
-                    onPress={() => navigation.navigate('ViewProfile', { userId: a.user_id })}
-                    accessibilityLabel={`View ${a.profiles?.display_name}'s profile`}
-                    accessibilityRole="button"
-                  >
-                    {attendeePhotoUrls[a.user_id] ? (
-                      <Image source={{ uri: attendeePhotoUrls[a.user_id] }} style={styles.meetAvatar} />
-                    ) : (
-                      <View style={[styles.meetAvatar, styles.meetAvatarPlaceholder]} />
+                {(showAllAttendees ? others : others.slice(0, 5)).map((a) => (
+                  <View key={a.user_id} style={styles.meetRowWrap}>
+                    <TouchableOpacity
+                      style={[styles.meetRow, { flex: 1, marginBottom: 0 }]}
+                      onPress={() => navigation.navigate('ViewProfile', { userId: a.user_id })}
+                      accessibilityLabel={`View ${a.profiles?.display_name}'s profile`}
+                      accessibilityRole="button"
+                    >
+                      {attendeePhotoUrls[a.user_id] ? (
+                        <Image source={{ uri: attendeePhotoUrls[a.user_id] }} style={styles.meetAvatar} />
+                      ) : (
+                        <View style={[styles.meetAvatar, styles.meetAvatarPlaceholder]} />
+                      )}
+                      <View>
+                        <Text style={styles.meetName}>{a.profiles?.display_name}</Text>
+                        {meetPersonLines(a).map((line, i) => (
+                          <Text key={i} style={styles.meetLine}>{line}</Text>
+                        ))}
+                      </View>
+                    </TouchableOpacity>
+                    {!gathering.isHost && (
+                      sentNoticeTo[a.user_id] ? (
+                        <Text style={styles.noticeSentText}>Notice sent</Text>
+                      ) : (
+                        <TouchableOpacity
+                          style={styles.noticeButton}
+                          onPress={() => handleSendNotice(a.user_id)}
+                          accessibilityLabel={`Send a notice to ${a.profiles?.display_name}`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.noticeButtonText}>Send notice</Text>
+                        </TouchableOpacity>
+                      )
                     )}
-                    <View>
-                      <Text style={styles.meetName}>{a.profiles?.display_name}</Text>
-                      {meetPersonLines(a).map((line, i) => (
-                        <Text key={i} style={styles.meetLine}>{line}</Text>
-                      ))}
-                    </View>
-                  </TouchableOpacity>
+                  </View>
                 ))}
+                {others.length > 5 && (
+                  <TouchableOpacity onPress={() => setShowAllAttendees((v) => !v)} accessibilityRole="button" accessibilityLabel={showAllAttendees ? 'Show fewer people' : `Show all ${others.length} people`}>
+                    <Text style={styles.showAllText}>{showAllAttendees ? 'Show fewer' : `Show all ${others.length}`}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
 
@@ -553,6 +589,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   section: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
   sectionLabel: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
   meetRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+  meetRowWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+  noticeButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6 },
+  noticeButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  noticeSentText: { color: colors.success, fontSize: 12, fontWeight: '700' },
+  showAllText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   meetAvatar: { width: 44, height: 44, borderRadius: 22 },
   meetAvatarPlaceholder: { backgroundColor: colors.border },
   meetName: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },

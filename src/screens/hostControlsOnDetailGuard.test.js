@@ -32,4 +32,22 @@ describe('host controls live on GatheringDetail', () => {
     const bad = walk(path.join(__dirname, '..')).filter((f) => /navigate\('Gatherings',\s*\{\s*initialTab:\s*'hosting'/.test(fs.readFileSync(f, 'utf8')));
     expect(bad).toEqual([]);
   });
+  test('nothing navigates to a retired Gatherings attending/hosting tab', () => {
+    const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? walk(path.join(d, e.name)) : /\.js$/.test(e.name) && !/\.test\.js$/.test(e.name) ? [path.join(d, e.name)] : []);
+    const bad = walk(path.join(__dirname, '..')).filter((f) => /navigate\('Gatherings',\s*\{[^}]*initialTab:\s*'(attending|hosting)'/.test(fs.readFileSync(f, 'utf8')));
+    expect(bad).toEqual([]);
+  });
+  test('Gatherings is browse-only: no attending collection', () => {
+    const g = read('GatheringsScreen.js');
+    expect(g).not.toMatch(/tab === 'attending'/);
+    expect(g).not.toMatch(/setTab\(/);
+    expect(g).not.toMatch(/getMyAttendingGatherings|getFellowAttendees|sendNoticeTo/);
+  });
+  test('attending actions moved off the retired tab are still reachable', () => {
+    expect(read('GatheringHubScreen.js')).toMatch(/sendNoticeTo/);
+    expect(read('GatheringDetailScreen.js')).toMatch(/<GatheringFeedbackPrompt/);
+    expect(read('PlansScreen.js')).toMatch(/getMyAttendingGatherings/);
+  });
+  });
 });

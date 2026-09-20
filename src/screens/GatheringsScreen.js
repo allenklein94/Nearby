@@ -4,21 +4,18 @@ import { PullToRefresh, FilterTransition, TapActiveChip, NLoader, SkeletonFeed }
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { joinLabel } from '../utils/gatheringJoinMode';
-import { getNearbyGatherings, searchGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, getMyTopGatheringCategories } from '../services/gatherings';
+import { getNearbyGatherings, searchGatherings, expressInterest, getMyTopGatheringCategories } from '../services/gatherings';
 import { recordBehaviorEvent } from '../services/behaviorSignals';
-import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import { getMyFriends } from '../services/friends';
 import { getPublicStoriesOnMap } from '../services/stories';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import NewcomerBadge from '../components/NewcomerBadge';
 import BusinessHostBadge from '../components/BusinessHostBadge';
-import GatheringFeedbackPrompt from '../components/GatheringFeedbackPrompt';
 import RecurringBadge from '../components/RecurringBadge';
 import GatheringOfferBadge from '../components/GatheringOfferBadge';
 import GatheringIntentModal from '../components/GatheringIntentModal';
 import GatheringQnA from '../components/GatheringQnA';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
-import { sendNoticeTo } from '../services/noticeActions';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { supabase } from '../services/supabase';
@@ -71,19 +68,15 @@ export default function GatheringsScreen({ navigation, route }) {
   const { t } = useLanguage();
   const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
-  const [tab, setTab] = useState(route?.params?.initialTab === 'attending' ? 'attending' : 'nearby');
+  // Gatherings is browse-only now; my plans (attending + hosting) live in Plans.
+  const tab = 'nearby';
   const [radiusTier, setRadiusTier] = useState('local');
   const [nearby, setNearby] = useState([]);
-  const [attending, setAttending] = useState({ upcoming: [], past: [] });
   const [refreshing, setRefreshing] = useState(false);
   const [photoUrls, setPhotoUrls] = useState({});
   const [attendeePhotoUrls, setAttendeePhotoUrls] = useState({});
   const [reportTarget, setReportTarget] = useState(null);
   const [expandedGathering, setExpandedGathering] = useState(null);
-  const [fellowAttendees, setFellowAttendees] = useState({});
-  const [fellowPhotoUrls, setFellowPhotoUrls] = useState({});
-  const [loadingFellows, setLoadingFellows] = useState(false);
-  const [sentNoticeTo, setSentNoticeTo] = useState({});
   const [interestFilter, setInterestFilter] = useState(route?.params?.initialCategoryFilter ?? null);
   // Real filter, not fabricated -- backed by the same CATEGORY_INDOOR_OUTDOOR
   // map already used for the weather-aware suggestions elsewhere (CLAUDE.md
@@ -135,19 +128,15 @@ export default function GatheringsScreen({ navigation, route }) {
   const [mapStoryPhotoUrls, setMapStoryPhotoUrls] = useState({});
   const [mapStoryDisplayNames, setMapStoryDisplayNames] = useState({});
   const [mapStoryViewerTarget, setMapStoryViewerTarget] = useState(null);
-  const [attendingPastExpanded, setAttendingPastExpanded] = useState(false);
-  const [attendingPastSort, setAttendingPastSort] = useState('newest');
   const [intentModalGathering, setIntentModalGathering] = useState(null);
   const [coverPhotoUrls, setCoverPhotoUrls] = useState({});
 
   const load = useCallback(async () => {
-    const [nearbyResults, attendingResults, topCats] = await Promise.all([
+    const [nearbyResults, topCats] = await Promise.all([
       getNearbyGatherings(radiusTier),
-      getMyAttendingGatherings(),
       getMyTopGatheringCategories(),
     ]);
     setNearby(nearbyResults);
-    setAttending(attendingResults);
     setTopCategories(topCats);
 
     try {
@@ -190,7 +179,7 @@ export default function GatheringsScreen({ navigation, route }) {
     );
     setAttendeePhotoUrls(Object.fromEntries(attendeeUrlEntries.filter(Boolean)));
 
-    const coverPhotoGatherings = [...nearbyResults, ...attendingResults.upcoming];
+    const coverPhotoGatherings = [...nearbyResults];
     const coverUrlEntries = await Promise.all(
       coverPhotoGatherings.map(async (g) => {
         if (!g.cover_photo_path) return null;
@@ -295,43 +284,8 @@ export default function GatheringsScreen({ navigation, route }) {
     setRefreshing(false);
   }
 
-  async function toggleExpandGathering(gatheringId) {
-    if (expandedGathering === gatheringId) {
-      setExpandedGathering(null);
-      return;
-    }
-
-    setExpandedGathering(gatheringId);
-
-    if (!fellowAttendees[gatheringId]) {
-      setLoadingFellows(true);
-      const fellows = await getFellowAttendees(gatheringId);
-      setFellowAttendees((prev) => ({ ...prev, [gatheringId]: fellows }));
-
-      const urlEntries = await Promise.all(
-        fellows.map(async (f) => {
-          const path = f.profiles?.photo_url;
-          if (!path) return null;
-          const url = await getSignedPhotoUrl(path);
-          return [f.user_id, url];
-        })
-      );
-      setFellowPhotoUrls((prev) => ({ ...prev, ...Object.fromEntries(urlEntries.filter(Boolean)) }));
-      setLoadingFellows(false);
-    }
-  }
-
-  async function handleSendNoticeToFellow(userId) {
-    try {
-      await sendNoticeTo(userId, false);
-      setSentNoticeTo((prev) => ({ ...prev, [userId]: true }));
-    } catch (e) {
-      if (e.message === 'ALREADY_SENT') {
-        Alert.alert('Already sent', "You've already noticed this person.");
-      } else {
-        Alert.alert('Error', e.message);
-      }
-    }
+  function toggleExpandGathering(gatheringId) {
+    setExpandedGathering((cur) => (cur === gatheringId ? null : gatheringId));
   }
 
   async function handleExpressInterest(gatheringId) {
@@ -493,7 +447,7 @@ export default function GatheringsScreen({ navigation, route }) {
           {tab === 'nearby' && interestFilter && !forYouActive ? `${interestFilter} Near You` : t('gatherings.title')}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {(tab === 'nearby' || tab === 'attending') && (
+          {tab === 'nearby' && (
             <TouchableOpacity
               style={styles.viewToggleButton}
               onPress={() => setViewStyle(viewStyle === 'map' ? 'list' : 'map')}
@@ -527,27 +481,6 @@ export default function GatheringsScreen({ navigation, route }) {
           <Text style={styles.offersBannerArrow}>›</Text>
         </TouchableOpacity>
       )}
-
-      <View style={styles.tabRow} accessibilityRole="tablist">
-        <TouchableOpacity
-          style={[styles.tab, tab === 'nearby' && styles.tabActive]}
-          onPress={() => setTab('nearby')}
-          accessibilityRole="tab"
-          accessibilityLabel="Nearby gatherings"
-          accessibilityState={{ selected: tab === 'nearby' }}
-        >
-          <Text style={[styles.tabText, tab === 'nearby' && styles.tabTextActive]}>{t('gatherings.nearbyTab')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, tab === 'attending' && styles.tabActive]}
-          onPress={() => setTab('attending')}
-          accessibilityRole="tab"
-          accessibilityLabel="Gatherings you're attending"
-          accessibilityState={{ selected: tab === 'attending' }}
-        >
-          <Text style={[styles.tabText, tab === 'attending' && styles.tabTextActive]}>{t('gatherings.attendingTab')}</Text>
-        </TouchableOpacity>
-      </View>
 
       {tab === 'nearby' && (
         <>
@@ -1090,168 +1023,6 @@ export default function GatheringsScreen({ navigation, route }) {
         </FilterTransition>
       )}
 
-      {tab === 'attending' && viewStyle === 'map' ? (
-        <View style={{ flex: 1 }}>
-          <GatheringsMapView
-            gatherings={attending.upcoming}
-            userLocation={userLocation}
-            onSelectGathering={(gathering) => navigation.navigate('GatheringDetail', { gatheringId: gathering.id })}
-          />
-        </View>
-      ) : tab === 'attending' && (
-        <FlatList
-          data={[
-            ...(attending.upcoming.length > 0 ? [{ type: 'header', key: 'upcoming-header', label: 'Upcoming' }] : []),
-            ...attending.upcoming.map((g) => ({ type: 'gathering', key: g.id, gathering: g })),
-            ...(attending.past.length > 0 ? [{ type: 'header', key: 'past-header', label: `Past (${attending.past.length})`, collapsible: true, expanded: attendingPastExpanded, onToggle: () => setAttendingPastExpanded((v) => !v), sortable: true, sortValue: attendingPastSort, onSortToggle: () => setAttendingPastSort((v) => v === 'newest' ? 'oldest' : 'newest') }] : []),
-            ...(attendingPastExpanded ? [...attending.past].sort((a, b) => attendingPastSort === 'newest' ? new Date(b.scheduled_at) - new Date(a.scheduled_at) : new Date(a.scheduled_at) - new Date(b.scheduled_at)).map((g) => ({ type: 'gathering', key: `past-${g.id}`, gathering: g, isPast: true })) : []),
-          ]}
-          keyExtractor={(row) => row.key}
-          contentContainerStyle={{ padding: spacing.lg }}
-          refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
-          ListEmptyComponent={
-            <FadeInState opportunity style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>✅</Text>
-              <Text style={styles.emptyText}>{t('gatherings.emptyAttending')}</Text>
-              <TouchableOpacity onPress={() => setTab('nearby')} accessibilityLabel="Browse nearby gatherings" accessibilityRole="button" style={styles.emptyStateCreateButton}>
-                <Text style={styles.emptyStateCreateButtonText}>Browse Nearby Gatherings</Text>
-              </TouchableOpacity>
-            </FadeInState>
-          }
-          renderItem={({ item: row }) => {
-            if (row.type === 'header') {
-              if (row.collapsible) {
-                return (
-                  <View>
-                    <TouchableOpacity onPress={row.onToggle} style={styles.collapsibleHeaderRow} accessibilityLabel={`${row.label}, ${row.expanded ? 'tap to collapse' : 'tap to expand'}`} accessibilityRole="button">
-                      <Text style={styles.attendingSectionHeader}>{row.label}</Text>
-                      <Text style={styles.collapsibleChevron}>{row.expanded ? '⌃' : '⌄'}</Text>
-                    </TouchableOpacity>
-                    {row.expanded && row.sortable && (
-                      <TouchableOpacity onPress={row.onSortToggle} accessibilityLabel={`Sorted ${row.sortValue}, tap to switch`} accessibilityRole="button">
-                        <Text style={styles.sortToggleText}>Sort: {row.sortValue === 'newest' ? 'Newest first' : 'Oldest first'} ⇅</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                );
-              }
-              return <Text style={styles.attendingSectionHeader}>{row.label}</Text>;
-            }
-            const item = row.gathering;
-            const isPast = row.isPast;
-            const categoryStyle = categoryStyleFor(item.interest_tag);
-            const isExpanded = expandedGathering === item.id;
-            const fellows = fellowAttendees[item.id] ?? [];
-            return (
-              <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }, isPast && styles.pastCard]}>
-                {coverPhotoUrls[item.id] ? (
-                  <Image source={{ uri: coverPhotoUrls[item.id] }} style={styles.coverPhoto} accessibilityLabel={`${item.title} cover photo`} />
-                ) : curatedCoverPhotoFor(item.interest_tag) ? (
-                  <Image source={{ uri: curatedCoverPhotoFor(item.interest_tag) }} style={styles.coverPhoto} accessibilityLabel={`${item.interest_tag} cover photo`} />
-                ) : null}
-                <TouchableOpacity
-                  onPress={() => !isPast && toggleExpandGathering(item.id)}
-                  disabled={isPast}
-                  activeOpacity={0.85}
-                  accessibilityLabel={`${item.title}, ${isExpanded ? 'showing' : 'show'} who else is attending`}
-                  accessibilityRole="button"
-                  accessibilityState={{ expanded: isExpanded }}
-                >
-                  <View style={styles.cardTopRow}>
-                    <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
-                      <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
-                    </View>
-                    <TouchableOpacity
-                      style={{ flex: 1 }}
-                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: item.id })}
-                      accessibilityLabel={`View details for ${item.title}`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.title}>{item.title}</Text>
-                      <Text style={styles.hostName}>{t('gatherings.hostedBy')} {item.host?.display_name}</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.expandChevron}>{isExpanded ? '⌃' : '⌄'}</Text>
-                  </View>
-                  {(() => {
-                    const interestedFriendsCount = (item.approvedAttendees ?? []).filter((a) => myFriendIds.has(a.user_id)).length;
-                    return interestedFriendsCount > 0 ? (
-                      <View style={styles.friendsInterestedBadge}>
-                        <Text style={styles.friendsInterestedText}>
-                          🤝 {interestedFriendsCount} friend{interestedFriendsCount === 1 ? '' : 's'} also going
-                        </Text>
-                      </View>
-                    ) : null;
-                  })()}
-                  {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
-                  <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
-                  <GatheringStatusBadge status={isPast ? 'attended' : 'going'} label={isPast ? undefined : t('gatherings.youreGoing')} />
-                  {isPast && <GatheringFeedbackPrompt gatheringId={item.id} />}
-                </TouchableOpacity>
-
-                {!isPast && (
-                  <TouchableOpacity
-                    style={styles.groupChatButton}
-                    onPress={() => navigation.navigate('GatheringHub', { gatheringId: item.id })}
-                    accessibilityLabel={`Open the Gathering Hub for ${item.title}`}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.groupChatButtonText}>🚀 Gathering Hub</Text>
-                  </TouchableOpacity>
-                )}
-                {isExpanded && !isPast && (
-                  <View>
-                    {renderVibeDetails(item)}
-                    <GatheringQnA gatheringId={item.id} isHost={false} />
-                  </View>
-                )}
-                {isExpanded && !isPast && (
-                  <View style={styles.fellowSection}>
-                    <Text style={styles.fellowSectionLabel}>{t('gatherings.whoElseGoing')}</Text>
-                    {loadingFellows && !fellowAttendees[item.id] && (
-                      <Text style={styles.emptyText}>{t('gatherings.loadingText')}</Text>
-                    )}
-                    {fellows.length === 0 && fellowAttendees[item.id] && (
-                      <Text style={styles.fellowEmptyText}>{t('gatherings.noOneElseApproved')}</Text>
-                    )}
-                    {fellows.map((fellow) => (
-                      <View key={fellow.user_id} style={styles.fellowRow}>
-                        <TouchableOpacity
-                          style={styles.fellowInfo}
-                          onPress={() => navigation.navigate('ViewProfile', { userId: fellow.user_id })}
-                          activeOpacity={0.85}
-                          accessibilityLabel={`View ${fellow.profiles?.display_name}'s profile`}
-                          accessibilityRole="button"
-                        >
-                          {fellowPhotoUrls[fellow.user_id] ? (
-                            <Image source={{ uri: fellowPhotoUrls[fellow.user_id] }} style={styles.fellowAvatar} />
-                          ) : (
-                            <View style={[styles.fellowAvatar, styles.fellowAvatarPlaceholder]} />
-                          )}
-                          <Text style={styles.fellowName}>{fellow.profiles?.display_name}</Text>
-                        </TouchableOpacity>
-                        {sentNoticeTo[fellow.user_id] ? (
-                          <Text style={styles.noticeSentText}>{t('gatherings.noticeSent')}</Text>
-                        ) : (
-                          <TouchableOpacity
-                            style={styles.fellowNoticeButton}
-                            onPress={() => handleSendNoticeToFellow(fellow.user_id)}
-                            activeOpacity={0.85}
-                            accessibilityLabel={`Send a notice to ${fellow.profiles?.display_name}`}
-                            accessibilityRole="button"
-                          >
-                            <Text style={styles.fellowNoticeButtonText}>{t('gatherings.sendNotice')}</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            );
-          }}
-        />
-      )}
-
       <ReportBlockModal
         visible={!!reportTarget}
         onClose={() => {
@@ -1318,11 +1089,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   offersBannerText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   offersBannerArrow: { color: colors.primary, fontSize: 18, fontWeight: '700' },
-  tabRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.md, gap: spacing.xs },
-  tab: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.full, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  tabText: { color: colors.textSecondary, fontWeight: '600', fontSize: 12 },
-  tabTextActive: { color: '#fff' },
   searchBarWrap: {
     flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.lg, marginTop: spacing.md,
     backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
@@ -1444,30 +1210,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   attendeeAvatars: { flexDirection: 'row', marginRight: spacing.sm },
   attendeeAvatar: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: colors.surface, backgroundColor: colors.surfaceElevated },
   attendeesText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
-  attendingSectionHeader: {
-    ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5,
-    marginTop: spacing.lg, marginBottom: spacing.sm,
-  },
-  collapsibleHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  collapsibleChevron: { color: colors.textTertiary, fontSize: 14, marginTop: spacing.lg },
-  sortToggleText: { color: colors.primary, fontSize: 12, fontWeight: '600', marginBottom: spacing.sm },
-  pastCard: { opacity: 0.6 },
   groupChatButton: {
     alignSelf: 'flex-start', backgroundColor: colors.surfaceElevated, borderRadius: radius.full,
     paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm, borderWidth: 1, borderColor: colors.border,
   },
   groupChatButtonText: { color: colors.textPrimary, fontSize: 12, fontWeight: '700', textAlign: 'center' },
-  fellowSection: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
-  fellowSectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
-  fellowEmptyText: { color: colors.textTertiary, fontSize: 13 },
-  fellowRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs },
-  fellowInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  fellowAvatar: { width: 36, height: 36, borderRadius: 18, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
-  fellowAvatarPlaceholder: {},
-  fellowName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
-  fellowNoticeButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6 },
-  fellowNoticeButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  noticeSentText: { color: colors.success, fontSize: 12, fontWeight: '700' },
   interestButton: { borderRadius: radius.full, paddingVertical: 10, alignItems: 'center' },
   // Aug 30 2026 -- see gatheringCategoryStyles.js's own CATEGORY_BUTTON_TEXT_COLOR
   // comment: white on this palette measures 2.03-3.19:1, below the WCAG
