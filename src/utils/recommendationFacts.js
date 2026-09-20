@@ -1,3 +1,4 @@
+import { canonicalizeInterests } from '../constants/interestGraph';
 // Universal recommendation-card rule (2026-09-20, owner item 33): every recommendation answers three questions on
 // the card itself -- WHY (a specific, checkable reason, never bare "Matches your interests"), HOW FAR, and WHEN.
 //   Because you like Coffee
@@ -54,4 +55,12 @@ export function friendGoingReason(g, friendIds, myUserId = null) {
   if (going.length === 1) return `${names[0]} is going`;
   if (others <= 0) return `${names[0]} and ${names[1]} are going`;
   return `${names[0]}, ${names[1]} and ${others} more friend${others === 1 ? '' : 's'} are going`;
+}
+
+// A community card's WHY: named only when its own interest tag is one the person really declared. No declared match =
+// no reason (never a generic "Matches your interests"); the card then shows only its measured distance/description.
+export function communityReason(community, declaredInterests) {
+  const tag = community?.interest_tag;
+  if (!tag) return null;
+  return canonicalizeInterests(declaredInterests).includes(tag) ? becauseYouLikeReason(tag) : null;
 }

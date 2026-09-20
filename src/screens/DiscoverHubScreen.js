@@ -36,7 +36,7 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { PLACE_CATEGORIES } from '../constants/placeCategories';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
-import { factsMeta, friendGoingReason } from '../utils/recommendationFacts';
+import { factsMeta, friendGoingReason, communityReason } from '../utils/recommendationFacts';
 import { getMyFriends } from '../services/friends';
 import { becauseYouLikeReason, categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
 import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
@@ -2092,6 +2092,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   {renderCardIcon('🏘️', c.interest_tag)}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{c.name}</Text>
+                    {communityReason(c, personalization.declared) ? <Text style={styles.cardSubtitle} numberOfLines={1}>{communityReason(c, personalization.declared)}</Text> : null}
                     {c.description || c.distanceMiles != null ? <Text style={styles.cardSubtitle} numberOfLines={1}>{[placeDistanceLabel(c.distanceMiles), c.description].filter(Boolean).join(' · ')}</Text> : null}
                   </View>
                   <Text style={styles.cardChevron}>›</Text>
