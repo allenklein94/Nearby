@@ -51,6 +51,7 @@ import { gatheringCardModel } from '../utils/recommendationCard';
 import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { homeLoadNotice } from '../utils/homeLoadNotice';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime, describeFriendGatheringTiming } from '../utils/timeContext';
+import { firstRunInterestLine } from '../utils/firstRunInterests';
 import { homeWeatherCard } from '../constants/weatherRelevance';
 import { attendeeTotal, gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
@@ -231,6 +232,7 @@ export default function HomeScreen({ navigation }) {
   const myDeclaredInterests = useMyInterests();
   const goalRow = useMyGoals();
   const [diningNudge, setDiningNudge] = useState(false);
+  const [myDeclaredInterests, setMyDeclaredInterests] = useState([]);
   const [diningModalVisible, setDiningModalVisible] = useState(false);
   const [quickPicksEditVisible, setQuickPicksEditVisible] = useState(false);
   const [intentText, setIntentText] = useState('');
@@ -450,6 +452,7 @@ export default function HomeScreen({ navigation }) {
         // new query, used below to compute real account-age maturity.
         const { data: profile } = await supabase.from('profiles').select('display_name, home_quick_pick_categories, seen_home_first_run_moment, social_comfort_level, created_at, interests, cuisine_preferences, venue_preferences, interest_groups').eq('id', myId).single();
         setMyName(profile?.display_name?.split(' ')[0] ?? '');
+        setMyDeclaredInterests(Array.isArray(profile?.interests) ? profile.interests : []);
         setPinnedQuickPicks(Array.isArray(profile?.home_quick_pick_categories) ? profile.home_quick_pick_categories : null);
         setSeenFirstRunMoment(profile?.seen_home_first_run_moment ?? true);
         const diningDismissed = await AsyncStorage.getItem(`dining_prompt_dismissed_${myId}`).catch(() => null);
@@ -1897,6 +1900,10 @@ export default function HomeScreen({ navigation }) {
                 real distinction between them. "Got it ->" is the one real
                 dismiss action now; the redundant X is gone. */}
             <Text style={styles.firstRunHeading}>👋 This is Nearby</Text>
+            {(() => {
+              const line = firstRunInterestLine(myDeclaredInterests, homeRecommendations);
+              return line ? <Text style={styles.firstRunBody}>{line.text}</Text> : null;
+            })()}
             {homeRecommendations.length > 0 ? (
               <>
                 <Text style={styles.firstRunBody}>
