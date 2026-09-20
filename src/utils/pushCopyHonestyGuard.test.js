@@ -15,7 +15,8 @@ describe('push copy honesty migration', () => {
   });
 
   it('never reintroduces the generic "matches your interests" wording', () => {
-    const replacements = sql.split('$q$,').filter((_, i) => i % 2 === 1).join('\n');
+    const blocks = sql.match(/\$q\$[\s\S]*?\$q\$/g) || [];
+    const replacements = blocks.filter((_, i) => i % 2 === 1).join('\n');
     expect(replacements).not.toMatch(/matches your interests/);
   });
 
