@@ -69,6 +69,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { NLoader, modalAnimation, showSuccessToast } from '../motion';
+import { isGatheringUpcoming } from '../utils/objectState';
 const SECTIONS = [
   { key: 'home', icon: '🏠', label: 'Home' },
   { key: 'opportunities', icon: '🎯', label: 'Opportunities' },
@@ -3211,7 +3212,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               ) : (
                 gatherings.map((g) => {
                   const breakdown = gatheringBreakdowns[g.id];
-                  const isUpcoming = new Date(g.scheduled_at) >= new Date();
+                  const isUpcoming = isGatheringUpcoming(g);
                   const attachedOffer = offers.find((o) => o.gathering_id === g.id);
                   return (
                     <TouchableOpacity

@@ -9,6 +9,7 @@ import { getMyGatheringChats } from '../services/gatherings';
 import { getMyCommunities } from '../services/communities';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { isGatheringPast } from '../utils/objectState';
 
 // getMyGatheringChats() deliberately keeps a gathering's chat chip visible
 // for up to 7 real days after it happened (a recent-past gathering's chat
@@ -69,7 +70,7 @@ export default function MessagesScreen({ navigation, route }) {
       setGroupChats([
         ...gatheringChats
           .filter((g) => !hidden.has(g.id))
-          .map((g) => ({ kind: 'gathering', id: g.id, title: g.title, isPast: new Date(g.scheduled_at) < new Date() })),
+          .map((g) => ({ kind: 'gathering', id: g.id, title: g.title, isPast: isGatheringPast(g) })),
         ...communities.map((c) => ({ kind: 'community', id: c.id, title: c.name })),
       ]);
     } catch (e) {

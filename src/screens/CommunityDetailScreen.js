@@ -19,6 +19,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { getUserLocation } from '../services/userLocation';
+import { isGatheringUpcoming } from '../utils/objectState';
 
 const ROLE_LABELS = { creator: 'Creator', leader: 'Leader', member: 'Member' };
 
@@ -103,7 +104,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
       setIsCreator(data?.creator_id === myId);
       setIsMember(mine.some((c) => c.id === communityId));
       setMemberCount(count);
-      setGatherings(upcoming.filter((g) => new Date(g.scheduled_at) >= new Date()));
+      setGatherings(upcoming.filter((g) => isGatheringUpcoming(g)));
       setMembers(memberList);
       setOffers(communityOffers);
       setRedeemedOfferIds(myRedemptions);

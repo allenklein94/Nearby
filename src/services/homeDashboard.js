@@ -7,6 +7,7 @@ import { getMyGroupPlans } from './groupPlans';
 import { getUserLocation } from './userLocation';
 import { meetSomeoneTonight } from '../utils/meetTonight';
 import { canonicalizeInterests, becauseYouLikeCategories } from '../constants/interestGraph';
+import { isGatheringPast } from '../utils/objectState';
 
 function isToday(iso) {
   const d = new Date(iso);
@@ -138,7 +139,7 @@ async function countActionableSocialInvites(myId) {
   const gatheringIds = rows.filter((i) => i.invite_type === 'gathering').map((i) => i.target_id);
   if (gatheringIds.length === 0) return rows.length;
   const { data: gs } = await supabase.from('gatherings').select('id, scheduled_at').in('id', gatheringIds);
-  const pastIds = new Set((gs ?? []).filter((g) => new Date(g.scheduled_at).getTime() < Date.now()).map((g) => g.id));
+  const pastIds = new Set((gs ?? []).filter((g) => isGatheringPast(g)).map((g) => g.id));
   return rows.filter((i) => !(i.invite_type === 'gathering' && pastIds.has(i.target_id))).length;
 }
 

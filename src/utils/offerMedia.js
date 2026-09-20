@@ -52,6 +52,5 @@ export function validityLabel(validUntil, now = new Date()) {
   return sameDay ? `Valid until ${time}` : `Valid until ${end.toLocaleDateString([], { weekday: 'short' })} ${time}`;
 }
 
-export function isOfferExpired(offer, now = new Date()) {
-  return validityLabel(offer?.valid_until, now) === 'expired';
-}
+// Derived Expired state lives in utils/objectState.js; re-exported so imports keep working.
+export { isOfferExpired } from './objectState';

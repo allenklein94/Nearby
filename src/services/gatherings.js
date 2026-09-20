@@ -7,6 +7,7 @@ import { getMyFriends } from './friends';
 import { getMyCommunities } from './communities';
 import { REASON_TEXT, becauseYouLikeReason } from '../constants/recommendationReasonVocabulary';
 import { getUserLocation, requireUserLocation } from './userLocation';
+import { isGatheringPast, isGatheringUpcoming } from '../utils/objectState';
 
 function localArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 100) / 100;
@@ -379,8 +380,8 @@ export async function getMyGatherings() {
   }));
 
   const now = new Date();
-  const upcoming = all.filter((g) => new Date(g.scheduled_at) >= now).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
-  const past = all.filter((g) => new Date(g.scheduled_at) < now).sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at));
+  const upcoming = all.filter((g) => isGatheringUpcoming(g, now)).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
+  const past = all.filter((g) => isGatheringPast(g, now)).sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at));
 
   const upcomingWithCoords = await attachFuzzedCoordinates(upcoming);
 
@@ -470,7 +471,7 @@ export async function getMyInterestedGatherings() {
   const now = new Date();
   return (data ?? [])
     .map((row) => row.gatherings)
-    .filter((g) => g && new Date(g.scheduled_at) >= now)
+    .filter((g) => g && isGatheringUpcoming(g, now))
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
 }
 
@@ -494,11 +495,11 @@ export async function getMyAttendingGatherings() {
   const all = (data ?? []).filter((row) => row.gatherings).map((row) => row.gatherings);
 
   const upcoming = all
-    .filter((g) => new Date(g.scheduled_at) >= now)
+    .filter((g) => isGatheringUpcoming(g, now))
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
 
   const past = all
-    .filter((g) => new Date(g.scheduled_at) < now)
+    .filter((g) => isGatheringPast(g, now))
     .sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at));
 
   const upcomingWithCoords = await attachFuzzedCoordinates(upcoming);

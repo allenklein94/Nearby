@@ -2,6 +2,7 @@ import { supabase, functionUrl } from './supabase';
 import Constants from 'expo-constants';
 import { getGoogleMapsRequestHeaders } from './places';
 import { getUserLocation } from './userLocation';
+import { isGatheringUpcoming } from '../utils/objectState';
 
 // Callers that don't pass coordinates (Matches, Gatherings) used to get an unfiltered, location-blind
 // offers list. Nearby knows where the user is, so fall back to the shared position -- passively, never
@@ -480,8 +481,8 @@ export async function getMyBusinessGatherings(partnerId) {
       recurringBySeries[g.recurring_series_id] = g;
       continue;
     }
-    const gIsUpcoming = new Date(g.scheduled_at) >= now;
-    const existingIsUpcoming = new Date(existing.scheduled_at) >= now;
+    const gIsUpcoming = isGatheringUpcoming(g, now);
+    const existingIsUpcoming = isGatheringUpcoming(existing, now);
     if (gIsUpcoming && (!existingIsUpcoming || new Date(g.scheduled_at) < new Date(existing.scheduled_at))) {
       recurringBySeries[g.recurring_series_id] = g;
     } else if (!gIsUpcoming && !existingIsUpcoming && new Date(g.scheduled_at) > new Date(existing.scheduled_at)) {

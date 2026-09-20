@@ -43,6 +43,7 @@ import ExperienceComponentList from '../components/ExperienceComponentList';
 import TabHeaderActions from '../components/TabHeaderActions';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { isGatheringPast } from '../utils/objectState';
 import { recommendationFacts, recommendationRow } from '../utils/recommendationFacts';
 import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime, describeFriendGatheringTiming } from '../utils/timeContext';
@@ -360,7 +361,7 @@ export default function HomeScreen({ navigation }) {
     becauseYouLike: dashboard?.becauseYouLike,
     trending: dashboard?.trendingGatherings,
     friends: dashboard?.friendsActivity,
-    isPast: (g) => !!(g.scheduled_at && describeFriendGatheringTiming(g.scheduled_at)?.isPast),
+    isPast: (g) => isGatheringPast(g),
   });
 
   function renderGatheringCta(g, variant) {

@@ -57,6 +57,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { needsApproval, joinLabel } from '../utils/gatheringJoinMode';
 import { isGatheringRequestExpired, expiredDateLabel } from '../utils/inviteExpiry';
+import { isGatheringPast, isGatheringUpcoming } from '../utils/objectState';
 
 const VIBE_SCALES = [
   { key: 'energy_level', label: 'Energy', lowLabel: 'Chill', highLabel: 'High energy' },
@@ -119,7 +120,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   useEffect(() => {
     if (!openJoinRequested || openJoinHandled.current || !gathering) return;
     openJoinHandled.current = true;
-    const blocked = gathering.isHost || gathering.myStatus || new Date(gathering.scheduled_at) < new Date()
+    const blocked = gathering.isHost || gathering.myStatus || isGatheringPast(gathering)
       || (gathering.visibility === 'invite_only' && !gathering.hasInviteOnlyAccess);
     if (!blocked) setIntentModalVisible(true);
   }, [openJoinRequested, gathering]);
@@ -529,7 +530,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
     pending: formatPlaceStatusLabel({ place: 'pending', ...placeOfferCounts }),
     todo: 'Find a place',
   };
-  const gatheringIsUpcoming = new Date(gathering.scheduled_at) >= new Date();
+  const gatheringIsUpcoming = isGatheringUpcoming(gathering);
   const canActOnPlace = Boolean(businessRequest || acceptedBusinessOffer || gatheringIsUpcoming);
   function handlePlaceRowPress() {
     if (businessRequest || acceptedBusinessOffer) {
@@ -658,7 +659,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
           {gathering.description ? <Text style={styles.description}>{gathering.description}</Text> : null}
 
-          {!gathering.isHost && gathering.myStatus === 'approved' && new Date(gathering.scheduled_at) < new Date() && (
+          {!gathering.isHost && gathering.myStatus === 'approved' && isGatheringPast(gathering) && (
             <GatheringFeedbackPrompt gatheringId={gatheringId} />
           )}
 
@@ -938,7 +939,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   "Manage Community" label -- this label makes Gatherings'
                   own equivalent (Edit/Cancel) visually match, same links,
                   same behavior, just now grouped and named to match. */}
-              {new Date(gathering.scheduled_at) >= new Date() && (
+              {isGatheringUpcoming(gathering) && (
                 <>
                   <Text style={styles.manageSectionLabel}>Manage Gathering</Text>
                   <TouchableOpacity
@@ -967,7 +968,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
               >
                 <Text style={styles.hostBannerLink}>🤝 Invite friends →</Text>
               </TouchableOpacity>
-              {new Date(gathering.scheduled_at) >= new Date() && (
+              {isGatheringUpcoming(gathering) && (
                 acceptedBusinessOffer ? (
                   // Gap #1: the accepted business offer, shown inline
                   // instead of only ever living on a separate
@@ -1089,7 +1090,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   </View>
                 )
               )}
-              {!gathering.community_id && new Date(gathering.scheduled_at) < new Date() && (
+              {!gathering.community_id && isGatheringPast(gathering) && (
                 <TouchableOpacity
                   onPress={() => navigation.navigate('CreateCommunity', {
                     seedFromGatheringId: gatheringId,
@@ -1209,7 +1210,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   {joining ? 'Joining...' : gathering.isFull ? 'JOIN WAITLIST' : gathering.myInterested ? (needsApproval(gathering) ? 'REQUEST TO JOIN' : "I'M GOING") : (needsApproval(gathering) ? 'REQUEST TO JOIN' : 'JOIN GATHERING')}
                 </Text>
               </TouchableOpacity>
-              {new Date(gathering.scheduled_at) >= new Date() && (
+              {isGatheringUpcoming(gathering) && (
                 <>
                 <TouchableOpacity
                   onPress={toggleInterested}
