@@ -22,6 +22,8 @@ import { spacing, radius, typography } from '../theme';
 import { getUserLocation } from '../services/userLocation';
 import { isGatheringUpcoming } from '../utils/objectState';
 
+import { unlockStatus } from '../utils/unlockProgress';
+import { memberCountLabel } from '../utils/outcomeDisplay';
 const ROLE_LABELS = { creator: 'Creator', leader: 'Leader', member: 'Member' };
 
 export default function CommunityDetailScreen({ route, navigation }) {
@@ -46,7 +48,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [isMember, setIsMember] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
   const [myId, setMyId] = useState(null);
-  const [memberCount, setMemberCount] = useState(0);
+  const [memberCount, setMemberCount] = useState(null); // null = not known (never shown as 0)
   const [gatherings, setGatherings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -282,7 +284,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   function confirmDeleteCommunity() {
     Alert.alert(
       `Delete "${community.name}"?`,
-      `This permanently removes the community and its ${memberCount} member${memberCount === 1 ? '' : 's'}. Gatherings already linked to it aren't deleted, just unlinked. This can't be undone.`,
+      `This permanently removes the community and its ${memberCountLabel(memberCount) ?? 'members'}. Gatherings already linked to it aren't deleted, just unlinked. This can't be undone.`,
       [
         { text: 'Keep It', style: 'cancel' },
         {
@@ -334,7 +336,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   function confirmCancelCommunity() {
     Alert.alert(
       `Cancel "${community.name}"?`,
-      `This notifies all ${memberCount} member${memberCount === 1 ? '' : 's'} that the community is cancelled. Membership and message history are kept, and any business requests or confirmed reservations tied to this community are cancelled too (unless a payment's already gone through — that side will be told to sort it out directly with the business). This can't be undone (though you can still delete it permanently afterward).`,
+      `This notifies all ${memberCountLabel(memberCount) ?? 'members'} that the community is cancelled. Membership and message history are kept, and any business requests or confirmed reservations tied to this community are cancelled too (unless a payment's already gone through — that side will be told to sort it out directly with the business). This can't be undone (though you can still delete it permanently afterward).`,
       [
         { text: 'Keep It', style: 'cancel' },
         {
@@ -398,7 +400,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
           <Text style={styles.iconText}>{categoryStyle.icon}</Text>
         </View>
         <Text style={styles.title}>{community.name}</Text>
-        <Text style={styles.meta}>{memberCount} member{memberCount === 1 ? '' : 's'} · {community.is_public ? 'Public' : 'Private'}</Text>
+        <Text style={styles.meta}>{[memberCountLabel(memberCount), community.is_public ? 'Public' : 'Private'].filter(Boolean).join(' · ')}</Text>
         {community.status === 'paused' && (
           <Text style={styles.statusNotice}>⏸️ This community is paused by its creator.</Text>
         )}
@@ -542,7 +544,8 @@ export default function CommunityDetailScreen({ route, navigation }) {
           <>
             <Text style={styles.sectionHeader}>🎁 Community Perks</Text>
             {offers.map((offer) => {
-              const isLocked = memberCount < offer.unlock_min_members;
+              const unlock = unlockStatus({ ...offer, unlock_scope: 'community' }, memberCount);
+              const isLocked = unlock.isLocked;
               const alreadyRedeemed = redeemedOfferIds.includes(offer.id);
               return (
                 <View key={offer.id} style={styles.perkCard}>
@@ -557,7 +560,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
                   {offer.description ? <Text style={styles.perkDesc}>{offer.description}</Text> : null}
                   <Text style={styles.perkUnlockText}>
                     {isLocked
-                      ? `🔒 Unlocks at ${offer.unlock_min_members} members (${memberCount}/${offer.unlock_min_members} so far)`
+                      ? unlock.label
                       : '🔓 Unlocked — community goal reached'}
                   </Text>
                   {alreadyRedeemed ? (
@@ -727,7 +730,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
         )}
         {members.length > 0 && (
           <>
-            <Text style={styles.sectionHeader}>Leaders & Members ({memberCount})</Text>
+            <Text style={styles.sectionHeader}>Leaders & Members{memberCount != null ? ` (${memberCount})` : ''}</Text>
             {members.map((m) => {
               const photoUrl = memberPhotoUrls[m.user_id];
               return (

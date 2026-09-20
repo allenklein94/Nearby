@@ -218,8 +218,9 @@ export async function getCommunityMemberCount(communityId) {
     .select('id', { count: 'exact', head: true })
     .eq('community_id', communityId);
 
-  if (error) return 0;
-  return count ?? 0;
+  // Unknown, not zero: a failed lookup must not read as an empty community.
+  if (error) return null;
+  return count ?? null;
 }
 
 // A small, chat-friendly summary -- built for CommunityChatScreen's own

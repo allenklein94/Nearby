@@ -3327,7 +3327,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       accessibilityRole="button"
                     >
                       <Text style={styles.offerTitle}>{c.name}</Text>
-                      <Text style={styles.breakdownText}>{c.memberCount} member{c.memberCount === 1 ? '' : 's'}</Text>
+                      <Text style={styles.breakdownText}>{countLabel(c.memberCount, 'member') ?? 'Members not loaded'}</Text>
                       {c.description ? <Text style={styles.offerDescription}>{c.description}</Text> : null}
                     </TouchableOpacity>
                   ))
@@ -5372,10 +5372,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             key={c.id}
                             style={[styles.chip, unlockCommunityId === c.id && styles.chipSelected]}
                             onPress={() => setUnlockCommunityId(c.id)}
-                            accessibilityLabel={`${c.name}, ${countLabel(c.memberCount, 'member')}${unlockCommunityId === c.id ? ', selected' : ''}`}
+                            accessibilityLabel={`${[c.name, countLabel(c.memberCount, 'member')].filter(Boolean).join(', ')}${unlockCommunityId === c.id ? ', selected' : ''}`}
                             accessibilityRole="button"
                           >
-                            <Text style={[styles.chipText, unlockCommunityId === c.id && styles.chipTextSelected]}>{c.name} ({c.memberCount})</Text>
+                            <Text style={[styles.chipText, unlockCommunityId === c.id && styles.chipTextSelected]}>{c.name}{c.memberCount != null ? ` (${c.memberCount})` : ''}</Text>
                           </TouchableOpacity>
                         ))}
                       </View>

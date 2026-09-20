@@ -14,6 +14,7 @@ import { typography, spacing, radius } from '../theme';
 import { getUserLocation } from '../services/userLocation';
 import { placeDistanceLabel } from '../services/places';
 
+import { unlockStatus } from '../utils/unlockProgress';
 export default function BrandOffersScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
@@ -192,7 +193,8 @@ export default function BrandOffersScreen({ navigation, route }) {
 
         {offers.map((offer) => {
           const alreadyRedeemed = redeemedIds.includes(offer.id);
-          const isLocked = offer.unlock_scope != null && (unlockProgress[offer.id] ?? 0) < offer.unlock_min_members;
+          const unlock = unlockStatus(offer, unlockProgress[offer.id]);
+          const isLocked = unlock?.isLocked ?? false;
           const isHighlighted = highlightOfferId === offer.id;
           return (
             <View
@@ -227,7 +229,7 @@ export default function BrandOffersScreen({ navigation, route }) {
               {offer.unlock_scope != null && (
                 <Text style={styles.scarcityText}>
                   {isLocked
-                    ? `🔒 Unlocks at ${offer.unlock_min_members} ${offer.unlock_scope === 'community' ? 'community members' : 'attendees'} (${unlockProgress[offer.id] ?? 0}/${offer.unlock_min_members} so far)`
+                    ? unlock.label
                     : `🔓 Unlocked — ${offer.unlock_scope === 'community' ? 'community' : 'gathering'} goal reached`}
                 </Text>
               )}

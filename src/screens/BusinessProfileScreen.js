@@ -27,6 +27,7 @@ import { useTheme } from '../context/ThemeContext';
 import { formatDateTime } from '../utils/timeLabels';
 import { spacing, radius, typography } from '../theme';
 
+import { unlockStatus } from '../utils/unlockProgress';
 function formatDate(iso) {
   return formatDateTime(iso);
 }
@@ -437,7 +438,8 @@ export default function BusinessProfileScreen({ route, navigation }) {
           <View style={styles.section}>
             <Text style={styles.sectionHeader}>Perks</Text>
             {offers.map((offer) => {
-              const isLocked = offer.unlock_scope != null && (unlockProgress[offer.id] ?? 0) < offer.unlock_min_members;
+              const unlock = unlockStatus(offer, unlockProgress[offer.id]);
+              const isLocked = unlock?.isLocked ?? false;
               return (
                 <View key={offer.id} style={styles.offerCard}>
                   <Text style={styles.offerTitle}>{offer.title}</Text>
@@ -449,9 +451,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
                   )}
                   {offer.unlock_scope != null && (
                     <Text style={styles.scarcityText}>
-                      {isLocked
-                        ? `🔒 Unlocks at ${offer.unlock_min_members} ${offer.unlock_scope === 'community' ? 'community members' : 'attendees'} (${unlockProgress[offer.id] ?? 0}/${offer.unlock_min_members} so far)`
-                        : '🔓 Unlocked'}
+                      {unlock.label}
                     </Text>
                   )}
                   {isLocked ? (
