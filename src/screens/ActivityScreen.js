@@ -24,6 +24,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { offerPrimaryAction } from '../utils/primaryAction';
 import { activityLoadNotice } from '../utils/homeLoadNotice';
+import { formatAgo } from '../utils/timeLabels';
 
 // A genuinely unified feed — notices/waves, recent crossed paths,
 // and other activity all interleaved by recency into one
@@ -368,12 +369,8 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
   }
 
   function formatTimeAgo(iso) {
-    const diffMins = Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60));
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${Math.floor(diffHours / 24)}d ago`;
+    const ago = formatAgo(iso);
+    return ago ? ago.charAt(0).toUpperCase() + ago.slice(1) : '';
   }
 
   // Combined so "Invitations" reflects real invites of every kind this

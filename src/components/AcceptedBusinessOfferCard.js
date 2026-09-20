@@ -5,11 +5,11 @@ import { visibleRedemption } from '../utils/offerMedia';
 import { formatOfferSummary } from '../services/businessFulfillment';
 import { openUberToDestination } from '../utils/uberDeepLink';
 import { useTheme } from '../context/ThemeContext';
+import { formatDateTime } from '../utils/timeLabels';
 import { typography, spacing, radius } from '../theme';
 
 function formatOfferTime(iso) {
-  const d = new Date(iso);
-  return d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  return formatDateTime(iso);
 }
 
 // Convergence pass P1 follow-up (CLAUDE.md): the same "here's the real

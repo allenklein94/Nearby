@@ -35,6 +35,7 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 import { DATE_OPTIONS, matchesDateFilter } from '../utils/gatheringDateFilter';
 import { gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { useTheme } from '../context/ThemeContext';
+import { formatDateTime } from '../utils/timeLabels';
 import useMyInterests from '../hooks/useMyInterests';
 import { becauseYouLikeCategories } from '../constants/interestGraph';
 import { rankByBlend, forYouBlend } from '../constants/blendedRanking';
@@ -324,8 +325,7 @@ export default function GatheringsScreen({ navigation, route }) {
   }
 
   function formatDate(iso) {
-    const d = new Date(iso);
-    return d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    return formatDateTime(iso);
   }
 
   function renderVibeDetails(item) {

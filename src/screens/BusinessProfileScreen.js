@@ -24,10 +24,11 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { businessAttributeLabel, cuisineLabel, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, experiencePriceLabel, experiencePartyTypeLabel } from '../constants/businessAttributes';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
+import { formatDateTime } from '../utils/timeLabels';
 import { spacing, radius, typography } from '../theme';
 
 function formatDate(iso) {
-  return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  return formatDateTime(iso);
 }
 
 // Phase 4 (media upload, CLAUDE.md) -- a Signature Experience's own real

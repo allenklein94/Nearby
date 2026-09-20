@@ -9,6 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 import { NearbyMark } from '../components/brand';
+import { formatDay, parseDate } from '../utils/timeLabels';
 
 // Convergence pass P2 (CLAUDE.md, "Insights vs. Momentum -- one user-facing
 // 'how am I doing?' concept"): this screen used to be Momentum-only (the
@@ -34,13 +35,12 @@ function deltaSymbol(current, previous) {
 }
 
 function weekLabel(iso) {
-  const d = new Date(iso);
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return formatDay(iso) ?? '';
 }
 
 function formatMemberSince(iso) {
-  if (!iso) return null;
-  const d = new Date(iso);
+  const d = parseDate(iso);
+  if (!d) return null;
   return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 }
 

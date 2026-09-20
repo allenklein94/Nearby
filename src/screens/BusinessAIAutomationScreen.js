@@ -20,6 +20,7 @@ import {
 import { NLoader, modalAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
+import { formatAgo } from '../utils/timeLabels';
 import { spacing, radius, typography } from '../theme';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { getBusinessExperiences } from '../services/brandOffers';
@@ -66,15 +67,7 @@ function normalizeTimeInput(text) {
 }
 
 function formatRelativeTime(iso) {
-  const then = new Date(iso).getTime();
-  const diffMs = Date.now() - then;
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return formatAgo(iso) ?? 'time unknown';
 }
 
 export default function BusinessAIAutomationScreen({ route }) {

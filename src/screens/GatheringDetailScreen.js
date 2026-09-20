@@ -54,6 +54,7 @@ import { getGatheringPlanCompletion, formatPlaceStatusLabel } from '../utils/pla
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
+import { formatDateTime } from '../utils/timeLabels';
 import { spacing, radius, typography } from '../theme';
 import { needsApproval, joinLabel } from '../utils/gatheringJoinMode';
 import { expiredDateLabel } from '../utils/inviteExpiry';
@@ -66,8 +67,7 @@ const VIBE_SCALES = [
 ];
 
 function formatDate(iso) {
-  const d = new Date(iso);
-  return d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  return formatDateTime(iso);
 }
 
 export default function GatheringDetailScreen({ route, navigation }) {

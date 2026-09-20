@@ -66,6 +66,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import BusinessNotificationPreferences from '../components/BusinessNotificationPreferences';
 import BusinessEmailNotifications from '../components/BusinessEmailNotifications';
 import { useTheme } from '../context/ThemeContext';
+import { formatDateTime, formatAgo } from '../utils/timeLabels';
 import { spacing, radius, typography } from '../theme';
 
 import { NLoader, modalAnimation, showSuccessToast } from '../motion';
@@ -2080,12 +2081,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     return Number.isFinite(n) ? n : null;
   }
   function formatWeatherCheckAge(checkedAtIso) {
-    if (!checkedAtIso) return 'not checked yet';
-    const minutes = Math.max(0, Math.round((Date.now() - new Date(checkedAtIso).getTime()) / 60000));
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.round(minutes / 60);
-    return `${hours}h ago`;
+    const ago = formatAgo(checkedAtIso);
+    return ago ? `checked ${ago}` : 'not checked yet';
   }
   function normalizeTimeInput(text) {
     // Accepts "HH:MM" (24h) only -- kept deliberately simple, matching
@@ -2614,7 +2611,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }
 
   function formatDate(iso) {
-    return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    return formatDateTime(iso);
   }
 
   // Gap 3 of the merged gathering/date <-> business UX (see CLAUDE.md's
@@ -5064,8 +5061,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     {fulfillmentPolicy.weather_dependent && (
                       <Text style={styles.breakdownText}>
                         {fulfillmentPolicy.last_rain_risk === 'high'
-                          ? `🌧️ Weather-dependent -- paused right now for real rain/storms (checked ${formatWeatherCheckAge(fulfillmentPolicy.last_weather_checked_at)})`
-                          : `☀️ Weather-dependent -- conditions look fine (checked ${formatWeatherCheckAge(fulfillmentPolicy.last_weather_checked_at)})`}
+                          ? `🌧️ Weather-dependent -- paused right now for real rain/storms (${formatWeatherCheckAge(fulfillmentPolicy.last_weather_checked_at)})`
+                          : `☀️ Weather-dependent -- conditions look fine (${formatWeatherCheckAge(fulfillmentPolicy.last_weather_checked_at)})`}
                       </Text>
                     )}
                     {(fulfillmentPolicy.min_spend_per_person != null || fulfillmentPolicy.max_discount_pct != null || fulfillmentPolicy.deposit_amount != null || fulfillmentPolicy.cancellation_window_hours != null) && (

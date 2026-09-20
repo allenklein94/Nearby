@@ -17,6 +17,7 @@ import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
+import { formatDateTime } from '../utils/timeLabels';
 import { spacing, radius, typography } from '../theme';
 import { getUserLocation } from '../services/userLocation';
 import { isGatheringUpcoming } from '../utils/objectState';
@@ -354,7 +355,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   }
 
   function formatDate(iso) {
-    return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    return formatDateTime(iso);
   }
 
   if (loading) {

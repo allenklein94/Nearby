@@ -4,6 +4,7 @@ import FadeInState from '../components/FadeInState';
 import { Ionicons } from '@expo/vector-icons';
 import { getMyTimeline } from '../services/homeDashboard';
 import { useTheme } from '../context/ThemeContext';
+import { formatDay } from '../utils/timeLabels';
 import { spacing, radius, typography } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 
@@ -39,7 +40,7 @@ export default function TimelineScreen({ navigation }) {
   }, []);
 
   function formatDate(iso) {
-    return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+    return formatDay(iso, { withYear: true });
   }
 
   return (

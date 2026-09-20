@@ -19,10 +19,11 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { Share } from 'react-native';
+import { parseDate } from '../utils/timeLabels';
 
 function formatMatchedTime(iso) {
-  if (!iso) return null;
-  const then = new Date(iso);
+  const then = parseDate(iso);
+  if (!then) return null;
   const diffMs = Date.now() - then.getTime();
   const diffMins = Math.floor(diffMs / (1000 * 60));
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -32,7 +33,8 @@ function formatMatchedTime(iso) {
     ', ' + then.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
   let relative;
-  if (diffMins < 60) relative = 'Matched just now';
+  if (diffMins < 1) relative = 'Matched just now';
+  else if (diffMins < 60) relative = `Matched ${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
   else if (diffHours < 24) relative = `Matched ${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
   else if (diffDays === 1) relative = 'Matched yesterday';
   else if (diffDays < 7) relative = `Matched ${diffDays} days ago`;

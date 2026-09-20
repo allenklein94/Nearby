@@ -1,3 +1,4 @@
+import { parseDate } from '../utils/timeLabels';
 /**
  * CROSSED PATHS SIGNALS -- shared, PURE logic for the unified Crossed
  * Paths mechanism used by both Dating (services/proximity.js) and
@@ -79,8 +80,8 @@ export function mergeCrossedPathsSignals(sightings = [], gatheringPartners = [])
 // DiscoveryScreen.js) -- "3 hours ago (Sep 10, 2:14 PM)" style, no
 // upper cutoff (falls back to an absolute date/time stamp past a week).
 export function formatCrossedPathsTime(iso) {
-  if (!iso) return null;
-  const then = new Date(iso);
+  const then = parseDate(iso);
+  if (!then) return null;
   const diffMs = Date.now() - then.getTime();
   const diffMins = Math.floor(diffMs / (1000 * 60));
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -105,8 +106,8 @@ export function formatCrossedPathsTime(iso) {
 // room on a card for the fuller absolute-stamp fallback above, so
 // anything past 24h just returns null (caller omits the time clause).
 export function formatCrossedPathsTimeShort(iso) {
-  if (!iso) return null;
-  const then = new Date(iso);
+  const then = parseDate(iso);
+  if (!then) return null;
   const diffMins = Math.floor((Date.now() - then.getTime()) / (1000 * 60));
   if (diffMins < 1) return 'Just now';
   if (diffMins < 60) return `${diffMins} min ago`;

@@ -7,6 +7,7 @@ import { getMyChemistryEntries, deleteChemistryEntry } from '../services/chemist
 import { usePostHog } from 'posthog-react-native';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
+import { formatDay } from '../utils/timeLabels';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -21,7 +22,7 @@ const SIGNALS = [
 const MIN_ENTRIES_FOR_INSIGHTS = 3;
 
 function formatDate(iso) {
-  return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+  return formatDay(iso, { withYear: true });
 }
 
 // A gentle, honest reflection of actual patterns — not a score or a
