@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { getNearbyMatches } from './proximity';
 import { getNearbyGatherings, getMyInterestedGatherings, getGatheringFitReasons, getMyTopGatheringCategories, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
+import { createWeatherLoader } from './weatherLoader';
 import { getMyGroupPlans } from './groupPlans';
 import { canonicalizeInterests, becauseYouLikeCategories } from '../constants/interestGraph';
 
@@ -175,32 +176,38 @@ async function getPendingGroupPlanActionCount(myId) {
   return (invitedCount ?? 0) + needsMyConfirmation;
 }
 
+const weatherLoader = createWeatherLoader({
+  submit: async (latitude, longitude) => {
+    const { data: requestId, error } = await supabase.rpc('submit_weather_request', { my_lat: latitude, my_lng: longitude });
+    if (error || !requestId) {
+      console.error('submitWeatherRequest error', error);
+      return null;
+    }
+    return requestId;
+  },
+  read: async (requestId) => {
+    const { data, error } = await supabase.rpc('get_weather_result', { request_id_param: requestId });
+    if (error) {
+      console.error('getWeatherResult error', error);
+      return null;
+    }
+    return data?.[0] ?? null;
+  },
+});
+
+// Bounded polling + per-area cache + in-flight dedupe live in
+// weatherLoader.js (locked limits). Only a FRESH row is ever returned: a
+// stale cached row is display/debug only and never becomes a weather signal.
 export async function getSocialForecast(latitude, longitude) {
-  const { data: requestId, error: submitError } = await supabase.rpc('submit_weather_request', { my_lat: latitude, my_lng: longitude });
-  if (submitError || !requestId) {
-    console.error('submitWeatherRequest error', submitError);
-    return null;
-  }
-
-  // pg_net processes the request asynchronously via a background
-  // worker — a short wait here, then a separate query, avoids the
-  // transaction-visibility deadlock that a single blocking function
-  // would hit trying to wait for its own request.
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-
-  const { data, error } = await supabase.rpc('get_weather_result', { request_id_param: requestId });
-  if (error) {
-    console.error('getWeatherResult error', error);
-    return null;
-  }
-  const result = data?.[0] ?? null;
+  const { row, fresh } = await weatherLoader.getWeather(latitude, longitude);
+  if (!row || !fresh) return null;
   // 'Good' is the SQL function's own ambiguous catch-all branch ("Decent
   // conditions out there tonight.") — real data, but nothing distinctive
   // enough to act on. Not a new invented threshold: only 'Excellent'
   // (clear + comfortable) and 'Quiet' (genuinely bad — rain/storm/too
   // cold/too hot) are signals worth surfacing as a recommendation at all.
-  if (result?.forecast_label === 'Good') return null;
-  return result;
+  if (row.forecast_label === 'Good') return null;
+  return row;
 }
 
 // Was capped to a single most-recently-joined community (.limit(1)) —
@@ -390,7 +397,10 @@ export async function getHomeDashboard() {
     supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('status', 'accepted').or(`user_a.eq.${myId},user_b.eq.${myId}`),
   ]);
 
-  const gatheringsToday = nearbyGatherings.filter((g) => isToday(g.scheduled_at));
+  // Upcoming only: a weather suggestion must never point at a gathering that
+  // already started (the RPC already requires scheduled_at > now() at query
+  // time; this keeps the list correct if the dashboard was loaded a while ago).
+  const gatheringsToday = nearbyGatherings.filter((g) => isToday(g.scheduled_at) && new Date(g.scheduled_at).getTime() > Date.now());
 
   // For the weather card's bad-weather ("Quiet") case — real nearby
   // gatherings happening today in a genuinely indoor category (see

@@ -237,10 +237,18 @@ describe('scoreBusinessOpportunity weather bonus', () => {
   it('awards SCORE_HAPPENING_NOW for a genuinely outdoor-category request when weather is outdoor-biased', () => {
     const result = scoreBusinessOpportunity({
       requestCategory: 'Hiking',
-      weather: { forecast_label: 'Excellent' },
+      weather: { forecast_label: 'Excellent', rain_risk: 'low', outdoor_favorable: true },
     });
     expect(result.score).toBe(SCORE_HAPPENING_NOW);
     expect(result.reasons.map(({ key, ...r }) => r)).toEqual([{ label: 'Great weather for this', points: SCORE_HAPPENING_NOW }]);
+  });
+
+  it('gives no outdoor bonus when the forecast is unknown (clear right now is not enough)', () => {
+    const result = scoreBusinessOpportunity({
+      requestCategory: 'Hiking',
+      weather: { forecast_label: 'Excellent', rain_risk: null, outdoor_favorable: null },
+    });
+    expect(result.score).toBe(0);
   });
 
   it('awards nothing for a genuinely ambiguous category, even with a real weather signal', () => {

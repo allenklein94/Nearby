@@ -2274,8 +2274,13 @@ export default function HomeScreen({ navigation }) {
               // "broaden beyond current-conditions" reasoning for the
               // indoor case. The two stay mutually exclusive so the card
               // never suggests both at once.
-              const showIndoor = isWeatherIndoorBiased(socialForecast) && dashboard?.indoorGatheringsToday?.length > 0;
-              const showOutdoor = isWeatherOutdoorBiased(socialForecast) && dashboard?.outdoorGatheringsToday?.length > 0;
+              // Re-checked at render: never suggest a gathering that has since started.
+              const nowMs = Date.now();
+              const upcomingOnly = (list) => (list ?? []).filter((g) => new Date(g.scheduled_at).getTime() > nowMs);
+              const indoorUpcoming = upcomingOnly(dashboard?.indoorGatheringsToday);
+              const outdoorUpcoming = upcomingOnly(dashboard?.outdoorGatheringsToday);
+              const showIndoor = isWeatherIndoorBiased(socialForecast) && indoorUpcoming?.length > 0;
+              const showOutdoor = isWeatherOutdoorBiased(socialForecast) && outdoorUpcoming?.length > 0;
               return (
                 <View style={styles.forecastCard}>
                   <View style={styles.forecastLabelRow}>
@@ -2289,10 +2294,10 @@ export default function HomeScreen({ navigation }) {
                       <View style={styles.weatherSuggestionsHeaderRow}>
                         <Ionicons name="home-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
                         <Text style={styles.weatherSuggestionsHeader}>
-                          {dashboard.indoorGatheringsToday.length} indoor gathering{dashboard.indoorGatheringsToday.length === 1 ? '' : 's'} today
+                          {indoorUpcoming.length} indoor gathering{indoorUpcoming.length === 1 ? '' : 's'} today
                         </Text>
                       </View>
-                      {dashboard.indoorGatheringsToday.map((g) => (
+                      {indoorUpcoming.map((g) => (
                         <TouchableOpacity
                           key={g.id}
                           style={styles.weatherSuggestionRow}
@@ -2313,10 +2318,10 @@ export default function HomeScreen({ navigation }) {
                       <View style={styles.weatherSuggestionsHeaderRow}>
                         <Ionicons name="sunny-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
                         <Text style={styles.weatherSuggestionsHeader}>
-                          {dashboard.outdoorGatheringsToday.length} outdoor gathering{dashboard.outdoorGatheringsToday.length === 1 ? '' : 's'} today
+                          {outdoorUpcoming.length} outdoor gathering{outdoorUpcoming.length === 1 ? '' : 's'} today
                         </Text>
                       </View>
-                      {dashboard.outdoorGatheringsToday.map((g) => (
+                      {outdoorUpcoming.map((g) => (
                         <TouchableOpacity
                           key={g.id}
                           style={styles.weatherSuggestionRow}

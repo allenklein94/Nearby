@@ -53,8 +53,12 @@ export function isWeatherIndoorBiased(weather) {
   );
 }
 
+// Outdoor bias needs a KNOWN, precipitation-free forecast: outdoor_favorable is
+// NULL while the forecast is unresolved (unknown, never favorable) and false
+// when rain/drizzle (pop >= 0.3), heat or cold is forecast. A clear current
+// label alone (Excellent) no longer suffices without a known forecast.
 export function isWeatherOutdoorBiased(weather) {
   if (!weather) return false;
   if (isWeatherIndoorBiased(weather)) return false;
-  return weather.forecast_label === 'Excellent' || weather.outdoor_favorable === true;
+  return weather.outdoor_favorable === true;
 }
