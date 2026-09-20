@@ -46,7 +46,7 @@ import { spacing, radius, typography } from '../theme';
 import { isGatheringPast } from '../utils/objectState';
 import { recommendationFacts, recommendationRow } from '../utils/recommendationFacts';
 import { categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
-import { selectHomeAttention } from '../utils/homeAttention';
+import { selectHomeAttention, weatherCardWithoutLead } from '../utils/homeAttention';
 import { gatheringCardModel } from '../utils/recommendationCard';
 import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { homeLoadNotice } from '../utils/homeLoadNotice';
@@ -375,8 +375,27 @@ export default function HomeScreen({ navigation }) {
   // A starting-soon gathering that Picked For You already shows carries "Starting soon" as one of its reasons there,
   // so it is not repeated as a chip (one object, one place).
   const shownInMergeIds = new Set([homeMerge.hero?.id, ...homeMerge.cards.map((c) => c.gathering.id)].filter(Boolean));
+  // The weather card renders ABOVE Picked For You, so a gathering it lists is not rendered again below: the list below
+  // hands over its reasons instead (attention.absorbed) and the weather row shows them.
+  const weatherCardRaw = socialForecast ? (() => {
+    const nowMs = Date.now();
+    const upcomingOnly = (list) => (list ?? []).filter((g) => new Date(g.scheduled_at).getTime() > nowMs);
+    return homeWeatherCard({
+      weather: socialForecast,
+      indoorUpcoming: upcomingOnly(dashboard?.indoorGatheringsToday),
+      outdoorUpcoming: upcomingOnly(dashboard?.outdoorGatheringsToday),
+      intentActive: intentThinking || !!intentResults || !!surprise,
+    });
+  })() : null;
+  const weatherCard = weatherCardWithoutLead(weatherCardRaw, homeMerge.hero?.id);
   // Every engine feeds ONE capped list (utils/homeAttention.js): Home shows the few things that deserve attention now.
   const attention = selectHomeAttention({
+    // Objects already rendered above: the weather card's rows and "Your interest" in Your Plans (attending/hosting are
+    // already left out of every list by the dashboard).
+    exclude: new Set([
+      ...(weatherCard ? weatherCard.gatherings.map((g) => g.id) : []),
+      ...(dashboard?.plansInterested ?? []).map((g) => g?.id).filter(Boolean),
+    ]),
     hero: homeMerge.hero,
     cards: homeMerge.cards,
     recommended: homeRecommendations,
@@ -2333,14 +2352,7 @@ export default function HomeScreen({ navigation }) {
               // Weather is a nudge, never a creator (constants/weatherRelevance.js): the card
               // renders only when a structured rule fires AND there is a real, still-upcoming,
               // classified gathering to point at, and never over an active intent/Surprise result.
-              const nowMs = Date.now();
-              const upcomingOnly = (list) => (list ?? []).filter((g) => new Date(g.scheduled_at).getTime() > nowMs);
-              const card = homeWeatherCard({
-                weather: socialForecast,
-                indoorUpcoming: upcomingOnly(dashboard?.indoorGatheringsToday),
-                outdoorUpcoming: upcomingOnly(dashboard?.outdoorGatheringsToday),
-                intentActive: intentThinking || !!intentResults || !!surprise,
-              });
+              const card = weatherCard;
               if (!card) return null;
               const showIndoor = card.bias === 'indoor';
               const showOutdoor = card.bias === 'outdoor';
@@ -2372,7 +2384,10 @@ export default function HomeScreen({ navigation }) {
                           accessibilityRole="button"
                         >
                           <Text style={styles.weatherSuggestionIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
-                          <Text style={styles.weatherSuggestionText} numberOfLines={1}>{g.title}</Text>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.weatherSuggestionText, { flex: 0, flexGrow: 0, flexBasis: 'auto' }]} numberOfLines={1}>{g.title}</Text>
+                            {attention.absorbed.get(g.id)?.length ? <Text style={styles.weatherSuggestionTime} numberOfLines={1}>{attention.absorbed.get(g.id).join(' · ')}</Text> : null}
+                          </View>
                           <Text style={styles.weatherSuggestionTime}>{formatHeroDateTime(g.scheduled_at)}</Text>
                         </TouchableOpacity>
                       ))}
@@ -2396,7 +2411,10 @@ export default function HomeScreen({ navigation }) {
                           accessibilityRole="button"
                         >
                           <Text style={styles.weatherSuggestionIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
-                          <Text style={styles.weatherSuggestionText} numberOfLines={1}>{g.title}</Text>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.weatherSuggestionText, { flex: 0, flexGrow: 0, flexBasis: 'auto' }]} numberOfLines={1}>{g.title}</Text>
+                            {attention.absorbed.get(g.id)?.length ? <Text style={styles.weatherSuggestionTime} numberOfLines={1}>{attention.absorbed.get(g.id).join(' · ')}</Text> : null}
+                          </View>
                           <Text style={styles.weatherSuggestionTime}>{formatHeroDateTime(g.scheduled_at)}</Text>
                         </TouchableOpacity>
                       ))}

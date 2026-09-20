@@ -43,3 +43,36 @@ describe('selectHomeAttention', () => {
     expect(selectHomeAttention({ now })).toMatchObject({ items: [], shown: 0, total: 0 });
   });
 });
+
+describe('global dedupe (already rendered above)', () => {
+  const { weatherCardWithoutLead } = require('./homeAttention');
+  it('an object already above is not rendered again; its reasons are handed to the earlier surface', () => {
+    const out = selectHomeAttention({
+      hero: { id: 'h' },
+      cards: [card('a', 300, [{ kind: 'interest', text: 'Because you like Coffee' }, { kind: 'trending', text: 'Trending nearby' }]), card('b', 300)],
+      exclude: new Set(['a']),
+      now,
+    });
+    expect(out.items.map((i) => i.gathering.id)).toEqual(['b']);
+    expect(out.absorbed.get('a')).toEqual(['Because you like Coffee', 'Trending nearby']);
+  });
+  it('covers every engine: ranked list and starting soon too, and slots refill', () => {
+    const out = selectHomeAttention({ recommended: [rec('r', 900), rec('r2', 900)], soon: [{ id: 's', scheduled_at: at(20) }], exclude: new Set(['r', 's']), now });
+    expect(out.items.map((i) => i.gathering.id)).toEqual(['r2']);
+    expect(out.absorbed.get('r')).toEqual(['Because you like Coffee']);
+    expect(out.absorbed.get('s')).toEqual(['Starting soon']);
+  });
+  it('the lead is never excluded, and is taken out of the weather rows instead', () => {
+    const out = selectHomeAttention({ hero: { id: 'h' }, exclude: new Set(['h']), now });
+    expect(out.hero.id).toBe('h');
+    const card = { bias: 'indoor', gatherings: [{ id: 'h' }, { id: 'x' }] };
+    expect(weatherCardWithoutLead(card, 'h').gatherings.map((g) => g.id)).toEqual(['x']);
+    expect(weatherCardWithoutLead({ ...card, gatherings: [{ id: 'h' }] }, 'h')).toBeNull();
+    expect(weatherCardWithoutLead(null, 'h')).toBeNull();
+  });
+  it('an object is never in both the list and the absorbed map', () => {
+    const out = selectHomeAttention({ cards: [card('a', 30), card('b', 30)], exclude: new Set(['a']), now });
+    const shown = out.items.map((i) => i.gathering.id);
+    for (const id of out.absorbed.keys()) expect(shown).not.toContain(id);
+  });
+});

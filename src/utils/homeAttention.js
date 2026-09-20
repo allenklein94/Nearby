@@ -22,7 +22,24 @@ function urgency(g, now) {
 
 // hero/cards come from mergeHomeGatheringSignals; recommended = buildHomeRecommendations rows ({type,id,title,reasons,data});
 // soon = gatherings starting soon that the merge did not already show.
-export function selectHomeAttention({ hero = null, cards = [], recommended = [], soon = [], now = new Date(), max = MAX_HOME_ATTENTION } = {}) {
+//
+// Global dedupe (item 51): `exclude` = ids of objects ALREADY rendered above on Home (e.g. the weather card's rows). An
+// excluded object is not rendered again; instead its real reasons are returned in `absorbed` (id -> [reason text]) so the
+// earlier surface can show the richer explanation ("Because you like Coffee · Trending nearby"). The lead is never excluded.
+export function selectHomeAttention({ hero = null, cards = [], recommended = [], soon = [], exclude = null, now = new Date(), max = MAX_HOME_ATTENTION } = {}) {
+  const absorbed = new Map();
+  const isAbove = (id) => !!exclude && exclude.has(id) && id !== hero?.id;
+  const absorb = (id, texts) => {
+    const list = absorbed.get(id) ?? [];
+    for (const t of texts) if (t && !list.includes(t)) list.push(t);
+    absorbed.set(id, list);
+  };
+  const visibleCards = [];
+  for (const c of cards) {
+    if (isAbove(c.gathering?.id)) absorb(c.gathering.id, c.reasons ?? []);
+    else visibleCards.push(c);
+  }
+  cards = visibleCards;
   const seen = new Set([hero?.id, ...cards.map((c) => c.gathering?.id)].filter(Boolean));
   const candidates = cards.map((c, i) => ({ kind: 'gathering', ...c, order: i }));
   let order = cards.length;
@@ -35,12 +52,14 @@ export function selectHomeAttention({ hero = null, cards = [], recommended = [],
     if (seen.has(item.id)) continue; // already shown, with its own reasons
     seen.add(item.id);
     const why = recommendationRow(item).why;
+    if (isAbove(item.id)) { absorb(item.id, why ? [why] : []); continue; }
     const signals = why ? [{ kind: 'recommended', text: why }] : [];
     candidates.push({ kind: 'gathering', gathering: item.data ?? { id: item.id, title: item.title }, signals, reasons: signals.map((s) => s.text), hasFriend: false, trendingOnly: false, order: order++ });
   }
   for (const g of soon ?? []) {
     if (!g?.id || seen.has(g.id)) continue;
     seen.add(g.id);
+    if (isAbove(g.id)) { absorb(g.id, ['Starting soon']); continue; }
     const signals = [{ kind: 'soon', text: 'Starting soon' }];
     candidates.push({ kind: 'gathering', gathering: g, signals, reasons: ['Starting soon'], hasFriend: false, trendingOnly: false, order: order++ });
   }
@@ -56,5 +75,13 @@ export function selectHomeAttention({ hero = null, cards = [], recommended = [],
     .sort((a, b) => b.s - a.s || a.c.order - b.c.order)
     .map(({ c }) => c);
   const items = ranked.slice(0, room);
-  return { hero, items, total: (hero ? 1 : 0) + candidates.length, shown: (hero ? 1 : 0) + items.length };
+  return { hero, items, absorbed, total: (hero ? 1 : 0) + candidates.length, shown: (hero ? 1 : 0) + items.length };
+}
+
+// The weather card is a statement with rows as its evidence, and it renders above Picked For You. The lead is never
+// shown twice, so it is taken out of the card's rows; a card left with no rows does not render (it has nothing to point at).
+export function weatherCardWithoutLead(card, leadId) {
+  if (!card) return null;
+  const gatherings = (card.gatherings ?? []).filter((g) => g.id !== leadId);
+  return gatherings.length > 0 ? { ...card, gatherings } : null;
 }
