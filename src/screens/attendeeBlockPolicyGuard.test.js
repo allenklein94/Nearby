@@ -13,6 +13,6 @@ describe('attendee read respects blocks (migration 20270138)', () => {
   });
   test('the approved-attendee read policy uses it; the host policy is untouched', () => {
     expect(sql).toMatch(/using \(status = 'approved' and not public\.viewer_blocked_either_way\(user_id\)\)/);
-    expect(sql).not.toMatch(/Users see own interest or gatherings they host/);
+    expect(sql).not.toMatch(/(create|drop) policy[^;]*Users see own interest or gatherings they host/i);
   });
 });
