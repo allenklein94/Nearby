@@ -22,3 +22,17 @@ describe('capacity rules (item 71)', () => {
     expect(edit).toMatch(/Limit attendees/);
   });
 });
+
+describe('host controls are centralized (item 73)', () => {
+  it('the edit screen has one "Gathering settings" section holding the controls in order', () => {
+    const i = edit.indexOf('Gathering settings');
+    expect(i).toBeGreaterThan(-1);
+    const after = edit.slice(i);
+    const order = ['Visibility:', 'Require approval to join', 'Limit attendees', 'Allow business requests'].map((t) => after.indexOf(t));
+    order.forEach((n) => expect(n).toBeGreaterThan(-1));
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+  it('does not invent settings that have no data behind them', () => {
+    expect(edit).not.toMatch(/Allow guests to invite/);
+  });
+});

@@ -16,6 +16,12 @@ const VIBE_SCALES = [
 
 const MAX_TIMELINE_STEPS = 8;
 
+// Who the gathering is visible to (fixed at creation; the column is CHECK-limited to these four).
+function visibilityLabel(g) {
+  const v = g.visibility ?? (g.is_public === false ? 'invite_only' : 'everyone');
+  return { everyone: 'Public', friends: 'Friends', community: 'Community members', invite_only: 'Private (invite only)' }[v] ?? 'Public';
+}
+
 export default function EditGatheringScreen({ route, navigation }) {
   const { gathering } = route.params;
   const { colors, shadow } = useTheme();
@@ -31,6 +37,7 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [beginnerFriendly, setBeginnerFriendly] = useState(gathering.beginner_friendly ?? true);
   const [showGroupInsights, setShowGroupInsights] = useState(gathering.show_group_insights ?? true);
   const [requiresApproval, setRequiresApproval] = useState(gathering.requires_approval ?? false);
+  const [askLocalBusinesses, setAskLocalBusinesses] = useState(gathering.ask_local_businesses ?? false);
   const [limitAttendees, setLimitAttendees] = useState(gathering.capacity != null);
   const [capacity, setCapacity] = useState(gathering.capacity ?? 10);
   // A gathering made before the category became required has none; the host can fill it in (never change one).
@@ -116,6 +123,7 @@ export default function EditGatheringScreen({ route, navigation }) {
         timelineSteps: cleanedTimelineSteps.length > 0 ? cleanedTimelineSteps : null,
         showGroupInsights,
         ...(gathering.is_public === false ? {} : { requiresApproval }),
+        askLocalBusinesses,
       });
       const nextCapacity = limitAttendees ? capacity : null;
       if ((gathering.capacity ?? null) !== nextCapacity) await setGatheringCapacity(gathering.id, nextCapacity);
@@ -264,6 +272,22 @@ export default function EditGatheringScreen({ route, navigation }) {
               accessibilityLabel="Show group insights to attendees"
             />
           </View>
+          <Text style={styles.sectionHeader}>Gathering settings</Text>
+          <Text style={styles.subheader}>Visibility: {visibilityLabel(gathering)}. Set when the gathering was created.</Text>
+          {gathering.is_public !== false && (
+            <>
+              <View style={styles.toggleRow}>
+                <Text style={styles.label}>Require approval to join</Text>
+                <Switch
+                  value={requiresApproval}
+                  onValueChange={setRequiresApproval}
+                  accessibilityLabel="Require approval to join"
+                />
+              </View>
+              <Text style={styles.subheader}>Off: anyone can join in one tap. On: new people request to join and you approve or decline. Changing this doesn't affect people already in.</Text>
+            </>
+          )}
+
           <View style={styles.toggleRow}>
             <Text style={styles.label}>Limit attendees</Text>
             <Switch value={limitAttendees} onValueChange={setLimitAttendees} accessibilityLabel="Limit attendees" />
@@ -280,19 +304,11 @@ export default function EditGatheringScreen({ route, navigation }) {
             </View>
           )}
           <Text style={styles.subheader}>When you're at the limit, new people join the waitlist. Raising or removing the limit lets the waitlist in, in order. You can't go below the people already attending.</Text>
-          {gathering.is_public !== false && (
-            <>
-              <View style={styles.toggleRow}>
-                <Text style={styles.label}>Require approval to join</Text>
-                <Switch
-                  value={requiresApproval}
-                  onValueChange={setRequiresApproval}
-                  accessibilityLabel="Require approval to join"
-                />
-              </View>
-              <Text style={styles.subheader}>Off: anyone can join in one tap. On: new people request to join and you approve or decline. Changing this doesn't affect people already in.</Text>
-            </>
-          )}
+          <View style={styles.toggleRow}>
+            <Text style={styles.label}>Allow business requests</Text>
+            <Switch value={askLocalBusinesses} onValueChange={setAskLocalBusinesses} accessibilityLabel="Allow business requests" />
+          </View>
+          <Text style={styles.subheader}>On: Nearby can look for a business to help with this gathering once you say so. Nothing is sent until you tap "Yes, look now". Turning it off doesn't cancel a request you already made.</Text>
 
           <Text style={styles.subheader}>Shared interests and an age/gender-makeup summary, shown to attendees once there's enough people to keep it anonymous.</Text>
 

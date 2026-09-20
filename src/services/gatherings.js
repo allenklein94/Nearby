@@ -787,11 +787,12 @@ export async function setGatheringCapacity(gatheringId, capacity) {
   return data;
 }
 
-export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps, showGroupInsights, requiresApproval }) {
+export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps, showGroupInsights, requiresApproval, askLocalBusinesses }) {
   const { error } = await supabase
     .from('gatherings')
     .update({
       ...(requiresApproval === undefined ? {} : { requires_approval: requiresApproval }),
+      ...(askLocalBusinesses === undefined ? {} : { ask_local_businesses: askLocalBusinesses }),
       title,
       description,
       scheduled_at: scheduledAt,
