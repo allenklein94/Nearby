@@ -1,4 +1,4 @@
-import { factsMeta } from '../utils/recommendationFacts';
+import { factsMeta, friendGoingReason } from '../utils/recommendationFacts';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { PullToRefresh, FilterTransition, TapActiveChip, NLoader, SkeletonFeed } from '../motion';
@@ -911,12 +911,10 @@ export default function GatheringsScreen({ navigation, route }) {
                   </View>
                 )}
                 {(() => {
-                  const interestedFriendsCount = (item.approvedAttendees ?? []).filter((a) => myFriendIds.has(a.user_id)).length;
-                  return interestedFriendsCount > 0 ? (
+                  const friendReason = friendGoingReason(item, myFriendIds);
+                  return friendReason ? (
                     <View style={styles.friendsInterestedBadge}>
-                      <Text style={styles.friendsInterestedText}>
-                        🤝 {interestedFriendsCount} friend{interestedFriendsCount === 1 ? '' : 's'} interested
-                      </Text>
+                      <Text style={styles.friendsInterestedText}>🤝 {friendReason}</Text>
                     </View>
                   ) : null;
                 })()}

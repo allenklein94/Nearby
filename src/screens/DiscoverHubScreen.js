@@ -34,7 +34,8 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { PLACE_CATEGORIES } from '../constants/placeCategories';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
-import { factsMeta } from '../utils/recommendationFacts';
+import { factsMeta, friendGoingReason } from '../utils/recommendationFacts';
+import { getMyFriends } from '../services/friends';
 import { becauseYouLikeReason, categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
 import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
 import { matchesDateFilter } from '../utils/gatheringDateFilter';
@@ -168,6 +169,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const styles = getStyles(colors, shadow);
   const { session } = useAuth();
   const myUserId = session?.user?.id ?? null;
+  // Accepted friends only (never matches or strangers): powers the "Sam is going" reason on gathering cards.
+  const [myFriendIds, setMyFriendIds] = useState(() => new Set());
+  useEffect(() => {
+    if (!myUserId) return undefined;
+    let cancelled = false;
+    getMyFriends().then((list) => { if (!cancelled) setMyFriendIds(new Set((list ?? []).map((f) => f.id))); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [myUserId]);
 
   // A no-uploaded-photo card falls back to the real curated category photo
   // first (same map/precedent as GatheringDetailScreen's and
@@ -1081,6 +1090,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // still cleared STANDARD_SCORE (e.g. "Very close" / "0.3 mi away" /
   // "Happening today").
   function primaryReasonLine(g) {
+    const friendReason = friendGoingReason(g, myFriendIds, myUserId);
+    if (friendReason) return friendReason;
     if (g.matchesYourInterests && g.interest_tag) return becauseYouLikeReason(g.interest_tag);
     const attendeeCount = g.approvedAttendees?.length ?? 0;
     if (attendeeCount >= TRENDING_ATTENDANCE_MIN) return `${attendeeCount} attending`;

@@ -117,3 +117,20 @@ describe('recommendationRow (Nearby Right Now)', () => {
     expect(home).not.toMatch(/item\.reasons\.join/);
   });
 });
+
+describe('friendGoingReason', () => {
+  const { friendGoingReason } = require('./recommendationFacts');
+  const att = (id, name) => ({ user_id: id, profiles: { display_name: name } });
+  const friends = new Set(['f1', 'f2', 'f3', 'f4']);
+  it('names one friend', () => expect(friendGoingReason({ approvedAttendees: [att('x', 'Stranger'), att('f1', 'Sam')] }, friends)).toBe('Sam is going'));
+  it('names two, then counts the rest', () => {
+    expect(friendGoingReason({ approvedAttendees: [att('f1', 'Sam'), att('f2', 'Alex')] }, friends)).toBe('Sam and Alex are going');
+    expect(friendGoingReason({ approvedAttendees: [att('f1', 'Sam'), att('f2', 'Alex'), att('f3', 'Jo'), att('f4', 'Lee')] }, friends)).toBe('Sam, Alex and 2 more friends are going');
+  });
+  it('is null with no friend going, no friends, or only yourself', () => {
+    expect(friendGoingReason({ approvedAttendees: [att('x', 'Stranger')] }, friends)).toBeNull();
+    expect(friendGoingReason({ approvedAttendees: [att('f1', 'Sam')] }, new Set())).toBeNull();
+    expect(friendGoingReason({ approvedAttendees: [att('f1', 'Sam')] }, friends, 'f1')).toBeNull();
+    expect(friendGoingReason(null, friends)).toBeNull();
+  });
+});

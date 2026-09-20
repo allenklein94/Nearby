@@ -38,3 +38,18 @@ export function recommendationRow(item) {
   const why = reasons.filter((r) => !restated.includes(categorizeReasonText(r)));
   return { why: why.join(' · ') || null, meta };
 }
+
+// "Sam is going" / "Sam and Alex are going" / "Sam, Alex and 2 more friends are going": connected FRIENDS (never a
+// stranger, never yourself) who are approved attendees of this gathering. `friendIds` is a Set of the viewer's
+// accepted friends. Null when no friend is going -- no reason is invented.
+export function friendGoingReason(g, friendIds, myUserId = null) {
+  if (!friendIds || friendIds.size === 0) return null;
+  const going = (g?.approvedAttendees ?? []).filter((a) => a?.user_id && a.user_id !== myUserId && friendIds.has(a.user_id));
+  if (going.length === 0) return null;
+  const names = going.map((a) => a.profiles?.display_name).filter(Boolean);
+  if (names.length === 0) return going.length === 1 ? 'A friend is going' : `${going.length} friends are going`;
+  const others = going.length - Math.min(names.length, 2);
+  if (going.length === 1) return `${names[0]} is going`;
+  if (others <= 0) return `${names[0]} and ${names[1]} are going`;
+  return `${names[0]}, ${names[1]} and ${others} more friend${others === 1 ? '' : 's'} are going`;
+}
