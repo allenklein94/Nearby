@@ -25,6 +25,7 @@ begin
     where (x->'business_requests'->'gatherings'->>'interest_tag') = 'Coffee' and (x->>'is_directed')::boolean limit 1;
   out := out || 'owner sees directed opportunity: ' || (opp is not null) || ' status=' || coalesce(opp->>'status','-')
        || ' party=' || coalesce(opp->'business_requests'->>'party_size','-') || ' date=' || coalesce(opp->'business_requests'->>'date','-')
+       || ' title=' || coalesce(opp->'business_requests'->'gatherings'->>'title','-')
        || ' requester_name_hidden=' || ((opp->'business_requests'->>'requester_display_name') is null) || E'\n';
   perform set_config('request.jwt.claims', json_build_object('sub', host, 'role', 'authenticated')::text, true);
   begin perform request_business_partnership('gathering', g, p1, null); msg := 'NO ERROR'; exception when others then msg := sqlerrm; end;
