@@ -52,6 +52,7 @@ test('validity: owner-picked day + time becomes a real future timestamp; a past 
   expect(validUntilFromChoice('today', at(19), now).iso).toBe(new Date(2026, 8, 20, 19, 0).toISOString());
   expect(validUntilFromChoice('tomorrow', at(9), now).iso).toBe(new Date(2026, 8, 21, 9, 0).toISOString());
   expect(validUntilFromChoice('today', at(14), now).error).toMatch(/later than now/);
+  expect(validUntilFromChoice('today', null, now).error).toMatch(/Pick the time/);
 });
 test('validity label reads "Valid until 7 PM", flags expired, and is null with no end time', () => {
   const now = new Date(2026, 8, 20, 15, 0);

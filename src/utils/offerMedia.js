@@ -35,7 +35,9 @@ export function visibleRedemption(offer) {
 
 // day: 'today' | 'tomorrow'; time: a Date whose local hours/minutes are the chosen end time. Returns { iso } or { error }.
 export function validUntilFromChoice(day, time, now = new Date()) {
-  if (!day || !time) return { iso: null };
+  if (!day) return { iso: null };
+  // A day with no time (e.g. "Today" preselected from a creative's wording) is never sent as "no end time": the owner picks the time.
+  if (!time) return { error: 'Pick the time your offer ends, or choose No end time.' };
   const end = new Date(now);
   end.setHours(time.getHours(), time.getMinutes(), 0, 0);
   if (day === 'tomorrow') end.setDate(end.getDate() + 1);

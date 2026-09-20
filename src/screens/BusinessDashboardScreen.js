@@ -19,8 +19,9 @@ import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRe
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { CANCELLATION_REASONS, CANCELLATION_ACTOR_LABELS } from '../constants/cancellationReasons';
 import { getPartnerCancellationPatterns } from '../services/cancellationReasons';
+import { creativeFormPatch, detectedSummary, extractedDiscountWarning, canReadCreative, hasAnySuggestion, sanitizeCreativeSuggestions } from '../utils/creativeExtraction';
 import { videoLimitProblem, MAX_REDEMPTION_LENGTH, validUntilFromChoice, availableWindowFromChoice } from '../utils/offerMedia';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, getMyCreatives, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, getMyCreatives, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit } from '../services/businessFulfillment';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
@@ -683,6 +684,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // photo/video, uploaded only at Send time (never orphans a file on
   // Cancel).
   const [offerPickedMediaAsset, setOfferPickedMediaAsset] = useState(null);
+  // "Read this for me": the picked media once uploaded for reading (reused at send so it is not uploaded twice), and what was read.
+  const [creativeUpload, setCreativeUpload] = useState(null);
+  const [readingCreative, setReadingCreative] = useState(false);
+  const [creativeDetected, setCreativeDetected] = useState(null); // { summary, warning } | { none: true }
   const [redemptionCodeInput, setRedemptionCodeInput] = useState('');
   const [confirmingCode, setConfirmingCode] = useState(false);
   const [respondingToRequestId, setRespondingToRequestId] = useState(null);
@@ -1649,6 +1654,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setShowOfferTimePicker(false);
     setSelectedExperienceIdInput(null);
     setOfferPickedMediaAsset(null);
+    setCreativeUpload(null);
+    setCreativeDetected(null);
     setOfferTitleInput('');
     setOfferIncludedItemsInput([]);
     setOfferRedemptionInput('');
@@ -1842,6 +1849,45 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setRespondingOpportunityId(null);
   }
 
+  // Explicit "Read this for me" tap only. Fills EMPTY form fields with suggestions; nothing is saved or sent (Send Offer is the
+  // confirmation, and screening + the discount cap still run on whatever the owner leaves in the form).
+  async function handleReadCreative() {
+    if (!offerPickedMediaAsset || readingCreative) return;
+    setReadingCreative(true);
+    setCreativeDetected(null);
+    try {
+      let upload = creativeUpload && creativeUpload.asset === offerPickedMediaAsset ? creativeUpload : null;
+      if (!upload) {
+        const uploaded = await uploadBusinessOfferMedia(selectedPartner.id, offerPickedMediaAsset, 'offer');
+        const frames = uploaded.mediaType === 'video' ? await uploadOfferVideoFrames(selectedPartner.id, offerPickedMediaAsset) : [];
+        upload = { asset: offerPickedMediaAsset, mediaPath: uploaded.path, mediaType: uploaded.mediaType, framePaths: frames };
+        setCreativeUpload(upload);
+      }
+      const suggestions = sanitizeCreativeSuggestions(await readOfferCreative(selectedPartner.id, upload));
+      if (!hasAnySuggestion(suggestions)) { setCreativeDetected({ none: true }); return; }
+      const patch = creativeFormPatch(suggestions, {
+        title: offerTitleInput, description: offerDescriptionInput, price: offerPriceInput, discountPct: offerDiscountInput,
+        redemption: offerRedemptionInput, validDay: offerValidDay, offerType: offerTypeInput,
+      });
+      if (patch.title != null) setOfferTitleInput(patch.title);
+      if (patch.description != null) setOfferDescriptionInput(patch.description);
+      if (patch.price != null) setOfferPriceInput(patch.price);
+      if (patch.offerType) setOfferTypeInput(patch.offerType);
+      if (patch.discountPct != null) setOfferDiscountInput(patch.discountPct);
+      if (patch.redemption != null) setOfferRedemptionInput(patch.redemption);
+      // Day only: the end time stays empty until the owner picks it (nothing invents a time).
+      if (patch.validDay) { setOfferValidDay(patch.validDay); setOfferValidTime(null); setShowValidTimePicker(false); }
+      setCreativeDetected({
+        summary: detectedSummary(suggestions, selectedPartner?.name),
+        warning: extractedDiscountWarning(suggestions, discountCap),
+      });
+    } catch (e) {
+      Alert.alert('Could not read this', e.message);
+    } finally {
+      setReadingCreative(false);
+    }
+  }
+
   async function handleSubmitOffer() {
     if (!offerDescriptionInput.trim()) {
       Alert.alert('Add a description', 'Say what you can offer.');
@@ -1872,11 +1918,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       let mediaType = null;
       let framePaths = [];
       if (offerPickedMediaAsset && !offerCreativeId) {
-        const uploaded = await uploadBusinessOfferMedia(selectedPartner.id, offerPickedMediaAsset, 'offer');
-        mediaPath = uploaded.path;
-        mediaType = uploaded.mediaType;
-        // A video is screened through preview frames sampled on the device; the first becomes its poster.
-        if (mediaType === 'video') framePaths = await uploadOfferVideoFrames(selectedPartner.id, offerPickedMediaAsset);
+        if (creativeUpload && creativeUpload.asset === offerPickedMediaAsset) {
+          // Already uploaded for "Read this for me" -- reuse it (screening still runs on it below, unchanged).
+          ({ mediaPath, mediaType, framePaths } = creativeUpload);
+        } else {
+          const uploaded = await uploadBusinessOfferMedia(selectedPartner.id, offerPickedMediaAsset, 'offer');
+          mediaPath = uploaded.path;
+          mediaType = uploaded.mediaType;
+          // A video is screened through preview frames sampled on the device; the first becomes its poster.
+          if (mediaType === 'video') framePaths = await uploadOfferVideoFrames(selectedPartner.id, offerPickedMediaAsset);
+        }
       }
 
       const priceNum = offerPriceInput.trim() ? parseFloat(offerPriceInput.trim()) : null;
@@ -6247,13 +6298,33 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     const asset = await pickBusinessOfferMedia({ imagesOnly: Platform.OS === 'web' });
                     const problem = videoLimitProblem(asset);
                     if (problem) { Alert.alert('Video too big', problem); return; }
-                    if (asset) setOfferPickedMediaAsset(asset);
+                    if (asset) { setOfferPickedMediaAsset(asset); setCreativeDetected(null); }
                   } catch (e) {
                     Alert.alert('Error', e.message);
                   }
                 }}
-                onRemove={() => setOfferPickedMediaAsset(null)}
+                onRemove={() => { setOfferPickedMediaAsset(null); setCreativeUpload(null); setCreativeDetected(null); }}
               />
+              {offerPickedMediaAsset && canReadCreative(offerPickedMediaAsset, Platform.OS) ? (
+                <TouchableOpacity
+                  onPress={handleReadCreative}
+                  disabled={readingCreative}
+                  style={{ marginTop: spacing.sm, alignSelf: 'flex-start', opacity: readingCreative ? 0.6 : 1 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Read this for me. Fills in the offer details from your photo or video for you to review."
+                >
+                  <Text style={{ color: colors.primary, fontWeight: '600' }}>{readingCreative ? 'Reading…' : '✨ Read this for me'}</Text>
+                </TouchableOpacity>
+              ) : null}
+              {creativeDetected?.none ? (
+                <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>We couldn't find offer details in that. You can fill them in below.</Text>
+              ) : creativeDetected?.summary ? (
+                <View style={{ marginTop: spacing.xs }}>
+                  <Text style={[styles.offerDescription, { marginBottom: 0 }]}>{creativeDetected.summary}</Text>
+                  <Text style={[styles.offerDescription, { marginBottom: 0 }]}>Check and edit anything below, then tap Send Offer. Nothing is sent until you do.</Text>
+                  {creativeDetected.warning ? <Text style={{ color: colors.danger, marginTop: spacing.xs }}>{creativeDetected.warning}</Text> : null}
+                </View>
+              ) : null}
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm }]}
                 placeholder="How to redeem (optional), e.g. show this at the counter"
@@ -6292,6 +6363,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <Text style={{ color: colors.textPrimary, marginTop: spacing.xs }}>
                     Until {offerValidTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} {offerValidDay} · tap to change
                   </Text>
+                </TouchableOpacity>
+              ) : null}
+              {offerValidDay && !offerValidTime ? (
+                <TouchableOpacity onPress={() => setShowValidTimePicker(true)} accessibilityRole="button" accessibilityLabel="Pick the end time">
+                  <Text style={{ color: colors.primary, marginTop: spacing.xs }}>Pick an end time for {offerValidDay} (or choose No end time)</Text>
                 </TouchableOpacity>
               ) : null}
               {showValidTimePicker && offerValidDay ? (
