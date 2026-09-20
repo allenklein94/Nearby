@@ -907,9 +907,9 @@ export default function GatheringsScreen({ navigation, route }) {
                     <Text style={styles.womenOnlyBadgeText}>👩 Women Only</Text>
                   </View>
                 )}
-                {item.matchesYourInterests && (
+                {item.matchesYourInterests && item.interest_tag && (
                   <View style={styles.matchBadge}>
-                    <Text style={styles.matchBadgeText}>{item.interest_tag ? `${t('gatherings.becauseYouLike')} ${item.interest_tag}` : t('gatherings.matchesInterests')}</Text>
+                    <Text style={styles.matchBadgeText}>{`${t('gatherings.becauseYouLike')} ${item.interest_tag}`}</Text>
                   </View>
                 )}
                 {(() => {

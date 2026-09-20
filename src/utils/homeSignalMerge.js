@@ -6,11 +6,15 @@
 // Placement: Best Pick keeps the hero slot and absorbs the other reasons; every other gathering becomes one card in a
 // single list, ordered by how many reasons it has (then by first appearance: interest, trending, friend).
 import { friendGoingReason } from './recommendationFacts';
+import { interestMatch } from './interestMatch';
 import { attendeeTotal } from './gatheringFullness';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 
 export const SIGNAL_TEXT = {
-  interest: (g) => (g?.interest_tag ? `Because you like ${g.interest_tag}` : 'Because of your interests'),
+  // The reason is decided by interestMatch (item 60): a tag the person declared reads "Because you like X"; one that is
+  // only from their activity says so; no real match = no reason (null, the signal is dropped). `declared` null = unknown
+  // (older callers), treated as declared so existing behavior is unchanged.
+  interest: (g, _isPast, ctx) => interestMatch(g?.interest_tag, ctx?.declared == null ? { declared: [g?.interest_tag] } : ctx).match_reason,
   // Popular, not personal: says how many are really going (approved attendees; Interested is private and never counted).
   trending: (g) => {
     const n = attendeeTotal(g);
@@ -23,7 +27,7 @@ export const SIGNAL_TEXT = {
   },
 };
 
-export function mergeHomeGatheringSignals({ bestPick = null, becauseYouLike = [], trending = [], friends = [], soon = [], friendIds = null, isPast = () => false } = {}) {
+export function mergeHomeGatheringSignals({ bestPick = null, becauseYouLike = [], trending = [], friends = [], soon = [], friendIds = null, isPast = () => false, declaredInterests = null, activityCategories = [] } = {}) {
   const byId = new Map();
   const order = [];
   function add(g, kind) {
@@ -37,7 +41,8 @@ export function mergeHomeGatheringSignals({ bestPick = null, becauseYouLike = []
       entry.gathering = { ...entry.gathering, ...g };
     }
     if (!entry.signals.some((s) => s.kind === kind)) {
-      entry.signals.push({ kind, text: SIGNAL_TEXT[kind](g, kind === 'friend' ? isPast(g) : false) });
+      const text = SIGNAL_TEXT[kind](g, kind === 'friend' ? isPast(g) : false, { declared: declaredInterests, activity: activityCategories });
+      if (text) entry.signals.push({ kind, text });
     }
   }
   for (const g of becauseYouLike ?? []) add(g, 'interest');
@@ -69,7 +74,7 @@ export function mergeHomeGatheringSignals({ bestPick = null, becauseYouLike = []
   }
 
   const cards = order
-    .filter((id) => id !== hero?.id)
+    .filter((id) => id !== hero?.id && byId.get(id).signals.length > 0)
     .map((id, index) => ({ ...byId.get(id), index }))
     .sort((a, b) => b.signals.length - a.signals.length || a.index - b.index)
     .map(({ gathering, signals }) => ({

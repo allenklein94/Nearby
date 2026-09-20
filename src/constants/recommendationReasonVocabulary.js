@@ -97,6 +97,7 @@ const EXACT_MATCHES = new Map([
 const PATTERN_MATCHES = [
   { pattern: /^Trending nearby( · \d+ going)?$/, category: REASON_CATEGORIES.POPULARITY },
   { pattern: /^Because you like .+$/, category: REASON_CATEGORIES.INTEREST },
+  { pattern: /^Based on your recent activity: .+$/, category: REASON_CATEGORIES.INTEREST },
   // getGatheringFitReasons()'s real attendee-count reason.
   { pattern: /^\d+ (person|people) attending$/, category: REASON_CATEGORIES.POPULARITY },
   // getGatheringFitReasons()'s real first-timer-count reason.

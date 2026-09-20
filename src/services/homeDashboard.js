@@ -739,6 +739,7 @@ export async function getHomeDashboard() {
     loadFailures,
     becauseYouLike,
     becauseYouLikeCategories: topInterestCategories,
+    declaredInterests: canonicalizeInterests([...(profileData?.interests ?? []), ...(profileData?.monthly_interests ?? [])]),
     indoorGatheringsToday,
     outdoorGatheringsToday,
   };
