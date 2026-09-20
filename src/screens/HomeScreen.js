@@ -43,6 +43,7 @@ import ExperienceComponentList from '../components/ExperienceComponentList';
 import TabHeaderActions from '../components/TabHeaderActions';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime, describeFriendGatheringTiming } from '../utils/timeContext';
 import { homeWeatherCard } from '../constants/weatherRelevance';
 import { gatheringFullnessLabel } from '../utils/gatheringFullness';
@@ -166,13 +167,6 @@ function occasionTypeIcon(occasionType) {
   return OCCASION_OPTIONS.find((o) => o.key === occasionType)?.icon ?? '📅';
 }
 
-// "Coffee" / "Coffee & Outdoors" / "Coffee, Outdoors & Music" — the real
-// top categories this section is drawn from, not just the first result.
-function formatCategoryList(categories) {
-  if (!categories || categories.length === 0) return '';
-  if (categories.length === 1) return categories[0];
-  return `${categories.slice(0, -1).join(', ')} & ${categories[categories.length - 1]}`;
-}
 
 function formatWeeklyRecap(recap) {
   const parts = [];
@@ -357,6 +351,16 @@ export default function HomeScreen({ navigation }) {
       Alert.alert('Error', e.message);
     }
   }
+
+  // One object, multiple signals: a gathering that is a Best Pick, matches your interests, is trending and/or is hosted
+  // by a friend renders ONCE with all its reasons (see utils/homeSignalMerge.js).
+  const homeMerge = mergeHomeGatheringSignals({
+    bestPick: dashboard?.bestPick,
+    becauseYouLike: dashboard?.becauseYouLike,
+    trending: dashboard?.trendingGatherings,
+    friends: dashboard?.friendsActivity,
+    isPast: (g) => !!(g.scheduled_at && describeFriendGatheringTiming(g.scheduled_at)?.isPast),
+  });
 
   function renderGatheringCta(g, variant) {
     const action = gatheringPrimaryAction(g, myUserId, Date.now(), variant === 'trending' ? { lowCommitment: true, interestedIds: interestedSet } : {});
@@ -2612,34 +2616,10 @@ export default function HomeScreen({ navigation }) {
           <>
             <View style={styles.sectionHeaderRow}>
               <Ionicons name="sparkles-outline" size={14} color={colors.textTertiary} style={styles.bannerIcon} />
-              <Text style={styles.sectionHeaderText}>Because You Like…</Text>
+              <Text style={styles.sectionHeaderText}>Picked For You</Text>
             </View>
 
-            {dashboard?.becauseYouLike?.length > 0 && (
-              <>
-                <View style={styles.subLabelRow}>
-                  <Ionicons name="bulb-outline" size={13} color={colors.textSecondary} style={styles.bannerIcon} />
-                  <Text style={styles.subLabelText}>{formatCategoryList(dashboard.becauseYouLikeCategories)}</Text>
-                </View>
-                {dashboard.becauseYouLike.map((g) => {
-                  const style = categoryStyleFor(g.interest_tag);
-                  return (
-                    <TouchableOpacity
-                      key={g.id}
-                      style={styles.trendingCard}
-                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
-                      accessibilityLabel={`${g.title}, ${g.interest_tag}`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.trendingTitle}>{style.icon} {g.title}</Text>
-                      <Text style={styles.trendingMeta}>{g.interest_tag} · {formatHeroDateTime(g.scheduled_at)}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </>
-            )}
-
-            {dashboard?.bestPick && (() => {
+            {homeMerge.hero && (() => {
               // Phase 8 section H (CLAUDE.md) -- Home's one hero moment,
               // same visual language as Discover's own hero tier (full-bleed
               // cover image or a category-color gradient fallback, dark
@@ -2652,14 +2632,14 @@ export default function HomeScreen({ navigation }) {
               // Everything below (Trending, Friends' Activity, Nearby Right
               // Now) stays plain text rows, per the "not a wall of imagery"
               // instruction.
-              const categoryStyle = categoryStyleFor(dashboard.bestPick.interest_tag);
-              const fullness = gatheringFullnessLabel(dashboard.bestPick);
+              const categoryStyle = categoryStyleFor(homeMerge.hero.interest_tag);
+              const fullness = gatheringFullnessLabel(homeMerge.hero);
               return (
                 <TouchableOpacity
                   style={[styles.heroCard, shadow.card]}
-                  onPress={() => navigation.navigate('GatheringDetail', { gatheringId: dashboard.bestPick.id })}
+                  onPress={() => navigation.navigate('GatheringDetail', { gatheringId: homeMerge.hero.id })}
                   activeOpacity={0.85}
-                  accessibilityLabel={`Best Pick Tonight: ${dashboard.bestPick.title}, ${dashboard.bestPick.reasons.join(', ')}`}
+                  accessibilityLabel={`Best Pick Tonight: ${homeMerge.hero.title}, ${homeMerge.hero.reasons.join(', ')}`}
                   accessibilityRole="button"
                 >
                   {bestPickCoverUrl ? (
@@ -2679,12 +2659,12 @@ export default function HomeScreen({ navigation }) {
                     style={styles.heroScrim}
                     pointerEvents="none"
                   />
-                  <Text style={styles.heroEyebrow}>{gatheringTimeBadge(dashboard.bestPick.scheduled_at) ?? 'BEST PICK TONIGHT'}</Text>
+                  <Text style={styles.heroEyebrow}>{gatheringTimeBadge(homeMerge.hero.scheduled_at) ?? 'BEST PICK TONIGHT'}</Text>
                   <View style={styles.heroBody}>
                     <View style={{ flex: 1, marginRight: spacing.sm }}>
-                      <Text style={styles.heroTitle} numberOfLines={1}>{dashboard.bestPick.title}</Text>
+                      <Text style={styles.heroTitle} numberOfLines={1}>{homeMerge.hero.title}</Text>
                       <Text style={styles.heroMeta} numberOfLines={1}>
-                        {dashboard.bestPick.reasons.join(' · ')}
+                        {homeMerge.hero.reasons.join(' · ')}
                       </Text>
                       {/* P1 remediation (CLAUDE.md, Aug 28 Full Coherence
                           Audit): the same real fullness signal every
@@ -2695,69 +2675,39 @@ export default function HomeScreen({ navigation }) {
                         <Text style={[styles.heroMeta, fullness.startsWith('🔒') && { color: '#FFB4B4' }]}>{fullness}</Text>
                       )}
                     </View>
-                    {renderGatheringCta(dashboard.bestPick, 'hero')}
+                    {renderGatheringCta(homeMerge.hero, 'hero')}
                   </View>
                 </TouchableOpacity>
               );
             })()}
 
-            {dashboard?.trendingGatherings?.length > 0 && (
-              <>
-                <View style={styles.subLabelRow}>
-                  <Ionicons name="flame-outline" size={13} color={colors.textSecondary} style={styles.bannerIcon} />
-                  <Text style={styles.subLabelText}>Trending Near You</Text>
-                </View>
-                {dashboard.trendingGatherings.map((g) => (
-                  <TouchableOpacity
-                    key={g.id}
-                    style={styles.trendingCard}
-                    onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
-                    accessibilityLabel={`${g.title}, ${g.approvedAttendees?.length ?? 0} attending`}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.trendingTitle}>{g.title}</Text>
-                    <Text style={styles.trendingMeta}>{g.approvedAttendees?.length ?? 0} attending · {g.distanceLabel}</Text>
-                    {gatheringFullnessLabel(g) && (
-                      <Text style={[styles.trendingMeta, gatheringFullnessLabel(g).startsWith('🔒') && { color: colors.danger }]}>
-                        {gatheringFullnessLabel(g)}
-                      </Text>
-                    )}
-                    <View style={{ marginTop: spacing.xs }}>{renderGatheringCta(g, 'trending')}</View>
-                  </TouchableOpacity>
-                ))}
-              </>
-            )}
-
-            {dashboard?.friendsActivity?.length > 0 && (
-              <>
-                <View style={styles.subLabelRow}>
-                  <Ionicons name="people-outline" size={13} color={colors.textSecondary} style={styles.bannerIcon} />
-                  <Text style={styles.subLabelText}>Friends' Activity</Text>
-                </View>
-                {dashboard.friendsActivity.map((g) => {
-                  const timing = g.scheduled_at ? describeFriendGatheringTiming(g.scheduled_at) : null;
-                  const verb = timing?.isPast ? 'hosted' : 'is hosting';
-                  return (
-                    <TouchableOpacity
-                      key={g.id}
-                      style={styles.trendingCard}
-                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
-                      accessibilityLabel={`${g.profiles?.display_name} ${verb} ${g.title}${timing ? `, ${timing.isPast ? `${timing.text}, already happened` : timing.text}` : ''}`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.trendingTitle}>{g.profiles?.display_name} {verb}</Text>
-                      <Text style={styles.trendingMeta}>{g.title}</Text>
-                      {timing && (
-                        <Text style={styles.trendingMeta}>
-                          {timing.isPast ? `${timing.text} · Already happened` : timing.text}
-                        </Text>
-                      )}
-                      {!timing?.isPast && <View style={{ marginTop: spacing.xs }}>{renderGatheringCta(g, 'row')}</View>}
-                    </TouchableOpacity>
-                  );
-                })}
-              </>
-            )}
+            {homeMerge.cards.map(({ gathering: g, reasons, hasFriend, trendingOnly }) => {
+              const timing = hasFriend && g.scheduled_at ? describeFriendGatheringTiming(g.scheduled_at) : null;
+              const past = !!timing?.isPast;
+              return (
+                <TouchableOpacity
+                  key={g.id}
+                  style={styles.trendingCard}
+                  onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                  accessibilityLabel={`${g.title}, ${reasons.join(', ')}`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.trendingTitle}>{categoryStyleFor(g.interest_tag).icon} {g.title}</Text>
+                  <Text style={styles.trendingMeta}>{reasons.join(' · ')}</Text>
+                  <Text style={styles.trendingMeta}>
+                    {[g.scheduled_at ? (past ? `${timing.text} · Already happened` : formatHeroDateTime(g.scheduled_at)) : null,
+                      g.approvedAttendees ? `${g.approvedAttendees.length} attending` : null,
+                      g.distanceLabel].filter(Boolean).join(' · ')}
+                  </Text>
+                  {gatheringFullnessLabel(g) && (
+                    <Text style={[styles.trendingMeta, gatheringFullnessLabel(g).startsWith('🔒') && { color: colors.danger }]}>
+                      {gatheringFullnessLabel(g)}
+                    </Text>
+                  )}
+                  {!past && <View style={{ marginTop: spacing.xs }}>{renderGatheringCta(g, trendingOnly ? 'trending' : 'row')}</View>}
+                </TouchableOpacity>
+              );
+            })}
           </>
         )}
 
