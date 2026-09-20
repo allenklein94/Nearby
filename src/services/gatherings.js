@@ -1091,27 +1091,29 @@ export async function getGatheringById(gatheringId) {
 }
 
 // Honest, derivable "first timer" signal: someone who has no other
-// *past* approved gathering anywhere — not a fabricated stat. Relies
-// on the same "anyone can see approved attendees" RLS policy that
-// already powers getFellowAttendees, so no new RPC is needed.
+// *past* approved gathering anywhere — not a fabricated stat. Read through
+// member-only / aggregate server functions (20270172), not gathering_interest.
 export async function getFirstTimerAttendeeIds(gatheringId, attendeeUserIds) {
   if (!attendeeUserIds || attendeeUserIds.length === 0) return [];
-
-  const { data, error } = await supabase
-    .from('gathering_interest')
-    .select('user_id, gatherings!inner(scheduled_at)')
-    .in('user_id', attendeeUserIds)
-    .eq('status', 'approved')
-    .neq('gathering_id', gatheringId)
-    .lt('gatherings.scheduled_at', new Date().toISOString());
-
+  // Member-only server function (host / approved attendee): other people's past attendance is no longer readable
+  // through gathering_interest for a non-member (item 75), so this asks the server.
+  const { data, error } = await supabase.rpc('get_gathering_first_timer_ids', { gathering_id_param: gatheringId });
   if (error) {
     console.error('getFirstTimerAttendeeIds error', error);
     return [];
   }
+  const firstTimers = new Set((data ?? []).map((r) => r.user_id));
+  return attendeeUserIds.filter((id) => firstTimers.has(id));
+}
 
-  const attendedBefore = new Set((data ?? []).map((r) => r.user_id));
-  return attendeeUserIds.filter((id) => !attendedBefore.has(id));
+// Aggregate for any signed-in viewer: how many approved attendees have no earlier attendance. No identities.
+export async function getGatheringFirstTimerCount(gatheringId) {
+  const { data, error } = await supabase.rpc('get_gathering_first_timer_count', { gathering_id_param: gatheringId });
+  if (error) {
+    console.error('getGatheringFirstTimerCount error', error);
+    return 0;
+  }
+  return typeof data === 'number' ? data : 0;
 }
 
 // Shared by the Home screen's single "best pick" and the gathering

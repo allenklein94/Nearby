@@ -1,3 +1,4 @@
+import { attendeeSummary } from '../utils/gatheringAttendeeDisplay';
 import { factsMeta, friendGoingReason } from '../utils/recommendationFacts';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
@@ -957,27 +958,27 @@ export default function GatheringsScreen({ navigation, route }) {
                   </View>
                 )}
 
-                {item.approvedAttendees?.length > 0 && (
-                  <View style={styles.attendeesRow}>
-                    <View style={styles.attendeeAvatars}>
-                      {item.approvedAttendees.slice(0, 4).map((attendee, i) => {
-                        const url = attendeePhotoUrls[`${item.id}-${attendee.profiles?.photo_url}`];
-                        return url ? (
-                          <Image
-                            key={i}
-                            source={{ uri: url }}
-                            style={[styles.attendeeAvatar, { marginLeft: i > 0 ? -10 : 0, zIndex: 10 - i }]}
-                          />
-                        ) : null;
-                      })}
+                {(() => {
+                  const summary = attendeeSummary(item, { verb: 'attending', maxAvatars: 4 });
+                  if (!summary) return null;
+                  return (
+                    <View style={styles.attendeesRow}>
+                      <View style={styles.attendeeAvatars}>
+                        {summary.avatars.map((attendee, i) => {
+                          const url = attendeePhotoUrls[`${item.id}-${attendee.profiles?.photo_url}`];
+                          return url ? (
+                            <Image
+                              key={i}
+                              source={{ uri: url }}
+                              style={[styles.attendeeAvatar, { marginLeft: i > 0 ? -10 : 0, zIndex: 10 - i }]}
+                            />
+                          ) : null;
+                        })}
+                      </View>
+                      <Text style={styles.attendeesText}>{summary.text}</Text>
                     </View>
-                    <Text style={styles.attendeesText}>
-                      {attendeeTotal(item) === 1 && item.approvedAttendees.length === 1
-                        ? `${item.approvedAttendees[0].profiles?.display_name} is attending`
-                        : `${countLabel(attendeeTotal(item), 'person', 'people')} attending`}
-                    </Text>
-                  </View>
-                )}
+                  );
+                })()}
 
                 <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                   <TouchableOpacity

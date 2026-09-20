@@ -1,3 +1,4 @@
+import { attendeeSummary } from '../utils/gatheringAttendeeDisplay';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
 import { NLoader } from '../motion';
@@ -7,7 +8,7 @@ import { usePostHog } from 'posthog-react-native';
 import {
   getGatheringById,
   getSignedGatheringPhotoUrl,
-  getFirstTimerAttendeeIds,
+  getGatheringFirstTimerCount,
   getGatheringFitReasons,
   getGatheringGroupInsights,
   expressInterest,
@@ -252,8 +253,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
         );
         setAttendeePhotoUrls(Object.fromEntries(urlEntries.filter(Boolean)));
 
-        const firstTimers = await getFirstTimerAttendeeIds(gatheringId, g.approvedAttendees.map((a) => a.user_id));
-        setFirstTimerCount(firstTimers.length);
+        // Aggregate for every viewer (no identities); the per-person ids are member-only (Hub).
+        setFirstTimerCount(await getGatheringFirstTimerCount(gatheringId));
 
         // Group Insights plan (2026-09-18): a real, already-connected-only
         // signal for the fit-reasons hero -- filterToMyConnections() over
@@ -672,7 +673,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
             <GatheringFeedbackPrompt gatheringId={gatheringId} />
           )}
 
-          {gathering.approvedAttendees?.length > 0 && (
+          {attendeeTotal(gathering) > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Who's Going</Text>
               <View style={styles.attendeesRow}>
@@ -693,12 +694,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                     );
                   })}
                 </View>
-                <Text style={styles.attendeesText}>
-                  {attendeeTotal(gathering) === 1 && gathering.approvedAttendees.length === 1
-                    ? `${gathering.approvedAttendees[0].profiles?.display_name} is going`
-                    : countLabel(attendeeTotal(gathering), 'person', 'people') + ' going'}
-                  {gathering.approvedAttendees.length > 6 ? ` (+${gathering.approvedAttendees.length - 6} more)` : ''}
-                </Text>
+                <Text style={styles.attendeesText}>{attendeeSummary(gathering, { verb: 'going', maxAvatars: 6 })?.text}</Text>
               </View>
               {firstTimerCount > 0 && (
                 <Text style={styles.firstTimerText}>
