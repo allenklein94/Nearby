@@ -2031,7 +2031,7 @@ export default function HomeScreen({ navigation }) {
           <>
             <View style={styles.sectionHeaderRow}>
               <Ionicons name="flash-outline" size={14} color={colors.textTertiary} style={styles.bannerIcon} />
-              <Text style={styles.sectionHeaderText}>Nearby Right Now</Text>
+              <Text style={styles.sectionHeaderText}>Recommended Nearby</Text>
             </View>
             <View style={[styles.plansCard, { marginBottom: spacing.lg }]}>
               {homeRecommendations.map((item) => {

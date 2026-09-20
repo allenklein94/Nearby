@@ -159,7 +159,7 @@ export const translations = {
       saving: 'Saving...',
     },
     gatherings: {
-      title: 'Happening Nearby',
+      title: 'Nearby Gatherings',
       hostButton: '+ Host',
       nearbyTab: 'Nearby',
       hostingTab: 'Hosting',
@@ -480,7 +480,7 @@ export const translations = {
       saving: 'Guardando...',
     },
     gatherings: {
-      title: 'Sucediendo Cerca',
+      title: 'Reuniones Cercanas',
       hostButton: '+ Organizar',
       nearbyTab: 'Cerca',
       hostingTab: 'Organizando',
@@ -802,7 +802,7 @@ export const translations = {
       saving: 'Wird gespeichert...',
     },
     gatherings: {
-      title: 'In der N\u00e4he los',
+      title: 'Treffen in der N\u00e4he',
       hostButton: '+ Veranstalten',
       nearbyTab: 'In der N\u00e4he',
       hostingTab: 'Veranstaltend',
@@ -1446,7 +1446,7 @@ export const translations = {
       saving: 'Salvando...',
     },
     gatherings: {
-      title: 'Acontecendo Perto',
+      title: 'Encontros Perto',
       hostButton: '+ Organizar',
       nearbyTab: 'Por Perto',
       hostingTab: 'Organizando',
@@ -1768,7 +1768,7 @@ export const translations = {
       saving: 'Ap sove...',
     },
     gatherings: {
-      title: 'K ap Pase Toupr\u00e8',
+      title: 'Rasanbleman Toupr\u00e8',
       hostButton: '+ Òganize',
       nearbyTab: 'Toupr\u00e8',
       hostingTab: 'W ap Òganize',
@@ -2412,7 +2412,7 @@ export const translations = {
       saving: 'Đang lưu...',
     },
     gatherings: {
-      title: 'Đang Diễn Ra Gần Đây',
+      title: 'Buổi Gặp Gần Đây',
       hostButton: '+ Tổ Chức',
       nearbyTab: 'Gần Đây',
       hostingTab: 'Đang Tổ Chức',
@@ -2734,7 +2734,7 @@ export const translations = {
       saving: 'Sine-save...',
     },
     gatherings: {
-      title: 'Nangyayari Malapit',
+      title: 'Mga Pagtitipon Malapit',
       hostButton: '+ Mag-host',
       nearbyTab: 'Malapit',
       hostingTab: 'Hina-host',
@@ -3056,7 +3056,7 @@ export const translations = {
       saving: 'Сохранение...',
     },
     gatherings: {
-      title: 'Происходит Рядом',
+      title: 'Встречи Рядом',
       hostButton: '+ Организовать',
       nearbyTab: 'Рядом',
       hostingTab: 'Организую',
