@@ -54,12 +54,13 @@ describe('ask facets: combinations and negative intent (items 47/48)', () => {
 
 describe('attributes named in the ask (items 51/52)', () => {
   it('coffee with my dog is the dog-friendly attribute, not a Pets category', () => {
-    expect(attributesFromAsk('Where can I get coffee with my dog?')).toEqual(['dog_friendly']);
-    expect(attributesFromAsk('a pet friendly patio')).toEqual(expect.arrayContaining(['dog_friendly', 'outdoor_seating']));
+    expect(attributesFromAsk('Where can I get coffee with my dog?')).toEqual(['pet_friendly', 'dog_friendly']);
+    expect(attributesFromAsk('somewhere I can bring my cat')).toEqual(['pet_friendly']);
+    expect(attributesFromAsk('a pet friendly patio')).toEqual(expect.arrayContaining(['pet_friendly', 'outdoor_seating']));
     expect(attributesFromAsk('coffee tonight')).toEqual([]);
   });
   it('a romantic, quiet dinner names date-friendly and quiet; a couple word implies date-friendly', () => {
-    expect(attributesFromAsk('somewhere romantic and quiet')).toEqual(expect.arrayContaining(['date_friendly', 'quiet']));
+    expect(attributesFromAsk('somewhere romantic and quiet')).toEqual(expect.arrayContaining(['romantic', 'date_friendly', 'quiet']));
     expect(attributesFromAsk('dinner with my girlfriend')).toEqual(['date_friendly']);
     expect(attributesFromAsk('dinner', { partyType: 'date' })).toEqual(['date_friendly']);
     expect(attributesFromAsk('nothing too quiet')).not.toContain('quiet');

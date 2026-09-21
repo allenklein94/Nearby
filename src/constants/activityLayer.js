@@ -51,7 +51,7 @@ export const ACTIVITIES = [
   {
     key: 'bring_dog', label: 'bringing your dog', icon: '🐕', display: 'Bring your dog',
     ask: /\bdog[- ]friendly\b|\b(bring|with)\s+(my|the|our)\s+dog\b/i,
-    fits: (b) => b.attributes.includes('dog_friendly'),
+    fits: (b) => b.attributes.includes('dog_friendly') || b.attributes.includes('pet_friendly'),
   },
   {
     key: 'small_gathering', label: 'a small gathering', icon: '🎉', display: 'Small gathering',

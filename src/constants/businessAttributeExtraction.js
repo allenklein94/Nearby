@@ -40,6 +40,8 @@ const KEYWORDS_BY_ATTRIBUTE = {
   stroller_friendly: ['stroller friendly', 'stroller-friendly', 'strollers welcome', 'stroller access'],
   family_seating: ['family seating', 'family tables', 'booster seat', 'booster seats', 'high chair', 'high chairs'],
   kid_menu: ['kid menu', "kids menu", "kids' menu", "children's menu", 'kid-friendly menu'],
+  pet_friendly: ['pet friendly', 'pet-friendly', 'pets welcome', 'pets allowed', 'bring your pet', 'bring your pets', 'cats welcome'],
+  romantic: ['romantic', 'candlelit', 'candle-lit', 'candlelight', 'intimate setting'],
   corporate_events: ['corporate event', 'corporate events', 'team dinner', 'company event', 'client dinner', 'offsite', 'team building'],
 };
 

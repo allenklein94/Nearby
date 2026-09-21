@@ -53,6 +53,9 @@ export const BUSINESS_ATTRIBUTE_OPTIONS = [
   { key: 'stroller_friendly', label: 'Stroller Friendly', icon: '👶' },
   { key: 'family_seating', label: 'Family Seating', icon: '🪑' },
   { key: 'kid_menu', label: 'Kid Menu', icon: '🍟' },
+  // Items 51/52: pets welcome beyond dogs, and the romantic atmosphere (date_friendly stays "a good fit for a date").
+  { key: 'pet_friendly', label: 'Pet-Friendly', icon: '🐾' },
+  { key: 'romantic', label: 'Romantic', icon: '🕯️' },
 ];
 
 export const ACCESSIBILITY_ATTRIBUTE_KEYS = ['wheelchair_accessible', 'accessible_parking', 'accessible_restroom', 'service_animal_friendly', 'quiet'];

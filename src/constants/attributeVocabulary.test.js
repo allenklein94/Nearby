@@ -19,7 +19,7 @@ describe('business attribute vocabulary (one list, everywhere it is enforced)', 
     expect(extractAttributesFromText('A cozy coffee shop')).not.toContain('wifi');
   });
   it('every DB constraint in the widening migration lists exactly the client keys', () => {
-    const mig = read('supabase/migrations/20270198_accessibility_family_features.sql');
+    const mig = read('supabase/migrations/20270200_pet_friendly_romantic_attributes.sql');
     const list = quoted(mig.match(/new_list text := \$q\$([^$]*)\$q\$/)[1]);
     expect(list).toEqual(keys);
     expect((mig.match(/<@ array\[' \|\| new_list/g) ?? []).length).toBe(6);

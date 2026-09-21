@@ -90,7 +90,9 @@ export function applyAskFacets(candidates, facets) {
 // romantic and quiet" reach those businesses through the existing attribute overlap (ranking only). Deterministic, a fallback beside
 // the AI extractor (which only knew "can bring my dog"); the result is unioned with whatever it returned. Closed keys only.
 const ATTRIBUTE_ASKS = [
+  ['pet_friendly', /\b(?:with|bring(?:ing)?|take|taking)\s+(?:my|our|the)\s+(?:dog|dogs|puppy|pup|cat|cats|pet|pets)\b|\bpets?[- ]friendly\b|\bdog[- ]friendly\b|\bpets?\s+(?:allowed|welcome)\b/i],
   ['dog_friendly', /\b(?:with|bring(?:ing)?|take|taking)\s+(?:my|our|the)\s+(?:dog|dogs|puppy|pup)\b|\b(?:dog|pet)[- ]friendly\b|\bpets?\s+(?:allowed|welcome)\b|\bpet[- ]friendly\b/i],
+  ['romantic', /\b(?:romantic|candlelit|candle[- ]lit)\b/i],
   ['date_friendly', /\b(?:date\s+night|first\s+date|on\s+a\s+date|for\s+a\s+date|date\s+spot|romantic|date[- ]friendly)\b/i],
   ['quiet', /(?<!\b(?:not|no|nothing|too|not too|nothing too)\s)\b(?:quiet|peaceful)\b/i],
   ['outdoor_seating', /\b(?:patio|outdoor\s+seating|al\s+fresco|terrace)\b/i],
