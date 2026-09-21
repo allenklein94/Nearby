@@ -86,7 +86,7 @@ export const CATEGORY_GROUPS = [
   },
   {
     key: 'outdoors_nature', icon: '🌳', label: 'Outdoors & Nature',
-    tags: ['Hiking', 'Outdoors', 'Camping', 'Fishing', 'Kayaking', 'Parks', 'Beaches', 'Trails', 'Paddleboarding', 'Wildlife', 'Gardens', 'Scenic Views', 'Picnics'],
+    tags: ['Hiking', 'Outdoors', 'Camping', 'Fishing', 'Kayaking', 'Parks', 'Beaches', 'Trails', 'Paddleboarding', 'Wildlife', 'Gardens', 'Scenic Views', 'Picnics', 'Surfing', 'Snorkeling', 'Diving'],
   },
   {
     key: 'pets', icon: '🐕', label: 'Pets',
@@ -130,7 +130,7 @@ export const CATEGORY_GROUPS = [
   },
   {
     key: 'attractions_things_to_see', icon: '🎟️', label: 'Attractions & Things to See',
-    tags: ['Museums', 'Zoos', 'Aquariums', 'Landmarks', 'Amusement Park', 'Sightseeing'],
+    tags: ['Museums', 'Zoos', 'Aquariums', 'Landmarks', 'Amusement Park', 'Sightseeing', 'Historic Sites', 'Observation Decks', 'Exhibits', 'Tourist Attractions', 'Local Attractions'],
   },
 ];
 
