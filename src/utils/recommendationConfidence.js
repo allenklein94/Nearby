@@ -15,7 +15,7 @@ export const CONFIDENCE_HEADLINE = {
 };
 
 // Activity-only and hobby-related interests are personalized but not STRONG evidence (a declared interest is).
-const isActivityOnly = (text) => /^(Based on your recent activity: |Related to your interest in )/.test(text ?? '');
+const isActivityOnly = (text) => /^(Based on your recent activity: |Related to your interest in )/.test(text ?? '') || /^.+ (is|are) into .+$/.test(text ?? '');
 
 // signals: [{ kind?, text }]; intent: the active Ask-Nearby search matched this object.
 export function recommendationConfidence(signals = [], { intent = false } = {}) {
@@ -26,7 +26,7 @@ export function recommendationConfidence(signals = [], { intent = false } = {}) 
   for (const s of list) {
     const k = reasonKind(s);
     if (k) kinds.add(k);
-    if (k === REASON_KINDS.SOCIAL || (k === REASON_KINDS.PERSONALIZED && !isActivityOnly(s.text))) strong = true;
+    if ((k === REASON_KINDS.SOCIAL || k === REASON_KINDS.PERSONALIZED) && !isActivityOnly(s.text)) strong = true;
   }
   if (intent) kinds.add('intent');
   const independent = kinds.size;

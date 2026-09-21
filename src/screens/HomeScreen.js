@@ -385,6 +385,7 @@ export default function HomeScreen({ navigation }) {
     isPast: (g) => isGatheringPast(g),
     declaredInterests: dashboard?.declaredInterests ?? null,
     activityCategories: dashboard?.becauseYouLikeCategories ?? [],
+    friendInterests: dashboard?.friendInterestByTag ?? null,
   });
 
   // A starting-soon gathering that Picked For You already shows carries "Starting soon" as one of its reasons there,

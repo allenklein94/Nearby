@@ -7,6 +7,7 @@
 // single list, ordered by how many reasons it has (then by first appearance: interest, trending, friend).
 import { friendGoingReason } from './recommendationFacts';
 import { interestMatch } from './interestMatch';
+import { friendsInterestReason } from './friendInterests';
 import { attendeeTotal } from './gatheringFullness';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 
@@ -27,7 +28,7 @@ export const SIGNAL_TEXT = {
   },
 };
 
-export function mergeHomeGatheringSignals({ bestPick = null, becauseYouLike = [], trending = [], friends = [], soon = [], friendIds = null, isPast = () => false, declaredInterests = null, activityCategories = [] } = {}) {
+export function mergeHomeGatheringSignals({ bestPick = null, becauseYouLike = [], trending = [], friends = [], soon = [], friendIds = null, isPast = () => false, declaredInterests = null, activityCategories = [], friendInterests = null } = {}) {
   const byId = new Map();
   const order = [];
   function add(g, kind) {
@@ -60,6 +61,9 @@ export function mergeHomeGatheringSignals({ bestPick = null, becauseYouLike = []
   for (const entry of byId.values()) {
     const text = goingText(entry.gathering);
     if (text) entry.signals.push({ kind: 'going', text });
+    // A friend's declared interest in this gathering's tag: a reason for a card already shown, never a card of its own.
+    const fi = friendsInterestReason(entry.gathering?.interest_tag, friendInterests?.[entry.gathering?.interest_tag]);
+    if (fi) entry.signals.push({ kind: 'friendInterest', text: fi });
   }
 
   let hero = null;
@@ -71,6 +75,8 @@ export function mergeHomeGatheringSignals({ bestPick = null, becauseYouLike = []
     hero = { ...(extra?.gathering ?? {}), ...bestPick, reasons };
     const going = goingText(hero);
     if (going && !reasons.includes(going)) reasons.push(going);
+    const heroFi = friendsInterestReason(hero.interest_tag, friendInterests?.[hero.interest_tag]);
+    if (heroFi && !reasons.includes(heroFi)) reasons.push(heroFi);
   }
 
   const cards = order

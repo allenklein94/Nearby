@@ -99,6 +99,8 @@ const PATTERN_MATCHES = [
   { pattern: /^Because you like .+$/, category: REASON_CATEGORIES.INTEREST },
   { pattern: /^Based on your recent activity: .+$/, category: REASON_CATEGORIES.INTEREST },
   { pattern: /^Related to your interest in .+$/, category: REASON_CATEGORIES.INTEREST },
+  // A friend's declared interest (utils/friendInterests.js): "Sam is into Coffee".
+  { pattern: /^.+ (is|are) into .+$/, category: REASON_CATEGORIES.INTEREST },
   // getGatheringFitReasons()'s real attendee-count reason.
   { pattern: /^\d+ (person|people) attending$/, category: REASON_CATEGORIES.POPULARITY },
   // getGatheringFitReasons()'s real first-timer-count reason.

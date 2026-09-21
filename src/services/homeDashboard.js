@@ -11,6 +11,7 @@ import { getFriendDiscoveryCandidates } from './friendDiscovery';
 import { meetSomeoneTonight, countTonightSupply } from '../utils/meetTonight';
 import { canonicalizeInterests, becauseYouLikeCategories } from '../constants/interestGraph';
 import { relatedHobbyFor } from '../constants/hobbyRelations';
+import { getFriendsInterestedIn } from './friendInterests';
 import { isGatheringPast } from '../utils/objectState';
 import { attendeeTotal } from '../utils/gatheringFullness';
 
@@ -631,6 +632,8 @@ export async function getHomeDashboard() {
     .filter((g) => !upcomingPlanIds.has(g.id) && !directMatches.includes(g) && relatedHobbyFor(g.interest_tag, profileData?.interests))
     .sort(byStart);
   const becauseYouLike = [...directMatches, ...relatedFill].slice(0, 6);
+  // Which of the tags on screen do the person's accepted friends declare (one server call; a failure = no friend-interest reasons).
+  const friendInterestByTag = await getFriendsInterestedIn(nearbyGatherings.map((g) => g.interest_tag));
 
   // Genuine recent activity from your actual friends — a new
   // gathering they're hosting, in the last 3 days. Real names, real
@@ -758,6 +761,7 @@ export async function getHomeDashboard() {
     plansGroup,
     friendsActivity,
     friendIds,
+    friendInterestByTag,
     loadFailures,
     becauseYouLike,
     becauseYouLikeCategories: topInterestCategories,

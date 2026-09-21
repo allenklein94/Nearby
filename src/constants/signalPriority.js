@@ -29,13 +29,16 @@ const KIND_TIER = {
   weather: SIGNAL_TIERS.weather,
 };
 
+// A friend's declared interest ("Sam is into Coffee"): social, but weaker than a friend hosting/going, so it ranks at tier 5.
+const FRIEND_INTEREST_RE = /^.+ (is|are) into .+$/;
+
 // The tier of a free-text reason, from the shared reason vocabulary. Unknown text is general discovery, never stronger.
 export function reasonTier(text) {
   if (typeof text !== 'string') return WORST_TIER;
   if (text === REASON_TEXT.WEATHER_GOOD_INDOOR.text || text === REASON_TEXT.WEATHER_GOOD_OUTDOOR.text) return SIGNAL_TIERS.weather;
   if (/ (is|are) (going|attending)$/.test(text) || /^\d+ of your friends /.test(text) || /\b(is|are) hosting\b/.test(text)) return SIGNAL_TIERS.planFriend;
   // A tag only RELATED to a declared hobby is weaker than a declared interest (tier 4): it ranks with business availability.
-  if (/^Related to your interest in /.test(text)) return SIGNAL_TIERS.business;
+  if (/^Related to your interest in /.test(text) || FRIEND_INTEREST_RE.test(text)) return SIGNAL_TIERS.business;
   switch (categorizeReasonText(text)) {
     case REASON_CATEGORIES.INTEREST: return SIGNAL_TIERS.interest;
     case REASON_CATEGORIES.TIME: return SIGNAL_TIERS.time;
@@ -71,6 +74,7 @@ export const REASON_KINDS = { PERSONALIZED: 'personalized', POPULAR: 'popular', 
 export function reasonKind(signalOrText) {
   const signal = typeof signalOrText === 'string' ? { text: signalOrText } : signalOrText;
   if (/^Related to your interest in /.test(signal?.text ?? '')) return REASON_KINDS.PERSONALIZED;
+  if (FRIEND_INTEREST_RE.test(signal?.text ?? '')) return REASON_KINDS.SOCIAL;
   switch (signalTier(signal)) {
     case SIGNAL_TIERS.planFriend: return REASON_KINDS.SOCIAL;
     case SIGNAL_TIERS.time: return REASON_KINDS.TIME;

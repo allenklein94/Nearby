@@ -12,6 +12,8 @@ import SponsoredSpotlightSlot from '../components/SponsoredSpotlightSlot';
 import usePersonalization from '../hooks/usePersonalization';
 import { behaviorNudge, broadGroupNudge, relatedHobbyNudge } from '../constants/blendedRanking';
 import { relatedHobbyFor, relatedInterestReason } from '../constants/hobbyRelations';
+import { getFriendsInterestedIn } from '../services/friendInterests';
+import { friendsInterestReason } from '../utils/friendInterests';
 import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Linking, Alert, BackHandler } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Video } from 'expo-av';
@@ -350,6 +352,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const [userLocation, setUserLocation] = useState(null);
 
   const [gatherings, setGatherings] = useState([]);
+  // Accepted friends who declared each tag on screen (server-enforced): powers "Sam is into Coffee" on a card.
+  const [friendInterestByTag, setFriendInterestByTag] = useState({});
+  const gatheringTagKey = [...new Set(gatherings.map((g) => g.interest_tag).filter(Boolean))].sort().join('|');
+  useEffect(() => {
+    if (!gatheringTagKey) return undefined;
+    let cancelled = false;
+    getFriendsInterestedIn(gatheringTagKey.split('|')).then((m) => { if (!cancelled) setFriendInterestByTag(m); });
+    return () => { cancelled = true; };
+  }, [gatheringTagKey]);
   const [communities, setCommunities] = useState([]);
   const [offers, setOffers] = useState([]);
   const [businesses, setBusinesses] = useState([]);
@@ -1123,6 +1134,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const friendReason = friendGoingReason(g, myFriendIds, myUserId);
     if (friendReason) return friendReason;
     if (g.matchesYourInterests && g.interest_tag) return becauseYouLikeReason(g.interest_tag);
+    const friendsInto = friendsInterestReason(g.interest_tag, friendInterestByTag[g.interest_tag]);
+    if (friendsInto) return friendsInto;
     const attendeeCount = attendeeTotal(g);
     if (attendeeCount >= TRENDING_ATTENDANCE_MIN) return `${attendeeCount} attending`;
     // Distance and time are the card's own "how far / when" line; repeating them as the reason would say them twice.
