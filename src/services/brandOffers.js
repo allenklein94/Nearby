@@ -1267,3 +1267,18 @@ export async function confirmOfferRedemption(code) {
   if (error) throw error;
   return data;
 }
+
+// Item 40: 'free' | '$' | '$$' | '$$$' | null (= not said, no price effect). Migration 20270192.
+export async function setBusinessPriceLevel(partnerId, level) {
+  const { error } = await supabase.rpc('set_business_price_level', { partner_id_param: partnerId, level_param: level ?? null });
+  if (error) throw error;
+}
+
+// partnerId -> price_level for the intent resolver's business results. Best-effort: a failure is an empty map (no nudge).
+export async function getPartnerPriceLevels(partnerIds) {
+  const ids = [...new Set((partnerIds ?? []).filter(Boolean))];
+  if (ids.length === 0) return new Map();
+  const { data, error } = await supabase.from('brand_partners').select('id, price_level').in('id', ids);
+  if (error) return new Map();
+  return new Map((data ?? []).filter((r) => r.price_level).map((r) => [r.id, r.price_level]));
+}

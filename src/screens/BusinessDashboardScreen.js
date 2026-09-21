@@ -18,7 +18,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
 // P2 remediation item 11 (CLAUDE.md) -- reuse the admin queue's own real
@@ -1055,6 +1055,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     } catch (e) {
       setSelectedPartner((prev) => ({ ...prev, weather_setting: current }));
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePickWeatherSetting(key) });
+    }
+  }
+
+  // Item 40: tap a price tier to choose it, tap again to clear (= not said). Saves per tap.
+  async function handlePickPriceLevel(key) {
+    if (!selectedPartner) return;
+    const current = selectedPartner.price_level ?? null;
+    const next = current === key ? null : key;
+    setSelectedPartner((prev) => ({ ...prev, price_level: next }));
+    try {
+      await setBusinessPriceLevel(selectedPartner.id, next);
+    } catch (e) {
+      setSelectedPartner((prev) => ({ ...prev, price_level: current }));
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePickPriceLevel(key) });
     }
   }
 
@@ -5235,6 +5249,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 </View>
                 <Text style={styles.helperText}>
                   Outdoor: shown less when rain is coming, more in good weather. Weather dependent: shown less in bad weather. Indoor: shown more in bad weather. Tap again to clear.
+                </Text>
+                {/* Price (item 40): the same Free/$/$$/$$$ vocabulary gatherings use; owner-declared, never inferred. */}
+                <Text style={styles.sectionHeader}>What does it usually cost?</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {EXPERIENCE_PRICE_OPTIONS.filter((o) => o.key).map((o) => {
+                    const selected = (selectedPartner?.price_level ?? null) === o.key;
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handlePickPriceLevel(o.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${o.label}${selected ? ', selected' : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <Text style={styles.helperText}>
+                  Free means no cost to take part. Helps you appear when someone asks for something free or budget-friendly. Tap again to clear.
                 </Text>
 </>
 )}

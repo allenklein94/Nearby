@@ -1,7 +1,8 @@
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
-import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings } from './brandOffers';
+import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, getPartnerPriceLevels } from './brandOffers';
+import { applyBusinessPriceToCandidates } from '../utils/priceBias';
 import { applyBusinessWeatherToCandidates } from '../utils/weatherBias';
 import { occasionLabel } from '../constants/businessAttributes';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, searchOccasionOfferingBusinesses, getMyBusinessAffinitySignals } from './businessFulfillment';
@@ -650,6 +651,15 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     }
   } catch (e) {
     console.error('business weather nudge skipped', e);
+  }
+
+  // Item 40: a business that declared the asked price tier (e.g. Free) ranks up; ranking only, never a filter.
+  if (priceLevel) {
+    try {
+      deduped = applyBusinessPriceToCandidates(deduped, await getPartnerPriceLevels(deduped.map((c) => c.partnerId)), priceLevel, SCORE_HAPPENING_NOW);
+    } catch (e) {
+      console.error('business price nudge skipped', e);
+    }
   }
 
   // Open-ended ask ("something fun tonight"): no category named, so only inventory in social groups is eligible and it gets a
