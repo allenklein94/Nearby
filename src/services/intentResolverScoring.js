@@ -16,6 +16,7 @@ import { formatDistanceAway } from '../utils/formatDistance';
 import { isWithinRightNowWindow } from '../utils/rightNowWindow';
 import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS } from '../constants/businessAttributes';
 import { hobbyAttributeMatch, relatedInterestReason } from '../constants/hobbyRelations';
+import { activityFit } from '../constants/activityLayer';
 
 // Shared relevance weights, kept on the same scale
 // getGatheringFitReasons() already established (interest match = 5, close
@@ -167,6 +168,12 @@ export function attributeAndCuisineBonus(row, attributes, cuisine) {
 
 // Hobby link (owner request, 2026-09-21): a small lift for a business that declares an attribute suiting one of the person's
 // declared hobbies (Photography -> laptop_friendly). Below every other bonus (SCORE_HAPPENING_NOW is 2), ranking only.
+// Activity fit (owner item 37): the ask names something to DO ("work remotely", "a first date") and this business declared
+// what it takes (activityLayer.js). Same weight as the other ask-specific bonuses, ranking only, never a filter.
+export const SCORE_ACTIVITY_FIT = SCORE_HAPPENING_NOW;
+export function activityFitBonus(row, askedActivities) {
+  return activityFit(row, askedActivities) ? SCORE_ACTIVITY_FIT : 0;
+}
 export const SCORE_HOBBY_LINK = 1;
 export function hobbyAttributeBonus(row, declaredInterests) {
   return hobbyAttributeMatch(row?.attributes, declaredInterests) ? SCORE_HOBBY_LINK : 0;
@@ -350,7 +357,7 @@ export function whoForPreferenceBonus(row, whoForSignals) {
 // exact condition (never a new signal, never a fabricated one) and returns
 // human-readable text for whichever ones actually fired, in the same
 // priority order resolveBusinessAvailability() already scores them in.
-export function getBusinessAvailabilityReasons(row, { category, attributes, cuisine, partyType, occasion, followedPartnerIds, pastPartnerIds, whoForSignals, whoForName, declaredInterests } = {}) {
+export function getBusinessAvailabilityReasons(row, { category, attributes, cuisine, partyType, occasion, followedPartnerIds, pastPartnerIds, whoForSignals, whoForName, declaredInterests, askedActivities } = {}) {
   const reasons = [];
   const matchesCategory = !!(category && (
     (row.category && row.category === category)
@@ -358,6 +365,8 @@ export function getBusinessAvailabilityReasons(row, { category, attributes, cuis
     || (Array.isArray(row.categories) && row.categories.includes(category))
   ));
   if (matchesCategory) reasons.push("Matches what you're looking for");
+  const activityHit = activityFit(row, askedActivities);
+  if (activityHit) reasons.push(activityHit.reason);
   if (row.distance_miles != null && row.distance_miles < 2) {
     reasons.push(formatDistanceAway(row.distance_miles));
   }

@@ -1,0 +1,61 @@
+import { ACTIVITIES, activitiesForBusiness, activitiesFromText, activityFit } from './activityLayer';
+import { CATEGORY_GROUPS } from './gatheringCategories';
+import { BUSINESS_ATTRIBUTE_OPTIONS } from './businessAttributes';
+import { OCCASION_OPTIONS } from './businessAttributes';
+
+const coffee = { subcategory: 'Coffee', category: 'food_drink', attributes: [], offered_occasions: [] };
+
+describe('activity layer (what can someone do here?)', () => {
+  it('one business satisfies many intents, but only through what it declared', () => {
+    expect(activitiesForBusiness(coffee)).toEqual(expect.arrayContaining(['grab_coffee', 'meet_a_friend']));
+    expect(activitiesForBusiness(coffee)).not.toContain('work_remotely'); // never declared laptop_friendly
+    expect(activitiesForBusiness({ ...coffee, attributes: ['laptop_friendly'] })).toContain('work_remotely');
+    expect(activitiesForBusiness({ ...coffee, offered_occasions: ['first_date'] })).toContain('first_date');
+    expect(activitiesForBusiness({ subcategory: 'Bakeries', attributes: [] })).toEqual(expect.arrayContaining(['breakfast', 'quick_bite']));
+  });
+  it('a major-only business claims no tag-based activity', () => {
+    expect(activitiesForBusiness({ category: 'food_drink', attributes: [] })).toEqual([]);
+  });
+  it('reads the ask from the person\'s own words only', () => {
+    expect(activitiesFromText('somewhere to work remotely this afternoon')).toEqual(['work_remotely']);
+    expect(activitiesFromText('a first date spot')).toEqual(['first_date']);
+    expect(activitiesFromText('grab a coffee with a friend')).toEqual(expect.arrayContaining(['grab_coffee']));
+    expect(activitiesFromText('meet a friend')).toContain('meet_a_friend');
+    expect(activitiesFromText('breakfast tomorrow')).toEqual(['breakfast']);
+    expect(activitiesFromText('coffee')).toEqual([]);
+    expect(activitiesFromText('')).toEqual([]);
+    expect(activitiesFromText(null)).toEqual([]);
+  });
+  it('a fitting business gets an honest reason; a non-fitting one gets nothing (never a filter)', () => {
+    const asked = activitiesFromText('work remotely');
+    expect(activityFit({ ...coffee, attributes: ['laptop_friendly'] }, asked)).toEqual({ key: 'work_remotely', reason: 'Good for working remotely' });
+    expect(activityFit(coffee, asked)).toBeNull();
+    expect(activityFit(coffee, [])).toBeNull();
+  });
+  it('every tag, attribute and occasion an activity uses is real taxonomy', () => {
+    const tags = new Set(CATEGORY_GROUPS.flatMap((g) => [...g.tags, ...(g.businessOnlyTags ?? [])]));
+    const attrs = new Set(BUSINESS_ATTRIBUTE_OPTIONS.map((a) => a.key));
+    const occ = new Set(OCCASION_OPTIONS.map((o) => o.key));
+    const src = require('fs').readFileSync(require('path').join(__dirname, 'activityLayer.js'), 'utf8');
+    for (const m of src.matchAll(/\[('[^\]]+')\]\.includes|\[(('[^']+',? ?)+)\]\.includes/g)) {
+      const items = (m[1] || m[2]).split(',').map((x) => x.trim().replace(/'/g, '')).filter(Boolean);
+      for (const i of items) expect(tags.has(i) || attrs.has(i)).toBe(true);
+    }
+    for (const m of src.matchAll(/occasions\.includes\('([a-z_]+)'\)/g)) expect(occ.has(m[1])).toBe(true);
+    expect(ACTIVITIES.length).toBeGreaterThan(5);
+  });
+});
+
+describe('activity layer is wired into ranking', () => {
+  it('the resolver scores and explains an activity fit, as a bonus never a filter', () => {
+    const { activityFitBonus, getBusinessAvailabilityReasons, SCORE_ACTIVITY_FIT } = require('../services/intentResolverScoring');
+    const row = { ...coffee, attributes: ['laptop_friendly'] };
+    expect(activityFitBonus(row, ['work_remotely'])).toBe(SCORE_ACTIVITY_FIT);
+    expect(activityFitBonus(coffee, ['work_remotely'])).toBe(0);
+    expect(activityFitBonus(row, [])).toBe(0);
+    expect(getBusinessAvailabilityReasons(row, { askedActivities: ['work_remotely'] })).toContain('Good for working remotely');
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../services/intentResolver.js'), 'utf8');
+    expect(src).toMatch(/activitiesFromText\(rawText\)/);
+    expect(src).toMatch(/score \+= activityFitBonus\(row, askedActivities\)/);
+  });
+});

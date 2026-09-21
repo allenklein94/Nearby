@@ -37,6 +37,7 @@ import {
   priceAndPartyBonus,
   attributeAndCuisineBonus,
   hobbyAttributeBonus,
+  activityFitBonus,
   accommodatesPartyTypeBonus,
   occasionBonus,
   occasionOfferingScore,
@@ -50,6 +51,7 @@ import {
   detectFriendDiscoveryIntent,
   SCORE_OCCASION_PACKAGE_FLOOR,
 } from './intentResolverScoring';
+import { activitiesFromText } from '../constants/activityLayer';
 import { getUserLocation } from './userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
 import { attendeeTotal } from '../utils/gatheringFullness';
@@ -284,7 +286,7 @@ async function resolvePerks(category, location) {
 // that requires submitting a fresh ask and waiting. This is what makes
 // the business path a real candidate instead of a dead end -- see the
 // integration audit for the gap this closes.
-async function resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName) {
+async function resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName, askedActivities = []) {
   if (!location) return [];
   // Universal Signal Remediation Pass, P0 item 2 (CLAUDE.md, Aug 28 2026):
   // a real hard feasibility filter now, not just relevance -- a posting
@@ -327,6 +329,8 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
     // otherwise-eligible posting outright.
     score += attributeAndCuisineBonus(row, attributes, cuisine);
     score += hobbyAttributeBonus(row, affinitySignals?.declaredInterests);
+    // Activity (item 37): what the person asked to DO, against what this business declared it supports.
+    score += activityFitBonus(row, askedActivities);
     // "10/10 blueprint" audit, Finding 8 (CLAUDE.md, Aug 30 2026): the
     // business's own real accommodates_party_types now propagates all the
     // way to a consumer-facing ranking bonus, not just its public profile.
@@ -370,7 +374,7 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
       followedPartnerIds: affinitySignals?.followedPartnerIds,
       pastPartnerIds: affinitySignals?.pastPartnerIds,
       declaredInterests: affinitySignals?.declaredInterests,
-      whoForSignals, whoForName,
+      whoForSignals, whoForName, askedActivities,
     });
     const baseSubtitle = row.price != null ? `${row.title} · ${moneyLabel(row.price)}` : row.title;
     return {
@@ -612,7 +616,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     resolveCommunities(category, location, myCity),
     resolveConnectedRequests(category, dateWindow),
     resolvePerks(category, location),
-    resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName),
+    resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName, activitiesFromText(rawText)),
     resolvePolicyOnlyBusinesses(location, partySize),
     resolveOccasionPackages(location, occasion, partySize),
     resolveOccasionOfferingBusinesses(location, occasion),
