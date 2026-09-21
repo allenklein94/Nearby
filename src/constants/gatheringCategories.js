@@ -118,11 +118,11 @@ export const CATEGORY_GROUPS = [
   },
   {
     key: 'health_personal_care', icon: '🩺', label: 'Health & Personal Care',
-    tags: [],
+    tags: ['General Wellness', 'Nutrition', 'Personal Care'],
   },
   {
     key: 'education_classes', icon: '🎓', label: 'Education & Classes',
-    tags: ['Workshops', 'Lectures', 'Cooking Class', 'Study Group', 'Language Exchange', 'Tech Meetup', 'Classes'],
+    tags: ['Workshops', 'Lectures', 'Cooking Class', 'Study Group', 'Language Exchange', 'Tech Meetup', 'Classes', 'Language Classes', 'Technology Classes', 'Tutoring', 'Adult Education', 'Kids Education', 'Professional Development', 'Certifications', 'Dance Classes'],
   },
   {
     key: 'attractions_things_to_see', icon: '🎟️', label: 'Attractions & Things to See',
@@ -152,8 +152,8 @@ export function groupForTag(tag) {
 // per major, rather than inventing a second one -- this is the one shared
 // lookup both BusinessPartnerApplyScreen and BusinessDashboardScreen use
 // to render the right subcategory chips once a major category is picked.
-// One major (health_personal_care) genuinely has none yet (home_local_services and auto_transportation gained leaf tags in 20270177) -- an honest empty list,
-// not a bug, per this file's own comment above on why.
+// health_personal_care carries only NON-clinical tags on purpose (20270179): clinical services (dental, physical therapy,
+// medical...) are withheld for privacy/regulatory reasons until a business-only tag mechanism exists.
 export function subcategoryOptionsFor(categoryKey) {
   return CATEGORY_GROUPS.find((g) => g.key === categoryKey)?.tags ?? [];
 }

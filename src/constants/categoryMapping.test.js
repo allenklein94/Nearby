@@ -26,7 +26,7 @@ describe('canonical category mapping', () => {
     expect(businessServesTag({ category: 'food_drink' }, 'Yoga')).toBe(false);
     expect(businessServesTag({ category: 'not_a_group' }, 'Coffee')).toBe(false);
     expect(businessServesTag({ category: 'health_personal_care' }, 'Coffee')).toBe(false);
-    expect(servedTags({ category: 'health_personal_care' })).toEqual([]);
+    expect(servedTags({ category: 'health_personal_care' })).not.toContain('Dental');
     expect(servedTags({ category: 'home_local_services' })).toContain('Plumbing');
     expect(businessServesTag({ category: 'food_drink' }, null)).toBe(false);
   });
@@ -54,7 +54,7 @@ describe('canonical category mapping', () => {
     }
   });
 
-  test('SQL seed + the later tag migrations (20270177, 20270178) together equal CATEGORY_GROUPS (no drift either way)', () => {
+  test('SQL seed + the later tag migrations (20270177-20270179) together equal CATEGORY_GROUPS (no drift either way)', () => {
     const dir = path.join(__dirname, '../../supabase/migrations');
     const rowsOf = (file, from, to) => {
       const sql = fs.readFileSync(path.join(dir, file), 'utf8');
@@ -65,6 +65,7 @@ describe('canonical category mapping', () => {
     const later = [
       ...rowsOf('20270177_category_tags_broad_taxonomy.sql', 'insert into public.category_tag_groups'),
       ...rowsOf('20270178_stay_getaway_subcategories.sql', 'insert into public.category_tag_groups'),
+      ...rowsOf('20270179_education_health_subcategories.sql', 'insert into public.category_tag_groups'),
     ];
     const key = (r) => `${r[1]}::${r[0]}`;
     const expected = CATEGORY_GROUPS.flatMap((g) => g.tags.map((t) => [t, g.key]));
