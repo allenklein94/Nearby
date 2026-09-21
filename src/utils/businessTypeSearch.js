@@ -1,4 +1,5 @@
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
+import { tagsForPhrase } from '../constants/categorySynonyms';
 
 // Business signup: "What type of business are you?" is a search, not a four-level tree. Typing "coffee" offers
 // "Food & Drink -> Coffee"; tapping one sets the business's major AND its specific type in one go. Rule-based over the
@@ -19,6 +20,15 @@ export function searchBusinessTypes(query, limit = 6) {
     }
     const groupRank = gl.startsWith(q) ? 1 : gl.split(' ').some((w) => w.startsWith(q)) ? 2 : -1;
     if (groupRank >= 0) out.push({ rank: groupRank + 3, category: g.key, subcategory: null, label: g.label, pathLabel: g.label });
+  }
+  // Synonyms: "cafe" -> Coffee, "gym" -> Gyms. Ranked just after an exact tag match.
+  const synonymTags = new Set(tagsForPhrase(query));
+  if (synonymTags.size) {
+    for (const g of CATEGORY_GROUPS) {
+      for (const tag of [...g.tags, ...(g.businessOnlyTags ?? [])]) {
+        if (synonymTags.has(tag)) out.push({ rank: 0.5, category: g.key, subcategory: tag, label: tag, pathLabel: `${g.label} → ${tag}` });
+      }
+    }
   }
   const seen = new Set();
   return out

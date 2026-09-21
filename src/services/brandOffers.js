@@ -1,4 +1,5 @@
 import { supabase, functionUrl } from './supabase';
+import { expandSearchTerms } from '../constants/categorySynonyms';
 import { serviceError } from '../utils/recoverableError';
 import Constants from 'expo-constants';
 import { getGoogleMapsRequestHeaders } from './places';
@@ -168,12 +169,15 @@ export async function searchOffers(queryText, lat = null, lng = null) {
     nearbyOfferIds = new Map((nearby ?? []).map((n) => [n.id, n.distance_miles]));
   }
 
-  const { data: idRows, error: idError } = await supabase.rpc('search_offer_ids', { query_text: escaped });
-  if (idError) {
-    console.error('search_offer_ids error', idError);
+  // Synonyms (items 31/32): the person's own words plus the canonical tags they stand for ("cafe" -> Coffee).
+  const searchTerms = expandSearchTerms(term).map((t) => t.replace(/[%_]/g, '\\$&'));
+  const idResults = await Promise.all(searchTerms.map((q) => supabase.rpc('search_offer_ids', { query_text: q })));
+  const firstError = idResults.find((r) => r.error)?.error;
+  if (firstError && idResults.every((r) => r.error)) {
+    console.error('search_offer_ids error', firstError);
     return [];
   }
-  const ids = (idRows ?? []).map((r) => r.id);
+  const ids = [...new Set(idResults.flatMap((r) => (r.data ?? []).map((row) => row.id)))];
   if (ids.length === 0) return [];
 
   const { data, error } = await supabase

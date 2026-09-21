@@ -36,6 +36,14 @@ describe('public web signup form parity', () => {
     CATEGORY_GROUPS.forEach((g) => { app[g.key] = [...g.tags, ...(g.businessOnlyTags ?? [])]; });
     expect(web).toEqual(app);
   });
+  it('its embedded synonyms equal the app synonyms', () => {
+    const { seedRows } = require('../constants/categorySynonyms');
+    const m = html.match(/var APPLY_SYNONYMS = (\{.*\});/);
+    expect(m).toBeTruthy();
+    const app = {};
+    for (const r of seedRows()) (app[r.phrase] = app[r.phrase] || []).push(r.tag);
+    expect(JSON.parse(m[1])).toEqual(app);
+  });
   it('sends the specific type and the server keeps it only when it is a real tag of that major', () => {
     expect(html).toContain('subcategory: selectedApplySubcategory');
     const fn = fs.readFileSync(require.resolve('../../supabase/functions/submit-business-application/index.ts'), 'utf8');
@@ -45,5 +53,15 @@ describe('public web signup form parity', () => {
   it('the inline script still parses', () => {
     const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((x) => x[1]);
     scripts.forEach((code) => expect(() => new Function(code)).not.toThrow());
+  });
+});
+
+describe('signup type search understands synonyms', () => {
+  const { searchBusinessTypes } = require('./businessTypeSearch');
+  it('"cafe" finds Coffee, "gym" finds Gyms, "happy hour" finds Happy Hour', () => {
+    expect(searchBusinessTypes('cafe')[0].subcategory).toBe('Coffee');
+    expect(searchBusinessTypes('gym').map((r) => r.subcategory)).toContain('Gyms');
+    expect(searchBusinessTypes('happy hour').map((r) => r.subcategory)).toEqual(expect.arrayContaining(['Happy Hour', 'Bars & Lounges']));
+    expect(searchBusinessTypes('coffee shop')[0].subcategory).toBe('Coffee');
   });
 });

@@ -1,4 +1,5 @@
 import { relatedHobbyFor } from '../constants/hobbyRelations';
+import { tagsForPhrase } from '../constants/categorySynonyms';
 import { groupForTag } from '../constants/gatheringCategories';
 import { formatDistanceAway } from '../utils/formatDistance';
 import { supabase } from './supabase';
@@ -317,17 +318,20 @@ export async function searchGatherings(queryText, tier = 'wide') {
   // already reads, gatheringCategories.js's own CATEGORY_GROUPS) closes
   // that gap with no new matching logic to maintain -- a real tag value
   // is itself a real, searchable English phrase.
-  const [titleRes, descriptionRes, tagRes] = await Promise.all([
+  // Synonyms (items 31/32): "cafe" also finds gatherings tagged Coffee, "gym" Gyms/Fitness. Exact canonical tags only.
+  const synonymTags = tagsForPhrase(term);
+  const [titleRes, descriptionRes, tagRes, ...synonymRes] = await Promise.all([
     baseQuery().ilike('title', `%${escaped}%`),
     baseQuery().ilike('description', `%${escaped}%`),
     baseQuery().ilike('interest_tag', `%${escaped}%`),
+    ...synonymTags.map((t) => baseQuery().eq('interest_tag', t)),
   ]);
   if (titleRes.error) console.error('searchGatherings title error', titleRes.error);
   if (descriptionRes.error) console.error('searchGatherings description error', descriptionRes.error);
   if (tagRes.error) console.error('searchGatherings interest_tag error', tagRes.error);
 
   const byId = new Map();
-  for (const row of [...(titleRes.data ?? []), ...(descriptionRes.data ?? []), ...(tagRes.data ?? [])]) byId.set(row.id, row);
+  for (const row of [...(titleRes.data ?? []), ...(descriptionRes.data ?? []), ...(tagRes.data ?? []), ...synonymRes.flatMap((r) => r.data ?? [])]) byId.set(row.id, row);
 
   const filtered = applyGatheringVisibilityFilters([...byId.values()], context);
   return enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, context.myInterests, tier);
