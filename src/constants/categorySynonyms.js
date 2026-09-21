@@ -61,12 +61,34 @@ for (const { tags, phrases } of SYNONYM_GROUPS) {
     PHRASE_TO_TAGS.set(k, [...new Set([...(PHRASE_TO_TAGS.get(k) ?? []), ...tags])]);
   }
 }
-// A canonical tag's own name is also a phrase for itself ("Wine" finds Wine); it never overrides a synonym row.
-for (const g of CATEGORY_GROUPS) {
-  for (const t of [...g.tags, ...(g.businessOnlyTags ?? [])]) {
-    const k = key(t);
-    if (!PHRASE_TO_TAGS.has(k)) PHRASE_TO_TAGS.set(k, [t]);
+// A canonical tag's own name is also a phrase for itself ("Wine" finds Wine); it never overrides a synonym row. Built per
+// call from the live taxonomy so a tag an admin adds later (registerCategoryTag) matches with no other step.
+function phraseMap() {
+  const m = new Map(PHRASE_TO_TAGS);
+  for (const g of CATEGORY_GROUPS) {
+    for (const t of [...g.tags, ...(g.businessOnlyTags ?? [])]) {
+      const k = key(t);
+      if (!m.has(k)) m.set(k, [t]);
+    }
   }
+  return m;
+}
+
+// Synonyms taught centrally (category_synonyms, migration 20270191) arrive here on sign-in. Only a phrase whose tag
+// exists in the taxonomy is kept; nothing is ever removed, and the built-in rows above always work with no network.
+export function registerSynonyms(rows) {
+  const known = new Set(CATEGORY_GROUPS.flatMap((g) => [...g.tags, ...(g.businessOnlyTags ?? [])]));
+  let added = 0;
+  for (const r of Array.isArray(rows) ? rows : []) {
+    if (typeof r?.phrase !== 'string' || !known.has(r?.tag)) continue;
+    const k = key(r.phrase);
+    if (k.length < 2) continue;
+    const cur = PHRASE_TO_TAGS.get(k) ?? [];
+    if (cur.includes(r.tag)) continue;
+    PHRASE_TO_TAGS.set(k, [...cur, r.tag]);
+    added += 1;
+  }
+  return added;
 }
 
 // Canonical tags a typed phrase stands for: the whole query, or a whole-word phrase inside it ("cafe near me").
@@ -74,11 +96,12 @@ for (const g of CATEGORY_GROUPS) {
 export function tagsForPhrase(text) {
   const q = key(text);
   if (q.length < 2) return [];
-  const out = new Set(PHRASE_TO_TAGS.get(q) ?? []);
+  const map = phraseMap();
+  const out = new Set(map.get(q) ?? []);
   if (out.size === 0) {
     const padded = ` ${q} `;
     let best = null;
-    for (const [phrase, tags] of PHRASE_TO_TAGS) {
+    for (const [phrase, tags] of map) {
       if (phrase.length >= 3 && padded.includes(` ${phrase} `) && (!best || phrase.length > best.phrase.length)) best = { phrase, tags };
     }
     if (best) best.tags.forEach((t) => out.add(t));
