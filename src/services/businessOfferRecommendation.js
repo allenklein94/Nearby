@@ -6,7 +6,7 @@
 //
 // Ranks the business's own real, active Signature Experiences
 // (business_experiences) against one open opportunity (business_requests),
-// by real attribute/party-type/price-level fit plus a real fulfillment-
+// by real attribute/price-level fit plus a real fulfillment-
 // policy fit -- and separately, ranks the business's own five real offer
 // types (standard/discount/perk/upgrade/alt_time) by their own real
 // historical acceptance rate for this one partner, computed entirely from
@@ -63,7 +63,6 @@ export function bestAcceptedOfferType(offerTypeAcceptance = {}) {
 function scoreExperience({
   experience,
   requestAttributes,
-  requestPartyType,
   requestPriceLevel,
   requestPartySize,
   fulfillmentPolicy,
@@ -75,11 +74,6 @@ function scoreExperience({
   if (attrs.some((a) => requestAttributes.includes(a))) {
     score += SCORE_INTEREST_MATCH;
     reasons.push({ label: 'Matches what this request is looking for', points: SCORE_INTEREST_MATCH });
-  }
-
-  if (requestPartyType && experience.party_type && experience.party_type === requestPartyType) {
-    score += SCORE_INTEREST_MATCH;
-    reasons.push({ label: 'Matches who this is for', points: SCORE_INTEREST_MATCH });
   }
 
   if (requestPriceLevel && experience.price_level && experience.price_level === requestPriceLevel) {
@@ -108,7 +102,6 @@ function scoreExperience({
 // fallback.
 export function rankExperiencesForOpportunity({
   requestAttributes = [],
-  requestPartyType = null,
   requestPriceLevel = null,
   requestPartySize = null,
   experiences = [],
@@ -120,7 +113,6 @@ export function rankExperiencesForOpportunity({
       const { score, reasons } = scoreExperience({
         experience,
         requestAttributes,
-        requestPartyType,
         requestPriceLevel,
         requestPartySize,
         fulfillmentPolicy,

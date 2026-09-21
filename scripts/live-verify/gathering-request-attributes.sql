@@ -1,4 +1,4 @@
--- Verifies migration 20270201: a gathering's business request snapshots the gathering's DECLARED attributes. Rolled back.
+-- Verifies migrations 20270201 + 20270202 (no party_type in the business payload): a gathering's business request snapshots the gathering's DECLARED attributes. Rolled back.
 begin;
 create temp table r(step text, result text) on commit drop;
 grant all on r to public;
@@ -50,7 +50,7 @@ begin
 end $$;
 
 do $$
-declare v_host uuid; v_partner uuid; v_g3 uuid; v_req3 uuid; v_solo uuid; v_attrs text[]; v_opp jsonb; v_keys text; v_owner uuid;
+declare v_host uuid; v_partner uuid; v_g3 uuid; v_req3 uuid; v_solo uuid; v_attrs text[]; v_opp jsonb; v_keys text; v_owner uuid; v_pt text;
 begin
   select id into v_host from profiles where managed_partner_id is null limit 1;
   select id into v_partner from brand_partners where active limit 1;
@@ -80,8 +80,15 @@ begin
   insert into r values ('opportunity attributes', coalesce((v_opp->'business_requests'->'attributes')::text, 'NULL'));
   select string_agg(k, ',' order by k) into v_keys from jsonb_object_keys(coalesce(v_opp, '{}'::jsonb)) k
     where k in ('requester_id', 'host_id', 'party_type', 'plan_kind', 'attendees', 'attendee_ids', 'gathering_id', 'raw_text', 'user_id');
-  insert into r values ('gatherings sub-object keys', coalesce((select string_agg(k, ',' order by k) from jsonb_object_keys(v_opp->'business_requests'->'gatherings') k), 'none'));
+  insert into r values ('gatherings sub-object keys (no party_type)', coalesce((select string_agg(k, ',' order by k) from jsonb_object_keys(v_opp->'business_requests'->'gatherings') k), 'none'));
   insert into r values ('forbidden identity/social keys in payload', coalesce(v_keys, 'none'));
+
+  -- 6b. the plan kind never reaches the business, whatever the host chose (friends / date / family), on every payload
+  for v_pt in select unnest(array['friends','date','family']) loop
+    update gatherings set party_type = v_pt where id = v_g3;
+    select x into v_opp from jsonb_array_elements(get_business_opportunities(v_partner)) x where x->>'request_id' = v_req3::text limit 1;
+    insert into r values ('party_type=' || v_pt || ' visible to business', (v_opp::text ilike '%party_type%' or (v_opp->'business_requests'->'gatherings')::text ilike '%"' || v_pt || '"%')::text);
+  end loop;
 
   -- 7. helper is not callable by clients
   insert into r values ('helper executable by authenticated', has_function_privilege('authenticated', 'public._gathering_request_attributes(uuid)', 'execute')::text);

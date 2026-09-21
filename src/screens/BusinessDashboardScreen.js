@@ -592,7 +592,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     if (!offerModalRequest) return [];
     return rankExperiencesForOpportunity({
       requestAttributes: offerModalRequest.attributes ?? [],
-      requestPartyType: offerModalRequest.gatherings?.party_type ?? null,
       requestPriceLevel: offerModalRequest.gatherings?.price_level ?? null,
       requestPartySize: offerModalRequest.party_size ?? null,
       experiences,

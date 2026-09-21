@@ -47,7 +47,7 @@ describe('business-facing functions never read personal profile columns', () => 
 describe('the opportunity payload', () => {
   const { body } = latest.get('get_business_opportunities');
   const built = body.slice(body.indexOf('jsonb_build_object('), body.indexOf(') as business_requests'));
-  it.each(['raw_text', 'shared_interests', 'match_id', 'requester_id', 'plan_label', 'latitude', 'longitude'])('never returns %s', (col) => {
+  it.each(['raw_text', 'shared_interests', 'match_id', 'requester_id', 'plan_label', 'latitude', 'longitude', 'party_type', 'plan_kind'])('never returns %s', (col) => {
     expect(built).not.toMatch(new RegExp(`'${col}'`));
   });
   it('shows the requester name only once an offer is accepted or completed, and never on a match request', () => {

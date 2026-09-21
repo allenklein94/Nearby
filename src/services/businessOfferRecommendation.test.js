@@ -78,14 +78,14 @@ describe('rankExperiencesForOpportunity', () => {
     ]);
   });
 
-  it('stacks a real party-type match on top of an attribute match', () => {
+  it('never credits a party type (a business does not learn or score the gathering\'s plan kind)', () => {
     const result = rankExperiencesForOpportunity({
       requestAttributes: ['date_friendly'],
-      requestPartyType: 'date',
+      requestPartyType: 'date', // ignored: the parameter no longer exists
       experiences: [{ id: 'e1', active: true, title: 'A Date Here', attributes: ['date_friendly'], party_type: 'date' }],
     });
-    expect(result[0].score).toBe(SCORE_INTEREST_MATCH + SCORE_INTEREST_MATCH);
-    expect(result[0].reasons).toHaveLength(2);
+    expect(result[0].score).toBe(SCORE_INTEREST_MATCH);
+    expect(result[0].reasons).toHaveLength(1);
   });
 
   it('scores a real price-level match at SCORE_HAPPENING_NOW', () => {
@@ -128,13 +128,13 @@ describe('rankExperiencesForOpportunity', () => {
   it('sorts highest-scoring experience first and caps at MAX_OFFER_SUGGESTIONS', () => {
     const experiences = [
       { id: 'low', active: true, title: 'Low', attributes: ['date_friendly'] },
-      { id: 'high', active: true, title: 'High', attributes: ['date_friendly'], party_type: 'date' },
+      { id: 'high', active: true, title: 'High', attributes: ['date_friendly', 'quiet'], price_level: '$$' },
       { id: 'e3', active: true, title: 'E3', attributes: ['date_friendly'] },
       { id: 'e4', active: true, title: 'E4', attributes: ['date_friendly'] },
     ];
     const result = rankExperiencesForOpportunity({
       requestAttributes: ['date_friendly'],
-      requestPartyType: 'date',
+      requestPriceLevel: '$$',
       experiences,
     });
     expect(result.length).toBeLessThanOrEqual(MAX_OFFER_SUGGESTIONS);

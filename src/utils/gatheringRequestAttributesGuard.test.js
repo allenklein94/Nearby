@@ -29,4 +29,14 @@ describe('gathering -> business request attributes', () => {
     const vocab = BUSINESS_ATTRIBUTE_OPTIONS.map((o) => o.key);
     features.forEach((f) => expect(vocab).toContain(f));
   });
+
+  it('the business never learns or scores the gathering plan kind (friends / date / family)', () => {
+    const scorer = fs.readFileSync(require.resolve('../services/businessOfferRecommendation.js'), 'utf8');
+    const dash = fs.readFileSync(require.resolve('../screens/BusinessDashboardScreen.js'), 'utf8');
+    expect(scorer).not.toMatch(/requestPartyType|Matches who this is for/);
+    expect(dash).not.toMatch(/requestPartyType|gatherings\?\.party_type/);
+    const fix = fs.readFileSync(require.resolve('../../supabase/migrations/20270202_business_payload_no_party_type.sql'), 'utf8').replace(/^--.*$/gm, '');
+    expect(fix).not.toContain('party_type');
+    expect(fix).toContain("'price_level', g.price_level");
+  });
 });
