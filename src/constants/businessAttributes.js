@@ -241,6 +241,7 @@ export const OCCASION_OPTIONS = [
   { key: 'holiday_gathering', label: 'Holiday Gathering', icon: '🎇' },
   { key: 'bachelor_bachelorette', label: 'Bachelor/Bachelorette', icon: '🎊' },
   { key: 'fundraiser', label: 'Fundraiser', icon: '🎗️' },
+  { key: 'first_date', label: 'First Date', icon: '🌹' },
   { key: 'milestone', label: 'Milestone', icon: '🥂' },
   // occasions.occasion_type's own personal-record-only catch-all (real
   // since 20260914_occasions.sql) -- was missing from this list entirely
