@@ -44,12 +44,26 @@ export const BUSINESS_ATTRIBUTE_OPTIONS = [
   { key: 'food_available', label: 'Food Available', icon: '🍽️' },
   { key: 'beginner_friendly', label: 'Beginner-Friendly', icon: '🌱' },
   { key: 'reservation_required', label: 'Reservation Required', icon: '📅' },
+  // Accessibility and family features (owner items 49/50, 2026-09-21): STRUCTURED, declared by the business, never inferred from
+  // its description or category. (Quiet and Kid-Friendly above are the "quiet environment" and "kids welcome" of the same lists.)
+  { key: 'wheelchair_accessible', label: 'Wheelchair Accessible', icon: '♿' },
+  { key: 'accessible_parking', label: 'Accessible Parking', icon: '🅿️' },
+  { key: 'accessible_restroom', label: 'Accessible Restroom', icon: '🚻' },
+  { key: 'service_animal_friendly', label: 'Service Animal Friendly', icon: '🦮' },
+  { key: 'stroller_friendly', label: 'Stroller Friendly', icon: '👶' },
+  { key: 'family_seating', label: 'Family Seating', icon: '🪑' },
+  { key: 'kid_menu', label: 'Kid Menu', icon: '🍟' },
 ];
+
+export const ACCESSIBILITY_ATTRIBUTE_KEYS = ['wheelchair_accessible', 'accessible_parking', 'accessible_restroom', 'service_animal_friendly', 'quiet'];
+export const FAMILY_ATTRIBUTE_KEYS = ['kid_friendly', 'stroller_friendly', 'family_seating', 'kid_menu'];
 
 // Tags a business uses to describe itself / a customer uses to ask for a venue, but that are not a personal dining "vibe"
 // (you don't have a preference for "corporate events" on a night out). Excluded from the consumer dining-preference
 // surfaces via VENUE_PREFERENCE_OPTIONS below; still valid values everywhere else (business profile, requests).
-export const BUSINESS_ONLY_ATTRIBUTE_KEYS = ['private_dining', 'corporate_events', 'food_available', 'reservation_required'];
+export const BUSINESS_ONLY_ATTRIBUTE_KEYS = ['private_dining', 'corporate_events', 'food_available', 'reservation_required', 'wheelchair_accessible', 'accessible_parking', 'accessible_restroom', 'service_animal_friendly', 'stroller_friendly', 'family_seating', 'kid_menu'];
+// (The seven accessibility/family keys are business/venue declarations. They are deliberately NOT a personal preference a person
+// stores on their profile: an access need is sensitive, and a person only ever states one per request, on purpose.)
 
 export const VENUE_PREFERENCE_OPTIONS = BUSINESS_ATTRIBUTE_OPTIONS.filter((o) => !BUSINESS_ONLY_ATTRIBUTE_KEYS.includes(o.key));
 

@@ -33,6 +33,13 @@ const KEYWORDS_BY_ATTRIBUTE = {
   food_available: ['food available', 'full menu', 'kitchen', 'serves food', 'food menu', 'lunch menu', 'dinner menu'],
   beginner_friendly: ['beginner friendly', 'beginner-friendly', 'beginners welcome', 'all skill levels', 'no experience needed', 'no experience necessary'],
   reservation_required: ['reservation required', 'reservations required', 'reservation only', 'by reservation', 'booking required', 'must book'],
+  wheelchair_accessible: ['wheelchair accessible', 'wheelchair-accessible', 'step-free', 'step free', 'ada accessible', 'ada compliant', 'ramp access'],
+  accessible_parking: ['accessible parking', 'handicap parking', 'disabled parking', 'accessible spaces'],
+  accessible_restroom: ['accessible restroom', 'accessible bathroom', 'ada restroom', 'accessible toilet'],
+  service_animal_friendly: ['service animal', 'service animals', 'service dog', 'service dogs'],
+  stroller_friendly: ['stroller friendly', 'stroller-friendly', 'strollers welcome', 'stroller access'],
+  family_seating: ['family seating', 'family tables', 'booster seat', 'booster seats', 'high chair', 'high chairs'],
+  kid_menu: ['kid menu', "kids menu", "kids' menu", "children's menu", 'kid-friendly menu'],
   corporate_events: ['corporate event', 'corporate events', 'team dinner', 'company event', 'client dinner', 'offsite', 'team building'],
 };
 

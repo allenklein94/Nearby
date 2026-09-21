@@ -13,6 +13,7 @@ import { REASON_TEXT, becauseYouLikeReason } from '../constants/recommendationRe
 import { getUserLocation, requireUserLocation } from './userLocation';
 import { isGatheringPast, isGatheringUpcoming } from '../utils/objectState';
 import { attendeeTotal } from '../utils/gatheringFullness';
+import { cleanFeatures } from '../utils/gatheringPractical';
 
 function localArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 100) / 100;
@@ -52,7 +53,7 @@ const WIDE_TIER_MAX_MILES = 15;
 // unknown, never a guessed value" convention. Added here (the one shared
 // select list every gathering-fetching function already reads from) so
 // every caller starts returning them for free, no per-call-site change.
-const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity, ask_local_businesses, price_level, party_type, show_group_insights, requires_approval, host_notifications, allow_attendee_invites, discoverable, equipment_provided, duration_minutes, genre';
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity, ask_local_businesses, price_level, party_type, show_group_insights, requires_approval, host_notifications, allow_attendee_invites, discoverable, equipment_provided, duration_minutes, genre, features';
 
 // ask_local_businesses only ever stores the host's real consent/intent at
 // creation time -- it does NOT itself create a business_requests row. A
@@ -66,7 +67,7 @@ const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, sc
 // exists, from GatheringDetailScreen's own "Ready to see what's
 // available?" banner (or the existing manual "Ask Local Businesses" link)
 // -- see submitBusinessRequestForGathering() in businessFulfillment.js.
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null, showGroupInsights = true, requiresApproval = false, allowAttendeeInvites = true, hostNotifications = true, discoverable = true, equipmentProvided = null, durationMinutes = null, genre = null }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null, showGroupInsights = true, requiresApproval = false, allowAttendeeInvites = true, hostNotifications = true, discoverable = true, equipmentProvided = null, durationMinutes = null, genre = null, features = [] }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -111,6 +112,7 @@ export async function createGathering({ title, description, interestTag, schedul
       allow_attendee_invites: allowAttendeeInvites,
       host_notifications: hostNotifications,
       equipment_provided: equipmentProvided ?? null,
+      features: cleanFeatures(features),
       duration_minutes: durationMinutes ?? null,
       genre: genre ?? null,
     })
@@ -803,7 +805,7 @@ export async function setGatheringCapacity(gatheringId, capacity) {
   return data;
 }
 
-export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps, showGroupInsights, requiresApproval, askLocalBusinesses, hostNotifications, allowAttendeeInvites, discoverable, equipmentProvided, durationMinutes, genre }) {
+export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps, showGroupInsights, requiresApproval, askLocalBusinesses, hostNotifications, allowAttendeeInvites, discoverable, equipmentProvided, durationMinutes, genre, features }) {
   const { error } = await supabase
     .from('gatherings')
     .update({
@@ -813,6 +815,7 @@ export async function updateGathering(gatheringId, { title, description, schedul
       ...(hostNotifications === undefined ? {} : { host_notifications: hostNotifications }),
       ...(allowAttendeeInvites === undefined ? {} : { allow_attendee_invites: allowAttendeeInvites }),
       ...(equipmentProvided === undefined ? {} : { equipment_provided: equipmentProvided }),
+      ...(features === undefined ? {} : { features: cleanFeatures(features) }),
       ...(durationMinutes === undefined ? {} : { duration_minutes: durationMinutes }),
       ...(genre === undefined ? {} : { genre }),
       title,

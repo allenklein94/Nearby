@@ -1,4 +1,4 @@
-import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, isMusicTag } from '../utils/gatheringPractical';
+import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_OPTIONS, cleanFeatures, toggleFeature, isMusicTag } from '../utils/gatheringPractical';
 import React, { useState, useEffect } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Platform, Keyboard, TouchableWithoutFeedback, Image, Switch } from 'react-native';
@@ -40,6 +40,7 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [groupSizeFeel, setGroupSizeFeel] = useState(gathering.group_size_feel ?? null);
   const [beginnerFriendly, setBeginnerFriendly] = useState(gathering.beginner_friendly ?? true);
   const [equipmentProvided, setEquipmentProvided] = useState(gathering.equipment_provided ?? null);
+  const [features, setFeatures] = useState(cleanFeatures(gathering.features));
   const [genre, setGenre] = useState(gathering.genre ?? null);
   const [durationMinutes, setDurationMinutes] = useState(gathering.duration_minutes ?? null);
   const [showGroupInsights, setShowGroupInsights] = useState(gathering.show_group_insights ?? true);
@@ -131,6 +132,7 @@ export default function EditGatheringScreen({ route, navigation }) {
         groupSizeFeel,
         beginnerFriendly,
         equipmentProvided,
+        features,
         durationMinutes,
         ...(isMusicTag(gathering.interest_tag) ? { genre } : {}),
         timelineSteps: cleanedTimelineSteps.length > 0 ? cleanedTimelineSteps : null,
@@ -278,6 +280,26 @@ export default function EditGatheringScreen({ route, navigation }) {
               onValueChange={setBeginnerFriendly}
               accessibilityLabel="Beginner friendly"
             />
+          </View>
+
+          <Text style={styles.label}>Accessibility & family</Text>
+          <View style={styles.chipsWrap}>
+            {GATHERING_FEATURE_OPTIONS.map((option) => {
+              const selected = features.includes(option.key);
+              return (
+                <TouchableOpacity
+                  key={option.key}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => { Haptics.selectionAsync(); setFeatures((cur) => toggleFeature(cur, option.key)); }}
+                  activeOpacity={0.85}
+                  accessibilityLabel={option.label}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.icon} {option.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           <Text style={styles.label}>Equipment</Text>

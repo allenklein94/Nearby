@@ -54,6 +54,8 @@ import {
 } from './intentResolverScoring';
 import { activitiesFromText } from '../constants/activityLayer';
 import { energiesFromText, applyEnergyToCandidates } from '../constants/energyLevel';
+import { cleanFeatures } from '../utils/gatheringPractical';
+import { applyDeclaredFeatures } from '../constants/declaredFeatures';
 import { parseAskFacets, applyAskFacets, partnerPartyType } from '../constants/askFacets';
 import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitmentLevel';
 import { spontaneityOf, isImmediate, applySpontaneityToCandidates, spontaneityCaption } from '../constants/spontaneity';
@@ -126,6 +128,7 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       durationMinutes: gathering.duration_minutes ?? null,
       requiresApproval: gathering.requires_approval === true,
       hostEnergy: gathering.energy_level ?? null,
+      features: cleanFeatures(gathering.features),
       priceLevel: gathering.price_level ?? null,
       attendeeCount,
       isFull,
@@ -687,6 +690,9 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // small lift (utils/openEndedAsk.js, rule-based). A real category or occasion in the ask leaves everything untouched.
   const openEndedGroups = openEndedAskGroups({ category, rawText, occasion, attributes });
   deduped = applyOpenEndedAsk(deduped, openEndedGroups, { dateWindow, partyType, hour: new Date().getHours() });
+
+  // Accessibility / family (items 49/50): a gathering the HOST declared these features for ranks up (declared only, never inferred).
+  deduped = applyDeclaredFeatures(deduped, attributes);
 
   // Combinations + negative intent (items 47/48): "outside", "no alcohol", "nothing crowded", "not too expensive" from the person's
   // own words. Exclusions drop only KNOWN conflicts; the caption says what was left out (constants/askFacets.js).

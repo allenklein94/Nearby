@@ -19,10 +19,10 @@ describe('business attribute vocabulary (one list, everywhere it is enforced)', 
     expect(extractAttributesFromText('A cozy coffee shop')).not.toContain('wifi');
   });
   it('every DB constraint in the widening migration lists exactly the client keys', () => {
-    const mig = read('supabase/migrations/20270193_more_cross_activity_attributes.sql');
-    const lists = [...mig.matchAll(/check \(\w+ <@ array\[([^\]]*)\]/g)].map((m) => quoted(m[1]));
-    expect(lists).toHaveLength(6);
-    for (const l of lists) expect(l).toEqual(keys);
+    const mig = read('supabase/migrations/20270198_accessibility_family_features.sql');
+    const list = quoted(mig.match(/new_list text := \$q\$([^$]*)\$q\$/)[1]);
+    expect(list).toEqual(keys);
+    expect((mig.match(/<@ array\[' \|\| new_list/g) ?? []).length).toBe(6);
   });
   it('the three edge functions accept exactly the client keys', () => {
     for (const [f, re] of [
@@ -44,7 +44,8 @@ describe('business attribute vocabulary (one list, everywhere it is enforced)', 
     expect(venue).not.toContain('corporate_events');
     expect(venue).not.toContain('reservation_required');
     expect(venue).toEqual(expect.arrayContaining(['wifi', 'beginner_friendly']));
-    expect(venue).toHaveLength(BUSINESS_ATTRIBUTE_OPTIONS.length - 4);
+    expect(venue).toHaveLength(BUSINESS_ATTRIBUTE_OPTIONS.length - 11);
+    for (const k of ['wheelchair_accessible', 'accessible_parking', 'accessible_restroom', 'service_animal_friendly', 'stroller_friendly', 'family_seating', 'kid_menu']) expect(venue).not.toContain(k);
     for (const f of ['src/components/DiningPreferencesPromptModal.js', 'src/screens/ProfileScreen.js', 'src/constants/preferencePollQuestions.js']) {
       expect(read(f)).toMatch(/VENUE_PREFERENCE_OPTIONS/);
       expect(read(f)).not.toMatch(/\bBUSINESS_ATTRIBUTE_OPTIONS\.map/);

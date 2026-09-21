@@ -17,7 +17,7 @@ describe('nearby canonical taxonomy', () => {
   it('exposes the other layers from their single sources', () => {
     expect(CATEGORY_GROUPS.length).toBeGreaterThanOrEqual(19);
     expect(OCCASION_OPTIONS.length).toBeGreaterThan(10);
-    expect(BUSINESS_ATTRIBUTE_OPTIONS.length).toBe(24);
+    expect(BUSINESS_ATTRIBUTE_OPTIONS.length).toBe(31);
     expect(INTENT_ROUTES.length).toBeGreaterThan(20);
   });
   it('teach once: a new tag plus its synonyms is understood by search with no other change', () => {

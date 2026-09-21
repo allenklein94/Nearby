@@ -26,6 +26,26 @@ export const MUSIC_TAGS = ['Music', 'Live Music', 'Concerts', 'DJs', 'Karaoke'];
 export const isMusicTag = (tag) => MUSIC_TAGS.includes(tag);
 export const genreLabel = (key) => GENRE_OPTIONS.find((o) => o.key && o.key === key)?.label ?? null;
 
+// Accessibility and family features a HOST declares on a gathering (owner items 49/50): a closed list, stored as
+// `gatherings.features`, shown only when the host said them, never inferred. Keys are the same ones the business vocabulary uses.
+export const GATHERING_FEATURE_OPTIONS = [
+  { key: 'wheelchair_accessible', label: 'Wheelchair accessible', icon: '♿' },
+  { key: 'accessible_parking', label: 'Accessible parking', icon: '🅿️' },
+  { key: 'accessible_restroom', label: 'Accessible restroom', icon: '🚻' },
+  { key: 'service_animal_friendly', label: 'Service animal friendly', icon: '🦮' },
+  { key: 'quiet', label: 'Quiet environment', icon: '🤫' },
+  { key: 'kid_friendly', label: 'Kids welcome', icon: '🧒' },
+  { key: 'stroller_friendly', label: 'Stroller friendly', icon: '👶' },
+  { key: 'family_seating', label: 'Family seating', icon: '🪑' },
+];
+export const GATHERING_FEATURE_KEYS = GATHERING_FEATURE_OPTIONS.map((o) => o.key);
+// Drops anything outside the closed list and duplicates (the database CHECK enforces the same).
+export const cleanFeatures = (arr) => [...new Set(Array.isArray(arr) ? arr : [])].filter((k) => GATHERING_FEATURE_KEYS.includes(k));
+export function toggleFeature(list, key) {
+  const cur = cleanFeatures(list);
+  return cur.includes(key) ? cur.filter((k) => k !== key) : cleanFeatures([...cur, key]);
+}
+
 export function durationLabel(minutes) {
   if (!Number.isFinite(minutes) || minutes < 15) return null;
   if (minutes < 60) return `${minutes} min`;
@@ -42,5 +62,9 @@ export function practicalFacts(g) {
   if (d) out.push(`⏱️ About ${d}`);
   const genre = genreLabel(g?.genre);
   if (genre) out.unshift(`🎵 ${genre}`);
+  for (const k of cleanFeatures(g?.features)) {
+    const o = GATHERING_FEATURE_OPTIONS.find((x) => x.key === k);
+    if (o) out.push(`${o.icon} ${o.label}`);
+  }
   return out;
 }
