@@ -11,7 +11,7 @@ export async function hydrateCategoryTags() {
     const cached = await AsyncStorage.getItem(CACHE_KEY);
     if (cached) applyRemoteCategoryTags(JSON.parse(cached));
   } catch (_e) { /* cache is a convenience */ }
-  const { data, error } = await supabase.from('category_tag_groups').select('tag, group_key');
+  const { data, error } = await supabase.from('category_tag_groups').select('tag, group_key, business_only');
   if (error || !Array.isArray(data)) return 0;
   const added = applyRemoteCategoryTags(data);
   AsyncStorage.setItem(CACHE_KEY, JSON.stringify(data)).catch(() => {});

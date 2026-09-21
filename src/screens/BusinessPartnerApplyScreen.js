@@ -11,7 +11,7 @@ import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEven
 import { classifyBusinessDescription } from '../services/businessOnboardingAssistant';
 import { suggestBusinessCategory } from '../services/businessCategorySuggestion';
 import { BUSINESS_ATTRIBUTE_OPTIONS, businessAttributeLabel, CUISINE_OPTIONS, cuisineLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
-import { CATEGORY_GROUPS, subcategoryOptionsFor, INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import { CATEGORY_GROUPS, subcategoryOptionsFor, businessTagOptions } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -518,7 +518,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
               nightlife live-music venue). */}
           <Text style={styles.label}>Also Classify As (optional)</Text>
           <View style={styles.chipRow}>
-            {INTEREST_OPTIONS.map((c) => (
+            {businessTagOptions().map((c) => (
               <TouchableOpacity
                 key={c}
                 style={[styles.chip, categories.includes(c) && styles.chipActive]}

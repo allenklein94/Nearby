@@ -119,6 +119,10 @@ export const CATEGORY_GROUPS = [
   {
     key: 'health_personal_care', icon: '🩺', label: 'Health & Personal Care',
     tags: ['General Wellness', 'Nutrition', 'Personal Care'],
+    // BUSINESS-ONLY tags (20270180, category_tag_groups.business_only): a business may describe ITSELF with these, but they
+    // are deliberately NOT in `tags`, so INTEREST_OPTIONS, PERSONAL_INTEREST_OPTIONS and every consumer picker, ranking
+    // helper and the AI extractor's vocabulary never see them. The server refuses them on any consumer surface.
+    businessOnlyTags: ['Dental', 'Vision', 'Physical Therapy', 'Chiropractic', 'Medical Services', 'Pharmacies'],
   },
   {
     key: 'education_classes', icon: '🎓', label: 'Education & Classes',
@@ -152,8 +156,17 @@ export function groupForTag(tag) {
 // per major, rather than inventing a second one -- this is the one shared
 // lookup both BusinessPartnerApplyScreen and BusinessDashboardScreen use
 // to render the right subcategory chips once a major category is picked.
-// health_personal_care carries only NON-clinical tags on purpose (20270179): clinical services (dental, physical therapy,
-// medical...) are withheld for privacy/regulatory reasons until a business-only tag mechanism exists.
+// health_personal_care's clinical tags are BUSINESS-ONLY (see businessOnlyTags): a business can pick them here, a consumer never can.
 export function subcategoryOptionsFor(categoryKey) {
-  return CATEGORY_GROUPS.find((g) => g.key === categoryKey)?.tags ?? [];
+  const g = CATEGORY_GROUPS.find((x) => x.key === categoryKey);
+  return g ? [...g.tags, ...(g.businessOnlyTags ?? [])] : [];
+}
+
+// Every tag a BUSINESS may declare about itself (consumer tags + business-only). Consumer surfaces use INTEREST_OPTIONS.
+export function businessTagOptions() {
+  return [...INTEREST_OPTIONS, ...CATEGORY_GROUPS.flatMap((g) => g.businessOnlyTags ?? [])];
+}
+
+export function isBusinessOnlyTag(tag) {
+  return CATEGORY_GROUPS.some((g) => (g.businessOnlyTags ?? []).includes(tag));
 }

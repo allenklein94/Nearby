@@ -73,7 +73,7 @@ import { deriveSignatureExperienceSuggestions } from '../constants/businessExper
 import { bundleableOccasions, experienceComponentOptionsForOccasion } from '../constants/experienceTemplates';
 import { classifyBusinessCategory } from '../constants/businessCategoryClassifier';
 import { extractAttributesFromText } from '../constants/businessAttributeExtraction';
-import { INTEREST_OPTIONS, subcategoryOptionsFor } from '../constants/gatheringCategories';
+import { INTEREST_OPTIONS, subcategoryOptionsFor, businessTagOptions } from '../constants/gatheringCategories';
 import SponsoredPromotionsPanel from '../components/SponsoredPromotionsPanel';
 import LoadErrorState from '../components/LoadErrorState';
 import BusinessNotificationPreferences from '../components/BusinessNotificationPreferences';
@@ -5901,7 +5901,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 Also show up under any of these, in addition to your main category above.
               </Text>
               <View style={styles.chipRow}>
-                {INTEREST_OPTIONS.map((c) => {
+                {businessTagOptions().map((c) => {
                   const selected = editCategoriesInput.includes(c);
                   return (
                     <TouchableOpacity

@@ -110,7 +110,7 @@ serve(async (req) => {
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-    { const vocab = await loadCategoryVocab(admin); SUBCATEGORY_OPTIONS_BY_CATEGORY = vocab.byGroup; ALL_LEAF_TAGS = vocab.tags; }
+    { const vocab = await loadCategoryVocab(admin, { includeBusinessOnly: true }); SUBCATEGORY_OPTIONS_BY_CATEGORY = vocab.byGroup; ALL_LEAF_TAGS = vocab.tags; }
 
     const { data: withinLimit } = await admin.rpc('check_and_increment_ai_use', {
       user_id_param: myId,

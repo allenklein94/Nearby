@@ -4,11 +4,16 @@
 // new tag is searchable/matchable everywhere with no per-feature list. Groups (majors) are never created here.
 import { CATEGORY_GROUPS, INTEREST_OPTIONS, PERSONAL_INTEREST_OPTIONS } from './gatheringCategories';
 
-export function registerCategoryTag(tag, groupKey) {
+export function registerCategoryTag(tag, groupKey, businessOnly = false) {
   if (typeof tag !== 'string' || !tag) return false;
   const group = CATEGORY_GROUPS.find((g) => g.key === groupKey);
   if (!group) return false;
-  if (CATEGORY_GROUPS.some((g) => g.tags.includes(tag))) return false;
+  if (CATEGORY_GROUPS.some((g) => g.tags.includes(tag) || (g.businessOnlyTags ?? []).includes(tag))) return false;
+  if (businessOnly) {
+    // Business-only (migration 20270180): kept OUT of every consumer list on purpose.
+    (group.businessOnlyTags ??= []).push(tag);
+    return true;
+  }
   group.tags.push(tag);
   INTEREST_OPTIONS.push(tag);
   if (tag !== 'Dating') PERSONAL_INTEREST_OPTIONS.push(tag);
@@ -19,7 +24,7 @@ export function registerCategoryTag(tag, groupKey) {
 export function applyRemoteCategoryTags(rows) {
   let added = 0;
   for (const r of Array.isArray(rows) ? rows : []) {
-    if (registerCategoryTag(r?.tag, r?.group_key)) added += 1;
+    if (registerCategoryTag(r?.tag, r?.group_key, r?.business_only === true)) added += 1;
   }
   return added;
 }

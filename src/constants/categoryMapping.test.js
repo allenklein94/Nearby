@@ -54,21 +54,22 @@ describe('canonical category mapping', () => {
     }
   });
 
-  test('SQL seed + the later tag migrations (20270177-20270179) together equal CATEGORY_GROUPS (no drift either way)', () => {
+  test('SQL seed + the later tag migrations (20270177-20270180) together equal CATEGORY_GROUPS (no drift either way)', () => {
     const dir = path.join(__dirname, '../../supabase/migrations');
     const rowsOf = (file, from, to) => {
       const sql = fs.readFileSync(path.join(dir, file), 'utf8');
       const body = sql.slice(sql.indexOf(from), to ? sql.indexOf(to) : undefined);
-      return [...body.matchAll(/\('((?:[^']|'')+)', '([a-z_]+)'\)/g)].map((m) => [m[1].replace(/''/g, "'"), m[2]]);
+      return [...body.matchAll(/\('((?:[^']|'')+)', '([a-z_]+)'(?:, (?:true|false))?\)/g)].map((m) => [m[1].replace(/''/g, "'"), m[2]]);
     };
     const base = rowsOf('20270118_category_mapping.sql', 'insert into public.category_tag_groups', 'create or replace function public.business_served_tags');
     const later = [
       ...rowsOf('20270177_category_tags_broad_taxonomy.sql', 'insert into public.category_tag_groups'),
       ...rowsOf('20270178_stay_getaway_subcategories.sql', 'insert into public.category_tag_groups'),
       ...rowsOf('20270179_education_health_subcategories.sql', 'insert into public.category_tag_groups'),
+      ...rowsOf('20270180_business_only_category_tags.sql', 'insert into public.category_tag_groups'),
     ];
     const key = (r) => `${r[1]}::${r[0]}`;
-    const expected = CATEGORY_GROUPS.flatMap((g) => g.tags.map((t) => [t, g.key]));
+    const expected = CATEGORY_GROUPS.flatMap((g) => [...g.tags, ...(g.businessOnlyTags ?? [])].map((t) => [t, g.key]));
     expect([...base, ...later].map(key).sort()).toEqual(expected.map(key).sort());
     // the original seed keeps its exact order within the file
     expect(base.map(key)).toEqual(expected.filter((r) => base.some((b) => key(b) === key(r))).map(key));

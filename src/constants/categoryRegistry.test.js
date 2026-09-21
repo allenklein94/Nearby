@@ -52,7 +52,7 @@ describe('single source of truth', () => {
     });
   test('the three tag-reading edge functions load the vocabulary from the table', () => {
     ['create-assistant', 'business-onboarding-assistant', 'screen-business-content'].forEach((fn) => {
-      expect(read(`supabase/functions/${fn}/index.ts`)).toMatch(/loadCategoryVocab\(admin\)/);
+      expect(read(`supabase/functions/${fn}/index.ts`)).toMatch(/loadCategoryVocab\(admin[,)]/);
     });
     expect(read('supabase/functions/_shared/categoryTags.ts')).toMatch(/from\('category_tag_groups'\)/);
   });

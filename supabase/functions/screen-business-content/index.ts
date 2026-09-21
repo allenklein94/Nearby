@@ -300,7 +300,7 @@ serve(async (req) => {
     }
 
     const admin = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!);
-    { const vocab = await loadCategoryVocab(admin); SUBCATEGORY_OPTIONS_BY_CATEGORY = vocab.byGroup; ALL_LEAF_TAGS = vocab.tags; }
+    { const vocab = await loadCategoryVocab(admin, { includeBusinessOnly: true }); SUBCATEGORY_OPTIONS_BY_CATEGORY = vocab.byGroup; ALL_LEAF_TAGS = vocab.tags; }
 
     // Ownership gate, service-role read -- never trust a client-supplied
     // partnerId claim, same pattern business-ai-assistant already
