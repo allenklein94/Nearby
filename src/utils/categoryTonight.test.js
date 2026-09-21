@@ -55,7 +55,7 @@ describe('wiring', () => {
   const src = require('fs').readFileSync(require.resolve('../screens/DiscoverHubScreen.js'), 'utf8');
   it('is one inline slice over the lists the view already has: no new query, screen or navigation', () => {
     expect(src).toContain("import { splitTonight } from '../utils/categoryTonight'");
-    expect((src.match(/Happening tonight/g) ?? []).length).toBe(1);
+    expect((src.match(/>Happening tonight</g) ?? []).length).toBe(1);
     const block = src.slice(src.indexOf('const { tonight: contextTonight'), src.indexOf('const { tonight: contextTonight') + 400);
     expect(block).not.toMatch(/getNearbyGatherings|supabase|navigate/);
   });
