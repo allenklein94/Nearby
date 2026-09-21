@@ -42,6 +42,7 @@ import { formatDateTime } from '../utils/timeLabels';
 import { countLabel } from '../utils/plural';
 import useMyInterests from '../hooks/useMyInterests';
 import { becauseYouLikeCategories } from '../constants/interestGraph';
+import { relatedInterestReason } from '../constants/hobbyRelations';
 import { rankByBlend, forYouBlend } from '../constants/blendedRanking';
 import usePersonalization from '../hooks/usePersonalization';
 import { useLanguage } from '../context/LanguageContext';
@@ -915,6 +916,11 @@ export default function GatheringsScreen({ navigation, route }) {
                 {item.matchesYourInterests && item.interest_tag && (
                   <View style={styles.matchBadge}>
                     <Text style={styles.matchBadgeText}>{`${t('gatherings.becauseYouLike')} ${item.interest_tag}`}</Text>
+                  </View>
+                )}
+                {!item.matchesYourInterests && item.relatedHobby && (
+                  <View style={styles.matchBadge}>
+                    <Text style={styles.matchBadgeText}>{relatedInterestReason(item.relatedHobby)}</Text>
                   </View>
                 )}
                 {(() => {

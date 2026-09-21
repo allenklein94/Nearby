@@ -1127,16 +1127,19 @@ export async function getBusinessAvailabilityById(availabilityId) {
 export async function getMyBusinessAffinitySignals() {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;
-  if (!myId) return { followedPartnerIds: new Set(), pastPartnerIds: new Set() };
+  if (!myId) return { followedPartnerIds: new Set(), pastPartnerIds: new Set(), declaredInterests: [] };
 
-  const [followedResult, pastResult] = await Promise.allSettled([
+  const [followedResult, pastResult, interestsResult] = await Promise.allSettled([
     supabase.from('business_followers').select('brand_partner_id').eq('user_id', myId),
     supabase
       .from('business_request_offers')
       .select('partner_id, status, business_requests!inner(requester_id)')
       .eq('business_requests.requester_id', myId)
       .in('status', ['accepted', 'completed']),
+    supabase.from('profiles').select('interests').eq('id', myId).single(),
   ]);
+  // The person's own declared interests, for the hobby -> business-attribute ranking lift (hobbyRelations.js).
+  const declaredInterests = interestsResult.status === 'fulfilled' ? (interestsResult.value.data?.interests ?? []) : [];
 
   const followedPartnerIds = new Set(
     followedResult.status === 'fulfilled' ? (followedResult.value.data ?? []).map((r) => r.brand_partner_id) : []
@@ -1144,7 +1147,7 @@ export async function getMyBusinessAffinitySignals() {
   const pastPartnerIds = new Set(
     pastResult.status === 'fulfilled' ? (pastResult.value.data ?? []).map((r) => r.partner_id) : []
   );
-  return { followedPartnerIds, pastPartnerIds };
+  return { followedPartnerIds, pastPartnerIds, declaredInterests };
 }
 
 // "Occasions we offer" (20270102): businesses near the caller that explicitly offer this occasion,

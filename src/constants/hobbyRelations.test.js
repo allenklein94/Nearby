@@ -1,5 +1,8 @@
-import { HOBBY_RELATIONS, relatedHobbyFor, relatedInterestReason, RELATED_POINTS } from './hobbyRelations';
+import { HOBBY_ATTRIBUTES, hobbyAttributeMatch, HOBBY_RELATIONS, relatedHobbyFor, relatedInterestReason, RELATED_POINTS } from './hobbyRelations';
 import { INTEREST_OPTIONS } from './gatheringCategories';
+import { BUSINESS_ATTRIBUTE_OPTIONS } from './businessAttributes';
+import { hobbyAttributeBonus, getBusinessAvailabilityReasons, SCORE_HOBBY_LINK, SCORE_HAPPENING_NOW } from '../services/intentResolverScoring';
+import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { blendedCategoryScore, relatedHobbyNudge, broadGroupNudge, forYouBlend, EXPLICIT_POINTS } from './blendedRanking';
 import { interestMatch } from '../utils/interestMatch';
 import { reasonKind, reasonTier, SIGNAL_TIERS } from './signalPriority';
@@ -64,5 +67,42 @@ describe('hobby relations', () => {
     const dir = path.join(__dirname, '../../supabase');
     const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]);
     walk(dir).filter((f) => /\.(sql|ts)$/.test(f)).forEach((f) => expect(fs.readFileSync(f, 'utf8')).not.toMatch(/hobbyRelations|HOBBY_RELATIONS/));
+  });
+
+  test('hobby -> business attribute links use real attribute keys and real hobbies', () => {
+    const keys = BUSINESS_ATTRIBUTE_OPTIONS.map((o) => o.key);
+    for (const [hobby, attrs] of Object.entries(HOBBY_ATTRIBUTES)) {
+      expect(INTEREST_OPTIONS).toContain(hobby);
+      attrs.forEach((a) => expect(keys).toContain(a));
+    }
+  });
+  test('"a coffee shop to edit photos": a photographer gets a small lift for a laptop-friendly business, nobody else does', () => {
+    const row = { attributes: ['laptop_friendly', 'quiet'] };
+    expect(hobbyAttributeMatch(row.attributes, ['Photography'])).toEqual({ hobby: 'Photography', attribute: 'laptop_friendly' });
+    expect(hobbyAttributeBonus(row, ['Photography'])).toBe(SCORE_HOBBY_LINK);
+    expect(SCORE_HOBBY_LINK).toBeLessThan(SCORE_HAPPENING_NOW);
+    expect(hobbyAttributeBonus(row, ['Cooking'])).toBe(0);
+    expect(hobbyAttributeBonus(row, [])).toBe(0);
+    expect(hobbyAttributeBonus({ attributes: null }, ['Photography'])).toBe(0);
+    expect(getBusinessAvailabilityReasons(row, { declaredInterests: ['Photography'] })).toContain('Related to your interest in Photography');
+    expect(getBusinessAvailabilityReasons(row, { declaredInterests: ['Cooking'] })).not.toContain('Related to your interest in Photography');
+  });
+  test('Home merges a related gathering with its honest reason; an unrelated one is dropped', () => {
+    const merged = mergeHomeGatheringSignals({
+      becauseYouLike: [{ id: 'a', interest_tag: 'Museums' }, { id: 'b', interest_tag: 'Coffee' }],
+      declaredInterests: ['Photography'],
+    });
+    const texts = JSON.stringify(merged);
+    expect(texts).toContain('Related to your interest in Photography');
+    expect(texts).not.toMatch(/Because you like Museums/);
+    expect(texts).not.toContain('"id":"b"');
+  });
+  test('the Gatherings feed, Home and the resolver all read the shared map (no second copy)', () => {
+    const fs = require('fs'); const path = require('path');
+    const read = (f) => fs.readFileSync(path.join(__dirname, '../..', f), 'utf8');
+    expect(read('src/services/gatherings.js')).toMatch(/relatedHobbyFor/);
+    expect(read('src/services/homeDashboard.js')).toMatch(/relatedHobbyFor/);
+    expect(read('src/screens/GatheringsScreen.js')).toMatch(/relatedInterestReason/);
+    expect(read('src/services/intentResolver.js')).toMatch(/hobbyAttributeBonus/);
   });
 });

@@ -15,6 +15,7 @@ import { formatDistanceAway } from '../utils/formatDistance';
 // copies -- same values, same logic, just factored out.
 import { isWithinRightNowWindow } from '../utils/rightNowWindow';
 import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS } from '../constants/businessAttributes';
+import { hobbyAttributeMatch, relatedInterestReason } from '../constants/hobbyRelations';
 
 // Shared relevance weights, kept on the same scale
 // getGatheringFitReasons() already established (interest match = 5, close
@@ -162,6 +163,13 @@ export function attributeAndCuisineBonus(row, attributes, cuisine) {
     bonus += SCORE_HAPPENING_NOW;
   }
   return bonus;
+}
+
+// Hobby link (owner request, 2026-09-21): a small lift for a business that declares an attribute suiting one of the person's
+// declared hobbies (Photography -> laptop_friendly). Below every other bonus (SCORE_HAPPENING_NOW is 2), ranking only.
+export const SCORE_HOBBY_LINK = 1;
+export function hobbyAttributeBonus(row, declaredInterests) {
+  return hobbyAttributeMatch(row?.attributes, declaredInterests) ? SCORE_HOBBY_LINK : 0;
 }
 
 // "10/10 blueprint" audit, Finding 8 (CLAUDE.md, Aug 30 2026): the business's
@@ -342,7 +350,7 @@ export function whoForPreferenceBonus(row, whoForSignals) {
 // exact condition (never a new signal, never a fabricated one) and returns
 // human-readable text for whichever ones actually fired, in the same
 // priority order resolveBusinessAvailability() already scores them in.
-export function getBusinessAvailabilityReasons(row, { category, attributes, cuisine, partyType, occasion, followedPartnerIds, pastPartnerIds, whoForSignals, whoForName } = {}) {
+export function getBusinessAvailabilityReasons(row, { category, attributes, cuisine, partyType, occasion, followedPartnerIds, pastPartnerIds, whoForSignals, whoForName, declaredInterests } = {}) {
   const reasons = [];
   const matchesCategory = !!(category && (
     (row.category && row.category === category)
@@ -365,6 +373,8 @@ export function getBusinessAvailabilityReasons(row, { category, attributes, cuis
       reasons.push(label);
     }
   }
+  const hobbyLink = hobbyAttributeMatch(row.attributes, declaredInterests);
+  if (hobbyLink) reasons.push(relatedInterestReason(hobbyLink.hobby));
   if (partyType) {
     const accommodates = Array.isArray(row.accommodates_party_types) ? row.accommodates_party_types : [];
     if (accommodates.includes(partyType)) reasons.push('Accommodates your group');

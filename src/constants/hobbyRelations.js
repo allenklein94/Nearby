@@ -38,3 +38,29 @@ export function relatedHobbyFor(tag, declared = []) {
 export function relatedInterestReason(hobby) {
   return hobby ? `Related to your interest in ${hobby}` : null;
 }
+
+// Hobby -> the business ATTRIBUTES (layer 3, businessAttributes.js) that suit it: "a coffee shop to edit photos" is a coffee shop
+// that is laptop_friendly / photography_friendly. Only ever a small ranking lift on a business the ask already returned (never a
+// filter, never a way into results); the business declared the attribute itself. Keys are guarded against the real attribute list.
+export const HOBBY_ATTRIBUTES = {
+  Photography: ['photography_friendly', 'laptop_friendly', 'waterfront'],
+  Gaming: ['board_game_friendly', 'group_friendly'],
+  'Board Games': ['board_game_friendly', 'group_friendly'],
+  'D&D': ['board_game_friendly', 'group_friendly'],
+  Reading: ['book_lovers', 'quiet', 'laptop_friendly'],
+  Crafts: ['craft_friendly'],
+  Technology: ['laptop_friendly'],
+  Running: ['fitness_focused'],
+  Fishing: ['waterfront'],
+};
+
+// { hobby, attribute } for the first declared hobby whose linked attribute this business row declares, else null.
+export function hobbyAttributeMatch(rowAttributes, declared = []) {
+  const attrs = Array.isArray(rowAttributes) ? rowAttributes : [];
+  if (attrs.length === 0) return null;
+  for (const hobby of canonicalizeInterests(declared)) {
+    const attribute = (HOBBY_ATTRIBUTES[hobby] ?? []).find((a) => attrs.includes(a));
+    if (attribute) return { hobby, attribute };
+  }
+  return null;
+}

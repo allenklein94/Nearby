@@ -10,6 +10,7 @@ import { subModeFromMotivations } from '../utils/peopleSubModePreference';
 import { getFriendDiscoveryCandidates } from './friendDiscovery';
 import { meetSomeoneTonight, countTonightSupply } from '../utils/meetTonight';
 import { canonicalizeInterests, becauseYouLikeCategories } from '../constants/interestGraph';
+import { relatedHobbyFor } from '../constants/hobbyRelations';
 import { isGatheringPast } from '../utils/objectState';
 import { attendeeTotal } from '../utils/gatheringFullness';
 
@@ -619,12 +620,17 @@ export async function getHomeDashboard() {
     const top = pool.map((g) => ({ gathering: g, ...getGatheringFitReasons(g) })).sort((a, b) => b.score - a.score)[0];
     if (top && top.score >= 5) bestPick = { ...top.gathering, reasons: top.reasons };
   }
-  const becauseYouLike = topInterestCategories.length > 0
-    ? nearbyGatherings
-        .filter((g) => topInterestCategories.includes(g.interest_tag) && !upcomingPlanIds.has(g.id))
-        .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
-        .slice(0, 6)
+  const byStart = (a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at);
+  const directMatches = topInterestCategories.length > 0
+    ? nearbyGatherings.filter((g) => topInterestCategories.includes(g.interest_tag) && !upcomingPlanIds.has(g.id)).sort(byStart)
     : [];
+  // Hobby-related fill (hobbyRelations.js): after the direct matches, a gathering whose tag is only RELATED to a hobby the
+  // person DECLARED (never behavior alone) may fill the remaining slots; mergeHomeGatheringSignals words it "Related to
+  // your interest in X" via interestMatch, so it never claims "you like".
+  const relatedFill = nearbyGatherings
+    .filter((g) => !upcomingPlanIds.has(g.id) && !directMatches.includes(g) && relatedHobbyFor(g.interest_tag, profileData?.interests))
+    .sort(byStart);
+  const becauseYouLike = [...directMatches, ...relatedFill].slice(0, 6);
 
   // Genuine recent activity from your actual friends — a new
   // gathering they're hosting, in the last 3 days. Real names, real

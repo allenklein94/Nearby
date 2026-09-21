@@ -1,3 +1,4 @@
+import { relatedHobbyFor } from '../constants/hobbyRelations';
 import { groupForTag } from '../constants/gatheringCategories';
 import { formatDistanceAway } from '../utils/formatDistance';
 import { supabase } from './supabase';
@@ -200,6 +201,8 @@ async function enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, myInt
       return {
         ...gathering,
         matchesYourInterests: gathering.interest_tag ? myInterests.includes(gathering.interest_tag) : false,
+        // A tag only RELATED to a declared hobby (hobbyRelations.js); never set for a declared tag.
+        relatedHobby: gathering.interest_tag ? relatedHobbyFor(gathering.interest_tag, myInterests) : null,
         distanceLabel: distanceMiles !== null
           ? formatDistanceAway(distanceMiles)
           : 'Nearby',

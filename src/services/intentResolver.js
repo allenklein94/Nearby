@@ -36,6 +36,7 @@ import {
   scoreGatheringForResolver,
   priceAndPartyBonus,
   attributeAndCuisineBonus,
+  hobbyAttributeBonus,
   accommodatesPartyTypeBonus,
   occasionBonus,
   occasionOfferingScore,
@@ -322,6 +323,7 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
     // less relevant but slightly closer one, without ever hiding an
     // otherwise-eligible posting outright.
     score += attributeAndCuisineBonus(row, attributes, cuisine);
+    score += hobbyAttributeBonus(row, affinitySignals?.declaredInterests);
     // "10/10 blueprint" audit, Finding 8 (CLAUDE.md, Aug 30 2026): the
     // business's own real accommodates_party_types now propagates all the
     // way to a consumer-facing ranking bonus, not just its public profile.
@@ -364,6 +366,7 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
       category, attributes, cuisine, partyType, occasion,
       followedPartnerIds: affinitySignals?.followedPartnerIds,
       pastPartnerIds: affinitySignals?.pastPartnerIds,
+      declaredInterests: affinitySignals?.declaredInterests,
       whoForSignals, whoForName,
     });
     const baseSubtitle = row.price != null ? `${row.title} · ${moneyLabel(row.price)}` : row.title;
@@ -590,7 +593,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // itself, only once it's already done its own network work. Best-effort,
   // fails open to empty sets rather than blocking or breaking the resolver.
   const affinitySignalsPromise = getMyBusinessAffinitySignals().catch(() => ({
-    followedPartnerIds: new Set(), pastPartnerIds: new Set(),
+    followedPartnerIds: new Set(), pastPartnerIds: new Set(), declaredInterests: [],
   }));
 
   // Item 100 (CLAUDE.md): only fetched when the ask actually carries a real
