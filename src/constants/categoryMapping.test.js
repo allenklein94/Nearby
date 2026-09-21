@@ -54,7 +54,7 @@ describe('canonical category mapping', () => {
     }
   });
 
-  test('SQL seed + the later tag migrations (20270177-20270184) together equal CATEGORY_GROUPS (no drift either way)', () => {
+  test('SQL seed + the later tag migrations (20270177-20270187) together equal CATEGORY_GROUPS (no drift either way)', () => {
     const dir = path.join(__dirname, '../../supabase/migrations');
     const rowsOf = (file, from, to) => {
       const sql = fs.readFileSync(path.join(dir, file), 'utf8');
@@ -70,6 +70,7 @@ describe('canonical category mapping', () => {
       ...rowsOf('20270181_attractions_water_subcategories.sql', 'insert into public.category_tag_groups'),
       ...rowsOf('20270183_hobby_tags.sql', 'insert into public.category_tag_groups'),
       ...rowsOf('20270184_camera_shops_tag.sql', 'insert into public.category_tag_groups'),
+      ...rowsOf('20270187_breakfast_pastries_tags.sql', 'insert into public.category_tag_groups'),
     ];
     const key = (r) => `${r[1]}::${r[0]}`;
     const expected = CATEGORY_GROUPS.flatMap((g) => [...g.tags, ...(g.businessOnlyTags ?? [])].map((t) => [t, g.key]));

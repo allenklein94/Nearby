@@ -24,3 +24,26 @@ describe('business type search', () => {
     expect(searchBusinessTypes(null)).toEqual([]);
   });
 });
+
+describe('public web signup form parity', () => {
+  const fs = require('fs');
+  const html = fs.readFileSync(require.resolve('../../docs/business.html'), 'utf8');
+  it('its embedded taxonomy equals the app taxonomy (consumer + business-only tags)', () => {
+    const m = html.match(/var APPLY_TAGS = (\{.*\});/);
+    expect(m).toBeTruthy();
+    const web = JSON.parse(m[1]);
+    const app = {};
+    CATEGORY_GROUPS.forEach((g) => { app[g.key] = [...g.tags, ...(g.businessOnlyTags ?? [])]; });
+    expect(web).toEqual(app);
+  });
+  it('sends the specific type and the server keeps it only when it is a real tag of that major', () => {
+    expect(html).toContain('subcategory: selectedApplySubcategory');
+    const fn = fs.readFileSync(require.resolve('../../supabase/functions/submit-business-application/index.ts'), 'utf8');
+    expect(fn).toMatch(/from\('category_tag_groups'\)[\s\S]*eq\('group_key', category\)/);
+    expect(fn).toContain('      subcategory,');
+  });
+  it('the inline script still parses', () => {
+    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((x) => x[1]);
+    scripts.forEach((code) => expect(() => new Function(code)).not.toThrow());
+  });
+});

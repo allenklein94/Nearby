@@ -548,7 +548,26 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
             </>
           ) : null}
 
-          <Text style={styles.label}>What else describes you? (optional)</Text>
+          {category && subcategoryOptionsFor(category).filter((t) => t !== subcategory).length > 0 ? (
+            <>
+              <Text style={styles.label}>What else describes you? (optional)</Text>
+              <View style={styles.chipRow}>
+                {subcategoryOptionsFor(category).filter((t) => t !== subcategory).slice(0, 14).map((t) => (
+                  <TouchableOpacity
+                    key={t}
+                    style={[styles.chip, categories.includes(t) && styles.chipActive]}
+                    onPress={() => toggleCategory(t)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t}
+                    accessibilityState={{ selected: categories.includes(t) }}
+                  >
+                    <Text style={[styles.chipText, categories.includes(t) && styles.chipTextActive]}>{t}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          ) : null}
+          <Text style={styles.label}>What is your business great for? (optional)</Text>
           <View style={styles.chipRow}>
             {BUSINESS_ATTRIBUTE_OPTIONS.map((a) => {
               const selected = attributes.includes(a.key);

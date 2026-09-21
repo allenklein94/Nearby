@@ -823,12 +823,16 @@
       </div>
 
       <div class="apply-field">
-        <label>Category</label>
-        <div class="apply-category-row" id="apply-category-row"></div>
+        <label for="apply-type-search">What type of business are you?</label>
+        <input type="text" id="apply-type-search" placeholder="Search, e.g. coffee, gym, salon, plumber" maxlength="200" autocomplete="off">
+        <div class="apply-category-row" id="apply-type-results"></div>
+        <div class="apply-category-row" id="apply-type-picked"></div>
+        <button type="button" id="apply-browse-toggle" class="apply-category-chip" style="margin-top:8px">Browse all categories</button>
+        <div class="apply-category-row" id="apply-category-row" hidden></div>
       </div>
 
       <div class="apply-field">
-        <label for="apply-category-text">Can't find your category? <span style="font-weight:400">(optional)</span></label>
+        <label for="apply-category-text">Nothing fits? Describe your business <span style="font-weight:400">(optional)</span></label>
         <input type="text" id="apply-category-text" name="categoryText" placeholder="Tell us what kind of business it is, e.g. small-batch coffee roaster" maxlength="200">
       </div>
 
@@ -1022,7 +1026,69 @@
     { key: 'education_classes', label: '🎓 Education & Classes' },
     { key: 'attractions_things_to_see', label: '🎟️ Attractions & Things to See' },
   ];
+  var APPLY_TAGS = {"food_drink": ["Coffee", "Foodie", "Cooking", "Wine", "Brunch", "Breakfast", "Pastries", "Bakeries", "Bars & Lounges", "Breweries", "Food Trucks", "Happy Hour", "Restaurants", "Dessert & Ice Cream", "Fine Dining", "Fast Casual", "Takeout & Delivery", "Wineries"], "activities_recreation": ["Fitness", "Yoga", "Sports", "Running", "Pickleball", "Tennis", "Cycling", "Swimming", "Climbing", "Golf", "Bowling", "Gyms", "Pilates", "Walking", "Basketball", "Soccer", "Volleyball", "Skating", "Martial Arts", "Water Sports", "Boating", "Adventure", "Cars"], "entertainment_nightlife": ["Music", "Movies", "Gaming", "Dancing", "Concerts", "Karaoke", "Comedy", "Trivia", "Nightlife", "Live Music", "DJs", "Nightclubs", "Theater", "Performing Arts", "Festivals", "Arcade", "Escape Rooms", "Casinos", "Special Events", "Street Events", "Board Games", "D&D"], "dating_social": ["Dating", "Speed Dating", "Singles Events", "Group Hangouts", "Date Night", "First Date", "Double Date", "Make New Friends", "Couples", "Social Clubs"], "arts_culture_learning": ["Reading", "Art", "Photography", "Crafts", "Art Galleries", "Art Classes", "Pottery", "Cultural Events", "History", "Libraries", "Music Lessons", "Collecting", "Fashion"], "shopping": ["Farmers Markets", "Thrift & Vintage", "Florist", "Party & Event Decor", "Gift Shop", "Boutiques", "Clothing", "Jewelry", "Home & Furniture", "Electronics", "Markets", "Pop-Ups", "Local Shopping", "Camera Shops"], "wellness_beauty": ["Meditation", "Spa Day", "Self-Care", "Massage", "Salons", "Barbers", "Nails", "Skin Care", "Wellness Centers", "Sauna", "Recovery"], "family_kids": ["Family Playdate", "Kids Activity", "Family Events", "Playgrounds", "Indoor Play", "Kids Museums", "Camps", "Kids Sports", "Birthday Activities", "Family Dining"], "outdoors_nature": ["Hiking", "Outdoors", "Camping", "Fishing", "Kayaking", "Parks", "Beaches", "Trails", "Paddleboarding", "Wildlife", "Gardens", "Scenic Views", "Picnics", "Surfing", "Snorkeling", "Diving", "Gardening"], "pets": ["Dogs", "Cats", "Dog Meetup", "Dog Parks", "Pet Friendly Places", "Pet Events", "Grooming", "Pet Stores", "Pet Boarding", "Dog Walking", "Pet Training", "Veterinary"], "home_local_services": ["Cleaning", "Landscaping", "Plumbing", "Electrical", "HVAC", "Handyman", "Moving", "Pest Control", "Repairs", "Interior Design"], "auto_transportation": ["Car Wash", "Detailing", "Auto Repair", "Tires", "Oil Change", "EV Charging", "Car Rental", "Parking", "Towing"], "business_networking": ["Networking", "Coworking", "Conferences", "Professional Events", "Entrepreneurship", "Career Events", "Real Estate", "Finance"], "community_volunteering": ["Volunteering", "Faith & Spirituality", "Fundraiser", "Charity", "Community Events", "Neighborhood Events", "Cleanups", "Donation Drives"], "travel_experiences": ["Travel", "Day Trip", "Tours", "Excursions", "Boat Tours", "Adventure Experiences", "Local Experiences"], "stay_getaway": ["Weekend Getaway", "Staycation", "Road Trip", "Resorts", "Hotels", "Vacation Rentals", "Romantic Getaways", "Spa Resorts", "Family Resorts", "Pet Friendly Stays", "Glamping"], "health_personal_care": ["General Wellness", "Nutrition", "Personal Care", "Dental", "Vision", "Physical Therapy", "Chiropractic", "Medical Services", "Pharmacies"], "education_classes": ["Workshops", "Lectures", "Cooking Class", "Study Group", "Language Exchange", "Tech Meetup", "Classes", "Language Classes", "Technology Classes", "Tutoring", "Adult Education", "Kids Education", "Professional Development", "Certifications", "Dance Classes", "Technology"], "attractions_things_to_see": ["Museums", "Zoos", "Aquariums", "Landmarks", "Amusement Park", "Sightseeing", "Historic Sites", "Observation Decks", "Exhibits", "Tourist Attractions", "Local Attractions"]};
+  var APPLY_GROUP_LABELS = {};
+  APPLY_CATEGORIES.forEach(function (c) { APPLY_GROUP_LABELS[c.key] = c.label.replace(/^\S+\s+/, ''); });
   var selectedApplyCategory = null;
+  var selectedApplySubcategory = null;
+  function applyNorm(t) { return String(t || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function applySearchTypes(query) {
+    var q = applyNorm(query);
+    if (q.length < 2) return [];
+    var out = [];
+    Object.keys(APPLY_TAGS).forEach(function (key) {
+      APPLY_TAGS[key].forEach(function (tag) {
+        var t = applyNorm(tag);
+        var rank = t === q ? 0 : t.indexOf(q) === 0 ? 1 : t.split(' ').some(function (w) { return w.indexOf(q) === 0; }) ? 2 : t.indexOf(q) >= 0 ? 3 : -1;
+        if (rank >= 0) out.push({ rank: rank, category: key, subcategory: tag, label: APPLY_GROUP_LABELS[key] + ' \u2192 ' + tag });
+      });
+      var gl = applyNorm(APPLY_GROUP_LABELS[key]);
+      if (gl.indexOf(q) === 0 || gl.split(' ').some(function (w) { return w.indexOf(q) === 0; })) out.push({ rank: 4, category: key, subcategory: null, label: APPLY_GROUP_LABELS[key] });
+    });
+    out.sort(function (a, b) { return a.rank - b.rank || a.label.localeCompare(b.label); });
+    return out.slice(0, 6);
+  }
+  var applyTypeSearch = document.getElementById('apply-type-search');
+  var applyTypeResults = document.getElementById('apply-type-results');
+  var applyTypePicked = document.getElementById('apply-type-picked');
+  function renderApplyType() {
+    applyTypeResults.textContent = '';
+    applyTypePicked.textContent = '';
+    if (selectedApplyCategory) {
+      var pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'apply-category-chip selected';
+      pill.textContent = APPLY_GROUP_LABELS[selectedApplyCategory] + (selectedApplySubcategory ? ' \u2192 ' + selectedApplySubcategory : '') + '  \u2715';
+      pill.addEventListener('click', function () { selectedApplyCategory = null; selectedApplySubcategory = null; syncApplyChips(); renderApplyType(); });
+      applyTypePicked.appendChild(pill);
+      return;
+    }
+    applySearchTypes(applyTypeSearch.value).forEach(function (r) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'apply-category-chip';
+      b.textContent = r.label;
+      b.addEventListener('click', function () {
+        selectedApplyCategory = r.category; selectedApplySubcategory = r.subcategory;
+        applyTypeSearch.value = ''; syncApplyChips(); renderApplyType();
+      });
+      applyTypeResults.appendChild(b);
+    });
+  }
+  applyTypeSearch.addEventListener('input', function () {
+    if (!selectedApplyCategory) document.getElementById('apply-category-text').value = applyTypeSearch.value.slice(0, 200);
+    renderApplyType();
+  });
+  function syncApplyChips() {
+    Array.prototype.forEach.call(document.getElementById('apply-category-row').children, function (el) {
+      el.classList.toggle('selected', el.getAttribute('data-key') === selectedApplyCategory);
+    });
+  }
+  document.getElementById('apply-browse-toggle').addEventListener('click', function () {
+    var row = document.getElementById('apply-category-row');
+    row.hidden = !row.hidden;
+    this.textContent = row.hidden ? 'Browse all categories' : 'Hide categories';
+  });
   var applyCategoryRow = document.getElementById('apply-category-row');
   APPLY_CATEGORIES.forEach(function (c) {
     var chip = document.createElement('button');
@@ -1032,9 +1098,9 @@
     chip.setAttribute('data-key', c.key);
     chip.addEventListener('click', function () {
       selectedApplyCategory = selectedApplyCategory === c.key ? null : c.key;
-      Array.prototype.forEach.call(applyCategoryRow.children, function (el) {
-        el.classList.toggle('selected', el === chip && selectedApplyCategory !== null);
-      });
+      selectedApplySubcategory = null;
+      syncApplyChips();
+      renderApplyType();
     });
     applyCategoryRow.appendChild(chip);
   });
@@ -1094,6 +1160,7 @@
       body: JSON.stringify({
         businessName: businessName,
         category: selectedApplyCategory,
+        subcategory: selectedApplySubcategory,
         categoryText: categoryText,
         address: address,
         website: website,

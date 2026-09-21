@@ -46,7 +46,7 @@
 export const CATEGORY_GROUPS = [
   {
     key: 'food_drink', icon: '🍔', label: 'Food & Drink',
-    tags: ['Coffee', 'Foodie', 'Cooking', 'Wine', 'Brunch', 'Bakeries', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour', 'Restaurants', 'Dessert & Ice Cream', 'Fine Dining', 'Fast Casual', 'Takeout & Delivery', 'Wineries'],
+    tags: ['Coffee', 'Foodie', 'Cooking', 'Wine', 'Brunch', 'Breakfast', 'Pastries', 'Bakeries', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour', 'Restaurants', 'Dessert & Ice Cream', 'Fine Dining', 'Fast Casual', 'Takeout & Delivery', 'Wineries'],
   },
   {
     key: 'activities_recreation', icon: '🏃', label: 'Activities & Recreation',

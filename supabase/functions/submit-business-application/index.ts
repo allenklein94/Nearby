@@ -114,6 +114,7 @@ serve(async (req) => {
   const category = typeof body.category === 'string' ? body.category.trim() : '';
   // "Can't find your category?" -- the applicant's own words. Signup is never rejected for lacking a listed
   // category; an admin maps it later (admin_map_business_category).
+  const subcategoryRaw = typeof body.subcategory === 'string' ? body.subcategory.trim() : '';
   const categoryText = typeof body.categoryText === 'string' ? body.categoryText.trim() : '';
   const address = typeof body.address === 'string' ? body.address.trim() : '';
   const website = typeof body.website === 'string' ? body.website.trim() : '';
@@ -170,12 +171,21 @@ serve(async (req) => {
     return jsonResponse({ error: 'Too many applications from this connection recently. Please try again later.' }, 429);
   }
 
+  // A specific type ("Coffee") is kept only when it is a real tag of the chosen major (the tag registry decides).
+  let subcategory: string | null = null;
+  if (category && subcategoryRaw) {
+    const { data: tagRow } = await supabase
+      .from('category_tag_groups').select('tag').eq('tag', subcategoryRaw).eq('group_key', category).maybeSingle();
+    subcategory = tagRow?.tag ?? null;
+  }
+
   const { data: inserted, error } = await supabase
     .from('business_partner_requests')
     .insert({
       business_name: businessName,
       business_description: description || null,
       category: category || null,
+      subcategory,
       unlisted_category_text: category ? null : categoryText,
       address,
       website: website || null,
