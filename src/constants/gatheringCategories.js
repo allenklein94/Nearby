@@ -74,7 +74,7 @@ export const CATEGORY_GROUPS = [
     // major-only precedent. Widened together with the 7 CHECK constraints
     // that mirror this exact array (20261104_plan_addons.sql).
     key: 'shopping', icon: '🛍️', label: 'Shopping',
-    tags: ['Farmers Markets', 'Thrift & Vintage', 'Florist', 'Party & Event Decor', 'Gift Shop', 'Boutiques', 'Clothing', 'Jewelry', 'Home & Furniture', 'Electronics', 'Markets', 'Pop-Ups', 'Local Shopping'],
+    tags: ['Farmers Markets', 'Thrift & Vintage', 'Florist', 'Party & Event Decor', 'Gift Shop', 'Boutiques', 'Clothing', 'Jewelry', 'Home & Furniture', 'Electronics', 'Markets', 'Pop-Ups', 'Local Shopping', 'Camera Shops'],
   },
   {
     key: 'wellness_beauty', icon: '💆', label: 'Wellness & Beauty',

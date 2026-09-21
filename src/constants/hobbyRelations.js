@@ -10,7 +10,7 @@ import { canonicalizeInterests } from './interestGraph';
 export const RELATED_POINTS = 2;
 
 export const HOBBY_RELATIONS = {
-  Photography: ['Museums', 'Art Galleries', 'Trails', 'Scenic Views', 'Parks', 'Art Classes', 'Workshops'],
+  Photography: ['Museums', 'Art Galleries', 'Trails', 'Scenic Views', 'Parks', 'Art Classes', 'Workshops', 'Camera Shops'],
   Gaming: ['Arcade', 'Board Games', 'Trivia', 'Escape Rooms', 'Tech Meetup'],
   'Board Games': ['Gaming', 'D&D', 'Trivia'],
   'D&D': ['Board Games', 'Gaming', 'Trivia'],
