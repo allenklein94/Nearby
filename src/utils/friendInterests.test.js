@@ -50,4 +50,10 @@ describe('friends who like a tag', () => {
     expect(sql).toMatch(/revoke all on function public\.get_friends_interested_in\(text\[\]\) from public, anon/);
     expect(sql).toMatch(/returns table \(tag text, friend_count integer, sample_names text\[\]\)/);
   });
+  test('the Gatherings feed badge, Home and Discover all use the shared helper', () => {
+    const fs = require('fs'); const path = require('path');
+    ['src/screens/GatheringsScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/utils/homeSignalMerge.js'].forEach((f) => {
+      expect(fs.readFileSync(path.join(__dirname, '../..', f), 'utf8')).toMatch(/friendsInterestReason/);
+    });
+  });
 });

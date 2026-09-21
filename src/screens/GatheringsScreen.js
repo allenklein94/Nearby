@@ -43,6 +43,8 @@ import { countLabel } from '../utils/plural';
 import useMyInterests from '../hooks/useMyInterests';
 import { becauseYouLikeCategories } from '../constants/interestGraph';
 import { relatedInterestReason } from '../constants/hobbyRelations';
+import { getFriendsInterestedIn } from '../services/friendInterests';
+import { friendsInterestReason } from '../utils/friendInterests';
 import { rankByBlend, forYouBlend } from '../constants/blendedRanking';
 import usePersonalization from '../hooks/usePersonalization';
 import { useLanguage } from '../context/LanguageContext';
@@ -80,6 +82,14 @@ export default function GatheringsScreen({ navigation, route }) {
   const tab = 'nearby';
   const [radiusTier, setRadiusTier] = useState('local');
   const [nearby, setNearby] = useState([]);
+  const [friendInterestByTag, setFriendInterestByTag] = useState({});
+  const nearbyTagKey = [...new Set(nearby.map((g) => g.interest_tag).filter(Boolean))].sort().join('|');
+  useEffect(() => {
+    if (!nearbyTagKey) return undefined;
+    let cancelled = false;
+    getFriendsInterestedIn(nearbyTagKey.split('|')).then((m) => { if (!cancelled) setFriendInterestByTag(m); });
+    return () => { cancelled = true; };
+  }, [nearbyTagKey]);
   const [refreshing, setRefreshing] = useState(false);
   const [photoUrls, setPhotoUrls] = useState({});
   const [attendeePhotoUrls, setAttendeePhotoUrls] = useState({});
@@ -924,7 +934,9 @@ export default function GatheringsScreen({ navigation, route }) {
                   </View>
                 )}
                 {(() => {
-                  const friendReason = friendGoingReason(item, myFriendIds);
+                  // A friend going wins; otherwise a friend who declared this tag ("Sam is into Coffee", server-enforced friends only).
+                  const friendReason = friendGoingReason(item, myFriendIds)
+                    ?? friendsInterestReason(item.interest_tag, friendInterestByTag[item.interest_tag]);
                   return friendReason ? (
                     <View style={styles.friendsInterestedBadge}>
                       <Text style={styles.friendsInterestedText}>🤝 {friendReason}</Text>
