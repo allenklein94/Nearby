@@ -999,7 +999,7 @@ export default function HomeScreen({ navigation }) {
         // category "recommendation recipe" section (assembleExperience(),
         // experienceAssembly.js) -- null whenever there's no real occasion,
         // no template for it, or no genuine matching inventory.
-        const { items: resolved, experience } = await resolveIntent({ category: result.category, dateWindow: result.dateWindow, rawText: typedText, partySize: result.partySize ?? null, priceLevel: result.priceLevel ?? null, partyType: result.partyType ?? null, attributes: result.attributes ?? [], cuisine: result.cuisine ?? null, occasion: result.occasion ?? null });
+        const { items: resolved, experience, openEndedNote } = await resolveIntent({ category: result.category, dateWindow: result.dateWindow, rawText: typedText, partySize: result.partySize ?? null, priceLevel: result.priceLevel ?? null, partyType: result.partyType ?? null, attributes: result.attributes ?? [], cuisine: result.cuisine ?? null, occasion: result.occasion ?? null });
         // P1 remediation (CLAUDE.md, Aug 28 Full Coherence Audit,
         // Scenario D): a real, deterministic person-shaped-phrase check,
         // never a fabricated resolver candidate -- appends one honest
@@ -1018,7 +1018,7 @@ export default function HomeScreen({ navigation }) {
           partySize: result.partySize ?? null,
         });
         if (items.length > 0) {
-          setIntentResults({ items, experience, classifyResult: result, typedText, submissionId });
+          setIntentResults({ items, experience, openEndedNote, classifyResult: result, typedText, submissionId });
         } else {
           setIntentEmptyFallback({ classifyResult: result, typedText, submissionId });
         }
@@ -1781,6 +1781,9 @@ export default function HomeScreen({ navigation }) {
           {intentResults && (
             <View style={styles.intentResults}>
               {intentResults.items?.length > 0 && <FoundLine />}
+              {intentResults.items?.length > 0 && !!intentResults.openEndedNote && (
+                <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{intentResults.openEndedNote}</Text>
+              )}
               {intentResults.classifyResult?.intent === 'unclear' && (
                 <Text style={styles.intentUnclearNote}>
                   {detectFriendDiscoveryIntent(intentResults.typedText)

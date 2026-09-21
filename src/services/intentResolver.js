@@ -53,6 +53,7 @@ import {
 import { getUserLocation } from './userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
 import { attendeeTotal } from '../utils/gatheringFullness';
+import { openEndedAskGroups, applyOpenEndedAsk, openEndedCaption } from '../utils/openEndedAsk';
 
 const RESULT_CAP = 4;
 
@@ -645,7 +646,14 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     console.error('business weather nudge skipped', e);
   }
 
+  // Open-ended ask ("something fun tonight"): no category named, so only inventory in social groups is eligible and it gets a
+  // small lift (utils/openEndedAsk.js, rule-based). A real category or occasion in the ask leaves everything untouched.
+  const openEndedGroups = openEndedAskGroups({ category, rawText, occasion, attributes });
+  deduped = applyOpenEndedAsk(deduped, openEndedGroups);
+
   deduped.sort((a, b) => b.score - a.score);
+  // The caption names only the groups the SHOWN results really come from.
+  const openEndedNote = openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups);
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,
@@ -658,7 +666,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // section when this is truthy.
   const experience = assembleExperience(occasion, deduped, { partyType, dateWindow, attributes });
 
-  return { items: deduped.slice(0, RESULT_CAP), experience };
+  return { items: deduped.slice(0, RESULT_CAP), experience, openEndedNote };
 }
 
 // A synthetic result item (not a real resolveIntent() candidate) --
