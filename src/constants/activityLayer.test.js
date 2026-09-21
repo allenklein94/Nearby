@@ -82,3 +82,38 @@ describe('things you can do here (owner item 38)', () => {
     expect(src).toMatch(/What You Can Do Here/);
   });
 });
+
+describe('owner preview hints (structured, never owner-typed)', () => {
+  const { activityHints } = require('./activityLayer');
+  const shop = { subcategory: 'Coffee', category: 'food_drink', attributes: [], offered_occasions: [] };
+  it('names the existing attribute that would unlock an activity', () => {
+    const h = activityHints(shop).find((x) => x.key === 'work_remotely');
+    expect(h.add).toMatchObject({ kind: 'attribute', key: 'laptop_friendly' });
+    expect(activityHints(shop).find((x) => x.key === 'bring_dog').add.key).toBe('dog_friendly');
+    expect(activityHints(shop).find((x) => x.key === 'small_gathering').add).toMatchObject({ kind: 'partyType', key: 'groups' });
+  });
+  it('adding the attribute makes the activity eligible and removes its hint', () => {
+    const next = { ...shop, attributes: ['laptop_friendly'] };
+    expect(activitiesForBusiness(next)).toContain('work_remotely');
+    expect(activityHints(next).some((x) => x.key === 'work_remotely')).toBe(false);
+  });
+  it('a business without the attribute does not qualify, and tag-only activities have no hint', () => {
+    expect(activitiesForBusiness(shop)).not.toContain('work_remotely');
+    expect(activityHints(shop).some((x) => x.key === 'grab_coffee')).toBe(false);
+    expect(activityHints(null)).toEqual([]);
+  });
+  it('every hint is real vocabulary and owners cannot type activities', () => {
+    const attrs = new Set(BUSINESS_ATTRIBUTE_OPTIONS.map((a) => a.key));
+    for (const h of activityHints(shop)) if (h.add.kind === 'attribute') expect(attrs.has(h.add.key)).toBe(true);
+    const fs = require('fs'), path = require('path');
+    const dash = fs.readFileSync(path.join(__dirname, '../screens/BusinessDashboardScreen.js'), 'utf8');
+    expect(dash).toMatch(/activityHints\(selectedPartner\)/);
+    expect(dash).not.toMatch(/setBusinessActivit|activity_text|customActivit/);
+  });
+  it('friend and friends both route to Meet friends via activity, not the word coffee', () => {
+    for (const t of ['I need somewhere to meet a friend', 'meet friends', 'see my friends']) {
+      expect(activitiesFromText(t)).toContain('meet_a_friend');
+      expect(activityFit(shop, activitiesFromText(t)).reason).toBe('Good for meeting a friend');
+    }
+  });
+});

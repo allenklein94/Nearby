@@ -1,3 +1,4 @@
+import { activityHints } from '../constants/activityLayer';
 import { canRespondToOpportunity } from '../utils/objectLifecycle';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
@@ -4789,6 +4790,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   >
                     <Text style={styles.messageMemberLink}>✏️ Edit Profile</Text>
                   </TouchableOpacity>
+                  {(() => {
+                    const hint = selectedPartner ? activityHints(selectedPartner)[0] : null;
+                    if (!hint) return null;
+                    return (
+                      <TouchableOpacity onPress={openEditProfileModal} style={{ marginTop: spacing.sm }} accessibilityRole="button" accessibilityLabel={`Add ${hint.add.label} to your profile`}>
+                        <Text style={styles.breakdownText}>{hint.icon} {hint.display}: add {hint.add.label} to your profile to appear for this activity.</Text>
+                      </TouchableOpacity>
+                    );
+                  })()}
                 </View>
 
                 {/* "Business Profile Phase 1" addendum -- AI Category

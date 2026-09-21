@@ -60,6 +60,8 @@ export const ACTIVITIES = [
   },
 ];
 
+import { BUSINESS_ATTRIBUTE_OPTIONS, OCCASION_OPTIONS, OFFERED_OCCASION_KEYS, ACCOMMODATE_PARTY_TYPE_OPTIONS } from './businessAttributes';
+
 const asArray = (v) => (Array.isArray(v) ? v : []);
 
 // The business's own declared signals, in one shape (a search row or a profile row both work).
@@ -86,6 +88,32 @@ export function activitiesFromText(text) {
 export function thingsToDoHere(row) {
   const mine = new Set(activitiesForBusiness(row));
   return ACTIVITIES.filter((a) => mine.has(a.key)).map((a) => ({ key: a.key, icon: a.icon, label: a.display }));
+}
+
+// Owner-side preview: activities this business does NOT qualify for yet but would by declaring ONE more thing that already
+// exists in the vocabulary (an attribute, a party type or an offered occasion). Derived by asking the same `fits` rule with the
+// candidate added, so it can never drift from matching and can never offer an activity the business cannot really support.
+// Tag-only activities (Grab coffee) have no such hint: only the business's real category qualifies it. Nothing is stored and
+// nothing here lets an owner claim an activity directly.
+const HINT_PREFER = { work_remotely: 'laptop_friendly', casual_date: 'date_friendly', group_hangout: 'group_friendly', bring_dog: 'dog_friendly', small_gathering: 'groups' };
+
+export function activityHints(row) {
+  if (!row) return [];
+  const b = businessSignals(row);
+  const candidates = [
+    ...BUSINESS_ATTRIBUTE_OPTIONS.map((o) => ({ kind: 'attribute', key: o.key, label: o.label, next: { ...b, attributes: [...b.attributes, o.key] } })),
+    ...ACCOMMODATE_PARTY_TYPE_OPTIONS.map((o) => ({ kind: 'partyType', key: o.key, label: o.label, next: { ...b, partyTypes: [...b.partyTypes, o.key] } })),
+    ...OCCASION_OPTIONS.filter((o) => OFFERED_OCCASION_KEYS.includes(o.key)).map((o) => ({ kind: 'occasion', key: o.key, label: o.label, next: { ...b, occasions: [...b.occasions, o.key] } })),
+  ];
+  const hints = [];
+  for (const a of ACTIVITIES) {
+    if (a.fits(b)) continue;
+    const flips = candidates.filter((c) => a.fits(c.next));
+    if (flips.length === 0) continue;
+    const add = flips.find((c) => c.key === HINT_PREFER[a.key]) ?? flips[0];
+    hints.push({ key: a.key, icon: a.icon, display: a.display, add: { kind: add.kind, key: add.key, label: add.label } });
+  }
+  return hints;
 }
 
 // The first asked activity this business fits, else null (drives one ranking nudge and one reason line).
