@@ -11,6 +11,7 @@ import { searchPlacesByText, getPlaceDetails } from '../services/places';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { classifyBusinessDescription } from '../services/businessOnboardingAssistant';
 import { suggestBusinessCategory } from '../services/businessCategorySuggestion';
+import { activityChoices, toggleActivity } from '../constants/activityLayer';
 import { BUSINESS_ATTRIBUTE_OPTIONS, businessAttributeLabel, CUISINE_OPTIONS, cuisineLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { CATEGORY_GROUPS, subcategoryOptionsFor, businessTagOptions } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
@@ -550,7 +551,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
 
           {category && subcategoryOptionsFor(category).filter((t) => t !== subcategory).length > 0 ? (
             <>
-              <Text style={styles.label}>What else describes you? (optional)</Text>
+              <Text style={styles.label}>Anything else you are? (optional)</Text>
               <View style={styles.chipRow}>
                 {subcategoryOptionsFor(category).filter((t) => t !== subcategory).slice(0, 14).map((t) => (
                   <TouchableOpacity
@@ -567,7 +568,34 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
               </View>
             </>
           ) : null}
-          <Text style={styles.label}>What is your business great for? (optional)</Text>
+          {/* Step 2 (item 53): what customers can do here. A checklist over the same attributes; nothing else is stored. */}
+          {category ? (() => {
+            const row = { category, subcategory, categories, attributes };
+            const tagOptions = subcategoryOptionsFor(category);
+            const choices = activityChoices(row, tagOptions);
+            if (choices.length === 0) return null;
+            return (
+              <>
+                <Text style={styles.label}>What can customers do here? (optional)</Text>
+                <View style={styles.chipRow}>
+                  {choices.map((c) => (
+                    <TouchableOpacity
+                      key={c.key}
+                      style={[styles.chip, c.checked && styles.chipActive, c.locked && { opacity: 0.7 }]}
+                      onPress={() => { if (c.locked) return; const next = toggleActivity(row, c.key, tagOptions); setAttributes(next.attributes); setCategories(next.categories); }}
+                      disabled={c.locked}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${c.display}${c.checked ? ', selected' : ''}${c.locked ? ', already covered by your business type' : ''}`}
+                      accessibilityState={{ selected: c.checked, disabled: !!c.locked }}
+                    >
+                      <Text style={[styles.chipText, c.checked && styles.chipTextActive]}>{c.checked ? '☑' : '☐'} {c.icon} {c.display}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            );
+          })() : null}
+          <Text style={styles.label}>What describes your business? (optional)</Text>
           <View style={styles.chipRow}>
             {BUSINESS_ATTRIBUTE_OPTIONS.map((a) => {
               const selected = attributes.includes(a.key);

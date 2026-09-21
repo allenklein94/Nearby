@@ -117,3 +117,44 @@ describe('owner preview hints (structured, never owner-typed)', () => {
     }
   });
 });
+
+describe('onboarding activity checklist (item 53)', () => {
+  const { activityChoices, toggleActivity, activitiesForBusiness } = require('./activityLayer');
+  const TAGS = ['Coffee', 'Breakfast', 'Bakeries', 'Brunch'];
+  const coffee = (attributes = [], categories = []) => ({ category: 'food_drink', subcategory: 'Coffee', categories, attributes });
+
+  it('a coffee shop is already covered for the type-only activities (checked, locked); the rest are offered unchecked', () => {
+    const by = Object.fromEntries(activityChoices(coffee(), TAGS).map((x) => [x.key, x]));
+    expect(by.grab_coffee).toMatchObject({ checked: true, locked: true });
+    expect(by.meet_a_friend).toMatchObject({ checked: true, locked: true });
+    expect(by.work_remotely).toMatchObject({ checked: false });
+    expect(by.casual_date.add).toEqual({ attributes: ['date_friendly'], categories: [] });
+    // Breakfast is a tag, so ticking it declares the Breakfast tag (never a free-form claim)
+    expect(by.breakfast.add).toEqual({ attributes: [], categories: ['Breakfast'] });
+  });
+  it('ticking adds exactly what makes it fit, and matching then agrees', () => {
+    const next = toggleActivity(coffee(), 'work_remotely', TAGS);
+    expect(next.attributes).toEqual(expect.arrayContaining(['laptop_friendly']));
+    expect(activitiesForBusiness(coffee(next.attributes, next.categories))).toContain('work_remotely');
+    expect(activitiesForBusiness(coffee())).not.toContain('work_remotely');
+    const b = toggleActivity(coffee(), 'breakfast', TAGS);
+    expect(activitiesForBusiness(coffee(b.attributes, b.categories))).toContain('breakfast');
+  });
+  it('unticking removes only what was carrying it; a locked type-covered activity cannot be unticked', () => {
+    const on = toggleActivity(coffee(['wifi']), 'casual_date', TAGS);
+    expect(on.attributes).toEqual(['wifi', 'date_friendly']);
+    expect(toggleActivity(coffee(on.attributes), 'casual_date', TAGS).attributes).toEqual(['wifi']);
+    const bf = toggleActivity(coffee(), 'breakfast', TAGS);
+    expect(toggleActivity(coffee(bf.attributes, bf.categories), 'breakfast', TAGS).categories).toEqual([]);
+    expect(toggleActivity(coffee(['wifi']), 'grab_coffee', TAGS)).toEqual({ attributes: ['wifi'], categories: [] });
+  });
+  it('an activity needing a party type or occasion (not writable on the application) is not offered', () => {
+    expect(activityChoices(coffee(), TAGS).map((x) => x.key)).not.toContain('small_gathering');
+  });
+  it('the apply screen uses the checklist and never stores activities itself', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../screens/BusinessPartnerApplyScreen.js'), 'utf8');
+    expect(src).toMatch(/What can customers do here\?/);
+    expect(src).toMatch(/toggleActivity\(/);
+    expect(src).not.toMatch(/activities:/);
+  });
+});

@@ -48,15 +48,18 @@ const PRICE_OPTIONS = [
 // something different -- a felt vibe, and a hard cap -- and fabricating
 // this label from either would misrepresent real data). See CLAUDE.md's
 // "Category/filter taxonomy pass" section.
+// "What kind of plan is this?" (owner item 54): the same `party_type` column and vocabulary as everywhere else, worded as the KIND of
+// plan. Networking is the existing `coworkers` value and a casual hangout is `friends` (one value each, no second list); a plan is one
+// kind, so this stays single-select. Not specified stays the default.
 const PARTY_TYPE_OPTIONS = [
   { key: null, label: 'Not specified' },
-  { key: 'solo', label: '🧍 Solo-Friendly' },
-  { key: 'friends', label: '👥 Bring Friends' },
-  { key: 'groups', label: '👨‍👩‍👧‍👦 Big Group' },
-  { key: 'date', label: '💕 A Date Idea' },
+  { key: 'friends', label: '👥 Friends / casual hangout' },
+  { key: 'date', label: '💕 Date' },
   { key: 'family', label: '👨‍👩‍👧 Family' },
-  { key: 'coworkers', label: '💼 Coworkers' },
-  { key: 'new_people', label: '🤝 Meet New People' },
+  { key: 'coworkers', label: '💼 Networking / work' },
+  { key: 'new_people', label: '🤝 Meet new people' },
+  { key: 'groups', label: '👨‍👩‍👧‍👦 Big group' },
+  { key: 'solo', label: '🧍 Solo-friendly' },
 ];
 
 // Capacity buckets match the original mockup language. "10+" doesn't map to
@@ -836,7 +839,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
                   </>
                 )}
-                <Text style={styles.label}>Who's this for?</Text>
+                <Text style={styles.label}>What kind of plan is this?</Text>
                 <View style={styles.chipsWrap}>
                   {PARTY_TYPE_OPTIONS.map((option) => {
                     const selected = partyType === option.key;

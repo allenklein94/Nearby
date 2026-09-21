@@ -116,6 +116,67 @@ export function activityHints(row) {
   return hints;
 }
 
+// Onboarding checklist "What can customers do here?" (owner item 53). The checklist is a convenient way to DECLARE what the business
+// already has a place for, never a second store: an activity is checked only when its own `fits` rule passes on what the business has
+// declared, and ticking one adds exactly the attribute(s) or secondary tag that make it fit (the same search activityHints uses).
+// An activity the business TYPE already covers (Grab coffee for a coffee shop) shows checked and locked. One that could only come from
+// a party type or an offered occasion (not writable on the application) is not offered, so nothing here can claim what it cannot save.
+const ATTR_KEYS = BUSINESS_ATTRIBUTE_OPTIONS.map((o) => o.key);
+const sig = (row, attributes, categories) => businessSignals({ ...row, attributes, categories });
+
+// { attributes: [...], categories: [...] } that, added to the row, make the activity fit; null when no such addition exists.
+function additionsThatMakeFit(activity, row, tagOptions) {
+  const attrs = asArray(row?.attributes);
+  const cats = asArray(row?.categories);
+  const fitsWith = (addAttrs, addCats) => activity.fits(sig(row, [...attrs, ...addAttrs], [...cats, ...addCats]));
+  const singles = ATTR_KEYS.filter((k) => !attrs.includes(k) && fitsWith([k], []));
+  if (singles.length > 0) return { attributes: [singles.find((k) => k === HINT_PREFER[activity.key]) ?? singles[0]], categories: [] };
+  const tags = asArray(tagOptions).filter((t) => t && !cats.includes(t) && t !== row?.subcategory && t !== row?.category);
+  const tag = tags.find((t) => fitsWith([], [t]));
+  if (tag) return { attributes: [], categories: [tag] };
+  for (const x of ATTR_KEYS) {
+    if (attrs.includes(x)) continue;
+    for (const y of ATTR_KEYS) {
+      if (y <= x || attrs.includes(y)) continue;
+      if (fitsWith([x, y], [])) return { attributes: [x, y], categories: [] };
+    }
+  }
+  return null;
+}
+
+// `tagOptions` = the leaf tags of the chosen major (the same list the "Anything else you are?" row offers).
+export function activityChoices(row, tagOptions = []) {
+  const b = businessSignals(row);
+  const typeOnly = { ...b, attributes: [], tags: [row?.subcategory, row?.category].filter(Boolean) };
+  return ACTIVITIES.map((a) => {
+    const checked = a.fits(b);
+    return { key: a.key, icon: a.icon, display: a.display, checked, locked: checked && a.fits(typeOnly), add: checked ? null : additionsThatMakeFit(a, row, tagOptions) };
+  }).filter((c) => c.checked || c.add);
+}
+
+// The { attributes, categories } after ticking / unticking one activity. Unticking removes only what was carrying it; a locked
+// (type-covered) activity cannot be unticked and returns the row's lists unchanged.
+export function toggleActivity(row, activityKey, tagOptions = []) {
+  const attrs = asArray(row?.attributes);
+  const cats = asArray(row?.categories);
+  const unchanged = { attributes: attrs, categories: cats };
+  const a = ACTIVITIES.find((x) => x.key === activityKey);
+  if (!a) return unchanged;
+  const fits = (A, C) => a.fits(sig(row, A, C));
+  if (!fits(attrs, cats)) {
+    const add = additionsThatMakeFit(a, row, tagOptions);
+    return add ? { attributes: [...attrs, ...add.attributes], categories: [...cats, ...add.categories] } : unchanged;
+  }
+  if (a.fits({ ...businessSignals(row), attributes: [], tags: [row?.subcategory, row?.category].filter(Boolean) })) return unchanged;
+  const needA = attrs.filter((k) => !fits(attrs.filter((x) => x !== k), cats));
+  const needC = cats.filter((t) => !fits(attrs, cats.filter((x) => x !== t)));
+  if (needA.length + needC.length > 0) return { attributes: attrs.filter((k) => !needA.includes(k)), categories: cats.filter((t) => !needC.includes(t)) };
+  // several declared things each carry it: remove all the ones that would carry it alone
+  const sufA = attrs.filter((k) => fits([k], []));
+  const sufC = cats.filter((t) => fits([], [t]));
+  return { attributes: attrs.filter((k) => !sufA.includes(k)), categories: cats.filter((t) => !sufC.includes(t)) };
+}
+
 // The first asked activity this business fits, else null (drives one ranking nudge and one reason line).
 export function activityFit(row, askedActivities) {
   const asked = asArray(askedActivities);
