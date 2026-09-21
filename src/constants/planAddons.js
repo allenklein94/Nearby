@@ -68,6 +68,8 @@ const OCCASION_ADDON_RELEVANCE = {
   reunion: ['photographer', 'dessert', 'entertainment'],
   welcome: ['gift', 'flowers'],
   holiday_gathering: ['decorations', 'dessert', 'entertainment', 'gift'],
+  bachelor_bachelorette: ['transportation', 'entertainment', 'decorations', 'photographer'],
+  fundraiser: ['decorations', 'entertainment', 'photographer'],
   milestone: ['dessert', 'photographer', 'gift'],
   life_event: ['dessert', 'gift'],
   other: ['dessert', 'photographer', 'flowers', 'gift'],

@@ -239,6 +239,8 @@ export const OCCASION_OPTIONS = [
   { key: 'reunion', label: 'Reunion', icon: '🤗' },
   { key: 'welcome', label: 'Welcome', icon: '🙌' },
   { key: 'holiday_gathering', label: 'Holiday Gathering', icon: '🎇' },
+  { key: 'bachelor_bachelorette', label: 'Bachelor/Bachelorette', icon: '🎊' },
+  { key: 'fundraiser', label: 'Fundraiser', icon: '🎗️' },
   { key: 'milestone', label: 'Milestone', icon: '🥂' },
   // occasions.occasion_type's own personal-record-only catch-all (real
   // since 20260914_occasions.sql) -- was missing from this list entirely
@@ -286,7 +288,7 @@ export const OCCASION_GROUPS = [
   {
     key: 'celebrations',
     label: 'Celebrations',
-    keys: ['birthday', 'anniversary', 'celebration', 'graduation', 'engagement', 'wedding', 'baby_shower', 'housewarming'],
+    keys: ['birthday', 'anniversary', 'celebration', 'graduation', 'engagement', 'wedding', 'baby_shower', 'housewarming', 'bachelor_bachelorette'],
   },
   {
     key: 'milestones',
@@ -296,7 +298,7 @@ export const OCCASION_GROUPS = [
   {
     key: 'social_moments',
     label: 'Social Moments',
-    keys: ['reunion', 'farewell', 'welcome', 'holiday_gathering'],
+    keys: ['reunion', 'farewell', 'welcome', 'holiday_gathering', 'fundraiser'],
   },
   {
     key: 'custom',
