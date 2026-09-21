@@ -29,6 +29,7 @@ import { formatDateTime } from '../utils/timeLabels';
 import { spacing, radius, typography } from '../theme';
 
 import { unlockStatus } from '../utils/unlockProgress';
+import { thingsToDoHere } from '../constants/activityLayer';
 function formatDate(iso) {
   return formatDateTime(iso);
 }
@@ -73,6 +74,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
   const styles = getStyles(colors, shadow);
 
   const [partner, setPartner] = useState(null);
+  const thingsToDo = partner ? thingsToDoHere(partner) : [];
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
@@ -278,6 +280,21 @@ export default function BusinessProfileScreen({ route, navigation }) {
         {partner.differentiator ? (
           <Text style={[styles.description, { fontStyle: 'italic' }]}>"{partner.differentiator}"</Text>
         ) : null}
+
+        {/* "What you can do here" (owner item 38): derived ONLY from what the business declared (activityLayer.js), so it
+            never claims something the owner did not say; hidden when nothing is supported. */}
+        {thingsToDo.length > 0 && (
+          <>
+            <Text style={styles.attributeSectionHeader}>What You Can Do Here</Text>
+            <View style={styles.attributeChipRow}>
+              {thingsToDo.map((a) => (
+                <View key={a.key} style={styles.attributeChip}>
+                  <Text style={styles.attributeChipText}>{a.icon} {a.label}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
 
         {((partner.attributes ?? []).length > 0 || partner.cuisine) && (
           <>

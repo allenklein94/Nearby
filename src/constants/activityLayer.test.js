@@ -39,7 +39,7 @@ describe('activity layer (what can someone do here?)', () => {
     const src = require('fs').readFileSync(require('path').join(__dirname, 'activityLayer.js'), 'utf8');
     for (const m of src.matchAll(/\[('[^\]]+')\]\.includes|\[(('[^']+',? ?)+)\]\.includes/g)) {
       const items = (m[1] || m[2]).split(',').map((x) => x.trim().replace(/'/g, '')).filter(Boolean);
-      for (const i of items) expect(tags.has(i) || attrs.has(i)).toBe(true);
+      for (const i of items) expect(tags.has(i) || attrs.has(i) || occ.has(i)).toBe(true);
     }
     for (const m of src.matchAll(/occasions\.includes\('([a-z_]+)'\)/g)) expect(occ.has(m[1])).toBe(true);
     expect(ACTIVITIES.length).toBeGreaterThan(5);
@@ -57,5 +57,28 @@ describe('activity layer is wired into ranking', () => {
     const src = require('fs').readFileSync(require('path').join(__dirname, '../services/intentResolver.js'), 'utf8');
     expect(src).toMatch(/activitiesFromText\(rawText\)/);
     expect(src).toMatch(/score \+= activityFitBonus\(row, askedActivities\)/);
+  });
+});
+
+describe('things you can do here (owner item 38)', () => {
+  const { thingsToDoHere } = require('./activityLayer');
+  it('the owner example: a declared coffee shop lists what it supports, with icons', () => {
+    const shop = { subcategory: 'Coffee', category: 'food_drink', categories: ['Bakeries', 'Breakfast'], attributes: ['laptop_friendly', 'dog_friendly', 'date_friendly'], offered_occasions: ['celebration'], accommodates_party_types: ['groups'] };
+    const labels = thingsToDoHere(shop).map((a) => a.label);
+    expect(labels).toEqual(expect.arrayContaining(['Grab coffee', 'Get breakfast', 'Meet friends', 'Casual date', 'Work remotely', 'Bring your dog', 'Small gathering']));
+    expect(thingsToDoHere(shop).every((a) => a.icon)).toBe(true);
+  });
+  it('an undeclared business lists nothing, so the section does not render', () => {
+    expect(thingsToDoHere({ category: 'food_drink', attributes: [] })).toEqual([]);
+    expect(thingsToDoHere(null)).toEqual([]);
+  });
+  it('"meet a friend" matches a business whose category is not literally about that', () => {
+    expect(activityFit({ subcategory: 'Coffee', attributes: [] }, activitiesFromText('I need somewhere to meet a friend'))).toEqual({ key: 'meet_a_friend', reason: 'Good for meeting a friend' });
+    expect(activitiesFromText('meet friends')).toContain('meet_a_friend');
+  });
+  it('the public profile renders the section from the derived list', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../screens/BusinessProfileScreen.js'), 'utf8');
+    expect(src).toMatch(/thingsToDoHere\(partner\)/);
+    expect(src).toMatch(/What You Can Do Here/);
   });
 });

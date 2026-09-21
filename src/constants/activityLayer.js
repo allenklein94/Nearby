@@ -9,39 +9,54 @@
 // AI). Ranking + one honest reason line; never a filter (a business that does not fit is not removed).
 export const ACTIVITIES = [
   {
-    key: 'grab_coffee', label: 'grabbing a coffee',
+    key: 'grab_coffee', label: 'grabbing a coffee', icon: '☕', display: 'Grab coffee',
     ask: /\b(grab|get|have|want)\s+(a\s+|some\s+)?(coffee|latte|espresso|cappuccino)\b|\bcoffee\s+(run|break)\b/i,
     fits: (b) => b.tags.some((t) => ['Coffee', 'Bakeries'].includes(t)),
   },
   {
-    key: 'work_remotely', label: 'working remotely',
+    key: 'work_remotely', label: 'working remotely', icon: '💻', display: 'Work remotely',
     ask: /\bwork(ing)?\s+(remotely|from\s+(a\s+)?(cafe|café|coffee|coffee\s+shop|home)|on\s+my\s+laptop)\b|\bremote\s+work\b|\bstudy\s+spot\b|\bplace\s+to\s+work\b/i,
     fits: (b) => b.tags.includes('Coworking') || (b.tags.some((t) => ['Coffee', 'Bakeries'].includes(t)) && b.attributes.some((a) => ['laptop_friendly', 'quiet'].includes(a))),
   },
   {
-    key: 'first_date', label: 'a first date',
+    key: 'first_date', label: 'a first date', icon: '💕', display: 'First date',
     ask: /\bfirst\s+date\b/i,
     fits: (b) => b.occasions.includes('first_date') || (b.attributes.includes('date_friendly') && b.attributes.includes('quiet')),
   },
   {
-    key: 'meet_a_friend', label: 'meeting a friend',
-    ask: /\b(meet|meeting|see)\s+(up\s+with\s+)?(a\s+|my\s+)?(friend|buddy|pal)\b|\bcatch(ing)?\s+up\b/i,
+    key: 'meet_a_friend', label: 'meeting a friend', icon: '👥', display: 'Meet friends',
+    ask: /\b(meet|meeting|see)\s+(up\s+with\s+)?(a\s+|my\s+)?(friends?|buddy|buddies|pals?)\b|\bcatch(ing)?\s+up\b/i,
     fits: (b) => b.tags.some((t) => ['Coffee', 'Brunch', 'Bars & Lounges', 'Restaurants', 'Dessert & Ice Cream', 'Bakeries'].includes(t)),
   },
   {
-    key: 'quick_bite', label: 'a quick bite',
+    key: 'quick_bite', label: 'a quick bite', icon: '🥪', display: 'Grab a quick bite',
     ask: /\bquick\s+(bite|lunch|snack|meal)\b|\bgrab\s+a\s+bite\b/i,
     fits: (b) => b.tags.some((t) => ['Fast Casual', 'Food Trucks', 'Bakeries', 'Takeout & Delivery'].includes(t)),
   },
   {
-    key: 'breakfast', label: 'breakfast',
+    key: 'breakfast', label: 'breakfast', icon: '🥐', display: 'Get breakfast',
     ask: /\b(breakfast|brunch)\b/i,
     fits: (b) => b.tags.some((t) => ['Breakfast', 'Brunch', 'Bakeries'].includes(t)),
   },
   {
-    key: 'group_hangout', label: 'a group hangout',
+    key: 'group_hangout', label: 'a group hangout', icon: '🎈', display: 'Hang out as a group',
     ask: /\b(group|crew|team)\s+(hangout|outing|get[- ]together|night)\b|\bhang\s*out\s+with\s+(a\s+)?group\b/i,
     fits: (b) => b.attributes.includes('group_friendly') || b.partyTypes.includes('groups'),
+  },
+  {
+    key: 'casual_date', label: 'a casual date', icon: '❤️', display: 'Casual date',
+    ask: /\bcasual\s+date\b/i,
+    fits: (b) => b.attributes.includes('date_friendly') || b.occasions.some((o) => ['date_night', 'first_date'].includes(o)),
+  },
+  {
+    key: 'bring_dog', label: 'bringing your dog', icon: '🐕', display: 'Bring your dog',
+    ask: /\bdog[- ]friendly\b|\b(bring|with)\s+(my|the|our)\s+dog\b/i,
+    fits: (b) => b.attributes.includes('dog_friendly'),
+  },
+  {
+    key: 'small_gathering', label: 'a small gathering', icon: '🎉', display: 'Small gathering',
+    ask: /\bsmall\s+(gathering|get[- ]together|party)\b/i,
+    fits: (b) => b.occasions.some((o) => ['celebration', 'birthday', 'casual_hangout', 'family_gathering'].includes(o)) || b.partyTypes.includes('groups'),
   },
 ];
 
@@ -64,6 +79,13 @@ export function activitiesFromText(text) {
   const t = String(text ?? '');
   if (!t.trim()) return [];
   return ACTIVITIES.filter((a) => a.ask.test(t)).map((a) => a.key);
+}
+
+// "What you can do here" for a business profile: the fitting activities as icon + wording, in the order above. Empty when the
+// business has declared nothing that supports one (the section then does not render).
+export function thingsToDoHere(row) {
+  const mine = new Set(activitiesForBusiness(row));
+  return ACTIVITIES.filter((a) => mine.has(a.key)).map((a) => ({ key: a.key, icon: a.icon, label: a.display }));
 }
 
 // The first asked activity this business fits, else null (drives one ranking nudge and one reason line).
