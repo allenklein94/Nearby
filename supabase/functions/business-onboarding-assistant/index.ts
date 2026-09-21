@@ -68,7 +68,7 @@ const VALID_OCCASIONS = [
 // OFFERED_OCCASION_KEYS in src/constants/businessAttributes.js (guarded by a test).
 const VALID_OFFERED_OCCASIONS = ['birthday', 'anniversary', 'date_night', 'celebration', 'graduation', 'family_gathering'];
 // brand_partners.accommodates_party_types vocabulary (ACCOMMODATE_PARTY_TYPE_OPTIONS).
-const VALID_PARTY_TYPES = ['solo', 'friends', 'groups', 'date'];
+const VALID_PARTY_TYPES = ['solo', 'friends', 'groups', 'date', 'family', 'coworkers', 'new_people'];
 // Intent engine vision, layer 2 (subcategory) -- second increment
 // (2026-09-06): the same real per-major leaf-tag sets update_business_
 // profile's own subcategory_param validation enforces

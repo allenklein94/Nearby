@@ -162,6 +162,9 @@ export const EXPERIENCE_PARTY_TYPE_OPTIONS = [
   { key: 'friends', label: '👥 Bring Friends' },
   { key: 'groups', label: '👨‍👩‍👧‍👦 Big Group' },
   { key: 'date', label: '💕 A Date Idea' },
+  { key: 'family', label: '👨‍👩‍👧 Family' },
+  { key: 'coworkers', label: '💼 Coworkers' },
+  { key: 'new_people', label: '🤝 Meet New People' },
 ];
 
 export function experiencePriceLabel(key) {

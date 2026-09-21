@@ -335,7 +335,7 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
     // "10/10 blueprint" audit, Finding 8 (CLAUDE.md, Aug 30 2026): the
     // business's own real accommodates_party_types now propagates all the
     // way to a consumer-facing ranking bonus, not just its public profile.
-    score += accommodatesPartyTypeBonus(row, partyType);
+    score += accommodatesPartyTypeBonus(row, partyType, partySize);
     // Intent engine vision, first increment (2026-09-06): a business that
     // has declared this exact occasion among its own real
     // priority_occasions is a genuinely stronger match than one that

@@ -187,10 +187,14 @@ export function hobbyAttributeBonus(row, declaredInterests) {
 // attributeAndCuisineBonus() above -- a real value match is a flat
 // SCORE_HAPPENING_NOW bonus, never a hard filter, so a business that can't
 // honestly claim a match is never excluded, just not boosted.
-export function accommodatesPartyTypeBonus(row, partyType) {
-  if (!partyType) return 0;
+// Owner item 43: a LARGE GROUP is derived from the ask's own headcount (>= 7, the same cutoff the business side uses), not
+// a stored type -- so "coffee with 8 coworkers" also credits a business that says it takes big groups, once (never stacked).
+export const LARGE_GROUP_PARTY_SIZE = 7;
+export function accommodatesPartyTypeBonus(row, partyType, partySize = null) {
+  const wanted = [partyType, Number.isFinite(partySize) && partySize >= LARGE_GROUP_PARTY_SIZE ? 'groups' : null].filter(Boolean);
+  if (wanted.length === 0) return 0;
   const accommodates = Array.isArray(row.accommodates_party_types) ? row.accommodates_party_types : [];
-  return accommodates.includes(partyType) ? SCORE_HAPPENING_NOW : 0;
+  return wanted.some((t) => accommodates.includes(t)) ? SCORE_HAPPENING_NOW : 0;
 }
 
 // Intent engine vision, first increment (2026-09-06, CLAUDE.md's Active
