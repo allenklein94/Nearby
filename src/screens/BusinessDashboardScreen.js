@@ -1,3 +1,4 @@
+import { windowPhrase } from '../utils/timeWindow';
 import { activityHints } from '../constants/activityLayer';
 import { canRespondToOpportunity } from '../utils/objectLifecycle';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -4239,6 +4240,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         ].filter(Boolean).join(' · ') || 'No further details given'}
                       </Text>
                       <Text style={styles.breakdownText}>{AVAILABILITY_STATUS_COPY[a.status] ?? a.status}</Text>
+                      {a.status === 'active' && windowPhrase(a.starts_at, a.ends_at, 'availability') ? (
+                        <Text style={styles.breakdownText}>🕒 {windowPhrase(a.starts_at, a.ends_at, 'availability')}</Text>
+                      ) : null}
                       {a.status === 'active' && (
                         <TouchableOpacity
                           style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated, marginTop: spacing.sm, alignSelf: 'flex-start' }]}
@@ -5032,7 +5036,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     {activePrioritySignals.map((s) => (
                       <View key={s.id} style={[styles.gatheringRow, { marginTop: spacing.xs }]}>
                         <Text style={styles.breakdownText}>
-                          🎯 {s.category} — until {new Date(s.expires_at).toLocaleDateString()}
+                          🎯 {s.category} — {windowPhrase(null, s.expires_at, 'availability')?.replace('Available until', 'until') ?? 'ended'}
                         </Text>
                         <TouchableOpacity
                           onPress={() => handleClearBoost(s.id)}

@@ -1,4 +1,4 @@
-import { timeWindowState, windowEnd, gatheringWhen, ENDING_SOON_MIN } from './timeWindow';
+import { windowPhrase, timeWindowState, windowEnd, gatheringWhen, ENDING_SOON_MIN } from './timeWindow';
 import { validityLabel } from './offerMedia';
 
 const at = (h, m = 0) => new Date(2026, 8, 21, h, m);
@@ -41,6 +41,15 @@ describe('one temporal engine (item 41)', () => {
   it('a gathering with a declared duration reads through the same engine', () => {
     expect(gatheringWhen({ scheduled_at: iso(at(19)), duration_minutes: 120 }, at(20))).toBe('Happening now · until 9 PM');
     expect(gatheringWhen({ scheduled_at: iso(at(19)) }, at(21))).toBeNull();
+  });
+  it('owner lists: a live window reads through the engine, a finished one shows nothing', () => {
+    expect(windowPhrase(iso(at(18)), iso(at(21)), 'availability', at(19))).toBe('Available until 9 PM');
+    expect(windowPhrase(iso(at(18)), iso(at(21)), 'availability', at(21, 5))).toBeNull();
+    expect(windowPhrase(iso(at(20)), iso(at(22)), 'availability', at(12))).toMatch(/Tonight|Today/);
+    expect(windowPhrase(null, null)).toBeNull();
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../screens/BusinessDashboardScreen.js'), 'utf8');
+    expect(src).toMatch(/windowPhrase\(a\.starts_at, a\.ends_at/);
+    expect(src).not.toMatch(/new Date\(s\.expires_at\)\.toLocaleDateString/);
   });
   it('no surface builds its own "Valid until" / "Ends in" wording', () => {
     const fs = require('fs'), path = require('path');

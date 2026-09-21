@@ -63,3 +63,10 @@ export function gatheringWhen(g, now = new Date()) {
   if (!g?.scheduled_at) return null;
   return timeWindowState({ start: g.scheduled_at, durationMinutes: g.duration_minutes }, now, 'event').label;
 }
+
+// One line for a window with explicit start/end (owner-facing lists): the engine's label for a live or upcoming window, null
+// once it is over or unreadable (the caller then shows nothing rather than a stale claim).
+export function windowPhrase(start, end, kind = 'availability', now = new Date()) {
+  const st = timeWindowState({ start, end }, now, kind);
+  return st.phase === 'over' || st.phase === 'unknown' ? null : st.label;
+}
