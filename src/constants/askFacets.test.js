@@ -1,4 +1,4 @@
-import { parseAskFacets, applyAskFacets, partnerPartyType, environmentOf, ALCOHOL_TAGS, CROWDED_TAGS } from './askFacets';
+import { attributesFromAsk, parseAskFacets, applyAskFacets, partnerPartyType, environmentOf, ALCOHOL_TAGS, CROWDED_TAGS } from './askFacets';
 import { groupForTag } from './gatheringCategories';
 
 describe('ask facets: combinations and negative intent (items 47/48)', () => {
@@ -49,5 +49,25 @@ describe('ask facets: combinations and negative intent (items 47/48)', () => {
     expect(environmentOf('Parks')).toBe('outdoor');
     expect(environmentOf('Coffee')).toBe('indoor');
     expect(environmentOf('Music')).toBeNull();
+  });
+});
+
+describe('attributes named in the ask (items 51/52)', () => {
+  it('coffee with my dog is the dog-friendly attribute, not a Pets category', () => {
+    expect(attributesFromAsk('Where can I get coffee with my dog?')).toEqual(['dog_friendly']);
+    expect(attributesFromAsk('a pet friendly patio')).toEqual(expect.arrayContaining(['dog_friendly', 'outdoor_seating']));
+    expect(attributesFromAsk('coffee tonight')).toEqual([]);
+  });
+  it('a romantic, quiet dinner names date-friendly and quiet; a couple word implies date-friendly', () => {
+    expect(attributesFromAsk('somewhere romantic and quiet')).toEqual(expect.arrayContaining(['date_friendly', 'quiet']));
+    expect(attributesFromAsk('dinner with my girlfriend')).toEqual(['date_friendly']);
+    expect(attributesFromAsk('dinner', { partyType: 'date' })).toEqual(['date_friendly']);
+    expect(attributesFromAsk('nothing too quiet')).not.toContain('quiet');
+    expect(attributesFromAsk(null)).toEqual([]);
+  });
+  it('only ever returns keys in the shared attribute vocabulary', () => {
+    const { BUSINESS_ATTRIBUTE_OPTIONS } = require('./businessAttributes');
+    const keys = BUSINESS_ATTRIBUTE_OPTIONS.map((o) => o.key);
+    for (const t of ['with my dog', 'romantic', 'quiet', 'patio', 'girlfriend']) attributesFromAsk(t).forEach((k) => expect(keys).toContain(k));
   });
 });

@@ -57,7 +57,7 @@ import { energiesFromText, applyEnergyToCandidates } from '../constants/energyLe
 import { askedChildAges, applySuitedAgesToCandidates } from '../utils/suitedAges';
 import { cleanFeatures } from '../utils/gatheringPractical';
 import { applyDeclaredFeatures } from '../constants/declaredFeatures';
-import { parseAskFacets, applyAskFacets, partnerPartyType } from '../constants/askFacets';
+import { parseAskFacets, applyAskFacets, partnerPartyType, attributesFromAsk } from '../constants/askFacets';
 import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitmentLevel';
 import { spontaneityOf, isImmediate, applySpontaneityToCandidates, spontaneityCaption } from '../constants/spontaneity';
 import { getUserLocation } from './userLocation';
@@ -559,6 +559,8 @@ async function resolveOccasionPackages(location, occasion, partySize) {
 export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null }) {
   // "my girlfriend" = a date party when the extractor named none (constants/askFacets.js, deterministic).
   partyType = partyType ?? partnerPartyType(rawText);
+  // Items 51/52: pet-friendly / date-friendly / quiet / patio are ATTRIBUTES the ask can name (constants/askFacets.js), unioned with the extractor's.
+  attributes = [...new Set([...(Array.isArray(attributes) ? attributes : []), ...attributesFromAsk(rawText, { partyType })])];
   // Resolved once, up front, before any branch runs in parallel below —
   // not a check-only call. getNearbyGatherings() (called from
   // resolveGatherings) already calls the shared location provider

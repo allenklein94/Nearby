@@ -85,4 +85,22 @@ export function applyAskFacets(candidates, facets) {
   return { items, caption: parts.length ? `Leaving out ${list}` : null };
 }
 
+// Attributes the person's own words name (owner items 51/52). A coffee shop stays Food & Drink -> Coffee and CARRIES dog_friendly /
+// date_friendly / quiet / outdoor_seating as attributes; the ask names them the same way, so "coffee with my dog" and "somewhere
+// romantic and quiet" reach those businesses through the existing attribute overlap (ranking only). Deterministic, a fallback beside
+// the AI extractor (which only knew "can bring my dog"); the result is unioned with whatever it returned. Closed keys only.
+const ATTRIBUTE_ASKS = [
+  ['dog_friendly', /\b(?:with|bring(?:ing)?|take|taking)\s+(?:my|our|the)\s+(?:dog|dogs|puppy|pup)\b|\b(?:dog|pet)[- ]friendly\b|\bpets?\s+(?:allowed|welcome)\b|\bpet[- ]friendly\b/i],
+  ['date_friendly', /\b(?:date\s+night|first\s+date|on\s+a\s+date|for\s+a\s+date|date\s+spot|romantic|date[- ]friendly)\b/i],
+  ['quiet', /(?<!\b(?:not|no|nothing|too|not too|nothing too)\s)\b(?:quiet|peaceful)\b/i],
+  ['outdoor_seating', /\b(?:patio|outdoor\s+seating|al\s+fresco|terrace)\b/i],
+];
+export function attributesFromAsk(text, { partyType = null } = {}) {
+  if (typeof text !== 'string') return partyType === 'date' ? ['date_friendly'] : [];
+  const out = ATTRIBUTE_ASKS.filter(([, re]) => re.test(text)).map(([k]) => k);
+  // A date-shaped party (a couple word, or the extractor's own `date`) is the date-friendly quality by definition.
+  if ((partyType === 'date' || partnerPartyType(text)) && !out.includes('date_friendly')) out.push('date_friendly');
+  return out;
+}
+
 export const FACET_GROUP_KEYS = CATEGORY_GROUPS.map((g) => g.key); // (kept so a test can tie outdoors_nature to a real group)
