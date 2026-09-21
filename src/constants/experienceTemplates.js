@@ -32,6 +32,8 @@
 // own "never force a multi-part answer onto a single-purpose ask" design.
 const DINNER_CATEGORIES = ['Foodie', 'Wine', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour', 'Brunch', 'Cooking', 'Restaurants', 'Fine Dining', 'Wineries'];
 const NIGHT_OUT_CATEGORIES = ['Music', 'Movies', 'Dancing', 'Concerts', 'Comedy', 'Nightlife', 'Karaoke', 'Live Music', 'Theater', 'Performing Arts'];
+// Date-only extras for "Something to Do": an active or see-something date (bowling, arcade, a gallery, a viewpoint), not only a show.
+const DATE_ACTIVITY_CATEGORIES = ['Bowling', 'Arcade', 'Escape Rooms', 'Golf', 'Museums', 'Art Galleries', 'Observation Decks', 'Sightseeing', 'Landmarks', 'Historic Sites', 'Exhibits'];
 const DESSERT_CATEGORIES = ['Bakeries', 'Coffee', 'Dessert & Ice Cream'];
 // Deliberately excludes the alcohol/nightlife-leaning DINNER_CATEGORIES
 // entries (Wine, Bars & Lounges, Breweries, Happy Hour) -- an honest,
@@ -50,7 +52,7 @@ const STAY_CATEGORIES = ['Hotels', 'Resorts', 'Romantic Getaways', 'Spa Resorts'
 
 const DATE_NIGHT_COMPONENTS = [
   { key: 'dinner', label: '🍽️ Dinner', categories: DINNER_CATEGORIES },
-  { key: 'something_to_do', label: '🎵 Something to Do', categories: NIGHT_OUT_CATEGORIES },
+  { key: 'something_to_do', label: '🎵 Something to Do', categories: [...NIGHT_OUT_CATEGORIES, ...DATE_ACTIVITY_CATEGORIES] },
   { key: 'finish_the_night', label: '🍰 Finish the Night', categories: DESSERT_CATEGORIES },
 ];
 

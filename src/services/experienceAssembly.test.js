@@ -318,3 +318,17 @@ describe('budget-aware assembled night (cheap date tonight)', () => {
     expect(fs.readFileSync(require.resolve('../components/ExperienceComponentList.js'), 'utf8')).toContain('priceChipLabel(item)');
   });
 });
+
+describe('date night "Something to Do" includes active and see-something dates', () => {
+  it('a bowling gathering and a museum posting can fill it; a birthday celebration is unchanged', () => {
+    const cands = [
+      gatheringCandidate({ id: 'bowl', category: 'Bowling' }),
+      businessCandidate({ id: 'dinner', category: 'Restaurants' }),
+      businessCandidate({ id: 'museum', partnerId: 'p2', category: 'Museums' }),
+    ];
+    const exp = assembleExperience('date_night', cands);
+    expect(exp.components.find((c) => c.key === 'something_to_do').items.map((i) => i.id).sort()).toEqual(['bowl', 'museum']);
+    const birthday = assembleExperience('birthday', cands);
+    expect(birthday.components.map((c) => c.key)).toEqual(['dinner']);
+  });
+});
