@@ -54,6 +54,7 @@ import {
 } from './intentResolverScoring';
 import { activitiesFromText } from '../constants/activityLayer';
 import { energiesFromText, applyEnergyToCandidates } from '../constants/energyLevel';
+import { parseAskFacets, applyAskFacets, partnerPartyType } from '../constants/askFacets';
 import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitmentLevel';
 import { spontaneityOf, isImmediate, applySpontaneityToCandidates, spontaneityCaption } from '../constants/spontaneity';
 import { getUserLocation } from './userLocation';
@@ -550,6 +551,8 @@ async function resolveOccasionPackages(location, occasion, partySize) {
 // declared priority_occasions (resolveBusinessAvailability), never a
 // filter and never written anywhere.
 export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null }) {
+  // "my girlfriend" = a date party when the extractor named none (constants/askFacets.js, deterministic).
+  partyType = partyType ?? partnerPartyType(rawText);
   // Resolved once, up front, before any branch runs in parallel below —
   // not a check-only call. getNearbyGatherings() (called from
   // resolveGatherings) already calls the shared location provider
@@ -685,10 +688,15 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const openEndedGroups = openEndedAskGroups({ category, rawText, occasion, attributes });
   deduped = applyOpenEndedAsk(deduped, openEndedGroups, { dateWindow, partyType, hour: new Date().getHours() });
 
+  // Combinations + negative intent (items 47/48): "outside", "no alcohol", "nothing crowded", "not too expensive" from the person's
+  // own words. Exclusions drop only KNOWN conflicts; the caption says what was left out (constants/askFacets.js).
+  const askFacets = applyAskFacets(deduped, parseAskFacets(rawText));
+  deduped = askFacets.items;
+
   deduped.sort((a, b) => b.score - a.score);
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
-  const openEndedNote = [openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity)].filter(Boolean).join(' · ') || null;
+  const openEndedNote = [openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), askFacets.caption].filter(Boolean).join(' · ') || null;
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,
