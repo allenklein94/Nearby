@@ -31,3 +31,21 @@ describe('category mapping loop', () => {
     for (const k of keys) expect(valid).toContain(k);
   });
 });
+
+describe('living taxonomy (emerging categories)', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const mig = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270188_emerging_categories.sql'), 'utf8');
+  const screen = fs.readFileSync(path.join(__dirname, 'AdminBusinessRequestsScreen.js'), 'utf8');
+  it('is admin-only, counts distinct applicants, and never uses AI', () => {
+    expect((mig.match(/is_admin = true/g) || []).length).toBeGreaterThanOrEqual(3);
+    expect(mig).toMatch(/count\(distinct coalesce\(nullif\(lower\(btrim\(r\.applicant_email\)\)/);
+    expect(mig).toMatch(/category_suggestion_min_applicants/);
+    expect(mig).not.toMatch(/anthropic|http/i);
+  });
+  it('the admin screen offers add and dismiss for a flag', () => {
+    expect(screen).toMatch(/admin_get_emerging_categories/);
+    expect(screen).toMatch(/admin_resolve_emerging_category/);
+    expect(screen).toMatch(/admin_dismiss_emerging_category/);
+  });
+});

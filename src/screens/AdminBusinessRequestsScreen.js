@@ -13,6 +13,7 @@ import { businessAttributeLabel, cuisineLabel, occasionLabel } from '../constant
 import { suggestBusinessCategory } from '../services/businessCategorySuggestion';
 import { subcategoryOptionsFor } from '../constants/gatheringCategories';
 import { adminAddCategoryTag } from '../services/categoryTags';
+import { applyRemoteCategoryTags } from '../constants/categoryRegistry';
 
 export default function AdminBusinessRequestsScreen() {
   const { colors, shadow } = useTheme();
@@ -33,6 +34,10 @@ export default function AdminBusinessRequestsScreen() {
   const [mapRemember, setMapRemember] = useState(true);
   const [suggestions, setSuggestions] = useState({});
   const [notesDrafts, setNotesDrafts] = useState({});
+  // Living taxonomy: the same unmatched words from several different applicants (admin_get_emerging_categories).
+  const [emerging, setEmerging] = useState([]);
+  const [emGroup, setEmGroup] = useState({});
+  const [emName, setEmName] = useState({});
 
   const load = useCallback(async () => {
     const { data } = await supabase
@@ -43,7 +48,41 @@ export default function AdminBusinessRequestsScreen() {
       // even though the data itself was preserved.
       .order('created_at', { ascending: false });
     setRequests(data ?? []);
+    const { data: flagged } = await supabase.rpc('admin_get_emerging_categories');
+    setEmerging(Array.isArray(flagged) ? flagged : []);
   }, []);
+
+  function handleResolveEmerging(flag) {
+    const group = emGroup[flag.phrase_key];
+    const name = (emName[flag.phrase_key] ?? flag.sample_phrase ?? '').trim();
+    if (!group || name.length < 2) return Alert.alert('Pick a group and a name', 'Choose the category group and the name for the new category.');
+    const groupLabel = BUSINESS_CATEGORIES.find((c) => c.key === group)?.label ?? group;
+    Alert.alert(
+      `Add "${name}" under ${groupLabel}?`,
+      `It becomes a permanent category, and the ${flag.applicants} applications that used these words are mapped to it. It cannot be renamed or removed here.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Add and map',
+          onPress: async () => {
+            const { data, error } = await supabase.rpc('admin_resolve_emerging_category', {
+              phrase_key_param: flag.phrase_key, tag_param: name, group_key_param: group,
+            });
+            if (error) return presentRecoverableError(Alert, { what: 'complete that', error, onRetry: () => handleResolveEmerging(flag) });
+            applyRemoteCategoryTags([{ tag: name, group_key: group }]);
+            Alert.alert('Added', `${name} is now a category. ${data ?? 0} application${data === 1 ? '' : 's'} mapped.`);
+            load();
+          },
+        },
+      ],
+    );
+  }
+
+  async function handleDismissEmerging(flag) {
+    const { error } = await supabase.rpc('admin_dismiss_emerging_category', { phrase_key_param: flag.phrase_key });
+    if (error) return presentRecoverableError(Alert, { what: 'complete that', error, onRetry: () => handleDismissEmerging(flag) });
+    load();
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -156,6 +195,40 @@ export default function AdminBusinessRequestsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: spacing.lg }}
         refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
+        ListHeaderComponent={emerging.length ? (
+          <View style={styles.card}>
+            <Text style={styles.businessName}>Potential new categories</Text>
+            <Text style={styles.contact}>Several different businesses described themselves in words no category covers.</Text>
+            {emerging.map((flag) => (
+              <View key={flag.phrase_key} style={{ marginTop: spacing.sm }}>
+                <Text style={styles.category}>Potential new subcategory: {flag.sample_phrase} · {flag.applicants} businesses</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                  {BUSINESS_CATEGORIES.map((c) => (
+                    <TouchableOpacity key={c.key} onPress={() => setEmGroup((p) => ({ ...p, [flag.phrase_key]: c.key }))} accessibilityRole="button" accessibilityState={{ selected: emGroup[flag.phrase_key] === c.key }} accessibilityLabel={c.label}>
+                      <Text style={[styles.contact, emGroup[flag.phrase_key] === c.key && { fontWeight: '800', color: colors.primary }]}>{c.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput
+                  style={styles.notesInput}
+                  value={emName[flag.phrase_key] ?? flag.sample_phrase}
+                  onChangeText={(t) => setEmName((p) => ({ ...p, [flag.phrase_key]: t }))}
+                  maxLength={40}
+                  placeholderTextColor={colors.textTertiary}
+                  accessibilityLabel="Category name"
+                />
+                <View style={{ flexDirection: 'row', gap: spacing.md }}>
+                  <TouchableOpacity onPress={() => handleResolveEmerging(flag)} accessibilityRole="button" accessibilityLabel={`Add category ${flag.sample_phrase}`}>
+                    <Text style={[styles.contact, { fontWeight: '700', color: colors.primary }]}>＋ Add category</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleDismissEmerging(flag)} accessibilityRole="button" accessibilityLabel={`Dismiss ${flag.sample_phrase}`}>
+                    <Text style={styles.contact}>Not a category</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : null}
         ListEmptyComponent={
           <FadeInState style={styles.emptyState}>
             <EmptyCopy id="admin_business_requests" />
