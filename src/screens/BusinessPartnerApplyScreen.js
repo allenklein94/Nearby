@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { searchBusinessTypes } from '../utils/businessTypeSearch';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback, ActivityIndicator } from 'react-native';
@@ -77,6 +78,9 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
   const [category, setCategory] = useState(null);
   // "Can't find your category?" -- own words; never blocks signup (category may stay empty).
   const [unlistedText, setUnlistedText] = useState('');
+  const [typeQuery, setTypeQuery] = useState('');
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const [categorySuggestion, setCategorySuggestion] = useState(null);
   // Intent engine vision, layer 2 (subcategory) first increment
   // (2026-09-06): the business's own real, finer self-classification --
@@ -442,15 +446,55 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
             accessibilityLabel="Contact info, optional"
           />
 
-          <Text style={styles.label}>Category</Text>
+          <Text style={styles.label}>What type of business are you?</Text>
+          {category ? (
+            <View style={styles.chipRow}>
+              <TouchableOpacity
+                style={[styles.chip, styles.chipActive]}
+                onPress={() => { setCategory(null); setSubcategory(null); setTypeQuery(''); }}
+                accessibilityRole="button"
+                accessibilityLabel="Change business type"
+              >
+                <Text style={styles.chipTextActive}>
+                  {BUSINESS_CATEGORIES.find((c) => c.key === category)?.label ?? category}{subcategory ? ` \u2192 ${subcategory}` : ''}  \u2715
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <TextInput
+                style={styles.input}
+                placeholder="Search, e.g. coffee, gym, salon, plumber"
+                placeholderTextColor={colors.textTertiary}
+                value={typeQuery}
+                onChangeText={(t) => { setTypeQuery(t); setUnlistedText(t); }}
+                maxLength={200}
+                accessibilityLabel="Search for your type of business"
+              />
+              {searchBusinessTypes(typeQuery).map((r) => (
+                <TouchableOpacity
+                  key={`${r.category}|${r.subcategory}`}
+                  style={[styles.chip, { alignSelf: 'flex-start', marginBottom: 6 }]}
+                  onPress={() => { setCategory(r.category); setSubcategory(r.subcategory); setUnlistedText(''); setTypeQuery(''); }}
+                  accessibilityRole="button"
+                  accessibilityLabel={r.pathLabel}
+                >
+                  <Text style={styles.chipText}>{r.pathLabel}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity onPress={() => setShowAllCategories(!showAllCategories)} accessibilityRole="button" accessibilityLabel="Browse all categories">
+                <Text style={styles.chipText}>{showAllCategories ? 'Hide categories' : 'Browse all categories'}</Text>
+              </TouchableOpacity>
+              {showAllCategories ? (
           <View style={styles.chipRow}>
             {BUSINESS_CATEGORIES.map((c) => (
               <TouchableOpacity
                 key={c.key}
                 style={[styles.chip, category === c.key && styles.chipActive]}
                 onPress={() => {
-                  setCategory(category === c.key ? null : c.key);
+                  setCategory(c.key);
                   setSubcategory(null);
+                  setUnlistedText('');
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={c.label}
@@ -461,24 +505,17 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
             ))}
           </View>
 
-          {!category ? (
-            <>
-              <Text style={styles.label}>Can't find your category? (optional)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Tell us what kind of business it is, e.g. small-batch coffee roaster"
-                placeholderTextColor={colors.textTertiary}
-                value={unlistedText}
-                onChangeText={setUnlistedText}
-                maxLength={200}
-                accessibilityLabel="What kind of business is it, optional"
-              />
+              ) : null}
+              {typeQuery.trim().length >= 3 && searchBusinessTypes(typeQuery).length === 0 ? (
+                <Text style={styles.chipText}>No match in our list. That's fine: we'll keep what you typed and the team will place it.</Text>
+              ) : null}
               {categorySuggestion ? (
                 <TouchableOpacity
                   style={[styles.chip, styles.chipActive]}
                   onPress={() => {
                     setCategory(categorySuggestion.category);
                     setSubcategory(categorySuggestion.subcategory);
+                    setUnlistedText('');
                   }}
                   accessibilityRole="button"
                   accessibilityLabel="Use the suggested category"
@@ -489,9 +526,9 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
                 </TouchableOpacity>
               ) : null}
             </>
-          ) : null}
+          )}
 
-          {subcategoryOptionsFor(category).length > 0 ? (
+          {subcategoryOptionsFor(category).length > 0 && !subcategory ? (
             <>
               <Text style={styles.label}>More specifically? (optional)</Text>
               <View style={styles.chipRow}>
@@ -511,6 +548,30 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
             </>
           ) : null}
 
+          <Text style={styles.label}>What else describes you? (optional)</Text>
+          <View style={styles.chipRow}>
+            {BUSINESS_ATTRIBUTE_OPTIONS.map((a) => {
+              const selected = attributes.includes(a.key);
+              return (
+                <TouchableOpacity
+                  key={a.key}
+                  style={[styles.chip, selected && styles.chipActive]}
+                  onPress={() => toggleAttribute(a.key)}
+                  accessibilityRole="button"
+                  accessibilityLabel={a.label}
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextActive]}>{a.icon} {a.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <TouchableOpacity onPress={() => setShowMore(!showMore)} accessibilityRole="button" accessibilityLabel="More details, optional">
+            <Text style={styles.chipText}>{showMore ? 'Hide more details' : 'More details (optional): also classify as, cuisine, occasions'}</Text>
+          </TouchableOpacity>
+          {showMore ? (
+            <>
           {/* Intent engine vision, multi-classification businesses
               (resumed 2026-09-10) -- a secondary, cross-major
               self-classification, distinct from the single subcategory
@@ -530,25 +591,6 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
                 <Text style={[styles.chipText, categories.includes(c) && styles.chipTextActive]}>{c}</Text>
               </TouchableOpacity>
             ))}
-          </View>
-
-          <Text style={styles.label}>What's your business great for? (optional)</Text>
-          <View style={styles.chipRow}>
-            {BUSINESS_ATTRIBUTE_OPTIONS.map((a) => {
-              const selected = attributes.includes(a.key);
-              return (
-                <TouchableOpacity
-                  key={a.key}
-                  style={[styles.chip, selected && styles.chipActive]}
-                  onPress={() => toggleAttribute(a.key)}
-                  accessibilityRole="button"
-                  accessibilityLabel={a.label}
-                  accessibilityState={{ selected }}
-                >
-                  <Text style={[styles.chipText, selected && styles.chipTextActive]}>{a.icon} {a.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
           </View>
 
           {category === 'food_drink' ? (
@@ -589,6 +631,9 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
               );
             })}
           </View>
+
+            </>
+          ) : null}
 
           <Text style={styles.label}>Website</Text>
           <TextInput
