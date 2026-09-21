@@ -26,8 +26,7 @@
 // common case, not something dedup alone is relied on to paper over.
 //
 // Deliberately covers only the occasions where a genuine multi-part want is
-// a safe, common-sense default -- date_night, anniversary, birthday,
-// celebration, family_gathering. casual_hangout, business_meal, and other
+// a safe, common-sense default (see EXPERIENCE_TEMPLATES below; widened by owner item 42). casual_hangout, business_meal, and other
 // are left as single-purpose asks (no template), matching this feature's
 // own "never force a multi-part answer onto a single-purpose ask" design.
 const DINNER_CATEGORIES = ['Foodie', 'Wine', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour', 'Brunch', 'Cooking', 'Restaurants', 'Fine Dining', 'Wineries'];
@@ -50,6 +49,13 @@ const FAMILY_OUTDOOR_CATEGORIES = ['Hiking', 'Outdoors', 'Fishing', 'Kayaking', 
 
 const STAY_CATEGORIES = ['Hotels', 'Resorts', 'Romantic Getaways', 'Spa Resorts', 'Vacation Rentals', 'Staycation', 'Weekend Getaway'];
 
+// Owner item 42 (occasion as a first-class dimension): three more recipes, same rules (real leaf tags, disjoint within a
+// template, a component with no real nearby supply is dropped).
+const SELF_CARE_CATEGORIES = ['Spa Day', 'Massage', 'Salons', 'Skin Care', 'Wellness Centers', 'Sauna', 'Yoga', 'Meditation'];
+const VACATION_DO_CATEGORIES = ['Sightseeing', 'Tours', 'Boat Tours', 'Landmarks', 'Museums', 'Observation Decks', 'Beaches', 'Trails'];
+const NETWORKING_EVENT_CATEGORIES = ['Networking', 'Conferences', 'Workshops', 'Lectures', 'Professional Development'];
+const NETWORKING_MEET_CATEGORIES = ['Coffee', 'Coworking', 'Bars & Lounges', 'Restaurants'];
+
 const DATE_NIGHT_COMPONENTS = [
   { key: 'dinner', label: '🍽️ Dinner', categories: DINNER_CATEGORIES },
   { key: 'something_to_do', label: '🎵 Something to Do', categories: [...NIGHT_OUT_CATEGORIES, ...DATE_ACTIVITY_CATEGORIES] },
@@ -67,12 +73,39 @@ const FAMILY_GATHERING_COMPONENTS = [
   { key: 'family_fun', label: '👨‍👩‍👧 Family Fun', categories: FAMILY_FUN_CATEGORIES },
 ];
 
+const SELF_CARE_COMPONENTS = [
+  { key: 'treatment', label: '🧘 Treat Yourself', categories: SELF_CARE_CATEGORIES },
+  { key: 'refuel', label: '🥗 Refuel', categories: ['Foodie', 'Brunch', 'Restaurants'] },
+  { key: 'sweet_treat', label: '☕ Slow Down', categories: DESSERT_CATEGORIES },
+];
+const VACATION_COMPONENTS = [
+  { key: 'stay', label: '🏨 Where to Stay', categories: STAY_CATEGORIES },
+  { key: 'explore', label: '🧭 Things to See', categories: VACATION_DO_CATEGORIES },
+  { key: 'dinner', label: '🍽️ Eat Out', categories: DINNER_CATEGORIES },
+];
+const NETWORKING_COMPONENTS = [
+  { key: 'event', label: '🤝 Meet People', categories: NETWORKING_EVENT_CATEGORIES },
+  { key: 'meet_up', label: '☕ Somewhere to Talk', categories: NETWORKING_MEET_CATEGORIES },
+];
+
 export const EXPERIENCE_TEMPLATES = {
   date_night: { title: '✨ Your Date Night', components: DATE_NIGHT_COMPONENTS },
   anniversary: { title: '✨ Your Anniversary Night', components: DATE_NIGHT_COMPONENTS },
   birthday: { title: '✨ Make It a Birthday', components: CELEBRATION_COMPONENTS },
   celebration: { title: '✨ Time to Celebrate', components: CELEBRATION_COMPONENTS },
   family_gathering: { title: '✨ Family Time', components: FAMILY_GATHERING_COMPONENTS },
+  // A first date / engagement is a date-shaped night; a graduation / promotion / new job / achievement / bachelor(ette) is a
+  // celebration-shaped one. Same components, own titles.
+  first_date: { title: '✨ Your First Date', components: DATE_NIGHT_COMPONENTS },
+  engagement: { title: '✨ Celebrate the Engagement', components: DATE_NIGHT_COMPONENTS },
+  graduation: { title: '✨ Celebrate the Graduation', components: CELEBRATION_COMPONENTS },
+  promotion: { title: '✨ Celebrate the Promotion', components: CELEBRATION_COMPONENTS },
+  new_job: { title: '✨ Celebrate the New Job', components: CELEBRATION_COMPONENTS },
+  achievement: { title: '✨ Celebrate the Win', components: CELEBRATION_COMPONENTS },
+  bachelor_bachelorette: { title: '✨ Make It a Send-Off', components: CELEBRATION_COMPONENTS },
+  self_care: { title: '✨ Your Self-Care Day', components: SELF_CARE_COMPONENTS },
+  vacation: { title: '✨ Plan the Trip', components: VACATION_COMPONENTS },
+  networking: { title: '✨ Your Networking Night', components: NETWORKING_COMPONENTS },
 };
 
 // Context-triggered recipes (no explicit occasion needed). Same shape as the occasion templates above: a recipe of
