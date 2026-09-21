@@ -1,3 +1,4 @@
+import { EXPERIENCE_PARTY_TYPE_OPTIONS } from '../constants/businessAttributes';
 import { practicalFacts } from '../utils/gatheringPractical';
 import { attendeeSummary } from '../utils/gatheringAttendeeDisplay';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -66,13 +67,7 @@ const PRICE_FILTER_OPTIONS = [
 
 // "Who's this for?" filter, backed by gatherings.party_type -- mirrors
 // CreateGatheringScreen's own PARTY_TYPE_OPTIONS chip labels.
-const PARTY_TYPE_FILTER_OPTIONS = [
-  { key: null, label: 'Any' },
-  { key: 'solo', label: '🧍 Solo-Friendly' },
-  { key: 'friends', label: '👥 Bring Friends' },
-  { key: 'groups', label: '👨‍👩‍👧‍👦 Big Group' },
-  { key: 'date', label: '💕 A Date Idea' },
-];
+const PARTY_TYPE_FILTER_OPTIONS = [{ key: null, label: 'Any' }, ...EXPERIENCE_PARTY_TYPE_OPTIONS.filter((o) => o.key)];
 
 export default function GatheringsScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();

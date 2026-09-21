@@ -64,7 +64,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { attendeeTotal, gatheringFullnessLabel } from '../utils/gatheringFullness';
-import { gatheringSignalLine } from '../constants/gatheringDisplaySignals';
+import { gatheringSignalLine, PARTY_TYPE_LABELS } from '../constants/gatheringDisplaySignals';
 // P2 remediation item 8 (CLAUDE.md, "Discover information parity") --
 // the business/perk half of the same fix.
 import { businessSignalLine } from '../constants/businessDisplaySignals';
@@ -2088,6 +2088,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 {intentSearch.classifyResult?.partyType === 'groups' && <Text style={styles.intentSearchTag}>👨‍👩‍👧‍👦 Big group</Text>}
                 {intentSearch.classifyResult?.partyType === 'friends' && <Text style={styles.intentSearchTag}>👥 Bring friends</Text>}
                 {intentSearch.classifyResult?.partyType === 'solo' && <Text style={styles.intentSearchTag}>🧍 Solo</Text>}
+                {['family', 'coworkers', 'new_people'].includes(intentSearch.classifyResult?.partyType) && (
+                  <Text style={styles.intentSearchTag}>{PARTY_TYPE_LABELS[intentSearch.classifyResult.partyType]}</Text>
+                )}
               </View>
               {intentSearch.experience ? (
                 <>

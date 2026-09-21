@@ -1,3 +1,4 @@
+import { EXPERIENCE_PARTY_TYPE_OPTIONS } from './businessAttributes';
 // P1 remediation (CLAUDE.md, Aug 28 2026 Full Coherence Audit, "Discover
 // needs to stop throwing away information it already has"): Discover's
 // own gathering cards already fetch price_level/party_type on every row
@@ -15,12 +16,8 @@ export const PRICE_LEVEL_LABELS = {
   $$$: '$$$',
 };
 
-export const PARTY_TYPE_LABELS = {
-  solo: '🧍 Solo-Friendly',
-  friends: '👥 Bring Friends',
-  groups: '👨‍👩‍👧‍👦 Big Group',
-  date: '💕 A Date Idea',
-};
+// One source (businessAttributes.EXPERIENCE_PARTY_TYPE_OPTIONS, the closed group-type list), never a second copy.
+export const PARTY_TYPE_LABELS = Object.fromEntries(EXPERIENCE_PARTY_TYPE_OPTIONS.filter((o) => o.key).map((o) => [o.key, o.label]));
 
 // A real, honest, contextual signal line for a gathering card -- only the
 // signals actually set render, never a fabricated "no preference" filler.
