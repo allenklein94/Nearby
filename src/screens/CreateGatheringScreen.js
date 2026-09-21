@@ -10,7 +10,7 @@ import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { linkOccasionToPlan } from '../services/occasions';
 import { linkOccasionGroupPlanToPlan } from '../services/occasionGroupPlans';
 import { getMyCommunities } from '../services/communities';
-import { EQUIPMENT_OPTIONS, DURATION_OPTIONS } from '../utils/gatheringPractical';
+import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, isMusicTag } from '../utils/gatheringPractical';
 import { searchNearbyPlaces, priceLevelLabel } from '../services/places';
 import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
@@ -168,6 +168,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [priceLevel, setPriceLevel] = useState(null);
   const [equipmentProvided, setEquipmentProvided] = useState(null);
   const [durationMinutes, setDurationMinutes] = useState(null);
+  const [genre, setGenre] = useState(null);
   const [partyType, setPartyType] = useState(null);
   const [showGroupInsights, setShowGroupInsights] = useState(true);
   const [allowAttendeeInvites, setAllowAttendeeInvites] = useState(true);
@@ -179,7 +180,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
     step, title, description, interestTag, visibility, discoverable, communityId,
     scheduledAt: scheduledAt instanceof Date ? scheduledAt.toISOString() : null, whenPreset,
     locationMode, customLocation, placeName, showOnMap, womenOnly, recurrenceRule, capacityOption, capacityCustom,
-    askLocalBusinesses, priceLevel, partyType, showGroupInsights, allowAttendeeInvites, hostNotifications, requiresApproval, equipmentProvided, durationMinutes,
+    askLocalBusinesses, priceLevel, partyType, showGroupInsights, allowAttendeeInvites, hostNotifications, requiresApproval, equipmentProvided, durationMinutes, genre,
   };
   const gatheringDraft = useFormDraft('gathering', gatheringSnapshot, {
     isEmpty: (d) => !String(d.title ?? '').trim() && !String(d.description ?? '').trim(),
@@ -194,7 +195,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
     setLocationMode(d.locationMode ?? 'near_me'); setCustomLocation(d.customLocation ?? null); setPlaceName(d.placeName ?? null);
     setShowOnMap(d.showOnMap !== false); setWomenOnly(!!d.womenOnly); setRecurrenceRule(d.recurrenceRule ?? null);
     setCapacityOption(d.capacityOption ?? 'no_limit'); setCapacityCustom(d.capacityCustom ?? 15);
-    setAskLocalBusinesses(!!d.askLocalBusinesses); setPriceLevel(d.priceLevel ?? null); setEquipmentProvided(d.equipmentProvided ?? null); setDurationMinutes(d.durationMinutes ?? null); setPartyType(d.partyType ?? null);
+    setAskLocalBusinesses(!!d.askLocalBusinesses); setPriceLevel(d.priceLevel ?? null); setEquipmentProvided(d.equipmentProvided ?? null); setDurationMinutes(d.durationMinutes ?? null); setGenre(d.genre ?? null); setPartyType(d.partyType ?? null);
     setShowGroupInsights(d.showGroupInsights !== false); setAllowAttendeeInvites(d.allowAttendeeInvites !== false);
     setHostNotifications(d.hostNotifications !== false); setRequiresApproval(!!d.requiresApproval);
   }
@@ -400,6 +401,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         priceLevel,
         equipmentProvided,
         durationMinutes,
+        genre: isMusicTag(interestTag) ? genre : null,
         partyType,
         showGroupInsights,
         requiresApproval: visibility !== 'invite_only' && requiresApproval,
@@ -785,6 +787,22 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   })}
                 </View>
 
+                {isMusicTag(interestTag) && (
+                  <>
+                    <Text style={styles.label}>Genre</Text>
+                    <View style={styles.chipsWrap}>
+                      {GENRE_OPTIONS.map((option) => {
+                        const selected = genre === option.key;
+                        return (
+                          <TouchableOpacity key={option.label} style={[styles.chip, selected && styles.chipSelected]} onPress={() => { Haptics.selectionAsync(); setGenre(option.key); }} activeOpacity={0.85} accessibilityLabel={option.label} accessibilityRole="button" accessibilityState={{ selected }}>
+                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+
+                  </>
+                )}
                 <Text style={styles.label}>Who's this for?</Text>
                 <View style={styles.chipsWrap}>
                   {PARTY_TYPE_OPTIONS.map((option) => {

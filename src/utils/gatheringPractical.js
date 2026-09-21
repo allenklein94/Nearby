@@ -14,6 +14,18 @@ export const EQUIPMENT_OPTIONS = [
   { key: false, label: 'Bring your own' },
 ];
 
+export const GENRE_OPTIONS = [
+  { key: null, label: 'Not specified' },
+  { key: 'rock', label: 'Rock' }, { key: 'pop', label: 'Pop' }, { key: 'jazz', label: 'Jazz' }, { key: 'blues', label: 'Blues' },
+  { key: 'country', label: 'Country' }, { key: 'hip_hop', label: 'Hip-Hop' }, { key: 'electronic', label: 'Electronic' },
+  { key: 'classical', label: 'Classical' }, { key: 'folk', label: 'Folk' }, { key: 'latin', label: 'Latin' },
+  { key: 'r_and_b', label: 'R&B' }, { key: 'open_mic', label: 'Open Mic' },
+];
+// Genre is asked only for a music gathering; the tags below are real canonical Entertainment tags.
+export const MUSIC_TAGS = ['Music', 'Live Music', 'Concerts', 'DJs', 'Karaoke'];
+export const isMusicTag = (tag) => MUSIC_TAGS.includes(tag);
+export const genreLabel = (key) => GENRE_OPTIONS.find((o) => o.key && o.key === key)?.label ?? null;
+
 export function durationLabel(minutes) {
   if (!Number.isFinite(minutes) || minutes < 15) return null;
   if (minutes < 60) return `${minutes} min`;
@@ -28,5 +40,7 @@ export function practicalFacts(g) {
   else if (g?.equipment_provided === false) out.push('🎒 Bring your own equipment');
   const d = durationLabel(g?.duration_minutes);
   if (d) out.push(`⏱️ About ${d}`);
+  const genre = genreLabel(g?.genre);
+  if (genre) out.unshift(`🎵 ${genre}`);
   return out;
 }

@@ -1,4 +1,4 @@
-import { EQUIPMENT_OPTIONS, DURATION_OPTIONS } from '../utils/gatheringPractical';
+import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, isMusicTag } from '../utils/gatheringPractical';
 import React, { useState, useEffect } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Platform, Keyboard, TouchableWithoutFeedback, Image, Switch } from 'react-native';
@@ -40,6 +40,7 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [groupSizeFeel, setGroupSizeFeel] = useState(gathering.group_size_feel ?? null);
   const [beginnerFriendly, setBeginnerFriendly] = useState(gathering.beginner_friendly ?? true);
   const [equipmentProvided, setEquipmentProvided] = useState(gathering.equipment_provided ?? null);
+  const [genre, setGenre] = useState(gathering.genre ?? null);
   const [durationMinutes, setDurationMinutes] = useState(gathering.duration_minutes ?? null);
   const [showGroupInsights, setShowGroupInsights] = useState(gathering.show_group_insights ?? true);
   const [requiresApproval, setRequiresApproval] = useState(gathering.requires_approval ?? false);
@@ -131,6 +132,7 @@ export default function EditGatheringScreen({ route, navigation }) {
         beginnerFriendly,
         equipmentProvided,
         durationMinutes,
+        ...(isMusicTag(gathering.interest_tag) ? { genre } : {}),
         timelineSteps: cleanedTimelineSteps.length > 0 ? cleanedTimelineSteps : null,
         showGroupInsights,
         ...(gathering.is_public === false ? {} : { requiresApproval }),
@@ -318,6 +320,22 @@ export default function EditGatheringScreen({ route, navigation }) {
             })}
           </View>
 
+          {isMusicTag(gathering.interest_tag) && (
+            <>
+              <Text style={styles.label}>Genre</Text>
+              <View style={styles.chipsWrap}>
+                {GENRE_OPTIONS.map((option) => {
+                  const selected = genre === option.key;
+                  return (
+                    <TouchableOpacity key={option.label} style={[styles.chip, selected && styles.chipSelected]} onPress={() => { Haptics.selectionAsync(); setGenre(option.key); }} activeOpacity={0.85} accessibilityLabel={option.label} accessibilityRole="button" accessibilityState={{ selected }}>
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+            </>
+          )}
           <View style={styles.toggleRow}>
             <Text style={styles.label}>Show group insights</Text>
             <Switch
