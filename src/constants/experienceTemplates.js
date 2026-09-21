@@ -46,6 +46,8 @@ const FRIENDS_FOOD_CATEGORIES = ['Foodie', 'Brunch', 'Food Trucks', 'Cooking', '
 const FRIENDS_DRINKS_CATEGORIES = ['Bars & Lounges', 'Breweries', 'Wine', 'Happy Hour', 'Wineries'];
 const FAMILY_OUTDOOR_CATEGORIES = ['Hiking', 'Outdoors', 'Fishing', 'Kayaking', 'Family Playdate', 'Kids Activity', 'Zoos', 'Aquariums', 'Amusement Park', 'Parks', 'Playgrounds', 'Beaches', 'Trails', 'Picnics', 'Gardens'];
 
+const STAY_CATEGORIES = ['Hotels', 'Resorts', 'Romantic Getaways', 'Spa Resorts', 'Vacation Rentals', 'Staycation', 'Weekend Getaway'];
+
 const DATE_NIGHT_COMPONENTS = [
   { key: 'dinner', label: '🍽️ Dinner', categories: DINNER_CATEGORIES },
   { key: 'something_to_do', label: '🎵 Something to Do', categories: NIGHT_OUT_CATEGORIES },
@@ -75,7 +77,10 @@ export const EXPERIENCE_TEMPLATES = {
 // components over real category tags, dropped when there is no real inventory. `contextTitle` is the optional, softer
 // framing used when the experience is only SUGGESTED from context ("Make it a night") rather than asked for.
 export const CONTEXT_TEMPLATES = {
-  date_night: { title: '✨ Make it a night', components: DATE_NIGHT_COMPONENTS },
+  // "Date night -> hotel": an OPTIONAL last part, only for the suggested (context) night, never the occasion template
+  // (bundles and their DB CHECK vocabulary are unchanged). Like every component it is dropped when there is no real
+  // stay supply nearby, so it costs nothing until a hotel/resort can post availability.
+  date_night: { title: '✨ Make it a night', components: [...DATE_NIGHT_COMPONENTS, { key: 'stay', label: '🏨 Stay Over', categories: STAY_CATEGORIES }] },
   friends_out: {
     title: '✨ Make it a day out',
     components: [

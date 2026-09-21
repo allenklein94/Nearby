@@ -209,6 +209,13 @@ describe('context-triggered "Make it a night" (no explicit occasion)', () => {
     expect(exp.claimedIds).toEqual([]);
     expect(exp.bundles).toEqual([]);
   });
+  it('adds an optional "Stay Over" only when a real stay posting exists, and never counts alone as a night', () => {
+    const hotel = businessCandidate({ id: 'h1', category: 'Hotels', score: 4 });
+    const withStay = assembleExperience(null, [dinner, hotel], ctx);
+    expect(withStay.components.map((c) => c.key)).toEqual(['dinner', 'stay']);
+    expect(assembleExperience(null, [hotel], ctx)).toBeNull(); // one part is not an experience
+    expect(assembleExperience(null, [dinner, music, dessert], ctx).components.some((c) => c.key === 'stay')).toBe(false);
+  });
   it('never forces a component: a missing one is simply absent', () => {
     const exp = assembleExperience(null, [dinner, music], ctx);
     expect(exp.components.map((c) => c.key)).toEqual(['dinner', 'something_to_do']);
