@@ -836,6 +836,11 @@
         <input type="text" id="apply-category-text" name="categoryText" placeholder="Tell us what kind of business it is, e.g. small-batch coffee roaster" maxlength="200">
       </div>
 
+      <div class="apply-field" id="apply-activities-field" hidden>
+        <label>What can customers do here? <span class="hint">(optional)</span></label>
+        <div class="apply-category-row" id="apply-activities"></div>
+      </div>
+
       <div class="apply-field">
         <label for="apply-address">Business Address</label>
         <input type="text" id="apply-address" name="address" placeholder="Street, city, state" maxlength="300" required>
@@ -1062,7 +1067,12 @@
   var applyTypeSearch = document.getElementById('apply-type-search');
   var applyTypeResults = document.getElementById('apply-type-results');
   var applyTypePicked = document.getElementById('apply-type-picked');
+  var applyActivityKey = '';
   function renderApplyType() {
+    // A different type starts the checklist over (its additions belonged to the previous type).
+    var typeKey = (selectedApplyCategory || '') + '|' + (selectedApplySubcategory || '');
+    if (typeKey !== applyActivityKey) { applyActivityKey = typeKey; applyAttributes = []; applyExtraTags = []; }
+    renderApplyActivities();
     applyTypeResults.textContent = '';
     applyTypePicked.textContent = '';
     if (selectedApplyCategory) {
@@ -1115,6 +1125,99 @@
     });
     applyCategoryRow.appendChild(chip);
   });
+
+  // "What can customers do here?" (owner item 53). A browser copy of src/constants/activityLayer.js (ACTIVITIES.fits,
+  // activityChoices, toggleActivity) for a business with no offered occasions or party types (an application has none). It is a
+  // convenient way to DECLARE attributes / a secondary tag the business already has a place for -- nothing else is stored, and an
+  // activity that only a party type or an occasion could support is not offered. activityLayer.test.js runs this copy against the
+  // app's on a matrix of rows, so the two cannot drift.
+  var APPLY_ATTR_KEYS = ["outdoor_seating","date_friendly","group_friendly","live_music","kid_friendly","quiet","casual","upscale","specialty_coffee","laptop_friendly","dog_friendly","waterfront","late_night","board_game_friendly","photography_friendly","book_lovers","craft_friendly","fitness_focused","private_dining","corporate_events","wifi","food_available","beginner_friendly","reservation_required","wheelchair_accessible","accessible_parking","accessible_restroom","service_animal_friendly","stroller_friendly","family_seating","kid_menu","pet_friendly","romantic"];
+  var APPLY_HINT_PREFER = { work_remotely: 'laptop_friendly', casual_date: 'date_friendly', group_hangout: 'group_friendly', bring_dog: 'dog_friendly', small_gathering: 'groups' };
+  function hasAny(list, wanted) { return list.some(function (t) { return wanted.indexOf(t) >= 0; }); }
+  var APPLY_ACTIVITIES = [
+    { key: 'grab_coffee', icon: '☕', display: 'Grab coffee', fits: function (b) { return hasAny(b.tags, ['Coffee', 'Bakeries']); } },
+    { key: 'work_remotely', icon: '💻', display: 'Work remotely', fits: function (b) { return b.tags.indexOf('Coworking') >= 0 || (hasAny(b.tags, ['Coffee', 'Bakeries']) && hasAny(b.attributes, ['laptop_friendly', 'quiet'])); } },
+    { key: 'first_date', icon: '💕', display: 'First date', fits: function (b) { return b.attributes.indexOf('date_friendly') >= 0 && b.attributes.indexOf('quiet') >= 0; } },
+    { key: 'meet_a_friend', icon: '👥', display: 'Meet friends', fits: function (b) { return hasAny(b.tags, ['Coffee', 'Brunch', 'Bars & Lounges', 'Restaurants', 'Dessert & Ice Cream', 'Bakeries']); } },
+    { key: 'quick_bite', icon: '🥪', display: 'Grab a quick bite', fits: function (b) { return hasAny(b.tags, ['Fast Casual', 'Food Trucks', 'Bakeries', 'Takeout & Delivery']); } },
+    { key: 'breakfast', icon: '🥐', display: 'Get breakfast', fits: function (b) { return hasAny(b.tags, ['Breakfast', 'Brunch', 'Bakeries']); } },
+    { key: 'group_hangout', icon: '🎈', display: 'Hang out as a group', fits: function (b) { return b.attributes.indexOf('group_friendly') >= 0; } },
+    { key: 'casual_date', icon: '❤️', display: 'Casual date', fits: function (b) { return b.attributes.indexOf('date_friendly') >= 0; } },
+    { key: 'bring_dog', icon: '🐕', display: 'Bring your dog', fits: function (b) { return b.attributes.indexOf('dog_friendly') >= 0 || b.attributes.indexOf('pet_friendly') >= 0; } }
+  ];
+  function applySignals(row, attributes, categories) {
+    var tags = [];
+    [row.subcategory, row.category].concat(categories).forEach(function (t) { if (t && tags.indexOf(t) < 0) tags.push(t); });
+    return { tags: tags, attributes: attributes };
+  }
+  function applyAdditions(a, row, tagOptions) {
+    var attrs = row.attributes, cats = row.categories;
+    function fitsWith(addA, addC) { return a.fits(applySignals(row, attrs.concat(addA), cats.concat(addC))); }
+    var singles = APPLY_ATTR_KEYS.filter(function (k) { return attrs.indexOf(k) < 0 && fitsWith([k], []); });
+    if (singles.length > 0) return { attributes: [singles.indexOf(APPLY_HINT_PREFER[a.key]) >= 0 ? APPLY_HINT_PREFER[a.key] : singles[0]], categories: [] };
+    var tag = tagOptions.filter(function (t) { return t && cats.indexOf(t) < 0 && t !== row.subcategory && t !== row.category; }).filter(function (t) { return fitsWith([], [t]); })[0];
+    if (tag) return { attributes: [], categories: [tag] };
+    for (var i = 0; i < APPLY_ATTR_KEYS.length; i++) {
+      var x = APPLY_ATTR_KEYS[i];
+      if (attrs.indexOf(x) >= 0) continue;
+      for (var j = 0; j < APPLY_ATTR_KEYS.length; j++) {
+        var y = APPLY_ATTR_KEYS[j];
+        if (y <= x || attrs.indexOf(y) >= 0) continue;
+        if (fitsWith([x, y], [])) return { attributes: [x, y], categories: [] };
+      }
+    }
+    return null;
+  }
+  function applyTypeOnly(row) { return { tags: [row.subcategory, row.category].filter(Boolean), attributes: [] }; }
+  function applyChoices(row, tagOptions) {
+    var b = applySignals(row, row.attributes, row.categories);
+    return APPLY_ACTIVITIES.map(function (a) {
+      var checked = a.fits(b);
+      return { key: a.key, icon: a.icon, display: a.display, checked: checked, locked: checked && a.fits(applyTypeOnly(row)), add: checked ? null : applyAdditions(a, row, tagOptions) };
+    }).filter(function (c) { return c.checked || c.add; });
+  }
+  function applyToggle(row, key, tagOptions) {
+    var attrs = row.attributes, cats = row.categories, unchanged = { attributes: attrs, categories: cats };
+    var a = APPLY_ACTIVITIES.filter(function (x) { return x.key === key; })[0];
+    if (!a) return unchanged;
+    function fits(A, C) { return a.fits(applySignals(row, A, C)); }
+    if (!fits(attrs, cats)) {
+      var add = applyAdditions(a, row, tagOptions);
+      return add ? { attributes: attrs.concat(add.attributes), categories: cats.concat(add.categories) } : unchanged;
+    }
+    if (a.fits(applyTypeOnly(row))) return unchanged;
+    var needA = attrs.filter(function (k) { return !fits(attrs.filter(function (x) { return x !== k; }), cats); });
+    var needC = cats.filter(function (t) { return !fits(attrs, cats.filter(function (x) { return x !== t; })); });
+    if (needA.length + needC.length > 0) return { attributes: attrs.filter(function (k) { return needA.indexOf(k) < 0; }), categories: cats.filter(function (t) { return needC.indexOf(t) < 0; }) };
+    var sufA = attrs.filter(function (k) { return fits([k], []); });
+    var sufC = cats.filter(function (t) { return fits([], [t]); });
+    return { attributes: attrs.filter(function (k) { return sufA.indexOf(k) < 0; }), categories: cats.filter(function (t) { return sufC.indexOf(t) < 0; }) };
+  }
+  var applyAttributes = [];
+  var applyExtraTags = [];
+  function applyRow() { return { category: selectedApplyCategory, subcategory: selectedApplySubcategory, categories: applyExtraTags, attributes: applyAttributes }; }
+  function renderApplyActivities() {
+    var field = document.getElementById('apply-activities-field');
+    var box = document.getElementById('apply-activities');
+    box.innerHTML = '';
+    var tagOptions = selectedApplyCategory ? (APPLY_TAGS[selectedApplyCategory] || []) : [];
+    var choices = selectedApplyCategory ? applyChoices(applyRow(), tagOptions) : [];
+    field.hidden = choices.length === 0;
+    choices.forEach(function (c) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'apply-category-chip' + (c.checked ? ' selected' : '');
+      b.textContent = (c.checked ? '☑ ' : '☐ ') + c.icon + ' ' + c.display;
+      if (c.locked) { b.disabled = true; b.style.opacity = '0.7'; b.title = 'Already covered by your business type'; }
+      b.addEventListener('click', function () {
+        if (c.locked) return;
+        var next = applyToggle(applyRow(), c.key, tagOptions);
+        applyAttributes = next.attributes; applyExtraTags = next.categories;
+        renderApplyActivities();
+      });
+      box.appendChild(b);
+    });
+  }
 
   function revealApplyForm() {
     var section = document.getElementById('apply');
@@ -1172,6 +1275,8 @@
         businessName: businessName,
         category: selectedApplyCategory,
         subcategory: selectedApplySubcategory,
+        attributes: selectedApplyCategory ? applyAttributes : [],
+        categories: selectedApplyCategory ? applyExtraTags : [],
         categoryText: categoryText,
         address: address,
         website: website,

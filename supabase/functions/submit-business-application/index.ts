@@ -33,6 +33,9 @@ const CORS_HEADERS: Record<string, string> = {
 // then again the same day to 19 -- 20260923_business_category_taxonomy_v2_new_majors.sql)
 // -- re-validated here so a malformed/hallucinated category value can never
 // reach the row a real admin later reviews.
+// The one attribute vocabulary (src/constants/businessAttributes.js; a Jest test keeps this list identical to it).
+const VALID_ATTRIBUTES = ["outdoor_seating","date_friendly","group_friendly","live_music","kid_friendly","quiet","casual","upscale","specialty_coffee","laptop_friendly","dog_friendly","waterfront","late_night","board_game_friendly","photography_friendly","book_lovers","craft_friendly","fitness_focused","private_dining","corporate_events","wifi","food_available","beginner_friendly","reservation_required","wheelchair_accessible","accessible_parking","accessible_restroom","service_animal_friendly","stroller_friendly","family_seating","kid_menu","pet_friendly","romantic"];
+
 const VALID_CATEGORIES = [
   'food_drink',
   'activities_recreation',
@@ -179,6 +182,19 @@ serve(async (req) => {
     subcategory = tagRow?.tag ?? null;
   }
 
+  // "What can customers do here?" additions: attributes must be in the closed vocabulary, extra tags must be real tags of the
+  // chosen major (the registry decides); anything else is dropped, never an error (the checklist is optional).
+  const attributes = Array.isArray(body.attributes)
+    ? [...new Set(body.attributes.filter((a: unknown): a is string => typeof a === 'string' && VALID_ATTRIBUTES.includes(a)))].slice(0, 12)
+    : [];
+  let categories: string[] = [];
+  if (category && Array.isArray(body.categories) && body.categories.length > 0) {
+    const wanted = [...new Set(body.categories.filter((t: unknown): t is string => typeof t === 'string'))].slice(0, 6);
+    const { data: tagRows } = await supabase
+      .from('category_tag_groups').select('tag').eq('group_key', category).in('tag', wanted);
+    categories = (tagRows ?? []).map((r: { tag: string }) => r.tag).filter((t: string) => t !== subcategory);
+  }
+
   const { data: inserted, error } = await supabase
     .from('business_partner_requests')
     .insert({
@@ -186,6 +202,8 @@ serve(async (req) => {
       business_description: description || null,
       category: category || null,
       subcategory,
+      categories,
+      attributes: category ? attributes : [],
       unlisted_category_text: category ? null : categoryText,
       address,
       website: website || null,

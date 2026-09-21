@@ -65,3 +65,47 @@ describe('signup type search understands synonyms', () => {
     expect(searchBusinessTypes('coffee shop')[0].subcategory).toBe('Coffee');
   });
 });
+
+describe('web signup checklist is a faithful copy of the app checklist', () => {
+  const fs = require('fs');
+  const html = fs.readFileSync(require.resolve('../../docs/business.html'), 'utf8');
+  const start = html.indexOf('var APPLY_ATTR_KEYS');
+  const end = html.indexOf('var applyAttributes = [];');
+  const web = new Function(`${html.slice(start, end)}; return { applyChoices, applyToggle, APPLY_ATTR_KEYS };`)();
+  const { activityChoices, toggleActivity } = require('../constants/activityLayer');
+  const { BUSINESS_ATTRIBUTE_OPTIONS } = require('../constants/businessAttributes');
+  const { CATEGORY_GROUPS } = require('../constants/gatheringCategories');
+  // Web rows never carry offered occasions or party types, so the app side is asked the same way; activities that only those could
+  // support are not offered on web (the app's checklist hides them too, because an application cannot write them).
+  const tagsOf = (key) => { const g = CATEGORY_GROUPS.find((x) => x.key === key); return [...g.tags, ...(g.businessOnlyTags ?? [])]; };
+  const rows = [
+    { category: 'food_drink', subcategory: 'Coffee', categories: [], attributes: [] },
+    { category: 'food_drink', subcategory: 'Coffee', categories: [], attributes: ['laptop_friendly'] },
+    { category: 'food_drink', subcategory: 'Restaurants', categories: [], attributes: [] },
+    { category: 'food_drink', subcategory: 'Restaurants', categories: ['Breakfast'], attributes: ['date_friendly', 'quiet'] },
+    { category: 'food_drink', subcategory: null, categories: [], attributes: ['dog_friendly'] },
+    { category: 'food_drink', subcategory: 'Bars & Lounges', categories: [], attributes: ['group_friendly', 'pet_friendly'] },
+    { category: 'business_networking', subcategory: 'Coworking', categories: [], attributes: [] },
+    { category: 'activities_recreation', subcategory: 'Yoga', categories: [], attributes: [] },
+    { category: 'pets', subcategory: null, categories: [], attributes: [] },
+  ];
+  it('offers the same attribute vocabulary, in the same order', () => {
+    expect(web.APPLY_ATTR_KEYS).toEqual(BUSINESS_ATTRIBUTE_OPTIONS.map((o) => o.key));
+  });
+  it.each(rows.map((r, i) => [i, r]))('row %#: same choices as the app for everything web can write', (_i, row) => {
+    const tags = tagsOf(row.category);
+    const app = activityChoices(row, tags).filter((c) => c.key !== 'small_gathering');
+    const w = web.applyChoices(row, tags);
+    expect(w).toEqual(app);
+    w.forEach((c) => {
+      expect(web.applyToggle(row, c.key, tags)).toEqual(toggleActivity(row, c.key, tags));
+    });
+  });
+  it('the edge function accepts only the same vocabulary and real tags of the chosen major', () => {
+    const fn = fs.readFileSync(require.resolve('../../supabase/functions/submit-business-application/index.ts'), 'utf8');
+    const m = fn.match(/const VALID_ATTRIBUTES = (\[.*?\]);/);
+    expect(JSON.parse(m[1])).toEqual(BUSINESS_ATTRIBUTE_OPTIONS.map((o) => o.key));
+    expect(fn).toMatch(/eq\('group_key', category\)\.in\('tag', wanted\)/);
+    expect(html).toContain('attributes: selectedApplyCategory ? applyAttributes : []');
+  });
+});
