@@ -277,3 +277,44 @@ describe('perks as an add-on line (never a component)', () => {
     expect(candidates[0].perk).toBeUndefined();
   });
 });
+
+describe('budget-aware assembled night (cheap date tonight)', () => {
+  const ask = { partyType: 'date', dateWindow: 'tonight', attributes: [], priceLevel: '$', budgetMax: null };
+  const night = (context, extra = []) => assembleExperience(null, [
+    gatheringCandidate({ id: 'fancy', category: 'Fine Dining', priceLevel: '$$$', score: 9 }),
+    gatheringCandidate({ id: 'cheap', category: 'Restaurants', priceLevel: '$', score: 1 }),
+    businessCandidate({ id: 'biz', category: 'Restaurants', matchedAvailability: { price: 40 }, score: 5 }),
+    gatheringCandidate({ id: 'music', category: 'Live Music', priceLevel: 'free', score: 1 }),
+    ...extra,
+  ], context);
+  const dinner = (exp) => exp.components.find((c) => c.key === 'dinner').items.map((i) => i.id);
+
+  it('no budget: score order unchanged', () => {
+    expect(dinner(night({ ...ask, priceLevel: null }))).toEqual(['fancy', 'biz', 'cheap']);
+  });
+  it('fitting known price first, unknown stays, over-budget sinks but stays visible', () => {
+    expect(dinner(night(ask))).toEqual(['cheap', 'biz', 'fancy']);
+  });
+  it('a business posting with a price but no per-person flag stays unknown', () => {
+    const { budgetFit } = require('../utils/experienceBudget');
+    expect(budgetFit({ id: 'biz', matchedAvailability: { price: 40 } }, ask)).toBe(1);
+  });
+  it('the recipe order Dinner -> Something to Do (-> Finish -> Stay) is preserved under a budget', () => {
+    const exp = night(ask, [
+      gatheringCandidate({ id: 'ice', category: 'Dessert & Ice Cream', priceLevel: '$' }),
+      businessCandidate({ id: 'hotel', partnerId: 'p9', category: 'Hotels' }),
+    ]);
+    expect(exp.components.map((c) => c.key)).toEqual(['dinner', 'something_to_do', 'finish_the_night', 'stay']);
+    expect(exp.suggested).toBe(true);
+  });
+  it('the price level survives resolver -> assembly -> rendered chip', () => {
+    const fs = require('fs');
+    const resolver = fs.readFileSync(require.resolve('./intentResolver.js'), 'utf8');
+    expect(resolver).toMatch(/priceLevel: classifyResult\.priceLevel \?\? null, budgetMax: classifyResult\.budgetMax/);
+    expect(resolver).toMatch(/priceLevel: gathering\.price_level/);
+    expect(resolver).toMatch(/assembleExperience\(occasion, deduped, \{[^}]*priceLevel, budgetMax/);
+    const { priceChipLabel } = require('../utils/experienceBudget');
+    expect(priceChipLabel(night(ask).components[0].items[0])).toBe('$');
+    expect(fs.readFileSync(require.resolve('../components/ExperienceComponentList.js'), 'utf8')).toContain('priceChipLabel(item)');
+  });
+});
