@@ -185,7 +185,7 @@ serve(async (req) => {
   // "What can customers do here?" additions: attributes must be in the closed vocabulary, extra tags must be real tags of the
   // chosen major (the registry decides); anything else is dropped, never an error (the checklist is optional).
   const attributes = Array.isArray(body.attributes)
-    ? [...new Set(body.attributes.filter((a: unknown): a is string => typeof a === 'string' && VALID_ATTRIBUTES.includes(a)))].slice(0, 12)
+    ? [...new Set(body.attributes.filter((a: unknown): a is string => typeof a === 'string' && VALID_ATTRIBUTES.includes(a)))].slice(0, VALID_ATTRIBUTES.length)
     : [];
   let categories: string[] = [];
   if (category && Array.isArray(body.categories) && body.categories.length > 0) {

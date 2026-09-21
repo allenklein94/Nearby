@@ -101,6 +101,10 @@ describe('web signup checklist is a faithful copy of the app checklist', () => {
       expect(web.applyToggle(row, c.key, tags)).toEqual(toggleActivity(row, c.key, tags));
     });
   });
+  it('step 3 chips are the app\'s attribute options, labels and icons included', () => {
+    const m = html.match(/var APPLY_ATTR_OPTIONS = (\[.*\]);/);
+    expect(JSON.parse(m[1])).toEqual(BUSINESS_ATTRIBUTE_OPTIONS.map((o) => [o.key, o.label, o.icon]));
+  });
   it('the edge function accepts only the same vocabulary and real tags of the chosen major', () => {
     const fn = fs.readFileSync(require.resolve('../../supabase/functions/submit-business-application/index.ts'), 'utf8');
     const m = fn.match(/const VALID_ATTRIBUTES = (\[.*?\]);/);

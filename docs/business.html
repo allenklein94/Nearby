@@ -841,6 +841,11 @@
         <div class="apply-category-row" id="apply-activities"></div>
       </div>
 
+      <div class="apply-field" id="apply-attrs-field" hidden>
+        <label>What describes your business? <span class="hint">(optional)</span></label>
+        <div class="apply-category-row" id="apply-attrs"></div>
+      </div>
+
       <div class="apply-field">
         <label for="apply-address">Business Address</label>
         <input type="text" id="apply-address" name="address" placeholder="Street, city, state" maxlength="300" required>
@@ -1132,6 +1137,7 @@
   // activity that only a party type or an occasion could support is not offered. activityLayer.test.js runs this copy against the
   // app's on a matrix of rows, so the two cannot drift.
   var APPLY_ATTR_KEYS = ["outdoor_seating","date_friendly","group_friendly","live_music","kid_friendly","quiet","casual","upscale","specialty_coffee","laptop_friendly","dog_friendly","waterfront","late_night","board_game_friendly","photography_friendly","book_lovers","craft_friendly","fitness_focused","private_dining","corporate_events","wifi","food_available","beginner_friendly","reservation_required","wheelchair_accessible","accessible_parking","accessible_restroom","service_animal_friendly","stroller_friendly","family_seating","kid_menu","pet_friendly","romantic"];
+  var APPLY_ATTR_OPTIONS = [["outdoor_seating","Outdoor Seating","\ud83c\udf24\ufe0f"],["date_friendly","Date-Friendly","\ud83d\udc95"],["group_friendly","Group-Friendly","\ud83d\udc65"],["live_music","Live Music","\ud83c\udfb5"],["kid_friendly","Kid-Friendly","\ud83e\uddd2"],["quiet","Quiet","\ud83e\udd2b"],["casual","Casual","\ud83d\udc55"],["upscale","Upscale","\ud83c\udfa9"],["specialty_coffee","Specialty Coffee","\u2615"],["laptop_friendly","Laptop-Friendly","\ud83d\udcbb"],["dog_friendly","Dog-Friendly","\ud83d\udc15"],["waterfront","Waterfront","\ud83c\udf0a"],["late_night","Late-Night","\ud83c\udf19"],["board_game_friendly","Board Game Friendly","\ud83c\udfb2"],["photography_friendly","Photography-Friendly","\ud83d\udcf8"],["book_lovers","Book Lovers","\ud83d\udcda"],["craft_friendly","Craft-Friendly","\ud83e\uddf6"],["fitness_focused","Fitness-Focused","\ud83d\udcaa"],["private_dining","Private Dining","\ud83e\udd42"],["corporate_events","Corporate Events","\ud83d\udcbc"],["wifi","Wi-Fi","\ud83d\udcf6"],["food_available","Food Available","\ud83c\udf7d\ufe0f"],["beginner_friendly","Beginner-Friendly","\ud83c\udf31"],["reservation_required","Reservation Required","\ud83d\udcc5"],["wheelchair_accessible","Wheelchair Accessible","\u267f"],["accessible_parking","Accessible Parking","\ud83c\udd7f\ufe0f"],["accessible_restroom","Accessible Restroom","\ud83d\udebb"],["service_animal_friendly","Service Animal Friendly","\ud83e\uddae"],["stroller_friendly","Stroller Friendly","\ud83d\udc76"],["family_seating","Family Seating","\ud83e\ude91"],["kid_menu","Kid Menu","\ud83c\udf5f"],["pet_friendly","Pet-Friendly","\ud83d\udc3e"],["romantic","Romantic","\ud83d\udd6f\ufe0f"]];
   var APPLY_HINT_PREFER = { work_remotely: 'laptop_friendly', casual_date: 'date_friendly', group_hangout: 'group_friendly', bring_dog: 'dog_friendly', small_gathering: 'groups' };
   function hasAny(list, wanted) { return list.some(function (t) { return wanted.indexOf(t) >= 0; }); }
   var APPLY_ACTIVITIES = [
@@ -1196,6 +1202,27 @@
   var applyAttributes = [];
   var applyExtraTags = [];
   function applyRow() { return { category: selectedApplyCategory, subcategory: selectedApplySubcategory, categories: applyExtraTags, attributes: applyAttributes }; }
+  // Step 3: the same attribute vocabulary as plain chips. Shares applyAttributes with the checklist, so what an activity added shows
+  // ticked here, and vice versa.
+  function renderApplyAttrs() {
+    var field = document.getElementById('apply-attrs-field');
+    var box = document.getElementById('apply-attrs');
+    box.innerHTML = '';
+    field.hidden = !selectedApplyCategory;
+    if (!selectedApplyCategory) return;
+    APPLY_ATTR_OPTIONS.forEach(function (o) {
+      var on = applyAttributes.indexOf(o[0]) >= 0;
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'apply-category-chip' + (on ? ' selected' : '');
+      b.textContent = (on ? '\u2611 ' : '\u2610 ') + o[2] + ' ' + o[1];
+      b.addEventListener('click', function () {
+        applyAttributes = on ? applyAttributes.filter(function (k) { return k !== o[0]; }) : applyAttributes.concat([o[0]]);
+        renderApplyActivities();
+      });
+      box.appendChild(b);
+    });
+  }
   function renderApplyActivities() {
     var field = document.getElementById('apply-activities-field');
     var box = document.getElementById('apply-activities');
@@ -1203,6 +1230,7 @@
     var tagOptions = selectedApplyCategory ? (APPLY_TAGS[selectedApplyCategory] || []) : [];
     var choices = selectedApplyCategory ? applyChoices(applyRow(), tagOptions) : [];
     field.hidden = choices.length === 0;
+    renderApplyAttrs();
     choices.forEach(function (c) {
       var b = document.createElement('button');
       b.type = 'button';
