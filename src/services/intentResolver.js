@@ -649,7 +649,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Open-ended ask ("something fun tonight"): no category named, so only inventory in social groups is eligible and it gets a
   // small lift (utils/openEndedAsk.js, rule-based). A real category or occasion in the ask leaves everything untouched.
   const openEndedGroups = openEndedAskGroups({ category, rawText, occasion, attributes });
-  deduped = applyOpenEndedAsk(deduped, openEndedGroups);
+  deduped = applyOpenEndedAsk(deduped, openEndedGroups, { dateWindow, partyType, hour: new Date().getHours() });
 
   deduped.sort((a, b) => b.score - a.score);
   // The caption names only the groups the SHOWN results really come from.
@@ -749,7 +749,7 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
     };
   }
 
-  const { items: resolved, experience } = await resolveIntent({
+  const { items: resolved, experience, openEndedNote } = await resolveIntent({
     category: classifyResult.category, dateWindow: classifyResult.dateWindow, rawText: typedText,
     partySize: classifyResult.partySize ?? null, priceLevel: classifyResult.priceLevel ?? null,
     partyType: classifyResult.partyType ?? null, attributes: classifyResult.attributes ?? [],
@@ -765,7 +765,7 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
   });
   return {
     outcome: items.length > 0 ? 'results' : 'empty',
-    classifyResult, typedText, submissionId, items, experience,
+    classifyResult, typedText, submissionId, items, experience, openEndedNote,
   };
 }
 

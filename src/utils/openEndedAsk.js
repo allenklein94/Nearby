@@ -32,16 +32,37 @@ function groupKeyOf(candidate) {
   return (groupForTag(c) ?? CATEGORY_GROUPS.find((g) => (g.businessOnlyTags ?? []).includes(c)))?.key ?? null;
 }
 
-// Filters and lifts a scored candidate list for an open-ended ask. `groups` from openEndedAskGroups (null = untouched).
-export function applyOpenEndedAsk(candidates, groups) {
+// A second, small nudge from the ask's own time window (never a clock the person did not give): an evening ask (tonight, or
+// today once it is 5 PM or later) leans to nightlife and food, a daytime ask (today earlier, tomorrow, the weekend) leans to things
+// to go and do, and a date leans a little to dating & social. Stacks with the base lift but stays far below a real match (5).
+export const TIME_TILT_POINTS = 1;
+const EVENING_GROUPS = ['entertainment_nightlife', 'food_drink'];
+const DAYTIME_GROUPS = ['activities_recreation', 'outdoors_nature', 'attractions_things_to_see', 'arts_culture_learning'];
+
+export function timeTiltGroups({ dateWindow = null, partyType = null, hour = null } = {}) {
+  const evening = dateWindow === 'tonight' || (dateWindow === 'today' && Number.isFinite(hour) && hour >= 17);
+  const daytime = !evening && ['today', 'tomorrow', 'weekend'].includes(dateWindow);
+  const tilt = [...(evening ? EVENING_GROUPS : []), ...(daytime ? DAYTIME_GROUPS : [])];
+  if (partyType === 'date') tilt.push('dating_social');
+  return tilt;
+}
+
+// Filters and lifts a scored candidate list for an open-ended ask. `groups` from openEndedAskGroups (null = untouched);
+// `ctx` = { dateWindow, partyType, hour } for the time tilt.
+export function applyOpenEndedAsk(candidates, groups, ctx = {}) {
   if (!Array.isArray(groups)) return candidates;
   const eligible = new Set(groups);
+  const tilt = new Set(timeTiltGroups(ctx));
   return candidates
     .filter((c) => {
       const k = groupKeyOf(c);
       return k == null || eligible.has(k); // unknown category is kept, never dropped
     })
-    .map((c) => (groupKeyOf(c) ? { ...c, score: (c.score ?? 0) + OPEN_ENDED_GROUP_BONUS } : c));
+    .map((c) => {
+      const k = groupKeyOf(c);
+      if (!k) return c;
+      return { ...c, score: (c.score ?? 0) + OPEN_ENDED_GROUP_BONUS + (tilt.has(k) ? TIME_TILT_POINTS : 0) };
+    });
 }
 
 // "Activities, Entertainment and Food & Drink" -- the groups that actually contributed results, for an honest one-line caption.

@@ -1991,6 +1991,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {isSearching && !intentSearching && intentSearch?.outcome === 'results' && (
             <View style={styles.intentSearchBlock}>
               <FoundLine />
+              {!!intentSearch.openEndedNote && (
+                <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{intentSearch.openEndedNote}</Text>
+              )}
               <Text style={styles.intentSearchTitle}>
                 {intentSearch.experience?.title ?? intentSearchFallbackTitle(intentSearch.classifyResult)}
               </Text>

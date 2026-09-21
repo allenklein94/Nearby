@@ -1,4 +1,4 @@
-import { openEndedAskGroups, applyOpenEndedAsk, openEndedCaption, OPEN_ENDED_GROUP_BONUS } from './openEndedAsk';
+import { openEndedAskGroups, applyOpenEndedAsk, openEndedCaption, timeTiltGroups, TIME_TILT_POINTS, OPEN_ENDED_GROUP_BONUS } from './openEndedAsk';
 import { SCORE_INTEREST_MATCH } from '../services/intentResolverScoring';
 
 const ask = (rawText, extra = {}) => openEndedAskGroups({ rawText, ...extra });
@@ -53,5 +53,26 @@ describe('open-ended asks', () => {
   test('rule-based only: no AI or network in the module', () => {
     const src = require('fs').readFileSync(require('path').join(__dirname, 'openEndedAsk.js'), 'utf8');
     expect(src).not.toMatch(/fetch|supabase|anthropic|functions\.invoke/i);
+  });
+  test('time tilt: evening leans nightlife/food, daytime leans things to do, a date leans dating; unknown time = none', () => {
+    expect(timeTiltGroups({ dateWindow: 'tonight' })).toEqual(['entertainment_nightlife', 'food_drink']);
+    expect(timeTiltGroups({ dateWindow: 'today', hour: 19 })).toEqual(['entertainment_nightlife', 'food_drink']);
+    expect(timeTiltGroups({ dateWindow: 'today', hour: 10 })).toContain('outdoors_nature');
+    expect(timeTiltGroups({ dateWindow: 'weekend' })).toContain('attractions_things_to_see');
+    expect(timeTiltGroups({ dateWindow: 'tonight', partyType: 'date' })).toContain('dating_social');
+    expect(timeTiltGroups({ dateWindow: 'flexible' })).toEqual([]);
+    expect(timeTiltGroups({ dateWindow: 'today' })).toContain('activities_recreation'); // no hour given -> not evening
+    expect(timeTiltGroups({})).toEqual([]);
+  });
+  test('the tilt adds on top of the base lift and stays far below a real match', () => {
+    const groups = ask('something fun tonight');
+    const out = applyOpenEndedAsk([{ id: 'c', category: 'Concerts', score: 1 }, { id: 'h', category: 'Hiking', score: 1 }], groups, { dateWindow: 'tonight' });
+    expect(out.find((c) => c.id === 'c').score).toBe(1 + OPEN_ENDED_GROUP_BONUS + TIME_TILT_POINTS);
+    expect(out.find((c) => c.id === 'h').score).toBe(1 + OPEN_ENDED_GROUP_BONUS);
+    expect(OPEN_ENDED_GROUP_BONUS + TIME_TILT_POINTS).toBeLessThan(SCORE_INTEREST_MATCH);
+  });
+  test('Home and Discover both render the caption', () => {
+    const fs = require('fs'); const path = require('path');
+    ['src/screens/HomeScreen.js', 'src/screens/DiscoverHubScreen.js'].forEach((f) => expect(fs.readFileSync(path.join(__dirname, '../..', f), 'utf8')).toMatch(/openEndedNote/));
   });
 });
