@@ -1,3 +1,4 @@
+import { gatheringWhen } from './timeWindow';
 import { canonicalizeInterests } from '../constants/interestGraph';
 // Universal recommendation-card rule (2026-09-20, owner item 33): every recommendation answers three questions on
 // the card itself -- WHY (a specific, checkable reason, never bare "Matches your interests"), HOW FAR, and WHEN.
@@ -19,7 +20,7 @@ export function recommendationFacts(g) {
   const firstWhy = (g.reasons ?? []).find((r) => !restated.includes(categorizeReasonText(r))) ?? null;
   const why = interestMatched ? becauseYouLikeReason(g.interest_tag) : firstWhy;
   const distance = formatDistance(g.distanceMiles);
-  const when = g.scheduled_at ? formatHeroDateTime(g.scheduled_at) : null;
+  const when = g.scheduled_at ? gatheringWhen(g) : null;
   return { why, distance, when, meta: [distance, when].filter(Boolean).join(' · ') || null };
 }
 

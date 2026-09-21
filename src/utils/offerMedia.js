@@ -1,3 +1,4 @@
+import { timeWindowState } from './timeWindow';
 // Rich offers, Phase 2 (PRODUCT_AUDIT/OFFER_MEDIA_MODEL_2026-09-20.md). Pure rules shared by the sender and the tests.
 // A video offer is screened through up to three preview frames sampled from it (the first becomes its poster); the server
 // enforces the same size cap and refuses a video with no frames.
@@ -50,10 +51,8 @@ export function validityLabel(validUntil, now = new Date()) {
   if (!validUntil) return null;
   const end = new Date(validUntil);
   if (Number.isNaN(end.getTime())) return null;
-  if (end.getTime() <= now.getTime()) return 'expired';
-  const time = end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  const sameDay = end.toDateString() === now.toDateString();
-  return sameDay ? `Valid until ${time}` : `Valid until ${end.toLocaleDateString([], { weekday: 'short' })} ${time}`;
+  const st = timeWindowState({ end: end.toISOString() }, now, 'offer');
+  return st.phase === 'over' ? 'expired' : st.label;
 }
 
 // Owner-set available window ("Available 6-8 PM"): a time-of-day range for the day the visit is for. Both ends or neither.

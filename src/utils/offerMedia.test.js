@@ -57,7 +57,7 @@ test('validity: owner-picked day + time becomes a real future timestamp; a past 
 test('validity label reads "Valid until 7 PM", flags expired, and is null with no end time', () => {
   const now = new Date(2026, 8, 20, 15, 0);
   expect(validityLabel(null, now)).toBeNull();
-  expect(validityLabel(new Date(2026, 8, 20, 19, 0).toISOString(), now)).toMatch(/^Valid until .*7:00/);
+  expect(validityLabel(new Date(2026, 8, 20, 19, 0).toISOString(), now)).toBe('Valid until 7 PM');
   expect(validityLabel(new Date(2026, 8, 20, 14, 0).toISOString(), now)).toBe('expired');
   expect(isOfferExpired({ valid_until: new Date(2026, 8, 20, 14, 0).toISOString() }, now)).toBe(true);
   expect(isOfferExpired({}, now)).toBe(false);
