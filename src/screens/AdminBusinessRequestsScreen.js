@@ -198,10 +198,14 @@ export default function AdminBusinessRequestsScreen() {
         ListHeaderComponent={emerging.length ? (
           <View style={styles.card}>
             <Text style={styles.businessName}>Potential new categories</Text>
-            <Text style={styles.contact}>Several different businesses described themselves in words no category covers.</Text>
+            <Text style={styles.contact}>Three or more different businesses described themselves, in their own words, in a way no category covers. Only that description counts, never searches.</Text>
             {emerging.map((flag) => (
               <View key={flag.phrase_key} style={{ marginTop: spacing.sm }}>
-                <Text style={styles.category}>Potential new subcategory: {flag.sample_phrase} · {flag.applicants} businesses</Text>
+                <Text style={styles.category}>Potential new subcategory: {flag.sample_phrase} · {flag.applicants} distinct businesses</Text>
+                {Array.isArray(flag.wordings) && flag.wordings.length ? (
+                  <Text style={styles.contact}>They wrote: {flag.wordings.map((w) => `"${w}"`).join(', ')}</Text>
+                ) : null}
+                <Text style={styles.contact}>Add category creates it under the group you pick, maps these applications (an already-approved business is updated too) and remembers the wording. Nothing happens until you tap it.</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
                   {BUSINESS_CATEGORIES.map((c) => (
                     <TouchableOpacity key={c.key} onPress={() => setEmGroup((p) => ({ ...p, [flag.phrase_key]: c.key }))} accessibilityRole="button" accessibilityState={{ selected: emGroup[flag.phrase_key] === c.key }} accessibilityLabel={c.label}>
