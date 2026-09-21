@@ -26,13 +26,14 @@ describe('canonical category mapping', () => {
     expect(businessServesTag({ category: 'food_drink' }, 'Yoga')).toBe(false);
     expect(businessServesTag({ category: 'not_a_group' }, 'Coffee')).toBe(false);
     expect(businessServesTag({ category: 'health_personal_care' }, 'Coffee')).toBe(false);
-    expect(servedTags({ category: 'home_local_services' })).toEqual([]);
+    expect(servedTags({ category: 'health_personal_care' })).toEqual([]);
+    expect(servedTags({ category: 'home_local_services' })).toContain('Plumbing');
     expect(businessServesTag({ category: 'food_drink' }, null)).toBe(false);
   });
 
   test('no accidental broad or fuzzy matches', () => {
     const biz = { category: 'food_drink' };
-    for (const near of ['food', 'coffee', 'Coffee Shop', 'Food & Drink', 'Cooking Class', 'Restaurants', 'food_drink']) {
+    for (const near of ['food', 'coffee', 'Coffee Shop', 'Food & Drink', 'Cooking Class', 'Restaurant', 'food_drink']) {
       expect(businessServesTag(biz, near)).toBe(false);
     }
     // a group key is never itself a servable tag
@@ -53,11 +54,19 @@ describe('canonical category mapping', () => {
     }
   });
 
-  test('SQL seed (category_tag_groups) is identical to CATEGORY_GROUPS', () => {
-    const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270118_category_mapping.sql'), 'utf8');
-    const body = sql.slice(sql.indexOf('insert into public.category_tag_groups'), sql.indexOf('create or replace function public.business_served_tags'));
-    const seeded = [...body.matchAll(/\('((?:[^']|'')+)', '([a-z_]+)'\)/g)].map((m) => [m[1].replace(/''/g, "'"), m[2]]);
+  test('SQL seed + the later tag migrations together equal CATEGORY_GROUPS (no drift either way)', () => {
+    const dir = path.join(__dirname, '../../supabase/migrations');
+    const rowsOf = (file, from, to) => {
+      const sql = fs.readFileSync(path.join(dir, file), 'utf8');
+      const body = sql.slice(sql.indexOf(from), to ? sql.indexOf(to) : undefined);
+      return [...body.matchAll(/\('((?:[^']|'')+)', '([a-z_]+)'\)/g)].map((m) => [m[1].replace(/''/g, "'"), m[2]]);
+    };
+    const base = rowsOf('20270118_category_mapping.sql', 'insert into public.category_tag_groups', 'create or replace function public.business_served_tags');
+    const later = rowsOf('20270177_category_tags_broad_taxonomy.sql', 'insert into public.category_tag_groups');
+    const key = (r) => `${r[1]}::${r[0]}`;
     const expected = CATEGORY_GROUPS.flatMap((g) => g.tags.map((t) => [t, g.key]));
-    expect(seeded).toEqual(expected);
+    expect([...base, ...later].map(key).sort()).toEqual(expected.map(key).sort());
+    // the original seed keeps its exact order within the file
+    expect(base.map(key)).toEqual(expected.filter((r) => base.some((b) => key(b) === key(r))).map(key));
   });
 });

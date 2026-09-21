@@ -46,23 +46,23 @@
 export const CATEGORY_GROUPS = [
   {
     key: 'food_drink', icon: '🍔', label: 'Food & Drink',
-    tags: ['Coffee', 'Foodie', 'Cooking', 'Wine', 'Brunch', 'Bakeries', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour'],
+    tags: ['Coffee', 'Foodie', 'Cooking', 'Wine', 'Brunch', 'Bakeries', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour', 'Restaurants', 'Dessert & Ice Cream', 'Fine Dining', 'Fast Casual', 'Takeout & Delivery', 'Wineries'],
   },
   {
     key: 'activities_recreation', icon: '🏃', label: 'Activities & Recreation',
-    tags: ['Fitness', 'Yoga', 'Sports', 'Running', 'Pickleball', 'Tennis', 'Cycling', 'Swimming', 'Climbing', 'Golf', 'Bowling'],
+    tags: ['Fitness', 'Yoga', 'Sports', 'Running', 'Pickleball', 'Tennis', 'Cycling', 'Swimming', 'Climbing', 'Golf', 'Bowling', 'Gyms', 'Pilates', 'Walking', 'Basketball', 'Soccer', 'Volleyball', 'Skating', 'Martial Arts', 'Water Sports', 'Boating', 'Adventure'],
   },
   {
     key: 'entertainment_nightlife', icon: '🎵', label: 'Entertainment & Nightlife',
-    tags: ['Music', 'Movies', 'Gaming', 'Dancing', 'Concerts', 'Karaoke', 'Comedy', 'Trivia', 'Nightlife'],
+    tags: ['Music', 'Movies', 'Gaming', 'Dancing', 'Concerts', 'Karaoke', 'Comedy', 'Trivia', 'Nightlife', 'Live Music', 'DJs', 'Nightclubs', 'Theater', 'Performing Arts', 'Festivals', 'Arcade', 'Escape Rooms', 'Casinos', 'Special Events', 'Street Events'],
   },
   {
     key: 'dating_social', icon: '❤️', label: 'Dating & Social',
-    tags: ['Dating', 'Speed Dating', 'Singles Events', 'Group Hangouts'],
+    tags: ['Dating', 'Speed Dating', 'Singles Events', 'Group Hangouts', 'Date Night', 'First Date', 'Double Date', 'Make New Friends', 'Couples', 'Social Clubs'],
   },
   {
     key: 'arts_culture_learning', icon: '🎨', label: 'Arts, Culture & Learning',
-    tags: ['Reading', 'Art', 'Photography', 'Crafts'],
+    tags: ['Reading', 'Art', 'Photography', 'Crafts', 'Art Galleries', 'Art Classes', 'Pottery', 'Cultural Events', 'History', 'Libraries', 'Music Lessons'],
   },
   {
     // Item 80 ("Make it special," CLAUDE.md): 3 new leaf tags -- Florist,
@@ -74,47 +74,47 @@ export const CATEGORY_GROUPS = [
     // major-only precedent. Widened together with the 7 CHECK constraints
     // that mirror this exact array (20261104_plan_addons.sql).
     key: 'shopping', icon: '🛍️', label: 'Shopping',
-    tags: ['Farmers Markets', 'Thrift & Vintage', 'Florist', 'Party & Event Decor', 'Gift Shop'],
+    tags: ['Farmers Markets', 'Thrift & Vintage', 'Florist', 'Party & Event Decor', 'Gift Shop', 'Boutiques', 'Clothing', 'Jewelry', 'Home & Furniture', 'Electronics', 'Markets', 'Pop-Ups', 'Local Shopping'],
   },
   {
     key: 'wellness_beauty', icon: '💆', label: 'Wellness & Beauty',
-    tags: ['Meditation', 'Spa Day', 'Self-Care'],
+    tags: ['Meditation', 'Spa Day', 'Self-Care', 'Massage', 'Salons', 'Barbers', 'Nails', 'Skin Care', 'Wellness Centers', 'Sauna', 'Recovery'],
   },
   {
     key: 'family_kids', icon: '👨‍👩‍👧', label: 'Family & Kids',
-    tags: ['Family Playdate', 'Kids Activity'],
+    tags: ['Family Playdate', 'Kids Activity', 'Family Events', 'Playgrounds', 'Indoor Play', 'Kids Museums', 'Camps', 'Kids Sports', 'Birthday Activities', 'Family Dining'],
   },
   {
     key: 'outdoors_nature', icon: '🌳', label: 'Outdoors & Nature',
-    tags: ['Hiking', 'Outdoors', 'Camping', 'Fishing', 'Kayaking'],
+    tags: ['Hiking', 'Outdoors', 'Camping', 'Fishing', 'Kayaking', 'Parks', 'Beaches', 'Trails', 'Paddleboarding', 'Wildlife', 'Gardens', 'Scenic Views', 'Picnics'],
   },
   {
     key: 'pets', icon: '🐕', label: 'Pets',
-    tags: ['Dogs', 'Cats', 'Dog Meetup'],
+    tags: ['Dogs', 'Cats', 'Dog Meetup', 'Dog Parks', 'Pet Friendly Places', 'Pet Events', 'Grooming', 'Pet Stores', 'Pet Boarding', 'Dog Walking', 'Pet Training', 'Veterinary'],
   },
   {
     key: 'home_local_services', icon: '🏠', label: 'Home & Local Services',
-    tags: [],
+    tags: ['Cleaning', 'Landscaping', 'Plumbing', 'Electrical', 'HVAC', 'Handyman', 'Moving', 'Pest Control', 'Repairs', 'Interior Design'],
   },
   {
     key: 'auto_transportation', icon: '🚗', label: 'Auto & Transportation',
-    tags: [],
+    tags: ['Car Wash', 'Detailing', 'Auto Repair', 'Tires', 'Oil Change', 'EV Charging', 'Car Rental', 'Parking', 'Towing'],
   },
   {
     key: 'business_networking', icon: '💼', label: 'Business & Networking',
-    tags: ['Networking', 'Coworking'],
+    tags: ['Networking', 'Coworking', 'Conferences', 'Professional Events', 'Entrepreneurship', 'Career Events', 'Real Estate', 'Finance'],
   },
   {
     key: 'community_volunteering', icon: '🤝', label: 'Community & Volunteering',
-    tags: ['Volunteering', 'Faith & Spirituality', 'Fundraiser'],
+    tags: ['Volunteering', 'Faith & Spirituality', 'Fundraiser', 'Charity', 'Community Events', 'Neighborhood Events', 'Cleanups', 'Donation Drives'],
   },
   {
     key: 'travel_experiences', icon: '✈️', label: 'Travel & Experiences',
-    tags: ['Travel', 'Day Trip'],
+    tags: ['Travel', 'Day Trip', 'Tours', 'Excursions', 'Boat Tours', 'Adventure Experiences', 'Local Experiences'],
   },
   {
     key: 'stay_getaway', icon: '🏨', label: 'Stay & Getaway',
-    tags: ['Weekend Getaway', 'Staycation', 'Road Trip'],
+    tags: ['Weekend Getaway', 'Staycation', 'Road Trip', 'Resorts', 'Hotels'],
   },
   {
     key: 'health_personal_care', icon: '🩺', label: 'Health & Personal Care',
@@ -122,7 +122,7 @@ export const CATEGORY_GROUPS = [
   },
   {
     key: 'education_classes', icon: '🎓', label: 'Education & Classes',
-    tags: ['Workshops', 'Lectures', 'Cooking Class', 'Study Group', 'Language Exchange', 'Tech Meetup'],
+    tags: ['Workshops', 'Lectures', 'Cooking Class', 'Study Group', 'Language Exchange', 'Tech Meetup', 'Classes'],
   },
   {
     key: 'attractions_things_to_see', icon: '🎟️', label: 'Attractions & Things to See',
@@ -152,8 +152,7 @@ export function groupForTag(tag) {
 // per major, rather than inventing a second one -- this is the one shared
 // lookup both BusinessPartnerApplyScreen and BusinessDashboardScreen use
 // to render the right subcategory chips once a major category is picked.
-// Three majors (home_local_services, auto_transportation,
-// health_personal_care) genuinely have none yet -- an honest empty list,
+// One major (health_personal_care) genuinely has none yet (home_local_services and auto_transportation gained leaf tags in 20270177) -- an honest empty list,
 // not a bug, per this file's own comment above on why.
 export function subcategoryOptionsFor(categoryKey) {
   return CATEGORY_GROUPS.find((g) => g.key === categoryKey)?.tags ?? [];
