@@ -25,11 +25,15 @@ d('journey: free tonight (mutual) -> match -> distance only for the pair -> bloc
   select array_agg(user_id) into v_ids from get_mutual_free_tonight(array[v_b, v_c, v_a]);
   log := log || jsonb_build_array(jsonb_build_object('step','mutual_only','ok', v_ids = array[v_b]));
 
-  -- 3. no match yet: no distance, even though both are free
   insert into notification_areas (user_id, area) values (v_a, '40.00,-75.00') on conflict (user_id) do update set area = '40.00,-75.00', updated_at = now();
   insert into notification_areas (user_id, area) values (v_b, '40.00,-75.05') on conflict (user_id) do update set area = '40.00,-75.05', updated_at = now();
+  -- 3. no match yet: both areas ARE known (so a null is not just "missing data"), the pair has no match row, and the only
+  -- distance door (get_match_distance, keyed by match id) has nothing to open for them
+  select count(*) into v_n from matches where (user_a = v_a and user_b = v_b) or (user_a = v_b and user_b = v_a);
   v_d := get_match_distance(gen_random_uuid());
-  log := log || jsonb_build_array(jsonb_build_object('step','no_match_no_distance','ok', v_d is null));
+  log := log || jsonb_build_array(jsonb_build_object('step','no_match_no_distance',
+     'ok', v_n = 0 and v_d is null and (select count(*) from notification_areas where user_id in (v_a, v_b)) = 2,
+     'data', jsonb_build_object('match_rows', v_n)));
 
   -- 4. they match: the pair gets whole-mile distance
   insert into matches (user_a, user_b) values (v_a, v_b) returning id into v_m;
