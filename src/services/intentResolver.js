@@ -1,7 +1,7 @@
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
-import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, getPartnerPriceLevels } from './brandOffers';
+import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, getPartnerPriceLevels, getPartnerSuitedAges } from './brandOffers';
 import { applyBusinessPriceToCandidates } from '../utils/priceBias';
 import { applyBusinessWeatherToCandidates } from '../utils/weatherBias';
 import { occasionLabel } from '../constants/businessAttributes';
@@ -54,6 +54,7 @@ import {
 } from './intentResolverScoring';
 import { activitiesFromText } from '../constants/activityLayer';
 import { energiesFromText, applyEnergyToCandidates } from '../constants/energyLevel';
+import { askedChildAges, applySuitedAgesToCandidates } from '../utils/suitedAges';
 import { cleanFeatures } from '../utils/gatheringPractical';
 import { applyDeclaredFeatures } from '../constants/declaredFeatures';
 import { parseAskFacets, applyAskFacets, partnerPartyType } from '../constants/askFacets';
@@ -129,6 +130,8 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       requiresApproval: gathering.requires_approval === true,
       hostEnergy: gathering.energy_level ?? null,
       features: cleanFeatures(gathering.features),
+      ageMin: gathering.suited_age_min ?? null,
+      ageMax: gathering.suited_age_max ?? null,
       priceLevel: gathering.price_level ?? null,
       attendeeCount,
       isFull,
@@ -690,6 +693,17 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // small lift (utils/openEndedAsk.js, rule-based). A real category or occasion in the ask leaves everything untouched.
   const openEndedGroups = openEndedAskGroups({ category, rawText, occasion, attributes });
   deduped = applyOpenEndedAsk(deduped, openEndedGroups, { dateWindow, partyType, hour: new Date().getHours() });
+
+  // Age range (item 50): "with my 5 year old" ranks a place or gathering whose declared suited ages cover it; an unknown range is untouched.
+  const childAges = askedChildAges(rawText);
+  if (childAges.length > 0) {
+    try {
+      const ranges = await getPartnerSuitedAges(deduped.map((c) => c.partnerId));
+      deduped = applySuitedAgesToCandidates(deduped.map((c) => (c.partnerId && ranges.has(c.partnerId) ? { ...c, ...ranges.get(c.partnerId) } : c)), childAges);
+    } catch (e) {
+      console.error('suited age nudge skipped', e);
+    }
+  }
 
   // Accessibility / family (items 49/50): a gathering the HOST declared these features for ranks up (declared only, never inferred).
   deduped = applyDeclaredFeatures(deduped, attributes);

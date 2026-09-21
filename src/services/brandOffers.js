@@ -1274,6 +1274,21 @@ export async function setBusinessPriceLevel(partnerId, level) {
   if (error) throw error;
 }
 
+// Item 50 (age range): a descriptive suited-age range, 0..18, either bound may be null. Migration 20270199.
+export async function setBusinessSuitedAges(partnerId, min, max) {
+  const { error } = await supabase.rpc('set_business_suited_ages', { partner_id_param: partnerId, min_param: min ?? null, max_param: max ?? null });
+  if (error) throw error;
+}
+
+// partnerId -> { ageMin, ageMax } for the intent resolver's business results. Best-effort: a failure is an empty map (no nudge).
+export async function getPartnerSuitedAges(partnerIds) {
+  const ids = [...new Set((partnerIds ?? []).filter(Boolean))];
+  if (ids.length === 0) return new Map();
+  const { data, error } = await supabase.from('brand_partners').select('id, suited_age_min, suited_age_max').in('id', ids);
+  if (error) return new Map();
+  return new Map((data ?? []).filter((r) => r.suited_age_min != null || r.suited_age_max != null).map((r) => [r.id, { ageMin: r.suited_age_min, ageMax: r.suited_age_max }]));
+}
+
 // partnerId -> price_level for the intent resolver's business results. Best-effort: a failure is an empty map (no nudge).
 export async function getPartnerPriceLevels(partnerIds) {
   const ids = [...new Set((partnerIds ?? []).filter(Boolean))];

@@ -1,3 +1,4 @@
+import { ageRangeLabel } from './suitedAges';
 // Host-declared practical facts on a gathering (item 39): equipment provided, duration. Absent = the host did not say, so
 // nothing renders; nothing is inferred from the category. beginner_friendly is its own existing field.
 export const DURATION_OPTIONS = [
@@ -62,6 +63,8 @@ export function practicalFacts(g) {
   if (d) out.push(`⏱️ About ${d}`);
   const genre = genreLabel(g?.genre);
   if (genre) out.unshift(`🎵 ${genre}`);
+  const ages = ageRangeLabel(g?.suited_age_min, g?.suited_age_max);
+  if (ages) out.push(`🧒 ${ages}`);
   for (const k of cleanFeatures(g?.features)) {
     const o = GATHERING_FEATURE_OPTIONS.find((x) => x.key === k);
     if (o) out.push(`${o.icon} ${o.label}`);

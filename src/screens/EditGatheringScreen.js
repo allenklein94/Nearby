@@ -1,3 +1,5 @@
+import AgeRangePicker from '../components/AgeRangePicker';
+import { cleanAgeRange } from '../utils/suitedAges';
 import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_OPTIONS, cleanFeatures, toggleFeature, isMusicTag } from '../utils/gatheringPractical';
 import React, { useState, useEffect } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -41,6 +43,8 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [beginnerFriendly, setBeginnerFriendly] = useState(gathering.beginner_friendly ?? true);
   const [equipmentProvided, setEquipmentProvided] = useState(gathering.equipment_provided ?? null);
   const [features, setFeatures] = useState(cleanFeatures(gathering.features));
+  const [ageMin, setAgeMin] = useState(cleanAgeRange(gathering.suited_age_min, gathering.suited_age_max).min);
+  const [ageMax, setAgeMax] = useState(cleanAgeRange(gathering.suited_age_min, gathering.suited_age_max).max);
   const [genre, setGenre] = useState(gathering.genre ?? null);
   const [durationMinutes, setDurationMinutes] = useState(gathering.duration_minutes ?? null);
   const [showGroupInsights, setShowGroupInsights] = useState(gathering.show_group_insights ?? true);
@@ -133,6 +137,8 @@ export default function EditGatheringScreen({ route, navigation }) {
         beginnerFriendly,
         equipmentProvided,
         features,
+        suitedAgeMin: ageMin,
+        suitedAgeMax: ageMax,
         durationMinutes,
         ...(isMusicTag(gathering.interest_tag) ? { genre } : {}),
         timelineSteps: cleanedTimelineSteps.length > 0 ? cleanedTimelineSteps : null,
@@ -301,6 +307,8 @@ export default function EditGatheringScreen({ route, navigation }) {
               );
             })}
           </View>
+
+          <AgeRangePicker min={ageMin} max={ageMax} onChange={(a, b) => { setAgeMin(a); setAgeMax(b); }} />
 
           <Text style={styles.label}>Equipment</Text>
           <View style={styles.chipsWrap}>

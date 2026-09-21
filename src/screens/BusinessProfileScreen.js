@@ -30,6 +30,7 @@ import { spacing, radius, typography } from '../theme';
 
 import { unlockStatus } from '../utils/unlockProgress';
 import { thingsToDoHere } from '../constants/activityLayer';
+import { ageRangeLabel } from '../utils/suitedAges';
 function formatDate(iso) {
   return formatDateTime(iso);
 }
@@ -294,6 +295,10 @@ export default function BusinessProfileScreen({ route, navigation }) {
               ))}
             </View>
           </>
+        )}
+
+        {!!ageRangeLabel(partner.suited_age_min, partner.suited_age_max) && (
+          <Text style={styles.attributeSectionHeader}>🧒 {ageRangeLabel(partner.suited_age_min, partner.suited_age_max)}</Text>
         )}
 
         {((partner.attributes ?? []).length > 0 || partner.cuisine) && (

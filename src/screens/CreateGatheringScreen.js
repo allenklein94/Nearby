@@ -10,6 +10,8 @@ import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { linkOccasionToPlan } from '../services/occasions';
 import { linkOccasionGroupPlanToPlan } from '../services/occasionGroupPlans';
 import { getMyCommunities } from '../services/communities';
+import AgeRangePicker from '../components/AgeRangePicker';
+import { cleanAgeRange } from '../utils/suitedAges';
 import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_OPTIONS, cleanFeatures, toggleFeature, isMusicTag } from '../utils/gatheringPractical';
 import { searchNearbyPlaces, priceLevelLabel } from '../services/places';
 import { checkTextModeration } from '../services/textModeration';
@@ -171,6 +173,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [priceLevel, setPriceLevel] = useState(null);
   const [equipmentProvided, setEquipmentProvided] = useState(null);
   const [features, setFeatures] = useState([]);
+  const [ageMin, setAgeMin] = useState(null);
+  const [ageMax, setAgeMax] = useState(null);
   const [durationMinutes, setDurationMinutes] = useState(null);
   const [genre, setGenre] = useState(null);
   const [partyType, setPartyType] = useState(null);
@@ -184,7 +188,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
     step, title, description, interestTag, visibility, discoverable, communityId,
     scheduledAt: scheduledAt instanceof Date ? scheduledAt.toISOString() : null, whenPreset,
     locationMode, customLocation, placeName, showOnMap, womenOnly, recurrenceRule, capacityOption, capacityCustom,
-    askLocalBusinesses, priceLevel, partyType, showGroupInsights, allowAttendeeInvites, hostNotifications, requiresApproval, equipmentProvided, durationMinutes, genre, features,
+    askLocalBusinesses, priceLevel, partyType, showGroupInsights, allowAttendeeInvites, hostNotifications, requiresApproval, equipmentProvided, durationMinutes, genre, features, ageMin, ageMax,
   };
   const gatheringDraft = useFormDraft('gathering', gatheringSnapshot, {
     isEmpty: (d) => !String(d.title ?? '').trim() && !String(d.description ?? '').trim(),
@@ -199,7 +203,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
     setLocationMode(d.locationMode ?? 'near_me'); setCustomLocation(d.customLocation ?? null); setPlaceName(d.placeName ?? null);
     setShowOnMap(d.showOnMap !== false); setWomenOnly(!!d.womenOnly); setRecurrenceRule(d.recurrenceRule ?? null);
     setCapacityOption(d.capacityOption ?? 'no_limit'); setCapacityCustom(d.capacityCustom ?? 15);
-    setAskLocalBusinesses(!!d.askLocalBusinesses); setPriceLevel(d.priceLevel ?? null); setEquipmentProvided(d.equipmentProvided ?? null); setDurationMinutes(d.durationMinutes ?? null); setGenre(d.genre ?? null); setFeatures(cleanFeatures(d.features)); setPartyType(d.partyType ?? null);
+    setAskLocalBusinesses(!!d.askLocalBusinesses); setPriceLevel(d.priceLevel ?? null); setEquipmentProvided(d.equipmentProvided ?? null); setDurationMinutes(d.durationMinutes ?? null); setGenre(d.genre ?? null); setFeatures(cleanFeatures(d.features)); setAgeMin(cleanAgeRange(d.ageMin, d.ageMax).min); setAgeMax(cleanAgeRange(d.ageMin, d.ageMax).max); setPartyType(d.partyType ?? null);
     setShowGroupInsights(d.showGroupInsights !== false); setAllowAttendeeInvites(d.allowAttendeeInvites !== false);
     setHostNotifications(d.hostNotifications !== false); setRequiresApproval(!!d.requiresApproval);
   }
@@ -405,6 +409,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
         priceLevel,
         equipmentProvided,
         features,
+        suitedAgeMin: ageMin,
+        suitedAgeMax: ageMax,
         durationMinutes,
         genre: isMusicTag(interestTag) ? genre : null,
         partyType,
@@ -771,6 +777,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
                     );
                   })}
                 </View>
+
+                <AgeRangePicker min={ageMin} max={ageMax} onChange={(a, b) => { setAgeMin(a); setAgeMax(b); }} />
 
                 <Text style={styles.label}>Equipment</Text>
                 <View style={styles.chipsWrap}>

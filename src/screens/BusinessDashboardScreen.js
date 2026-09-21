@@ -4,6 +4,7 @@ import { canRespondToOpportunity } from '../utils/objectLifecycle';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import DraftBanner from '../components/DraftBanner';
+import AgeRangePicker from '../components/AgeRangePicker';
 import OfferCustomerBody from '../components/OfferCustomerBody';
 import { offerValueLines } from '../utils/offerValue';
 import { offerRevealHeader } from '../utils/offerCopy';
@@ -19,7 +20,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
 // P2 remediation item 11 (CLAUDE.md) -- reuse the admin queue's own real
@@ -1070,6 +1071,19 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     } catch (e) {
       setSelectedPartner((prev) => ({ ...prev, price_level: current }));
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePickPriceLevel(key) });
+    }
+  }
+
+  // Item 50: suited ages (descriptive, 0-18). Saves per tap; a failure puts the previous range back.
+  async function handlePickSuitedAges(min, max) {
+    if (!selectedPartner) return;
+    const prev = { min: selectedPartner.suited_age_min ?? null, max: selectedPartner.suited_age_max ?? null };
+    setSelectedPartner((p) => ({ ...p, suited_age_min: min, suited_age_max: max }));
+    try {
+      await setBusinessSuitedAges(selectedPartner.id, min, max);
+    } catch (e) {
+      setSelectedPartner((p) => ({ ...p, suited_age_min: prev.min, suited_age_max: prev.max }));
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePickSuitedAges(min, max) });
     }
   }
 
@@ -5276,6 +5290,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.helperText}>
                   Free means no cost to take part. Helps you appear when someone asks for something free or budget-friendly. Tap again to clear.
                 </Text>
+                {/* Suited ages (item 50): descriptive only, never a restriction; owner-declared. */}
+                <Text style={styles.sectionHeader}>What ages is it suited to?</Text>
+                <AgeRangePicker
+                  label="Ages"
+                  min={selectedPartner?.suited_age_min ?? null}
+                  max={selectedPartner?.suited_age_max ?? null}
+                  onChange={handlePickSuitedAges}
+                />
 </>
 )}
 {on('offers') && moreOffersOpen && (
