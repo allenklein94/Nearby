@@ -1,3 +1,4 @@
+import { EQUIPMENT_OPTIONS, DURATION_OPTIONS } from '../utils/gatheringPractical';
 import React, { useState, useEffect } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Platform, Keyboard, TouchableWithoutFeedback, Image, Switch } from 'react-native';
@@ -38,6 +39,8 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [conversationLevel, setConversationLevel] = useState(gathering.conversation_level ?? null);
   const [groupSizeFeel, setGroupSizeFeel] = useState(gathering.group_size_feel ?? null);
   const [beginnerFriendly, setBeginnerFriendly] = useState(gathering.beginner_friendly ?? true);
+  const [equipmentProvided, setEquipmentProvided] = useState(gathering.equipment_provided ?? null);
+  const [durationMinutes, setDurationMinutes] = useState(gathering.duration_minutes ?? null);
   const [showGroupInsights, setShowGroupInsights] = useState(gathering.show_group_insights ?? true);
   const [requiresApproval, setRequiresApproval] = useState(gathering.requires_approval ?? false);
   const [discoverable, setDiscoverable] = useState(gathering.discoverable ?? true);
@@ -126,6 +129,8 @@ export default function EditGatheringScreen({ route, navigation }) {
         conversationLevel,
         groupSizeFeel,
         beginnerFriendly,
+        equipmentProvided,
+        durationMinutes,
         timelineSteps: cleanedTimelineSteps.length > 0 ? cleanedTimelineSteps : null,
         showGroupInsights,
         ...(gathering.is_public === false ? {} : { requiresApproval }),
@@ -271,6 +276,46 @@ export default function EditGatheringScreen({ route, navigation }) {
               onValueChange={setBeginnerFriendly}
               accessibilityLabel="Beginner friendly"
             />
+          </View>
+
+          <Text style={styles.label}>Equipment</Text>
+          <View style={styles.chipsWrap}>
+            {EQUIPMENT_OPTIONS.map((option) => {
+              const selected = equipmentProvided === option.key;
+              return (
+                <TouchableOpacity
+                  key={option.label}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => { Haptics.selectionAsync(); setEquipmentProvided(option.key); }}
+                  activeOpacity={0.85}
+                  accessibilityLabel={option.label}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <Text style={styles.label}>How long</Text>
+          <View style={styles.chipsWrap}>
+            {DURATION_OPTIONS.map((option) => {
+              const selected = durationMinutes === option.key;
+              return (
+                <TouchableOpacity
+                  key={option.label}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => { Haptics.selectionAsync(); setDurationMinutes(option.key); }}
+                  activeOpacity={0.85}
+                  accessibilityLabel={option.label}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           <View style={styles.toggleRow}>
