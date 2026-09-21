@@ -183,10 +183,18 @@ export default function GroupPlanScreen({ navigation, route }) {
   }
 
   function handleLeave() {
-    Alert.alert('Leave this group plan?', 'You can always start your own request again later.', [
-      { text: 'Never mind', style: 'cancel' },
-      { text: 'Leave', style: 'destructive', onPress: () => runAction(() => leaveGroupPlan(proposalId)) },
-    ]);
+    // A confirmed plan has offers this person may have confirmed; the server removes exactly those (nobody else's).
+    const confirmed = proposal?.status === 'confirmed';
+    Alert.alert(
+      'Leave this group plan?',
+      confirmed
+        ? "Leave this plan? The offers you've confirmed will be removed. Everyone else's confirmations stay."
+        : 'You can always start your own request again later.',
+      [
+        { text: 'Never mind', style: 'cancel' },
+        { text: 'Leave', style: 'destructive', onPress: () => runAction(() => leaveGroupPlan(proposalId)) },
+      ],
+    );
   }
 
   function handleSetBudget() {
@@ -447,12 +455,6 @@ export default function GroupPlanScreen({ navigation, route }) {
           </View>
         )}
 
-        {!isInitiator && canDo('group_plan', proposal.status, 'respond') && canDo('group_participant', myParticipant?.status, 'leave') && (
-          <TouchableOpacity onPress={handleLeave} disabled={acting} accessibilityLabel="Leave this group plan" accessibilityRole="button">
-            <Text style={styles.declineLink}>Leave Group Plan</Text>
-          </TouchableOpacity>
-        )}
-
         {isInitiator && canDo('group_plan', proposal.status, 'manage') && (
           <View style={styles.organizerSection}>
             <Text style={styles.sectionHeader}>Set the budget</Text>
@@ -487,7 +489,7 @@ export default function GroupPlanScreen({ navigation, route }) {
           </View>
         )}
 
-        {proposal.status === 'confirmed' && (
+        {canDo('group_plan', proposal.status, 'offers') && (
           <>
             <Text style={styles.sectionHeader}>Offers</Text>
             {offers.length === 0 ? (
@@ -496,7 +498,7 @@ export default function GroupPlanScreen({ navigation, route }) {
               offers.map((o, offerIndex) => {
                 const confirmedForThisOffer = confirmations.filter((c) => c.offer_id === o.id);
                 const iConfirmed = confirmedForThisOffer.some((c) => c.user_id === myId);
-                const amActiveParticipant = myParticipant?.status === 'accepted';
+                const amActiveParticipant = canDo('group_participant', myParticipant?.status, 'confirm_offer');
                 return (
                   // Item 124 ("Use animation when something becomes available"): the group's own
                   // "we found options" moment -- each offer settles into place with a small
@@ -504,7 +506,7 @@ export default function GroupPlanScreen({ navigation, route }) {
                   <StaggeredReveal key={o.id} index={offerIndex} style={styles.offerCard}>
                   <View>
                     <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? 'A business'}</Text>
-                    <Text style={styles.offerStatus}>{OFFER_STATUS_COPY[o.status] ?? o.status}</Text>
+                    <Text style={styles.offerStatus}>{offerLifecycleState(o) === 'expired' ? 'This offer has expired' : (OFFER_STATUS_COPY[o.status] ?? o.status)}</Text>
                     {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
                     {offerPriceLabel(o.offer_price, o.price_is_per_person) ? <Text style={styles.offerPrice}>{offerPriceLabel(o.offer_price, o.price_is_per_person)}</Text> : null}
                     {canDo('offer', offerLifecycleState(o), 'accept') && amActiveParticipant && (
@@ -564,7 +566,7 @@ export default function GroupPlanScreen({ navigation, route }) {
                 </StaggeredReveal>
               ))
             )}
-            {myParticipant?.status === 'accepted' && !isInitiator && !socialOffers.some((o) => o.offerer_id === myId) && (
+            {canDo('group_participant', myParticipant?.status, 'social_offer') && !isInitiator && !socialOffers.some((o) => o.offerer_id === myId) && (
               <View style={styles.socialOfferForm}>
                 <TextInput
                   style={styles.socialOfferInput}
@@ -587,12 +589,14 @@ export default function GroupPlanScreen({ navigation, route }) {
               </View>
             )}
 
-            {myParticipant?.status === 'accepted' && !isInitiator && (
-              <TouchableOpacity onPress={handleLeave} disabled={acting} accessibilityLabel="Leave this group plan" accessibilityRole="button">
-                <Text style={styles.declineLink}>Leave Group Plan</Text>
-              </TouchableOpacity>
-            )}
           </>
+        )}
+
+        {/* One Leave control for every state that allows it (pending or confirmed); the server does the cleanup. */}
+        {canDo('group_plan', proposal.status, 'leave') && canDo('group_participant', myParticipant?.status, 'leave') && !isInitiator && (
+          <TouchableOpacity onPress={handleLeave} disabled={acting} accessibilityLabel="Leave this group plan" accessibilityRole="button">
+            <Text style={styles.declineLink}>Leave Group Plan</Text>
+          </TouchableOpacity>
         )}
       </ScrollView>
       <CancellationReasonSheet ask={reasonAsk} onClose={() => setReasonAsk(null)} />

@@ -49,15 +49,17 @@ export const LIFECYCLE = {
   // Group plan proposal (group_plan_proposals.status CHECK): the whole group deciding together. 'manage' = the
   // organizer's decisions (budget, confirm, remove someone); the caller still checks WHO is asking (organizer or not).
   group_plan: {
-    pending: ['view', 'manage', 'respond', 'dietary'],
-    confirmed: ['view'],
+    pending: ['view', 'manage', 'respond', 'dietary', 'leave'],
+    // Confirmed: the group's offers are open and a participant may still back out (the server drops that person's
+    // offer confirmations and touches nobody else's).
+    confirmed: ['view', 'offers', 'leave'],
     cancelled: ['view'],
     expired: ['view'],
   },
   // A person inside a group plan (group_plan_participants.status CHECK).
   group_participant: {
     invited: ['view', 'join', 'decline', 'dietary'],
-    accepted: ['view', 'leave', 'dietary'],
+    accepted: ['view', 'leave', 'dietary', 'confirm_offer', 'social_offer'],
     declined: ['view'],
     left: ['view'],
   },

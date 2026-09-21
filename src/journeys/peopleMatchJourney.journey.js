@@ -35,6 +35,14 @@ d('journey: free tonight (mutual) -> match -> distance only for the pair -> bloc
      'ok', v_n = 0 and v_d is null and (select count(*) from notification_areas where user_id in (v_a, v_b)) = 2,
      'data', jsonb_build_object('match_rows', v_n)));
 
+  -- 3b. a REAL match exists (a with c). b, who is mutual-free with a but has NO match with anyone, cannot read its distance
+  insert into notification_areas (user_id, area) values (v_c, '40.00,-75.02') on conflict (user_id) do update set area = '40.00,-75.02', updated_at = now();
+  insert into matches (user_a, user_b) values (v_a, v_c) returning id into v_m;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_b, 'role', 'authenticated')::text, true);
+  log := log || jsonb_build_array(jsonb_build_object('step','unmatched_person_cannot_read_a_real_match','ok', get_match_distance(v_m) is null));
+  perform set_config('request.jwt.claims', json_build_object('sub', v_a, 'role', 'authenticated')::text, true);
+  log := log || jsonb_build_array(jsonb_build_object('step','the_real_match_itself_reads_fine','ok', get_match_distance(v_m) is not null));
+
   -- 4. they match: the pair gets whole-mile distance
   insert into matches (user_a, user_b) values (v_a, v_b) returning id into v_m;
   v_d := get_match_distance(v_m);
@@ -55,7 +63,7 @@ d('journey: free tonight (mutual) -> match -> distance only for the pair -> bloc
     s = stepMap(log);
   }, 60000);
 
-  test.each(['one_sided_shows_nothing', 'mutual_only', 'no_match_no_distance', 'match_distance', 'stranger_gets_nothing', 'block_ends_mutual'])('step %s', (n) => {
+  test.each(['one_sided_shows_nothing', 'mutual_only', 'no_match_no_distance', 'unmatched_person_cannot_read_a_real_match', 'the_real_match_itself_reads_fine', 'match_distance', 'stranger_gets_nothing', 'block_ends_mutual'])('step %s', (n) => {
     expect(s[n]).toBeDefined();
     expect(s[n].ok).toBe(true);
   });
