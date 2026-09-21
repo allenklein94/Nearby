@@ -54,6 +54,8 @@ import {
 } from './intentResolverScoring';
 import { activitiesFromText } from '../constants/activityLayer';
 import { energiesFromText, applyEnergyToCandidates } from '../constants/energyLevel';
+import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitmentLevel';
+import { spontaneityOf, isImmediate, applySpontaneityToCandidates, spontaneityCaption } from '../constants/spontaneity';
 import { getUserLocation } from './userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
 import { attendeeTotal } from '../utils/gatheringFullness';
@@ -118,6 +120,11 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       // gathering filling "Something to Do") without a second fetch.
       category: gathering.interest_tag ?? null,
       capacity: gathering.capacity ?? null,
+      // real host-declared facts the energy / commitment / spontaneity passes read (constants/energyLevel|commitmentLevel|spontaneity.js)
+      startsAt: gathering.scheduled_at ?? null,
+      durationMinutes: gathering.duration_minutes ?? null,
+      requiresApproval: gathering.requires_approval === true,
+      hostEnergy: gathering.energy_level ?? null,
       priceLevel: gathering.price_level ?? null,
       attendeeCount,
       isFull,
@@ -666,6 +673,13 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Energy level (item 44): "something low-key" lifts tags that carry that energy; ranking only (constants/energyLevel.js).
   deduped = applyEnergyToCandidates(deduped, energiesFromText(rawText));
 
+  // Commitment (item 45) and spontaneity (item 46): ranking only. An immediate ask implies a light commitment unless the person
+  // said otherwise; "plan ahead" / "next few hours" have no dateWindow bucket, so they come from the person's own words.
+  const spontaneity = spontaneityOf({ dateWindow, rawText });
+  const commitAsk = commitmentAsk(rawText) ?? (isImmediate(spontaneity) ? 'light' : null);
+  deduped = applyCommitmentToCandidates(deduped, commitAsk);
+  deduped = applySpontaneityToCandidates(deduped, spontaneity);
+
   // Open-ended ask ("something fun tonight"): no category named, so only inventory in social groups is eligible and it gets a
   // small lift (utils/openEndedAsk.js, rule-based). A real category or occasion in the ask leaves everything untouched.
   const openEndedGroups = openEndedAskGroups({ category, rawText, occasion, attributes });
@@ -673,7 +687,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
 
   deduped.sort((a, b) => b.score - a.score);
   // The caption names only the groups the SHOWN results really come from.
-  const openEndedNote = openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups);
+  // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
+  const openEndedNote = [openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity)].filter(Boolean).join(' · ') || null;
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,

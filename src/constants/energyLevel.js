@@ -45,10 +45,19 @@ export function energiesForTag(tag) {
   return (tag && TAG_ENERGY[tag]) || [];
 }
 
+// A gathering's own host-declared energy (1 Chill .. 5 High energy, set in Create/Edit) beats the tag table: it is the host's word
+// for THIS event. 1-2 = low-key, 4-5 = high-energy, 3 = the host said middling, so no energy is claimed either way.
+export function energiesFromHost(level) {
+  if (!Number.isFinite(level)) return null;
+  if (level <= 2) return ['low_key'];
+  if (level >= 4) return ['high_energy'];
+  return [];
+}
+
 // { delta, reason } for one candidate category against the asked energies; delta 0 and reason null when nothing real applies.
-export function energyFit(tag, asked) {
+export function energyFit(tag, asked, hostEnergy = null) {
   if (!Array.isArray(asked) || asked.length === 0) return { delta: 0, reason: null };
-  const mine = energiesForTag(tag);
+  const mine = energiesFromHost(hostEnergy) ?? energiesForTag(tag);
   if (mine.length === 0) return { delta: 0, reason: null };
   const hit = ENERGY_LEVELS.find((e) => asked.includes(e.key) && mine.includes(e.key));
   if (hit) return { delta: ENERGY_FIT_POINTS, reason: `Fits a ${hit.label} plan` };
@@ -60,7 +69,7 @@ export function energyFit(tag, asked) {
 export function applyEnergyToCandidates(candidates, asked) {
   if (!Array.isArray(asked) || asked.length === 0) return candidates;
   return candidates.map((c) => {
-    const { delta, reason } = energyFit(c?.category, asked);
+    const { delta, reason } = energyFit(c?.category, asked, c?.hostEnergy);
     if (!delta) return c;
     return { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle };
   });
