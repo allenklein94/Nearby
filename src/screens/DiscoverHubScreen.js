@@ -4,7 +4,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { getNearbyMatches } from '../services/proximity';
 import { getFriendDiscoveryCandidates } from '../services/friendDiscovery';
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 import { joinLabel } from '../utils/gatheringJoinMode';
 import ExperienceComponentList from '../components/ExperienceComponentList';
@@ -45,6 +45,7 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { PLACE_CATEGORIES } from '../constants/placeCategories';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
+import { railGroups } from '../constants/discoverCategoryRail';
 import { factsMeta, friendGoingReason, communityReason } from '../utils/recommendationFacts';
 import { getMyFriends } from '../services/friends';
 import { becauseYouLikeReason, categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
@@ -57,7 +58,7 @@ import PlaceCard from '../components/PlaceCard';
 import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
-import { ModeTransition, FilterTransition, TapActiveChip, NearbyPickBadge, NLoader, FoundLine, modalAnimation } from '../motion';
+import { ModeTransition, FilterTransition, TapActiveChip, NearbyPickBadge, NLoader, FoundLine, modalAnimation, animateLayout } from '../motion';
 import StaggeredReveal from '../components/StaggeredReveal';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -328,6 +329,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const [postingStory, setPostingStory] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [showMoreCategories, setShowMoreCategories] = useState(false);
+  const rail = useMemo(() => railGroups(CATEGORY_GROUPS), []);
   // Item 39 (CLAUDE.md, "search should understand the same language as the
   // intent box"): a real, natural-language understanding of the same typed
   // search -- explicit-submit only (onSubmitEditing), not debounced on
@@ -2019,21 +2022,33 @@ export default function DiscoverHubScreen({ navigation, route }) {
               whole group's tags instead of one gathering's own tag. */}
           {isAll && !isSearching && (
             <>
-              <Text style={styles.sectionHeader}>Categories</Text>
+              <Text style={styles.sectionHeader}>What are you into?</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
-                {CATEGORY_GROUPS.map((group) => (
+                {[...rail.primary, ...(showMoreCategories ? rail.more : [])].map(({ group, label }) => (
                   <TouchableOpacity
                     key={group.key}
                     style={styles.categoryChip}
                     onPress={() => openCategoryContext(group)}
                     activeOpacity={0.85}
-                    accessibilityLabel={group.label}
+                    accessibilityLabel={label}
                     accessibilityRole="button"
                   >
                     <Text style={styles.categoryChipIcon}>{group.icon}</Text>
-                    <Text style={styles.categoryChipText}>{group.label}</Text>
+                    <Text style={styles.categoryChipText}>{label}</Text>
                   </TouchableOpacity>
                 ))}
+                {rail.more.length > 0 ? (
+                  <TouchableOpacity
+                    style={styles.categoryChip}
+                    onPress={() => { animateLayout(); setShowMoreCategories((v) => !v); }}
+                    activeOpacity={0.85}
+                    accessibilityLabel={showMoreCategories ? 'Show fewer categories' : 'More categories'}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: showMoreCategories }}
+                  >
+                    <Text style={styles.categoryChipText}>{showMoreCategories ? 'Less' : 'More'}</Text>
+                  </TouchableOpacity>
+                ) : null}
               </ScrollView>
             </>
           )}
