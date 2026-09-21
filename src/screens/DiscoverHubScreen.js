@@ -890,6 +890,23 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // rebuilt every render, so its identity can't be a dependency.
   const contextGatheringKey = contextGatherings.map((g) => g.id).join(',');
 
+  // A category is a gateway, not a directory: friends into it (accepted friends only, server-enforced), public communities
+  // for it, and one tap to ask businesses for an offer. Each shows only when real.
+  const contextTags = expandedContext ? (expandedContext.categoryTags ?? [expandedContext.interestTag]).filter(Boolean) : [];
+  const contextTagKey = contextTags.slice(0, 20).join('|');
+  const [contextFriendMap, setContextFriendMap] = useState({});
+  useEffect(() => {
+    if (!contextTagKey) { setContextFriendMap({}); return undefined; }
+    let cancelled = false;
+    getFriendsInterestedIn(contextTagKey.split('|')).then((m) => { if (!cancelled) setContextFriendMap(m ?? {}); });
+    return () => { cancelled = true; };
+  }, [contextTagKey]);
+  const contextFriendLine = (() => {
+    const tag = contextTags.find((t) => friendsInterestReason(t, contextFriendMap?.[t]));
+    return tag ? friendsInterestReason(tag, contextFriendMap[tag]) : null;
+  })();
+  const contextCommunities = expandedContext ? communities.filter((c) => contextTags.includes(c.interest_tag)) : [];
+
   // Real Google Places keyword search on the context's own interest tag
   // ("Coffee", "Yoga"), fired only once a context is actually open --
   // Places is a metered external API, same on-demand-only discipline the
@@ -1698,6 +1715,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
            context's own real interest tag; People You Know is a strictly
            secondary section underneath, never a peer tab. */
         <ScrollView contentContainerStyle={styles.scrollContent}>
+          {contextFriendLine ? <Text style={styles.contextGroupNote}>{contextFriendLine}</Text> : null}
           <Text style={styles.sectionHeader}>Gatherings</Text>
           {contextGatherings.length === 0 ? (
             <>
@@ -1728,6 +1746,29 @@ export default function DiscoverHubScreen({ navigation, route }) {
               <StaggeredReveal index={0}>
                 <View>{contextOtherTimeGatherings.map(renderContextGatheringRow)}</View>
               </StaggeredReveal>
+            </>
+          )}
+
+          {contextCommunities.length > 0 && (
+            <>
+              <Text style={styles.sectionHeader}>Communities</Text>
+              {contextCommunities.slice(0, 3).map((c) => (
+                <TouchableOpacity
+                  key={c.id}
+                  style={styles.card}
+                  onPress={() => navigation.navigate('CommunityDetail', { communityId: c.id, communityName: c.name })}
+                  activeOpacity={0.85}
+                  accessibilityLabel={c.name}
+                  accessibilityRole="button"
+                >
+                  {renderCardIcon('🏘️', c.interest_tag)}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cardTitle}>{c.name}</Text>
+                    {placeDistanceLabel(c.distanceMiles) ? <Text style={styles.cardSubtitle} numberOfLines={1}>{placeDistanceLabel(c.distanceMiles)}</Text> : null}
+                  </View>
+                  <Text style={styles.cardChevron}>›</Text>
+                </TouchableOpacity>
+              ))}
             </>
           )}
 
@@ -1799,6 +1840,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
               </View>
             </StaggeredReveal>
           )}
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('AskBusiness', expandedContext.interestTag
+              ? { prefillCategory: expandedContext.interestTag }
+              : { prefillText: `Looking for ${contextTopicLabel} nearby` })}
+            accessibilityLabel={`Get an offer for ${contextTopicLabel}`}
+            accessibilityRole="button"
+          >
+            <Text style={styles.emptyActionText}>Get an offer from nearby businesses →</Text>
+          </TouchableOpacity>
 
           {/* Phase 8 section G -- secondary by construction: it renders
               below the real supply above, and only when there is genuinely
