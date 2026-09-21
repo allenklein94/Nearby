@@ -10,7 +10,8 @@ import { joinLabel } from '../utils/gatheringJoinMode';
 import ExperienceComponentList from '../components/ExperienceComponentList';
 import SponsoredSpotlightSlot from '../components/SponsoredSpotlightSlot';
 import usePersonalization from '../hooks/usePersonalization';
-import { behaviorNudge, broadGroupNudge } from '../constants/blendedRanking';
+import { behaviorNudge, broadGroupNudge, relatedHobbyNudge } from '../constants/blendedRanking';
+import { relatedHobbyFor, relatedInterestReason } from '../constants/hobbyRelations';
 import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Linking, Alert, BackHandler } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Video } from 'expo-av';
@@ -740,6 +741,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
     if (nudge > 0) {
       fit.score += nudge;
       fit.reasons = [...fit.reasons, 'Like what you\'ve joined'];
+    }
+    const relatedHobby = relatedHobbyFor(g.interest_tag, personalization.declared);
+    const related = relatedHobbyNudge(g.interest_tag, personalization);
+    if (related > 0) {
+      fit.score += related;
+      fit.reasons = [...fit.reasons, relatedInterestReason(relatedHobby)];
     }
     const broad = broadGroupNudge(g.interest_tag, personalization);
     if (broad > 0) {

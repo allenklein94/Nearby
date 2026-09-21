@@ -14,7 +14,8 @@ export const CONFIDENCE_HEADLINE = {
   low: 'Worth discovering',
 };
 
-const isActivityOnly = (text) => /^Based on your recent activity: /.test(text ?? '');
+// Activity-only and hobby-related interests are personalized but not STRONG evidence (a declared interest is).
+const isActivityOnly = (text) => /^(Based on your recent activity: |Related to your interest in )/.test(text ?? '');
 
 // signals: [{ kind?, text }]; intent: the active Ask-Nearby search matched this object.
 export function recommendationConfidence(signals = [], { intent = false } = {}) {

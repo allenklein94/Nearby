@@ -50,11 +50,11 @@ export const CATEGORY_GROUPS = [
   },
   {
     key: 'activities_recreation', icon: '🏃', label: 'Activities & Recreation',
-    tags: ['Fitness', 'Yoga', 'Sports', 'Running', 'Pickleball', 'Tennis', 'Cycling', 'Swimming', 'Climbing', 'Golf', 'Bowling', 'Gyms', 'Pilates', 'Walking', 'Basketball', 'Soccer', 'Volleyball', 'Skating', 'Martial Arts', 'Water Sports', 'Boating', 'Adventure'],
+    tags: ['Fitness', 'Yoga', 'Sports', 'Running', 'Pickleball', 'Tennis', 'Cycling', 'Swimming', 'Climbing', 'Golf', 'Bowling', 'Gyms', 'Pilates', 'Walking', 'Basketball', 'Soccer', 'Volleyball', 'Skating', 'Martial Arts', 'Water Sports', 'Boating', 'Adventure', 'Cars'],
   },
   {
     key: 'entertainment_nightlife', icon: '🎵', label: 'Entertainment & Nightlife',
-    tags: ['Music', 'Movies', 'Gaming', 'Dancing', 'Concerts', 'Karaoke', 'Comedy', 'Trivia', 'Nightlife', 'Live Music', 'DJs', 'Nightclubs', 'Theater', 'Performing Arts', 'Festivals', 'Arcade', 'Escape Rooms', 'Casinos', 'Special Events', 'Street Events'],
+    tags: ['Music', 'Movies', 'Gaming', 'Dancing', 'Concerts', 'Karaoke', 'Comedy', 'Trivia', 'Nightlife', 'Live Music', 'DJs', 'Nightclubs', 'Theater', 'Performing Arts', 'Festivals', 'Arcade', 'Escape Rooms', 'Casinos', 'Special Events', 'Street Events', 'Board Games', 'D&D'],
   },
   {
     key: 'dating_social', icon: '❤️', label: 'Dating & Social',
@@ -62,7 +62,7 @@ export const CATEGORY_GROUPS = [
   },
   {
     key: 'arts_culture_learning', icon: '🎨', label: 'Arts, Culture & Learning',
-    tags: ['Reading', 'Art', 'Photography', 'Crafts', 'Art Galleries', 'Art Classes', 'Pottery', 'Cultural Events', 'History', 'Libraries', 'Music Lessons'],
+    tags: ['Reading', 'Art', 'Photography', 'Crafts', 'Art Galleries', 'Art Classes', 'Pottery', 'Cultural Events', 'History', 'Libraries', 'Music Lessons', 'Collecting', 'Fashion'],
   },
   {
     // Item 80 ("Make it special," CLAUDE.md): 3 new leaf tags -- Florist,
@@ -86,7 +86,7 @@ export const CATEGORY_GROUPS = [
   },
   {
     key: 'outdoors_nature', icon: '🌳', label: 'Outdoors & Nature',
-    tags: ['Hiking', 'Outdoors', 'Camping', 'Fishing', 'Kayaking', 'Parks', 'Beaches', 'Trails', 'Paddleboarding', 'Wildlife', 'Gardens', 'Scenic Views', 'Picnics', 'Surfing', 'Snorkeling', 'Diving'],
+    tags: ['Hiking', 'Outdoors', 'Camping', 'Fishing', 'Kayaking', 'Parks', 'Beaches', 'Trails', 'Paddleboarding', 'Wildlife', 'Gardens', 'Scenic Views', 'Picnics', 'Surfing', 'Snorkeling', 'Diving', 'Gardening'],
   },
   {
     key: 'pets', icon: '🐕', label: 'Pets',
@@ -126,7 +126,7 @@ export const CATEGORY_GROUPS = [
   },
   {
     key: 'education_classes', icon: '🎓', label: 'Education & Classes',
-    tags: ['Workshops', 'Lectures', 'Cooking Class', 'Study Group', 'Language Exchange', 'Tech Meetup', 'Classes', 'Language Classes', 'Technology Classes', 'Tutoring', 'Adult Education', 'Kids Education', 'Professional Development', 'Certifications', 'Dance Classes'],
+    tags: ['Workshops', 'Lectures', 'Cooking Class', 'Study Group', 'Language Exchange', 'Tech Meetup', 'Classes', 'Language Classes', 'Technology Classes', 'Tutoring', 'Adult Education', 'Kids Education', 'Professional Development', 'Certifications', 'Dance Classes', 'Technology'],
   },
   {
     key: 'attractions_things_to_see', icon: '🎟️', label: 'Attractions & Things to See',

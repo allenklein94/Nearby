@@ -5,6 +5,7 @@ import { CATEGORY_GROUPS } from './gatheringCategories';
 import { comfortFits } from './socialComfort';
 import { SIGNAL_SOURCES, weightSignal } from './signalSourceMaturity';
 import { canonicalizeInterests, groupKeyForTag } from './interestGraph';
+import { relatedHobbyFor, RELATED_POINTS, HOBBY_RELATIONS } from './hobbyRelations';
 
 export const EXPLICIT_POINTS = 5;      // matches SCORE_INTEREST_MATCH: a declared interest is the strongest single signal
 export const BEHAVIOR_MAX_POINTS = 4;  // strictly below EXPLICIT_POINTS: behavior alone can lift, never outrank a declared interest
@@ -25,7 +26,9 @@ export function blendedCategoryScore(category, { declared = [], declaredGroups =
   if (!category) return 0;
   const isDeclared = canonicalizeInterests(declared).includes(category);
   const broad = !isDeclared && declaredGroups.length > 0 && declaredGroups.includes(groupKeyForTag(category)) ? BROAD_GROUP_POINTS : 0;
-  const explicit = isDeclared ? EXPLICIT_POINTS : broad;
+  // A hobby-related tag (hobbyRelations.js) is a weak match too; the larger of broad/related applies, never both.
+  const related = !isDeclared && relatedHobbyFor(category, declared) ? RELATED_POINTS : 0;
+  const explicit = isDeclared ? EXPLICIT_POINTS : Math.max(broad, related);
   const raw = Math.min(1, (behavior[category] ?? 0) / BEHAVIOR_WEIGHT_FOR_MAX) * BEHAVIOR_MAX_POINTS;
   return explicit + weightSignal(raw, SIGNAL_SOURCES.BEHAVIORAL, maturity);
 }
@@ -43,7 +46,8 @@ export function rankByBlend(items, ctx, tagOf = (x) => x.interest_tag) {
 // (maturity > 0). Ordered by blended score.
 export function forYouBlend(declared, behavior, maturity, limit = 50, declaredGroups = []) {
   const broadTags = CATEGORY_GROUPS.filter((g) => declaredGroups.includes(g.key)).flatMap((g) => g.tags);
-  const cats = new Set([...canonicalizeInterests(declared), ...broadTags, ...Object.keys(behavior ?? {})]);
+  const relatedTags = canonicalizeInterests(declared).flatMap((h) => HOBBY_RELATIONS[h] ?? []);
+  const cats = new Set([...canonicalizeInterests(declared), ...broadTags, ...relatedTags, ...Object.keys(behavior ?? {})]);
   return [...cats]
     .map((c) => ({ c, s: blendedCategoryScore(c, { declared, declaredGroups, behavior, maturity }) }))
     .filter((x) => x.s > 0)
@@ -65,4 +69,11 @@ export function behaviorNudge(category, { behavior = {}, maturity = null } = {})
 export function broadGroupNudge(category, { declared = [], declaredGroups = [] } = {}) {
   if (!category || canonicalizeInterests(declared).includes(category)) return 0;
   return declaredGroups.includes(groupKeyForTag(category)) ? BROAD_GROUP_POINTS : 0;
+}
+
+// Just the hobby-related part, for Discover (its fit.score already counts declared tags): the lift RELATED_POINTS gives a tag related
+// to a declared hobby, less whatever broadGroupNudge already added (so the two never stack). 0 when the tag is declared or unrelated.
+export function relatedHobbyNudge(category, { declared = [], declaredGroups = [] } = {}) {
+  if (!relatedHobbyFor(category, declared)) return 0;
+  return Math.max(0, RELATED_POINTS - broadGroupNudge(category, { declared, declaredGroups }));
 }
