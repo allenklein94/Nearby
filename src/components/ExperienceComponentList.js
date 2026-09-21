@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { priceChipLabel } from '../utils/experienceBudget';
 import ExperiencePerkLine from './ExperiencePerkLine';
 import { createExperiencePlan, experienceStopFromItem } from '../services/plans';
 
@@ -54,6 +55,9 @@ export default function ExperienceComponentList({ experience, renderItem, naviga
             return (
               <React.Fragment key={`${item.type}-${item.id}`}>
                 {renderItem(item, index)}
+                {priceChipLabel(item) ? (
+                  <Text style={{ ...typography.caption, color: colors.textSecondary, marginLeft: spacing.lg, marginBottom: 2 }}>{priceChipLabel(item)}</Text>
+                ) : null}
                 <ExperiencePerkLine item={item} />
                 {stop ? (
                   <TouchableOpacity

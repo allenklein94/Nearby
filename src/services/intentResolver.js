@@ -113,6 +113,7 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       // gathering filling "Something to Do") without a second fetch.
       category: gathering.interest_tag ?? null,
       capacity: gathering.capacity ?? null,
+      priceLevel: gathering.price_level ?? null,
       attendeeCount,
       isFull,
       score: scoreGatheringForResolver(gathering)
@@ -534,7 +535,7 @@ async function resolveOccasionPackages(location, occasion, partySize) {
 // 2026-09-06) -- only ever a ranking bonus against a business's own real,
 // declared priority_occasions (resolveBusinessAvailability), never a
 // filter and never written anywhere.
-export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null }) {
+export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null }) {
   // Resolved once, up front, before any branch runs in parallel below —
   // not a check-only call. getNearbyGatherings() (called from
   // resolveGatherings) already calls the shared location provider
@@ -664,7 +665,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // occasion, the occasion has no defined template, or no component found
   // genuine matching inventory; callers only ever render an Experience
   // section when this is truthy.
-  const experience = assembleExperience(occasion, deduped, { partyType, dateWindow, attributes });
+  const experience = assembleExperience(occasion, deduped, { partyType, dateWindow, attributes, priceLevel, budgetMax });
 
   return { items: deduped.slice(0, RESULT_CAP), experience, openEndedNote };
 }
@@ -751,7 +752,7 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
 
   const { items: resolved, experience, openEndedNote } = await resolveIntent({
     category: classifyResult.category, dateWindow: classifyResult.dateWindow, rawText: typedText,
-    partySize: classifyResult.partySize ?? null, priceLevel: classifyResult.priceLevel ?? null,
+    partySize: classifyResult.partySize ?? null, priceLevel: classifyResult.priceLevel ?? null, budgetMax: classifyResult.budgetMax ?? null,
     partyType: classifyResult.partyType ?? null, attributes: classifyResult.attributes ?? [],
     cuisine: classifyResult.cuisine ?? null, occasion: classifyResult.occasion ?? null,
   });

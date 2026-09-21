@@ -47,6 +47,7 @@
 // keys (a posting that only ticked one box is just a normal candidate for
 // that one component -- no special casing needed, the per-component loop
 // already handles it via its own category/subcategory/categories match).
+import { orderByBudget } from '../utils/experienceBudget';
 import { experienceTemplateForOccasion, experienceTemplateForContext } from '../constants/experienceTemplates';
 
 const EXPERIENCE_ELIGIBLE_TYPES = ['business_availability', 'gathering'];
@@ -123,7 +124,7 @@ export function assembleExperience(occasion, candidates, context = null) {
     components.push({
       key: component.key,
       label: component.label,
-      items: matches.sort((a, b) => b.score - a.score).slice(0, 3).map((m) => attachPerk(m, perks)),
+      items: orderByBudget(matches.sort((a, b) => b.score - a.score), context).slice(0, 3).map((m) => attachPerk(m, perks)),
     });
   }
 
