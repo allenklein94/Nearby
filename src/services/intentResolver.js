@@ -53,6 +53,7 @@ import {
 import { getUserLocation } from './userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
 import { attendeeTotal } from '../utils/gatheringFullness';
+import { intentRecipeFor } from '../constants/intentRoutes';
 import { openEndedAskGroups, applyOpenEndedAsk, openEndedCaption } from '../utils/openEndedAsk';
 
 const RESULT_CAP = 4;
@@ -665,7 +666,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // occasion, the occasion has no defined template, or no component found
   // genuine matching inventory; callers only ever render an Experience
   // section when this is truthy.
-  const experience = assembleExperience(occasion, deduped, { partyType, dateWindow, attributes, priceLevel, budgetMax });
+  const experience = assembleExperience(occasion, deduped, { partyType, dateWindow, attributes, priceLevel, budgetMax, intentRecipe: intentRecipeFor(rawText) });
 
   return { items: deduped.slice(0, RESULT_CAP), experience, openEndedNote };
 }

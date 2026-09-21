@@ -1,4 +1,5 @@
 import { supabase, functionUrl } from './supabase';
+import { detectIntentRoute, navigateIntentRoute } from '../constants/intentRoutes';
 
 // The Create Assistant -- a free, unbranded natural-language box on
 // CreateHubScreen that classifies what the user's typing into an intent
@@ -62,6 +63,9 @@ export async function classifyCreateRequest(text) {
 // real results-review step first, or the two contexts' intent will drift
 // back into meaning something they aren't.
 export function routeClassifiedIntentToCreation(navigation, result, typedText) {
+  // A recognised intent (constants/intentRoutes.js) that belongs on another existing surface goes there, unless the AI
+  // already found a named community or a specific business (those are explicit and win).
+  if (result.intent !== 'community' && result.intent !== 'business_partner' && navigateIntentRoute(navigation, detectIntentRoute(typedText), typedText)) return;
   if (result.intent === 'gathering') {
     navigation.navigate('CreateGathering', { quickStartTitle: result.title, quickStartCategory: result.category, quickStartPartySize: result.partySize ?? null });
   } else if (result.intent === 'community') {

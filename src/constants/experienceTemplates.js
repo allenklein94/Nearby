@@ -108,8 +108,10 @@ const PLANNING_WINDOWS = ['today', 'tonight', 'tomorrow', 'weekend'];
 // friends in a planning window -> a day out; a kid-friendly ask in a planning window -> a family day. An explicit
 // occasion with its own template always wins upstream, so this is only consulted when there is none.
 export function experienceContextKey(context) {
-  const { partyType = null, dateWindow = null, attributes = [] } = context ?? {};
+  const { partyType = null, dateWindow = null, attributes = [], intentRecipe = null } = context ?? {};
   if (!PLANNING_WINDOWS.includes(dateWindow)) return null;
+  // A recipe named by a recognised intent (constants/intentRoutes.js) wins over the party-type guess.
+  if (intentRecipe && CONTEXT_TEMPLATES[intentRecipe]) return intentRecipe;
   if (partyType === 'date') return 'date_night';
   if (Array.isArray(attributes) && attributes.includes('kid_friendly')) return 'family_day';
   if (partyType === 'friends') return 'friends_out';

@@ -49,6 +49,7 @@ import { factsMeta, friendGoingReason, communityReason } from '../utils/recommen
 import { getMyFriends } from '../services/friends';
 import { becauseYouLikeReason, categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
 import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
+import { splitTonight } from '../utils/categoryTonight';
 import { matchesDateFilter } from '../utils/gatheringDateFilter';
 import { lightenHex } from '../utils/colorUtils';
 import GatheringsMapView from '../components/GatheringsMapView';
@@ -857,12 +858,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // every row in `offers` from getActiveOffers(lat, lng), so the scope is
   // real and already applied -- the label names the constraint that's
   // genuinely in force rather than claiming one that isn't.
-  const contextGatherings = expandedContext
+  const contextGatheringsAll = expandedContext
     ? gatherings.filter((g) => (expandedContext.categoryTags
         ? expandedContext.categoryTags.includes(g.interest_tag)
         : g.interest_tag === expandedContext.interestTag && gatheringTimeBadge(g.scheduled_at) === expandedContext.timeBucket))
     : [];
-  const contextGatheringIds = new Set(contextGatherings.map((g) => g.id));
+  const contextGatheringIds = new Set(contextGatheringsAll.map((g) => g.id));
   // Same interest, genuinely different time. Shown as its own clearly
   // labelled group rather than silently folded into the exact-context list
   // above -- a "Tonight" context must never quietly list next Saturday
@@ -870,9 +871,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // with (contextGatherings above already includes every time), so this
   // is always empty there -- not a second, redundant listing of the exact
   // same rows.
-  const contextOtherTimeGatherings = expandedContext && !expandedContext.categoryTags
+  const contextOtherTimeAll = expandedContext && !expandedContext.categoryTags
     ? gatherings.filter((g) => g.interest_tag === expandedContext.interestTag && !contextGatheringIds.has(g.id))
     : [];
+  // "Happening tonight": a slice of the two lists above (same rows, same time badge); a gathering shown there is removed from
+  // the list it came from, so it never appears twice. Empty (and not rendered) when nothing is on tonight.
+  const { tonight: contextTonight, main: contextGatherings, other: contextOtherTimeGatherings } = splitTonight(
+    contextGatheringsAll, contextOtherTimeAll, expandedContext?.timeBucket ?? null,
+  );
   // target_interest_tag is the offer row's own real targeting field (the
   // same one the Perks section above already reads) -- not a keyword guess
   // against the offer's title.
@@ -888,7 +894,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const contextTopicLabel = expandedContext?.categoryLabel ?? expandedContext?.interestTag ?? '';
   // A stable dep for the connections effect below -- contextGatherings is
   // rebuilt every render, so its identity can't be a dependency.
-  const contextGatheringKey = contextGatherings.map((g) => g.id).join(',');
+  // The connections effect reads every gathering this view shows, including the tonight slice.
+  const contextShownGatherings = [...contextTonight, ...contextGatherings];
+  const contextGatheringKey = contextShownGatherings.map((g) => g.id).join(',');
 
   // A category is a gateway, not a directory: friends into it (accepted friends only, server-enforced), public communities
   // for it, and one tap to ask businesses for an offer. Each shows only when real.
@@ -950,7 +958,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       return;
     }
     const attendeeIds = [...new Set(
-      contextGatherings.flatMap((g) => (g.approvedAttendees ?? []).map((a) => a.user_id))
+      contextShownGatherings.flatMap((g) => (g.approvedAttendees ?? []).map((a) => a.user_id))
     )].filter((id) => id && id !== myUserId);
     if (attendeeIds.length === 0) {
       setContextConnections([]);
@@ -962,7 +970,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         if (thisRequestId !== contextConnectionsRequestId.current) return;
         const withWhere = people.map((person) => ({
           ...person,
-          gatheringTitle: contextGatherings.find((g) =>
+          gatheringTitle: contextShownGatherings.find((g) =>
             (g.approvedAttendees ?? []).some((a) => a.user_id === person.id))?.title ?? null,
         }));
         setContextConnections(withWhere);
@@ -1716,8 +1724,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
            secondary section underneath, never a peer tab. */
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {contextFriendLine ? <Text style={styles.contextGroupNote}>{contextFriendLine}</Text> : null}
-          <Text style={styles.sectionHeader}>Gatherings</Text>
-          {contextGatherings.length === 0 ? (
+          {contextTonight.length > 0 && (
+            <>
+              <Text style={styles.sectionHeader}>Happening tonight</Text>
+              <StaggeredReveal index={0}>
+                <View>{contextTonight.map(renderContextGatheringRow)}</View>
+              </StaggeredReveal>
+            </>
+          )}
+          {contextTonight.length > 0 && contextGatherings.length === 0 ? null : <Text style={styles.sectionHeader}>Gatherings</Text>}
+          {contextGatherings.length === 0 && contextTonight.length > 0 ? null : contextGatherings.length === 0 ? (
             <>
               <EmptyCopy id="context_gatherings" vars={{ topic: contextTopicLabel.toLowerCase() }} />
               <TouchableOpacity

@@ -4,6 +4,7 @@
 // (a) drops results whose own category belongs to a non-social group and (b) gives a small lift to the ones that fit. Only
 // candidates with a KNOWN category are ever dropped; uncategorized ones are kept, and a real category in the ask turns all of this off.
 import { CATEGORY_GROUPS, groupForTag } from '../constants/gatheringCategories';
+import { detectIntentRoute, ROUTE_SURFACES } from '../constants/intentRoutes';
 
 // Groups that describe supply or services rather than something to go and do. Never part of a "something fun" ask.
 const SUPPLY_GROUPS = ['home_local_services', 'auto_transportation', 'business_networking', 'health_personal_care', 'stay_getaway', 'pets', 'education_classes'];
@@ -17,6 +18,10 @@ export const OPEN_ENDED_GROUP_BONUS = 1; // below every real category/interest m
 // Group keys the ask can mean, or null when this is not an open-ended ask (a real category, an occasion, or no open phrase).
 export function openEndedAskGroups({ category = null, rawText = '', occasion = null, attributes = [] } = {}) {
   if (category || occasion) return null;
+  // A recognised intent (constants/intentRoutes.js) that names category groups limits the ask to exactly those groups.
+  const routed = detectIntentRoute(rawText);
+  // (A tagged intent like coffee or live music leaves the choice of category to the extractor, so it never limits groups here.)
+  if (routed?.route.surface === ROUTE_SURFACES.CATEGORY_GROUPS && !routed.route.category) return [...routed.route.groups];
   if (typeof rawText !== 'string' || !OPEN_ENDED.test(rawText)) return null;
   const kidFriendly = Array.isArray(attributes) && attributes.includes('kid_friendly');
   return CATEGORY_GROUPS
