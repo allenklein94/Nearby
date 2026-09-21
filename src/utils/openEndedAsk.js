@@ -4,6 +4,7 @@
 // (a) drops results whose own category belongs to a non-social group and (b) gives a small lift to the ones that fit. Only
 // candidates with a KNOWN category are ever dropped; uncategorized ones are kept, and a real category in the ask turns all of this off.
 import { CATEGORY_GROUPS, groupForTag } from '../constants/gatheringCategories';
+import { energiesFromText } from '../constants/energyLevel';
 import { detectIntentRoute, ROUTE_SURFACES } from '../constants/intentRoutes';
 
 // Groups that describe supply or services rather than something to go and do. Never part of a "something fun" ask.
@@ -22,7 +23,7 @@ export function openEndedAskGroups({ category = null, rawText = '', occasion = n
   const routed = detectIntentRoute(rawText);
   // (A tagged intent like coffee or live music leaves the choice of category to the extractor, so it never limits groups here.)
   if (routed?.route.surface === ROUTE_SURFACES.CATEGORY_GROUPS && !routed.route.category) return [...routed.route.groups];
-  if (typeof rawText !== 'string' || !OPEN_ENDED.test(rawText)) return null;
+  if (typeof rawText !== 'string' || !(OPEN_ENDED.test(rawText) || energiesFromText(rawText).length > 0)) return null; // an energy alone ("something low-key") names no category either
   const kidFriendly = Array.isArray(attributes) && attributes.includes('kid_friendly');
   return CATEGORY_GROUPS
     .map((g) => g.key)

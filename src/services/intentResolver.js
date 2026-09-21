@@ -53,6 +53,7 @@ import {
   SCORE_OCCASION_PACKAGE_FLOOR,
 } from './intentResolverScoring';
 import { activitiesFromText } from '../constants/activityLayer';
+import { energiesFromText, applyEnergyToCandidates } from '../constants/energyLevel';
 import { getUserLocation } from './userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
 import { attendeeTotal } from '../utils/gatheringFullness';
@@ -661,6 +662,9 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
       console.error('business price nudge skipped', e);
     }
   }
+
+  // Energy level (item 44): "something low-key" lifts tags that carry that energy; ranking only (constants/energyLevel.js).
+  deduped = applyEnergyToCandidates(deduped, energiesFromText(rawText));
 
   // Open-ended ask ("something fun tonight"): no category named, so only inventory in social groups is eligible and it gets a
   // small lift (utils/openEndedAsk.js, rule-based). A real category or occasion in the ask leaves everything untouched.
