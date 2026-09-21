@@ -29,6 +29,10 @@ const KEYWORDS_BY_ATTRIBUTE = {
   craft_friendly: ['craft', 'crafting', 'diy workshop', 'make your own'],
   fitness_focused: ['fitness', 'workout', 'gym', 'training session', 'active lifestyle'],
   private_dining: ['private dining', 'private room', 'private event space', 'semi-private', "chef's table", 'buyout'],
+  wifi: ['free wifi', 'free wi-fi', 'wifi available', 'wi-fi available', 'wifi included'],
+  food_available: ['food available', 'full menu', 'kitchen', 'serves food', 'food menu', 'lunch menu', 'dinner menu'],
+  beginner_friendly: ['beginner friendly', 'beginner-friendly', 'beginners welcome', 'all skill levels', 'no experience needed', 'no experience necessary'],
+  reservation_required: ['reservation required', 'reservations required', 'reservation only', 'by reservation', 'booking required', 'must book'],
   corporate_events: ['corporate event', 'corporate events', 'team dinner', 'company event', 'client dinner', 'offsite', 'team building'],
 };
 

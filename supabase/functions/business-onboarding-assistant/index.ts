@@ -45,6 +45,7 @@ const VALID_ATTRIBUTES = [
   'late_night', 'board_game_friendly', 'photography_friendly',
   'book_lovers', 'craft_friendly', 'fitness_focused',
   'private_dining', 'corporate_events',
+  'wifi', 'food_available', 'beginner_friendly', 'reservation_required',
 ];
 const VALID_CUISINES = [
   'italian', 'mexican', 'japanese', 'chinese', 'american', 'french',

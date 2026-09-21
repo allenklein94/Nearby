@@ -12,8 +12,14 @@ describe('business attribute vocabulary (one list, everywhere it is enforced)', 
     expect(BUSINESS_ATTRIBUTE_OPTIONS.find((o) => o.key === 'private_dining')?.label).toBe('Private Dining');
     expect(BUSINESS_ATTRIBUTE_OPTIONS.find((o) => o.key === 'corporate_events')?.label).toBe('Corporate Events');
   });
+  it('the four cross-activity attributes exist with labels and are found from plain text', () => {
+    expect(BUSINESS_ATTRIBUTE_OPTIONS.find((o) => o.key === 'wifi')?.label).toBe('Wi-Fi');
+    expect(extractAttributesFromText('Free wifi and beginners welcome')).toEqual(expect.arrayContaining(['wifi', 'beginner_friendly']));
+    expect(extractAttributesFromText('Reservation required, full menu')).toEqual(expect.arrayContaining(['reservation_required', 'food_available']));
+    expect(extractAttributesFromText('A cozy coffee shop')).not.toContain('wifi');
+  });
   it('every DB constraint in the widening migration lists exactly the client keys', () => {
-    const mig = read('supabase/migrations/20261229_private_dining_corporate_events_attributes.sql');
+    const mig = read('supabase/migrations/20270193_more_cross_activity_attributes.sql');
     const lists = [...mig.matchAll(/check \(\w+ <@ array\[([^\]]*)\]/g)].map((m) => quoted(m[1]));
     expect(lists).toHaveLength(6);
     for (const l of lists) expect(l).toEqual(keys);
@@ -36,7 +42,9 @@ describe('business attribute vocabulary (one list, everywhere it is enforced)', 
     const venue = VENUE_PREFERENCE_OPTIONS.map((o) => o.key);
     expect(venue).not.toContain('private_dining');
     expect(venue).not.toContain('corporate_events');
-    expect(venue).toHaveLength(BUSINESS_ATTRIBUTE_OPTIONS.length - 2);
+    expect(venue).not.toContain('reservation_required');
+    expect(venue).toEqual(expect.arrayContaining(['wifi', 'beginner_friendly']));
+    expect(venue).toHaveLength(BUSINESS_ATTRIBUTE_OPTIONS.length - 4);
     for (const f of ['src/components/DiningPreferencesPromptModal.js', 'src/screens/ProfileScreen.js', 'src/constants/preferencePollQuestions.js']) {
       expect(read(f)).toMatch(/VENUE_PREFERENCE_OPTIONS/);
       expect(read(f)).not.toMatch(/\bBUSINESS_ATTRIBUTE_OPTIONS\.map/);
