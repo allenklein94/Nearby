@@ -114,7 +114,7 @@ export const CATEGORY_GROUPS = [
   },
   {
     key: 'stay_getaway', icon: '🏨', label: 'Stay & Getaway',
-    tags: ['Weekend Getaway', 'Staycation', 'Road Trip', 'Resorts', 'Hotels'],
+    tags: ['Weekend Getaway', 'Staycation', 'Road Trip', 'Resorts', 'Hotels', 'Vacation Rentals', 'Romantic Getaways', 'Spa Resorts', 'Family Resorts', 'Pet Friendly Stays', 'Glamping'],
   },
   {
     key: 'health_personal_care', icon: '🩺', label: 'Health & Personal Care',

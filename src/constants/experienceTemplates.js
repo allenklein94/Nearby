@@ -30,21 +30,21 @@
 // celebration, family_gathering. casual_hangout, business_meal, and other
 // are left as single-purpose asks (no template), matching this feature's
 // own "never force a multi-part answer onto a single-purpose ask" design.
-const DINNER_CATEGORIES = ['Foodie', 'Wine', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour', 'Brunch', 'Cooking'];
-const NIGHT_OUT_CATEGORIES = ['Music', 'Movies', 'Dancing', 'Concerts', 'Comedy', 'Nightlife', 'Karaoke'];
-const DESSERT_CATEGORIES = ['Bakeries', 'Coffee'];
+const DINNER_CATEGORIES = ['Foodie', 'Wine', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour', 'Brunch', 'Cooking', 'Restaurants', 'Fine Dining', 'Wineries'];
+const NIGHT_OUT_CATEGORIES = ['Music', 'Movies', 'Dancing', 'Concerts', 'Comedy', 'Nightlife', 'Karaoke', 'Live Music', 'Theater', 'Performing Arts'];
+const DESSERT_CATEGORIES = ['Bakeries', 'Coffee', 'Dessert & Ice Cream'];
 // Deliberately excludes the alcohol/nightlife-leaning DINNER_CATEGORIES
 // entries (Wine, Bars & Lounges, Breweries, Happy Hour) -- an honest,
 // family-appropriate curation choice for this one occasion, not an
 // oversight; Foodie/Brunch/Cooking/Food Trucks already cover real family
 // dining supply.
-const FAMILY_FOOD_CATEGORIES = ['Brunch', 'Foodie', 'Cooking', 'Food Trucks'];
-const FAMILY_FUN_CATEGORIES = ['Family Playdate', 'Kids Activity', 'Zoos', 'Aquariums', 'Amusement Park'];
+const FAMILY_FOOD_CATEGORIES = ['Brunch', 'Foodie', 'Cooking', 'Food Trucks', 'Restaurants', 'Family Dining', 'Dessert & Ice Cream'];
+const FAMILY_FUN_CATEGORIES = ['Family Playdate', 'Kids Activity', 'Zoos', 'Aquariums', 'Amusement Park', 'Family Events', 'Indoor Play', 'Kids Museums', 'Birthday Activities'];
 
-const FRIENDS_ACTIVITY_CATEGORIES = ['Sports', 'Bowling', 'Pickleball', 'Climbing', 'Karaoke', 'Trivia', 'Gaming', 'Comedy', 'Music', 'Dancing'];
-const FRIENDS_FOOD_CATEGORIES = ['Foodie', 'Brunch', 'Food Trucks', 'Cooking'];
-const FRIENDS_DRINKS_CATEGORIES = ['Bars & Lounges', 'Breweries', 'Wine', 'Happy Hour'];
-const FAMILY_OUTDOOR_CATEGORIES = ['Hiking', 'Outdoors', 'Fishing', 'Kayaking', 'Family Playdate', 'Kids Activity', 'Zoos', 'Aquariums', 'Amusement Park'];
+const FRIENDS_ACTIVITY_CATEGORIES = ['Sports', 'Bowling', 'Pickleball', 'Climbing', 'Karaoke', 'Trivia', 'Gaming', 'Comedy', 'Music', 'Dancing', 'Basketball', 'Soccer', 'Volleyball', 'Escape Rooms', 'Arcade', 'Social Clubs'];
+const FRIENDS_FOOD_CATEGORIES = ['Foodie', 'Brunch', 'Food Trucks', 'Cooking', 'Restaurants', 'Fast Casual'];
+const FRIENDS_DRINKS_CATEGORIES = ['Bars & Lounges', 'Breweries', 'Wine', 'Happy Hour', 'Wineries'];
+const FAMILY_OUTDOOR_CATEGORIES = ['Hiking', 'Outdoors', 'Fishing', 'Kayaking', 'Family Playdate', 'Kids Activity', 'Zoos', 'Aquariums', 'Amusement Park', 'Parks', 'Playgrounds', 'Beaches', 'Trails', 'Picnics', 'Gardens'];
 
 const DATE_NIGHT_COMPONENTS = [
   { key: 'dinner', label: '🍽️ Dinner', categories: DINNER_CATEGORIES },
