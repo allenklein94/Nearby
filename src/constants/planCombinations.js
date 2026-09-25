@@ -11,16 +11,29 @@
 import { EXPERIENCE_TEMPLATES, CONTEXT_TEMPLATES, experienceContextKey } from './experienceTemplates';
 import { intentRecipeFor } from './intentRoutes';
 import { planParts } from '../utils/planAsk';
+import { ENERGY_LEVELS } from './energyLevel';
+import { EXPERIENCE_PARTY_TYPE_OPTIONS } from './businessAttributes';
+import { WHEN_PRESETS } from '../utils/whenPresets';
 
+// Item 65: what Create would ask to build each one. `who` = the existing party types it can be for (ONE = implied, never asked);
+// `kinds` = the existing energy levels offered for "What kind of night/day?" (none = not asked); `kindPrompt` = that question.
 export const PLAN_COMBINATIONS = [
-  { key: 'date_night', label: 'Date Night', parts: ['food', 'entertainment'], occasion: 'date_night', recipe: 'date_night' },
-  { key: 'family_day', label: 'Family Day', parts: ['activity', 'food'], occasion: 'family_gathering', recipe: 'family_day' },
-  { key: 'night_out', label: 'Night Out', parts: ['food', 'drinks', 'entertainment'], recipe: 'night_out' },
-  { key: 'weekend', label: 'Weekend', parts: ['activity', 'food', 'shopping'], recipe: 'weekend_out' },
-  { key: 'beach_day', label: 'Beach Day', parts: ['outdoors', 'food', 'activity'], recipe: 'beach_day' },
-  { key: 'birthday', label: 'Birthday', parts: ['food', 'entertainment', 'activity'], occasion: 'birthday' },
-  { key: 'business_meeting', label: 'Business Meeting', parts: ['food', 'professional'], occasion: 'business_meal', recipe: 'business_meeting' },
-  { key: 'day_out', label: 'Day Out', parts: ['activity', 'food', 'drinks'], recipe: 'friends_out' },
+  { key: 'date_night', label: 'Date Night', parts: ['food', 'entertainment'], occasion: 'date_night', recipe: 'date_night',
+    who: ['date'], kinds: ['low_key', 'romantic', 'active', 'social'], kindPrompt: 'What kind of night?' },
+  { key: 'family_day', label: 'Family Day', parts: ['activity', 'food'], occasion: 'family_gathering', recipe: 'family_day',
+    who: ['family'], kinds: ['low_key', 'active', 'adventurous'], kindPrompt: 'What kind of day?' },
+  { key: 'night_out', label: 'Night Out', parts: ['food', 'drinks', 'entertainment'], recipe: 'night_out',
+    who: ['friends', 'date', 'coworkers', 'groups'], kinds: ['low_key', 'social', 'high_energy'], kindPrompt: 'What kind of night?' },
+  { key: 'weekend', label: 'Weekend', parts: ['activity', 'food', 'shopping'], recipe: 'weekend_out',
+    who: ['solo', 'friends', 'date', 'family'], kinds: ['low_key', 'active', 'adventurous', 'social'], kindPrompt: 'What kind of weekend?' },
+  { key: 'beach_day', label: 'Beach Day', parts: ['outdoors', 'food', 'activity'], recipe: 'beach_day',
+    who: ['friends', 'date', 'family'], kinds: ['low_key', 'active', 'adventurous'], kindPrompt: 'What kind of day?' },
+  { key: 'birthday', label: 'Birthday', parts: ['food', 'entertainment', 'activity'], occasion: 'birthday',
+    who: ['friends', 'family', 'date', 'groups'], kinds: ['low_key', 'social', 'high_energy'], kindPrompt: 'What kind of celebration?' },
+  { key: 'business_meeting', label: 'Business Meeting', parts: ['food', 'professional'], occasion: 'business_meal', recipe: 'business_meeting',
+    who: ['coworkers'], kinds: [] },
+  { key: 'day_out', label: 'Day Out', parts: ['activity', 'food', 'drinks'], recipe: 'friends_out',
+    who: ['friends'], kinds: ['low_key', 'active', 'social', 'adventurous'], kindPrompt: 'What kind of day?' },
 ];
 
 // The template a combination assembles with: its occasion's template when that exists, else its context recipe.
@@ -49,4 +62,44 @@ export function recognizeCombination({ text = '', occasion = null, partyType = n
     return byRecipe(dateWindow === 'tonight' || EVENING.test(text) ? 'date_night' : 'friends_out');
   }
   return null;
+}
+
+// ---- Item 65: "Create a date night." -> ask only what is missing, then build ----
+// Infer first (item 61): a slot the ask already answers, or that the combination implies, is never asked. Options come only
+// from the existing vocabularies (party types, When presets, energy levels); nothing here invents a time. No UI uses this yet.
+const WHEN_CHOICES = ['tonight', 'tomorrow', 'custom'];
+const partyOption = (k) => ({ key: k, label: EXPERIENCE_PARTY_TYPE_OPTIONS.find((o) => o.key === k)?.label ?? k });
+const energyOption = (k) => { const e = ENERGY_LEVELS.find((x) => x.key === k); return { key: k, label: `${e.icon} ${e.display}` }; };
+
+export function combinationByKey(key) { return PLAN_COMBINATIONS.find((c) => c.key === key) ?? null; }
+
+// `ask` = resolveAsk()'s structured result. Returns null when the ask is not a combination.
+export function planQuestions(ask) {
+  const combo = combinationByKey(ask?.combination);
+  if (!combo) return null;
+  const partyType = ask.group?.partyType ?? null;
+  const who = combo.who.length === 1 ? combo.who[0] : (combo.who.includes(partyType) ? partyType : null);
+  const when = ask.time?.whenPreset ?? ask.time?.dateWindow ?? null;
+  const kind = (ask.energies ?? []).find((e) => combo.kinds.includes(e)) ?? null;
+  const questions = [];
+  if (!who) questions.push({ slot: 'who', prompt: 'Who is it for?', options: combo.who.map(partyOption) });
+  if (!when) questions.push({ slot: 'when', prompt: 'When?', options: WHEN_PRESETS.filter((p) => WHEN_CHOICES.includes(p.key)).map((p) => ({ key: p.key, label: `${p.icon} ${p.label}` })) });
+  if (!kind && combo.kinds.length) questions.push({ slot: 'kind', prompt: combo.kindPrompt, options: combo.kinds.map(energyOption) });
+  return { combination: combo.key, answered: { who, when, kind }, questions };
+}
+
+// The answers as resolveIntent inputs, so the plan is built by the existing engine (recipe/occasion template, energy ranking).
+// `when` is a When preset the PERSON picked; 'custom' carries no window here (the picked date is the caller's), so no time is
+// assumed. Energy only reranks; it never removes a part.
+export function planBuildInputs(combinationKey, { who = null, when = null, kind = null } = {}) {
+  const combo = combinationByKey(combinationKey);
+  if (!combo) return null;
+  const partyType = combo.who.length === 1 ? combo.who[0] : (combo.who.includes(who) ? who : null);
+  return {
+    occasion: combo.occasion ?? null,
+    partyType,
+    dateWindow: when === 'tonight' || when === 'tomorrow' ? when : null,
+    energies: combo.kinds.includes(kind) ? [kind] : [],
+    intentRecipe: combo.recipe ?? null,
+  };
 }

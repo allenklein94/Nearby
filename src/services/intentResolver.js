@@ -557,7 +557,7 @@ async function resolveOccasionPackages(location, occasion, partySize) {
 // 2026-09-06) -- only ever a ranking bonus against a business's own real,
 // declared priority_occasions (resolveBusinessAvailability), never a
 // filter and never written anywhere.
-export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null }) {
+export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null, energies = [] }) {
   // "my girlfriend" = a date party when the extractor named none (constants/askFacets.js, deterministic).
   partyType = partyType ?? partnerPartyType(rawText);
   // Item 63: an ask naming two or more parts of an outing ("dinner and something to do after") is ONE plan. A single
@@ -691,7 +691,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   }
 
   // Energy level (item 44): "something low-key" lifts tags that carry that energy; ranking only (constants/energyLevel.js).
-  deduped = applyEnergyToCandidates(deduped, energiesFromText(rawText));
+  // Item 65: an energy the person PICKED ("What kind of night?") joins the ones their words name.
+  deduped = applyEnergyToCandidates(deduped, [...new Set([...(Array.isArray(energies) ? energies : []), ...energiesFromText(rawText)])]);
 
   // Commitment (item 45) and spontaneity (item 46): ranking only. An immediate ask implies a light commitment unless the person
   // said otherwise; "plan ahead" / "next few hours" have no dateWindow bucket, so they come from the person's own words.

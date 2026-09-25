@@ -65,3 +65,52 @@ describe('recognizeCombination: deterministic, from the person\'s words and reso
     expect(src).not.toMatch(/fetch\(|supabase|functions\.invoke|anthropic/i);
   });
 });
+
+describe('item 65: Create asks only what a combination is missing', () => {
+  const { planQuestions, planBuildInputs } = require('./planCombinations');
+  const { resolveAsk } = require('../utils/askResolver');
+  const { ENERGY_LEVELS } = require('./energyLevel');
+  const { EXPERIENCE_PARTY_TYPE_OPTIONS } = require('./businessAttributes');
+  const { WHEN_PRESETS } = require('../utils/whenPresets');
+  const slots = (t) => planQuestions(resolveAsk(t)).questions.map((q) => q.slot);
+
+  it('"Create a date night": partner is implied, asks When and What kind of night', () => {
+    const q = planQuestions(resolveAsk('Create a date night'));
+    expect(q.combination).toBe('date_night');
+    expect(q.answered.who).toBe('date');
+    expect(q.questions.map((x) => x.slot)).toEqual(['when', 'kind']);
+    expect(q.questions[0].options.map((o) => o.key)).toContain('tonight');
+    expect(q.questions[1].prompt).toBe('What kind of night?');
+    expect(q.questions[1].options.map((o) => o.key)).toEqual(['low_key', 'romantic', 'active', 'social']);
+  });
+  it('never asks what the words already said', () => {
+    expect(slots('a romantic date night tonight')).toEqual([]);
+    expect(slots('a night out with friends tomorrow')).toEqual(['kind']);
+    expect(slots('plan a beach day')).toEqual(['who', 'when', 'kind']);
+    expect(slots('client lunch tomorrow')).toEqual([]);
+    expect(planQuestions(resolveAsk('coffee'))).toBeNull();
+  });
+  it('every option comes from an existing vocabulary', () => {
+    const party = new Set(EXPERIENCE_PARTY_TYPE_OPTIONS.map((o) => o.key));
+    const energy = new Set(ENERGY_LEVELS.map((e) => e.key));
+    for (const c of PLAN_COMBINATIONS) {
+      expect(c.who.length).toBeGreaterThan(0);
+      c.who.forEach((k) => expect(party.has(k) ? k : `bad party ${k}`).toBe(k));
+      c.kinds.forEach((k) => expect(energy.has(k) ? k : `bad energy ${k}`).toBe(k));
+      if (c.kinds.length) expect(c.kindPrompt).toBeTruthy();
+    }
+    expect(WHEN_PRESETS.map((p) => p.key)).toEqual(expect.arrayContaining(['tonight', 'tomorrow', 'custom']));
+  });
+  it('answers become the existing engine\'s inputs; no time is assumed', () => {
+    expect(planBuildInputs('date_night', { when: 'tonight', kind: 'romantic' }))
+      .toEqual({ occasion: 'date_night', partyType: 'date', dateWindow: 'tonight', energies: ['romantic'], intentRecipe: 'date_night' });
+    expect(planBuildInputs('night_out', { who: 'friends', when: 'custom', kind: 'nonsense' }))
+      .toEqual({ occasion: null, partyType: 'friends', dateWindow: null, energies: [], intentRecipe: 'night_out' });
+    expect(planBuildInputs('nope')).toBeNull();
+  });
+  it('a picked energy reaches the resolver\'s ranking', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../services/intentResolver.js'), 'utf8');
+    expect(src).toMatch(/whoForName = null, energies = \[\] \}/);
+    expect(src).toMatch(/applyEnergyToCandidates\(deduped, \[\.\.\.new Set\(\[\.\.\.\(Array\.isArray\(energies\)/);
+  });
+});
