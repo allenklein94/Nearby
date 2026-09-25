@@ -42,7 +42,6 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [energyLevel, setEnergyLevel] = useState(gathering.energy_level ?? null);
   const [conversationLevel, setConversationLevel] = useState(gathering.conversation_level ?? null);
   const [groupSizeFeel, setGroupSizeFeel] = useState(gathering.group_size_feel ?? null);
-  const [beginnerFriendly, setBeginnerFriendly] = useState(gathering.beginner_friendly ?? true);
   const [equipmentProvided, setEquipmentProvided] = useState(gathering.equipment_provided ?? null);
   const [features, setFeatures] = useState(cleanFeatures(gathering.features));
   const [ageMin, setAgeMin] = useState(cleanAgeRange(gathering.suited_age_min, gathering.suited_age_max).min);
@@ -138,7 +137,6 @@ export default function EditGatheringScreen({ route, navigation }) {
         energyLevel,
         conversationLevel,
         groupSizeFeel,
-        beginnerFriendly,
         equipmentProvided,
         features,
         suitedAgeMin: ageMin,
@@ -284,15 +282,6 @@ export default function EditGatheringScreen({ route, navigation }) {
               </View>
             </View>
           ))}
-
-          <View style={styles.toggleRow}>
-            <Text style={styles.label}>Beginner friendly</Text>
-            <Switch
-              value={beginnerFriendly}
-              onValueChange={setBeginnerFriendly}
-              accessibilityLabel="Beginner friendly"
-            />
-          </View>
 
           <Text style={styles.label}>Accessibility, family & venue</Text>
           <View style={styles.chipsWrap}>

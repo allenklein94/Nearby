@@ -3,7 +3,7 @@
 // Recreation, Outdoors & Nature) = Beginner / Intermediate / Advanced / All levels; anything else = not asked. Stored only as
 // `gatherings.skill_level` (host-declared, NULL = not said, never inferred; migration 20270206). The ask names a level by
 // deterministic phrase rules on the person's own words (never AI). Ranking only: a fit lifts, a clear mismatch sinks a little,
-// unknown is untouched, nothing is removed.
+// unknown is untouched, nothing is removed. Scoped to typed requests only (never Home/Discover feeds).
 import { CATEGORY_GROUPS } from './gatheringCategories';
 import { TAG_FORMAT } from './activityFormat';
 
@@ -50,14 +50,9 @@ export function cleanSkillLevel(level, ctx) {
   return level && SKILL_CONTEXT_LEVELS[ctx]?.includes(level) ? level : null;
 }
 
-// The existing `beginner_friendly` flag defaults to true on every gathering, so it is a default, not a declaration. A declared
-// skill level is the host's real answer and wins: the legacy badge shows only when no level was declared or the level is
-// beginner-suitable.
-const BEGINNER_OK = ['beginner', 'all_levels', 'casual'];
-export function beginnerFriendlyShown(g) {
-  if (!g?.beginner_friendly) return false;
-  return !g.skill_level || BEGINNER_OK.includes(g.skill_level);
-}
+// The old `beginner_friendly` flag is NOT NULL DEFAULT true on every gathering, so it cannot tell a host's "yes" from the default.
+// Owner decision (item 67, LOCKED): it is no longer displayed or used for ranking anywhere; a host says who it suits through the
+// declared skill level above. The column stays (stored data), nothing reads it.
 
 const ASK = [
   { key: 'beginner', re: /\bbeginners?\b|\bnew\s+to\b|\bfirst[- ]timers?\b|\bnever\s+(played|tried|done)\b|\bnewbies?\b|\blearn(ing)?\s+(to|how)\b/i },
@@ -74,20 +69,22 @@ export function skillLevelsFromText(text) {
   return ASK.filter((a) => a.re.test(text)).map((a) => a.key);
 }
 
-// Which declared levels suit an asked one, and which clearly do not.
+// Explicit, conservative compatibility (owner decision, item 67, LOCKED): an asked level fits the SAME declared level or
+// "All levels"; an "all levels" ask fits every declared level. Nothing else counts as a fit (Beginner is not Casual, Advanced is
+// not Competitive). A clear opposite sinks modestly; everything else, and an undeclared level, is neutral.
 const FITS = {
-  beginner: ['beginner', 'all_levels', 'casual'],
+  beginner: ['beginner', 'all_levels'],
+  casual: ['casual', 'all_levels'],
   intermediate: ['intermediate', 'all_levels'],
-  advanced: ['advanced', 'competitive'],
-  all_levels: ['all_levels'],
-  casual: ['casual', 'beginner', 'all_levels'],
-  competitive: ['competitive', 'advanced'],
+  advanced: ['advanced', 'all_levels'],
+  competitive: ['competitive', 'all_levels'],
+  all_levels: SKILL_LEVEL_KEYS,
 };
 const CONFLICTS = {
   beginner: ['advanced', 'competitive'],
-  casual: ['advanced', 'competitive'],
-  advanced: ['beginner', 'casual'],
-  competitive: ['beginner', 'casual'],
+  casual: ['competitive'],
+  advanced: ['beginner'],
+  competitive: ['casual'],
   intermediate: [],
   all_levels: [],
 };

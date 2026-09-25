@@ -2,7 +2,6 @@ import { relatedHobbyFor } from '../constants/hobbyRelations';
 import { tagsForPhrase } from '../constants/categorySynonyms';
 import { groupForTag } from '../constants/gatheringCategories';
 import { formatDistanceAway } from '../utils/formatDistance';
-import { beginnerFriendlyShown } from '../constants/skillLevel';
 import { supabase } from './supabase';
 import { randomUUID } from 'expo-crypto';
 import * as Location from 'expo-location';
@@ -833,7 +832,7 @@ export async function updateGathering(gatheringId, { title, description, schedul
       energy_level: energyLevel,
       conversation_level: conversationLevel,
       group_size_feel: groupSizeFeel,
-      beginner_friendly: beginnerFriendly,
+      ...(beginnerFriendly === undefined ? {} : { beginner_friendly: beginnerFriendly }),
       timeline_steps: timelineSteps,
       show_group_insights: showGroupInsights,
     })
@@ -1185,10 +1184,6 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendA
   if (isToday) {
     score += 2;
     reasons.push(REASON_TEXT.HAPPENING_TODAY.text);
-  }
-  if (beginnerFriendlyShown(gathering)) {
-    score += 1;
-    reasons.push('Beginner friendly');
   }
   if (firstTimerCount > 0) {
     score += 1;

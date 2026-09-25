@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { SKILL_LEVEL_KEYS, SPORT_TAGS, SKILL_CONTEXT_LEVELS, skillContext, skillOptionsFor, cleanSkillLevel, beginnerFriendlyShown, skillLevelsFromText, applySkillToCandidates } = require('./skillLevel');
+const { SKILL_LEVEL_KEYS, SPORT_TAGS, SKILL_CONTEXT_LEVELS, skillContext, skillOptionsFor, cleanSkillLevel, skillLevelsFromText, skillFit, applySkillToCandidates } = require('./skillLevel');
 const { CATEGORY_GROUPS } = require('./gatheringCategories');
 const { practicalFacts } = require('../utils/gatheringPractical');
 const { resolveAsk } = require('../utils/askResolver');
@@ -45,15 +45,13 @@ describe('display', () => {
     expect(practicalFacts({ skill_level: 'advanced' })[0]).toBe('🎯 Advanced');
     expect(practicalFacts({ interest_tag: 'Pickleball' })).toEqual([]);
   });
-  it('the default beginner_friendly badge never contradicts a declared level', () => {
-    expect(beginnerFriendlyShown({ beginner_friendly: true })).toBe(true);
-    expect(beginnerFriendlyShown({ beginner_friendly: true, skill_level: 'advanced' })).toBe(false);
-    expect(beginnerFriendlyShown({ beginner_friendly: true, skill_level: 'competitive' })).toBe(false);
-    expect(beginnerFriendlyShown({ beginner_friendly: true, skill_level: 'all_levels' })).toBe(true);
-    expect(beginnerFriendlyShown({ beginner_friendly: false, skill_level: 'beginner' })).toBe(false);
-    for (const f of ['src/screens/GatheringsScreen.js', 'src/screens/GatheringDetailScreen.js', 'src/services/gatherings.js']) {
-      expect([f, /\b(item|gathering)\.beginner_friendly\s*(&&|\|\||\))/.test(read(f))]).toEqual([f, false]);
+  it('the old universal "Beginner friendly" badge and boost are gone; the Edit switch is gone', () => {
+    for (const f of ['src/screens/GatheringsScreen.js', 'src/screens/GatheringDetailScreen.js', 'src/screens/EditGatheringScreen.js', 'src/services/gatherings.js']) {
+      const src = read(f);
+      expect([f, /Beginner friendly/.test(src)]).toEqual([f, false]);
+      expect([f, /\b(item|gathering)\.beginner_friendly\b/.test(src)]).toEqual([f, false]);
     }
+    expect(read('src/services/gatherings.js')).not.toMatch(/reasons\.push\('Beginner friendly'\)/);
   });
 });
 
@@ -73,20 +71,47 @@ describe('recognition and ranking', () => {
       expect([t, skillLevelsFromText(t)]).toEqual([t, []]);
     }
   });
+  it('explicit compatibility table (owner decision)', () => {
+    const fit = (asked, level) => skillFit({ skillLevel: level }, [asked]).delta;
+    const table = {
+      beginner: { beginner: 2, all_levels: 2, casual: 0, intermediate: 0, advanced: -1, competitive: -1 },
+      casual: { casual: 2, all_levels: 2, beginner: 0, intermediate: 0, advanced: 0, competitive: -1 },
+      intermediate: { intermediate: 2, all_levels: 2, beginner: 0, casual: 0, advanced: 0, competitive: 0 },
+      advanced: { advanced: 2, all_levels: 2, beginner: -1, casual: 0, intermediate: 0, competitive: 0 },
+      competitive: { competitive: 2, all_levels: 2, beginner: 0, casual: -1, intermediate: 0, advanced: 0 },
+      all_levels: { beginner: 2, casual: 2, intermediate: 2, advanced: 2, competitive: 2, all_levels: 2 },
+    };
+    for (const [asked, row] of Object.entries(table)) {
+      for (const [level, delta] of Object.entries(row)) expect([asked, level, fit(asked, level)]).toEqual([asked, level, delta]);
+      expect(fit(asked, undefined)).toBe(0);
+    }
+  });
   it('ranking only: fit up, clear mismatch down, unknown untouched, nothing removed', () => {
     const cands = [
       { id: 'b', skillLevel: 'beginner', score: 0 },
       { id: 'a', skillLevel: 'all_levels', score: 0 },
       { id: 'c', skillLevel: 'competitive', score: 0 },
-      { id: 'i', skillLevel: 'intermediate', score: 0 },
+      { id: 'k', skillLevel: 'casual', score: 0 },
       { id: 'u', score: 0 },
     ];
     const out = applySkillToCandidates(cands, ['beginner']);
-    expect(out.map((c) => [c.id, c.score])).toEqual([['b', 2], ['a', 2], ['c', -1], ['i', 0], ['u', 0]]);
+    expect(out.map((c) => [c.id, c.score])).toEqual([['b', 2], ['a', 2], ['c', -1], ['k', 0], ['u', 0]]);
     expect(out[4]).toBe(cands[4]);
+    expect(out).toHaveLength(5);
     expect(applySkillToCandidates(cands, [])).toBe(cands);
     expect(applySkillToCandidates(cands, ['competitive']).find((c) => c.id === 'c').subtitle).toBe('🎯 Competitive');
   });
+  it('only a HOST-DECLARED level is read: a title or description saying "beginner" declares nothing', () => {
+    const r = read('src/services/intentResolver.js');
+    expect(r.match(/skillLevel:\s*[^,\n]+/g)).toEqual(['skillLevel: gathering.skill_level ?? null']);
+    expect(applySkillToCandidates([{ id: 'x', title: 'Beginner pickleball', description: 'beginners welcome', score: 0 }], ['beginner'])[0].score).toBe(0);
+  });
+  it('scoped to typed requests: not in Home or Discover feeds', () => {
+    for (const f of ['src/screens/HomeScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/screens/GatheringsScreen.js', 'src/services/homeDashboard.js', 'src/services/homeRecommendations.js']) {
+      if (fs.existsSync(path.join(ROOT, f))) expect([f, /skillLevel|skill_level|applySkillToCandidates/.test(read(f))]).toEqual([f, false]);
+    }
+  });
+
 });
 
 describe('wiring', () => {

@@ -1,5 +1,4 @@
 import { practicalFacts } from '../utils/gatheringPractical';
-import { beginnerFriendlyShown } from '../constants/skillLevel';
 import { attendeeSummary } from '../utils/gatheringAttendeeDisplay';
 import { presentRecoverableError } from '../utils/recoverableError';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
@@ -780,7 +779,6 @@ export default function GatheringDetailScreen({ route, navigation }) {
                       </View>
                     );
                   })}
-                  {beginnerFriendlyShown(gathering) && <Text style={styles.beginnerText}>🔰 Beginner friendly</Text>}
                 </View>
               )}
 
