@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-na
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { priceChipLabel } from '../utils/experienceBudget';
+import { picksLengthLine } from '../utils/planTiming';
 import ExperiencePerkLine from './ExperiencePerkLine';
 import { createExperiencePlan, experienceStopFromItem } from '../services/plans';
 
@@ -16,6 +17,12 @@ export default function ExperienceComponentList({ experience, renderItem, naviga
   const [picked, setPicked] = useState({}); // componentKey -> stop
   const [creating, setCreating] = useState(false);
   const stops = experience.components.map((c) => picked[c.key]).filter(Boolean);
+  // The items behind the picks, for their usual total next to "Plan this night" (utils/planTiming.js).
+  const pickedItems = experience.components
+    .map((c) => c.items.find((item) => picked[c.key] && experienceStopFromItem(c, item)?.refId === picked[c.key].refId))
+    .filter(Boolean);
+  const picksLine = picksLengthLine(pickedItems, experience.timing?.budget ?? null);
+  const timingLines = [experience.timing?.line, experience.timing?.leftOutLine].filter(Boolean);
 
   function toggle(component, item) {
     const stop = experienceStopFromItem(component, item);
@@ -46,6 +53,9 @@ export default function ExperienceComponentList({ experience, renderItem, naviga
 
   return (
     <>
+      {timingLines.map((line) => (
+        <Text key={line} style={{ ...typography.caption, color: colors.textSecondary, marginBottom: spacing.xs }}>⏱️ {line}</Text>
+      ))}
       {experience.components.map((component) => (
         <View key={component.key} style={componentStyle ?? { marginBottom: spacing.sm }}>
           <Text style={labelStyle}>{component.label}</Text>
@@ -80,6 +90,9 @@ export default function ExperienceComponentList({ experience, renderItem, naviga
           })}
         </View>
       ))}
+      {stops.length >= 2 && picksLine ? (
+        <Text style={{ ...typography.caption, color: colors.textSecondary, marginBottom: spacing.xs }}>⏱️ {picksLine}</Text>
+      ) : null}
       {stops.length >= 2 && (
         <TouchableOpacity
           onPress={planIt}

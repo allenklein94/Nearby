@@ -62,6 +62,8 @@ import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitm
 import { formatsFromText, applyFormatToCandidates } from '../constants/activityFormat';
 import { skillLevelsFromText, applySkillToCandidates } from '../constants/skillLevel';
 import { timeBudgetFromText, applyTimeBudgetToCandidates, timeBudgetCaption } from '../constants/timeBudget';
+import { clockWindowFromText, applyClockWindowToCandidates, clockWindowCaption, windowSpan } from '../constants/clockWindow';
+import { fitExperienceToTime } from '../utils/planTiming';
 import { intensityFromText, effortFromText, applyIntensityToCandidates, applyEffortToCandidates, energiesWithoutIntensity } from '../constants/intensityEffort';
 import { spontaneityOf, isImmediate, applySpontaneityToCandidates, spontaneityCaption } from '../constants/spontaneity';
 import { getUserLocation } from './userLocation';
@@ -423,6 +425,9 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
       // itself -- read by assembleExperience() (experienceAssembly.js) to
       // present it as a single "one business has your whole night covered"
       // unit instead of competing for just one component slot.
+      // The posting's real room window (when the business has space), read by the clock-window pass ("before 3 PM").
+      windowStart: row.starts_at ?? null,
+      windowEnd: row.ends_at ?? null,
       bundleOccasion: row.bundle_occasion ?? null,
       bundleComponents: row.bundle_components ?? [],
       matchedAvailability: {
@@ -711,6 +716,9 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // does not; unknown lengths are untouched, nothing is removed.
   const timeBudget = timeBudgetFromText(rawText);
   deduped = applyTimeBudgetToCandidates(deduped, timeBudget);
+  // "before 3 PM" / "between 2 and 5 PM": a real start or a posting's real room window that fits lifts, a clear miss sinks.
+  const clockWindow = clockWindowFromText(rawText);
+  deduped = applyClockWindowToCandidates(deduped, clockWindow);
   deduped = applyEnergyToCandidates(deduped, energiesWithoutIntensity([...new Set([...(Array.isArray(energies) ? energies : []), ...energiesFromText(rawText)])], askedIntensity));
 
   // Commitment (item 45) and spontaneity (item 46): ranking only. An immediate ask implies a light commitment unless the person
@@ -747,7 +755,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   deduped.sort((a, b) => b.score - a.score);
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
-  const openEndedNote = [planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), askFacets.caption].filter(Boolean).join(' · ') || null;
+  const openEndedNote = [planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow), askFacets.caption].filter(Boolean).join(' · ') || null;
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,
@@ -758,7 +766,10 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // occasion, the occasion has no defined template, or no component found
   // genuine matching inventory; callers only ever render an Experience
   // section when this is truthy.
-  const experience = assembleExperience(occasion, deduped, { partyType, dateWindow, attributes, priceLevel, budgetMax, intentRecipe: recognizeCombination({ text: rawText, occasion, partyType, dateWindow, attributes })?.recipe ?? null });
+  // A multi-part plan is fitted into the stated time (or the span of "between 2 and 5 PM"): shorter options lead, trailing
+  // parts are left out while two remain, and the plan says its usual total (utils/planTiming.js).
+  const planBudget = timeBudget ?? windowSpan(clockWindow);
+  const experience = fitExperienceToTime(assembleExperience(occasion, deduped, { partyType, dateWindow, attributes, priceLevel, budgetMax, intentRecipe: recognizeCombination({ text: rawText, occasion, partyType, dateWindow, attributes })?.recipe ?? null }), planBudget);
 
   return { items: deduped.slice(0, RESULT_CAP), experience, openEndedNote };
 }

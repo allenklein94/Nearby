@@ -78,3 +78,11 @@ describe('wiring and scope', () => {
     expect(read('src/constants/timeBudget.js').replace(/^\s*\/\/.*$/gm, '')).not.toMatch(/fetch\(|supabase|functions\.invoke|anthropic/i);
   });
 });
+
+describe('business postings get a length from their declared tags (no owner-typed duration)', () => {
+  it('reads subcategory and secondary tags after a major category', () => {
+    expect(lengthOf({ category: 'food_drink', subcategory: 'Coffee' })).toEqual({ minutes: 45, declared: false });
+    expect(lengthOf({ category: 'entertainment_nightlife', categories: ['Mini Golf'] })).toEqual({ minutes: 90, declared: false });
+    expect(lengthOf({ category: 'food_drink' })).toBeNull();
+  });
+});

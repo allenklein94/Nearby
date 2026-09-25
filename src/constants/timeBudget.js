@@ -39,10 +39,12 @@ export function timeBudgetFromText(text) {
 }
 
 // A candidate's length: { minutes, declared } or null. `c` may carry { durationMinutes, category }.
+// A business posting's major category (e.g. food_drink) has no norm; its declared subcategory / secondary tags are read in order.
 export function lengthOf(c) {
   if (Number.isFinite(c?.durationMinutes) && c.durationMinutes >= 15) return { minutes: c.durationMinutes, declared: true };
-  const typical = c?.category ? TAG_TYPICAL_MINUTES[c.category] : null;
-  return typical ? { minutes: typical, declared: false } : null;
+  const tags = [c?.category, c?.subcategory, ...(Array.isArray(c?.categories) ? c.categories : [])].filter(Boolean);
+  const tag = tags.find((t) => TAG_TYPICAL_MINUTES[t]);
+  return tag ? { minutes: TAG_TYPICAL_MINUTES[tag], declared: false } : null;
 }
 
 export function lengthPhrase(len) {

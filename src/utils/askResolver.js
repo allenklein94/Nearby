@@ -27,6 +27,7 @@ import { formatsFromText } from '../constants/activityFormat';
 import { skillLevelsFromText } from '../constants/skillLevel';
 import { intensityFromText, effortFromText } from '../constants/intensityEffort';
 import { timeBudgetFromText } from '../constants/timeBudget';
+import { clockWindowFromText } from '../constants/clockWindow';
 
 // ---- time: explicit words only (the classifier's own buckets) ----
 export function dateWindowFromText(text) {
@@ -170,6 +171,7 @@ export function resolveAsk(text, ai = null) {
     effort: effortFromText(t),
     // Item 68: minutes the person said they have ("I only have an hour" = 60), or null. Never a start time.
     timeBudgetMinutes: timeBudgetFromText(t),
+    clockWindow: clockWindowFromText(t),
     commitment: commitmentAsk(t),
     spontaneity: spontaneityOf({ dateWindow, rawText: t }),
     sources,
