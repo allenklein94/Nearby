@@ -4,8 +4,8 @@ const path = require('path');
 const { assembleExperience } = require('../services/experienceAssembly');
 const { resolveAsk, toClassification } = require('./askResolver');
 const deterministicClassification = (t) => toClassification(resolveAsk(t));
-const { recipeForPlan, planAsk } = require('./planAsk');
-const { intentRecipeFor } = require('../constants/intentRoutes');
+const { planAsk } = require('./planAsk');
+const { recognizeCombination } = require('../constants/planCombinations');
 
 // Real supply for two different parts of a night, as resolveIntent candidates.
 const SUPPLY = [
@@ -20,7 +20,7 @@ function planFor(text, supply = SUPPLY) {
     c,
     experience: assembleExperience(c.occasion, supply, {
       partyType: c.partyType, dateWindow: c.dateWindow, attributes: [],
-      intentRecipe: intentRecipeFor(text) ?? recipeForPlan(text, { dateWindow: c.dateWindow }),
+      intentRecipe: recognizeCombination({ text, occasion: c.occasion, partyType: c.partyType, dateWindow: c.dateWindow })?.recipe ?? null,
     }),
   };
 }

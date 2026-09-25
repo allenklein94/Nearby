@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { planParts, planAsk, occasionFromAsk, recipeForPlan, planCaption } = require('./planAsk');
+const { planParts, planAsk, occasionFromAsk, planCaption } = require('./planAsk');
+const { recognizeCombination } = require('../constants/planCombinations');
+const recipeForPlan = (text, { dateWindow = null } = {}) => (planAsk(text) ? recognizeCombination({ text, dateWindow })?.recipe ?? null : null);
 const { resolveAsk, toClassification } = require('./askResolver');
 const deterministicClassification = (t) => toClassification(resolveAsk(t));
 const { experienceContextKey, CONTEXT_TEMPLATES, EXPERIENCE_TEMPLATES } = require('../constants/experienceTemplates');
@@ -50,7 +52,7 @@ describe('resolver wiring', () => {
     expect(src).toMatch(/if \(multiPart\) category = null;/);
     expect(src).toMatch(/occasion = occasion \?\? occasionFromAsk/);
     expect(src).toMatch(/planCaption\(rawText, \{ occasion, dateWindow \}\)/);
-    expect(src).toMatch(/intentRecipeFor\(rawText\) \?\? recipeForPlan\(rawText, \{ dateWindow \}\)/);
+    expect(src).toMatch(/intentRecipe: recognizeCombination\(\{ text: rawText, occasion, partyType, dateWindow, attributes \}\)\?\.recipe \?\? null/);
   });
   it('never uses AI or the network', () => {
     const mod = fs.readFileSync(path.join(__dirname, 'planAsk.js'), 'utf8').replace(/^\s*\/\/.*$/gm, '');

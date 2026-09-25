@@ -320,7 +320,7 @@ describe('budget-aware assembled night (cheap date tonight)', () => {
 });
 
 describe('date night "Something to Do" includes active and see-something dates', () => {
-  it('a bowling gathering and a museum posting can fill it; a birthday celebration is unchanged', () => {
+  it('a bowling gathering and a museum posting can fill it; a birthday gains the same activity part (item 64)', () => {
     const cands = [
       gatheringCandidate({ id: 'bowl', category: 'Bowling' }),
       businessCandidate({ id: 'dinner', category: 'Restaurants' }),
@@ -329,6 +329,7 @@ describe('date night "Something to Do" includes active and see-something dates',
     const exp = assembleExperience('date_night', cands);
     expect(exp.components.find((c) => c.key === 'something_to_do').items.map((i) => i.id).sort()).toEqual(['bowl', 'museum']);
     const birthday = assembleExperience('birthday', cands);
-    expect(birthday.components.map((c) => c.key)).toEqual(['dinner']);
+    expect(birthday.components.map((c) => c.key)).toEqual(['dinner', 'something_to_do']);
+    expect(assembleExperience('celebration', cands).components.map((c) => c.key)).toEqual(['dinner']);
   });
 });

@@ -24,6 +24,13 @@ export const INTENT_ROUTES = [
   { key: 'join_event', family: 'event', phrases: [/\bjoin\s+(an?\s+|the\s+)?(event|gathering|meetup|meet-up)\b/i], route: { surface: ROUTE_SURFACES.FIND_EVENTS } },
   { key: 'find_event', family: 'event', phrases: [/\b(find|see|browse|what'?s)\s+(an?\s+|any\s+)?(events?|gatherings?|meetups?|happening)\b/i, /\bevents?\s+(near|nearby|around)\b/i], route: { surface: ROUTE_SURFACES.FIND_EVENTS } },
 
+  // Plan combinations (owner item 64): a named outing is a multi-part recipe, recognised before any single-purpose intent
+  // below so "a business lunch" or "girls night" is a combined plan, not just "eat" or "nightlife".
+  { key: 'night_out', family: 'plan', phrases: [/\bnight\s+out\b/i, /\b(girls|guys|ladies)['’]?\s+night\b/i], route: recipe('night_out') },
+  { key: 'weekend_plans', family: 'plan', phrases: [/\bweekend\s+(plans?|outing|adventure)\b/i, /\bfun\s+weekend\b/i, /\bmake\s+a\s+weekend\s+of\s+it\b/i], route: recipe('weekend_out') },
+  { key: 'beach_day', family: 'plan', phrases: [/\bbeach\s+(day|trip)\b/i, /\bday\s+at\s+the\s+beach\b/i], route: recipe('beach_day') },
+  { key: 'business_meeting', family: 'plan', phrases: [/\bbusiness\s+(meeting|lunch|dinner|meal)\b/i, /\bclient\s+(lunch|dinner|meeting)\b/i, /\bwork\s+(lunch|dinner)\b/i, /\bteam\s+lunch\b/i], route: recipe('business_meeting') },
+
   // Service (business request flow; never routed into clinical/health categories)
   { key: 'fix_something', family: 'service', phrases: [/\b(fix|repair)\b/i, /\b(plumber|electrician|handyman|hvac)\b/i], route: request() },
   { key: 'hire_someone', family: 'service', phrases: [/\b(hire|book)\s+(a\s+|an\s+|someone|somebody)/i, /\bneed\s+(a|an)\s+(cleaner|painter|mover|photographer|dj|caterer)\b/i], route: request() },

@@ -50,12 +50,7 @@ export function occasionFromAsk(text, { partyType = null, dateWindow = null } = 
   return null;
 }
 
-// Which existing context recipe a multi-part ask with no party-specific recipe should use: the evening "Make it a night"
-// recipe for tonight, the "Make it a day out" one otherwise. Only ever an EXISTING recipe key.
-export function recipeForPlan(text, { dateWindow = null } = {}) {
-  if (!planAsk(text)) return null;
-  return dateWindow === 'tonight' || EVENING.test(String(text ?? '')) ? 'date_night' : 'friends_out';
-}
+// Which recipe a multi-part ask uses is decided by constants/planCombinations.js (recognizeCombination), the one table.
 
 const OCCASION_LABEL = { date_night: 'a date night', first_date: 'a first date', anniversary: 'an anniversary', birthday: 'a birthday' };
 const WHEN_LABEL = { tonight: 'tonight', today: 'today', tomorrow: 'tomorrow', weekend: 'this weekend' };

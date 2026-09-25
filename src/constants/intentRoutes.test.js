@@ -5,6 +5,7 @@ import { openEndedAskGroups } from '../utils/openEndedAsk';
 
 const SAMPLES = {
   create_event: 'I want to host an event', join_event: 'join a meetup', find_event: 'find events near me',
+  night_out: 'a night out tonight', weekend_plans: 'fun weekend plans', beach_day: 'beach day tomorrow', business_meeting: 'client lunch tomorrow',
   fix_something: 'fix my sink', hire_someone: 'hire a photographer', find_appointment: 'find an appointment', get_something_done: 'get something done',
   meet_new_people: 'meet new people', meet_friends: 'catch up with my friends', hang_out: 'hang out', group_activity: 'a group activity', make_plans: 'make plans',
   see_live_music: 'see live music', watch_movie: 'watch a movie', comedy: 'some comedy', nightlife: 'nightlife', go_out_tonight: 'go out',

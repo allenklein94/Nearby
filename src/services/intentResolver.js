@@ -63,8 +63,8 @@ import { spontaneityOf, isImmediate, applySpontaneityToCandidates, spontaneityCa
 import { getUserLocation } from './userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
 import { attendeeTotal } from '../utils/gatheringFullness';
-import { intentRecipeFor } from '../constants/intentRoutes';
-import { planAsk, occasionFromAsk, recipeForPlan, planCaption } from '../utils/planAsk';
+import { planAsk, occasionFromAsk, planCaption } from '../utils/planAsk';
+import { recognizeCombination } from '../constants/planCombinations';
 import { openEndedAskGroups, applyOpenEndedAsk, openEndedCaption } from '../utils/openEndedAsk';
 
 const RESULT_CAP = 4;
@@ -738,7 +738,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // occasion, the occasion has no defined template, or no component found
   // genuine matching inventory; callers only ever render an Experience
   // section when this is truthy.
-  const experience = assembleExperience(occasion, deduped, { partyType, dateWindow, attributes, priceLevel, budgetMax, intentRecipe: intentRecipeFor(rawText) ?? recipeForPlan(rawText, { dateWindow }) });
+  const experience = assembleExperience(occasion, deduped, { partyType, dateWindow, attributes, priceLevel, budgetMax, intentRecipe: recognizeCombination({ text: rawText, occasion, partyType, dateWindow, attributes })?.recipe ?? null });
 
   return { items: deduped.slice(0, RESULT_CAP), experience, openEndedNote };
 }

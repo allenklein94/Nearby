@@ -22,6 +22,7 @@ import { spontaneityOf } from '../constants/spontaneity';
 import { tagsForPhrase } from '../constants/categorySynonyms';
 import { groupFromText, whenPresetFromText, partySizeFromText, titleFromText, inferredSummary } from './gatheringInference';
 import { planAsk, occasionFromAsk } from './planAsk';
+import { recognizeCombination } from '../constants/planCombinations';
 
 // ---- time: explicit words only (the classifier's own buckets) ----
 export function dateWindowFromText(text) {
@@ -152,6 +153,8 @@ export function resolveAsk(text, ai = null) {
     time: { dateWindow, whenPreset },
     budget: { priceLevel, budgetMax },
     plan,
+    // Item 64: the named multi-part combination this ask is (Date Night, Night Out, Beach Day...), or null.
+    combination: recognizeCombination({ text: t, occasion, partyType, dateWindow, attributes })?.key ?? null,
     facets: parseAskFacets(t),
     energies: energiesFromText(t),
     commitment: commitmentAsk(t),

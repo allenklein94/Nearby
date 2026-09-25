@@ -88,10 +88,33 @@ const NETWORKING_COMPONENTS = [
   { key: 'meet_up', label: '☕ Somewhere to Talk', categories: NETWORKING_MEET_CATEGORIES },
 ];
 
+// Owner item 64 (plan combinations): Birthday = Food + Entertainment + Activity (+ the sweet treat it already had). Only the
+// birthday template gains the activity part; the other celebration-shaped occasions are unchanged. 'something_to_do' is an
+// existing bundle component key, so business bundles are unaffected.
+const BIRTHDAY_COMPONENTS = [
+  CELEBRATION_COMPONENTS[0],
+  CELEBRATION_COMPONENTS[1],
+  { key: 'something_to_do', label: '🎳 Something to Do', categories: DATE_ACTIVITY_CATEGORIES },
+  CELEBRATION_COMPONENTS[2],
+];
+
+// Owner item 64: the remaining combinations, as context recipes (no occasion needed, still only in a planning window the
+// person gave, and a part with no real nearby supply is dropped). Real leaf tags only, disjoint within each recipe.
+const NIGHT_OUT_FOOD = ['Restaurants', 'Foodie', 'Fine Dining', 'Food Trucks'];
+// "Shopping" in a weekend is LOCAL shopping as an outing (markets, pop-ups, boutiques), never a general retail/product feed
+// (the creep guard: Nearby has no product supply model).
+const WEEKEND_SHOPPING = ['Farmers Markets', 'Markets', 'Pop-Ups', 'Boutiques', 'Thrift & Vintage', 'Local Shopping'];
+const WEEKEND_ACTIVITY = [...FRIENDS_ACTIVITY_CATEGORIES, 'Hiking', 'Parks', 'Museums', 'Sightseeing'];
+const BEACH_CATEGORIES = ['Beaches', 'Surfing', 'Snorkeling', 'Diving', 'Paddleboarding', 'Water Sports'];
+const BEACH_FOOD = ['Food Trucks', 'Restaurants', 'Foodie', 'Dessert & Ice Cream'];
+const BEACH_ACTIVITY = ['Kayaking', 'Boat Tours', 'Volleyball', 'Fishing', 'Boating', 'Picnics'];
+const BUSINESS_FOOD = ['Restaurants', 'Fine Dining', 'Coffee', 'Brunch'];
+const BUSINESS_PROFESSIONAL = ['Networking', 'Coworking', 'Conferences', 'Professional Events', 'Career Events', 'Entrepreneurship'];
+
 export const EXPERIENCE_TEMPLATES = {
   date_night: { title: '✨ Your Date Night', components: DATE_NIGHT_COMPONENTS },
   anniversary: { title: '✨ Your Anniversary Night', components: DATE_NIGHT_COMPONENTS },
-  birthday: { title: '✨ Make It a Birthday', components: CELEBRATION_COMPONENTS },
+  birthday: { title: '✨ Make It a Birthday', components: BIRTHDAY_COMPONENTS },
   celebration: { title: '✨ Time to Celebrate', components: CELEBRATION_COMPONENTS },
   family_gathering: { title: '✨ Family Time', components: FAMILY_GATHERING_COMPONENTS },
   // A first date / engagement is a date-shaped night; a graduation / promotion / new job / achievement / bachelor(ette) is a
@@ -129,6 +152,37 @@ export const CONTEXT_TEMPLATES = {
     components: [
       { key: 'outdoor_fun', label: '🌳 Get Out and Play', categories: FAMILY_OUTDOOR_CATEGORIES },
       { key: 'food', label: '🍽️ Food', categories: FAMILY_FOOD_CATEGORIES },
+    ],
+  },
+  night_out: {
+    title: '✨ Make it a night out',
+    components: [
+      { key: 'food', label: '🍽️ Dinner', categories: NIGHT_OUT_FOOD },
+      { key: 'drinks', label: '🍸 Drinks', categories: FRIENDS_DRINKS_CATEGORIES },
+      { key: 'entertainment', label: '🎵 Entertainment', categories: NIGHT_OUT_CATEGORIES },
+    ],
+  },
+  weekend_out: {
+    title: '✨ Make a weekend of it',
+    components: [
+      { key: 'activity', label: '🎯 Something to Do', categories: WEEKEND_ACTIVITY },
+      { key: 'food', label: '🍽️ Food', categories: FRIENDS_FOOD_CATEGORIES },
+      { key: 'shopping', label: '🛍️ Browse Local', categories: WEEKEND_SHOPPING },
+    ],
+  },
+  beach_day: {
+    title: '✨ Make it a beach day',
+    components: [
+      { key: 'beach', label: '🏖️ The Beach', categories: BEACH_CATEGORIES },
+      { key: 'food', label: '🍽️ Food', categories: BEACH_FOOD },
+      { key: 'activity', label: '🛶 Something to Do', categories: BEACH_ACTIVITY },
+    ],
+  },
+  business_meeting: {
+    title: '✨ Plan the meeting',
+    components: [
+      { key: 'food', label: '🍽️ Somewhere to Eat', categories: BUSINESS_FOOD },
+      { key: 'professional', label: '💼 Professional', categories: BUSINESS_PROFESSIONAL },
     ],
   },
 };
