@@ -26,6 +26,7 @@ import { recognizeCombination } from '../constants/planCombinations';
 import { formatsFromText } from '../constants/activityFormat';
 import { skillLevelsFromText } from '../constants/skillLevel';
 import { intensityFromText, effortFromText } from '../constants/intensityEffort';
+import { timeBudgetFromText } from '../constants/timeBudget';
 
 // ---- time: explicit words only (the classifier's own buckets) ----
 export function dateWindowFromText(text) {
@@ -167,6 +168,8 @@ export function resolveAsk(text, ai = null) {
     // Intensity / effort, only when an activity word sits next to the qualifier ('easy hike', 'high intensity workout').
     intensity: intensityFromText(t),
     effort: effortFromText(t),
+    // Item 68: minutes the person said they have ("I only have an hour" = 60), or null. Never a start time.
+    timeBudgetMinutes: timeBudgetFromText(t),
     commitment: commitmentAsk(t),
     spontaneity: spontaneityOf({ dateWindow, rawText: t }),
     sources,

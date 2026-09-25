@@ -61,6 +61,7 @@ import { parseAskFacets, applyAskFacets, partnerPartyType, attributesFromAsk } f
 import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitmentLevel';
 import { formatsFromText, applyFormatToCandidates } from '../constants/activityFormat';
 import { skillLevelsFromText, applySkillToCandidates } from '../constants/skillLevel';
+import { timeBudgetFromText, applyTimeBudgetToCandidates, timeBudgetCaption } from '../constants/timeBudget';
 import { intensityFromText, effortFromText, applyIntensityToCandidates, applyEffortToCandidates, energiesWithoutIntensity } from '../constants/intensityEffort';
 import { spontaneityOf, isImmediate, applySpontaneityToCandidates, spontaneityCaption } from '../constants/spontaneity';
 import { getUserLocation } from './userLocation';
@@ -706,6 +707,10 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const askedIntensity = intensityFromText(rawText);
   deduped = applyIntensityToCandidates(deduped, askedIntensity);
   deduped = applyEffortToCandidates(deduped, effortFromText(rawText));
+  // Item 68: "I only have an hour" lifts what fits (declared length, else the category's typical one) and sinks what clearly
+  // does not; unknown lengths are untouched, nothing is removed.
+  const timeBudget = timeBudgetFromText(rawText);
+  deduped = applyTimeBudgetToCandidates(deduped, timeBudget);
   deduped = applyEnergyToCandidates(deduped, energiesWithoutIntensity([...new Set([...(Array.isArray(energies) ? energies : []), ...energiesFromText(rawText)])], askedIntensity));
 
   // Commitment (item 45) and spontaneity (item 46): ranking only. An immediate ask implies a light commitment unless the person
@@ -742,7 +747,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   deduped.sort((a, b) => b.score - a.score);
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
-  const openEndedNote = [planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), askFacets.caption].filter(Boolean).join(' · ') || null;
+  const openEndedNote = [planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), askFacets.caption].filter(Boolean).join(' · ') || null;
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,
