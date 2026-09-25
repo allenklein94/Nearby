@@ -16,14 +16,13 @@ import { canonicalGroupForTag } from '../constants/categoryMapping';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { activitiesFromText, ACTIVITIES } from '../constants/activityLayer';
 import { partnerPartyType } from '../constants/askFacets';
-import { planAsk, occasionFromAsk } from './planAsk';
 
 // Group from the person's own words. First match wins, most specific first; no match = null (not asked for here).
 const GROUP_RULES = [
   ['date', null], // partnerPartyType (girlfriend, wife, partner...) handled below
-  ['family', /\b(my\s+)?(kids?|children|family|son|daughter|toddlers?)\b/i],
-  ['coworkers', /\b(co-?workers?|colleagues?|work\s+friends|the\s+team|my\s+team)\b/i],
-  ['new_people', /\b(meet|meeting)\s+(new\s+)?people\b|\bnew\s+people\b/i],
+  ['family', /\b(my\s+)?(kids?|children|family|son|daughter|toddlers?|parents|mom|dad)\b/i],
+  ['coworkers', /\b(co-?workers?|colleagues?|work\s+friends|the\s+team|my\s+team|the\s+office)\b/i],
+  ['new_people', /\b(meet|meeting)\s+(new\s+)?people\b|\bnew\s+people\b|\bmake\s+new\s+friends\b|\bpeople\s+I\s+don'?t\s+know\b/i],
   ['groups', /\b(big|large)\s+group\b/i],
   ['friends', /\b(friends?|buddies|buddy|pals?|the\s+crew|my\s+crew|the\s+guys|the\s+girls)\b/i],
   ['solo', /\b(by\s+myself|alone|solo|just\s+me)\b/i],
@@ -106,60 +105,5 @@ export function inferredSummary(inf) {
   return rows;
 }
 
-// Merge the AI classifier's answer (when it ran) with the rules. The AI keeps what it is already trusted for (intent,
-// title, category, party size); the rules fill only what it left empty, and time always comes from the rules (the person's
-// own words), never from the AI's dateWindow.
-export function mergeInference(classifyResult, inferred) {
-  const r = classifyResult ?? {};
-  const inf = inferred ?? {};
-  const tag = r.category && canonicalGroupForTag(r.category) ? r.category : inf.tag ?? null;
-  const categoryKey = tag ? canonicalGroupForTag(tag) : null;
-  const partyType = r.partyType ?? inf.partyType ?? null;
-  return {
-    tag,
-    categoryKey,
-    categoryLabel: CATEGORY_GROUPS.find((g) => g.key === categoryKey)?.label ?? null,
-    partyType,
-    whenPreset: inf.whenPreset ?? null,
-    activities: inf.activities ?? [],
-    partySize: r.partySize ?? inf.partySize ?? null,
-    title: r.title || (tag === inf.tag ? inf.title : tag) || null,
-  };
-}
-
-// Navigation params for CreateGathering from a merged inference. `inferredFromText` lets the screen skip the What step
-// when title + a real category are both known (the host can still go back to it) and show the summary.
-export function createParamsFromInference(inf, typedText) {
-  const known = !!(inf?.title && inf?.tag);
-  return {
-    quickStartTitle: inf?.title || typedText || null,
-    quickStartCategory: inf?.tag ?? null,
-    quickStartPartySize: inf?.partySize ?? null,
-    quickStartPartyType: inf?.partyType ?? null,
-    ...(inf?.whenPreset ? { quickStartWhenPreset: inf.whenPreset } : {}),
-    inferredSummary: inferredSummary(inf),
-    inferredFromText: known,
-  };
-}
-
-// A classification built from the rules alone, used only when the AI classifier SERVICE is down (not on a refusal or a
-// sign-in problem). Intent is 'gathering' only when a real category was found; otherwise 'unclear' (each caller already
-// has its honest fallback for that).
-export function deterministicClassification(text) {
-  const inf = inferGatheringFromText(text);
-  const DATE_WINDOW = { now: 'now', tonight: 'tonight', tomorrow: 'tomorrow' };
-  const dateWindow = DATE_WINDOW[inf?.whenPreset] ?? null;
-  // Item 63: a multi-part ask ("dinner and something to do after") is one plan across categories, never one category.
-  const plan = planAsk(text);
-  return {
-    intent: inf?.tag || plan ? 'gathering' : 'unclear',
-    title: inf?.title ?? null,
-    category: plan ? null : inf?.tag ?? null,
-    occasion: occasionFromAsk(text, { partyType: inf?.partyType ?? null, dateWindow }),
-    partyType: inf?.partyType ?? null,
-    partySize: inf?.partySize ?? null,
-    dateWindow,
-    attributes: [],
-    deterministic: true,
-  };
-}
+// The merged/structured result and the no-AI classification now live in utils/askResolver.js (resolveAsk), shared by every
+// entry point; this file keeps the per-layer word rules it reads.

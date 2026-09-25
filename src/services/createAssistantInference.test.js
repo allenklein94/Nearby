@@ -70,7 +70,7 @@ describe('AI failure -> deterministic fallback', () => {
 describe('AI success -> AI wins, rules fill only the gaps', () => {
   it('keeps AI title/category/headcount; adds Who and Tonight from the words', () => {
     const n = nav();
-    routeClassifiedIntentToCreation(n, { intent: 'gathering', title: 'Latte meetup', category: 'Coffee', partySize: 5, dateWindow: 'weekend' }, 'coffee tonight with some friends');
+    routeClassifiedIntentToCreation(n, { intent: 'gathering', title: 'Latte meetup', category: 'Coffee', partySize: 5, dateWindow: 'weekend' }, 'coffee tonight with some friends, five of us');
     expect(n.calls[0].params).toMatchObject({
       quickStartTitle: 'Latte meetup', quickStartCategory: 'Coffee', quickStartPartySize: 5,
       quickStartPartyType: 'friends', quickStartWhenPreset: 'tonight',

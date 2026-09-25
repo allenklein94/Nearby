@@ -2,7 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 const { assembleExperience } = require('../services/experienceAssembly');
-const { deterministicClassification } = require('./gatheringInference');
+const { resolveAsk, toClassification } = require('./askResolver');
+const deterministicClassification = (t) => toClassification(resolveAsk(t));
 const { recipeForPlan, planAsk } = require('./planAsk');
 const { intentRecipeFor } = require('../constants/intentRoutes');
 

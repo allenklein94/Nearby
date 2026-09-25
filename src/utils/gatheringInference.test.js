@@ -2,8 +2,11 @@ const fs = require('fs');
 const path = require('path');
 const {
   inferGatheringFromText, groupFromText, whenPresetFromText, partySizeFromText, titleFromText,
-  inferredSummary, mergeInference, createParamsFromInference, deterministicClassification,
+  inferredSummary,
 } = require('./gatheringInference');
+const { resolveAsk, toClassification, createParamsFromAsk } = require('./askResolver');
+const deterministicClassification = (t) => toClassification(resolveAsk(t));
+const createParamsFromInference = (_inf, t) => createParamsFromAsk(resolveAsk(t), t);
 const { canSkipWhatStep, startAfterWhatStep } = require('./gatheringStructure');
 
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
@@ -49,29 +52,26 @@ describe('each layer only from the person\'s own words', () => {
     const inf = inferGatheringFromText('something with coworkers tomorrow');
     expect(inf.tag).toBeNull();
     expect(inf.title).toBeNull();
-    expect(createParamsFromInference(inf, 'something with coworkers tomorrow').inferredFromText).toBe(false);
+    expect(createParamsFromInference(null, 'something with coworkers tomorrow').inferredFromText).toBe(false);
   });
   it('never infers a business-only (clinical) tag for a gathering', () => {
     expect(inferGatheringFromText('dentist visit').tag).not.toBe('Dental');
   });
 });
 
-describe('merging with the AI classifier', () => {
-  it('AI keeps title/category/size; rules fill the gaps; time never comes from the AI dateWindow', () => {
-    const m = mergeInference(
-      { intent: 'gathering', title: 'Coffee catch-up', category: 'Coffee', partySize: 3, dateWindow: 'weekend' },
-      inferGatheringFromText('coffee with some friends'),
-    );
-    expect(m).toMatchObject({ title: 'Coffee catch-up', tag: 'Coffee', partySize: 3, partyType: 'friends', whenPreset: null });
+describe('merging with the AI classifier (resolveAsk)', () => {
+  it('AI keeps title/category/stated size; rules fill the gaps; time never comes from the AI dateWindow', () => {
+    const r = resolveAsk('coffee with some friends, five of us', { intent: 'gathering', title: 'Coffee catch-up', category: 'Coffee', partySize: 5, dateWindow: 'weekend' });
+    expect(r).toMatchObject({ title: 'Coffee catch-up', subcategory: 'Coffee', group: { partyType: 'friends', partySize: 5 }, time: { dateWindow: null, whenPreset: null } });
   });
   it('an AI category that is not a real consumer tag falls back to the rules', () => {
-    expect(mergeInference({ category: 'Nonsense' }, inferGatheringFromText('coffee')).tag).toBe('Coffee');
+    expect(resolveAsk('coffee', { category: 'Nonsense' }).subcategory).toBe('Coffee');
   });
 });
 
 describe('Create flow: ask only what is missing', () => {
   it('title + category known -> start after What (still reachable), When is never skipped', () => {
-    const params = createParamsFromInference(inferGatheringFromText('Coffee tonight with some friends'), 'x');
+    const params = createParamsFromInference(null, 'Coffee tonight with some friends');
     expect(params).toMatchObject({ quickStartCategory: 'Coffee', quickStartPartyType: 'friends', quickStartWhenPreset: 'tonight', inferredFromText: true });
     expect(startAfterWhatStep(params)).toBe(true);
     expect(canSkipWhatStep(params)).toBe(false);
@@ -83,7 +83,7 @@ describe('Create flow: ask only what is missing', () => {
     expect(screen).toMatch(/stepKey === 'when' && \(!whenPreset/);
   });
   it('does not ask for energy, commitment, occasion, activity or attributes at creation', () => {
-    const params = createParamsFromInference(inferGatheringFromText('Coffee tonight with some friends'), 'x');
+    const params = createParamsFromInference(null, 'Coffee tonight with some friends');
     expect(Object.keys(params).sort()).toEqual([
       'inferredFromText', 'inferredSummary', 'quickStartCategory', 'quickStartPartySize', 'quickStartPartyType', 'quickStartTitle', 'quickStartWhenPreset',
     ]);
@@ -99,6 +99,7 @@ describe('works without the AI', () => {
   });
   it('the classifier falls back only on a service failure, never on a 4xx', () => {
     const src = read('services/createAssistant.js');
+    expect(src).toMatch(/const deterministicClassification = \(text\) => toClassification\(resolveAsk\(text\)\);/);
     expect(src).toMatch(/catch \(_e\) \{\s*return deterministicClassification\(text\);/);
     expect(src).toMatch(/response\.status >= 500\) return deterministicClassification\(text\)/);
     expect(src).not.toMatch(/status >= 400\) return deterministic/);

@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const { planParts, planAsk, occasionFromAsk, recipeForPlan, planCaption } = require('./planAsk');
-const { deterministicClassification } = require('./gatheringInference');
+const { resolveAsk, toClassification } = require('./askResolver');
+const deterministicClassification = (t) => toClassification(resolveAsk(t));
 const { experienceContextKey, CONTEXT_TEMPLATES, EXPERIENCE_TEMPLATES } = require('../constants/experienceTemplates');
 
 const OWNER = 'I want something fun with my wife tonight, maybe dinner and something to do after.';

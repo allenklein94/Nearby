@@ -14,10 +14,9 @@ describe('the closed loop, end to end (item 85)', () => {
   });
   test('the intent hand-off carries the headcount and the screen tells the person it is a suggestion', () => {
     // Item 61: the hand-off goes through the shared inference merge, which keeps the classifier's headcount.
-    expect(read('../services/createAssistant.js')).toContain('createParamsFromInference(mergeInference(result');
-    const inference = read('./gatheringInference.js');
-    expect(inference).toContain('partySize: r.partySize ?? inf.partySize');
-    expect(inference).toContain('quickStartPartySize: inf?.partySize');
+    expect(read('../services/createAssistant.js')).toContain('createParamsFromAsk(result.structured ?? resolveAsk(typedText, result)');
+    const resolver = read('./askResolver.js');
+    expect(resolver).toContain('quickStartPartySize: r.group.partySize');
     const screen = read('../screens/CreateGatheringScreen.js');
     expect(screen).toContain('Planning for {suggestedPartySize}?');
     expect(screen).toContain('Change it any time');

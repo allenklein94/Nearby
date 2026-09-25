@@ -1,6 +1,8 @@
 import { supabase, functionUrl } from './supabase';
 import { detectIntentRoute, navigateIntentRoute } from '../constants/intentRoutes';
-import { inferGatheringFromText, mergeInference, createParamsFromInference, deterministicClassification } from '../utils/gatheringInference';
+import { resolveAsk, toClassification, createParamsFromAsk } from '../utils/askResolver';
+
+const deterministicClassification = (text) => toClassification(resolveAsk(text));
 
 // The Create Assistant -- a free, unbranded natural-language box on
 // CreateHubScreen that classifies what the user's typing into an intent
@@ -47,7 +49,8 @@ export async function classifyCreateRequest(text) {
   if (!response.ok) {
     throw new Error(result?.error || "Couldn't process that right now.");
   }
-  return result;
+  // One structured understanding for every consumer: the AI enhances, the words decide the facts (utils/askResolver.js).
+  return toClassification(resolveAsk(text, result));
 }
 
 // Routes a classifyCreateRequest() result to its matching creation screen,
@@ -78,14 +81,14 @@ export function routeClassifiedIntentToCreation(navigation, result, typedText) {
   if (result.intent !== 'community' && result.intent !== 'business_partner' && navigateIntentRoute(navigation, detectIntentRoute(typedText), typedText)) return;
   if (result.intent === 'gathering') {
     // Item 61: infer what the words say (category, what, who, when, activity) and only ask for the rest.
-    navigation.navigate('CreateGathering', createParamsFromInference(mergeInference(result, inferGatheringFromText(typedText)), typedText));
+    navigation.navigate('CreateGathering', createParamsFromAsk(result.structured ?? resolveAsk(typedText, result), typedText));
   } else if (result.intent === 'community') {
     navigation.navigate('CreateCommunity', { quickStartTitle: result.title, quickStartCategory: result.category });
   } else if (result.intent === 'business_partner') {
     navigation.navigate('RequestBusinessPartner', { initialBusinessQuery: result.businessName ?? '' });
   } else {
     // Still the person's own words as the title; the rules add whatever else they can read (never a category they did not say).
-    const inf = inferGatheringFromText(typedText);
-    navigation.navigate('CreateGathering', { ...createParamsFromInference(inf, typedText), quickStartTitle: inf?.title || typedText });
+    const r = result.structured ?? resolveAsk(typedText, result);
+    navigation.navigate('CreateGathering', { ...createParamsFromAsk(r, typedText), quickStartTitle: r.title || typedText });
   }
 }
