@@ -54,7 +54,7 @@ const WIDE_TIER_MAX_MILES = 15;
 // unknown, never a guessed value" convention. Added here (the one shared
 // select list every gathering-fetching function already reads from) so
 // every caller starts returning them for free, no per-call-site change.
-const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity, ask_local_businesses, price_level, party_type, show_group_insights, requires_approval, host_notifications, allow_attendee_invites, discoverable, equipment_provided, duration_minutes, genre, format, skill_level, features, suited_age_min, suited_age_max';
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity, ask_local_businesses, price_level, party_type, show_group_insights, requires_approval, host_notifications, allow_attendee_invites, discoverable, equipment_provided, duration_minutes, genre, format, skill_level, effort_level, features, suited_age_min, suited_age_max';
 
 // ask_local_businesses only ever stores the host's real consent/intent at
 // creation time -- it does NOT itself create a business_requests row. A
@@ -68,7 +68,7 @@ const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, sc
 // exists, from GatheringDetailScreen's own "Ready to see what's
 // available?" banner (or the existing manual "Ask Local Businesses" link)
 // -- see submitBusinessRequestForGathering() in businessFulfillment.js.
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null, showGroupInsights = true, requiresApproval = false, allowAttendeeInvites = true, hostNotifications = true, discoverable = true, equipmentProvided = null, durationMinutes = null, genre = null, format = null, skillLevel = null, features = [], suitedAgeMin = null, suitedAgeMax = null }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null, showGroupInsights = true, requiresApproval = false, allowAttendeeInvites = true, hostNotifications = true, discoverable = true, equipmentProvided = null, durationMinutes = null, genre = null, format = null, skillLevel = null, effortLevel = null, features = [], suitedAgeMin = null, suitedAgeMax = null }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -120,6 +120,7 @@ export async function createGathering({ title, description, interestTag, schedul
       genre: genre ?? null,
       format: format ?? null,
       skill_level: skillLevel ?? null,
+      effort_level: effortLevel ?? null,
     })
     .select()
     .single();
@@ -393,7 +394,7 @@ export async function getMyGatherings() {
 
   const { data, error } = await supabase
     .from('gatherings')
-    .select('id, title, description, interest_tag, scheduled_at, show_on_map, hosting_partner_id, energy_level, conversation_level, group_size_feel, beginner_friendly, skill_level, timeline_steps, cover_photo_path, interested:gathering_interest(id, user_id, status, profiles(display_name, photo_url))')
+    .select('id, title, description, interest_tag, scheduled_at, show_on_map, hosting_partner_id, energy_level, conversation_level, group_size_feel, beginner_friendly, skill_level, effort_level, timeline_steps, cover_photo_path, interested:gathering_interest(id, user_id, status, profiles(display_name, photo_url))')
     .eq('host_id', userId)
     .order('scheduled_at', { ascending: true });
 
@@ -510,7 +511,7 @@ export async function getMyAttendingGatherings() {
 
   const { data, error } = await supabase
     .from('gathering_interest')
-    .select('id, status, gatherings(id, title, description, interest_tag, scheduled_at, show_on_map, host_id, hosting_partner_id, energy_level, conversation_level, group_size_feel, beginner_friendly, skill_level, timeline_steps, cover_photo_path, host:profiles!gatherings_host_id_fkey(display_name, photo_url))')
+    .select('id, status, gatherings(id, title, description, interest_tag, scheduled_at, show_on_map, host_id, hosting_partner_id, energy_level, conversation_level, group_size_feel, beginner_friendly, skill_level, effort_level, timeline_steps, cover_photo_path, host:profiles!gatherings_host_id_fkey(display_name, photo_url))')
     .eq('user_id', userId)
     .eq('status', 'approved')
     .order('id', { ascending: false });
@@ -810,7 +811,7 @@ export async function setGatheringCapacity(gatheringId, capacity) {
   return data;
 }
 
-export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps, showGroupInsights, requiresApproval, askLocalBusinesses, hostNotifications, allowAttendeeInvites, discoverable, equipmentProvided, durationMinutes, genre, format, skillLevel, features, suitedAgeMin, suitedAgeMax }) {
+export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps, showGroupInsights, requiresApproval, askLocalBusinesses, hostNotifications, allowAttendeeInvites, discoverable, equipmentProvided, durationMinutes, genre, format, skillLevel, effortLevel, features, suitedAgeMin, suitedAgeMax }) {
   const { error } = await supabase
     .from('gatherings')
     .update({
@@ -826,6 +827,7 @@ export async function updateGathering(gatheringId, { title, description, schedul
       ...(genre === undefined ? {} : { genre }),
       ...(format === undefined ? {} : { format }),
       ...(skillLevel === undefined ? {} : { skill_level: skillLevel }),
+      ...(effortLevel === undefined ? {} : { effort_level: effortLevel }),
       title,
       description,
       scheduled_at: scheduledAt,

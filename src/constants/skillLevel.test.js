@@ -116,7 +116,7 @@ describe('recognition and ranking', () => {
 
 describe('wiring', () => {
   it('stored through the one gathering service, asked in Create and Edit only where relevant, read by the resolver', () => {
-    expect(read('src/services/gatherings.js')).toMatch(/genre, format, skill_level, features/);
+    expect(read('src/services/gatherings.js')).toMatch(/genre, format, skill_level, (effort_level, )?features/);
     for (const f of ['src/screens/CreateGatheringScreen.js', 'src/screens/EditGatheringScreen.js']) {
       const s = read(f);
       expect(s).toContain('Skill level');

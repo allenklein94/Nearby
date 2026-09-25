@@ -25,6 +25,7 @@ import { planAsk, occasionFromAsk } from './planAsk';
 import { recognizeCombination } from '../constants/planCombinations';
 import { formatsFromText } from '../constants/activityFormat';
 import { skillLevelsFromText } from '../constants/skillLevel';
+import { intensityFromText, effortFromText } from '../constants/intensityEffort';
 
 // ---- time: explicit words only (the classifier's own buckets) ----
 export function dateWindowFromText(text) {
@@ -163,6 +164,9 @@ export function resolveAsk(text, ai = null) {
     formats: formatsFromText(t),
     // Item 67: skill level the person named (beginner, casual game, competitive...); words only.
     skillLevels: skillLevelsFromText(t),
+    // Intensity / effort, only when an activity word sits next to the qualifier ('easy hike', 'high intensity workout').
+    intensity: intensityFromText(t),
+    effort: effortFromText(t),
     commitment: commitmentAsk(t),
     spontaneity: spontaneityOf({ dateWindow, rawText: t }),
     sources,

@@ -2,6 +2,7 @@ import AgeRangePicker from '../components/AgeRangePicker';
 import { cleanAgeRange } from '../utils/suitedAges';
 import { FORMAT_OPTIONS } from '../constants/activityFormat';
 import { skillContext, skillOptionsFor, cleanSkillLevel } from '../constants/skillLevel';
+import { EFFORT_OPTIONS } from '../constants/intensityEffort';
 import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_OPTIONS, cleanFeatures, toggleFeature, isMusicTag } from '../utils/gatheringPractical';
 import React, { useState, useEffect } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -48,6 +49,7 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [ageMax, setAgeMax] = useState(cleanAgeRange(gathering.suited_age_min, gathering.suited_age_max).max);
   const [genre, setGenre] = useState(gathering.genre ?? null);
   const [format, setFormat] = useState(gathering.format ?? null);
+  const [effortLevel, setEffortLevel] = useState(gathering.effort_level ?? null);
   const [skillLevel, setSkillLevel] = useState(gathering.skill_level ?? null);
   const [durationMinutes, setDurationMinutes] = useState(gathering.duration_minutes ?? null);
   const [showGroupInsights, setShowGroupInsights] = useState(gathering.show_group_insights ?? true);
@@ -145,6 +147,8 @@ export default function EditGatheringScreen({ route, navigation }) {
         ...(isMusicTag(gathering.interest_tag) ? { genre } : {}),
         format,
         skillLevel: cleanSkillLevel(skillLevel, skillContext({ tag: gathering.interest_tag, format })),
+        // Effort is asked only where skill is (activities, sports, classes); elsewhere it is not saved.
+        effortLevel: skillOptionsFor(skillContext({ tag: gathering.interest_tag, format })) ? effortLevel : null,
         timelineSteps: cleanedTimelineSteps.length > 0 ? cleanedTimelineSteps : null,
         showGroupInsights,
         ...(gathering.is_public === false ? {} : { requiresApproval }),
@@ -380,6 +384,21 @@ export default function EditGatheringScreen({ route, navigation }) {
                   const selected = skillLevel === option.key;
                   return (
                     <TouchableOpacity key={option.label} style={[styles.chip, selected && styles.chipSelected]} onPress={() => { Haptics.selectionAsync(); setSkillLevel(option.key); }} activeOpacity={0.85} accessibilityLabel={`Skill level ${option.label}`} accessibilityRole="button" accessibilityState={{ selected }}>
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          )}
+          {skillOptionsFor(skillContext({ tag: gathering.interest_tag, format })) && (
+            <>
+              <Text style={styles.label}>Effort</Text>
+              <View style={styles.chipsWrap}>
+                {EFFORT_OPTIONS.map((option) => {
+                  const selected = effortLevel === option.key;
+                  return (
+                    <TouchableOpacity key={option.label} style={[styles.chip, selected && styles.chipSelected]} onPress={() => { Haptics.selectionAsync(); setEffortLevel(option.key); }} activeOpacity={0.85} accessibilityLabel={`Effort ${option.label}`} accessibilityRole="button" accessibilityState={{ selected }}>
                       <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
                     </TouchableOpacity>
                   );
