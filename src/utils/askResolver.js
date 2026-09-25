@@ -27,7 +27,7 @@ import { formatsFromText } from '../constants/activityFormat';
 import { skillLevelsFromText } from '../constants/skillLevel';
 import { intensityFromText, effortFromText } from '../constants/intensityEffort';
 import { timeBudgetFromText } from '../constants/timeBudget';
-import { clockWindowFromText } from '../constants/clockWindow';
+import { clockWindowFromText, dateAnchorFromText } from '../constants/clockWindow';
 
 // ---- time: explicit words only (the classifier's own buckets) ----
 export function dateWindowFromText(text) {
@@ -35,6 +35,8 @@ export function dateWindowFromText(text) {
   if (/\b(right\s+now|right\s+away|immediately|asap|as\s+soon\s+as\s+possible|now)\b/i.test(t)) return 'now';
   if (/\b(tonight|tonite|this\s+evening)\b/i.test(t)) return 'tonight';
   if (/\btomorrow\b/i.test(t)) return 'tomorrow';
+  // "next weekend" has no defined meaning in this product, so it is not read as this weekend.
+  if (/\bnext\s+weekend\b/i.test(t)) return null;
   if (/\b(this\s+weekend|weekend|saturday|sunday)\b/i.test(t)) return 'weekend';
   if (/\btoday\b/i.test(t)) return 'today';
   return null;
@@ -171,7 +173,9 @@ export function resolveAsk(text, ai = null) {
     effort: effortFromText(t),
     // Item 68: minutes the person said they have ("I only have an hour" = 60), or null. Never a start time.
     timeBudgetMinutes: timeBudgetFromText(t),
+    // A clock boundary/range from the words, and the calendar date(s) the words anchor it to (null = none said; nothing chosen).
     clockWindow: clockWindowFromText(t),
+    dateAnchor: dateAnchorFromText(t),
     commitment: commitmentAsk(t),
     spontaneity: spontaneityOf({ dateWindow, rawText: t }),
     sources,

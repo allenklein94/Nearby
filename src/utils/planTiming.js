@@ -1,13 +1,13 @@
-// Fitting a multi-part plan into the time the person has (item 68 follow-up, 2026-09-25). "Dinner and a movie, I have 3 hours."
-// Input: the assembled Experience (utils/experienceAssembly.js) and a budget in minutes from the person's OWN words (a stated
-// amount, or the span of "between 2 and 5 PM"). Each part's length is its lead item's `lengthOf` (host-declared, else the
-// category's usual length); a part with no known length counts as unknown, never as zero-and-fine.
-// Steps, deterministic: (1) if the plan runs over, each part leads with its SHORTEST known-length option among the ones already
-// shown (a reorder; nothing is hidden), (2) if it still runs over, the LAST parts are left out of the plan, one at a time, while
-// at least two parts remain; they stay in the flat results and the caption names them; (3) the plan carries a `timing` line.
-// No travel time between stops is added (nothing measures it), so the line says "usually about", never an exact itinerary.
-// No budget = the Experience is returned unchanged.
-import { lengthOf, TIME_SLACK } from '../constants/timeBudget';
+// Fitting a multi-part plan into the time the person has (item 68, owner decision 2026-09-25, LOCKED). "Dinner and a movie,
+// I have 3 hours." ONE duration system: each part's length is its lead item's `lengthOf` (host-declared, else the category's
+// usual length, constants/timeBudget.js); the plan's total is their sum, an APPROXIMATE planning estimate, always worded
+// "usually about ... in total (an estimate)", never a promise. The budget comes only from the person's words: an amount they
+// said they have, or the length of an anchored clock range ("tonight between 6 and 8 PM"); never from a start time or the clock.
+// Ranking only, never a filter: when the plan runs over, each part leads with its shortest known-length option among the ones
+// already shown, so the combination that fits moves up; every part and every option stays. A part with no known length is
+// NEVER given one: the total is marked incomplete ("for the parts we know") and cannot be called a fit on its own.
+// No travel time between stops is added (nothing measures it). No budget = the Experience is returned unchanged.
+import { lengthOf, TIME_SLACK, timePhrase } from '../constants/timeBudget';
 
 export function planDurationLabel(minutes) {
   if (!Number.isFinite(minutes) || minutes <= 0) return null;
@@ -16,13 +16,6 @@ export function planDurationLabel(minutes) {
   const m = rounded % 60;
   if (!h) return `${m} min`;
   return m ? `${h} hr ${m} min` : `${h} hr`;
-}
-
-function budgetPhrase(budget) {
-  if (budget === 60) return 'your hour';
-  if (budget === 30) return 'your half hour';
-  if (budget % 60 === 0) return `your ${budget / 60} hours`;
-  return `your ${planDurationLabel(budget)}`;
 }
 
 // { minutes, unknown } for the lead items of the given components.
@@ -37,11 +30,30 @@ export function planLength(components) {
 }
 
 const over = (minutes, budget) => minutes > budget * TIME_SLACK;
-// Honest wording in three bands: within the budget, a little over (inside the rounding slack), clearly over.
-function fitWords(minutes, budget) {
-  if (minutes <= budget) return ` · fits ${budgetPhrase(budget)}`;
-  if (!over(minutes, budget)) return `, a little over ${budgetPhrase(budget)}`;
-  return `, more than ${budgetPhrase(budget)}`;
+
+// 'fits' | 'a_little_over' | 'over' | 'unknown'. An incomplete total already over is over; an incomplete total under the
+// budget is 'unknown' (the missing part could take any time).
+export function planFitStatus(minutes, unknown, budget) {
+  if (minutes <= 0) return 'unknown';
+  if (over(minutes, budget)) return 'over';
+  if (minutes > budget) return 'a_little_over';
+  return unknown ? 'unknown' : 'fits';
+}
+
+// "your hour", "your hour and a half", "your 2 hours".
+function yourTime(budget) {
+  if (budget === 60) return 'your hour';
+  if (budget === 30) return 'your half hour';
+  if (budget === 90) return 'your hour and a half';
+  return `your ${timePhrase(budget)}`;
+}
+
+function fitWords(status, budget, span) {
+  const target = span ? `between ${span}` : yourTime(budget);
+  if (status === 'fits') return span ? ` · fits ${target}` : ` · fits in ${target}`;
+  if (status === 'a_little_over') return `, a little over ${target}`;
+  if (status === 'over') return `, more than ${target}`;
+  return ` · may fit ${target}`;
 }
 
 function leadShortest(component) {
@@ -50,31 +62,23 @@ function leadShortest(component) {
   const shortest = known.reduce((a, b) => (b.len < a.len ? b : a));
   const leadLen = lengthOf(component.items[0])?.minutes ?? null;
   if (shortest.index === 0 || (leadLen != null && leadLen <= shortest.len)) return component;
-  const items = [shortest.item, ...component.items.filter((_, i) => i !== shortest.index)];
-  return { ...component, items };
+  return { ...component, items: [shortest.item, ...component.items.filter((_, i) => i !== shortest.index)] };
 }
 
-export function fitExperienceToTime(experience, budget) {
+// `spanLabel` (optional): "6 PM and 8 PM" when the budget is an anchored clock range, so the line names the window, not an amount.
+export function fitExperienceToTime(experience, budget, spanLabel = null) {
   if (!experience || !Array.isArray(experience.components) || !Number.isFinite(budget) || budget <= 0) return experience;
   let components = experience.components;
   if (over(planLength(components).minutes, budget)) components = components.map(leadShortest);
-  const leftOut = [];
-  while (components.length > 2 && over(planLength(components).minutes, budget)) {
-    leftOut.unshift(components[components.length - 1].label);
-    components = components.slice(0, -1);
-  }
   const { minutes, unknown } = planLength(components);
-  const fits = !over(minutes, budget);
-  let line = null;
-  if (minutes > 0) {
-    const total = `Usually about ${planDurationLabel(minutes)}${unknown ? ' for the parts we know' : ''}`;
-    line = `${total}${fitWords(minutes, budget)}`;
-  }
-  const leftOutLine = leftOut.length ? `Left out ${leftOut.join(' and ')} to fit ${budgetPhrase(budget)}` : null;
-  return { ...experience, components, timing: { budget, minutes, unknownParts: unknown, fits, leftOut, line, leftOutLine } };
+  const status = planFitStatus(minutes, unknown, budget);
+  const line = minutes > 0
+    ? `Usually about ${planDurationLabel(minutes)} in total${unknown ? ' for the parts we know' : ''} (an estimate)${fitWords(status, budget, spanLabel)}`
+    : null;
+  return { ...experience, components, timing: { budget, minutes, unknownParts: unknown, complete: unknown === 0, status, line } };
 }
 
-// The person's own picks ("+ Add to your night"): their usual total, for the line beside "Plan this night".
+// The person's own picks ("+ Add to your night"): their approximate total, beside "Plan this night".
 export function picksLengthLine(items, budget) {
   if (!Array.isArray(items) || items.length < 2) return null;
   let minutes = 0;
@@ -83,5 +87,5 @@ export function picksLengthLine(items, budget) {
   if (minutes <= 0) return null;
   const base = `Your picks: usually about ${planDurationLabel(minutes)}${unknown ? ' for the parts we know' : ''}`;
   if (!Number.isFinite(budget) || budget <= 0) return base;
-  return `${base}${fitWords(minutes, budget)}`;
+  return `${base}${fitWords(planFitStatus(minutes, unknown, budget), budget, null)}`;
 }

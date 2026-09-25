@@ -60,7 +60,8 @@ describe('ranking against the budget', () => {
   });
   it('the caption says what it did', () => {
     expect(timeBudgetCaption(60)).toBe('Picking things that fit in about an hour');
-    expect(timeBudgetCaption(90)).toBe('Picking things that fit in about 1.5 hr');
+    expect(timeBudgetCaption(90)).toBe('Picking things that fit in about an hour and a half');
+    expect(timeBudgetCaption(120)).toBe('Picking things that fit in about 2 hours');
     expect(timeBudgetCaption(null)).toBeNull();
   });
 });
@@ -79,10 +80,3 @@ describe('wiring and scope', () => {
   });
 });
 
-describe('business postings get a length from their declared tags (no owner-typed duration)', () => {
-  it('reads subcategory and secondary tags after a major category', () => {
-    expect(lengthOf({ category: 'food_drink', subcategory: 'Coffee' })).toEqual({ minutes: 45, declared: false });
-    expect(lengthOf({ category: 'entertainment_nightlife', categories: ['Mini Golf'] })).toEqual({ minutes: 90, declared: false });
-    expect(lengthOf({ category: 'food_drink' })).toBeNull();
-  });
-});

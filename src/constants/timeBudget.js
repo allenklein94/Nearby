@@ -39,12 +39,11 @@ export function timeBudgetFromText(text) {
 }
 
 // A candidate's length: { minutes, declared } or null. `c` may carry { durationMinutes, category }.
-// A business posting's major category (e.g. food_drink) has no norm; its declared subcategory / secondary tags are read in order.
+// The candidate's own `category` only (business supply unchanged by decision: no posting duration yet).
 export function lengthOf(c) {
   if (Number.isFinite(c?.durationMinutes) && c.durationMinutes >= 15) return { minutes: c.durationMinutes, declared: true };
-  const tags = [c?.category, c?.subcategory, ...(Array.isArray(c?.categories) ? c.categories : [])].filter(Boolean);
-  const tag = tags.find((t) => TAG_TYPICAL_MINUTES[t]);
-  return tag ? { minutes: TAG_TYPICAL_MINUTES[tag], declared: false } : null;
+  const typical = c?.category ? TAG_TYPICAL_MINUTES[c.category] : null;
+  return typical ? { minutes: typical, declared: false } : null;
 }
 
 export function lengthPhrase(len) {
@@ -75,9 +74,19 @@ export function applyTimeBudgetToCandidates(candidates, budget) {
   });
 }
 
-// The one caption line ("Fits in about an hour"), joined onto the resolver's existing note line.
+// Spoken amount of time: 60 = "an hour", 30 = "half an hour", 90 = "an hour and a half", 120 = "2 hours", 45 = "45 minutes".
+export function timePhrase(minutes) {
+  if (!Number.isFinite(minutes) || minutes <= 0) return null;
+  if (minutes === 60) return 'an hour';
+  if (minutes === 30) return 'half an hour';
+  if (minutes === 90) return 'an hour and a half';
+  if (minutes < 60) return `${minutes} minutes`;
+  if (minutes % 60 === 0) return `${minutes / 60} hours`;
+  return durationLabel(minutes);
+}
+
+// The one caption line ("Picking things that fit in about 2 hours"), joined onto the resolver's existing note line.
 export function timeBudgetCaption(budget) {
-  if (!Number.isFinite(budget) || budget <= 0) return null;
-  const d = durationLabel(budget);
-  return d ? `Picking things that fit in about ${d === '1 hr' ? 'an hour' : d}` : null;
+  const p = timePhrase(budget);
+  return p ? `Picking things that fit in about ${p}` : null;
 }

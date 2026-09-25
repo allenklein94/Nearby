@@ -22,7 +22,7 @@ export default function ExperienceComponentList({ experience, renderItem, naviga
     .map((c) => c.items.find((item) => picked[c.key] && experienceStopFromItem(c, item)?.refId === picked[c.key].refId))
     .filter(Boolean);
   const picksLine = picksLengthLine(pickedItems, experience.timing?.budget ?? null);
-  const timingLines = [experience.timing?.line, experience.timing?.leftOutLine].filter(Boolean);
+  const timingLines = [experience.timing?.line].filter(Boolean);
 
   function toggle(component, item) {
     const stop = experienceStopFromItem(component, item);
