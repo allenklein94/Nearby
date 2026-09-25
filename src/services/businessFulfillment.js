@@ -131,6 +131,24 @@ export async function readOfferCreative(partnerId, { mediaPath, mediaType, frame
   return result?.suggestions ?? null;
 }
 
+// "See it in plain language" (owner item 59): an explicit owner action. Returns a SUGGESTION only (nothing is
+// saved or sent); the owner explicitly accepts or ignores it (src/utils/plainLanguageOffer.js). `context` is
+// src/utils/plainLanguageOffer.js's plainLanguageContext() output -- read-only facts, never part of the reply.
+export async function rewriteOfferPlainLanguage(partnerId, { title, description, ...context }) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('You need to be signed in to do that.');
+  const response = await fetch(functionUrl('rewrite-offer-plain-language'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ partnerId, title, description, ...context }),
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(result?.error || "We couldn't do that right now. Your own wording is unchanged.");
+  // { suggestion } or { suggestion: null, message } when it was withheld (claim guard / screening). Never applied here.
+  return { suggestion: result?.suggestion ?? null, message: result?.message ?? null };
+}
+
 // The owner's saved creatives (added automatically when an offer's media passes screening). RLS scopes it to their business.
 export async function getMyCreatives(partnerId) {
   const { data, error } = await supabase

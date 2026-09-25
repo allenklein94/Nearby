@@ -31,9 +31,10 @@ import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { CANCELLATION_REASONS, CANCELLATION_ACTOR_LABELS } from '../constants/cancellationReasons';
 import { getPartnerCancellationPatterns } from '../services/cancellationReasons';
 import { creativeFormPatch, detectedSummary, extractedDiscountWarning, canReadCreative, hasAnySuggestion, sanitizeCreativeSuggestions } from '../utils/creativeExtraction';
+import { sanitizePlainLanguageSuggestion, plainLanguageDiffers, plainLanguageContext, claimProblem, acceptPlainLanguage } from '../utils/plainLanguageOffer';
 import { videoLimitProblem, MAX_REDEMPTION_LENGTH, validUntilFromChoice, availableWindowFromChoice } from '../utils/offerMedia';
 import { priorityTimeRangeFromChoice, priorityTimeStringToDate, priorityTimeRangeLabel } from '../utils/priorityTimeRange';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, getMyCreatives, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit, getMyOfferSubmissions, dismissOfferSubmission, retryOfferSubmission, getPartnerOfferValue } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, rewriteOfferPlainLanguage, getMyCreatives, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit, getMyOfferSubmissions, dismissOfferSubmission, retryOfferSubmission, getPartnerOfferValue } from '../services/businessFulfillment';
 import { submissionView, inFlightRequestIds, payloadToForm } from '../utils/offerSubmission';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
@@ -714,6 +715,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [creativeUpload, setCreativeUpload] = useState(null);
   const [readingCreative, setReadingCreative] = useState(false);
   const [creativeDetected, setCreativeDetected] = useState(null); // { summary, warning } | { none: true }
+  // "See it in plain language" (owner item 59): a SUGGESTED rewrite of the owner's own title/description, shown
+  // side-by-side; nothing is applied until the owner explicitly taps "Use this wording" (utils/plainLanguageOffer.js).
+  const [requestingPlainLanguage, setRequestingPlainLanguage] = useState(false);
+  const [plainLanguageSuggestion, setPlainLanguageSuggestion] = useState(null);
   const [redemptionCodeInput, setRedemptionCodeInput] = useState('');
   const [confirmingCode, setConfirmingCode] = useState(false);
   const [respondingToRequestId, setRespondingToRequestId] = useState(null);
@@ -1827,6 +1832,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferPickedMediaAsset(null);
     setCreativeUpload(null);
     setCreativeDetected(null);
+    setPlainLanguageSuggestion(null);
     setOfferTitleInput('');
     setOfferIncludedItemsInput([]);
     setOfferRedemptionInput('');
@@ -2057,6 +2063,48 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     } finally {
       setReadingCreative(false);
     }
+  }
+
+  // "See it in plain language" (owner item 59, option 1): an explicit tap only. Shows a SUGGESTION beside the owner's own
+  // wording; nothing in the form changes unless the owner taps "Use this wording" (acceptPlainLanguage re-checks the guard).
+  async function handlePlainLanguage() {
+    if (requestingPlainLanguage || !offerDescriptionInput.trim()) return;
+    setRequestingPlainLanguage(true);
+    setPlainLanguageSuggestion(null);
+    const original = { title: offerTitleInput, description: offerDescriptionInput };
+    try {
+      const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : undefined; };
+      const { suggestion, message } = await rewriteOfferPlainLanguage(selectedPartner.id, {
+        ...original,
+        ...plainLanguageContext({
+          price: num(offerPriceInput), discountPct: num(offerDiscountInput), offerType: offerTypeInput,
+          proposedTime: offerProposedTime, availableFrom: offerAvailFrom, availableUntil: offerAvailUntil, redemption: offerRedemptionInput,
+        }),
+      });
+      if (!suggestion || claimProblem(suggestion, original)) {
+        setPlainLanguageSuggestion({ none: true, message: message || "We couldn't suggest wording that keeps your offer exactly as it is. Your own wording is unchanged." });
+      } else if (!plainLanguageDiffers(suggestion, original)) {
+        setPlainLanguageSuggestion({ none: true, message: 'Your wording is already plain and clear.' });
+      } else {
+        setPlainLanguageSuggestion({ ...sanitizePlainLanguageSuggestion(suggestion), basedOn: original });
+      }
+    } catch (e) {
+      presentRecoverableError(Alert, { what: 'suggest plain wording', error: e, onRetry: () => handlePlainLanguage() });
+    } finally {
+      setRequestingPlainLanguage(false);
+    }
+  }
+
+  function applyPlainLanguageSuggestion() {
+    // Only if the owner has not edited since asking: the suggestion rewords THAT text, not whatever is there now.
+    const s = plainLanguageSuggestion;
+    if (!s || s.none || s.basedOn.description !== offerDescriptionInput || s.basedOn.title !== offerTitleInput) {
+      setPlainLanguageSuggestion(null);
+      return;
+    }
+    const patch = acceptPlainLanguage(s, s.basedOn);
+    if (patch) { setOfferTitleInput(patch.title); setOfferDescriptionInput(patch.description); }
+    setPlainLanguageSuggestion(null);
   }
 
   // One validation for both Preview and Send, so a preview can never show something Send would refuse. null = invalid (already alerted).
@@ -6544,6 +6592,39 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 multiline
                 accessibilityLabel="Offer description"
               />
+              {offerDescriptionInput.trim() ? (
+                <TouchableOpacity
+                  onPress={handlePlainLanguage}
+                  disabled={requestingPlainLanguage}
+                  style={{ marginTop: spacing.xs, alignSelf: 'flex-start', opacity: requestingPlainLanguage ? 0.6 : 1 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="See it in plain language. Suggests easier wording for you to review. Nothing changes unless you choose it."
+                >
+                  <Text style={{ color: colors.primary, fontWeight: '600' }}>{requestingPlainLanguage ? 'Rewording…' : '✨ See it in plain language'}</Text>
+                </TouchableOpacity>
+              ) : null}
+              {plainLanguageSuggestion?.none ? (
+                <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>{plainLanguageSuggestion.message}</Text>
+              ) : plainLanguageSuggestion ? (
+                (plainLanguageSuggestion.basedOn.description !== offerDescriptionInput || plainLanguageSuggestion.basedOn.title !== offerTitleInput) ? (
+                  <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>You've edited your wording since. Tap "See it in plain language" again for a new suggestion.</Text>
+                ) : (
+                  <View style={{ marginTop: spacing.xs, padding: spacing.sm, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+                    <Text style={[styles.offerDescription, { marginBottom: 0, fontWeight: '600' }]}>Suggested wording</Text>
+                    {plainLanguageSuggestion.title ? <Text style={[styles.offerDescription, { marginBottom: 0 }]}>{plainLanguageSuggestion.title}</Text> : null}
+                    <Text style={[styles.offerDescription, { marginBottom: 0 }]}>{plainLanguageSuggestion.description}</Text>
+                    <Text style={[styles.offerDescription, { marginBottom: 0, color: colors.textSecondary }]}>Your price, discount, times and redemption details stay exactly as you set them.</Text>
+                    <View style={{ flexDirection: 'row', marginTop: spacing.xs }}>
+                      <TouchableOpacity onPress={applyPlainLanguageSuggestion} style={{ marginRight: spacing.md }} accessibilityRole="button" accessibilityLabel="Use this wording">
+                        <Text style={{ color: colors.primary, fontWeight: '600' }}>Use this wording</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setPlainLanguageSuggestion(null)} accessibilityRole="button" accessibilityLabel="Keep my wording">
+                        <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Keep mine</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )
+              ) : null}
               {offerTypeInput === 'discount' && (
                 <>
                   <TextInput
