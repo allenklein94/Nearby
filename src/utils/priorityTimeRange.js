@@ -4,6 +4,13 @@
 // availability/hours promise (that stays the separate availability-posting system). Same-day time-of-day only, no
 // date, no overnight wrap, no timezone beyond the business's own device-local picker (matching every other
 // business time-of-day field in this app, e.g. `available_from`/`available_until`).
+//
+// LOCKED boundary (owner item 58, 2026-09-25): this field is a MATCHING SIGNAL ONLY, scored against a request a
+// business already received (businessOpportunityScoring.js). It must NEVER be read by a consumer-facing
+// discovery/resolver surface to conjure browsable supply out of nothing -- a business that wants to be actually
+// discoverable at a given time uses Post Availability / Occasion Packages / Signature Experiences instead. Guarded
+// by priorityTimeBoundaryGuard.test.js; do not import this module from src/services/intentResolver*.js or any
+// other consumer candidate-discovery file.
 import { formatTimeOfDay } from './businessRequestWhen';
 
 // Picker Dates -> 'HH:MM' strings, or a validation error. Both-or-neither; end must be strictly after start.
