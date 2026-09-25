@@ -56,6 +56,7 @@ export const CATEGORY_STYLES = {
   Climbing: { icon: '🧗', color: PALETTE[1] },
   Golf: { icon: '⛳', color: PALETTE[2] },
   Bowling: { icon: '🎳', color: PALETTE[5] },
+  'Mini Golf': { icon: '⛳', color: PALETTE[5] },
 
   Karaoke: { icon: '🎙️', color: PALETTE[1] },
   Comedy: { icon: '😂', color: PALETTE[3] },

@@ -27,7 +27,7 @@ describe('a result\'s length: declared first, else a well-known category norm', 
   it('typical lengths use real tags only (the owner\'s examples included)', () => {
     const tags = new Set(CATEGORY_GROUPS.flatMap((g) => g.tags));
     Object.keys(TAG_TYPICAL_MINUTES).forEach((t) => expect(tags.has(t) ? t : `unknown tag ${t}`).toBe(t));
-    expect([TAG_TYPICAL_MINUTES.Coffee, TAG_TYPICAL_MINUTES.Movies, TAG_TYPICAL_MINUTES.Hiking]).toEqual([45, 120, 150]);
+    expect([TAG_TYPICAL_MINUTES.Coffee, TAG_TYPICAL_MINUTES['Mini Golf'], TAG_TYPICAL_MINUTES.Movies, TAG_TYPICAL_MINUTES.Hiking]).toEqual([45, 90, 120, 150]);
   });
   it('host-declared wins and reads as a fact; a norm reads as "usually"', () => {
     expect(lengthOf({ category: 'Hiking', durationMinutes: 60 })).toEqual({ minutes: 60, declared: true });

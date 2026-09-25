@@ -11,7 +11,7 @@ const HEAVY = ['reservation', 'planned_event', 'multi_hour', 'all_day'];
 export const TAG_COMMITMENT = {
   Coffee: 'drop_in', 'Happy Hour': 'drop_in', 'Live Music': 'drop_in', Walking: 'drop_in', Bakeries: 'drop_in', 'Bars & Lounges': 'drop_in',
   Breweries: 'drop_in', 'Food Trucks': 'drop_in', 'Dessert & Ice Cream': 'drop_in', 'Fast Casual': 'drop_in', Arcade: 'drop_in', Parks: 'drop_in',
-  Brunch: 'easy', Restaurants: 'easy', Museums: 'easy', Bowling: 'easy', Trivia: 'easy', Karaoke: 'easy', Movies: 'easy', Comedy: 'easy',
+  Brunch: 'easy', Restaurants: 'easy', Museums: 'easy', Bowling: 'easy', 'Mini Golf': 'easy', Trivia: 'easy', Karaoke: 'easy', Movies: 'easy', Comedy: 'easy',
   'Fine Dining': 'reservation', 'Escape Rooms': 'reservation',
   Theater: 'planned_event', Concerts: 'planned_event', Festivals: 'planned_event',
   'Cooking Class': 'multi_hour', Workshops: 'multi_hour', Classes: 'multi_hour', 'Dance Classes': 'multi_hour', Golf: 'multi_hour', Wineries: 'multi_hour', Boating: 'multi_hour', Hiking: 'multi_hour',

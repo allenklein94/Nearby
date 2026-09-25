@@ -71,6 +71,7 @@ describe('canonical category mapping', () => {
       ...rowsOf('20270183_hobby_tags.sql', 'insert into public.category_tag_groups'),
       ...rowsOf('20270184_camera_shops_tag.sql', 'insert into public.category_tag_groups'),
       ...rowsOf('20270187_breakfast_pastries_tags.sql', 'insert into public.category_tag_groups'),
+      ...rowsOf('20270208_mini_golf_tag.sql', 'insert into public.category_tag_groups', 'delete from'),
     ];
     const key = (r) => `${r[1]}::${r[0]}`;
     const expected = CATEGORY_GROUPS.flatMap((g) => [...g.tags, ...(g.businessOnlyTags ?? [])].map((t) => [t, g.key]));

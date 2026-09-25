@@ -54,7 +54,7 @@ export const CATEGORY_GROUPS = [
   },
   {
     key: 'entertainment_nightlife', icon: '🎵', label: 'Entertainment & Nightlife',
-    tags: ['Music', 'Movies', 'Gaming', 'Dancing', 'Concerts', 'Karaoke', 'Comedy', 'Trivia', 'Nightlife', 'Live Music', 'DJs', 'Nightclubs', 'Theater', 'Performing Arts', 'Festivals', 'Arcade', 'Escape Rooms', 'Casinos', 'Special Events', 'Street Events', 'Board Games', 'D&D'],
+    tags: ['Music', 'Movies', 'Gaming', 'Dancing', 'Concerts', 'Karaoke', 'Comedy', 'Trivia', 'Nightlife', 'Live Music', 'DJs', 'Nightclubs', 'Theater', 'Performing Arts', 'Festivals', 'Arcade', 'Mini Golf', 'Escape Rooms', 'Casinos', 'Special Events', 'Street Events', 'Board Games', 'D&D'],
   },
   {
     key: 'dating_social', icon: '❤️', label: 'Dating & Social',

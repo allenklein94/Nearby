@@ -42,9 +42,13 @@ describe('search synonyms', () => {
 describe('database seed', () => {
   const fs = require('fs');
   const path = require('path');
-  it('migration 20270190 seeds exactly the client synonym rows', () => {
-    const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270190_category_synonyms.sql'), 'utf8');
-    const rows = [...sql.matchAll(/^\s+\('((?:[^']|'')+)', '((?:[^']|'')+)'\),?$/gm)].map((m) => `${m[1].replace(/''/g, "'")}|${m[2].replace(/''/g, "'")}`);
+  it('migration 20270190 + later synonym migrations seed exactly the client synonym rows', () => {
+    const read = (f) => fs.readFileSync(path.join(__dirname, '../../supabase/migrations', f), 'utf8');
+    const rowsIn = (sql) => [...sql.matchAll(/^\s+\('((?:[^']|'')+)', '((?:[^']|'')+)'\),?$/gm)].map((m) => `${m[1].replace(/''/g, "'")}|${m[2].replace(/''/g, "'")}`);
+    const miniGolf = read('20270208_mini_golf_tag.sql');
+    const removed = [...miniGolf.matchAll(/delete from public\.category_synonyms where phrase = '([^']+)' and tag = '([^']+)'/g)].map((m) => `${m[1]}|${m[2]}`);
+    const added = rowsIn(miniGolf.slice(miniGolf.indexOf('insert into public.category_synonyms')));
+    const rows = [...rowsIn(read('20270190_category_synonyms.sql')).filter((r) => !removed.includes(r)), ...added];
     const expected = seedRows().map((r) => `${r.phrase}|${r.tag}`);
     expect(rows.sort()).toEqual(expected.sort());
   });
@@ -53,5 +57,13 @@ describe('database seed', () => {
     expect(rd('gatherings.js')).toMatch(/tagsForPhrase\(term\)/);
     expect(rd('communities.js')).toMatch(/tagsForPhrase\(term\)/);
     expect(rd('brandOffers.js')).toMatch(/expandSearchTerms\(term\)/);
+  });
+});
+
+describe('Mini Golf is its own tag (item 68)', () => {
+  it('mini golf phrases find Mini Golf, not Golf', () => {
+    expect(tagsForPhrase('mini golf')).toEqual(['Mini Golf']);
+    expect(tagsForPhrase('putt putt')).toEqual(['Mini Golf']);
+    expect(tagsForPhrase('golf course')).toEqual(['Golf']);
   });
 });
