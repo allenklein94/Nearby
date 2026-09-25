@@ -16,6 +16,7 @@ import { canonicalGroupForTag } from '../constants/categoryMapping';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { activitiesFromText, ACTIVITIES } from '../constants/activityLayer';
 import { partnerPartyType } from '../constants/askFacets';
+import { planAsk, occasionFromAsk } from './planAsk';
 
 // Group from the person's own words. First match wins, most specific first; no match = null (not asked for here).
 const GROUP_RULES = [
@@ -147,13 +148,17 @@ export function createParamsFromInference(inf, typedText) {
 export function deterministicClassification(text) {
   const inf = inferGatheringFromText(text);
   const DATE_WINDOW = { now: 'now', tonight: 'tonight', tomorrow: 'tomorrow' };
+  const dateWindow = DATE_WINDOW[inf?.whenPreset] ?? null;
+  // Item 63: a multi-part ask ("dinner and something to do after") is one plan across categories, never one category.
+  const plan = planAsk(text);
   return {
-    intent: inf?.tag ? 'gathering' : 'unclear',
+    intent: inf?.tag || plan ? 'gathering' : 'unclear',
     title: inf?.title ?? null,
-    category: inf?.tag ?? null,
+    category: plan ? null : inf?.tag ?? null,
+    occasion: occasionFromAsk(text, { partyType: inf?.partyType ?? null, dateWindow }),
     partyType: inf?.partyType ?? null,
     partySize: inf?.partySize ?? null,
-    dateWindow: DATE_WINDOW[inf?.whenPreset] ?? null,
+    dateWindow,
     attributes: [],
     deterministic: true,
   };

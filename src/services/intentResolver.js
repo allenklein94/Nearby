@@ -64,6 +64,7 @@ import { getUserLocation } from './userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
 import { attendeeTotal } from '../utils/gatheringFullness';
 import { intentRecipeFor } from '../constants/intentRoutes';
+import { planAsk, occasionFromAsk, recipeForPlan, planCaption } from '../utils/planAsk';
 import { openEndedAskGroups, applyOpenEndedAsk, openEndedCaption } from '../utils/openEndedAsk';
 
 const RESULT_CAP = 4;
@@ -559,6 +560,14 @@ async function resolveOccasionPackages(location, occasion, partySize) {
 export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null }) {
   // "my girlfriend" = a date party when the extractor named none (constants/askFacets.js, deterministic).
   partyType = partyType ?? partnerPartyType(rawText);
+  // Item 63: an ask naming two or more parts of an outing ("dinner and something to do after") is ONE plan. A single
+  // category would hard-filter every part but one out, so it is dropped here and the cross-category recipe assembles the
+  // plan instead; the occasion is filled from the person's own words only when the extractor gave none (utils/planAsk.js).
+  const multiPart = planAsk(rawText);
+  if (multiPart) {
+    category = null;
+    occasion = occasion ?? occasionFromAsk(rawText, { partyType, dateWindow });
+  }
   // Items 51/52: pet-friendly / date-friendly / quiet / patio are ATTRIBUTES the ask can name (constants/askFacets.js), unioned with the extractor's.
   attributes = [...new Set([...(Array.isArray(attributes) ? attributes : []), ...attributesFromAsk(rawText, { partyType })])];
   // Resolved once, up front, before any branch runs in parallel below —
@@ -718,7 +727,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   deduped.sort((a, b) => b.score - a.score);
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
-  const openEndedNote = [openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), askFacets.caption].filter(Boolean).join(' · ') || null;
+  const openEndedNote = [planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), askFacets.caption].filter(Boolean).join(' · ') || null;
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,
@@ -729,7 +738,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // occasion, the occasion has no defined template, or no component found
   // genuine matching inventory; callers only ever render an Experience
   // section when this is truthy.
-  const experience = assembleExperience(occasion, deduped, { partyType, dateWindow, attributes, priceLevel, budgetMax, intentRecipe: intentRecipeFor(rawText) });
+  const experience = assembleExperience(occasion, deduped, { partyType, dateWindow, attributes, priceLevel, budgetMax, intentRecipe: intentRecipeFor(rawText) ?? recipeForPlan(rawText, { dateWindow }) });
 
   return { items: deduped.slice(0, RESULT_CAP), experience, openEndedNote };
 }
