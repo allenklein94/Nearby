@@ -114,3 +114,36 @@ describe('item 65: Create asks only what a combination is missing', () => {
     expect(src).toMatch(/applyEnergyToCandidates\(deduped, \[\.\.\.new Set\(\[\.\.\.\(Array\.isArray\(energies\)/);
   });
 });
+
+describe('item 65 decision (LOCKED 2026-09-25)', () => {
+  const { ENERGY_LEVELS, energiesFromText } = require('./energyLevel');
+  const { planQuestions } = require('./planCombinations');
+  const { resolveAsk } = require('../utils/askResolver');
+  it('keeps the existing mood vocabulary: Low-key and Social, no Relaxed/Fun values', () => {
+    const keys = ENERGY_LEVELS.map((e) => e.key);
+    const labels = ENERGY_LEVELS.map((e) => e.display);
+    expect(labels).toEqual(expect.arrayContaining(['Low-key', 'Social']));
+    for (const bad of ['relaxed', 'fun']) expect(keys).not.toContain(bad);
+    for (const bad of ['Relaxed', 'Fun']) expect(labels).not.toContain(bad);
+  });
+  it('the word "fun" never selects a mood; "something fun tonight" stays an open request', () => {
+    expect(energiesFromText('something fun tonight')).toEqual([]);
+    expect(energiesFromText('a fun night out')).toEqual([]);
+    expect(resolveAsk('something fun tonight').energies).toEqual([]);
+  });
+  it('"Pick a date" is never turned into a date', () => {
+    const { planBuildInputs } = require('./planCombinations');
+    expect(planBuildInputs('date_night', { when: 'custom' }).dateWindow).toBeNull();
+  });
+  it('one question structure: the options are read from PLAN_COMBINATIONS, not a second list', () => {
+    const q = planQuestions(resolveAsk('plan a beach day'));
+    const combo = PLAN_COMBINATIONS.find((c) => c.key === 'beach_day');
+    expect(q.questions.find((x) => x.slot === 'who').options.map((o) => o.key)).toEqual(combo.who);
+    expect(q.questions.find((x) => x.slot === 'kind').options.map((o) => o.key)).toEqual(combo.kinds);
+  });
+  it('no Create UI reads the questions yet (add only on a direct request)', () => {
+    const { execSync } = require('child_process');
+    const hits = execSync('grep -rlE "planQuestions|planBuildInputs" src/screens src/components || true', { cwd: path.join(__dirname, '../..') }).toString().trim();
+    expect(hits).toBe('');
+  });
+});
