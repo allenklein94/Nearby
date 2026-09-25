@@ -23,6 +23,7 @@ import { tagsForPhrase } from '../constants/categorySynonyms';
 import { groupFromText, whenPresetFromText, partySizeFromText, titleFromText, inferredSummary } from './gatheringInference';
 import { planAsk, occasionFromAsk } from './planAsk';
 import { recognizeCombination } from '../constants/planCombinations';
+import { formatsFromText } from '../constants/activityFormat';
 
 // ---- time: explicit words only (the classifier's own buckets) ----
 export function dateWindowFromText(text) {
@@ -157,6 +158,8 @@ export function resolveAsk(text, ai = null) {
     combination: recognizeCombination({ text: t, occasion, partyType, dateWindow, attributes })?.key ?? null,
     facets: parseAskFacets(t),
     energies: energiesFromText(t),
+    // Item 66: HOW it runs (tournament, open play, class...), separate from the category; words only.
+    formats: formatsFromText(t),
     commitment: commitmentAsk(t),
     spontaneity: spontaneityOf({ dateWindow, rawText: t }),
     sources,

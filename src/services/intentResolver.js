@@ -59,6 +59,7 @@ import { cleanFeatures } from '../utils/gatheringPractical';
 import { applyDeclaredFeatures } from '../constants/declaredFeatures';
 import { parseAskFacets, applyAskFacets, partnerPartyType, attributesFromAsk } from '../constants/askFacets';
 import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitmentLevel';
+import { formatsFromText, applyFormatToCandidates } from '../constants/activityFormat';
 import { spontaneityOf, isImmediate, applySpontaneityToCandidates, spontaneityCaption } from '../constants/spontaneity';
 import { getUserLocation } from './userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
@@ -128,6 +129,7 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       // real host-declared facts the energy / commitment / spontaneity passes read (constants/energyLevel|commitmentLevel|spontaneity.js)
       startsAt: gathering.scheduled_at ?? null,
       durationMinutes: gathering.duration_minutes ?? null,
+      format: gathering.format ?? null,
       requiresApproval: gathering.requires_approval === true,
       hostEnergy: gathering.energy_level ?? null,
       features: cleanFeatures(gathering.features),
@@ -692,6 +694,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
 
   // Energy level (item 44): "something low-key" lifts tags that carry that energy; ranking only (constants/energyLevel.js).
   // Item 65: an energy the person PICKED ("What kind of night?") joins the ones their words name.
+  // Item 66: a format the person named ("a pickleball tournament") lifts that format and sinks a known different one; never hides.
+  deduped = applyFormatToCandidates(deduped, formatsFromText(rawText));
   deduped = applyEnergyToCandidates(deduped, [...new Set([...(Array.isArray(energies) ? energies : []), ...energiesFromText(rawText)])]);
 
   // Commitment (item 45) and spontaneity (item 46): ranking only. An immediate ask implies a light commitment unless the person

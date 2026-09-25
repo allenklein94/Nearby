@@ -1,5 +1,6 @@
 import AgeRangePicker from '../components/AgeRangePicker';
 import { cleanAgeRange } from '../utils/suitedAges';
+import { FORMAT_OPTIONS } from '../constants/activityFormat';
 import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_OPTIONS, cleanFeatures, toggleFeature, isMusicTag } from '../utils/gatheringPractical';
 import React, { useState, useEffect } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -46,6 +47,7 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [ageMin, setAgeMin] = useState(cleanAgeRange(gathering.suited_age_min, gathering.suited_age_max).min);
   const [ageMax, setAgeMax] = useState(cleanAgeRange(gathering.suited_age_min, gathering.suited_age_max).max);
   const [genre, setGenre] = useState(gathering.genre ?? null);
+  const [format, setFormat] = useState(gathering.format ?? null);
   const [durationMinutes, setDurationMinutes] = useState(gathering.duration_minutes ?? null);
   const [showGroupInsights, setShowGroupInsights] = useState(gathering.show_group_insights ?? true);
   const [requiresApproval, setRequiresApproval] = useState(gathering.requires_approval ?? false);
@@ -141,6 +143,7 @@ export default function EditGatheringScreen({ route, navigation }) {
         suitedAgeMax: ageMax,
         durationMinutes,
         ...(isMusicTag(gathering.interest_tag) ? { genre } : {}),
+        format,
         timelineSteps: cleanedTimelineSteps.length > 0 ? cleanedTimelineSteps : null,
         showGroupInsights,
         ...(gathering.is_public === false ? {} : { requiresApproval }),
@@ -366,6 +369,17 @@ export default function EditGatheringScreen({ route, navigation }) {
 
             </>
           )}
+          <Text style={styles.label}>How does it run?</Text>
+          <View style={styles.chipsWrap}>
+            {FORMAT_OPTIONS.map((option) => {
+              const selected = format === option.key;
+              return (
+                <TouchableOpacity key={option.label} style={[styles.chip, selected && styles.chipSelected]} onPress={() => { Haptics.selectionAsync(); setFormat(option.key); }} activeOpacity={0.85} accessibilityLabel={option.label} accessibilityRole="button" accessibilityState={{ selected }}>
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
           <View style={styles.toggleRow}>
             <Text style={styles.label}>Show group insights</Text>
             <Switch

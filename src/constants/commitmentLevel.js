@@ -3,6 +3,8 @@
 // heavy, never a filter), stores nothing. A result's commitment comes from REAL data first: a gathering's host-declared
 // `duration_minutes` (>= 8 h all-day, >= 3 h multi-hour) and `requires_approval` (a planned event); otherwise from its canonical
 // category tag (table below, near-certain tags only). Anything unknown has no commitment and is untouched.
+import { ACTIVITY_FORMATS } from './activityFormat';
+
 export const COMMITMENT_LEVELS = ['drop_in', 'easy', 'reservation', 'planned_event', 'multi_hour', 'all_day'];
 const HEAVY = ['reservation', 'planned_event', 'multi_hour', 'all_day'];
 
@@ -16,13 +18,16 @@ export const TAG_COMMITMENT = {
   Camping: 'all_day', 'Day Trip': 'all_day', Excursions: 'all_day',
 };
 
-// What a candidate asks of the person. `c` may carry { category, durationMinutes, requiresApproval }.
+// What a candidate asks of the person. `c` may carry { category, durationMinutes, format, requiresApproval }.
 export function commitmentOf(c) {
   const m = c?.durationMinutes;
   if (Number.isFinite(m)) {
     if (m >= 480) return 'all_day';
     if (m >= 180) return 'multi_hour';
   }
+  // Item 66: a host-declared format (open play = drop in, tournament = a planned event) is real data, ahead of the guesses below.
+  const declared = c?.format ? ACTIVITY_FORMATS.find((f) => f.key === c.format)?.commitment : null;
+  if (declared) return declared;
   if (c?.requiresApproval === true) return 'planned_event';
   return (c?.category && TAG_COMMITMENT[c.category]) || null;
 }
