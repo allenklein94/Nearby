@@ -564,10 +564,10 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // category would hard-filter every part but one out, so it is dropped here and the cross-category recipe assembles the
   // plan instead; the occasion is filled from the person's own words only when the extractor gave none (utils/planAsk.js).
   const multiPart = planAsk(rawText);
-  if (multiPart) {
-    category = null;
-    occasion = occasion ?? occasionFromAsk(rawText, { partyType, dateWindow });
-  }
+  if (multiPart) category = null;
+  // Same occasion rule as the no-AI fallback, so behavior is identical with or without the AI: explicit words, or a couple
+  // planning a multi-part evening. Never from a category alone.
+  occasion = occasion ?? occasionFromAsk(rawText, { partyType, dateWindow });
   // Items 51/52: pet-friendly / date-friendly / quiet / patio are ATTRIBUTES the ask can name (constants/askFacets.js), unioned with the extractor's.
   attributes = [...new Set([...(Array.isArray(attributes) ? attributes : []), ...attributesFromAsk(rawText, { partyType })])];
   // Resolved once, up front, before any branch runs in parallel below —

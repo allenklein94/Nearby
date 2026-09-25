@@ -46,7 +46,8 @@ describe('only a real multi-part ask counts', () => {
 describe('resolver wiring', () => {
   const src = fs.readFileSync(path.join(__dirname, '../services/intentResolver.js'), 'utf8');
   it('drops the single category for a multi-part ask, fills occasion only when absent, and captions the plan', () => {
-    expect(src).toMatch(/if \(multiPart\) \{\s*category = null;\s*occasion = occasion \?\? occasionFromAsk/);
+    expect(src).toMatch(/if \(multiPart\) category = null;/);
+    expect(src).toMatch(/occasion = occasion \?\? occasionFromAsk/);
     expect(src).toMatch(/planCaption\(rawText, \{ occasion, dateWindow \}\)/);
     expect(src).toMatch(/intentRecipeFor\(rawText\) \?\? recipeForPlan\(rawText, \{ dateWindow \}\)/);
   });
