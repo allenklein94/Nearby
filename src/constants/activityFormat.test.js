@@ -98,3 +98,63 @@ describe('wiring', () => {
     expect(src).not.toMatch(/fetch\(|supabase|functions\.invoke|anthropic/i);
   });
 });
+
+describe('item 66 decision (LOCKED 2026-09-25): format is a structured gathering attribute, not a discovery system', () => {
+  const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
+  const { commitmentAsk, applyCommitmentToCandidates } = require('./commitmentLevel');
+  it('the owner\'s positive examples', () => {
+    expect(formatsFromText('pickleball tournament')).toEqual(['tournament']);
+    expect(formatsFromText('open play')).toEqual(['open_play']);
+    expect(formatsFromText('drop-in yoga')).toEqual(['drop_in']);
+    expect(formatsFromText('cooking class')).toEqual(['class']);
+    expect(formatsFromText('comedy show')).toEqual(['show']);
+  });
+  it('negative guards: vague words never create a format', () => {
+    for (const t of ['something fun tonight', 'party of 6', 'dinner for a party of 4', 'show me what is nearby', 'something to do', 'hang out with friends', 'go out tonight', 'coffee', 'a fun night', 'what should we do this weekend']) {
+      expect([t, formatsFromText(t)]).toEqual([t, []]);
+      expect([t, resolveAsk(t).formats]).toEqual([t, []]);
+    }
+  });
+  it('explicit host format wins; unknown stays unknown and keeps its rank', () => {
+    const cands = [{ id: 'u', score: 5 }, { id: 'c', format: 'open_play', score: 5 }];
+    const out = applyFormatToCandidates(cands, ['tournament']);
+    expect(out.find((c) => c.id === 'u')).toBe(cands[0]);
+    expect(out.find((c) => c.id === 'c').score).toBe(4);
+    expect(out).toHaveLength(2);
+  });
+  it('"nothing too committal" prefers open play over a tournament through the existing commitment model', () => {
+    const ask = commitmentAsk('nothing too committal tonight, I don\'t want to commit');
+    expect(ask).toBe('light');
+    const out = applyCommitmentToCandidates([
+      { id: 'tour', category: 'Pickleball', format: 'tournament', score: 0 },
+      { id: 'open', category: 'Pickleball', format: 'open_play', score: 0 },
+    ], ask);
+    expect(out.find((c) => c.id === 'open').score).toBeGreaterThan(out.find((c) => c.id === 'tour').score);
+    expect(out).toHaveLength(2);
+  });
+  it('category -> format only for categories that ARE a format (closed, reviewed list; extend deliberately)', () => {
+    expect(TAG_FORMAT).toEqual({
+      Concerts: 'concert', Festivals: 'festival', Workshops: 'workshop', Exhibits: 'exhibition',
+      Classes: 'class', 'Art Classes': 'class', 'Cooking Class': 'class', 'Dance Classes': 'class', 'Language Classes': 'class', 'Technology Classes': 'class',
+      'Farmers Markets': 'market', Markets: 'market', 'Tech Meetup': 'meetup', 'Boat Tours': 'tour',
+    });
+  });
+  it('no format filter on Discover or Gatherings, no business format field, nothing in business payloads, no AI detection', () => {
+    for (const f of ['src/screens/DiscoverHubScreen.js', 'src/screens/GatheringsScreen.js']) expect([f, /activityFormat|FORMAT_OPTIONS|\.format\s*===|formatOf\(/.test(read(f))]).toEqual([f, false]);
+    const migrations = fs.readdirSync(path.join(ROOT, 'supabase/migrations')).filter((m) => m > '20270205');
+    for (const m of ['20270205_gathering_activity_format.sql', ...migrations]) {
+      const sql = read(`supabase/migrations/${m}`);
+      expect([m, /alter table public\.(business_\w+|brand_\w+)\s+add column[^;]*\bformat\b/i.test(sql)]).toEqual([m, false]);
+      expect([m, /get_business_opportunities[\s\S]*\bformat\b/i.test(sql)]).toEqual([m, false]);
+    }
+    const fnDir = path.join(ROOT, 'supabase/functions');
+    for (const d of fs.readdirSync(fnDir)) {
+      const idx = path.join(fnDir, d, 'index.ts');
+      if (fs.existsSync(idx)) expect([d, /open_play|activity format|ACTIVITY_FORMATS/i.test(fs.readFileSync(idx, 'utf8'))]).toEqual([d, false]);
+    }
+  });
+  it('optional: Create defaults to Not specified and the service sends NULL when unset', () => {
+    expect(read('src/screens/CreateGatheringScreen.js')).toContain('const [format, setFormat] = useState(null);');
+    expect(read('src/services/gatherings.js')).toContain('format: format ?? null,');
+  });
+});
