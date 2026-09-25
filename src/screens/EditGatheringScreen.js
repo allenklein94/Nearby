@@ -288,7 +288,7 @@ export default function EditGatheringScreen({ route, navigation }) {
             />
           </View>
 
-          <Text style={styles.label}>Accessibility & family</Text>
+          <Text style={styles.label}>Accessibility, family & venue</Text>
           <View style={styles.chipsWrap}>
             {GATHERING_FEATURE_OPTIONS.map((option) => {
               const selected = features.includes(option.key);

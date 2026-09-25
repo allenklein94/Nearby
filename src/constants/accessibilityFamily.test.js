@@ -13,9 +13,15 @@ describe('accessibility + family features (items 49/50)', () => {
     [...ACCESSIBILITY_ATTRIBUTE_KEYS, ...FAMILY_ATTRIBUTE_KEYS].forEach((k) => expect(attrKeys).toContain(k));
     GATHERING_FEATURE_KEYS.forEach((k) => expect(attrKeys).toContain(k));
   });
-  it('the gathering CHECK lists exactly the client feature keys', () => {
-    const mig = read('supabase/migrations/20270198_accessibility_family_features.sql');
-    const list = [...mig.match(/features <@ array\[([^\]]*)\]/)[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort();
+  it('the gathering CHECK lists exactly the client feature keys (latest live definition, across every migration that touches it)', () => {
+    const migDir = path.join(__dirname, '../../supabase/migrations');
+    const files = fs.readdirSync(migDir).filter((f) => f.endsWith('.sql')).sort();
+    let latest = null;
+    for (const f of files) {
+      const m = fs.readFileSync(path.join(migDir, f), 'utf8').match(/features <@ array\[([^\]]*)\]/);
+      if (m) latest = m;
+    }
+    const list = [...latest[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort();
     expect(list).toEqual([...GATHERING_FEATURE_KEYS].sort());
   });
   it('a business owner\'s plain text finds them, and only when actually said', () => {

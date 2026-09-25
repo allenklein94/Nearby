@@ -38,6 +38,7 @@ export const GATHERING_FEATURE_OPTIONS = [
   { key: 'kid_friendly', label: 'Kids welcome', icon: '🧒' },
   { key: 'stroller_friendly', label: 'Stroller friendly', icon: '👶' },
   { key: 'family_seating', label: 'Family seating', icon: '🪑' },
+  { key: 'outdoor_seating', label: 'Outdoor seating', icon: '🌤️' },
 ];
 export const GATHERING_FEATURE_KEYS = GATHERING_FEATURE_OPTIONS.map((o) => o.key);
 // Drops anything outside the closed list and duplicates (the database CHECK enforces the same).
