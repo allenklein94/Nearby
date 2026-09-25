@@ -35,6 +35,9 @@ import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoo
 // would for the identical real signal, not a fourth independently-typed
 // wording of the same fact.
 import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
+// Owner item 56 follow-up: an optional exact time-of-day preference ("4-7 PM"), additive to the coarse
+// morning/afternoon/evening/weekend buckets scored below -- never a replacement, never an availability promise.
+import { isWithinPriorityTimeRange, priorityTimeRangeLabel } from '../utils/priorityTimeRange';
 
 // Universal Signal Remediation Pass, P1 item 5 (CLAUDE.md, Aug 28 2026):
 // a real, monotonic, capped-not-fabricated reference point -- $150 was
@@ -67,6 +70,9 @@ export function scoreBusinessOpportunity({
   businessCuisine = null,
   businessPriorityAttributes = [],
   businessPriorityTimeWindows = [],
+  // Owner item 56 follow-up: the business's own optional exact time-of-day preference ('HH:MM' strings or null).
+  businessPriorityTimeStart = null,
+  businessPriorityTimeEnd = null,
   businessPriorityOccasions = [],
   // "Occasions we offer": the business's explicit capability list (separate from the want-more list above).
   businessOfferedOccasions = [],
@@ -176,6 +182,14 @@ export function scoreBusinessOpportunity({
       score += SCORE_HAPPENING_NOW;
       reasons.push({ key: 'time_window', label: `Fits your usual ${period} hours`, points: SCORE_HAPPENING_NOW });
     }
+  }
+
+  // Owner item 56 follow-up: an exact time-of-day preference ("4-7 PM"), additive to the coarse bucket bonus
+  // above -- a real, separate fact (the business said something more precise than "Evenings"), so it stacks
+  // rather than replaces. Silent whenever the business hasn't set one, or the request carries no time.
+  if (requestTimeWindowStart && isWithinPriorityTimeRange(requestTimeWindowStart, businessPriorityTimeStart, businessPriorityTimeEnd)) {
+    score += SCORE_HAPPENING_NOW;
+    reasons.push({ key: 'priority_time_range', label: `Falls in your ${priorityTimeRangeLabel(businessPriorityTimeStart, businessPriorityTimeEnd)} window`, points: SCORE_HAPPENING_NOW });
   }
 
   // "Weekday customers" / "Last-minute bookings": derived from the request's own date only (no new field). Weekday =

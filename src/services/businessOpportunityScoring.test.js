@@ -307,3 +307,67 @@ describe('large groups preference', () => {
   });
 });
 
+// Owner item 56 follow-up (2026-09-25): an optional exact time-of-day preference ("4-7 PM"), additive to the
+// coarse morning/afternoon/evening/weekend buckets above -- a preference for the kind of opportunity to rank
+// higher, never an availability/hours promise.
+describe('exact time-window preference (item 56 follow-up)', () => {
+  const base = { businessPriorityTimeStart: '16:00', businessPriorityTimeEnd: '19:00' };
+
+  it('credits a request inside the exact window', () => {
+    const r = scoreBusinessOpportunity({ requestTimeWindowStart: '17:30', ...base });
+    expect(r.reasons.map(({ key, ...x }) => x)).toEqual([{ label: 'Falls in your 4–7 PM window', points: SCORE_HAPPENING_NOW }]);
+  });
+
+  it('does not credit a request before the window', () => {
+    expect(scoreBusinessOpportunity({ requestTimeWindowStart: '15:59', ...base }).reasons).toEqual([]);
+  });
+
+  it('does not credit a request after the window', () => {
+    expect(scoreBusinessOpportunity({ requestTimeWindowStart: '19:01', ...base }).reasons).toEqual([]);
+  });
+
+  it('is inclusive at the start boundary', () => {
+    expect(scoreBusinessOpportunity({ requestTimeWindowStart: '16:00', ...base }).reasons.map((x) => x.key)).toEqual(['priority_time_range']);
+  });
+
+  it('is inclusive at the end boundary', () => {
+    expect(scoreBusinessOpportunity({ requestTimeWindowStart: '19:00', ...base }).reasons.map((x) => x.key)).toEqual(['priority_time_range']);
+  });
+
+  it('a business with no exact window set gets nothing, even with a matching coarse bucket', () => {
+    const r = scoreBusinessOpportunity({
+      requestDate: '2026-09-24', requestTimeWindowStart: '18:00',
+      businessPriorityTimeWindows: ['evening'],
+    });
+    expect(r.reasons.map((x) => x.key)).toEqual(['time_window']);
+  });
+
+  it('stacks with (does not replace) the coarse bucket bonus when both fit', () => {
+    const r = scoreBusinessOpportunity({
+      requestDate: '2026-09-24', requestTimeWindowStart: '18:00',
+      businessPriorityTimeWindows: ['evening'], ...base,
+    });
+    expect(r.reasons.map((x) => x.key).sort()).toEqual(['priority_time_range', 'time_window']);
+    expect(r.score).toBe(SCORE_HAPPENING_NOW * 2);
+  });
+
+  it('a request outside the exact window still gets the coarse-bucket credit it independently earns', () => {
+    const r = scoreBusinessOpportunity({
+      requestDate: '2026-09-24', requestTimeWindowStart: '21:00',
+      businessPriorityTimeWindows: ['evening'], ...base,
+    });
+    expect(r.reasons.map((x) => x.key)).toEqual(['time_window']);
+  });
+
+  it('no request time -> no credit, even with a window set', () => {
+    expect(scoreBusinessOpportunity({ ...base }).reasons).toEqual([]);
+  });
+
+  it('is a ranking signal only -- never present in the scorer result as an availability/hours field', () => {
+    const r = scoreBusinessOpportunity({ requestTimeWindowStart: '17:00', ...base });
+    expect(r).not.toHaveProperty('available');
+    expect(r).not.toHaveProperty('hours');
+    expect(Object.keys(r).sort()).toEqual(['reasons', 'score']);
+  });
+});
+

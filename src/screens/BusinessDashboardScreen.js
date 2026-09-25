@@ -20,7 +20,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityTimeRange, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
 // P2 remediation item 11 (CLAUDE.md) -- reuse the admin queue's own real
@@ -32,6 +32,7 @@ import { CANCELLATION_REASONS, CANCELLATION_ACTOR_LABELS } from '../constants/ca
 import { getPartnerCancellationPatterns } from '../services/cancellationReasons';
 import { creativeFormPatch, detectedSummary, extractedDiscountWarning, canReadCreative, hasAnySuggestion, sanitizeCreativeSuggestions } from '../utils/creativeExtraction';
 import { videoLimitProblem, MAX_REDEMPTION_LENGTH, validUntilFromChoice, availableWindowFromChoice } from '../utils/offerMedia';
+import { priorityTimeRangeFromChoice, priorityTimeStringToDate, priorityTimeRangeLabel } from '../utils/priorityTimeRange';
 import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, getMyCreatives, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit, getMyOfferSubmissions, dismissOfferSubmission, retryOfferSubmission, getPartnerOfferValue } from '../services/businessFulfillment';
 import { submissionView, inFlightRequestIds, payloadToForm } from '../utils/offerSubmission';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
@@ -307,6 +308,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // Want More Of," saved together with priorityAttributesInput via the
   // same Save button (one card, one action, two RPCs underneath).
   const [priorityTimeWindowsInput, setPriorityTimeWindowsInput] = useState([]);
+  // Owner item 56 follow-up -- an optional exact time-of-day preference ("4-7 PM") additive to the coarse
+  // buckets above; Date objects while editing (picker-friendly), saved together via the same Save button.
+  const [priorityTimeStartInput, setPriorityTimeStartInput] = useState(null);
+  const [priorityTimeEndInput, setPriorityTimeEndInput] = useState(null);
+  const [priorityTimeRangePicker, setPriorityTimeRangePicker] = useState(null);
   // "Intelligent demand inbox" Phase 2 (CLAUDE.md, Sep 3 2026) -- the real
   // WHY half of "What You're Looking For," saved via the same Save button
   // and RPC batch as the two fields above.
@@ -481,6 +487,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         businessCuisine: selectedPartner?.cuisine ?? null,
         businessPriorityAttributes: selectedPartner?.priority_attributes ?? [],
         businessPriorityTimeWindows: selectedPartner?.priority_time_windows ?? [],
+        businessPriorityTimeStart: selectedPartner?.priority_time_start ?? null,
+        businessPriorityTimeEnd: selectedPartner?.priority_time_end ?? null,
         businessPriorityOccasions: selectedPartner?.priority_occasions ?? [],
         businessOfferedOccasions: selectedPartner?.offered_occasions ?? [],
         activePrioritySignals,
@@ -790,6 +798,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadedPartnerId = partner.id;
         setPriorityAttributesInput(partner.priority_attributes ?? []);
         setPriorityTimeWindowsInput(partner.priority_time_windows ?? []);
+        setPriorityTimeStartInput(priorityTimeStringToDate(partner.priority_time_start));
+        setPriorityTimeEndInput(priorityTimeStringToDate(partner.priority_time_end));
         setPriorityOccasionsInput(partner.priority_occasions ?? []);
         setPulseNoteInput(partner.availability_pulse_note ?? '');
         setAccommodatePartyTypesInput(partner.accommodates_party_types ?? []);
@@ -1088,17 +1098,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
   async function handleSavePriorityAttributes() {
     if (!selectedPartner) return;
+    // Owner item 56 follow-up: an invalid exact window is an input problem, not a service failure -- fix it in
+    // place, don't send any of the three RPCs (matches the rest of this app's "no draft loss, no partial save
+    // on a bad input" pattern; see utils/recoverableError.js).
+    const timeRange = priorityTimeRangeFromChoice(priorityTimeStartInput, priorityTimeEndInput);
+    if (timeRange.error) {
+      Alert.alert('Fix the exact time window', timeRange.error);
+      return;
+    }
     setSavingPriorityAttributes(true);
     try {
       await Promise.all([
         setBusinessPriorityAttributes(selectedPartner.id, priorityAttributesInput),
         setBusinessPriorityTimeWindows(selectedPartner.id, priorityTimeWindowsInput),
+        setBusinessPriorityTimeRange(selectedPartner.id, timeRange.start, timeRange.end),
         setBusinessPriorityOccasions(selectedPartner.id, priorityOccasionsInput),
       ]);
       setSelectedPartner((prev) => ({
         ...prev,
         priority_attributes: priorityAttributesInput,
         priority_time_windows: priorityTimeWindowsInput,
+        priority_time_start: timeRange.start,
+        priority_time_end: timeRange.end,
         priority_occasions: priorityOccasionsInput,
       }));
       showSuccessToast('Saved', "We'll flag opportunities that match what you're looking for.");
@@ -4988,6 +5009,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     );
                   })}
                 </View>
+                {/* Owner item 56 follow-up: an optional exact time-of-day preference ("4-7 PM"), additive to the
+                    coarse buckets above -- a preference for the kind of opportunity to see ranked higher, never
+                    an availability promise. Same From/To/Clear picker the offer editor already uses. */}
+                <Text style={styles.helperText}>
+                  {(() => {
+                    const win = priorityTimeRangeFromChoice(priorityTimeStartInput, priorityTimeEndInput);
+                    const label = win.error ? null : priorityTimeRangeLabel(win.start, win.end);
+                    return label ? `Or set an exact window (optional) -- opportunities between ${label} are flagged higher` : 'Or set an exact window (optional)';
+                  })()}
+                </Text>
+                {renderAvailabilityWindow({
+                  from: priorityTimeStartInput, until: priorityTimeEndInput,
+                  setFrom: setPriorityTimeStartInput, setUntil: setPriorityTimeEndInput,
+                  picker: priorityTimeRangePicker, setPicker: setPriorityTimeRangePicker,
+                })}
                 {/* "Intelligent demand inbox" Phase 2 (CLAUDE.md, Sep 3
                     2026) -- the real WHY half of "What You're Looking
                     For." Reuses the exact same OCCASION_OPTIONS

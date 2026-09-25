@@ -906,6 +906,18 @@ export async function setBusinessPriorityTimeWindows(partnerId, timeWindows) {
   if (error) throw error;
 }
 
+// Owner item 56 follow-up: an optional, ADDITIVE exact time-of-day window ("4-7 PM") supplementing the coarse
+// priority_time_windows buckets above -- a preference for the kind of opportunity to see ranked higher, never an
+// availability promise. start/end are 'HH:MM' strings (or both null to clear); same narrow-RPC shape as its siblings.
+export async function setBusinessPriorityTimeRange(partnerId, start, end) {
+  const { error } = await supabase.rpc('set_business_priority_time_range', {
+    partner_id_param: partnerId,
+    start_param: start ?? null,
+    end_param: end ?? null,
+  });
+  if (error) throw error;
+}
+
 // "Intelligent demand inbox" Phase 2 (CLAUDE.md, Sep 3 2026) -- business
 // occasion-appetite preferences ("what would you like more customers
 // for"). Reuses the exact same real OCCASION_OPTIONS vocabulary Phase 1's
