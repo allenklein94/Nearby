@@ -1,4 +1,5 @@
 import { EXPERIENCE_PARTY_TYPE_OPTIONS } from '../constants/businessAttributes';
+import { beginnerFriendlyShown } from '../constants/skillLevel';
 import { practicalFacts } from '../utils/gatheringPractical';
 import { attendeeSummary } from '../utils/gatheringAttendeeDisplay';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -342,7 +343,7 @@ export default function GatheringsScreen({ navigation, route }) {
 
   function renderVibeDetails(item) {
     const hasVibe = item.energy_level != null || item.conversation_level != null || item.group_size_feel != null
-      || item.beginner_friendly || practicalFacts(item).length > 0 || (item.timeline_steps?.length > 0);
+      || beginnerFriendlyShown(item) || practicalFacts(item).length > 0 || (item.timeline_steps?.length > 0);
     if (!hasVibe) return null;
 
     return (
@@ -354,7 +355,7 @@ export default function GatheringsScreen({ navigation, route }) {
             {item.group_size_feel != null && <Text style={styles.vibeBadgeText}>👥 Group {item.group_size_feel}/5</Text>}
           </View>
         )}
-        {item.beginner_friendly && <Text style={styles.beginnerText}>🔰 Beginner friendly</Text>}
+        {beginnerFriendlyShown(item) && <Text style={styles.beginnerText}>🔰 Beginner friendly</Text>}
         {practicalFacts(item).map((f) => <Text key={f} style={styles.beginnerText}>{f}</Text>)}
         {item.timeline_steps?.length > 0 && (
           <View style={{ marginTop: spacing.xs }}>

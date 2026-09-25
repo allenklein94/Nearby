@@ -82,7 +82,7 @@ describe('a result\'s format comes from real data only', () => {
 describe('wiring', () => {
   const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
   it('stored and edited through the one gathering service, offered in Create and Edit', () => {
-    expect(read('src/services/gatherings.js')).toMatch(/genre, format, features/);
+    expect(read('src/services/gatherings.js')).toMatch(/genre, format, (skill_level, )?features/);
     for (const f of ['src/screens/CreateGatheringScreen.js', 'src/screens/EditGatheringScreen.js']) {
       expect(read(f)).toContain('How does it run?');
       expect(read(f)).toContain('FORMAT_OPTIONS.map');

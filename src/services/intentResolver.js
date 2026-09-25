@@ -60,6 +60,7 @@ import { applyDeclaredFeatures } from '../constants/declaredFeatures';
 import { parseAskFacets, applyAskFacets, partnerPartyType, attributesFromAsk } from '../constants/askFacets';
 import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitmentLevel';
 import { formatsFromText, applyFormatToCandidates } from '../constants/activityFormat';
+import { skillLevelsFromText, applySkillToCandidates } from '../constants/skillLevel';
 import { spontaneityOf, isImmediate, applySpontaneityToCandidates, spontaneityCaption } from '../constants/spontaneity';
 import { getUserLocation } from './userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
@@ -130,6 +131,7 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       startsAt: gathering.scheduled_at ?? null,
       durationMinutes: gathering.duration_minutes ?? null,
       format: gathering.format ?? null,
+      skillLevel: gathering.skill_level ?? null,
       requiresApproval: gathering.requires_approval === true,
       hostEnergy: gathering.energy_level ?? null,
       features: cleanFeatures(gathering.features),
@@ -696,6 +698,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Item 65: an energy the person PICKED ("What kind of night?") joins the ones their words name.
   // Item 66: a format the person named ("a pickleball tournament") lifts that format and sinks a known different one; never hides.
   deduped = applyFormatToCandidates(deduped, formatsFromText(rawText));
+  // Item 67: "beginner pickleball" lifts a declared Beginner / All levels / Casual game and sinks a Competitive one; never hides.
+  deduped = applySkillToCandidates(deduped, skillLevelsFromText(rawText));
   deduped = applyEnergyToCandidates(deduped, [...new Set([...(Array.isArray(energies) ? energies : []), ...energiesFromText(rawText)])]);
 
   // Commitment (item 45) and spontaneity (item 46): ranking only. An immediate ask implies a light commitment unless the person

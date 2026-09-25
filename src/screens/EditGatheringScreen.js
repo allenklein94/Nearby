@@ -1,6 +1,7 @@
 import AgeRangePicker from '../components/AgeRangePicker';
 import { cleanAgeRange } from '../utils/suitedAges';
 import { FORMAT_OPTIONS } from '../constants/activityFormat';
+import { skillContext, skillOptionsFor, cleanSkillLevel } from '../constants/skillLevel';
 import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_OPTIONS, cleanFeatures, toggleFeature, isMusicTag } from '../utils/gatheringPractical';
 import React, { useState, useEffect } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -48,6 +49,7 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [ageMax, setAgeMax] = useState(cleanAgeRange(gathering.suited_age_min, gathering.suited_age_max).max);
   const [genre, setGenre] = useState(gathering.genre ?? null);
   const [format, setFormat] = useState(gathering.format ?? null);
+  const [skillLevel, setSkillLevel] = useState(gathering.skill_level ?? null);
   const [durationMinutes, setDurationMinutes] = useState(gathering.duration_minutes ?? null);
   const [showGroupInsights, setShowGroupInsights] = useState(gathering.show_group_insights ?? true);
   const [requiresApproval, setRequiresApproval] = useState(gathering.requires_approval ?? false);
@@ -144,6 +146,7 @@ export default function EditGatheringScreen({ route, navigation }) {
         durationMinutes,
         ...(isMusicTag(gathering.interest_tag) ? { genre } : {}),
         format,
+        skillLevel: cleanSkillLevel(skillLevel, skillContext({ tag: gathering.interest_tag, format })),
         timelineSteps: cleanedTimelineSteps.length > 0 ? cleanedTimelineSteps : null,
         showGroupInsights,
         ...(gathering.is_public === false ? {} : { requiresApproval }),
@@ -380,6 +383,21 @@ export default function EditGatheringScreen({ route, navigation }) {
               );
             })}
           </View>
+          {skillOptionsFor(skillContext({ tag: gathering.interest_tag, format })) && (
+            <>
+              <Text style={styles.label}>Skill level</Text>
+              <View style={styles.chipsWrap}>
+                {skillOptionsFor(skillContext({ tag: gathering.interest_tag, format })).map((option) => {
+                  const selected = skillLevel === option.key;
+                  return (
+                    <TouchableOpacity key={option.label} style={[styles.chip, selected && styles.chipSelected]} onPress={() => { Haptics.selectionAsync(); setSkillLevel(option.key); }} activeOpacity={0.85} accessibilityLabel={`Skill level ${option.label}`} accessibilityRole="button" accessibilityState={{ selected }}>
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          )}
           <View style={styles.toggleRow}>
             <Text style={styles.label}>Show group insights</Text>
             <Switch

@@ -24,6 +24,7 @@ import { groupFromText, whenPresetFromText, partySizeFromText, titleFromText, in
 import { planAsk, occasionFromAsk } from './planAsk';
 import { recognizeCombination } from '../constants/planCombinations';
 import { formatsFromText } from '../constants/activityFormat';
+import { skillLevelsFromText } from '../constants/skillLevel';
 
 // ---- time: explicit words only (the classifier's own buckets) ----
 export function dateWindowFromText(text) {
@@ -160,6 +161,8 @@ export function resolveAsk(text, ai = null) {
     energies: energiesFromText(t),
     // Item 66: HOW it runs (tournament, open play, class...), separate from the category; words only.
     formats: formatsFromText(t),
+    // Item 67: skill level the person named (beginner, casual game, competitive...); words only.
+    skillLevels: skillLevelsFromText(t),
     commitment: commitmentAsk(t),
     spontaneity: spontaneityOf({ dateWindow, rawText: t }),
     sources,

@@ -1,5 +1,6 @@
 import { ageRangeLabel } from './suitedAges';
 import { formatLabel, formatIcon } from '../constants/activityFormat';
+import { skillLabel } from '../constants/skillLevel';
 // Host-declared practical facts on a gathering (item 39): equipment provided, duration. Absent = the host did not say, so
 // nothing renders; nothing is inferred from the category. beginner_friendly is its own existing field.
 export const DURATION_OPTIONS = [
@@ -68,6 +69,9 @@ export function practicalFacts(g) {
   // Item 66: the host-declared format leads (how it runs), never inferred from the category.
   const fmt = formatLabel(g?.format);
   if (fmt) out.unshift(`${formatIcon(g.format)} ${fmt}`);
+  // Item 67: a declared skill level, right after the format.
+  const skill = skillLabel(g?.skill_level);
+  if (skill) out.splice(fmt ? 1 : 0, 0, `🎯 ${skill}`);
   const ages = ageRangeLabel(g?.suited_age_min, g?.suited_age_max);
   if (ages) out.push(`🧒 ${ages}`);
   for (const k of cleanFeatures(g?.features)) {
