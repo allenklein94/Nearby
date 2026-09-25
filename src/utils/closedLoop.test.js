@@ -13,7 +13,11 @@ describe('the closed loop, end to end (item 85)', () => {
     for (const bad of [1, 0, null, undefined, 'x', 2.5, 500]) expect(capacityForPartySize(bad)).toBeNull();
   });
   test('the intent hand-off carries the headcount and the screen tells the person it is a suggestion', () => {
-    expect(read('../services/createAssistant.js')).toContain('quickStartPartySize: result.partySize');
+    // Item 61: the hand-off goes through the shared inference merge, which keeps the classifier's headcount.
+    expect(read('../services/createAssistant.js')).toContain('createParamsFromInference(mergeInference(result');
+    const inference = read('./gatheringInference.js');
+    expect(inference).toContain('partySize: r.partySize ?? inf.partySize');
+    expect(inference).toContain('quickStartPartySize: inf?.partySize');
     const screen = read('../screens/CreateGatheringScreen.js');
     expect(screen).toContain('Planning for {suggestedPartySize}?');
     expect(screen).toContain('Change it any time');

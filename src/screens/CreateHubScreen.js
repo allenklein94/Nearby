@@ -3,6 +3,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import TabHeaderActions from '../components/TabHeaderActions';
+import { inferGatheringFromText, mergeInference, createParamsFromInference } from '../utils/gatheringInference';
 import { classifyCreateRequest } from '../services/createAssistant';
 import { getMyFriends } from '../services/friends';
 import { buildGatheringQuickStartTitle, buildAskBusinessPrefillText, buildOccasionWhoForParams } from '../utils/createHubWhoFor';
@@ -185,10 +186,9 @@ export default function CreateHubScreen({ navigation, route }) {
       const result = await classifyCreateRequest(assistantText.trim());
       const typedText = assistantText.trim();
       if (result.intent === 'gathering') {
-        // An AI guess deserves a look before publish, unlike a literal
-        // icon tap — no fromQuickPick here, so the "What" step still
-        // shows, prefilled but editable.
-        navigation.navigate('CreateGathering', { quickStartTitle: result.title, quickStartCategory: result.category });
+        // Item 61: infer, then ask only what is missing. With a title and a real category the What step is skipped, and
+        // the first step shows "From what you said" with every inferred value; Back still reaches What to change it.
+        navigation.navigate('CreateGathering', createParamsFromInference(mergeInference(result, inferGatheringFromText(typedText)), typedText));
       } else if (result.intent === 'community') {
         navigation.navigate('CreateCommunity', { quickStartTitle: result.title, quickStartCategory: result.category });
       } else if (result.intent === 'business_partner') {

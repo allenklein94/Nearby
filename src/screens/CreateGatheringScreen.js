@@ -18,7 +18,7 @@ import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { CATEGORY_GROUPS, groupForTag } from '../constants/gatheringCategories';
-import { whatStepProblem, canSkipWhatStep, capacityForPartySize } from '../utils/gatheringStructure';
+import { whatStepProblem, canSkipWhatStep, startAfterWhatStep, capacityForPartySize } from '../utils/gatheringStructure';
 import useMyInterests from '../hooks/useMyInterests';
 import { orderGroupsByInterests } from '../constants/interestGraph';
 import { VISIBILITY_OPTIONS } from '../constants/gatheringVisibility';
@@ -129,7 +129,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
     { key: 'publish', label: 'Publish' },
   ].filter((s) => !(s.key === 'what' && skipWhat));
 
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => (startAfterWhatStep(route.params) ? 1 : 0));
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [interestTag, setInterestTag] = useState(null);
@@ -227,6 +227,14 @@ export default function CreateGatheringScreen({ navigation, route }) {
       setInterestTag(route.params.quickStartCategory);
     }
   }, [route.params?.quickStartTitle, route.params?.quickStartCategory]);
+
+  // Item 61: "Coffee tonight with some friends" -> Who: Friends, prefilled on the Details step and fully editable.
+  useEffect(() => {
+    const pt = route.params?.quickStartPartyType;
+    if (pt && PARTY_TYPE_OPTIONS.some((o) => o.key === pt)) setPartyType(pt);
+  }, [route.params?.quickStartPartyType]);
+  const inferredRows = Array.isArray(route.params?.inferredSummary) ? route.params.inferredSummary : [];
+  const [inferredDismissed, setInferredDismissed] = useState(false);
 
   // "Planning for 4?": a headcount from the person's own words, suggested (visible + editable) rather than committed.
   const [suggestedPartySize, setSuggestedPartySize] = useState(null);
@@ -557,6 +565,23 @@ export default function CreateGatheringScreen({ navigation, route }) {
               </View>
             ))}
           </>
+        )}
+
+        {stepKey === 'when' && inferredRows.length > 0 && !inferredDismissed && (
+          <View style={{ marginBottom: spacing.md, padding: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }} accessibilityLabel="From what you said">
+            <Text style={[styles.label, { marginTop: 0 }]}>From what you said</Text>
+            {inferredRows.map((r) => (
+              <Text key={r.layer} style={{ color: colors.text, marginTop: 2 }}>
+                <Text style={{ color: colors.textSecondary }}>{r.label}: </Text>{r.value}
+              </Text>
+            ))}
+            <Text style={{ color: colors.textSecondary, marginTop: spacing.xs }}>
+              {whenPreset ? 'Check the time below, then pick a place. ' : 'Pick a time, then a place. '}Change anything on its step (Back for the title and category).
+            </Text>
+            <TouchableOpacity onPress={() => setInferredDismissed(true)} accessibilityRole="button" accessibilityLabel="Hide this summary" style={{ marginTop: spacing.xs, alignSelf: 'flex-start' }}>
+              <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Hide</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {stepKey === 'when' && (

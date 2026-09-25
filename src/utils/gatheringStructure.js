@@ -17,6 +17,12 @@ export function canSkipWhatStep(params) {
   return !!params?.fromQuickPick && whatStepProblem({ title: params?.quickStartTitle, interestTag: params?.quickStartCategory }) === null;
 }
 
+// Item 61: the host's own words already gave a title AND a real category, so the flow STARTS after the What step (it stays
+// in the flow, one Back away, to change either). A quick-pick removes the step instead (canSkipWhatStep).
+export function startAfterWhatStep(params) {
+  return !!params?.inferredFromText && !canSkipWhatStep(params) && whatStepProblem({ title: params?.quickStartTitle, interestTag: params?.quickStartCategory }) === null;
+}
+
 // Item 65: the gathering's WHEN as the host's own local wall-clock date ('YYYY-MM-DD') and start time ('HH:MM:SS'), which the
 // business request stores as structured fields (the server cannot know the device timezone). null for an unusable date.
 export function localWhenParts(scheduledAt) {

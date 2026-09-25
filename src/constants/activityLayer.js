@@ -25,7 +25,7 @@ export const ACTIVITIES = [
   },
   {
     key: 'meet_a_friend', label: 'meeting a friend', icon: '👥', display: 'Meet friends',
-    ask: /\b(meet|meeting|see)\s+(up\s+with\s+)?(a\s+|my\s+)?(friends?|buddy|buddies|pals?)\b|\bcatch(ing)?\s+up\b/i,
+    ask: /\b(meet|meeting|see)\s+(up\s+with\s+)?(a\s+|my\s+)?(friends?|buddy|buddies|pals?)\b|\bcatch(ing)?\s+up\b|\bwith\s+(some\s+|my\s+|a\s+few\s+|a\s+couple\s+(of\s+)?|\d{1,2}\s+)?(friends|buddies|pals)\b/i,
     fits: (b) => b.tags.some((t) => ['Coffee', 'Brunch', 'Bars & Lounges', 'Restaurants', 'Dessert & Ice Cream', 'Bakeries'].includes(t)),
   },
   {

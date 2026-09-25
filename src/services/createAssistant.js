@@ -1,5 +1,6 @@
 import { supabase, functionUrl } from './supabase';
 import { detectIntentRoute, navigateIntentRoute } from '../constants/intentRoutes';
+import { inferGatheringFromText, mergeInference, createParamsFromInference, deterministicClassification } from '../utils/gatheringInference';
 
 // The Create Assistant -- a free, unbranded natural-language box on
 // CreateHubScreen that classifies what the user's typing into an intent
@@ -24,14 +25,23 @@ export async function classifyCreateRequest(text) {
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('Sign in to use this.');
 
-  const response = await fetch(functionUrl('create-assistant'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ text }),
-  });
+  // Item 61: when the classifier SERVICE is down (network, 5xx; e.g. no Anthropic credit), fall back to the deterministic
+  // rules (utils/gatheringInference.js) so "Coffee tonight with some friends" still works. Never on a 4xx (sign-in, limit,
+  // bad input), which keeps its own message.
+  let response;
+  try {
+    response = await fetch(functionUrl('create-assistant'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ text }),
+    });
+  } catch (_e) {
+    return deterministicClassification(text);
+  }
+  if (response.status >= 500) return deterministicClassification(text);
 
   const result = await response.json();
   if (!response.ok) {
@@ -67,12 +77,15 @@ export function routeClassifiedIntentToCreation(navigation, result, typedText) {
   // already found a named community or a specific business (those are explicit and win).
   if (result.intent !== 'community' && result.intent !== 'business_partner' && navigateIntentRoute(navigation, detectIntentRoute(typedText), typedText)) return;
   if (result.intent === 'gathering') {
-    navigation.navigate('CreateGathering', { quickStartTitle: result.title, quickStartCategory: result.category, quickStartPartySize: result.partySize ?? null });
+    // Item 61: infer what the words say (category, what, who, when, activity) and only ask for the rest.
+    navigation.navigate('CreateGathering', createParamsFromInference(mergeInference(result, inferGatheringFromText(typedText)), typedText));
   } else if (result.intent === 'community') {
     navigation.navigate('CreateCommunity', { quickStartTitle: result.title, quickStartCategory: result.category });
   } else if (result.intent === 'business_partner') {
     navigation.navigate('RequestBusinessPartner', { initialBusinessQuery: result.businessName ?? '' });
   } else {
-    navigation.navigate('CreateGathering', { quickStartTitle: typedText, quickStartCategory: null });
+    // Still the person's own words as the title; the rules add whatever else they can read (never a category they did not say).
+    const inf = inferGatheringFromText(typedText);
+    navigation.navigate('CreateGathering', { ...createParamsFromInference(inf, typedText), quickStartTitle: inf?.title || typedText });
   }
 }
