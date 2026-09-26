@@ -973,6 +973,24 @@ export async function setBusinessNotAccommodated(partnerId, keys) {
   if (error) throw error;
 }
 
+// Item 86: the businesses that conflict with what the person's words state, decided by the server's ONE rule (_business_declines,
+// migration 20270223; the same rule routing and auto-offers use). Map partnerId -> reason. Best-effort: a failure keeps everyone.
+export async function getDeclinedBusinesses(partnerIds, facts) {
+  const ids = [...new Set((partnerIds ?? []).filter(Boolean))].slice(0, 100);
+  if (ids.length === 0 || !facts) return new Map();
+  const { data, error } = await supabase.rpc('get_declined_businesses', {
+    partner_ids_param: ids,
+    party_size_param: facts.partySize ?? null,
+    children_param: !!facts.children,
+    pets_param: !!facts.pets,
+    wants_outdoor_param: !!facts.wantsOutdoor,
+    wants_indoor_param: !!facts.wantsIndoor,
+    walk_in_param: !!facts.walkIn,
+  });
+  if (error) return new Map();
+  return new Map((data ?? []).map((r) => [r.partner_id, r.reason]));
+}
+
 // Owner item 72: how customers come in (walk_in / reservation_recommended / reservation_required / request_required; null clears).
 // Drives the consumer CTA (utils/primaryAction.js businessPrimaryAction). Setting it also drops the legacy reservation_required attribute.
 export async function setBusinessBookingMode(partnerId, mode) {
@@ -997,7 +1015,7 @@ export async function getPartnerOperatingInfo(partnerIds) {
   if (ids.length === 0) return new Map();
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, name, latitude, longitude, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, max_group_size, private_room_capacity, outdoor_capacity, not_accommodated, weather_setting')
+    .select('id, name, latitude, longitude, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, max_group_size, private_room_capacity, outdoor_capacity')
     .in('id', ids);
   if (error) return new Map();
   return new Map((data ?? []).map((r) => [r.id, r]));

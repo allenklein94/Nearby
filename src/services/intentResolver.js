@@ -1,7 +1,7 @@
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
-import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, getPartnerPriceInfo, getPartnerSuitedAges, getPartnerOperatingInfo } from './brandOffers';
+import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, getPartnerPriceInfo, getPartnerSuitedAges, getPartnerOperatingInfo, getDeclinedBusinesses } from './brandOffers';
 import { Linking } from 'react-native';
 import { bookingModeOf } from '../constants/bookingMode';
 import { BUSINESS_RESULT_TYPES, intentResultBusinessRoute } from '../utils/businessAction';
@@ -66,7 +66,7 @@ import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitm
 import { formatsFromText, applyFormatToCandidates } from '../constants/activityFormat';
 import { skillLevelsFromText, applySkillToCandidates } from '../constants/skillLevel';
 import { wordsBackedAttributes, applyCapabilitiesToCandidates } from '../constants/businessCapabilities';
-import { restrictionAsk, applyRestrictionsToCandidates } from '../constants/businessRestrictions';
+import { restrictionAsk, askRaisesRestriction, applyRestrictionsToCandidates } from '../constants/businessRestrictions';
 import { genresFromText, applyGenreToCandidates } from '../constants/genreMatch';
 import { timeBudgetFromText, applyTimeBudgetToCandidates, timeBudgetCaption } from '../constants/timeBudget';
 import { clockWindowFromText, dateAnchorFromText, applyClockWindowToCandidates, clockWindowCaption, windowSpan, clockLabel } from '../constants/clockWindow';
@@ -598,6 +598,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   let dateTag = null;
   if (dateAsk && category && canonicalGroupForTag(category) === 'dating_social') { dateTag = category; category = null; }
   // A date is two people unless the words say otherwise (never overrides a stated size).
+  // Item 86: restrictions read only a size the person stated, never this date default.
+  const statedPartySize = partySize;
   partySize = datePartySize(rawText, { partyType, occasion, partySize });
   // Items 51/52: pet-friendly / date-friendly / quiet / patio are ATTRIBUTES the ask can name (constants/askFacets.js), unioned with the extractor's.
   attributes = [...new Set([...(Array.isArray(attributes) ? attributes : []), ...attributesFromAsk(rawText, { partyType })])];
@@ -795,12 +797,20 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     const mode = bookingModeOf(partner);
     return { ...c, businessPartner: partner, ...(mode ? { bookingMode: mode } : {}) };
   });
-  // Item 86: a business (or a perk's business) that DECLARED something the ask conflicts with is removed before it is shown: no
-  // children / 21+ vs kids in the ask, no pets vs a pet, largest group below the party, indoor-only vs outside, outdoor-only vs
-  // indoors, a required booking vs "walk in". Unknown on either side is kept; the caption says what was left out.
-  const restrictions = applyRestrictionsToCandidates(deduped, restrictionAsk({ text: rawText, attributes, partySize }),
-    (c) => (c.partnerId && (BUSINESS_RESULT_TYPES.includes(c.type) || c.type === 'perk') ? partnerInfo.get(c.partnerId) ?? null : null),
-    { isBusiness: (c) => BUSINESS_RESULT_TYPES.includes(c.type) });
+  // Item 86: customer intent -> compatibility check -> eligible businesses. Only what the person's WORDS state ("with my kids",
+  // "my dog", "for 10", "outside", "walk in") is checked, by the server's one rule (the same one routing and auto-offers use); a
+  // business or perk whose business declared a conflict is removed. "Dinner tonight" raises nothing. A failed lookup keeps everyone.
+  const restrictionFacts = restrictionAsk(rawText, statedPartySize);
+  let restrictions = { items: deduped, caption: null };
+  if (askRaisesRestriction(restrictionFacts)) {
+    const isPartnerResult = (c) => c.partnerId && (BUSINESS_RESULT_TYPES.includes(c.type) || c.type === 'perk');
+    try {
+      const declined = await getDeclinedBusinesses(deduped.filter(isPartnerResult).map((c) => c.partnerId), restrictionFacts);
+      restrictions = applyRestrictionsToCandidates(deduped, declined, { partnerIdOf: (c) => (isPartnerResult(c) ? c.partnerId : null), isBusiness: (c) => BUSINESS_RESULT_TYPES.includes(c.type) });
+    } catch (e) {
+      console.error('restriction check skipped', e);
+    }
+  }
   deduped = restrictions.items;
   // Item 80: declared capabilities vs the ask: largest group vs the stated party size, private events / catering only when the
   // words ask for them. Ranking only; unknown is neutral; business results only (perks carry no partner row).

@@ -7,11 +7,9 @@
 //   Indoor only / Outdoor only         -> weather_setting indoor / outdoor (item 63)
 // 21+ is the business's own house rule; Nearby never checks anyone's age and it gates nothing. It only keeps asks that involve
 // children away. Service animals are not pets (service_animal_friendly never conflicts with No pets).
-// The server applies the same rule to routing and auto-offers (_business_declines_request); a request the customer addressed to
-// ONE business is never filtered. Deterministic, never AI.
-import { bookingModeOf, NEEDS_BOOKING_FIRST } from './bookingMode';
-import { cleanMaxGroupSize } from './businessCapabilities';
-import { parseAskFacets } from './askFacets';
+// One rule on the server (_business_declines) serves typed asks, routing and auto-offers; a request the customer addressed to ONE
+// business is never filtered. Deterministic, never AI.
+import { parseAskFacets, attributesFromAsk } from './askFacets';
 import { askedChildAges } from '../utils/suitedAges';
 
 export const NOT_ACCOMMODATED_OPTIONS = [
@@ -51,50 +49,39 @@ export function notAccommodatedLine(partner) {
   return NOT_ACCOMMODATED_OPTIONS.filter((o) => keys.includes(o.key)).map((o) => o.line).join(' · ');
 }
 
-// ---- The ask side: only the person's own words (plus attributes the ask already carries) ----
+// ---- The ask side: ONLY the person's own words ----
+// Owner decision (2026-09-26): a restriction applies only when the ask explicitly raises it. "Dinner with my kids" -> children;
+// "dinner tonight" -> nothing. "Pet-friendly restaurant" -> pets; "restaurant tonight" -> nothing. "Nightlife" never implies 21+.
+// Never from AI-extracted attributes, a default (a date's assumed 2 people), a category or an occasion.
+// The CONFLICT decision is not made here: the server's one rule (_business_declines, migration 20270223) decides it for typed asks
+// (get_declined_businesses), routing and auto-offers alike. This file only turns words into facts and applies the answer.
 const NEG_CHILDREN = /\b(?:no|without(?:\s+the)?|minus\s+the)\s+(?:kids?|children|child|little\s+ones?)\b|\b(?:kid|child)[- ]free\b|\badults?[- ]only\b|\bjust\s+(?:the\s+)?adults\b/gi;
-const CHILDREN = /\b(?:kids?|kiddos?|children|child|toddlers?|bab(?:y|ies)|little\s+ones?|my\s+(?:sons?|daughters?)|our\s+(?:sons?|daughters?)|stroller)\b/i;
+const CHILDREN = /\b(?:kids?|kiddos?|children|child|toddlers?|bab(?:y|ies)|little\s+ones?|my\s+(?:sons?|daughters?)|our\s+(?:sons?|daughters?)|stroller|kid[- ]friendly|family[- ]friendly|kids?\s+menu)\b/i;
 const WALK_IN = /\bwalk[- ]?ins?\b|\bjust\s+(?:show|walk|drop|turn)\s+(?:up|in|by)\b|\bno\s+(?:reservations?|booking)\b|\bwithout\s+(?:a\s+)?(?:reservation|booking)s?\b|\b(?:don'?t|do\s+not)\s+want\s+to\s+(?:book|reserve)\b/i;
 
-// Children are part of the ask: their words ("with my kids", "my 5 year old"), or a child-facing attribute the ask carries.
-export function childrenInAsk(text, attributes = []) {
-  if (Array.isArray(attributes) && attributes.some((a) => CHILD_ATTRIBUTES.includes(a))) return true;
+export function childrenInAsk(text) {
   if (typeof text !== 'string' || !text) return false;
   if (askedChildAges(text).length > 0) return true;
   return CHILDREN.test(text.replace(NEG_CHILDREN, ' '));
 }
-export const petsInAsk = (attributes = []) => Array.isArray(attributes) && attributes.some((a) => PET_ATTRIBUTES.includes(a));
+export const petsInAsk = (text) => attributesFromAsk(text).some((a) => PET_ATTRIBUTES.includes(a));
 export const walkInAsk = (text) => typeof text === 'string' && WALK_IN.test(text);
 
-// Everything the ask says that a restriction can conflict with. Built once per ask.
-export function restrictionAsk({ text = '', attributes = [], partySize = null } = {}) {
-  const facets = parseAskFacets(text);
-  const outdoorWanted = facets.environment === 'outdoor' || (Array.isArray(attributes) && attributes.includes('outdoor_seating'));
+// The facts the person's words state. `statedPartySize` = a number they said, never a default.
+export function restrictionAsk(text, statedPartySize = null) {
+  const words = typeof text === 'string' ? text : '';
+  const facets = parseAskFacets(words);
   return {
-    children: childrenInAsk(text, attributes),
-    pets: petsInAsk(attributes),
-    partySize: Number.isInteger(partySize) && partySize > 0 ? partySize : null,
-    walkIn: walkInAsk(text),
-    // an indoor-only place conflicts with "outside"/"patio" or "nothing indoors"; an outdoor-only one with "indoors" or "nothing outdoors"
-    rejectsIndoorOnly: outdoorWanted || facets.exclude.includes('indoor'),
-    rejectsOutdoorOnly: facets.environment === 'indoor' || facets.exclude.includes('outdoor'),
+    partySize: Number.isInteger(statedPartySize) && statedPartySize > 0 ? statedPartySize : null,
+    children: childrenInAsk(words),
+    pets: petsInAsk(words),
+    // "outside" / "patio" / "nothing indoors" conflicts with indoor only; "indoors" / "nothing outdoors" with outdoor only
+    wantsOutdoor: facets.environment === 'outdoor' || attributesFromAsk(words).includes('outdoor_seating') || facets.exclude.includes('indoor'),
+    wantsIndoor: facets.environment === 'indoor' || facets.exclude.includes('outdoor'),
+    walkIn: walkInAsk(words),
   };
 }
-const askIsEmpty = (a) => !a || (!a.children && !a.pets && a.partySize == null && !a.walkIn && !a.rejectsIndoorOnly && !a.rejectsOutdoorOnly);
-
-// The first declared conflict between a business and the ask, or null. `bookable` = a business result (a perk has no booking).
-export function declinedBy(partner, ask, { bookable = true } = {}) {
-  if (!partner || askIsEmpty(ask)) return null;
-  const keys = notAccommodatedOf(partner);
-  if (ask.children && keys.some((k) => NO_CHILD_KEYS.includes(k))) return 'children';
-  if (ask.pets && keys.includes('no_pets')) return 'pets';
-  const max = cleanMaxGroupSize(partner.max_group_size);
-  if (ask.partySize != null && max != null && max < ask.partySize) return 'group';
-  if (ask.rejectsIndoorOnly && partner.weather_setting === 'indoor') return 'indoor_only';
-  if (ask.rejectsOutdoorOnly && partner.weather_setting === 'outdoor') return 'outdoor_only';
-  if (bookable && ask.walkIn && NEEDS_BOOKING_FIRST.includes(bookingModeOf(partner))) return 'booking';
-  return null;
-}
+export const askRaisesRestriction = (a) => !!a && (a.partySize != null || a.children || a.pets || a.wantsOutdoor || a.wantsIndoor || a.walkIn);
 
 export const DECLINE_LABELS = {
   children: "places that don't take children",
@@ -105,20 +92,20 @@ export const DECLINE_LABELS = {
   booking: 'places that need a booking first',
 };
 
-// Removes business results and perks whose business declared a conflict with the ask. `partnerFor(c)` returns the candidate's
-// partner row or null (unknown = kept). The caption names only what was really removed, so nothing disappears silently.
-export function applyRestrictionsToCandidates(candidates, ask, partnerFor, { isBusiness = () => true } = {}) {
-  if (askIsEmpty(ask)) return { items: candidates, caption: null };
+// Applies the server's answer (`declined`: Map partnerId -> reason). A booking conflict removes only BUSINESS results: a perk has
+// no booking. Anything not in the map (compatible, unknown, or the lookup failed) is kept. The caption names only what was removed.
+export function applyRestrictionsToCandidates(candidates, declined, { partnerIdOf = (c) => c.partnerId, isBusiness = () => true } = {}) {
+  if (!(declined instanceof Map) || declined.size === 0) return { items: candidates, caption: null };
   const removed = [];
   const items = candidates.filter((c) => {
-    const partner = partnerFor(c);
-    if (!partner) return true;
-    const why = declinedBy(partner, ask, { bookable: isBusiness(c) });
-    if (why && !removed.includes(why)) removed.push(why);
-    return !why;
+    const id = partnerIdOf(c);
+    const why = id ? declined.get(id) : null;
+    if (!why || (why === 'booking' && !isBusiness(c))) return true;
+    if (!removed.includes(why)) removed.push(why);
+    return false;
   });
   if (removed.length === 0) return { items, caption: null };
-  const parts = removed.map((k) => DECLINE_LABELS[k]);
+  const parts = removed.map((k) => DECLINE_LABELS[k] ?? 'places that can\'t take this request');
   const list = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
   return { items, caption: `Leaving out ${list}` };
 }

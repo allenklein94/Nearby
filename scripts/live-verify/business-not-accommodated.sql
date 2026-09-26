@@ -4,7 +4,9 @@
 --  * routing (5 nearby businesses, cap 10, so an absence can only be an elimination): a kid request skips no_children and 21+;
 --    a dog request skips no_pets; a patio request skips indoor-only; a party of 20 skips max 8; a plain request reaches all 5
 --  * auto-offer from a live availability posting is not made for a conflicting request
---  * anon/authenticated cannot execute the internal helper
+--  * anon/authenticated cannot execute the internal helpers
+--  * get_declined_businesses (typed asks, same rule): each fact removes only its conflict; no facts = nothing; walk-in vs a
+--    required booking; not callable by anon; returns nothing without a signed-in caller
 begin;
 do $$
 declare out text := ''; req uuid; requester uuid; other_id uuid; base jsonb; n int; hit boolean;
@@ -101,6 +103,19 @@ begin
 
   out := out || 'anon can run helper (expect false): ' || has_function_privilege('anon', 'public._business_declines_request(uuid, uuid)', 'execute') || E'\n';
   out := out || 'authenticated can run helper (expect false): ' || has_function_privilege('authenticated', 'public._business_declines_request(uuid, uuid)', 'execute') || E'\n';
+  update brand_partners set booking_mode = 'reservation_required' where id = plain;
+  perform set_config('request.jwt.claims', json_build_object('sub', requester, 'role', 'authenticated')::text, true);
+  select string_agg(p.name || ':' || d.reason, ',' order by p.name) into function_reached
+    from get_declined_businesses(array[plain, nokids, adults, nopets, indoor, small]) d join brand_partners p on p.id = d.partner_id;
+  out := out || 'rpc, no facts (expect empty): ' || coalesce(function_reached, 'empty') || E'\n';
+  select string_agg(p.name || ':' || d.reason, ',' order by p.name) into function_reached
+    from get_declined_businesses(array[plain, nokids, adults, nopets, indoor, small], 10, true, true, true, false, true) d join brand_partners p on p.id = d.partner_id;
+  out := out || 'rpc, kids+pets+10+outside+walk-in (expect Plain:booking, Indoor, NoKids, NoPets, Small, 21): ' || function_reached || E'\n';
+  perform set_config('request.jwt.claims', '', true);
+  select count(*) into n from get_declined_businesses(array[nokids], null, true);
+  out := out || 'rpc without a signed-in caller (expect 0): ' || n || E'\n';
+  out := out || 'anon can call rpc (expect false): ' || has_function_privilege('anon', 'public.get_declined_businesses(uuid[], integer, boolean, boolean, boolean, boolean, boolean)', 'execute') || E'\n';
+  out := out || 'core rule callable by authenticated (expect false): ' || has_function_privilege('authenticated', 'public._business_declines(uuid, integer, boolean, boolean, boolean, boolean, boolean)', 'execute') || E'\n';
   raise exception E'RESULT\n%', out;
 end $$;
 rollback;

@@ -172,7 +172,7 @@ describe('privacy and scope', () => {
     const users = fs.readdirSync(path.join(ROOT, 'src'), { recursive: true })
       .filter((f) => /\.js$/.test(f) && !/test\.js$/.test(f) && /from '[^']*businessCapabilities'/.test(read(`src/${f}`)))
       .map((f) => f.split(path.sep).join('/')).sort();
-    expect(users).toEqual(['constants/businessRestrictions.js', 'screens/BusinessDashboardScreen.js', 'screens/BusinessProfileScreen.js', 'services/intentResolver.js', 'utils/askResolver.js']);
+    expect(users).toEqual(['screens/BusinessDashboardScreen.js', 'screens/BusinessProfileScreen.js', 'services/intentResolver.js', 'utils/askResolver.js']);
   });
 });
 
