@@ -109,3 +109,34 @@ describe('works without the AI', () => {
     expect(src).not.toMatch(/fetch\(|supabase|anthropic/i);
   });
 });
+
+// Owner decision (2026-09-26, item 80 follow-up, LOCKED): ONE party-size parser (partySizeFromText) serves typed discovery,
+// business routing and Create Gathering's "Planning for N?"; the number is TOTAL people, the same semantics as capacity, and
+// nothing downstream adds the host again. Arbitrary numbers are never a party size.
+describe('party size: one shared parser, total people, no arbitrary numbers', () => {
+  const { resolveAsk, createParamsFromAsk } = require('./askResolver');
+  const { capacityForPartySize } = require('./gatheringStructure');
+  it.each([
+    ['12 guests', 12], ['dinner for 12', 12], ['party of 12', 12], ['a 20-person birthday', 20], ['table for 8', 8],
+    ['group of 6', 6], ['4 people', 4], ['me and 3 friends', 4], ['for 1', 1], ['for 2', 2],
+  ])('%s -> %i total people', (t, n) => expect(partySizeFromText(t)).toBe(n));
+  it.each(['for 2 hours', 'for 5 PM', 'for 5pm', 'for $30', 'under $50', 'in 2 hours', 'at 5', 'at 7:30', 'for 10 minutes', 'top 5 bars', 'route 66 diner', 'for 2026'])(
+    '%s is not a party size', (t) => expect(partySizeFromText(t)).toBeNull());
+  it('the person\'s words beat an AI number', () => {
+    expect(resolveAsk('birthday dinner for 12', { partySize: 8 }).group.partySize).toBe(12);
+  });
+  it('Create Gathering gets the same number and uses it as the total (never +1)', () => {
+    const ask = resolveAsk('birthday dinner for 12 tonight', null);
+    const params = createParamsFromAsk(ask);
+    expect(params.quickStartPartySize).toBe(12);
+    expect(capacityForPartySize(params.quickStartPartySize)).toEqual({ option: '10+', custom: 12, size: 12 });
+    expect(capacityForPartySize(partySizeFromText('4 guests')).option).toBe('2-4');
+  });
+  it('there is exactly one party-size parser', () => {
+    const fs = require('fs'); const path = require('path');
+    const src = path.join(__dirname, '..');
+    const defs = fs.readdirSync(src, { recursive: true }).filter((f) => /\.js$/.test(f) && !/test\.js$/.test(f))
+      .filter((f) => /function\s+\w*[pP]artySize\w*FromText\b/.test(fs.readFileSync(path.join(src, f), 'utf8')));
+    expect(defs.map((f) => f.split(path.sep).join('/'))).toEqual(['utils/gatheringInference.js']);
+  });
+});
