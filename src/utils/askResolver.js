@@ -54,7 +54,10 @@ export function priceLevelFromText(text) {
   if (/\b(free|no\s+cost)\b/i.test(t)) return 'free';
   if (/\b(cheap|inexpensive|budget[- ]friendly|on\s+a\s+budget|affordable)\b/i.test(t)) return '$';
   if (/\b(moderate|moderately\s+priced|reasonably\s+priced)\b/i.test(t)) return '$$';
-  if (/\b(expensive|upscale|fancy|splurge)\b/i.test(t)) return '$$$';
+  // Item 82: "special occasion" is the person's word for the top of the range (fits a $$$ or $$$$ business). "Not too
+  // expensive" is a negation, handled by askFacets, never read as $$$.
+  if (/\bnot\s+too\s+(expensive|pricey|fancy)\b|\b(no|nothing)\s+(too\s+)?(expensive|pricey|fancy)\b/i.test(t)) return null;
+  if (/\b(expensive|upscale|fancy|splurge|special[- ]occasion)\b/i.test(t)) return '$$$';
   return null;
 }
 export function budgetMaxFromText(text) {

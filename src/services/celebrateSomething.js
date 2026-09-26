@@ -42,9 +42,10 @@ export const ACTIVITY_OPTIONS = [
 // ceiling when the user bothers to type an exact number.
 export const BUDGET_LEVEL_OPTIONS = [
   { key: 'any', label: 'No preference', max: null },
-  { key: '$', label: '$', max: 25 },
-  { key: '$$', label: '$$', max: 60 },
-  { key: '$$$', label: '$$$', max: 150 },
+  // Item 82: people speak in words, not symbols. Keys and ceilings unchanged (budget contract); only the labels.
+  { key: '$', label: 'Cheap · $', max: 25 },
+  { key: '$$', label: 'Moderate · $$', max: 60 },
+  { key: '$$$', label: 'Special occasion · $$$', max: 150 },
 ];
 
 // The real budgetMax to submit -- an explicit numeric override always wins

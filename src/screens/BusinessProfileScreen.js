@@ -24,6 +24,7 @@ import { businessHoursLabel, weekHoursLines } from '../utils/operatingStatus';
 import { businessPrimaryAction } from '../utils/primaryAction';
 import { bookingModeOf, bookingModeOption, LEGACY_RESERVATION_ATTRIBUTE } from '../constants/bookingMode';
 import { maxGroupLine, spaceCapacityLines } from '../constants/businessCapabilities';
+import { businessPriceLine } from '../constants/businessPrice';
 import { businessActionRoute } from '../utils/businessAction';
 import { getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
@@ -288,6 +289,12 @@ export default function BusinessProfileScreen({ route, navigation }) {
         {bookingModeOption(bookingModeOf(partner)) && (
           <Text style={styles.reliabilityLine}>
             {bookingModeOption(bookingModeOf(partner)).icon} {bookingModeOption(bookingModeOf(partner)).customerLine}
+          </Text>
+        )}
+        {/* Item 82: the owner's price tier and optional typical spend; hidden when neither was said. */}
+        {businessPriceLine(partner.price_level, partner.typical_spend_per_person) && (
+          <Text style={styles.reliabilityLine}>
+            💲 {businessPriceLine(partner.price_level, partner.typical_spend_per_person)}
           </Text>
         )}
         {/* Item 80: the largest group the owner said they can host (total people); hidden when not set, never guessed. */}

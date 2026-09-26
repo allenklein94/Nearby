@@ -9,7 +9,7 @@ jest.mock('./gatherings', () => ({ getNearbyGatherings: jest.fn(), getGatheringF
 jest.mock('./communities', () => ({ getMyCommunities: jest.fn(async () => []), getPublicCommunities: jest.fn(async () => []) }));
 jest.mock('./brandOffers', () => ({
   getActiveOffers: jest.fn(async () => []), logBusinessProfileView: jest.fn(), getPartnerWeatherSettings: jest.fn(async () => ({})),
-  getPartnerPriceLevels: jest.fn(async () => ({})), getPartnerSuitedAges: jest.fn(async () => ({})), getPartnerOperatingInfo: jest.fn(async () => ({})),
+  getPartnerPriceInfo: jest.fn(async () => new Map()), getPartnerSuitedAges: jest.fn(async () => ({})), getPartnerOperatingInfo: jest.fn(async () => ({})),
 }));
 jest.mock('./businessFulfillment', () => ({
   getConnectedOpenBusinessRequests: jest.fn(async () => []), searchActiveBusinessAvailability: jest.fn(async () => []),

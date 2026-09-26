@@ -21,8 +21,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityTimeRange, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize, setBusinessSpaceCapacity } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityTimeRange, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize, setBusinessSpaceCapacity, setBusinessTypicalSpend } from '../services/brandOffers';
 import { cleanMaxGroupSize, maxGroupSizeProblem, SPACES, spaceCapacityProblem } from '../constants/businessCapabilities';
+import { BUSINESS_PRICE_LEVELS, typicalSpendProblem } from '../constants/businessPrice';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
 // P2 remediation item 11 (CLAUDE.md) -- reuse the admin queue's own real
@@ -285,6 +286,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [selectedPartner, setSelectedPartner] = useState(null);
   // Item 80: the "Largest group you can host" field; null = not yet edited (shows the saved value).
   const [maxGroupDraft, setMaxGroupDraft] = useState(null);
+  const [spendDraft, setSpendDraft] = useState(null);
+  const [savingSpend, setSavingSpend] = useState(false);
   const [savingMaxGroup, setSavingMaxGroup] = useState(false);
   // Item 81: per-space drafts ({ private_room: '20' }); a key is present only while being edited.
   const [spaceDrafts, setSpaceDrafts] = useState({});
@@ -1111,6 +1114,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setSelectedPartner((prev) => ({ ...prev, price_level: current }));
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePickPriceLevel(key) });
     }
+  }
+
+  // Item 82: optional typical spend per person, whole dollars. Blank = not said. Saved on tap.
+  async function handleSaveTypicalSpend() {
+    if (!selectedPartner || spendDraft === null) return;
+    const problem = typicalSpendProblem(spendDraft);
+    if (problem) { Alert.alert('Check the amount', problem); return; }
+    const next = spendDraft.trim() ? Number(spendDraft.trim()) : null;
+    setSavingSpend(true);
+    try {
+      await setBusinessTypicalSpend(selectedPartner.id, next);
+      setSelectedPartner((prev) => ({ ...prev, typical_spend_per_person: next }));
+      setSpendDraft(null);
+    } catch (e) {
+      presentRecoverableError(Alert, { what: 'save your typical spend', error: e, onRetry: () => handleSaveTypicalSpend() });
+    }
+    setSavingSpend(false);
   }
 
   // Item 80: largest group the business can host (total people). Blank = not said; never guessed. Saved on tap.
@@ -5433,27 +5453,50 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.helperText}>
                   Sets the button customers see: Walk-in shows "Go now" while you're open, Reservation recommended "Reserve", Reservation required "Book", Request required "Request". Reserve, Book and Request send you a request to answer. Tap again to clear.
                 </Text>
-                {/* Price (item 40): the same Free/$/$$/$$$ vocabulary gatherings use; owner-declared, never inferred. */}
+                {/* Price (items 40 + 82): one coarse tier, $ to $$$$, plus an optional typical spend per person. Owner-declared, never inferred. */}
                 <Text style={styles.sectionHeader}>What does it usually cost?</Text>
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {EXPERIENCE_PRICE_OPTIONS.filter((o) => o.key).map((o) => {
-                    const selected = (selectedPartner?.price_level ?? null) === o.key;
+                  {BUSINESS_PRICE_LEVELS.map((key) => {
+                    const selected = (selectedPartner?.price_level ?? null) === key;
                     return (
                       <TouchableOpacity
-                        key={o.key}
+                        key={key}
                         style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => handlePickPriceLevel(o.key)}
+                        onPress={() => handlePickPriceLevel(key)}
                         accessibilityRole="button"
-                        accessibilityLabel={`${o.label}${selected ? ', selected' : ''}`}
+                        accessibilityLabel={`${key}${selected ? ', selected' : ''}`}
                         accessibilityState={{ selected }}
                       >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{key}</Text>
                       </TouchableOpacity>
                     );
                   })}
                 </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
+                  <TextInput
+                    style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
+                    placeholder="Typical spend per person (optional), e.g. 25"
+                    placeholderTextColor={colors.textTertiary}
+                    value={spendDraft ?? (selectedPartner?.typical_spend_per_person != null ? String(selectedPartner.typical_spend_per_person) : '')}
+                    onChangeText={(t) => setSpendDraft(t.replace(/[^0-9]/g, ''))}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    accessibilityLabel="Typical spend per person in dollars, optional"
+                  />
+                  {spendDraft !== null && (
+                    <TouchableOpacity
+                      style={[styles.chip, styles.chipSelected, { marginLeft: spacing.sm }]}
+                      onPress={handleSaveTypicalSpend}
+                      disabled={savingSpend}
+                      accessibilityRole="button"
+                      accessibilityLabel="Save typical spend"
+                    >
+                      <Text style={[styles.chipText, styles.chipTextSelected]}>{savingSpend ? 'Saving…' : 'Save'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
                 <Text style={styles.helperText}>
-                  Free means no cost to take part. Helps you appear when someone asks for something free or budget-friendly. Tap again to clear.
+                  A rough idea is enough. Helps you appear when someone asks for something cheap, moderate or for a special occasion. Tap a tier again to clear; leave the amount blank if it varies.
                 </Text>
                 {/* Item 80: largest group (total people), owner-declared; used only to decide which requests reach you. */}
                 <Text style={styles.sectionHeader}>Largest group you can host</Text>

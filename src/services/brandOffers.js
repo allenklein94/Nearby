@@ -1333,6 +1333,12 @@ export async function setBusinessPriceLevel(partnerId, level) {
 }
 
 // Item 80: largest group the business can host, total people (1-5000), or null = not said. Migration 20270216.
+// Item 82: typical spend per person, whole dollars 1-1000, or null = not said. Migration 20270218.
+export async function setBusinessTypicalSpend(partnerId, amount) {
+  const { error } = await supabase.rpc('set_business_typical_spend', { partner_id_param: partnerId, amount_param: amount ?? null });
+  if (error) throw error;
+}
+
 export async function setBusinessMaxGroupSize(partnerId, size) {
   const { error } = await supabase.rpc('set_business_max_group_size', { partner_id_param: partnerId, max_group_size_param: size ?? null });
   if (error) throw error;
@@ -1360,10 +1366,11 @@ export async function getPartnerSuitedAges(partnerIds) {
 }
 
 // partnerId -> price_level for the intent resolver's business results. Best-effort: a failure is an empty map (no nudge).
-export async function getPartnerPriceLevels(partnerIds) {
+export async function getPartnerPriceInfo(partnerIds) {
   const ids = [...new Set((partnerIds ?? []).filter(Boolean))];
   if (ids.length === 0) return new Map();
-  const { data, error } = await supabase.from('brand_partners').select('id, price_level').in('id', ids);
+  const { data, error } = await supabase.from('brand_partners').select('id, price_level, typical_spend_per_person').in('id', ids);
   if (error) return new Map();
-  return new Map((data ?? []).filter((r) => r.price_level).map((r) => [r.id, r.price_level]));
+  return new Map((data ?? []).filter((r) => r.price_level || r.typical_spend_per_person)
+    .map((r) => [r.id, { level: r.price_level ?? null, spend: r.typical_spend_per_person ?? null }]));
 }

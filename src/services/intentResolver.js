@@ -1,7 +1,7 @@
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
-import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, getPartnerPriceLevels, getPartnerSuitedAges, getPartnerOperatingInfo } from './brandOffers';
+import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, getPartnerPriceInfo, getPartnerSuitedAges, getPartnerOperatingInfo } from './brandOffers';
 import { Linking } from 'react-native';
 import { bookingModeOf } from '../constants/bookingMode';
 import { BUSINESS_RESULT_TYPES, intentResultBusinessRoute } from '../utils/businessAction';
@@ -712,10 +712,12 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     console.error('weather nudge skipped', e);
   }
 
-  // Item 40: a business that declared the asked price tier (e.g. Free) ranks up; ranking only, never a filter.
-  if (priceLevel) {
+  // Items 40 + 82: a business whose declared tier fits the asked price, or whose typical spend fits a stated budget, ranks up;
+  // a typical spend clearly over the budget, or a $$$/$$$$ tier on "not too expensive", ranks down. Never a filter.
+  const askPricey = parseAskFacets(rawText).pricey;
+  if (priceLevel || budgetMax || askPricey) {
     try {
-      deduped = applyBusinessPriceToCandidates(deduped, await getPartnerPriceLevels(deduped.map((c) => c.partnerId)), priceLevel, SCORE_HAPPENING_NOW);
+      deduped = applyBusinessPriceToCandidates(deduped, await getPartnerPriceInfo(deduped.map((c) => c.partnerId)), { priceLevel, budgetMax, pricey: askPricey }, SCORE_HAPPENING_NOW);
     } catch (e) {
       console.error('business price nudge skipped', e);
     }
