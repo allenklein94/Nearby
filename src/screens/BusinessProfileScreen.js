@@ -24,6 +24,7 @@ import { businessHoursLabel, weekHoursLines } from '../utils/operatingStatus';
 import { businessPrimaryAction } from '../utils/primaryAction';
 import { bookingModeOf, bookingModeOption, LEGACY_RESERVATION_ATTRIBUTE } from '../constants/bookingMode';
 import { maxGroupLine, spaceCapacityLines } from '../constants/businessCapabilities';
+import { notAccommodatedLine } from '../constants/businessRestrictions';
 import { businessPriceLine } from '../constants/businessPrice';
 import { businessActionRoute } from '../utils/businessAction';
 import { getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
@@ -301,6 +302,12 @@ export default function BusinessProfileScreen({ route, navigation }) {
         {maxGroupLine(partner.max_group_size) && (
           <Text style={styles.reliabilityLine} accessibilityLabel={`Largest group, ${maxGroupLine(partner.max_group_size)}`}>
             👥 Largest group · {maxGroupLine(partner.max_group_size)}
+          </Text>
+        )}
+        {/* Item 86: what the owner said they don't accommodate; hidden when nothing is declared. */}
+        {notAccommodatedLine(partner) && (
+          <Text style={styles.reliabilityLine} accessibilityLabel={`Not accommodated, ${notAccommodatedLine(partner)}`}>
+            🚫 {notAccommodatedLine(partner)}
           </Text>
         )}
         {/* Item 81: per-space sizes, only for a declared capability with a size set. */}

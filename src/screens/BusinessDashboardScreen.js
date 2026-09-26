@@ -21,7 +21,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityTimeRange, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize, setBusinessSpaceCapacity, setBusinessTypicalSpend } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityTimeRange, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize, setBusinessSpaceCapacity, setBusinessTypicalSpend, setBusinessNotAccommodated } from '../services/brandOffers';
 import { cleanMaxGroupSize, maxGroupSizeProblem, SPACES, spaceCapacityProblem } from '../constants/businessCapabilities';
 import { BUSINESS_PRICE_LEVELS, typicalSpendProblem } from '../constants/businessPrice';
 import { getBusinessCommunities } from '../services/communities';
@@ -76,6 +76,7 @@ import TellNearbyBusinessCard from '../components/TellNearbyBusinessCard';
 import { describeDemandSignals } from '../utils/demandSignals';
 import { opportunityPrimaryAction, consumerOfferAction } from '../utils/primaryAction';
 import { BOOKING_MODE_OPTIONS, LEGACY_RESERVATION_ATTRIBUTE, bookingModeOf } from '../constants/bookingMode';
+import { NOT_ACCOMMODATED_OPTIONS, notAccommodatedOf, notAccommodatedProblem } from '../constants/businessRestrictions';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, OFFERED_OCCASION_OPTIONS, WEATHER_SETTING_OPTIONS, occasionLabel, occasionPhrase, dietaryLabel, requestedItemLabel } from '../constants/businessAttributes';
 import { planAddonLabel } from '../constants/planAddons';
 import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
@@ -1084,6 +1085,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     } catch (e) {
       setSelectedPartner((prev) => ({ ...prev, weather_setting: current }));
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePickWeatherSetting(key) });
+    }
+  }
+
+  // Item 86: what you don't accommodate. Tap to add, tap again to remove; saves per tap. A conflict with a declared quality
+  // (Family-friendly, Pet friendly, suited ages) is explained before anything is sent, and the server checks it again.
+  async function handleToggleNotAccommodated(key) {
+    if (!selectedPartner) return;
+    const current = notAccommodatedOf(selectedPartner);
+    const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
+    const problem = notAccommodatedProblem(next, selectedPartner);
+    if (problem) { Alert.alert("That didn't go through", problem); return; }
+    setSelectedPartner((prev) => ({ ...prev, not_accommodated: next }));
+    try {
+      await setBusinessNotAccommodated(selectedPartner.id, next);
+    } catch (e) {
+      setSelectedPartner((prev) => ({ ...prev, not_accommodated: current }));
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleToggleNotAccommodated(key) });
     }
   }
 
@@ -5429,7 +5447,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   })}
                 </View>
                 <Text style={styles.helperText}>
-                  Outdoor: shown less when rain is coming, more in good weather. Weather dependent: shown less in bad weather. Indoor: shown more in bad weather. Tap again to clear.
+                  Outdoor only: shown less when rain is coming, more in good weather, and never to someone asking for indoors. Weather dependent: shown less in bad weather. Indoor only: shown more in bad weather, and never to someone asking for outside or a patio. Tap again to clear.
                 </Text>
                 {/* Booking mode (item 72): one owner-declared answer that sets the customer's button. */}
                 <Text style={styles.sectionHeader}>How do customers come in?</Text>
@@ -5524,7 +5542,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   )}
                 </View>
                 <Text style={styles.helperText}>
-                  Total people, counting everyone. Requests for larger groups go to businesses that can host them first. Leave blank if it varies.
+                  Total people, counting everyone. Requests for bigger groups aren't sent to you. Leave blank if it varies.
                 </Text>
                 {SPACES.filter((sp) => (selectedPartner?.attributes ?? []).includes(sp.attribute)).map((sp) => (
                   <View key={sp.key} style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
@@ -5565,6 +5583,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   max={selectedPartner?.suited_age_max ?? null}
                   onChange={handlePickSuitedAges}
                 />
+                {/* Item 86: what you don't accommodate. Requests that conflict are never sent to you or shown with your business. */}
+                <Text style={styles.sectionHeader}>What don't you accommodate?</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {NOT_ACCOMMODATED_OPTIONS.map((o) => {
+                    const selected = notAccommodatedOf(selectedPartner).includes(o.key);
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handleToggleNotAccommodated(o.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${o.label}${selected ? ', selected' : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <Text style={styles.helperText}>
+                  Requests that conflict aren't sent to you, and customers asking for them won't see you. Group size, reservations and indoor or outdoor only are set above.
+                </Text>
 </>
 )}
 {on('offers') && moreOffersOpen && (

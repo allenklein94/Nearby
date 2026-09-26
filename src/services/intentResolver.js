@@ -66,6 +66,7 @@ import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitm
 import { formatsFromText, applyFormatToCandidates } from '../constants/activityFormat';
 import { skillLevelsFromText, applySkillToCandidates } from '../constants/skillLevel';
 import { wordsBackedAttributes, applyCapabilitiesToCandidates } from '../constants/businessCapabilities';
+import { restrictionAsk, applyRestrictionsToCandidates } from '../constants/businessRestrictions';
 import { genresFromText, applyGenreToCandidates } from '../constants/genreMatch';
 import { timeBudgetFromText, applyTimeBudgetToCandidates, timeBudgetCaption } from '../constants/timeBudget';
 import { clockWindowFromText, dateAnchorFromText, applyClockWindowToCandidates, clockWindowCaption, windowSpan, clockLabel } from '../constants/clockWindow';
@@ -794,6 +795,13 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     const mode = bookingModeOf(partner);
     return { ...c, businessPartner: partner, ...(mode ? { bookingMode: mode } : {}) };
   });
+  // Item 86: a business (or a perk's business) that DECLARED something the ask conflicts with is removed before it is shown: no
+  // children / 21+ vs kids in the ask, no pets vs a pet, largest group below the party, indoor-only vs outside, outdoor-only vs
+  // indoors, a required booking vs "walk in". Unknown on either side is kept; the caption says what was left out.
+  const restrictions = applyRestrictionsToCandidates(deduped, restrictionAsk({ text: rawText, attributes, partySize }),
+    (c) => (c.partnerId && (BUSINESS_RESULT_TYPES.includes(c.type) || c.type === 'perk') ? partnerInfo.get(c.partnerId) ?? null : null),
+    { isBusiness: (c) => BUSINESS_RESULT_TYPES.includes(c.type) });
+  deduped = restrictions.items;
   // Item 80: declared capabilities vs the ask: largest group vs the stated party size, private events / catering only when the
   // words ask for them. Ranking only; unknown is neutral; business results only (perks carry no partner row).
   deduped = applyCapabilitiesToCandidates(deduped, { partySize, text: rawText });
@@ -845,7 +853,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   deduped.sort((a, b) => b.score - a.score);
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
-  const openEndedNote = [openNowOnly ? OPEN_NOW_CAPTION : null, planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacets.caption].filter(Boolean).join(' · ') || null;
+  const openEndedNote = [openNowOnly ? OPEN_NOW_CAPTION : null, planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacets.caption, restrictions.caption].filter(Boolean).join(' · ') || null;
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,

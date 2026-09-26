@@ -967,6 +967,12 @@ export async function setBusinessWeatherSetting(partnerId, setting) {
   if (error) throw error;
 }
 
+// Owner item 86: what the business does NOT accommodate (no_children / no_pets / adults_21_plus; [] clears). Migration 20270222.
+export async function setBusinessNotAccommodated(partnerId, keys) {
+  const { error } = await supabase.rpc('set_business_not_accommodated', { partner_id_param: partnerId, keys_param: keys ?? [] });
+  if (error) throw error;
+}
+
 // Owner item 72: how customers come in (walk_in / reservation_recommended / reservation_required / request_required; null clears).
 // Drives the consumer CTA (utils/primaryAction.js businessPrimaryAction). Setting it also drops the legacy reservation_required attribute.
 export async function setBusinessBookingMode(partnerId, mode) {
@@ -991,7 +997,7 @@ export async function getPartnerOperatingInfo(partnerIds) {
   if (ids.length === 0) return new Map();
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, name, latitude, longitude, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, max_group_size, private_room_capacity, outdoor_capacity')
+    .select('id, name, latitude, longitude, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, max_group_size, private_room_capacity, outdoor_capacity, not_accommodated, weather_setting')
     .in('id', ids);
   if (error) return new Map();
   return new Map((data ?? []).map((r) => [r.id, r]));
