@@ -3,8 +3,8 @@
 // from the time of day, a profile or behavior). null = not said = ranking unchanged.
 //   walking    "I'm walking", "on foot", "we'll walk over"            -> strongest relative closeness preference
 //   bike       "on my bike", "I'm biking", "cycling there"            -> moderate relative closeness preference
-//   driving    "I'm driving", "I have a car", "I'll drive"            -> the close-by bonus is removed (distance matters less)
-//   rideshare  "I'll take an Uber", "grab a Lyft", "a cab"            -> same as driving
+//   driving    "I'm driving", "I have a car", "I'll take an Uber",    -> the close-by bonus is removed (distance matters less)
+//              "grab a Lyft", "a cab"                                  rideshare is NOT its own concept (owner): it is going by car
 //   transit    "taking the train", "by bus", "on the subway"          -> NO ranking effect on miles: no transit data
 // Rules (owner, LOCKED): ranking only, typed asks only, nothing stored, never sent to a business, never used for people; a mode is
 // never turned into a travel time, and nothing claims a result is easier to reach. Search bounds are never widened by a mode
@@ -23,8 +23,8 @@ import { closeBonusOf } from './distanceWillingness';
 export const TRANSPORT_MODES = [
   { key: 'walking', label: 'Walking', milesWeight: 2, timed: { weight: 2, halfLifeMin: 10 }, caption: 'Keeping it close since you\u2019re walking' },
   { key: 'bike', label: 'Bike', milesWeight: 1, timed: { weight: 1.5, halfLifeMin: 12 }, caption: 'Leaning closer since you\u2019re biking' },
-  { key: 'driving', label: 'Driving', dropCloseBonus: true, timed: { weight: 1, halfLifeMin: 15 }, caption: 'Not just the closest, since you\u2019re driving' },
-  { key: 'rideshare', label: 'Rideshare', dropCloseBonus: true, timed: { weight: 1, halfLifeMin: 15 }, caption: 'Not just the closest, since you\u2019re taking a ride' },
+  // Driving and rideshare/taxi are ONE mode (going by car); never split into separate product concepts.
+  { key: 'driving', label: 'By car', dropCloseBonus: true, timed: { weight: 1, halfLifeMin: 15 }, caption: 'Not just the closest, since you\u2019re going by car' },
   // Transit ranks ONLY on real routed times; on miles alone it changes nothing and says nothing.
   { key: 'transit', label: 'Transit', timed: { weight: 1.5, halfLifeMin: 20 } },
 ];
@@ -52,8 +52,7 @@ const PATTERNS = {
     new RegExp(String.raw`\b${WILL}\s+drive\b`, 'i'),
     /\b(?:i|we)\s+(?:have|got|'ve\s+got)\s+(?:a|the|my|our)\s+car\b/i,
     /\b(?:by\s+car|driving\s+there)\b/i,
-  ],
-  rideshare: [
+    // rideshare / taxi = going by car
     /\b(?:take|taking|grab|grabbing|get|getting|call|calling|order|ordering)\s+(?:an?\s+)?(?:uber|lyft|cab|taxi|rideshare)\b/i,
     /\b(?:uber|lyft)(?:ing)?\s+(?:there|over)\b/i,
     /\b(?:by|in\s+an?)\s+(?:uber|lyft|cab|taxi|rideshare)\b/i,
@@ -81,9 +80,7 @@ export function transportModeFromText(text) {
       if (found.has(key)) break;
     }
   }
-  // driving + rideshare both say "distance matters less": not a conflict.
   const keys = [...found];
-  if (keys.length === 2 && found.has('driving') && found.has('rideshare')) return 'rideshare';
   return keys.length === 1 ? keys[0] : null;
 }
 

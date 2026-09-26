@@ -13,7 +13,7 @@ describe('reading how the person is getting there (words only)', () => {
     expect(t("I'm walking, where should we get coffee")).toBe('walking');
     expect(t("I'm on my bike, something fun nearby")).toBe('bike');
     expect(t("I'm driving, dinner tonight")).toBe('driving');
-    expect(t("I'll take an Uber to dinner")).toBe('rideshare');
+    expect(t("I'll take an Uber to dinner")).toBe('driving');
     expect(t("I'm taking the train, drinks after work")).toBe('transit');
     expect(resolveAsk("coffee, I'm walking").transportMode).toBe('walking');
   });
@@ -21,7 +21,7 @@ describe('reading how the person is getting there (words only)', () => {
     expect(['we are on foot', "we'll walk over", 'we can walk there'].map(t)).toEqual(Array(3).fill('walking'));
     expect(['by bike', "we're cycling", "I'll bike there"].map(t)).toEqual(Array(3).fill('bike'));
     expect(['I have a car', "I'll drive", 'we are driving'].map(t)).toEqual(Array(3).fill('driving'));
-    expect(['grab a Lyft', 'in a cab', 'getting a taxi', 'uber there'].map(t)).toEqual(Array(4).fill('rideshare'));
+    expect(['grab a Lyft', 'in a cab', 'getting a taxi', 'uber there'].map(t)).toEqual(Array(4).fill('driving'));
     expect(['by bus', 'on the subway', 'public transit', 'catching the metro'].map(t)).toEqual(Array(4).fill('transit'));
   });
   it('activities and vague words are not a mode', () => {
@@ -32,10 +32,11 @@ describe('reading how the person is getting there (words only)', () => {
   it('negated modes are not a mode', () => {
     for (const s of ["I'm not driving tonight", "we won't take an Uber", "I don't have a car"]) expect([s, t(s)]).toEqual([s, null]);
   });
-  it('two different modes = unclear (null); driving + rideshare agree', () => {
+  it('two different modes = unclear (null); a car and an Uber are the same mode', () => {
     expect(t("I'll walk or take the bus")).toBeNull();
     expect(t("I'm walking there and taking an Uber home")).toBeNull();
-    expect(t("I have a car but might grab an Uber")).toBe('rideshare');
+    expect(t("I have a car but might grab an Uber")).toBe('driving');
+    expect(TRANSPORT_MODES.map((m) => m.key)).toEqual(['walking', 'bike', 'driving', 'transit']);
   });
 });
 
@@ -45,7 +46,7 @@ describe('an explicit distance stays primary; the mode only refines', () => {
   const lift = (mode, stated) => applyTransportMode(list(), mode, null, { statedDistance: stated }).map((c) => c.score);
   it('"within 10 minutes" + driving: driving never removes the close-by bonus (that would contradict the ask)', () => {
     expect(lift('driving', 'very_nearby')).toEqual([0, 0, 0]);
-    expect(lift('rideshare', 'nearby')).toEqual([0, 0, 0]);
+    expect(lift('driving', 'nearby')).toEqual([0, 0, 0]);
   });
   it('"30 minutes away and I\'m walking": walking refines with a weight below every stated-distance lift', () => {
     expect(lift('walking', 'willing_to_travel')).toEqual([REFINE_WEIGHT, REFINE_WEIGHT * 2.5 / 4, 0]);
@@ -70,11 +71,10 @@ describe('ranking: relative closeness on real measured distances, no mile cutoff
     expect(deltas('walking')).toEqual([2, 2 * 2.5 / 4, 0, 0]);
     expect(deltas('bike')).toEqual([1, 2.5 / 4, 0, 0]);
   });
-  it('driving and rideshare remove exactly the existing close-by bonus, nothing else', () => {
+  it('going by car removes exactly the existing close-by bonus, nothing else', () => {
     const d = deltas('driving');
     expect(d).toEqual(list().map((c) => -closeBonusOf(c) || 0));
     expect(d[0]).toBeLessThan(0);
-    expect(deltas('rideshare')).toEqual(d);
   });
   it('transit changes nothing on miles alone (no transit data)', () => {
     expect(applyTransportMode(list(), 'transit')).toEqual(list());
@@ -197,3 +197,19 @@ describe('scope and safety', () => {
     }
   });
 });
+
+describe('routing budget ceilings (migration 20270210): shipped closed', () => {
+  const sql = read('supabase/migrations/20270210_routing_budget_ceilings.sql');
+  it('every ceiling defaults to 0, so every claim is refused until the owner sets a budget', () => {
+    for (const c of ['monthly_element_ceiling', 'daily_element_ceiling', 'per_user_daily_asks']) expect(sql).toMatch(new RegExp(`${c} integer not null default 0`));
+    expect(sql).toMatch(/monthly_element_ceiling = 0 or s\.daily_element_ceiling = 0 or s\.per_user_daily_asks = 0 then\s+return false/);
+    expect(sql).not.toMatch(/update public\.routing_budget_settings/i);
+  });
+  it('service_role only; no client grant; nothing about the ask is stored', () => {
+    expect(sql).toContain('revoke all on function public.routing_claim_budget(uuid, integer) from public, anon, authenticated;');
+    expect(sql).toContain('grant execute on function public.routing_claim_budget(uuid, integer) to service_role;');
+    expect(sql).not.toMatch(/grant [^;]* to (anon|authenticated)/i);
+    expect(sql).not.toMatch(/\b(mode|lat|lng|origin|candidate)\w*\s+(text|numeric|double|uuid|jsonb)/i);
+  });
+});
+

@@ -7,7 +7,7 @@
 // which provider produced it. A future provider is a server-side relay (an edge function) that receives a coarsened origin and
 // candidate KEYS (never destination coordinates from the client; the server looks them up) and returns seconds per key.
 
-export const ROUTABLE_MODES = ['walking', 'bike', 'driving', 'rideshare', 'transit'];
+export const ROUTABLE_MODES = ['walking', 'bike', 'driving', 'transit'];
 // At most this many of the already-ranked, already-bounded results are ever routed per ask (cost cap; see the design doc).
 export const MAX_ROUTED_CANDIDATES = 20;
 export const ROUTING_TIMEOUT_MS = 1500;
@@ -74,7 +74,7 @@ export function travelTimeSeconds(result, travelTimes, keyOf) {
   return plausible(s) ? s : null;
 }
 
-const MODE_PHRASE = { walking: 'on foot', bike: 'by bike', driving: 'by car', rideshare: 'by car', transit: 'by transit' };
+const MODE_PHRASE = { walking: 'on foot', bike: 'by bike', driving: 'by car', transit: 'by transit' };
 
 // "About 12 min by transit". Only for a real provider-supplied time; unknown = null (nothing shown, nothing guessed).
 export function travelTimeLabel(seconds, mode) {
