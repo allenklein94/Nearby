@@ -20,10 +20,10 @@ import {
 } from '../services/brandOffers';
 import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
 import { getCommunityMemberCount } from '../services/communities';
-import { hoursStatus, weekHoursLines } from '../utils/operatingStatus';
+import { businessHoursLabel, weekHoursLines } from '../utils/operatingStatus';
 import { businessPrimaryAction } from '../utils/primaryAction';
 import { bookingModeOf, bookingModeOption, LEGACY_RESERVATION_ATTRIBUTE } from '../constants/bookingMode';
-import { buildDirectionsUrl } from '../utils/planLogisticsActions';
+import { businessActionRoute } from '../utils/businessAction';
 import { getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { businessAttributeLabel, cuisineLabel, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, experiencePriceLabel, experiencePartyTypeLabel } from '../constants/businessAttributes';
@@ -222,16 +222,12 @@ export default function BusinessProfileScreen({ route, navigation }) {
   // Item 72: the booking CTA. Go now / directions open maps; Reserve / Book / Request open the request addressed to just this
   // business, whose accepted offer is the booking.
   function runBookingAction(action) {
-    if (!action || !partner) return;
-    if (action.kind === 'go_now' || action.kind === 'directions') {
-      Linking.openURL(buildDirectionsUrl({ latitude: partner.latitude, longitude: partner.longitude, address: partner.address }));
-      return;
+    const route = businessActionRoute(action, { partner, partnerId, prefill: { prefillCategory: partner?.subcategory ?? null } });
+    if (route?.kind === 'url') {
+      if (route.url) Linking.openURL(route.url);
+    } else if (route) {
+      navigation.navigate(route.screen, route.params);
     }
-    navigation.navigate('AskBusiness', {
-      targetPartner: { id: partnerId, name: partner.name },
-      prefillCategory: partner.subcategory ?? null,
-      bookingMode: bookingModeOf(partner),
-    });
   }
 
   if (loading) {
@@ -279,8 +275,8 @@ export default function BusinessProfileScreen({ route, navigation }) {
         {/* Hours (item 71): only what the owner declared, read by the one open-now resolver; nothing when not declared. */}
         {weekHoursLines(partner.operating_hours) && (
           <View style={{ marginBottom: 6 }}>
-            {hoursStatus(partner.operating_hours).label ? (
-              <Text style={styles.reliabilityLine}>🕒 {hoursStatus(partner.operating_hours).label}</Text>
+            {businessHoursLabel(partner) ? (
+              <Text style={styles.reliabilityLine}>🕒 {businessHoursLabel(partner)}</Text>
             ) : null}
             {weekHoursLines(partner.operating_hours).map((l) => (
               <Text key={l.day} style={styles.reliabilityLine}>{l.day}  {l.text}</Text>

@@ -562,6 +562,8 @@ export default function AskBusinessScreen({ navigation, route }) {
           <Text style={styles.heading}>
             {targetPartner
               ? bookingAskHeading(route.params?.bookingMode, targetPartner)
+              : matchedAvailability && route.params?.bookingMode
+              ? bookingAskHeading(route.params.bookingMode, { name: matchedAvailability.partnerName })
               : gatheringId
               ? `Find ${gatheringTitle ?? 'your gathering'} somewhere to go`
               : matchId

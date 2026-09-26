@@ -1,3 +1,4 @@
+import { businessActionForItem } from '../utils/businessAction';
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
@@ -1128,6 +1129,10 @@ export default function HomeScreen({ navigation }) {
             </Text>
           ) : null}
         </View>
+        {/* Item 72: a business result names the action its tap takes (same resolver as its profile). */}
+        {businessActionForItem(item) ? (
+          <Text style={{ color: colors.primary, fontWeight: '700', marginRight: 4 }}>{businessActionForItem(item).label}</Text>
+        ) : null}
         <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
       </TouchableOpacity>
     );
@@ -1226,21 +1231,16 @@ export default function HomeScreen({ navigation }) {
       navigation.navigate('BrandOffers', { highlightOfferId: item.id });
     } else if (item.type === 'community') {
       navigation.navigate('CommunityDetail', { communityId: item.id });
-    } else if (item.type === 'business_availability') {
-      if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
-      navigation.navigate('AskBusiness', {
-        prefillText: '',
-        prefillCategory: item.category ?? null,
-        prefillDateWindow: surprise?.when ?? null,
-        prefillOccasion: surprise?.mood ? moodToParams(surprise.mood).occasion : null,
-        matchedAvailability: item.matchedAvailability ?? null,
-      });
-    } else if (item.type === 'business_policy_match') {
-      if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
-      navigation.navigate('AskBusiness', {
-        prefillText: '',
-        prefillCategory: item.category ?? null,
-        prefillDateWindow: surprise?.when ?? null,
+    } else {
+      // Item 72: business suggestions follow the same booking-mode action as everywhere else (utils/businessAction.js via the
+      // shared router); Surprise Me has no typed text, so only its own real when/mood prefill the request form.
+      navigateToIntentResultItem(navigation, item, {
+        typedText: '',
+        classifyResult: {
+          category: item.category ?? null,
+          dateWindow: surprise?.when ?? null,
+          occasion: item.type === 'business_availability' && surprise?.mood ? moodToParams(surprise.mood).occasion : null,
+        },
       });
     }
   }

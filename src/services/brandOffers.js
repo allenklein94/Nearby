@@ -219,7 +219,7 @@ export async function getNearbyBusinesses(lat, lng, radiusMiles = 50) {
   const { lat: myLat, lng: myLng } = await resolveCoords(lat, lng);
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, name, logo_url, latitude, longitude, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode')
+    .select('id, name, logo_url, latitude, longitude, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode')
     .eq('active', true)
     .not('latitude', 'is', null)
     .not('longitude', 'is', null)
@@ -968,14 +968,14 @@ export async function setBusinessOperatingHours(partnerId, hours) {
   if (error) throw error;
 }
 
-// partnerId -> { operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode } for the open-now resolver on typed-ask
+// partnerId -> the partner row (name, place, attributes, hours, pulse, booking_mode) for the open-now resolver and the item-72 action on typed-ask
 // business results. Best-effort: a failure is an empty map, which makes every business "unknown" (never "closed").
 export async function getPartnerOperatingInfo(partnerIds) {
   const ids = [...new Set((partnerIds ?? []).filter(Boolean))];
   if (ids.length === 0) return new Map();
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode')
+    .select('id, name, latitude, longitude, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode')
     .in('id', ids);
   if (error) return new Map();
   return new Map((data ?? []).map((r) => [r.id, r]));

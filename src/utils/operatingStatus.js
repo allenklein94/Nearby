@@ -168,6 +168,16 @@ export function hoursStatus(hours, at = new Date()) {
   return { status: 'closed', label: 'Closed now' };
 }
 
+// The public hours line for a business (item 72): a Book / Request business inside its hours is never called "Open now".
+export function businessHoursLabel(partner, at = new Date()) {
+  const h = hoursStatus(partner?.operating_hours ?? null, at);
+  if (h.status === 'open' && NEEDS_BOOKING_FIRST.includes(bookingModeOf(partner))) {
+    const until = h.label && h.label.includes('·') ? h.label.split('·').slice(1).join('·').trim() : null;
+    return until ? `Within today's hours · ${until} · booking needed` : "Within today's hours · booking needed";
+  }
+  return h.label;
+}
+
 // ---- Entities ----
 // Callers build an entity with one of the adapters below (never a hand-rolled shape), so every surface reads the same fields.
 
@@ -200,7 +210,8 @@ export function perkEntity(offer = {}, partner = null) {
     expiresAt: offer.expires_at ?? offer.expiresAt ?? null,
     fromTime: offer.valid_from_time ?? offer.validFromTime ?? null,
     toTime: offer.valid_to_time ?? offer.validToTime ?? null,
-    business: businessEntity(p),
+    // Perks stay independent of booking mode (item 72): the perk keeps its own validity rules and the business's plain hours.
+    business: { ...businessEntity(p), bookingMode: null },
   };
 }
 // A typed-ask candidate (intentResolver). `partnerInfo`: Map partnerId -> brand_partners row with hours/pulse.
@@ -230,7 +241,12 @@ function postingLive(posting, t) {
 export function getOperatingStatus(entity, at = new Date()) {
   const t = nowMs(at);
   switch (entity?.kind) {
-    case 'business': return hoursStatus(entity.hours, t).status;
+    case 'business': {
+      // Item 72: within declared hours, a Book / Request business is NOT "open now" (you cannot just walk in): unknown. Closed
+      // hours stay closed; missing hours stay unknown.
+      const st = hoursStatus(entity.hours, t).status;
+      return st === 'open' && NEEDS_BOOKING_FIRST.includes(entity.bookingMode) ? 'unknown' : st;
+    }
     case 'place': {
       const f = ms(entity.fetchedAt);
       if (entity.openNow == null || f == null || t - f > PLACE_OPEN_NOW_FRESH_MS || f > t + 60000) return 'unknown';
@@ -270,6 +286,10 @@ export function getAvailabilityStatus(entity, at = new Date()) {
     case 'business': {
       const live = postingLive(entity.posting, t);
       if (live === true) return entity.posting.remainingCapacity === 0 ? 'unavailable' : 'available';
+      // Item 72 table: closed hours with no live posting = unavailable. A Book / Request business becomes available ONLY through a
+      // live posting (above); its self-reported pulse is not a booking, so without one it stays unknown.
+      if (getOperatingStatus(entity, t) === 'closed') return 'unavailable';
+      if (NEEDS_BOOKING_FIRST.includes(entity.bookingMode)) return 'unknown';
       const p = ms(entity.pulseUpdatedAt);
       if (entity.pulse && p != null && t - p <= PULSE_NOW_FRESH_MS && p <= t + 60000 && getOperatingStatus(entity, t) !== 'closed') {
         if (entity.pulse === 'full') return 'unavailable';
@@ -297,9 +317,6 @@ export function usableNowTier(entity, at = new Date()) {
   if (avail === 'available') return 'available';
   const op = getOperatingStatus(entity, at);
   if (avail === 'unavailable') return 'closed';
-  // Item 72: open hours do not make a book-first / request-first business usable right now (you need a reply first). Only a
-  // live posting or a fresh pulse (above) does; otherwise it is unknown, never closed.
-  if (op === 'open' && entity?.kind === 'business' && NEEDS_BOOKING_FIRST.includes(entity.bookingMode)) return 'unknown';
   return op === 'open' ? 'open' : op;
 }
 export function isConfirmedUsableNow(entity, at = new Date()) {

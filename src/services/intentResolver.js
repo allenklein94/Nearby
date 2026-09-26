@@ -2,7 +2,9 @@ import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
 import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, getPartnerPriceLevels, getPartnerSuitedAges, getPartnerOperatingInfo } from './brandOffers';
+import { Linking } from 'react-native';
 import { bookingModeOf } from '../constants/bookingMode';
+import { BUSINESS_RESULT_TYPES, intentResultBusinessRoute } from '../utils/businessAction';
 import { openNowAskFromText, candidateEntity, filterOpenNow, openNowLift, OPEN_NOW_CAPTION } from '../utils/operatingStatus';
 import { applyBusinessPriceToCandidates } from '../utils/priceBias';
 import { applyAskWeather } from '../utils/askWeather';
@@ -754,17 +756,22 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // empty map (every business unknown, no booking mode), never a broken search.
   const openNowOnly = openNowAskFromText(rawText);
   let partnerInfo = new Map();
-  if (commitAsk || openNowOnly || isImmediate(spontaneity)) {
+  const businessIds = deduped.filter((c) => c.partnerId && (BUSINESS_RESULT_TYPES.includes(c.type) || c.type === 'perk')).map((c) => c.partnerId);
+  if (businessIds.length > 0) {
     try {
-      partnerInfo = await getPartnerOperatingInfo(deduped.map((c) => c.partnerId));
+      partnerInfo = await getPartnerOperatingInfo(businessIds);
     } catch (e) {
       console.error('partner operating lookup skipped', e);
     }
   }
-  // Item 72: a business's DECLARED booking mode feeds its commitment (walk-in = drop in, book/request first = reservation).
+  // Item 72: every BUSINESS result carries its partner row, so its tap follows the same booking-mode action as its profile
+  // (utils/businessAction.js), and its declared mode feeds commitment (walk-in = drop in, book/request first = reservation).
+  // Perks get neither: a perk keeps its own validity rules and is never turned into Book/Request.
   deduped = deduped.map((c) => {
-    const mode = c.type !== 'gathering' && c.partnerId ? bookingModeOf(partnerInfo.get(c.partnerId)) : null;
-    return mode ? { ...c, bookingMode: mode } : c;
+    if (!BUSINESS_RESULT_TYPES.includes(c.type) || !c.partnerId || !partnerInfo.has(c.partnerId)) return c;
+    const partner = partnerInfo.get(c.partnerId);
+    const mode = bookingModeOf(partner);
+    return { ...c, businessPartner: partner, ...(mode ? { bookingMode: mode } : {}) };
   });
   deduped = applyCommitmentToCandidates(deduped, commitAsk);
   deduped = applySpontaneityToCandidates(deduped, spontaneity);
@@ -963,27 +970,16 @@ export function navigateToIntentResultItem(navigation, item, { typedText, classi
     navigation.navigate('CommunityDetail', { communityId: item.id });
   } else if (item.type === 'friend_discovery') {
     navigation.navigate('FriendDiscovery');
-  } else if (item.type === 'business_availability') {
+  } else if (BUSINESS_RESULT_TYPES.includes(item.type)) {
+    // Item 72: every business result follows the ONE booking-mode action (utils/businessAction.js), the same as its profile:
+    // Go now / Get Directions open maps, Reserve / Book / Request open the request addressed to that business; no declared
+    // mode keeps the general request form (bound to the posting when the result is one).
     if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
-    navigation.navigate('AskBusiness', {
-      prefillText: typedText ?? '',
-      prefillCategory: classifyResult?.category ?? null,
-      prefillPartySize: classifyResult?.partySize ?? null,
-      prefillBudgetMax: classifyResult?.budgetMax ?? null,
-      prefillDateWindow: classifyResult?.dateWindow ?? null,
-      prefillOccasion: classifyResult?.occasion ?? null,
-      matchedAvailability: item.matchedAvailability ?? null,
-    });
-  } else if (item.type === 'business_policy_match') {
-    if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
-    navigation.navigate('AskBusiness', {
-      prefillText: typedText ?? '',
-      prefillCategory: classifyResult?.category ?? null,
-      prefillPartySize: classifyResult?.partySize ?? null,
-      prefillBudgetMax: classifyResult?.budgetMax ?? null,
-      prefillDateWindow: classifyResult?.dateWindow ?? null,
-      prefillOccasion: classifyResult?.occasion ?? null,
-      matchedAvailability: null,
-    });
+    const route = intentResultBusinessRoute(item, { typedText, classifyResult });
+    if (route?.kind === 'url') {
+      if (route.url) Linking.openURL(route.url);
+    } else if (route) {
+      navigation.navigate(route.screen, route.params);
+    }
   }
 }

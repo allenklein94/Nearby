@@ -106,7 +106,7 @@ describe('availability is separate from open', () => {
     const stale = businessEntity({ availability_pulse: 'open', availability_pulse_updated_at: '2026-09-28T10:00:00Z' });
     expect(getAvailabilityStatus(stale, at)).toBe('unknown');
     const closedButPulse = businessEntity({ operating_hours: hours(), availability_pulse: 'open', availability_pulse_updated_at: '2026-09-29T00:30:00Z' });
-    expect(getAvailabilityStatus(closedButPulse, MON_6PM)).toBe('unknown');
+    expect(getAvailabilityStatus(closedButPulse, MON_6PM)).toBe('unavailable'); // item 72 table: closed = unavailable (was unknown under item 71)
     expect(isConfirmedUsableNow(closedButPulse, MON_6PM)).toBe(false);
   });
 });

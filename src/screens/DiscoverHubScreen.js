@@ -26,6 +26,7 @@ import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from 
 import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptions } from '../services/brandOffers';
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, placeDistanceLabel, getGoogleMapsRequestHeaders } from '../services/places';
 import { buildDirectionsUrl } from '../utils/planLogisticsActions';
+import { businessActionForItem } from '../utils/businessAction';
 import { getSocialForecast } from '../services/homeDashboard';
 // Phase 8 section G (CLAUDE.md) -- accepted friends UNION real matches,
 // the one shared client-side definition of this app's connected set.
@@ -1126,7 +1127,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
           <Text style={styles.intentSearchResultTitle} numberOfLines={1}>{item.title}</Text>
           {item.subtitle ? <Text style={styles.intentSearchResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
         </View>
-        <Text style={styles.intentSearchResultChevron}>›</Text>
+        {/* Item 72: a business result names the action its tap takes (same resolver as its profile). */}
+        {businessActionForItem(item) ? (
+          <Text style={[styles.intentSearchResultChevron, { color: colors.primary, fontWeight: '700' }]}>{businessActionForItem(item).label} ›</Text>
+        ) : (
+          <Text style={styles.intentSearchResultChevron}>›</Text>
+        )}
       </TouchableOpacity>
       </StaggeredReveal>
     );
