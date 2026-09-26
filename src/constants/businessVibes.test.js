@@ -72,3 +72,43 @@ describe('vibe (item 83): a named view over the one attribute vocabulary', () =>
     expect(src).toMatch(/applyVibeSinks\(deduped, vibesFromAsk\(rawText\)\)/);
   });
 });
+
+describe('vibes are normalized to canonical tags (item 84)', () => {
+  const { VIBE_SYNONYMS } = require('./businessVibes');
+  it('chill, chilled, laid back, relaxed, low-key and calm are ONE vibe, for a person asking and an owner describing', () => {
+    for (const w of ['chill', 'chilled', 'laid back', 'laid-back', 'relaxed', 'low-key', 'low key', 'lowkey', 'calm', 'mellow', 'easygoing']) {
+      expect(vibesFromAsk(`somewhere ${w} tonight`).want).toEqual(['relaxed']);
+      expect(extractAttributesFromText(`A ${w} neighborhood spot`).filter((k) => VIBE_KEYS.includes(k))).toEqual(['relaxed']);
+    }
+  });
+  it('every phrase belongs to exactly one vibe, and every vibe key is canonical', () => {
+    const seen = new Map();
+    for (const [key, { phrases }] of Object.entries(VIBE_SYNONYMS)) {
+      expect(VIBE_KEYS).toContain(key);
+      for (const p of phrases) {
+        const n = p.toLowerCase().replace(/-/g, ' ');
+        expect(seen.get(n) ?? key).toBe(key);
+        seen.set(n, key);
+      }
+    }
+    expect(Object.keys(VIBE_SYNONYMS).sort()).toEqual([...VIBE_KEYS].sort());
+  });
+  it('drinks and food are not vibes', () => {
+    expect(vibesFromAsk('chilled wine and a chill out playlist').want).toEqual(['relaxed']);
+    expect(vibesFromAsk('a glass of chilled wine').want).toEqual([]);
+    expect(extractAttributesFromText('We serve chilled beers and a chili of the day')).not.toContain('relaxed');
+  });
+  it('no second vibe word list exists: extraction and ask rules defer to the table', () => {
+    const fs = require('fs'), path = require('path');
+    const ext = fs.readFileSync(path.join(__dirname, 'businessAttributeExtraction.js'), 'utf8');
+    const block = ext.slice(ext.indexOf('const KEYWORDS_BY_ATTRIBUTE'), ext.indexOf('};', ext.indexOf('const KEYWORDS_BY_ATTRIBUTE')));
+    for (const k of VIBE_KEYS) expect(block).not.toMatch(new RegExp(`\\n\\s+${k}:`));
+    const ask = fs.readFileSync(path.join(__dirname, 'askFacets.js'), 'utf8');
+    for (const k of VIBE_KEYS) expect(ask).not.toMatch(new RegExp(`\\['${k}',`));
+  });
+  it('a business cannot invent a vibe: every attribute writer is a closed list enforced by the database', () => {
+    const fs = require('fs'), path = require('path');
+    const mig = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270219_business_vibes.sql'), 'utf8');
+    expect((mig.match(/<@ array\[' \|\| new_list/g) ?? []).length).toBe(6);
+  });
+});

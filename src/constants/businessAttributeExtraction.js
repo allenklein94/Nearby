@@ -7,22 +7,13 @@
 // only ever land in the existing, real BUSINESS_ATTRIBUTE_OPTIONS
 // vocabulary -- no new taxonomy invented for this.
 
+import { vibesFromAsk } from './businessVibes';
+
 const KEYWORDS_BY_ATTRIBUTE = {
   outdoor_seating: ['patio', 'outdoor', 'rooftop', 'terrace', 'garden', 'al fresco'],
   date_friendly: ['date', 'romantic', 'intimate', 'candlelit'],
   group_friendly: ['group', 'groups', 'party', 'large table', 'big groups'],
   live_music: ['live music', 'band', 'dj', 'concert', 'open mic'],
-  kid_friendly: ['kid', 'kids', 'family', 'family-friendly', 'children'],
-  quiet: ['quiet', 'calm', 'peaceful', 'low-key'],
-  casual: ['casual', 'no dress code', 'come as you are'],
-  // Item 83: vibe keys. Relaxed is the pace (was folded into casual, which is about formality).
-  relaxed: ['relaxed', 'laid-back', 'laid back', 'easygoing', 'chill vibe', 'unhurried'],
-  lively: ['lively', 'energetic', 'buzzing', 'vibrant', 'high-energy', 'high energy'],
-  trendy: ['trendy', 'stylish', 'hot spot', 'modern and stylish'],
-  cozy: ['cozy', 'cosy', 'snug', 'warm and inviting'],
-  social: ['social atmosphere', 'social spot', 'communal table', 'communal tables', 'mingle', 'meet new people'],
-  professional: ['professional atmosphere', 'business meetings', 'client meetings', 'meeting space', 'business lunch'],
-  upscale: ['upscale', 'fancy', 'elegant', 'high-end', 'fine dining'],
   // Intent engine vision, layer 3 (semantic tags) -- see businessAttributes.js's
   // own header comment for the full lineage/rationale of these 10.
   specialty_coffee: ['specialty coffee', 'espresso', 'latte', 'pour over', 'pour-over', 'artisan coffee', 'third wave coffee'],
@@ -49,7 +40,6 @@ const KEYWORDS_BY_ATTRIBUTE = {
   family_seating: ['family seating', 'family tables', 'booster seat', 'booster seats', 'high chair', 'high chairs'],
   kid_menu: ['kid menu', "kids menu", "kids' menu", "children's menu", 'kid-friendly menu'],
   pet_friendly: ['pet friendly', 'pet-friendly', 'pets welcome', 'pets allowed', 'bring your pet', 'bring your pets', 'cats welcome'],
-  romantic: ['romantic', 'candlelit', 'candle-lit', 'candlelight', 'intimate setting'],
   corporate_events: ['corporate event', 'corporate events', 'team dinner', 'company event', 'client dinner', 'offsite', 'team building'],
 };
 
@@ -62,7 +52,9 @@ export function extractAttributesFromText(text) {
   const lower = (text ?? '').toLowerCase();
   if (!lower.trim()) return [];
 
-  return Object.keys(KEYWORDS_BY_ATTRIBUTE).filter((attribute) =>
+  const found = Object.keys(KEYWORDS_BY_ATTRIBUTE).filter((attribute) =>
     KEYWORDS_BY_ATTRIBUTE[attribute].some((kw) => lower.includes(kw))
   );
+  // Items 83/84: vibes come from the ONE synonym table (whole words, look-alikes excluded), never a second list here.
+  return [...found, ...vibesFromAsk(text).want.filter((k) => !found.includes(k))];
 }

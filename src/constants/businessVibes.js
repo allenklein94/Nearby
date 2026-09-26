@@ -23,20 +23,31 @@ export const VIBES = [
 ];
 export const VIBE_KEYS = VIBES.map((v) => v.key);
 
-// Word rules per vibe. Each is tested against every occurrence; an occurrence right after a negation is an AVOID.
-const VIBE_ASKS = {
-  casual: /\bcasual\b(?!\s+(?:game|games|date|dating|hook ?up|sex|encounter|friends?|player|level))|\bno\s+dress\s+code\b|\bcome\s+as\s+you\s+are\b/gi,
-  upscale: /\b(?:upscale|fancy|high[- ]end|classy|elegant|swanky|posh|dress(?:ed)?\s+up)\b/gi,
-  romantic: /\b(?:romantic|candlelit|candle[- ]lit)\b/gi,
-  lively: /\b(?:lively|energetic|buzzing|vibrant|high[- ]energy)\b/gi,
-  quiet: /\b(?:quiet|peaceful)\b/gi,
-  trendy: /\b(?:trendy|stylish|instagrammable|hot\s+spot)\b/gi,
-  kid_friendly: /\b(?:family[- ]friendly|kid[- ]friendly|child[- ]friendly)\b|\bwith\s+(?:my|our|the)\s+(?:kids|children|little\s+ones)\b/gi,
-  relaxed: /\b(?:relaxed|laid[- ]back|chill|mellow|easy[- ]?going)\b/gi,
-  social: /\bsocial\s+(?:spot|place|vibe|atmosphere|scene|bar|crowd)\b|\bsomewhere\s+social\b/gi,
-  cozy: /\b(?:cozy|cosy|snug)\b/gi,
-  professional: /\bprofessional\b(?!\s+(?:development|photographer|photography|headshots?|cleaning|services?|help|advice))|\b(?:business|client|work)\s+(?:meeting|lunch|dinner|coffee)\b|\bmeet(?:ing)?\s+(?:a|my|with\s+a)\s+client\b/gi,
+// Item 84: ONE synonym table per vibe. Every word a person or an owner might use lands on exactly one canonical key; nobody can
+// add a vibe (the attribute CHECKs refuse anything else) and no second word list exists: the ask parser (vibesFromAsk) and
+// "Teach Nearby" (businessAttributeExtraction) both read this table. A phrase belongs to one vibe only (tested).
+// `not` = what may not follow the phrase (look-alikes: "casual game", "professional development", "chilled wine").
+export const VIBE_SYNONYMS = {
+  casual: { phrases: ['casual', 'no dress code', 'come as you are', 'dress down'], not: ['game', 'games', 'date', 'dates', 'dating', 'hookup', 'hook up', 'sex', 'encounter', 'friend', 'friends', 'player', 'players', 'level'] },
+  upscale: { phrases: ['upscale', 'fancy', 'high-end', 'high end', 'classy', 'elegant', 'swanky', 'posh', 'fine dining', 'dress up', 'dressed up', 'luxurious', 'luxury'] },
+  romantic: { phrases: ['romantic', 'candlelit', 'candle-lit', 'candle lit', 'candlelight', 'intimate setting'] },
+  lively: { phrases: ['lively', 'energetic', 'buzzing', 'buzzy', 'vibrant', 'high-energy', 'high energy', 'upbeat', 'bustling'] },
+  quiet: { phrases: ['quiet', 'peaceful', 'hushed', 'tranquil', 'serene'] },
+  trendy: { phrases: ['trendy', 'stylish', 'instagrammable', 'hot spot', 'fashionable'] },
+  kid_friendly: { phrases: ['family-friendly', 'family friendly', 'kid-friendly', 'kid friendly', 'kids-friendly', 'child-friendly', 'child friendly', 'kids welcome', 'families welcome', 'great for families', 'great for kids', 'whole family', 'family restaurant', 'with my kids', 'with our kids', 'with the kids', 'with my children', 'with our children', 'with the little ones'] },
+  relaxed: { phrases: ['relaxed', 'chill', 'chilled', 'chilled out', 'chill out', 'laid back', 'laid-back', 'low-key', 'low key', 'lowkey', 'calm', 'mellow', 'easygoing', 'easy-going', 'easy going', 'unhurried'], not: ['wine', 'wines', 'beer', 'beers', 'drink', 'drinks', 'glass', 'glasses', 'soup', 'dessert', 'desserts', 'water', 'bottle', 'bottles'] },
+  social: { phrases: ['social spot', 'social place', 'social vibe', 'social atmosphere', 'social scene', 'social bar', 'social crowd', 'somewhere social', 'communal table', 'communal tables', 'mingle', 'mingling'] },
+  cozy: { phrases: ['cozy', 'cosy', 'snug', 'warm and inviting'] },
+  professional: { phrases: ['professional', 'business meeting', 'business meetings', 'business lunch', 'business dinner', 'business coffee', 'client meeting', 'client meetings', 'client lunch', 'client dinner', 'client coffee', 'work meeting', 'work lunch', 'meeting space', 'meet a client', 'meeting a client', 'meet with a client'], not: ['development', 'photographer', 'photography', 'headshot', 'headshots', 'cleaning', 'service', 'services', 'help', 'advice', 'athlete', 'athletes', 'league'] },
 };
+
+const esc = (p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/[- ]/g, '[- ]?');
+const VIBE_ASKS = Object.fromEntries(Object.entries(VIBE_SYNONYMS).map(([key, { phrases, not = [] }]) => {
+  const alts = [...phrases].sort((a, b) => b.length - a.length).map(esc).join('|');
+  const tail = not.length ? `(?!\\s+(?:${not.map(esc).join('|')})\\b)` : '';
+  return [key, new RegExp(`\\b(?:${alts})\\b${tail}`, 'gi')];
+}));
+
 const NEGATION_BEFORE = /\b(?:not|no|nothing|never|isn't|without|avoid|too)\s+(?:too\s+|very\s+|overly\s+|that\s+|super\s+|so\s+)?$/i;
 // "nothing fancy" also says what the person DOES want: casual.
 const NOTHING_FANCY = /\b(?:nothing|not)\s+(?:too\s+)?(?:fancy|upscale|high[- ]end)\b/i;

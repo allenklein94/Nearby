@@ -94,15 +94,13 @@ export function applyAskFacets(candidates, facets) {
 const ATTRIBUTE_ASKS = [
   ['pet_friendly', /\b(?:with|bring(?:ing)?|take|taking)\s+(?:my|our|the)\s+(?:dog|dogs|puppy|pup|cat|cats|pet|pets)\b|\bpets?[- ]friendly\b|\bdog[- ]friendly\b|\bpets?\s+(?:allowed|welcome)\b/i],
   ['dog_friendly', /\b(?:with|bring(?:ing)?|take|taking)\s+(?:my|our|the)\s+(?:dog|dogs|puppy|pup)\b|\b(?:dog|pet)[- ]friendly\b|\bpets?\s+(?:allowed|welcome)\b|\bpet[- ]friendly\b/i],
-  ['romantic', /\b(?:romantic|candlelit|candle[- ]lit)\b/i],
   ['date_friendly', /\b(?:date\s+night|first\s+date|on\s+a\s+date|for\s+a\s+date|date\s+spot|romantic|date[- ]friendly)\b/i],
-  ['quiet', /(?<!\b(?:not|no|nothing|too|not too|nothing too)\s)\b(?:quiet|peaceful)\b/i],
   ['outdoor_seating', /\b(?:patio|outdoor\s+seating|al\s+fresco|terrace)\b/i],
 ];
 export function attributesFromAsk(text, { partyType = null } = {}) {
   if (typeof text !== 'string') return partyType === 'date' ? ['date_friendly'] : [];
   const out = ATTRIBUTE_ASKS.filter(([, re]) => re.test(text)).map(([k]) => k);
-  // Item 83: the vibes the person asked for ("relaxed and quiet"); a negated vibe is never an ask.
+  // Items 83/84: the vibes the person asked for (quiet and romantic included), from the ONE synonym table in businessVibes.js ("relaxed and quiet"); a negated vibe is never an ask.
   const vibes = vibesFromAsk(text);
   for (const k of vibes.want) if (!out.includes(k)) out.push(k);
   for (const k of vibes.avoid) if (out.includes(k)) out.splice(out.indexOf(k), 1);
