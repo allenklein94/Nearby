@@ -91,15 +91,19 @@ export function applyAskFacets(candidates, facets) {
 // date_friendly / quiet / outdoor_seating as attributes; the ask names them the same way, so "coffee with my dog" and "somewhere
 // romantic and quiet" reach those businesses through the existing attribute overlap (ranking only). Deterministic, a fallback beside
 // the AI extractor (which only knew "can bring my dog"); the result is unioned with whatever it returned. Closed keys only.
+// Item 88: an access need is stated per ask, in the person's own words, maps ONLY to the existing accessibility attributes, and is
+// never stored (utils/sensitiveNeeds.js strips these phrases before any search log).
+export const ACCESSIBILITY_ASKS = [
+  ['wheelchair_accessible', /\bwheelchair[- ]accessible\b|\bwheelchairs?\b|\bstep[- ]free\b|\bno\s+stairs\b/i],
+  ['accessible_parking', /\b(?:accessible|handicap(?:ped)?|disabled|disability|ada)\s+parking\b/i],
+  ['accessible_restroom', /\b(?:accessible|handicap(?:ped)?|disabled|ada)\s+(?:restrooms?|bathrooms?|toilets?)\b/i],
+];
 const ATTRIBUTE_ASKS = [
   ['pet_friendly', /\b(?:with|bring(?:ing)?|take|taking)\s+(?:my|our|the)\s+(?:dog|dogs|puppy|pup|cat|cats|pet|pets)\b|\bpets?[- ]friendly\b|\bdog[- ]friendly\b|\bpets?\s+(?:allowed|welcome)\b/i],
   ['dog_friendly', /\b(?:with|bring(?:ing)?|take|taking)\s+(?:my|our|the)\s+(?:dog|dogs|puppy|pup)\b|\b(?:dog|pet)[- ]friendly\b|\bpets?\s+(?:allowed|welcome)\b|\bpet[- ]friendly\b/i],
   ['date_friendly', /\b(?:date\s+night|first\s+date|on\s+a\s+date|for\s+a\s+date|date\s+spot|romantic|date[- ]friendly)\b/i],
   ['outdoor_seating', /\b(?:patio|outdoor\s+seating|al\s+fresco|terrace)\b/i],
-  // Item 88: an access need is stated per ask, in the person's own words, and never stored on a profile.
-  ['wheelchair_accessible', /\bwheelchairs?\b|\bstep[- ]free\b|\bwheelchair[- ]accessible\b|\bno\s+stairs\b/i],
-  ['accessible_parking', /\b(?:accessible|handicap(?:ped)?|disabled|disability|ada)\s+parking\b/i],
-  ['accessible_restroom', /\b(?:accessible|handicap(?:ped)?|disabled|ada)\s+(?:restrooms?|bathrooms?|toilets?)\b/i],
+  ...ACCESSIBILITY_ASKS,
 ];
 export function attributesFromAsk(text, { partyType = null } = {}) {
   if (typeof text !== 'string') return partyType === 'date' ? ['date_friendly'] : [];

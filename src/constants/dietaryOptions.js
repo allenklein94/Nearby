@@ -13,7 +13,7 @@ export const BUSINESS_DIETARY_OPTIONS = [
   { key: 'vegan', label: 'Vegan options', short: 'Vegan' },
   { key: 'gluten_free', label: 'Gluten-free options', short: 'Gluten-free' },
   { key: 'dairy_free', label: 'Dairy-free options', short: 'Dairy-free' },
-  { key: 'nut_allergy', label: 'Can accommodate nut allergies', short: 'Nut allergies' },
+  { key: 'nut_allergy', label: 'Can accommodate nut / peanut allergies', short: 'Nut allergies' },
   { key: 'shellfish_allergy', label: 'Can accommodate shellfish allergies', short: 'Shellfish allergies' },
   { key: 'halal', label: 'Halal', short: 'Halal' },
   { key: 'kosher', label: 'Kosher', short: 'Kosher' },
@@ -22,6 +22,14 @@ export const BUSINESS_DIETARY_OPTIONS = [
 export function dietaryOptionsOf(partner) {
   const list = Array.isArray(partner?.dietary_options) ? partner.dietary_options : [];
   return DIETARY_KEYS.filter((k) => list.includes(k));
+}
+
+// Safety-sensitive keys (an allergy or celiac disease): a declaration is the business's own statement that it accommodates it, never
+// a guarantee against cross-contact. Anywhere a customer sees one, it reads "declared by the business" with that caveat.
+export const SAFETY_SENSITIVE_DIETARY = ['gluten_free', 'dairy_free', 'nut_allergy', 'shellfish_allergy'];
+export const DIETARY_SAFETY_NOTE = 'Declared by the business, not a guarantee against cross-contact. If you have an allergy or celiac disease, confirm with them.';
+export function dietarySafetyNote(keys) {
+  return (Array.isArray(keys) ? keys : []).some((k) => SAFETY_SENSITIVE_DIETARY.includes(k)) ? DIETARY_SAFETY_NOTE : null;
 }
 
 // Public profile line: "Vegan options · Gluten-free options · Halal"; null when nothing declared.
@@ -43,7 +51,7 @@ export function dietaryRelevantFor(partner) {
 
 // ---- The ask side: ONLY the person's own words (deterministic, never AI) ----
 const NEGATED = /\b(?:non|not|no)[- ]+(?:vegetarians?|vegans?|halal|kosher)\b/gi;
-const DIETARY_ASKS = [
+export const DIETARY_ASKS = [
   ['vegetarian', /\bvegetarians?\b|\bveggie[- ]friendly\b/i],
   ['vegan', /\bvegans?\b|\bplant[- ]based\b/i],
   ['gluten_free', /\bgluten[- ]free\b|\bceliacs?\b|\bcoeliacs?\b|\bno\s+gluten\b/i],
@@ -68,7 +76,8 @@ export function applyDietaryToCandidates(candidates, needs) {
   return candidates.map((c) => {
     const offered = dietaryOptionsOf(c?.businessPartner);
     if (offered.length === 0 || !needs.every((n) => offered.includes(n))) return c;
-    const reason = BUSINESS_DIETARY_OPTIONS.filter((o) => needs.includes(o.key)).map((o) => o.label).join(' · ');
+    const labels = BUSINESS_DIETARY_OPTIONS.filter((o) => needs.includes(o.key)).map((o) => o.label).join(' · ');
+    const reason = dietarySafetyNote(needs) ? `Business-declared: ${labels}` : labels;
     return { ...c, score: (c.score ?? 0) + DIETARY_FIT_POINTS, dietaryReason: reason, subtitle: c.subtitle ?? reason };
   });
 }

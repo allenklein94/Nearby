@@ -6,6 +6,7 @@ import { supabase } from './supabase';
 import * as Location from 'expo-location';
 import { findRecurringIntentPattern, formatSmartPlaceholder, findTopSearchedCategory } from '../utils/intentPatterns';
 import { getTimePeriod } from '../utils/timeContext';
+import { redactSensitiveNeeds } from '../utils/sensitiveNeeds';
 
 // Same coarse-bucketing convention already established for profiles.wide_area
 // and gatherings.wide_area (see the 20260823_intent_submissions_wide_area.sql
@@ -49,7 +50,7 @@ export async function recordIntentSelection({ rawText, category, dateWindow, res
     if (!user) return;
     await supabase.from('intent_outcomes').insert({
       user_id: user.id,
-      raw_text: rawText ?? null,
+      raw_text: redactSensitiveNeeds(rawText),
       category: category ?? null,
       date_window: dateWindow ?? null,
       result_type: resultType,
@@ -87,7 +88,7 @@ export async function recordIntentSubmission({ rawText, category, dateWindow, in
       .from('intent_submissions')
       .insert({
         user_id: user.id,
-        raw_text: rawText ?? null,
+        raw_text: redactSensitiveNeeds(rawText),
         category: category ?? null,
         date_window: dateWindow ?? null,
         intent_kind: intentKind ?? null,

@@ -21,7 +21,7 @@ describe('business dietary options (item 88): one vocabulary, two views', () => 
   });
   it('owner-facing wording names an offer, allergies are "can accommodate", nothing declared = hidden', () => {
     expect(dietaryOptionsLine({ dietary_options: ['halal', 'vegan'] })).toBe('Vegan options · Halal');
-    expect(dietaryOptionsLine({ dietary_options: ['nut_allergy'] })).toBe('Can accommodate nut allergies');
+    expect(dietaryOptionsLine({ dietary_options: ['nut_allergy'] })).toBe('Can accommodate nut / peanut allergies');
     expect(dietaryOptionsLine({ dietary_options: [] })).toBeNull();
     expect(dietaryOptionsLine({})).toBeNull();
     expect(dietaryOptionsOf({ dietary_options: ['vegan', 'bogus'] })).toEqual(['vegan']);
@@ -67,7 +67,7 @@ describe('matching ranks, never removes', () => {
     const list = [biz('all', ['vegan', 'gluten_free']), biz('part', ['vegan']), biz('none', []), biz('unknown')];
     const out = applyDietaryToCandidates(list, ['vegan', 'gluten_free']);
     expect(out.map((c) => c.score)).toEqual([1 + DIETARY_FIT_POINTS, 1, 1, 1]);
-    expect(out[0].dietaryReason).toBe('Vegan options · Gluten-free options');
+    expect(out[0].dietaryReason).toBe('Business-declared: Vegan options · Gluten-free options'); // gluten-free is safety-sensitive
     expect(out).toHaveLength(4);
     expect(applyDietaryToCandidates(list, [])).toBe(list);
   });
@@ -110,5 +110,60 @@ describe('structured and declared only; wired where it matters', () => {
     expect(r('src/services/intentResolver.js')).toMatch(/applyDietaryToCandidates\(deduped, dietaryFromAsk\(rawText\)\)/);
     expect(r('src/services/brandOffers.js')).toMatch(/outdoor_capacity, dietary_options'\)/);
     expect(r('src/utils/businessOpportunityCard.js')).toMatch(/'cuisine', 'dietary', 'party_size'/);
+  });
+});
+
+describe('item 88 scope lock (owner, 2026-09-26)', () => {
+  const { redactSensitiveNeeds } = require('../utils/sensitiveNeeds');
+  const { ACCESSIBILITY_ASKS } = require('./askFacets');
+  const { ACCESSIBILITY_ATTRIBUTE_KEYS } = require('./businessAttributes');
+  const { SAFETY_SENSITIVE_DIETARY, dietarySafetyNote } = require('./dietaryOptions');
+
+  it('a stated need is never kept: the search logs store the ask with dietary / access phrases removed', () => {
+    expect(redactSensitiveNeeds('I need a wheelchair-accessible restaurant tonight')).toBe('I need a restaurant tonight');
+    expect(redactSensitiveNeeds('vegan and gluten-free dinner for my celiac friend')).toBe('and dinner for my friend');
+    expect(redactSensitiveNeeds('halal lunch near accessible parking')).toBe('lunch near');
+    expect(redactSensitiveNeeds('coffee tonight')).toBe('coffee tonight');
+    expect(redactSensitiveNeeds(null)).toBeNull();
+    const src = r('src/services/intentOutcomes.js');
+    expect((src.match(/raw_text: redactSensitiveNeeds\(rawText\)/g) ?? []).length).toBe(2);
+    expect(src).not.toMatch(/raw_text: rawText/);
+  });
+  it('accessibility asks map ONLY to the existing accessibility attributes (no second taxonomy)', () => {
+    for (const [k] of ACCESSIBILITY_ASKS) expect(ACCESSIBILITY_ATTRIBUTE_KEYS).toContain(k);
+  });
+  it('"vegan and gluten-free": only a business declaring BOTH gets the benefit, everywhere', () => {
+    const needs = dietaryFromAsk('vegan and gluten-free');
+    expect(needs).toEqual(['vegan', 'gluten_free']);
+    const out = applyDietaryToCandidates([{ score: 0, businessPartner: { dietary_options: ['vegan'] } }, { score: 0, businessPartner: { dietary_options: ['vegan', 'gluten_free'] } }], needs);
+    expect(out.map((c) => c.score)).toEqual([0, DIETARY_FIT_POINTS]);
+    expect(dietaryCovers({ dietary_options: ['vegan'] }, needs)).toBe(false);
+    expect(mig).toMatch(/@> v_req_dietary/); // routing: contains every need, not overlaps
+    expect(mig).not.toMatch(/&& v_req_dietary/);
+  });
+  it('nothing is ranked by having more attributes when the person did not ask', () => {
+    const list = [{ score: 1, businessPartner: { dietary_options: DIETARY_KEYS } }];
+    expect(applyDietaryToCandidates(list, dietaryFromAsk('dinner tonight'))).toBe(list);
+    const reasons = scoreBusinessOpportunity({ businessAttributes: ACCESSIBILITY_ATTRIBUTE_KEYS, businessDietaryOptions: DIETARY_KEYS }).reasons.map((x) => x.key);
+    expect(reasons).not.toContain('dietary');
+    expect(reasons).not.toContain('offers_attribute');
+    expect(mig).toMatch(/cardinality\(coalesce\(v_req_dietary, '\{\}'\)\) > 0 and/);
+  });
+  it('safety-sensitive needs read as a business declaration, never a guarantee', () => {
+    expect(SAFETY_SENSITIVE_DIETARY).toEqual(['gluten_free', 'dairy_free', 'nut_allergy', 'shellfish_allergy']);
+    expect(dietarySafetyNote(['vegan'])).toBeNull();
+    expect(dietarySafetyNote(['nut_allergy'])).toMatch(/^Declared by the business, not a guarantee against cross-contact/);
+    const out = applyDietaryToCandidates([{ score: 0, businessPartner: { dietary_options: ['gluten_free'] } }], dietaryFromAsk('celiac'));
+    expect(out[0].dietaryReason).toBe('Business-declared: Gluten-free options');
+    expect(applyDietaryToCandidates([{ score: 0, businessPartner: { dietary_options: ['halal'] } }], ['halal'])[0].dietaryReason).toBe('Halal');
+    for (const o of BUSINESS_DIETARY_OPTIONS) expect(o.label).not.toMatch(/safe|guarantee|certified|free kitchen/i);
+    expect(r('src/screens/BusinessProfileScreen.js')).toMatch(/dietarySafetyNote\(dietaryOptionsOf\(partner\)\)/);
+  });
+  it('not built: gathering dietary fields, AI / free-text extraction, a profile preference, a Discover filter', () => {
+    const dir = path.join(ROOT, 'supabase/migrations');
+    for (const f of fs.readdirSync(dir)) expect([f, /alter table public\.gatherings[^;]*dietary/i.test(r(`supabase/migrations/${f}`))]).toEqual([f, false]);
+    expect(r('src/constants/businessAttributeExtraction.js')).not.toMatch(/vegan|halal|gluten/i);
+    expect(r('src/screens/DiscoverHubScreen.js')).not.toMatch(/dietaryFromAsk|dietary_options|DIETARY_OPTIONS/);
+    expect(r('src/screens/SettingsScreen.js')).not.toMatch(/dietary_options|DIETARY_OPTIONS/);
   });
 });

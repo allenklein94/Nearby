@@ -5770,7 +5770,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       })}
                     </View>
                     <Text style={styles.helperText}>
-                      Customers who ask for these are matched with you first. Wheelchair access, accessible parking and restrooms are under Edit Profile.
+                      Customers who ask for these are matched with you first. Only pick an allergy or gluten-free option if you can really accommodate it: customers rely on it, and we show it as declared by you. Wheelchair access, accessible parking and restrooms are under Edit Profile.
                     </Text>
                   </>
                 )}
