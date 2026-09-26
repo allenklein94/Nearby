@@ -1,6 +1,7 @@
 import { peopleTonightBanner, countTonightSupply } from '../utils/meetTonight';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
+import { contextHasCuisines, offerInContext, applyCuisine, cuisineChips, cuisineConstraintFromText, cuisineLabel } from '../utils/cuisineFilter';
 import { getNearbyMatches } from '../services/proximity';
 import { getFriendDiscoveryCandidates } from '../services/friendDiscovery';
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
@@ -355,6 +356,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Open now (owner item 71): one toggle over every tab and category view; typed "what's open" asks turn it on too. The rule
   // is utils/operatingStatus.js only -- this screen never decides open/closed itself.
   const [openNowOnly, setOpenNowOnly] = useState(false);
+  // Item 76: the exact declared-cuisine filter inside the Restaurants view (null = broad). Lives only while a context is open.
+  const [cuisineFilter, setCuisineFilter] = useState(null);
   const [viewStyle, setViewStyle] = useState('list');
   const [placesCategory, setPlacesCategory] = useState('food_drink');
   const [userLocation, setUserLocation] = useState(null);
@@ -414,6 +417,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     setContextPlaces([]);
     setContextConnections([]);
     setContextConnectionPhotos({});
+    setCuisineFilter(null);
     setExpandedContext({
       interestTag: g.interest_tag,
       // gatheringTimeBadge's own vocabulary (RIGHT NOW / TODAY / TONIGHT /
@@ -435,11 +439,22 @@ export default function DiscoverHubScreen({ navigation, route }) {
     setContextPlaces([]);
     setContextConnections([]);
     setContextConnectionPhotos({});
+    setCuisineFilter(null);
     setExpandedContext({
       categoryTags: group.tags,
       categoryLabel: group.label,
       categoryIcon: group.icon,
+      categoryKey: group.key,
     });
+  }
+
+  // A typed cuisine ("Italian dinner tonight") opens the SAME Restaurants view with the same exact constraint the chip sets.
+  function openCuisineContext(cuisine) {
+    setContextPlaces([]);
+    setContextConnections([]);
+    setContextConnectionPhotos({});
+    setCuisineFilter(cuisine);
+    setExpandedContext({ interestTag: 'Restaurants' });
   }
 
   // Item 46's "{Category} Near You" section's own "See all" -- the exact
@@ -450,11 +465,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
     setContextPlaces([]);
     setContextConnections([]);
     setContextConnectionPhotos({});
+    setCuisineFilter(null);
     setExpandedContext({ interestTag: topSearchedCategory.category });
   }
 
   function closeContext() {
     setExpandedContext(null);
+    setCuisineFilter(null);
     setContextPlaces([]);
     setContextConnections([]);
     setContextConnectionPhotos({});
@@ -894,11 +911,20 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // target_interest_tag is the offer row's own real targeting field (the
   // same one the Perks section above already reads) -- not a keyword guess
   // against the offer's title.
-  const contextOffers = expandedContext
-    ? applyOpenNow(offers, (o) => perkEntity(o)).filter((o) => (expandedContext.categoryTags
-        ? expandedContext.categoryTags.includes(o.target_interest_tag)
-        : o.target_interest_tag === expandedContext.interestTag))
-    : [];
+  // Item 76: a perk also belongs to the context through its business's OWN declared type (subcategory / major).
+  const contextScope = expandedContext
+    ? { tags: (expandedContext.categoryTags ?? [expandedContext.interestTag]).filter(Boolean), groupKey: expandedContext.categoryKey ?? null }
+    : { tags: [], groupKey: null };
+  const contextOffersAnyTime = expandedContext ? offers.filter((o) => offerInContext(o, contextScope)) : [];
+  const contextOffersBroad = openNowActive ? applyOpenNow(contextOffersAnyTime, (o) => perkEntity(o)) : contextOffersAnyTime;
+  // The cuisine row exists only in a context that holds the restaurant branch; a cuisine is an EXACT declared match that
+  // combines with Open now (both filters apply) and never widens. Clearing it restores contextOffersBroad unchanged.
+  const cuisineRowVisible = !!expandedContext && contextHasCuisines(contextScope.tags);
+  const activeCuisine = cuisineRowVisible ? cuisineFilter : null;
+  const activeCuisineLabel = activeCuisine ? cuisineLabel(activeCuisine) : null;
+  const contextCuisineChips = cuisineRowVisible ? cuisineChips(contextOffersBroad, activeCuisine) : [];
+  const contextOffers = applyCuisine(contextOffersBroad, activeCuisine);
+  const cuisineMatchesAnyTime = activeCuisine ? applyCuisine(contextOffersAnyTime, activeCuisine) : [];
   // The one real topic label this context is about, regardless of which
   // mode opened it -- every empty-state string and the Places search
   // keyword below read this instead of assuming expandedContext.interestTag
@@ -1552,6 +1578,23 @@ export default function DiscoverHubScreen({ navigation, route }) {
             {renderOpenNowChip()}
           </View>
         )}
+        {mode === 'things' && expandedContext && contextCuisineChips.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }} style={{ marginBottom: spacing.sm }}>
+            {contextCuisineChips.map((c) => (
+              <TapActiveChip
+                key={c.key}
+                active={c.active}
+                style={[styles.filterChip, c.active && styles.filterChipActive]}
+                onPress={() => setCuisineFilter(c.active ? null : c.key)}
+                accessibilityLabel={c.active ? `${c.label} cuisine, selected. Tap to clear` : `${c.label} cuisine`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: c.active }}
+              >
+                <Text style={[styles.filterChipText, c.active && styles.filterChipTextActive]}>{c.active ? `${c.label} ✕` : c.label}</Text>
+              </TapActiveChip>
+            ))}
+          </ScrollView>
+        )}
         {mode === 'things' && openNowActive && (
           <Text style={styles.openNowNote}>Only what we can confirm is open right now. Places without posted hours are left out.</Text>
         )}
@@ -1764,6 +1807,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
            context's own real interest tag; People You Know is a strictly
            secondary section underneath, never a peer tab. */
         <ScrollView contentContainerStyle={styles.scrollContent}>
+          {activeCuisine ? (
+            <Text style={styles.contextGroupNote}>Showing businesses that list {activeCuisineLabel} as their cuisine.</Text>
+          ) : null}
+          {!activeCuisine && (<>
           {contextFriendLine ? <Text style={styles.contextGroupNote}>{contextFriendLine}</Text> : null}
           {contextTonight.length > 0 && (
             <>
@@ -1866,8 +1913,17 @@ export default function DiscoverHubScreen({ navigation, route }) {
             ))
           )}
 
+          </>)}
+
           <Text style={styles.sectionHeader}>Perks</Text>
-          {openNowActive && contextOffers.length === 0 ? (
+          {activeCuisine && contextOffers.length === 0 && !(openNowActive && cuisineMatchesAnyTime.length > 0) ? (
+            <>
+              <EmptyCopy id="cuisine_none" vars={{ cuisine: activeCuisineLabel }} />
+              <TouchableOpacity onPress={() => setCuisineFilter(null)} accessibilityLabel="Clear cuisine filter" accessibilityRole="button">
+                <Text style={styles.emptyActionText}>Show all restaurants →</Text>
+              </TouchableOpacity>
+            </>
+          ) : openNowActive && contextOffers.length === 0 ? (
             renderOpenNowEmpty()
           ) : contextOffers.length === 0 ? (
             <>
@@ -2134,6 +2190,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   <Text style={styles.intentSearchTag}>{PARTY_TYPE_LABELS[intentSearch.classifyResult.partyType]}</Text>
                 )}
               </View>
+              {/* Item 76: an explicit typed cuisine keeps its constraint in the Restaurants view (same resolver as the chip). */}
+              {!!cuisineConstraintFromText(intentSearch.typedText) && (
+                <TouchableOpacity
+                  onPress={() => openCuisineContext(cuisineConstraintFromText(intentSearch.typedText))}
+                  accessibilityLabel={`See ${cuisineLabel(cuisineConstraintFromText(intentSearch.typedText))} restaurants`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.emptyActionText}>See {cuisineLabel(cuisineConstraintFromText(intentSearch.typedText))} restaurants →</Text>
+                </TouchableOpacity>
+              )}
               {intentSearch.experience ? (
                 <>
                   {(intentSearch.experience.bundles ?? []).map((bundle) => (

@@ -12,6 +12,8 @@ export const EMPTY_STATES = {
   places_category: { title: 'Nothing nearby in this category', body: 'Try another category or widen what you are looking for.' },
   // Open now (item 71): the list has items, none confirmed open this minute.
   open_now_none: { title: 'Nothing confirmed open right now', body: 'Only places with known hours or live availability can show here. Turn off Open now to see everything nearby.' },
+  // Cuisine chip in the Restaurants view (item 76): an exact declared-cuisine filter found nothing in view.
+  cuisine_none: { title: 'No {cuisine} places here yet', body: 'Only businesses that list {cuisine} as their cuisine show here. Clear the filter to see every restaurant.' },
   places_search: { title: 'No places match "{query}"', body: 'Try a different word, or clear the search.' },
   // Item 80 sweep: the rest of the bare-fragment empties.
   admin_business_requests: { title: "No pending requests", body: "New business applications will appear here for review." },
