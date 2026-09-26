@@ -3,7 +3,7 @@ import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
 import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, getPartnerPriceLevels, getPartnerSuitedAges } from './brandOffers';
 import { applyBusinessPriceToCandidates } from '../utils/priceBias';
-import { applyBusinessWeatherToCandidates } from '../utils/weatherBias';
+import { applyAskWeather } from '../utils/askWeather';
 import { occasionLabel } from '../constants/businessAttributes';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, searchOccasionOfferingBusinesses, getMyBusinessAffinitySignals } from './businessFulfillment';
 import { getWhoForPreferenceSignals } from './preferencePolls';
@@ -11,8 +11,6 @@ import { searchOccasionPackages, formatOccasionPackageDetail } from './occasionP
 import { getSocialForecast } from './homeDashboard';
 import { classifyCreateRequest } from './createAssistant';
 import { recordIntentSubmission } from './intentOutcomes';
-import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
-import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { assembleExperience } from './experienceAssembly';
 // P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): the identical
 // shared, canonical weather-reason text homeRecommendations.js's own
@@ -79,18 +77,8 @@ import { openEndedAskGroups, applyOpenEndedAsk, openEndedCaption } from '../util
 
 const RESULT_CAP = 4;
 
-// P2 item 7 (Universal Signal Remediation Pass, CLAUDE.md, Aug 28 2026):
-// weatherPromise is a real, already-in-flight promise (kicked off by
-// resolveIntent right after location resolves, in parallel with this
-// function's own getNearbyGatherings() call and every other resolver
-// branch) -- never awaited before this function starts its own work, so
-// wiring weather into the ask box doesn't add sequential latency to
-// every submission. Closes the audit's own confirmed gap ("reaches
-// neither the ask box... at all") using the one shared
-// isWeatherIndoorBiased/isWeatherOutdoorBiased definition
-// (utils/weatherBias.js) -- the identical real signal and weight
-// (SCORE_HAPPENING_NOW) homeRecommendations.js's own weatherAdjustment()
-// already uses, not a second invented rule.
+// weatherPromise is no longer read here: weather is applied after dedupe (utils/askWeather.js), judged at each gathering's own
+// start time. The parameter stays so the call site is unchanged.
 async function resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise = null, travel = false) {
   const nearby = await getNearbyGatherings(travel ? 'travel' : 'wide');
   const relevant = nearby.filter((g) => {
@@ -98,7 +86,6 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
     return matchesDateWindow(g.scheduled_at, dateWindow);
   });
   const meaningfulWords = extractMeaningfulWords(rawText);
-  const weather = weatherPromise ? await weatherPromise : null;
   return relevant.map((gathering) => {
     const { reasons } = getGatheringFitReasons(gathering);
     // Universal Signal Remediation Pass, P0 item 1 (CLAUDE.md, Aug 28 2026):
@@ -110,16 +97,7 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
     // only discovering it one screen later on GatheringDetailScreen.
     const attendeeCount = attendeeTotal(gathering);
     const isFull = isGatheringFull(gathering, attendeeCount);
-    let weatherBonus = 0;
-    if (weather) {
-      if (isWeatherIndoorBiased(weather) && isIndoorCategory(gathering.interest_tag)) {
-        weatherBonus = SCORE_HAPPENING_NOW;
-        reasons.push(REASON_TEXT.WEATHER_GOOD_INDOOR.text);
-      } else if (isWeatherOutdoorBiased(weather) && isOutdoorCategory(gathering.interest_tag)) {
-        weatherBonus = SCORE_HAPPENING_NOW;
-        reasons.push(REASON_TEXT.WEATHER_GOOD_OUTDOOR.text);
-      }
-    }
+    // Weather is applied after dedupe by utils/askWeather.js, judged at this gathering's own start (not today's conditions).
     return {
       type: 'gathering',
       id: gathering.id,
@@ -156,8 +134,7 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       isFull,
       score: scoreGatheringForResolver(gathering)
         + titleMentionBonus(gathering.title, meaningfulWords)
-        + priceAndPartyBonus(gathering, priceLevel, partyType)
-        + weatherBonus,
+        + priceAndPartyBonus(gathering, priceLevel, partyType),
     };
   });
 }
@@ -701,16 +678,20 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // policy-only): a weaker tier is dropped when the same business has a stronger one.
   let deduped = dedupeBusinessTiers(candidates);
 
-  // Item 63: a business's own indoor/outdoor/weather-dependent declaration nudges its result with today's weather (ranks,
-  // never hides; same weight as the gathering weather bonus). Best-effort: no weather or no settings = unchanged order.
+  // Weather nudges, never dictates (2026-09-26, utils/askWeather.js): a gathering is judged at its own start, everything else at
+  // the window the person's words anchor ("tonight", "tomorrow", "Saturday before 3 PM"); no anchor or "this weekend" = no
+  // weather effect, and today's conditions are never used for another day. Indoor/outdoor from existing metadata only (a
+  // business's declared weather_setting, item 63, else its category). Ranking only; an explicit "outdoor"/"indoor" ask is never
+  // reinterpreted. Best-effort: no weather = unchanged order.
+  let weatherCaption = null;
   try {
     const weather = await weatherPromise;
-    if (weather) {
-      const settings = await getPartnerWeatherSettings(deduped.map((c) => c.partnerId));
-      deduped = applyBusinessWeatherToCandidates(deduped, settings, weather, SCORE_HAPPENING_NOW);
-    }
+    const settings = weather ? await getPartnerWeatherSettings(deduped.map((c) => c.partnerId).filter(Boolean)) : null;
+    const applied = applyAskWeather(deduped, weather, { text: rawText, explicitEnvironment: parseAskFacets(rawText).environment ?? null, settingByPartnerId: settings });
+    deduped = applied.items;
+    weatherCaption = applied.caption;
   } catch (e) {
-    console.error('business weather nudge skipped', e);
+    console.error('weather nudge skipped', e);
   }
 
   // Item 40: a business that declared the asked price tier (e.g. Free) ranks up; ranking only, never a filter.
@@ -790,7 +771,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   deduped.sort((a, b) => b.score - a.score);
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
-  const openEndedNote = [planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), askFacets.caption].filter(Boolean).join(' · ') || null;
+  const openEndedNote = [planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacets.caption].filter(Boolean).join(' · ') || null;
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,
