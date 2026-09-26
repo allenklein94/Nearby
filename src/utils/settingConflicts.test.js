@@ -155,8 +155,14 @@ describe('the dashboard shows conflicts inline, never as an alert, and decides n
     const helper = dash.match(/async function savePerTapSetting[\s\S]*?\n  }\n/)[0];
     expect(helper).toMatch(/catch \(e\) \{\s*setSelectedPartner\(\(prev\) => \(\{ \.\.\.prev, \.\.\.field\(saved\) \}\)\);/);
   });
-  it('multi-save forms ask the server before saving, so nothing is half-applied', () => {
-    expect(dash).toMatch(/const lines = await checkBusinessSettingConflicts\(selectedPartner\.id, priorityCheck\.kind, priorityCheck\.patch\);[\s\S]{0,200}return;[\s\S]{0,80}await Promise\.all\(/);
+  it('multi-write forms persist nothing on a conflict: want-more is ONE server transaction; Tell Nearby asks first', () => {
+    const h = dash.match(/async function handleSavePriorityAttributes[\s\S]*?\n  }\n/)[0];
+    expect(h).toMatch(/await setBusinessWantMore\(/);
+    expect(h).not.toMatch(/Promise\.all|setBusinessPriority(Attributes|TimeWindows|TimeRange|Occasions)\(/);
+    const mig = read('supabase/migrations/20270227_bundle_parts_and_atomic_want_more.sql');
+    expect(mig.match(/function public\.set_business_want_more[\s\S]*?\$\$;/)[0]).toMatch(
+      /set_business_priority_attributes[\s\S]*set_business_priority_time_windows[\s\S]*set_business_priority_time_range[\s\S]*set_business_priority_occasions/);
+    expect(read('scripts/live-verify/setting-validation-outcomes.sql')).toMatch(/zero partial writes/);
     expect(card).toMatch(/const lines = await checkBusinessSettingConflicts\([\s\S]{0,200}return;[\s\S]{0,40}const applied = \{\};/);
   });
   it('no client copy of the rule or the wording', () => {
@@ -168,5 +174,31 @@ describe('the dashboard shows conflicts inline, never as an alert, and decides n
   it('no new screen, modal or conflict center', () => {
     expect(read('src/components/SettingConflictNotice.js')).not.toMatch(/Modal|navigation|Alert/);
     expect(dash).not.toMatch(/ConflictCenter|conflictModal/i);
+  });
+});
+
+describe('bundle parts belong to their occasion (20270227): an integrity rule, not a No-children rule', () => {
+  const { EXPERIENCE_TEMPLATES } = require('../constants/experienceTemplates');
+  const mig = read('supabase/migrations/20270227_bundle_parts_and_atomic_want_more.sql');
+  const fn = mig.match(/function public\._bundle_component_problem[\s\S]*?\$\$;/)[0];
+  const serverParts = Object.fromEntries([...fn.matchAll(/\('(\w+)',\s*array\[([^\]]*)\]\)/g)].map(([, occ, keys]) => [occ, keys.match(/'(\w+)'/g).map((k) => k.slice(1, -1))]));
+  it('the server list is exactly the parts the app offers for each bundle occasion', () => {
+    const bundleOccasions = ['date_night', 'anniversary', 'birthday', 'celebration', 'family_gathering']; // the table's bundle_occasion CHECK
+    expect(Object.keys(serverParts).sort()).toEqual([...bundleOccasions].sort());
+    for (const occ of bundleOccasions) expect([occ, serverParts[occ]]).toEqual([occ, EXPERIENCE_TEMPLATES[occ].components.map((c) => c.key)]);
+    expect(serverParts.family_gathering).toContain('family_fun');
+    expect(Object.entries(serverParts).filter(([, k]) => k.includes('family_fun')).map(([o]) => o)).toEqual(['family_gathering']);
+  });
+  it('enforced for every write path (table CHECK) with a plain validation message, never a conflict hint', () => {
+    expect(mig).toMatch(/add constraint business_availability_bundle_parts_fit_check\s+check \(public\._bundle_component_problem\(bundle_occasion, bundle_components\) is null\)/);
+    expect(fn).toMatch(/isn''t part of a %s bundle/);
+    expect(mig.replace(/^--.*$/gm, '')).not.toMatch(/setting_conflict|_raise_setting_conflicts/);
+  });
+  it('Family Fun is never a No-children trigger; the Family Gathering occasion stays the only one', () => {
+    for (const f of ['supabase/migrations/20270226_setting_conflicts_structured.sql', 'supabase/migrations/20270227_bundle_parts_and_atomic_want_more.sql']) {
+      const src = read(f).replace(/^--.*$/gm, '');
+      expect([f, /family_fun[\s\S]{0,200}(No children|_child_restriction|_offering_conflicts)|bundle_components[\s\S]{0,120}_family_offering_label/.test(src)]).toEqual([f, false]);
+    }
+    expect(read('scripts/live-verify/setting-validation-outcomes.sql')).toMatch(/one Family Gathering line, no Family Fun line/);
   });
 });

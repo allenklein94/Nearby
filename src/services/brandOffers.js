@@ -940,6 +940,20 @@ export async function setBusinessPriorityTimeRange(partnerId, start, end) {
 // business_requests.occasion column already established -- no second
 // taxonomy. Same narrow-RPC shape as setBusinessPriorityAttributes/
 // setBusinessPriorityTimeWindows above.
+// Item 86: "What do you want more of?" in ONE transaction (set_business_want_more, migration 20270227). A conflict, an invalid
+// value or a failure in any part saves nothing.
+export async function setBusinessWantMore(partnerId, { priorityAttributes, timeWindows, timeStart, timeEnd, occasions }) {
+  const { error } = await supabase.rpc('set_business_want_more', {
+    partner_id_param: partnerId,
+    priority_attributes_param: priorityAttributes ?? [],
+    time_windows_param: timeWindows ?? [],
+    start_param: timeStart ?? null,
+    end_param: timeEnd ?? null,
+    occasions_param: occasions ?? [],
+  });
+  if (error) throw error;
+}
+
 export async function setBusinessPriorityOccasions(partnerId, occasions) {
   const { error } = await supabase.rpc('set_business_priority_occasions', {
     partner_id_param: partnerId,

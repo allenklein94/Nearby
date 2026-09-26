@@ -7,7 +7,6 @@ import DraftBanner from '../components/DraftBanner';
 import AgeRangePicker from '../components/AgeRangePicker';
 import SettingConflictNotice from '../components/SettingConflictNotice';
 import { useSettingConflicts } from '../hooks/useSettingConflicts';
-import { checkBusinessSettingConflicts } from '../services/brandOffers';
 import { conflictMessages, hasPending, shownValue } from '../utils/settingConflicts';
 import OfferCustomerBody from '../components/OfferCustomerBody';
 import { offerValueLines } from '../utils/offerValue';
@@ -25,7 +24,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityTimeRange, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize, setBusinessSpaceCapacity, setBusinessTypicalSpend, setBusinessNotAccommodated } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize, setBusinessSpaceCapacity, setBusinessTypicalSpend, setBusinessNotAccommodated, setBusinessWantMore } from '../services/brandOffers';
 import { cleanMaxGroupSize, maxGroupSizeProblem, SPACES, spaceCapacityProblem } from '../constants/businessCapabilities';
 import { BUSINESS_PRICE_LEVELS, typicalSpendProblem } from '../constants/businessPrice';
 import { getBusinessCommunities } from '../services/communities';
@@ -1293,18 +1292,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setSavingPriorityAttributes(true);
     const priorityCheck = { kind: 'profile', patch: { priority_attributes: priorityAttributesInput, priority_occasions: priorityOccasionsInput } };
     try {
-      // Item 86: asked first (same server rule, nothing saved) so a contradiction never leaves these four saves half-applied.
-      const lines = await checkBusinessSettingConflicts(selectedPartner.id, priorityCheck.kind, priorityCheck.patch);
-      if (settingConflicts.report('priority', { conflicts: lines }, { check: priorityCheck })) {
-        setSavingPriorityAttributes(false);
-        return;
-      }
-      await Promise.all([
-        setBusinessPriorityAttributes(selectedPartner.id, priorityAttributesInput),
-        setBusinessPriorityTimeWindows(selectedPartner.id, priorityTimeWindowsInput),
-        setBusinessPriorityTimeRange(selectedPartner.id, timeRange.start, timeRange.end),
-        setBusinessPriorityOccasions(selectedPartner.id, priorityOccasionsInput),
-      ]);
+      // Item 86: one server transaction -- a conflict or an invalid part saves nothing (no half-applied preferences).
+      await setBusinessWantMore(selectedPartner.id, {
+        priorityAttributes: priorityAttributesInput,
+        timeWindows: priorityTimeWindowsInput,
+        timeStart: timeRange.start,
+        timeEnd: timeRange.end,
+        occasions: priorityOccasionsInput,
+      });
       setSelectedPartner((prev) => ({
         ...prev,
         priority_attributes: priorityAttributesInput,
