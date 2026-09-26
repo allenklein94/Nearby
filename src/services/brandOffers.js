@@ -1,5 +1,6 @@
 import { supabase, functionUrl } from './supabase';
 import { expandSearchTerms } from '../constants/categorySynonyms';
+import { searchScope } from '../constants/categoryTree';
 import { serviceError } from '../utils/recoverableError';
 import Constants from 'expo-constants';
 import { getGoogleMapsRequestHeaders } from './places';
@@ -171,7 +172,22 @@ export async function searchOffers(queryText, lat = null, lng = null) {
 
   // Synonyms (items 31/32): the person's own words plus the canonical tags they stand for ("cafe" -> Coffee).
   const searchTerms = expandSearchTerms(term).map((t) => t.replace(/[%_]/g, '\\$&'));
-  const idResults = await Promise.all(searchTerms.map((q) => supabase.rpc('search_offer_ids', { query_text: q })));
+  // Item 76: the category tree. A group or tag also matches offers from businesses whose OWN declared type sits in it
+  // (Food & Drink -> any food business's perk); a cuisine ("italian", "sushi") matches businesses that declared that cuisine.
+  const scope = searchScope(term);
+  const liveOffers = (q) => q.eq('active', true).is('gathering_id', null).or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
+  const scopeQueries = [];
+  if (scope.level === 'group') scopeQueries.push(liveOffers(supabase.from('brand_offers').select('id').in('target_interest_tag', scope.tags)));
+  if (scope.level === 'group' || scope.level === 'tag') {
+    scopeQueries.push(liveOffers(supabase.from('brand_offers').select('id, brand_partners!inner(subcategory)').in('brand_partners.subcategory', scope.tags)));
+  }
+  if (scope.level === 'cuisine') {
+    scopeQueries.push(liveOffers(supabase.from('brand_offers').select('id, brand_partners!inner(cuisine)').eq('brand_partners.cuisine', scope.cuisine)));
+  }
+  const idResults = await Promise.all([
+    ...searchTerms.map((q) => supabase.rpc('search_offer_ids', { query_text: q })),
+    ...scopeQueries,
+  ]);
   const firstError = idResults.find((r) => r.error)?.error;
   if (firstError && idResults.every((r) => r.error)) {
     console.error('search_offer_ids error', firstError);

@@ -87,7 +87,7 @@ const CATEGORY_OPTIONS = [
 // 20260927_business_semantic_tags_expansion.sql; keep in sync with that
 // migration and businessAttributes.js's BUSINESS_ATTRIBUTE_OPTIONS.
 const ATTRIBUTE_OPTIONS = ['outdoor_seating', 'date_friendly', 'group_friendly', 'live_music', 'kid_friendly', 'quiet', 'casual', 'upscale', 'specialty_coffee', 'laptop_friendly', 'dog_friendly', 'waterfront', 'late_night', 'board_game_friendly', 'photography_friendly', 'book_lovers', 'craft_friendly', 'fitness_focused', 'private_dining', 'corporate_events', 'wifi', 'food_available', 'beginner_friendly', 'reservation_required', 'wheelchair_accessible', 'accessible_parking', 'accessible_restroom', 'service_animal_friendly', 'stroller_friendly', 'family_seating', 'kid_menu', 'pet_friendly', 'romantic'];
-const CUISINE_OPTIONS = ['italian', 'mexican', 'japanese', 'chinese', 'american', 'french', 'mediterranean', 'indian', 'thai', 'seafood', 'other'];
+const CUISINE_OPTIONS = ['italian', 'mexican', 'japanese', 'chinese', 'american', 'french', 'mediterranean', 'indian', 'thai', 'seafood', 'bbq', 'korean', 'vietnamese', 'greek', 'other'];
 // Intent engine vision, layer 2 (subcategory) first increment
 // (2026-09-06): the same real per-major leaf-tag sets
 // update_business_profile's own new subcategory_param validation block

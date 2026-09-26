@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { tagsForPhrase } from '../constants/categorySynonyms';
+import { searchScope } from '../constants/categoryTree';
 import { filterToMyFriends } from './friends';
 import { sendInvite } from './invites';
 import { getUserLocation } from './userLocation';
@@ -199,12 +199,14 @@ export async function searchPublicCommunities(queryText) {
   // Taxonomy audit reply (CLAUDE.md, "Categories are actually a major
   // strategic issue," P1 item 15): same real gap and same fix as
   // searchGatherings() -- this used to be blind to interest_tag entirely.
-  const synonymTags = tagsForPhrase(term);
+  // Item 76: broad or narrow through the category tree -- a group name ("Food & Drink") searches every tag in it, a tag or
+  // synonym just that tag; a cuisine ("italian") adds no tag here (only businesses declare a cuisine), so it stays literal.
+  const synonymTags = searchScope(term).tags;
   const [nameRes, descriptionRes, tagRes, ...synonymRes] = await Promise.all([
     baseQuery().ilike('name', `%${escaped}%`),
     baseQuery().ilike('description', `%${escaped}%`),
     baseQuery().ilike('interest_tag', `%${escaped}%`),
-    ...synonymTags.map((t) => baseQuery().eq('interest_tag', t)),
+    ...(synonymTags.length ? [baseQuery().in('interest_tag', synonymTags)] : []),
   ]);
   if (nameRes.error) console.error('searchPublicCommunities name error', nameRes.error);
   if (descriptionRes.error) console.error('searchPublicCommunities description error', descriptionRes.error);

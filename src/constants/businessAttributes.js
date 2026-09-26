@@ -81,6 +81,10 @@ export const CUISINE_OPTIONS = [
   { key: 'indian', label: 'Indian' },
   { key: 'thai', label: 'Thai' },
   { key: 'seafood', label: 'Seafood' },
+  { key: 'bbq', label: 'BBQ' },
+  { key: 'korean', label: 'Korean' },
+  { key: 'vietnamese', label: 'Vietnamese' },
+  { key: 'greek', label: 'Greek' },
   { key: 'other', label: 'Other' },
 ];
 

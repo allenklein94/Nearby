@@ -1,6 +1,6 @@
 import { relatedHobbyFor } from '../constants/hobbyRelations';
 import { TRAVEL_SEARCH_MILES, boundedSearchMiles } from '../constants/searchRadius';
-import { tagsForPhrase } from '../constants/categorySynonyms';
+import { searchScope } from '../constants/categoryTree';
 import { groupForTag } from '../constants/gatheringCategories';
 import { formatDistanceAway } from '../utils/formatDistance';
 import { supabase } from './supabase';
@@ -334,12 +334,14 @@ export async function searchGatherings(queryText, tier = 'wide') {
   // that gap with no new matching logic to maintain -- a real tag value
   // is itself a real, searchable English phrase.
   // Synonyms (items 31/32): "cafe" also finds gatherings tagged Coffee, "gym" Gyms/Fitness. Exact canonical tags only.
-  const synonymTags = tagsForPhrase(term);
+  // Item 76: broad or narrow through the category tree -- a group name ("Food & Drink") searches every tag in it, a tag or
+  // synonym just that tag; a cuisine ("italian") adds no tag here (only businesses declare a cuisine), so it stays literal.
+  const synonymTags = searchScope(term).tags;
   const [titleRes, descriptionRes, tagRes, ...synonymRes] = await Promise.all([
     baseQuery().ilike('title', `%${escaped}%`),
     baseQuery().ilike('description', `%${escaped}%`),
     baseQuery().ilike('interest_tag', `%${escaped}%`),
-    ...synonymTags.map((t) => baseQuery().eq('interest_tag', t)),
+    ...(synonymTags.length ? [baseQuery().in('interest_tag', synonymTags)] : []),
   ]);
   if (titleRes.error) console.error('searchGatherings title error', titleRes.error);
   if (descriptionRes.error) console.error('searchGatherings description error', descriptionRes.error);

@@ -31,6 +31,7 @@ import { distanceWillingnessFromText } from '../constants/distanceWillingness';
 import { transportModeFromText } from '../constants/transportMode';
 import { timeBudgetFromText } from '../constants/timeBudget';
 import { clockWindowFromText, dateAnchorFromText } from '../constants/clockWindow';
+import { cuisineFromText } from '../constants/categoryTree';
 
 // ---- time: explicit words only (the classifier's own buckets) ----
 export function dateWindowFromText(text) {
@@ -157,7 +158,8 @@ export function resolveAsk(text, ai = null) {
     subcategory,
     activities,
     attributes,
-    cuisine: a.cuisine ?? null,
+    // Item 76: the AI's cuisine, else the one the words name ("italian dinner", "sushi"); a cuisine is classification.
+    cuisine: a.cuisine ? set('cuisine', a.cuisine, 'ai') : set('cuisine', cuisineFromText(t), 'words'),
     occasion,
     group: { partyType, partySize },
     time: { dateWindow, whenPreset },

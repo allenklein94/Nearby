@@ -56,8 +56,8 @@ describe('database seed', () => {
   });
   it('search services expand through the one synonym table', () => {
     const rd = (f) => fs.readFileSync(path.join(__dirname, '../services', f), 'utf8');
-    expect(rd('gatherings.js')).toMatch(/tagsForPhrase\(term\)/);
-    expect(rd('communities.js')).toMatch(/tagsForPhrase\(term\)/);
+    expect(rd('gatherings.js')).toMatch(/searchScope\(term\)\.tags/);
+    expect(rd('communities.js')).toMatch(/searchScope\(term\)\.tags/);
     expect(rd('brandOffers.js')).toMatch(/expandSearchTerms\(term\)/);
   });
 });

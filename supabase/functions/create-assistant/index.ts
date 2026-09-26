@@ -61,7 +61,7 @@ const VALID_ATTRIBUTES = [
 ];
 const VALID_CUISINES = [
   'italian', 'mexican', 'japanese', 'chinese', 'american', 'french',
-  'mediterranean', 'indian', 'thai', 'seafood', 'other',
+  'mediterranean', 'indian', 'thai', 'seafood', 'bbq', 'korean', 'vietnamese', 'greek', 'other',
 ];
 
 // "Intelligent demand inbox" Phase 1 (CLAUDE.md, Sep 3 2026): the real
