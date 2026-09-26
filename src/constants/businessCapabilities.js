@@ -16,6 +16,7 @@
 //   - catering: only from the words ("catering", "cater our party"); a business that declared Catering gets +2, "Offers catering".
 // The number and the capabilities are never put in a business-facing payload; routing reads the number server-side only. The
 // public business profile shows the number as "Largest group · Up to 40 people" (maxGroupLine), only when the owner set it.
+import { attributesFromAsk, parseAskFacets } from './askFacets';
 
 export const CAPABILITIES = [
   { key: 'private_events', attribute: 'private_dining', label: 'Private events', icon: '🥂' },
@@ -70,17 +71,56 @@ export const CAPACITY_TOO_SMALL_POINTS = -4;
 export const PRIVATE_EVENTS_POINTS = 2;
 export const CATERING_POINTS = 2;
 
-// partySize = the total people the person said; maxGroup = the business's declared total. Never adds the host or anyone else.
-export function capacityFit(maxGroup, partySize) {
+// Item 81: capacity per SPACE (migration 20270217), each TOTAL people, owner-declared, NULL = not said. A space counts only while
+// its capability is declared (a private room without Private events is ignored), and can never exceed the overall maximum.
+export const SPACES = [
+  { key: 'private_room', attribute: 'private_dining', column: 'private_room_capacity', label: 'Private room' },
+  { key: 'outdoor', attribute: 'outdoor_seating', column: 'outdoor_capacity', label: 'Outdoor area' },
+];
+export function spaceCapacity(partner, spaceKey) {
+  const s = SPACES.find((x) => x.key === spaceKey);
+  if (!s || !(Array.isArray(partner?.attributes) && partner.attributes.includes(s.attribute))) return null;
+  return cleanMaxGroupSize(partner?.[s.column]);
+}
+// Profile lines, only for declared spaces with a size: [{ key, label: 'Private room', line: 'Up to 20 people' }].
+export function spaceCapacityLines(partner) {
+  return SPACES.map((s) => ({ key: s.key, label: s.label, line: maxGroupLine(spaceCapacity(partner, s.key)) })).filter((x) => x.line);
+}
+// The owner's own form check, mirroring the server: a space no larger than the overall maximum.
+export function spaceCapacityProblem(text, maxGroup) {
+  const basic = maxGroupSizeProblem(text);
+  if (basic) return basic;
+  const n = cleanMaxGroupSize(text);
   const max = cleanMaxGroupSize(maxGroup);
-  if (max === null || !Number.isInteger(partySize) || partySize < 1) return { delta: 0, reason: null };
-  return max >= partySize ? { delta: CAPACITY_FIT_POINTS, reason: 'Can host your group' } : { delta: CAPACITY_TOO_SMALL_POINTS, reason: null };
+  return n !== null && max !== null && n > max ? `This space can't hold more than your largest group (${max}). Raise that first.` : null;
 }
 
-// One pass over business candidates carrying their partner row (`businessPartner`: attributes + max_group_size).
+// "patio for 12", "dinner outside for 12" (never "nothing outdoors"): the ask wants the outdoor area.
+export const outdoorSpaceAsk = (text) => typeof text === 'string'
+  && (attributesFromAsk(text).includes('outdoor_seating') || parseAskFacets(text).environment === 'outdoor');
+
+// partySize = the total people the person said; never adds the host or anyone else. Every KNOWN limit that applies is checked:
+// the overall maximum, plus the private room when a private event was asked for and the outdoor area when outside was asked for.
+// Any known limit below the party = too small; otherwise a known limit that covers it = fits; nothing known = neutral.
+export function groupCapacityFit(partner, partySize, { privateAsk = false, outdoorAsk = false } = {}) {
+  if (!Number.isInteger(partySize) || partySize < 1) return { delta: 0, reason: null };
+  const limits = [{ n: cleanMaxGroupSize(partner?.max_group_size), reason: 'Can host your group' }];
+  if (privateAsk) limits.push({ n: spaceCapacity(partner, 'private_room'), reason: 'Private room fits your group' });
+  if (outdoorAsk) limits.push({ n: spaceCapacity(partner, 'outdoor'), reason: 'Outdoor area fits your group' });
+  const known = limits.filter((l) => l.n !== null);
+  if (known.length === 0) return { delta: 0, reason: null };
+  if (known.some((l) => l.n < partySize)) return { delta: CAPACITY_TOO_SMALL_POINTS, reason: null };
+  // the most specific space that fits names the reason ("Private room fits your group" over "Can host your group")
+  return { delta: CAPACITY_FIT_POINTS, reason: known[known.length - 1].reason };
+}
+// Kept for the overall maximum alone (item 80).
+export const capacityFit = (maxGroup, partySize) => groupCapacityFit({ max_group_size: maxGroup }, partySize);
+
+// One pass over business candidates carrying their partner row (`businessPartner`: attributes + capacities).
 export function applyCapabilitiesToCandidates(candidates, { partySize = null, text = '' } = {}) {
   const wantPrivate = privateEventAsk(text);
   const wantCatering = cateringAsk(text);
+  const wantOutdoor = outdoorSpaceAsk(text);
   const size = Number.isInteger(partySize) && partySize > 0 ? partySize : null;
   if (!wantPrivate && !wantCatering && size === null) return candidates;
   return candidates.map((c) => {
@@ -91,11 +131,11 @@ export function applyCapabilitiesToCandidates(candidates, { partySize = null, te
     const reasons = [];
     if (wantPrivate && attrs.includes('private_dining')) { delta += PRIVATE_EVENTS_POINTS; reasons.push('Hosts private events'); }
     if (wantCatering && attrs.includes('catering')) { delta += CATERING_POINTS; reasons.push('Offers catering'); }
-    const cap = capacityFit(partner.max_group_size, size);
+    const cap = groupCapacityFit(partner, size, { privateAsk: wantPrivate, outdoorAsk: wantOutdoor });
     delta += cap.delta;
     if (cap.reason) reasons.push(cap.reason);
     if (!delta) return c;
-    // An explicitly asked capability is the ask's own words, so its reason leads; a capacity fit alone keeps an existing line.
+    // A space that fits the group, or an explicitly asked capability, leads; a plain overall fit keeps an existing line.
     const lead = reasons.find((r) => r !== 'Can host your group');
     return { ...c, score: (c.score ?? 0) + delta, subtitle: lead ?? c.subtitle ?? reasons[0] ?? null };
   });

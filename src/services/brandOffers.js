@@ -991,7 +991,7 @@ export async function getPartnerOperatingInfo(partnerIds) {
   if (ids.length === 0) return new Map();
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, name, latitude, longitude, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, max_group_size')
+    .select('id, name, latitude, longitude, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, max_group_size, private_room_capacity, outdoor_capacity')
     .in('id', ids);
   if (error) return new Map();
   return new Map((data ?? []).map((r) => [r.id, r]));
@@ -1335,6 +1335,12 @@ export async function setBusinessPriceLevel(partnerId, level) {
 // Item 80: largest group the business can host, total people (1-5000), or null = not said. Migration 20270216.
 export async function setBusinessMaxGroupSize(partnerId, size) {
   const { error } = await supabase.rpc('set_business_max_group_size', { partner_id_param: partnerId, max_group_size_param: size ?? null });
+  if (error) throw error;
+}
+
+// Item 81: a space's capacity ('private_room' | 'outdoor'), total people, or null. Needs that capability declared. Migration 20270217.
+export async function setBusinessSpaceCapacity(partnerId, space, size) {
+  const { error } = await supabase.rpc('set_business_space_capacity', { partner_id_param: partnerId, space_param: space, capacity_param: size ?? null });
   if (error) throw error;
 }
 

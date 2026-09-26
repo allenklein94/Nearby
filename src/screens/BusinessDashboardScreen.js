@@ -21,8 +21,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityTimeRange, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize } from '../services/brandOffers';
-import { cleanMaxGroupSize, maxGroupSizeProblem } from '../constants/businessCapabilities';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityTimeRange, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize, setBusinessSpaceCapacity } from '../services/brandOffers';
+import { cleanMaxGroupSize, maxGroupSizeProblem, SPACES, spaceCapacityProblem } from '../constants/businessCapabilities';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
 // P2 remediation item 11 (CLAUDE.md) -- reuse the admin queue's own real
@@ -286,6 +286,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // Item 80: the "Largest group you can host" field; null = not yet edited (shows the saved value).
   const [maxGroupDraft, setMaxGroupDraft] = useState(null);
   const [savingMaxGroup, setSavingMaxGroup] = useState(false);
+  // Item 81: per-space drafts ({ private_room: '20' }); a key is present only while being edited.
+  const [spaceDrafts, setSpaceDrafts] = useState({});
+  const [savingSpace, setSavingSpace] = useState(null);
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [offerRedemptionCounts, setOfferRedemptionCounts] = useState({});
@@ -1125,6 +1128,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       presentRecoverableError(Alert, { what: 'save your group size', error: e, onRetry: () => handleSaveMaxGroupSize() });
     }
     setSavingMaxGroup(false);
+  }
+
+  // Item 81: a space's capacity (private room / outdoor area). Shown only while that capability is declared; the server re-checks.
+  async function handleSaveSpaceCapacity(space) {
+    if (!selectedPartner || spaceDrafts[space.key] === undefined) return;
+    const problem = spaceCapacityProblem(spaceDrafts[space.key], selectedPartner.max_group_size);
+    if (problem) { Alert.alert('Check the group size', problem); return; }
+    const next = cleanMaxGroupSize(spaceDrafts[space.key]);
+    setSavingSpace(space.key);
+    try {
+      await setBusinessSpaceCapacity(selectedPartner.id, space.key, next);
+      setSelectedPartner((prev) => ({ ...prev, [space.column]: next }));
+      setSpaceDrafts((prev) => { const n = { ...prev }; delete n[space.key]; return n; });
+    } catch (e) {
+      presentRecoverableError(Alert, { what: 'save that size', error: e, onRetry: () => handleSaveSpaceCapacity(space) });
+    }
+    setSavingSpace(null);
   }
 
   // Item 50: suited ages (descriptive, 0-18). Saves per tap; a failure puts the previous range back.
@@ -5463,6 +5483,37 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.helperText}>
                   Total people, counting everyone. Requests for larger groups go to businesses that can host them first. Leave blank if it varies.
                 </Text>
+                {SPACES.filter((sp) => (selectedPartner?.attributes ?? []).includes(sp.attribute)).map((sp) => (
+                  <View key={sp.key} style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
+                    <Text style={[styles.helperText, { width: 110, marginTop: 0 }]}>{sp.label}</Text>
+                    <TextInput
+                      style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
+                      placeholder="Not set"
+                      placeholderTextColor={colors.textTertiary}
+                      value={spaceDrafts[sp.key] ?? (selectedPartner?.[sp.column] != null ? String(selectedPartner[sp.column]) : '')}
+                      onChangeText={(t) => setSpaceDrafts((prev) => ({ ...prev, [sp.key]: t.replace(/[^0-9]/g, '') }))}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      accessibilityLabel={`${sp.label}, largest group, total people`}
+                    />
+                    {spaceDrafts[sp.key] !== undefined && (
+                      <TouchableOpacity
+                        style={[styles.chip, styles.chipSelected, { marginLeft: spacing.sm }]}
+                        onPress={() => handleSaveSpaceCapacity(sp)}
+                        disabled={savingSpace === sp.key}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Save ${sp.label} size`}
+                      >
+                        <Text style={[styles.chipText, styles.chipTextSelected]}>{savingSpace === sp.key ? 'Saving…' : 'Save'}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+                {SPACES.some((sp) => (selectedPartner?.attributes ?? []).includes(sp.attribute)) && (
+                  <Text style={styles.helperText}>
+                    The most people each space holds. A group that asks for that space is matched against it. No bigger than your largest group.
+                  </Text>
+                )}
                 {/* Suited ages (item 50): descriptive only, never a restriction; owner-declared. */}
                 <Text style={styles.sectionHeader}>What ages is it suited to?</Text>
                 <AgeRangePicker

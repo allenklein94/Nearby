@@ -23,7 +23,7 @@ import { getCommunityMemberCount } from '../services/communities';
 import { businessHoursLabel, weekHoursLines } from '../utils/operatingStatus';
 import { businessPrimaryAction } from '../utils/primaryAction';
 import { bookingModeOf, bookingModeOption, LEGACY_RESERVATION_ATTRIBUTE } from '../constants/bookingMode';
-import { maxGroupLine } from '../constants/businessCapabilities';
+import { maxGroupLine, spaceCapacityLines } from '../constants/businessCapabilities';
 import { businessActionRoute } from '../utils/businessAction';
 import { getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
@@ -296,6 +296,12 @@ export default function BusinessProfileScreen({ route, navigation }) {
             👥 Largest group · {maxGroupLine(partner.max_group_size)}
           </Text>
         )}
+        {/* Item 81: per-space sizes, only for a declared capability with a size set. */}
+        {spaceCapacityLines(partner).map((sp) => (
+          <Text key={sp.key} style={styles.reliabilityLine} accessibilityLabel={`${sp.label}, ${sp.line}`}>
+            {sp.key === 'private_room' ? '🥂' : '🌤️'} {sp.label} · {sp.line}
+          </Text>
+        ))}
         {/* "Business Story" plan, Phase 3 -- a real, self-reported
             "how's business right now" signal, hidden once stale so it
             never reads as real-time when it isn't (see CLAUDE.md). */}

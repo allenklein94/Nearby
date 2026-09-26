@@ -175,3 +175,94 @@ describe('privacy and scope', () => {
     expect(users).toEqual(['screens/BusinessDashboardScreen.js', 'screens/BusinessProfileScreen.js', 'services/intentResolver.js', 'utils/askResolver.js']);
   });
 });
+
+// Item 81: capacity per space (owner's example: max 40, private room 20, outdoor area 30; a 12-person gathering).
+describe('space capacities (item 81)', () => {
+  const {
+    SPACES, spaceCapacity, spaceCapacityLines, spaceCapacityProblem, groupCapacityFit, outdoorSpaceAsk,
+  } = require('./businessCapabilities');
+  const MIG81 = 'supabase/migrations/20270217_business_space_capacities.sql';
+  const venue = { attributes: ['private_dining', 'outdoor_seating'], max_group_size: 40, private_room_capacity: 20, outdoor_capacity: 30 };
+
+  it('two spaces, each tied to its capability', () => {
+    expect(SPACES.map((s) => [s.label, s.attribute])).toEqual([['Private room', 'private_dining'], ['Outdoor area', 'outdoor_seating']]);
+    expect(spaceCapacity(venue, 'private_room')).toBe(20);
+    expect(spaceCapacity(venue, 'outdoor')).toBe(30);
+    // a size without the capability declared is ignored (never shown, never matched)
+    expect(spaceCapacity({ attributes: [], private_room_capacity: 20 }, 'private_room')).toBeNull();
+    expect(spaceCapacity({ attributes: ['private_dining'] }, 'private_room')).toBeNull();
+  });
+
+  it('profile lines: only declared spaces with a size, total people', () => {
+    expect(spaceCapacityLines(venue)).toEqual([
+      { key: 'private_room', label: 'Private room', line: 'Up to 20 people' },
+      { key: 'outdoor', label: 'Outdoor area', line: 'Up to 30 people' },
+    ]);
+    expect(spaceCapacityLines({ attributes: ['outdoor_seating'], outdoor_capacity: 30, private_room_capacity: 20 })).toEqual([
+      { key: 'outdoor', label: 'Outdoor area', line: 'Up to 30 people' },
+    ]);
+    expect(spaceCapacityLines({ attributes: [] })).toEqual([]);
+  });
+
+  it('a space can never exceed the overall maximum (form check mirrors the server)', () => {
+    expect(spaceCapacityProblem('50', 40)).toMatch(/largest group \(40\)/);
+    expect(spaceCapacityProblem('20', 40)).toBeNull();
+    expect(spaceCapacityProblem('20', null)).toBeNull();
+    expect(spaceCapacityProblem('', 40)).toBeNull();
+    const sql = read(MIG81);
+    expect(sql).toMatch(/private_room_capacity <= max_group_size/);
+    expect(sql).toMatch(/outdoor_capacity <= max_group_size/);
+    expect(sql).toMatch(/Add Private Dining to your profile first/);
+    expect(sql).toMatch(/Add Outdoor Seating to your profile first/);
+  });
+
+  it('a 12-person group: fits overall, in the private room and outdoors', () => {
+    expect(groupCapacityFit(venue, 12)).toEqual({ delta: CAPACITY_FIT_POINTS, reason: 'Can host your group' });
+    expect(groupCapacityFit(venue, 12, { privateAsk: true })).toEqual({ delta: CAPACITY_FIT_POINTS, reason: 'Private room fits your group' });
+    expect(groupCapacityFit(venue, 12, { outdoorAsk: true })).toEqual({ delta: CAPACITY_FIT_POINTS, reason: 'Outdoor area fits your group' });
+  });
+
+  it('a 25-person group asking for a private room: the venue holds 40 but the room holds 20 -> too small', () => {
+    expect(groupCapacityFit(venue, 25).delta).toBe(CAPACITY_FIT_POINTS);
+    expect(groupCapacityFit(venue, 25, { privateAsk: true }).delta).toBe(CAPACITY_TOO_SMALL_POINTS);
+    expect(groupCapacityFit(venue, 25, { outdoorAsk: true }).delta).toBe(CAPACITY_FIT_POINTS);
+    expect(groupCapacityFit(venue, 35, { outdoorAsk: true }).delta).toBe(CAPACITY_TOO_SMALL_POINTS);
+  });
+
+  it('unknown space size falls back to the overall maximum; nothing known = neutral', () => {
+    const noRoomSize = { attributes: ['private_dining'], max_group_size: 40 };
+    expect(groupCapacityFit(noRoomSize, 25, { privateAsk: true })).toEqual({ delta: CAPACITY_FIT_POINTS, reason: 'Can host your group' });
+    expect(groupCapacityFit({ attributes: ['private_dining'] }, 25, { privateAsk: true })).toEqual({ delta: 0, reason: null });
+  });
+
+  it('outdoor asks come from the words, negation-safe', () => {
+    for (const t of ['a patio for 12', 'dinner outside for 12', 'outdoor seating for 8']) expect(outdoorSpaceAsk(t)).toBe(true);
+    for (const t of ['dinner for 12', 'nothing outdoors please', 'birthday for 12']) expect(outdoorSpaceAsk(t)).toBe(false);
+  });
+
+  it('typed-ask ranking end to end: room-too-small venue sinks for a private ask, stays for a plain one', () => {
+    const small = biz('smallroom', { attributes: ['private_dining'], max_group_size: 40, private_room_capacity: 10 });
+    const fits = biz('fitsroom', { attributes: ['private_dining'], max_group_size: 40, private_room_capacity: 30 });
+    const priv = applyCapabilitiesToCandidates([small, fits], { partySize: 20, text: 'private room for 20' }).sort((a, b) => b.score - a.score);
+    expect(priv.map((c) => c.id)).toEqual(['fitsroom', 'smallroom']);
+    expect(priv[0].subtitle).toBe('Hosts private events');
+    const plain = applyCapabilitiesToCandidates([small, fits], { partySize: 20, text: 'birthday dinner for 20' });
+    expect(plain.map((c) => c.score)).toEqual([5 + CAPACITY_FIT_POINTS, 5 + CAPACITY_FIT_POINTS]);
+  });
+
+  it('routing: space-aware too-small and fits keys, gated on the request asking for the space AND the business declaring it', () => {
+    const sql = read(MIG81);
+    expect(sql).toMatch(/'private_dining' = any\(coalesce\(v_req_attributes, '\{\}'\)\) and 'private_dining' = any\(coalesce\(e\.attributes, '\{\}'\)\)\s+and e\.private_room_capacity is not null and e\.private_room_capacity < v_req_party/);
+    expect(sql).toMatch(/e\.outdoor_capacity >= v_req_party/);
+    expect(sql).not.toMatch(/v_req_party\s*\+\s*1/);
+    expect(sql.replace(/^\s*--.*$/gm, '')).not.toMatch(/create table/i);
+  });
+
+  it('never in a business-facing payload', () => {
+    const migs = fs.readdirSync(path.join(ROOT, 'supabase/migrations')).sort();
+    for (const fn of ['get_business_opportunities', 'get_partner_demand_signals', 'business_safe_request_summary']) {
+      const last = migs.filter((m) => new RegExp(`function\\s+public\\.${fn}\\b`, 'i').test(read(`supabase/migrations/${m}`))).pop();
+      expect([fn, /private_room_capacity|outdoor_capacity/.test(read(`supabase/migrations/${last}`))]).toEqual([fn, false]);
+    }
+  });
+});
