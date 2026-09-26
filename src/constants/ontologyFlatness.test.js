@@ -9,6 +9,7 @@ import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS } from './businessAttribute
 import { SKILL_LEVELS } from './skillLevel';
 import { RELATED_ACTIVITY_GROUPS } from './activityDictionary';
 import { ACTIVITY_FORMATS } from './activityFormat';
+import { GENRE_OPTIONS, MUSIC_TAGS } from '../utils/gatheringPractical';
 import { childrenOf, CUISINE_PHRASES, cuisineForSearch, cuisineFromText, searchScope } from './categoryTree';
 
 const ALL_TAGS = CATEGORY_GROUPS.flatMap((g) => [...g.tags, ...(g.businessOnlyTags ?? [])]);
@@ -101,6 +102,32 @@ describe('sports stay flat (item 78)', () => {
     for (const g of RELATED_ACTIVITY_GROUPS) {
       expect(Array.isArray(g)).toBe(true);
       for (const t of g) expect(typeof t).toBe('string');
+    }
+  });
+});
+
+// Item 79 (owner, LOCKED 2026-09-26): nightlife too. Category group (Entertainment & Nightlife) -> activity tag (Live Music),
+// and the rest are separate flat facts: genre (host-declared `gatherings.genre`, music tags only), indoor/outdoor (from the
+// tag), food (`food_available` attribute), dancing (its own tag). No "Rock Concerts", "Jazz Clubs", "Outdoor Concerts" or
+// "21+ Nights" tags. An age limit (21+) is NOT built: it restricts who may join and needs its own owner decision.
+describe('nightlife stays flat (item 79)', () => {
+  const tagSet = new Set(ALL_TAGS.map(lower));
+  const genres = GENRE_OPTIONS.filter((g) => g.key).map((g) => lower(g.label));
+  const GENRE_WORDS = [...genres, 'jazz club', 'indie', 'metal', 'punk', 'edm', 'techno', 'house'];
+  it('a genre is never a tag, and no tag is genre + an activity (Rock Concerts, Jazz Club, Techno Nights)', () => {
+    for (const t of ALL_TAGS.map(lower)) {
+      expect(genres).not.toContain(t);
+      for (const g of GENRE_WORDS) if (t.startsWith(`${g} `)) expect(tagSet.has(t.slice(g.length + 1)) || /club|night|concert|show|bar/.test(t)).toBe(false);
+    }
+  });
+  it('no age-qualified tag (21+, 18+, adults only)', () => {
+    for (const t of ALL_TAGS) expect(t).not.toMatch(/\b(1[89]|2[01])\+|adults? only/i);
+  });
+  it('genre is asked only on music tags, which are plain Entertainment & Nightlife tags with no children', () => {
+    const ent = CATEGORY_GROUPS.find((g) => g.key === 'entertainment_nightlife').tags;
+    for (const t of MUSIC_TAGS) {
+      expect(ent).toContain(t);
+      expect(childrenOf({ tag: t })).toEqual([]);
     }
   });
 });
