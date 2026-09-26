@@ -111,7 +111,7 @@ export async function getActiveOffers(lat = null, lng = null) {
 
   const { data, error } = await supabase
     .from('brand_offers')
-    .select('*, brand_partners(name, logo_url, description, cuisine, attributes, weather_setting, operating_hours, availability_pulse, availability_pulse_updated_at)')
+    .select('*, brand_partners(name, logo_url, description, cuisine, attributes, weather_setting, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode)')
     .eq('active', true)
     .is('gathering_id', null)
     .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
@@ -182,7 +182,7 @@ export async function searchOffers(queryText, lat = null, lng = null) {
 
   const { data, error } = await supabase
     .from('brand_offers')
-    .select('*, brand_partners(name, logo_url, description, cuisine, attributes, weather_setting, operating_hours, availability_pulse, availability_pulse_updated_at)')
+    .select('*, brand_partners(name, logo_url, description, cuisine, attributes, weather_setting, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode)')
     .in('id', ids)
     .order('created_at', { ascending: false });
   if (error) {
@@ -219,7 +219,7 @@ export async function getNearbyBusinesses(lat, lng, radiusMiles = 50) {
   const { lat: myLat, lng: myLng } = await resolveCoords(lat, lng);
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, name, logo_url, latitude, longitude, operating_hours, availability_pulse, availability_pulse_updated_at')
+    .select('id, name, logo_url, latitude, longitude, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode')
     .eq('active', true)
     .not('latitude', 'is', null)
     .not('longitude', 'is', null)
@@ -951,6 +951,13 @@ export async function setBusinessWeatherSetting(partnerId, setting) {
   if (error) throw error;
 }
 
+// Owner item 72: how customers come in (walk_in / reservation_recommended / reservation_required / request_required; null clears).
+// Drives the consumer CTA (utils/primaryAction.js businessPrimaryAction). Setting it also drops the legacy reservation_required attribute.
+export async function setBusinessBookingMode(partnerId, mode) {
+  const { error } = await supabase.rpc('set_business_booking_mode', { partner_id_param: partnerId, mode_param: mode ?? null });
+  if (error) throw error;
+}
+
 // Owner item 71: the owner's declared weekly hours (null clears them -> "unknown", never "closed"). Validated server-side by the
 // same rules as utils/operatingStatus.js operatingHoursProblem().
 export async function setBusinessOperatingHours(partnerId, hours) {
@@ -961,14 +968,14 @@ export async function setBusinessOperatingHours(partnerId, hours) {
   if (error) throw error;
 }
 
-// partnerId -> { operating_hours, availability_pulse, availability_pulse_updated_at } for the open-now resolver on typed-ask
+// partnerId -> { operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode } for the open-now resolver on typed-ask
 // business results. Best-effort: a failure is an empty map, which makes every business "unknown" (never "closed").
 export async function getPartnerOperatingInfo(partnerIds) {
   const ids = [...new Set((partnerIds ?? []).filter(Boolean))];
   if (ids.length === 0) return new Map();
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, operating_hours, availability_pulse, availability_pulse_updated_at')
+    .select('id, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode')
     .in('id', ids);
   if (error) return new Map();
   return new Map((data ?? []).map((r) => [r.id, r]));

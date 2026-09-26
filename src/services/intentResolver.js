@@ -2,6 +2,7 @@ import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
 import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, getPartnerPriceLevels, getPartnerSuitedAges, getPartnerOperatingInfo } from './brandOffers';
+import { bookingModeOf } from '../constants/bookingMode';
 import { openNowAskFromText, candidateEntity, filterOpenNow, openNowLift, OPEN_NOW_CAPTION } from '../utils/operatingStatus';
 import { applyBusinessPriceToCandidates } from '../utils/priceBias';
 import { applyAskWeather } from '../utils/askWeather';
@@ -749,6 +750,22 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // said otherwise; "plan ahead" / "next few hours" have no dateWindow bucket, so they come from the person's own words.
   const spontaneity = spontaneityOf({ dateWindow, rawText });
   const commitAsk = commitmentAsk(rawText) ?? (isImmediate(spontaneity) ? 'light' : null);
+  // One best-effort partner lookup (hours, pulse, booking mode) shared by the commitment and open-now passes; a failure is an
+  // empty map (every business unknown, no booking mode), never a broken search.
+  const openNowOnly = openNowAskFromText(rawText);
+  let partnerInfo = new Map();
+  if (commitAsk || openNowOnly || isImmediate(spontaneity)) {
+    try {
+      partnerInfo = await getPartnerOperatingInfo(deduped.map((c) => c.partnerId));
+    } catch (e) {
+      console.error('partner operating lookup skipped', e);
+    }
+  }
+  // Item 72: a business's DECLARED booking mode feeds its commitment (walk-in = drop in, book/request first = reservation).
+  deduped = deduped.map((c) => {
+    const mode = c.type !== 'gathering' && c.partnerId ? bookingModeOf(partnerInfo.get(c.partnerId)) : null;
+    return mode ? { ...c, bookingMode: mode } : c;
+  });
   deduped = applyCommitmentToCandidates(deduped, commitAsk);
   deduped = applySpontaneityToCandidates(deduped, spontaneity);
 
@@ -780,14 +797,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // right now" keeps ONLY confirmed-usable results (unknown and closed both drop out). An immediate ask without that language
   // only lifts businesses and perks that are confirmed usable (available +2, open +1); gatherings already rank by their real
   // start in the spontaneity pass, so they get no second lift. Nothing about this is stored or sent to a business.
-  const openNowOnly = openNowAskFromText(rawText);
   if (openNowOnly || isImmediate(spontaneity)) {
-    let partnerInfo = new Map();
-    try {
-      partnerInfo = await getPartnerOperatingInfo(deduped.map((c) => c.partnerId));
-    } catch (e) {
-      console.error('open-now partner lookup skipped', e);
-    }
     const toEntity = (c) => candidateEntity(c, partnerInfo);
     deduped = openNowOnly
       ? filterOpenNow(deduped, toEntity)

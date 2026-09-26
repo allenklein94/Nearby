@@ -21,7 +21,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityTimeRange, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityTimeRange, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
 // P2 remediation item 11 (CLAUDE.md) -- reuse the admin queue's own real
@@ -72,6 +72,7 @@ import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import DemandNearYouCard from '../components/DemandNearYouCard';
 import TellNearbyBusinessCard from '../components/TellNearbyBusinessCard';
 import { describeDemandSignals } from '../utils/demandSignals';
+import { BOOKING_MODE_OPTIONS, LEGACY_RESERVATION_ATTRIBUTE, bookingModeOf } from '../constants/bookingMode';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, OFFERED_OCCASION_OPTIONS, WEATHER_SETTING_OPTIONS, occasionLabel, occasionPhrase, dietaryLabel, requestedItemLabel } from '../constants/businessAttributes';
 import { planAddonLabel } from '../constants/planAddons';
 import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
@@ -1072,6 +1073,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     } catch (e) {
       setSelectedPartner((prev) => ({ ...prev, weather_setting: current }));
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePickWeatherSetting(key) });
+    }
+  }
+
+  // Item 72: how customers come in. Tap to choose, tap again to clear (= not said). Saves per tap; drives the customer's button.
+  async function handlePickBookingMode(key) {
+    if (!selectedPartner) return;
+    const current = selectedPartner.booking_mode ?? null;
+    const currentAttrs = selectedPartner.attributes ?? [];
+    const next = bookingModeOf(selectedPartner) === key ? null : key;
+    setSelectedPartner((prev) => ({ ...prev, booking_mode: next, attributes: (prev.attributes ?? []).filter((a) => a !== LEGACY_RESERVATION_ATTRIBUTE) }));
+    try {
+      await setBusinessBookingMode(selectedPartner.id, next);
+    } catch (e) {
+      setSelectedPartner((prev) => ({ ...prev, booking_mode: current, attributes: currentAttrs }));
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePickBookingMode(key) });
     }
   }
 
@@ -5020,7 +5036,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   flagged in your inbox. Quiet times? Pick the hours you'd like to fill.
                 </Text>
                 <View style={styles.chipRow}>
-                  {BUSINESS_ATTRIBUTE_OPTIONS.map((a) => {
+                  {BUSINESS_ATTRIBUTE_OPTIONS.filter((a) => a.key !== LEGACY_RESERVATION_ATTRIBUTE).map((a) => {
                     const selected = priorityAttributesInput.includes(a.key);
                     return (
                       <TouchableOpacity
@@ -5358,6 +5374,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 </View>
                 <Text style={styles.helperText}>
                   Outdoor: shown less when rain is coming, more in good weather. Weather dependent: shown less in bad weather. Indoor: shown more in bad weather. Tap again to clear.
+                </Text>
+                {/* Booking mode (item 72): one owner-declared answer that sets the customer's button. */}
+                <Text style={styles.sectionHeader}>How do customers come in?</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {BOOKING_MODE_OPTIONS.map((o) => {
+                    const selected = bookingModeOf(selectedPartner) === o.key;
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handlePickBookingMode(o.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${o.label}${selected ? ', selected' : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <Text style={styles.helperText}>
+                  Sets the button customers see: Walk-in shows "Go now" while you're open, Reservation recommended "Reserve", Reservation required "Book", Request required "Request". Reserve, Book and Request send you a request to answer. Tap again to clear.
                 </Text>
                 {/* Price (item 40): the same Free/$/$$/$$$ vocabulary gatherings use; owner-declared, never inferred. */}
                 <Text style={styles.sectionHeader}>What does it usually cost?</Text>
@@ -6089,7 +6127,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   vocabulary/RPC, just named for what it actually is. */}
               <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Why People Choose Us</Text>
               <View style={styles.chipRow}>
-                {BUSINESS_ATTRIBUTE_OPTIONS.map((a) => {
+                {BUSINESS_ATTRIBUTE_OPTIONS.filter((a) => a.key !== LEGACY_RESERVATION_ATTRIBUTE).map((a) => {
                   const selected = editAttributesInput.includes(a.key);
                   return (
                     <TouchableOpacity
@@ -6196,7 +6234,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               />
               <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Tags</Text>
               <View style={styles.chipRow}>
-                {BUSINESS_ATTRIBUTE_OPTIONS.map((a) => {
+                {BUSINESS_ATTRIBUTE_OPTIONS.filter((a) => a.key !== LEGACY_RESERVATION_ATTRIBUTE).map((a) => {
                   const selected = expAttributesInput.includes(a.key);
                   return (
                     <TouchableOpacity

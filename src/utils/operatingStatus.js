@@ -18,6 +18,7 @@
 //
 // usableNowTier(): 'available' > 'open' > 'unknown' | 'closed' (the last two get no lift). The explicit Open-now filter keeps
 // only 'available' and 'open'; without it, unknown stays eligible and nothing is hidden.
+import { bookingModeOf, NEEDS_BOOKING_FIRST } from '../constants/bookingMode';
 import { timeWindowState, windowEnd } from './timeWindow';
 import { isGatheringFull } from './gatheringFullness';
 
@@ -177,6 +178,7 @@ export function businessEntity(partner = {}, { posting = null } = {}) {
     pulse: partner.availability_pulse ?? null,
     pulseUpdatedAt: partner.availability_pulse_updated_at ?? null,
     posting,
+    bookingMode: bookingModeOf(partner),
   };
 }
 export function placeEntity(place = {}) {
@@ -295,6 +297,9 @@ export function usableNowTier(entity, at = new Date()) {
   if (avail === 'available') return 'available';
   const op = getOperatingStatus(entity, at);
   if (avail === 'unavailable') return 'closed';
+  // Item 72: open hours do not make a book-first / request-first business usable right now (you need a reply first). Only a
+  // live posting or a fresh pulse (above) does; otherwise it is unknown, never closed.
+  if (op === 'open' && entity?.kind === 'business' && NEEDS_BOOKING_FIRST.includes(entity.bookingMode)) return 'unknown';
   return op === 'open' ? 'open' : op;
 }
 export function isConfirmedUsableNow(entity, at = new Date()) {

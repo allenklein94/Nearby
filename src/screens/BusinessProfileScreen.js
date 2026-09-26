@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Linking } from 'react-native';
 import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -21,6 +21,9 @@ import {
 import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
 import { getCommunityMemberCount } from '../services/communities';
 import { hoursStatus, weekHoursLines } from '../utils/operatingStatus';
+import { businessPrimaryAction } from '../utils/primaryAction';
+import { bookingModeOf, bookingModeOption, LEGACY_RESERVATION_ATTRIBUTE } from '../constants/bookingMode';
+import { buildDirectionsUrl } from '../utils/planLogisticsActions';
 import { getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { businessAttributeLabel, cuisineLabel, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, experiencePriceLabel, experiencePartyTypeLabel } from '../constants/businessAttributes';
@@ -216,6 +219,21 @@ export default function BusinessProfileScreen({ route, navigation }) {
     }
   }
 
+  // Item 72: the booking CTA. Go now / directions open maps; Reserve / Book / Request open the request addressed to just this
+  // business, whose accepted offer is the booking.
+  function runBookingAction(action) {
+    if (!action || !partner) return;
+    if (action.kind === 'go_now' || action.kind === 'directions') {
+      Linking.openURL(buildDirectionsUrl({ latitude: partner.latitude, longitude: partner.longitude, address: partner.address }));
+      return;
+    }
+    navigation.navigate('AskBusiness', {
+      targetPartner: { id: partnerId, name: partner.name },
+      prefillCategory: partner.subcategory ?? null,
+      bookingMode: bookingModeOf(partner),
+    });
+  }
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -231,6 +249,8 @@ export default function BusinessProfileScreen({ route, navigation }) {
       </SafeAreaView>
     );
   }
+
+  const bookingAction = businessPrimaryAction(partner);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -266,6 +286,12 @@ export default function BusinessProfileScreen({ route, navigation }) {
               <Text key={l.day} style={styles.reliabilityLine}>{l.day}  {l.text}</Text>
             ))}
           </View>
+        )}
+        {/* Booking mode (item 72): how you come in, as the owner declared it; nothing when not declared. */}
+        {bookingModeOption(bookingModeOf(partner)) && (
+          <Text style={styles.reliabilityLine}>
+            {bookingModeOption(bookingModeOf(partner)).icon} {bookingModeOption(bookingModeOf(partner)).customerLine}
+          </Text>
         )}
         {/* "Business Story" plan, Phase 3 -- a real, self-reported
             "how's business right now" signal, hidden once stale so it
@@ -313,7 +339,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
           <Text style={styles.attributeSectionHeader}>🧒 {ageRangeLabel(partner.suited_age_min, partner.suited_age_max)}</Text>
         )}
 
-        {((partner.attributes ?? []).length > 0 || partner.cuisine) && (
+        {((partner.attributes ?? []).some((key) => key !== LEGACY_RESERVATION_ATTRIBUTE) || partner.cuisine) && (
           <>
             <Text style={styles.attributeSectionHeader}>Why People Choose Us</Text>
             <View style={styles.attributeChipRow}>
@@ -322,7 +348,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
                   <Text style={styles.attributeChipText}>{cuisineLabel(partner.cuisine)}</Text>
                 </View>
               )}
-              {(partner.attributes ?? []).map((key) => (
+              {(partner.attributes ?? []).filter((key) => key !== LEGACY_RESERVATION_ATTRIBUTE).map((key) => (
                 <View key={key} style={styles.attributeChip}>
                   <Text style={styles.attributeChipText}>{businessAttributeLabel(key)}</Text>
                 </View>
@@ -364,15 +390,42 @@ export default function BusinessProfileScreen({ route, navigation }) {
             Item 37 (context-aware primary CTA): "Plan Here" is the real
             primary action on a business profile -- coral -- not "Follow",
             which is a passive subscribe action and stays secondary below. */}
-        <TouchableOpacity
-          style={styles.planHereButton}
-          onPress={() => navigation.navigate('MakeAPlan', { partnerId })}
-          activeOpacity={0.85}
-          accessibilityLabel={`Plan something at ${partner.name}`}
-          accessibilityRole="button"
-        >
-          <Text style={styles.planHereButtonText}>📅 Plan Here</Text>
-        </TouchableOpacity>
+        {/* Item 72: when the owner declared how customers come in, the primary CTA follows it (Go now / Reserve / Book /
+            Request, utils/primaryAction.js businessPrimaryAction); otherwise "Plan Here" stays the primary. */}
+        {bookingAction ? (
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <TouchableOpacity
+              style={[styles.planHereButton, { flex: 1 }]}
+              onPress={() => runBookingAction(bookingAction)}
+              activeOpacity={0.85}
+              accessibilityLabel={`${bookingAction.label}, ${partner.name}`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.planHereButtonText}>{bookingAction.label}</Text>
+            </TouchableOpacity>
+            {bookingAction.secondary ? (
+              <TouchableOpacity
+                style={[styles.messageButton, { flex: 0, paddingHorizontal: spacing.lg, justifyContent: 'center' }]}
+                onPress={() => runBookingAction(bookingAction.secondary)}
+                activeOpacity={0.85}
+                accessibilityLabel={`${bookingAction.secondary.label}, ${partner.name}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.messageButtonText}>{bookingAction.secondary.label}</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.planHereButton}
+            onPress={() => navigation.navigate('MakeAPlan', { partnerId })}
+            activeOpacity={0.85}
+            accessibilityLabel={`Plan something at ${partner.name}`}
+            accessibilityRole="button"
+          >
+            <Text style={styles.planHereButtonText}>📅 Plan Here</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.actionRow}>
           <TouchableOpacity
@@ -397,7 +450,20 @@ export default function BusinessProfileScreen({ route, navigation }) {
           >
             <Text style={styles.messageButtonText}>✨ Plan something</Text>
           </TouchableOpacity>
-          {/* Same request form as asking Nearby, addressed to just this business. */}
+          {/* With a booking CTA as the primary, "Plan Here" moves into this row so it stays one tap away. */}
+          {bookingAction ? (
+            <TouchableOpacity
+              style={styles.messageButton}
+              onPress={() => navigation.navigate('MakeAPlan', { partnerId })}
+              activeOpacity={0.85}
+              accessibilityLabel={`Plan something at ${partner.name}`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.messageButtonText}>📅 Plan Here</Text>
+            </TouchableOpacity>
+          ) : null}
+          {/* Same request form as asking Nearby, addressed to just this business (hidden when Reserve/Book/Request already opens it). */}
+          {!(bookingAction && ['reserve', 'book', 'request'].includes(bookingAction.kind)) && (
           <TouchableOpacity
             style={styles.messageButton}
             onPress={() => navigation.navigate('AskBusiness', { targetPartner: { id: partnerId, name: partner.name }, prefillCategory: partner.subcategory ?? null })}
@@ -407,6 +473,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
           >
             <Text style={styles.messageButtonText}>Get an offer</Text>
           </TouchableOpacity>
+          )}
           {hasThread && (
             <TouchableOpacity
               style={styles.messageButton}

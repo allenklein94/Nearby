@@ -8,9 +8,12 @@
 //   potential activity   -> I'm Interested   (private "maybe", set_gathering_interested)
 //   dating recommendation-> Meet People
 //   business opportunity -> View Offer
+//   business (item 72)   -> Go now / Reserve / Book / Request, from its declared booking mode (businessPrimaryAction)
 import { attendeeTotal, isGatheringFull } from './gatheringFullness';
 import { needsApproval, joinLabel } from './gatheringJoinMode';
 import { gatheringViewerState } from './objectState';
+import { bookingModeOf } from '../constants/bookingMode';
+import { businessEntity, usableNowTier } from './operatingStatus';
 import { canDo, gatheringLifecycleState, offerLifecycleState, lifecycleClass, viewLabel } from './objectLifecycle';
 
 // Returns { kind, label, showView }.
@@ -70,4 +73,35 @@ export function peoplePrimaryAction(nearbyPeopleCount) {
 // declined or completed the row is history and keeps its plain tap-through with no button.
 export function offerPrimaryAction(offer) {
   return canDo('offer', offerLifecycleState(offer), 'accept') ? { kind: 'view_offer', label: 'View Offer' } : null;
+}
+
+// Business (owner item 72): the CTA follows the business's DECLARED booking mode (constants/bookingMode.js). Returns null when no
+// mode was declared, so the surface keeps its own default action (never a guessed "Book"). Shape: { kind, label, secondary? }.
+//   walk_in                 -> "Go now" only while CONFIRMED usable now (open hours / live posting / fresh pulse, item 71) and the
+//                              business has a place to go to; closed or a fresh "full" -> null (default CTA); unknown -> directions
+//   reservation_recommended -> "Reserve" (+ "Go now" as a secondary while confirmed usable now: walk-ins still work)
+//   reservation_required    -> "Book"
+//   request_required        -> "Request"
+// kind: 'go_now' | 'directions' open maps; 'reserve' | 'book' | 'request' open the targeted request (AskBusiness), whose accepted
+// offer IS the booking ("You're booked") -- no outside reservation system is claimed.
+export function businessPrimaryAction(partner, { posting = null, at = new Date() } = {}) {
+  const mode = bookingModeOf(partner);
+  if (!mode) return null;
+  const hasPlace = (partner?.latitude != null && partner?.longitude != null) || Boolean(partner?.address);
+  const tier = usableNowTier(businessEntity(partner, { posting }), at);
+  const usableNow = tier === 'available' || tier === 'open';
+  const goNow = { kind: 'go_now', label: 'Go now' };
+  switch (mode) {
+    case 'walk_in':
+      if (!hasPlace || tier === 'closed') return null;
+      return usableNow ? goNow : { kind: 'directions', label: 'Get Directions' };
+    case 'reservation_recommended':
+      return { kind: 'reserve', label: 'Reserve', secondary: usableNow && hasPlace ? goNow : null };
+    case 'reservation_required':
+      return { kind: 'book', label: 'Book' };
+    case 'request_required':
+      return { kind: 'request', label: 'Request' };
+    default:
+      return null;
+  }
 }

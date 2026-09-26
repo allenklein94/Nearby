@@ -139,6 +139,14 @@ function resolveDateParam(dateWindow, pickedDate) {
 // specific gathering does -- but, like gathering mode, location comes from
 // real server-side data (the community's own Community Area), never the
 // device's own GPS.
+// Item 72: the targeted ask reached from a business's booking CTA says what the person tapped (the flow is the same request).
+function bookingAskHeading(mode, targetPartner) {
+  if (mode === 'reservation_required') return `Book with ${targetPartner.name}`;
+  if (mode === 'reservation_recommended') return `Reserve at ${targetPartner.name}`;
+  if (mode === 'request_required') return `Request from ${targetPartner.name}`;
+  return `Ask ${targetPartner.name}`;
+}
+
 export default function AskBusinessScreen({ navigation, route }) {
   const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -146,6 +154,7 @@ export default function AskBusinessScreen({ navigation, route }) {
   // "Ask this specific business": the SAME form and request model as asking nearby businesses; only the recipient differs
   // (one chosen business instead of the ranked nearby set). { id, name }, plus partnershipTarget when it started from a gathering.
   const targetPartner = route.params?.targetPartner ?? null;
+  // Item 72: opened from a business's Reserve / Book / Request CTA. Same request, worded for what the person tapped.
   const [noteToBusiness, setNoteToBusiness] = useState('');
   // Optional preferred start time (deterministic picker, never inferred). null = any time.
   const [startTime, setStartTime] = useState(null);
@@ -552,7 +561,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           )}
           <Text style={styles.heading}>
             {targetPartner
-              ? `Ask ${targetPartner.name}`
+              ? bookingAskHeading(route.params?.bookingMode, targetPartner)
               : gatheringId
               ? `Find ${gatheringTitle ?? 'your gathering'} somewhere to go`
               : matchId
