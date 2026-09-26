@@ -10,7 +10,7 @@ import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnl
 import { setGatheringInterested, getInterestedDemandPrefs, getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getMyPositiveExperienceSignals, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent, navigateToIntentResultItem, buildFriendDiscoveryResultItem } from '../services/intentResolver';
-import { submitSurprise, shuffleSurprise, navigateToSurprisePick, surpriseAskFromText } from '../services/surpriseMe';
+import { submitSurprise, shuffleSurprise, navigateToSurprisePick, pickForMeKind } from '../services/surpriseMe';
 import { detectFriendDiscoveryIntent, intentPhaseCaption } from '../services/intentResolverScoring';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/businessFulfillment';
@@ -965,8 +965,9 @@ export default function HomeScreen({ navigation }) {
     const typedText = (overrideText ?? intentText).trim();
     if (!typedText) return;
     if (overrideText) setIntentText(overrideText);
-    // Item 89: "surprise me" can be said. The rest of the sentence ("tonight under $30 with my girlfriend") still counts.
-    if (surpriseAskFromText(typedText)) {
+    // Item 89: "surprise me" can be said; item 90: so can "I don't know what I want" / "what's good tonight". Both run the one
+    // shared flow (services/surpriseMe.js); the rest of the sentence ("tonight under $30") still counts.
+    if (pickForMeKind(typedText)) {
       await handleSurpriseSubmit({ text: typedText });
       return;
     }
@@ -1609,7 +1610,39 @@ export default function HomeScreen({ navigation }) {
                 </>
               ) : (
                 <>
-                  {surprise.suggestion.kind === 'experience' ? (
+                  {surprise.suggestion.kind === 'lanes' ? (
+                    <View style={styles.surpriseCard}>
+                      {/* Item 90: no category forced. Each labeled row is shown only when a real result backs its label. */}
+                      <Text style={styles.intentResultsHeading}>{surprise.header}</Text>
+                      {!!surprise.basis && <Text style={styles.surpriseConnectedText}>{surprise.basis}</Text>}
+                      {surprise.lanes.map((lane) => (
+                        <View key={lane.key} style={{ marginBottom: spacing.sm }}>
+                          <Text style={styles.intentGroupLabel}>{lane.plan ? `${lane.label} · ${lane.plan}` : lane.label}</Text>
+                          {lane.items.map((item) => (
+                            <TouchableOpacity
+                              key={`${item.type}-${item.id}`}
+                              style={styles.intentResultRow}
+                              onPress={() => handleSurpriseResultTap(item)}
+                              accessibilityRole="button"
+                              accessibilityLabel={`${lane.label}: ${item.title}`}
+                            >
+                              <Ionicons name={INTENT_RESULT_ICONS[item.type] ?? 'sparkles-outline'} size={18} color={colors.primary} style={styles.intentResultIcon} />
+                              <View style={styles.intentResultTextCol}>
+                                <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
+                                {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
+                              </View>
+                              <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      ))}
+                      {surprise.connectedPerson && (
+                        <Text style={styles.surpriseConnectedText}>
+                          You could go with {surprise.connectedPerson.name}{surprise.connectedPerson.forTitle ? ` to ${surprise.connectedPerson.forTitle}` : ''} 👋
+                        </Text>
+                      )}
+                    </View>
+                  ) : surprise.suggestion.kind === 'experience' ? (
                     <View style={{ marginBottom: spacing.sm }}>
                       <Text style={styles.intentResultsHeading}>{surprise.suggestion.experience.title}</Text>
                       {(surprise.suggestion.experience.bundles ?? []).map((bundle) => (

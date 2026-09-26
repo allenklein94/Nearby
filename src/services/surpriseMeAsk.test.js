@@ -157,8 +157,9 @@ describe('wiring', () => {
   const home = fs.readFileSync(path.join(__dirname, '../screens/HomeScreen.js'), 'utf8');
   it('Home routes a typed surprise before the normal ask, into the one engine, and renders the set', () => {
     const submit = home.slice(home.indexOf('async function handleHomeIntentSubmit'));
-    expect(submit.indexOf('surpriseAskFromText(typedText)')).toBeLessThan(submit.indexOf('classifyCreateRequest(typedText)'));
+    expect(submit.indexOf('pickForMeKind(typedText)')).toBeLessThan(submit.indexOf('classifyCreateRequest(typedText)'));
     expect(home).toMatch(/handleSurpriseSubmit\(\{ text: typedText \}\)/);
+    expect(home).toMatch(/if \(pickForMeKind\(typedText\)\)/);
     expect(home).toMatch(/A few ideas for you/);
     expect(home).toMatch(/shuffleSurprise\(surprise\)/);
   });
@@ -299,7 +300,7 @@ describe('typed surprises are not logged as searches', () => {
     expect(eng).not.toMatch(/recordIntentSubmission|intent_submissions|intent_outcomes|recordIntentOutcome/);
     const home = fs.readFileSync(path.join(__dirname, '../screens/HomeScreen.js'), 'utf8');
     const submit = home.slice(home.indexOf('async function handleHomeIntentSubmit'));
-    expect(submit.indexOf('surpriseAskFromText(typedText)')).toBeLessThan(submit.indexOf('recordIntentSubmission('));
+    expect(submit.indexOf('pickForMeKind(typedText)')).toBeLessThan(submit.indexOf('recordIntentSubmission('));
     const handler = home.slice(home.indexOf('async function handleSurpriseSubmit'), home.indexOf('function handleSurpriseDismiss'));
     expect(handler).not.toMatch(/recordIntent/);
   });
@@ -374,7 +375,7 @@ describe('Discover uses the one Surprise Me engine, inline', () => {
 
   it('Discover routes a typed surprise before the normal search, into the shared flow, inline (no new screen or tab)', () => {
     const submit = discover.slice(discover.indexOf('async function handleUnderstandSearch'));
-    expect(submit.indexOf('surpriseAskFromText(typedText)')).toBeLessThan(submit.indexOf('runIntentSearch(typedText'));
+    expect(submit.indexOf('pickForMeKind(typedText)')).toBeLessThan(submit.indexOf('runIntentSearch(typedText'));
     expect(discover).toMatch(/submitSurprise\(\{ text: typedText, types: surpriseTypesForTab\(typeFilter\), openNow: openNowActive \}\)/);
     expect(discover).toMatch(/shuffleSurprise\(discoverSurprise\)/);
     expect(discover).toMatch(/navigateToSurprisePick\(navigation, it, discoverSurprise\)/);
@@ -385,7 +386,7 @@ describe('Discover uses the one Surprise Me engine, inline', () => {
 
   it('"surprise me" is never a keyword search for the phrase in Discover', () => {
     expect(discover).toMatch(/const isSearching = q\.length >= 2 && !surpriseTyped;/);
-    expect(discover).toMatch(/if \(term\.length < 2 \|\| surpriseAskFromText\(term\)\)/);
+    expect(discover).toMatch(/if \(term\.length < 2 \|\| pickForMeKind\(term\)\)/);
     expect(discover).toMatch(/!surpriseTyped \? searchQuery\.trim\(\) : null/);
   });
 

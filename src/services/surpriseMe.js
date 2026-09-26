@@ -35,9 +35,15 @@ import {
   inSurpriseScope,
   surpriseStateFrom,
   EMPTY_SURPRISE,
+  pickForMeKind,
+  pickLanes,
+  undecidedPlanRecipe,
+  undecidedHeader,
 } from './surpriseMeLogic';
 import { cuisineFromText } from '../constants/categoryTree';
 import { dateWindowFromText } from '../utils/askResolver';
+import { assembleExperience } from './experienceAssembly';
+import { stripUndecidedPhrase } from '../constants/undecidedAsk';
 
 export {
   WHEN_OPTIONS,
@@ -68,7 +74,16 @@ export {
   surpriseShownKeys,
   surpriseStateFrom,
   EMPTY_SURPRISE,
+  pickForMeKind,
+  pickLanes,
+  UNDECIDED_LANES,
+  fitsFriends,
+  fitsActive,
+  fitsEasy,
+  undecidedPlanRecipe,
+  undecidedHeader,
 } from './surpriseMeLogic';
+export { undecidedAskFromText } from '../constants/undecidedAsk';
 
 // Connected people only ADD an optional "your friend likes this" line to a suggestion; when they cannot be loaded the
 // suggestion is shown without it (no claim about friends is made either way), and the failure is logged, not silent.
@@ -153,6 +168,7 @@ async function getCalendarHint() {
 // the person switched on Discover's Open-now chip. Both only narrow.
 export async function runSurpriseMe({ when = null, mood = null, text = null, exclude = null, types = null, openNow = false } = {}) {
   const typed = typeof text === 'string';
+  if (typed && pickForMeKind(text) === 'undecided') return runUndecided({ text, exclude, types, openNow });
   const rest = typed ? stripSurprisePhrase(text) : '';
   let ask = {};
   if (typed && rest.length >= 2) {
@@ -218,6 +234,50 @@ export async function runSurpriseMe({ when = null, mood = null, text = null, exc
   const exhausted = !suggestion && excludeKeys.size > 0 && merged.length > 0;
 
   return { suggestion, picks: shownPicks, pool: merged, connectedPeople, connectedPerson, calendarHint, basis, dateWindow, ask, rest, scope, exhausted };
+}
+
+// Item 90: "I don't know what I want" / "what's good tonight". No category is forced: ONE search with no category (the open-ended
+// rule leaves out service businesses), then labeled rows, each only when a real result backs its label (pickLanes). Best Pick may be
+// a real two-part plan from an existing recipe chosen by the person's own time words. Same scope, time, budget, privacy and
+// never-logged rules as a surprise; the same submit / shuffle / tap flow.
+async function runUndecided({ text, exclude = null, types = null, openNow = false }) {
+  const rest = stripUndecidedPhrase(text);
+  let ask = {};
+  if (rest.length >= 2) {
+    try { ask = await classifyCreateRequest(rest); } catch (e) { console.error('undecided classify skipped', e); ask = {}; }
+  }
+  const dateWindow = dateWindowFromText(text);
+  const [result, calendarHint] = await Promise.all([
+    resolveIntent({
+      category: null,
+      dateWindow,
+      rawText: text, // the whole sentence, so the open-ended rule sees "I don't know what I want"
+      partyType: ask.partyType ?? null,
+      partySize: ask.partySize ?? null,
+      priceLevel: ask.priceLevel ?? null,
+      budgetMax: ask.budgetMax ?? null,
+      cuisine: null,
+      attributes: [],
+      occasion: null,
+      openNowChip: !!openNow,
+    }).catch(() => ({ items: [], experience: null })),
+    getCalendarHint(),
+  ]);
+  const pool = mergeCandidatePools([result.items]).filter((c) => !Array.isArray(types) || types.includes(c.type));
+  const recipe = undecidedPlanRecipe(dateWindow);
+  const experience = recipe ? assembleExperience(null, pool, { dateWindow, intentRecipe: recipe }) : null;
+  const excludeKeys = exclude instanceof Set ? exclude : new Set(exclude ?? []);
+  const lanes = pickLanes(pool, { experience, excludeKeys });
+  const suggestion = lanes.length > 0 ? { kind: 'lanes' } : null;
+  const laneItems = lanes.flatMap((l) => l.items);
+  const connectedPeople = suggestion ? await getConnectedPeopleWithInterests().catch(logSoftFailure('undecided connected people')) : [];
+  const connectedPerson = suggestion ? findConnectedPersonForPicks(laneItems, connectedPeople) : null;
+  const basis = surpriseBasis({ budgetMax: ask.budgetMax ?? null, priceLevel: ask.priceLevel ?? null, partyType: ask.partyType ?? null });
+  const exhausted = !suggestion && excludeKeys.size > 0 && pool.length > 0;
+  return {
+    kind: 'undecided', header: undecidedHeader(dateWindow), lanes, suggestion, picks: [], pool, connectedPeople, connectedPerson,
+    calendarHint, basis, dateWindow, ask, rest, scope: { level: 'broad' }, exhausted,
+  };
 }
 
 // ---- The shared surface flow (Home's ask box + sheet, Discover's search box): one submit, one shuffle, one tap. ----

@@ -6,6 +6,7 @@
 import { CATEGORY_GROUPS, groupForTag } from '../constants/gatheringCategories';
 import { energiesFromText } from '../constants/energyLevel';
 import { detectIntentRoute, ROUTE_SURFACES } from '../constants/intentRoutes';
+import { undecidedAskFromText } from '../constants/undecidedAsk';
 
 // Groups that describe supply or services rather than something to go and do. Never part of a "something fun" ask.
 const SUPPLY_GROUPS = ['home_local_services', 'auto_transportation', 'business_networking', 'health_personal_care', 'stay_getaway', 'pets', 'education_classes'];
@@ -23,7 +24,8 @@ export function openEndedAskGroups({ category = null, rawText = '', occasion = n
   const routed = detectIntentRoute(rawText);
   // (A tagged intent like coffee or live music leaves the choice of category to the extractor, so it never limits groups here.)
   if (routed?.route.surface === ROUTE_SURFACES.CATEGORY_GROUPS && !routed.route.category) return [...routed.route.groups];
-  if (typeof rawText !== 'string' || !(OPEN_ENDED.test(rawText) || energiesFromText(rawText).length > 0)) return null; // an energy alone ("something low-key") names no category either
+  // Item 90: "I don't know what I want" / "what's good tonight" names no category either.
+  if (typeof rawText !== 'string' || !(OPEN_ENDED.test(rawText) || undecidedAskFromText(rawText) || energiesFromText(rawText).length > 0)) return null; // an energy alone ("something low-key") names no category either
   const kidFriendly = Array.isArray(attributes) && attributes.includes('kid_friendly');
   return CATEGORY_GROUPS
     .map((g) => g.key)

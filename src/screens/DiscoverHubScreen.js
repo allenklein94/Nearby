@@ -33,7 +33,7 @@ import { getSocialForecast } from '../services/homeDashboard';
 import { filterToMyConnections } from '../services/connections';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { runIntentSearch, navigateToIntentResultItem } from '../services/intentResolver';
-import { submitSurprise, shuffleSurprise, navigateToSurprisePick, surpriseAskFromText, surpriseTypesForTab } from '../services/surpriseMe';
+import { submitSurprise, shuffleSurprise, navigateToSurprisePick, pickForMeKind, surpriseTypesForTab } from '../services/surpriseMe';
 import { recordIntentSelection, getMyTopSearchedCategory } from '../services/intentOutcomes';
 import { recordPeopleSubModeUse, getMyPeopleSubModeUsage } from '../services/peopleSubModeUsage';
 import { resolveDefaultPeopleSubMode } from '../utils/peopleSubModePreference';
@@ -612,7 +612,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // actually looks at Places, or types a real search with location
   // available — never on every keystroke across every section.
   useEffect(() => {
-    const surpriseTyped = surpriseAskFromText(searchQuery);
+    const surpriseTyped = !!pickForMeKind(searchQuery);
     const wantsPlaces = typeFilter === 'places' || (typeFilter === 'all' && searchQuery.trim().length >= 2 && !surpriseTyped);
     if (!wantsPlaces || !userLocation) return;
     const thisRequestId = ++placesRequestId.current;
@@ -638,7 +638,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // for the same reason — no query fired on every keystroke.
   useEffect(() => {
     const term = searchQuery.trim();
-    if (term.length < 2 || surpriseAskFromText(term)) { // "surprise me" is an ask, never a keyword search for the phrase
+    if (term.length < 2 || pickForMeKind(term)) { // "surprise me" / "I don't know what I want" are asks, never keyword searches
       setSearchedGatherings([]);
       setSearchedCommunities([]);
       setSearchedOffers([]);
@@ -710,7 +710,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // threshold (and the debounced effect above, which only fires a real
   // gatherings/communities query at this same length) — a single keystroke
   // doesn't count as "searching" anywhere else on this screen either.
-  const surpriseTyped = surpriseAskFromText(searchQuery);
+  const surpriseTyped = !!pickForMeKind(searchQuery);
   const isSearching = q.length >= 2 && !surpriseTyped; // a typed "surprise me" is not a keyword search
 
   // Gatherings/communities: real server-side, indexed search results
@@ -1097,7 +1097,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   async function handleUnderstandSearch() {
     const typedText = searchQuery.trim();
     if (typedText.length < 2) return;
-    if (surpriseAskFromText(typedText)) {
+    if (pickForMeKind(typedText)) {
       await handleDiscoverSurprise(typedText);
       return;
     }
@@ -2216,12 +2216,20 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
           {surpriseTyped && !surpriseLoading && discoverSurprise && (
             <View style={styles.intentSearchBlock}>
-              <Text style={styles.intentSearchTitle}>✨ A few ideas for you</Text>
+              <Text style={styles.intentSearchTitle}>{discoverSurprise.kind === 'undecided' ? discoverSurprise.header : '✨ A few ideas for you'}</Text>
               {!!discoverSurprise.basis && (
                 <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{discoverSurprise.basis}</Text>
               )}
               {!discoverSurprise.suggestion ? (
                 <EmptyCopy id="surprise_none" />
+              ) : discoverSurprise.suggestion.kind === 'lanes' ? (
+                // Item 90: labeled rows, each only when a real result backs its label (same engine as Home).
+                discoverSurprise.lanes.map((lane) => (
+                  <View key={lane.key} style={{ marginBottom: spacing.sm }}>
+                    <Text style={styles.intentSearchGroupLabel}>{lane.plan ? `${lane.label} · ${lane.plan}` : lane.label}</Text>
+                    {lane.items.map((item, index) => renderIntentSearchResultRow(item, index, { onPress: (it) => navigateToSurprisePick(navigation, it, discoverSurprise), pickBadge: false }))}
+                  </View>
+                ))
               ) : discoverSurprise.suggestion.kind === 'experience' ? (
                 <ExperienceComponentList
                   experience={discoverSurprise.suggestion.experience}
@@ -2250,7 +2258,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </View>
           )}
           {surpriseTyped && !surpriseLoading && !discoverSurprise && (
-            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>Press search and Nearby will pick a few ideas for you.</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>Press search and Nearby will find a few ideas for you.</Text>
           )}
 
           {isSearching && intentSearching && (

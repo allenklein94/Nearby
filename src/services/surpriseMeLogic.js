@@ -12,6 +12,9 @@ import { tagsForPhrase } from '../constants/categorySynonyms';
 import { cuisineFromText, groupForPhrase } from '../constants/categoryTree';
 import { detectIntentRoute, ROUTE_SURFACES } from '../constants/intentRoutes';
 import { CUISINE_OPTIONS } from '../constants/businessAttributes';
+import { undecidedAskFromText, stripUndecidedPhrase } from '../constants/undecidedAsk';
+import { energiesFromHost, energiesForTag } from '../constants/energyLevel';
+import { commitmentOf } from '../constants/commitmentLevel';
 
 export const WHEN_OPTIONS = [
   { key: 'now', label: 'Now' },
@@ -375,6 +378,7 @@ export function surpriseTypesForTab(tab) {
 
 // The one state object every surface keeps for a shown surprise (Home and Discover).
 export function surpriseShownKeys(r) {
+  if (Array.isArray(r?.lanes) && r.lanes.length > 0) return lanesShownKeys(r.lanes);
   if (!r?.suggestion) return [];
   return r.suggestion.kind === 'experience'
     ? suggestionCandidateKeys(r.suggestion)
@@ -384,3 +388,98 @@ export function surpriseStateFrom(args, r) {
   return { args, ...r, suggestion: r?.suggestion ?? null, shown: new Set(surpriseShownKeys(r)), exhausted: r?.exhausted === true && !r?.suggestion };
 }
 export const EMPTY_SURPRISE = { suggestion: null, picks: [], pool: [], connectedPeople: [], connectedPerson: null, calendarHint: null, basis: null, exhausted: false };
+
+// ---- Item 90 (owner, 2026-09-26): "I don't know what I want" is a valid intent ----
+
+// 'surprise' ("surprise me": pick for me), 'undecided' ("I don't know what I want", "what's good tonight"), or null. Surprise wins
+// when both are said. Both run the one shared flow in surpriseMe.js; neither is ever a keyword search or written to the search log.
+export function pickForMeKind(text) {
+  if (surpriseAskFromText(text)) return 'surprise';
+  // "I don't know what I want... maybe coffee" names something after all: that is an ordinary ask, not an undecided one.
+  if (undecidedAskFromText(text) && surpriseScope(stripUndecidedPhrase(text)).level === 'broad') return 'undecided';
+  return null;
+}
+
+// The ROW labels for an undecided ask. Each label is a claim about the item under it, so each has its own real test.
+export const UNDECIDED_LANES = [
+  { key: 'best', label: 'Best Pick' },
+  { key: 'friends', label: 'With Friends' },
+  { key: 'active', label: 'Something Active' },
+  { key: 'easy', label: 'Something Easy' },
+];
+
+function energiesOf(c) {
+  const host = energiesFromHost(c?.hostEnergy);
+  if (host) return host;
+  return [...new Set([...energiesForTag(c?.category), ...energiesForTag(c?.subcategory)])];
+}
+function declaredAttributes(c) {
+  return [...(Array.isArray(c?.attributes) ? c.attributes : []), ...(Array.isArray(c?.businessPartner?.attributes) ? c.businessPartner.attributes : [])];
+}
+// With Friends: the host declared the gathering for friends or groups, or the business declared it is group-friendly.
+export function fitsFriends(c) {
+  return ['friends', 'groups'].includes(c?.partyType) || declaredAttributes(c).includes('group_friendly');
+}
+// Something Active: the host's own energy or the canonical energy table says active.
+export function fitsActive(c) {
+  return energiesOf(c).includes('active');
+}
+// Something Easy: a drop-in or easy commitment (host facts, booking mode, then the tag table), and never high-energy.
+export function fitsEasy(c) {
+  return ['drop_in', 'easy'].includes(commitmentOf(c)) && !energiesOf(c).includes('high_energy');
+}
+const LANE_TEST = { friends: fitsFriends, active: fitsActive, easy: fitsEasy };
+
+// The plan ideas an undecided ask may lead with, chosen only from the person's own time words: an existing multi-part recipe.
+export function undecidedPlanRecipe(dateWindow) {
+  if (dateWindow === 'tonight') return 'night_out';
+  if (dateWindow === 'weekend') return 'weekend_out';
+  return null;
+}
+
+// Header naming only the time the person said ("Tonight near you"); no time = "Near you".
+const LANE_HEADERS = { now: 'Right now near you', today: 'Today near you', tonight: 'Tonight near you', tomorrow: 'Tomorrow near you', weekend: 'This weekend near you' };
+export function undecidedHeader(dateWindow) {
+  return LANE_HEADERS[dateWindow] ?? 'Near you';
+}
+
+// Rows from the real pool: Best Pick (a real assembled plan's first two parts, else the top result), then each labeled row gets
+// the best not-yet-used result that genuinely fits it. A row with nothing real behind it is left out; one item and one business
+// never appear twice; `excludeKeys` = the previous set (Shuffle Again).
+export function pickLanes(pool, { experience = null, excludeKeys = new Set() } = {}) {
+  const eligible = eligibleCandidates(pool)
+    .filter((c) => !excludeKeys.has(`${c.type}:${c.id}`))
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  const usedKeys = new Set();
+  const usedPartners = new Set();
+  const free = (c) => !usedKeys.has(`${c.type}:${c.id}`) && !(c.partnerId && usedPartners.has(c.partnerId));
+  const use = (c) => { usedKeys.add(`${c.type}:${c.id}`); if (c.partnerId) usedPartners.add(c.partnerId); };
+  const lanes = [];
+
+  // Best Pick: a real plan from two different parts, when the recipe found them.
+  const parts = (experience?.components ?? [])
+    .map((comp) => ({ comp, item: (comp.items ?? []).find((i) => SURPRISE_ELIGIBLE_TYPES.includes(i.type) && !excludeKeys.has(`${i.type}:${i.id}`) && free(i)) }))
+    .filter((p) => p.item);
+  const pair = [];
+  for (const p of parts) {
+    if (pair.length === 2) break;
+    if (pair.some((q) => q.item.partnerId && q.item.partnerId === p.item.partnerId)) continue;
+    pair.push(p);
+  }
+  if (pair.length === 2) {
+    pair.forEach((p) => use(p.item));
+    lanes.push({ key: 'best', label: 'Best Pick', plan: pair.map((p) => p.comp.label.replace(/^\S+\s+/, '')).join(' + '), items: pair.map((p) => p.item) });
+  } else {
+    const top = eligible.find(free);
+    if (top) { use(top); lanes.push({ key: 'best', label: 'Best Pick', plan: null, items: [top] }); }
+  }
+  for (const lane of UNDECIDED_LANES.slice(1)) {
+    const hit = eligible.find((c) => free(c) && LANE_TEST[lane.key](c));
+    if (hit) { use(hit); lanes.push({ key: lane.key, label: lane.label, plan: null, items: [hit] }); }
+  }
+  return lanes;
+}
+
+export function lanesShownKeys(lanes) {
+  return (lanes ?? []).flatMap((l) => l.items.map((c) => `${c.type}:${c.id}`));
+}
