@@ -981,7 +981,7 @@ export async function setBusinessWeatherSetting(partnerId, setting) {
   if (error) throw error;
 }
 
-// Owner item 86: what the business does NOT accommodate (no_children / no_pets / adults_21_plus; [] clears). Migration 20270222.
+// Owner item 86: what the business does NOT accommodate (no_children / no_pets / adults_18_plus / adults_21_plus; [] clears). Migration 20270222.
 // Item 86 (migration 20270226): the server's own rule, asked without saving. kind: 'profile' | 'experience' | 'package' |
 // 'availability'; patch = the values being edited. Returns the exact conflict lines ([] = none). Never decides anything itself.
 export async function checkBusinessSettingConflicts(partnerId, kind, patch) {

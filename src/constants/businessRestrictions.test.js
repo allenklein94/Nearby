@@ -1,17 +1,18 @@
 import fs from 'fs';
 import path from 'path';
 import {
-  NOT_ACCOMMODATED_KEYS, CHILD_ATTRIBUTES, PET_ATTRIBUTES, notAccommodatedLine, childrenInAsk,
+  NOT_ACCOMMODATED_KEYS, CHILD_ATTRIBUTES, toggleNotAccommodated, ADULT_AGE_RULES, PET_ATTRIBUTES, notAccommodatedLine, childrenInAsk,
   walkInAsk, restrictionAsk, askRaisesRestriction, applyRestrictionsToCandidates,
 } from './businessRestrictions';
 
 const migration = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270222_business_not_accommodated.sql'), 'utf8');
 
 describe('not-accommodated vocabulary (item 86)', () => {
-  it('client keys == the database CHECK and the setter list', () => {
-    const lists = [...migration.matchAll(/array\['no_children', 'no_pets', 'adults_21_plus'\]/g)];
+  it('client keys == the database CHECK and the setter list (18+ added by 20270228)', () => {
+    const m18 = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270228_adults_18_plus.sql'), 'utf8');
+    const lists = [...m18.matchAll(/array\['no_children', 'no_pets', 'adults_18_plus', 'adults_21_plus'\]/g)];
     expect(lists.length).toBeGreaterThanOrEqual(2);
-    expect(NOT_ACCOMMODATED_KEYS).toEqual(['no_children', 'no_pets', 'adults_21_plus']);
+    expect(NOT_ACCOMMODATED_KEYS).toEqual(['no_children', 'no_pets', 'adults_18_plus', 'adults_21_plus']);
   });
   it('client conflict attribute lists == the server trigger and routing rule', () => {
     expect(migration).toContain(`array[${CHILD_ATTRIBUTES.map((a) => `'${a}'`).join(', ')}]`);
@@ -165,5 +166,45 @@ describe('scope', () => {
       const last = migs.filter((m) => new RegExp(`function\\s+public\\.${fn}\\b`, 'i').test(read(`supabase/migrations/${m}`))).pop();
       expect([fn, /not_accommodated/.test(read(`supabase/migrations/${last}`))]).toEqual([fn, false]);
     }
+  });
+});
+
+describe('18+ only (owner item 87, migration 20270228)', () => {
+  const ROOT = path.join(__dirname, '../..');
+  const m18 = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20270228_adults_18_plus.sql'), 'utf8');
+  it('treated exactly like 21+ in the one routing rule, the family-offering check and the conflict message', () => {
+    expect(m18).toMatch(/'public\._business_declines\(uuid, integer, boolean, boolean, boolean, boolean, boolean\)'/);
+    expect(m18).toMatch(/'public\._business_says_no_children\(uuid\)'/);
+    expect(m18).toContain("array['no_children', 'adults_18_plus', 'adults_21_plus']");
+    expect(m18).toMatch(/when 'adults_18_plus' = any\(coalesce\(keys, '\{\}'\)\) then '18\+ only'/);
+    expect(m18).toMatch(/if v_new = v_def then raise exception/); // the patch fails loudly
+  });
+  it('18+ and 21+ are alternatives: the client toggle swaps, the server refuses both', () => {
+    expect(ADULT_AGE_RULES).toEqual(['adults_18_plus', 'adults_21_plus']);
+    expect(toggleNotAccommodated(['no_pets', 'adults_21_plus'], 'adults_18_plus')).toEqual(['no_pets', 'adults_18_plus']);
+    expect(toggleNotAccommodated(['adults_18_plus'], 'adults_21_plus')).toEqual(['adults_21_plus']);
+    expect(toggleNotAccommodated(['adults_18_plus'], 'adults_18_plus')).toEqual([]);
+    expect(toggleNotAccommodated(['adults_21_plus'], 'no_children')).toEqual(['adults_21_plus', 'no_children']); // redundant, allowed
+    expect(m18).toMatch(/Pick 18\+ only or 21\+ only, not both\./);
+    expect(m18).toMatch(/brand_partners_one_adult_age_rule_check/);
+    expect(fs.readFileSync(path.join(ROOT, 'src/screens/BusinessDashboardScreen.js'), 'utf8')).toMatch(/toggleNotAccommodated\(shown, key\)/);
+  });
+  it('public line names it', () => {
+    expect(notAccommodatedLine({ not_accommodated: ['adults_18_plus'] })).toBe('18+ only');
+    expect(notAccommodatedLine({ not_accommodated: ['no_pets', 'adults_18_plus'] })).toBe('No pets · 18+ only');
+  });
+  it('a teen or child is known only from stated words or a stated age under 18', () => {
+    expect(childrenInAsk('somewhere for my 15 year old')).toBe(true);
+    expect(childrenInAsk('with my 19 year old')).toBe(false);
+    expect(childrenInAsk('an 18+ club')).toBe(false);
+    expect(askRaisesRestriction(restrictionAsk('21+ nightlife bar'))).toBe(false);
+  });
+  it('structured only: nothing derives an adult rule from text, a category or marketing copy; gatherings untouched', () => {
+    const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
+    const users = walk(path.join(ROOT, 'src')).filter((f) => /\.js$/.test(f) && !/\.test\.js$/.test(f) && /adults_(18|21)_plus/.test(fs.readFileSync(f, 'utf8')));
+    expect(users.map((f) => path.relative(ROOT, f))).toEqual(['src/constants/businessRestrictions.js', 'src/services/brandOffers.js']); // the list + the setter's comment
+    expect(m18).not.toMatch(/alter table public\.gatherings|function public\.(join_gathering|approve_gathering_interest|invite_friend_to_gathering|send_social_invite)\b/);
+    for (const fn of ['create-assistant', 'business-onboarding-assistant', 'screen-business-content'])
+      expect(fs.readFileSync(path.join(ROOT, `supabase/functions/${fn}/index.ts`), 'utf8')).not.toMatch(/adults_(18|21)_plus/);
   });
 });

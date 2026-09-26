@@ -1,11 +1,11 @@
 // What a business does NOT accommodate (owner item 86, 2026-09-26; migration 20270222). Matching removes a KNOWN conflict before
 // it is shown: the business declared the restriction AND the person's own ask conflicts with it. Unknown on either side = kept.
 // One new owner-declared list (`brand_partners.not_accommodated`); the rest of the owner's list is an EXISTING declaration, reused:
-//   No children / No pets / 21+ only   -> not_accommodated (this file)
+//   No children / No pets / 18+ / 21+  -> not_accommodated (this file; 18+ added by item 87, migration 20270228)
 //   No large groups                    -> max_group_size (item 80)
 //   Reservations required / No walk-ins -> booking_mode reservation_required / request_required (item 72)
 //   Indoor only / Outdoor only         -> weather_setting indoor / outdoor (item 63)
-// 21+ is the business's own house rule; Nearby never checks anyone's age and it gates nothing. It only keeps asks that involve
+// 18+ and 21+ are the business's own house rules (alternatives: picking one clears the other; the server refuses both); Nearby never checks anyone's age and it gates nothing. It only keeps asks that involve
 // children away. Service animals are not pets (service_animal_friendly never conflicts with No pets).
 // One rule on the server (_business_declines) serves typed asks, routing and auto-offers; a request the customer addressed to ONE
 // business is never filtered. Deterministic, never AI.
@@ -15,8 +15,18 @@ import { askedChildAges } from '../utils/suitedAges';
 export const NOT_ACCOMMODATED_OPTIONS = [
   { key: 'no_children', label: 'No children', icon: '🚸', line: 'No children' },
   { key: 'no_pets', label: 'No pets', icon: '🐾', line: 'No pets' },
+  { key: 'adults_18_plus', label: '18+ only', icon: '🔞', line: '18+ only' },
   { key: 'adults_21_plus', label: '21+ only', icon: '🔞', line: '21+ only' },
 ];
+export const ADULT_AGE_RULES = ['adults_18_plus', 'adults_21_plus'];
+
+// Tap to add, tap again to remove. 18+ and 21+ are alternatives, so choosing one drops the other (21+ already means 18+).
+export function toggleNotAccommodated(list, key) {
+  const current = Array.isArray(list) ? list : [];
+  if (current.includes(key)) return current.filter((k) => k !== key);
+  const rest = ADULT_AGE_RULES.includes(key) ? current.filter((k) => !ADULT_AGE_RULES.includes(k)) : current;
+  return [...rest, key];
+}
 export const NOT_ACCOMMODATED_KEYS = NOT_ACCOMMODATED_OPTIONS.map((o) => o.key);
 export const CHILD_ATTRIBUTES = ['kid_friendly', 'kid_menu', 'family_seating', 'stroller_friendly'];
 export const PET_ATTRIBUTES = ['dog_friendly', 'pet_friendly'];
