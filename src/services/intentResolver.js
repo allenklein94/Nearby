@@ -56,6 +56,7 @@ import {
 } from './intentResolverScoring';
 import { activitiesFromText } from '../constants/activityLayer';
 import { energiesFromText, applyEnergyToCandidates } from '../constants/energyLevel';
+import { vibesFromText, vibeKeysFromAttributes, applyVibesToCandidates, VIBE_ATTRIBUTE_KEYS } from '../constants/vibe';
 import { askedChildAges, applySuitedAgesToCandidates } from '../utils/suitedAges';
 import { cleanFeatures } from '../utils/gatheringPractical';
 import { applyDeclaredFeatures } from '../constants/declaredFeatures';
@@ -593,6 +594,10 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Item 80: private events and catering are asked for only in the person's own words (never inferred from a large party or an
   // occasion), and their lift is owned by the capability pass below, so they are kept out of the generic attribute overlap.
   attributes = wordsBackedAttributes(attributes, rawText).filter((a) => a !== 'private_dining' && a !== 'catering');
+  // Item 83: vibes ("relaxed and quiet") from the words and the extractor's attributes; their business lift is owned by the vibe
+  // pass below (every business result, by its declared attributes), so they are kept out of the posting tier's generic overlap.
+  const askedVibes = [...new Set([...vibesFromText(rawText), ...vibeKeysFromAttributes(attributes)])];
+  const overlapAttributes = attributes.filter((a) => !VIBE_ATTRIBUTE_KEYS.includes(a));
   // Resolved once, up front, before any branch runs in parallel below —
   // not a check-only call. getNearbyGatherings() (called from
   // resolveGatherings) already calls the shared location provider
@@ -672,7 +677,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     resolveCommunities(category, location, myCity),
     resolveConnectedRequests(category, dateWindow),
     resolvePerks(category, location),
-    resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName, activitiesFromText(rawText), travelMiles),
+    resolveBusinessAvailability(category, location, overlapAttributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName, activitiesFromText(rawText), travelMiles),
     resolvePolicyOnlyBusinesses(location, partySize, travelMiles),
     resolveOccasionPackages(location, occasion, partySize, travelMiles),
     resolveOccasionOfferingBusinesses(location, occasion, travelMiles),
@@ -787,6 +792,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Item 80: declared capabilities vs the ask: largest group vs the stated party size, private events / catering only when the
   // words ask for them. Ranking only; unknown is neutral; business results only (perks carry no partner row).
   deduped = applyCapabilitiesToCandidates(deduped, { partySize, text: rawText });
+  // Item 83: the vibe the person asked for vs the vibe each business declared. Ranking only; undeclared = neutral.
+  deduped = applyVibesToCandidates(deduped, askedVibes);
   deduped = applyCommitmentToCandidates(deduped, commitAsk);
   deduped = applySpontaneityToCandidates(deduped, spontaneity);
 

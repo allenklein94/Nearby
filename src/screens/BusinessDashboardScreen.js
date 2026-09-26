@@ -76,6 +76,7 @@ import TellNearbyBusinessCard from '../components/TellNearbyBusinessCard';
 import { describeDemandSignals } from '../utils/demandSignals';
 import { opportunityPrimaryAction, consumerOfferAction } from '../utils/primaryAction';
 import { BOOKING_MODE_OPTIONS, LEGACY_RESERVATION_ATTRIBUTE, bookingModeOf } from '../constants/bookingMode';
+import { VIBES, VIBE_ATTRIBUTE_KEYS } from '../constants/vibe';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, OFFERED_OCCASION_OPTIONS, WEATHER_SETTING_OPTIONS, occasionLabel, occasionPhrase, dietaryLabel, requestedItemLabel } from '../constants/businessAttributes';
 import { planAddonLabel } from '../constants/planAddons';
 import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
@@ -6263,9 +6264,29 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               {/* "Business Story" plan: reframed from a plain "Attributes"
                   checkbox list to "Why People Choose Us" -- same real
                   vocabulary/RPC, just named for what it actually is. */}
+              {/* Item 83: the vibe is a named view over the same attributes (constants/vibe.js); shown first, on its own. */}
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>What's the vibe?</Text>
+              <Text style={styles.helperText}>Pick what it really feels like. People who ask for "somewhere relaxed and quiet" see places that said so first.</Text>
+              <View style={styles.chipRow}>
+                {VIBES.map((v) => {
+                  const selected = editAttributesInput.includes(v.attribute);
+                  return (
+                    <TouchableOpacity
+                      key={v.key}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => setEditAttributesInput((prev) => (selected ? prev.filter((k) => k !== v.attribute) : [...prev, v.attribute]))}
+                      accessibilityRole="button"
+                      accessibilityLabel={v.label}
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{v.icon} {v.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
               <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Why People Choose Us</Text>
               <View style={styles.chipRow}>
-                {BUSINESS_ATTRIBUTE_OPTIONS.filter((a) => a.key !== LEGACY_RESERVATION_ATTRIBUTE).map((a) => {
+                {BUSINESS_ATTRIBUTE_OPTIONS.filter((a) => a.key !== LEGACY_RESERVATION_ATTRIBUTE && !VIBE_ATTRIBUTE_KEYS.includes(a.key)).map((a) => {
                   const selected = editAttributesInput.includes(a.key);
                   return (
                     <TouchableOpacity

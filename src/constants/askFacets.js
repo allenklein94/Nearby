@@ -7,6 +7,7 @@
 // only sinks a known $$$ result. The caption always says what was left out, so nothing disappears silently.
 import { CATEGORY_GROUPS, groupForTag } from './gatheringCategories';
 import { CATEGORY_INDOOR_OUTDOOR } from './gatheringIndoorOutdoor';
+import { vibesFromText, vibeAttributesFor } from './vibe';
 
 export const ALCOHOL_TAGS = ['Bars & Lounges', 'Breweries', 'Wine', 'Wineries', 'Happy Hour', 'Nightclubs'];
 export const CROWDED_TAGS = ['Festivals', 'Nightclubs', 'Concerts', 'Nightlife', 'Street Events', 'Special Events'];
@@ -103,6 +104,8 @@ export function attributesFromAsk(text, { partyType = null } = {}) {
   const out = ATTRIBUTE_ASKS.filter(([, re]) => re.test(text)).map(([k]) => k);
   // A date-shaped party (a couple word, or the extractor's own `date`) is the date-friendly quality by definition.
   if ((partyType === 'date' || partnerPartyType(text)) && !out.includes('date_friendly')) out.push('date_friendly');
+  // Item 83: a vibe the words name ("relaxed and quiet", "somewhere cozy") is its declared attribute (constants/vibe.js).
+  for (const a of vibeAttributesFor(vibesFromText(text))) if (!out.includes(a)) out.push(a);
   return out;
 }
 

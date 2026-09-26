@@ -9,12 +9,12 @@
 
 const KEYWORDS_BY_ATTRIBUTE = {
   outdoor_seating: ['patio', 'outdoor', 'rooftop', 'terrace', 'garden', 'al fresco'],
-  date_friendly: ['date', 'romantic', 'intimate', 'candlelit', 'cozy'],
+  date_friendly: ['date', 'romantic', 'intimate', 'candlelit'],
   group_friendly: ['group', 'groups', 'party', 'large table', 'big groups'],
   live_music: ['live music', 'band', 'dj', 'concert', 'open mic'],
   kid_friendly: ['kid', 'kids', 'family', 'family-friendly', 'children'],
-  quiet: ['quiet', 'calm', 'peaceful', 'low-key'],
-  casual: ['casual', 'laid-back', 'relaxed', 'easygoing'],
+  quiet: ['quiet', 'calm', 'peaceful'],
+  casual: ['casual', 'no dress code', 'come as you are'],
   upscale: ['upscale', 'fancy', 'elegant', 'high-end', 'fine dining'],
   // Intent engine vision, layer 3 (semantic tags) -- see businessAttributes.js's
   // own header comment for the full lineage/rationale of these 10.
@@ -42,6 +42,12 @@ const KEYWORDS_BY_ATTRIBUTE = {
   family_seating: ['family seating', 'family tables', 'booster seat', 'booster seats', 'high chair', 'high chairs'],
   kid_menu: ['kid menu', "kids menu", "kids' menu", "children's menu", 'kid-friendly menu'],
   pet_friendly: ['pet friendly', 'pet-friendly', 'pets welcome', 'pets allowed', 'bring your pet', 'bring your pets', 'cats welcome'],
+  lively: ['lively', 'buzzing', 'vibrant', 'energetic', 'high-energy', 'great energy'],
+  trendy: ['trendy', 'stylish', 'hip spot', 'hot spot'],
+  relaxed: ['relaxed', 'relaxing', 'laid-back', 'laid back', 'easygoing', 'chill vibe', 'low-key'],
+  social: ['social atmosphere', 'social vibe', 'communal tables', 'meet people', 'mingle'],
+  cozy: ['cozy', 'cosy', 'snug', 'warm and inviting'],
+  professional: ['professional atmosphere', 'professional setting', 'business meetings', 'client meetings', 'meeting space'],
   romantic: ['romantic', 'candlelit', 'candle-lit', 'candlelight', 'intimate setting'],
   corporate_events: ['corporate event', 'corporate events', 'team dinner', 'company event', 'client dinner', 'offsite', 'team building'],
 };

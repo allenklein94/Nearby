@@ -18,6 +18,7 @@ import { activitiesFromText } from '../constants/activityLayer';
 import { attributesFromAsk, parseAskFacets } from '../constants/askFacets';
 import { wordsBackedAttributes } from '../constants/businessCapabilities';
 import { energiesFromText } from '../constants/energyLevel';
+import { vibesFromText } from '../constants/vibe';
 import { commitmentAsk } from '../constants/commitmentLevel';
 import { spontaneityOf } from '../constants/spontaneity';
 import { tagsForPhrase } from '../constants/categorySynonyms';
@@ -175,6 +176,7 @@ export function resolveAsk(text, ai = null) {
     combination: recognizeCombination({ text: t, occasion, partyType, dateWindow, attributes })?.key ?? null,
     facets: parseAskFacets(t),
     energies: energiesFromText(t),
+    vibes: vibesFromText(t),
     // Item 66: HOW it runs (tournament, open play, class...), separate from the category; words only.
     formats: formatsFromText(t),
     // Item 67: skill level the person named (beginner, casual game, competitive...); words only.
