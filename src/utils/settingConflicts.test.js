@@ -189,6 +189,16 @@ describe('bundle parts belong to their occasion (20270227): an integrity rule, n
     expect(serverParts.family_gathering).toContain('family_fun');
     expect(Object.entries(serverParts).filter(([, k]) => k.includes('family_fun')).map(([o]) => o)).toEqual(['family_gathering']);
   });
+  it('no unparented bundle part: every part in the vocabulary has at least one parent occasion, and nothing else exists', () => {
+    const fnSrc = read('supabase/functions/screen-business-content/index.ts');
+    const edgeParts = fnSrc.match(/const BUNDLE_COMPONENT_OPTIONS = \[([^\]]*)\]/)[1].match(/'(\w+)'/g).map((k) => k.slice(1, -1));
+    const edgeOccasions = fnSrc.match(/const BUNDLE_OCCASION_OPTIONS = \[([^\]]*)\]/)[1].match(/'(\w+)'/g).map((k) => k.slice(1, -1));
+    const parented = new Set(Object.values(serverParts).flat());
+    expect([...parented].sort()).toEqual([...edgeParts].sort());
+    expect(Object.keys(serverParts).sort()).toEqual([...edgeOccasions].sort());
+    // an occasion missing from the parent table allows NO parts (fail closed), and a part with no parent is refused everywhere
+    expect(fn).toMatch(/not c = any\(coalesce\(\(select keys from parts where occ = occasion\), '\{\}'\)\)/);
+  });
   it('enforced for every write path (table CHECK) with a plain validation message, never a conflict hint', () => {
     expect(mig).toMatch(/add constraint business_availability_bundle_parts_fit_check\s+check \(public\._bundle_component_problem\(bundle_occasion, bundle_components\) is null\)/);
     expect(fn).toMatch(/isn''t part of a %s bundle/);

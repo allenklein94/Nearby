@@ -123,6 +123,23 @@ begin
       then 'ok   ' else 'FAIL ' end) || 'No children vs Family Gathering + Family Fun: one Family Gathering line, no Family Fun line -- ' || v_detail || E'\n';
   end;
 
+  -- no unparented bundle part: every key in the table's bundle-part vocabulary has a parent occasion, and every
+  -- (bundle occasion x part) pair outside the parent table is refused
+  declare v_vocab text[]; v_orphans text[]; v_bad int;
+  begin
+    select array(select m[1] from regexp_matches(pg_get_constraintdef(oid), '''(\w+)''::text', 'g') m) into v_vocab
+      from pg_constraint where conname = 'business_availability_bundle_components_check';
+    select array(select c from unnest(v_vocab) c where not exists (
+      select 1 from unnest(array['date_night','anniversary','birthday','celebration','family_gathering']) o where public._bundle_component_problem(o, array[c]) is null)) into v_orphans;
+    out := out || (case when cardinality(v_vocab) = 7 and cardinality(v_orphans) = 0 then 'ok   ' else 'FAIL ' end)
+      || 'no unparented bundle part (' || array_to_string(v_vocab, ',') || '; orphans: ' || coalesce(array_to_string(v_orphans, ','), '') || ')' || E'\n';
+    select count(*) into v_bad from unnest(array['date_night','anniversary','birthday','celebration','family_gathering']) o, unnest(v_vocab) c
+      where public._bundle_component_problem(o, array[c]) is not null;
+    out := out || (case when v_bad = 20 then 'ok   ' else 'FAIL ' end) || 'invalid parent/part pairs refused: ' || v_bad || ' of 35' || E'\n';
+    out := out || (case when public._bundle_component_problem('birthday', array['dinner', 'family_fun']) is not null then 'ok   ' else 'FAIL ' end)
+      || 'a mix of a valid and an invalid part is refused as a whole' || E'\n';
+  end;
+
   -- a request addressed to ONE business is not removed by compatibility filtering
   out := out || (case when pg_get_functiondef('public._route_request_to_partner'::regproc) !~ '_business_declines' then 'ok   ' else 'FAIL ' end)
     || 'directed request: _route_request_to_partner does not call the compatibility rule' || E'\n';
