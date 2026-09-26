@@ -63,6 +63,7 @@ import { parseAskFacets, applyAskFacets, partnerPartyType, attributesFromAsk } f
 import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitmentLevel';
 import { formatsFromText, applyFormatToCandidates } from '../constants/activityFormat';
 import { skillLevelsFromText, applySkillToCandidates } from '../constants/skillLevel';
+import { genresFromText, applyGenreToCandidates } from '../constants/genreMatch';
 import { timeBudgetFromText, applyTimeBudgetToCandidates, timeBudgetCaption } from '../constants/timeBudget';
 import { clockWindowFromText, dateAnchorFromText, applyClockWindowToCandidates, clockWindowCaption, windowSpan, clockLabel } from '../constants/clockWindow';
 import { fitExperienceToTime } from '../utils/planTiming';
@@ -127,6 +128,8 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       durationMinutes: gathering.duration_minutes ?? null,
       format: gathering.format ?? null,
       skillLevel: gathering.skill_level ?? null,
+      // the HOST-DECLARED genre only (music gatherings); read by the genre pass (constants/genreMatch.js), never inferred
+      genre: gathering.genre ?? null,
       effortLevel: gathering.effort_level ?? null,
       requiresApproval: gathering.requires_approval === true,
       hostEnergy: gathering.energy_level ?? null,
@@ -720,6 +723,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   deduped = applyFormatToCandidates(deduped, formatsFromText(rawText));
   // Item 67: "beginner pickleball" lifts a declared Beginner / All levels / Casual game and sinks a Competitive one; never hides.
   deduped = applySkillToCandidates(deduped, skillLevelsFromText(rawText));
+  // "rock show tonight" lifts gatherings whose host declared Rock; a different/undeclared genre is neutral, nothing hidden.
+  deduped = applyGenreToCandidates(deduped, genresFromText(rawText));
   // Intensity (the host's Energy scale) and effort, only from "easy hike" / "high intensity workout"-style phrases; never hides.
   const askedIntensity = intensityFromText(rawText);
   deduped = applyIntensityToCandidates(deduped, askedIntensity);

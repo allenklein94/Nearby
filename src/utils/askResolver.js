@@ -25,6 +25,7 @@ import { planAsk, occasionFromAsk } from './planAsk';
 import { recognizeCombination } from '../constants/planCombinations';
 import { formatsFromText } from '../constants/activityFormat';
 import { skillLevelsFromText } from '../constants/skillLevel';
+import { genresFromText } from '../constants/genreMatch';
 import { intensityFromText, effortFromText } from '../constants/intensityEffort';
 import { socialSignalsFromText } from '../constants/socialContext';
 import { distanceWillingnessFromText } from '../constants/distanceWillingness';
@@ -173,6 +174,8 @@ export function resolveAsk(text, ai = null) {
     formats: formatsFromText(t),
     // Item 67: skill level the person named (beginner, casual game, competitive...); words only.
     skillLevels: skillLevelsFromText(t),
+    // Declared-genre words the person typed (rock, jazz, techno -> electronic...); ranking only against a host-declared genre.
+    genres: genresFromText(t),
     // Intensity / effort, only when an activity word sits next to the qualifier ('easy hike', 'high intensity workout').
     intensity: intensityFromText(t),
     effort: effortFromText(t),
