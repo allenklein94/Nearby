@@ -7,9 +7,9 @@
 //   - no genre category, no genre + activity category, no Discover filter, no preference screen, nothing stored;
 //   - never in a business payload, demand signal or people discovery;
 //   - the reason reads "Related to your interest in Rock" (the typed request), never "you like" / "because you like".
-// "concert tonight" names no genre and changes nothing. Words without a declared genre key map onto the closest declared one
-// only where listed below (techno / house music / EDM -> Electronic, rap -> Hip-Hop, salsa / reggaeton -> Latin); the closed
-// genre list itself is unchanged.
+// "concert tonight" names no genre and changes nothing. Techno is its own declared genre (migration 20270215): "techno",
+// "techno music", "techno night" -> Techno. Words without their own key map onto a declared one only where listed below
+// (house music / deep house / EDM -> Electronic, rap -> Hip-Hop, salsa / reggaeton -> Latin); bare "house" maps to nothing.
 import { GENRE_OPTIONS, genreLabel } from '../utils/gatheringPractical';
 
 export const GENRE_KEYS = GENRE_OPTIONS.filter((o) => o.key).map((o) => o.key);
@@ -22,7 +22,8 @@ const ASK = [
   { key: 'blues', re: /\bblues\b/i },
   { key: 'country', re: new RegExp(`\\bcountry\\s+${MUSIC}\\b|\\bcountry\\s+(western|line\\s+danc\\w*)\\b`, 'i') },
   { key: 'hip_hop', re: /\bhip[\s-]?hop\b|\brap\s+(show|concert|battle|night|music)\b/i },
-  { key: 'electronic', re: /\btechno\b|\bedm\b|\belectronic\s+music\b|\b(deep|tech)\s+house\b|\bhouse\s+music\b|\brave\b/i },
+  { key: 'techno', re: /\btechno\b/i },
+  { key: 'electronic', re: /\bedm\b|\belectronic\s+music\b|\b(deep|tech)\s+house\b|\bhouse\s+music\b|\brave\b/i },
   { key: 'classical', re: /\bclassical\b|\bsymphony\b|\borchestra\b/i },
   { key: 'folk', re: /\bfolk\b/i },
   { key: 'latin', re: new RegExp(`\\blatin\\s+${MUSIC}\\b|\\bsalsa\\s+(night|music|dancing|band)\\b|\\breggaeton\\b`, 'i') },

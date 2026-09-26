@@ -21,7 +21,7 @@ export const EQUIPMENT_OPTIONS = [
 export const GENRE_OPTIONS = [
   { key: null, label: 'Not specified' },
   { key: 'rock', label: 'Rock' }, { key: 'pop', label: 'Pop' }, { key: 'jazz', label: 'Jazz' }, { key: 'blues', label: 'Blues' },
-  { key: 'country', label: 'Country' }, { key: 'hip_hop', label: 'Hip-Hop' }, { key: 'electronic', label: 'Electronic' },
+  { key: 'country', label: 'Country' }, { key: 'hip_hop', label: 'Hip-Hop' }, { key: 'electronic', label: 'Electronic' }, { key: 'techno', label: 'Techno' },
   { key: 'classical', label: 'Classical' }, { key: 'folk', label: 'Folk' }, { key: 'latin', label: 'Latin' },
   { key: 'r_and_b', label: 'R&B' }, { key: 'open_mic', label: 'Open Mic' },
 ];

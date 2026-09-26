@@ -31,7 +31,10 @@ describe('genre (music gatherings only)', () => {
   });
   it('the client list equals the database CHECK, and music tags are real taxonomy', () => {
     const fs = require('fs'), path = require('path');
-    const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270195_gathering_genre.sql'), 'utf8');
+    // the LATEST migration that sets the genre CHECK (20270215 added Techno)
+    const dir = path.join(__dirname, '../../supabase/migrations');
+    const last = fs.readdirSync(dir).sort().filter((m) => /gatherings_genre_check check/.test(fs.readFileSync(path.join(dir, m), 'utf8'))).pop();
+    const sql = fs.readFileSync(path.join(dir, last), 'utf8');
     const db = [...sql.match(/genre in \(([^)]*)\)/)[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort();
     expect(GENRE_OPTIONS.map((o) => o.key).filter(Boolean).sort()).toEqual(db);
     const { CATEGORY_GROUPS } = require('../constants/gatheringCategories');
