@@ -38,6 +38,7 @@ import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
 // Owner item 56 follow-up: an optional exact time-of-day preference ("4-7 PM"), additive to the coarse
 // morning/afternoon/evening/weekend buckets scored below -- never a replacement, never an availability promise.
 import { isWithinPriorityTimeRange, priorityTimeRangeLabel } from '../utils/priorityTimeRange';
+import { dietaryCovers } from '../constants/dietaryOptions';
 
 // Universal Signal Remediation Pass, P1 item 5 (CLAUDE.md, Aug 28 2026):
 // a real, monotonic, capped-not-fabricated reference point -- $150 was
@@ -65,6 +66,9 @@ export function scoreBusinessOpportunity({
   // real WHY signal Phase 1 added to business_requests, matched against
   // the business's own declared occasion-appetite preferences below.
   requestOccasion = null,
+  // Item 88: the request's dietary needs (closed vocabulary) and the business's declared dietary options (same keys).
+  requestDietary = [],
+  businessDietaryOptions = [],
   // The requester's opt-in shared interest tags, and the business's own tag set (subcategory + categories).
   businessAttributes = [],
   businessCuisine = null,
@@ -135,6 +139,12 @@ export function scoreBusinessOpportunity({
   if (requestCuisine && businessCuisine && requestCuisine === businessCuisine) {
     score += SCORE_INTEREST_MATCH;
     reasons.push({ key: 'cuisine', label: 'Matches your cuisine', points: SCORE_INTEREST_MATCH });
+  }
+
+  // Item 88: credited once, only when the business DECLARED every dietary need on the request (declared, never inferred).
+  if (dietaryCovers({ dietary_options: businessDietaryOptions }, requestDietary) === true) {
+    score += SCORE_INTEREST_MATCH;
+    reasons.push({ key: 'dietary', label: 'You offer the dietary options they need', points: SCORE_INTEREST_MATCH });
   }
 
   // Finding 5 (audit): a real, explicitly-typed dollar amount that

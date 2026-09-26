@@ -1039,7 +1039,7 @@ export async function getPartnerOperatingInfo(partnerIds) {
   if (ids.length === 0) return new Map();
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, name, latitude, longitude, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, max_group_size, private_room_capacity, outdoor_capacity')
+    .select('id, name, latitude, longitude, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, max_group_size, private_room_capacity, outdoor_capacity, dietary_options')
     .in('id', ids);
   if (error) return new Map();
   return new Map((data ?? []).map((r) => [r.id, r]));
@@ -1398,7 +1398,13 @@ export async function setBusinessSpaceCapacity(partnerId, space, size) {
   if (error) throw error;
 }
 
-// Item 50 (age range): a descriptive suited-age range, 0..18, either bound may be null. Migration 20270199.
+// Item 88: the dietary options the business DECLARES it offers (the request dietary vocabulary; [] clears). Migration 20270230.
+export async function setBusinessDietaryOptions(partnerId, keys) {
+  const { error } = await supabase.rpc('set_business_dietary_options', { partner_id_param: partnerId, keys_param: Array.isArray(keys) ? keys : [] });
+  if (error) throw error;
+}
+
+// Item 50 (age range): a descriptive suited-age range, 0..17 (item 87 lock), either bound may be null. Migration 20270199.
 export async function setBusinessSuitedAges(partnerId, min, max) {
   const { error } = await supabase.rpc('set_business_suited_ages', { partner_id_param: partnerId, min_param: min ?? null, max_param: max ?? null });
   if (error) throw error;

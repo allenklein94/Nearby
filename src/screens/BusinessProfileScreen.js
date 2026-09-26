@@ -25,6 +25,7 @@ import { businessPrimaryAction } from '../utils/primaryAction';
 import { bookingModeOf, bookingModeOption, LEGACY_RESERVATION_ATTRIBUTE } from '../constants/bookingMode';
 import { maxGroupLine, spaceCapacityLines } from '../constants/businessCapabilities';
 import { notAccommodatedLine } from '../constants/businessRestrictions';
+import { dietaryOptionsLine } from '../constants/dietaryOptions';
 import { businessPriceLine } from '../constants/businessPrice';
 import { businessActionRoute } from '../utils/businessAction';
 import { getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
@@ -308,6 +309,12 @@ export default function BusinessProfileScreen({ route, navigation }) {
         {notAccommodatedLine(partner) && (
           <Text style={styles.reliabilityLine} accessibilityLabel={`Not accommodated, ${notAccommodatedLine(partner)}`}>
             🚫 {notAccommodatedLine(partner)}
+          </Text>
+        )}
+        {/* Item 88: dietary options the owner declared; hidden when nothing is declared (never "none"). */}
+        {dietaryOptionsLine(partner) && (
+          <Text style={styles.reliabilityLine} accessibilityLabel={`Dietary options, ${dietaryOptionsLine(partner)}`}>
+            🥗 {dietaryOptionsLine(partner)}
           </Text>
         )}
         {/* Item 81: per-space sizes, only for a declared capability with a size set. */}

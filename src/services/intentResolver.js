@@ -59,6 +59,7 @@ import {
 import { activitiesFromText } from '../constants/activityLayer';
 import { energiesFromText, applyEnergyToCandidates } from '../constants/energyLevel';
 import { askedChildAges, applySuitedAgesToCandidates } from '../utils/suitedAges';
+import { dietaryFromAsk, applyDietaryToCandidates } from '../constants/dietaryOptions';
 import { cleanFeatures } from '../utils/gatheringPractical';
 import { applyDeclaredFeatures } from '../constants/declaredFeatures';
 import { parseAskFacets, applyAskFacets, partnerPartyType, attributesFromAsk } from '../constants/askFacets';
@@ -812,6 +813,9 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     }
   }
   deduped = restrictions.items;
+  // Item 88: dietary needs the person's own words state ("vegan", "gluten-free", "halal") lift a business that DECLARED every one
+  // of them (its partner row, attached above). Ranking only; a business that did not say is kept where it was.
+  deduped = applyDietaryToCandidates(deduped, dietaryFromAsk(rawText));
   // Item 80: declared capabilities vs the ask: largest group vs the stated party size, private events / catering only when the
   // words ask for them. Ranking only; unknown is neutral; business results only (perks carry no partner row).
   deduped = applyCapabilitiesToCandidates(deduped, { partySize, text: rawText });

@@ -96,6 +96,10 @@ const ATTRIBUTE_ASKS = [
   ['dog_friendly', /\b(?:with|bring(?:ing)?|take|taking)\s+(?:my|our|the)\s+(?:dog|dogs|puppy|pup)\b|\b(?:dog|pet)[- ]friendly\b|\bpets?\s+(?:allowed|welcome)\b|\bpet[- ]friendly\b/i],
   ['date_friendly', /\b(?:date\s+night|first\s+date|on\s+a\s+date|for\s+a\s+date|date\s+spot|romantic|date[- ]friendly)\b/i],
   ['outdoor_seating', /\b(?:patio|outdoor\s+seating|al\s+fresco|terrace)\b/i],
+  // Item 88: an access need is stated per ask, in the person's own words, and never stored on a profile.
+  ['wheelchair_accessible', /\bwheelchairs?\b|\bstep[- ]free\b|\bwheelchair[- ]accessible\b|\bno\s+stairs\b/i],
+  ['accessible_parking', /\b(?:accessible|handicap(?:ped)?|disabled|disability|ada)\s+parking\b/i],
+  ['accessible_restroom', /\b(?:accessible|handicap(?:ped)?|disabled|ada)\s+(?:restrooms?|bathrooms?|toilets?)\b/i],
 ];
 export function attributesFromAsk(text, { partyType = null } = {}) {
   if (typeof text !== 'string') return partyType === 'date' ? ['date_friendly'] : [];

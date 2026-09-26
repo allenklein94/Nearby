@@ -24,7 +24,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize, setBusinessSpaceCapacity, setBusinessTypicalSpend, setBusinessNotAccommodated, setBusinessWantMore } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize, setBusinessSpaceCapacity, setBusinessTypicalSpend, setBusinessNotAccommodated, setBusinessWantMore, setBusinessDietaryOptions } from '../services/brandOffers';
 import { cleanMaxGroupSize, maxGroupSizeProblem, SPACES, spaceCapacityProblem } from '../constants/businessCapabilities';
 import { BUSINESS_PRICE_LEVELS, typicalSpendProblem } from '../constants/businessPrice';
 import { getBusinessCommunities } from '../services/communities';
@@ -80,6 +80,7 @@ import { describeDemandSignals } from '../utils/demandSignals';
 import { opportunityPrimaryAction, consumerOfferAction } from '../utils/primaryAction';
 import { BOOKING_MODE_OPTIONS, LEGACY_RESERVATION_ATTRIBUTE, bookingModeOf } from '../constants/bookingMode';
 import { NOT_ACCOMMODATED_OPTIONS, ADULT_AGE_RULES, notAccommodatedOf, toggleNotAccommodated } from '../constants/businessRestrictions';
+import { BUSINESS_DIETARY_OPTIONS, dietaryOptionsOf, dietaryRelevantFor } from '../constants/dietaryOptions';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, OFFERED_OCCASION_OPTIONS, WEATHER_SETTING_OPTIONS, occasionLabel, occasionPhrase, dietaryLabel, requestedItemLabel } from '../constants/businessAttributes';
 import { planAddonLabel } from '../constants/planAddons';
 import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
@@ -505,6 +506,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         requestBudgetMax: req.budget_max ?? null,
         requestPartySize: req.party_size ?? null,
         requestOccasion: req.occasion ?? null,
+        requestDietary: req.dietary ?? [],
+        businessDietaryOptions: selectedPartner?.dietary_options ?? [],
         businessAttributes: selectedPartner?.attributes ?? [],
         businessCuisine: selectedPartner?.cuisine ?? null,
         businessPriorityAttributes: selectedPartner?.priority_attributes ?? [],
@@ -1173,6 +1176,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     const shown = shownValue(settingConflicts.entries, 'not_accommodated', saved);
     const next = toggleNotAccommodated(shown, key);
     await saveNotAccommodated(next, saved);
+  }
+
+  // Item 88: dietary options the business offers. Tap to add, tap again to remove; saves per tap. Declared only, never inferred.
+  async function handleToggleDietaryOption(key) {
+    if (!selectedPartner) return;
+    const saved = dietaryOptionsOf(selectedPartner);
+    const shown = shownValue(settingConflicts.entries, 'dietary_options', saved);
+    const next = shown.includes(key) ? shown.filter((k) => k !== key) : [...shown, key];
+    await savePerTapSetting('dietary_options', next, saved, {
+      save: (v) => setBusinessDietaryOptions(selectedPartner.id, v),
+      field: (v) => ({ dietary_options: v }),
+      patch: (v) => ({ dietary_options: v }),
+      retry: () => handleToggleDietaryOption(key),
+    });
   }
 
   function saveNotAccommodated(next, saved = notAccommodatedOf(selectedPartner)) {
@@ -5731,6 +5748,32 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.helperText}>
                   Requests that conflict aren't sent to you, and customers asking for them won't see you. Group size, reservations and indoor or outdoor only are set above.
                 </Text>
+                {/* Item 88: dietary options, asked only of a food business (or one that already declared some). */}
+                {dietaryRelevantFor(selectedPartner) && (
+                  <>
+                    <Text style={styles.sectionHeader}>What dietary options do you offer?</Text>
+                    <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                      {BUSINESS_DIETARY_OPTIONS.map((o) => {
+                        const selected = shownValue(settingConflicts.entries, 'dietary_options', dietaryOptionsOf(selectedPartner)).includes(o.key);
+                        return (
+                          <TouchableOpacity
+                            key={o.key}
+                            style={[styles.chip, selected && styles.chipSelected]}
+                            onPress={() => handleToggleDietaryOption(o.key)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${o.label}${selected ? ', selected' : ''}`}
+                            accessibilityState={{ selected }}
+                          >
+                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                    <Text style={styles.helperText}>
+                      Customers who ask for these are matched with you first. Wheelchair access, accessible parking and restrooms are under Edit Profile.
+                    </Text>
+                  </>
+                )}
 </>
 )}
 {on('offers') && moreOffersOpen && (
