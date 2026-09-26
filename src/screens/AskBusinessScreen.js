@@ -1,3 +1,4 @@
+import { DATE_VIBES } from '../constants/businessVibes';
 import React, { useState } from 'react';
 import { SEARCH_RADIUS_OPTIONS } from '../constants/searchRadius';
 import useFormDraft from '../hooks/useFormDraft';
@@ -438,6 +439,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           radiusMiles,
           occasion: occasionInput,
           dietary: category === 'Foodie' && dietaryInput.length > 0 ? dietaryInput : null,
+          attributes: attributesInput,
         });
       } else if (communityId) {
         result = await submitBusinessRequestForCommunity({
@@ -542,7 +544,7 @@ export default function AskBusinessScreen({ navigation, route }) {
     if (isSoloMode && category === 'Foodie' && cuisineInput) recapParts.push(cuisineLabel(cuisineInput));
     if (showItems && itemsInput.length > 0) recapParts.push(itemsInput.map(requestedItemLabel).join(' + '));
     if (category === 'Foodie' && dietaryInput.length > 0) recapParts.push(dietaryInput.map(dietaryLabel).join(', '));
-    if (isSoloMode && attributesInput.length > 0) recapParts.push(attributesInput.map(businessAttributeLabel).join(', '));
+    if ((isSoloMode || matchId) && attributesInput.length > 0) recapParts.push(attributesInput.map(businessAttributeLabel).join(', '));
     if (isSoloMode && pickedAvailability) recapParts.push(`at ${pickedAvailability.partner_name}`);
     recapParts.push(`within ${radiusMiles} mi`);
   }
@@ -905,6 +907,32 @@ export default function AskBusinessScreen({ navigation, route }) {
                     <Text style={[styles.chipText, experienceLevel === o.key && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
                   </TouchableOpacity>
                 ))}
+              </View>
+            </>
+          )}
+
+          {/* Item 85: a date between a matched pair says what KIND of place (romantic, quiet, cozy...), not only a category.
+              The same attribute vocabulary; the business sees them as "Customer is looking for", never who the pair is. */}
+          {!!matchId && (
+            <>
+              <Text style={styles.label}>What kind of date? (optional)</Text>
+              <View style={styles.chipRow}>
+                {DATE_VIBES.map((v) => {
+                  const selected = attributesInput.includes(v.key);
+                  const opt = BUSINESS_ATTRIBUTE_OPTIONS.find((a) => a.key === v.key);
+                  return (
+                    <TouchableOpacity
+                      key={v.key}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => setAttributesInput((prev) => (selected ? prev.filter((k) => k !== v.key) : [...prev, v.key]))}
+                      accessibilityLabel={v.label}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{opt?.icon} {v.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </>
           )}

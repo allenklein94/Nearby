@@ -23,6 +23,12 @@ export const VIBES = [
 ];
 export const VIBE_KEYS = VIBES.map((v) => v.key);
 
+// Item 85: the vibes that describe a DATE, offered as "What kind of date?" on a matched pair's request. Family-friendly,
+// Professional and Social describe other plans, so they are left out of this row (never hidden elsewhere).
+export const DATE_VIBES = VIBES.filter((v) => !['kid_friendly', 'professional', 'social'].includes(v.key));
+// A place fits a date by what its owner DECLARED: date-friendly or romantic. Nothing else (never its category) makes the claim.
+export const DATE_PLACE_KEYS = ['date_friendly', 'romantic'];
+
 // Item 84: ONE synonym table per vibe. Every word a person or an owner might use lands on exactly one canonical key; nobody can
 // add a vibe (the attribute CHECKs refuse anything else) and no second word list exists: the ask parser (vibesFromAsk) and
 // "Teach Nearby" (businessAttributeExtraction) both read this table. A phrase belongs to one vibe only (tested).
@@ -77,10 +83,16 @@ export function vibesToSink({ want = [], avoid = [] } = {}) {
 
 export const VIBE_SINK_POINTS = -1;
 
-// A candidate's declared vibes: a business's attributes, or a gathering host's declared features.
-function declared(c) {
-  return [...(Array.isArray(c?.attributes) ? c.attributes : []), ...(Array.isArray(c?.features) ? c.features : [])];
+// A candidate's declared qualities: a gathering host's features, or a business's own attributes (its partner row, or the posting
+// row's copy of them). Only what someone DECLARED; never a category.
+export function declaredQualities(c) {
+  const out = new Set();
+  for (const list of [c?.attributes, c?.features, c?.businessPartner?.attributes, c?.matchedAvailability?.attributes]) {
+    if (Array.isArray(list)) for (const k of list) out.add(k);
+  }
+  return [...out];
 }
+const declared = declaredQualities;
 
 export function applyVibeSinks(candidates, vibes) {
   const sink = vibesToSink(vibes);
@@ -92,4 +104,48 @@ export function applyVibeSinks(candidates, vibes) {
 export function matchedVibeLabels(declaredKeys, wanted) {
   const d = Array.isArray(declaredKeys) ? declaredKeys : [];
   return VIBES.filter((v) => wanted.includes(v.key) && d.includes(v.key)).map((v) => v.label);
+}
+
+// Item 85: a date is described by what kind of place, not a category. "Romantic + quiet + $ + tonight + 2 people" is scored on
+// the qualities an owner DECLARED, so a coffee shop its owner marked date-friendly or romantic can be a real date recommendation.
+export function isDateAsk({ partyType = null, occasion = null } = {}) {
+  return partyType === 'date' || occasion === 'date_night' || occasion === 'first_date';
+}
+
+// A date is two people unless the words say otherwise ("double date" = 4). Only fills a missing size; never overrides one.
+export function datePartySize(text, { partyType = null, occasion = null, partySize = null } = {}) {
+  if (partySize != null || !isDateAsk({ partyType, occasion })) return partySize;
+  return /\bdouble[- ]date\b/i.test(String(text ?? '')) ? 4 : 2;
+}
+
+export function dateFrame({ occasion = null, dateWindow = null } = {}) {
+  if (occasion === 'first_date') return 'First date';
+  if (occasion === 'date_night' || dateWindow === 'tonight') return 'Date night';
+  return 'A date';
+}
+
+export const QUALITY_DEPTH_POINTS = 1;
+export const QUALITY_DEPTH_MAX = 2;
+
+// The existing attribute overlap credits ANY match once. A place matching more of what was asked ranks above one matching a
+// single quality: +1 per additional declared match, capped at +2. Ranking only.
+export function applyQualityDepth(candidates, asked) {
+  if (!Array.isArray(asked) || asked.length < 2) return candidates;
+  return candidates.map((c) => {
+    const n = declared(c).filter((k) => asked.includes(k)).length;
+    const extra = Math.min(Math.max(n - 1, 0) * QUALITY_DEPTH_POINTS, QUALITY_DEPTH_MAX);
+    return extra ? { ...c, score: (c.score ?? 0) + extra } : c;
+  });
+}
+
+// "Date night at Coastal Coffee?": for a date ask, a BUSINESS result whose owner declared it date-friendly or romantic is
+// offered as a date, as a question (a suggestion, never a claim). Title only; score untouched (the qualities already scored).
+export function frameDatePlaces(candidates, { isDate = false, frame = 'A date', businessTypes = [] } = {}) {
+  if (!isDate) return candidates;
+  return candidates.map((c) => {
+    if (!businessTypes.includes(c?.type)) return c;
+    const name = c.businessPartner?.name ?? c.matchedAvailability?.partnerName ?? null;
+    if (!name || !declared(c).some((k) => DATE_PLACE_KEYS.includes(k))) return c;
+    return { ...c, title: `${frame} at ${name}?`, dateFit: true };
+  });
 }

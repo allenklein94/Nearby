@@ -183,6 +183,7 @@ export async function createBusinessRequestForMatch({
   radiusMiles = 15,
   occasion = null,
   dietary = null,
+  attributes = null,
 }) {
   const location = await requireUserLocation('Location access is needed to find nearby businesses.');
 
@@ -198,6 +199,8 @@ export async function createBusinessRequestForMatch({
     time_window_start_param: timeWindowStart,
     time_window_end_param: timeWindowEnd,
     radius_miles_param: radiusMiles,
+    // Item 85: what kind of place the pair wants (romantic, quiet, cozy...), the one attribute vocabulary.
+    attributes_param: Array.isArray(attributes) && attributes.length ? attributes : null,
     dietary_param: dietary && dietary.length > 0 ? dietary : null,
   });
   if (error) throw new Error(error.message);

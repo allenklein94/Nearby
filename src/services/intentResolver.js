@@ -7,7 +7,8 @@ import { bookingModeOf } from '../constants/bookingMode';
 import { BUSINESS_RESULT_TYPES, intentResultBusinessRoute } from '../utils/businessAction';
 import { openNowAskFromText, candidateEntity, filterOpenNow, openNowLift, OPEN_NOW_CAPTION } from '../utils/operatingStatus';
 import { applyBusinessPriceToCandidates } from '../utils/priceBias';
-import { vibesFromAsk, applyVibeSinks } from '../constants/businessVibes';
+import { vibesFromAsk, applyVibeSinks, applyQualityDepth, frameDatePlaces, isDateAsk, datePartySize, dateFrame } from '../constants/businessVibes';
+import { canonicalGroupForTag } from '../constants/categoryMapping';
 import { applyAskWeather } from '../utils/askWeather';
 import { occasionLabel } from '../constants/businessAttributes';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, searchOccasionOfferingBusinesses, getMyBusinessAffinitySignals } from './businessFulfillment';
@@ -589,6 +590,14 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Same occasion rule as the no-AI fallback, so behavior is identical with or without the AI: explicit words, or a couple
   // planning a multi-part evening. Never from a category alone.
   occasion = occasion ?? occasionFromAsk(rawText, { partyType, dateWindow });
+  // Item 85: a date is a WHO/WHY, not a market. When the only category is a date word itself (Date Night, First Date, Couples:
+  // the Dating & Social group), it no longer filters: the declared qualities, price, time and party decide, so a coffee shop
+  // its owner marked date-friendly can be the answer. A real market the person named ("coffee date", "dinner") still filters.
+  const dateAsk = isDateAsk({ partyType, occasion });
+  let dateTag = null;
+  if (dateAsk && category && canonicalGroupForTag(category) === 'dating_social') { dateTag = category; category = null; }
+  // A date is two people unless the words say otherwise (never overrides a stated size).
+  partySize = datePartySize(rawText, { partyType, occasion, partySize });
   // Items 51/52: pet-friendly / date-friendly / quiet / patio are ATTRIBUTES the ask can name (constants/askFacets.js), unioned with the extractor's.
   attributes = [...new Set([...(Array.isArray(attributes) ? attributes : []), ...attributesFromAsk(rawText, { partyType })])];
   // Item 80: private events and catering are asked for only in the person's own words (never inferred from a large party or an
@@ -811,6 +820,11 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   deduped = applyDeclaredFeatures(deduped, attributes);
   // Vibe (item 83): a declared vibe the person said to avoid, or the declared opposite of one they want, sinks a little. Never hides.
   deduped = applyVibeSinks(deduped, vibesFromAsk(rawText));
+  // Item 85: more of the asked qualities declared = higher; a date ask offers a declared date spot as "Date night at X?"; a
+  // gathering carrying the date tag the words named keeps a lift now that the tag no longer filters.
+  deduped = applyQualityDepth(deduped, attributes);
+  deduped = frameDatePlaces(deduped, { isDate: dateAsk, frame: dateFrame({ occasion, dateWindow }), businessTypes: BUSINESS_RESULT_TYPES });
+  if (dateTag) deduped = deduped.map((c) => (c.category === dateTag ? { ...c, score: (c.score ?? 0) + SCORE_HAPPENING_NOW } : c));
 
   // Combinations + negative intent (items 47/48): "outside", "no alcohol", "nothing crowded", "not too expensive" from the person's
   // own words. Exclusions drop only KNOWN conflicts; the caption says what was left out (constants/askFacets.js).
