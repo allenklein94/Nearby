@@ -9,6 +9,9 @@
 import { CATEGORY_GROUPS, INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { canonicalGroupForTag } from '../constants/categoryMapping';
 import { tagsForPhrase } from '../constants/categorySynonyms';
+import { cuisineFromText, groupForPhrase } from '../constants/categoryTree';
+import { detectIntentRoute, ROUTE_SURFACES } from '../constants/intentRoutes';
+import { CUISINE_OPTIONS } from '../constants/businessAttributes';
 
 export const WHEN_OPTIONS = [
   { key: 'now', label: 'Now' },
@@ -227,35 +230,93 @@ export function stripSurprisePhrase(text) {
 
 export const SURPRISE_PICK_COUNT = 3;
 
-// A surprise narrows to one category ONLY when the person's own words name it ("surprise me with coffee"); an AI guess never
-// collapses the set (it would lose the range the person asked for). Returns a real consumer tag or null.
-export function saidCategory(rest) {
-  if (typeof rest !== 'string' || !rest.trim()) return null;
-  return tagsForPhrase(rest).find((t) => INTEREST_OPTIONS.includes(t)) ?? null;
+// SCOPE (owner, 2026-09-26, LOCKED): only the person's own words can narrow a surprise, and the AI can neither narrow nor broaden
+// it. Broad request -> variety ACROSS category groups. Explicit category -> variety WITHIN it (different businesses, different
+// tags inside a named group). Returns one of:
+//   { level: 'broad' }                          "surprise me tonight"
+//   { level: 'tags', tags: [...] }              "with coffee" -> [Coffee]; "with coffee and a movie" -> [Coffee, Movies]
+//   { level: 'cuisine', cuisine: 'italian' }    "with Italian food" -> only businesses that DECLARED that cuisine
+//   { level: 'groups', groups: [...] }          "with something to do" / "with food" -> those category groups only
+// Deterministic: synonym table, declared cuisines, group names, the intent-route table. Never the AI's category.
+const THINGS_TO_DO = /\b(something|anything|things?)\s+to\s+do\b|\ban?\s+activit(y|ies)\b/i;
+export const THINGS_TO_DO_GROUPS = ['activities_recreation', 'entertainment_nightlife', 'outdoors_nature', 'attractions_things_to_see', 'arts_culture_learning'];
+export function surpriseScope(rest) {
+  if (typeof rest !== 'string' || !rest.trim()) return { level: 'broad' };
+  const cuisine = cuisineFromText(rest);
+  if (cuisine) return { level: 'cuisine', cuisine };
+  // "coffee and a movie" names two things: each part is read on its own, then combined.
+  const parts = [rest, ...rest.split(/\s*(?:,|\band\b|\bthen\b|\bplus\b|&)\s*/i)].filter((x) => x && x.trim());
+  const tags = parts.flatMap((x) => tagsForPhrase(x)).filter((t) => INTEREST_OPTIONS.includes(t));
+  if (tags.length > 0) return { level: 'tags', tags: [...new Set(tags)] };
+  const g = groupForPhrase(rest.replace(/^(with|for)\s+/i, ''));
+  if (g) return { level: 'groups', groups: [g.key] };
+  if (THINGS_TO_DO.test(rest)) return { level: 'groups', groups: [...THINGS_TO_DO_GROUPS] };
+  const routed = detectIntentRoute(rest);
+  if (routed?.route.surface === ROUTE_SURFACES.CATEGORY_GROUPS) {
+    return routed.route.category && INTEREST_OPTIONS.includes(routed.route.category)
+      ? { level: 'tags', tags: [routed.route.category] }
+      : { level: 'groups', groups: [...routed.route.groups] };
+  }
+  return { level: 'broad' };
 }
 
-// What makes two picks "the same kind of thing": the canonical category group of its tag, else its result type. Two picks from one
-// business are never both shown.
-function diversityKey(c) {
-  const isGroup = c?.category && CATEGORY_GROUPS.some((g) => g.key === c.category);
-  const group = c?.category ? (isGroup ? c.category : canonicalGroupForTag(c.category)) : null;
+// Back-compat: the single tag a scope names, else null.
+export function saidCategory(rest) {
+  const s = surpriseScope(rest);
+  return s.level === 'tags' ? s.tags[0] : null;
+}
+
+function groupOf(c) {
+  if (!c?.category) return null;
+  return CATEGORY_GROUPS.some((g) => g.key === c.category) ? c.category : canonicalGroupForTag(c.category);
+}
+function cuisineOf(c) {
+  return c?.matchedAvailability?.cuisine ?? c?.businessPartner?.cuisine ?? c?.cuisine ?? null;
+}
+
+// Keeps only what is CONFIRMED inside an explicit scope (an unknown category or cuisine is not confirmed, so it is left out).
+export function inSurpriseScope(c, scope) {
+  if (!scope || scope.level === 'broad') return true;
+  if (scope.level === 'cuisine') return cuisineOf(c) === scope.cuisine;
+  if (scope.level === 'groups') return scope.groups.includes(groupOf(c));
+  if (scope.level === 'tags') {
+    const own = [c?.category, c?.subcategory, ...(Array.isArray(c?.categories) ? c.categories : [])].filter(Boolean);
+    return own.some((t) => scope.tags.includes(t));
+  }
+  return true;
+}
+
+// Label for the basis line: what the person named ("Coffee", "Italian", "Things to do").
+export function scopeLabel(scope) {
+  if (!scope || scope.level === 'broad') return null;
+  if (scope.level === 'cuisine') return CUISINE_OPTIONS.find((o) => o.key === scope.cuisine)?.label ?? null;
+  if (scope.level === 'tags') return scope.tags.join(' + ');
+  if (scope.groups.length === THINGS_TO_DO_GROUPS.length && scope.groups.every((g) => THINGS_TO_DO_GROUPS.includes(g))) return 'Things to do';
+  return scope.groups.map((k) => CATEGORY_GROUPS.find((g) => g.key === k)?.label).filter(Boolean).join(' + ') || null;
+}
+
+// What makes two picks "the same kind of thing". Broad: the canonical category group. Explicit scope: the leaf tag (so a
+// named group spreads across its tags; a single named tag spreads across businesses, via the business rule). Else the type.
+function diversityKey(c, level = 'broad') {
+  const group = groupOf(c);
+  if (level !== 'broad' && c?.category) return c.subcategory ?? c.category;
   return group ?? `type:${c?.type ?? 'unknown'}`;
 }
 
-// A small, DIVERSE set from the real pool: best score first, then the best of each not-yet-used category group; only when there
-// are not enough groups does a second pick from a used group fill in. Never invents, never pads with nothing. `excludeKeys` = the
-// `type:id` keys already shown (Shuffle never repeats them).
-export function pickDiverse(pool, count = SURPRISE_PICK_COUNT, excludeKeys = new Set()) {
+// A small, DIVERSE set from the real pool: best score first, then the best of each not-yet-used kind; only when there are not
+// enough kinds does a second pick of a used kind fill in. Two picks from one business are never both shown. Never invents, never
+// pads. `excludeKeys` = the `type:id` keys of the immediately previous set (Shuffle Again avoids them).
+export function pickDiverse(pool, count = SURPRISE_PICK_COUNT, excludeKeys = new Set(), level = 'broad') {
   const eligible = eligibleCandidates(pool)
     .filter((c) => !excludeKeys.has(`${c.type}:${c.id}`))
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   const picks = [];
-  const groups = new Set();
+  const kinds = new Set();
   const partners = new Set();
-  const take = (c) => { picks.push(c); groups.add(diversityKey(c)); if (c.partnerId) partners.add(c.partnerId); };
+  const take = (c) => { picks.push(c); kinds.add(diversityKey(c, level)); if (c.partnerId) partners.add(c.partnerId); };
   for (const c of eligible) {
     if (picks.length >= count) break;
-    if (groups.has(diversityKey(c)) || (c.partnerId && partners.has(c.partnerId))) continue;
+    if (kinds.has(diversityKey(c, level)) || (c.partnerId && partners.has(c.partnerId))) continue;
     take(c);
   }
   for (const c of eligible) {
@@ -279,9 +340,11 @@ export function surpriseCategories(myInterests = [], rand = Math.random) {
 // One honest line naming only the signals that really shaped the set ("Picked from your interests · tonight · under $30").
 const WHEN_WORDS = { now: 'right now', today: 'today', tonight: 'tonight', tomorrow: 'tomorrow', weekend: 'this weekend' };
 const PARTY_WORDS = { date: 'for a date', friends: 'with friends', family: 'with family', solo: 'on your own', coworkers: 'with coworkers', groups: 'for a group' };
-export function surpriseBasis({ usedInterests = false, dateWindow = null, budgetMax = null, priceLevel = null, partyType = null } = {}) {
+export function surpriseBasis({ usedInterests = false, scope = null, dateWindow = null, budgetMax = null, priceLevel = null, partyType = null } = {}) {
   const parts = [];
-  if (usedInterests) parts.push('Picked from your interests');
+  const named = scopeLabel(scope);
+  if (named) parts.push(named);
+  else if (usedInterests) parts.push('Picked from your interests');
   if (WHEN_WORDS[dateWindow]) parts.push(WHEN_WORDS[dateWindow]);
   if (Number.isFinite(budgetMax) && budgetMax > 0) parts.push(`under $${budgetMax}`);
   else if (priceLevel) parts.push(priceLevel === 'free' ? 'free' : priceLevel);

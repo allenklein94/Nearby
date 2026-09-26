@@ -108,7 +108,7 @@ describe('structured and declared only; wired where it matters', () => {
     expect(dash).toMatch(/requestDietary: req\.dietary/);
     expect(r('src/screens/BusinessProfileScreen.js')).toMatch(/dietaryOptionsLine\(partner\)/);
     expect(r('src/services/intentResolver.js')).toMatch(/applyDietaryToCandidates\(deduped, dietaryFromAsk\(rawText\)\)/);
-    expect(r('src/services/brandOffers.js')).toMatch(/outdoor_capacity, dietary_options'\)/);
+    expect(r('src/services/brandOffers.js')).toMatch(/outdoor_capacity, dietary_options[,']/);
     expect(r('src/utils/businessOpportunityCard.js')).toMatch(/'cuisine', 'dietary', 'party_size'/);
   });
 });

@@ -31,8 +31,10 @@ import {
   surpriseCategories,
   surpriseBasis,
   findConnectedPersonForPicks,
-  saidCategory,
+  surpriseScope,
+  inSurpriseScope,
 } from './surpriseMeLogic';
+import { cuisineFromText } from '../constants/categoryTree';
 
 export {
   WHEN_OPTIONS,
@@ -55,6 +57,10 @@ export {
   findConnectedPersonForPicks,
   SURPRISE_PICK_COUNT,
   saidCategory,
+  surpriseScope,
+  inSurpriseScope,
+  scopeLabel,
+  THINGS_TO_DO_GROUPS,
 } from './surpriseMeLogic';
 
 // Connected people only ADD an optional "your friend likes this" line to a suggestion; when they cannot be loaded the
@@ -130,21 +136,30 @@ async function getCalendarHint() {
 // judged at its own start, businesses at the stated window), interests (two declared + one new tag for range), budget and party
 // (the words), connected friends (the existing line). Output: up to SURPRISE_PICK_COUNT picks from DIFFERENT category groups and
 // businesses (pickDiverse), or a real multi-part experience when the resolver assembled one.
-export async function runSurpriseMe({ when = null, mood = null, text = null } = {}) {
+// Contract (owner, 2026-09-26, LOCKED): up to 3 real suggestions; different category groups when the request is broad, variety
+// WITHIN the named scope when the words narrow it ("surprise me with coffee" = up to 3 different coffee places); never two from
+// one business; a real multi-part plan replaces the picks; Shuffle Again is a fresh fetch that avoids the immediately previous
+// set (`exclude`); the basis line names only signals that shaped the selection; no time is ever invented; typed surprises are
+// never written to the search log. The AI can neither narrow nor broaden: its category, cuisine, attributes and occasion guesses
+// are ignored here (the resolver reads the same facts from the words themselves).
+export async function runSurpriseMe({ when = null, mood = null, text = null, exclude = null } = {}) {
   const typed = typeof text === 'string';
   const rest = typed ? stripSurprisePhrase(text) : '';
   let ask = {};
   if (typed && rest.length >= 2) {
     try { ask = await classifyCreateRequest(rest); } catch (e) { console.error('surprise classify skipped', e); ask = {}; }
   }
-  const params = typed ? { occasion: ask.occasion ?? null, attributes: ask.attributes ?? [], partyType: ask.partyType ?? null } : moodToParams(mood);
-  const myInterests = typed || mood === 'something_new' ? await fetchMyInterests() : [];
-  // A typed ask that names its own category keeps it; otherwise the person's interests (plus one new tag) spread the set.
-  const named = typed ? saidCategory(rest) : null;
+  // Typed: only word-backed facts (time, budget, who with, party size are words-only in resolveAsk). Attributes, occasion and
+  // cuisine are left to the resolver's own word readers, so an AI guess can never narrow the set.
+  const params = typed ? { occasion: null, attributes: [], partyType: ask.partyType ?? null } : moodToParams(mood);
+  const scope = typed ? surpriseScope(rest) : { level: 'broad' };
+  const broad = scope.level === 'broad';
+  const myInterests = (typed && broad) || mood === 'something_new' ? await fetchMyInterests() : [];
   const categories = typed
-    ? (named ? [named] : surpriseCategories(myInterests))
+    ? (scope.level === 'tags' ? scope.tags : broad ? surpriseCategories(myInterests) : [null])
     : pickSampleCategories(categoryPoolForMood(mood, myInterests), CATEGORY_SAMPLE_SIZE);
   const dateWindow = typed ? (ask.dateWindow ?? null) : when;
+  const cuisine = typed ? cuisineFromText(rest) : null;
 
   const [results, calendarHint] = await Promise.all([
     Promise.all(
@@ -157,7 +172,7 @@ export async function runSurpriseMe({ when = null, mood = null, text = null } = 
           partySize: typed ? (ask.partySize ?? null) : null,
           priceLevel: typed ? (ask.priceLevel ?? null) : null,
           budgetMax: typed ? (ask.budgetMax ?? null) : null,
-          cuisine: typed ? (ask.cuisine ?? null) : null,
+          cuisine,
           attributes: params.attributes,
           occasion: params.occasion,
         }).catch(() => ({ items: [], experience: null }))
@@ -166,22 +181,28 @@ export async function runSurpriseMe({ when = null, mood = null, text = null } = 
     getCalendarHint(),
   ]);
 
-  const merged = mergeCandidatePools(results.map((r) => r.items));
+  // An explicit scope keeps only what is confirmed inside it; a broad request keeps everything the resolver returned.
+  const merged = mergeCandidatePools(results.map((r) => r.items)).filter((c) => inSurpriseScope(c, scope));
   // Only one call can produce a real cross-category experience (all calls share one occasion); never merged into a fabricated one.
   const experience = results.find((r) => r.experience)?.experience ?? null;
 
-  const suggestion = pickSuggestion(experience, merged);
-  const picks = suggestion?.kind === 'experience' ? [] : pickDiverse(merged);
+  const excludeKeys = exclude instanceof Set ? exclude : new Set(exclude ?? []);
+  const picks = pickDiverse(merged, undefined, excludeKeys, broad ? 'broad' : 'scoped');
+  const suggestion = pickSuggestion(experience, picks);
+  const shownPicks = suggestion?.kind === 'experience' ? [] : picks;
   const connectedPeople = suggestion ? await getConnectedPeopleWithInterests().catch(logSoftFailure('surprise connected people')) : [];
   const connectedPerson = suggestion
-    ? (picks.length > 0 ? findConnectedPersonForPicks(picks, connectedPeople) : findConnectedPerson(suggestion, connectedPeople))
+    ? (shownPicks.length > 0 ? findConnectedPersonForPicks(shownPicks, connectedPeople) : findConnectedPerson(suggestion, connectedPeople))
     : null;
+  const usedInterests = broad && categories.some(Boolean);
   const basis = typed
     ? surpriseBasis({
-      usedInterests: !named && categories.some(Boolean), dateWindow, budgetMax: ask.budgetMax ?? null,
+      usedInterests, scope, dateWindow, budgetMax: ask.budgetMax ?? null,
       priceLevel: ask.priceLevel ?? null, partyType: ask.partyType ?? null,
     })
-    : null;
+    : surpriseBasis({ dateWindow: when, partyType: params.partyType });
+  // Every eligible real result was already shown last time: say so rather than repeating it.
+  const exhausted = !suggestion && excludeKeys.size > 0 && merged.length > 0;
 
-  return { suggestion, picks, pool: merged, connectedPeople, connectedPerson, calendarHint, basis, dateWindow, ask, rest };
+  return { suggestion, picks: shownPicks, pool: merged, connectedPeople, connectedPerson, calendarHint, basis, dateWindow, ask, rest, scope, exhausted };
 }

@@ -10,7 +10,7 @@ import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnl
 import { setGatheringInterested, getInterestedDemandPrefs, getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getMyPositiveExperienceSignals, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent, navigateToIntentResultItem, buildFriendDiscoveryResultItem } from '../services/intentResolver';
-import { runSurpriseMe, suggestionCandidateKeys, moodToParams, surpriseAskFromText, pickDiverse, findConnectedPersonForPicks } from '../services/surpriseMe';
+import { runSurpriseMe, suggestionCandidateKeys, moodToParams, surpriseAskFromText } from '../services/surpriseMe';
 import { detectFriendDiscoveryIntent, intentPhaseCaption } from '../services/intentResolverScoring';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/businessFulfillment';
@@ -1171,22 +1171,28 @@ export default function HomeScreen({ navigation }) {
     }
   }
 
-  // Shuffle Again: the next diverse set from the pool already fetched (never repeating what was shown); a fresh run of the SAME
-  // ask only when that real pool is exhausted. Never fabricates an alternative.
+  // Shuffle Again (owner contract, 2026-09-26): a FRESH fetch of the same ask that avoids the immediately previous set. When
+  // everything real was just shown, the previous set stays with a plain note instead of repeating or inventing one.
   async function handleSurpriseShuffle() {
     if (!surprise) return;
-    const nextPicks = pickDiverse(surprise.pool, undefined, surprise.shown);
-    if (nextPicks.length > 0) {
-      setSurprise((prev) => ({
-        ...prev,
-        suggestion: { kind: 'candidate', candidate: nextPicks[0] },
-        picks: nextPicks,
-        connectedPerson: findConnectedPersonForPicks(nextPicks, prev.connectedPeople),
-        shown: new Set([...prev.shown, ...nextPicks.map((c) => `${c.type}:${c.id}`)]),
-      }));
-      return;
+    const previous = surprise;
+    setSurpriseLoading(true);
+    try {
+      const r = await runSurpriseMe({ ...previous.args, exclude: previous.shown });
+      if (!r.suggestion) {
+        setSurprise({ ...previous, exhausted: true });
+        return;
+      }
+      const shownKeys = r.suggestion.kind === 'experience'
+        ? suggestionCandidateKeys(r.suggestion)
+        : (r.picks ?? []).map((c) => `${c.type}:${c.id}`);
+      setSurprise({ args: previous.args, ...r, shown: new Set(shownKeys), exhausted: false });
+    } catch (e) {
+      console.error('runSurpriseMe shuffle failed', e);
+      setSurprise({ ...previous, exhausted: false });
+    } finally {
+      setSurpriseLoading(false);
     }
-    await handleSurpriseSubmit(surprise.args);
   }
 
   function handleSurpriseDismiss() {
@@ -1717,6 +1723,9 @@ export default function HomeScreen({ navigation }) {
                       (OccasionsScreen) and a genuine near-term event
                       exists. Purely informational context, never a gate
                       on the suggestion itself. */}
+                  {surprise.exhausted && (
+                    <Text style={styles.surpriseConnectedText}>That's everything nearby that fits right now.</Text>
+                  )}
                   {surprise.calendarHint && (
                     <Text style={styles.surpriseConnectedText}>
                       📅 You also have "{surprise.calendarHint.title}" coming up ({surprise.calendarHint.dateLabel})

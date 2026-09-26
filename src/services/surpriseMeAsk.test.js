@@ -26,7 +26,7 @@ const { resolveIntent } = require('./intentResolver');
 const { classifyCreateRequest } = require('./createAssistant');
 const {
   runSurpriseMe, surpriseAskFromText, stripSurprisePhrase, pickDiverse, surpriseCategories, surpriseBasis, saidCategory,
-  findConnectedPersonForPicks, SURPRISE_PICK_COUNT,
+  findConnectedPersonForPicks, SURPRISE_PICK_COUNT, surpriseScope, inSurpriseScope,
 } = require('./surpriseMe');
 
 const c = (id, category, score, extra = {}) => ({ type: 'gathering', id, category, score, title: id, ...extra });
@@ -67,7 +67,7 @@ describe('diverse, small, real', () => {
     expect(pickDiverse([])).toEqual([]);
     expect(pickDiverse([{ type: 'friend_request', id: 'x', score: 9 }])).toEqual([]); // not a surprise-eligible thing
   });
-  it('Shuffle never repeats what was shown', () => {
+  it('Shuffle avoids the immediately previous set', () => {
     const pool = [c('a', 'Coffee', 3), c('b', 'Hiking', 2), c('d', 'Museums', 1)];
     expect(pickDiverse(pool, 3, new Set(['gathering:a'])).map((p) => p.id)).toEqual(['b', 'd']);
   });
@@ -115,7 +115,8 @@ describe('the engine: every signal reaches the one resolver', () => {
     expect(calls.map((a) => a.category)).not.toContain('Bars & Lounges');
     for (const a of calls) {
       expect(a).toMatchObject({ dateWindow: 'tonight', budgetMax: 30, partyType: 'date', partySize: 2, rawText: 'tonight under $30 with my girlfriend' });
-      expect(a.attributes).toEqual(['date_friendly']);
+      expect(a.attributes).toEqual([]); // the AI's attributes are ignored; the resolver reads them from the words
+      expect(a.occasion).toBeNull();
     }
     expect(r.picks.length).toBeGreaterThan(0);
     expect(r.picks.length).toBeLessThanOrEqual(3);
@@ -158,11 +159,145 @@ describe('wiring', () => {
     expect(submit.indexOf('surpriseAskFromText(typedText)')).toBeLessThan(submit.indexOf('classifyCreateRequest(typedText)'));
     expect(home).toMatch(/handleSurpriseSubmit\(\{ text: typedText \}\)/);
     expect(home).toMatch(/A few ideas for you/);
-    expect(home).toMatch(/pickDiverse\(surprise\.pool, undefined, surprise\.shown\)/);
+    expect(home).toMatch(/runSurpriseMe\(\{ \.\.\.previous\.args, exclude: previous\.shown \}\)/);
   });
   it('weather is the resolver\'s own pass (no second weather logic in Surprise Me), and no time is invented', () => {
     const eng = fs.readFileSync(path.join(__dirname, 'surpriseMe.js'), 'utf8');
     expect(eng).not.toMatch(/getSocialForecast|weatherBias|askWeather/);
     expect(eng).toMatch(/const dateWindow = typed \? \(ask\.dateWindow \?\? null\) : when;/);
+  });
+});
+
+// Owner contract (2026-09-26, LOCKED): broad -> variety across categories; explicit -> variety within it; AI never narrows/broadens.
+describe('scope: only the words narrow, and variety follows the scope', () => {
+  it('reads the scope from the words', () => {
+    expect(surpriseScope('tonight')).toEqual({ level: 'broad' });
+    expect(surpriseScope('')).toEqual({ level: 'broad' });
+    expect(surpriseScope('with coffee')).toEqual({ level: 'tags', tags: ['Coffee'] });
+    expect(surpriseScope('with Italian food')).toEqual({ level: 'cuisine', cuisine: 'italian' });
+    expect(surpriseScope('with something to do tonight').level).toBe('groups');
+    expect(surpriseScope('with something to do tonight').groups).not.toContain('food_drink');
+    const two = surpriseScope('with coffee and a movie');
+    expect(two.level).toBe('tags');
+    expect(two.tags).toEqual(expect.arrayContaining(['Coffee', 'Movies']));
+  });
+  it('an explicit scope keeps only what is confirmed inside it', () => {
+    expect(inSurpriseScope(c('a', 'Coffee', 1), { level: 'tags', tags: ['Coffee'] })).toBe(true);
+    expect(inSurpriseScope(c('b', 'Hiking', 1), { level: 'tags', tags: ['Coffee'] })).toBe(false);
+    expect(inSurpriseScope({ type: 'business_availability', id: 'x', matchedAvailability: { cuisine: 'italian' } }, { level: 'cuisine', cuisine: 'italian' })).toBe(true);
+    expect(inSurpriseScope({ type: 'business_availability', id: 'y', businessPartner: { cuisine: 'thai' } }, { level: 'cuisine', cuisine: 'italian' })).toBe(false);
+    expect(inSurpriseScope(c('g', 'Restaurants', 1), { level: 'cuisine', cuisine: 'italian' })).toBe(false); // no declared cuisine
+    expect(inSurpriseScope(c('h', null, 1), { level: 'groups', groups: ['outdoors_nature'] })).toBe(false); // unknown is not confirmed
+  });
+  it('within one tag, the set spreads across businesses, never two from one', () => {
+    const pool = [
+      { type: 'business_availability', id: '1', partnerId: 'A', category: 'Coffee', score: 9 },
+      { type: 'business_availability', id: '2', partnerId: 'A', category: 'Coffee', score: 8 },
+      { type: 'business_availability', id: '3', partnerId: 'B', category: 'Coffee', score: 7 },
+      { type: 'business_availability', id: '4', partnerId: 'C', category: 'Coffee', score: 6 },
+    ];
+    expect(pickDiverse(pool, 3, new Set(), 'scoped').map((p) => p.id)).toEqual(['1', '3', '4']);
+  });
+  it('within a named group, the set spreads across its tags before repeating one', () => {
+    const pool = [c('h1', 'Hiking', 9), c('h2', 'Hiking', 8), c('m', 'Museums', 7), c('b', 'Bowling', 6)];
+    expect(pickDiverse(pool, 3, new Set(), 'scoped').map((p) => p.id)).toEqual(['h1', 'm', 'b']);
+  });
+});
+
+describe('the engine honours the scope', () => {
+  beforeEach(() => {
+    resolveIntent.mockReset();
+    classifyCreateRequest.mockReset();
+  });
+
+  it('"surprise me with coffee" = up to 3 coffee places, not coffee + dinner + activity; the AI cannot broaden it', async () => {
+    classifyCreateRequest.mockResolvedValue({ category: 'Restaurants', dateWindow: null, partyType: null });
+    resolveIntent.mockResolvedValue({
+      items: [
+        { type: 'business_availability', id: 'c1', partnerId: 'A', category: 'Coffee', score: 9 },
+        { type: 'business_availability', id: 'c2', partnerId: 'B', category: 'Coffee', score: 8 },
+        { type: 'gathering', id: 'd', category: 'Restaurants', score: 20 },
+        { type: 'business_availability', id: 'c3', partnerId: 'C', category: 'Coffee', score: 7 },
+      ],
+      experience: null,
+    });
+    const r = await runSurpriseMe({ text: 'surprise me with coffee' });
+    expect(resolveIntent.mock.calls.map(([a]) => a.category)).toEqual(['Coffee']);
+    expect(r.picks.map((p) => p.id)).toEqual(['c1', 'c2', 'c3']);
+    expect(r.basis).toBe('Coffee');
+  });
+
+  it('"surprise me tonight": the AI guessing coffee does not narrow it; interests spread across categories', async () => {
+    classifyCreateRequest.mockResolvedValue({ category: 'Coffee', cuisine: 'italian', attributes: ['quiet'], occasion: 'date_night', dateWindow: 'tonight', partyType: null });
+    resolveIntent.mockImplementation(async ({ category }) => ({ items: [c(`${category}-1`, category ?? 'Coffee', 5)], experience: null }));
+    const r = await runSurpriseMe({ text: 'surprise me tonight' });
+    const calls = resolveIntent.mock.calls.map(([a]) => a);
+    expect(calls.length).toBeGreaterThan(1);
+    for (const a of calls) expect(a).toMatchObject({ cuisine: null, attributes: [], occasion: null });
+    expect(new Set(r.picks.map((p) => p.category)).size).toBe(r.picks.length);
+    expect(r.basis).toBe('Picked from your interests · tonight');
+  });
+
+  it('"surprise me with Italian food" = only businesses that declared Italian', async () => {
+    classifyCreateRequest.mockResolvedValue({ category: null, dateWindow: null });
+    resolveIntent.mockResolvedValue({
+      items: [
+        { type: 'business_availability', id: 'i1', partnerId: 'A', category: 'Restaurants', matchedAvailability: { cuisine: 'italian' }, score: 5 },
+        { type: 'business_availability', id: 't1', partnerId: 'B', category: 'Restaurants', matchedAvailability: { cuisine: 'thai' }, score: 9 },
+        c('hike', 'Hiking', 9),
+      ],
+      experience: null,
+    });
+    const r = await runSurpriseMe({ text: 'surprise me with Italian food' });
+    expect(resolveIntent.mock.calls.map(([a]) => a.cuisine)).toEqual(['italian']);
+    expect(r.picks.map((p) => p.id)).toEqual(['i1']);
+    expect(r.basis).toBe('Italian');
+  });
+
+  it('"surprise me with something to do tonight" = things to do only, no food', async () => {
+    classifyCreateRequest.mockResolvedValue({ dateWindow: 'tonight' });
+    resolveIntent.mockResolvedValue({ items: [c('m', 'Museums', 5), c('bowl', 'Bowling', 4), c('cafe', 'Coffee', 9)], experience: null });
+    const r = await runSurpriseMe({ text: 'surprise me with something to do tonight' });
+    expect(r.picks.map((p) => p.id)).toEqual(['m', 'bowl']);
+    expect(r.basis).toBe('Things to do · tonight');
+  });
+
+  it('"surprise me with coffee and a movie": a real assembled plan replaces the picks', async () => {
+    classifyCreateRequest.mockResolvedValue({ dateWindow: 'tonight' });
+    const experience = { components: [{ key: 'x', items: [c('c', 'Coffee', 1)] }, { key: 'y', items: [c('mv', 'Movies', 1)] }] };
+    resolveIntent.mockResolvedValue({ items: [c('c', 'Coffee', 1), c('mv', 'Movies', 1)], experience });
+    const r = await runSurpriseMe({ text: 'surprise me with coffee and a movie tonight' });
+    expect(r.suggestion.kind).toBe('experience');
+    expect(r.picks).toEqual([]);
+  });
+
+  it('"for a date" appears only when the words established it', async () => {
+    classifyCreateRequest.mockResolvedValue({ dateWindow: null, partyType: null });
+    resolveIntent.mockResolvedValue({ items: [c('r', 'Wine', 5, { attributes: ['romantic'] })], experience: null });
+    const r = await runSurpriseMe({ text: 'surprise me with wine' });
+    expect(r.basis).not.toMatch(/date/);
+  });
+
+  it('Shuffle Again: a fresh fetch that avoids the previous set; nothing new = exhausted, never a repeat', async () => {
+    classifyCreateRequest.mockResolvedValue({ dateWindow: null });
+    resolveIntent.mockResolvedValue({ items: [c('a', 'Coffee', 3), c('b', 'Hiking', 2)], experience: null });
+    const first = await runSurpriseMe({ text: 'surprise me with coffee' });
+    expect(first.picks.map((p) => p.id)).toEqual(['a']);
+    const again = await runSurpriseMe({ text: 'surprise me with coffee', exclude: new Set(['gathering:a']) });
+    expect(again.suggestion).toBeNull();
+    expect(again.exhausted).toBe(true);
+    expect(resolveIntent).toHaveBeenCalledTimes(2); // fresh fetch each time
+  });
+});
+
+describe('typed surprises are not logged as searches', () => {
+  it('the engine never writes the search log, and Home routes a surprise before any logging', () => {
+    const eng = fs.readFileSync(path.join(__dirname, 'surpriseMe.js'), 'utf8');
+    expect(eng).not.toMatch(/recordIntentSubmission|intent_submissions|intent_outcomes|recordIntentOutcome/);
+    const home = fs.readFileSync(path.join(__dirname, '../screens/HomeScreen.js'), 'utf8');
+    const submit = home.slice(home.indexOf('async function handleHomeIntentSubmit'));
+    expect(submit.indexOf('surpriseAskFromText(typedText)')).toBeLessThan(submit.indexOf('recordIntentSubmission('));
+    const handler = home.slice(home.indexOf('async function handleSurpriseSubmit'), home.indexOf('function handleSurpriseDismiss'));
+    expect(handler).not.toMatch(/recordIntent/);
   });
 });
