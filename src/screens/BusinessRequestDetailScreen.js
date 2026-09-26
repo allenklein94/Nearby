@@ -27,6 +27,7 @@ import OfferReveal from '../components/OfferReveal';
 import OfferCustomerBody, { formatProposedTime } from '../components/OfferCustomerBody';
 import { visibleRedemption, validityLabel, isOfferExpired, availableWindowLabel } from '../utils/offerMedia';
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
+import { consumerOfferAction } from '../utils/primaryAction';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
@@ -1309,27 +1310,35 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   {showComparison && o.viewed_at ? (
                     <Text style={styles.offerViewedIndicator}>👁 You've seen this</Text>
                   ) : null}
-                  {request.status === 'open' && !hasWinner && isGroupPlanRequest && (
-                    <TouchableOpacity
-                      style={styles.acceptButton}
-                      onPress={() => navigation.navigate('GroupPlan', { proposalId: request.group_plan_id })}
-                      accessibilityLabel="Confirm this offer with the group"
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.acceptButtonText}>Confirm With the Group →</Text>
-                    </TouchableOpacity>
-                  )}
-                  {!hasWinner && !isGroupPlanRequest && canDo('request', request.status, 'accept_offer') && canDo('offer', offerLifecycleState(o), 'accept') && (
-                    <TouchableOpacity
-                      style={styles.acceptButton}
-                      onPress={() => handleAccept(o.id)}
-                      disabled={actingOfferId === o.id}
-                      accessibilityLabel={`Accept offer from ${o.brand_partners?.name ?? 'this business'}`}
-                      accessibilityRole="button"
-                    >
-                      {actingOfferId === o.id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>I'll take this one</Text>}
-                    </TouchableOpacity>
-                  )}
+                  {/* Item 73: the button comes from the offer's and the request's state (utils/primaryAction.js
+                      consumerOfferAction), including the request's own deadline -- never a raw status check here. */}
+                  {(() => {
+                    const action = consumerOfferAction(o, { request, hasWinner, isGroupPlanRequest });
+                    if (action.kind === 'confirm_with_group') {
+                      return (
+                        <TouchableOpacity
+                          style={styles.acceptButton}
+                          onPress={() => navigation.navigate('GroupPlan', { proposalId: request.group_plan_id })}
+                          accessibilityLabel="Confirm this offer with the group"
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.acceptButtonText}>{action.label}</Text>
+                        </TouchableOpacity>
+                      );
+                    }
+                    if (action.kind !== 'accept_offer') return null;
+                    return (
+                      <TouchableOpacity
+                        style={styles.acceptButton}
+                        onPress={() => handleAccept(o.id)}
+                        disabled={actingOfferId === o.id}
+                        accessibilityLabel={`Accept offer from ${o.brand_partners?.name ?? 'this business'}`}
+                        accessibilityRole="button"
+                      >
+                        {actingOfferId === o.id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>{action.label}</Text>}
+                      </TouchableOpacity>
+                    );
+                  })()}
                 </OfferReveal>
               )}
               {o.status === 'accepted' && (

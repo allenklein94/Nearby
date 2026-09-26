@@ -1,12 +1,11 @@
 import { peopleTonightBanner, countTonightSupply } from '../utils/meetTonight';
-import { gatheringViewerState } from '../utils/objectState';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { getNearbyMatches } from '../services/proximity';
 import { getFriendDiscoveryCandidates } from '../services/friendDiscovery';
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
-import { joinLabel } from '../utils/gatheringJoinMode';
+import { gatheringPrimaryAction } from '../utils/primaryAction';
 import ExperienceComponentList from '../components/ExperienceComponentList';
 import SponsoredSpotlightSlot from '../components/SponsoredSpotlightSlot';
 import usePersonalization from '../hooks/usePersonalization';
@@ -64,7 +63,7 @@ import StaggeredReveal from '../components/StaggeredReveal';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import { attendeeTotal, gatheringFullnessLabel, isGatheringFull } from '../utils/gatheringFullness';
+import { attendeeTotal, gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { gatheringSignalLine, PARTY_TYPE_LABELS } from '../constants/gatheringDisplaySignals';
 // P2 remediation item 8 (CLAUDE.md, "Discover information parity") --
 // the business/perk half of the same fix.
@@ -1226,15 +1225,6 @@ export default function DiscoverHubScreen({ navigation, route }) {
     return gatheringTimeBadge(g.scheduled_at) ?? 'RECOMMENDED';
   }
 
-  // The current user's own real RSVP status on this gathering, derived
-  // from the raw `attendees` array every gathering row already carries
-  // (enrichGatheringsWithDistanceAndSort, services/gatherings.js) -- not a
-  // new fetch. Mirrors GatheringDetailScreen's own myStatus values exactly.
-  function myAttendeeStatus(g) {
-    if (!myUserId) return null;
-    return (g.attendees ?? []).find((a) => a.user_id === myUserId)?.status ?? null;
-  }
-
   // Real action vocabulary, reused verbatim from GatheringDetailScreen.js
   // (its own accessibilityLabel / countdown-stat labels) rather than an
   // invented "View"/"Explore" catch-all: someone already RSVP'd sees their
@@ -1245,17 +1235,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // vs. capacity. Tapping either kind still opens GatheringDetailScreen to
   // actually perform the join -- a real task change, not just more info.
   function gatheringActionInfo(g) {
-    // One state from the shared helper (objectState.js), so an over gathering
-    // or a lapsed request never reads as live here while Detail says otherwise.
-    const viewer = gatheringViewerState({ myStatus: myAttendeeStatus(g), scheduled_at: g.scheduled_at });
-    if (viewer.expired) return { kind: 'state', label: 'Request expired' };
-    if (viewer.relation === 'attending') return { kind: 'state', label: 'Going' };
-    if (viewer.relation === 'waitlisted') return { kind: 'state', label: 'Waitlisted' };
-    if (viewer.relation === 'requested') return { kind: 'state', label: 'Requested' };
-    if (viewer.time === 'past') return { kind: 'state', label: 'Past' };
-    const isFull = isGatheringFull(g);
-    return { kind: 'cta', label: joinLabel(g, { isFull }) };
+    // Item 73: generated from the gathering's state for this viewer (utils/primaryAction.js), the same function Home and the
+    // Gatherings feed use: a join shows as the CTA; going / hosting / requested / waitlisted / past / expired show as a status
+    // badge; anything unknown is a plain View. Tapping either kind opens GatheringDetail, where the join itself happens.
+    const a = gatheringPrimaryAction(g, myUserId);
+    if (a.kind === 'join') return { kind: 'cta', label: a.label };
+    if (a.status) return { kind: 'state', label: a.status };
+    return { kind: 'cta', label: a.label };
   }
+
 
   // "TONIGHT" -> "Tonight". gatheringTimeBadge's own words, cased for a
   // breadcrumb line instead of an all-caps eyebrow badge -- same single

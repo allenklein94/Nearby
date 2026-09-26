@@ -1,7 +1,6 @@
 import { businessReplyTitle } from '../utils/offerCopy';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
-import { canDo, inviteLifecycleState } from '../utils/objectLifecycle';
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Image, Alert } from 'react-native';
 import FadeInState from '../components/FadeInState';
@@ -26,7 +25,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
-import { offerPrimaryAction } from '../utils/primaryAction';
+import { offerPrimaryAction, inviteAction } from '../utils/primaryAction';
 import { activityLoadNotice } from '../utils/homeLoadNotice';
 import { formatAgo } from '../utils/timeLabels';
 
@@ -455,7 +454,8 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                 <Text style={styles.textButtonLabel}>Accept</Text>
               </TouchableOpacity>
             </View>
-          ) : canDo('invite', inviteLifecycleState(item), 'dismiss') ? (
+          ) : inviteAction(item).kind === 'dismiss' ? (
+            // Item 73: the invite's action comes from its state (utils/primaryAction.js inviteAction).
             <View key={`social-${item.id}`} style={styles.row}>
               <View style={[styles.rowAvatar, styles.avatarPlaceholder]} />
               <View style={{ flex: 1 }}>
@@ -468,10 +468,10 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                 accessibilityLabel={`Dismiss expired invite to ${item.targetTitle}`}
                 accessibilityRole="button"
               >
-                <Text style={styles.declineTextButtonLabel}>Dismiss</Text>
+                <Text style={styles.declineTextButtonLabel}>{inviteAction(item).label}</Text>
               </TouchableOpacity>
             </View>
-          ) : (
+          ) : inviteAction(item).kind !== 'accept' ? null : (
             <View key={`social-${item.id}`} style={styles.row}>
               <View style={[styles.rowAvatar, styles.avatarPlaceholder]} />
               <View style={{ flex: 1 }}>
@@ -486,7 +486,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                 accessibilityLabel={`Decline invite to ${item.targetTitle}`}
                 accessibilityRole="button"
               >
-                <Text style={styles.declineTextButtonLabel}>Decline</Text>
+                <Text style={styles.declineTextButtonLabel}>{inviteAction(item).alternatives[0].label}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.textButton}
@@ -494,7 +494,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                 accessibilityLabel={`Accept invite to ${item.targetTitle}`}
                 accessibilityRole="button"
               >
-                <Text style={styles.textButtonLabel}>Accept</Text>
+                <Text style={styles.textButtonLabel}>{inviteAction(item).label}</Text>
               </TouchableOpacity>
             </View>
           ))}

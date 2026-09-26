@@ -72,6 +72,7 @@ import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import DemandNearYouCard from '../components/DemandNearYouCard';
 import TellNearbyBusinessCard from '../components/TellNearbyBusinessCard';
 import { describeDemandSignals } from '../utils/demandSignals';
+import { opportunityPrimaryAction, consumerOfferAction } from '../utils/primaryAction';
 import { BOOKING_MODE_OPTIONS, LEGACY_RESERVATION_ATTRIBUTE, bookingModeOf } from '../constants/bookingMode';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, OFFERED_OCCASION_OPTIONS, WEATHER_SETTING_OPTIONS, occasionLabel, occasionPhrase, dietaryLabel, requestedItemLabel } from '../constants/businessAttributes';
 import { planAddonLabel } from '../constants/planAddons';
@@ -4115,23 +4116,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       priceFits: fulfillmentPolicy?.active === true && budgetMeetsMinSpend(o.business_requests?.budget_max, fulfillmentPolicy?.min_spend_per_person),
                     });
                     const contextLine = [surpriseTag, planTimeLabel ? `🕐 ${planTimeLabel}` : null].filter(Boolean).join(' · ');
+                    const oppAction = opportunityPrimaryAction(o, { inFlight: offerInFlight.has(o.request_id) });
                     return (
                     <View key={o.id} style={styles.gatheringRow}>
-                      {o.status === 'pending' && (
-                        <>
-                          {offerInFlight.has(o.request_id) ? (
-                            <Text style={[styles.breakdownText, { fontWeight: '700' }]}>Reviewing your offer…</Text>
-                          ) : canRespondToOpportunity(o) ? (
-                            <Text style={[styles.breakdownText, { color: colors.info, fontWeight: '700' }]}>
-                              {matchReasons.length > 0 ? '✨ Good match for your business' : '✨ New opportunity'}
-                            </Text>
-                          ) : (
-                            // Not open any more (cancelled, expired, fulfilled or merged): no
-                            // "new opportunity" claim and no action buttons (those need 'open').
-                            <Text style={[styles.breakdownText, { fontWeight: '700' }]}>No longer open</Text>
-                          )}
-                        </>
-                      )}
+                      {/* Item 73: the card's action comes from the opportunity's state (utils/primaryAction.js). */}
+                      {oppAction.kind === 'send_offer' ? (
+                        <Text style={[styles.breakdownText, { color: colors.info, fontWeight: '700' }]}>
+                          {matchReasons.length > 0 ? '✨ Good match for your business' : '✨ New opportunity'}
+                        </Text>
+                      ) : oppAction.kind === 'status' ? (
+                        <Text style={[styles.breakdownText, { fontWeight: '700' }]}>{oppAction.status}</Text>
+                      ) : null}
                       <Text style={styles.offerTitle}>{card.title}</Text>
                       {!!o.business_requests?.gatherings?.title && o.is_directed === true && (
                         <Text style={styles.breakdownText}>“{o.business_requests.gatherings.title}”</Text>
@@ -4163,7 +4158,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           ))}
                         </View>
                       )}
-                      {canRespondToOpportunity(o) && !offerInFlight.has(o.request_id) && (
+                      {oppAction.kind === 'send_offer' && (
                         <>
                           <Text style={[styles.offerTitle, { marginTop: spacing.sm }]}>Can you accommodate this?</Text>
                           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.xs }}>
@@ -4174,7 +4169,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                               accessibilityLabel="Accept this request"
                               accessibilityRole="button"
                             >
-                              <Text style={styles.smallActionButtonText}>Accept & Offer</Text>
+                              <Text style={styles.smallActionButtonText}>{oppAction.label}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated, marginRight: spacing.sm, marginBottom: spacing.xs }]}
@@ -4183,7 +4178,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                               accessibilityLabel="Offer an alternative time"
                               accessibilityRole="button"
                             >
-                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Offer Alternative</Text>
+                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{oppAction.alternatives[0].label}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated, marginBottom: spacing.xs }]}
@@ -4193,7 +4188,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                               accessibilityRole="button"
                             >
                               {/* Opens a real reason picker (Phase 1), never a silent one-tap decline. */}
-                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Decline</Text>
+                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{oppAction.alternatives[1].label}</Text>
                             </TouchableOpacity>
                           </View>
                         </>
@@ -6427,7 +6422,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       {!!offerTitleInput.trim() && <Text style={[styles.offerTitle, { marginTop: spacing.xs }]}>{offerTitleInput.trim()}</Text>}
                       <OfferCustomerBody offer={previewOffer} localMedia={localMedia} />
                       <View style={[styles.submitButton, { opacity: 0.45, marginTop: spacing.sm }]} accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel="Preview of the customer's accept button">
-                        <Text style={styles.submitButtonText}>I'll take this one</Text>
+                        <Text style={styles.submitButtonText}>{consumerOfferAction({ status: 'offered' }, { request: { status: 'open' } }).label}</Text>
                       </View>
                     </View>
                     {!!offerRedemptionInput.trim() && <Text style={styles.helperText}>"How to redeem" is shown to the customer once they accept.</Text>}

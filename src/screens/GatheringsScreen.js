@@ -9,7 +9,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert
 import { PullToRefresh, FilterTransition, TapActiveChip, NLoader, SkeletonFeed } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
-import { joinLabel } from '../utils/gatheringJoinMode';
+import { gatheringPrimaryAction } from '../utils/primaryAction';
 import { getNearbyGatherings, searchGatherings, expressInterest, getMyTopGatheringCategories } from '../services/gatherings';
 import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { getMyFriends } from '../services/friends';
@@ -38,7 +38,7 @@ import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { getSocialForecast } from '../services/homeDashboard';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { DATE_OPTIONS, matchesDateFilter } from '../utils/gatheringDateFilter';
-import { attendeeTotal, gatheringFullnessLabel, isGatheringFull } from '../utils/gatheringFullness';
+import { attendeeTotal, gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { useTheme } from '../context/ThemeContext';
 import { formatDateTime } from '../utils/timeLabels';
 import { countLabel } from '../utils/plural';
@@ -144,8 +144,11 @@ export default function GatheringsScreen({ navigation, route }) {
   const [mapStoryViewerTarget, setMapStoryViewerTarget] = useState(null);
   const [intentModalGathering, setIntentModalGathering] = useState(null);
   const [coverPhotoUrls, setCoverPhotoUrls] = useState({});
+  // Item 73: the card's action comes from the gathering's state for THIS viewer, so the viewer's id is needed.
+  const [myUserId, setMyUserId] = useState(null);
 
   const load = useCallback(async () => {
+    supabase.auth.getSession().then(({ data }) => setMyUserId(data?.session?.user?.id ?? null)).catch(() => {});
     const [nearbyResults, topCats] = await Promise.all([
       getNearbyGatherings(radiusTier),
       getMyTopGatheringCategories(),
@@ -999,30 +1002,24 @@ export default function GatheringsScreen({ navigation, route }) {
                 })()}
 
                 <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                  <TouchableOpacity
-                    style={[styles.interestButton, { backgroundColor: categoryStyle.color, flex: 1 }]}
-                    onPress={() => setIntentModalGathering(item)}
-                    activeOpacity={0.85}
-                    accessibilityLabel={
-                      isGatheringFull(item)
-                        ? 'Join Waitlist'
-                        : joinLabel(item)
-                    }
-                    accessibilityRole="button"
-                  >
-                    {/* Action-verb audit (item 33, 2026-09-11): this used to
-                        always say "I'm Interested" regardless of the real
-                        gathering state, while GatheringDetailScreen's
-                        identical action already used the real three-way
-                        Join Gathering/Request to Join/Join Waitlist label
-                        for the exact same underlying gathering_interest
-                        insert -- same computation now applied here too. */}
-                    <Text style={styles.interestButtonText}>
-                      {isGatheringFull(item)
-                        ? 'Join Waitlist'
-                        : joinLabel(item)}
-                    </Text>
-                  </TouchableOpacity>
+                  {/* Item 73: the action is generated from the gathering's state for this viewer (utils/primaryAction.js):
+                      Join / Request to Join / Join Waitlist open the join confirmation; going, hosting, requested, past or
+                      unknown open the gathering instead of offering a join that would be wrong. */}
+                  {(() => {
+                    const action = gatheringPrimaryAction(item, myUserId);
+                    const label = action.kind === 'join' ? action.label : action.status && action.kind !== 'view_plan' ? action.status : action.label;
+                    return (
+                      <TouchableOpacity
+                        style={[styles.interestButton, { backgroundColor: action.kind === 'join' ? categoryStyle.color : colors.surfaceElevated, flex: 1 }]}
+                        onPress={() => (action.kind === 'join' ? setIntentModalGathering(item) : navigation.navigate('GatheringDetail', { gatheringId: item.id }))}
+                        activeOpacity={0.85}
+                        accessibilityLabel={label}
+                        accessibilityRole="button"
+                      >
+                        <Text style={[styles.interestButtonText, action.kind !== 'join' && { color: colors.textPrimary }]}>{label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })()}
                   {myFriendIds.size > 0 && (
                     <TouchableOpacity
                       style={styles.inviteFriendsButton}
@@ -1072,11 +1069,7 @@ export default function GatheringsScreen({ navigation, route }) {
           setIntentModalGathering(null);
           if (gathering) handleExpressInterest(gathering.id);
         }}
-        confirmLabel={
-          isGatheringFull(intentModalGathering)
-            ? 'Join Waitlist'
-            : joinLabel(intentModalGathering)
-        }
+        confirmLabel={intentModalGathering ? gatheringPrimaryAction(intentModalGathering, myUserId).label : ''}
       />
       <StoryViewerModal
         visible={!!mapStoryViewerTarget}

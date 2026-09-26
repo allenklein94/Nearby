@@ -7,16 +7,18 @@ import path from 'path';
 // opportunity" claim.
 const read = (f) => fs.readFileSync(path.join(__dirname, '..', 'screens', f), 'utf8');
 
+// Item 73: both rules now live in utils/primaryAction.js (consumerOfferAction, opportunityPrimaryAction) and are tested there on
+// behavior (utils/stateDrivenCta.test.js: open request required, deadline respected, closed = "No longer open"). These guards
+// only check the screens still go through them.
 test('consumer offer actions require an open request', () => {
   const src = read('BusinessRequestDetailScreen.js');
-  expect(src).toMatch(/request\.status === 'open' && !hasWinner && isGroupPlanRequest/);
-  expect(src).toMatch(/canDo\('request', request\.status, 'accept_offer'\) && canDo\('offer', offerLifecycleState\(o\), 'accept'\)/);
+  expect(src).toMatch(/consumerOfferAction\(o, \{ request, hasWinner, isGroupPlanRequest \}\)/);
 });
 
 test('a closed pending opportunity is labelled, not called new', () => {
   const src = read('BusinessDashboardScreen.js');
-  expect(src).toMatch(/No longer open/);
-  expect(src).toMatch(/canRespondToOpportunity\(o\) \? \(\s*<Text[^>]*>\s*\{matchReasons\.length > 0/);
+  expect(src).toMatch(/opportunityPrimaryAction\(o, \{ inFlight/);
+  expect(src).toMatch(/oppAction\.kind === 'send_offer' \? \(\s*<Text[^>]*>\s*\{matchReasons\.length > 0/);
 });
 
 test('surprise reveal is not offered on a cancelled plan', () => {

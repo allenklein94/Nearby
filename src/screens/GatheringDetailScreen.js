@@ -61,7 +61,7 @@ import { formatDateTime } from '../utils/timeLabels';
 import { attendeeTotal, getGatheringFullness, gatheringBusinessPartySize } from '../utils/gatheringFullness';
 import { countLabel } from '../utils/plural';
 import { spacing, radius, typography } from '../theme';
-import { needsApproval, joinLabel } from '../utils/gatheringJoinMode';
+import { gatheringJoinAction } from '../utils/primaryAction';
 import { expiredDateLabel } from '../utils/inviteExpiry';
 import { gatheringViewerState } from '../utils/objectState';
 import { canDo, gatheringLifecycleState } from '../utils/objectLifecycle';
@@ -1214,11 +1214,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 onPress={() => setIntentModalVisible(true)}
                 disabled={joining}
                 activeOpacity={0.85}
-                accessibilityLabel={joinLabel(gathering, { isFull: gathering.isFull })}
+                accessibilityLabel={gatheringJoinAction(gathering, { isFull: gathering.isFull, interested: gathering.myInterested === true }).label}
                 accessibilityRole="button"
               >
                 <Text style={styles.joinButtonText}>
-                  {joining ? 'Joining...' : gathering.isFull ? 'JOIN WAITLIST' : gathering.myInterested ? (needsApproval(gathering) ? 'REQUEST TO JOIN' : "I'M GOING") : (needsApproval(gathering) ? 'REQUEST TO JOIN' : 'JOIN GATHERING')}
+                  {joining ? 'Joining...' : gatheringJoinAction(gathering, { isFull: gathering.isFull, interested: gathering.myInterested === true }).label.toUpperCase()}
                 </Text>
               </TouchableOpacity>
               {can('interested') && (
@@ -1283,7 +1283,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
         gathering={gathering}
         onClose={() => setIntentModalVisible(false)}
         onConfirm={handleConfirmIntent}
-        confirmLabel={joinLabel(gathering, { isFull: gathering.isFull })}
+        confirmLabel={gatheringJoinAction(gathering, { isFull: gathering.isFull }).label}
       />
 
       <InviteFriendsModal
