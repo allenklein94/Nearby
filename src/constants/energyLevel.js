@@ -26,7 +26,7 @@ export const TAG_ENERGY = {
   Museums: ['low_key'], Bakeries: ['low_key'], Walking: ['low_key'], Gardening: ['low_key'], 'Board Games': ['low_key', 'social'],
   Wine: ['low_key', 'romantic'], Wineries: ['low_key', 'romantic'], 'Fine Dining': ['romantic'],
   Trivia: ['social'], Karaoke: ['social', 'high_energy'], 'Happy Hour': ['social'], 'Bars & Lounges': ['social'], Breweries: ['social'], Brunch: ['social'],
-  Fitness: ['active'], Running: ['active'], Pickleball: ['active'], Tennis: ['active'], Cycling: ['active'], Swimming: ['active'],
+  Fitness: ['active'], Running: ['active'], Pickleball: ['active'], Padel: ['active'], Tennis: ['active'], Cycling: ['active'], Swimming: ['active'],
   Basketball: ['active'], Soccer: ['active'], Volleyball: ['active'], Skating: ['active'], 'Martial Arts': ['active'], Gyms: ['active'], Hiking: ['active', 'adventurous'],
   Nightclubs: ['high_energy'], DJs: ['high_energy'], Dancing: ['high_energy'], Concerts: ['high_energy'], Nightlife: ['high_energy'], Festivals: ['high_energy', 'social'], Arcade: ['high_energy', 'social'],
   Adventure: ['adventurous'], Climbing: ['active', 'adventurous'], 'Water Sports': ['adventurous'], Surfing: ['adventurous'], Diving: ['adventurous'], Snorkeling: ['adventurous'], Camping: ['adventurous'], 'Escape Rooms': ['adventurous', 'social'],

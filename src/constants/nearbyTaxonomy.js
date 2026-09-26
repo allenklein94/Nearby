@@ -13,6 +13,7 @@
 //   semantic tags (attributes) businessAttributes.BUSINESS_ATTRIBUTE_OPTIONS the attribute CHECKs (a migration)
 //   occasions                 businessAttributes.OCCASION_OPTIONS           the occasion CHECKs (a migration)
 //   user-interest mappings    hobbyRelations (related tags, hobby->attrs)   (client-side ranking only, by rule)
+//   related activities        activityDictionary (sibling, never a synonym)  (client-side ranking only, by rule)
 //   intent mappings           intentRoutes.INTENT_ROUTES                    (client-side, deterministic)
 //   activity types / formats  the leaf tags themselves (no second list)     --
 import { CATEGORY_GROUPS } from './gatheringCategories';
@@ -21,6 +22,7 @@ import { tagsForPhrase, expandSearchTerms, SYNONYM_GROUPS } from './categorySyno
 import { HOBBY_RELATIONS, HOBBY_ATTRIBUTES } from './hobbyRelations';
 import { BUSINESS_ATTRIBUTE_OPTIONS, OCCASION_OPTIONS } from './businessAttributes';
 import { INTENT_ROUTES } from './intentRoutes';
+import { relatedActivities } from './activityDictionary';
 
 export { CATEGORY_GROUPS, canonicalGroupForTag, tagsForGroup, tagsForPhrase, expandSearchTerms, INTENT_ROUTES, OCCASION_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS };
 
@@ -40,6 +42,7 @@ export function describeTag(tag) {
     synonyms,
     relatedTags,
     relatedFromHobbies: relatedFrom,
+    relatedActivities: relatedActivities(tag),
     suitedAttributes: HOBBY_ATTRIBUTES[tag] ?? [],
   };
 }

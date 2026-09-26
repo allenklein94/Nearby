@@ -24,6 +24,11 @@ export const SYNONYM_GROUPS = [
   { tags: ['Yoga'], phrases: ['yoga studio', 'hot yoga', 'vinyasa'] },
   { tags: ['Pilates'], phrases: ['pilates studio', 'reformer'] },
   { tags: ['Martial Arts'], phrases: ['karate', 'judo', 'jiu jitsu', 'bjj', 'taekwondo', 'boxing', 'mma', 'dojo'] },
+  { tags: ['Pickleball'], phrases: ['pickle ball', 'pickleball court', 'paddle'] },
+  { tags: ['Padel'], phrases: ['padel tennis', 'padel court', 'padel club'] },
+  { tags: ['Tennis'], phrases: ['tennis court', 'tennis club'] },
+  { tags: ['Paddleboarding'], phrases: ['paddleboard', 'paddle board', 'paddle boarding', 'stand up paddle', 'sup board'] },
+  { tags: ['Kayaking'], phrases: ['kayak'] },
   { tags: ['Climbing'], phrases: ['rock climbing', 'bouldering', 'climbing gym'] },
   { tags: ['Mini Golf'], phrases: ['miniature golf', 'putt putt', 'crazy golf'] },
   { tags: ['Golf'], phrases: ['driving range', 'golf course', 'indoor golf', 'golf simulator'] },
@@ -75,6 +80,12 @@ function phraseMap() {
   return m;
 }
 
+// The canonical tag whose own name has this key, or null.
+function ownTagOf(k) {
+  for (const g of CATEGORY_GROUPS) for (const t of [...g.tags, ...(g.businessOnlyTags ?? [])]) if (key(t) === k) return t;
+  return null;
+}
+
 // Synonyms taught centrally (category_synonyms, migration 20270191) arrive here on sign-in. Only a phrase whose tag
 // exists in the taxonomy is kept; nothing is ever removed, and the built-in rows above always work with no network.
 export function registerSynonyms(rows) {
@@ -84,6 +95,9 @@ export function registerSynonyms(rows) {
     if (typeof r?.phrase !== 'string' || !known.has(r?.tag)) continue;
     const k = key(r.phrase);
     if (k.length < 2) continue;
+    // A canonical tag's own name is never a synonym of a DIFFERENT tag ("padel" can never become Pickleball).
+    const own = ownTagOf(k);
+    if (own && own !== r.tag) continue;
     const cur = PHRASE_TO_TAGS.get(k) ?? [];
     if (cur.includes(r.tag)) continue;
     PHRASE_TO_TAGS.set(k, [...cur, r.tag]);

@@ -50,6 +50,7 @@ export const CATEGORY_STYLES = {
   'Happy Hour': { icon: '🍹', color: PALETTE[5] },
 
   Pickleball: { icon: '🏓', color: PALETTE[0] },
+  Padel: { icon: '🎾', color: PALETTE[0] },
   Tennis: { icon: '🎾', color: PALETTE[2] },
   Cycling: { icon: '🚴', color: PALETTE[3] },
   Swimming: { icon: '🏊', color: PALETTE[4] },

@@ -11,20 +11,20 @@ const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
 describe('a new category flows into every vocabulary the app reads', () => {
   test('registerCategoryTag merges in place and everything downstream sees it', () => {
-    expect(INTEREST_OPTIONS).not.toContain('Padel');
-    expect(registerCategoryTag('Padel', 'activities_recreation')).toBe(true);
-    expect(INTEREST_OPTIONS).toContain('Padel');
-    expect(PERSONAL_INTEREST_OPTIONS).toContain('Padel');
-    expect(subcategoryOptionsFor('activities_recreation')).toContain('Padel');
-    expect(groupForTag('Padel').key).toBe('activities_recreation');
-    expect(canonicalizeInterests(['padel'])).toEqual(['Padel']); // profile interests / intent canonicalization
-    expect(canonicalGroupForTag('Padel')).toBe('activities_recreation'); // business <-> tag mapping
-    expect(servedTags({ category: 'activities_recreation' })).toContain('Padel'); // a tagless business serves its group
-    expect(categoryStyleFor('Padel').icon).toBeTruthy(); // falls back to the group's icon
+    expect(INTEREST_OPTIONS).not.toContain('Axe Throwing');
+    expect(registerCategoryTag('Axe Throwing', 'activities_recreation')).toBe(true);
+    expect(INTEREST_OPTIONS).toContain('Axe Throwing');
+    expect(PERSONAL_INTEREST_OPTIONS).toContain('Axe Throwing');
+    expect(subcategoryOptionsFor('activities_recreation')).toContain('Axe Throwing');
+    expect(groupForTag('Axe Throwing').key).toBe('activities_recreation');
+    expect(canonicalizeInterests(['axe throwing'])).toEqual(['Axe Throwing']); // profile interests / intent canonicalization
+    expect(canonicalGroupForTag('Axe Throwing')).toBe('activities_recreation'); // business <-> tag mapping
+    expect(servedTags({ category: 'activities_recreation' })).toContain('Axe Throwing'); // a tagless business serves its group
+    expect(categoryStyleFor('Axe Throwing').icon).toBeTruthy(); // falls back to the group's icon
   });
   test('idempotent, and never invents a group or accepts junk', () => {
     const before = INTEREST_OPTIONS.length;
-    expect(registerCategoryTag('Padel', 'activities_recreation')).toBe(false);
+    expect(registerCategoryTag('Axe Throwing', 'activities_recreation')).toBe(false);
     expect(registerCategoryTag('Pickleball', 'pets')).toBe(false); // existing tag is never moved
     expect(registerCategoryTag('Zumba', 'made_up_group')).toBe(false);
     expect(registerCategoryTag('', 'pets')).toBe(false);

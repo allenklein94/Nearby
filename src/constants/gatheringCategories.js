@@ -50,7 +50,7 @@ export const CATEGORY_GROUPS = [
   },
   {
     key: 'activities_recreation', icon: '🏃', label: 'Activities & Recreation',
-    tags: ['Fitness', 'Yoga', 'Sports', 'Running', 'Pickleball', 'Tennis', 'Cycling', 'Swimming', 'Climbing', 'Golf', 'Bowling', 'Gyms', 'Pilates', 'Walking', 'Basketball', 'Soccer', 'Volleyball', 'Skating', 'Martial Arts', 'Water Sports', 'Boating', 'Adventure', 'Cars'],
+    tags: ['Fitness', 'Yoga', 'Sports', 'Running', 'Pickleball', 'Padel', 'Tennis', 'Cycling', 'Swimming', 'Climbing', 'Golf', 'Bowling', 'Gyms', 'Pilates', 'Walking', 'Basketball', 'Soccer', 'Volleyball', 'Skating', 'Martial Arts', 'Water Sports', 'Boating', 'Adventure', 'Cars'],
   },
   {
     key: 'entertainment_nightlife', icon: '🎵', label: 'Entertainment & Nightlife',

@@ -6,6 +6,7 @@
 //   - ranking only: nothing is hidden or added to a list, and the reason says what it is ("Related to your interest in X");
 //   - client-side only: no server, no business ever sees it. Every tag must be a real canonical tag (guarded by a test).
 import { canonicalizeInterests } from './interestGraph';
+import { relatedActivities } from './activityDictionary';
 
 export const RELATED_POINTS = 2;
 
@@ -32,7 +33,10 @@ export function relatedHobbyFor(tag, declared = []) {
   if (!tag) return null;
   const mine = canonicalizeInterests(declared);
   if (mine.includes(tag)) return null;
-  return mine.find((h) => (HOBBY_RELATIONS[h] ?? []).includes(tag)) ?? null;
+  return mine.find((h) => (HOBBY_RELATIONS[h] ?? []).includes(tag))
+    // A sibling activity (activityDictionary: Padel for a Pickleball player) is related the same weak, labeled way.
+    ?? mine.find((h) => relatedActivities(h).includes(tag))
+    ?? null;
 }
 
 export function relatedInterestReason(hobby) {

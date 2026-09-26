@@ -19,7 +19,7 @@ export const SKILL_LEVEL_KEYS = SKILL_LEVELS.map((s) => s.key);
 export const skillLabel = (key) => SKILL_LEVELS.find((s) => s.key === key)?.label ?? null;
 
 // Real canonical tags that are competitive/recreational sports (test-verified). Fitness, Yoga, Running... are activities.
-export const SPORT_TAGS = ['Sports', 'Pickleball', 'Tennis', 'Basketball', 'Soccer', 'Volleyball', 'Golf', 'Bowling', 'Martial Arts'];
+export const SPORT_TAGS = ['Sports', 'Pickleball', 'Padel', 'Tennis', 'Basketball', 'Soccer', 'Volleyball', 'Golf', 'Bowling', 'Martial Arts'];
 const ACTIVITY_GROUPS = ['activities_recreation', 'outdoors_nature'];
 const CLASS_FORMATS = ['class', 'workshop'];
 

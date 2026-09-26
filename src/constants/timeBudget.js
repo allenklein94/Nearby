@@ -11,7 +11,7 @@ export const TAG_TYPICAL_MINUTES = {
   Restaurants: 90, 'Fine Dining': 120, 'Happy Hour': 90, 'Bars & Lounges': 90, Breweries: 90, Wineries: 120,
   Movies: 120, Theater: 150, Concerts: 180, 'Live Music': 120, Comedy: 90, Karaoke: 120, Trivia: 120, 'Board Games': 120,
   Bowling: 90, 'Mini Golf': 90, Arcade: 60, 'Escape Rooms': 60, Golf: 240,
-  Yoga: 60, Pilates: 60, Fitness: 60, Running: 45, Walking: 45, Pickleball: 90, Tennis: 90, Climbing: 120, Swimming: 60,
+  Yoga: 60, Pilates: 60, Fitness: 60, Running: 45, Walking: 45, Pickleball: 90, Padel: 90, Tennis: 90, Climbing: 120, Swimming: 60,
   Hiking: 150, Kayaking: 120, Parks: 60,
   Museums: 120, 'Art Galleries': 60, Zoos: 180, Aquariums: 120, 'Amusement Park': 360,
   'Cooking Class': 150, Workshops: 120, Massage: 60, 'Spa Day': 180,
