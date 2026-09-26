@@ -6,6 +6,9 @@
 // The tree (categoryTree.js) stops at cuisine: group -> tag -> cuisine, three levels, nothing below.
 import { CATEGORY_GROUPS } from './gatheringCategories';
 import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS } from './businessAttributes';
+import { SKILL_LEVELS } from './skillLevel';
+import { RELATED_ACTIVITY_GROUPS } from './activityDictionary';
+import { ACTIVITY_FORMATS } from './activityFormat';
 import { childrenOf, CUISINE_PHRASES, cuisineForSearch, cuisineFromText, searchScope } from './categoryTree';
 
 const ALL_TAGS = CATEGORY_GROUPS.flatMap((g) => [...g.tags, ...(g.businessOnlyTags ?? [])]);
@@ -64,3 +67,41 @@ describe('the ontology stays flat (item 77)', () => {
     }
   });
 });
+
+// Item 78 (owner, LOCKED 2026-09-26): the same for sports. Never Activities -> Sports -> Ball Sports -> Racquet -> Tennis ->
+// Outdoor Tennis -> Casual Tennis. Instead: category group (Activities & Recreation) -> activity tag (Tennis), and the
+// qualities are separate flat facts: skill level (host-declared: Casual / Beginner / All levels...), indoor/outdoor (from the
+// tag, askFacets.environmentOf), format (open play, tournament...). Related sports (Pickleball / Padel / Tennis) are an
+// UNNAMED sibling group (activityDictionary), never a "Racquet Sports" parent; SPORT_TAGS is a flat list, not a level.
+
+describe('sports stay flat (item 78)', () => {
+  const tagSet = new Set(ALL_TAGS.map(lower));
+  const QUALIFIERS = ['outdoor', 'indoor', 'casual', 'competitive', 'beginner', 'intermediate', 'advanced', 'recreational', 'pro',
+    ...SKILL_LEVELS.map((l) => lower(l.label)), ...ACTIVITY_FORMATS.map((f) => lower(f.label))];
+  it('no intermediate sport family is a tag (Ball Sports, Racquet Sports...)', () => {
+    for (const t of ['ball sports', 'racquet sports', 'racket sports', 'paddle sports', 'court sports', 'team sports', 'combat sports']) {
+      expect(tagSet.has(t)).toBe(false);
+    }
+  });
+  // Pre-existing, kept on purpose (item 66: removing a stored tag breaks data; it carries its format through TAG_FORMAT).
+  // Adding to this list needs an owner decision.
+  const LEGACY_QUALIFIED_TAGS = ['cooking class'];
+  it('no tag is a qualifier + another tag (Outdoor Tennis, Casual Tennis, Beginner Yoga, Tennis Tournament)', () => {
+    for (const t of ALL_TAGS.map(lower).filter((x) => !LEGACY_QUALIFIED_TAGS.includes(x))) {
+      for (const q of QUALIFIERS) {
+        if (t.startsWith(`${q} `)) expect(tagSet.has(t.slice(q.length + 1))).toBe(false);
+        if (t.endsWith(` ${q}`)) expect(tagSet.has(t.slice(0, -(q.length + 1)))).toBe(false);
+      }
+    }
+  });
+  it('an activity tag has no children in the tree (qualities are facts, not levels)', () => {
+    for (const t of ['Tennis', 'Pickleball', 'Padel', 'Basketball', 'Yoga', 'Hiking']) expect(childrenOf({ tag: t })).toEqual([]);
+  });
+  it('related sports are unnamed sibling groups, never a parent tag', () => {
+    for (const g of RELATED_ACTIVITY_GROUPS) {
+      expect(Array.isArray(g)).toBe(true);
+      for (const t of g) expect(typeof t).toBe('string');
+    }
+  });
+});
+
