@@ -13,9 +13,27 @@ export function cleanAgeRange(min, max) {
   return { min: a, max: b };
 }
 
+// Quick bands (owner decision 2026-09-26): convenience presets over the SAME range, never a second field or taxonomy.
+// All ages = from 0 with no upper end, an explicit declaration that is distinct from unset (both null = not said).
+// It describes suitability only; it never promises the business admits everyone (its own rules still apply).
+export const AGE_BANDS = [
+  { key: 'all_ages', label: 'All ages', min: 0, max: null, reason: 'Suited to all ages' },
+  { key: 'kids', label: 'Kids (up to 12)', min: 0, max: 12, reason: 'Suited to kids up to 12' },
+  { key: 'teens', label: 'Teens (13–17)', min: 13, max: 17, reason: 'Suited to teens 13–17' },
+];
+
+// The band a stored range is exactly equal to, else null (an exact range such as 3–8, or nothing declared).
+export function ageBandOf(min, max) {
+  const { min: a, max: b } = cleanAgeRange(min, max);
+  if (a == null && b == null) return null;
+  return AGE_BANDS.find((band) => band.min === a && band.max === b) ?? null;
+}
+
 export function ageRangeLabel(min, max) {
   const { min: a, max: b } = cleanAgeRange(min, max);
   if (a == null && b == null) return null;
+  const band = ageBandOf(a, b);
+  if (band) return band.label;
   if (a != null && b != null) return a === b ? `Age ${a}` : `Ages ${a}–${b}`;
   return a != null ? `Ages ${a}+` : `Up to age ${b}`;
 }
@@ -48,7 +66,8 @@ export function applySuitedAgesToCandidates(candidates, ages) {
     const fits = ages.map((a) => ageFits(c?.ageMin, c?.ageMax, a));
     if (fits.every((f) => f === null)) return c;
     const delta = fits.every((f) => f === true) ? AGE_FIT_POINTS : AGE_MISMATCH_POINTS;
-    const reason = delta > 0 ? `Suited to ${ageRangeLabel(c.ageMin, c.ageMax).replace(/^Age /, 'age ').replace(/^Ages /, 'ages ')}` : null;
+    const band = ageBandOf(c.ageMin, c.ageMax);
+    const reason = delta > 0 ? (band ? band.reason : `Suited to ${ageRangeLabel(c.ageMin, c.ageMax).replace(/^Age /, 'age ').replace(/^Ages /, 'ages ')}`) : null;
     return { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle };
   });
 }
