@@ -16,6 +16,7 @@ import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { activitiesFromText } from '../constants/activityLayer';
 import { attributesFromAsk, parseAskFacets } from '../constants/askFacets';
+import { wordsBackedAttributes } from '../constants/businessCapabilities';
 import { energiesFromText } from '../constants/energyLevel';
 import { commitmentAsk } from '../constants/commitmentLevel';
 import { spontaneityOf } from '../constants/spontaneity';
@@ -144,7 +145,8 @@ export function resolveAsk(text, ai = null) {
   const budgetMax = wordBudget != null ? set('budgetMax', wordBudget, 'words') : set('budgetMax', aiBudget, 'ai');
 
   // CHARACTERISTICS: the AI's closed-vocabulary attributes plus the words' own.
-  const attributes = [...new Set([...(Array.isArray(a.attributes) ? a.attributes : []), ...attributesFromAsk(t, { partyType })])];
+  // Item 80: an AI private_dining / catering the words do not back is dropped (a large party is not a private-event ask).
+  const attributes = wordsBackedAttributes([...new Set([...(Array.isArray(a.attributes) ? a.attributes : []), ...attributesFromAsk(t, { partyType })])], t);
   set('attributes', attributes, Array.isArray(a.attributes) && a.attributes.length ? 'ai' : 'words');
 
   const activities = set('activities', activitiesFromText(t), 'words');

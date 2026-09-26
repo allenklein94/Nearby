@@ -21,7 +21,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityTimeRange, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityTimeRange, setBusinessPriorityOccasions, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize } from '../services/brandOffers';
+import { cleanMaxGroupSize, maxGroupSizeProblem } from '../constants/businessCapabilities';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
 // P2 remediation item 11 (CLAUDE.md) -- reuse the admin queue's own real
@@ -282,6 +283,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [moreOffersOpen, setMoreOffersOpen] = useState(false);
   const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState(null);
+  // Item 80: the "Largest group you can host" field; null = not yet edited (shows the saved value).
+  const [maxGroupDraft, setMaxGroupDraft] = useState(null);
+  const [savingMaxGroup, setSavingMaxGroup] = useState(false);
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [offerRedemptionCounts, setOfferRedemptionCounts] = useState({});
@@ -1104,6 +1108,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setSelectedPartner((prev) => ({ ...prev, price_level: current }));
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePickPriceLevel(key) });
     }
+  }
+
+  // Item 80: largest group the business can host (total people). Blank = not said; never guessed. Saved on tap.
+  async function handleSaveMaxGroupSize() {
+    if (!selectedPartner || maxGroupDraft === null) return;
+    const problem = maxGroupSizeProblem(maxGroupDraft);
+    if (problem) { Alert.alert('Check the group size', problem); return; }
+    const next = cleanMaxGroupSize(maxGroupDraft);
+    setSavingMaxGroup(true);
+    try {
+      await setBusinessMaxGroupSize(selectedPartner.id, next);
+      setSelectedPartner((prev) => ({ ...prev, max_group_size: next }));
+      setMaxGroupDraft(null);
+    } catch (e) {
+      presentRecoverableError(Alert, { what: 'save your group size', error: e, onRetry: () => handleSaveMaxGroupSize() });
+    }
+    setSavingMaxGroup(false);
   }
 
   // Item 50: suited ages (descriptive, 0-18). Saves per tap; a failure puts the previous range back.
@@ -5413,6 +5434,34 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 </View>
                 <Text style={styles.helperText}>
                   Free means no cost to take part. Helps you appear when someone asks for something free or budget-friendly. Tap again to clear.
+                </Text>
+                {/* Item 80: largest group (total people), owner-declared; used only to decide which requests reach you. */}
+                <Text style={styles.sectionHeader}>Largest group you can host</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs }}>
+                  <TextInput
+                    style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
+                    placeholder="Not set"
+                    placeholderTextColor={colors.textTertiary}
+                    value={maxGroupDraft ?? (selectedPartner?.max_group_size != null ? String(selectedPartner.max_group_size) : '')}
+                    onChangeText={(t) => setMaxGroupDraft(t.replace(/[^0-9]/g, ''))}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    accessibilityLabel="Largest group you can host, total people"
+                  />
+                  {maxGroupDraft !== null && (
+                    <TouchableOpacity
+                      style={[styles.chip, styles.chipSelected, { marginLeft: spacing.sm }]}
+                      onPress={handleSaveMaxGroupSize}
+                      disabled={savingMaxGroup}
+                      accessibilityRole="button"
+                      accessibilityLabel="Save group size"
+                    >
+                      <Text style={[styles.chipText, styles.chipTextSelected]}>{savingMaxGroup ? 'Saving…' : 'Save'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <Text style={styles.helperText}>
+                  Total people, counting everyone. Requests for larger groups go to businesses that can host them first. Leave blank if it varies.
                 </Text>
                 {/* Suited ages (item 50): descriptive only, never a restriction; owner-declared. */}
                 <Text style={styles.sectionHeader}>What ages is it suited to?</Text>

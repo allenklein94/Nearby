@@ -28,6 +28,7 @@ const KEYWORDS_BY_ATTRIBUTE = {
   book_lovers: ['bookstore', 'book club', 'reading nook', 'book lovers'],
   craft_friendly: ['craft', 'crafting', 'diy workshop', 'make your own'],
   fitness_focused: ['fitness', 'workout', 'gym', 'training session', 'active lifestyle'],
+  catering: ['catering', 'we cater', 'caterer', 'catered events', 'event catering', 'party trays'],
   private_dining: ['private dining', 'private room', 'private event space', 'semi-private', "chef's table", 'buyout'],
   wifi: ['free wifi', 'free wi-fi', 'wifi available', 'wi-fi available', 'wifi included'],
   food_available: ['food available', 'full menu', 'kitchen', 'serves food', 'food menu', 'lunch menu', 'dinner menu'],

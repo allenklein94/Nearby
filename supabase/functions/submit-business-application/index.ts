@@ -34,7 +34,7 @@ const CORS_HEADERS: Record<string, string> = {
 // -- re-validated here so a malformed/hallucinated category value can never
 // reach the row a real admin later reviews.
 // The one attribute vocabulary (src/constants/businessAttributes.js; a Jest test keeps this list identical to it).
-const VALID_ATTRIBUTES = ["outdoor_seating","date_friendly","group_friendly","live_music","kid_friendly","quiet","casual","upscale","specialty_coffee","laptop_friendly","dog_friendly","waterfront","late_night","board_game_friendly","photography_friendly","book_lovers","craft_friendly","fitness_focused","private_dining","corporate_events","wifi","food_available","beginner_friendly","reservation_required","wheelchair_accessible","accessible_parking","accessible_restroom","service_animal_friendly","stroller_friendly","family_seating","kid_menu","pet_friendly","romantic"];
+const VALID_ATTRIBUTES = ["outdoor_seating","date_friendly","group_friendly","live_music","kid_friendly","quiet","casual","upscale","specialty_coffee","laptop_friendly","dog_friendly","waterfront","late_night","board_game_friendly","photography_friendly","book_lovers","craft_friendly","fitness_focused","private_dining","corporate_events","wifi","food_available","beginner_friendly","reservation_required","wheelchair_accessible","accessible_parking","accessible_restroom","service_animal_friendly","stroller_friendly","family_seating","kid_menu","pet_friendly","romantic","catering"];
 
 const VALID_CATEGORIES = [
   'food_drink',

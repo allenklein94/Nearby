@@ -991,7 +991,7 @@ export async function getPartnerOperatingInfo(partnerIds) {
   if (ids.length === 0) return new Map();
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, name, latitude, longitude, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode')
+    .select('id, name, latitude, longitude, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, max_group_size')
     .in('id', ids);
   if (error) return new Map();
   return new Map((data ?? []).map((r) => [r.id, r]));
@@ -1329,6 +1329,12 @@ export async function confirmOfferRedemption(code) {
 // Item 40: 'free' | '$' | '$$' | '$$$' | null (= not said, no price effect). Migration 20270192.
 export async function setBusinessPriceLevel(partnerId, level) {
   const { error } = await supabase.rpc('set_business_price_level', { partner_id_param: partnerId, level_param: level ?? null });
+  if (error) throw error;
+}
+
+// Item 80: largest group the business can host, total people (1-5000), or null = not said. Migration 20270216.
+export async function setBusinessMaxGroupSize(partnerId, size) {
+  const { error } = await supabase.rpc('set_business_max_group_size', { partner_id_param: partnerId, max_group_size_param: size ?? null });
   if (error) throw error;
 }
 

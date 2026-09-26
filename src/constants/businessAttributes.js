@@ -56,6 +56,8 @@ export const BUSINESS_ATTRIBUTE_OPTIONS = [
   // Items 51/52: pets welcome beyond dogs, and the romantic atmosphere (date_friendly stays "a good fit for a date").
   { key: 'pet_friendly', label: 'Pet-Friendly', icon: '🐾' },
   { key: 'romantic', label: 'Romantic', icon: '🕯️' },
+  // Item 80: a business capability (constants/businessCapabilities.js). Delivery / Takeout are deliberately never added.
+  { key: 'catering', label: 'Catering', icon: '🍱' },
 ];
 
 export const ACCESSIBILITY_ATTRIBUTE_KEYS = ['wheelchair_accessible', 'accessible_parking', 'accessible_restroom', 'service_animal_friendly', 'quiet'];
@@ -64,7 +66,7 @@ export const FAMILY_ATTRIBUTE_KEYS = ['kid_friendly', 'stroller_friendly', 'fami
 // Tags a business uses to describe itself / a customer uses to ask for a venue, but that are not a personal dining "vibe"
 // (you don't have a preference for "corporate events" on a night out). Excluded from the consumer dining-preference
 // surfaces via VENUE_PREFERENCE_OPTIONS below; still valid values everywhere else (business profile, requests).
-export const BUSINESS_ONLY_ATTRIBUTE_KEYS = ['private_dining', 'corporate_events', 'food_available', 'reservation_required', 'wheelchair_accessible', 'accessible_parking', 'accessible_restroom', 'service_animal_friendly', 'stroller_friendly', 'family_seating', 'kid_menu'];
+export const BUSINESS_ONLY_ATTRIBUTE_KEYS = ['private_dining', 'corporate_events', 'food_available', 'reservation_required', 'wheelchair_accessible', 'accessible_parking', 'accessible_restroom', 'service_animal_friendly', 'stroller_friendly', 'family_seating', 'kid_menu', 'catering'];
 // (The seven accessibility/family keys are business/venue declarations. They are deliberately NOT a personal preference a person
 // stores on their profile: an access need is sensitive, and a person only ever states one per request, on purpose.)
 

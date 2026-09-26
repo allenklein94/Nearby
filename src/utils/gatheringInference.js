@@ -54,6 +54,13 @@ export function partySizeFromText(text) {
   if (people) return Number(people[1]);
   const friends = t.match(/\b(\d{1,2})\s+(friends|buddies|coworkers|colleagues)\b/i);
   if (friends) return Number(friends[1]) + 1;
+  // Item 80: "a 20-person birthday", "party of 12", "table for 8", "12 guests", "birthday dinner for 12" (a bare "for N" only when
+  // N is not a time, duration, price or distance: "for 2 hours", "for 5 PM", "for $30", "for 10 minutes" are not party sizes).
+  const other = t.match(/\b(\d{1,3})[- ]?(?:person|people)\b/i)
+    ?? t.match(/\b(?:party|group|table)\s+(?:of|for)\s+(\d{1,3})\b/i)
+    ?? t.match(/\b(\d{1,3})\s+(?:guests|adults|attendees)\b/i)
+    ?? t.match(/(?<!\$)\bfor\s+(\d{1,3})\b(?!\s*(?:[:.]\d|a\.?m\b|p\.?m\b|o'?clock|hours?|hrs?|h\b|minutes?|mins?|days?|nights?|weeks?|months?|years?|dollars?|bucks|%|percent|miles?|mi\b|km\b|th\b|st\b|nd\b|rd\b|-?\s*(?:person|people)\b))/i);
+  if (other) return Number(other[1]);
   return null;
 }
 

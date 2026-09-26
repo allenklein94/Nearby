@@ -63,6 +63,7 @@ import { parseAskFacets, applyAskFacets, partnerPartyType, attributesFromAsk } f
 import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitmentLevel';
 import { formatsFromText, applyFormatToCandidates } from '../constants/activityFormat';
 import { skillLevelsFromText, applySkillToCandidates } from '../constants/skillLevel';
+import { wordsBackedAttributes, applyCapabilitiesToCandidates } from '../constants/businessCapabilities';
 import { genresFromText, applyGenreToCandidates } from '../constants/genreMatch';
 import { timeBudgetFromText, applyTimeBudgetToCandidates, timeBudgetCaption } from '../constants/timeBudget';
 import { clockWindowFromText, dateAnchorFromText, applyClockWindowToCandidates, clockWindowCaption, windowSpan, clockLabel } from '../constants/clockWindow';
@@ -589,6 +590,9 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   occasion = occasion ?? occasionFromAsk(rawText, { partyType, dateWindow });
   // Items 51/52: pet-friendly / date-friendly / quiet / patio are ATTRIBUTES the ask can name (constants/askFacets.js), unioned with the extractor's.
   attributes = [...new Set([...(Array.isArray(attributes) ? attributes : []), ...attributesFromAsk(rawText, { partyType })])];
+  // Item 80: private events and catering are asked for only in the person's own words (never inferred from a large party or an
+  // occasion), and their lift is owned by the capability pass below, so they are kept out of the generic attribute overlap.
+  attributes = wordsBackedAttributes(attributes, rawText).filter((a) => a !== 'private_dining' && a !== 'catering');
   // Resolved once, up front, before any branch runs in parallel below —
   // not a check-only call. getNearbyGatherings() (called from
   // resolveGatherings) already calls the shared location provider
@@ -778,6 +782,9 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     const mode = bookingModeOf(partner);
     return { ...c, businessPartner: partner, ...(mode ? { bookingMode: mode } : {}) };
   });
+  // Item 80: declared capabilities vs the ask: largest group vs the stated party size, private events / catering only when the
+  // words ask for them. Ranking only; unknown is neutral; business results only (perks carry no partner row).
+  deduped = applyCapabilitiesToCandidates(deduped, { partySize, text: rawText });
   deduped = applyCommitmentToCandidates(deduped, commitAsk);
   deduped = applySpontaneityToCandidates(deduped, spontaneity);
 
