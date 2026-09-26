@@ -79,7 +79,7 @@ import TellNearbyBusinessCard from '../components/TellNearbyBusinessCard';
 import { describeDemandSignals } from '../utils/demandSignals';
 import { opportunityPrimaryAction, consumerOfferAction } from '../utils/primaryAction';
 import { BOOKING_MODE_OPTIONS, LEGACY_RESERVATION_ATTRIBUTE, bookingModeOf } from '../constants/bookingMode';
-import { NOT_ACCOMMODATED_OPTIONS, notAccommodatedOf, toggleNotAccommodated } from '../constants/businessRestrictions';
+import { NOT_ACCOMMODATED_OPTIONS, ADULT_AGE_RULES, notAccommodatedOf, toggleNotAccommodated } from '../constants/businessRestrictions';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, OFFERED_OCCASION_OPTIONS, WEATHER_SETTING_OPTIONS, occasionLabel, occasionPhrase, dietaryLabel, requestedItemLabel } from '../constants/businessAttributes';
 import { planAddonLabel } from '../constants/planAddons';
 import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
@@ -5701,8 +5701,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 />
                 {/* Item 86: what you don't accommodate. Requests that conflict are never sent to you or shown with your business. */}
                 <Text style={styles.sectionHeader}>What don't you accommodate?</Text>
+                {[NOT_ACCOMMODATED_OPTIONS.filter((o) => !ADULT_AGE_RULES.includes(o.key)), NOT_ACCOMMODATED_OPTIONS.filter((o) => ADULT_AGE_RULES.includes(o.key))].map((group, gi) => (
+                <View key={gi}>
+                {gi === 1 && <Text style={[styles.helperText, { marginTop: spacing.sm }]}>Age restriction (pick one)</Text>}
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {NOT_ACCOMMODATED_OPTIONS.map((o) => {
+                  {group.map((o) => {
                     const selected = shownValue(settingConflicts.entries, 'not_accommodated', notAccommodatedOf(selectedPartner)).includes(o.key);
                     return (
                       <TouchableOpacity
@@ -5718,6 +5721,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     );
                   })}
                 </View>
+                </View>
+                ))}
                 <SettingConflictNotice
                   messages={conflictMessages(settingConflicts.entries, 'not_accommodated')}
                   onSave={pendingSaveFor('not_accommodated', (v) => saveNotAccommodated(v))}

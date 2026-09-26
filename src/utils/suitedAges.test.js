@@ -15,8 +15,13 @@ describe('suited age range (item 50)', () => {
     expect(ageRangeLabel(9, 3)).toBeNull(); // an impossible pair is dropped, never shown
     expect(ageRangeLabel(0, 30)).toBe('All ages'); // out-of-range bound dropped, leaving 0+ = the All ages band
   });
-  it('options never reach 21+ (that would be a restriction, a separate decision)', () => {
-    expect(Math.max(...AGE_MIN_OPTIONS, ...AGE_MAX_OPTIONS)).toBeLessThanOrEqual(18);
+  it('options stop at 17: no "Ages 18+" label, 18+ / 21+ are business house rules only (item 87 lock, 20270229)', () => {
+    expect(Math.max(...AGE_MIN_OPTIONS, ...AGE_MAX_OPTIONS)).toBeLessThanOrEqual(17);
+    expect(ageRangeLabel(18, null)).toBeNull();
+    expect(cleanAgeRange(18, null)).toEqual({ min: null, max: null });
+    const mig = r('supabase/migrations/20270229_suited_ages_under_18.sql');
+    expect((mig.match(/between 0 and 17/g) ?? []).length).toBe(4);
+    expect(mig).toMatch(/min_param > 17[\s\S]*max_param > 17/);
   });
   it('fit is unknown without a declared range', () => {
     expect(ageFits(3, 8, 5)).toBe(true);

@@ -1,12 +1,13 @@
 // Age range (owner item 50): a DESCRIPTIVE "suited ages" range a business or a gathering's host declares. It never restricts who may
 // join or buy, and it is never inferred. NULL bound = open ("Ages 5+", "Up to age 12"); both null = not said = nothing shown.
-// Options stop at 18 on purpose: "21+" would be an age RESTRICTION, which is a separate owner decision.
-export const AGE_MIN_OPTIONS = [0, 1, 2, 3, 5, 8, 13, 18];
+// Options stop at 17 on purpose (item 87 lock, migration 20270229): 18+ / 21+ are business house rules only, never a descriptive
+// label, and a gathering age limit stays parked. Every declared range therefore includes someone under 18.
+export const AGE_MIN_OPTIONS = [0, 1, 2, 3, 5, 8, 13];
 export const AGE_MAX_OPTIONS = [2, 5, 12, 17];
 
-// Returns { min, max } with both null when the pair is unusable (out of 0..18, min above max).
+// Returns { min, max } with both null when the pair is unusable (out of 0..17, min above max).
 export function cleanAgeRange(min, max) {
-  const ok = (n) => Number.isInteger(n) && n >= 0 && n <= 18;
+  const ok = (n) => Number.isInteger(n) && n >= 0 && n <= 17;
   const a = ok(min) ? min : null;
   const b = ok(max) ? max : null;
   if (a != null && b != null && a > b) return { min: null, max: null };

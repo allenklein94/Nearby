@@ -52,8 +52,9 @@ export function notAccommodatedLine(partner) {
 // Never from AI-extracted attributes, a default (a date's assumed 2 people), a category or an occasion.
 // The CONFLICT decision is not made here: the server's one rule (_business_declines, migration 20270223) decides it for typed asks
 // (get_declined_businesses), routing and auto-offers alike. This file only turns words into facts and applies the answer.
-const NEG_CHILDREN = /\b(?:no|without(?:\s+the)?|minus\s+the)\s+(?:kids?|children|child|little\s+ones?)\b|\b(?:kid|child)[- ]free\b|\badults?[- ]only\b|\bjust\s+(?:the\s+)?adults\b/gi;
-const CHILDREN = /\b(?:kids?|kiddos?|children|child|toddlers?|bab(?:y|ies)|little\s+ones?|my\s+(?:sons?|daughters?)|our\s+(?:sons?|daughters?)|stroller|kid[- ]friendly|family[- ]friendly|kids?\s+menu)\b/i;
+const NEG_CHILDREN = /\b(?:no|without(?:\s+the)?|minus\s+the)\s+(?:kids?|children|child|little\s+ones?|teens?|teenagers?)\b|\b(?:kid|child|teen)[- ]free\b|\badults?[- ]only\b|\bjust\s+(?:the\s+)?adults\b/gi;
+// Teens count too (item 87 lock): an explicit teen ask conflicts with No children / 18+ / 21+ just like a child ask.
+const CHILDREN = /\b(?:kids?|kiddos?|children|child|toddlers?|teens?|teenagers?|teenage\s+(?:sons?|daughters?|kids?)|bab(?:y|ies)|little\s+ones?|my\s+(?:sons?|daughters?)|our\s+(?:sons?|daughters?)|stroller|kid[- ]friendly|family[- ]friendly|kids?\s+menu)\b/i;
 const WALK_IN = /\bwalk[- ]?ins?\b|\bjust\s+(?:show|walk|drop|turn)\s+(?:up|in|by)\b|\bno\s+(?:reservations?|booking)\b|\bwithout\s+(?:a\s+)?(?:reservation|booking)s?\b|\b(?:don'?t|do\s+not)\s+want\s+to\s+(?:book|reserve)\b/i;
 
 export function childrenInAsk(text) {

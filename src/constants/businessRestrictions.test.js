@@ -195,9 +195,26 @@ describe('18+ only (owner item 87, migration 20270228)', () => {
   });
   it('a teen or child is known only from stated words or a stated age under 18', () => {
     expect(childrenInAsk('somewhere for my 15 year old')).toBe(true);
+    for (const t of ['bowling with my teenagers', 'something for teens', 'dinner with my teenage son', 'a place for my teen'])
+      expect([t, childrenInAsk(t)]).toEqual([t, true]);
+    for (const t of ['a teen-free brunch', 'dinner, no teens', 'date night tonight', 'drinks after work', 'nineteen of us'])
+      expect([t, childrenInAsk(t)]).toEqual([t, false]);
     expect(childrenInAsk('with my 19 year old')).toBe(false);
     expect(childrenInAsk('an 18+ club')).toBe(false);
     expect(askRaisesRestriction(restrictionAsk('21+ nightlife bar'))).toBe(false);
+    for (const t of ['an 18+ club', '21+ nightlife', 'adults only bar', 'date night tonight'])
+      expect([t, askRaisesRestriction(restrictionAsk(t))]).toEqual([t, false]); // no customer age signal
+  });
+  it('LOCKED scope: no customer age system, no profile age, no ranking boost, no gathering use', () => {
+    const src = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
+    // the ask side never reads a profile age or birthdate and never turns 18+/21+ words into a constraint
+    expect(src('src/constants/businessRestrictions.js')).not.toMatch(/birth|date_of_birth|profile\.age|\bage\s*[<>]=?\s*(18|21)/);
+    // only the restriction list/setter know the keys: the resolver, feeds and gatherings never rank or filter by them
+    for (const f of ['src/services/intentResolver.js', 'src/services/gatherings.js', 'src/utils/suitedAges.js', 'src/components/AgeRangePicker.js',
+      'src/screens/CreateGatheringScreen.js', 'src/screens/EditGatheringScreen.js', 'src/screens/HomeScreen.js', 'src/screens/DiscoverHubScreen.js'])
+      expect([f, /adults_(18|21)_plus|18\+ only|21\+ only/.test(src(f))]).toEqual([f, false]);
+    // the dashboard shows 18+ / 21+ as one "Age restriction (pick one)" row in the same control
+    expect(src('src/screens/BusinessDashboardScreen.js')).toMatch(/Age restriction \(pick one\)/);
   });
   it('structured only: nothing derives an adult rule from text, a category or marketing copy; gatherings untouched', () => {
     const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
