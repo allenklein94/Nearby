@@ -67,6 +67,8 @@ import { fitExperienceToTime } from '../utils/planTiming';
 import { intensityFromText, effortFromText, applyIntensityToCandidates, applyEffortToCandidates, energiesWithoutIntensity } from '../constants/intensityEffort';
 import { socialSignalsFromText, applySocialToCandidates } from '../constants/socialContext';
 import { distanceWillingnessFromText, applyDistanceWillingness, distanceWillingnessCaption, travelSearchMiles } from '../constants/distanceWillingness';
+import { transportModeFromText, effectiveTransportMode, applyTransportMode, transportModeCaption, candidateKey } from '../constants/transportMode';
+import { getTravelTimes } from './travelTime';
 import { spontaneityOf, isImmediate, applySpontaneityToCandidates, spontaneityCaption } from '../constants/spontaneity';
 import { getUserLocation } from './userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
@@ -736,6 +738,13 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Item 69: "walking distance" / "not too far" lift the closer results by their real measured distance (relative, no mile cutoffs);
   // "willing to travel" already widened the search above. Nothing is removed.
   deduped = applyDistanceWillingness(deduped, distanceWillingness);
+  // Transportation mode (2026-09-26): "I'm walking" / "on my bike" lift closer results relative to the others; "I'm driving" /
+  // "an Uber" drop the close-by bonus; transit changes nothing without real travel times. A stated distance wins over the mode.
+  // Never widens the search. getTravelTimes has NO provider today (returns null, no network); it is the plug-in point for the
+  // future routing layer, which ranking reads only as seconds.
+  const transportMode = effectiveTransportMode(transportModeFromText(rawText), distanceWillingness);
+  const travelTimes = transportMode ? await getTravelTimes(deduped, transportMode, location, { keyOf: candidateKey }) : null;
+  deduped = applyTransportMode(deduped, transportMode, travelTimes);
   // Item 68: "I only have an hour" lifts what fits (declared length, else the category's typical one) and sinks what clearly
   // does not; unknown lengths are untouched, nothing is removed.
   const timeBudget = timeBudgetFromText(rawText);
@@ -781,7 +790,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   deduped.sort((a, b) => b.score - a.score);
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
-  const openEndedNote = [planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), askFacets.caption].filter(Boolean).join(' · ') || null;
+  const openEndedNote = [planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode), askFacets.caption].filter(Boolean).join(' · ') || null;
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,

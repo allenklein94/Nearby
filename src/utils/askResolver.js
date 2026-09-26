@@ -28,6 +28,7 @@ import { skillLevelsFromText } from '../constants/skillLevel';
 import { intensityFromText, effortFromText } from '../constants/intensityEffort';
 import { socialSignalsFromText } from '../constants/socialContext';
 import { distanceWillingnessFromText } from '../constants/distanceWillingness';
+import { transportModeFromText } from '../constants/transportMode';
 import { timeBudgetFromText } from '../constants/timeBudget';
 import { clockWindowFromText, dateAnchorFromText } from '../constants/clockWindow';
 
@@ -177,6 +178,8 @@ export function resolveAsk(text, ai = null) {
     social: socialSignalsFromText(t),
     // Item 69: how far the person said they will go (very_nearby / nearby / anywhere_in_area / willing_to_travel), or null.
     distanceWillingness: distanceWillingnessFromText(t),
+    // How the person said they are getting there (walking / bike / driving / rideshare / transit), or null; words only.
+    transportMode: transportModeFromText(t),
     // Item 68: minutes the person said they have ("I only have an hour" = 60), or null. Never a start time.
     timeBudgetMinutes: timeBudgetFromText(t),
     // A clock boundary/range from the words, and the calendar date(s) the words anchor it to (null = none said; nothing chosen).
