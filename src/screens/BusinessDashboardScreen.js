@@ -5,6 +5,10 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import DraftBanner from '../components/DraftBanner';
 import AgeRangePicker from '../components/AgeRangePicker';
+import SettingConflictNotice from '../components/SettingConflictNotice';
+import { useSettingConflicts } from '../hooks/useSettingConflicts';
+import { checkBusinessSettingConflicts } from '../services/brandOffers';
+import { conflictMessages, hasPending, shownValue } from '../utils/settingConflicts';
 import OfferCustomerBody from '../components/OfferCustomerBody';
 import { offerValueLines } from '../utils/offerValue';
 import { offerRevealHeader } from '../utils/offerCopy';
@@ -285,6 +289,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [moreOffersOpen, setMoreOffersOpen] = useState(false);
   const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState(null);
+  // Item 86: contradictory settings are refused by the server and shown inline under the control (never an alert, never a
+  // silent change). One entry per editing surface; see hooks/useSettingConflicts.js.
+  const settingConflicts = useSettingConflicts(selectedPartner?.id ?? null);
+  const [savingPendingSetting, setSavingPendingSetting] = useState(null);
   // Item 80: the "Largest group you can host" field; null = not yet edited (shows the saved value).
   const [maxGroupDraft, setMaxGroupDraft] = useState(null);
   const [spendDraft, setSpendDraft] = useState(null);
@@ -988,6 +996,38 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // result must never make the UI claim something changed that didn't.
   // Opens the existing Edit Profile modal pre-filled from the saved profile (shared by the Profile tab and
   // "Tell Nearby about your business").
+  // Item 86: keep inline conflict messages true. When anything the server's rule reads changes (a profile save, an experience,
+  // package or posting added/removed), ask again; a resolved conflict's message clears. The server answers; nothing decided here.
+  const { recheck: recheckConflicts, clear: clearConflictSurface } = settingConflicts;
+  const conflictSurfacesOpen = Object.keys(settingConflicts.entries).length > 0;
+  useEffect(() => {
+    if (conflictSurfacesOpen) recheckConflicts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPartner, experiences, myOccasionPackages, myAvailability]);
+  // A form's own edits re-ask for that form only (e.g. switching the package off Family Gathering clears its message).
+  const conflictFormChecks = [
+    ['profile_edit', { kind: 'profile', patch: { attributes: editAttributesInput } }],
+    ['priority', { kind: 'profile', patch: { priority_attributes: priorityAttributesInput, priority_occasions: priorityOccasionsInput } }],
+    ['accommodations', { kind: 'profile', patch: { accommodates_party_types: accommodatePartyTypesInput } }],
+    ['experience', { kind: 'experience', patch: { party_type: expPartyTypeInput, attributes: expAttributesInput } }],
+    ['package', { kind: 'package', patch: { occasion_type: packageOccasionInput } }],
+    ['availability', { kind: 'availability', patch: { bundle_occasion: availabilityBundleOccasionInput } }],
+  ];
+  const conflictFormKey = JSON.stringify(conflictFormChecks);
+  useEffect(() => {
+    for (const [surface, check] of conflictFormChecks) {
+      if (settingConflicts.entries[surface] && JSON.stringify(settingConflicts.entries[surface].check) !== JSON.stringify(check)) {
+        recheckConflicts(surface, check);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conflictFormKey]);
+  // Closing a form without saving drops its message (the form's values are not kept as a change).
+  useEffect(() => { if (!editProfileModalVisible) clearConflictSurface('profile_edit'); }, [editProfileModalVisible, clearConflictSurface]);
+  useEffect(() => { if (!experienceModalVisible) clearConflictSurface('experience'); }, [experienceModalVisible, clearConflictSurface]);
+  useEffect(() => { if (!packageModalVisible) clearConflictSurface('package'); }, [packageModalVisible, clearConflictSurface]);
+  useEffect(() => { if (!postAvailabilityModalVisible) clearConflictSurface('availability'); }, [postAvailabilityModalVisible, clearConflictSurface]);
+
   function openEditProfileModal() {
     setEditNameInput(selectedPartner?.name ?? '');
     setEditDescriptionInput(selectedPartner?.description ?? '');
@@ -1030,6 +1070,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
           subcategory: editSubcategoryInput,
           categories: editCategoriesInput,
         }));
+        settingConflicts.clear('profile_edit');
         setEditProfileModalVisible(false);
         showSuccessToast('Saved', 'Your business profile has been updated.');
         logBusinessAcquisitionEvent(sessionId, 'profile_completed', { partnerId: selectedPartner.id });
@@ -1046,7 +1087,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         );
       }
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'save your changes', error: e, draftKept: true, onRetry: () => handleSaveProfile() });
+      if (!settingConflicts.report('profile_edit', e, { check: { kind: 'profile', patch: { attributes: editAttributesInput } } })) {
+        presentRecoverableError(Alert, { what: 'save your changes', error: e, draftKept: true, onRetry: () => handleSaveProfile() });
+      }
     }
     setSavingProfile(false);
   }
@@ -1061,46 +1104,85 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // you want," "when you want them," and "why they're coming" are
   // genuinely different vocabularies).
   // "Occasions we offer": saves per tap, reverting the chip if the save fails.
+  // Item 86: one save path for the save-per-tap rows. The row shows the owner's choice; the server decides. A contradiction keeps
+  // the choice visible but UNSAVED (the persisted value is put back) with the server's lines under the row; tapping the choice off
+  // again, or Save once it is resolved, ends it. Any other failure puts the saved value back and uses the usual recovery.
+  async function savePerTapSetting(surface, next, saved, { save, field, patch, retry }) {
+    const same = Array.isArray(next)
+      ? JSON.stringify([...next].sort()) === JSON.stringify([...(saved ?? [])].sort())
+      : JSON.stringify(next) === JSON.stringify(saved);
+    if (same && hasPending(settingConflicts.entries, surface)) { settingConflicts.clear(surface); return; }
+    setSelectedPartner((prev) => ({ ...prev, ...field(next) }));
+    try {
+      await save(next);
+      settingConflicts.clear(surface);
+    } catch (e) {
+      setSelectedPartner((prev) => ({ ...prev, ...field(saved) }));
+      if (!settingConflicts.report(surface, e, { pending: next, check: { kind: 'profile', patch: patch(next) } })) {
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: retry });
+      }
+    }
+  }
+
+  function pendingSaveFor(surface, handler) {
+    if (!hasPending(settingConflicts.entries, surface)) return null;
+    return async () => {
+      setSavingPendingSetting(surface);
+      try { await handler(settingConflicts.entries[surface].pending); } finally { setSavingPendingSetting(null); }
+    };
+  }
+
   async function handleToggleOfferedOccasion(key) {
     if (!selectedPartner) return;
-    const current = selectedPartner.offered_occasions ?? [];
-    const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
-    setSelectedPartner((prev) => ({ ...prev, offered_occasions: next }));
-    try {
-      await setBusinessOfferedOccasions(selectedPartner.id, next);
-    } catch (e) {
-      setSelectedPartner((prev) => ({ ...prev, offered_occasions: current }));
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleToggleOfferedOccasion(key) });
-    }
+    const saved = selectedPartner.offered_occasions ?? [];
+    const shown = shownValue(settingConflicts.entries, 'offered_occasions', saved);
+    const next = shown.includes(key) ? shown.filter((k) => k !== key) : [...shown, key];
+    await saveOfferedOccasions(next, saved);
+  }
+
+  function saveOfferedOccasions(next, saved = selectedPartner?.offered_occasions ?? []) {
+    return savePerTapSetting('offered_occasions', next, saved, {
+      save: (v) => setBusinessOfferedOccasions(selectedPartner.id, v),
+      field: (v) => ({ offered_occasions: v }),
+      patch: (v) => ({ offered_occasions: v }),
+      retry: () => saveOfferedOccasions(next, saved),
+    });
   }
 
   // Item 63: tap a setting to choose it, tap it again to clear (= not said, no weather effect). Saves per tap.
   async function handlePickWeatherSetting(key) {
     if (!selectedPartner) return;
-    const current = selectedPartner.weather_setting ?? null;
-    const next = current === key ? null : key;
-    setSelectedPartner((prev) => ({ ...prev, weather_setting: next }));
-    try {
-      await setBusinessWeatherSetting(selectedPartner.id, next);
-    } catch (e) {
-      setSelectedPartner((prev) => ({ ...prev, weather_setting: current }));
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePickWeatherSetting(key) });
-    }
+    const saved = selectedPartner.weather_setting ?? null;
+    const shown = shownValue(settingConflicts.entries, 'weather_setting', saved);
+    await saveWeatherSetting(shown === key ? null : key, saved);
+  }
+
+  function saveWeatherSetting(next, saved = selectedPartner?.weather_setting ?? null) {
+    return savePerTapSetting('weather_setting', next, saved, {
+      save: (v) => setBusinessWeatherSetting(selectedPartner.id, v),
+      field: (v) => ({ weather_setting: v }),
+      patch: (v) => ({ weather_setting: v }),
+      retry: () => saveWeatherSetting(next, saved),
+    });
   }
 
   // Item 86: what you don't accommodate. Tap to add, tap again to remove; saves per tap. A contradiction (Family-friendly, Family
-  // group, Pet friendly, suited ages...) is refused by the server trigger alone; its message is shown as written.
+  // group, Pet friendly, suited ages, a Family Gathering package or posting...) is refused by the server alone; shown inline.
   async function handleToggleNotAccommodated(key) {
     if (!selectedPartner) return;
-    const current = notAccommodatedOf(selectedPartner);
-    const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
-    setSelectedPartner((prev) => ({ ...prev, not_accommodated: next }));
-    try {
-      await setBusinessNotAccommodated(selectedPartner.id, next);
-    } catch (e) {
-      setSelectedPartner((prev) => ({ ...prev, not_accommodated: current }));
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleToggleNotAccommodated(key) });
-    }
+    const saved = notAccommodatedOf(selectedPartner);
+    const shown = shownValue(settingConflicts.entries, 'not_accommodated', saved);
+    const next = shown.includes(key) ? shown.filter((k) => k !== key) : [...shown, key];
+    await saveNotAccommodated(next, saved);
+  }
+
+  function saveNotAccommodated(next, saved = notAccommodatedOf(selectedPartner)) {
+    return savePerTapSetting('not_accommodated', next, saved, {
+      save: (v) => setBusinessNotAccommodated(selectedPartner.id, v),
+      field: (v) => ({ not_accommodated: v }),
+      patch: (v) => ({ not_accommodated: v }),
+      retry: () => saveNotAccommodated(next, saved),
+    });
   }
 
   // Item 72: how customers come in. Tap to choose, tap again to clear (= not said). Saves per tap; drives the customer's button.
@@ -1184,16 +1266,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }
 
   // Item 50: suited ages (descriptive, 0-18). Saves per tap; a failure puts the previous range back.
-  async function handlePickSuitedAges(min, max) {
+  function handlePickSuitedAges(min, max) {
     if (!selectedPartner) return;
-    const prev = { min: selectedPartner.suited_age_min ?? null, max: selectedPartner.suited_age_max ?? null };
-    setSelectedPartner((p) => ({ ...p, suited_age_min: min, suited_age_max: max }));
-    try {
-      await setBusinessSuitedAges(selectedPartner.id, min, max);
-    } catch (e) {
-      setSelectedPartner((p) => ({ ...p, suited_age_min: prev.min, suited_age_max: prev.max }));
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePickSuitedAges(min, max) });
-    }
+    return saveSuitedAges({ min, max });
+  }
+
+  function saveSuitedAges(next, saved = { min: selectedPartner?.suited_age_min ?? null, max: selectedPartner?.suited_age_max ?? null }) {
+    return savePerTapSetting('suited_ages', next, saved, {
+      save: (v) => setBusinessSuitedAges(selectedPartner.id, v.min, v.max),
+      field: (v) => ({ suited_age_min: v.min, suited_age_max: v.max }),
+      patch: (v) => ({ suited_age_min: v.min, suited_age_max: v.max }),
+      retry: () => saveSuitedAges(next, saved),
+    });
   }
 
   async function handleSavePriorityAttributes() {
@@ -1207,7 +1291,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       return;
     }
     setSavingPriorityAttributes(true);
+    const priorityCheck = { kind: 'profile', patch: { priority_attributes: priorityAttributesInput, priority_occasions: priorityOccasionsInput } };
     try {
+      // Item 86: asked first (same server rule, nothing saved) so a contradiction never leaves these four saves half-applied.
+      const lines = await checkBusinessSettingConflicts(selectedPartner.id, priorityCheck.kind, priorityCheck.patch);
+      if (settingConflicts.report('priority', { conflicts: lines }, { check: priorityCheck })) {
+        setSavingPriorityAttributes(false);
+        return;
+      }
       await Promise.all([
         setBusinessPriorityAttributes(selectedPartner.id, priorityAttributesInput),
         setBusinessPriorityTimeWindows(selectedPartner.id, priorityTimeWindowsInput),
@@ -1222,9 +1313,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         priority_time_end: timeRange.end,
         priority_occasions: priorityOccasionsInput,
       }));
+      settingConflicts.clear('priority');
       showSuccessToast('Saved', "We'll flag opportunities that match what you're looking for.");
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSavePriorityAttributes() });
+      if (!settingConflicts.report('priority', e, { check: priorityCheck })) {
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSavePriorityAttributes() });
+      }
     }
     setSavingPriorityAttributes(false);
   }
@@ -1287,8 +1381,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     try {
       await setBusinessAccommodations(selectedPartner.id, accommodatePartyTypesInput);
       setSelectedPartner((prev) => ({ ...prev, accommodates_party_types: accommodatePartyTypesInput }));
+      settingConflicts.clear('accommodations');
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSaveAccommodations() });
+      if (!settingConflicts.report('accommodations', e, { check: { kind: 'profile', patch: { accommodates_party_types: accommodatePartyTypesInput } } })) {
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSaveAccommodations() });
+      }
     }
     setSavingAccommodations(false);
   }
@@ -1548,6 +1645,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         mediaType,
       });
 
+      settingConflicts.clear('experience');
       if (result.published) {
         await loadExperiences(selectedPartner.id);
         setExperienceModalVisible(false);
@@ -1576,7 +1674,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       const entitlementError = parseEntitlementError(e);
       if (entitlementError?.kind === 'limit') {
         showUpgradePlaceholder(entitlementError.feature);
-      } else {
+      } else if (!settingConflicts.report('experience', e, { check: { kind: 'experience', patch: { party_type: expPartyTypeInput, attributes: expAttributesInput } } })) {
         presentRecoverableError(Alert, { what: 'save this experience', error: e, draftKept: true, onRetry: () => handleSaveExperience() });
       }
     }
@@ -1600,11 +1698,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         aiSuggested: true,
       });
       await loadExperiences(selectedPartner.id);
+      settingConflicts.clear(`experience_suggestion:${suggestion.attribute}`);
     } catch (e) {
       const entitlementError = parseEntitlementError(e);
       if (entitlementError?.kind === 'limit') {
         showUpgradePlaceholder(entitlementError.feature);
-      } else {
+      } else if (!settingConflicts.report(`experience_suggestion:${suggestion.attribute}`, e, { check: { kind: 'experience', patch: { party_type: suggestion.partyType ?? null, attributes: suggestion.attributes ?? [] } } })) {
         presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleKeepSuggestion(suggestion) });
       }
     }
@@ -2463,10 +2562,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       } else {
         await createOccasionPackage(params);
       }
+      settingConflicts.clear('package');
       setPackageModalVisible(false);
       await loadMyOccasionPackages();
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSavePackage() });
+      if (!settingConflicts.report('package', e, { check: { kind: 'package', patch: { occasion_type: packageOccasionInput } } })) {
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSavePackage() });
+      }
     }
     setSavingPackage(false);
   }
@@ -2710,6 +2812,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         endsAt: availabilityWhenMode === 'scheduled' ? availabilityEnd.toISOString() : null,
       });
 
+      settingConflicts.clear('availability');
       if (result.published) {
         setPostAvailabilityModalVisible(false);
         await loadMyAvailability(selectedPartner.id);
@@ -2734,7 +2837,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         );
       }
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'post your availability', error: e, draftKept: true, onRetry: () => handlePostAvailability() });
+      if (!settingConflicts.report('availability', e, { check: { kind: 'availability', patch: { bundle_occasion: availabilityBundleOccasionInput } } })) {
+        presentRecoverableError(Alert, { what: 'post your availability', error: e, draftKept: true, onRetry: () => handlePostAvailability() });
+      }
     }
     setPostingAvailability(false);
   }
@@ -5082,6 +5187,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   >
                     {savingAccommodations ? <ActivityIndicator color="#fff" /> : <Text style={styles.postUpdateButtonText}>Save</Text>}
                   </TouchableOpacity>
+                  <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, 'accommodations')} />
                 </View>
                 <View style={[styles.gatheringRow, { marginTop: spacing.sm }]}>
                   <Text style={[styles.breakdownText, { fontWeight: '700' }]}>Space</Text>
@@ -5202,6 +5308,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <Text style={styles.postUpdateButtonText}>Save</Text>
                   )}
                 </TouchableOpacity>
+                <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, 'priority')} />
 
                 {/* Business Intelligence & Opportunity Engine, Phase 1 --
                     the Business Priority Engine: a real, time-bounded
@@ -5384,6 +5491,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                               <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Remove</Text>
                             </TouchableOpacity>
                           </View>
+                          <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, `experience_suggestion:${s.attribute}`)} />
                         </View>
                       ))}
                     </>
@@ -5400,7 +5508,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.sectionHeader}>Occasions we offer</Text>
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                   {OFFERED_OCCASION_OPTIONS.map((o) => {
-                    const selected = (selectedPartner?.offered_occasions ?? []).includes(o.key);
+                    const selected = shownValue(settingConflicts.entries, 'offered_occasions', selectedPartner?.offered_occasions ?? []).includes(o.key);
                     return (
                       <TouchableOpacity
                         key={o.key}
@@ -5415,6 +5523,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     );
                   })}
                 </View>
+                <SettingConflictNotice
+                  messages={conflictMessages(settingConflicts.entries, 'offered_occasions')}
+                  onSave={pendingSaveFor('offered_occasions', (v) => saveOfferedOccasions(v))}
+                  saving={savingPendingSetting === 'offered_occasions'}
+                />
                 <Text style={styles.helperText}>
                   Requests for these occasions reach you first. Add a package under Occasion Packages to offer one automatically.
                 </Text>
@@ -5429,7 +5542,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.sectionHeader}>Is your experience affected by weather?</Text>
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                   {WEATHER_SETTING_OPTIONS.map((o) => {
-                    const selected = (selectedPartner?.weather_setting ?? null) === o.key;
+                    const selected = shownValue(settingConflicts.entries, 'weather_setting', selectedPartner?.weather_setting ?? null) === o.key;
                     return (
                       <TouchableOpacity
                         key={o.key}
@@ -5444,6 +5557,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     );
                   })}
                 </View>
+                <SettingConflictNotice
+                  messages={conflictMessages(settingConflicts.entries, 'weather_setting')}
+                  onSave={pendingSaveFor('weather_setting', (v) => saveWeatherSetting(v))}
+                  saving={savingPendingSetting === 'weather_setting'}
+                />
                 <Text style={styles.helperText}>
                   Outdoor only: shown less when rain is coming, more in good weather, and never to someone asking for indoors. Weather dependent: shown less in bad weather. Indoor only: shown more in bad weather, and never to someone asking for outside or a patio. Tap again to clear.
                 </Text>
@@ -5577,15 +5695,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.sectionHeader}>What ages is it suited to?</Text>
                 <AgeRangePicker
                   label="Ages"
-                  min={selectedPartner?.suited_age_min ?? null}
-                  max={selectedPartner?.suited_age_max ?? null}
+                  min={shownValue(settingConflicts.entries, 'suited_ages', { min: selectedPartner?.suited_age_min ?? null }).min ?? null}
+                  max={shownValue(settingConflicts.entries, 'suited_ages', { max: selectedPartner?.suited_age_max ?? null }).max ?? null}
                   onChange={handlePickSuitedAges}
+                />
+                <SettingConflictNotice
+                  messages={conflictMessages(settingConflicts.entries, 'suited_ages')}
+                  onSave={pendingSaveFor('suited_ages', (v) => saveSuitedAges(v))}
+                  saving={savingPendingSetting === 'suited_ages'}
                 />
                 {/* Item 86: what you don't accommodate. Requests that conflict are never sent to you or shown with your business. */}
                 <Text style={styles.sectionHeader}>What don't you accommodate?</Text>
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                   {NOT_ACCOMMODATED_OPTIONS.map((o) => {
-                    const selected = notAccommodatedOf(selectedPartner).includes(o.key);
+                    const selected = shownValue(settingConflicts.entries, 'not_accommodated', notAccommodatedOf(selectedPartner)).includes(o.key);
                     return (
                       <TouchableOpacity
                         key={o.key}
@@ -5600,6 +5723,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     );
                   })}
                 </View>
+                <SettingConflictNotice
+                  messages={conflictMessages(settingConflicts.entries, 'not_accommodated')}
+                  onSave={pendingSaveFor('not_accommodated', (v) => saveNotAccommodated(v))}
+                  saving={savingPendingSetting === 'not_accommodated'}
+                />
                 <Text style={styles.helperText}>
                   Requests that conflict aren't sent to you, and customers asking for them won't see you. Group size, reservations and indoor or outdoor only are set above.
                 </Text>
@@ -6362,6 +6490,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               >
                 <Text style={styles.submitButtonText}>{savingProfile ? 'Saving...' : 'Save Profile'}</Text>
               </TouchableOpacity>
+              <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, 'profile_edit')} />
               <TouchableOpacity onPress={() => setEditProfileModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
                 <Text style={styles.modalCloseText}>Cancel</Text>
               </TouchableOpacity>
@@ -6485,6 +6614,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               >
                 <Text style={styles.submitButtonText}>{savingExperience ? 'Saving...' : 'Save'}</Text>
               </TouchableOpacity>
+              <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, 'experience')} />
               <TouchableOpacity onPress={() => setExperienceModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
                 <Text style={styles.modalCloseText}>Cancel</Text>
               </TouchableOpacity>
@@ -7499,6 +7629,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               >
                 <Text style={styles.submitButtonText}>{postingAvailability ? 'Posting...' : availabilityDemandPeople != null ? 'Send Offer' : 'Post Availability'}</Text>
               </TouchableOpacity>
+              <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, 'availability')} />
               <TouchableOpacity onPress={() => setPostAvailabilityModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
                 <Text style={styles.modalCloseText}>Cancel</Text>
               </TouchableOpacity>
@@ -7641,6 +7772,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               >
                 {savingPackage ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>{editingPackageId ? 'Save Changes' : 'Add Package'}</Text>}
               </TouchableOpacity>
+              <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, 'package')} />
               <TouchableOpacity onPress={() => setPackageModalVisible(false)} style={{ marginTop: spacing.md, marginBottom: spacing.lg }} accessibilityLabel="Cancel" accessibilityRole="button">
                 <Text style={styles.modalCloseText}>Cancel</Text>
               </TouchableOpacity>

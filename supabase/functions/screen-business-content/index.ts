@@ -132,6 +132,32 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
+// Item 86 (migration 20270226): the database is the ONE authority on contradictory settings. Its refusal carries HINT
+// 'setting_conflict' and DETAIL = a JSON array of the exact owner-facing lines; returned as 400 {code, conflicts} so the app shows
+// them inline. Any other rule refusal (raised exception / CHECK) is also the owner's to fix (400); anything else is an outage (500).
+function conflictsOf(err: any): string[] | null {
+  if (!err || err.hint !== 'setting_conflict') return null;
+  try {
+    const list = JSON.parse(err.details ?? '[]');
+    return Array.isArray(list) && list.every((m) => typeof m === 'string') && list.length > 0 ? list : null;
+  } catch { return null; }
+}
+
+function writeRefusal(err: any) {
+  const conflicts = conflictsOf(err);
+  if (conflicts) return json({ error: conflicts.join('\n'), code: 'setting_conflict', conflicts }, 400);
+  const isRuleRefusal = err?.code === 'P0001' || err?.code === '23514';
+  return json({ error: err?.message || 'Could not save your changes.' }, isRuleRefusal ? 400 : 500);
+}
+
+// Asked BEFORE screening, so a contradiction is answered even when the classifier is down (and never held for review only to fail
+// on approval). Same server rule, nothing saved. A failed check is not a conflict; the write's own trigger still decides.
+async function preCheckConflicts(client: any, partnerId: string, kind: string, patch: Record<string, unknown>) {
+  const { data, error } = await client.rpc('check_business_setting_conflicts', { partner_id_param: partnerId, kind_param: kind, patch_param: patch });
+  if (error || !Array.isArray(data) || data.length === 0) return null;
+  return json({ error: data.join('\n'), code: 'setting_conflict', conflicts: data }, 400);
+}
+
 // Decision 6, Phase 4 (CLAUDE.md's Aug 27 2026 plan) -- real vision-model
 // classification for a business's own logo image, the one real image
 // surface the locked design names directly. Anthropic's Messages API
@@ -364,6 +390,10 @@ serve(async (req) => {
 Description: ${description || '(none)'}
 What makes them different: ${differentiator || '(none)'}`;
 
+      {
+        const conflict = await preCheckConflicts(supabaseAsUser, partnerId, 'profile', { attributes });
+        if (conflict) return conflict;
+      }
       const textResult = await classifyContent(contentBlock);
       if (!textResult) return screeningUnavailable();
 
@@ -431,10 +461,7 @@ What makes them different: ${differentiator || '(none)'}`;
         });
         if (writeError) {
           console.error('screen-business-content: low-tier write failed', writeError);
-          // A refusal by the database's own rules (a raised exception, a CHECK) is the owner's input to fix, e.g. "No children"
-          // with Family-friendly (item 86): 400 with the database's message, never an outage-style 500 that hides it.
-          const isRuleRefusal = writeError.code === 'P0001' || writeError.code === '23514';
-          return json({ error: writeError.message || 'Could not save your changes.' }, isRuleRefusal ? 400 : 500);
+          return writeRefusal(writeError); // a rule refusal is the owner's to fix (item 86), never an outage
         }
         return json({ riskTier, published: true, blocked: false, screeningId });
       }
@@ -494,6 +521,10 @@ What makes them different: ${differentiator || '(none)'}`;
       const contentBlock = `Title: ${title}
 Description: ${description || '(none)'}`;
 
+      {
+        const conflict = await preCheckConflicts(supabaseAsUser, partnerId, 'experience', { party_type: partyType, attributes });
+        if (conflict) return conflict;
+      }
       const result = await classifyContent(contentBlock);
       if (!result) return screeningUnavailable();
       const { riskTier, matchedCategories, reasoning } = result;
@@ -534,7 +565,7 @@ Description: ${description || '(none)'}`;
           });
           if (writeError) {
             console.error('screen-business-content: low-tier experience update failed', writeError);
-            return json({ error: writeError.message || 'Could not save your changes.' }, (writeError.code === 'P0001' || writeError.code === '23514') ? 400 : 500); // a rule refusal is the owner's to fix (item 86)
+            return writeRefusal(writeError); // a rule refusal is the owner's to fix (item 86)
           }
           return json({ riskTier, published: true, blocked: false, screeningId, experienceId });
         }
@@ -557,7 +588,7 @@ Description: ${description || '(none)'}`;
           // existing parseEntitlementError() already recognizes this exact
           // string, no new error shape introduced.
           console.error('screen-business-content: low-tier experience create failed', writeError);
-          return json({ error: writeError.message || 'Could not save your changes.' }, (writeError.code === 'P0001' || writeError.code === '23514') ? 400 : 500); // a rule refusal is the owner's to fix (item 86)
+          return writeRefusal(writeError); // a rule refusal is the owner's to fix (item 86)
         }
         return json({ riskTier, published: true, blocked: false, screeningId, experienceId: newId });
       }
@@ -714,6 +745,10 @@ Description: ${description || '(none)'}`;
       const contentBlock = `Title: ${title}
 Description: ${description || '(none)'}`;
 
+      {
+        const conflict = await preCheckConflicts(supabaseAsUser, partnerId, 'availability', { bundle_occasion: bundleOccasion });
+        if (conflict) return conflict;
+      }
       const result = await classifyContent(contentBlock);
       if (!result) return screeningUnavailable();
       const { riskTier, matchedCategories, reasoning } = result;
@@ -754,7 +789,7 @@ Description: ${description || '(none)'}`;
         });
         if (writeError) {
           console.error('screen-business-content: low-tier availability write failed', writeError);
-          return json({ error: writeError.message || 'Could not save your changes.' }, 500);
+          return writeRefusal(writeError);
         }
         return json({ riskTier, published: true, blocked: false, screeningId, availabilityId: writeResult?.availabilityId, matchedCount: writeResult?.matchedCount });
       }

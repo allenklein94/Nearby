@@ -9,6 +9,8 @@ export function serviceError(response, result, fallback) {
   const e = new Error(result?.error || fallback);
   e.status = response?.status ?? null;
   e.code = result?.code ?? null;
+  // Item 86: a refused contradictory setting carries the server's exact lines, shown inline (utils/settingConflicts.js).
+  if (Array.isArray(result?.conflicts)) e.conflicts = result.conflicts;
   return e;
 }
 

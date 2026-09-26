@@ -968,6 +968,16 @@ export async function setBusinessWeatherSetting(partnerId, setting) {
 }
 
 // Owner item 86: what the business does NOT accommodate (no_children / no_pets / adults_21_plus; [] clears). Migration 20270222.
+// Item 86 (migration 20270226): the server's own rule, asked without saving. kind: 'profile' | 'experience' | 'package' |
+// 'availability'; patch = the values being edited. Returns the exact conflict lines ([] = none). Never decides anything itself.
+export async function checkBusinessSettingConflicts(partnerId, kind, patch) {
+  const { data, error } = await supabase.rpc('check_business_setting_conflicts', {
+    partner_id_param: partnerId, kind_param: kind, patch_param: patch ?? {},
+  });
+  if (error) throw error;
+  return Array.isArray(data) ? data : [];
+}
+
 export async function setBusinessNotAccommodated(partnerId, keys) {
   const { error } = await supabase.rpc('set_business_not_accommodated', { partner_id_param: partnerId, keys_param: keys ?? [] });
   if (error) throw error;

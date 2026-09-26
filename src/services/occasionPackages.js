@@ -7,6 +7,7 @@
 // business_availability slot or a flat priority_occasions appetite signal.
 import { supabase } from './supabase';
 import { getUserLocation } from './userLocation';
+import { errorWithConflicts } from '../utils/settingConflicts';
 
 // Pure display helpers live in a separate, dependency-free module so they
 // stay directly unit-testable (see that file's own header comment) --
@@ -34,7 +35,7 @@ export async function createOccasionPackage({
     price_per_person_param: pricePerPerson,
     available_days_param: availableDays,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw errorWithConflicts(error); // item 86: a Family Gathering package vs No children is shown inline
   return data;
 }
 
@@ -51,7 +52,7 @@ export async function updateOccasionPackage(packageId, {
     price_per_person_param: pricePerPerson,
     available_days_param: availableDays,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw errorWithConflicts(error); // item 86: a Family Gathering package vs No children is shown inline
   return data;
 }
 

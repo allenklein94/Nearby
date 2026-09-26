@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
@@ -6,6 +6,10 @@ import { spacing, radius, typography } from '../theme';
 import { classifyBusinessDescription } from '../services/businessOnboardingAssistant';
 import { updateBusinessProfile, setBusinessOfferedOccasions, setBusinessAccommodations } from '../services/brandOffers';
 import { buildSetupPlan } from '../utils/businessSetupPlan';
+import SettingConflictNotice from './SettingConflictNotice';
+import { useSettingConflicts } from '../hooks/useSettingConflicts';
+import { checkBusinessSettingConflicts } from '../services/brandOffers';
+import { conflictMessages } from '../utils/settingConflicts';
 
 // "Tell Nearby about your business": the owner describes the business in a sentence or two, Nearby reads it back as
 // chips, and "Yes, continue" saves it through the existing setters. AI suggests, the owner confirms; nothing is saved
@@ -21,8 +25,24 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
   const [exclude, setExclude] = useState([]);
   const plan = result ? buildSetupPlan(partner, result, exclude) : null;
   const [saved, setSaved] = useState(false);
+  // Item 86: a contradiction with what is already set (e.g. "No children" vs a Family group) is the server's to decide; shown here.
+  const conflicts = useSettingConflicts(partner?.id ?? null);
+  const conflictCheck = plan ? {
+    kind: 'profile',
+    patch: {
+      ...(plan.patch.profile ? { attributes: plan.patch.profile.attributes } : {}),
+      ...(plan.patch.offeredOccasions ? { offered_occasions: plan.patch.offeredOccasions } : {}),
+      ...(plan.patch.partyTypes ? { accommodates_party_types: plan.patch.partyTypes } : {}),
+    },
+  } : null;
+  const conflictKey = JSON.stringify(conflictCheck);
+  useEffect(() => {
+    if (conflicts.entries.tell && conflictCheck) conflicts.recheck('tell', conflictCheck);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conflictKey]);
 
   function reset() {
+    conflicts.clear('tell');
     setResult(null);
     setExclude([]);
     setEditing(false);
@@ -50,6 +70,12 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
     if (!plan || busy) return;
     setBusy(true);
     try {
+      // Asked first (same server rule, nothing saved) so a contradiction never leaves these saves half-applied.
+      const lines = await checkBusinessSettingConflicts(partner.id, conflictCheck.kind, conflictCheck.patch);
+      if (conflicts.report('tell', { conflicts: lines }, { check: conflictCheck })) {
+        setBusy(false);
+        return;
+      }
       const applied = {};
       if (plan.patch.profile) {
         const p = plan.patch.profile;
@@ -80,7 +106,9 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
       reset();
       setText('');
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirm() });
+      if (!conflicts.report('tell', e, { check: conflictCheck })) {
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirm() });
+      }
     }
     setBusy(false);
   }
@@ -132,6 +160,7 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
               ? 'Tap a highlighted item to leave it out. Nothing you already set is removed.'
               : plan.hasChanges ? 'Looks right? Highlighted items will be added. Nothing you already set is removed.' : 'All of this is already in your profile.'}
           </Text>
+          <SettingConflictNotice messages={conflictMessages(conflicts.entries, 'tell')} />
           <View style={styles.row}>
             {plan.hasChanges ? (
               <TouchableOpacity style={[styles.primary, { flex: 1, opacity: busy ? 0.6 : 1 }]} onPress={confirm} disabled={busy} accessibilityRole="button" accessibilityLabel="Yes, continue">

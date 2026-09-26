@@ -1,4 +1,5 @@
--- Verifies migrations 20270222 + 20270224 + 20270225 (item 86 save-time contradictions, profile AND offerings). Rolled back; results via the exception text.
+-- Verifies migrations 20270222 + 20270224 + 20270225 + 20270226 (item 86 save-time contradictions, profile, offerings AND availability
+-- bundles; exact owner wording; structured refusal; the check-only call). Rolled back; results via the exception text.
 -- Each case starts from a clean business, applies the two settings in BOTH orders, and expects REFUSED or ALLOWED.
 begin;
 do $$
@@ -83,11 +84,19 @@ begin
       ('No children + Date Signature Experience',            'no_children',    'experience', 'date', '{quiet}', null, true, 'ALLOWED'),
       ('No children + Birthday package',                     'no_children',    'package', null, null, 'birthday', true, 'ALLOWED'),
       ('No children + Baby Shower package',                  'no_children',    'package', null, null, 'baby_shower', true, 'ALLOWED'),
-      ('No pets + Family Gathering package',                 'no_pets',        'package', null, null, 'family_gathering', true, 'ALLOWED');
+      ('No pets + Family Gathering package',                 'no_pets',        'package', null, null, 'family_gathering', true, 'ALLOWED'),
+      -- 20270226: availability posting bundles (active = live window; false = a posting that has ended)
+      ('No children + Family Gathering posting',             'no_children',    'availability', null, null, 'family_gathering', true, 'REFUSED'),
+      ('21+ + Family Gathering posting',                     'adults_21_plus', 'availability', null, null, 'family_gathering', true, 'REFUSED'),
+      ('No children + ended Family Gathering posting',       'no_children',    'availability', null, null, 'family_gathering', false, 'ALLOWED'),
+      ('No children + Date night posting',                   'no_children',    'availability', null, null, 'date_night', true, 'ALLOWED'),
+      ('No children + posting with no bundle',               'no_children',    'availability', null, null, null, true, 'ALLOWED'),
+      ('No pets + Family Gathering posting',                 'no_pets',        'availability', null, null, 'family_gathering', true, 'ALLOWED');
     for o in select * from ocases loop
       for dir in 1..2 loop
         delete from business_experiences where partner_id = b;
         delete from business_occasion_packages where partner_id = b;
+        delete from business_availability where partner_id = b;
         update brand_partners set attributes = '{}', priority_attributes = '{}', priority_occasions = '{}', offered_occasions = '{}',
           accommodates_party_types = '{}', not_accommodated = '{}', weather_setting = null, suited_age_min = null, suited_age_max = null,
           max_group_size = null, outdoor_capacity = null where id = b;
@@ -96,8 +105,12 @@ begin
           if dir = 1 then update brand_partners set not_accommodated = array[o.restriction] where id = b; end if;
           if o.kind = 'experience' then
             insert into business_experiences (partner_id, title, attributes, party_type, active) values (b, 'Test night', o.attrs, o.party, o.active);
-          else
+          elsif o.kind = 'package' then
             insert into business_occasion_packages (partner_id, occasion_type, name, active) values (b, o.occ, 'Test package', o.active);
+          else
+            insert into business_availability (partner_id, title, starts_at, ends_at, status, bundle_occasion)
+              values (b, 'Test posting', now() - interval '1 hour', case when o.active then now() + interval '3 hours' else now() - interval '10 minutes' end,
+                      case when o.active then 'active' else 'expired' end, o.occ);
           end if;
           if dir = 2 then update brand_partners set not_accommodated = array[o.restriction] where id = b; end if;
           got := 'ALLOWED';
@@ -111,6 +124,7 @@ begin
     -- through the owner's real RPCs (the paths the app uses), both directions
     delete from business_experiences where partner_id = b;
     delete from business_occasion_packages where partner_id = b;
+    delete from business_availability where partner_id = b;
     update brand_partners set not_accommodated = array['no_children'] where id = b;
     perform set_config('request.jwt.claims', json_build_object('sub', owner_id, 'role', 'authenticated')::text, true);
     begin
@@ -128,6 +142,92 @@ begin
       out := out || 'FAIL rpc set No children with a Family Gathering package: ALLOWED' || E'\n';
     exception when others then out := out || 'ok   rpc set No children with a Family Gathering package: REFUSED -- ' || sqlerrm || E'\n'; end;
     perform set_config('request.jwt.claims', '', true);
+  end;
+
+  -- 20270226: exact wording, all conflicts in one refusal, structured DETAIL/HINT, check-only call
+  declare v_msg text; v_detail text; v_hint text; owner_id uuid; got text[];
+  begin
+    delete from business_experiences where partner_id = b;
+    delete from business_occasion_packages where partner_id = b;
+    delete from business_availability where partner_id = b;
+    update brand_partners set attributes = '{}', priority_attributes = '{}', priority_occasions = '{}', offered_occasions = '{}',
+      accommodates_party_types = '{}', not_accommodated = '{}', weather_setting = null, suited_age_min = null, suited_age_max = null,
+      max_group_size = null, outdoor_capacity = null where id = b;
+    update brand_partners set attributes = array['kid_friendly', 'kid_menu', 'outdoor_seating'], priority_attributes = array['kid_friendly'],
+      priority_occasions = array['family_gathering'], outdoor_capacity = 30 where id = b;
+    insert into business_occasion_packages (partner_id, occasion_type, name, active) values (b, 'family_gathering', 'P', true);
+    insert into business_availability (partner_id, title, starts_at, ends_at, status, bundle_occasion)
+      values (b, 'A', now(), now() + interval '2 hours', 'active', 'family_gathering');
+    begin
+      update brand_partners set not_accommodated = array['no_children'], weather_setting = 'indoor' where id = b;
+      out := out || 'FAIL multi-conflict save: ALLOWED' || E'\n';
+    exception when others then
+      get stacked diagnostics v_msg = message_text, v_detail = pg_exception_detail, v_hint = pg_exception_hint;
+      out := out || (case when v_hint = 'setting_conflict' and v_detail::jsonb = jsonb_build_array(
+          'No children conflicts with Family-friendly. Remove one of these settings to continue.',
+          'No children conflicts with Kids menu. Remove one of these settings to continue.',
+          'No children conflicts with wanting more families. Remove one of these settings to continue.',
+          'No children conflicts with Family Gathering. Remove one of these settings to continue.',
+          'Indoor only conflicts with Outdoor dining. Remove one of these settings to continue.',
+          'Indoor only conflicts with the outdoor area size. Remove one of these settings to continue.')
+        and v_msg = array_to_string(array(select jsonb_array_elements_text(v_detail::jsonb)), E'\n')
+        then 'ok   ' else 'FAIL ' end) || 'multi-conflict save: every line once (package + posting = one Family Gathering), hint + detail -- ' || v_detail || E'\n';
+    end;
+    -- 21+ alone names itself
+    update brand_partners set attributes = array['kid_friendly'], priority_attributes = '{}', priority_occasions = '{}', outdoor_capacity = null where id = b;
+    delete from business_occasion_packages where partner_id = b; delete from business_availability where partner_id = b;
+    begin
+      update brand_partners set not_accommodated = array['adults_21_plus'] where id = b;
+      out := out || 'FAIL 21+ + Family-friendly: ALLOWED' || E'\n';
+    exception when others then
+      out := out || (case when sqlerrm = '21+ only conflicts with Family-friendly. Remove one of these settings to continue.' then 'ok   ' else 'FAIL ' end) || '21+ wording: ' || sqlerrm || E'\n';
+    end;
+    -- same message from the offering side
+    update brand_partners set attributes = '{}', not_accommodated = array['no_children'] where id = b;
+    begin
+      insert into business_availability (partner_id, title, starts_at, ends_at, status, bundle_occasion) values (b, 'A', now(), now() + interval '2 hours', 'active', 'family_gathering');
+      out := out || 'FAIL posting with No children: ALLOWED' || E'\n';
+    exception when others then
+      out := out || (case when sqlerrm = 'No children conflicts with Family Gathering. Remove one of these settings to continue.' then 'ok   ' else 'FAIL ' end) || 'posting-side wording: ' || sqlerrm || E'\n';
+    end;
+    -- through the real RPC the edge function uses (post_business_availability), and the check-only call
+    select id into owner_id from profiles where managed_partner_id = b limit 1;
+    update brand_partners set address = '1 Test St', latitude = 40.0, longitude = -75.0 where id = b;
+    perform set_config('request.jwt.claims', json_build_object('sub', owner_id, 'role', 'authenticated')::text, true);
+    begin
+      perform post_business_availability(null, 'Sunday family table', null, null, null, null, now(), now() + interval '2 hours', 15, 'family_gathering', '{}', null);
+      out := out || 'FAIL rpc post_business_availability Family Gathering with No children: ALLOWED' || E'\n';
+    exception when others then
+      get stacked diagnostics v_hint = pg_exception_hint;
+      out := out || (case when v_hint = 'setting_conflict' then 'ok   ' else 'FAIL ' end) || 'rpc post_business_availability Family Gathering with No children: REFUSED -- ' || sqlerrm || E'\n';
+    end;
+    perform set_business_not_accommodated(b, array[]::text[]);
+    perform post_business_availability(null, 'Sunday family table', null, null, null, null, now(), now() + interval '2 hours', 15, 'family_gathering', '{}', null);
+    begin
+      perform set_business_not_accommodated(b, array['no_children']);
+      out := out || 'FAIL rpc set No children with a live Family Gathering posting: ALLOWED' || E'\n';
+    exception when others then out := out || 'ok   rpc set No children with a live Family Gathering posting: REFUSED -- ' || sqlerrm || E'\n'; end;
+    got := check_business_setting_conflicts(b, 'profile', '{"not_accommodated": ["no_children"]}');
+    out := out || (case when got = array['No children conflicts with Family Gathering. Remove one of these settings to continue.'] then 'ok   ' else 'FAIL ' end) || 'check-only profile: ' || coalesce(array_to_string(got, ' | '), 'null') || E'\n';
+    out := out || (case when (select not_accommodated from brand_partners where id = b) = '{}' then 'ok   ' else 'FAIL ' end) || 'check-only saved nothing' || E'\n';
+    update business_availability set status = 'cancelled' where partner_id = b;
+    got := check_business_setting_conflicts(b, 'profile', '{"not_accommodated": ["no_children"]}');
+    out := out || (case when got = '{}' then 'ok   ' else 'FAIL ' end) || 'check-only clear once the posting is cancelled' || E'\n';
+    perform set_business_not_accommodated(b, array['no_children']);
+    got := check_business_setting_conflicts(b, 'availability', '{"bundle_occasion": "family_gathering"}');
+    out := out || (case when got = array['No children conflicts with Family Gathering. Remove one of these settings to continue.'] then 'ok   ' else 'FAIL ' end) || 'check-only availability' || E'\n';
+    got := check_business_setting_conflicts(b, 'experience', '{"party_type": "family", "attributes": []}');
+    out := out || (case when got = array['No children conflicts with Family Signature Experience. Remove one of these settings to continue.'] then 'ok   ' else 'FAIL ' end) || 'check-only experience' || E'\n';
+    got := check_business_setting_conflicts(b, 'package', '{"occasion_type": "birthday"}');
+    out := out || (case when got = '{}' then 'ok   ' else 'FAIL ' end) || 'check-only package birthday clear' || E'\n';
+    perform set_config('request.jwt.claims', json_build_object('sub', gen_random_uuid(), 'role', 'authenticated')::text, true);
+    begin
+      perform check_business_setting_conflicts(b, 'profile', '{}');
+      out := out || 'FAIL check-only by a non-owner: ALLOWED' || E'\n';
+    exception when others then out := out || 'ok   check-only by a non-owner: REFUSED' || E'\n'; end;
+    perform set_config('request.jwt.claims', '', true);
+    out := out || (case when not has_function_privilege('anon', 'public.check_business_setting_conflicts(uuid,text,jsonb)', 'execute')
+      and not has_function_privilege('authenticated', 'public._raise_setting_conflicts(text[])', 'execute') then 'ok   ' else 'FAIL ' end) || 'grants' || E'\n';
   end;
   raise exception E'RESULT\n%', out;
 end $$;

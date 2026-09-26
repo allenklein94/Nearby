@@ -71,14 +71,16 @@ describe('save-time contradictions: one server trigger, no client copy (migratio
   });
   it('experience saves through the screening function surface a rule refusal as 400', () => {
     const fn = fs.readFileSync(path.join(ROOT, 'supabase/functions/screen-business-content/index.ts'), 'utf8');
-    expect((fn.match(/experience (update|create) failed', writeError\);\s*return json\(\{ error: writeError\.message \|\| 'Could not save your changes\.' \}, \(writeError\.code === 'P0001'/g) ?? []).length).toBe(2);
+    expect((fn.match(/experience (update|create) failed', writeError\);\s*return writeRefusal\(writeError\)/g) ?? []).length).toBe(2);
+    // one helper: a setting conflict = 400 {code, conflicts}; another rule refusal = 400; anything else = 500
+    expect(fn).toMatch(/function writeRefusal[\s\S]{0,400}code: 'setting_conflict', conflicts \}, 400\)[\s\S]{0,200}err\?\.code === 'P0001'[\s\S]{0,120}isRuleRefusal \? 400 : 500/);
   });
   it('no conflict decision in the client; the profile editor surfaces the refusal as the owner\'s to fix', () => {
     const dash = fs.readFileSync(path.join(ROOT, 'src/screens/BusinessDashboardScreen.js'), 'utf8');
     expect(dash).not.toMatch(/notAccommodatedProblem|kid_friendly[^\n]*no_children|no_children[^\n]*kid_friendly/);
     expect(fs.readFileSync(path.join(ROOT, 'src/constants/businessRestrictions.js'), 'utf8')).not.toMatch(/export function notAccommodatedProblem/);
     const fn = fs.readFileSync(path.join(ROOT, 'supabase/functions/screen-business-content/index.ts'), 'utf8');
-    expect(fn).toMatch(/writeError\.code === 'P0001'[\s\S]{0,120}isRuleRefusal \? 400 : 500/);
+    expect(fn).toMatch(/low-tier write failed', writeError\);\s*return writeRefusal\(writeError\)/);
   });
   it('public line only when declared', () => {
     expect(notAccommodatedLine({ not_accommodated: [] })).toBeNull();
