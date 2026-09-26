@@ -65,6 +65,7 @@ import { timeBudgetFromText, applyTimeBudgetToCandidates, timeBudgetCaption } fr
 import { clockWindowFromText, dateAnchorFromText, applyClockWindowToCandidates, clockWindowCaption, windowSpan, clockLabel } from '../constants/clockWindow';
 import { fitExperienceToTime } from '../utils/planTiming';
 import { intensityFromText, effortFromText, applyIntensityToCandidates, applyEffortToCandidates, energiesWithoutIntensity } from '../constants/intensityEffort';
+import { socialSignalsFromText, applySocialToCandidates } from '../constants/socialContext';
 import { spontaneityOf, isImmediate, applySpontaneityToCandidates, spontaneityCaption } from '../constants/spontaneity';
 import { getUserLocation } from './userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
@@ -131,6 +132,9 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       // gathering filling "Something to Do") without a second fetch.
       category: gathering.interest_tag ?? null,
       capacity: gathering.capacity ?? null,
+      // host-declared social facts the social-context pass compares a typed ask against (constants/socialContext.js; nothing new stored)
+      partyType: gathering.party_type ?? null,
+      groupSizeFeel: gathering.group_size_feel ?? null,
       // real host-declared facts the energy / commitment / spontaneity passes read (constants/energyLevel|commitmentLevel|spontaneity.js)
       startsAt: gathering.scheduled_at ?? null,
       durationMinutes: gathering.duration_minutes ?? null,
@@ -709,6 +713,9 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const askedIntensity = intensityFromText(rawText);
   deduped = applyIntensityToCandidates(deduped, askedIntensity);
   deduped = applyEffortToCandidates(deduped, effortFromText(rawText));
+  // Social context (2026-09-26): "a few friends" / "big group hike" / "meet new people" compared against the gathering's existing
+  // party_type, capacity and group_size_feel; gatherings only, ranking only, nothing stored.
+  deduped = applySocialToCandidates(deduped, socialSignalsFromText(rawText), { partyType });
   // Item 68: "I only have an hour" lifts what fits (declared length, else the category's typical one) and sinks what clearly
   // does not; unknown lengths are untouched, nothing is removed.
   const timeBudget = timeBudgetFromText(rawText);
