@@ -1,7 +1,8 @@
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
-import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, getPartnerPriceLevels, getPartnerSuitedAges } from './brandOffers';
+import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, getPartnerPriceLevels, getPartnerSuitedAges, getPartnerOperatingInfo } from './brandOffers';
+import { openNowAskFromText, candidateEntity, filterOpenNow, openNowLift, OPEN_NOW_CAPTION } from '../utils/operatingStatus';
 import { applyBusinessPriceToCandidates } from '../utils/priceBias';
 import { applyAskWeather } from '../utils/askWeather';
 import { occasionLabel } from '../constants/businessAttributes';
@@ -289,6 +290,10 @@ async function resolvePerks(category, location) {
     // real, comparable match, same weight as a gathering's own interest
     // match.
     score: offer.target_interest_tag && offer.target_interest_tag === category ? SCORE_INTEREST_MATCH : 0,
+    // read by the open-now resolver (utils/operatingStatus.js): expiry and the perk's own time-of-day window
+    expiresAt: offer.expires_at ?? null,
+    validFromTime: offer.valid_from_time ?? null,
+    validToTime: offer.valid_to_time ?? null,
   }));
 }
 
@@ -395,6 +400,9 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
       type: 'business_availability',
       id: row.id,
       partnerId: row.partner_id,
+      // the posting's live window, read by the open-now resolver (named apart from a gathering's startsAt on purpose)
+      postingStartsAt: row.starts_at ?? null,
+      postingEndsAt: row.ends_at ?? null,
       distanceMiles: row.distance_miles ?? null,
       title: `${row.partner_name} has availability`,
       subtitle: bonusReasons[0] ? `${baseSubtitle} · ${bonusReasons[0]}` : baseSubtitle,
@@ -768,10 +776,28 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const askFacets = applyAskFacets(deduped, parseAskFacets(rawText));
   deduped = askFacets.items;
 
+  // Open now (owner item 71, utils/operatingStatus.js, the one resolver): "what's open" / "still open" / "somewhere I can go
+  // right now" keeps ONLY confirmed-usable results (unknown and closed both drop out). An immediate ask without that language
+  // only lifts businesses and perks that are confirmed usable (available +2, open +1); gatherings already rank by their real
+  // start in the spontaneity pass, so they get no second lift. Nothing about this is stored or sent to a business.
+  const openNowOnly = openNowAskFromText(rawText);
+  if (openNowOnly || isImmediate(spontaneity)) {
+    let partnerInfo = new Map();
+    try {
+      partnerInfo = await getPartnerOperatingInfo(deduped.map((c) => c.partnerId));
+    } catch (e) {
+      console.error('open-now partner lookup skipped', e);
+    }
+    const toEntity = (c) => candidateEntity(c, partnerInfo);
+    deduped = openNowOnly
+      ? filterOpenNow(deduped, toEntity)
+      : deduped.map((c) => (c.type === 'gathering' ? c : { ...c, score: (c.score ?? 0) + openNowLift(toEntity(c)) }));
+  }
+
   deduped.sort((a, b) => b.score - a.score);
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
-  const openEndedNote = [planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacets.caption].filter(Boolean).join(' · ') || null;
+  const openEndedNote = [openNowOnly ? OPEN_NOW_CAPTION : null, planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacets.caption].filter(Boolean).join(' · ') || null;
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,
@@ -788,7 +814,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const planSpanLabel = timeBudget == null && planBudget != null ? `${clockLabel(clockWindow.after)} and ${clockLabel(clockWindow.before)}` : null;
   const experience = fitExperienceToTime(assembleExperience(occasion, deduped, { partyType, dateWindow, attributes, priceLevel, budgetMax, intentRecipe: recognizeCombination({ text: rawText, occasion, partyType, dateWindow, attributes })?.recipe ?? null }), planBudget, planSpanLabel);
 
-  return { items: deduped.slice(0, RESULT_CAP), experience, openEndedNote };
+  return { items: deduped.slice(0, RESULT_CAP), experience, openEndedNote, openNowOnly };
 }
 
 // A synthetic result item (not a real resolveIntent() candidate) --
@@ -871,13 +897,13 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
     };
   }
 
-  const { items: resolved, experience, openEndedNote } = await resolveIntent({
+  const { items: resolved, experience, openEndedNote, openNowOnly } = await resolveIntent({
     category: classifyResult.category, dateWindow: classifyResult.dateWindow, rawText: typedText,
     partySize: classifyResult.partySize ?? null, priceLevel: classifyResult.priceLevel ?? null, budgetMax: classifyResult.budgetMax ?? null,
     partyType: classifyResult.partyType ?? null, attributes: classifyResult.attributes ?? [],
     cuisine: classifyResult.cuisine ?? null, occasion: classifyResult.occasion ?? null,
   });
-  const items = detectFriendDiscoveryIntent(typedText)
+  const items = detectFriendDiscoveryIntent(typedText) && !openNowOnly // an Open-now ask keeps only confirmed-open things
     ? [...resolved, buildFriendDiscoveryResultItem(classifyResult.category)]
     : resolved;
   const submissionId = await recordIntentSubmission({
@@ -887,7 +913,7 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
   });
   return {
     outcome: items.length > 0 ? 'results' : 'empty',
-    classifyResult, typedText, submissionId, items, experience, openEndedNote,
+    classifyResult, typedText, submissionId, items, experience, openEndedNote, openNowOnly: openNowOnly === true,
   };
 }
 

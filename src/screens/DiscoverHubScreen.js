@@ -69,6 +69,7 @@ import { gatheringSignalLine, PARTY_TYPE_LABELS } from '../constants/gatheringDi
 // the business/perk half of the same fix.
 import { businessSignalLine } from '../constants/businessDisplaySignals';
 import { getUserLocation } from '../services/userLocation';
+import { filterOpenNow, gatheringEntity, placeEntity, perkEntity, businessEntity } from '../utils/operatingStatus';
 
 // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- real, disclosed
 // thresholds against getGatheringFitReasons()'s real 0-22 score range
@@ -351,6 +352,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
     setTypeFilter(key);
   }
   const isAll = typeFilter === 'all';
+  // Open now (owner item 71): one toggle over every tab and category view; typed "what's open" asks turn it on too. The rule
+  // is utils/operatingStatus.js only -- this screen never decides open/closed itself.
+  const [openNowOnly, setOpenNowOnly] = useState(false);
   const [viewStyle, setViewStyle] = useState('list');
   const [placesCategory, setPlacesCategory] = useState('food_drink');
   const [userLocation, setUserLocation] = useState(null);
@@ -688,15 +692,20 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // (searchedGatherings/searchedCommunities, populated by the debounced
   // effect above) once actively searching, instead of client-side
   // .filter().includes() over the full already-fetched browse lists.
-  const filteredGatherings = isSearching ? searchedGatherings : gatherings;
-  const filteredCommunities = isSearching ? searchedCommunities : communities;
+  // Communities have no hours, so the Open-now chip is not offered on that tab; everywhere else it keeps only confirmed-open
+  // results (unknown hours are left out on purpose) and hides communities from the blended view.
+  const openNowActive = openNowOnly && (!!expandedContext || typeFilter !== 'communities');
+  const openNowAt = new Date();
+  const applyOpenNow = (list, toEntity) => (openNowActive ? filterOpenNow(list, toEntity, openNowAt) : list);
+  const filteredGatherings = applyOpenNow(isSearching ? searchedGatherings : gatherings, gatheringEntity);
+  const filteredCommunities = openNowActive ? [] : (isSearching ? searchedCommunities : communities);
   // Offers: real server-side, indexed search results (searchedOffers,
   // populated by the debounced effect above — a genuine cross-table search
   // over brand_offers.title/description and brand_partners.name via the new
   // search_offer_ids() RPC) once actively searching, instead of the
   // client-side .filter().includes() this used before.
   // A business's own weather setting re-ranks perks (item 63): ranks, never hides; unchanged order without a weather signal.
-  const filteredOffers = rankOffersByBusinessWeather(isSearching ? searchedOffers : offers, weatherSignal);
+  const filteredOffers = rankOffersByBusinessWeather(applyOpenNow(isSearching ? searchedOffers : offers, (o) => perkEntity(o)), weatherSignal);
 
   // Weather-aware re-ranking (CLAUDE.md, 14-item UX review item 9) --
   // reuses isIndoorCategory/isOutdoorCategory (Home's own weather card
@@ -862,7 +871,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // real and already applied -- the label names the constraint that's
   // genuinely in force rather than claiming one that isn't.
   const contextGatheringsAll = expandedContext
-    ? gatherings.filter((g) => (expandedContext.categoryTags
+    ? applyOpenNow(gatherings, gatheringEntity).filter((g) => (expandedContext.categoryTags
         ? expandedContext.categoryTags.includes(g.interest_tag)
         : g.interest_tag === expandedContext.interestTag && gatheringTimeBadge(g.scheduled_at) === expandedContext.timeBucket))
     : [];
@@ -875,7 +884,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // is always empty there -- not a second, redundant listing of the exact
   // same rows.
   const contextOtherTimeAll = expandedContext && !expandedContext.categoryTags
-    ? gatherings.filter((g) => g.interest_tag === expandedContext.interestTag && !contextGatheringIds.has(g.id))
+    ? applyOpenNow(gatherings, gatheringEntity).filter((g) => g.interest_tag === expandedContext.interestTag && !contextGatheringIds.has(g.id))
     : [];
   // "Happening tonight": a slice of the two lists above (same rows, same time badge); a gathering shown there is removed from
   // the list it came from, so it never appears twice. Empty (and not rendered) when nothing is on tonight.
@@ -886,7 +895,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // same one the Perks section above already reads) -- not a keyword guess
   // against the offer's title.
   const contextOffers = expandedContext
-    ? offers.filter((o) => (expandedContext.categoryTags
+    ? applyOpenNow(offers, (o) => perkEntity(o)).filter((o) => (expandedContext.categoryTags
         ? expandedContext.categoryTags.includes(o.target_interest_tag)
         : o.target_interest_tag === expandedContext.interestTag))
     : [];
@@ -916,7 +925,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const tag = contextTags.find((t) => friendsInterestReason(t, contextFriendMap?.[t]));
     return tag ? friendsInterestReason(tag, contextFriendMap[tag]) : null;
   })();
-  const contextCommunities = expandedContext ? communities.filter((c) => contextTags.includes(c.interest_tag)) : [];
+  const contextPlacesShown = applyOpenNow(contextPlaces, placeEntity);
+  const contextCommunities = expandedContext && !openNowActive ? communities.filter((c) => contextTags.includes(c.interest_tag)) : [];
 
   // Real Google Places keyword search on the context's own interest tag
   // ("Coffee", "Yoga"), fired only once a context is actually open --
@@ -1007,7 +1017,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const gatheringsToShow = isAll ? dedupedGatherings.slice(0, PREVIEW_COUNT) : dedupedGatherings;
   const communitiesToShow = isAll ? filteredCommunities.slice(0, PREVIEW_COUNT) : filteredCommunities;
   const offersToShow = isAll ? filteredOffers.slice(0, PREVIEW_COUNT) : filteredOffers;
-  const placesToShow = isAll ? places.slice(0, PREVIEW_COUNT) : places;
+  const visiblePlaces = applyOpenNow(places, placeEntity);
+  const placesToShow = isAll ? visiblePlaces.slice(0, PREVIEW_COUNT) : visiblePlaces;
 
   // Decision 5 (CLAUDE.md, Aug 27 2026): a real "nothing anywhere matched"
   // state, checked against all three real searchable sections regardless of
@@ -1017,6 +1028,32 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Google-Places-backed browse, not a create-it candidate).
   const nothingMatchedAnywhere = isSearching && !loadingSearch
     && filteredGatherings.length === 0 && filteredCommunities.length === 0 && filteredOffers.length === 0;
+
+  function renderOpenNowChip() {
+    return (
+      <TapActiveChip
+        active={openNowOnly}
+        style={[styles.filterChip, openNowOnly && styles.filterChipActive]}
+        onPress={() => setOpenNowOnly((v) => !v)}
+        accessibilityLabel="Open now"
+        accessibilityRole="switch"
+        accessibilityState={{ checked: openNowOnly }}
+      >
+        <Text style={[styles.filterChipText, openNowOnly && styles.filterChipTextActive]}>🕒 Open now</Text>
+      </TapActiveChip>
+    );
+  }
+
+  function renderOpenNowEmpty() {
+    return (
+      <>
+        <EmptyCopy id="open_now_none" />
+        <TouchableOpacity onPress={() => setOpenNowOnly(false)} accessibilityLabel="Show everything" accessibilityRole="button">
+          <Text style={styles.emptyActionText}>Show Everything →</Text>
+        </TouchableOpacity>
+      </>
+    );
+  }
 
   // Item 39: explicit-submit (Enter/Search key), not the live debounce the
   // literal keyword search above uses -- see intentSearchRequestId's own
@@ -1033,6 +1070,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
         onPhase: (p) => { if (thisRequestId === intentSearchRequestId.current) setIntentPhase(p); },
       });
       if (thisRequestId !== intentSearchRequestId.current) return;
+      // "what's open" / "still open" turns on the same Open-now chip (one definition, utils/operatingStatus.js).
+      if (result.openNowOnly) setOpenNowOnly(true);
       if (result.outcome === 'business_partner') {
         setIntentSearch(null);
         routeClassifiedIntentToCreation(navigation, result.classifyResult, typedText);
@@ -1147,7 +1186,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   }
 
   const mapDeals = showPerks ? filteredOffers.filter((o) => o.latitude != null && o.longitude != null) : [];
-  const mapBusinesses = showPerks ? businesses : [];
+  const mapBusinesses = showPerks ? applyOpenNow(businesses, (b) => businessEntity(b)) : [];
 
   const activeModeInfo = DISCOVER_MODES.find((m) => m.key === mode);
 
@@ -1516,7 +1555,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
               <Text style={styles.breadcrumbBack}>←</Text>
             </TouchableOpacity>
             <Text style={styles.breadcrumbText} numberOfLines={1}>{contextLabel}</Text>
+            {renderOpenNowChip()}
           </View>
+        )}
+        {mode === 'things' && openNowActive && (
+          <Text style={styles.openNowNote}>Only what we can confirm is open right now. Places without posted hours are left out.</Text>
         )}
 
         {mode === 'things' && !expandedContext && (
@@ -1574,6 +1617,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                     </TapActiveChip>
                   );
                 })}
+                {typeFilter !== 'communities' && renderOpenNowChip()}
               </ScrollView>
               {showViewToggle && (
                 <TouchableOpacity
@@ -1803,7 +1847,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <View style={{ marginVertical: spacing.md }}>
               <NLoader fullScreen={false} size="compact" kind="places" />
             </View>
-          ) : contextPlaces.length === 0 ? (
+          ) : openNowActive && contextPlaces.length > 0 && contextPlacesShown.length === 0 ? (
+            renderOpenNowEmpty()
+          ) : contextPlacesShown.length === 0 ? (
             <>
               <EmptyCopy id="context_places" vars={{ topic: contextTopicLabel.toLowerCase() }} />
               <TouchableOpacity onPress={closeContext} accessibilityLabel="Browse other categories" accessibilityRole="button">
@@ -1811,7 +1857,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               </TouchableOpacity>
             </>
           ) : (
-            contextPlaces.slice(0, PREVIEW_COUNT).map((p, i) => (
+            contextPlacesShown.slice(0, PREVIEW_COUNT).map((p, i) => (
               <StaggeredReveal key={p.placeId} index={i}>
                 <PlaceCard
                   photoUrl={p.photoRef ? getPlacePhotoUrl(p.photoRef) : null}
@@ -1827,7 +1873,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
 
           <Text style={styles.sectionHeader}>Perks</Text>
-          {contextOffers.length === 0 ? (
+          {openNowActive && contextOffers.length === 0 ? (
+            renderOpenNowEmpty()
+          ) : contextOffers.length === 0 ? (
             <>
               <EmptyCopy id="context_perks" vars={{ topic: contextTopicLabel.toLowerCase() }} />
               <TouchableOpacity onPress={closeContext} accessibilityLabel="Browse other categories" accessibilityRole="button">
@@ -2244,7 +2292,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
 
           {/* Sponsored slot (item 44): Places tab only, its own card above the organic list; never in the blended All view or a search. */}
-          {typeFilter === 'places' && !isSearching && (
+          {/* Not shown while Open now is on: a paid card must never ride the filter (it carries no hours). */}
+          {typeFilter === 'places' && !isSearching && !openNowActive && (
             <SponsoredSpotlightSlot
               userLocation={userLocation}
               categoryGroup={placesCategory}
@@ -2256,7 +2305,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionHeaderRowLabel}>Places</Text>
-                {isAll && places.length > 0 && (
+                {isAll && visiblePlaces.length > 0 && (
                   <TouchableOpacity onPress={() => setTypeTab('places')} accessibilityLabel="See all places" accessibilityRole="button">
                     <Text style={styles.seeAllInline}>See all →</Text>
                   </TouchableOpacity>
@@ -2273,6 +2322,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 <View style={{ marginVertical: spacing.md }}>
                   <NLoader fullScreen={false} size="compact" kind="places" />
                 </View>
+              ) : openNowActive && places.length > 0 && placesToShow.length === 0 ? (
+                renderOpenNowEmpty()
               ) : placesToShow.length === 0 ? (
                 <>
                   <EmptyCopy id={isSearching ? 'places_search' : 'places_category'} vars={{ query: (searchQuery ?? '').trim() }} />
@@ -2349,7 +2400,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
 
           {/* Sponsored slot (item 44): Perks tab only (no category filter here, so any allow-listed category in range). */}
-          {typeFilter === 'perks' && !isSearching && (
+          {typeFilter === 'perks' && !isSearching && !openNowActive && (
             <SponsoredSpotlightSlot userLocation={userLocation} categoryGroup={null} navigation={navigation} />
           )}
 
@@ -2405,7 +2456,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               call Home's own intent box already uses, then lands on
               whichever real creation screen it returns, term carried
               forward as a real, editable prefill. Never auto-submitted. */}
-          {nothingMatchedAnywhere && (
+          {nothingMatchedAnywhere && !openNowActive && (
             <View style={styles.createItCard}>
               <Text style={styles.createItTitle}>Don't see what you're looking for?</Text>
               <Text style={styles.createItSubtitle}>Tell Nearby what you want to do.</Text>
@@ -2569,6 +2620,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   searchInput: { flex: 1, color: colors.textPrimary, paddingVertical: spacing.md, fontSize: 15 },
   searchClear: { color: colors.textTertiary, fontSize: 16, paddingLeft: spacing.sm },
   filterRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+  openNowNote: { color: colors.textTertiary, fontSize: 12, marginBottom: spacing.sm },
   filterChip: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full,
     borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.sm,

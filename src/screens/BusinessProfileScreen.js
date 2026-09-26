@@ -20,6 +20,7 @@ import {
 } from '../services/brandOffers';
 import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
 import { getCommunityMemberCount } from '../services/communities';
+import { hoursStatus, weekHoursLines } from '../utils/operatingStatus';
 import { getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { businessAttributeLabel, cuisineLabel, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, experiencePriceLabel, experiencePartyTypeLabel } from '../constants/businessAttributes';
@@ -255,6 +256,17 @@ export default function BusinessProfileScreen({ route, navigation }) {
           <Text style={styles.reliabilityLine}>{formatPartnerReliabilityLine(fulfillmentReputation, fulfillmentResponseTime)}</Text>
         )}
 
+        {/* Hours (item 71): only what the owner declared, read by the one open-now resolver; nothing when not declared. */}
+        {weekHoursLines(partner.operating_hours) && (
+          <View style={{ marginBottom: 6 }}>
+            {hoursStatus(partner.operating_hours).label ? (
+              <Text style={styles.reliabilityLine}>🕒 {hoursStatus(partner.operating_hours).label}</Text>
+            ) : null}
+            {weekHoursLines(partner.operating_hours).map((l) => (
+              <Text key={l.day} style={styles.reliabilityLine}>{l.day}  {l.text}</Text>
+            ))}
+          </View>
+        )}
         {/* "Business Story" plan, Phase 3 -- a real, self-reported
             "how's business right now" signal, hidden once stale so it
             never reads as real-time when it isn't (see CLAUDE.md). */}

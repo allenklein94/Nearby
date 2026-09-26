@@ -14,6 +14,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PlatformDateTimeInput from '../components/PlatformDateTimeInput';
+import BusinessHoursEditor from '../components/BusinessHoursEditor';
 import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
@@ -5329,6 +5330,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.helperText}>
                   Requests for these occasions reach you first. Add a package under Occasion Packages to offer one automatically.
                 </Text>
+                {/* Hours (item 71): one optional row, expands in place. Feeds the consumer "Open now" filter; never inferred. */}
+                {selectedPartner ? (
+                  <BusinessHoursEditor
+                    partner={selectedPartner}
+                    onSaved={(hours) => setSelectedPartner((prev) => ({ ...prev, operating_hours: hours }))}
+                  />
+                ) : null}
                 {/* Weather sensitivity (item 63): say it once; Nearby ranks your offers with the weather (never hides them). */}
                 <Text style={styles.sectionHeader}>Is your experience affected by weather?</Text>
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>

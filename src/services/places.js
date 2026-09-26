@@ -52,6 +52,8 @@ export async function searchNearbyPlaces(latitude, longitude, category, keyword 
   // tier for Nearby/Text Search — no extra fields param or per-place Details call
   // needed, unlike weekly opening hours (only in Place Details, deliberately not
   // fetched here to avoid N extra network calls per list of 20 places).
+  // When Google answered: its open_now is a snapshot, read as "unknown" once stale (utils/operatingStatus.js).
+  const fetchedAt = new Date().toISOString();
   const places = (data.results ?? []).slice(0, 20).map((p) => ({
     placeId: p.place_id,
     name: p.name,
@@ -59,6 +61,7 @@ export async function searchNearbyPlaces(latitude, longitude, category, keyword 
     rating: p.rating ?? null,
     reviewCount: p.user_ratings_total ?? null,
     openNow: p.opening_hours?.open_now ?? null,
+    fetchedAt,
     priceLevel: typeof p.price_level === 'number' ? p.price_level : null,
     latitude: p.geometry?.location?.lat,
     longitude: p.geometry?.location?.lng,

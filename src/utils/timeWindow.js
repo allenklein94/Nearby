@@ -6,9 +6,9 @@
 // a window with neither an end nor a duration never claims it is still going beyond the shared 30-minute "just started" rule
 // (timeContext.whenLabel), and an unparseable time gives phase 'unknown' and no label.
 //
-// NOT covered, on purpose: business opening hours ("Open now / Closing soon"). No per-business hours exist in the data model
-// (a locked decision), so the engine has nothing real to run on; if hours are ever collected they become a recurring window
-// feeding this same function, not a second engine. Google Places' own openNow flag stays that provider's field.
+// Business opening hours (owner-declared since item 71, 2026-09-26) are a RECURRING weekly window in the business's timezone,
+// evaluated by utils/operatingStatus.js, which also reads gatherings' live phase from this engine. Google Places' own openNow
+// flag stays that provider's field and is read there too.
 import { whenLabel } from './timeContext';
 
 export const ENDING_SOON_MIN = 30;

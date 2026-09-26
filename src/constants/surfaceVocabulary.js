@@ -13,6 +13,11 @@ export const SURFACES = {
     means: 'Things that are geographically close AND inside the canonical Right Now window (started up to 30 min ago, or starts within 2 h; utils/rightNowWindow.js).',
     where: 'Gatherings "Right Now" filter, Discover "Happening Now" bucket.',
   },
+  openNow: {
+    label: 'Open now',
+    means: 'Only things CONFIRMED usable this minute by the one resolver (utils/operatingStatus.js): inside a business\'s owner-declared hours (its timezone) or a live availability posting, Google\'s fresh open_now, a gathering inside its live window, a perk inside its validity. Unknown hours are left out, never shown as open or closed. Open never means bookable.',
+    where: 'Discover chip (every tab except Communities, and every category view); typed asks such as "what\'s open".',
+  },
   happeningNearby: {
     label: 'Happening Nearby',
     means: 'Time-sensitive local activity that expires: live 24-hour moments from gatherings and local businesses near you.',

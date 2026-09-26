@@ -10,6 +10,8 @@ export const EMPTY_STATES = {
   business_opportunities: { title: 'No new opportunities', body: "We'll show requests from nearby customers here." },
   business_stats: { title: 'No activity to show yet', body: 'Views, followers and redemptions appear here once customers start finding your business.' },
   places_category: { title: 'Nothing nearby in this category', body: 'Try another category or widen what you are looking for.' },
+  // Open now (item 71): the list has items, none confirmed open this minute.
+  open_now_none: { title: 'Nothing confirmed open right now', body: 'Only places with known hours or live availability can show here. Turn off Open now to see everything nearby.' },
   places_search: { title: 'No places match "{query}"', body: 'Try a different word, or clear the search.' },
   // Item 80 sweep: the rest of the bare-fragment empties.
   admin_business_requests: { title: "No pending requests", body: "New business applications will appear here for review." },
