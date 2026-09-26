@@ -6,7 +6,7 @@
 // The tree (categoryTree.js) stops at cuisine: group -> tag -> cuisine, three levels, nothing below.
 import { CATEGORY_GROUPS } from './gatheringCategories';
 import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS } from './businessAttributes';
-import { childrenOf, CUISINE_PHRASES } from './categoryTree';
+import { childrenOf, CUISINE_PHRASES, cuisineForSearch, cuisineFromText, searchScope } from './categoryTree';
 
 const ALL_TAGS = CATEGORY_GROUPS.flatMap((g) => [...g.tags, ...(g.businessOnlyTags ?? [])]);
 const lower = (s) => s.toLowerCase();
@@ -48,6 +48,19 @@ describe('the ontology stays flat (item 77)', () => {
     for (const a of BUSINESS_ATTRIBUTE_OPTIONS) {
       expect(a.key).toMatch(/^[a-z_]+$/);
       expect(CUISINE_LABELS).not.toContain(lower(a.label));
+    }
+  });
+  it('a dish word maps to a cuisine ONLY where CUISINE_PHRASES explicitly says so; otherwise it stays plain search text', () => {
+    // Explicit entries resolve deterministically.
+    expect(cuisineForSearch('sushi')).toBe('japanese');
+    expect(cuisineForSearch('pho')).toBe('vietnamese');
+    expect(cuisineForSearch('tacos')).toBe('mexican');
+    expect(cuisineForSearch('ramen')).toBe('japanese');
+    // Pizza (and other unlisted dishes) are NOT assumed to be any cuisine, however commonly associated.
+    for (const w of ['pizza', 'pizza near me', 'pizza tonight', 'burgers', 'steak', 'wings', 'bagels', 'curry', 'noodles']) {
+      expect(cuisineForSearch(w)).toBeNull();
+      expect(cuisineFromText(w)).toBeNull();
+      expect(searchScope(w).cuisine).toBeNull();
     }
   });
 });
