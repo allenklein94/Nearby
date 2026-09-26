@@ -43,6 +43,7 @@ describe('explicit social language', () => {
     expect(sig('a group of 12 for soccer')[0]).toBe('group');
     expect(sig('a group of four')[0]).toBe('small_group');
     expect(sig('one on one tennis')[0]).toBe('one_on_one');
+    expect(sig('just me and one other person')[0]).toBe('one_on_one');
   });
 });
 
@@ -53,6 +54,7 @@ describe('ambiguous language declares nothing', () => {
       expect([t, sig(t)]).toEqual([t, [null, null]]);
     }
     expect(sig('not here to meet people')).toEqual([null, null]);
+    for (const t of ['a table for a party of 2', 'dinner for 2', 'reservation for two']) expect([t, sig(t)]).toEqual([t, [null, null]]);
   });
   it('family/date/friends never become a social context value', () => {
     for (const t of ['with my family', 'on a date', 'with friends', 'with coworkers']) expect(SOCIAL_CONTEXTS).not.toContain(socialSignalsFromText(t).social_context ?? 'x');
@@ -68,6 +70,12 @@ describe('matching existing gathering fields (nothing stored)', () => {
     expect([1, 2, 3, 4, 5].map((n) => f({ groupSizeFeel: n }))).toEqual([['small_group'], ['small_group'], [], ['group'], ['group']]);
     expect(f({ partyType: 'groups' })).toEqual(['group']);
     expect(f({ capacity: 1, groupSizeFeel: 5 })).toEqual([]);
+    // capacity counts guests (the host is never a row): capacity 1 = two people = one-on-one, never solo; an intimate feel supports it
+    expect(f({ capacity: 1, groupSizeFeel: 1 })).toEqual(['one_on_one']);
+    expect(f({ capacity: 1, groupSizeFeel: 2 })).toEqual(['one_on_one']);
+    expect(f({ capacity: 1, groupSizeFeel: 2, partyType: 'groups' })).toEqual([]);
+    expect(f({ capacity: 2, groupSizeFeel: 2 })).toEqual(['small_group']);
+    for (const c of [1, 2]) { expect(f({ capacity: c })).not.toContain('solo'); expect(gatheringSocialFacts({ capacity: c }).meetNewPeople).toBeNull(); }
     expect(gatheringSocialFacts({ partyType: 'new_people' }).meetNewPeople).toBe(true);
     expect(gatheringSocialFacts({ partyType: 'friends' }).meetNewPeople).toBeNull();
   });

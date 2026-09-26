@@ -9,7 +9,9 @@
 //
 // Existing gathering fields it is compared against (host-declared, unchanged):
 //   party_type 'solo' -> solo; party_type 'groups' -> group; party_type 'new_people' -> meet new people
-//   capacity 1 (one other person; the host is not counted in capacity) -> one_on_one
+//   capacity 1 (one other person; join_gathering counts guests only, the host is never a row) -> one_on_one, a two-person
+//     gathering. Capacity never means solo (capacity 1 is already two people) and never implies meeting new people. An intimate
+//     group_size_feel (1-2) alongside capacity 1 supports one-on-one instead of conflicting with it.
 //   group_size_feel 1-2 ("Intimate") -> small_group; 4-5 ("Big group") -> group; 3 -> neither (ambiguous, not forced)
 // Ranking only, typed consumer asks only: a fit lifts, a clear mismatch sinks modestly, unknown on either side is neutral, nothing
 // is removed. Gathering candidates only: it never adds a result and never touches people, so "meet new people" can never become
@@ -31,7 +33,7 @@ const PERSON = String.raw`(?:friend|buddy|pal|mate|coworker|co-worker|colleague|
 const SCALE_RULES = [
   // [context, source, regex]; a regex may carry a count in group 1, resolved by the rule's own fn.
   ['one_on_one', 'explicit', /\b(?:one[\s-]on[\s-]one|1[\s:-]on[\s:-]1|1:1)\b/i],
-  ['one_on_one', 'normalized', /\b(?:just\s+)?the\s+two\s+of\s+us\b|\bjust\s+us\s+two\b/i],
+  ['one_on_one', 'normalized', /\b(?:just\s+)?the\s+two\s+of\s+us\b|\bjust\s+us\s+two\b|\b(?:just\s+)?me\s+and\s+one\s+other\s+person\b/i],
   ['one_on_one', 'normalized', new RegExp(String.raw`\bwith\s+(?:a|one|my|an\s+old)\s+${PERSON}\b(?!s)(?!\s+and\b)`, 'i')],
   ['small_group', 'explicit', /\b(?:small|little|intimate)\s+group\b/i],
   ['small_group', 'normalized', new RegExp(String.raw`\b(?:a\s+few|a\s+couple(?:\s+of)?|a\s+handful\s+of)\s+(?:of\s+)?(?:${PERSON}s|people|of\s+us)\b|\bfew\s+of\s+us\b`, 'i')],
@@ -110,6 +112,8 @@ export function gatheringSocialFacts(c) {
   if (Number.isInteger(feel) && feel >= 1 && feel <= 2) scale.add('small_group');
   if (Number.isInteger(feel) && feel >= 4 && feel <= 5) scale.add('group');
   if (c?.partyType === 'groups') scale.add('group');
+  // A two-person gathering (capacity 1) with an intimate feel is still one-on-one: the feel supports it rather than conflicting.
+  if (scale.size === 2 && scale.has('one_on_one') && scale.has('small_group') && c?.partyType !== 'groups') scale.delete('small_group');
   if (scale.size === 1) contexts.add([...scale][0]);
   return { contexts, meetNewPeople: c?.partyType === 'new_people' ? true : null };
 }
