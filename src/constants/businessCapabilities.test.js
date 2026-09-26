@@ -143,6 +143,21 @@ describe('the owner\'s example end to end (words only, no AI)', () => {
   });
 });
 
+describe('public profile line', () => {
+  const { maxGroupLine } = require('./businessCapabilities');
+  it('"Up to 40 people" only when set; total people as stored; hidden (null) when unknown', () => {
+    expect(maxGroupLine(40)).toBe('Up to 40 people');
+    expect(maxGroupLine(1)).toBe('Up to 1 person');
+    for (const v of [null, undefined, '', 0, -2, 'abc']) expect(maxGroupLine(v)).toBeNull();
+  });
+  it('the profile renders it only through maxGroupLine, never "Unknown", never a filter or a new screen', () => {
+    const src = read('src/screens/BusinessProfileScreen.js');
+    expect(src).toMatch(/maxGroupLine\(partner\.max_group_size\) &&/);
+    expect(src).not.toMatch(/max_group_size\s*\?\?\s*['"]Unknown|Capacity:/);
+    for (const f of ['src/screens/DiscoverHubScreen.js', 'src/screens/GatheringsScreen.js', 'src/screens/HomeScreen.js']) expect(read(f)).not.toMatch(/max_group_size|maxGroupLine/);
+  });
+});
+
 describe('privacy and scope', () => {
   it('the largest-group number and capabilities never enter a business-facing payload', () => {
     const migs = fs.readdirSync(path.join(ROOT, 'supabase/migrations')).sort();
@@ -157,6 +172,6 @@ describe('privacy and scope', () => {
     const users = fs.readdirSync(path.join(ROOT, 'src'), { recursive: true })
       .filter((f) => /\.js$/.test(f) && !/test\.js$/.test(f) && /from '[^']*businessCapabilities'/.test(read(`src/${f}`)))
       .map((f) => f.split(path.sep).join('/')).sort();
-    expect(users).toEqual(['screens/BusinessDashboardScreen.js', 'services/intentResolver.js', 'utils/askResolver.js']);
+    expect(users).toEqual(['screens/BusinessDashboardScreen.js', 'screens/BusinessProfileScreen.js', 'services/intentResolver.js', 'utils/askResolver.js']);
   });
 });

@@ -14,7 +14,8 @@
 //     event", "private space", "a private birthday"...), never from party size, an occasion or a large group; a business that
 //     declared Private events gets +2 and the reason "Hosts private events".
 //   - catering: only from the words ("catering", "cater our party"); a business that declared Catering gets +2, "Offers catering".
-// The number and the capabilities are never put in a business-facing payload; routing reads the number server-side only.
+// The number and the capabilities are never put in a business-facing payload; routing reads the number server-side only. The
+// public business profile shows the number as "Largest group · Up to 40 people" (maxGroupLine), only when the owner set it.
 
 export const CAPABILITIES = [
   { key: 'private_events', attribute: 'private_dining', label: 'Private events', icon: '🥂' },
@@ -38,6 +39,13 @@ export function cleanMaxGroupSize(value) {
   if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) return null;
   const n = typeof value === 'number' ? value : Number(String(value).trim());
   return Number.isInteger(n) && n >= 1 && n <= MAX_GROUP_SIZE_LIMIT ? n : null;
+}
+// The public profile line (owner, 2026-09-26): "Up to 40 people" -- total people, everyone counted; null when not set (the row is
+// hidden, never "Unknown").
+export function maxGroupLine(value) {
+  const n = cleanMaxGroupSize(value);
+  if (n === null) return null;
+  return `Up to ${n} ${n === 1 ? 'person' : 'people'}`;
 }
 export function maxGroupSizeProblem(text) {
   if (text === null || text === undefined || String(text).trim() === '') return null;

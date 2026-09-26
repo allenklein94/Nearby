@@ -23,6 +23,7 @@ import { getCommunityMemberCount } from '../services/communities';
 import { businessHoursLabel, weekHoursLines } from '../utils/operatingStatus';
 import { businessPrimaryAction } from '../utils/primaryAction';
 import { bookingModeOf, bookingModeOption, LEGACY_RESERVATION_ATTRIBUTE } from '../constants/bookingMode';
+import { maxGroupLine } from '../constants/businessCapabilities';
 import { businessActionRoute } from '../utils/businessAction';
 import { getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
@@ -287,6 +288,12 @@ export default function BusinessProfileScreen({ route, navigation }) {
         {bookingModeOption(bookingModeOf(partner)) && (
           <Text style={styles.reliabilityLine}>
             {bookingModeOption(bookingModeOf(partner)).icon} {bookingModeOption(bookingModeOf(partner)).customerLine}
+          </Text>
+        )}
+        {/* Item 80: the largest group the owner said they can host (total people); hidden when not set, never guessed. */}
+        {maxGroupLine(partner.max_group_size) && (
+          <Text style={styles.reliabilityLine} accessibilityLabel={`Largest group, ${maxGroupLine(partner.max_group_size)}`}>
+            👥 Largest group · {maxGroupLine(partner.max_group_size)}
           </Text>
         )}
         {/* "Business Story" plan, Phase 3 -- a real, self-reported
