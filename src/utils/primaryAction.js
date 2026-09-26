@@ -40,7 +40,22 @@ import { canDo, gatheringLifecycleState, offerLifecycleState, requestLifecycleSt
 //   kind: 'interested' (private maybe, toggles) | 'join' (opens the normal join confirmation on the detail screen) | 'view_plan' | 'requested' | 'view'
 // opts.lowCommitment (Trending: popular nearby, not personal): an open join becomes the private "I'm Interested"
 // (opts.interestedIds = the viewer's own Interested gathering ids); Join stays reachable through View.
+// Every result also carries `state`, the lifecycle state it was derived from (owner review of item 73): the table maps STATES to
+// actions, so an accepted offer or a hosted gathering can never pick up an action through a relabel.
 export function gatheringPrimaryAction(gathering, myUserId, now = Date.now(), opts = {}) {
+  const input = gathering ? {
+    isHost: Boolean(myUserId) && gathering.host_id === myUserId,
+    myStatus: (Boolean(myUserId) && Array.isArray(gathering.attendees) ? gathering.attendees.find((a) => a.user_id === myUserId)?.status : null) ?? null,
+    scheduled_at: gathering.scheduled_at,
+  } : null;
+  const known = Boolean(myUserId) && Array.isArray(gathering?.attendees);
+  const lifecycle = input ? gatheringLifecycleState(input, now) : 'unknown';
+  // An upcoming gathering whose attendance we cannot see is not "none": the viewer's state is unknown.
+  const state = lifecycle === 'upcoming_none' && !known ? 'unknown_viewer' : lifecycle;
+  return { ...gatheringActionFromState(gathering, myUserId, now, opts), state };
+}
+
+function gatheringActionFromState(gathering, myUserId, now, opts) {
   const view = { kind: 'view', label: 'View', showView: false };
   if (!gathering) return view;
   // Attendance rows tell us the viewer's state; without them we cannot know it: offer only View, never a wrong "Join".
@@ -69,8 +84,8 @@ export function gatheringPrimaryAction(gathering, myUserId, now = Date.now(), op
 
   if (!canDo('gathering', lifecycle, 'join') && !canDo('gathering', lifecycle, 'request')) return view;
 
-  // Invite-only: only invited people can join, and that access is resolved on the detail screen.
-  if (gathering.visibility === 'invite_only') return view;
+  // Invite-only: only invited people can join, and that access is resolved on the detail screen. Not eligible here = no action.
+  if (gathering.visibility === 'invite_only') return { ...view, status: 'Invite only' };
 
   if (opts.lowCommitment && opts.interestedIds) {
     const on = opts.interestedIds.has(gathering.id);
@@ -140,34 +155,52 @@ export function businessPrimaryAction(partner, { posting = null, at = new Date()
 // Business side: one opportunity row (a pending offer on a customer's request). ctx.inFlight = an offer for it is being reviewed
 // (item 83). Returns { kind, label?, status?, alternatives? }.
 export function opportunityPrimaryAction(opportunity, { inFlight = false, now } = {}) {
-  if (!opportunity || opportunity.status !== 'pending') return { kind: 'view' };
-  if (inFlight) return { kind: 'status', status: 'Reviewing your offer…' };
-  if (!canRespondToOpportunity(opportunity, now)) return { kind: 'status', status: 'No longer open' };
+  if (!opportunity) return { kind: 'view', state: 'unknown' };
+  if (opportunity.status !== 'pending') return { kind: 'view', state: opportunity.status ?? 'unknown' };
+  if (inFlight) return { kind: 'status', status: 'Reviewing your offer…', state: 'reviewing' };
+  if (!canRespondToOpportunity(opportunity, now)) return { kind: 'status', status: 'No longer open', state: 'closed' };
   return {
     kind: 'send_offer',
     label: 'Accept & Offer',
+    state: 'respondable',
     alternatives: [{ kind: 'offer_alternative', label: 'Offer Alternative' }, { kind: 'decline', label: 'Decline' }],
   };
 }
 
 // Consumer side: one offer on the consumer's own request. ctx: { request, hasWinner, isGroupPlanRequest }. The request's state
 // includes its own deadline (requestLifecycleState), so a request past its deadline never shows an accept button.
+// States: offered (acceptable), accepted, completed, expired, declined / cancelled / withdrawn, not_chosen (another offer won),
+// request_closed (the request is no longer open, including past its own deadline), unknown. Only `offered` on an open request
+// with no winner has an action; every other state is a status with no acceptance action.
+const OFFER_STATE_STATUS = {
+  accepted: "You're booked",
+  completed: 'Completed',
+  expired: 'Expired',
+  declined: 'No longer available',
+  cancelled: 'No longer available',
+  withdrawn: 'No longer available',
+  not_chosen: 'Another offer was chosen',
+  request_closed: 'Request closed',
+};
 export function consumerOfferAction(offer, { request, hasWinner = false, isGroupPlanRequest = false, now } = {}) {
-  const view = { kind: 'view', label: 'View' };
-  if (!offer || !request || hasWinner) return view;
-  const requestState = requestLifecycleState(request, now);
+  const at = (state) => ({ kind: 'view', label: 'View', state, ...(OFFER_STATE_STATUS[state] ? { status: OFFER_STATE_STATUS[state] } : {}) });
+  if (!offer || !request) return at('unknown');
   const offerState = offerLifecycleState(offer, now);
-  if (!canDo('request', requestState, 'accept_offer') || !canDo('offer', offerState, 'accept')) return view;
-  if (isGroupPlanRequest) return { kind: 'confirm_with_group', label: 'Confirm With the Group →' };
-  return { kind: 'accept_offer', label: "I'll take this one" };
+  if (offerState !== 'offered') return at(offerState);
+  if (hasWinner) return at('not_chosen');
+  const requestState = requestLifecycleState(request, now);
+  if (!canDo('request', requestState, 'accept_offer')) return at('request_closed');
+  if (!canDo('offer', offerState, 'accept')) return at(offerState);
+  if (isGroupPlanRequest) return { kind: 'confirm_with_group', label: 'Confirm With the Group →', state: 'offered' };
+  return { kind: 'accept_offer', label: "I'll take this one", state: 'offered' };
 }
 
 // A social invite (Activity): pending -> Accept (+ Decline); expired -> Dismiss; settled -> View.
 export function inviteAction(invite, now) {
   const state = inviteLifecycleState(invite, now);
-  if (canDo('invite', state, 'accept')) return { kind: 'accept', label: 'Accept', alternatives: [{ kind: 'decline', label: 'Decline' }] };
-  if (canDo('invite', state, 'dismiss')) return { kind: 'dismiss', label: 'Dismiss' };
-  return { kind: 'view', label: 'View' };
+  if (canDo('invite', state, 'accept')) return { kind: 'accept', label: 'Accept', state, alternatives: [{ kind: 'decline', label: 'Decline' }] };
+  if (canDo('invite', state, 'dismiss')) return { kind: 'dismiss', label: 'Dismiss', state };
+  return { kind: 'view', label: 'View', state };
 }
 
 // The one entry point: the action for any object kind comes from its state.
@@ -179,6 +212,6 @@ export function primaryActionFor(kind, object, ctx = {}) {
     case 'offer_row': return offerPrimaryAction(object);
     case 'invite': return inviteAction(object, ctx.now);
     case 'business': return businessPrimaryAction(object, ctx);
-    default: return { kind: 'view', label: 'View' };
+    default: return { kind: 'view', label: 'View', state: 'unknown' };
   }
 }

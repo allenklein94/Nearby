@@ -45,14 +45,14 @@ describe('the owner\'s table', () => {
     expect(a.alternatives.map((x) => x.kind)).toEqual(['offer_alternative', 'decline']);
   });
   test('business request past its deadline, closed, or already answered -> no Send Offer', () => {
-    expect(opportunityPrimaryAction(opp({ expires_at: '2026-09-26T11:00:00Z' }), { now: NOW })).toEqual({ kind: 'status', status: 'No longer open' });
+    expect(opportunityPrimaryAction(opp({ expires_at: '2026-09-26T11:00:00Z' }), { now: NOW })).toMatchObject({ kind: 'status', status: 'No longer open' });
     expect(opportunityPrimaryAction(opp({ status: 'cancelled' })).kind).toBe('status');
     expect(opportunityPrimaryAction(opp({}, { status: 'offered' })).kind).toBe('view');
-    expect(opportunityPrimaryAction(opp(), { inFlight: true })).toEqual({ kind: 'status', status: 'Reviewing your offer…' });
+    expect(opportunityPrimaryAction(opp(), { inFlight: true })).toMatchObject({ kind: 'status', status: 'Reviewing your offer…' });
   });
   const req = (over = {}) => ({ status: 'open', expires_at: null, ...over });
   test('offer + available -> Accept Offer', () => {
-    expect(primaryActionFor('offer', { status: 'offered' }, { request: req(), now: NOW })).toEqual({ kind: 'accept_offer', label: "I'll take this one" });
+    expect(primaryActionFor('offer', { status: 'offered' }, { request: req(), now: NOW })).toMatchObject({ kind: 'accept_offer', label: "I'll take this one" });
   });
   test('offer + expired -> View', () => {
     expect(consumerOfferAction({ status: 'offered', valid_until: '2026-09-26T11:00:00Z' }, { request: req(), now: NOW }).kind).toBe('view');
@@ -75,7 +75,7 @@ describe('the owner\'s table', () => {
     expect(inviteAction({ status: 'declined' }, NOW).kind).toBe('view');
   });
   test('unknown kind -> View', () => {
-    expect(primaryActionFor('mystery', {})).toEqual({ kind: 'view', label: 'View' });
+    expect(primaryActionFor('mystery', {})).toMatchObject({ kind: 'view', label: 'View' });
   });
 });
 
@@ -115,5 +115,57 @@ describe('screens do not decide CTAs themselves', () => {
     expect(read('src/screens/BusinessDashboardScreen.js')).toContain('opportunityPrimaryAction(o, {');
     expect(read('src/screens/BusinessRequestDetailScreen.js')).toContain('consumerOfferAction(o, {');
     expect(read('src/screens/ActivityScreen.js')).toContain('inviteAction(item)');
+  });
+});
+
+describe('results carry the STATE they came from, and only an eligible state has an action (owner review)', () => {
+  const act = (gathering, who = 'me') => primaryActionFor('gathering', gathering, { myUserId: who, now: NOW });
+  test('gathering: host and attending -> View Plan, never Join', () => {
+    expect(act(g(), 'host')).toMatchObject({ state: 'upcoming_hosting', kind: 'view_plan' });
+    expect(act(g({ attendees: [{ user_id: 'me', status: 'approved' }] }))).toMatchObject({ state: 'upcoming_attending', kind: 'view_plan' });
+  });
+  test('gathering: eligible -> Join; not eligible -> a non-action state', () => {
+    expect(act(g())).toMatchObject({ state: 'upcoming_none', kind: 'join', label: 'Join' });
+    expect(act(g({ visibility: 'invite_only' }))).toMatchObject({ state: 'upcoming_none', kind: 'view', status: 'Invite only' });
+    expect(act(g({ attendees: undefined }))).toMatchObject({ state: 'unknown_viewer', kind: 'view' });
+    expect(act(g({ scheduled_at: PAST }))).toMatchObject({ state: 'past_none', kind: 'view' });
+  });
+  const req = { status: 'open', expires_at: null };
+  const offer = (over) => primaryActionFor('offer', { status: 'offered', ...over }, { request: req, now: NOW });
+  test('offer: active + eligible -> I\'ll take this one', () => {
+    expect(offer({})).toMatchObject({ state: 'offered', kind: 'accept_offer', label: "I'll take this one" });
+  });
+  test.each([
+    [{ valid_until: '2026-09-26T11:00:00Z' }, 'expired', 'Expired'],
+    [{ status: 'expired' }, 'expired', 'Expired'],
+    [{ status: 'accepted' }, 'accepted', "You're booked"],
+    [{ status: 'completed' }, 'completed', 'Completed'],
+    [{ status: 'cancelled' }, 'cancelled', 'No longer available'],
+    [{ status: 'withdrawn' }, 'withdrawn', 'No longer available'],
+    [{ status: 'declined' }, 'declined', 'No longer available'],
+  ])('offer %o -> state %s, status "%s", no acceptance action', (over, state, status) => {
+    const a = offer(over);
+    expect(a).toMatchObject({ state, status, kind: 'view' });
+  });
+  test('offer: another chosen / request closed -> no acceptance action', () => {
+    expect(primaryActionFor('offer', { status: 'offered' }, { request: req, hasWinner: true, now: NOW })).toMatchObject({ state: 'not_chosen', kind: 'view' });
+    expect(primaryActionFor('offer', { status: 'offered' }, { request: { status: 'cancelled' }, now: NOW })).toMatchObject({ state: 'request_closed', kind: 'view' });
+  });
+  test('an accepted offer never shows an accept action even though a winner exists', () => {
+    expect(primaryActionFor('offer', { status: 'accepted' }, { request: { status: 'fulfilled' }, hasWinner: true, now: NOW })).toMatchObject({ state: 'accepted', kind: 'view' });
+  });
+  test('opportunity states', () => {
+    const opp = (req2, over = {}) => ({ status: 'pending', business_requests: { status: 'open', ...req2 }, ...over });
+    expect(primaryActionFor('opportunity', opp({}))).toMatchObject({ state: 'respondable', kind: 'send_offer' });
+    expect(primaryActionFor('opportunity', opp({ status: 'fulfilled' }))).toMatchObject({ state: 'closed', kind: 'status' });
+    expect(primaryActionFor('opportunity', opp({}, { status: 'offered' }))).toMatchObject({ state: 'offered', kind: 'view' });
+  });
+  test('only actionable states produce an action kind', () => {
+    const ACTION_KINDS = new Set(['join', 'interested', 'send_offer', 'accept_offer', 'confirm_with_group', 'accept', 'dismiss']);
+    const samples = [
+      act(g(), 'host'), act(g({ attendees: [{ user_id: 'me', status: 'approved' }] })), act(g({ scheduled_at: PAST })),
+      offer({ status: 'accepted' }), offer({ status: 'expired' }), offer({ status: 'cancelled' }),
+    ];
+    for (const a of samples) expect(ACTION_KINDS.has(a.kind)).toBe(false);
   });
 });

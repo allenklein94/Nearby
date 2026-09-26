@@ -4,19 +4,19 @@ const NOW = new Date('2026-09-20T12:00:00Z').getTime();
 const base = { id: 'g', host_id: 'host', scheduled_at: '2026-09-20T23:00:00Z', is_public: true, capacity: null, attendees: [] };
 
 test('open public gathering -> Join + View', () => {
-  expect(gatheringPrimaryAction(base, 'me', NOW)).toEqual({ kind: 'join', label: 'Join', showView: true });
+  expect(gatheringPrimaryAction(base, 'me', NOW)).toMatchObject({ kind: 'join', label: 'Join', showView: true });
 });
 test('approval required -> Request to Join; full -> Join Waitlist', () => {
   expect(gatheringPrimaryAction({ ...base, requires_approval: true }, 'me', NOW).label).toBe('Request to Join');
   expect(gatheringPrimaryAction({ ...base, capacity: 1, attendees: [{ user_id: 'x', status: 'approved' }] }, 'me', NOW).label).toBe('Join Waitlist');
 });
 test('attending or hosting -> single View Plan', () => {
-  expect(gatheringPrimaryAction({ ...base, attendees: [{ user_id: 'me', status: 'approved' }] }, 'me', NOW)).toEqual({ kind: 'view_plan', label: 'View Plan', status: 'Going', showView: false });
+  expect(gatheringPrimaryAction({ ...base, attendees: [{ user_id: 'me', status: 'approved' }] }, 'me', NOW)).toMatchObject({ kind: 'view_plan', label: 'View Plan', status: 'Going', showView: false });
   expect(gatheringPrimaryAction(base, 'host', NOW).kind).toBe('view_plan');
 });
 test('pending shows status plus View, never Join again', () => {
   const a = gatheringPrimaryAction({ ...base, attendees: [{ user_id: 'me', status: 'pending' }] }, 'me', NOW);
-  expect(a).toEqual({ kind: 'requested', label: 'Requested', status: 'Requested', showView: true });
+  expect(a).toMatchObject({ kind: 'requested', label: 'Requested', status: 'Requested', showView: true });
 });
 test('unknown viewer state, invite-only, or started -> View only', () => {
   expect(gatheringPrimaryAction({ ...base, attendees: undefined }, 'me', NOW).kind).toBe('view');
@@ -27,7 +27,7 @@ test('unknown viewer state, invite-only, or started -> View only', () => {
 
 test('lowCommitment (Trending): open join -> I\'m Interested toggle; attending/pending unchanged', () => {
   const o = { lowCommitment: true, interestedIds: new Set() };
-  expect(gatheringPrimaryAction(base, 'me', NOW, o)).toEqual({ kind: 'interested', label: "I'm Interested", on: false, showView: true });
+  expect(gatheringPrimaryAction(base, 'me', NOW, o)).toMatchObject({ kind: 'interested', label: "I'm Interested", on: false, showView: true });
   expect(gatheringPrimaryAction(base, 'me', NOW, { ...o, interestedIds: new Set(['g']) }).on).toBe(true);
   expect(gatheringPrimaryAction({ ...base, attendees: [{ user_id: 'me', status: 'approved' }] }, 'me', NOW, o).kind).toBe('view_plan');
   expect(gatheringPrimaryAction(base, 'me', NOW).kind).toBe('join');
