@@ -56,8 +56,12 @@ const VACATION_DO_CATEGORIES = ['Sightseeing', 'Tours', 'Boat Tours', 'Landmarks
 const NETWORKING_EVENT_CATEGORIES = ['Networking', 'Conferences', 'Workshops', 'Lectures', 'Professional Development'];
 const NETWORKING_MEET_CATEGORIES = ['Coffee', 'Coworking', 'Bars & Lounges', 'Restaurants'];
 
+// Café on a date (owner decision 2026-09-26): the date's eat/drink part also takes a café, but only when it fits the ask
+// (see utils/dateCafe.js: a coffee date, or a café whose owner DECLARED it date-friendly/romantic). Coffee stays listed under
+// "Finish the Night" for every other café, so cafés never replace restaurants wholesale.
+export const DATE_CAFE_CATEGORIES = ['Coffee'];
 const DATE_NIGHT_COMPONENTS = [
-  { key: 'dinner', label: '🍽️ Dinner', categories: DINNER_CATEGORIES },
+  { key: 'dinner', label: '🍽️ Dinner', categories: DINNER_CATEGORIES, cafeOnDate: true },
   { key: 'something_to_do', label: '🎵 Something to Do', categories: [...NIGHT_OUT_CATEGORIES, ...DATE_ACTIVITY_CATEGORIES] },
   { key: 'finish_the_night', label: '🍰 Finish the Night', categories: DESSERT_CATEGORIES },
 ];

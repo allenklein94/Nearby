@@ -48,6 +48,7 @@
 // that one component -- no special casing needed, the per-component loop
 // already handles it via its own category/subcategory/categories match).
 import { orderByBudget } from '../utils/experienceBudget';
+import { cafeFitsDatePlan, dateFoodLabel } from '../utils/dateCafe';
 import { experienceTemplateForOccasion, experienceTemplateForContext } from '../constants/experienceTemplates';
 
 const EXPERIENCE_ELIGIBLE_TYPES = ['business_availability', 'gathering'];
@@ -113,7 +114,9 @@ export function assembleExperience(occasion, candidates, context = null) {
     const matches = candidates.filter((c) => {
       if (!EXPERIENCE_ELIGIBLE_TYPES.includes(c.type) || claimed.has(c.id)) return false;
       const rowCategories = [c.category, c.subcategory, ...(Array.isArray(c.categories) ? c.categories : [])].filter(Boolean);
-      return rowCategories.some((tag) => component.categories.includes(tag));
+      if (rowCategories.some((tag) => component.categories.includes(tag))) return true;
+      // A date's eat/drink part also takes a café that fits the ask (utils/dateCafe.js), claimed here so it is a real plan stop.
+      return !!component.cafeOnDate && cafeFitsDatePlan(c, context);
     });
     if (matches.length === 0) continue;
     matches.forEach((m) => claimed.add(m.id));
@@ -121,10 +124,11 @@ export function assembleExperience(occasion, candidates, context = null) {
     // already computed it for the flat list -- a real, already-computed
     // relevance ranking, never a second invented scoring pass just for this
     // grouping.
+    const items = orderByBudget(matches.sort((a, b) => b.score - a.score), context).slice(0, 3).map((m) => attachPerk(m, perks));
     components.push({
       key: component.key,
-      label: component.label,
-      items: orderByBudget(matches.sort((a, b) => b.score - a.score), context).slice(0, 3).map((m) => attachPerk(m, perks)),
+      label: component.cafeOnDate ? dateFoodLabel(items, component.label) : component.label,
+      items,
     });
   }
 

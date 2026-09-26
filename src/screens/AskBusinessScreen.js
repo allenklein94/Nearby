@@ -1,4 +1,5 @@
 import { DATE_VIBES } from '../constants/businessVibes';
+import { cleanDateVibes } from '../utils/dateProposalVibes';
 import React, { useState } from 'react';
 import { SEARCH_RADIUS_OPTIONS } from '../constants/searchRadius';
 import useFormDraft from '../hooks/useFormDraft';
@@ -235,7 +236,8 @@ export default function AskBusinessScreen({ navigation, route }) {
   // Taxonomy audit Phase 2 (CLAUDE.md, Aug 25 2026): optional, solo mode
   // only -- matching where party size/budget are already solo-only inputs
   // on this screen, same isSoloMode gate.
-  const [attributesInput, setAttributesInput] = useState([]);
+  // A match's plan arrives with the vibes its proposer picked (utils/dateProposalVibes.js): shown selected, still editable.
+  const [attributesInput, setAttributesInput] = useState(() => (route.params?.matchId ? cleanDateVibes(route.params?.prefillAttributes) : []));
   // Opt-in interest sharing (design 2026-09-18): OFF by default, per request only, never remembered.
   const [cuisineInput, setCuisineInput] = useState(null);
   const [dietaryInput, setDietaryInput] = useState([]);

@@ -23,6 +23,9 @@ import { getMatchPlanCompletion, formatPlaceStatusLabel } from '../utils/planCom
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { moneyLabel } from '../utils/outcomeDisplay';
+import { DATE_VIBES } from '../constants/businessVibes';
+import { BUSINESS_ATTRIBUTE_OPTIONS } from '../constants/businessAttributes';
+import { cleanDateVibes, requestAttributesFromProposal, dateVibesLine } from '../utils/dateProposalVibes';
 
 import { countLabel } from '../utils/plural';
 const TERMINAL_STATUS_COPY = {
@@ -95,6 +98,8 @@ export default function DateProposalScreen({ navigation, route }) {
   const [submitting, setSubmitting] = useState(false);
   // Dietary needs for the request auto-created when this plan (already tied to a specific place) is accepted.
   const [dietaryInput, setDietaryInput] = useState([]);
+  // "What kind of date?" (optional): only the vibes the proposer taps; carried to the business request when the match accepts.
+  const [selectedVibes, setSelectedVibes] = useState([]);
 
   const load = useCallback(async () => {
     try {
@@ -162,12 +167,13 @@ export default function DateProposalScreen({ navigation, route }) {
     }
     setSubmitting(true);
     try {
-      await proposeDate(matchId, planText.trim(), selectedAvailabilityId, selectedCategory);
+      await proposeDate(matchId, planText.trim(), selectedAvailabilityId, selectedCategory, cleanDateVibes(selectedVibes));
       setPlanText('');
       setSelectedCategory(null);
       setActiveChipKey(null);
       setNearbyResults(null);
       setSelectedAvailabilityId(null);
+      setSelectedVibes([]);
       await load();
     } catch (e) {
       presentRecoverableError(Alert, { what: 'send your proposal', error: e, draftKept: true, onRetry: () => handlePropose() });
@@ -219,6 +225,8 @@ export default function DateProposalScreen({ navigation, route }) {
             text: proposal.plan_text,
             category: proposal.category,
             dietary: proposal.category === 'Foodie' && dietaryInput.length > 0 ? dietaryInput : null,
+            // exactly the vibes the proposer picked (none = none); the business sees them, never who the pair is
+            attributes: requestAttributesFromProposal(proposal),
           });
         } catch (e) {
           console.error('auto-create business request for accepted plan failed', e);
@@ -303,7 +311,7 @@ export default function DateProposalScreen({ navigation, route }) {
               acceptedOffer || businessRequest
                 ? () => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })
                 : proposal?.status === 'accepted'
-                ? () => navigation.navigate('AskBusiness', { matchId, matchName, prefillCategory: proposal?.category ?? selectedCategory })
+                ? () => navigation.navigate('AskBusiness', { matchId, matchName, prefillCategory: proposal?.category ?? selectedCategory, prefillAttributes: requestAttributesFromProposal(proposal) })
                 : undefined
             }
             style={{ marginBottom: spacing.lg }}
@@ -320,6 +328,7 @@ export default function DateProposalScreen({ navigation, route }) {
             <View style={styles.planCard}>
               <Text style={styles.planCardLabel}>{isProposer ? `You proposed` : `${matchName} proposed`}</Text>
               <Text style={styles.planCardText}>"{proposal.plan_text}"</Text>
+              {!!dateVibesLine(proposal.attributes) && <Text style={styles.nearbyResultMeta}>{dateVibesLine(proposal.attributes)}</Text>}
               {isProposer ? (
                 <>
                   <Text style={styles.waitingText}>Waiting for {matchName} to respond.</Text>
@@ -361,6 +370,7 @@ export default function DateProposalScreen({ navigation, route }) {
             <View style={styles.acceptedCard}>
               <Text style={styles.acceptedTitle}>🎉 It's a plan!</Text>
               <Text style={styles.planCardText}>"{proposal.plan_text}"</Text>
+              {!!dateVibesLine(proposal.attributes) && <Text style={styles.nearbyResultMeta}>{dateVibesLine(proposal.attributes)}</Text>}
               {businessRequest && acceptedOffer ? (
                 // Gap #2: the merged "your date is set" view -- the real
                 // accepted offer's own venue/time/what-they-offered,
@@ -387,7 +397,7 @@ export default function DateProposalScreen({ navigation, route }) {
               ) : (
                 <TouchableOpacity
                   style={styles.primaryButton}
-                  onPress={() => navigation.navigate('AskBusiness', { matchId, matchName, prefillCategory: proposal?.category ?? selectedCategory })}
+                  onPress={() => navigation.navigate('AskBusiness', { matchId, matchName, prefillCategory: proposal?.category ?? selectedCategory, prefillAttributes: requestAttributesFromProposal(proposal) })}
                   accessibilityLabel="Find somewhere to go"
                   accessibilityRole="button"
                 >
@@ -484,6 +494,26 @@ export default function DateProposalScreen({ navigation, route }) {
                   )}
                 </View>
               )}
+
+              <Text style={styles.label}>{isRomanticMatch ? 'What kind of date? (optional)' : 'What kind of place? (optional)'}</Text>
+              <View style={styles.quickCategoryRow}>
+                {DATE_VIBES.map((v) => {
+                  const selected = selectedVibes.includes(v.key);
+                  const opt = BUSINESS_ATTRIBUTE_OPTIONS.find((a) => a.key === v.key);
+                  return (
+                    <TouchableOpacity
+                      key={v.key}
+                      style={[styles.quickCategoryChip, selected && styles.quickCategoryChipSelected]}
+                      onPress={() => setSelectedVibes((prev) => (selected ? prev.filter((k) => k !== v.key) : [...prev, v.key]))}
+                      accessibilityLabel={v.label}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.quickCategoryLabel, selected && styles.quickCategoryLabelSelected]}>{opt?.icon} {v.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
               <Text style={styles.label}>Or say it your way</Text>
               <TextInput

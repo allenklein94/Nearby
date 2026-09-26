@@ -860,7 +860,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // 6 and 8 PM"): combinations that fit lead, every part stays, and the plan says its approximate total (utils/planTiming.js).
   const planBudget = timeBudget ?? windowSpan(clockWindow, dateAnchor);
   const planSpanLabel = timeBudget == null && planBudget != null ? `${clockLabel(clockWindow.after)} and ${clockLabel(clockWindow.before)}` : null;
-  const experience = fitExperienceToTime(assembleExperience(occasion, deduped, { partyType, dateWindow, attributes, priceLevel, budgetMax, intentRecipe: recognizeCombination({ text: rawText, occasion, partyType, dateWindow, attributes })?.recipe ?? null }), planBudget, planSpanLabel);
+  const experience = fitExperienceToTime(assembleExperience(occasion, deduped, { partyType, dateWindow, attributes, priceLevel, budgetMax, category, cuisine, intentRecipe: recognizeCombination({ text: rawText, occasion, partyType, dateWindow, attributes })?.recipe ?? null }), planBudget, planSpanLabel);
 
   return { items: deduped.slice(0, RESULT_CAP), experience, openEndedNote, openNowOnly };
 }

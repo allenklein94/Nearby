@@ -35,12 +35,14 @@ export async function searchNearbyForPlan(category) {
 // resulting business request to that exact place immediately, and "Find
 // Somewhere to Go" prefills correctly regardless of who taps it. Both
 // stay null for today's plain freeform-text invite, unchanged.
-export async function proposeDate(matchId, planText, availabilityId = null, category = null) {
+// attributes: the "What kind of date?" vibes the proposer tapped (utils/dateProposalVibes.js); none = null, never a default.
+export async function proposeDate(matchId, planText, availabilityId = null, category = null, attributes = null) {
   const { data, error } = await supabase.rpc('propose_date', {
     match_id_param: matchId,
     plan_text_param: planText,
     availability_id_param: availabilityId,
     category_param: category,
+    attributes_param: Array.isArray(attributes) && attributes.length ? attributes : null,
   });
   if (error) throw new Error(error.message);
   return data; // { proposalId, status }
