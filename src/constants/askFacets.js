@@ -5,6 +5,7 @@
 // (its category tag, or a gathering's real capacity/attendance); a result with nothing known is kept, so a gap in our data never
 // hides something the person might want. Budget stays the locked rule: over-budget is ordered, never hidden, so "not too expensive"
 // only sinks a known $$$ result. The caption always says what was left out, so nothing disappears silently.
+import { vibesFromAsk } from './businessVibes';
 import { CATEGORY_GROUPS, groupForTag } from './gatheringCategories';
 import { CATEGORY_INDOOR_OUTDOOR } from './gatheringIndoorOutdoor';
 
@@ -101,6 +102,10 @@ const ATTRIBUTE_ASKS = [
 export function attributesFromAsk(text, { partyType = null } = {}) {
   if (typeof text !== 'string') return partyType === 'date' ? ['date_friendly'] : [];
   const out = ATTRIBUTE_ASKS.filter(([, re]) => re.test(text)).map(([k]) => k);
+  // Item 83: the vibes the person asked for ("relaxed and quiet"); a negated vibe is never an ask.
+  const vibes = vibesFromAsk(text);
+  for (const k of vibes.want) if (!out.includes(k)) out.push(k);
+  for (const k of vibes.avoid) if (out.includes(k)) out.splice(out.indexOf(k), 1);
   // A date-shaped party (a couple word, or the extractor's own `date`) is the date-friendly quality by definition.
   if ((partyType === 'date' || partnerPartyType(text)) && !out.includes('date_friendly')) out.push('date_friendly');
   return out;

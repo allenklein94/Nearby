@@ -58,6 +58,13 @@ export const BUSINESS_ATTRIBUTE_OPTIONS = [
   { key: 'romantic', label: 'Romantic', icon: '🕯️' },
   // Item 80: a business capability (constants/businessCapabilities.js). Delivery / Takeout are deliberately never added.
   { key: 'catering', label: 'Catering', icon: '🍱' },
+  // Item 83: vibe keys (constants/businessVibes.js names the view). Owner-declared, never inferred.
+  { key: 'lively', label: 'Lively', icon: '🎉' },
+  { key: 'trendy', label: 'Trendy', icon: '✨' },
+  { key: 'cozy', label: 'Cozy', icon: '🛋️' },
+  { key: 'relaxed', label: 'Relaxed', icon: '😌' },
+  { key: 'social', label: 'Social', icon: '🗣️' },
+  { key: 'professional', label: 'Professional', icon: '👔' },
 ];
 
 export const ACCESSIBILITY_ATTRIBUTE_KEYS = ['wheelchair_accessible', 'accessible_parking', 'accessible_restroom', 'service_animal_friendly', 'quiet'];

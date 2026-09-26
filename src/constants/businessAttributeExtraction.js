@@ -9,12 +9,19 @@
 
 const KEYWORDS_BY_ATTRIBUTE = {
   outdoor_seating: ['patio', 'outdoor', 'rooftop', 'terrace', 'garden', 'al fresco'],
-  date_friendly: ['date', 'romantic', 'intimate', 'candlelit', 'cozy'],
+  date_friendly: ['date', 'romantic', 'intimate', 'candlelit'],
   group_friendly: ['group', 'groups', 'party', 'large table', 'big groups'],
   live_music: ['live music', 'band', 'dj', 'concert', 'open mic'],
   kid_friendly: ['kid', 'kids', 'family', 'family-friendly', 'children'],
   quiet: ['quiet', 'calm', 'peaceful', 'low-key'],
-  casual: ['casual', 'laid-back', 'relaxed', 'easygoing'],
+  casual: ['casual', 'no dress code', 'come as you are'],
+  // Item 83: vibe keys. Relaxed is the pace (was folded into casual, which is about formality).
+  relaxed: ['relaxed', 'laid-back', 'laid back', 'easygoing', 'chill vibe', 'unhurried'],
+  lively: ['lively', 'energetic', 'buzzing', 'vibrant', 'high-energy', 'high energy'],
+  trendy: ['trendy', 'stylish', 'hot spot', 'modern and stylish'],
+  cozy: ['cozy', 'cosy', 'snug', 'warm and inviting'],
+  social: ['social atmosphere', 'social spot', 'communal table', 'communal tables', 'mingle', 'meet new people'],
+  professional: ['professional atmosphere', 'business meetings', 'client meetings', 'meeting space', 'business lunch'],
   upscale: ['upscale', 'fancy', 'elegant', 'high-end', 'fine dining'],
   // Intent engine vision, layer 3 (semantic tags) -- see businessAttributes.js's
   // own header comment for the full lineage/rationale of these 10.

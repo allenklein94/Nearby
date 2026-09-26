@@ -7,6 +7,7 @@ import { bookingModeOf } from '../constants/bookingMode';
 import { BUSINESS_RESULT_TYPES, intentResultBusinessRoute } from '../utils/businessAction';
 import { openNowAskFromText, candidateEntity, filterOpenNow, openNowLift, OPEN_NOW_CAPTION } from '../utils/operatingStatus';
 import { applyBusinessPriceToCandidates } from '../utils/priceBias';
+import { vibesFromAsk, applyVibeSinks } from '../constants/businessVibes';
 import { applyAskWeather } from '../utils/askWeather';
 import { occasionLabel } from '../constants/businessAttributes';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, searchOccasionOfferingBusinesses, getMyBusinessAffinitySignals } from './businessFulfillment';
@@ -808,6 +809,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
 
   // Accessibility / family (items 49/50): a gathering the HOST declared these features for ranks up (declared only, never inferred).
   deduped = applyDeclaredFeatures(deduped, attributes);
+  // Vibe (item 83): a declared vibe the person said to avoid, or the declared opposite of one they want, sinks a little. Never hides.
+  deduped = applyVibeSinks(deduped, vibesFromAsk(rawText));
 
   // Combinations + negative intent (items 47/48): "outside", "no alcohol", "nothing crowded", "not too expensive" from the person's
   // own words. Exclusions drop only KNOWN conflicts; the caption says what was left out (constants/askFacets.js).

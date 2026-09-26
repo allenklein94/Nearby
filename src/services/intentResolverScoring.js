@@ -380,10 +380,10 @@ export function getBusinessAvailabilityReasons(row, { category, attributes, cuis
   }
   const rowAttributes = Array.isArray(row.attributes) ? row.attributes : [];
   if (Array.isArray(attributes) && attributes.length > 0) {
-    const matchedKey = rowAttributes.find((a) => attributes.includes(a));
-    if (matchedKey) {
-      const label = BUSINESS_ATTRIBUTE_OPTIONS.find((o) => o.key === matchedKey)?.label ?? matchedKey;
-      reasons.push(label);
+    // Item 83: every matched quality, so "relaxed and quiet" reads "Quiet · Relaxed", not just the first.
+    const matched = rowAttributes.filter((a) => attributes.includes(a));
+    if (matched.length) {
+      reasons.push(matched.map((k) => BUSINESS_ATTRIBUTE_OPTIONS.find((o) => o.key === k)?.label ?? k).join(' · '));
     }
   }
   const hobbyLink = hobbyAttributeMatch(row.attributes, declaredInterests);
