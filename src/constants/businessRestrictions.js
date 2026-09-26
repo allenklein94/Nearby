@@ -20,27 +20,14 @@ export const NOT_ACCOMMODATED_OPTIONS = [
 export const NOT_ACCOMMODATED_KEYS = NOT_ACCOMMODATED_OPTIONS.map((o) => o.key);
 export const CHILD_ATTRIBUTES = ['kid_friendly', 'kid_menu', 'family_seating', 'stroller_friendly'];
 export const PET_ATTRIBUTES = ['dog_friendly', 'pet_friendly'];
-const NO_CHILD_KEYS = ['no_children', 'adults_21_plus'];
 
 export function notAccommodatedOf(partner) {
   const list = Array.isArray(partner?.not_accommodated) ? partner.not_accommodated : [];
   return NOT_ACCOMMODATED_KEYS.filter((k) => list.includes(k));
 }
 
-// The owner's form check, mirroring the server trigger's messages. `next` = the keys the owner would have after the tap.
-export function notAccommodatedProblem(next, partner) {
-  const attrs = Array.isArray(partner?.attributes) ? partner.attributes : [];
-  if (next.some((k) => NO_CHILD_KEYS.includes(k))) {
-    if (attrs.some((a) => CHILD_ATTRIBUTES.includes(a))) {
-      return "You said you don't accommodate children, so Family-friendly, Kids menu, Family seating and Stroller friendly can't be on too. Remove one of them first.";
-    }
-    if (partner?.suited_age_min != null || partner?.suited_age_max != null) return "You said you don't accommodate children, so clear the suited ages first.";
-  }
-  if (next.includes('no_pets') && attrs.some((a) => PET_ATTRIBUTES.includes(a))) {
-    return "You said you don't allow pets, so Dog friendly and Pet friendly can't be on too. Remove one of them first.";
-  }
-  return null;
-}
+// Save-time contradictions (No children vs Family-friendly, Indoor only vs Outdoor dining...) are decided ONLY by the server
+// trigger _check_business_not_accommodated (migrations 20270222 + 20270224); the owner sees its message as written.
 
 // Public profile line: "No children · No pets" / "21+ only"; null when nothing declared (hidden, never "Unknown").
 export function notAccommodatedLine(partner) {

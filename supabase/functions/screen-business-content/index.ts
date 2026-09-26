@@ -431,7 +431,10 @@ What makes them different: ${differentiator || '(none)'}`;
         });
         if (writeError) {
           console.error('screen-business-content: low-tier write failed', writeError);
-          return json({ error: writeError.message || 'Could not save your changes.' }, 500);
+          // A refusal by the database's own rules (a raised exception, a CHECK) is the owner's input to fix, e.g. "No children"
+          // with Family-friendly (item 86): 400 with the database's message, never an outage-style 500 that hides it.
+          const isRuleRefusal = writeError.code === 'P0001' || writeError.code === '23514';
+          return json({ error: writeError.message || 'Could not save your changes.' }, isRuleRefusal ? 400 : 500);
         }
         return json({ riskTier, published: true, blocked: false, screeningId });
       }

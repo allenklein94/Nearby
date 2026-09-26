@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import {
-  NOT_ACCOMMODATED_KEYS, CHILD_ATTRIBUTES, PET_ATTRIBUTES, notAccommodatedProblem, notAccommodatedLine, childrenInAsk,
+  NOT_ACCOMMODATED_KEYS, CHILD_ATTRIBUTES, PET_ATTRIBUTES, notAccommodatedLine, childrenInAsk,
   walkInAsk, restrictionAsk, askRaisesRestriction, applyRestrictionsToCandidates,
 } from './businessRestrictions';
 
@@ -22,13 +22,42 @@ describe('not-accommodated vocabulary (item 86)', () => {
   });
 });
 
-describe('owner-side conflicts mirror the server', () => {
-  it('no children vs Family-friendly / suited ages; no pets vs Pet friendly; service animals are fine', () => {
-    expect(notAccommodatedProblem(['no_children'], { attributes: ['kid_friendly'] })).toMatch(/Family-friendly/);
-    expect(notAccommodatedProblem(['adults_21_plus'], { attributes: [], suited_age_min: 5 })).toMatch(/suited ages/);
-    expect(notAccommodatedProblem(['no_pets'], { attributes: ['dog_friendly'] })).toMatch(/Pet friendly/);
-    expect(notAccommodatedProblem(['no_pets'], { attributes: ['service_animal_friendly'] })).toBeNull();
-    expect(notAccommodatedProblem([], { attributes: ['kid_friendly'] })).toBeNull();
+describe('save-time contradictions: one server trigger, no client copy (migrations 20270222 + 20270224)', () => {
+  const ROOT = path.join(__dirname, '../..');
+  const trigger = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20270224_business_restriction_contradictions.sql'), 'utf8');
+  const live = fs.readFileSync(path.join(ROOT, 'scripts/live-verify/business-restriction-contradictions.sql'), 'utf8');
+  it('No children checks every explicit child/family field from the vocabulary audit', () => {
+    for (const needle of ['new.attributes', 'new.suited_age_min', "'family' = any(coalesce(new.accommodates_party_types", "'family_gathering' = any(coalesce(new.offered_occasions",
+      'new.priority_attributes', "'family_gathering' = any(coalesce(new.priority_occasions"]) expect([needle, trigger.includes(needle)]).toEqual([needle, true]);
+    expect(trigger).toContain(`array[${CHILD_ATTRIBUTES.map((k) => `'${k}'`).join(', ')}]`);
+    // not conflicts: an adult event, category classification
+    expect(trigger).not.toMatch(/'baby_shower' = any/);
+    expect(trigger).not.toMatch(/new\.(category|subcategory|categories)\b/);
+  });
+  it('Indoor only checks Outdoor dining and the outdoor size only while it counts; 21+ with No children is untouched', () => {
+    expect(trigger).toMatch(/new\.weather_setting = 'indoor' and 'outdoor_seating' = any/);
+    expect(trigger).toMatch(/new\.outdoor_capacity is not null/);
+    expect(trigger).not.toMatch(/'adults_21_plus'[^\n]*'no_children'[^\n]*raise/);
+  });
+  it('the trigger fires on every column it reads', () => {
+    const cols = trigger.match(/before insert or update of ([\s\S]*?)\s+on public\.brand_partners/)[1];
+    for (const c of ['not_accommodated', 'attributes', 'suited_age_min', 'suited_age_max', 'accommodates_party_types', 'offered_occasions',
+      'priority_attributes', 'priority_occasions', 'weather_setting', 'outdoor_capacity']) expect([c, cols.includes(c)]).toEqual([c, true]);
+  });
+  it('the live regression script covers every required combination', () => {
+    for (const label of ['No children + Family group', 'No children + Group/Family occasion', 'No children + want more families', 'Indoor only + Outdoor dining',
+      'Indoor only + outdoor area size', '21+ + No children', 'No children + Family-friendly', 'No children + Kids menu', 'No children + Family seating',
+      'No children + Stroller friendly', 'No children + suited ages', 'No pets + Dog friendly', 'No pets + Pet friendly', 'No children + Quiet',
+      'No children + Date-friendly', 'No children + Private events', 'No children + Groups', 'No children + large group size'])
+      expect([label, live.includes(`('${label}',`)]).toEqual([label, true]);
+    expect(live).toMatch(/\('21\+ \+ No children',[^\n]*'ALLOWED'\)/);
+  });
+  it('no conflict decision in the client; the profile editor surfaces the refusal as the owner\'s to fix', () => {
+    const dash = fs.readFileSync(path.join(ROOT, 'src/screens/BusinessDashboardScreen.js'), 'utf8');
+    expect(dash).not.toMatch(/notAccommodatedProblem|kid_friendly[^\n]*no_children|no_children[^\n]*kid_friendly/);
+    expect(fs.readFileSync(path.join(ROOT, 'src/constants/businessRestrictions.js'), 'utf8')).not.toMatch(/export function notAccommodatedProblem/);
+    const fn = fs.readFileSync(path.join(ROOT, 'supabase/functions/screen-business-content/index.ts'), 'utf8');
+    expect(fn).toMatch(/writeError\.code === 'P0001'[\s\S]{0,120}isRuleRefusal \? 400 : 500/);
   });
   it('public line only when declared', () => {
     expect(notAccommodatedLine({ not_accommodated: [] })).toBeNull();

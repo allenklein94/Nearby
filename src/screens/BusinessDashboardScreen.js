@@ -76,7 +76,7 @@ import TellNearbyBusinessCard from '../components/TellNearbyBusinessCard';
 import { describeDemandSignals } from '../utils/demandSignals';
 import { opportunityPrimaryAction, consumerOfferAction } from '../utils/primaryAction';
 import { BOOKING_MODE_OPTIONS, LEGACY_RESERVATION_ATTRIBUTE, bookingModeOf } from '../constants/bookingMode';
-import { NOT_ACCOMMODATED_OPTIONS, notAccommodatedOf, notAccommodatedProblem } from '../constants/businessRestrictions';
+import { NOT_ACCOMMODATED_OPTIONS, notAccommodatedOf } from '../constants/businessRestrictions';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, OFFERED_OCCASION_OPTIONS, WEATHER_SETTING_OPTIONS, occasionLabel, occasionPhrase, dietaryLabel, requestedItemLabel } from '../constants/businessAttributes';
 import { planAddonLabel } from '../constants/planAddons';
 import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
@@ -1088,14 +1088,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     }
   }
 
-  // Item 86: what you don't accommodate. Tap to add, tap again to remove; saves per tap. A conflict with a declared quality
-  // (Family-friendly, Pet friendly, suited ages) is explained before anything is sent, and the server checks it again.
+  // Item 86: what you don't accommodate. Tap to add, tap again to remove; saves per tap. A contradiction (Family-friendly, Family
+  // group, Pet friendly, suited ages...) is refused by the server trigger alone; its message is shown as written.
   async function handleToggleNotAccommodated(key) {
     if (!selectedPartner) return;
     const current = notAccommodatedOf(selectedPartner);
     const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
-    const problem = notAccommodatedProblem(next, selectedPartner);
-    if (problem) { Alert.alert("That didn't go through", problem); return; }
     setSelectedPartner((prev) => ({ ...prev, not_accommodated: next }));
     try {
       await setBusinessNotAccommodated(selectedPartner.id, next);
