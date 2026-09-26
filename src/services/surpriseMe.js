@@ -13,6 +13,7 @@
 // getMyMatches() this app already has -- same "reuse what's already real,
 // invent nothing new" discipline as experienceAssembly.js.
 import { resolveIntent } from './intentResolver';
+import { classifyCreateRequest } from './createAssistant';
 import { getMyFriends } from './friends';
 import { getMyMatches } from './matchActions';
 import { supabase } from './supabase';
@@ -25,6 +26,12 @@ import {
   mergeCandidatePools,
   pickSuggestion,
   findConnectedPerson,
+  stripSurprisePhrase,
+  pickDiverse,
+  surpriseCategories,
+  surpriseBasis,
+  findConnectedPersonForPicks,
+  saidCategory,
 } from './surpriseMeLogic';
 
 export {
@@ -40,6 +47,14 @@ export {
   suggestionTags,
   suggestionCandidateKeys,
   findConnectedPerson,
+  surpriseAskFromText,
+  stripSurprisePhrase,
+  pickDiverse,
+  surpriseCategories,
+  surpriseBasis,
+  findConnectedPersonForPicks,
+  SURPRISE_PICK_COUNT,
+  saidCategory,
 } from './surpriseMeLogic';
 
 // Connected people only ADD an optional "your friend likes this" line to a suggestion; when they cannot be loaded the
@@ -107,20 +122,42 @@ async function getCalendarHint() {
 // already resolves the device's own location internally and degrades to
 // fewer/no candidates (never a crash, never a fabricated result) when
 // permission is denied.
-export async function runSurpriseMe({ when, mood }) {
-  const params = moodToParams(mood);
-  const myInterests = mood === 'something_new' ? await fetchMyInterests() : [];
-  const pool = categoryPoolForMood(mood, myInterests);
-  const categories = pickSampleCategories(pool, CATEGORY_SAMPLE_SIZE);
+// Two ways in, ONE engine:
+//   the sheet: { when, mood } picked with chips (unchanged vocabulary)
+//   item 89:   { text } -- the person SAID "surprise me ..." in the ask box; the rest of the sentence carries the real signals
+//              (time words, budget, who with, dietary / access needs, indoor/outdoor), read by the same resolver as any ask.
+// Signals, all from existing sources: time (words or the chip, never invented), location + weather (resolveIntent: each gathering
+// judged at its own start, businesses at the stated window), interests (two declared + one new tag for range), budget and party
+// (the words), connected friends (the existing line). Output: up to SURPRISE_PICK_COUNT picks from DIFFERENT category groups and
+// businesses (pickDiverse), or a real multi-part experience when the resolver assembled one.
+export async function runSurpriseMe({ when = null, mood = null, text = null } = {}) {
+  const typed = typeof text === 'string';
+  const rest = typed ? stripSurprisePhrase(text) : '';
+  let ask = {};
+  if (typed && rest.length >= 2) {
+    try { ask = await classifyCreateRequest(rest); } catch (e) { console.error('surprise classify skipped', e); ask = {}; }
+  }
+  const params = typed ? { occasion: ask.occasion ?? null, attributes: ask.attributes ?? [], partyType: ask.partyType ?? null } : moodToParams(mood);
+  const myInterests = typed || mood === 'something_new' ? await fetchMyInterests() : [];
+  // A typed ask that names its own category keeps it; otherwise the person's interests (plus one new tag) spread the set.
+  const named = typed ? saidCategory(rest) : null;
+  const categories = typed
+    ? (named ? [named] : surpriseCategories(myInterests))
+    : pickSampleCategories(categoryPoolForMood(mood, myInterests), CATEGORY_SAMPLE_SIZE);
+  const dateWindow = typed ? (ask.dateWindow ?? null) : when;
 
   const [results, calendarHint] = await Promise.all([
     Promise.all(
       categories.map((category) =>
         resolveIntent({
           category,
-          dateWindow: when,
-          rawText: '',
+          dateWindow,
+          rawText: rest,
           partyType: params.partyType,
+          partySize: typed ? (ask.partySize ?? null) : null,
+          priceLevel: typed ? (ask.priceLevel ?? null) : null,
+          budgetMax: typed ? (ask.budgetMax ?? null) : null,
+          cuisine: typed ? (ask.cuisine ?? null) : null,
           attributes: params.attributes,
           occasion: params.occasion,
         }).catch(() => ({ items: [], experience: null }))
@@ -130,16 +167,21 @@ export async function runSurpriseMe({ when, mood }) {
   ]);
 
   const merged = mergeCandidatePools(results.map((r) => r.items));
-  // Only one call can ever produce a real cross-category experience here:
-  // occasion is only ever set for the "date" mood, and every sampled
-  // category shares that same single occasion, so at most the first
-  // non-null result matters -- never merged, since a merged "experience"
-  // would mix two independently-assembled recipes into one fabricated one.
+  // Only one call can produce a real cross-category experience (all calls share one occasion); never merged into a fabricated one.
   const experience = results.find((r) => r.experience)?.experience ?? null;
 
   const suggestion = pickSuggestion(experience, merged);
+  const picks = suggestion?.kind === 'experience' ? [] : pickDiverse(merged);
   const connectedPeople = suggestion ? await getConnectedPeopleWithInterests().catch(logSoftFailure('surprise connected people')) : [];
-  const connectedPerson = suggestion ? findConnectedPerson(suggestion, connectedPeople) : null;
+  const connectedPerson = suggestion
+    ? (picks.length > 0 ? findConnectedPersonForPicks(picks, connectedPeople) : findConnectedPerson(suggestion, connectedPeople))
+    : null;
+  const basis = typed
+    ? surpriseBasis({
+      usedInterests: !named && categories.some(Boolean), dateWindow, budgetMax: ask.budgetMax ?? null,
+      priceLevel: ask.priceLevel ?? null, partyType: ask.partyType ?? null,
+    })
+    : null;
 
-  return { suggestion, pool: merged, connectedPeople, connectedPerson, calendarHint };
+  return { suggestion, picks, pool: merged, connectedPeople, connectedPerson, calendarHint, basis, dateWindow, ask, rest };
 }

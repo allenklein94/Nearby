@@ -7,6 +7,8 @@
 // for. surpriseMe.js (the async orchestrator that actually calls
 // resolveIntent()/getMyFriends()/getMyMatches()) imports everything here.
 import { CATEGORY_GROUPS, INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import { canonicalGroupForTag } from '../constants/categoryMapping';
+import { tagsForPhrase } from '../constants/categorySynonyms';
 
 export const WHEN_OPTIONS = [
   { key: 'now', label: 'Now' },
@@ -203,4 +205,95 @@ export function findConnectedPerson(suggestion, connectedPeople) {
   const match = (connectedPeople ?? []).find((p) => (p.interests ?? []).some((i) => tags.includes(i)));
   if (!match) return null;
   return { id: match.id, name: match.name, photo_url: match.photo_url };
+}
+
+// ---- Item 89 (owner, 2026-09-26): "surprise me" can be SAID, and returns a small, diverse set ----
+
+// The person's own words asking Nearby to choose. Deterministic, never AI. "Surprise party" / "a surprise for my wife" are NOT this
+// (they are a plan about someone else); "don't surprise me" is not either.
+const SURPRISE_ASK = /\bsurprise\s+(?:me|us)\b|\bdealer'?s\s+choice\b|\byou\s+(?:pick|choose|decide)\b|\bpick\s+(?:something|anything)\s+for\s+(?:me|us)\b|\bi'?m\s+feeling\s+lucky\b/i;
+const SURPRISE_NEGATED = /\b(?:don'?t|do\s+not|never)\s+surprise\s+(?:me|us)\b/i;
+export function surpriseAskFromText(text) {
+  if (typeof text !== 'string' || !text) return false;
+  if (SURPRISE_NEGATED.test(text)) return false;
+  return SURPRISE_ASK.test(text);
+}
+
+// The rest of the ask, which still carries real signals ("surprise me tonight under $30" -> "tonight under $30").
+export function stripSurprisePhrase(text) {
+  if (typeof text !== 'string') return '';
+  return text.replace(new RegExp(SURPRISE_ASK.source, 'gi'), ' ').replace(/^[\s,.!?-]+|[\s,.!?-]+$/g, '').replace(/\s{2,}/g, ' ').trim();
+}
+
+export const SURPRISE_PICK_COUNT = 3;
+
+// A surprise narrows to one category ONLY when the person's own words name it ("surprise me with coffee"); an AI guess never
+// collapses the set (it would lose the range the person asked for). Returns a real consumer tag or null.
+export function saidCategory(rest) {
+  if (typeof rest !== 'string' || !rest.trim()) return null;
+  return tagsForPhrase(rest).find((t) => INTEREST_OPTIONS.includes(t)) ?? null;
+}
+
+// What makes two picks "the same kind of thing": the canonical category group of its tag, else its result type. Two picks from one
+// business are never both shown.
+function diversityKey(c) {
+  const isGroup = c?.category && CATEGORY_GROUPS.some((g) => g.key === c.category);
+  const group = c?.category ? (isGroup ? c.category : canonicalGroupForTag(c.category)) : null;
+  return group ?? `type:${c?.type ?? 'unknown'}`;
+}
+
+// A small, DIVERSE set from the real pool: best score first, then the best of each not-yet-used category group; only when there
+// are not enough groups does a second pick from a used group fill in. Never invents, never pads with nothing. `excludeKeys` = the
+// `type:id` keys already shown (Shuffle never repeats them).
+export function pickDiverse(pool, count = SURPRISE_PICK_COUNT, excludeKeys = new Set()) {
+  const eligible = eligibleCandidates(pool)
+    .filter((c) => !excludeKeys.has(`${c.type}:${c.id}`))
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  const picks = [];
+  const groups = new Set();
+  const partners = new Set();
+  const take = (c) => { picks.push(c); groups.add(diversityKey(c)); if (c.partnerId) partners.add(c.partnerId); };
+  for (const c of eligible) {
+    if (picks.length >= count) break;
+    if (groups.has(diversityKey(c)) || (c.partnerId && partners.has(c.partnerId))) continue;
+    take(c);
+  }
+  for (const c of eligible) {
+    if (picks.length >= count) break;
+    if (picks.includes(c) || (c.partnerId && partners.has(c.partnerId))) continue;
+    take(c);
+  }
+  return picks;
+}
+
+// The categories a typed surprise samples: up to two of the person's DECLARED interests (the personal part) plus one tag they have
+// not declared (the "something new" part, for range). No declared interests = one unfiltered search ([null]).
+export function surpriseCategories(myInterests = [], rand = Math.random) {
+  const declared = (Array.isArray(myInterests) ? myInterests : []).filter((t) => INTEREST_OPTIONS.includes(t));
+  if (declared.length === 0) return [null];
+  const mine = pickSampleCategories(declared, 2, rand);
+  const novel = pickSampleCategories(categoryPoolForMood('something_new', declared), 1, rand);
+  return [...mine, ...novel.filter((t) => t && !mine.includes(t))];
+}
+
+// One honest line naming only the signals that really shaped the set ("Picked from your interests · tonight · under $30").
+const WHEN_WORDS = { now: 'right now', today: 'today', tonight: 'tonight', tomorrow: 'tomorrow', weekend: 'this weekend' };
+const PARTY_WORDS = { date: 'for a date', friends: 'with friends', family: 'with family', solo: 'on your own', coworkers: 'with coworkers', groups: 'for a group' };
+export function surpriseBasis({ usedInterests = false, dateWindow = null, budgetMax = null, priceLevel = null, partyType = null } = {}) {
+  const parts = [];
+  if (usedInterests) parts.push('Picked from your interests');
+  if (WHEN_WORDS[dateWindow]) parts.push(WHEN_WORDS[dateWindow]);
+  if (Number.isFinite(budgetMax) && budgetMax > 0) parts.push(`under $${budgetMax}`);
+  else if (priceLevel) parts.push(priceLevel === 'free' ? 'free' : priceLevel);
+  if (PARTY_WORDS[partyType]) parts.push(PARTY_WORDS[partyType]);
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
+
+// The connected-friend line for a SET: the first pick a real friend/match has a declared-interest link to (never a stranger).
+export function findConnectedPersonForPicks(picks, connectedPeople) {
+  for (const c of picks ?? []) {
+    const person = findConnectedPerson({ kind: 'candidate', candidate: c }, connectedPeople);
+    if (person) return { ...person, forTitle: c.title ?? null };
+  }
+  return null;
 }

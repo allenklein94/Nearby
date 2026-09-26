@@ -10,7 +10,7 @@ import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnl
 import { setGatheringInterested, getInterestedDemandPrefs, getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getMyPositiveExperienceSignals, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent, navigateToIntentResultItem, buildFriendDiscoveryResultItem } from '../services/intentResolver';
-import { runSurpriseMe, pickNextFromPool, findConnectedPerson, suggestionCandidateKeys, moodToParams } from '../services/surpriseMe';
+import { runSurpriseMe, suggestionCandidateKeys, moodToParams, surpriseAskFromText, pickDiverse, findConnectedPersonForPicks } from '../services/surpriseMe';
 import { detectFriendDiscoveryIntent, intentPhaseCaption } from '../services/intentResolverScoring';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/businessFulfillment';
@@ -965,6 +965,11 @@ export default function HomeScreen({ navigation }) {
     const typedText = (overrideText ?? intentText).trim();
     if (!typedText) return;
     if (overrideText) setIntentText(overrideText);
+    // Item 89: "surprise me" can be said. The rest of the sentence ("tonight under $30 with my girlfriend") still counts.
+    if (surpriseAskFromText(typedText)) {
+      await handleSurpriseSubmit({ text: typedText });
+      return;
+    }
     setIntentThinking(true);
     setIntentPhase({ phase: 'understanding' });
     setIntentResults(null);
@@ -1144,73 +1149,44 @@ export default function HomeScreen({ navigation }) {
     setIntentText('');
   }
 
-  // "Surprise Me" (critique item 28) -- runs entirely off the locked-spec
-  // quick-picker (When/Mood), never free text. Dismisses any in-progress
-  // typed-ask results first so the two result blocks never show at once.
-  async function handleSurpriseSubmit({ when, mood }) {
+  // "Surprise Me": the sheet ({ when, mood }) or, item 89, the person SAID it in the ask box ({ text }). One engine
+  // (runSurpriseMe) either way; it returns a small DIVERSE set (picks) or a real multi-part experience. Dismisses any typed-ask
+  // results first so the two result blocks never show at once.
+  async function handleSurpriseSubmit(args) {
     setIntentResults(null);
     setIntentEmptyFallback(null);
     setSurprise(null);
     setSurpriseLoading(true);
     try {
-      const { suggestion, pool, connectedPeople, connectedPerson, calendarHint } = await runSurpriseMe({ when, mood });
-      if (!suggestion) {
-        setSurprise({ when, mood, suggestion: null, pool, connectedPeople, connectedPerson: null, calendarHint, shown: new Set() });
-        return;
-      }
-      setSurprise({
-        when,
-        mood,
-        suggestion,
-        pool,
-        connectedPeople,
-        connectedPerson,
-        calendarHint,
-        shown: new Set(suggestionCandidateKeys(suggestion)),
-      });
+      const r = await runSurpriseMe(args);
+      const shownKeys = r.suggestion?.kind === 'experience'
+        ? suggestionCandidateKeys(r.suggestion)
+        : (r.picks ?? []).map((c) => `${c.type}:${c.id}`);
+      setSurprise({ args, ...r, suggestion: r.suggestion ?? null, shown: new Set(shownKeys) });
     } catch (e) {
       console.error('runSurpriseMe failed', e);
-      setSurprise({ when, mood, suggestion: null, pool: [], connectedPeople: [], connectedPerson: null, calendarHint: null, shown: new Set() });
+      setSurprise({ args, suggestion: null, picks: [], pool: [], connectedPeople: [], connectedPerson: null, calendarHint: null, basis: null, shown: new Set() });
     } finally {
       setSurpriseLoading(false);
     }
   }
 
-  // Re-rolls within the pool already fetched for this Surprise Me tap --
-  // only re-fetches (a fresh runSurpriseMe call, same when/mood) when that
-  // real pool is genuinely exhausted, per the locked spec. Never fabricates
-  // an alternative.
+  // Shuffle Again: the next diverse set from the pool already fetched (never repeating what was shown); a fresh run of the SAME
+  // ask only when that real pool is exhausted. Never fabricates an alternative.
   async function handleSurpriseShuffle() {
     if (!surprise) return;
-    const next = pickNextFromPool(surprise.pool, surprise.shown);
-    if (next) {
-      const connectedPerson = findConnectedPerson(next, surprise.connectedPeople);
+    const nextPicks = pickDiverse(surprise.pool, undefined, surprise.shown);
+    if (nextPicks.length > 0) {
       setSurprise((prev) => ({
         ...prev,
-        suggestion: next,
-        connectedPerson,
-        shown: new Set([...prev.shown, ...suggestionCandidateKeys(next)]),
+        suggestion: { kind: 'candidate', candidate: nextPicks[0] },
+        picks: nextPicks,
+        connectedPerson: findConnectedPersonForPicks(nextPicks, prev.connectedPeople),
+        shown: new Set([...prev.shown, ...nextPicks.map((c) => `${c.type}:${c.id}`)]),
       }));
       return;
     }
-    setSurpriseLoading(true);
-    try {
-      const { suggestion, pool, connectedPeople, connectedPerson, calendarHint } = await runSurpriseMe({ when: surprise.when, mood: surprise.mood });
-      setSurprise({
-        when: surprise.when,
-        mood: surprise.mood,
-        suggestion,
-        pool,
-        connectedPeople,
-        connectedPerson: suggestion ? connectedPerson : null,
-        calendarHint,
-        shown: suggestion ? new Set(suggestionCandidateKeys(suggestion)) : new Set(),
-      });
-    } catch (e) {
-      console.error('runSurpriseMe re-fetch failed', e);
-    } finally {
-      setSurpriseLoading(false);
-    }
+    await handleSurpriseSubmit(surprise.args);
   }
 
   function handleSurpriseDismiss() {
@@ -1235,11 +1211,13 @@ export default function HomeScreen({ navigation }) {
       // Item 72: business suggestions follow the same booking-mode action as everywhere else (utils/businessAction.js via the
       // shared router); Surprise Me has no typed text, so only its own real when/mood prefill the request form.
       navigateToIntentResultItem(navigation, item, {
-        typedText: '',
+        typedText: surprise?.rest ?? '',
         classifyResult: {
           category: item.category ?? null,
-          dateWindow: surprise?.when ?? null,
-          occasion: item.type === 'business_availability' && surprise?.mood ? moodToParams(surprise.mood).occasion : null,
+          dateWindow: surprise?.dateWindow ?? null,
+          occasion: item.type === 'business_availability'
+            ? (surprise?.args?.mood ? moodToParams(surprise.args.mood).occasion : (surprise?.ask?.occasion ?? null))
+            : null,
         },
       });
     }
@@ -1706,27 +1684,29 @@ export default function HomeScreen({ navigation }) {
                     </View>
                   ) : (
                     <View style={styles.surpriseCard}>
-                      <View style={styles.intentResultRow}>
-                        <Ionicons
-                          name={INTENT_RESULT_ICONS[surprise.suggestion.candidate.type] ?? 'sparkles-outline'}
-                          size={20}
-                          color={colors.primary}
-                          style={styles.intentResultIcon}
-                        />
-                        <View style={styles.intentResultTextCol}>
-                          <Text style={styles.intentResultTitle}>{surprise.suggestion.candidate.title}</Text>
-                          {surprise.suggestion.candidate.subtitle ? (
-                            <Text style={styles.intentResultSubtitle}>{surprise.suggestion.candidate.subtitle}</Text>
-                          ) : null}
-                        </View>
-                      </View>
-                      {/* People/privacy hard rule (locked spec item 2): only
-                          ever a real connected friend/match with a genuine,
-                          verifiable interest overlap -- never a stranger,
-                          never forced. */}
+                      {/* Item 89: a small, diverse set (different kinds of things), each row opens its own action. */}
+                      <Text style={styles.intentResultsHeading}>✨ A few ideas for you</Text>
+                      {!!surprise.basis && <Text style={styles.surpriseConnectedText}>{surprise.basis}</Text>}
+                      {(surprise.picks?.length ? surprise.picks : [surprise.suggestion.candidate]).map((item) => (
+                        <TouchableOpacity
+                          key={`${item.type}-${item.id}`}
+                          style={styles.intentResultRow}
+                          onPress={() => handleSurpriseResultTap(item)}
+                          accessibilityRole="button"
+                          accessibilityLabel={item.title}
+                        >
+                          <Ionicons name={INTENT_RESULT_ICONS[item.type] ?? 'sparkles-outline'} size={20} color={colors.primary} style={styles.intentResultIcon} />
+                          <View style={styles.intentResultTextCol}>
+                            <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
+                            {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
+                          </View>
+                          <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                        </TouchableOpacity>
+                      ))}
+                      {/* People/privacy hard rule: only a real connected friend/match with a declared-interest link, never a stranger. */}
                       {surprise.connectedPerson && (
                         <Text style={styles.surpriseConnectedText}>
-                          You could go with {surprise.connectedPerson.name} 👋
+                          You could go with {surprise.connectedPerson.name}{surprise.connectedPerson.forTitle ? ` to ${surprise.connectedPerson.forTitle}` : ''} 👋
                         </Text>
                       )}
                     </View>
@@ -1743,24 +1723,6 @@ export default function HomeScreen({ navigation }) {
                     </Text>
                   )}
                   <View style={styles.surpriseActionsRow}>
-                    {surprise.suggestion.kind === 'candidate' && (
-                      <TouchableOpacity
-                        style={styles.surpriseViewButton}
-                        onPress={() => handleSurpriseResultTap(surprise.suggestion.candidate)}
-                        accessibilityLabel={
-                          surprise.suggestion.candidate.type === 'business_availability'
-                          || surprise.suggestion.candidate.type === 'business_policy_match'
-                            ? 'Plan This' : 'View'
-                        }
-                        accessibilityRole="button"
-                      >
-                        <Text style={styles.surpriseViewButtonText}>
-                          {surprise.suggestion.candidate.type === 'business_availability'
-                            || surprise.suggestion.candidate.type === 'business_policy_match'
-                            ? 'Plan This' : 'View'}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
                     <TouchableOpacity
                       style={styles.surpriseShuffleButton}
                       onPress={handleSurpriseShuffle}
@@ -2863,11 +2825,6 @@ const getStyles = (colors) => StyleSheet.create({
   surpriseCard: { marginBottom: spacing.sm },
   surpriseConnectedText: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs, marginLeft: spacing.xl },
   surpriseActionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs, marginBottom: spacing.sm },
-  surpriseViewButton: {
-    flex: 1, backgroundColor: colors.primary, borderRadius: radius.full,
-    paddingVertical: spacing.sm, alignItems: 'center', justifyContent: 'center',
-  },
-  surpriseViewButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   // Secondary/outlined per the locked spec ("Shuffle Again should be
   // secondary/outlined") -- never coral, coral is reserved for this
   // card's own primary View/Plan This action beside it.
