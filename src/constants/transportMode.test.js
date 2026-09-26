@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { transportModeFromText, effectiveTransportMode, applyTransportMode, transportModeCaption, candidateKey, TRANSPORT_MODES } = require('./transportMode');
+const { transportModeFromText, applyTransportMode, transportModeCaption, candidateKey, TRANSPORT_MODES, REFINE_WEIGHT, travelProximity } = require('./transportMode');
 const { closeBonusOf } = require('./distanceWillingness');
 const { resolveAsk } = require('../utils/askResolver');
 const travel = require('../services/travelTime');
@@ -37,10 +37,28 @@ describe('reading how the person is getting there (words only)', () => {
     expect(t("I'm walking there and taking an Uber home")).toBeNull();
     expect(t("I have a car but might grab an Uber")).toBe('rideshare');
   });
-  it('a stated distance wins over the mode', () => {
-    expect(effectiveTransportMode('driving', 'very_nearby')).toBeNull();
-    expect(effectiveTransportMode('walking', null)).toBe('walking');
-    expect(effectiveTransportMode('teleport', null)).toBeNull();
+});
+
+describe('an explicit distance stays primary; the mode only refines', () => {
+  const g = (id, d, o = {}) => ({ type: 'gathering', id, distanceMiles: d, score: 0, ...o });
+  const list = () => [g('a', 0.5), g('b', 2), g('c', 4.5)];
+  const lift = (mode, stated) => applyTransportMode(list(), mode, null, { statedDistance: stated }).map((c) => c.score);
+  it('"within 10 minutes" + driving: driving never removes the close-by bonus (that would contradict the ask)', () => {
+    expect(lift('driving', 'very_nearby')).toEqual([0, 0, 0]);
+    expect(lift('rideshare', 'nearby')).toEqual([0, 0, 0]);
+  });
+  it('"30 minutes away and I\'m walking": walking refines with a weight below every stated-distance lift', () => {
+    expect(lift('walking', 'willing_to_travel')).toEqual([REFINE_WEIGHT, REFINE_WEIGHT * 2.5 / 4, 0]);
+    expect(REFINE_WEIGHT).toBeLessThan(1); // nearby's lift, the smallest stated-distance lift
+  });
+  it('the stated distance speaks; the mode caption stays silent', () => {
+    expect(transportModeCaption('walking', { statedDistance: 'very_nearby' })).toBeNull();
+    expect(transportModeCaption('walking')).toMatch(/walking/);
+  });
+  it('the resolver passes the stated distance and never widens the search for a mode', () => {
+    const src = read('src/services/intentResolver.js');
+    expect(src).toContain('applyTransportMode(deduped, transportMode, travelTimes, { statedDistance: distanceWillingness })');
+    expect(src).toMatch(/const travelMiles = travelSearchMiles\(distanceWillingness\);/);
   });
 });
 
@@ -100,12 +118,34 @@ describe('future routing interface (no provider exists)', () => {
     expect(seen[0].candidateKeys[0]).toBe('gathering:g29');
     expect(Object.keys(seen[0]).sort()).toEqual(['candidateKeys', 'mode', 'origin', 'signal']);
   });
-  it('real seconds re-rank on time, not miles: 4 mi can beat 1 mi; transit then ranks too', async () => {
+  it('real seconds re-rank on normalized time proximity, not miles: 4 mi can beat 1 mi', async () => {
     travel.registerTravelTimeProvider({ name: 'fake', travelTimes: async () => [900, 300, 1500] });
     const tt = await travel.getTravelTimes(cands, 'transit', origin, { keyOf: candidateKey });
     expect(travel.travelTimeSeconds(cands[1], tt, candidateKey)).toBe(300);
-    const ranked = applyTransportMode(cands, 'transit', tt);
-    expect(ranked.map((c) => c.score - cands.find((x) => x.id === c.id).score)).toEqual([0.5, 1, 0]);
+    const d = applyTransportMode(cands, 'transit', tt).map((c) => c.score - cands.find((x) => x.id === c.id).score);
+    // proximity = 20 / (20 + minutes) x 1.5; the 1 mi result also loses its straight-line close-by bonus (time replaces it)
+    expect(d[0]).toBeCloseTo(1.5 * 20 / 35);
+    expect(d[1]).toBeCloseTo(1.5 * 20 / 25);
+    expect(d[2]).toBeCloseTo(1.5 * 20 / 45 - 3);
+    expect(d[1]).toBeGreaterThan(d[2]);
+  });
+  it('proximity is absolute and saturating: 10 vs 20 min matters more than 50 vs 60; never 0, no cutoff', () => {
+    const p = (min) => travelProximity(min * 60, 'walking');
+    expect(p(0)).toBe(1);
+    expect(p(10)).toBeCloseTo(0.5);
+    expect(p(10) - p(20)).toBeGreaterThan(p(50) - p(60));
+    expect(p(600)).toBeGreaterThan(0);
+    expect(travelProximity(null, 'walking')).toBeNull();
+  });
+  it('a result without a routed time keeps its place; seconds and miles are never mixed', () => {
+    const tt = new Map([['gathering:a', 600], ['gathering:b', 1200]]);
+    const out = applyTransportMode(cands, 'walking', tt);
+    expect(out[2]).toBe(cands[2]);
+  });
+  it('with a stated distance, routed time only refines and never removes the close-by bonus', () => {
+    const tt = new Map([['gathering:a', 600], ['gathering:b', 1200], ['business_availability:c', 300]]);
+    const d = applyTransportMode(cands, 'driving', tt, { statedDistance: 'very_nearby' }).map((c, i) => c.score - cands[i].score);
+    expect(d.every((x) => x > 0 && x <= REFINE_WEIGHT)).toBe(true);
   });
   it('failure, timeout, bad shape or implausible values fall back to null (never throws)', async () => {
     const tries = [
@@ -148,7 +188,7 @@ describe('scope and safety', () => {
   });
   it('typed-ask resolver only; never widens the search; not in feeds, people or business code', () => {
     const src = read('src/services/intentResolver.js');
-    expect(src).toContain('applyTransportMode(deduped, transportMode, travelTimes)');
+    expect(src).toContain('applyTransportMode(deduped, transportMode, travelTimes, { statedDistance: distanceWillingness })');
     // the only widening input is distance willingness
     expect(src).toMatch(/const travelMiles = travelSearchMiles\(distanceWillingness\);/);
     for (const f of ['src/screens/HomeScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/services/homeDashboard.js', 'src/services/businessFulfillment.js', 'src/services/gatherings.js', 'src/services/friendDiscovery.js']) {
