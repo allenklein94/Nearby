@@ -25,6 +25,7 @@ const path = require('path');
 const { resolveIntent } = require('./intentResolver');
 const { classifyCreateRequest } = require('./createAssistant');
 const {
+  submitSurprise, shuffleSurprise, surpriseTypesForTab,
   runSurpriseMe, surpriseAskFromText, stripSurprisePhrase, pickDiverse, surpriseCategories, surpriseBasis, saidCategory,
   findConnectedPersonForPicks, SURPRISE_PICK_COUNT, surpriseScope, inSurpriseScope,
 } = require('./surpriseMe');
@@ -159,12 +160,12 @@ describe('wiring', () => {
     expect(submit.indexOf('surpriseAskFromText(typedText)')).toBeLessThan(submit.indexOf('classifyCreateRequest(typedText)'));
     expect(home).toMatch(/handleSurpriseSubmit\(\{ text: typedText \}\)/);
     expect(home).toMatch(/A few ideas for you/);
-    expect(home).toMatch(/runSurpriseMe\(\{ \.\.\.previous\.args, exclude: previous\.shown \}\)/);
+    expect(home).toMatch(/shuffleSurprise\(surprise\)/);
   });
   it('weather is the resolver\'s own pass (no second weather logic in Surprise Me), and no time is invented', () => {
     const eng = fs.readFileSync(path.join(__dirname, 'surpriseMe.js'), 'utf8');
     expect(eng).not.toMatch(/getSocialForecast|weatherBias|askWeather/);
-    expect(eng).toMatch(/const dateWindow = typed \? \(ask\.dateWindow \?\? null\) : when;/);
+    expect(eng).toMatch(/const dateWindow = typed \? dateWindowFromText\(rest\) : when;/);
   });
 });
 
@@ -172,6 +173,8 @@ describe('wiring', () => {
 describe('scope: only the words narrow, and variety follows the scope', () => {
   it('reads the scope from the words', () => {
     expect(surpriseScope('tonight')).toEqual({ level: 'broad' });
+    expect(surpriseScope('for under $30')).toEqual({ level: 'broad' });
+    expect(surpriseScope('with something fun this weekend')).toEqual({ level: 'broad' });
     expect(surpriseScope('')).toEqual({ level: 'broad' });
     expect(surpriseScope('with coffee')).toEqual({ level: 'tags', tags: ['Coffee'] });
     expect(surpriseScope('with Italian food')).toEqual({ level: 'cuisine', cuisine: 'italian' });
@@ -299,5 +302,100 @@ describe('typed surprises are not logged as searches', () => {
     expect(submit.indexOf('surpriseAskFromText(typedText)')).toBeLessThan(submit.indexOf('recordIntentSubmission('));
     const handler = home.slice(home.indexOf('async function handleSurpriseSubmit'), home.indexOf('function handleSurpriseDismiss'));
     expect(handler).not.toMatch(/recordIntent/);
+  });
+});
+
+// Owner (2026-09-26): Discover's search box recognizes Surprise Me and runs the SAME engine as Home, inline.
+describe('Discover uses the one Surprise Me engine, inline', () => {
+  const read = (rel) => fs.readFileSync(path.join(__dirname, rel), 'utf8');
+  const discover = read('../screens/DiscoverHubScreen.js');
+  const home = read('../screens/HomeScreen.js');
+
+  beforeEach(() => {
+    resolveIntent.mockReset();
+    classifyCreateRequest.mockReset();
+    classifyCreateRequest.mockResolvedValue({ dateWindow: null });
+    resolveIntent.mockResolvedValue({ items: [c('a', 'Coffee', 3), c('b', 'Hiking', 2)], experience: null });
+  });
+
+  it('recognizes the owner\'s examples', () => {
+    for (const t of ['surprise me', 'Surprise me tonight', 'surprise me with coffee', 'Surprise me for under $30', 'surprise me with something fun this weekend'])
+      expect([t, surpriseAskFromText(t)]).toEqual([t, true]);
+  });
+
+  it('Home and Discover give the same canonical interpretation for the same words', async () => {
+    for (const text of ['surprise me tonight', 'surprise me with coffee', 'Surprise me for under $30', 'surprise me with something fun this weekend']) {
+      resolveIntent.mockClear();
+      const fromHome = await submitSurprise({ text });
+      const homeCalls = resolveIntent.mock.calls.map(([a]) => ({ ...a }));
+      resolveIntent.mockClear();
+      const fromDiscover = await submitSurprise({ text, types: surpriseTypesForTab('all'), openNow: false });
+      const discoverCalls = resolveIntent.mock.calls.map(([a]) => ({ ...a }));
+      // interests are sampled randomly for a broad ask, so compare everything except the sampled category
+      const strip = (calls) => calls.map(({ category, ...rest }) => rest);
+      expect(strip(discoverCalls)).toEqual(strip(homeCalls));
+      expect(fromDiscover.scope).toEqual(fromHome.scope);
+      expect(fromDiscover.dateWindow).toEqual(fromHome.dateWindow);
+    }
+  });
+
+  it('Discover\'s own explicit choices only narrow: the type tab and the Open-now chip', async () => {
+    const r = await submitSurprise({ text: 'surprise me', types: surpriseTypesForTab('gatherings'), openNow: true });
+    expect(resolveIntent.mock.calls.every(([a]) => a.openNowChip === true)).toBe(true);
+    expect(r.picks.every((p) => p.type === 'gathering')).toBe(true);
+    resolveIntent.mockResolvedValue({ items: [c('g', 'Coffee', 3), { type: 'perk', id: 'p', category: 'Coffee', score: 9 }], experience: null });
+    const perks = await submitSurprise({ text: 'surprise me with coffee', types: surpriseTypesForTab('perks') });
+    expect(perks.picks.map((p) => p.id)).toEqual(['p']);
+    expect(surpriseTypesForTab('all')).toBeNull();
+  });
+
+  it('a failed AI call still gives the deterministic surprise, and no time is invented', async () => {
+    classifyCreateRequest.mockRejectedValue(new Error('500 no credit'));
+    const r = await submitSurprise({ text: 'surprise me with coffee' });
+    expect(r.picks.map((p) => p.id)).toEqual(['a']);
+    expect(resolveIntent.mock.calls.every(([a]) => a.dateWindow === null)).toBe(true);
+    // even if the classifier claims a time the words never said, none is used
+    classifyCreateRequest.mockResolvedValue({ dateWindow: 'tonight' });
+    resolveIntent.mockClear();
+    const noTime = await submitSurprise({ text: 'surprise me with coffee' });
+    expect(noTime.dateWindow).toBeNull();
+    expect(resolveIntent.mock.calls.every(([a]) => a.dateWindow === null)).toBe(true);
+  });
+
+  it('a network/service failure never fabricates a result; Shuffle keeps the previous set', async () => {
+    resolveIntent.mockRejectedValue(new Error('network'));
+    const r = await submitSurprise({ text: 'surprise me tonight' });
+    expect(r.suggestion).toBeNull();
+    expect(r.picks).toEqual([]);
+    const previous = { args: { text: 'surprise me' }, suggestion: { kind: 'candidate', candidate: c('a', 'Coffee', 1) }, picks: [c('a', 'Coffee', 1)], shown: new Set(['gathering:a']) };
+    const after = await shuffleSurprise(previous);
+    expect(after.picks.map((p) => p.id)).toEqual(['a']); // nothing fake, previous set kept
+  });
+
+  it('Discover routes a typed surprise before the normal search, into the shared flow, inline (no new screen or tab)', () => {
+    const submit = discover.slice(discover.indexOf('async function handleUnderstandSearch'));
+    expect(submit.indexOf('surpriseAskFromText(typedText)')).toBeLessThan(submit.indexOf('runIntentSearch(typedText'));
+    expect(discover).toMatch(/submitSurprise\(\{ text: typedText, types: surpriseTypesForTab\(typeFilter\), openNow: openNowActive \}\)/);
+    expect(discover).toMatch(/shuffleSurprise\(discoverSurprise\)/);
+    expect(discover).toMatch(/navigateToSurprisePick\(navigation, it, discoverSurprise\)/);
+    expect(discover).not.toMatch(/runSurpriseMe|navigate\(['"]Surprise|SurpriseMeScreen|setSurpriseSheet|handleSurpriseSubmit/);
+    const handler = discover.slice(discover.indexOf('async function handleDiscoverSurprise'), discover.indexOf('function handleIntentSearchResultTap'));
+    expect(handler).not.toMatch(/recordIntent|navigation\.navigate/);
+  });
+
+  it('"surprise me" is never a keyword search for the phrase in Discover', () => {
+    expect(discover).toMatch(/const isSearching = q\.length >= 2 && !surpriseTyped;/);
+    expect(discover).toMatch(/if \(term\.length < 2 \|\| surpriseAskFromText\(term\)\)/);
+    expect(discover).toMatch(/!surpriseTyped \? searchQuery\.trim\(\) : null/);
+  });
+
+  it('there is exactly one Surprise Me engine', () => {
+    const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((d) =>
+      d.isDirectory() ? walk(path.join(dir, d.name)) : (/\.js$/.test(d.name) && !/\.test\.js$/.test(d.name) ? [path.join(dir, d.name)] : []));
+    const src = path.join(__dirname, '..');
+    const definers = walk(src).filter((f) => /function (runSurpriseMe|pickDiverse|surpriseAskFromText|surpriseScope)\b/.test(fs.readFileSync(f, 'utf8')))
+      .map((f) => path.relative(src, f)).sort();
+    expect(definers).toEqual(['services/surpriseMe.js', 'services/surpriseMeLogic.js']);
+    for (const screen of [home, discover]) expect(screen).toMatch(/from '\.\.\/services\/surpriseMe'/);
   });
 });

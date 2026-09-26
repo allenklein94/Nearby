@@ -360,3 +360,27 @@ export function findConnectedPersonForPicks(picks, connectedPeople) {
   }
   return null;
 }
+
+// Discover's type tab is an explicit choice the person made, so it narrows a surprise to those result types (never broadens).
+// 'all' (or unknown) = no narrowing. Places = Nearby's own business results (Google places are never surprise picks).
+export const SURPRISE_TYPES_FOR_TAB = {
+  gatherings: ['gathering'],
+  perks: ['perk'],
+  communities: ['community'],
+  places: ['business_availability', 'business_policy_match'],
+};
+export function surpriseTypesForTab(tab) {
+  return SURPRISE_TYPES_FOR_TAB[tab] ?? null;
+}
+
+// The one state object every surface keeps for a shown surprise (Home and Discover).
+export function surpriseShownKeys(r) {
+  if (!r?.suggestion) return [];
+  return r.suggestion.kind === 'experience'
+    ? suggestionCandidateKeys(r.suggestion)
+    : (r.picks ?? []).map((c) => `${c.type}:${c.id}`);
+}
+export function surpriseStateFrom(args, r) {
+  return { args, ...r, suggestion: r?.suggestion ?? null, shown: new Set(surpriseShownKeys(r)), exhausted: r?.exhausted === true && !r?.suggestion };
+}
+export const EMPTY_SURPRISE = { suggestion: null, picks: [], pool: [], connectedPeople: [], connectedPerson: null, calendarHint: null, basis: null, exhausted: false };

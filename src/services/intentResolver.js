@@ -581,7 +581,7 @@ async function resolveOccasionPackages(location, occasion, partySize, searchMile
 // 2026-09-06) -- only ever a ranking bonus against a business's own real,
 // declared priority_occasions (resolveBusinessAvailability), never a
 // filter and never written anywhere.
-export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null, energies = [] }) {
+export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null, energies = [], openNowChip = false }) {
   // "my girlfriend" = a date party when the extractor named none (constants/askFacets.js, deterministic).
   partyType = partyType ?? partnerPartyType(rawText);
   // Item 63: an ask naming two or more parts of an outing ("dinner and something to do after") is ONE plan. A single
@@ -779,7 +779,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const commitAsk = commitmentAsk(rawText) ?? (isImmediate(spontaneity) ? 'light' : null);
   // One best-effort partner lookup (hours, pulse, booking mode) shared by the commitment and open-now passes; a failure is an
   // empty map (every business unknown, no booking mode), never a broken search.
-  const openNowOnly = openNowAskFromText(rawText);
+  // The person's words, or Discover's Open-now chip they switched on (openNowChip): one filter either way.
+  const openNowOnly = !!openNowChip || openNowAskFromText(rawText);
   let partnerInfo = new Map();
   const businessIds = deduped.filter((c) => c.partnerId && (BUSINESS_RESULT_TYPES.includes(c.type) || c.type === 'perk')).map((c) => c.partnerId);
   if (businessIds.length > 0) {

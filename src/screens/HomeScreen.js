@@ -10,7 +10,7 @@ import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnl
 import { setGatheringInterested, getInterestedDemandPrefs, getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getMyPositiveExperienceSignals, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent, navigateToIntentResultItem, buildFriendDiscoveryResultItem } from '../services/intentResolver';
-import { runSurpriseMe, suggestionCandidateKeys, moodToParams, surpriseAskFromText } from '../services/surpriseMe';
+import { submitSurprise, shuffleSurprise, navigateToSurprisePick, surpriseAskFromText } from '../services/surpriseMe';
 import { detectFriendDiscoveryIntent, intentPhaseCaption } from '../services/intentResolverScoring';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/businessFulfillment';
@@ -1157,42 +1157,19 @@ export default function HomeScreen({ navigation }) {
     setIntentEmptyFallback(null);
     setSurprise(null);
     setSurpriseLoading(true);
-    try {
-      const r = await runSurpriseMe(args);
-      const shownKeys = r.suggestion?.kind === 'experience'
-        ? suggestionCandidateKeys(r.suggestion)
-        : (r.picks ?? []).map((c) => `${c.type}:${c.id}`);
-      setSurprise({ args, ...r, suggestion: r.suggestion ?? null, shown: new Set(shownKeys) });
-    } catch (e) {
-      console.error('runSurpriseMe failed', e);
-      setSurprise({ args, suggestion: null, picks: [], pool: [], connectedPeople: [], connectedPerson: null, calendarHint: null, basis: null, shown: new Set() });
-    } finally {
-      setSurpriseLoading(false);
-    }
+    const next = await submitSurprise(args); // the one shared flow (services/surpriseMe.js); never throws
+    setSurprise(next);
+    setSurpriseLoading(false);
   }
 
-  // Shuffle Again (owner contract, 2026-09-26): a FRESH fetch of the same ask that avoids the immediately previous set. When
-  // everything real was just shown, the previous set stays with a plain note instead of repeating or inventing one.
+  // Shuffle Again (owner contract, 2026-09-26): a FRESH fetch of the same ask that avoids the immediately previous set; when
+  // everything real was just shown, the previous set stays with a plain note. Same shared helper Discover uses.
   async function handleSurpriseShuffle() {
     if (!surprise) return;
-    const previous = surprise;
     setSurpriseLoading(true);
-    try {
-      const r = await runSurpriseMe({ ...previous.args, exclude: previous.shown });
-      if (!r.suggestion) {
-        setSurprise({ ...previous, exhausted: true });
-        return;
-      }
-      const shownKeys = r.suggestion.kind === 'experience'
-        ? suggestionCandidateKeys(r.suggestion)
-        : (r.picks ?? []).map((c) => `${c.type}:${c.id}`);
-      setSurprise({ args: previous.args, ...r, shown: new Set(shownKeys), exhausted: false });
-    } catch (e) {
-      console.error('runSurpriseMe shuffle failed', e);
-      setSurprise({ ...previous, exhausted: false });
-    } finally {
-      setSurpriseLoading(false);
-    }
+    const next = await shuffleSurprise(surprise);
+    setSurprise(next);
+    setSurpriseLoading(false);
   }
 
   function handleSurpriseDismiss() {
@@ -1205,28 +1182,9 @@ export default function HomeScreen({ navigation }) {
   // this never went through a typed ask, so prefillText is honestly left
   // blank rather than inventing what the user "asked for."
   function handleSurpriseResultTap(item) {
+    const current = surprise;
     setSurprise(null);
-    if (item.type === 'gathering') {
-      navigation.navigate('GatheringDetail', { gatheringId: item.id });
-    } else if (item.type === 'perk') {
-      if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
-      navigation.navigate('BrandOffers', { highlightOfferId: item.id });
-    } else if (item.type === 'community') {
-      navigation.navigate('CommunityDetail', { communityId: item.id });
-    } else {
-      // Item 72: business suggestions follow the same booking-mode action as everywhere else (utils/businessAction.js via the
-      // shared router); Surprise Me has no typed text, so only its own real when/mood prefill the request form.
-      navigateToIntentResultItem(navigation, item, {
-        typedText: surprise?.rest ?? '',
-        classifyResult: {
-          category: item.category ?? null,
-          dateWindow: surprise?.dateWindow ?? null,
-          occasion: item.type === 'business_availability'
-            ? (surprise?.args?.mood ? moodToParams(surprise.args.mood).occasion : (surprise?.ask?.occasion ?? null))
-            : null,
-        },
-      });
-    }
+    navigateToSurprisePick(navigation, item, current);
   }
 
   async function handleOutcomeAnswer(outcome) {

@@ -33,6 +33,7 @@ import { getSocialForecast } from '../services/homeDashboard';
 import { filterToMyConnections } from '../services/connections';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { runIntentSearch, navigateToIntentResultItem } from '../services/intentResolver';
+import { submitSurprise, shuffleSurprise, navigateToSurprisePick, surpriseAskFromText, surpriseTypesForTab } from '../services/surpriseMe';
 import { recordIntentSelection, getMyTopSearchedCategory } from '../services/intentOutcomes';
 import { recordPeopleSubModeUse, getMyPeopleSubModeUsage } from '../services/peopleSubModeUsage';
 import { resolveDefaultPeopleSubMode } from '../utils/peopleSubModePreference';
@@ -348,6 +349,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const [intentPhase, setIntentPhase] = useState(null); // Item 135: real pipeline phase
 
   const intentSearchRequestId = useRef(0);
+  // Surprise Me typed into this search box (owner, 2026-09-26): the SAME engine as Home (services/surpriseMe.js), shown inline
+  // here; never a keyword search for the phrase, never logged as a search.
+  const [discoverSurprise, setDiscoverSurprise] = useState(null);
+  const [surpriseLoading, setSurpriseLoading] = useState(false);
+  const surpriseRequestId = useRef(0);
   const [typeFilter, setTypeFilter] = useState(() => route.params?.initialTypeTab ?? 'all');
   function setTypeTab(key) {
     setTypeFilter(key);
@@ -606,14 +612,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // actually looks at Places, or types a real search with location
   // available — never on every keystroke across every section.
   useEffect(() => {
-    const wantsPlaces = typeFilter === 'places' || (typeFilter === 'all' && searchQuery.trim().length >= 2);
+    const surpriseTyped = surpriseAskFromText(searchQuery);
+    const wantsPlaces = typeFilter === 'places' || (typeFilter === 'all' && searchQuery.trim().length >= 2 && !surpriseTyped);
     if (!wantsPlaces || !userLocation) return;
     const thisRequestId = ++placesRequestId.current;
     const timer = setTimeout(async () => {
       setLoadingPlaces(true);
       try {
         const category = typeFilter === 'places' ? placesCategory : null;
-        const keyword = searchQuery.trim().length >= 2 ? searchQuery.trim() : null;
+        const keyword = searchQuery.trim().length >= 2 && !surpriseTyped ? searchQuery.trim() : null;
         const results = await searchNearbyPlaces(userLocation.latitude, userLocation.longitude, category, keyword);
         if (thisRequestId === placesRequestId.current) setPlaces(results);
       } catch (e) {
@@ -631,7 +638,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // for the same reason — no query fired on every keystroke.
   useEffect(() => {
     const term = searchQuery.trim();
-    if (term.length < 2) {
+    if (term.length < 2 || surpriseAskFromText(term)) { // "surprise me" is an ask, never a keyword search for the phrase
       setSearchedGatherings([]);
       setSearchedCommunities([]);
       setSearchedOffers([]);
@@ -703,7 +710,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // threshold (and the debounced effect above, which only fires a real
   // gatherings/communities query at this same length) — a single keystroke
   // doesn't count as "searching" anywhere else on this screen either.
-  const isSearching = q.length >= 2;
+  const surpriseTyped = surpriseAskFromText(searchQuery);
+  const isSearching = q.length >= 2 && !surpriseTyped; // a typed "surprise me" is not a keyword search
 
   // Gatherings/communities: real server-side, indexed search results
   // (searchedGatherings/searchedCommunities, populated by the debounced
@@ -1089,6 +1097,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
   async function handleUnderstandSearch() {
     const typedText = searchQuery.trim();
     if (typedText.length < 2) return;
+    if (surpriseAskFromText(typedText)) {
+      await handleDiscoverSurprise(typedText);
+      return;
+    }
     const thisRequestId = ++intentSearchRequestId.current;
     setIntentSearching(true);
     try {
@@ -1110,6 +1122,37 @@ export default function DiscoverHubScreen({ navigation, route }) {
     if (thisRequestId === intentSearchRequestId.current) setIntentSearching(false);
   }
 
+  // Surprise Me from the search box: the one shared flow (submitSurprise / shuffleSurprise / navigateToSurprisePick), shown inline.
+  // Discover's own explicit choices only narrow it: the type tab and the Open-now chip. Nothing here is written to the search log.
+  async function handleDiscoverSurprise(typedText) {
+    intentSearchRequestId.current += 1;
+    setIntentSearch(null);
+    setIntentSearching(false);
+    const thisRequestId = ++surpriseRequestId.current;
+    setDiscoverSurprise(null);
+    setSurpriseLoading(true);
+    const next = await submitSurprise({ text: typedText, types: surpriseTypesForTab(typeFilter), openNow: openNowActive });
+    if (thisRequestId !== surpriseRequestId.current) return;
+    setDiscoverSurprise(next);
+    setSurpriseLoading(false);
+  }
+
+  async function handleDiscoverSurpriseShuffle() {
+    if (!discoverSurprise) return;
+    const thisRequestId = ++surpriseRequestId.current;
+    setSurpriseLoading(true);
+    const next = await shuffleSurprise(discoverSurprise);
+    if (thisRequestId !== surpriseRequestId.current) return;
+    setDiscoverSurprise(next);
+    setSurpriseLoading(false);
+  }
+
+  function clearDiscoverSurprise() {
+    surpriseRequestId.current += 1;
+    setDiscoverSurprise(null);
+    setSurpriseLoading(false);
+  }
+
   function handleIntentSearchResultTap(item) {
     const { classifyResult, typedText, submissionId } = intentSearch ?? {};
     recordIntentSelection({
@@ -1129,19 +1172,19 @@ export default function DiscoverHubScreen({ navigation, route }) {
     navigateToIntentResultItem(navigation, item, { typedText, classifyResult });
   }
 
-  function renderIntentSearchResultRow(item, index) {
+  function renderIntentSearchResultRow(item, index, { onPress = handleIntentSearchResultTap, pickBadge = true } = {}) {
     // Item 125 ("Make 'Nearby found this for you' visually recognizable"): the single real
     // top-scored item of an already relevance-sorted list (resolveIntent() sorts by real score
     // before this ever renders) gets the "✨ Nearby Pick" badge -- index === 0 only, so it never
     // shows on a bundle row (called with no index) or anywhere past the genuine #1 real match.
     // friend_discovery is a synthetic fallback item appended after the real ranked candidates,
     // never itself a scored "pick" -- excluded even in the edge case where it's the only item.
-    const isTopPick = index === 0 && item.type !== 'friend_discovery';
+    const isTopPick = pickBadge && index === 0 && item.type !== 'friend_discovery';
     return (
       <StaggeredReveal key={`${item.type}-${item.id}`} index={index}>
       <TouchableOpacity
         style={styles.intentSearchResultRow}
-        onPress={() => handleIntentSearchResultTap(item)}
+        onPress={() => onPress(item)}
         activeOpacity={0.85}
         accessibilityLabel={isTopPick ? `${item.title}, Nearby Pick` : item.title}
         accessibilityRole="button"
@@ -1616,6 +1659,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   // discipline searchRequestId/placesRequestId already use.
                   intentSearchRequestId.current += 1;
                   setIntentSearch(null);
+                  clearDiscoverSurprise();
                 }}
                 onSubmitEditing={handleUnderstandSearch}
                 returnKeyType="search"
@@ -1627,6 +1671,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                     setSearchQuery('');
                     intentSearchRequestId.current += 1;
                     setIntentSearch(null);
+                    clearDiscoverSurprise();
                   }}
                   accessibilityLabel="Clear search"
                   accessibilityRole="button"
@@ -2163,6 +2208,51 @@ export default function DiscoverHubScreen({ navigation, route }) {
               per-section results below are untouched and still render
               alongside this, so a genuine title match still shows up
               there too. */}
+          {/* Surprise Me typed into the search box: inline, in the results area, same engine as Home (no new screen or tab). */}
+          {surpriseTyped && surpriseLoading && (
+            <View style={styles.intentSearchLoadingRow}>
+              <NLoader fullScreen={false} size="inline" caption="Picking a few ideas…" />
+            </View>
+          )}
+          {surpriseTyped && !surpriseLoading && discoverSurprise && (
+            <View style={styles.intentSearchBlock}>
+              <Text style={styles.intentSearchTitle}>✨ A few ideas for you</Text>
+              {!!discoverSurprise.basis && (
+                <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{discoverSurprise.basis}</Text>
+              )}
+              {!discoverSurprise.suggestion ? (
+                <EmptyCopy id="surprise_none" />
+              ) : discoverSurprise.suggestion.kind === 'experience' ? (
+                <ExperienceComponentList
+                  experience={discoverSurprise.suggestion.experience}
+                  renderItem={(item, index) => renderIntentSearchResultRow(item, index, { onPress: (it) => navigateToSurprisePick(navigation, it, discoverSurprise), pickBadge: false })}
+                  navigation={navigation}
+                  partySize={discoverSurprise.ask?.partySize ?? null}
+                  labelStyle={styles.intentSearchGroupLabel}
+                />
+              ) : (
+                (discoverSurprise.picks?.length ? discoverSurprise.picks : [discoverSurprise.suggestion.candidate]).map((item, index) =>
+                  renderIntentSearchResultRow(item, index, { onPress: (it) => navigateToSurprisePick(navigation, it, discoverSurprise), pickBadge: false }))
+              )}
+              {discoverSurprise.connectedPerson && (
+                <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 6 }}>
+                  You could go with {discoverSurprise.connectedPerson.name}{discoverSurprise.connectedPerson.forTitle ? ` to ${discoverSurprise.connectedPerson.forTitle}` : ''} 👋
+                </Text>
+              )}
+              {discoverSurprise.exhausted && (
+                <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 6 }}>That's everything nearby that fits right now.</Text>
+              )}
+              {!!discoverSurprise.suggestion && (
+                <TouchableOpacity onPress={handleDiscoverSurpriseShuffle} accessibilityLabel="Shuffle Again" accessibilityRole="button">
+                  <Text style={styles.emptyActionText}>🔀 Shuffle Again</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+          {surpriseTyped && !surpriseLoading && !discoverSurprise && (
+            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>Press search and Nearby will pick a few ideas for you.</Text>
+          )}
+
           {isSearching && intentSearching && (
             <View style={styles.intentSearchLoadingRow}>
               <NLoader fullScreen={false} size="inline" caption={intentPhaseCaption(intentPhase?.phase ?? 'understanding', intentPhase?.classifyResult)} />

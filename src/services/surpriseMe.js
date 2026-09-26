@@ -12,7 +12,7 @@
 // that wires that logic to the same real resolveIntent()/getMyFriends()/
 // getMyMatches() this app already has -- same "reuse what's already real,
 // invent nothing new" discipline as experienceAssembly.js.
-import { resolveIntent } from './intentResolver';
+import { resolveIntent, navigateToIntentResultItem } from './intentResolver';
 import { classifyCreateRequest } from './createAssistant';
 import { getMyFriends } from './friends';
 import { getMyMatches } from './matchActions';
@@ -33,8 +33,11 @@ import {
   findConnectedPersonForPicks,
   surpriseScope,
   inSurpriseScope,
+  surpriseStateFrom,
+  EMPTY_SURPRISE,
 } from './surpriseMeLogic';
 import { cuisineFromText } from '../constants/categoryTree';
+import { dateWindowFromText } from '../utils/askResolver';
 
 export {
   WHEN_OPTIONS,
@@ -61,6 +64,10 @@ export {
   inSurpriseScope,
   scopeLabel,
   THINGS_TO_DO_GROUPS,
+  surpriseTypesForTab,
+  surpriseShownKeys,
+  surpriseStateFrom,
+  EMPTY_SURPRISE,
 } from './surpriseMeLogic';
 
 // Connected people only ADD an optional "your friend likes this" line to a suggestion; when they cannot be loaded the
@@ -142,7 +149,9 @@ async function getCalendarHint() {
 // set (`exclude`); the basis line names only signals that shaped the selection; no time is ever invented; typed surprises are
 // never written to the search log. The AI can neither narrow nor broaden: its category, cuisine, attributes and occasion guesses
 // are ignored here (the resolver reads the same facts from the words themselves).
-export async function runSurpriseMe({ when = null, mood = null, text = null, exclude = null } = {}) {
+// Surface options (never AI): `types` = result types the surface's own explicit filter allows (Discover's type tab), `openNow` =
+// the person switched on Discover's Open-now chip. Both only narrow.
+export async function runSurpriseMe({ when = null, mood = null, text = null, exclude = null, types = null, openNow = false } = {}) {
   const typed = typeof text === 'string';
   const rest = typed ? stripSurprisePhrase(text) : '';
   let ask = {};
@@ -158,7 +167,8 @@ export async function runSurpriseMe({ when = null, mood = null, text = null, exc
   const categories = typed
     ? (scope.level === 'tags' ? scope.tags : broad ? surpriseCategories(myInterests) : [null])
     : pickSampleCategories(categoryPoolForMood(mood, myInterests), CATEGORY_SAMPLE_SIZE);
-  const dateWindow = typed ? (ask.dateWindow ?? null) : when;
+  // Time: the person's own words (the same words-only reader the shared resolver uses), never the AI's, never invented.
+  const dateWindow = typed ? dateWindowFromText(rest) : when;
   const cuisine = typed ? cuisineFromText(rest) : null;
 
   const [results, calendarHint] = await Promise.all([
@@ -175,6 +185,7 @@ export async function runSurpriseMe({ when = null, mood = null, text = null, exc
           cuisine,
           attributes: params.attributes,
           occasion: params.occasion,
+          openNowChip: !!openNow,
         }).catch(() => ({ items: [], experience: null }))
       )
     ),
@@ -182,7 +193,9 @@ export async function runSurpriseMe({ when = null, mood = null, text = null, exc
   ]);
 
   // An explicit scope keeps only what is confirmed inside it; a broad request keeps everything the resolver returned.
-  const merged = mergeCandidatePools(results.map((r) => r.items)).filter((c) => inSurpriseScope(c, scope));
+  const merged = mergeCandidatePools(results.map((r) => r.items))
+    .filter((c) => inSurpriseScope(c, scope))
+    .filter((c) => !Array.isArray(types) || types.includes(c.type));
   // Only one call can produce a real cross-category experience (all calls share one occasion); never merged into a fabricated one.
   const experience = results.find((r) => r.experience)?.experience ?? null;
 
@@ -205,4 +218,45 @@ export async function runSurpriseMe({ when = null, mood = null, text = null, exc
   const exhausted = !suggestion && excludeKeys.size > 0 && merged.length > 0;
 
   return { suggestion, picks: shownPicks, pool: merged, connectedPeople, connectedPerson, calendarHint, basis, dateWindow, ask, rest, scope, exhausted };
+}
+
+// ---- The shared surface flow (Home's ask box + sheet, Discover's search box): one submit, one shuffle, one tap. ----
+
+// A run -> the state a surface keeps. A failure is an empty result (never a fabricated one) and never throws to the surface.
+export async function submitSurprise(args) {
+  try {
+    return surpriseStateFrom(args, await runSurpriseMe(args));
+  } catch (e) {
+    console.error('runSurpriseMe failed', e);
+    return { args, ...EMPTY_SURPRISE, shown: new Set() };
+  }
+}
+
+// Shuffle Again: a FRESH fetch of the same ask avoiding the immediately previous set. Nothing new = keep the previous set and say
+// so (`exhausted`); a failure keeps the previous set unchanged.
+export async function shuffleSurprise(previous) {
+  if (!previous) return previous;
+  try {
+    const r = await runSurpriseMe({ ...previous.args, exclude: previous.shown });
+    if (!r.suggestion) return { ...previous, exhausted: true };
+    return surpriseStateFrom(previous.args, r);
+  } catch (e) {
+    console.error('runSurpriseMe shuffle failed', e);
+    return { ...previous, exhausted: false };
+  }
+}
+
+// Opening a pick: the same router every typed ask uses. Only the surprise's own word-backed time (and the sheet's mood occasion)
+// prefill a business request; nothing is recorded to the search log.
+export function navigateToSurprisePick(navigation, item, surprise) {
+  navigateToIntentResultItem(navigation, item, {
+    typedText: surprise?.rest ?? '',
+    classifyResult: {
+      category: item.category ?? null,
+      dateWindow: surprise?.dateWindow ?? null,
+      occasion: item.type === 'business_availability'
+        ? (surprise?.args?.mood ? moodToParams(surprise.args.mood).occasion : (surprise?.ask?.occasion ?? null))
+        : null,
+    },
+  });
 }
