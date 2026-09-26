@@ -66,6 +66,7 @@ import { clockWindowFromText, dateAnchorFromText, applyClockWindowToCandidates, 
 import { fitExperienceToTime } from '../utils/planTiming';
 import { intensityFromText, effortFromText, applyIntensityToCandidates, applyEffortToCandidates, energiesWithoutIntensity } from '../constants/intensityEffort';
 import { socialSignalsFromText, applySocialToCandidates } from '../constants/socialContext';
+import { distanceWillingnessFromText, applyDistanceWillingness, distanceWillingnessCaption } from '../constants/distanceWillingness';
 import { spontaneityOf, isImmediate, applySpontaneityToCandidates, spontaneityCaption } from '../constants/spontaneity';
 import { getUserLocation } from './userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
@@ -132,6 +133,8 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       // gathering filling "Something to Do") without a second fetch.
       category: gathering.interest_tag ?? null,
       capacity: gathering.capacity ?? null,
+      // the real measured distance, read by the distance-willingness pass (constants/distanceWillingness.js)
+      distanceMiles: gathering.distanceMiles ?? null,
       // host-declared social facts the social-context pass compares a typed ask against (constants/socialContext.js; nothing new stored)
       partyType: gathering.party_type ?? null,
       groupSizeFeel: gathering.group_size_feel ?? null,
@@ -411,6 +414,7 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
       type: 'business_availability',
       id: row.id,
       partnerId: row.partner_id,
+      distanceMiles: row.distance_miles ?? null,
       title: `${row.partner_name} has availability`,
       subtitle: bonusReasons[0] ? `${baseSubtitle} · ${bonusReasons[0]}` : baseSubtitle,
       // Intent engine vision -- Experiences assembly, first increment
@@ -477,6 +481,7 @@ async function resolvePolicyOnlyBusinesses(location, partySize) {
     type: 'business_policy_match',
     id: row.partner_id,
     partnerId: row.partner_id,
+    distanceMiles: row.distance_miles ?? null,
     title: `${row.partner_name} may be able to help`,
     // Exact wording per direct instruction: never "Available" -- this is a
     // standing willingness, not confirmed inventory.
@@ -501,6 +506,7 @@ async function resolveOccasionOfferingBusinesses(location, occasion) {
     viaOccasionOffering: true,
     id: row.partner_id,
     partnerId: row.partner_id,
+    distanceMiles: row.distance_miles ?? null,
     title: `${row.partner_name} offers ${occasionLabel(occasion)} experiences`,
     subtitle: 'Ask what they can do — business confirmation required',
     score: occasionOfferingScore(row.distance_miles),
@@ -538,6 +544,7 @@ async function resolveOccasionPackages(location, occasion, partySize) {
       type: 'business_occasion_package',
       id: row.id,
       partnerId: row.partner_id,
+      distanceMiles: row.distance_miles ?? null,
       title: `🎁 ${row.partner_name} — ${row.name}`,
       subtitle: detail,
       category: row.category ?? null,
@@ -716,6 +723,10 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Social context (2026-09-26): "a few friends" / "big group hike" / "meet new people" compared against the gathering's existing
   // party_type, capacity and group_size_feel; gatherings only, ranking only, nothing stored.
   deduped = applySocialToCandidates(deduped, socialSignalsFromText(rawText), { partyType });
+  // Item 69: "walking distance" / "not too far" / "I don't mind driving" reorders by real measured distance; the search area is
+  // unchanged and nothing is removed.
+  const distanceWillingness = distanceWillingnessFromText(rawText);
+  deduped = applyDistanceWillingness(deduped, distanceWillingness);
   // Item 68: "I only have an hour" lifts what fits (declared length, else the category's typical one) and sinks what clearly
   // does not; unknown lengths are untouched, nothing is removed.
   const timeBudget = timeBudgetFromText(rawText);
@@ -761,7 +772,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   deduped.sort((a, b) => b.score - a.score);
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
-  const openEndedNote = [planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), askFacets.caption].filter(Boolean).join(' · ') || null;
+  const openEndedNote = [planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), askFacets.caption].filter(Boolean).join(' · ') || null;
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,
