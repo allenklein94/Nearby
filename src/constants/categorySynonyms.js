@@ -55,6 +55,13 @@ export const SYNONYM_GROUPS = [
   { tags: ['Cooking Class'], phrases: ['cooking lesson', 'culinary class'] },
 ];
 
+// Distinct named sports Nearby has NO category for (owner rule, item 75): a specific multi-word phrase beats a broad
+// single-word synonym, and a distinct sport is never silently redirected into a related one. "paddle tennis" must not
+// become Pickleball through "paddle" (nor Tennis through "tennis"), so these phrases compete like any other and map to
+// NOTHING: the search stays literal until a real category exists (then move the phrase to SYNONYM_GROUPS, or let the
+// tag's own name match it). Never create a category just to resolve a collision.
+export const UNMATCHED_PHRASES = ['paddle tennis', 'platform tennis'];
+
 const norm = (s) => String(s ?? '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 // Plural trim per word so "cafes" finds "cafe" (same idea as the server's _category_phrase_key).
 const singular = (w) => (w.length > 4 && !w.endsWith('ss') ? w.replace(/s$/, '') : w);
@@ -71,6 +78,7 @@ for (const { tags, phrases } of SYNONYM_GROUPS) {
 // call from the live taxonomy so a tag an admin adds later (registerCategoryTag) matches with no other step.
 function phraseMap() {
   const m = new Map(PHRASE_TO_TAGS);
+  for (const p of UNMATCHED_PHRASES) if (!m.has(key(p))) m.set(key(p), []);
   for (const g of CATEGORY_GROUPS) {
     for (const t of [...g.tags, ...(g.businessOnlyTags ?? [])]) {
       const k = key(t);
@@ -112,16 +120,14 @@ export function tagsForPhrase(text) {
   const q = key(text);
   if (q.length < 2) return [];
   const map = phraseMap();
-  const out = new Set(map.get(q) ?? []);
-  if (out.size === 0) {
-    const padded = ` ${q} `;
-    let best = null;
-    for (const [phrase, tags] of map) {
-      if (phrase.length >= 3 && padded.includes(` ${phrase} `) && (!best || phrase.length > best.phrase.length)) best = { phrase, tags };
-    }
-    if (best) best.tags.forEach((t) => out.add(t));
+  if (map.has(q)) return [...map.get(q)];
+  // The longest whole-word phrase inside the query wins, so a specific phrase beats a broad one ("paddle tennis" > "paddle").
+  const padded = ` ${q} `;
+  let best = null;
+  for (const [phrase, tags] of map) {
+    if (phrase.length >= 3 && padded.includes(` ${phrase} `) && (!best || phrase.length > best.phrase.length)) best = { phrase, tags };
   }
-  return [...out];
+  return best ? [...best.tags] : [];
 }
 
 // Everything a search should look for: the person's own words first, then the canonical tag names their words stand for.

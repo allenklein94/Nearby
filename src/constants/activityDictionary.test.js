@@ -1,5 +1,5 @@
 import { RELATED_ACTIVITY_GROUPS, canonicalActivity, relatedActivities, isSameActivity, areRelatedActivities } from './activityDictionary';
-import { SYNONYM_GROUPS, tagsForPhrase, expandSearchTerms, registerSynonyms } from './categorySynonyms';
+import { SYNONYM_GROUPS, UNMATCHED_PHRASES, tagsForPhrase, expandSearchTerms, registerSynonyms } from './categorySynonyms';
 import { CATEGORY_GROUPS } from './gatheringCategories';
 import { relatedHobbyFor } from './hobbyRelations';
 import { interestMatch } from '../utils/interestMatch';
@@ -20,6 +20,27 @@ describe('canonical activity dictionary (item 75)', () => {
   });
   it('paddle boarding is not pickleball', () => {
     for (const w of ['paddle board', 'paddle boarding', 'paddleboard', 'stand up paddle']) expect(canonicalActivity(w)).toBe('Paddleboarding');
+  });
+  it('the locked mapping list (owner, item 75 follow-up)', () => {
+    const want = {
+      'pickle ball': 'Pickleball', 'pickleball court': 'Pickleball', paddle: 'Pickleball',
+      padel: 'Padel', 'padel tennis': 'Padel', 'padel court': 'Padel',
+      'paddle board': 'Paddleboarding', 'paddle boarding': 'Paddleboarding', 'stand up paddle': 'Paddleboarding',
+      kayak: 'Kayaking',
+    };
+    for (const [w, tag] of Object.entries(want)) expect(tagsForPhrase(w)).toEqual([tag]);
+  });
+  it('a specific phrase beats a broad one: paddle tennis (no category) is unmatched, never Pickleball or Tennis', () => {
+    for (const w of ['paddle tennis', 'Paddle Tennis', 'paddle tennis near me', 'platform tennis']) {
+      expect(tagsForPhrase(w)).toEqual([]);
+      expect(canonicalActivity(w)).toBeNull();
+    }
+    expect(expandSearchTerms('paddle tennis')).toEqual(['paddle tennis']);
+    expect(tagsForPhrase('paddle near me')).toEqual(['Pickleball']);
+    expect(tagsForPhrase('tennis')).toEqual(['Tennis']);
+  });
+  it('no unmatched phrase is a real category (never shadow a tag that exists)', () => {
+    for (const p of UNMATCHED_PHRASES) expect([...ALL_TAGS].some((t) => t.toLowerCase() === p)).toBe(false);
   });
   it('related but distinct', () => {
     expect(areRelatedActivities('Pickleball', 'Padel')).toBe(true);
