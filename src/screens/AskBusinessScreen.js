@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SEARCH_RADIUS_OPTIONS } from '../constants/searchRadius';
 import useFormDraft from '../hooks/useFormDraft';
 import DraftBanner from '../components/DraftBanner';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -60,7 +61,7 @@ export const PICK_DATE_KEY = 'pick_date';
 // straight through to submitBusinessRequest/submitBusinessRequestForGathering's
 // already-existing radiusMiles param (no RPC change needed -- both already
 // accept it).
-const RADIUS_OPTIONS = [15, 30, 50];
+const RADIUS_OPTIONS = SEARCH_RADIUS_OPTIONS;
 
 function startOfDay(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());

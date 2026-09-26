@@ -1,4 +1,5 @@
 import { relatedHobbyFor } from '../constants/hobbyRelations';
+import { TRAVEL_SEARCH_MILES, boundedSearchMiles } from '../constants/searchRadius';
 import { tagsForPhrase } from '../constants/categorySynonyms';
 import { groupForTag } from '../constants/gatheringCategories';
 import { formatDistanceAway } from '../utils/formatDistance';
@@ -47,6 +48,9 @@ export function gatheringInviteShareUrl(gatheringId) {
 }
 
 const WIDE_TIER_MAX_MILES = 15;
+// 'travel': only when a typed ask says the person is willing to travel (constants/distanceWillingness.js); bounded, never unlimited.
+const TRAVEL_TIER_MAX_MILES = TRAVEL_SEARCH_MILES;
+const tierMaxMiles = (tier) => boundedSearchMiles(tier === 'local' ? LOCAL_TIER_MAX_MILES : tier === 'travel' ? TRAVEL_TIER_MAX_MILES : WIDE_TIER_MAX_MILES);
 
 // price_level/party_type: two real, optional, host-declared fields backing
 // the new Price/People filters (CLAUDE.md "Category/filter taxonomy pass")
@@ -200,7 +204,7 @@ async function enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, myInt
     }
   }
 
-  const maxMiles = tier === 'local' ? LOCAL_TIER_MAX_MILES : WIDE_TIER_MAX_MILES;
+  const maxMiles = tierMaxMiles(tier);
   const approvedCounts = await getApprovedCounts(gatheringIds);
 
   return filtered
@@ -252,7 +256,7 @@ export async function getNearbyGatherings(tier = 'local') {
   const myLng = location.coords.longitude;
 
   const context = await fetchGatheringVisibilityContext(userId);
-  const maxMiles = tier === 'local' ? LOCAL_TIER_MAX_MILES : WIDE_TIER_MAX_MILES;
+  const maxMiles = tierMaxMiles(tier);
 
   const { data: candidateRows, error: candidateError } = await supabase.rpc('get_bounded_nearby_gathering_ids', {
     my_lat: myLat,

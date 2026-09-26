@@ -66,7 +66,7 @@ import { clockWindowFromText, dateAnchorFromText, applyClockWindowToCandidates, 
 import { fitExperienceToTime } from '../utils/planTiming';
 import { intensityFromText, effortFromText, applyIntensityToCandidates, applyEffortToCandidates, energiesWithoutIntensity } from '../constants/intensityEffort';
 import { socialSignalsFromText, applySocialToCandidates } from '../constants/socialContext';
-import { distanceWillingnessFromText, applyDistanceWillingness, distanceWillingnessCaption } from '../constants/distanceWillingness';
+import { distanceWillingnessFromText, applyDistanceWillingness, distanceWillingnessCaption, travelSearchMiles } from '../constants/distanceWillingness';
 import { spontaneityOf, isImmediate, applySpontaneityToCandidates, spontaneityCaption } from '../constants/spontaneity';
 import { getUserLocation } from './userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
@@ -89,8 +89,8 @@ const RESULT_CAP = 4;
 // (utils/weatherBias.js) -- the identical real signal and weight
 // (SCORE_HAPPENING_NOW) homeRecommendations.js's own weatherAdjustment()
 // already uses, not a second invented rule.
-async function resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise = null) {
-  const nearby = await getNearbyGatherings('wide');
+async function resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise = null, travel = false) {
+  const nearby = await getNearbyGatherings(travel ? 'travel' : 'wide');
   const relevant = nearby.filter((g) => {
     if (category && g.interest_tag !== category) return false;
     return matchesDateWindow(g.scheduled_at, dateWindow);
@@ -319,7 +319,7 @@ async function resolvePerks(category, location) {
 // that requires submitting a fresh ask and waiting. This is what makes
 // the business path a real candidate instead of a dead end -- see the
 // integration audit for the gap this closes.
-async function resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName, askedActivities = []) {
+async function resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName, askedActivities = [], searchMiles = undefined) {
   if (!location) return [];
   // Universal Signal Remediation Pass, P0 item 2 (CLAUDE.md, Aug 28 2026):
   // a real hard feasibility filter now, not just relevance -- a posting
@@ -334,6 +334,8 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
       latitude: location.latitude,
       longitude: location.longitude,
       partySize: partySize ?? null,
+      // a posting still only reaches as far as its own business chose (the RPC uses least(this, the posting's radius))
+      ...(searchMiles ? { radiusMiles: searchMiles } : {}),
     }),
     affinitySignalsPromise,
     whoForSignalsPromise,
@@ -470,12 +472,13 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
 // also has a live availability match gets de-duped out of this tier
 // entirely in resolveIntent() below, so the same business is never shown
 // twice at two confidence levels.
-async function resolvePolicyOnlyBusinesses(location, partySize) {
+async function resolvePolicyOnlyBusinesses(location, partySize, searchMiles = undefined) {
   if (!location) return [];
   const rows = await searchPolicyOnlyBusinesses({
     latitude: location.latitude,
     longitude: location.longitude,
     partySize: partySize ?? null,
+    ...(searchMiles ? { radiusMiles: searchMiles } : {}),
   });
   return rows.map((row) => ({
     type: 'business_policy_match',
@@ -494,12 +497,13 @@ async function resolvePolicyOnlyBusinesses(location, partySize) {
 // package nor a live posting. Same honest framing as the policy-only tier -- never "available", always
 // "confirm with the business" -- and never outranks confirmed inventory (occasionOfferingScore's ceiling
 // sits under the confirmed floor). Only searched when the ask carries a real occasion.
-async function resolveOccasionOfferingBusinesses(location, occasion) {
+async function resolveOccasionOfferingBusinesses(location, occasion, searchMiles = undefined) {
   if (!location || !occasion) return [];
   const rows = await searchOccasionOfferingBusinesses({
     occasion,
     latitude: location.latitude,
     longitude: location.longitude,
+    ...(searchMiles ? { radiusMiles: searchMiles } : {}),
   });
   return rows.map((row) => ({
     type: 'business_policy_match',
@@ -526,13 +530,15 @@ async function resolveOccasionOfferingBusinesses(location, occasion) {
 // rather than folded into that tier -- CelebrateSomethingScreen's own
 // dedupeBusinessCandidates() (celebrateSomething.js) renders both
 // generically, side by side.
-async function resolveOccasionPackages(location, occasion, partySize) {
+async function resolveOccasionPackages(location, occasion, partySize, searchMiles = undefined) {
   if (!location || !occasion) return [];
   const rows = await searchOccasionPackages({
     occasionType: occasion,
     latitude: location.latitude,
     longitude: location.longitude,
     partySize: partySize ?? null,
+    // never narrower than the packages search's own default
+    ...(searchMiles ? { radiusMiles: Math.max(searchMiles, 25) } : {}),
   });
   return rows.map((row) => {
     let score = SCORE_OCCASION_PACKAGE_FLOOR;
@@ -660,15 +666,19 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     ? getWhoForPreferenceSignals(whoForFriendId).catch(() => ({ cuisineKeys: [], venueKeys: [] }))
     : Promise.resolve({ cuisineKeys: [], venueKeys: [] });
 
+  // Item 69: "willing to travel" widens every search one step on the shared radius list (15 -> 30 mi), bounded by its maximum.
+  const distanceWillingness = distanceWillingnessFromText(rawText);
+  const travelMiles = travelSearchMiles(distanceWillingness);
+
   const branches = await Promise.allSettled([
-    resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise),
+    resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise, !!travelMiles),
     resolveCommunities(category, location, myCity),
     resolveConnectedRequests(category, dateWindow),
     resolvePerks(category, location),
-    resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName, activitiesFromText(rawText)),
-    resolvePolicyOnlyBusinesses(location, partySize),
-    resolveOccasionPackages(location, occasion, partySize),
-    resolveOccasionOfferingBusinesses(location, occasion),
+    resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName, activitiesFromText(rawText), travelMiles),
+    resolvePolicyOnlyBusinesses(location, partySize, travelMiles),
+    resolveOccasionPackages(location, occasion, partySize, travelMiles),
+    resolveOccasionOfferingBusinesses(location, occasion, travelMiles),
   ]);
 
   const candidates = [];
@@ -723,9 +733,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Social context (2026-09-26): "a few friends" / "big group hike" / "meet new people" compared against the gathering's existing
   // party_type, capacity and group_size_feel; gatherings only, ranking only, nothing stored.
   deduped = applySocialToCandidates(deduped, socialSignalsFromText(rawText), { partyType });
-  // Item 69: "walking distance" / "not too far" / "I don't mind driving" reorders by real measured distance; the search area is
-  // unchanged and nothing is removed.
-  const distanceWillingness = distanceWillingnessFromText(rawText);
+  // Item 69: "walking distance" / "not too far" lift the closer results by their real measured distance (relative, no mile cutoffs);
+  // "willing to travel" already widened the search above. Nothing is removed.
   deduped = applyDistanceWillingness(deduped, distanceWillingness);
   // Item 68: "I only have an hour" lifts what fits (declared length, else the category's typical one) and sinks what clearly
   // does not; unknown lengths are untouched, nothing is removed.

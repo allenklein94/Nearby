@@ -6,19 +6,22 @@
 //   anywhere_in_area   "anywhere in town", "distance doesn't matter"
 //   willing_to_travel  "I don't mind driving", "worth the drive", "30 minutes away", "an hour away"
 // Minutes are mapped to a BUCKET only (<= 10 very nearby, <= 20 nearby, more = willing to travel); no travel time is ever turned
-// into miles or shown as one. Ranking only, on real measured distances (a result with no distance is untouched, nothing removed):
-//   very_nearby  within 1 mi +2, beyond 5 mi -2
-//   nearby       within 3 mi +1, beyond 10 mi -1
-//   anywhere / willing_to_travel  the resolver's usual "close by" bonus is cancelled, so distance stops deciding the order.
-// The search area itself is NOT widened: gatherings and businesses are still fetched within their existing bounded radius, so
-// "willing to travel" reorders what is in your area rather than reaching further. Typed asks only; never stored, never sent to a
-// business, never in Home/Discover feeds.
+// into miles or shown as one, and there are NO mile cutoffs (owner decision 2026-09-26). On real measured distances only (a result
+// with no distance keeps its place, nothing is removed or hard-filtered):
+//   very_nearby  the closer a result is RELATIVE to the others, the more it lifts (closest +2 down to farthest 0)
+//   nearby       the same, gentler (closest +1 down to 0)
+//   anywhere_in_area  the resolver's pre-existing "close by" bonus is cancelled, so distance stops deciding the order
+//   willing_to_travel  every search widens one step on the shared radius list (constants/searchRadius.js: 15 -> 30 mi, never past
+//                      its 50 mi maximum), then the wider results rank normally by their measured distance.
+// Typed asks only; never stored, never sent to a business, never in Home/Discover feeds.
+
+import { TRAVEL_SEARCH_MILES, boundedSearchMiles } from './searchRadius';
 
 export const DISTANCE_WILLINGNESS = [
   { key: 'very_nearby', label: 'Very nearby', caption: 'Keeping it very close by' },
   { key: 'nearby', label: 'Nearby', caption: 'Keeping it nearby' },
   { key: 'anywhere_in_area', label: 'Anywhere in my area', caption: 'Looking anywhere in your area' },
-  { key: 'willing_to_travel', label: 'Willing to travel', caption: 'Not limiting it to what is closest' },
+  { key: 'willing_to_travel', label: 'Willing to travel', caption: 'Showing options worth traveling for' },
 ];
 export const DISTANCE_WILLINGNESS_KEYS = DISTANCE_WILLINGNESS.map((d) => d.key);
 
@@ -64,24 +67,33 @@ export function closeBonusOf(c) {
   return CLOSE_BONUS[c.type] ?? 0;
 }
 
-const BANDS = {
-  very_nearby: { within: 1, lift: 2, beyond: 5, sink: -2 },
-  nearby: { within: 3, lift: 1, beyond: 10, sink: -1 },
-};
+// How strongly closeness counts, relative to the other results' real distances. No mile threshold anywhere.
+const CLOSENESS_WEIGHT = { very_nearby: 2, nearby: 1 };
 
-export function distanceWillingnessDelta(c, key) {
+export function distanceWillingnessDelta(c, key, measured = []) {
   if (!key || typeof c?.distanceMiles !== 'number' || !Number.isFinite(c.distanceMiles) || c.distanceMiles < 0) return 0;
-  const band = BANDS[key];
-  if (band) return c.distanceMiles <= band.within ? band.lift : c.distanceMiles > band.beyond ? band.sink : 0;
-  if (key === 'anywhere_in_area' || key === 'willing_to_travel') { const bonus = closeBonusOf(c); return bonus ? -bonus : 0; }
+  const weight = CLOSENESS_WEIGHT[key];
+  if (weight) {
+    const ds = measured.length ? measured : [c.distanceMiles];
+    const min = Math.min(...ds);
+    const max = Math.max(...ds);
+    return max === min ? weight : weight * (max - c.distanceMiles) / (max - min);
+  }
+  if (key === 'anywhere_in_area') { const bonus = closeBonusOf(c); return bonus ? -bonus : 0; }
   return 0;
+}
+
+// The one widened radius for a "willing to travel" ask (null otherwise = each search keeps its own default).
+export function travelSearchMiles(key) {
+  return key === 'willing_to_travel' ? boundedSearchMiles(TRAVEL_SEARCH_MILES) : null;
 }
 
 // Re-scores only; never adds or removes a result. No key = the same array.
 export function applyDistanceWillingness(candidates, key) {
   if (!Array.isArray(candidates) || !DISTANCE_WILLINGNESS_KEYS.includes(key)) return candidates;
+  const measured = candidates.map((c) => c?.distanceMiles).filter((d) => typeof d === 'number' && Number.isFinite(d) && d >= 0);
   return candidates.map((c) => {
-    const delta = distanceWillingnessDelta(c, key);
+    const delta = distanceWillingnessDelta(c, key, measured);
     return delta ? { ...c, score: (c.score ?? 0) + delta } : c;
   });
 }
