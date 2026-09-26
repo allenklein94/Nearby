@@ -534,7 +534,7 @@ Description: ${description || '(none)'}`;
           });
           if (writeError) {
             console.error('screen-business-content: low-tier experience update failed', writeError);
-            return json({ error: writeError.message || 'Could not save your changes.' }, 500);
+            return json({ error: writeError.message || 'Could not save your changes.' }, (writeError.code === 'P0001' || writeError.code === '23514') ? 400 : 500); // a rule refusal is the owner's to fix (item 86)
           }
           return json({ riskTier, published: true, blocked: false, screeningId, experienceId });
         }
@@ -557,7 +557,7 @@ Description: ${description || '(none)'}`;
           // existing parseEntitlementError() already recognizes this exact
           // string, no new error shape introduced.
           console.error('screen-business-content: low-tier experience create failed', writeError);
-          return json({ error: writeError.message || 'Could not save your changes.' }, 500);
+          return json({ error: writeError.message || 'Could not save your changes.' }, (writeError.code === 'P0001' || writeError.code === '23514') ? 400 : 500); // a rule refusal is the owner's to fix (item 86)
         }
         return json({ riskTier, published: true, blocked: false, screeningId, experienceId: newId });
       }

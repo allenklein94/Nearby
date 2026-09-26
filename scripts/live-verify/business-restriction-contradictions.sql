@@ -1,4 +1,4 @@
--- Verifies migrations 20270222 + 20270224 (item 86 save-time contradictions). Rolled back; results via the exception text.
+-- Verifies migrations 20270222 + 20270224 + 20270225 (item 86 save-time contradictions, profile AND offerings). Rolled back; results via the exception text.
 -- Each case starts from a clean business, applies the two settings in BOTH orders, and expects REFUSED or ALLOWED.
 begin;
 do $$
@@ -64,6 +64,70 @@ begin
           || case when ord = 1 and msg is not null then ' -- ' || msg else '' end || E'\n';
       end loop;
     end loop;
+  end;
+  -- Offerings (20270225): each case in both save directions. dir 1 = No children first, then the offering; dir 2 = offering first.
+  declare o record; dir int; got text; owner_id uuid; oid uuid;
+  begin
+    select id into owner_id from profiles limit 1;
+    perform set_config('app.trusted_update', 'true', true);
+    update profiles set managed_partner_id = b where id = owner_id;
+    create temp table ocases (label text, restriction text, kind text, party text, attrs text[], occ text, active boolean, expect text) on commit drop;
+    insert into ocases values
+      ('No children + Family Signature Experience',          'no_children',    'experience', 'family', '{}', null, true, 'REFUSED'),
+      ('21+ + Family Signature Experience',                  'adults_21_plus', 'experience', 'family', '{}', null, true, 'REFUSED'),
+      ('No children + Family-friendly Signature Experience', 'no_children',    'experience', 'groups', '{kid_friendly}', null, true, 'REFUSED'),
+      ('No children + Family Gathering package',             'no_children',    'package', null, null, 'family_gathering', true, 'REFUSED'),
+      ('No children + paused Family Gathering package',      'no_children',    'package', null, null, 'family_gathering', false, 'REFUSED'),
+      ('21+ + Family Gathering package',                     'adults_21_plus', 'package', null, null, 'family_gathering', true, 'REFUSED'),
+      ('No children + Groups Signature Experience',          'no_children',    'experience', 'groups', '{private_dining}', null, true, 'ALLOWED'),
+      ('No children + Date Signature Experience',            'no_children',    'experience', 'date', '{quiet}', null, true, 'ALLOWED'),
+      ('No children + Birthday package',                     'no_children',    'package', null, null, 'birthday', true, 'ALLOWED'),
+      ('No children + Baby Shower package',                  'no_children',    'package', null, null, 'baby_shower', true, 'ALLOWED'),
+      ('No pets + Family Gathering package',                 'no_pets',        'package', null, null, 'family_gathering', true, 'ALLOWED');
+    for o in select * from ocases loop
+      for dir in 1..2 loop
+        delete from business_experiences where partner_id = b;
+        delete from business_occasion_packages where partner_id = b;
+        update brand_partners set attributes = '{}', priority_attributes = '{}', priority_occasions = '{}', offered_occasions = '{}',
+          accommodates_party_types = '{}', not_accommodated = '{}', weather_setting = null, suited_age_min = null, suited_age_max = null,
+          max_group_size = null, outdoor_capacity = null where id = b;
+        msg := null;
+        begin
+          if dir = 1 then update brand_partners set not_accommodated = array[o.restriction] where id = b; end if;
+          if o.kind = 'experience' then
+            insert into business_experiences (partner_id, title, attributes, party_type, active) values (b, 'Test night', o.attrs, o.party, o.active);
+          else
+            insert into business_occasion_packages (partner_id, occasion_type, name, active) values (b, o.occ, 'Test package', o.active);
+          end if;
+          if dir = 2 then update brand_partners set not_accommodated = array[o.restriction] where id = b; end if;
+          got := 'ALLOWED';
+        exception when others then got := 'REFUSED'; msg := sqlerrm;
+        end;
+        out := out || (case when got = o.expect then 'ok   ' else 'FAIL ' end) || o.label || ' (' || case when dir = 1 then 'restriction first' else 'offering first' end || '): ' || got
+          || case when msg is not null then ' -- ' || msg else '' end || E'\n';
+      end loop;
+    end loop;
+
+    -- through the owner's real RPCs (the paths the app uses), both directions
+    delete from business_experiences where partner_id = b;
+    delete from business_occasion_packages where partner_id = b;
+    update brand_partners set not_accommodated = array['no_children'] where id = b;
+    perform set_config('request.jwt.claims', json_build_object('sub', owner_id, 'role', 'authenticated')::text, true);
+    begin
+      perform create_business_experience(b, 'Family brunch', null, null, '{}', null, 'family', false, null, null);
+      out := out || 'FAIL rpc create_business_experience family with No children: ALLOWED' || E'\n';
+    exception when others then out := out || 'ok   rpc create_business_experience family with No children: REFUSED' || E'\n'; end;
+    begin
+      perform create_occasion_package('family_gathering', 'Sunday family table', null, '{}', null, null, null);
+      out := out || 'FAIL rpc create_occasion_package Family Gathering with No children: ALLOWED' || E'\n';
+    exception when others then out := out || 'ok   rpc create_occasion_package Family Gathering with No children: REFUSED' || E'\n'; end;
+    perform set_business_not_accommodated(b, array[]::text[]);
+    perform create_occasion_package('family_gathering', 'Sunday family table', null, '{}', null, null, null);
+    begin
+      perform set_business_not_accommodated(b, array['no_children']);
+      out := out || 'FAIL rpc set No children with a Family Gathering package: ALLOWED' || E'\n';
+    exception when others then out := out || 'ok   rpc set No children with a Family Gathering package: REFUSED -- ' || sqlerrm || E'\n'; end;
+    perform set_config('request.jwt.claims', '', true);
   end;
   raise exception E'RESULT\n%', out;
 end $$;

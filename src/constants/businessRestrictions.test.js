@@ -52,6 +52,27 @@ describe('save-time contradictions: one server trigger, no client copy (migratio
       expect([label, live.includes(`('${label}',`)]).toEqual([label, true]);
     expect(live).toMatch(/\('21\+ \+ No children',[^\n]*'ALLOWED'\)/);
   });
+  it('offerings (20270225): one label rule and one message, enforced from both sides; explicit designations only', () => {
+    const off = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20270225_no_children_offering_conflicts.sql'), 'utf8');
+    expect(off).toMatch(/kind = 'experience' and party_type = 'family'/);
+    expect(off).toContain(`array[${CHILD_ATTRIBUTES.map((k) => `'${k}'`).join(', ')}]`);
+    expect(off).toMatch(/kind = 'package' and occasion = 'family_gathering'/);
+    // never from free text: the label rule reads no description / included items
+    expect(off.match(/function public\._family_offering_label[\s\S]*?\$\$;/)[0]).not.toMatch(/description|included_items/);
+    expect(off).toMatch(/create trigger check_experience_vs_no_children[\s\S]*business_experiences/);
+    expect(off).toMatch(/create trigger check_package_vs_no_children[\s\S]*business_occasion_packages/);
+    expect(off).toMatch(/public\._business_family_offerings\(new\.id\)/);
+    // one message: the shared _no_children_conflict owns the only live raise (the other occurrence is the patch's find-text)
+    expect(off).toMatch(/function public\._no_children_conflict[\s\S]*?raise exception 'You said you don''t accommodate children/);
+    expect(off).toMatch(/perform public\._no_children_conflict\(v_kids\);\$q\$\);/);
+    for (const label of ['No children + Family Signature Experience', 'No children + Family Gathering package', 'No children + paused Family Gathering package',
+      '21+ + Family Signature Experience', '21+ + Family Gathering package', 'No children + Groups Signature Experience', 'No children + Birthday package'])
+      expect([label, live.includes(`('${label}',`)]).toEqual([label, true]);
+  });
+  it('experience saves through the screening function surface a rule refusal as 400', () => {
+    const fn = fs.readFileSync(path.join(ROOT, 'supabase/functions/screen-business-content/index.ts'), 'utf8');
+    expect((fn.match(/experience (update|create) failed', writeError\);\s*return json\(\{ error: writeError\.message \|\| 'Could not save your changes\.' \}, \(writeError\.code === 'P0001'/g) ?? []).length).toBe(2);
+  });
   it('no conflict decision in the client; the profile editor surfaces the refusal as the owner\'s to fix', () => {
     const dash = fs.readFileSync(path.join(ROOT, 'src/screens/BusinessDashboardScreen.js'), 'utf8');
     expect(dash).not.toMatch(/notAccommodatedProblem|kid_friendly[^\n]*no_children|no_children[^\n]*kid_friendly/);
