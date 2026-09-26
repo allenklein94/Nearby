@@ -82,7 +82,7 @@ describe('attendee identities: friends see names, strangers see counts (item 75)
       expect(detail).toMatch(/attendeeTotal\(gathering\) > 0 && \(\s*<View style=\{styles\.section\}>\s*<Text style=\{styles\.sectionLabel\}>Who's Going/);
     });
     it('capacity and fullness come from the server count, never the visible rows', () => {
-      expect(read('./primaryAction.js')).toMatch(/Math\.max\(attendeeTotal\(gathering\), visibleApproved\) >= gathering\.capacity/);
+      expect(read('./primaryAction.js')).toMatch(/isGatheringFull\(gathering, Math\.max\(attendeeTotal\(gathering\), visibleApproved\)\)/);
     });
     it('"New here" reads member-only / aggregate RPCs, not other people\'s attendance rows', () => {
       const svc = read('../services/gatherings.js');

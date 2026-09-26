@@ -9,9 +9,9 @@
 //
 // Existing gathering fields it is compared against (host-declared, unchanged):
 //   party_type 'solo' -> solo; party_type 'groups' -> group; party_type 'new_people' -> meet new people
-//   capacity 1 (one other person; join_gathering counts guests only, the host is never a row) -> one_on_one, a two-person
-//     gathering. Capacity never means solo (capacity 1 is already two people) and never implies meeting new people. An intimate
-//     group_size_feel (1-2) alongside capacity 1 supports one-on-one instead of conflicting with it.
+//   capacity is TOTAL people including the host (migration 20270209): capacity 1 -> solo, capacity 2 -> one_on_one, larger
+//     capacities say nothing on their own. Capacity never implies meeting new people. An intimate group_size_feel (1-2) alongside
+//     capacity 2 supports one-on-one instead of conflicting with it; a group feel/plan kind with capacity 1 or 2 conflicts -> unknown.
 //   group_size_feel 1-2 ("Intimate") -> small_group; 4-5 ("Big group") -> group; 3 -> neither (ambiguous, not forced)
 // Ranking only, typed consumer asks only: a fit lifts, a clear mismatch sinks modestly, unknown on either side is neutral, nothing
 // is removed. Gathering candidates only: it never adds a result and never touches people, so "meet new people" can never become
@@ -107,13 +107,14 @@ export function gatheringSocialFacts(c) {
   const contexts = new Set();
   if (c?.partyType === 'solo') contexts.add('solo');
   const scale = new Set();
-  if (c?.capacity === 1) scale.add('one_on_one');
+  if (c?.capacity === 1) scale.add('solo');
+  if (c?.capacity === 2) scale.add('one_on_one');
   const feel = c?.groupSizeFeel;
   if (Number.isInteger(feel) && feel >= 1 && feel <= 2) scale.add('small_group');
   if (Number.isInteger(feel) && feel >= 4 && feel <= 5) scale.add('group');
   if (c?.partyType === 'groups') scale.add('group');
-  // A two-person gathering (capacity 1) with an intimate feel is still one-on-one: the feel supports it rather than conflicting.
-  if (scale.size === 2 && scale.has('one_on_one') && scale.has('small_group') && c?.partyType !== 'groups') scale.delete('small_group');
+  // A capacity of 1 or 2 with an intimate feel stays solo / one-on-one: the feel supports it rather than conflicting.
+  if (scale.size === 2 && scale.has('small_group') && (scale.has('solo') || scale.has('one_on_one'))) scale.delete('small_group');
   if (scale.size === 1) contexts.add([...scale][0]);
   return { contexts, meetNewPeople: c?.partyType === 'new_people' ? true : null };
 }

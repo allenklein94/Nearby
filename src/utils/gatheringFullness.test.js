@@ -9,11 +9,12 @@ describe('getGatheringFullness', () => {
   test('computes spotsLeft/isFull/almostFull from capacity and real approvedAttendees', () => {
     const g = { capacity: 10, approvedAttendees: new Array(3) };
     const f = getGatheringFullness(g);
-    expect(f).toEqual({ attendeeCount: 3, capacity: 10, spotsLeft: 7, isFull: false, almostFull: false });
+    // capacity counts the host: 3 guests + host = 4 of 10
+    expect(f).toEqual({ attendeeCount: 3, people: 4, capacity: 10, spotsLeft: 6, isFull: false, almostFull: false });
   });
 
   test('almost full at <= max(2, ceil(20% of capacity))', () => {
-    const g = { capacity: 10, approvedAttendees: new Array(8) }; // 2 left, threshold = max(2, 2) = 2
+    const g = { capacity: 10, approvedAttendees: new Array(7) }; // 7 guests + host = 8, 2 left, threshold = max(2, 2) = 2
     expect(getGatheringFullness(g).almostFull).toBe(true);
   });
 
@@ -42,14 +43,14 @@ describe('gatheringFullnessLabel', () => {
   });
 
   test('almost full -> the fire-emoji singular/plural wording', () => {
-    expect(gatheringFullnessLabel({ capacity: 10, approvedAttendees: new Array(9) }))
-      .toBe('🔥 1 spot left');
     expect(gatheringFullnessLabel({ capacity: 10, approvedAttendees: new Array(8) }))
+      .toBe('🔥 1 spot left');
+    expect(gatheringFullnessLabel({ capacity: 10, approvedAttendees: new Array(7) }))
       .toBe('🔥 2 spots left');
   });
 
   test('plenty of room -> the green-dot wording', () => {
     expect(gatheringFullnessLabel({ capacity: 20, approvedAttendees: new Array(2) }))
-      .toBe('🟢 18 spots left');
+      .toBe('🟢 17 spots left');
   });
 });

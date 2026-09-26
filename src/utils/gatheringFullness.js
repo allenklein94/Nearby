@@ -28,14 +28,35 @@ export function attendeeTotal(gathering) {
   return typeof gathering?.attendeeCount === 'number' ? gathering.attendeeCount : 0;
 }
 
+// CAPACITY = TOTAL PEOPLE INCLUDING THE HOST (owner decision 2026-09-26, migration 20270209). The host is never an attendee row,
+// so this file is the ONE client place that adds them: people = approved guests + 1, guest limit = capacity - 1 (the server's
+// _gathering_guest_limit). No other file may compare an attendee count against capacity directly.
+export function peopleGoing(gathering, guests = attendeeTotal(gathering)) {
+  return guests + 1;
+}
+export function guestLimit(capacity) {
+  return capacity == null ? null : Math.max(capacity - 1, 0);
+}
+// `guests` lets a caller pass a better-known guest count (e.g. the larger of the server count and the visible rows).
+export function isGatheringFull(gathering, guests = attendeeTotal(gathering)) {
+  return gathering?.capacity != null && guests >= guestLimit(gathering.capacity);
+}
+
+// The party a business is asked to host for this gathering: mirrors the server's _gathering_party_size, the larger of the
+// people going (guests + host) and the capacity. Never capacity + 1.
+export function gatheringBusinessPartySize(gathering) {
+  return Math.max(peopleGoing(gathering), gathering?.capacity ?? 0);
+}
+
 export function getGatheringFullness(gathering) {
   if (gathering?.capacity == null) return null;
   const attendeeCount = attendeeTotal(gathering);
-  const spotsLeft = Math.max(gathering.capacity - attendeeCount, 0);
+  const people = peopleGoing(gathering, attendeeCount);
+  const spotsLeft = Math.max(gathering.capacity - people, 0);
   const isFull = spotsLeft <= 0;
   const almostFullThreshold = Math.max(ALMOST_FULL_MIN, Math.ceil(gathering.capacity * ALMOST_FULL_THRESHOLD_RATIO));
   const almostFull = !isFull && spotsLeft <= almostFullThreshold;
-  return { attendeeCount, capacity: gathering.capacity, spotsLeft, isFull, almostFull };
+  return { attendeeCount, people, capacity: gathering.capacity, spotsLeft, isFull, almostFull };
 }
 
 // One real, consistent label -- reused verbatim across every surface

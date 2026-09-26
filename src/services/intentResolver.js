@@ -69,7 +69,7 @@ import { socialSignalsFromText, applySocialToCandidates } from '../constants/soc
 import { spontaneityOf, isImmediate, applySpontaneityToCandidates, spontaneityCaption } from '../constants/spontaneity';
 import { getUserLocation } from './userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
-import { attendeeTotal } from '../utils/gatheringFullness';
+import { attendeeTotal, isGatheringFull, peopleGoing } from '../utils/gatheringFullness';
 import { planAsk, occasionFromAsk, planCaption } from '../utils/planAsk';
 import { recognizeCombination } from '../constants/planCombinations';
 import { openEndedAskGroups, applyOpenEndedAsk, openEndedCaption } from '../utils/openEndedAsk';
@@ -106,7 +106,7 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
     // "Full -- Join Waitlist" state on the result card itself instead of
     // only discovering it one screen later on GatheringDetailScreen.
     const attendeeCount = attendeeTotal(gathering);
-    const isFull = gathering.capacity != null && attendeeCount >= gathering.capacity;
+    const isFull = isGatheringFull(gathering, attendeeCount);
     let weatherBonus = 0;
     if (weather) {
       if (isWeatherIndoorBiased(weather) && isIndoorCategory(gathering.interest_tag)) {
@@ -123,7 +123,7 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       title: gathering.title,
       // Matches GatheringDetailScreen's own established "🔒 Full —
       // N/M spots taken" copy, not a new visual language invented here.
-      subtitle: isFull ? `🔒 Full — Join Waitlist (${attendeeCount}/${gathering.capacity} spots taken)` : (reasons[0] ?? null),
+      subtitle: isFull ? `🔒 Full — Join Waitlist (${peopleGoing(gathering, attendeeCount)}/${gathering.capacity} spots taken)` : (reasons[0] ?? null),
       // Intent engine vision -- Experiences assembly, extended to gatherings
       // (2026-09-10): the gathering's own real interest_tag, carried onto
       // the candidate itself the same way resolveBusinessAvailability

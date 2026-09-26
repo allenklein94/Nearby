@@ -59,7 +59,8 @@ function conflicts(c, key) {
   if (key === 'indoor') return environmentOf(tag) === 'indoor';
   if (key === 'crowded') {
     if (CROWDED_TAGS.includes(tag)) return true;
-    return Math.max(c?.capacity ?? 0, c?.attendeeCount ?? 0) >= CROWDED_CAPACITY_MIN;
+    // capacity counts everyone including the host; attendeeCount is guests only, so the host is added once here.
+    return Math.max(c?.capacity ?? 0, typeof c?.attendeeCount === 'number' ? c.attendeeCount + 1 : 0) >= CROWDED_CAPACITY_MIN;
   }
   return false;
 }

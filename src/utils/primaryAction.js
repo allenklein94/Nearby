@@ -8,7 +8,7 @@
 //   potential activity   -> I'm Interested   (private "maybe", set_gathering_interested)
 //   dating recommendation-> Meet People
 //   business opportunity -> View Offer
-import { attendeeTotal } from './gatheringFullness';
+import { attendeeTotal, isGatheringFull } from './gatheringFullness';
 import { needsApproval, joinLabel } from './gatheringJoinMode';
 import { gatheringViewerState } from './objectState';
 import { canDo, gatheringLifecycleState, offerLifecycleState, lifecycleClass, viewLabel } from './objectLifecycle';
@@ -54,7 +54,7 @@ export function gatheringPrimaryAction(gathering, myUserId, now = Date.now(), op
 
   // Server count first: a non-member only receives friends' rows (item 75), so the visible rows are not the total.
   const visibleApproved = gathering.attendees.filter((a) => a.status === 'approved').length;
-  const isFull = gathering.capacity != null && Math.max(attendeeTotal(gathering), visibleApproved) >= gathering.capacity;
+  const isFull = isGatheringFull(gathering, Math.max(attendeeTotal(gathering), visibleApproved));
   return { kind: 'join', label: joinLabel(gathering, { isFull }).replace(' Gathering', ''), showView: true };
 }
 

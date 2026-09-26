@@ -70,6 +70,7 @@ const PARTY_TYPE_OPTIONS = [
 // enforce — so picking it reveals a plain stepper (default 15, editable)
 // rather than leaving the cap ambiguous. See CLAUDE.md's "Outstanding:
 // Capacity / Waitlist" section for the full design discussion.
+// Capacity = TOTAL people including the host (migration 20270209): "2-4 people" stores 4 and holds 4 people, not 4 guests + host.
 const CAPACITY_OPTIONS = [
   { key: 'no_limit', label: 'No Limit' },
   { key: '2-4', label: '2-4 people', capacity: 4 },
@@ -1103,7 +1104,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   </View>
                 )}
                 {capacityOption !== 'no_limit' && (
-                  <Text style={styles.helperText}>Once full, new joins go to a waitlist — if a spot opens, the next person in line is added automatically.</Text>
+                  <Text style={styles.helperText}>Counts everyone, including you. Once full, new joins go to a waitlist — if a spot opens, the next person in line is added automatically.</Text>
                 )}
 
 
@@ -1226,7 +1227,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
             {capacityValue != null && (
               <View style={styles.previewRow}>
                 <Text style={styles.previewRowIcon}>👥</Text>
-                <Text style={styles.previewRowText}>Up to {countLabel(capacityValue, 'person', 'people') ?? `${capacityValue} people`} — waitlist after that</Text>
+                <Text style={styles.previewRowText}>Up to {countLabel(capacityValue, 'person', 'people') ?? `${capacityValue} people`} including you — waitlist after that</Text>
               </View>
             )}
             {askLocalBusinesses && (

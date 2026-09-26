@@ -65,17 +65,20 @@ describe('matching existing gathering fields (nothing stored)', () => {
   it('party_type, capacity and group_size_feel; 3 is neither; conflicts cancel', () => {
     const f = (c) => [...gatheringSocialFacts(c).contexts];
     expect(f({ partyType: 'solo' })).toEqual(['solo']);
-    expect(f({ capacity: 1 })).toEqual(['one_on_one']);
-    expect(f({ capacity: 2 })).toEqual([]);
+    // capacity is TOTAL people including the host: 1 = solo, 2 = one-on-one, larger says nothing alone
+    expect(f({ capacity: 1 })).toEqual(['solo']);
+    expect(f({ capacity: 2 })).toEqual(['one_on_one']);
+    for (const c of [3, 4, 10]) expect(f({ capacity: c })).toEqual([]);
     expect([1, 2, 3, 4, 5].map((n) => f({ groupSizeFeel: n }))).toEqual([['small_group'], ['small_group'], [], ['group'], ['group']]);
     expect(f({ partyType: 'groups' })).toEqual(['group']);
     expect(f({ capacity: 1, groupSizeFeel: 5 })).toEqual([]);
-    // capacity counts guests (the host is never a row): capacity 1 = two people = one-on-one, never solo; an intimate feel supports it
-    expect(f({ capacity: 1, groupSizeFeel: 1 })).toEqual(['one_on_one']);
-    expect(f({ capacity: 1, groupSizeFeel: 2 })).toEqual(['one_on_one']);
-    expect(f({ capacity: 1, groupSizeFeel: 2, partyType: 'groups' })).toEqual([]);
-    expect(f({ capacity: 2, groupSizeFeel: 2 })).toEqual(['small_group']);
-    for (const c of [1, 2]) { expect(f({ capacity: c })).not.toContain('solo'); expect(gatheringSocialFacts({ capacity: c }).meetNewPeople).toBeNull(); }
+    expect(f({ capacity: 2, groupSizeFeel: 1 })).toEqual(['one_on_one']);
+    expect(f({ capacity: 2, groupSizeFeel: 2 })).toEqual(['one_on_one']);
+    expect(f({ capacity: 1, groupSizeFeel: 2 })).toEqual(['solo']);
+    expect(f({ capacity: 2, groupSizeFeel: 2, partyType: 'groups' })).toEqual([]);
+    expect(f({ capacity: 2, groupSizeFeel: 5 })).toEqual([]);
+    expect(f({ capacity: 4, groupSizeFeel: 2 })).toEqual(['small_group']);
+    for (const c of [1, 2, 4, 20]) expect(gatheringSocialFacts({ capacity: c }).meetNewPeople).toBeNull();
     expect(gatheringSocialFacts({ partyType: 'new_people' }).meetNewPeople).toBe(true);
     expect(gatheringSocialFacts({ partyType: 'friends' }).meetNewPeople).toBeNull();
   });
@@ -90,8 +93,10 @@ describe('ranking only', () => {
     expect(d({ groupSizeFeel: 3 }, 'with a few friends')).toBe(0);
     expect(d({}, 'with a few friends')).toBe(0);
     expect(d({ groupSizeFeel: 2 }, 'dinner tonight')).toBe(0);
-    expect(d({ capacity: 1 }, 'big group hike')).toBe(-1);
-    expect(d({ capacity: 1 }, 'solo yoga')).toBe(0);
+    expect(d({ capacity: 2 }, 'big group hike')).toBe(-1);
+    expect(d({ capacity: 2 }, 'coffee with one friend')).toBe(2);
+    expect(d({ capacity: 1 }, 'solo yoga')).toBe(2);
+    expect(d({ capacity: 2 }, 'solo yoga')).toBe(0);
     expect(d({ partyType: 'new_people' }, 'meet new people')).toBe(2);
     expect(d({ partyType: 'new_people' }, "I don't want to meet strangers")).toBe(-1);
     expect(d({ partyType: 'friends' }, 'meet new people')).toBe(0);

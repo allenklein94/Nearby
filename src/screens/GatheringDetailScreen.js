@@ -58,7 +58,7 @@ import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gathe
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
 import { formatDateTime } from '../utils/timeLabels';
-import { attendeeTotal } from '../utils/gatheringFullness';
+import { attendeeTotal, getGatheringFullness, gatheringBusinessPartySize } from '../utils/gatheringFullness';
 import { countLabel } from '../utils/plural';
 import { spacing, radius, typography } from '../theme';
 import { needsApproval, joinLabel } from '../utils/gatheringJoinMode';
@@ -631,9 +631,10 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
           {gathering.capacity != null && (
             <Text style={styles.capacityLine}>
+              {/* capacity counts everyone, including the host */}
               {gathering.isFull
-                ? `🔒 Full — ${attendeeTotal(gathering)}/${gathering.capacity} spots taken`
-                : `${attendeeTotal(gathering)}/${gathering.capacity} spots filled`}
+                ? `🔒 Full — ${getGatheringFullness(gathering).people}/${gathering.capacity} spots taken`
+                : `${getGatheringFullness(gathering).people}/${gathering.capacity} spots filled`}
             </Text>
           )}
           <TouchableOpacity
@@ -915,9 +916,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
               )}
               {gathering.capacity != null && !gathering.isFull && (
                 (() => {
-                  const spotsLeft = gathering.capacity - attendeeTotal(gathering);
-                  const almostFullThreshold = Math.max(2, Math.ceil(gathering.capacity * 0.2));
-                  return spotsLeft > 0 && spotsLeft <= almostFullThreshold ? (
+                  const { spotsLeft, almostFull } = getGatheringFullness(gathering);
+                  return almostFull ? (
                     <Text style={styles.almostFullNudge}>
                       🔥 Almost full — only {spotsLeft} spot{spotsLeft === 1 ? '' : 's'} left. Invite more people before it fills up!
                     </Text>
@@ -1083,7 +1083,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                             navigation.navigate('AskBusiness', {
                               gatheringId,
                               gatheringTitle: gathering.title,
-                              gatheringPartySize: attendeeTotal(gathering) + 1,
+                              gatheringPartySize: gatheringBusinessPartySize(gathering),
                               prefillCategory: gathering.interest_tag ?? null,
                             });
                           }}

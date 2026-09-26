@@ -12,7 +12,7 @@ import { getMyCommunities } from './communities';
 import { REASON_TEXT, becauseYouLikeReason } from '../constants/recommendationReasonVocabulary';
 import { getUserLocation, requireUserLocation } from './userLocation';
 import { isGatheringPast, isGatheringUpcoming } from '../utils/objectState';
-import { attendeeTotal } from '../utils/gatheringFullness';
+import { attendeeTotal, isGatheringFull } from '../utils/gatheringFullness';
 import { cleanFeatures } from '../utils/gatheringPractical';
 import { cleanAgeRange } from '../utils/suitedAges';
 
@@ -1037,7 +1037,7 @@ export async function getGatheringById(gatheringId) {
   const isHost = data.host_id === userId;
   const approvedCounts = await getApprovedCounts([gatheringId]);
   const approvedCount = approvedCounts[gatheringId] ?? null;
-  const isFull = data.capacity != null && (approvedCount ?? approvedAttendees.length) >= data.capacity;
+  const isFull = isGatheringFull(data, approvedCount ?? approvedAttendees.length);
   // Only accurate for the host or the caller's own row — RLS only
   // surfaces other people's non-approved rows to the host (see
   // "Users see own interest or gatherings they host" on gathering_interest),

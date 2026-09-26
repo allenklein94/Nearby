@@ -38,7 +38,7 @@ import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { getSocialForecast } from '../services/homeDashboard';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { DATE_OPTIONS, matchesDateFilter } from '../utils/gatheringDateFilter';
-import { attendeeTotal, gatheringFullnessLabel } from '../utils/gatheringFullness';
+import { attendeeTotal, gatheringFullnessLabel, isGatheringFull } from '../utils/gatheringFullness';
 import { useTheme } from '../context/ThemeContext';
 import { formatDateTime } from '../utils/timeLabels';
 import { countLabel } from '../utils/plural';
@@ -1004,7 +1004,7 @@ export default function GatheringsScreen({ navigation, route }) {
                     onPress={() => setIntentModalGathering(item)}
                     activeOpacity={0.85}
                     accessibilityLabel={
-                      item.capacity != null && attendeeTotal(item) >= item.capacity
+                      isGatheringFull(item)
                         ? 'Join Waitlist'
                         : joinLabel(item)
                     }
@@ -1018,7 +1018,7 @@ export default function GatheringsScreen({ navigation, route }) {
                         for the exact same underlying gathering_interest
                         insert -- same computation now applied here too. */}
                     <Text style={styles.interestButtonText}>
-                      {item.capacity != null && attendeeTotal(item) >= item.capacity
+                      {isGatheringFull(item)
                         ? 'Join Waitlist'
                         : joinLabel(item)}
                     </Text>
@@ -1073,8 +1073,7 @@ export default function GatheringsScreen({ navigation, route }) {
           if (gathering) handleExpressInterest(gathering.id);
         }}
         confirmLabel={
-          intentModalGathering?.capacity != null &&
-          attendeeTotal(intentModalGathering ?? {}) >= intentModalGathering.capacity
+          isGatheringFull(intentModalGathering)
             ? 'Join Waitlist'
             : joinLabel(intentModalGathering)
         }

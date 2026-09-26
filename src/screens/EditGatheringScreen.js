@@ -3,6 +3,7 @@ import { cleanAgeRange } from '../utils/suitedAges';
 import { FORMAT_OPTIONS } from '../constants/activityFormat';
 import { skillContext, skillOptionsFor, cleanSkillLevel } from '../constants/skillLevel';
 import { EFFORT_OPTIONS } from '../constants/intensityEffort';
+import { peopleGoing } from '../utils/gatheringFullness';
 import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_OPTIONS, cleanFeatures, toggleFeature, isMusicTag } from '../utils/gatheringPractical';
 import React, { useState, useEffect } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -59,7 +60,7 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [hostNotifications, setHostNotifications] = useState(gathering.host_notifications ?? true);
   const [allowAttendeeInvites, setAllowAttendeeInvites] = useState(gathering.allow_attendee_invites ?? true);
   const [limitAttendees, setLimitAttendees] = useState(gathering.capacity != null);
-  const [capacity, setCapacity] = useState(gathering.capacity ?? 10);
+  const [capacity, setCapacity] = useState(gathering.capacity ?? Math.max(10, peopleGoing(gathering)));
   // A gathering made before the category became required has none; the host can fill it in (never change one).
   const missingCategory = !gathering.interest_tag;
   const [newCategory, setNewCategory] = useState(null);
@@ -445,16 +446,16 @@ export default function EditGatheringScreen({ route, navigation }) {
           </View>
           {limitAttendees && (
             <View style={styles.toggleRow}>
-              <TouchableOpacity onPress={() => setCapacity((n) => Math.max(1, n - 1))} accessibilityLabel="Decrease maximum attendees" accessibilityRole="button">
+              <TouchableOpacity onPress={() => setCapacity((n) => Math.max(peopleGoing(gathering), n - 1))} accessibilityLabel="Decrease maximum attendees" accessibilityRole="button">
                 <Text style={styles.label}>−</Text>
               </TouchableOpacity>
-              <Text style={styles.label}>{capacity} max</Text>
+              <Text style={styles.label}>Up to {capacity} {capacity === 1 ? 'person' : 'people'}</Text>
               <TouchableOpacity onPress={() => setCapacity((n) => n + 1)} accessibilityLabel="Increase maximum attendees" accessibilityRole="button">
                 <Text style={styles.label}>+</Text>
               </TouchableOpacity>
             </View>
           )}
-          <Text style={styles.subheader}>When you're at the limit, new people join the waitlist. Raising or removing the limit lets the waitlist in, in order. You can't go below the people already attending.</Text>
+          <Text style={styles.subheader}>When you're at the limit, new people join the waitlist. Raising or removing the limit lets the waitlist in, in order. Capacity counts everyone, including you, so you can't go below the people already going plus yourself.</Text>
           <View style={styles.toggleRow}>
             <Text style={styles.label}>Allow business requests</Text>
             <Switch value={askLocalBusinesses} onValueChange={setAskLocalBusinesses} accessibilityLabel="Allow business requests" />
