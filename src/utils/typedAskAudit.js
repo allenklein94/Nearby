@@ -57,10 +57,12 @@ export const SIGNAL_CODES = {
 // their delta; the unexplained remainder shows only as final score minus the recorded parts.
 export const UNRECORDED_PASSES = ['dietary', 'suited_ages'];
 
-const TOKEN = /^[A-Za-z0-9 &_'.:+/-]{1,40}$/;
+const TOKEN = /^[A-Za-z0-9 &_'.:+/$-]{1,40}$/; // $ for price tiers ($, $$...)
 const SECTION = /^[a-z_]{1,20}(:[a-z_]{1,40})?$/;
 const TYPE = /^[a-z_]{1,40}$/;
 const UUID = /^[0-9a-f-]{36}$/;
+// The refinement chips (utils/askRefinements.js); the server CHECK carries the same list.
+export const REFINEMENT_KEYS = ['friends', 'date', 'solo', 'under_25'];
 const KEY = /^[a-z][a-z0-9_]{0,39}$/;
 const ID = /^[A-Za-z0-9_:.-]{1,64}$/;
 
@@ -231,7 +233,7 @@ export function displayedIntentResults(surface, result) {
 
 // The one payload shape the writer sends. `audit` = what resolveIntent returned ({ interpretation, trace }); null for the
 // community / business-partner paths, which record the interpretation they had and the shown ids only.
-export function buildTypedAskSnapshot({ id, surface, submissionId = null, outcome, audit = null, displayed = [], interpretation = null }) {
+export function buildTypedAskSnapshot({ id, surface, submissionId = null, outcome, audit = null, displayed = [], interpretation = null, refinement = null }) {
   const trace = audit?.trace ?? null;
   const results = displayed.slice(0, 50).map(({ item, section, position }) => {
     const rid = item?.id != null ? String(item.id) : null;
@@ -253,6 +255,12 @@ export function buildTypedAskSnapshot({ id, surface, submissionId = null, outcom
     outcome: /^[a-z_]{1,40}$/.test(outcome ?? '') ? outcome : null,
     interpretation: sanitizeInterpretation(interpretation ?? audit?.interpretation ?? {}),
     candidate_count: Number.isInteger(audit?.candidateCount) ? audit.candidateCount : null,
+    // A refinement chip (item 107): which chip, applied or removed, and the ORIGINAL ask's snapshot it refines.
+    ...(refinement && REFINEMENT_KEYS.includes(refinement.key) && ['applied', 'removed'].includes(refinement.action) ? {
+      refinement_key: refinement.key,
+      refinement_action: refinement.action,
+      parent_snapshot_id: typeof refinement.parentSnapshotId === 'string' && UUID.test(refinement.parentSnapshotId) ? refinement.parentSnapshotId : null,
+    } : {}),
     exclusions: trace ? trace.exclusions() : {},
     results,
   };

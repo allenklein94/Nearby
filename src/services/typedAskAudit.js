@@ -22,6 +22,7 @@ export function recordTypedAsk(surface, result) {
     };
     const payload = buildTypedAskSnapshot({
       id: snapshotId, surface, submissionId: result.submissionId ?? null, outcome, audit: result.audit ?? null, displayed, interpretation,
+      refinement: result.refinement ?? null,
     });
     Promise.resolve(supabase.rpc('record_typed_ask_snapshot', { snapshot: payload }))
       .then(({ error }) => { if (error) console.error('typed-ask audit write failed', error); })

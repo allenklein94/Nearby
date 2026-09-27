@@ -1045,15 +1045,7 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
     };
   }
 
-  const { items: resolved, experience, openEndedNote, openNowOnly, audit } = await resolveIntent({
-    category: classifyResult.category, dateWindow: classifyResult.dateWindow, rawText: typedText,
-    partySize: classifyResult.partySize ?? null, priceLevel: classifyResult.priceLevel ?? null, budgetMax: classifyResult.budgetMax ?? null,
-    partyType: classifyResult.partyType ?? null, attributes: classifyResult.attributes ?? [],
-    cuisine: classifyResult.cuisine ?? null, occasion: classifyResult.occasion ?? null,
-  });
-  const items = detectFriendDiscoveryIntent(typedText) && !openNowOnly // an Open-now ask keeps only confirmed-open things
-    ? [...resolved, buildFriendDiscoveryResultItem(classifyResult.category)]
-    : resolved;
+  const { items, experience, openEndedNote, openNowOnly, audit } = await resolveClassifiedAsk(classifyResult, typedText);
   const submissionId = await recordIntentSubmission({
     rawText: typedText, category: classifyResult.category ?? null, dateWindow: classifyResult.dateWindow ?? null,
     intentKind: classifyResult.intent, hadAnyResult: items.length > 0, reachedBusinessFallback: items.length === 0,
@@ -1061,8 +1053,25 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
   });
   return {
     outcome: items.length > 0 ? 'results' : 'empty',
-    classifyResult, typedText, submissionId, items, experience, openEndedNote, openNowOnly: openNowOnly === true, audit,
+    classifyResult, typedText, submissionId, items, experience, openEndedNote, openNowOnly, audit,
   };
+}
+
+// The ONE resolve for an already-classified typed ask: Discover's search (above), Home's ask box and every refinement chip on
+// both (services/askRefine.js). Same words + classification in = same results out, whichever surface asks. The friend-discovery
+// row is appended as before (a person-shaped phrase, never a fabricated candidate), except on an Open-now ask, which keeps only
+// confirmed-open things.
+export async function resolveClassifiedAsk(classifyResult, typedText) {
+  const { items: resolved, experience, openEndedNote, openNowOnly, audit } = await resolveIntent({
+    category: classifyResult.category, dateWindow: classifyResult.dateWindow, rawText: typedText,
+    partySize: classifyResult.partySize ?? null, priceLevel: classifyResult.priceLevel ?? null, budgetMax: classifyResult.budgetMax ?? null,
+    partyType: classifyResult.partyType ?? null, attributes: classifyResult.attributes ?? [],
+    cuisine: classifyResult.cuisine ?? null, occasion: classifyResult.occasion ?? null,
+  });
+  const items = detectFriendDiscoveryIntent(typedText) && !openNowOnly
+    ? [...resolved, buildFriendDiscoveryResultItem(classifyResult.category)]
+    : resolved;
+  return { items, experience, openEndedNote, openNowOnly: openNowOnly === true, audit };
 }
 
 // Item 74 (CLAUDE.md): INTENT_SEARCH_TYPE_EMOJI/intentSearchDateLabel/

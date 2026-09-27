@@ -141,7 +141,9 @@ describe('wiring and boundaries', () => {
   const discover = read('../screens/DiscoverHubScreen.js');
 
   it('Home and Discover record through the one writer, and link taps to the snapshot row', () => {
-    expect(home.match(/recordTypedAsk\('home'/g).length).toBe(3); // community + resolver paths + refinement chips (item 107)
+    expect(home.match(/recordTypedAsk\('home'/g).length).toBe(2); // community + resolver paths
+    // refinement chips (item 107) record through the one shared service for both surfaces
+    expect(read('../services/askRefine.js')).toMatch(/recordTypedAsk\(surface, \{/);
     expect(discover).toMatch(/recordTypedAsk\('discover', result\)/);
     for (const screen of [home, discover]) {
       expect(screen).toMatch(/snapshotId: shown\?\.snapshotId \?\? null/);
@@ -150,7 +152,7 @@ describe('wiring and boundaries', () => {
       expect(screen).not.toMatch(/function groupIntentResultsByType/);
     }
     expect(home).toMatch(/remainingIntentItems\(intentResults\)/);
-    expect(read('../services/intentResolver.js')).toMatch(/openNowOnly: openNowOnly === true, audit,/);
+    expect(read('../services/intentResolver.js')).toMatch(/openEndedNote, openNowOnly, audit,\n  \};/);
   });
 
   it('a request made from a result links back to the typed ask (existing submission id)', () => {
@@ -166,7 +168,7 @@ describe('wiring and boundaries', () => {
     expect(MIGRATION).not.toMatch(/grant select/i);
     expect(MIGRATION).toMatch(/grant execute on function public\.record_typed_ask_snapshot\(jsonb\) to authenticated/);
     const dir = path.join(__dirname, '../../supabase/migrations');
-    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.sql') && x !== '20270238_typed_ask_audit.sql')) {
+    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.sql') && !['20270238_typed_ask_audit.sql', '20270239_typed_ask_refinements.sql'].includes(x))) {
       expect(fs.readFileSync(path.join(dir, f), 'utf8')).not.toMatch(/typed_ask_/);
     }
     const fnDir = path.join(__dirname, '../../supabase/functions');

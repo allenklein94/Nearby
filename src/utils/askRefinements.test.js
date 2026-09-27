@@ -59,20 +59,29 @@ describe('refinement chips', () => {
   });
 });
 
-describe('Home wiring', () => {
+describe('one implementation on both surfaces', () => {
   const home = read('../screens/HomeScreen.js');
-  it('one search helper for the first ask and every refinement; the budget now reaches the resolver', () => {
-    expect(home.match(/await resolveHomeAsk\(/g).length).toBe(2);
-    expect(home).toMatch(/budgetMax: result\.budgetMax \?\? null/);
-    expect(home.match(/await resolveIntent\(\{/g).length).toBe(1);
+  const discover = read('../screens/DiscoverHubScreen.js');
+  it('both render the same chip component and refine through the same service; neither builds its own chips', () => {
+    for (const [screen, surface] of [[home, 'home'], [discover, 'discover']]) {
+      expect(screen).toMatch(/<AskRefinementChips\n\s+classifyResult=\{intent\w+\.classifyResult\}\n\s+onRefine=\{handleIntentRefine\}/);
+      expect(screen).toMatch(new RegExp(`refineTypedAsk\\('${surface}', prev, key\\)`));
+      expect(screen).not.toMatch(/refinementChips\(|applyRefinement\(|resolveIntent\(\{/);
+    }
   });
-  it('a refinement makes no AI call and no new search-log row, keeps the words, and is audited under the same ask', () => {
-    const fn = home.slice(home.indexOf('async function handleIntentRefine'), home.indexOf('function handleIntentResultTap'));
-    expect(fn).not.toMatch(/classifyCreateRequest|recordIntentSubmission/);
-    expect(fn).toMatch(/typedText: prev\.typedText, submissionId: prev\.submissionId/);
-    expect(fn).toMatch(/recordTypedAsk\('home'/);
+  it('the first search on both goes through the one canonical resolve', () => {
+    expect(home).toMatch(/await resolveClassifiedAsk\(result, typedText\)/);
+    expect(read('../services/intentResolver.js')).toMatch(/await resolveClassifiedAsk\(classifyResult, typedText\)/);
+    expect(read('../services/askRefine.js')).toMatch(/await resolveClassifiedAsk\(refined, prev\.typedText\)/);
   });
-  it('conversational acknowledgement', () => {
+  it('Discover keeps the block (and the selected chip) when a refinement is empty', () => {
+    expect(discover).toMatch(/\(intentSearch\?\.outcome === 'results' \|\| intentSearch\?\.refined\)/);
+  });
+  it('conversational acknowledgement on Home', () => {
     expect(home).toMatch(/<FoundLine text="Got it\. Here are a few ideas\." \/>/);
+  });
+  it('typed-ask only: the chips are not a persistent Discover filter', () => {
+    const d = discover.slice(discover.indexOf('async function handleIntentRefine'), discover.indexOf('async function handleDiscoverSurprise'));
+    expect(d).not.toMatch(/setTypeFilter|setOpenNowOnly|AsyncStorage|setCategory/);
   });
 });

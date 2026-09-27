@@ -84,7 +84,22 @@ begin
     and prosrc ilike '%typed_ask_%'), 'no other function reads the audit';
   assert (select count(*) from pg_proc where proname = 'record_typed_ask_snapshot') = 1, 'single overload';
   assert not exists (select 1 from information_schema.columns where table_name in ('typed_ask_snapshots', 'typed_ask_results')
-    and data_type = 'text' and column_name not in ('surface', 'rules_version', 'outcome', 'section', 'result_type', 'result_id')), 'no free-text column';
+    and data_type = 'text' and column_name not in ('surface', 'rules_version', 'outcome', 'section', 'result_type', 'result_id', 'refinement_key', 'refinement_action')), 'no free-text column';
+
+  -- ---------- 6b. refinement chips (20270239): linked to the caller's own original snapshot ----------
+  ret := record_typed_ask_snapshot(jsonb_build_object('id', gen_random_uuid(), 'surface', 'discover', 'rules_version', 'typed-ask-audit-v1',
+    'submission_id', sub, 'outcome', 'empty', 'refinement_key', 'under_25', 'refinement_action', 'applied', 'parent_snapshot_id', snap,
+    'interpretation', jsonb_build_object('category', 'Coffee', 'budget_max', 25, 'price_level', '$'), 'results', '[]'::jsonb));
+  assert (select (parent_snapshot_id, refinement_key, refinement_action, submission_id) = (snap, 'under_25', 'applied', sub)
+    from typed_ask_snapshots where id = ret), 'refinement linked to the original ask';
+  assert (select interpretation ->> 'budget_max' from typed_ask_snapshots where id = ret) = '25', 'resulting interpretation kept';
+  assert (select interpretation ->> 'price_level' from typed_ask_snapshots where id = ret) = '$', 'price tier recorded';
+  ret := record_typed_ask_snapshot(jsonb_build_object('id', gen_random_uuid(), 'surface', 'home', 'rules_version', 'typed-ask-audit-v1',
+    'refinement_key', 'vibe', 'refinement_action', 'applied', 'parent_snapshot_id', gen_random_uuid(), 'results', '[]'::jsonb));
+  assert (select refinement_key is null and refinement_action is null and parent_snapshot_id is null from typed_ask_snapshots where id = ret),
+    'unknown chip and a foreign/unknown parent are dropped';
+  assert (select count(*) from typed_ask_result_outcomes where snapshot_id = snap and refinement_key is null) = 2, 'view carries refinement fields';
+  assert (select count(*) from pg_proc where proname = 'record_typed_ask_snapshot') = 1, 'still a single overload';
 
   -- ---------- 7. unauthenticated call records nothing ----------
   perform set_config('request.jwt.claims', '{}', true);

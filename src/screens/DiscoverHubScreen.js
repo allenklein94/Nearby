@@ -34,6 +34,8 @@ import { filterToMyConnections } from '../services/connections';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { runIntentSearch, navigateToIntentResultItem } from '../services/intentResolver';
 import { recordTypedAsk } from '../services/typedAskAudit';
+import { refineTypedAsk } from '../services/askRefine';
+import AskRefinementChips from '../components/AskRefinementChips';
 import { displayedPosition } from '../utils/typedAskAudit';
 import { submitSurprise, shuffleSurprise, navigateToSurprisePick, surpriseTypesForTab } from '../services/surpriseMe';
 import { discoverQuery } from '../utils/discoverQuery';
@@ -354,6 +356,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // already moved on, same pattern searchRequestId/placesRequestId below
   // already use for the exact same race.
   const [intentSearch, setIntentSearch] = useState(null);
+  const [intentRefining, setIntentRefining] = useState(false); // item 107 refinement chips
   const [intentSearching, setIntentSearching] = useState(false);
   const [intentPhase, setIntentPhase] = useState(null); // Item 135: real pipeline phase
 
@@ -1202,6 +1205,21 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
   // Surprise Me from the search box: the one shared flow (submitSurprise / shuffleSurprise / navigateToSurprisePick), shown inline.
   // Discover's own explicit choices only narrow it: the type tab and the Open-now chip. Nothing here is written to the search log.
+  // Refine the typed ask in place (item 107, shared with Home): same words, one chip changed, results replaced inline.
+  async function handleIntentRefine(key) {
+    const prev = intentSearch;
+    if (!prev || intentRefining) return;
+    const thisRequestId = intentSearchRequestId.current;
+    setIntentRefining(true);
+    try {
+      const next = await refineTypedAsk('discover', prev, key);
+      if (thisRequestId === intentSearchRequestId.current) setIntentSearch(next);
+    } catch (e) {
+      presentRecoverableError(Alert, { what: 'update these ideas', error: e, onRetry: () => handleIntentRefine(key) });
+    }
+    setIntentRefining(false);
+  }
+
   async function handleDiscoverSurprise(typedText) {
     intentSearchRequestId.current += 1;
     setIntentSearch(null);
@@ -2327,9 +2345,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
               <NLoader fullScreen={false} size="inline" caption={intentPhaseCaption(intentPhase?.phase ?? 'understanding', intentPhase?.classifyResult)} />
             </View>
           )}
-          {isSearching && onTopOrNotTabbed && !intentSearching && intentSearch?.outcome === 'results' && (
+          {isSearching && onTopOrNotTabbed && !intentSearching && (intentSearch?.outcome === 'results' || intentSearch?.refined) && (
             <View style={styles.intentSearchBlock}>
-              <FoundLine />
+              {intentSearch.items?.length > 0 && <FoundLine />}
+              <AskRefinementChips
+                classifyResult={intentSearch.classifyResult}
+                onRefine={handleIntentRefine}
+                refining={intentRefining}
+                empty={!(intentSearch.items?.length > 0)}
+              />
               {!!intentSearch.openEndedNote && (
                 <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{intentSearch.openEndedNote}</Text>
               )}
