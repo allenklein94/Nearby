@@ -17,7 +17,7 @@ describe('ask facets: combinations and negative intent (items 47/48)', () => {
     expect(n.environment).toBeNull();
     expect(parseAskFacets('not too expensive').pricey).toBe(true);
     expect(parseAskFacets('indoors only').exclude).toEqual(['outdoor']);
-    expect(parseAskFacets('coffee tonight')).toEqual({ environment: null, exclude: [], pricey: false });
+    expect(parseAskFacets('coffee tonight')).toEqual({ environment: null, environmentRequired: false, exclude: [], pricey: false });
     expect(parseAskFacets(null).exclude).toEqual([]);
   });
   it('drops only KNOWN conflicts; unknown stays; caption says what was left out', () => {
@@ -32,12 +32,15 @@ describe('ask facets: combinations and negative intent (items 47/48)', () => {
     const list = [{ category: 'Festivals' }, { category: 'Coffee', capacity: 30 }, { category: 'Coffee', attendeeCount: 25 }, { category: 'Coffee', capacity: 6 }, { category: 'Coffee' }];
     expect(applyAskFacets(list, parseAskFacets('nothing crowded')).items).toHaveLength(2);
   });
-  it('nothing outdoors removes known outdoor; an outdoor ask lifts outdoor and nudges known indoor down; never removes for a positive ask', () => {
+  it('nothing outdoors removes known outdoor; a PLAIN outdoor ask is a must (known indoor removed, unknown kept); a HEDGED one only ranks (item 103)', () => {
     const list = [{ category: 'Hiking', score: 1 }, { category: 'Movies', score: 1 }, { category: 'Music', score: 1 }];
     expect(applyAskFacets(list, parseAskFacets('nothing outdoors')).items.map((c) => c.category)).toEqual(['Movies', 'Music']);
-    const up = applyAskFacets(list, parseAskFacets('something outside')).items;
-    expect(up.map((c) => c.score)).toEqual([3, 0, 1]);
-    expect(up).toHaveLength(3);
+    const must = applyAskFacets(list, parseAskFacets('something outside'));
+    expect(must.items.map((c) => [c.category, c.score])).toEqual([['Hiking', 3], ['Music', 1]]);
+    expect(must.caption).toBe('Leaving out indoor options');
+    const pref = applyAskFacets(list, parseAskFacets('something tonight, preferably outside')).items;
+    expect(pref.map((c) => c.score)).toEqual([3, 0, 1]);
+    expect(pref).toHaveLength(3);
   });
   it('not too expensive only sinks a known $$$ result; no facets = untouched', () => {
     const list = [{ category: 'Coffee', priceLevel: '$$$', score: 3 }, { category: 'Coffee', score: 3 }];

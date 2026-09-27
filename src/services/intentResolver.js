@@ -65,6 +65,7 @@ import { dietaryFromAsk, applyDietaryToCandidates } from '../constants/dietaryOp
 import { cleanFeatures } from '../utils/gatheringPractical';
 import { applyDeclaredFeatures } from '../constants/declaredFeatures';
 import { parseAskFacets, applyAskFacets, partnerPartyType, attributesFromAsk } from '../constants/askFacets';
+import { isPreferredCategory, PREFERRED_CATEGORY_POINTS } from '../utils/askPreferences';
 import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitmentLevel';
 import { formatsFromText, applyFormatToCandidates } from '../constants/activityFormat';
 import { skillLevelsFromText, applySkillToCandidates } from '../constants/skillLevel';
@@ -600,6 +601,9 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const dateAsk = isDateAsk({ partyType, occasion });
   let dateTag = null;
   if (dateAsk && category && canonicalGroupForTag(category) === 'dating_social') { dateTag = category; category = null; }
+  // Item 103: a category named only after a hedge ("preferably with live music") is nice-to-have: it no longer filters, it lifts.
+  let preferredTag = null;
+  if (category && isPreferredCategory(rawText, category)) { preferredTag = category; category = null; }
   // A date is two people unless the words say otherwise (never overrides a stated size).
   // Item 86: restrictions read only a size the person stated, never this date default.
   const statedPartySize = partySize;
@@ -850,6 +854,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   deduped = applyQualityDepth(deduped, attributes);
   deduped = frameDatePlaces(deduped, { isDate: dateAsk, frame: dateFrame({ occasion, dateWindow }), businessTypes: BUSINESS_RESULT_TYPES });
   if (dateTag) deduped = deduped.map((c) => (c.category === dateTag ? { ...c, score: (c.score ?? 0) + SCORE_HAPPENING_NOW } : c));
+  if (preferredTag) deduped = deduped.map((c) => (c.category === preferredTag ? { ...c, score: (c.score ?? 0) + PREFERRED_CATEGORY_POINTS } : c));
 
   // Combinations + negative intent (items 47/48): "outside", "no alcohol", "nothing crowded", "not too expensive" from the person's
   // own words. Exclusions drop only KNOWN conflicts; the caption says what was left out (constants/askFacets.js).

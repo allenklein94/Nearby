@@ -5,6 +5,7 @@
 // (its category tag, or a gathering's real capacity/attendance); a result with nothing known is kept, so a gap in our data never
 // hides something the person might want. Budget stays the locked rule: over-budget is ordered, never hidden, so "not too expensive"
 // only sinks a known $$$ result. The caption always says what was left out, so nothing disappears silently.
+import { splitHedge } from '../utils/askPreferences';
 import { vibesFromAsk } from './businessVibes';
 import { CATEGORY_GROUPS, groupForTag } from './gatheringCategories';
 import { CATEGORY_INDOOR_OUTDOOR } from './gatheringIndoorOutdoor';
@@ -29,7 +30,7 @@ export const EXCLUSION_LABELS = { alcohol: 'alcohol', outdoor: 'outdoor options'
 
 // { environment: 'outdoor'|'indoor'|null, exclude: string[], pricey: boolean } -- empty/false when the ask says none of it.
 export function parseAskFacets(text) {
-  const out = { environment: null, exclude: [], pricey: false };
+  const out = { environment: null, environmentRequired: false, exclude: [], pricey: false };
   if (typeof text !== 'string' || !text) return out;
   let rest = text;
   const take = (re, on) => { if (re.test(rest)) { on(); } rest = rest.replace(re, ' '); };
@@ -42,6 +43,14 @@ export function parseAskFacets(text) {
   // Positive environment only from what is left after the negations were removed ("nothing outdoors" must not read as outdoors).
   if (POS_OUTDOOR.test(rest) && !out.exclude.includes('outdoor')) out.environment = 'outdoor';
   else if (POS_INDOOR.test(rest) && !out.exclude.includes('indoor')) out.environment = 'indoor';
+  // Item 103: a plainly stated environment is a MUST ("somewhere outside tonight": known-indoor results are removed, unknown kept);
+  // one said only after a hedge ("preferably outside") stays a preference (the lift below, nothing removed).
+  if (out.environment) {
+    const h = splitHedge(text);
+    const plainRe = out.environment === 'outdoor' ? POS_OUTDOOR : POS_INDOOR;
+    const plain = h ? `${h.before} ${h.rest}`.replace(OUTSIDE_SEATING, ' ') : null;
+    out.environmentRequired = !h || plainRe.test(plain);
+  }
   return out;
 }
 
@@ -77,7 +86,11 @@ export const PRICEY_POINTS = -2;
 // sinks a known $$$. Returns { items, caption } (caption null when the ask stated none of these).
 export function applyAskFacets(candidates, facets) {
   if (!facets || (!facets.environment && !facets.exclude.length && !facets.pricey)) return { items: candidates, caption: null };
-  const items = candidates
+  const opposite = facets.environmentRequired ? (facets.environment === 'outdoor' ? 'indoor' : 'outdoor') : null;
+  const before = candidates.length;
+  const kept = candidates.filter((c) => !opposite || environmentOf(c?.category) !== opposite);
+  const removedOpposite = kept.length < before;
+  const items = kept
     .filter((c) => !facets.exclude.some((k) => conflicts(c, k)))
     .map((c) => {
       let delta = 0;
@@ -86,7 +99,7 @@ export function applyAskFacets(candidates, facets) {
       if (facets.pricey && c?.priceLevel === '$$$') delta += PRICEY_POINTS;
       return delta ? { ...c, score: (c.score ?? 0) + delta } : c;
     });
-  const parts = [...facets.exclude.map((k) => EXCLUSION_LABELS[k]), ...(facets.pricey ? ['pricier options'] : [])];
+  const parts = [...facets.exclude.map((k) => EXCLUSION_LABELS[k]), ...(removedOpposite ? [EXCLUSION_LABELS[opposite]] : []), ...(facets.pricey ? ['pricier options'] : [])];
   const list = parts.length <= 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
   return { items, caption: parts.length ? `Leaving out ${list}` : null };
 }
