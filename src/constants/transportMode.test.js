@@ -182,7 +182,8 @@ describe('scope and safety', () => {
     for (const f of walk(path.join(ROOT, 'src')).filter((f) => /\.js$/.test(f) && !/\.test\.js$/.test(f))) {
       expect([f, /registerTravelTimeProvider\(/.test(fs.readFileSync(f, 'utf8')) && !f.endsWith('travelTime.js')]).toEqual([f, false]);
     }
-    for (const f of walk(path.join(ROOT, 'supabase')).filter((f) => /\.(sql|ts)$/.test(f))) {
+    // Exception: the internal typed-ask audit (item 105) lists this field as recordable; no client or business reads it (typedAskAudit.test.js).
+    for (const f of walk(path.join(ROOT, 'supabase')).filter((f) => /\.(sql|ts)$/.test(f) && !f.endsWith('20270238_typed_ask_audit.sql'))) {
       expect([f, /routes\.googleapis|computeRouteMatrix|transport_mode/i.test(fs.readFileSync(f, 'utf8'))]).toEqual([f, false]);
     }
   });

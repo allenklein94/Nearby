@@ -1,0 +1,132 @@
+// Typed-ask audit (item 105) against the REAL resolver (network edges mocked, same harness as discoverGenreSearch.test.js):
+// the interpretation used is captured, signal codes explain the scores, recording changes nothing, and a broken writer cannot
+// break a search.
+jest.mock('expo-location', () => ({}));
+jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => '00000000-0000-4000-8000-000000000001') }));
+jest.mock('react-native', () => ({ Linking: { openURL: jest.fn() } }));
+jest.mock('./supabase', () => ({ supabase: { rpc: jest.fn() } }));
+jest.mock('./userLocation', () => ({ getUserLocation: jest.fn(async () => null) }));
+jest.mock('./gatherings', () => ({ getNearbyGatherings: jest.fn(), getGatheringFitReasons: jest.fn(() => ({ reasons: [] })) }));
+jest.mock('./communities', () => ({ getMyCommunities: jest.fn(async () => []), getPublicCommunities: jest.fn(async () => []) }));
+jest.mock('./brandOffers', () => ({
+  getActiveOffers: jest.fn(async () => []), logBusinessProfileView: jest.fn(), getPartnerWeatherSettings: jest.fn(async () => ({})),
+  getPartnerPriceInfo: jest.fn(async () => new Map()), getPartnerSuitedAges: jest.fn(async () => ({})), getPartnerOperatingInfo: jest.fn(async () => ({})),
+  getDeclinedBusinesses: jest.fn(async () => []),
+}));
+jest.mock('./businessFulfillment', () => ({
+  getConnectedOpenBusinessRequests: jest.fn(async () => []), searchActiveBusinessAvailability: jest.fn(async () => []),
+  searchPolicyOnlyBusinesses: jest.fn(async () => []), searchOccasionOfferingBusinesses: jest.fn(async () => []),
+  getMyBusinessAffinitySignals: jest.fn(async () => ({})),
+}));
+jest.mock('./preferencePolls', () => ({ getWhoForPreferenceSignals: jest.fn(async () => ({})) }));
+jest.mock('./occasionPackages', () => ({ searchOccasionPackages: jest.fn(async () => []), formatOccasionPackageDetail: jest.fn() }));
+jest.mock('./homeDashboard', () => ({ getSocialForecast: jest.fn(async () => null) }));
+jest.mock('./createAssistant', () => ({ classifyCreateRequest: jest.fn() }));
+jest.mock('./intentOutcomes', () => ({ recordIntentSubmission: jest.fn(async () => 'sub-1') }));
+
+import { runIntentSearch, resolveIntent } from './intentResolver';
+import { recordTypedAsk } from './typedAskAudit';
+import { supabase } from './supabase';
+import { getNearbyGatherings } from './gatherings';
+import { classifyCreateRequest } from './createAssistant';
+import * as auditUtils from '../utils/typedAskAudit';
+
+const soon = new Date(Date.now() + 3 * 3600 * 1000).toISOString();
+const gathering = (id, extra = {}) => ({
+  id, title: `Show ${id}`, interest_tag: 'Live Music', scheduled_at: soon, genre: null, capacity: null, approvedCount: 0, ...extra,
+});
+const LIST = [gathering('jazz', { genre: 'jazz' }), gathering('none'), gathering('rock', { genre: 'rock', distanceMiles: 1 })];
+const TEXT = 'rock show tonight for 4 people under $30';
+
+async function search(text = TEXT, list = LIST) {
+  getNearbyGatherings.mockResolvedValue(list);
+  classifyCreateRequest.mockResolvedValue({ intent: 'gathering', category: 'Live Music', dateWindow: 'tonight', partySize: 4, budgetMax: 30, attributes: [] });
+  return runIntentSearch(text);
+}
+
+beforeEach(() => {
+  supabase.rpc.mockReset();
+  supabase.rpc.mockResolvedValue({ data: 'x', error: null });
+});
+
+describe('typed-ask audit on the real resolver', () => {
+  it('captures the final structured interpretation actually used', async () => {
+    const r = await search();
+    const i = r.audit.interpretation;
+    expect(i).toMatchObject({ category: 'Live Music', date_window: 'tonight', party_size: 4, budget_max: 30, genres: ['rock'] });
+    expect(r.audit.candidateCount).toBe(3);
+  });
+
+  it('records the displayed order with type, id and canonical codes whose deltas explain each score', async () => {
+    const r = await search();
+    recordTypedAsk('discover', r);
+    const payload = supabase.rpc.mock.calls[0][1].snapshot;
+    expect(supabase.rpc.mock.calls[0][0]).toBe('record_typed_ask_snapshot');
+    expect(payload.surface).toBe('discover');
+    expect(payload.submission_id).toBe('sub-1');
+    expect(payload.results.map((x) => [x.position, x.result_type, x.result_id])).toEqual(r.items.map((it, n) => [n + 1, it.type, it.id]));
+    for (const row of payload.results) {
+      for (const s of row.signals) expect(auditUtils.SIGNAL_CODES[s.code]).toBeDefined();
+      const sum = row.signals.reduce((a, s) => a + s.delta, 0);
+      expect(sum).toBeCloseTo(row.score, 3);
+    }
+    expect(payload.results[0].signals.map((s) => s.code)).toContain('genre');
+  });
+
+  it('persists no raw ask text', async () => {
+    const r = await search();
+    recordTypedAsk('discover', r);
+    const json = JSON.stringify(supabase.rpc.mock.calls[0][1]);
+    expect(json).not.toMatch(/rock show|under \$30|Show rock|Show jazz/);
+  });
+
+  it('Home and Discover produce the same record for the same result (one canonical path)', async () => {
+    const r = await search();
+    recordTypedAsk('discover', r);
+    recordTypedAsk('home', { items: r.items, experience: r.experience, classifyResult: r.classifyResult, submissionId: r.submissionId, audit: r.audit });
+    const [d, h] = supabase.rpc.mock.calls.map((c) => c[1].snapshot);
+    expect(h.interpretation).toEqual(d.interpretation);
+    expect(h.results.map((x) => [x.result_type, x.result_id, x.signals])).toEqual(d.results.map((x) => [x.result_type, x.result_id, x.signals]));
+  });
+
+  it('instrumentation does not change scores or order', async () => {
+    const real = await search();
+    const spy = jest.spyOn(auditUtils, 'createScoreTrace').mockImplementation(() => ({
+      step() { throw new Error('trace down'); }, rebase() { throw new Error('trace down'); }, signalsFor: () => [], exclusions: () => ({}),
+    }));
+    let broken;
+    try {
+      broken = await search();
+    } catch (e) {
+      broken = { error: e };
+    } finally {
+      spy.mockRestore();
+    }
+    // a throwing trace is a failure mode we guard against in the resolver itself
+    expect(broken.error).toBeUndefined();
+    expect(broken.items.map((i) => [i.id, i.score])).toEqual(real.items.map((i) => [i.id, i.score]));
+  });
+
+  it('a failing write never breaks the search: rejected, thrown and malformed all return quietly', async () => {
+    const r = await search();
+    const err = jest.spyOn(console, 'error').mockImplementation(() => {});
+    supabase.rpc.mockRejectedValueOnce(new Error('offline'));
+    expect(recordTypedAsk('discover', r)).toMatchObject({ snapshotId: expect.any(String) });
+    supabase.rpc.mockImplementationOnce(() => { throw new Error('sync boom'); });
+    expect(recordTypedAsk('discover', r)).toBeNull();
+    supabase.rpc.mockResolvedValueOnce({ data: null, error: { message: 'denied' } });
+    expect(() => recordTypedAsk('discover', r)).not.toThrow();
+    expect(recordTypedAsk('elsewhere', r)).toBeNull();
+    await new Promise((res) => setTimeout(res, 0));
+    err.mockRestore();
+  });
+
+  it('resolveIntent items are identical whether or not anyone records them', async () => {
+    getNearbyGatherings.mockResolvedValue(LIST);
+    const args = { category: 'Live Music', dateWindow: 'tonight', rawText: TEXT, partySize: 4, budgetMax: 30, attributes: [] };
+    const a = await resolveIntent(args);
+    recordTypedAsk('home', { ...a, classifyResult: { intent: 'gathering' } });
+    const b = await resolveIntent(args);
+    expect(b.items.map((i) => [i.id, i.score])).toEqual(a.items.map((i) => [i.id, i.score]));
+  });
+});

@@ -38,7 +38,7 @@ export function businessActionRoute(action, { partner, partnerId, prefill = {}, 
 
 // The route for a typed-ask business result: the booking-mode route when the business declared one, else the pre-item-72 default
 // (the general request form, with the posting bound when the result is a posting).
-export function intentResultBusinessRoute(item, { typedText, classifyResult, at = new Date() } = {}) {
+export function intentResultBusinessRoute(item, { typedText, classifyResult, submissionId = null, at = new Date() } = {}) {
   const prefill = {
     prefillText: typedText ?? '',
     prefillCategory: classifyResult?.category ?? item?.category ?? null,
@@ -46,6 +46,8 @@ export function intentResultBusinessRoute(item, { typedText, classifyResult, at 
     prefillBudgetMax: classifyResult?.budgetMax ?? null,
     prefillDateWindow: classifyResult?.dateWindow ?? null,
     prefillOccasion: classifyResult?.occasion ?? null,
+    // links a request made from this result back to the typed ask (existing intent_submissions id; item 105 audit)
+    ...(submissionId ? { prefillSubmissionId: submissionId } : {}),
   };
   const matchedAvailability = item?.type === 'business_availability' ? item.matchedAvailability ?? null : null;
   const booked = businessActionRoute(businessActionForItem(item, at), {

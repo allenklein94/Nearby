@@ -12,6 +12,8 @@ import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../servi
 import { resolveIntent, resolveCommunityIntent, navigateToIntentResultItem, buildFriendDiscoveryResultItem } from '../services/intentResolver';
 import { submitSurprise, shuffleSurprise, navigateToSurprisePick, pickForMeKind } from '../services/surpriseMe';
 import { detectFriendDiscoveryIntent, intentPhaseCaption } from '../services/intentResolverScoring';
+import { recordTypedAsk } from '../services/typedAskAudit';
+import { remainingIntentItems, groupIntentResultsByType, displayedPosition } from '../utils/typedAskAudit';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/businessFulfillment';
 import { formatPlaceStatusLabel } from '../utils/planCompletion';
@@ -132,18 +134,8 @@ const INTENT_RESULT_TYPE_LABELS = {
 // (Item 39, CLAUDE.md) so Discover's own search box can build the
 // identical synthetic result -- imported above.
 
-function groupIntentResultsByType(items) {
-  const order = [];
-  const groups = new Map();
-  for (const item of items) {
-    if (!groups.has(item.type)) {
-      groups.set(item.type, []);
-      order.push(item.type);
-    }
-    groups.get(item.type).push(item);
-  }
-  return order.map((type) => ({ type, items: groups.get(type) }));
-}
+// groupIntentResultsByType / remainingIntentItems live in utils/typedAskAudit.js: the typed-ask audit records the order this
+// screen renders from the same functions, so the record cannot drift from what is shown (item 105).
 
 const PERIOD_SUBTITLES = {
   morning: 'What sounds good this morning?',
@@ -993,8 +985,9 @@ export default function HomeScreen({ navigation }) {
           rawText: typedText, category: result.category ?? null, dateWindow: result.dateWindow ?? null,
           intentKind: 'community', hadAnyResult: resolved.length > 0, reachedBusinessFallback: false,
         });
+        const shown = recordTypedAsk('home', { items: resolved, classifyResult: result, submissionId });
         if (resolved.length > 0) {
-          setIntentResults({ items: resolved, classifyResult: result, typedText, submissionId });
+          setIntentResults({ items: resolved, classifyResult: result, typedText, submissionId, shown });
         } else {
           proceedToCreation(result, typedText, submissionId);
         }
@@ -1005,7 +998,7 @@ export default function HomeScreen({ navigation }) {
         // category "recommendation recipe" section (assembleExperience(),
         // experienceAssembly.js) -- null whenever there's no real occasion,
         // no template for it, or no genuine matching inventory.
-        const { items: resolved, experience, openEndedNote } = await resolveIntent({ category: result.category, dateWindow: result.dateWindow, rawText: typedText, partySize: result.partySize ?? null, priceLevel: result.priceLevel ?? null, partyType: result.partyType ?? null, attributes: result.attributes ?? [], cuisine: result.cuisine ?? null, occasion: result.occasion ?? null });
+        const { items: resolved, experience, openEndedNote, audit } = await resolveIntent({ category: result.category, dateWindow: result.dateWindow, rawText: typedText, partySize: result.partySize ?? null, priceLevel: result.priceLevel ?? null, partyType: result.partyType ?? null, attributes: result.attributes ?? [], cuisine: result.cuisine ?? null, occasion: result.occasion ?? null });
         // P1 remediation (CLAUDE.md, Aug 28 Full Coherence Audit,
         // Scenario D): a real, deterministic person-shaped-phrase check,
         // never a fabricated resolver candidate -- appends one honest
@@ -1023,8 +1016,10 @@ export default function HomeScreen({ navigation }) {
           intentKind: result.intent, hadAnyResult: items.length > 0, reachedBusinessFallback: items.length === 0,
           partySize: result.partySize ?? null,
         });
+        // Typed-ask audit (item 105): after the results exist, before they render; never awaited, never changes them.
+        const shown = recordTypedAsk('home', { items, experience, classifyResult: result, submissionId, audit });
         if (items.length > 0) {
-          setIntentResults({ items, experience, openEndedNote, classifyResult: result, typedText, submissionId });
+          setIntentResults({ items, experience, openEndedNote, classifyResult: result, typedText, submissionId, shown });
         } else {
           setIntentEmptyFallback({ classifyResult: result, typedText, submissionId });
         }
@@ -1036,7 +1031,7 @@ export default function HomeScreen({ navigation }) {
   }
 
   function handleIntentResultTap(item) {
-    const { classifyResult, typedText, submissionId } = intentResults ?? {};
+    const { classifyResult, typedText, submissionId, shown } = intentResults ?? {};
     setIntentResults(null);
     recordIntentSelection({
       rawText: typedText,
@@ -1046,6 +1041,8 @@ export default function HomeScreen({ navigation }) {
       resultId: item.id ?? null,
       resultTitle: item.title,
       submissionId,
+      snapshotId: shown?.snapshotId ?? null,
+      resultPosition: displayedPosition(shown?.displayed, item),
     });
     // Item 39 (CLAUDE.md): this per-type routing switch used to be
     // inlined here -- extracted to navigateToIntentResultItem()
@@ -1053,7 +1050,7 @@ export default function HomeScreen({ navigation }) {
     // identical routing (a gathering result always lands on
     // GatheringDetail regardless of which search box found it), doesn't
     // hand-roll a second copy that could quietly drift from this one.
-    navigateToIntentResultItem(navigation, item, { typedText, classifyResult });
+    navigateToIntentResultItem(navigation, item, { typedText, classifyResult, submissionId });
   }
 
   // Extracted so the multi-option grouped view (layer 4) and the
@@ -1086,7 +1083,7 @@ export default function HomeScreen({ navigation }) {
               {item.matchId && (
                 <TouchableOpacity
                   onPress={() => {
-                    const { classifyResult, typedText, submissionId } = intentResults ?? {};
+                    const { classifyResult, typedText, submissionId, shown } = intentResults ?? {};
                     setIntentResults(null);
                     recordIntentSelection({
                       rawText: typedText,
@@ -1096,6 +1093,8 @@ export default function HomeScreen({ navigation }) {
                       resultId: item.id ?? null,
                       resultTitle: item.title,
                       submissionId,
+                      snapshotId: shown?.snapshotId ?? null,
+                      resultPosition: displayedPosition(shown?.displayed, item),
                     });
                     navigation.navigate('Chat', { matchId: item.matchId });
                   }}
@@ -1727,10 +1726,7 @@ export default function HomeScreen({ navigation }) {
                 </View>
               )}
               {(() => {
-                const claimedIds = intentResults.experience?.claimedIds ?? [];
-                const remainingItems = claimedIds.length > 0
-                  ? intentResults.items.filter((i) => !claimedIds.includes(i.id))
-                  : intentResults.items;
+                const remainingItems = remainingIntentItems(intentResults);
                 if (remainingItems.length === 0) return null;
                 // Friend Discovery, alone: never framed as "N ways to make
                 // this happen" (that heading implies real existing supply,

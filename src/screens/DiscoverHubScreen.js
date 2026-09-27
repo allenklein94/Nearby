@@ -33,6 +33,8 @@ import { getSocialForecast } from '../services/homeDashboard';
 import { filterToMyConnections } from '../services/connections';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { runIntentSearch, navigateToIntentResultItem } from '../services/intentResolver';
+import { recordTypedAsk } from '../services/typedAskAudit';
+import { displayedPosition } from '../utils/typedAskAudit';
 import { submitSurprise, shuffleSurprise, navigateToSurprisePick, surpriseTypesForTab } from '../services/surpriseMe';
 import { discoverQuery } from '../utils/discoverQuery';
 import { recordIntentSelection, getMyTopSearchedCategory } from '../services/intentOutcomes';
@@ -1187,7 +1189,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
         setIntentSearch(null);
         routeClassifiedIntentToCreation(navigation, result.classifyResult, typedText);
       } else {
-        setIntentSearch(result);
+        // Typed-ask audit (item 105): records what this search understood and the rows rendered below, in their order.
+        // Fire-and-forget; the result is set unchanged.
+        const shown = result.outcome === 'pick_for_me' ? null : recordTypedAsk('discover', result);
+        setIntentSearch({ ...result, shown });
       }
     } catch (e) {
       console.error('Discover intent search failed', e);
@@ -1227,7 +1232,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   }
 
   function handleIntentSearchResultTap(item) {
-    const { classifyResult, typedText, submissionId } = intentSearch ?? {};
+    const { classifyResult, typedText, submissionId, shown } = intentSearch ?? {};
     recordIntentSelection({
       rawText: typedText,
       category: classifyResult?.category ?? null,
@@ -1236,13 +1241,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
       resultId: item.id ?? null,
       resultTitle: item.title,
       submissionId,
+      snapshotId: shown?.snapshotId ?? null,
+      resultPosition: displayedPosition(shown?.displayed, item),
     });
     // Deliberately doesn't clear intentSearch, unlike HomeScreen's own
     // handleIntentResultTap -- this is a search results screen, not a
     // one-shot ask box, so returning here after viewing a result should
     // still show the same understood block, same as the literal keyword
     // search results right below it never disappear on their own either.
-    navigateToIntentResultItem(navigation, item, { typedText, classifyResult });
+    navigateToIntentResultItem(navigation, item, { typedText, classifyResult, submissionId });
   }
 
   function renderIntentSearchResultRow(item, index, { onPress = handleIntentSearchResultTap, pickBadge = true } = {}) {

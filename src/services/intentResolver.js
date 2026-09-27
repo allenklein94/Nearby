@@ -41,6 +41,7 @@ import {
   matchesDateWindow,
   dateWindowToDateRange,
   scoreGatheringForResolver,
+  gatheringResolverScoreParts,
   priceAndPartyBonus,
   attributeAndCuisineBonus,
   hobbyAttributeBonus,
@@ -66,6 +67,7 @@ import { cleanFeatures } from '../utils/gatheringPractical';
 import { applyDeclaredFeatures } from '../constants/declaredFeatures';
 import { parseAskFacets, applyAskFacets, partnerPartyType, attributesFromAsk } from '../constants/askFacets';
 import { isPreferredCategory, PREFERRED_CATEGORY_POINTS } from '../utils/askPreferences';
+import { createScoreTrace, guardTrace } from '../utils/typedAskAudit';
 import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitmentLevel';
 import { formatsFromText, applyFormatToCandidates } from '../constants/activityFormat';
 import { skillLevelsFromText, applySkillToCandidates } from '../constants/skillLevel';
@@ -150,6 +152,12 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       score: scoreGatheringForResolver(gathering)
         + titleMentionBonus(gathering.title, meaningfulWords)
         + priceAndPartyBonus(gathering, priceLevel, partyType),
+      // typed-ask audit only (utils/typedAskAudit.js): the same three terms, named; never read by ranking
+      baseSignals: [
+        ...gatheringResolverScoreParts(gathering),
+        { code: 'base_title_mention', delta: titleMentionBonus(gathering.title, meaningfulWords) },
+        { code: 'base_price_party', delta: priceAndPartyBonus(gathering, priceLevel, partyType) },
+      ],
     };
   });
 }
@@ -715,6 +723,9 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // The same rule now spans all four business tiers (live posting > package > offers-this-occasion >
   // policy-only): a weaker tier is dropped when the same business has a stronger one.
   let deduped = dedupeBusinessTiers(candidates);
+  // Typed-ask audit (utils/typedAskAudit.js): READ-ONLY. Each trace.step names what the pass just before it changed; it never
+  // writes to a candidate, never reorders, and swallows its own errors.
+  const trace = guardTrace(() => createScoreTrace(deduped, { removedBeforeStart: candidates.length - deduped.length }));
 
   // Weather nudges, never dictates (2026-09-26, utils/askWeather.js): a gathering is judged at its own start, everything else at
   // the window the person's words anchor ("tonight", "tomorrow", "Saturday before 3 PM"); no anchor or "this weekend" = no
@@ -731,6 +742,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   } catch (e) {
     console.error('weather nudge skipped', e);
   }
+  trace.step('weather', deduped);
 
   // Items 40 + 82: a business whose declared tier fits the asked price, or whose typical spend fits a stated budget, ranks up;
   // a typical spend clearly over the budget, or a $$$/$$$$ tier on "not too expensive", ranks down. Never a filter.
@@ -742,25 +754,33 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
       console.error('business price nudge skipped', e);
     }
   }
+  trace.step('price_budget', deduped);
 
   // Energy level (item 44): "something low-key" lifts tags that carry that energy; ranking only (constants/energyLevel.js).
   // Item 65: an energy the person PICKED ("What kind of night?") joins the ones their words name.
   // Item 66: a format the person named ("a pickleball tournament") lifts that format and sinks a known different one; never hides.
   deduped = applyFormatToCandidates(deduped, formatsFromText(rawText));
+  trace.step('format', deduped);
   // Item 67: "beginner pickleball" lifts a declared Beginner / All levels / Casual game and sinks a Competitive one; never hides.
   deduped = applySkillToCandidates(deduped, skillLevelsFromText(rawText));
+  trace.step('skill_level', deduped);
   // "rock show tonight" lifts gatherings whose host declared Rock; a different/undeclared genre is neutral, nothing hidden.
   deduped = applyGenreToCandidates(deduped, genresFromText(rawText));
+  trace.step('genre', deduped);
   // Intensity (the host's Energy scale) and effort, only from "easy hike" / "high intensity workout"-style phrases; never hides.
   const askedIntensity = intensityFromText(rawText);
   deduped = applyIntensityToCandidates(deduped, askedIntensity);
+  trace.step('intensity', deduped);
   deduped = applyEffortToCandidates(deduped, effortFromText(rawText));
+  trace.step('effort', deduped);
   // Social context (2026-09-26): "a few friends" / "big group hike" / "meet new people" compared against the gathering's existing
   // party_type, capacity and group_size_feel; gatherings only, ranking only, nothing stored.
   deduped = applySocialToCandidates(deduped, socialSignalsFromText(rawText), { partyType });
+  trace.step('social_context', deduped);
   // Item 69: "walking distance" / "not too far" lift the closer results by their real measured distance (relative, no mile cutoffs);
   // "willing to travel" already widened the search above. Nothing is removed.
   deduped = applyDistanceWillingness(deduped, distanceWillingness);
+  trace.step('distance_willingness', deduped);
   // Transportation mode (2026-09-26): "I'm walking" / "on my bike" lift closer results relative to the others; "I'm driving" /
   // "an Uber" drop the close-by bonus; transit changes nothing without real travel times. A stated distance stays primary and the
   // mode only refines (small weight, same direction). Never widens the search. getTravelTimes has NO provider today (returns
@@ -768,16 +788,21 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const transportMode = transportModeFromText(rawText);
   const travelTimes = transportMode ? await getTravelTimes(deduped, transportMode, location, { keyOf: candidateKey }) : null;
   deduped = applyTransportMode(deduped, transportMode, travelTimes, { statedDistance: distanceWillingness });
+  trace.step('transport_mode', deduped);
   // Item 68: "I only have an hour" lifts what fits (declared length, else the category's typical one) and sinks what clearly
   // does not; unknown lengths are untouched, nothing is removed.
   const timeBudget = timeBudgetFromText(rawText);
   deduped = applyTimeBudgetToCandidates(deduped, timeBudget);
+  trace.step('time_budget', deduped);
   // "today before 3 PM" / "Saturday until 5": used only when the person's words anchor it to a date ("before 3 PM" alone
   // constrains nothing). A gathering whose real start (and usual length) fits lifts, a clear miss sinks; never hides.
   const clockWindow = clockWindowFromText(rawText);
   const dateAnchor = clockWindow ? dateAnchorFromText(rawText) : null;
   deduped = applyClockWindowToCandidates(deduped, clockWindow, dateAnchor);
+  trace.step('clock_window', deduped);
+  const askedEnergies = energiesWithoutIntensity([...new Set([...(Array.isArray(energies) ? energies : []), ...energiesFromText(rawText)])], askedIntensity);
   deduped = applyEnergyToCandidates(deduped, energiesWithoutIntensity([...new Set([...(Array.isArray(energies) ? energies : []), ...energiesFromText(rawText)])], askedIntensity));
+  trace.step('energy', deduped);
 
   // Commitment (item 45) and spontaneity (item 46): ranking only. An immediate ask implies a light commitment unless the person
   // said otherwise; "plan ahead" / "next few hours" have no dateWindow bucket, so they come from the person's own words.
@@ -820,19 +845,25 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     }
   }
   deduped = restrictions.items;
+  trace.step('compatibility', deduped);
   // Item 88: dietary needs the person's own words state ("vegan", "gluten-free", "halal") lift a business that DECLARED every one
   // of them (its partner row, attached above). Ranking only; a business that did not say is kept where it was.
   deduped = applyDietaryToCandidates(deduped, dietaryFromAsk(rawText));
+  trace.rebase(deduped); // a stated dietary need is never recorded (UNRECORDED_PASSES)
   // Item 80: declared capabilities vs the ask: largest group vs the stated party size, private events / catering only when the
   // words ask for them. Ranking only; unknown is neutral; business results only (perks carry no partner row).
   deduped = applyCapabilitiesToCandidates(deduped, { partySize, text: rawText });
+  trace.step('capabilities', deduped);
   deduped = applyCommitmentToCandidates(deduped, commitAsk);
+  trace.step('commitment', deduped);
   deduped = applySpontaneityToCandidates(deduped, spontaneity);
+  trace.step('spontaneity', deduped);
 
   // Open-ended ask ("something fun tonight"): no category named, so only inventory in social groups is eligible and it gets a
   // small lift (utils/openEndedAsk.js, rule-based). A real category or occasion in the ask leaves everything untouched.
   const openEndedGroups = openEndedAskGroups({ category, rawText, occasion, attributes, force: !!openEnded });
   deduped = applyOpenEndedAsk(deduped, openEndedGroups, { dateWindow, partyType, hour: new Date().getHours() });
+  trace.step('open_ended', deduped);
 
   // Age range (item 50): "with my 5 year old" ranks a place or gathering whose declared suited ages cover it; an unknown range is untouched.
   const childAges = askedChildAges(rawText);
@@ -844,22 +875,31 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
       console.error('suited age nudge skipped', e);
     }
   }
+  trace.rebase(deduped); // a stated child's age is never recorded (UNRECORDED_PASSES)
 
   // Accessibility / family (items 49/50): a gathering the HOST declared these features for ranks up (declared only, never inferred).
   deduped = applyDeclaredFeatures(deduped, attributes);
+  trace.step('declared_features', deduped);
   // Vibe (item 83): a declared vibe the person said to avoid, or the declared opposite of one they want, sinks a little. Never hides.
   deduped = applyVibeSinks(deduped, vibesFromAsk(rawText));
+  trace.step('vibe', deduped);
   // Item 85: more of the asked qualities declared = higher; a date ask offers a declared date spot as "Date night at X?"; a
   // gathering carrying the date tag the words named keeps a lift now that the tag no longer filters.
   deduped = applyQualityDepth(deduped, attributes);
+  trace.step('quality_depth', deduped);
   deduped = frameDatePlaces(deduped, { isDate: dateAsk, frame: dateFrame({ occasion, dateWindow }), businessTypes: BUSINESS_RESULT_TYPES });
+  trace.step('date_place', deduped);
   if (dateTag) deduped = deduped.map((c) => (c.category === dateTag ? { ...c, score: (c.score ?? 0) + SCORE_HAPPENING_NOW } : c));
+  trace.step('date_tag', deduped);
   if (preferredTag) deduped = deduped.map((c) => (c.category === preferredTag ? { ...c, score: (c.score ?? 0) + PREFERRED_CATEGORY_POINTS } : c));
+  trace.step('preferred_category', deduped);
 
   // Combinations + negative intent (items 47/48): "outside", "no alcohol", "nothing crowded", "not too expensive" from the person's
   // own words. Exclusions drop only KNOWN conflicts; the caption says what was left out (constants/askFacets.js).
-  const askFacets = applyAskFacets(deduped, parseAskFacets(rawText));
+  const parsedFacets = parseAskFacets(rawText);
+  const askFacets = applyAskFacets(deduped, parsedFacets);
   deduped = askFacets.items;
+  trace.step('ask_facets', deduped);
 
   // Open now (owner item 71, utils/operatingStatus.js, the one resolver): "what's open" / "still open" / "somewhere I can go
   // right now" keeps ONLY confirmed-usable results (unknown and closed both drop out). An immediate ask without that language
@@ -871,6 +911,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
       ? filterOpenNow(deduped, toEntity)
       : deduped.map((c) => (c.type === 'gathering' ? c : { ...c, score: (c.score ?? 0) + openNowLift(toEntity(c)) }));
   }
+  trace.step('open_now', deduped);
 
   deduped.sort((a, b) => b.score - a.score);
   // The caption names only the groups the SHOWN results really come from.
@@ -892,7 +933,31 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const planSpanLabel = timeBudget == null && planBudget != null ? `${clockLabel(clockWindow.after)} and ${clockLabel(clockWindow.before)}` : null;
   const experience = fitExperienceToTime(assembleExperience(occasion, deduped, { partyType, dateWindow, attributes, priceLevel, budgetMax, category, cuisine, intentRecipe: recognizeCombination({ text: rawText, occasion, partyType, dateWindow, attributes })?.recipe ?? null }), planBudget, planSpanLabel);
 
-  return { items: deduped.slice(0, RESULT_CAP), experience, openEndedNote, openNowOnly };
+  // What the ranking path actually used, closed vocabularies only (never words; sanitized again by the writer).
+  let audit = null;
+  try {
+    const social = socialSignalsFromText(rawText);
+    audit = {
+      candidateCount: deduped.length,
+      trace,
+      interpretation: {
+        category, category_group: category ? canonicalGroupForTag(category) : null, preferred_category: preferredTag, date_tag: dateTag,
+        cuisine, occasion, combination: recognizeCombination({ text: rawText, occasion, partyType, dateWindow, attributes })?.key ?? null,
+        multi_part: !!multiPart, date_window: dateWindow, party_size: partySize, party_size_stated: Number.isInteger(statedPartySize),
+        party_type: partyType, price_level: priceLevel, budget_max: budgetMax, attributes, energies: askedEnergies,
+        formats: formatsFromText(rawText), skill_levels: skillLevelsFromText(rawText), genres: genresFromText(rawText),
+        intensity: askedIntensity, effort: effortFromText(rawText), social_context: social?.social_context ?? null,
+        meet_new_people: social?.meet_new_people ?? null, distance_willingness: distanceWillingness, search_widened: !!travelMiles,
+        transport_mode: transportMode, time_budget_minutes: timeBudget, clock_window: clockWindow,
+        date_anchor: dateAnchor?.kind ?? null, commitment: commitAsk, spontaneity, open_now: openNowOnly, open_now_chip: !!openNowChip,
+        environment: parsedFacets.environment, environment_required: !!parsedFacets.environmentRequired, exclude: parsedFacets.exclude,
+        avoid_pricey: !!parsedFacets.pricey, open_ended_groups: openEndedGroups, vibes_avoid: [...(vibesFromAsk(rawText).avoid ?? [])],
+      },
+    };
+  } catch (e) {
+    console.error('typed-ask audit skipped', e);
+  }
+  return { items: deduped.slice(0, RESULT_CAP), experience, openEndedNote, openNowOnly, audit };
 }
 
 // A synthetic result item (not a real resolveIntent() candidate) --
@@ -980,7 +1045,7 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
     };
   }
 
-  const { items: resolved, experience, openEndedNote, openNowOnly } = await resolveIntent({
+  const { items: resolved, experience, openEndedNote, openNowOnly, audit } = await resolveIntent({
     category: classifyResult.category, dateWindow: classifyResult.dateWindow, rawText: typedText,
     partySize: classifyResult.partySize ?? null, priceLevel: classifyResult.priceLevel ?? null, budgetMax: classifyResult.budgetMax ?? null,
     partyType: classifyResult.partyType ?? null, attributes: classifyResult.attributes ?? [],
@@ -996,7 +1061,7 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
   });
   return {
     outcome: items.length > 0 ? 'results' : 'empty',
-    classifyResult, typedText, submissionId, items, experience, openEndedNote, openNowOnly: openNowOnly === true,
+    classifyResult, typedText, submissionId, items, experience, openEndedNote, openNowOnly: openNowOnly === true, audit,
   };
 }
 
@@ -1024,7 +1089,7 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
 // point into it already does -- both are safely omittable for a context
 // that doesn't have them (e.g. Surprise Me's own restricted result set,
 // which never reaches these two types in the first place).
-export function navigateToIntentResultItem(navigation, item, { typedText, classifyResult } = {}) {
+export function navigateToIntentResultItem(navigation, item, { typedText, classifyResult, submissionId } = {}) {
   if (item.type === 'gathering') {
     navigation.navigate('GatheringDetail', { gatheringId: item.id });
   } else if (item.type === 'perk') {
@@ -1041,7 +1106,7 @@ export function navigateToIntentResultItem(navigation, item, { typedText, classi
     // Go now / Get Directions open maps, Reserve / Book / Request open the request addressed to that business; no declared
     // mode keeps the general request form (bound to the posting when the result is one).
     if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
-    const route = intentResultBusinessRoute(item, { typedText, classifyResult });
+    const route = intentResultBusinessRoute(item, { typedText, classifyResult, submissionId });
     if (route?.kind === 'url') {
       if (route.url) Linking.openURL(route.url);
     } else if (route) {

@@ -133,6 +133,7 @@ describe('scope and privacy boundary', () => {
   it('never reaches a business payload', () => {
     const dir = path.join(ROOT, 'supabase');
     const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
-    for (const f of walk(dir).filter((f) => /\.(sql|ts)$/.test(f))) expect([f, /social_context|meet_new_people/.test(fs.readFileSync(f, 'utf8'))]).toEqual([f, false]);
+    // Exception: the internal typed-ask audit (item 105) lists this field as recordable; no client or business reads it (typedAskAudit.test.js).
+    for (const f of walk(dir).filter((f) => /\.(sql|ts)$/.test(f) && !f.endsWith('20270238_typed_ask_audit.sql'))) expect([f, /social_context|meet_new_people/.test(fs.readFileSync(f, 'utf8'))]).toEqual([f, false]);
   });
 });

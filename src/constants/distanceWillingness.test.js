@@ -109,6 +109,7 @@ describe('scope', () => {
       expect([f, /applyDistanceWillingness|distanceWillingnessFromText/.test(read(f))]).toEqual([f, false]);
     }
     const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
-    for (const f of walk(path.join(ROOT, 'supabase')).filter((f) => /\.(sql|ts)$/.test(f))) expect([f, /distance_willingness/.test(fs.readFileSync(f, 'utf8'))]).toEqual([f, false]);
+    // Exception: the internal typed-ask audit (item 105) lists this field as recordable; no client or business reads it (typedAskAudit.test.js).
+    for (const f of walk(path.join(ROOT, 'supabase')).filter((f) => /\.(sql|ts)$/.test(f) && !f.endsWith('20270238_typed_ask_audit.sql'))) expect([f, /distance_willingness/.test(fs.readFileSync(f, 'utf8'))]).toEqual([f, false]);
   });
 });

@@ -531,17 +531,22 @@ export function dateWindowToDateRange(dateWindow) {
 // richer subtitle) -- only the *score* it returns is unused, so Home's
 // Best Pick and GatheringDetailScreen (both real, already-shipped,
 // unmodified) are unaffected by this.
-export function scoreGatheringForResolver(gathering) {
-  let score = 0;
-  if (gathering.matchesYourInterests) score += SCORE_INTEREST_MATCH;
+// The same score, split into its named parts (typed-ask audit, utils/typedAskAudit.js base_* codes). The score is their sum.
+export function gatheringResolverScoreParts(gathering) {
+  const parts = [];
+  if (gathering.matchesYourInterests) parts.push({ code: 'base_interest_match', delta: SCORE_INTEREST_MATCH });
   if (gathering.distanceMiles !== null && gathering.distanceMiles !== undefined && gathering.distanceMiles < 2) {
-    score += SCORE_CLOSE_DISTANCE;
+    parts.push({ code: 'base_close_distance', delta: SCORE_CLOSE_DISTANCE });
   }
   const scheduled = new Date(gathering.scheduled_at);
   const now = new Date();
   const isToday = scheduled.getFullYear() === now.getFullYear() && scheduled.getMonth() === now.getMonth() && scheduled.getDate() === now.getDate();
-  if (isToday) score += SCORE_HAPPENING_NOW;
-  return score;
+  if (isToday) parts.push({ code: 'base_today', delta: SCORE_HAPPENING_NOW });
+  return parts;
+}
+
+export function scoreGatheringForResolver(gathering) {
+  return gatheringResolverScoreParts(gathering).reduce((sum, p) => sum + p.delta, 0);
 }
 
 // Item 74 (CLAUDE.md): extracted from DiscoverHubScreen.js, which had these

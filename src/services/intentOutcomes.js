@@ -44,7 +44,7 @@ async function bestEffortWideArea() {
 // step in the user's own flow. Matches this codebase's established
 // "failures are swallowed with a console log, same as the post-gathering
 // feedback modal's philosophy" convention for non-critical writes.
-export async function recordIntentSelection({ rawText, category, dateWindow, resultType, resultId, resultTitle, submissionId }) {
+export async function recordIntentSelection({ rawText, category, dateWindow, resultType, resultId, resultTitle, submissionId, snapshotId, resultPosition }) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -57,6 +57,9 @@ export async function recordIntentSelection({ rawText, category, dateWindow, res
       result_id: resultId ?? null,
       result_title: resultTitle ?? null,
       submission_id: submissionId ?? null,
+      // typed-ask audit link (item 105): which shown row of which snapshot this tap came from
+      snapshot_id: snapshotId ?? null,
+      result_position: Number.isInteger(resultPosition) ? resultPosition : null,
     });
   } catch (e) {
     console.error('recordIntentSelection failed', e);
