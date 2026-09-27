@@ -419,6 +419,29 @@ describe('dateWindowToDateRange', () => {
   });
 });
 
+// Local calendar dates, in any timezone (2026-09-27 fix): "today" is the person's LOCAL date even just after local midnight, when
+// that instant is still the previous day in UTC for anyone east of UTC (formatting through UTC used to give the day before).
+describe('dateWindowToDateRange uses the LOCAL calendar date', () => {
+  afterEach(() => jest.useRealTimers());
+  it('today / tonight / now, tomorrow and this weekend on a Wednesday just after local midnight', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 9, 14, 0, 30)); // Wed Oct 14, 12:30 AM local
+    expect(dateWindowToDateRange('today')).toEqual({ start: '2026-10-14', end: '2026-10-14' });
+    expect(dateWindowToDateRange('tonight')).toEqual({ start: '2026-10-14', end: '2026-10-14' });
+    expect(dateWindowToDateRange('now')).toEqual({ start: '2026-10-14', end: '2026-10-14' });
+    expect(dateWindowToDateRange('tomorrow')).toEqual({ start: '2026-10-15', end: '2026-10-15' });
+    expect(dateWindowToDateRange('weekend')).toEqual({ start: '2026-10-17', end: '2026-10-18' });
+  });
+  it('late evening keeps the same local date (never rolls into the next UTC day)', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 9, 14, 23, 45)); // Wed Oct 14, 11:45 PM local
+    expect(dateWindowToDateRange('today')).toEqual({ start: '2026-10-14', end: '2026-10-14' });
+    expect(dateWindowToDateRange('tomorrow')).toEqual({ start: '2026-10-15', end: '2026-10-15' });
+  });
+  it('on a Sunday, this weekend is the Saturday just gone + today', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 9, 18, 0, 30)); // Sun Oct 18, 12:30 AM local
+    expect(dateWindowToDateRange('weekend')).toEqual({ start: '2026-10-17', end: '2026-10-18' });
+  });
+});
+
 describe('scoreGatheringForResolver', () => {
   it('scores an interest match, close distance, and happening-today independently', () => {
     const todayIso = new Date().toISOString();

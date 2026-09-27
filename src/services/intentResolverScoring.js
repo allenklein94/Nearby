@@ -17,6 +17,7 @@ import { isWithinRightNowWindow } from '../utils/rightNowWindow';
 import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS } from '../constants/businessAttributes';
 import { hobbyAttributeMatch, relatedInterestReason } from '../constants/hobbyRelations';
 import { activityFit } from '../constants/activityLayer';
+import { localDateParam } from '../utils/nightDate';
 
 // Shared relevance weights, kept on the same scale
 // getGatheringFitReasons() already established (interest match = 5, close
@@ -494,14 +495,15 @@ export function dateWindowToDateRange(dateWindow) {
   if (!dateWindow || dateWindow === 'flexible') return { start: null, end: null };
   const now = new Date();
   const todayStart = startOfDay(now);
+  // Dates are the person's LOCAL calendar dates (formatting local midnight in UTC would give the day before east of UTC).
   if (dateWindow === 'today' || dateWindow === 'tonight' || dateWindow === 'now') {
-    const d = todayStart.toISOString().slice(0, 10);
+    const d = localDateParam(todayStart);
     return { start: d, end: d };
   }
   if (dateWindow === 'tomorrow') {
     const d = new Date(todayStart);
     d.setDate(d.getDate() + 1);
-    const s = d.toISOString().slice(0, 10);
+    const s = localDateParam(d);
     return { start: s, end: s };
   }
   if (dateWindow === 'weekend') {
@@ -512,7 +514,7 @@ export function dateWindowToDateRange(dateWindow) {
     saturday.setDate(saturday.getDate() + daysUntilSaturday);
     const sunday = new Date(saturday);
     sunday.setDate(sunday.getDate() + 1);
-    return { start: saturday.toISOString().slice(0, 10), end: sunday.toISOString().slice(0, 10) };
+    return { start: localDateParam(saturday), end: localDateParam(sunday) };
   }
   return { start: null, end: null };
 }

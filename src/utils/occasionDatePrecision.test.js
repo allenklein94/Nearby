@@ -24,6 +24,16 @@ describe('occasionDatePrecisionLabel/Icon', () => {
 });
 
 describe('normalizeOccasionDateForPrecision', () => {
+  // Local calendar date in any timezone (2026-09-27 fix): the day the person picked stays that day, at any time of that day.
+  it('keeps the picked local calendar date at local midnight and late evening, for every precision', () => {
+    for (const picked of [new Date(2026, 9, 15, 0, 0), new Date(2026, 9, 15, 0, 30), new Date(2026, 9, 15, 23, 59)]) {
+      expect(normalizeOccasionDateForPrecision('exact', picked)).toBe('2026-10-15');
+      expect(normalizeOccasionDateForPrecision('around', picked)).toBe('2026-10-15');
+      expect(normalizeOccasionDateForPrecision('weekend', picked)).toBe('2026-10-17');
+      expect(normalizeOccasionDateForPrecision('flexible', picked)).toBe('2026-10-01');
+    }
+  });
+
   it('leaves an exact pick untouched', () => {
     expect(normalizeOccasionDateForPrecision('exact', new Date('2026-10-15T00:00:00'))).toBe('2026-10-15');
   });

@@ -8,6 +8,7 @@
 // Pure, dependency-free -- same posture as this repo's other small date/
 // label helpers (businessRequestWhen.js, calendarOccasionSuggestion.js).
 
+import { localDateParam } from './nightDate';
 export const OCCASION_DATE_PRECISION_OPTIONS = [
   { key: 'exact', label: 'Exact date', icon: '📅' },
   { key: 'weekend', label: 'Weekend', icon: '🌤️' },
@@ -40,7 +41,8 @@ export function normalizeOccasionDateForPrecision(precision, pickedDate) {
     // month, so nothing about the specific day should survive.
     d.setDate(1);
   }
-  return d.toISOString().slice(0, 10);
+  // The LOCAL calendar date the person picked (formatting it in UTC would give the day before east of UTC).
+  return localDateParam(d);
 }
 
 function monthDayText(d, { short = false } = {}) {
