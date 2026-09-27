@@ -59,6 +59,11 @@ describe('organic code never touches the sponsored system', () => {
     const offenders = walk(path.join(root, 'src')).filter((f) => !allowed.includes(f) && pattern.test(fs.readFileSync(f, 'utf8')));
     expect(offenders.map((f) => path.relative(root, f))).toEqual([]);
   });
+  it('the request area bucket uses the same ~10-mile grid as the sponsored area key, without referencing it', () => {
+    const grid = (f, name) => fs.readFileSync(path.join(root, 'supabase/migrations', f), 'utf8')
+      .match(new RegExp(`function public\\.${name}\\(lat double precision, lng double precision\\)[\\s\\S]*?select (floor[^;]*);`))[1];
+    expect(grid('20270241_live_loop_instrumentation.sql', 'request_area_key')).toBe(grid('20270154_sponsored_placements.sql', 'sponsored_area_key'));
+  });
   it('no other migration references the sponsored tables (organic SQL never reads them)', () => {
     const dir = path.join(root, 'supabase/migrations');
     const offenders = fs.readdirSync(dir)

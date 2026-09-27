@@ -169,7 +169,7 @@ describe('wiring and boundaries', () => {
     expect(MIGRATION).not.toMatch(/grant select/i);
     expect(MIGRATION).toMatch(/grant execute on function public\.record_typed_ask_snapshot\(jsonb\) to authenticated/);
     const dir = path.join(__dirname, '../../supabase/migrations');
-    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.sql') && !['20270238_typed_ask_audit.sql', '20270239_typed_ask_refinements.sql', '20270240_typed_ask_category_narrow.sql'].includes(x))) {
+    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.sql') && !['20270238_typed_ask_audit.sql', '20270239_typed_ask_refinements.sql', '20270240_typed_ask_category_narrow.sql', '20270241_live_loop_instrumentation.sql'].includes(x))) {
       expect(fs.readFileSync(path.join(dir, f), 'utf8')).not.toMatch(/typed_ask_/);
     }
     const fnDir = path.join(__dirname, '../../supabase/functions');

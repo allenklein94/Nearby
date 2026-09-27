@@ -29,6 +29,26 @@ export function visitDayKey(o) {
   return localDayKey(o?.proposed_time) ?? localDayKey(o?.business_requests?.gatherings?.scheduled_at) ?? localDayKey(o?.business_requests?.date);
 }
 
+// Whether a confirmed visit's time has passed, to OFFER "Didn't show up" (the server re-checks with its own rule and may still
+// refuse, e.g. a date-only visit is over only once that date has ended everywhere). Same precedence as visitDayKey: the accepted
+// alternative time, else the gathering start, else the request's date (+ start time when there is one, else the whole day).
+export function visitHasPassed(o, now = new Date()) {
+  const at = o?.proposed_time ?? o?.business_requests?.gatherings?.scheduled_at ?? null;
+  if (at) {
+    const t = new Date(at).getTime();
+    return Number.isFinite(t) && t <= now.getTime();
+  }
+  const date = o?.business_requests?.date;
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  const start = o?.business_requests?.time_window_start;
+  if (typeof start === 'string' && /^\d{2}:\d{2}/.test(start)) {
+    const [y, m, d] = date.split('-').map(Number);
+    const [hh, mm] = start.split(':').map(Number);
+    return new Date(y, m - 1, d, hh, mm).getTime() <= now.getTime();
+  }
+  return date < localDayKey(now);
+}
+
 export function dashboardGlance(opportunities, owed, now = new Date()) {
   const list = opportunities ?? [];
   const todayKey = localDayKey(now);

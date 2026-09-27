@@ -706,6 +706,22 @@ export async function completeBusinessReservation(offerId) {
   return data;
 }
 
+// Live-loop instrumentation (2026-09-27): the business marks a confirmed visit as "Didn't show up" once its time has passed.
+// Analysis only: nothing about the booking changes and the customer is neither told nor penalized. The server decides the
+// visit time (utils/dashboardGlance.js visitHasPassed only decides when to offer the button).
+export async function markBusinessNoShow(offerId) {
+  const { data, error } = await supabase.rpc('mark_business_no_show', { offer_id_param: offerId });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// The owner's own visits already marked as no-shows (offer ids).
+export async function getMyBusinessNoShows() {
+  const { data, error } = await supabase.rpc('get_my_business_no_shows');
+  if (error) throw new Error(error.message);
+  return new Set((data ?? []).map((r) => (typeof r === 'string' ? r : Object.values(r)[0])));
+}
+
 // Item 50 (CLAUDE.md, "state consistency audit") fix 5: the real "this fell
 // through" path once an offer is accepted -- either party may call it. The
 // RPC itself refuses once business_payments.status is 'captured'/

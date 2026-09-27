@@ -40,7 +40,7 @@ import { creativeFormPatch, detectedSummary, extractedDiscountWarning, canReadCr
 import { sanitizePlainLanguageSuggestion, plainLanguageDiffers, plainLanguageContext, claimProblem, acceptPlainLanguage } from '../utils/plainLanguageOffer';
 import { videoLimitProblem, MAX_REDEMPTION_LENGTH, validUntilFromChoice, availableWindowFromChoice } from '../utils/offerMedia';
 import { priorityTimeRangeFromChoice, priorityTimeStringToDate, priorityTimeRangeLabel } from '../utils/priorityTimeRange';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, rewriteOfferPlainLanguage, getMyCreatives, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit, getMyOfferSubmissions, dismissOfferSubmission, retryOfferSubmission, getPartnerOfferValue } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, markBusinessNoShow, getMyBusinessNoShows, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, rewriteOfferPlainLanguage, getMyCreatives, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit, getMyOfferSubmissions, dismissOfferSubmission, retryOfferSubmission, getPartnerOfferValue } from '../services/businessFulfillment';
 import { submissionView, inFlightRequestIds, payloadToForm } from '../utils/offerSubmission';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
@@ -61,7 +61,7 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 // own date/time window, shown on the business's opportunity card.
 import { budgetMeetsMinSpend } from '../utils/budgetTier';
 import { businessLocationNotice } from '../utils/businessLocationNotice';
-import { dashboardGlance } from '../utils/dashboardGlance';
+import { dashboardGlance, visitHasPassed } from '../utils/dashboardGlance';
 import { buildOpportunityCard, buildMatchReasons, availabilityCoversRequest } from '../utils/businessOpportunityCard';
 import { matchFitLine } from '../utils/matchFitLine';
 import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardAvailabilityText, requestedWindowDefaults } from '../utils/quickOfferResponse';
@@ -554,6 +554,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const suggestedOfferType = useMemo(() => bestAcceptedOfferType(offerTypeAcceptance), [offerTypeAcceptance]);
   const [respondingOpportunityId, setRespondingOpportunityId] = useState(null);
   const [cancellingReservationOfferId, setCancellingReservationOfferId] = useState(null);
+  // Visits this business marked "Didn't show up" (offer ids); they leave the visits list. Analysis only.
+  const [noShowIds, setNoShowIds] = useState(() => new Set());
+  const [markingNoShowId, setMarkingNoShowId] = useState(null);
   const [offerModalRequestId, setOfferModalRequestId] = useState(null);
   // Phase 3 -- which real Signature Experience (if any) the currently-open
   // offer was built from, so it's actually recorded on submit and can feed
@@ -1895,6 +1898,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     try {
       const results = await getBusinessOpportunities(partnerId);
       setOpportunities(results);
+      getMyBusinessNoShows().then(setNoShowIds).catch(() => {});
     } catch (e) {
       // Non-fatal -- the rest of the dashboard already loaded independently.
     }
@@ -2437,6 +2441,24 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // through" -- mirrors BusinessRequestDetailScreen's consumer-side action
   // over the same RPC. The RPC's own "already paid" rejection surfaces
   // here unchanged.
+  function handleMarkNoShow(offerId) {
+    Alert.alert("Mark as didn't show up?", "This is only for your records. The customer isn't notified and nothing changes for them.", [
+      { text: 'Never mind', style: 'cancel' },
+      {
+        text: "Didn't show up", onPress: async () => {
+          setMarkingNoShowId(offerId);
+          try {
+            await markBusinessNoShow(offerId);
+            setNoShowIds((prev) => new Set([...prev, offerId]));
+          } catch (e) {
+            presentRecoverableError(Alert, { what: 'mark that visit', error: e, onRetry: () => handleMarkNoShow(offerId) });
+          }
+          setMarkingNoShowId(null);
+        },
+      },
+    ]);
+  }
+
   function handleCancelReservation(offerId) {
     Alert.alert('Cancel this reservation?', 'The customer will be notified and any held spot will be released.', [
       { text: 'Never mind', style: 'cancel' },
@@ -4015,14 +4037,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <>
 {on('bookings') && (
 <>
-                {opportunities.filter((o) => o.status === 'accepted').length > 0 && (
+                {opportunities.filter((o) => o.status === 'accepted' && !noShowIds.has(o.id)).length > 0 && (
                   <View style={{ marginBottom: spacing.lg }}>
                     <Text style={styles.sectionHeader}>📅 Upcoming Nearby Visits</Text>
                     <Text style={styles.helperText}>
                       Real, confirmed visits headed your way -- accepted, not yet marked
                       complete.
                     </Text>
-                    {opportunities.filter((o) => o.status === 'accepted').map((o) => {
+                    {opportunities.filter((o) => o.status === 'accepted' && !noShowIds.has(o.id)).map((o) => {
                       const visit = describeVisit(o);
                       return (
                         <View key={o.id} style={styles.gatheringRow}>
@@ -4061,6 +4083,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                               <Text style={[styles.smallActionButtonText, { color: colors.danger }]}>Cancel Reservation</Text>
                             )}
                           </TouchableOpacity>
+                          {visitHasPassed(o) && (
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.border, backgroundColor: 'transparent', marginTop: spacing.sm, alignSelf: 'flex-start' }]}
+                              onPress={() => handleMarkNoShow(o.id)}
+                              disabled={markingNoShowId === o.id}
+                              accessibilityLabel="Mark that the customer didn't show up"
+                              accessibilityRole="button"
+                            >
+                              {markingNoShowId === o.id ? (
+                                <ActivityIndicator color={colors.textSecondary} size="small" />
+                              ) : (
+                                <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Didn't show up</Text>
+                              )}
+                            </TouchableOpacity>
+                          )}
                         </View>
                       );
                     })}

@@ -47,3 +47,23 @@ describe('dashboardGlance', () => {
     expect(dashboardGlance([], { redemptionCount: 1, estimatedAmount: 20, billingModel: 'hybrid' }, now).month[0].text).toBe('1 redemption');
   });
 });
+
+describe('visitHasPassed (when to offer "Didn\'t show up")', () => {
+  const { visitHasPassed } = require('./dashboardGlance');
+  const now = new Date(2026, 8, 27, 15, 0);
+  it('uses the accepted alternative time, then the gathering start', () => {
+    expect(visitHasPassed({ proposed_time: new Date(2026, 8, 27, 14, 0).toISOString() }, now)).toBe(true);
+    expect(visitHasPassed({ proposed_time: new Date(2026, 8, 27, 16, 0).toISOString(), business_requests: { date: '2026-09-01' } }, now)).toBe(false);
+    expect(visitHasPassed({ business_requests: { gatherings: { scheduled_at: new Date(2026, 8, 27, 13, 0).toISOString() } } }, now)).toBe(true);
+  });
+  it('a date with a start time is passed at that local time; a date alone only once the day is over', () => {
+    expect(visitHasPassed({ business_requests: { date: '2026-09-27', time_window_start: '14:30:00' } }, now)).toBe(true);
+    expect(visitHasPassed({ business_requests: { date: '2026-09-27', time_window_start: '18:00:00' } }, now)).toBe(false);
+    expect(visitHasPassed({ business_requests: { date: '2026-09-27' } }, now)).toBe(false);
+    expect(visitHasPassed({ business_requests: { date: '2026-09-26' } }, now)).toBe(true);
+  });
+  it('no time on record = never offered', () => {
+    expect(visitHasPassed({ business_requests: {} }, now)).toBe(false);
+    expect(visitHasPassed(null, now)).toBe(false);
+  });
+});
