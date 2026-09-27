@@ -209,6 +209,9 @@ export default function AskBusinessScreen({ navigation, route }) {
   // as toDateParam() itself now treats them as equivalent.
   const rawPrefillDateWindow = route.params?.prefillDateWindow;
   const normalizedPrefillDateWindow = rawPrefillDateWindow === 'tonight' || rawPrefillDateWindow === 'now' ? 'today' : rawPrefillDateWindow;
+  // Item 110: "tonight" is today's date (what is sent), but the chip says what the person said.
+  const saidTonight = rawPrefillDateWindow === 'tonight';
+  const dateOptionLabel = (d) => (d.key === 'today' && saidTonight ? 'Tonight' : d.label);
   // Item 106: unanswered (null) unless the person's words gave a day; sending asks "What day?" once (utils/askMissing.js).
   const [dateWindow, setDateWindow] = useState(normalizedPrefillDateWindow || null);
   // P0 #2 fix: a genuinely picked date, independent of the preset chips --
@@ -531,7 +534,7 @@ export default function AskBusinessScreen({ navigation, route }) {
       // dateWindow can hold PICK_DATE_KEY, which isn't in DATE_OPTIONS.
       const dateLabel = dateWindow === PICK_DATE_KEY && pickedDate
         ? pickedDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
-        : DATE_OPTIONS.find((d) => d.key === dateWindow)?.label;
+        : (() => { const d = DATE_OPTIONS.find((o) => o.key === dateWindow); return d ? dateOptionLabel(d) : null; })();
       if (dateLabel) recapParts.push(dateLabel);
     }
     if (!gatheringId && !matchId && partySize.trim()) recapParts.push(countLabel(partySize.trim(), 'person', 'people') ?? `${partySize.trim()} people`);
@@ -655,10 +658,10 @@ export default function AskBusinessScreen({ navigation, route }) {
                       setPickedDate(null);
                       setDateWindow(d.key);
                     }}
-                    accessibilityLabel={d.label}
+                    accessibilityLabel={dateOptionLabel(d)}
                     accessibilityRole="button"
                   >
-                    <Text style={[styles.chipText, dateWindow === d.key && styles.chipTextSelected]}>{d.label}</Text>
+                    <Text style={[styles.chipText, dateWindow === d.key && styles.chipTextSelected]}>{dateOptionLabel(d)}</Text>
                   </TouchableOpacity>
                 ))}
                 <TouchableOpacity

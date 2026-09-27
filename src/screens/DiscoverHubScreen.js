@@ -32,6 +32,7 @@ import { getSocialForecast } from '../services/homeDashboard';
 // the one shared client-side definition of this app's connected set.
 import { filterToMyConnections } from '../services/connections';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
+import { askBusinessFromAsk } from '../services/askToBusiness';
 import { runIntentSearch, navigateToIntentResultItem } from '../services/intentResolver';
 import { recordTypedAsk } from '../services/typedAskAudit';
 import { refineTypedAsk, narrowTypedAsk, restoreDiscoverAsk } from '../services/askRefine';
@@ -2571,6 +2572,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 intentSearch.items.map(renderIntentSearchResultRow)
               )}
               {/* Item 109: nothing here fits -> Create starts from this ask as it stands (what, when, who incl. a chip). */}
+              {/* Item 110: ask businesses with what was already said (what, how many, which day). */}
+              <TouchableOpacity
+                onPress={() => askBusinessFromAsk(navigation, { classifyResult: intentSearch.classifyResult, typedText: intentSearch.typedText ?? searchQuery.trim(), submissionId: intentSearch.submissionId })}
+                accessibilityLabel="Ask nearby businesses"
+                accessibilityRole="button"
+              >
+                <Text style={styles.emptyActionText}>Ask Nearby Businesses →</Text>
+              </TouchableOpacity>
               <TouchableOpacity onPress={createFromAsk} accessibilityLabel="Create it yourself" accessibilityRole="button">
                 <Text style={styles.emptyActionText}>None of these? Create it yourself →</Text>
               </TouchableOpacity>

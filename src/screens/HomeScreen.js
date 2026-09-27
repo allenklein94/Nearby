@@ -9,6 +9,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
 import { setGatheringInterested, getInterestedDemandPrefs, getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getMyPositiveExperienceSignals, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
+import { askBusinessFromAsk } from '../services/askToBusiness';
 import { resolveClassifiedAsk, resolveCommunityIntent, navigateToIntentResultItem } from '../services/intentResolver';
 import { submitSurprise, shuffleSurprise, navigateToSurprisePick, pickForMeKind } from '../services/surpriseMe';
 import { detectFriendDiscoveryIntent, intentPhaseCaption } from '../services/intentResolverScoring';
@@ -1435,31 +1436,8 @@ export default function HomeScreen({ navigation }) {
   // panel, and -- per CLAUDE.md's C1 -- the non-empty ranked-results panel
   // too) -- record+navigate only, no state-clearing responsibility of its
   // own, since the two callers clear two different state vars.
-  function goAskBusiness({ classifyResult, typedText, submissionId }) {
-    recordIntentSelection({
-      rawText: typedText,
-      category: classifyResult.category ?? null,
-      dateWindow: classifyResult.dateWindow ?? null,
-      resultType: 'created_new',
-      resultId: null,
-      resultTitle: typedText,
-      submissionId,
-    });
-    navigation.navigate('AskBusiness', {
-      prefillText: typedText,
-      prefillCategory: classifyResult.category ?? null,
-      prefillPartySize: classifyResult.partySize ?? null,
-      prefillBudgetMax: classifyResult.budgetMax ?? null,
-      prefillDateWindow: classifyResult.dateWindow ?? null,
-      // Intent engine vision, first increment (2026-09-06): create-assistant
-      // already extracts this from the same typed text every other prefill
-      // field above comes from -- just never threaded through to this
-      // screen before. Still only a prefill, same as every field above --
-      // AskBusinessScreen's own occasion chips remain fully editable/
-      // deselectable, this never silently commits anything.
-      prefillOccasion: classifyResult.occasion ?? null,
-      prefillSubmissionId: submissionId ?? null,
-    });
+  function goAskBusiness(ask) {
+    askBusinessFromAsk(navigation, ask); // item 110: one implementation, shared with Discover
   }
 
   function handleAskBusiness() {
