@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { sanitizeInterestGroups } from '../constants/interestGraph';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
-import { QUICK_INTERESTS, onboardingInterestSelection } from '../constants/onboardingInterests';
+import { QUICK_INTERESTS, onboardingInterestSelection, migrateOnboardingDraft, savedOnboardingInterests, ONBOARDING_DRAFT_VERSION } from '../constants/onboardingInterests';
 import { ONBOARDING_GOALS, LOOKING_FOR_OPTIONS, motivationsFromAnswers } from '../constants/onboardingGoals';
 
 // This screen runs before signup — there's no account yet to save
@@ -37,6 +37,10 @@ export default function OnboardingQuestionsScreen({ navigation }) {
   const [quickKeys, setQuickKeys] = useState([]);
   const [anythingElse, setAnythingElse] = useState('');
   const [excluded, setExcluded] = useState([]); // understood items the person tapped off (tags or group keys)
+  // Selections carried over from the previous onboarding version's draft (never dropped; removable like any chip).
+  const [earlierTags, setEarlierTags] = useState([]);
+  const [earlierGroups, setEarlierGroups] = useState([]);
+  const [earlierOff, setEarlierOff] = useState([]);
   const [saving, setSaving] = useState(false);
 
   const hydrated = useRef(false);
@@ -45,13 +49,17 @@ export default function OnboardingQuestionsScreen({ navigation }) {
     AsyncStorage.getItem(ONBOARDING_DRAFT_KEY)
       .then((raw) => {
         if (cancelled || !raw) return;
-        const d = JSON.parse(raw);
-        if (Array.isArray(d.goals)) setGoals(d.goals);
-        if (typeof d.lookingFor === 'string') setLookingFor(d.lookingFor);
-        if (typeof d.comfortLevel === 'string') setComfortLevel(d.comfortLevel);
-        if (Array.isArray(d.quickKeys)) setQuickKeys(d.quickKeys.filter((k) => QUICK_INTERESTS.some((q) => q.key === k)));
-        if (typeof d.anythingElse === 'string') setAnythingElse(d.anythingElse);
-        if (Array.isArray(d.excluded)) setExcluded(d.excluded);
+        // Old-format drafts (groupKeys/tags) are migrated, never discarded (constants/onboardingInterests.js).
+        const d = migrateOnboardingDraft(JSON.parse(raw));
+        setGoals(d.goals);
+        setLookingFor(d.lookingFor);
+        setComfortLevel(d.comfortLevel);
+        setQuickKeys(d.quickKeys);
+        setAnythingElse(d.anythingElse);
+        setExcluded(d.excluded);
+        setEarlierTags(d.earlierTags);
+        setEarlierGroups(d.earlierGroups);
+        setEarlierOff(d.earlierOff);
       })
       .catch(() => {})
       .finally(() => { hydrated.current = true; });
@@ -59,8 +67,10 @@ export default function OnboardingQuestionsScreen({ navigation }) {
   }, []);
   useEffect(() => {
     if (!hydrated.current) return;
-    AsyncStorage.setItem(ONBOARDING_DRAFT_KEY, JSON.stringify({ goals, lookingFor, comfortLevel, quickKeys, anythingElse, excluded })).catch(() => {});
-  }, [goals, lookingFor, comfortLevel, quickKeys, anythingElse, excluded]);
+    AsyncStorage.setItem(ONBOARDING_DRAFT_KEY, JSON.stringify({
+      v: ONBOARDING_DRAFT_VERSION, goals, lookingFor, comfortLevel, quickKeys, anythingElse, excluded, earlierTags, earlierGroups, earlierOff,
+    })).catch(() => {});
+  }, [goals, lookingFor, comfortLevel, quickKeys, anythingElse, excluded, earlierTags, earlierGroups, earlierOff]);
 
   function toggleGoal(label) {
     setGoals((prev) => (prev.includes(label) ? prev.filter((g) => g !== label) : [...prev, label]));
@@ -71,11 +81,10 @@ export default function OnboardingQuestionsScreen({ navigation }) {
   }
 
   // What will be saved: the quick picks + the words, mapped to canonical tags/groups, minus anything tapped off.
-  // A tap-off only removes what the WORDS added; a quick pick stays picked.
-  const quickOnly = onboardingInterestSelection(quickKeys, '');
+  // One function decides what is saved (quick picks + kept earlier selections + kept words).
   const extraOnly = onboardingInterestSelection([], anythingElse);
-  const savedTags = [...new Set([...quickOnly.tags, ...extraOnly.tags.filter((t) => !excluded.includes(t))])];
-  const savedGroups = [...new Set([...quickOnly.groups, ...extraOnly.groups.filter((g) => !excluded.includes(g))])];
+  const { tags: savedTags, groups: savedGroups } = savedOnboardingInterests({ quickKeys, anythingElse, excluded, earlierTags, earlierGroups, earlierOff });
+  const earlierItems = [...earlierTags.map((t) => ({ key: t, label: t })), ...earlierGroups.map((g) => ({ key: g, label: CATEGORY_GROUPS.find((x) => x.key === g)?.label ?? g }))];
   const groupLabel = (key) => CATEGORY_GROUPS.find((g) => g.key === key)?.label ?? key;
 
   // Flow: what Nearby should help with -> what you're into (a few quick picks) -> anything else (optional words) -> what
@@ -167,6 +176,28 @@ export default function OnboardingQuestionsScreen({ navigation }) {
                 );
               })}
             </View>
+            {earlierItems.length > 0 && (
+              <>
+                <Text style={styles.understoodLabel}>You picked these earlier. Tap one to leave it out.</Text>
+                <View style={styles.grid}>
+                  {earlierItems.map((item) => {
+                    const kept = !earlierOff.includes(item.key);
+                    return (
+                      <TouchableOpacity
+                        key={`earlier-${item.key}`}
+                        style={[styles.chip, kept && styles.chipSelected]}
+                        onPress={() => setEarlierOff((prev) => (kept ? [...prev, item.key] : prev.filter((k) => k !== item.key)))}
+                        accessibilityLabel={kept ? `${item.label}, kept. Tap to leave it out` : `${item.label}, left out`}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: kept }}
+                      >
+                        <Text style={[styles.chipText, kept && styles.chipTextSelected]}>{kept ? `${item.label} ✓` : item.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
           </>
         )}
 
@@ -186,7 +217,7 @@ export default function OnboardingQuestionsScreen({ navigation }) {
             />
             {(extraOnly.tags.length > 0 || extraOnly.groups.length > 0) && (
               <>
-                <Text style={styles.understoodLabel}>We'll add these. Tap one to leave it out.</Text>
+                <Text style={styles.understoodLabel}>These interests will be added. Tap one to leave it out.</Text>
                 <View style={styles.grid}>
                   {[...extraOnly.tags.map((t) => ({ key: t, label: t })), ...extraOnly.groups.map((g) => ({ key: g, label: groupLabel(g) }))].map((item) => {
                     const kept = !excluded.includes(item.key);
@@ -208,7 +239,7 @@ export default function OnboardingQuestionsScreen({ navigation }) {
             )}
             {extraOnly.unmatched.length > 0 && (
               <Text style={styles.unmatchedNote}>
-                Not matched yet: {extraOnly.unmatched.join(', ')}. You can add interests any time in Settings.
+                Not matched yet: {extraOnly.unmatched.join(', ')}. You can add more interests any time from your profile.
               </Text>
             )}
           </>

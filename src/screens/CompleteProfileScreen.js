@@ -363,7 +363,7 @@ export default function CompleteProfileScreen() {
         {stepKey === 'interests' && (
           <>
             <Text style={styles.label}>Your interests (Optional)</Text>
-            <Text style={styles.interestsHelper}>Helps us show you gatherings and people you'll actually click with. Tap to change; add more any time in Settings.</Text>
+            <Text style={styles.interestsHelper}>Helps us show you gatherings and people you'll actually click with. Tap to change; add more any time from your profile.</Text>
             <View style={styles.chipsWrap}>
               {interestChoices.map((interest) => {
                 const selected = interests.includes(interest);
