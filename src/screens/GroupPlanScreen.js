@@ -1,3 +1,4 @@
+import { recordAcceptBehavior } from '../services/behaviorSignals';
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { presentRecoverableError } from '../utils/recoverableError';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
@@ -291,6 +292,9 @@ export default function GroupPlanScreen({ navigation, route }) {
           // (allConfirmed) -- an interim "N of M confirmed" call isn't
           // an outcome yet, it's still in progress.
           (result) => {
+            // Item 95: my own confirmation is a deliberate act (private ranking signal, never a profile edit).
+            const confirmedOffer = offers.find((o) => o.id === offerId);
+            if (result) recordAcceptBehavior(confirmedOffer?.request_id ?? offerId, proposal.category);
             if (!result?.allConfirmed) return;
             flashSuccess('reservation');
             const offer = offers.find((o) => o.id === offerId);

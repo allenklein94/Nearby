@@ -1,3 +1,4 @@
+import { recordAcceptBehavior } from '../services/behaviorSignals';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
@@ -652,6 +653,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     setActingOfferId(offerId);
     try {
       const result = await acceptBusinessOffer(offerId);
+      recordAcceptBehavior(request?.id, request?.category); // item 95: private ranking signal, never a profile edit
       await load();
       setJustAccepted(true);
       clearTimeout(justAcceptedTimerRef.current);

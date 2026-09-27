@@ -55,6 +55,7 @@ import { becauseYouLikeReason, categorizeReasonText, REASON_CATEGORIES } from '.
 import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
 import { splitTonight } from '../utils/categoryTonight';
 import { buildDiscoverSections } from '../utils/discoverSections';
+import { recordSearchBehavior } from '../services/behaviorSignals';
 import { searchTopic, matchBusinesses, friendsLineForTopic } from '../utils/unifiedSearch';
 import { formatDistance } from '../utils/formatDistance';
 import { searchResultTabs, topResultKinds, effectiveResultTab, resultKindView } from '../utils/searchResultTabs';
@@ -689,6 +690,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           setSearchedCommunities(communityResults.filter((c) => !joinedCommunityIdsRef.current.has(c.id)));
           setSearchedOffers(offerResults);
           setSearchedTerm(term);
+          recordSearchBehavior(term); // item 95: private ranking signal (category only), never a profile edit
         }
       } catch (e) {
         console.error('Discover search failed', e);

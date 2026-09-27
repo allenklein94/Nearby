@@ -9,7 +9,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { deleteAccount } from '../services/account';
 import { requestDataExport } from '../services/dataExport';
 import { clearNotificationArea } from '../services/notificationArea';
-import { clearMyBehaviorHistory } from '../services/behaviorSignals';
+import { clearMyBehaviorHistory, getMyBehaviorCategories, forgetBehaviorCategory, addLearnedInterestToProfile } from '../services/behaviorSignals';
+import { learnedAffinities } from '../utils/learnedAffinity';
 import RecommendationCustomizePanel from '../components/RecommendationCustomizePanel';
 import { ONBOARDING_INTEREST_GROUPS, sanitizeInterestGroups } from '../constants/interestGraph';
 import { ONBOARDING_GOALS, goalLabelsFrom, motivationsWithGoals } from '../constants/onboardingGoals';
@@ -106,6 +107,10 @@ export default function SettingsScreen({ navigation, route }) {
   // expandedRecPanel holding which one (if any) is open.
   const [expandedRecPanel, setExpandedRecPanel] = useState(null); // null | 'things_to_do' | 'nearby_opportunities'
   const [myInterests, setMyInterests] = useState([]);
+  // Item 95: what Nearby has learned from activity (ranking only), shown back with Forget / Add to my interests.
+  const [behaviorRows, setBehaviorRows] = useState([]);
+  const learned = learnedAffinities(behaviorRows, myInterests);
+  const loadLearned = () => getMyBehaviorCategories().then(setBehaviorRows).catch(() => setBehaviorRows([]));
   const [ttdFrequency, setTtdFrequency] = useState('few_per_day');
   const [ttdDistance, setTtdDistance] = useState(15);
   const [ttdTimePref, setTtdTimePref] = useState('anytime');
@@ -201,6 +206,7 @@ export default function SettingsScreen({ navigation, route }) {
       setNotifyBusiness(data.notify_business ?? true);
       setNotifyCommunity(data.notify_community ?? true);
       setMyInterests(data.interests ?? []);
+      loadLearned();
       setMotivations(data.onboarding_motivations ?? []);
       setInterestGroups(data.interest_groups ?? []);
       setTtdFrequency(data.notify_things_to_do_frequency ?? 'few_per_day');
@@ -866,11 +872,41 @@ export default function SettingsScreen({ navigation, route }) {
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.settingLabel}>Activity that shapes your picks</Text>
-              <Text style={styles.helperText}>Nearby notices which kinds of gatherings and communities you open, create and join, only to order what you see. It's private, kept 90 days, and never shared with anyone or any business.</Text>
+              <Text style={styles.helperText}>Nearby notices which kinds of things you open, create, join, search for and book, only to order what you see. It never changes your interests on its own. It's private, kept 90 days, and never shared with anyone or any business.</Text>
+              {learned.length > 0 && (
+                <View style={{ marginTop: spacing.sm }}>
+                  <Text style={styles.settingLabel}>What Nearby has noticed</Text>
+                  {learned.map((a) => (
+                    <View key={a.category} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, gap: spacing.sm }}>
+                      <Text style={[styles.helperText, { flex: 1 }]}>{a.category}{a.inProfile ? ' · already in your interests' : ''}</Text>
+                      {!a.inProfile && (
+                        <TouchableOpacity
+                          onPress={() => addLearnedInterestToProfile(a.category)
+                            .then((next) => { setMyInterests(next); showSuccessToast('Added to your interests', `${a.category} is now on your profile.`); })
+                            .catch((e) => presentRecoverableError(Alert, { what: 'add that interest', error: e }))}
+                          accessibilityLabel={`Add ${a.category} to my interests`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.customizeLinkText}>Add to my interests</Text>
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity
+                        onPress={() => forgetBehaviorCategory(a.category)
+                          .then(() => { loadLearned(); showSuccessToast('Forgotten', `Nearby will stop using your ${a.category} activity.`); })
+                          .catch((e) => presentRecoverableError(Alert, { what: 'forget that', error: e }))}
+                        accessibilityLabel={`Forget my ${a.category} activity`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.customizeLinkText}>Forget</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
               <TouchableOpacity
                 style={styles.customizeLink}
                 onPress={() => clearMyBehaviorHistory()
-                  .then(() => showSuccessToast('Activity cleared', 'Your picks will rely on what you told us until new activity builds up.'))
+                  .then(() => { setBehaviorRows([]); return showSuccessToast('Activity cleared', 'Your picks will rely on what you told us until new activity builds up.'); })
                   .catch((e) => presentRecoverableError(Alert, { what: 'complete that', error: e }))}
                 accessibilityLabel="Clear my activity history"
                 accessibilityRole="button"

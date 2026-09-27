@@ -1,3 +1,4 @@
+import { recordSearchBehavior } from './behaviorSignals';
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
@@ -949,6 +950,7 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
   // here, whichever surface calls this. Callers route them to the Surprise Me engine first; this is the backstop.
   const pick = pickForMeKind(typedText);
   if (pick) return { outcome: 'pick_for_me', pick, typedText, items: [], experience: null };
+  recordSearchBehavior(typedText); // item 95: a private ranking signal (category only), never a profile edit
   onPhase?.({ phase: 'understanding' });
   const classifyResult = await classifyCreateRequest(typedText);
   onPhase?.({ phase: 'finding', classifyResult });
