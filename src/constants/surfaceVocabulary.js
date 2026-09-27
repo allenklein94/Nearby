@@ -26,12 +26,27 @@ export const SURFACES = {
   trendingNearYou: {
     label: 'Trending',
     means: 'Things gaining real engagement locally: gatherings with at least TRENDING_ATTENDANCE_MIN (5) approved attendees. No attendance, no "trending".',
-    where: 'Gatherings "Trending" chip, Discover trending, Home as a reason on a card.',
+    where: 'Gatherings "Trending" chip, Discover "Trending Near You" section, Home as a reason on a card.',
   },
   thingsToDo: {
     label: 'Things to Do',
     means: 'Available activities you can search or browse by what you are looking for and what you like.',
     where: 'Discover "Things to Do" tab.',
+  },
+  tonight: {
+    label: 'Tonight',
+    means: 'Gatherings still to start today, every one of them with the TONIGHT time badge (evening). If any is a daytime start the same section reads "Today" instead.',
+    where: 'Discover All view (utils/discoverSections.js).',
+  },
+  becauseYouLike: {
+    label: 'Because you like',
+    means: 'Nearby gatherings in one interest the person DECLARED (never an interest inferred from behavior alone), named in the heading.',
+    where: 'Discover All view (utils/discoverSections.js).',
+  },
+  friendsAreInto: {
+    label: 'Friends are into',
+    means: 'Nearby gatherings in a tag the person\'s accepted friends declared (get_friends_interested_in); the heading names the friends or their count ("Sam is into Coffee").',
+    where: 'Discover All view (utils/discoverSections.js).',
   },
   bestPick: {
     label: 'Best Pick',

@@ -1,6 +1,6 @@
 // Discover's category rail (owner item 34, 2026-09-21). The BACKEND keeps every major (19 today: the owner's 16 plus
 // Health & Personal Care, Education & Classes and Attractions, which stay majors until supply says otherwise); the
-// UI must not read as a directory. Discover leads with a short "What are you into?" rail and tucks the long tail
+// UI must not read as a directory. Discover leads with a short "Browse" rail (item 91: right under the search box, above the contextual sections) and tucks the long tail
 // behind "More", which expands in place (global rule 5: exploring populates inline). Labels here are display-only
 // shorthands; the tapped group is always the real canonical group.
 export const DISCOVER_RAIL_PRIMARY = [

@@ -54,6 +54,7 @@ import { getMyFriends } from '../services/friends';
 import { becauseYouLikeReason, categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
 import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
 import { splitTonight } from '../utils/categoryTonight';
+import { buildDiscoverSections } from '../utils/discoverSections';
 import { matchesDateFilter } from '../utils/gatheringDateFilter';
 import { lightenHex } from '../utils/colorUtils';
 import GatheringsMapView from '../components/GatheringsMapView';
@@ -101,7 +102,6 @@ const NOTABLE_DISPLAY_CAP = 6;
 // cap with a real "see more" link to the dedicated Gatherings screen
 // (reusing its existing initialDateFilter param) once there's genuinely
 // more than the cap.
-const HAPPENING_NOW_CAP = 6;
 const TIME_SECTION_CAP = 4;
 
 // A lightened variant of a category's own real PALETTE color
@@ -861,33 +861,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // twice (same "don't repeat what a more prominent section already
   // showed" principle dedupedGatherings below already established for
   // notable-vs-flat).
-  const happeningNowGatherings = isAll && !isSearching
-    ? filteredGatherings
-        .filter((g) => matchesDateFilter(g.scheduled_at, 'now') && !topCategoryIds.has(g.id))
-        .map(scoreGathering)
-        .sort(byDistance)
-        .slice(0, HAPPENING_NOW_CAP)
+  // Owner item 91: one dedupe chain for every contextual section on the All view (utils/discoverSections.js).
+  const discoverSections = isAll && !isSearching
+    ? buildDiscoverSections({
+        gatherings: filteredGatherings,
+        score: scoreGathering,
+        declared: personalization.declared,
+        friendInterestByTag,
+        excludeIds: topCategoryIds,
+      })
     : [];
-  const happeningNowIds = new Set(happeningNowGatherings.map((g) => g.id));
-
-  const todayQualifying = isAll && !isSearching
-    ? filteredGatherings.filter((g) => matchesDateFilter(g.scheduled_at, 'today') && !topCategoryIds.has(g.id) && !happeningNowIds.has(g.id))
-    : [];
-  const todayGatherings = todayQualifying
-    .map(scoreGathering)
-    .sort(byScoreThenDistance)
-    .slice(0, TIME_SECTION_CAP);
-  const todayHasMore = todayQualifying.length > TIME_SECTION_CAP;
-  const todayIds = new Set(todayGatherings.map((g) => g.id));
-
-  const weekendQualifying = isAll && !isSearching
-    ? filteredGatherings.filter((g) => matchesDateFilter(g.scheduled_at, 'weekend') && !topCategoryIds.has(g.id) && !happeningNowIds.has(g.id) && !todayIds.has(g.id))
-    : [];
-  const weekendGatherings = weekendQualifying
-    .map(scoreGathering)
-    .sort(byScoreThenDistance)
-    .slice(0, TIME_SECTION_CAP);
-  const weekendHasMore = weekendQualifying.length > TIME_SECTION_CAP;
 
   // Phase 8 section F -- the expanded context's own real content, filtered
   // out of what this screen already fetched. No new gatherings/offers query
@@ -1649,11 +1632,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
         {mode === 'things' && !expandedContext && (
           <>
+            <Text style={styles.searchPrompt} accessibilityRole="header">What are you looking for?</Text>
             <View style={styles.searchBarWrap}>
               <Text style={styles.searchIcon}>🔍</Text>
               <TextInput
                 style={styles.searchInput}
-                placeholder='Search, or try "something fun Saturday"'
+                placeholder='Search anything, or try "something fun Saturday"'
                 placeholderTextColor={colors.textTertiary}
                 value={searchQuery}
                 onChangeText={(t) => {
@@ -2083,6 +2067,48 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </View>
           )}
 
+          {/* Owner item 91: search -> Browse -> contextual sections. */}
+          {/* Categories answers "what," not "when" -- a real browse
+              entry point over this codebase's own single canonical 19-
+              group taxonomy (constants/gatheringCategories.js), the same
+              one gatherings/communities/business categorization already
+              share, not a second invented list. Tapping a group reuses
+              the exact same expand-in-place mechanism (Phase 8 section F)
+              a notable gathering tile already opens, just scoped to the
+              whole group's tags instead of one gathering's own tag. */}
+          {isAll && !isSearching && (
+            <>
+              <Text style={styles.sectionHeader}>Browse</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
+                {[...rail.primary, ...(showMoreCategories ? rail.more : [])].map(({ group, label }) => (
+                  <TouchableOpacity
+                    key={group.key}
+                    style={styles.categoryChip}
+                    onPress={() => openCategoryContext(group)}
+                    activeOpacity={0.85}
+                    accessibilityLabel={label}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.categoryChipIcon}>{group.icon}</Text>
+                    <Text style={styles.categoryChipText}>{label}</Text>
+                  </TouchableOpacity>
+                ))}
+                {rail.more.length > 0 ? (
+                  <TouchableOpacity
+                    style={styles.categoryChip}
+                    onPress={() => { animateLayout(); setShowMoreCategories((v) => !v); }}
+                    activeOpacity={0.85}
+                    accessibilityLabel={showMoreCategories ? 'Show fewer categories' : 'More categories'}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: showMoreCategories }}
+                  >
+                    <Text style={styles.categoryChipText}>{showMoreCategories ? 'Less' : 'More'}</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </ScrollView>
+            </>
+          )}
+
           {/* Item 46 (CLAUDE.md, "personalization should determine what
               appears first"): goes first, ahead of Happening Now/Today/
               This Weekend, and only when it's genuinely earned -- a real
@@ -2123,83 +2149,30 @@ export default function DiscoverHubScreen({ navigation, route }) {
               </TouchableOpacity>
             </View>
           )}
-          {happeningNowGatherings.length > 0 && (
-            <>
-              <Text style={styles.sectionHeader}>⚡ Happening Now</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
-                {happeningNowGatherings.map(renderHappeningNowTile)}
-              </ScrollView>
-            </>
-          )}
-
-          {todayGatherings.length > 0 && (
-            <>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderRowLabel}>🌅 Today</Text>
-                {todayHasMore && (
-                  <TouchableOpacity onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'today' })} accessibilityLabel="See all happening today" accessibilityRole="button">
-                    <Text style={styles.seeAllInline}>See all →</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              {todayGatherings.map(renderGatheringTile)}
-            </>
-          )}
-
-          {weekendGatherings.length > 0 && (
-            <>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderRowLabel}>🌴 This Weekend</Text>
-                {weekendHasMore && (
-                  <TouchableOpacity onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'weekend' })} accessibilityLabel="See all this weekend" accessibilityRole="button">
-                    <Text style={styles.seeAllInline}>See all →</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              {weekendGatherings.map(renderGatheringTile)}
-            </>
-          )}
-
-          {/* Categories answers "what," not "when" -- a real browse
-              entry point over this codebase's own single canonical 19-
-              group taxonomy (constants/gatheringCategories.js), the same
-              one gatherings/communities/business categorization already
-              share, not a second invented list. Tapping a group reuses
-              the exact same expand-in-place mechanism (Phase 8 section F)
-              a notable gathering tile already opens, just scoped to the
-              whole group's tags instead of one gathering's own tag. */}
-          {isAll && !isSearching && (
-            <>
-              <Text style={styles.sectionHeader}>What are you into?</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
-                {[...rail.primary, ...(showMoreCategories ? rail.more : [])].map(({ group, label }) => (
-                  <TouchableOpacity
-                    key={group.key}
-                    style={styles.categoryChip}
-                    onPress={() => openCategoryContext(group)}
-                    activeOpacity={0.85}
-                    accessibilityLabel={label}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.categoryChipIcon}>{group.icon}</Text>
-                    <Text style={styles.categoryChipText}>{label}</Text>
-                  </TouchableOpacity>
-                ))}
-                {rail.more.length > 0 ? (
-                  <TouchableOpacity
-                    style={styles.categoryChip}
-                    onPress={() => { animateLayout(); setShowMoreCategories((v) => !v); }}
-                    activeOpacity={0.85}
-                    accessibilityLabel={showMoreCategories ? 'Show fewer categories' : 'More categories'}
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded: showMoreCategories }}
-                  >
-                    <Text style={styles.categoryChipText}>{showMoreCategories ? 'Less' : 'More'}</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </ScrollView>
-            </>
-          )}
+          {discoverSections.map((section) => (
+            <React.Fragment key={section.key}>
+              {section.key === 'now' ? (
+                <>
+                  <Text style={styles.sectionHeader}>{section.title}</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
+                    {section.items.map(renderHappeningNowTile)}
+                  </ScrollView>
+                </>
+              ) : (
+                <>
+                  <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionHeaderRowLabel} numberOfLines={1}>{section.title}</Text>
+                    {section.hasMore && section.dateFilter ? (
+                      <TouchableOpacity onPress={() => navigation.navigate('Gatherings', { initialDateFilter: section.dateFilter })} accessibilityLabel={`See all: ${section.title}`} accessibilityRole="button">
+                        <Text style={styles.seeAllInline}>See all →</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                  {section.items.map(renderGatheringTile)}
+                </>
+              )}
+            </React.Fragment>
+          ))}
 
           {/* Item 39 ("search should understand the same language as the
               intent box"): a real natural-language understanding of the
@@ -2760,6 +2733,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   // same horizontal padding as the outer `header`/`scrollContent` blocks
   // so it lines up visually.
   peopleFixedArea: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  searchPrompt: { fontSize: 17, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.xs },
   // Item 44: the screen's one visual hero -- taller, a slightly heavier
   // border, and a subtle card shadow, so it reads as the obvious place for
   // the eye to land instead of one pill among several similar ones.
