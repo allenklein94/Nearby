@@ -14,6 +14,8 @@ export const EMPTY_STATES = {
   open_now_none: { title: 'Nothing confirmed open right now', body: 'Only places with known hours or live availability can show here. Turn off Open now to see everything nearby.' },
   // Cuisine chip in the Restaurants view (item 76): an exact declared-cuisine filter found nothing in view.
   cuisine_none: { title: 'No {cuisine} places here yet', body: 'Only businesses that list {cuisine} as their cuisine show here. Clear the filter to see every restaurant.' },
+  // Item 107: a refinement chip on Home's typed ask left nothing.
+  refine_none: { title: 'Nothing nearby fits that yet', body: 'Tap the chip again to go back to all the ideas.' },
   surprise_none: { title: 'Nothing to pick from nearby right now', body: 'Try another time or place in your words, or clear the search to see everything around you.' },
   places_search: { title: 'No places match "{query}"', body: 'Try a different word, or clear the search.' },
   // Item 80 sweep: the rest of the bare-fragment empties.

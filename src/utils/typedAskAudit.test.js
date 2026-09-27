@@ -141,7 +141,7 @@ describe('wiring and boundaries', () => {
   const discover = read('../screens/DiscoverHubScreen.js');
 
   it('Home and Discover record through the one writer, and link taps to the snapshot row', () => {
-    expect(home.match(/recordTypedAsk\('home'/g).length).toBe(2); // community + resolver paths
+    expect(home.match(/recordTypedAsk\('home'/g).length).toBe(3); // community + resolver paths + refinement chips (item 107)
     expect(discover).toMatch(/recordTypedAsk\('discover', result\)/);
     for (const screen of [home, discover]) {
       expect(screen).toMatch(/snapshotId: shown\?\.snapshotId \?\? null/);

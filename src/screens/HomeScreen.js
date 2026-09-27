@@ -13,6 +13,8 @@ import { resolveIntent, resolveCommunityIntent, navigateToIntentResultItem, buil
 import { submitSurprise, shuffleSurprise, navigateToSurprisePick, pickForMeKind } from '../services/surpriseMe';
 import { detectFriendDiscoveryIntent, intentPhaseCaption } from '../services/intentResolverScoring';
 import { recordTypedAsk } from '../services/typedAskAudit';
+import { refinementChips, applyRefinement, canRefine } from '../utils/askRefinements';
+import EmptyCopy from '../components/EmptyCopy';
 import { remainingIntentItems, groupIntentResultsByType, displayedPosition } from '../utils/typedAskAudit';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/businessFulfillment';
@@ -240,6 +242,7 @@ export default function HomeScreen({ navigation }) {
   const [quickPicksEditVisible, setQuickPicksEditVisible] = useState(false);
   const [intentText, setIntentText] = useState('');
   const [intentThinking, setIntentThinking] = useState(false);
+  const [intentRefining, setIntentRefining] = useState(false);
   const [intentPhase, setIntentPhase] = useState(null); // Item 135: real pipeline phase
   const [intentResults, setIntentResults] = useState(null);
   const [intentEmptyFallback, setIntentEmptyFallback] = useState(null);
@@ -998,19 +1001,7 @@ export default function HomeScreen({ navigation }) {
         // category "recommendation recipe" section (assembleExperience(),
         // experienceAssembly.js) -- null whenever there's no real occasion,
         // no template for it, or no genuine matching inventory.
-        const { items: resolved, experience, openEndedNote, audit } = await resolveIntent({ category: result.category, dateWindow: result.dateWindow, rawText: typedText, partySize: result.partySize ?? null, priceLevel: result.priceLevel ?? null, partyType: result.partyType ?? null, attributes: result.attributes ?? [], cuisine: result.cuisine ?? null, occasion: result.occasion ?? null });
-        // P1 remediation (CLAUDE.md, Aug 28 Full Coherence Audit,
-        // Scenario D): a real, deterministic person-shaped-phrase check,
-        // never a fabricated resolver candidate -- appends one honest
-        // "go meet people" action alongside whatever real gatherings/
-        // communities/etc. resolveIntent() already found. Counting this
-        // toward hadAnyResult (and so skipping the "ask nearby
-        // businesses" fallback) is deliberate: a person-search ask has no
-        // honest business-ask shape, matching the no-stranger-discovery
-        // principle everywhere else this app already enforces.
-        const items = detectFriendDiscoveryIntent(typedText)
-          ? [...resolved, buildFriendDiscoveryResultItem(result.category)]
-          : resolved;
+        const { items, experience, openEndedNote, audit } = await resolveHomeAsk(result, typedText);
         const submissionId = await recordIntentSubmission({
           rawText: typedText, category: result.category ?? null, dateWindow: result.dateWindow ?? null,
           intentKind: result.intent, hadAnyResult: items.length > 0, reachedBusinessFallback: items.length === 0,
@@ -1028,6 +1019,36 @@ export default function HomeScreen({ navigation }) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleHomeIntentSubmit(overrideText) });
     }
     setIntentThinking(false);
+  }
+
+  // One search for Home's typed ask, used by the first submit and every refinement chip (item 107). Passes the stated budget
+  // too, like Discover's runIntentSearch (Home used to drop it). The friend-discovery row is appended as before (Aug 28, Scenario
+  // D): a real person-shaped-phrase check, never a fabricated resolver candidate.
+  async function resolveHomeAsk(result, typedText) {
+    const { items: resolved, experience, openEndedNote, audit } = await resolveIntent({
+      category: result.category, dateWindow: result.dateWindow, rawText: typedText, partySize: result.partySize ?? null,
+      priceLevel: result.priceLevel ?? null, budgetMax: result.budgetMax ?? null, partyType: result.partyType ?? null,
+      attributes: result.attributes ?? [], cuisine: result.cuisine ?? null, occasion: result.occasion ?? null,
+    });
+    const items = detectFriendDiscoveryIntent(typedText) ? [...resolved, buildFriendDiscoveryResultItem(result.category)] : resolved;
+    return { items, experience, openEndedNote, audit };
+  }
+
+  // Refine without restarting (item 107): same words, one value changed, results replaced in place. No AI call, no new
+  // search-log row (the refinement belongs to the same ask: the audit snapshot keeps its submission id).
+  async function handleIntentRefine(key) {
+    const prev = intentResults;
+    if (!prev || intentRefining) return;
+    const refined = applyRefinement(prev.classifyResult, key);
+    setIntentRefining(true);
+    try {
+      const next = await resolveHomeAsk(refined, prev.typedText);
+      const shown = recordTypedAsk('home', { ...next, classifyResult: refined, submissionId: prev.submissionId });
+      setIntentResults({ ...next, classifyResult: refined, typedText: prev.typedText, submissionId: prev.submissionId, shown });
+    } catch (e) {
+      presentRecoverableError(Alert, { what: 'update these ideas', error: e, onRetry: () => handleIntentRefine(key) });
+    }
+    setIntentRefining(false);
   }
 
   function handleIntentResultTap(item) {
@@ -1675,7 +1696,27 @@ export default function HomeScreen({ navigation }) {
 
           {intentResults && (
             <View style={styles.intentResults}>
-              {intentResults.items?.length > 0 && <FoundLine />}
+              {intentResults.items?.length > 0 && <FoundLine text="Got it. Here are a few ideas." />}
+              {/* Item 107: refine in place. Chips reflect what was understood; a tap re-runs the same ask with one change. */}
+              {canRefine(intentResults.classifyResult) && (
+                <View style={styles.intentRefineRow}>
+                  {refinementChips(intentResults.classifyResult).map((chip) => (
+                    <TouchableOpacity
+                      key={chip.key}
+                      style={[styles.intentRefineChip, chip.selected && styles.intentRefineChipSelected]}
+                      onPress={() => handleIntentRefine(chip.key)}
+                      disabled={intentRefining}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: chip.selected, disabled: intentRefining }}
+                      accessibilityLabel={chip.label}
+                    >
+                      <Text style={[styles.intentRefineChipText, chip.selected && styles.intentRefineChipTextSelected]}>{chip.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+              {intentRefining && <NLoader fullScreen={false} size="inline" kind="recommendations" />}
+              {!intentRefining && !(intentResults.items?.length > 0) && <EmptyCopy id="refine_none" />}
               {intentResults.items?.length > 0 && !!intentResults.openEndedNote && (
                 <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{intentResults.openEndedNote}</Text>
               )}
@@ -2735,6 +2776,11 @@ const getStyles = (colors) => StyleSheet.create({
   intentLoadingText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm },
   intentUnclearNote: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: 18 },
   intentResultsHeading: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', marginBottom: spacing.sm },
+  intentRefineRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
+  intentRefineChip: { paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
+  intentRefineChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  intentRefineChipText: { ...typography.caption, color: colors.textPrimary, fontWeight: '600' },
+  intentRefineChipTextSelected: { color: '#fff' },
   intentGroupLabel: { color: colors.textSecondary, fontWeight: '700', fontSize: 12, marginBottom: 4 },
   intentResultRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
   intentResultIcon: { marginRight: spacing.sm },
