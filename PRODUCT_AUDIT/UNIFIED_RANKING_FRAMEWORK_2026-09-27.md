@@ -64,9 +64,13 @@ weaker one; within a tier, points add (so two asked qualities beat one). `tierVe
    group / related hobby 7, weather 8, then the incoming nearest-first order (stable). Replaces the old two-step sort (weather
    first, then `rankByBlend`) and For You's own category-rank sort: For You now only narrows the list and orders by the same
    ladder. `rankByBlend` removed (its tests moved to the feed's). The weather banner now says options "move up", not "first".
-4. **Discover sections.** Order inside each section by the same comparator (`fit` becomes a tier vector). **Section order
-   DECIDED (owner, 2026-09-27): keep the agreed sections, reorder to the ladder: Now, Tonight, Because you like, Friends are
-   into, Trending, This Weekend** (Trending moves below the two personal sections; supersedes item 91's order).
+4. **Discover: DONE (2026-09-27).** Sections reordered to the ladder: Now, Tonight, Because you like, Friends are into,
+   Trending, This Weekend (one dedupe chain, so a popular gathering in a declared interest now lands under Because you like).
+   Discover's `scoreGathering` gives every gathering `fit.rankVector` (the fit parts with their tiers + weather 8, own activity
+   6, related/broad 7, and an accepted friend going 3, rank-only so card reasons and `fit.score` are unchanged). ONE in-section
+   order, `compareDiscover` (tier vector, then nearest), for every section including Happening Now (was nearest-only) and
+   Trending (was attendance-only), the repeat-search section, the Gatherings tab's notable list and the category view.
+   `fit.score` still drives the hero/standard tiles and the notable list's eligibility bar.
 5. **Home.** Move from the flag form to the vector form (same tiers; reason count becomes points within a tier). Small.
 6. **Business routing.** **DECIDED (owner, 2026-09-27): its eligibility rules stay separate from recommendation ranking.**
    Filters first, then its own lexicographic order; no consumer tiers imposed. Minimum spend and want-more are NOT changed

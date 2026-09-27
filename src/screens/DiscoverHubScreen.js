@@ -63,7 +63,8 @@ import { getMyFriends } from '../services/friends';
 import { becauseYouLikeReason, categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
 import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
 import { splitTonight } from '../utils/categoryTonight';
-import { buildDiscoverSections } from '../utils/discoverSections';
+import { buildDiscoverSections, compareDiscover } from '../utils/discoverSections';
+import { SIGNAL_TIERS, tierVector } from '../constants/signalPriority';
 import { recordSearchBehavior } from '../services/behaviorSignals';
 import { searchTopic, matchBusinesses, friendsLineForTopic } from '../utils/unifiedSearch';
 import { formatDistance } from '../utils/formatDistance';
@@ -593,10 +594,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
     }
   }
 
-  // Within a time bucket, nearer wins ties (and, for Happening Now, comes first outright: "now" is only
-  // useful if you can get there). Distance is otherwise a small +3 inside fit.score.
-  const byDistance = (a, b) => (a.distanceMiles ?? Infinity) - (b.distanceMiles ?? Infinity);
-  const byScoreThenDistance = (a, b) => b.fit.score - a.fit.score || byDistance(a, b);
+  // Every Discover gathering list orders by the one ranking ladder (compareDiscover in utils/discoverSections.js): friends,
+  // room, today, interests, then weather and attendance; nearest breaks the remaining ties.
 
   // Android hardware back clears the expanded context instead of leaving
   // the whole Discover tab -- without this, "back" from an expanded view
@@ -919,6 +918,18 @@ export default function DiscoverHubScreen({ navigation, route }) {
       fit.score += broad;
       fit.reasons = [...fit.reasons, 'In a category you like'];
     }
+    // The one ranking ladder (constants/signalPriority.js): the fit parts carry their tiers; the extras above join theirs
+    // (weather 8, own activity 6, related / broad 7), and an accepted friend going counts as friends (3). The friend part is
+    // rank-only: the card already names the friend (friendGoingReason) and fit.score keeps driving the hero/standard tiles.
+    const friendGoing = (g.approvedAttendees ?? []).some((a) => a?.user_id && a.user_id !== myUserId && myFriendIds.has(a.user_id));
+    const weatherFit = (weatherIndoorBias && isIndoorCategory(g.interest_tag)) || (weatherOutdoorBias && isOutdoorCategory(g.interest_tag));
+    fit.rankVector = tierVector([
+      ...(fit.parts ?? []),
+      { tier: SIGNAL_TIERS.planFriend, delta: friendGoing ? 4 : 0 },
+      { tier: SIGNAL_TIERS.weather, delta: weatherFit ? WEATHER_BONUS : 0 },
+      { tier: SIGNAL_TIERS.interest, delta: nudge },
+      { tier: SIGNAL_TIERS.business, delta: related + broad },
+    ]);
     return { ...g, fit };
   }
 
@@ -938,7 +949,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     ? filteredGatherings
         .filter((g) => g.interest_tag === topSearchedCategory.category)
         .map(scoreGathering)
-        .sort((a, b) => b.fit.score - a.fit.score)
+        .sort(compareDiscover)
         .slice(0, TIME_SECTION_CAP)
     : [];
   const topCategoryIds = new Set(topCategoryGatherings.map((g) => g.id));
@@ -952,7 +963,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     ? filteredGatherings
         .map(scoreGathering)
         .filter((g) => g.fit.score >= STANDARD_SCORE)
-        .sort((a, b) => b.fit.score - a.fit.score)
+        .sort(compareDiscover)
         .slice(0, NOTABLE_DISPLAY_CAP)
     : [];
   const notableGatheringIds = new Set(notableGatherings.map((g) => g.id));
@@ -1013,8 +1024,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
     : [];
   // "Happening tonight": a slice of the two lists above (same rows, same time badge); a gathering shown there is removed from
   // the list it came from, so it never appears twice. Empty (and not rendered) when nothing is on tonight.
+  // Ordered by the same ladder as every other Discover gathering list (the rows themselves are unchanged).
+  const byLadder = (list) => list.map((g) => ({ g, k: scoreGathering(g) })).sort((a, b) => compareDiscover(a.k, b.k)).map((x) => x.g);
   const { tonight: contextTonight, main: contextGatherings, other: contextOtherTimeGatherings } = splitTonight(
-    contextGatheringsAll, contextOtherTimeAll, expandedContext?.timeBucket ?? null,
+    byLadder(contextGatheringsAll), byLadder(contextOtherTimeAll), expandedContext?.timeBucket ?? null,
   );
   // target_interest_tag is the offer row's own real targeting field (the
   // same one the Perks section above already reads) -- not a keyword guess

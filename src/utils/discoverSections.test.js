@@ -1,4 +1,5 @@
-import { buildDiscoverSections, SECTION_CAP } from './discoverSections';
+import { buildDiscoverSections, SECTION_CAP, compareDiscover } from './discoverSections';
+import { tierVector, SIGNAL_TIERS } from '../constants/signalPriority';
 
 const NOW = new Date(2026, 8, 25, 20, 0); // Fri 8 PM
 const at = (h, dayOffset = 0) => new Date(2026, 8, 25 + dayOffset, h, 0).toISOString();
@@ -17,7 +18,7 @@ const keys = (s) => s.map((x) => x.key);
 const ids = (s) => s.flatMap((x) => x.items.map((i) => i.id));
 
 describe('Discover contextual sections (item 91)', () => {
-  it('orders Happening Now, Tonight, Trending, Because you like, Friends, Weekend', () => {
+  it('orders Happening Now, Tonight, Because you like, Friends, Trending, Weekend (the ranking ladder; 2026-09-27)', () => {
     const s = run([
       g('now', { scheduled_at: at(20) }),
       g('tonight', { scheduled_at: at(23) }),
@@ -26,7 +27,7 @@ describe('Discover contextual sections (item 91)', () => {
       g('jazz', { interest_tag: 'Jazz' }),
       g('sat', { scheduled_at: at(12, 1), interest_tag: 'Hiking' }),
     ], { declared: ['Yoga'], friendInterestByTag: { Jazz: { friend_count: 2, sample_names: ['Sam', 'Alex'] } } });
-    expect(keys(s)).toEqual(['now', 'tonight', 'trending', 'because', 'friends', 'weekend']);
+    expect(keys(s)).toEqual(['now', 'tonight', 'because', 'friends', 'trending', 'weekend']);
     expect(s.find((x) => x.key === 'tonight').title).toBe('🌙 Tonight');
     expect(s.find((x) => x.key === 'because').title).toBe('✨ Because you like Yoga');
     expect(s.find((x) => x.key === 'friends').title).toBe('🤝 Sam and Alex are into Jazz');
@@ -37,7 +38,9 @@ describe('Discover contextual sections (item 91)', () => {
     const all = ids(s);
     expect(new Set(all).size).toBe(all.length);
     expect(all).not.toContain('c');
-    expect(s.find((x) => x.key === 'trending').items.map((i) => i.id)).toEqual(['b']);
+    // a popular gathering in a declared interest now lands under Because you like (above Trending), never both
+    expect(s.find((x) => x.key === 'because').items.map((i) => i.id)).toEqual(['b']);
+    expect(keys(s)).not.toContain('trending');
   });
   it('omits empty sections and invents none', () => {
     expect(run([])).toEqual([]);
@@ -125,5 +128,39 @@ describe('Discover contextual sections (item 91)', () => {
     expect(DISCOVER_RAIL_PRIMARY).toHaveLength(7);
     expect(DISCOVER_RAIL_PRIMARY.map((p) => p.label)).toContain('Activities');
     expect(DISCOVER_RAIL_PRIMARY.map((p) => p.label)).not.toContain('Things To Do');
+  });
+});
+
+describe('inside a section: the one ranking ladder (2026-09-27)', () => {
+  const v = (parts) => tierVector(parts);
+  const scored = (vectors) => (g0) => ({ ...g0, fit: { score: vectors[g0.id].score, reasons: [], rankVector: vectors[g0.id].v } });
+  it('a friend going beats a higher fit score (attendance) inside Tonight', () => {
+    const vectors = {
+      crowd: { score: 12, v: v([{ tier: SIGNAL_TIERS.popularity, delta: 10 }, { tier: SIGNAL_TIERS.time, delta: 2 }]) },
+      friend: { score: 2, v: v([{ tier: SIGNAL_TIERS.planFriend, delta: 4 }, { tier: SIGNAL_TIERS.time, delta: 2 }]) },
+    };
+    const s = run([g('crowd', { scheduled_at: at(22) }), g('friend', { scheduled_at: at(23) })], { score: scored(vectors) });
+    expect(s.find((x) => x.key === 'tonight').items.map((i) => i.id)).toEqual(['friend', 'crowd']);
+  });
+  it('Happening Now follows the ladder too; nearest only breaks ties', () => {
+    const vectors = {
+      near: { score: 0, v: v([]) },
+      far: { score: 5, v: v([{ tier: SIGNAL_TIERS.interest, delta: 5 }]) },
+      near2: { score: 0, v: v([]) },
+    };
+    const s = run([g('near', { scheduled_at: at(20), distanceMiles: 0.2 }), g('far', { scheduled_at: at(20), distanceMiles: 9 }), g('near2', { scheduled_at: at(20), distanceMiles: 0.1 })], { score: scored(vectors) });
+    expect(s[0].items.map((i) => i.id)).toEqual(['far', 'near2', 'near']);
+  });
+  it('without vectors the old score-then-nearest order is kept', () => {
+    const a = { id: 'a', fit: { score: 1 }, distanceMiles: 1 };
+    const b = { id: 'b', fit: { score: 3 }, distanceMiles: 5 };
+    expect([a, b].sort(compareDiscover).map((x) => x.id)).toEqual(['b', 'a']);
+  });
+  it('Discover scores every gathering list through the ladder (sections, the repeat-search section, the Gatherings tab, the category view)', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../screens/DiscoverHubScreen.js'), 'utf8');
+    expect(src).toMatch(/fit\.rankVector = tierVector\(/);
+    expect((src.match(/\.sort\(compareDiscover\)/g) ?? []).length).toBe(2);
+    expect(src).toMatch(/byLadder\(contextGatheringsAll\), byLadder\(contextOtherTimeAll\)/);
+    expect(src).not.toMatch(/b\.fit\.score - a\.fit\.score/);
   });
 });
