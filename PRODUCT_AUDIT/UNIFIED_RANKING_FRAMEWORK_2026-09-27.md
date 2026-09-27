@@ -59,9 +59,11 @@ weaker one; within a tier, points add (so two asked qualities beat one). `tierVe
    so the friends tier could not count). "Room to join" is rank-only, so `score`, Discover's hero/standard thresholds and the
    eligibility bar are unchanged. Not counted: a friend HOSTING (hosts are not attendee rows; Home's merge still adds that
    reason to the card).
-3. **Gatherings feed.** Keep its job (a personal ordering of the nearby list): declared interest (6), broad/related (7),
-   behavior (6, maturity-dampened, still below declared), comfort (10), plus friends going (3) and today (5) where the feed
-   already has them. Same comparator.
+3. **Gatherings feed: DONE (2026-09-27).** `utils/gatheringFeedRanking.js` (`feedRankParts`, `rankGatheringFeed`,
+   `FEED_SIGNAL_TIER`): friends going 3, room to join 4, today 5, declared interest + own activity + stated comfort 6, broad
+   group / related hobby 7, weather 8, then the incoming nearest-first order (stable). Replaces the old two-step sort (weather
+   first, then `rankByBlend`) and For You's own category-rank sort: For You now only narrows the list and orders by the same
+   ladder. `rankByBlend` removed (its tests moved to the feed's). The weather banner now says options "move up", not "first".
 4. **Discover sections.** Order inside each section by the same comparator (`fit` becomes a tier vector). **Section order
    DECIDED (owner, 2026-09-27): keep the agreed sections, reorder to the ladder: Now, Tonight, Because you like, Friends are
    into, Trending, This Weekend** (Trending moves below the two personal sections; supersedes item 91's order).

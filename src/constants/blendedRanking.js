@@ -33,14 +33,9 @@ export function blendedCategoryScore(category, { declared = [], declaredGroups =
   return explicit + weightSignal(raw, SIGNAL_SOURCES.BEHAVIORAL, maturity);
 }
 
-// Stable descending sort by blended score; equal scores keep their incoming order.
-export const COMFORT_POINTS = 1; // a small lift: below any declared interest (5) and any real behavior signal
-
-export function rankByBlend(items, ctx, tagOf = (x) => x.interest_tag) {
-  const scored = items.map((it, i) => ({ it, i, s: blendedCategoryScore(tagOf(it), ctx) + (comfortFits(it.group_size_feel, ctx?.socialComfort) ? COMFORT_POINTS : 0) }));
-  if (scored.every((x) => x.s === 0)) return items;
-  return scored.sort((a, b) => b.s - a.s || a.i - b.i).map((x) => x.it);
-}
+// A small lift for a gathering that fits the person's stated social comfort: below any declared interest (5) and any real behavior
+// signal. The Gatherings feed ranks with it (utils/gatheringFeedRanking.js, the one ranking ladder).
+export const COMFORT_POINTS = 1;
 
 // Categories for "For You": declared ones always qualify; behavior-only ones qualify once behavior is trusted
 // (maturity > 0). Ordered by blended score.

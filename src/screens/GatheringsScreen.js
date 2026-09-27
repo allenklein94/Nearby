@@ -47,7 +47,8 @@ import { becauseYouLikeCategories } from '../constants/interestGraph';
 import { relatedInterestReason } from '../constants/hobbyRelations';
 import { getFriendsInterestedIn } from '../services/friendInterests';
 import { friendsInterestReason } from '../utils/friendInterests';
-import { rankByBlend, forYouBlend } from '../constants/blendedRanking';
+import { forYouBlend } from '../constants/blendedRanking';
+import { rankGatheringFeed } from '../utils/gatheringFeedRanking';
 import usePersonalization from '../hooks/usePersonalization';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -407,20 +408,21 @@ export default function GatheringsScreen({ navigation, route }) {
   // the full GatheringsScreen.js browse/filter screen at all"). Reuses
   // the one shared isWeatherIndoorBiased/isWeatherOutdoorBiased
   // definition (utils/weatherBias.js), not a third invented rule.
-  // Deliberately only a tiebreak within the already-filtered set, and
-  // only when the For You priority sort below isn't already active, so
-  // the two ranking signals never compete against each other.
+  // Weather is tier 8 of the feed's one ranking ladder (utils/gatheringFeedRanking.js): it moves
+  // options up only among gatherings equal on every stronger signal.
   const weatherFits = (g) => {
     if (!weatherSignal) return false;
     if (isWeatherIndoorBiased(weatherSignal)) return isIndoorCategory(g.interest_tag);
     if (isWeatherOutdoorBiased(weatherSignal)) return isOutdoorCategory(g.interest_tag);
     return false;
   };
-  const weatherBanner = !forYouActive && weatherSignal
+  // Weather is one tier of the feed's order (below friends, room, today and interests), so the banner says it moves options
+  // up, never that they come first.
+  const weatherBanner = weatherSignal
     ? (isWeatherIndoorBiased(weatherSignal)
-        ? '🌧️ Weather coming in — showing indoor options first'
+        ? '🌧️ Weather coming in — indoor options move up'
         : isWeatherOutdoorBiased(weatherSignal)
-          ? '☀️ Great weather — showing outdoor options first'
+          ? '☀️ Great weather — outdoor options move up'
           : null)
     : null;
   // FilterTransition (the Nearby Motion System, CLAUDE.md Item 116): a
@@ -443,18 +445,11 @@ export default function GatheringsScreen({ navigation, route }) {
     .filter((g) => matchesDateFilter(g.scheduled_at, dateFilter))
     .filter((g) => !environmentFilter || (environmentFilter === 'indoor' ? isIndoorCategory(g.interest_tag) : isOutdoorCategory(g.interest_tag)))
     .filter((g) => !priceFilter || g.price_level === priceFilter)
-    .filter((g) => !partyTypeFilter || g.party_type === partyTypeFilter)
-    .sort((a, b) => {
-      if (forYouActive) {
-        const aRank = forYouCategories.indexOf(a.interest_tag);
-        const bRank = forYouCategories.indexOf(b.interest_tag);
-        return aRank - bRank;
-      }
-      return Number(weatherFits(b)) - Number(weatherFits(a));
-    });
-  // Declared interests make matching gatherings rise first; behavior adds a smaller nudge as the account matures (stable: distance order kept within ties);
-  // "For You" already orders by its own category rank, so it's left alone.
-  const filteredNearby = forYouActive ? filteredNearbyUnranked : rankByBlend(filteredNearbyUnranked, personalization);
+    .filter((g) => !partyTypeFilter || g.party_type === partyTypeFilter);
+  // One ranking ladder for the feed (utils/gatheringFeedRanking.js, constants/signalPriority.js): friends going > room to join >
+  // today > declared interest + own activity > broad group / related hobby > weather > nearest. For You uses the same order
+  // (its chip only narrows the list to the person's For You categories). Nothing is hidden.
+  const filteredNearby = rankGatheringFeed(filteredNearbyUnranked, { personalization, friendIds: myFriendIds, myUserId, weatherFits });
 
   return (
     <SafeAreaView style={styles.container}>
