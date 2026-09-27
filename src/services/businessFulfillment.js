@@ -1442,7 +1442,7 @@ export async function getMyBusinessEcosystemActivity(myId) {
   // right now".
   const { data: offers } = await supabase
     .from('business_request_offers')
-    .select('id, request_id, offer_type, offer_price, price_is_per_person, status, responded_at, accepted_at, brand_partners(name)')
+    .select('id, request_id, offer_type, offer_price, price_is_per_person, offer_title, discount_pct, included_items, status, responded_at, accepted_at, brand_partners(name)')
     .in('request_id', requestIds);
 
   const events = [];

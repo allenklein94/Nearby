@@ -44,6 +44,7 @@ import OfferOutcomeModal from '../components/OfferOutcomeModal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
+import { businessReplyStatus } from '../utils/offerCopy';
 
 import { countLabel } from '../utils/plural';
 const STATUS_COPY = {
@@ -56,7 +57,7 @@ const STATUS_COPY = {
 
 const OFFER_STATUS_COPY = {
   pending: 'Waiting for a response',
-  offered: 'Made you an offer',
+  offered: 'Made you an offer', // display uses businessReplyStatus (item 121); kept for GroupPlanScreen parity
   accepted: "You're booked",
   declined: "Can't help with this one",
   // Item 50 (state consistency audit, Finding 4): withdraw_business_offer()
@@ -1305,7 +1306,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   switches (Items 114-117), applied here to a single offer card's own real state
                   transition. */}
               <ModeTransition activeKey={o.status}>
-              <Text style={styles.offerStatus}>{offerLifecycleState(o) === 'expired' ? 'This offer has expired' : (OFFER_STATUS_COPY[o.status] ?? o.status)}</Text>
+              <Text style={styles.offerStatus}>{offerLifecycleState(o) === 'expired' ? 'This offer has expired' : (o.status === 'offered' ? businessReplyStatus(o) : (OFFER_STATUS_COPY[o.status] ?? o.status))}</Text>
               {o.status === 'offered' && (
                 <OfferReveal offerId={o.id} partnerName={o.brand_partners?.name ?? 'A business'} enabled={!!(o.media_path || o.offer_title)}>
                   <OfferCustomerBody offer={o} showTypeLabel={showComparison} typeLabel={OFFER_TYPE_LABELS[o.offer_type] ?? o.offer_type} />

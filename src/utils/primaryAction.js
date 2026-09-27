@@ -35,6 +35,7 @@ import { gatheringViewerState } from './objectState';
 import { bookingModeOf } from '../constants/bookingMode';
 import { businessEntity, usableNowTier } from './operatingStatus';
 import { canDo, gatheringLifecycleState, offerLifecycleState, requestLifecycleState, inviteLifecycleState, canRespondToOpportunity, lifecycleClass, viewLabel } from './objectLifecycle';
+import { businessReplyKind } from './offerCopy';
 
 // Returns { kind, label, showView }.
 //   kind: 'interested' (private maybe, toggles) | 'join' (opens the normal join confirmation on the detail screen) | 'view_plan' | 'requested' | 'view'
@@ -118,7 +119,8 @@ export function peoplePrimaryAction(nearbyPeopleCount) {
 // Business offer received (consumer side): "View Offer" only while the offer is still open to act on. Once accepted,
 // declined or completed the row is history and keeps its plain tap-through with no button.
 export function offerPrimaryAction(offer) {
-  return canDo('offer', offerLifecycleState(offer), 'accept') ? { kind: 'view_offer', label: 'View Offer' } : null;
+  // Same action and gate as before; only a real offer is called one (item 121): plain availability / a suggested time read View.
+  return canDo('offer', offerLifecycleState(offer), 'accept') ? { kind: 'view_offer', label: businessReplyKind(offer) === 'offer' ? 'View Offer' : 'View' } : null;
 }
 
 // Business (owner item 72): the CTA follows the business's DECLARED booking mode (constants/bookingMode.js). Returns null when no

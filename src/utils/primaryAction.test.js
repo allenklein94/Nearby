@@ -40,7 +40,10 @@ test('Meet People only with real people nearby', () => {
 });
 
 test('View Offer only while the offer is still open', () => {
-  expect(offerPrimaryAction({ status: 'offered' }).label).toBe('View Offer');
+  expect(offerPrimaryAction({ status: 'offered', offer_title: 'Latte + pastry' }).label).toBe('View Offer');
+  // item 121: same action for plain availability / a suggested time, never called an offer
+  expect(offerPrimaryAction({ status: 'offered', offer_type: 'standard' })).toEqual({ kind: 'view_offer', label: 'View' });
+  expect(offerPrimaryAction({ status: 'offered', offer_type: 'alt_time' })).toEqual({ kind: 'view_offer', label: 'View' });
   ['accepted', 'declined', 'completed', 'withdrawn', undefined].forEach((st) => expect(offerPrimaryAction({ status: st })).toBeNull());
   expect(offerPrimaryAction(null)).toBeNull();
 });

@@ -1,4 +1,4 @@
-import { businessReplyTitle } from '../utils/offerCopy';
+import { businessReplyTitle, acceptedReplyTitle } from '../utils/offerCopy';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import React, { useState, useCallback } from 'react';
@@ -640,7 +640,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
               const title = item.type === 'business_reply'
                 ? businessReplyTitle(partnerName, offer)
                 : item.type === 'business_offer_accepted'
-                  ? `You accepted ${partnerName}'s offer`
+                  ? acceptedReplyTitle(partnerName, offer)
                   : `${partnerName} confirmed your reservation`;
               const subtitleParts = [formatOfferSummary(offer), request?.raw_text].filter(Boolean);
               return (
