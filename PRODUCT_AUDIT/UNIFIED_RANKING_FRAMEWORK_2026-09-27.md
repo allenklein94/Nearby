@@ -71,7 +71,11 @@ weaker one; within a tier, points add (so two asked qualities beat one). `tierVe
    order, `compareDiscover` (tier vector, then nearest), for every section including Happening Now (was nearest-only) and
    Trending (was attendance-only), the repeat-search section, the Gatherings tab's notable list and the category view.
    `fit.score` still drives the hero/standard tiles and the notable list's eligibility bar.
-5. **Home.** Move from the flag form to the vector form (same tiers; reason count becomes points within a tier). Small.
+5. **Home: DONE (2026-09-27).** `selectHomeAttention` ranks by a tier vector (one point per real reason in that reason's
+   tier, plus one each for the intent-match, Right Now and perk flags) with `compareTierVectors`, then the engines' own order.
+   Same tiers as before; the one behavior change: among candidates with the same strongest tier, more reasons IN that tier
+   now win before weaker reasons are counted (before: total reason count, so interest + trending + weather beat two
+   interests). Tests in `homeAttention.test.js`. All five consumer surfaces are now on the one framework.
 6. **Business routing.** **DECIDED (owner, 2026-09-27): its eligibility rules stay separate from recommendation ranking.**
    Filters first, then its own lexicographic order; no consumer tiers imposed. Minimum spend and want-more are NOT changed
    until each has an exact definition of how it should work.

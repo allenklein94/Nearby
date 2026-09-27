@@ -7,12 +7,14 @@
 // Ranking of the non-lead candidates follows the signal priority (constants/signalPriority.js): each candidate is placed
 // by its STRONGEST real signal -- explicit current intent, then plan/friend activity, time relevance, personal interest,
 // business offer, local popularity, weather, general discovery -- so a trending event cannot outrank something the person
-// asked for. Ties: more real reasons, then the order the engines already ranked them.
+// asked for. Unified ranking (step 5): each candidate's key is its TIER VECTOR (one point per real reason in that reason's
+// tier, plus one per flag the selector knows: intent match, Right Now window, perk), compared tier by tier from the
+// strongest; ties keep the order the engines already ranked them.
 // Not covered here on purpose: Your Plans, invites, Quick Picks and Start Something are the person's OWN things and
 // actions, not recommendations, so they are not competing for these slots.
 import { isWithinRightNowWindow } from './rightNowWindow';
 import { recommendationRow } from './recommendationFacts';
-import { bestTier } from '../constants/signalPriority';
+import { signalTier, tierVector, compareTierVectors, SIGNAL_TIERS } from '../constants/signalPriority';
 
 export const MAX_HOME_ATTENTION = 5;
 
@@ -71,14 +73,17 @@ export function selectHomeAttention({ hero = null, cards = [], recommended = [],
   }
   // `intentTags`: the interest categories of the active Ask-Nearby search (lower-cased), or null when none is active.
   const matchesIntent = (g) => !!intentTags && intentTags.size > 0 && typeof g?.interest_tag === 'string' && intentTags.has(g.interest_tag.toLowerCase());
-  const tierOf = (c) => (c.kind === 'perk'
-    ? bestTier([], { business: true })
-    : bestTier(c.signals ?? [], { intent: matchesIntent(c.gathering), urgent: isUrgent(c.gathering, now) }));
-  const strength = (c) => (c.signals?.length ?? 0);
+  const vectorOf = (c) => {
+    if (c.kind === 'perk') return tierVector([{ tier: SIGNAL_TIERS.business, delta: 1 }]);
+    const parts = (c.signals ?? []).map((sig) => ({ tier: signalTier(sig), delta: 1 }));
+    if (matchesIntent(c.gathering)) parts.push({ tier: SIGNAL_TIERS.intent, delta: 1 });
+    if (isUrgent(c.gathering, now)) parts.push({ tier: SIGNAL_TIERS.time, delta: 1 });
+    return tierVector(parts);
+  };
   const room = Math.max(0, max - (hero ? 1 : 0));
   const ranked = candidates
-    .map((c) => ({ c, tier: tierOf(c) }))
-    .sort((a, b) => a.tier - b.tier || strength(b.c) - strength(a.c) || a.c.order - b.c.order)
+    .map((c) => ({ c, v: vectorOf(c) }))
+    .sort((a, b) => compareTierVectors(a.v, b.v) || a.c.order - b.c.order)
     .map(({ c }) => c);
   const items = ranked.slice(0, room);
   return { hero, items, absorbed, total: (hero ? 1 : 0) + candidates.length, shown: (hero ? 1 : 0) + items.length };

@@ -25,6 +25,18 @@ describe('selectHomeAttention', () => {
     expect(ids.indexOf('soon')).toBeLessThan(ids.indexOf('later'));
     expect(ids.indexOf('friend')).toBeLessThan(ids.indexOf('later'));
   });
+  it('unified ranking: within the same strongest tier, more reasons IN that tier beat more weaker reasons', () => {
+    const twoInterests = card('two', 900, [{ kind: 'interest', text: 'Because you like Coffee' }, { kind: 'interest', text: 'Because you like Tea' }]);
+    const oneInterestPlusWeak = card('mixed', 900, [{ kind: 'interest', text: 'Because you like Coffee' }, { kind: 'trending', text: 'Trending nearby' }, { kind: 'weather', text: 'w' }]);
+    const ids = selectHomeAttention({ cards: [oneInterestPlusWeak, twoInterests], now }).items.map((i) => i.gathering.id);
+    expect(ids).toEqual(['two', 'mixed']);
+  });
+  it('unified ranking: equal strongest tiers fall through to the next tier', () => {
+    const withWeather = card('weather', 900, [{ kind: 'interest', text: 'x' }, { kind: 'weather', text: 'w' }]);
+    const withTrending = card('trending', 900, [{ kind: 'interest', text: 'y' }, { kind: 'trending', text: 't' }]);
+    const ids = selectHomeAttention({ cards: [withTrending, withWeather], now }).items.map((i) => i.gathering.id);
+    expect(ids).toEqual(['weather', 'trending']);
+  });
   it('one object appears once across engines, keeping the merged card', () => {
     const out = selectHomeAttention({ hero: { id: 'h' }, cards: [card('a', 300)], recommended: [rec('a', 300), rec('h', 300), rec('b', 300)], soon: [{ id: 'a' }, { id: 'b' }, { id: 'c', scheduled_at: at(20) }], now });
     const ids = out.items.map((i) => i.gathering?.id ?? `perk-${i.item.id}`);
