@@ -1,0 +1,8034 @@
+{
+ "format": 1,
+ "rows": [
+  {
+   "tag": "Adult Education",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Adventure",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Adventure Experiences",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Amusement Park",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Aquariums",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Arcade",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Art",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Art Classes",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Art Galleries",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Auto Repair",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 5,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Bakeries",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 10,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Barbers",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Bars & Lounges",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 10,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Basketball",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Beaches",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Birthday Activities",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Board Games",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Boat Tours",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Boating",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Boutiques",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Bowling",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 2,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Breakfast",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 2,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Breweries",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 7,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Brunch",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 5,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Camera Shops",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Camping",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Camps",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Car Rental",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Car Wash",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Career Events",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Cars",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Casinos",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Cats",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Certifications",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Charity",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Chiropractic",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Classes",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Cleaning",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Cleanups",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Climbing",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Clothing",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Coffee",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 16,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Collecting",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Comedy",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Community Events",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Concerts",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Conferences",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Cooking",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Cooking Class",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Couples",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Coworking",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 2,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Crafts",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Cultural Events",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Cycling",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "D&D",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "DJs",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Dance Classes",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Dancing",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Date Night",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Dating",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Day Trip",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Dental",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Dessert & Ice Cream",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 9,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Detailing",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Diving",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Dog Meetup",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Dog Parks",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "pets"
+  },
+  {
+   "tag": "Dog Walking",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Dogs",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "pets"
+  },
+  {
+   "tag": "Donation Drives",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Double Date",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "EV Charging",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Electrical",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 2,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Electronics",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Entrepreneurship",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Escape Rooms",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Excursions",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Exhibits",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Faith & Spirituality",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Family Dining",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Family Events",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Family Playdate",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Family Resorts",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Farmers Markets",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Fashion",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Fast Casual",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Festivals",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Finance",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Fine Dining",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "food_drink"
+  },
+  {
+   "tag": "First Date",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Fishing",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Fitness",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 8,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Florist",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Food Trucks",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Foodie",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Fundraiser",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Gaming",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Gardening",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Gardens",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "General Wellness",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Gift Shop",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Glamping",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Golf",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 5,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Grooming",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Group Hangouts",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Gyms",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 8,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "HVAC",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Handyman",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Happy Hour",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Hiking",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Historic Sites",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "History",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Home & Furniture",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Hotels",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 6,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Indoor Play",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Interior Design",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Jewelry",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Karaoke",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Kayaking",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 2,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Kids Activity",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Kids Education",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Kids Museums",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Kids Sports",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Landmarks",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Landscaping",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Language Classes",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Language Exchange",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Lectures",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Libraries",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Live Music",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 5,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Local Attractions",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Local Experiences",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Local Shopping",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Make New Friends",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Markets",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Martial Arts",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 9,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Massage",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Medical Services",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Meditation",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Mini Golf",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Movies",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Moving",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Museums",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Music",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Music Lessons",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Nails",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Neighborhood Events",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Networking",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Nightclubs",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 5,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Nightlife",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Nutrition",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Observation Decks",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Oil Change",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Outdoors",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Paddleboarding",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 6,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Padel",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Parking",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Parks",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Party & Event Decor",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Pastries",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Performing Arts",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Personal Care",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Pest Control",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Pet Boarding",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Pet Events",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Pet Friendly Places",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Pet Friendly Stays",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Pet Stores",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Pet Training",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Pharmacies",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Photography",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Physical Therapy",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Pickleball",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Picnics",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Pilates",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Playgrounds",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Plumbing",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 2,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Pop-Ups",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Pottery",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Professional Development",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Professional Events",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Reading",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Real Estate",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Recovery",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Repairs",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Resorts",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Restaurants",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 8,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Road Trip",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Romantic Getaways",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Running",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Salons",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Sauna",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Scenic Views",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Self-Care",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Sightseeing",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Singles Events",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Skating",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Skin Care",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Snorkeling",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Soccer",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Social Clubs",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Spa Day",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Spa Resorts",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Special Events",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Speed Dating",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Sports",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Staycation",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Street Events",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Study Group",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Surfing",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Swimming",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Takeout & Delivery",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 2,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Tech Meetup",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Technology",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Technology Classes",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Tennis",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Theater",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Thrift & Vintage",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Tires",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Tourist Attractions",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Tours",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Towing",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Trails",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Travel",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Trivia",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Tutoring",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Vacation Rentals",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Veterinary",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Vision",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Volleyball",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Volunteering",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Walking",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Water Sports",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Weekend Getaway",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Wellness Centers",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Wildlife",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Wine",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 5,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Wineries",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 5,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Workshops",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Yoga",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Zoos",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/components/GatheringFeedbackModal.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/components/GatheringFeedbackModal.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/components/GatheringFeedbackModal.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/components/StartSomethingModal.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/components/StartSomethingModal.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gaming",
+   "file": "src/components/StartSomethingModal.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Music",
+   "file": "src/components/StartSomethingModal.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/components/StartSomethingModal.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sports",
+   "file": "src/components/StartSomethingModal.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Volunteering",
+   "file": "src/components/StartSomethingModal.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Diving",
+   "file": "src/constants/activityDictionary.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Golf",
+   "file": "src/constants/activityDictionary.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Hiking",
+   "file": "src/constants/activityDictionary.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Kayaking",
+   "file": "src/constants/activityDictionary.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Mini Golf",
+   "file": "src/constants/activityDictionary.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Paddleboarding",
+   "file": "src/constants/activityDictionary.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Padel",
+   "file": "src/constants/activityDictionary.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pickleball",
+   "file": "src/constants/activityDictionary.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pilates",
+   "file": "src/constants/activityDictionary.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Running",
+   "file": "src/constants/activityDictionary.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Snorkeling",
+   "file": "src/constants/activityDictionary.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Surfing",
+   "file": "src/constants/activityDictionary.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tennis",
+   "file": "src/constants/activityDictionary.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Walking",
+   "file": "src/constants/activityDictionary.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Yoga",
+   "file": "src/constants/activityDictionary.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Classes",
+   "file": "src/constants/activityFormat.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Concerts",
+   "file": "src/constants/activityFormat.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Exhibits",
+   "file": "src/constants/activityFormat.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Festivals",
+   "file": "src/constants/activityFormat.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Markets",
+   "file": "src/constants/activityFormat.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Workshops",
+   "file": "src/constants/activityFormat.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bakeries",
+   "file": "src/constants/activityLayer.js",
+   "consumer": "code",
+   "occurrences": 5,
+   "group": null
+  },
+  {
+   "tag": "Bars & Lounges",
+   "file": "src/constants/activityLayer.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Breakfast",
+   "file": "src/constants/activityLayer.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Brunch",
+   "file": "src/constants/activityLayer.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/activityLayer.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Coworking",
+   "file": "src/constants/activityLayer.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dessert & Ice Cream",
+   "file": "src/constants/activityLayer.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fast Casual",
+   "file": "src/constants/activityLayer.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Food Trucks",
+   "file": "src/constants/activityLayer.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Restaurants",
+   "file": "src/constants/activityLayer.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Takeout & Delivery",
+   "file": "src/constants/activityLayer.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bars & Lounges",
+   "file": "src/constants/askFacets.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Breweries",
+   "file": "src/constants/askFacets.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Concerts",
+   "file": "src/constants/askFacets.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Festivals",
+   "file": "src/constants/askFacets.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Happy Hour",
+   "file": "src/constants/askFacets.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Nightclubs",
+   "file": "src/constants/askFacets.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Nightlife",
+   "file": "src/constants/askFacets.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Special Events",
+   "file": "src/constants/askFacets.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Street Events",
+   "file": "src/constants/askFacets.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wine",
+   "file": "src/constants/askFacets.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wineries",
+   "file": "src/constants/askFacets.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/businessAttributes.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Date Night",
+   "file": "src/constants/businessAttributes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "First Date",
+   "file": "src/constants/businessAttributes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/constants/businessAttributes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fundraiser",
+   "file": "src/constants/businessAttributes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Live Music",
+   "file": "src/constants/businessAttributes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Moving",
+   "file": "src/constants/businessAttributes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Networking",
+   "file": "src/constants/businessAttributes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pastries",
+   "file": "src/constants/businessAttributes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Self-Care",
+   "file": "src/constants/businessAttributes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Nightlife",
+   "file": "src/constants/businessRestrictions.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dating",
+   "file": "src/constants/categoryRegistry.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Arcade",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Auto Repair",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bakeries",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Barbers",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bars & Lounges",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Bowling",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Breweries",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Brunch",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Car Wash",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cleaning",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Climbing",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cooking Class",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dessert & Ice Cream",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dog Parks",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dogs",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Electrical",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Escape Rooms",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fast Casual",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fine Dining",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fitness",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Food Trucks",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Golf",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gyms",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Happy Hour",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Hiking",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Hotels",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Kayaking",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Live Music",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Martial Arts",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Massage",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Mini Golf",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Museums",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Nails",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Nightclubs",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Paddleboarding",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Padel",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Photography",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pickleball",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pilates",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Plumbing",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Restaurants",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Salons",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Spa Day",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tennis",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wine",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Wineries",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Yoga",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Family Dining",
+   "file": "src/constants/categoryTree.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fast Casual",
+   "file": "src/constants/categoryTree.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fine Dining",
+   "file": "src/constants/categoryTree.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Food Trucks",
+   "file": "src/constants/categoryTree.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/constants/categoryTree.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Restaurants",
+   "file": "src/constants/categoryTree.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Takeout & Delivery",
+   "file": "src/constants/categoryTree.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Arcade",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bakeries",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bars & Lounges",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Boating",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bowling",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Breweries",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Brunch",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Camping",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Classes",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Comedy",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Concerts",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cooking Class",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dance Classes",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Day Trip",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dessert & Ice Cream",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Escape Rooms",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Excursions",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fast Casual",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Festivals",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fine Dining",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Food Trucks",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Golf",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Happy Hour",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Hiking",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Karaoke",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Live Music",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Mini Golf",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Movies",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Museums",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Parks",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Restaurants",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Theater",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Trivia",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Walking",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wineries",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Workshops",
+   "file": "src/constants/commitmentLevel.js",
+   "consumer": "commitment",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/constants/discoverCategoryRail.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Adventure",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Arcade",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bakeries",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bars & Lounges",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Basketball",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Board Games",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Breweries",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Brunch",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Camping",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Climbing",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Concerts",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cycling",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "DJs",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dancing",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Diving",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Escape Rooms",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Festivals",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fine Dining",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fitness",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gardening",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gyms",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Happy Hour",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Hiking",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Karaoke",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Martial Arts",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Meditation",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Museums",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Nightclubs",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Nightlife",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Padel",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pickleball",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pilates",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Reading",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Running",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Skating",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Snorkeling",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Soccer",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Surfing",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Swimming",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tennis",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Trivia",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Volleyball",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Walking",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Water Sports",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wine",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wineries",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Yoga",
+   "file": "src/constants/energyLevel.js",
+   "consumer": "energy",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Amusement Park",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Aquariums",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Arcade",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Art Galleries",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bakeries",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bars & Lounges",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Basketball",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Beaches",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Birthday Activities",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Boat Tours",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Boating",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Boutiques",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bowling",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Breweries",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Brunch",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 5,
+   "group": null
+  },
+  {
+   "tag": "Career Events",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Climbing",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 4,
+   "group": null
+  },
+  {
+   "tag": "Comedy",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Concerts",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Conferences",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Cooking",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Coworking",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Dancing",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Dessert & Ice Cream",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Diving",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Entrepreneurship",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Escape Rooms",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Exhibits",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Family Dining",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Family Events",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Family Playdate",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Farmers Markets",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fast Casual",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fine Dining",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Fishing",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Food Trucks",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 5,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 6,
+   "group": null
+  },
+  {
+   "tag": "Gaming",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gardens",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Golf",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Happy Hour",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Hiking",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Historic Sites",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Hotels",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Indoor Play",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Karaoke",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Kayaking",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Kids Activity",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Kids Museums",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Landmarks",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Lectures",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Live Music",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Local Shopping",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Markets",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Massage",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Meditation",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Movies",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Museums",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Music",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Networking",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Nightlife",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Observation Decks",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Paddleboarding",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Parks",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Performing Arts",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pickleball",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Picnics",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Playgrounds",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pop-Ups",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Professional Development",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Professional Events",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Resorts",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Restaurants",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 8,
+   "group": null
+  },
+  {
+   "tag": "Romantic Getaways",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Salons",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sauna",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sightseeing",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Skin Care",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Snorkeling",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Soccer",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Social Clubs",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Spa Day",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Spa Resorts",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sports",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Staycation",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Surfing",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Theater",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Thrift & Vintage",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tours",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Trails",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Trivia",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Vacation Rentals",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Volleyball",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Water Sports",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Weekend Getaway",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wellness Centers",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wine",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Wineries",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Workshops",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Yoga",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Zoos",
+   "file": "src/constants/experienceTemplates.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Adult Education",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Adventure",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Adventure Experiences",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Amusement Park",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Aquariums",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Arcade",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Art",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Art Classes",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Art Galleries",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Auto Repair",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Bakeries",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Barbers",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Bars & Lounges",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Basketball",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Beaches",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Birthday Activities",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Board Games",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Boat Tours",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Boating",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Boutiques",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Bowling",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Breakfast",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Breweries",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Brunch",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Camera Shops",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Camping",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Camps",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Car Rental",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Car Wash",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Career Events",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Cars",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Casinos",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Cats",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Certifications",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Charity",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Chiropractic",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Classes",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Cleaning",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Cleanups",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Climbing",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Clothing",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Collecting",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Comedy",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Community Events",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Concerts",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Conferences",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Cooking",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Cooking Class",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Couples",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Coworking",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Crafts",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Cultural Events",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Cycling",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "D&D",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "DJs",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Dance Classes",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Dancing",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Date Night",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Dating",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 3,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Day Trip",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Dental",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Dessert & Ice Cream",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Detailing",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Diving",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Dog Meetup",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Dog Parks",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Dog Walking",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Dogs",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Donation Drives",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Double Date",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "EV Charging",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Electrical",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Electronics",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Entrepreneurship",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Escape Rooms",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Excursions",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Exhibits",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Faith & Spirituality",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Family Dining",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Family Events",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Family Playdate",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Family Resorts",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Farmers Markets",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Fashion",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Fast Casual",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Festivals",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Finance",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Fine Dining",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "First Date",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Fishing",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Fitness",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Florist",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Food Trucks",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Fundraiser",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Gaming",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Gardening",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Gardens",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "General Wellness",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Gift Shop",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Glamping",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Golf",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Grooming",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Group Hangouts",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Gyms",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "HVAC",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Handyman",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Happy Hour",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Hiking",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Historic Sites",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "History",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Home & Furniture",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Hotels",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Indoor Play",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Interior Design",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Jewelry",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Karaoke",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Kayaking",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Kids Activity",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Kids Education",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Kids Museums",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Kids Sports",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Landmarks",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Landscaping",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Language Classes",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Language Exchange",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Lectures",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Libraries",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Live Music",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Local Attractions",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Local Experiences",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Local Shopping",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Make New Friends",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Markets",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Martial Arts",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Massage",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Medical Services",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Meditation",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Mini Golf",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Movies",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Moving",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Museums",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Music",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Music Lessons",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Nails",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Neighborhood Events",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Networking",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Nightclubs",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Nightlife",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Nutrition",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Observation Decks",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Oil Change",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Paddleboarding",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Padel",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Parking",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Parks",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Party & Event Decor",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Pastries",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Performing Arts",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Personal Care",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Pest Control",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Pet Boarding",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Pet Events",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Pet Friendly Places",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Pet Friendly Stays",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Pet Stores",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Pet Training",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Pharmacies",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Photography",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Physical Therapy",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Pickleball",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Picnics",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Pilates",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Playgrounds",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "family_kids"
+  },
+  {
+   "tag": "Plumbing",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Pop-Ups",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Pottery",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Professional Development",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Professional Events",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Reading",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Real Estate",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "business_networking"
+  },
+  {
+   "tag": "Recovery",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Repairs",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Resorts",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Restaurants",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Road Trip",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Romantic Getaways",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Running",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Salons",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Sauna",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Scenic Views",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Self-Care",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Sightseeing",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Singles Events",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Skating",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Skin Care",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Snorkeling",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Soccer",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Social Clubs",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Spa Day",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Spa Resorts",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Special Events",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Speed Dating",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "dating_social"
+  },
+  {
+   "tag": "Sports",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Staycation",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Street Events",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Study Group",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Surfing",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Swimming",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Takeout & Delivery",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Tech Meetup",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Technology",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Technology Classes",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Tennis",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Theater",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Thrift & Vintage",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
+   "tag": "Tires",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Tourist Attractions",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Tours",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Towing",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "auto_transportation"
+  },
+  {
+   "tag": "Trails",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Travel",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Trivia",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "entertainment_nightlife"
+  },
+  {
+   "tag": "Tutoring",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Vacation Rentals",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Veterinary",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "pets"
+  },
+  {
+   "tag": "Vision",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "health_personal_care"
+  },
+  {
+   "tag": "Volleyball",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Volunteering",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "community_volunteering"
+  },
+  {
+   "tag": "Walking",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Water Sports",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Weekend Getaway",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "stay_getaway"
+  },
+  {
+   "tag": "Wellness Centers",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "wellness_beauty"
+  },
+  {
+   "tag": "Wildlife",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Wine",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Wineries",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Workshops",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "education_classes"
+  },
+  {
+   "tag": "Yoga",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Zoos",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "attractions_things_to_see"
+  },
+  {
+   "tag": "Amusement Park",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Aquariums",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Art",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bakeries",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bars & Lounges",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bowling",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Breweries",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Brunch",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Camping",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cats",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Climbing",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Comedy",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Concerts",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cooking",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cooking Class",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coworking",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Crafts",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cycling",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dancing",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dating",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Day Trip",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dog Meetup",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dogs",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Faith & Spirituality",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Family Playdate",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Farmers Markets",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fishing",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fitness",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Food Trucks",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fundraiser",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gaming",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Golf",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Group Hangouts",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Happy Hour",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Hiking",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Karaoke",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Kayaking",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Kids Activity",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Landmarks",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Language Exchange",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Lectures",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Meditation",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Mini Golf",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Movies",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Museums",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Music",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Networking",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Nightlife",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Padel",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Photography",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pickleball",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Reading",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Road Trip",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Running",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Self-Care",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sightseeing",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Singles Events",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Spa Day",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Speed Dating",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sports",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Staycation",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Study Group",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Swimming",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tech Meetup",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tennis",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Thrift & Vintage",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Travel",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Trivia",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Volunteering",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Weekend Getaway",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wine",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Workshops",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Yoga",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Zoos",
+   "file": "src/constants/gatheringCategoryStyles.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Art",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cats",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Concerts",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cooking",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dancing",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Dogs",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Faith & Spirituality",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Fitness",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gaming",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Hiking",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Meditation",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Movies",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Museums",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Music",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Photography",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Reading",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Running",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sports",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Travel",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Volunteering",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wine",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Yoga",
+   "file": "src/constants/gatheringCoverPhotos.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Art",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cats",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Concerts",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cooking",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Dancing",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Dogs",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Faith & Spirituality",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fitness",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gaming",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Hiking",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Meditation",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Movies",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Museums",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Music",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Photography",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Reading",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Running",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Sports",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Travel",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Volunteering",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Wine",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Yoga",
+   "file": "src/constants/gatheringHubContent.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Art",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cats",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cooking",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dancing",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dogs",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Faith & Spirituality",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gaming",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Hiking",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Meditation",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Movies",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Museums",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Reading",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Running",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wine",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Yoga",
+   "file": "src/constants/gatheringIndoorOutdoor.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Arcade",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Art Classes",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Art Galleries",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Board Games",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 4,
+   "group": null
+  },
+  {
+   "tag": "Boating",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Boutiques",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Camera Shops",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Camping",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cars",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Clothing",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Collecting",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Concerts",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Conferences",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cooking",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cooking Class",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Crafts",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "D&D",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Electronics",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Escape Rooms",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Farmers Markets",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Fashion",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Festivals",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Fishing",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Fitness",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Florist",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gaming",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 4,
+   "group": null
+  },
+  {
+   "tag": "Gardening",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gardens",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "History",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Kayaking",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Lectures",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Libraries",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Live Music",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Markets",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Museums",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Music",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Music Lessons",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Parks",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Photography",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Pop-Ups",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Pottery",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Reading",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Running",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Scenic Views",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Special Events",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Street Events",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Study Group",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tech Meetup",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Technology",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Technology Classes",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Thrift & Vintage",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Trails",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Trivia",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Walking",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wine",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Workshops",
+   "file": "src/constants/hobbyRelations.js",
+   "consumer": "code",
+   "occurrences": 4,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/intentRoutes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Comedy",
+   "file": "src/constants/intentRoutes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dessert & Ice Cream",
+   "file": "src/constants/intentRoutes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Live Music",
+   "file": "src/constants/intentRoutes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Movies",
+   "file": "src/constants/intentRoutes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Nightlife",
+   "file": "src/constants/intentRoutes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Art",
+   "file": "src/constants/interestGraph.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/interestGraph.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Dating",
+   "file": "src/constants/interestGraph.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dog Meetup",
+   "file": "src/constants/interestGraph.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Faith & Spirituality",
+   "file": "src/constants/interestGraph.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/constants/interestGraph.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gaming",
+   "file": "src/constants/interestGraph.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Group Hangouts",
+   "file": "src/constants/interestGraph.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Happy Hour",
+   "file": "src/constants/interestGraph.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Music",
+   "file": "src/constants/interestGraph.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Reading",
+   "file": "src/constants/interestGraph.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Singles Events",
+   "file": "src/constants/interestGraph.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Speed Dating",
+   "file": "src/constants/interestGraph.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sports",
+   "file": "src/constants/interestGraph.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Dating",
+   "file": "src/constants/notificationCategories.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dating",
+   "file": "src/constants/onboardingGoals.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Art",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bars & Lounges",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Board Games",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Dogs",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Fitness",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Gaming",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Happy Hour",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Live Music",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Nightlife",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Restaurants",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Sports",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Yoga",
+   "file": "src/constants/onboardingInterests.js",
+   "consumer": "quick_picks",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Bakeries",
+   "file": "src/constants/planAddons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Florist",
+   "file": "src/constants/planAddons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gift Shop",
+   "file": "src/constants/planAddons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Music",
+   "file": "src/constants/planAddons.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Party & Event Decor",
+   "file": "src/constants/planAddons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Photography",
+   "file": "src/constants/planAddons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Date Night",
+   "file": "src/constants/planCombinations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Art",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cats",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Concerts",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cooking",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dancing",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dating",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dogs",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Faith & Spirituality",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fitness",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gaming",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Hiking",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Meditation",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Movies",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Museums",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Music",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Photography",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Reading",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Running",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sports",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Travel",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Volunteering",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wine",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Yoga",
+   "file": "src/constants/quickPickIcons.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Basketball",
+   "file": "src/constants/skillLevel.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bowling",
+   "file": "src/constants/skillLevel.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Golf",
+   "file": "src/constants/skillLevel.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Martial Arts",
+   "file": "src/constants/skillLevel.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Padel",
+   "file": "src/constants/skillLevel.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pickleball",
+   "file": "src/constants/skillLevel.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Soccer",
+   "file": "src/constants/skillLevel.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sports",
+   "file": "src/constants/skillLevel.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tennis",
+   "file": "src/constants/skillLevel.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Volleyball",
+   "file": "src/constants/skillLevel.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Amusement Park",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Aquariums",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Arcade",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Art Galleries",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bakeries",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bars & Lounges",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Board Games",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bowling",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Breakfast",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Breweries",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Brunch",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Climbing",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Comedy",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Concerts",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cooking Class",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dessert & Ice Cream",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Escape Rooms",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fast Casual",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fine Dining",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fitness",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Food Trucks",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Golf",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Happy Hour",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Hiking",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Karaoke",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Kayaking",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Live Music",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Massage",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Mini Golf",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Movies",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Museums",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Padel",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Parks",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pickleball",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pilates",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Restaurants",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Running",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Spa Day",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Swimming",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tennis",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Theater",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Trivia",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Walking",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wineries",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Workshops",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Yoga",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Zoos",
+   "file": "src/constants/timeBudget.js",
+   "consumer": "duration",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Walking",
+   "file": "src/constants/transportMode.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dating",
+   "file": "src/screens/AskBusinessScreen.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Faith & Spirituality",
+   "file": "src/screens/AskBusinessScreen.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/screens/AskBusinessScreen.js",
+   "consumer": "code",
+   "occurrences": 5,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/screens/DateProposalScreen.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Fitness",
+   "file": "src/screens/DateProposalScreen.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/screens/DateProposalScreen.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Music",
+   "file": "src/screens/DateProposalScreen.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/screens/DateProposalScreen.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/screens/DiscoverHubScreen.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dating",
+   "file": "src/screens/DiscoverHubScreen.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/screens/GroupPlanScreen.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/screens/PlacesScreen.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Yoga",
+   "file": "src/services/gatherings.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Couples",
+   "file": "src/services/intentResolver.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/services/intentResolverScoring.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sports",
+   "file": "src/services/intentResolverScoring.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/services/surpriseMeLogic.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Restaurants",
+   "file": "src/utils/cuisineFilter.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/utils/dateCafe.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Concerts",
+   "file": "src/utils/gatheringPractical.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "DJs",
+   "file": "src/utils/gatheringPractical.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Karaoke",
+   "file": "src/utils/gatheringPractical.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Live Music",
+   "file": "src/utils/gatheringPractical.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Music",
+   "file": "src/utils/gatheringPractical.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  }
+ ]
+}

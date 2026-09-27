@@ -94,3 +94,18 @@ export async function resolveCategoryTag(nameOrId) {
   if (error) throw new Error(error.message);
   return Array.isArray(data) ? (data[0] ?? null) : null;
 }
+
+// A committed rename / move / retirement is INCOMPLETE while app code still uses the old name (migration 20270233):
+// the commit result carries complete + code_followups; these list them and waive a false positive (reason required).
+// They close by themselves when updated code is synced (scripts/taxonomy/sync-code-dependencies.js).
+export async function adminGetTaxonomyFollowups(includeClosed = false) {
+  const { data, error } = await supabase.rpc('admin_get_taxonomy_followups', { include_closed_param: includeClosed });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function adminWaiveTaxonomyFollowup(followupId, reason) {
+  const { data, error } = await supabase.rpc('admin_waive_taxonomy_followup', { followup_id_param: followupId, reason_param: reason });
+  if (error) throw new Error(error.message);
+  return data;
+}

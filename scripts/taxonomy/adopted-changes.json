@@ -1,0 +1,4 @@
+{
+ "_note": "Server taxonomy changes (category_taxonomy_changes) that the app code has ADOPTED: the baseline list in src/constants/gatheringCategories.js already reflects them. categoryMapping.test.js applies these on top of the migration seeds, so adopting a runtime rename/move/retirement in code keeps the seed-parity test true. Add one entry per adopted change: {\"change_id\": 12, \"type\": \"renamed\"|\"moved\"|\"retired\", \"old_name\", \"new_name\", \"new_group\"}.",
+ "changes": []
+}

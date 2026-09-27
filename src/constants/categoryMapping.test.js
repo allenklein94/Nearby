@@ -76,7 +76,15 @@ describe('canonical category mapping', () => {
     ];
     const key = (r) => `${r[1]}::${r[0]}`;
     const expected = CATEGORY_GROUPS.flatMap((g) => [...g.tags, ...(g.businessOnlyTags ?? [])].map((t) => [t, g.key]));
-    expect([...base, ...later].map(key).sort()).toEqual(expected.map(key).sort());
+    // Runtime taxonomy changes the code has adopted (renames / moves / retirements made through the admin path, 20270232).
+    const adopted = require('../../scripts/taxonomy/adopted-changes.json').changes;
+    let seeded = [...base, ...later];
+    for (const c of adopted) {
+      if (c.type === 'renamed') seeded = seeded.map(([t, g]) => [t === c.old_name ? c.new_name : t, g]);
+      else if (c.type === 'moved') seeded = seeded.map(([t, g]) => [t, t === c.old_name ? c.new_group : g]);
+      else if (c.type === 'retired') seeded = seeded.filter(([t]) => t !== c.old_name);
+    }
+    expect(seeded.map(key).sort()).toEqual(expected.map(key).sort());
     // the original seed keeps its exact order within the file
     expect(base.map(key)).toEqual(expected.filter((r) => base.some((b) => key(b) === key(r))).map(key));
   });
