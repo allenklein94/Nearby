@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingTopBar from '../components/OnboardingTopBar';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
-import { ONBOARDING_INTEREST_GROUPS, tagsForGroups, sanitizeInterestGroups } from '../constants/interestGraph';
+import { sanitizeInterestGroups } from '../constants/interestGraph';
+import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
+import { QUICK_INTERESTS, onboardingInterestSelection } from '../constants/onboardingInterests';
 import { ONBOARDING_GOALS, LOOKING_FOR_OPTIONS, motivationsFromAnswers } from '../constants/onboardingGoals';
 
 // This screen runs before signup — there's no account yet to save
@@ -31,8 +33,10 @@ export default function OnboardingQuestionsScreen({ navigation }) {
   const [goals, setGoals] = useState([]);
   const [lookingFor, setLookingFor] = useState(null);
   const [comfortLevel, setComfortLevel] = useState(null);
-  const [groupKeys, setGroupKeys] = useState([]);
-  const [tags, setTags] = useState([]);
+  // Item 94: a few quick picks + optional words, both mapped onto the one taxonomy (constants/onboardingInterests.js).
+  const [quickKeys, setQuickKeys] = useState([]);
+  const [anythingElse, setAnythingElse] = useState('');
+  const [excluded, setExcluded] = useState([]); // understood items the person tapped off (tags or group keys)
   const [saving, setSaving] = useState(false);
 
   const hydrated = useRef(false);
@@ -45,8 +49,9 @@ export default function OnboardingQuestionsScreen({ navigation }) {
         if (Array.isArray(d.goals)) setGoals(d.goals);
         if (typeof d.lookingFor === 'string') setLookingFor(d.lookingFor);
         if (typeof d.comfortLevel === 'string') setComfortLevel(d.comfortLevel);
-        if (Array.isArray(d.groupKeys)) setGroupKeys(sanitizeInterestGroups(d.groupKeys));
-        if (Array.isArray(d.tags)) setTags(d.tags);
+        if (Array.isArray(d.quickKeys)) setQuickKeys(d.quickKeys.filter((k) => QUICK_INTERESTS.some((q) => q.key === k)));
+        if (typeof d.anythingElse === 'string') setAnythingElse(d.anythingElse);
+        if (Array.isArray(d.excluded)) setExcluded(d.excluded);
       })
       .catch(() => {})
       .finally(() => { hydrated.current = true; });
@@ -54,28 +59,28 @@ export default function OnboardingQuestionsScreen({ navigation }) {
   }, []);
   useEffect(() => {
     if (!hydrated.current) return;
-    AsyncStorage.setItem(ONBOARDING_DRAFT_KEY, JSON.stringify({ goals, lookingFor, comfortLevel, groupKeys, tags })).catch(() => {});
-  }, [goals, lookingFor, comfortLevel, groupKeys, tags]);
+    AsyncStorage.setItem(ONBOARDING_DRAFT_KEY, JSON.stringify({ goals, lookingFor, comfortLevel, quickKeys, anythingElse, excluded })).catch(() => {});
+  }, [goals, lookingFor, comfortLevel, quickKeys, anythingElse, excluded]);
 
   function toggleGoal(label) {
     setGoals((prev) => (prev.includes(label) ? prev.filter((g) => g !== label) : [...prev, label]));
   }
 
-  function toggleGroup(key) {
-    const next = groupKeys.includes(key) ? groupKeys.filter((k) => k !== key) : [...groupKeys, key];
-    setGroupKeys(next);
-    // Drop any picked tag whose group was just deselected.
-    const allowed = new Set(tagsForGroups(next));
-    setTags((t) => t.filter((x) => allowed.has(x)));
+  function toggleQuick(key) {
+    setQuickKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   }
 
-  function toggleTag(tag) {
-    setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
-  }
+  // What will be saved: the quick picks + the words, mapped to canonical tags/groups, minus anything tapped off.
+  // A tap-off only removes what the WORDS added; a quick pick stays picked.
+  const quickOnly = onboardingInterestSelection(quickKeys, '');
+  const extraOnly = onboardingInterestSelection([], anythingElse);
+  const savedTags = [...new Set([...quickOnly.tags, ...extraOnly.tags.filter((t) => !excluded.includes(t))])];
+  const savedGroups = [...new Set([...quickOnly.groups, ...extraOnly.groups.filter((g) => !excluded.includes(g))])];
+  const groupLabel = (key) => CATEGORY_GROUPS.find((g) => g.key === key)?.label ?? key;
 
-  // Flow: what Nearby should help with -> what you're into (-> favorites, only if a group was picked) -> what you're looking for
-  // -> relevant preferences. Every step is skippable; nothing here gates signup.
-  const steps = ['goals', 'groups', ...(groupKeys.length > 0 ? ['tags'] : []), 'lookingFor', 'comfort'];
+  // Flow: what Nearby should help with -> what you're into (a few quick picks) -> anything else (optional words) -> what
+  // you're looking for -> relevant preferences. Every step is skippable; nothing here gates signup.
+  const steps = ['goals', 'interests', 'anythingElse', 'lookingFor', 'comfort'];
   const step = steps[stepIndex];
   const lastStep = steps.length - 1;
 
@@ -93,9 +98,9 @@ export default function OnboardingQuestionsScreen({ navigation }) {
           social_comfort_level: comfortLevel,
           // Canonical tags (see interestGraph.js): seed CompleteProfile's interests step and this
           // month's mood, so onboarding never introduces a vocabulary of its own.
-          monthly_interests: tags,
-          // Broad interest: the groups themselves, saved even when no tag was picked (never expanded into tags).
-          interest_groups: sanitizeInterestGroups(groupKeys),
+          monthly_interests: savedTags,
+          // Broad interest: a whole area (Outdoors, Arts, or a group named in the words); never expanded into tags.
+          interest_groups: sanitizeInterestGroups(savedGroups),
         })
       );
     } catch (e) {
@@ -140,24 +145,24 @@ export default function OnboardingQuestionsScreen({ navigation }) {
           </>
         )}
 
-        {step === 'groups' && (
+        {step === 'interests' && (
           <>
             <Text style={styles.title}>What are you into?</Text>
-            <Text style={styles.subtitle}>Pick any that fit — you can skip this.</Text>
+            <Text style={styles.subtitle}>Choose a few. You can skip this.</Text>
             <View style={styles.grid}>
-              {ONBOARDING_INTEREST_GROUPS.map((g) => {
-                const selected = groupKeys.includes(g.key);
+              {QUICK_INTERESTS.map((q) => {
+                const selected = quickKeys.includes(q.key);
                 return (
                   <TouchableOpacity
-                    key={g.key}
+                    key={q.key}
                     style={[styles.chip, selected && styles.chipSelected]}
-                    onPress={() => toggleGroup(g.key)}
-                    accessibilityLabel={g.label}
+                    onPress={() => toggleQuick(q.key)}
+                    accessibilityLabel={q.label}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
                   >
-                    <Text style={styles.chipIcon}>{g.icon}</Text>
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{g.label}</Text>
+                    <Text style={styles.chipIcon}>{q.icon}</Text>
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{q.label}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -165,27 +170,47 @@ export default function OnboardingQuestionsScreen({ navigation }) {
           </>
         )}
 
-        {step === 'tags' && (
+        {step === 'anythingElse' && (
           <>
-            <Text style={styles.title}>Any favorites?</Text>
-            <Text style={styles.subtitle}>Optional — the more specific, the better we can find things for you.</Text>
-            <View style={styles.grid}>
-              {tagsForGroups(groupKeys).map((tag) => {
-                const selected = tags.includes(tag);
-                return (
-                  <TouchableOpacity
-                    key={tag}
-                    style={[styles.chip, selected && styles.chipSelected]}
-                    onPress={() => toggleTag(tag)}
-                    accessibilityLabel={tag}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                  >
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{tag}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            <Text style={styles.title}>Anything else?</Text>
+            <Text style={styles.subtitle}>Optional. Type a few things you like, like "pickleball, board games, hiking".</Text>
+            <TextInput
+              style={styles.input}
+              value={anythingElse}
+              onChangeText={(t) => { setAnythingElse(t); setExcluded([]); }}
+              placeholder="Anything else you're into"
+              placeholderTextColor={colors.textTertiary}
+              multiline
+              maxLength={200}
+              accessibilityLabel="Anything else you're into"
+            />
+            {(extraOnly.tags.length > 0 || extraOnly.groups.length > 0) && (
+              <>
+                <Text style={styles.understoodLabel}>We'll add these. Tap one to leave it out.</Text>
+                <View style={styles.grid}>
+                  {[...extraOnly.tags.map((t) => ({ key: t, label: t })), ...extraOnly.groups.map((g) => ({ key: g, label: groupLabel(g) }))].map((item) => {
+                    const kept = !excluded.includes(item.key);
+                    return (
+                      <TouchableOpacity
+                        key={item.key}
+                        style={[styles.chip, kept && styles.chipSelected]}
+                        onPress={() => setExcluded((prev) => (kept ? [...prev, item.key] : prev.filter((k) => k !== item.key)))}
+                        accessibilityLabel={kept ? `${item.label}, added. Tap to leave it out` : `${item.label}, left out`}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: kept }}
+                      >
+                        <Text style={[styles.chipText, kept && styles.chipTextSelected]}>{kept ? `${item.label} ✓` : item.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+            {extraOnly.unmatched.length > 0 && (
+              <Text style={styles.unmatchedNote}>
+                Not matched yet: {extraOnly.unmatched.join(', ')}. You can add interests any time in Settings.
+              </Text>
+            )}
           </>
         )}
 
@@ -269,6 +294,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   title: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
+  input: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, minHeight: 72, color: colors.textPrimary, fontSize: 15, textAlignVertical: 'top',
+  },
+  understoodLabel: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.md },
+  unmatchedNote: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.md },
   chip: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full,
     borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.sm,

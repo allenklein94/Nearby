@@ -12,7 +12,7 @@ import { checkTextModeration } from '../services/textModeration';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { PERSONAL_INTEREST_OPTIONS as INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import { QUICK_INTEREST_TAGS } from '../constants/onboardingInterests';
 import { typography, spacing, radius } from '../theme';
 
 const MIN_AGE = 18;
@@ -69,6 +69,10 @@ export default function CompleteProfileScreen() {
   const [showPicker, setShowPicker] = useState(false);
   const [photoAsset, setPhotoAsset] = useState(null);
   const [interests, setInterests] = useState([]);
+  // Item 94: the interests step never lists the whole taxonomy. It confirms what the person already chose (onboarding or a
+  // saved draft) and offers the same short quick list; the long tail lives in Settings.
+  const [knownInterests, setKnownInterests] = useState([]);
+  const interestChoices = [...new Set([...knownInterests, ...QUICK_INTEREST_TAGS])];
   const [submitting, setSubmitting] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const draftKeyRef = useRef(null);
@@ -94,7 +98,7 @@ export default function CompleteProfileScreen() {
           const draft = JSON.parse(stored);
           if (draft.displayName) setDisplayName(draft.displayName);
           if (draft.birthdateIso) setBirthdate(new Date(draft.birthdateIso));
-          if (Array.isArray(draft.interests) && draft.interests.length) { setInterests(draft.interests); restoredInterests = true; }
+          if (Array.isArray(draft.interests) && draft.interests.length) { setInterests(draft.interests); setKnownInterests(draft.interests); restoredInterests = true; }
           if (draft.agreedToTerms) setAgreedToTerms(true);
           if (typeof draft.step === 'number') {
             const photoStepIndex = STEP_DEFS.findIndex((s) => s.key === 'photo');
@@ -106,7 +110,7 @@ export default function CompleteProfileScreen() {
         if (!restoredInterests) {
           const pending = await AsyncStorage.getItem(ONBOARDING_ANSWERS_KEY);
           const seeded = canonicalizeInterests(pending ? JSON.parse(pending).monthly_interests : []);
-          if (seeded.length) setInterests(seeded);
+          if (seeded.length) { setInterests(seeded); setKnownInterests(seeded); }
         }
       } catch (e) {
         console.error('Failed to restore profile wizard draft', e);
@@ -358,10 +362,10 @@ export default function CompleteProfileScreen() {
 
         {stepKey === 'interests' && (
           <>
-            <Text style={styles.label}>Interests (Optional)</Text>
-            <Text style={styles.interestsHelper}>Helps us show you gatherings and people you'll actually click with.</Text>
+            <Text style={styles.label}>Your interests (Optional)</Text>
+            <Text style={styles.interestsHelper}>Helps us show you gatherings and people you'll actually click with. Tap to change; add more any time in Settings.</Text>
             <View style={styles.chipsWrap}>
-              {INTEREST_OPTIONS.map((interest) => {
+              {interestChoices.map((interest) => {
                 const selected = interests.includes(interest);
                 return (
                   <TouchableOpacity
