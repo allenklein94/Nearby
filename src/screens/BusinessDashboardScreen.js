@@ -2404,7 +2404,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         await loadOfferSubmissions(selectedPartner.id);
         showSuccessToast(...OFFER_QUEUED_CONFIRMATION);
       } else {
-        await handleOfferResult(result, () => { offerDraft.clear(); setOfferModalRequestId(null); }, { offer_type: 'standard', offer_title: 'offer' });
+        await handleOfferResult(result, () => { offerDraft.clear(); setOfferModalRequestId(null); }, {
+          // the reply's real fields, so the same classification as Activity/Request Detail names it (item 121/123)
+          offer_type: offerTypeInput, offer_title: offerTitleInput.trim() || null, offer_price: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
+          discount_pct: parseDiscountPct(offerDiscountInput), included_items: offerIncludedItemsInput,
+        });
       }
     } catch (e) {
       presentRecoverableError(Alert, { what: 'send this offer', error: e, draftKept: true, onRetry: () => handleSubmitOffer() });

@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { replySentConfirmation, OFFER_QUEUED_CONFIRMATION, inviteSentConfirmation, interestedConfirmation } = require('./actionConfirmations');
 const { justSentLine } = require('./requestTimeline');
+const { submissionView } = require('./offerSubmission');
 
 const read = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
 
@@ -13,6 +14,16 @@ describe('meaningful confirmations', () => {
     expect(replySentConfirmation({ offer_type: 'alt_time' })[0]).toBe('New time suggested');
     expect(replySentConfirmation({ offer_type: 'standard', offer_title: '2 coffees + 2 pastries' })[0]).toBe('Offer sent');
     expect(OFFER_QUEUED_CONFIRMATION[0]).toBe('Offer saved');
+  });
+  it('the screened-send list names the reply by kind once it clears; before that it never says sent', () => {
+    const pub = (payload) => submissionView({ status: 'published', payload }).headline;
+    expect(pub({ offerType: 'standard', offerTitle: '2 coffees + 2 pastries', offerPrice: 12 })).toBe('Offer sent');
+    expect(pub({ offerType: 'standard', offerDescription: 'We can do it.' })).toBe('Reply sent');
+    expect(pub({ offerType: 'alt_time' })).toBe('New time suggested');
+    expect(pub(undefined)).toBe('Reply sent');
+    for (const status of ['reviewing', 'in_review', 'needs_changes', 'not_sent', 'unavailable']) {
+      expect(submissionView({ status }).headline).not.toMatch(/^(Offer|Reply) sent$/);
+    }
   });
   it('an invitation names the person', () => {
     expect(inviteSentConfirmation('Claude')[0]).toBe('Invitation sent to Claude');
@@ -32,6 +43,20 @@ describe('meaningful confirmations', () => {
     expect(dash).toMatch(/showSuccessToast\(\.\.\.replySentConfirmation\(sent\)\)/);
     expect(dash).toMatch(/\{ offer_type: offerType \}\)/);
     expect(dash).toMatch(/showSuccessToast\(\.\.\.OFFER_QUEUED_CONFIRMATION\)/);
+    // the full editor's direct send passes the reply's REAL fields (no placeholder that forces "Offer sent")
+    expect(dash).not.toMatch(/offer_title: 'offer'/);
+    expect(dash).toMatch(/offer_type: offerTypeInput, offer_title: offerTitleInput/);
+    // a published reply is confirmed only on the published branch; held / blocked never say sent
+    const handler = dash.slice(dash.indexOf('async function handleOfferResult'), dash.indexOf('function openAlternativeSheet'));
+    expect(handler.indexOf('replySentConfirmation')).toBeGreaterThan(handler.indexOf('if (result.published)'));
+    expect(handler.indexOf('replySentConfirmation')).toBeLessThan(handler.indexOf('else if (result.blocked)'));
+    expect(handler).toMatch(/being reviewed before it’s sent/);
+    // the queued (screening) confirmation never claims delivery
+    expect(OFFER_QUEUED_CONFIRMATION.join(' ')).not.toMatch(/\bsent\b|delivered/i);
+    // one classifier: confirmations go through offerCopy's businessReplyKind, not their own offer_type checks
+    const src = read('utils/actionConfirmations.js');
+    expect(src).toMatch(/from '.\/offerCopy'/);
+    expect(src).not.toMatch(/offer_type ===/);
     for (const f of ['screens/GatheringConfirmationScreen.js', 'components/InviteFriendsModal.js']) expect(read(f)).toMatch(/inviteSentConfirmation\(/);
     for (const f of ['screens/GatheringDetailScreen.js', 'screens/HomeScreen.js']) expect(read(f)).toMatch(/interestedConfirmation\(/);
     expect(read('screens/AskBusinessScreen.js')).toMatch(/targetPartnerName: targetPartner\?\.name/);

@@ -5,7 +5,7 @@ import { submissionView, needsChangesExplanation, inFlightRequestIds, payloadToF
 describe('async offer screening (item 83)', () => {
   test('each stored state reads as the promised wording', () => {
     expect(submissionView({ status: 'reviewing' }).headline).toBe('Reviewing your offer…');
-    expect(submissionView({ status: 'published' }).headline).toBe('Offer sent');
+    expect(submissionView({ status: 'published', payload: { offerType: 'standard', offerTitle: 'Latte + pastry' } }).headline).toBe('Offer sent');
     expect(submissionView({ status: 'needs_changes', matched_categories: [] }).headline).toBe('Needs changes');
     expect(submissionView({ status: 'unavailable' }).actions).toEqual(['retry', 'dismiss']);
     expect(submissionView({ status: 'reviewing' }).actions).toEqual([]);

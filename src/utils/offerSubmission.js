@@ -1,4 +1,5 @@
 // Item 83: how a business offer's background screening reads to its owner. Pure: state in, wording out.
+import { replySentConfirmation } from './actionConfirmations';
 // States are the real stored ones (`business_offer_submissions.status`, with a held row's human decision already
 // folded in by get_my_offer_submissions): reviewing / in_review / published / needs_changes / unavailable / not_sent.
 
@@ -37,8 +38,12 @@ export function submissionView(sub) {
       return { headline: 'Reviewing your offer…', detail: "It will be sent to the customer as soon as it clears. You don't need to wait here.", tone: 'progress', actions: [] };
     case 'in_review':
       return { headline: 'In review by our team', detail: "We'll send it once it's approved. This is usually quick.", tone: 'progress', actions: [] };
-    case 'published':
-      return { headline: 'Offer sent', detail: 'The customer can see it now.', tone: 'success', actions: ['dismiss'] };
+    case 'published': {
+      // Named by the reply's real kind from its saved payload (item 121/123): a plain reply is "Reply sent", never "Offer sent".
+      const p = sub.payload ?? {};
+      const [headline] = replySentConfirmation({ offer_type: p.offerType, offer_title: p.offerTitle, offer_price: p.offerPrice, discount_pct: p.discountPct, included_items: p.includedItems });
+      return { headline, detail: 'The customer can see it now.', tone: 'success', actions: ['dismiss'] };
+    }
     case 'needs_changes':
       return { headline: 'Needs changes', detail: needsChangesExplanation(sub), tone: 'danger', actions: ['edit', 'dismiss'] };
     case 'not_sent':
