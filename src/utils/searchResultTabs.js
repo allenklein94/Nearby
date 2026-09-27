@@ -1,6 +1,6 @@
 // Search result tabs (owner item 93). The search itself still covers the whole graph (item 92); the UI shows it in
 // manageable pieces. While a search is active in Discover's All view, the type chips give way to result tabs, and a tab
-// exists only when it has results (or is still loading them):
+// exists only when it has results for the current term:
 //   Top Results = the activity row + a short preview of at most TOP_KIND_LIMIT kinds, TOP_PER_KIND items each
 //   Places      = Nearby businesses + Places
 //   Activities  = the activity/category row + communities (not "Things To Do": that is the Discover mode itself)
@@ -20,16 +20,19 @@ export const RESULT_TABS = [
 
 const TOP_ORDER = ['plans', 'places', 'offers', 'activities'];
 
-// counts: { plans, places, offers, activities } (numbers); loading: same keys (booleans).
-const available = (counts, loading, key) => Number(counts?.[key] ?? 0) > 0 || !!loading?.[key];
+// counts: { plans, places, offers, activities } (numbers of ELIGIBLE results for the current term).
+// settled: every source has answered for the current term. Until then no category tab or section exists (Top Results
+// shows one loader), so nothing stale or empty is presented as a result and nothing appears one by one.
+const available = (counts, key) => Number(counts?.[key] ?? 0) > 0;
 
-export function searchResultTabs(counts = {}, loading = {}) {
-  return RESULT_TABS.filter((t) => t.key === 'top' || available(counts, loading, t.key))
+export function searchResultTabs(counts = {}, { settled = true } = {}) {
+  return RESULT_TABS.filter((t) => t.key === 'top' || (settled && available(counts, t.key)))
     .map((t) => ({ ...t, count: t.key === 'top' ? null : Number(counts?.[t.key] ?? 0) }));
 }
 
-export function topResultKinds(counts = {}, loading = {}) {
-  return TOP_ORDER.filter((k) => available(counts, loading, k)).slice(0, TOP_KIND_LIMIT);
+export function topResultKinds(counts = {}, { settled = true } = {}) {
+  if (!settled) return [];
+  return TOP_ORDER.filter((k) => available(counts, k)).slice(0, TOP_KIND_LIMIT);
 }
 
 // The tab actually shown: the chosen one while it still exists, else Top Results.

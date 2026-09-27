@@ -558,7 +558,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const [searchedGatherings, setSearchedGatherings] = useState([]);
   const [searchedCommunities, setSearchedCommunities] = useState([]);
   const [searchedOffers, setSearchedOffers] = useState([]);
-  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [loadingSearchRaw, setLoadingSearch] = useState(false);
+  // Item 93: the exact term the searched lists / Places list belong to, so a previous query's results are never shown
+  // under a new one (they count as still loading until the new term's results land).
+  const [searchedTerm, setSearchedTerm] = useState(null);
+  const [placesTerm, setPlacesTerm] = useState(undefined);
   // Decision 5 (CLAUDE.md, Aug 27 2026): the "create it" completion CTA's
   // own in-flight state, while classifyCreateRequest() runs.
   const [creatingFromSearch, setCreatingFromSearch] = useState(false);
@@ -647,9 +651,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
         const category = typeFilter === 'places' ? placesCategory : null;
         const keyword = literalTerm;
         const results = await searchNearbyPlaces(userLocation.latitude, userLocation.longitude, category, keyword);
-        if (thisRequestId === placesRequestId.current) setPlaces(results);
+        if (thisRequestId === placesRequestId.current) { setPlaces(results); setPlacesTerm(keyword ?? null); }
       } catch (e) {
         console.error('Discover places search failed', e);
+        if (thisRequestId === placesRequestId.current) { setPlaces([]); setPlacesTerm(literalTerm ?? null); }
       }
       if (thisRequestId === placesRequestId.current) setLoadingPlaces(false);
     }, 350);
@@ -667,6 +672,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       setSearchedGatherings([]);
       setSearchedCommunities([]);
       setSearchedOffers([]);
+      setSearchedTerm(null);
       return;
     }
     const thisRequestId = ++searchRequestId.current;
@@ -682,9 +688,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
           setSearchedGatherings(gatheringResults);
           setSearchedCommunities(communityResults.filter((c) => !joinedCommunityIdsRef.current.has(c.id)));
           setSearchedOffers(offerResults);
+          setSearchedTerm(term);
         }
       } catch (e) {
         console.error('Discover search failed', e);
+        if (thisRequestId === searchRequestId.current) {
+          setSearchedGatherings([]);
+          setSearchedCommunities([]);
+          setSearchedOffers([]);
+          setSearchedTerm(term);
+        }
       }
       if (thisRequestId === searchRequestId.current) setLoadingSearch(false);
     }, 350);
@@ -739,6 +752,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const query = discoverQuery(searchQuery);
   const surpriseTyped = query.kind === 'pick_for_me';
   const isSearching = query.kind === 'search';
+  // Results are fresh only when they were fetched for exactly this term; otherwise they are loading, never shown.
+  const searchResultsFresh = !isSearching || searchedTerm === query.literalTerm;
+  const loadingSearch = loadingSearchRaw || !searchResultsFresh;
+  const placesFresh = !(isAll && isSearching) || !userLocation || placesTerm === query.literalTerm;
+  const placesPending = loadingPlaces || !placesFresh;
 
   // Gatherings/communities: real server-side, indexed search results
   // (searchedGatherings/searchedCommunities, populated by the debounced
@@ -749,15 +767,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const openNowActive = openNowOnly && (!!expandedContext || typeFilter !== 'communities');
   const openNowAt = new Date();
   const applyOpenNow = (list, toEntity) => (openNowActive ? filterOpenNow(list, toEntity, openNowAt) : list);
-  const filteredGatherings = applyOpenNow(isSearching ? searchedGatherings : gatherings, gatheringEntity);
-  const filteredCommunities = openNowActive ? [] : (isSearching ? searchedCommunities : communities);
+  const filteredGatherings = applyOpenNow(isSearching ? (searchResultsFresh ? searchedGatherings : []) : gatherings, gatheringEntity);
+  const filteredCommunities = openNowActive ? [] : (isSearching ? (searchResultsFresh ? searchedCommunities : []) : communities);
   // Offers: real server-side, indexed search results (searchedOffers,
   // populated by the debounced effect above — a genuine cross-table search
   // over brand_offers.title/description and brand_partners.name via the new
   // search_offer_ids() RPC) once actively searching, instead of the
   // client-side .filter().includes() this used before.
   // A business's own weather setting re-ranks perks (item 63): ranks, never hides; unchanged order without a weather signal.
-  const filteredOffers = rankOffersByBusinessWeather(applyOpenNow(isSearching ? searchedOffers : offers, (o) => perkEntity(o)), weatherSignal);
+  const filteredOffers = rankOffersByBusinessWeather(applyOpenNow(isSearching ? (searchResultsFresh ? searchedOffers : []) : offers, (o) => perkEntity(o)), weatherSignal);
 
   // Weather-aware re-ranking (CLAUDE.md, 14-item UX review item 9) --
   // reuses isIndoorCategory/isOutdoorCategory (Home's own weather card
@@ -1057,7 +1075,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // list right below it. A no-op when `notableGatherings` is empty
   // (Communities/Places/Perks views, or while actively searching).
   const dedupedGatherings = filteredGatherings.filter((g) => !notableGatheringIds.has(g.id));
-  const visiblePlaces = applyOpenNow(places, placeEntity);
+  const visiblePlaces = applyOpenNow(placesFresh ? places : [], placeEntity);
 
   // Decision 5 (CLAUDE.md, Aug 27 2026): a real "nothing anywhere matched"
   // state, checked against all three real searchable sections regardless of
@@ -1081,10 +1099,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
     offers: filteredOffers.length,
     activities: filteredCommunities.length + (searchedTopic ? 1 : 0),
   };
-  const resultLoading = { plans: loadingSearch, places: loadingPlaces && !!userLocation, offers: loadingSearch, activities: loadingSearch };
-  const resultTabs = resultTabsActive ? searchResultTabs(resultCounts, resultLoading) : [];
+  // Nothing is laid out until every source has answered for THIS term, so sections never appear one by one or reorder.
+  const resultsSettled = !loadingSearch && !(userLocation && placesPending);
+  const resultTabs = resultTabsActive ? searchResultTabs(resultCounts, { settled: resultsSettled }) : [];
   const resultTab = resultTabsActive ? effectiveResultTab(searchTab, resultTabs) : null;
-  const topKinds = resultTabsActive ? topResultKinds(resultCounts, resultLoading) : [];
+  const topKinds = resultTabsActive ? topResultKinds(resultCounts, { settled: resultsSettled }) : [];
+  const resultTabKey = resultTabs.map((t) => t.key).join('|');
+  // A chosen tab that ends up with no results goes back to Top Results (the selection itself resets, not just the view).
+  useEffect(() => {
+    if (resultTabsActive && resultsSettled && searchTab !== 'top' && !resultTabKey.split('|').includes(searchTab)) setSearchTab('top');
+  }, [resultTabsActive, resultsSettled, searchTab, resultTabKey]);
   const kindView = (kind) => (resultTabsActive ? resultKindView(kind, resultTab, topKinds) : { show: true, cap: isAll ? PREVIEW_COUNT : null });
   const capList = (list, kind) => { const { cap } = kindView(kind); return cap == null ? list : list.slice(0, cap); };
   const showGatherings = typeShowsGatherings && kindView('plans').show;
@@ -2351,6 +2375,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
 
           {/* Item 92: one search, every kind of result -- the activity itself, friends into it, and Nearby businesses. */}
+          {resultTabsActive && !resultsSettled && (
+            <View style={styles.intentSearchLoadingRow}>
+              <NLoader fullScreen={false} size="inline" caption="Searching everything nearby…" />
+            </View>
+          )}
           {showSearchTopic && (
             <TouchableOpacity
               style={styles.searchTopicRow}
@@ -2550,7 +2579,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                     <Text style={styles.emptyActionText}>Enable Location →</Text>
                   </TouchableOpacity>
                 </>
-              ) : loadingPlaces ? (
+              ) : placesPending ? (
                 <View style={{ marginVertical: spacing.md }}>
                   <NLoader fullScreen={false} size="compact" kind="places" />
                 </View>

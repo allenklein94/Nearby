@@ -12,8 +12,20 @@ describe('search result tabs (item 93)', () => {
     expect(searchResultTabs({ plans: 1, places: 1, offers: 1, activities: 1 }).map((t) => t.label))
       .toEqual(['Top Results', 'Places', 'Activities', 'Plans', 'Offers']);
   });
-  it('a kind still loading keeps its tab (no flicker to nothing)', () => {
-    expect(keys(searchResultTabs({ plans: 0 }, { plans: true }))).toContain('plans');
+  it('until every source has answered for this term, no category tab or preview exists (no placeholders)', () => {
+    const counts = { plans: 3, places: 2, offers: 1, activities: 1 };
+    expect(keys(searchResultTabs(counts, { settled: false }))).toEqual(['top']);
+    expect(topResultKinds(counts, { settled: false })).toEqual([]);
+    expect(topResultKinds(counts, { settled: true })).toEqual(['plans', 'places', 'offers']);
+  });
+  it('fixed order regardless of which source answered first or how big each list is', () => {
+    expect(topResultKinds({ activities: 9, offers: 7, places: 1, plans: 1 })).toEqual(['plans', 'places', 'offers']);
+    expect(topResultKinds({ activities: 9, offers: 7, places: 1 })).toEqual(['places', 'offers', 'activities']);
+  });
+  it('fewer than three categories with results: only those, nothing padded', () => {
+    expect(topResultKinds({ places: 2 })).toEqual(['places']);
+    expect(topResultKinds({ plans: 0, places: 0, offers: 0, activities: 0 })).toEqual([]);
+    expect(keys(searchResultTabs({ places: 2, offers: 1 }))).toEqual(['top', 'places', 'offers']);
   });
   it('Top Results previews at most three kinds in a fixed order', () => {
     expect(topResultKinds({ plans: 5, places: 2, offers: 1, activities: 4 })).toEqual(['plans', 'places', 'offers']);
@@ -44,5 +56,32 @@ describe('search result tabs (item 93)', () => {
     // every source is still searched regardless of the tab
     expect(d).toMatch(/searchGatherings\(term, 'wide'\),\s*searchPublicCommunities\(term\),\s*searchOffers\(/);
     expect(d).toMatch(/setSearchQuery\(t\);\s*setSearchTab\('top'\);/);
+  });
+  it('typing or clearing resets the selection to Top Results', () => {
+    const d = read('screens/DiscoverHubScreen.js');
+    expect(d).toMatch(/setSearchQuery\(t\);\s*setSearchTab\('top'\);/);
+    expect(d).toMatch(/setSearchQuery\(''\);\s*setSearchTab\('top'\);/);
+  });
+  it('an empty chosen tab resets the SELECTION to Top Results once results settle', () => {
+    const d = read('screens/DiscoverHubScreen.js');
+    expect(d).toMatch(/if \(resultTabsActive && resultsSettled && searchTab !== 'top' && !resultTabKey\.split\('\|'\)\.includes\(searchTab\)\) setSearchTab\('top'\);/);
+  });
+  it('a type chosen before searching stays the constraint: no result tabs, that type only, full list', () => {
+    const d = read('screens/DiscoverHubScreen.js');
+    expect(d).toMatch(/const resultTabsActive = isAll && isSearching;/);
+    expect(d).toMatch(/kindView = \(kind\) => \(resultTabsActive \? resultKindView\(kind, resultTab, topKinds\) : \{ show: true, cap: isAll \? PREVIEW_COUNT : null \}\)/);
+    expect(d).toMatch(/const typeShowsGatherings = typeFilter === 'all' \|\| typeFilter === 'gatherings';/);
+  });
+  it('a previous query\'s results are never shown under a new one', () => {
+    const d = read('screens/DiscoverHubScreen.js');
+    expect(d).toMatch(/const searchResultsFresh = !isSearching \|\| searchedTerm === query\.literalTerm;/);
+    expect(d).toMatch(/const loadingSearch = loadingSearchRaw \|\| !searchResultsFresh;/);
+    expect(d).toMatch(/isSearching \? \(searchResultsFresh \? searchedGatherings : \[\]\)/);
+    expect(d).toMatch(/isSearching \? \(searchResultsFresh \? searchedCommunities : \[\]\)/);
+    expect(d).toMatch(/isSearching \? \(searchResultsFresh \? searchedOffers : \[\]\)/);
+    expect(d).toMatch(/applyOpenNow\(placesFresh \? places : \[\], placeEntity\)/);
+    expect(d).toMatch(/setSearchedTerm\(term\);/);
+    expect(d).toMatch(/setPlacesTerm\(keyword \?\? null\)/);
+    expect(d).toMatch(/const resultsSettled = !loadingSearch && !\(userLocation && placesPending\);/);
   });
 });
