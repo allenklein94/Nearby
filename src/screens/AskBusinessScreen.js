@@ -1,3 +1,4 @@
+import { askMissingField } from '../utils/askMissing';
 import { DATE_VIBES } from '../constants/businessVibes';
 import { cleanDateVibes } from '../utils/dateProposalVibes';
 import React, { useState } from 'react';
@@ -208,7 +209,8 @@ export default function AskBusinessScreen({ navigation, route }) {
   // as toDateParam() itself now treats them as equivalent.
   const rawPrefillDateWindow = route.params?.prefillDateWindow;
   const normalizedPrefillDateWindow = rawPrefillDateWindow === 'tonight' || rawPrefillDateWindow === 'now' ? 'today' : rawPrefillDateWindow;
-  const [dateWindow, setDateWindow] = useState(normalizedPrefillDateWindow && normalizedPrefillDateWindow !== 'flexible' ? normalizedPrefillDateWindow : 'flexible');
+  // Item 106: unanswered (null) unless the person's words gave a day; sending asks "What day?" once (utils/askMissing.js).
+  const [dateWindow, setDateWindow] = useState(normalizedPrefillDateWindow || null);
   // P0 #2 fix: a genuinely picked date, independent of the preset chips --
   // pickedDate only matters while dateWindow === PICK_DATE_KEY; switching
   // back to any preset chip abandons it rather than leaving it silently
@@ -295,7 +297,7 @@ export default function AskBusinessScreen({ navigation, route }) {
     const picked = d.pickedDate ? new Date(d.pickedDate) : null;
     if (d.dateWindow === PICK_DATE_KEY) {
       if (picked && picked.getTime() > Date.now()) { setPickedDate(picked); setDateWindow(PICK_DATE_KEY); }
-    } else setDateWindow(d.dateWindow ?? 'flexible');
+    } else setDateWindow(d.dateWindow ?? null);
     setStartTime(d.startTime ? new Date(d.startTime) : null);
     setRadiusMiles(RADIUS_OPTIONS.includes(d.radiusMiles) ? d.radiusMiles : 15);
     setAttributesInput(Array.isArray(d.attributesInput) ? d.attributesInput : []); setCuisineInput(d.cuisineInput ?? null);
@@ -328,10 +330,10 @@ export default function AskBusinessScreen({ navigation, route }) {
   // order the fields render in, one specific alert per missing field,
   // matching this screen's own established single-check convention rather
   // than a generic "fill in required fields" message.
-  // Date isn't checked here -- the "When?" chip row always has a real,
-  // deterministic value selected (defaults to 'flexible', a genuine "no
-  // preference" answer, not an unanswered field), so there's no missing
-  // state to validate against for it.
+  // Item 106 (supersedes the old 'flexible' default): the day IS checked --
+  // a business cannot act on "12 people" without one. It starts unanswered
+  // unless the words gave a day; "I'm flexible" is a real answer the person
+  // picks. Gathering and posting-bound requests already carry their day.
   // Item 94 ("Add budget without making it feel transactional", CLAUDE.md):
   // budget is a deliberate, disclosed exception to the rule above now --
   // it always has a real, deterministic value selected too (defaults to
@@ -339,10 +341,7 @@ export default function AskBusinessScreen({ navigation, route }) {
   // established), so a forced "must type a number" check would contradict
   // the whole point of this item -- keeping the initial interaction easy.
   function findMissingField() {
-    if (!text.trim()) return { title: 'Tell us what you want', body: 'A few words about what you’re looking for.' };
-    if (!category) return { title: 'Pick a category', body: 'Helps us route this to the right kind of business.' };
-    if (!gatheringId && !matchId && !partySize.trim()) return { title: 'How many people?', body: 'A real party size helps a business quote the right offer.' };
-    return null;
+    return askMissingField({ text, category, gatheringId, matchId, partySize, dateWindow, matchedAvailability });
   }
 
   // Read-only, contacts no business -- same "browsing is free, asking is
