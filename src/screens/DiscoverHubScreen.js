@@ -37,6 +37,8 @@ import { recordTypedAsk } from '../services/typedAskAudit';
 import { refineTypedAsk, narrowTypedAsk, restoreDiscoverAsk } from '../services/askRefine';
 import { narrowGroupLabel } from '../utils/categoryNarrow';
 import { discoverSession } from '../services/discoverSession';
+import { syncDiscoverSession, pushSession, pushClear, sameSession } from '../services/discoverSessionSync';
+import { randomUUID } from 'expo-crypto';
 import AskRefinementChips from '../components/AskRefinementChips';
 import { displayedPosition } from '../utils/typedAskAudit';
 import { submitSurprise, shuffleSurprise, navigateToSurprisePick, surpriseTypesForTab } from '../services/surpriseMe';
@@ -383,9 +385,45 @@ export default function DiscoverHubScreen({ navigation, route }) {
     }
     if (thisRequestId === intentSearchRequestId.current) setIntentSearching(false);
   }
+  // Cross-device (services/discoverSessionSync.js): the account's session is the source of truth, the device store its cache.
+  // localEdit counts the person's own changes, so an account answer that arrives after they changed something never overrides it.
+  const localEdit = useRef(0);
+  const lastSynced = useRef(null); // {sessionId, updatedAt} last known to match the account
+  const clearedSession = useRef(null);
+  const accountApplied = useRef(false);
+  function applyAccountSession(session, editAtStart) {
+    if (localEdit.current !== editAtStart) return;
+    accountApplied.current = true;
+    if (sameSession(session, lastSynced.current)) return;
+    lastSynced.current = session ? { sessionId: session.sessionId, updatedAt: session.updatedAt } : null;
+    if (!session) {
+      // cleared on another device (or expired): end it here too
+      ++intentSearchRequestId.current;
+      setRestoreFailed(null);
+      setIntentSearch((cur) => (cur && cur.outcome !== 'pick_for_me' ? null : cur));
+      setSearchQuery(''); // safe: the guard above means the person has not typed since
+      return;
+    }
+    setSearchQuery(session.typedText);
+    restoreSession(session);
+  }
+  function syncFromAccount() {
+    if (!myUserId) return;
+    const editAtStart = localEdit.current;
+    syncDiscoverSession(myUserId)
+      .then((session) => applyAccountSession(session, editAtStart))
+      .catch((e) => console.warn('Discover session sync unavailable; using this device', e?.message));
+  }
   function endSearchSession() {
+    ++localEdit.current;
     setRestoreFailed(null);
     discoverSession.clear(myUserId);
+    const sid = intentSearch?.sessionId ?? restoreFailed?.sessionId ?? null;
+    if (sid && clearedSession.current !== sid) {
+      clearedSession.current = sid;
+      lastSynced.current = null;
+      pushClear(sid).catch((e) => console.warn('Discover session clear not synced', e?.message));
+    }
   }
   // Surprise Me typed into this search box (owner, 2026-09-26): the SAME engine as Home (services/surpriseMe.js), shown inline
   // here; never a keyword search for the phrase, never logged as a search.
@@ -1205,6 +1243,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       return;
     }
     if (submitted.kind !== 'search') return;
+    ++localEdit.current;
     const thisRequestId = ++intentSearchRequestId.current;
     setIntentSearching(true);
     try {
@@ -1221,7 +1260,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
         // Typed-ask audit (item 105): records what this search understood and the rows rendered below, in their order.
         // Fire-and-forget; the result is set unchanged.
         const shown = result.outcome === 'pick_for_me' ? null : recordTypedAsk('discover', result);
-        setIntentSearch({ ...result, shown, askedAt: Date.now() });
+        const now = Date.now();
+        setIntentSearch({ ...result, shown, askedAt: now, updatedAt: now, sessionId: randomUUID() });
       }
     } catch (e) {
       console.error('Discover intent search failed', e);
@@ -1236,6 +1276,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const prev = intentSearch;
     if (!prev || intentRefining) return;
     const thisRequestId = intentSearchRequestId.current;
+    ++localEdit.current;
     setIntentRefining(true);
     try {
       const next = await refineTypedAsk('discover', prev, key);
@@ -1251,15 +1292,33 @@ export default function DiscoverHubScreen({ navigation, route }) {
     if (!myUserId || sessionCheckedFor.current === myUserId) return;
     sessionCheckedFor.current = myUserId;
     if (searchQuery || intentSearch) return;
+    // the device cache first (instant), then the account (the source of truth) replaces it if another device changed it
     discoverSession.load(myUserId).then((saved) => {
-      if (!saved || sessionCheckedFor.current !== myUserId) return;
+      if (!saved || sessionCheckedFor.current !== myUserId || accountApplied.current) return;
+      lastSynced.current = { sessionId: saved.sessionId, updatedAt: saved.updatedAt };
       setSearchQuery(saved.typedText);
       restoreSession(saved);
     });
   }, [myUserId]);
-  // Save every change of the ask (first search, a chip, a category, a restore); the one place the session is written.
+  // Each time Discover comes into view, pick up a change made on another device.
+  useFocusEffect(useCallback(() => { syncFromAccount(); }, [myUserId]));
+  // Save every change of the ask (first search, a chip, a category, a restore) to the device cache; the person's own changes
+  // (newer than what the account last had) also go to the account. The one place the session is written.
   useEffect(() => {
-    if (intentSearch && intentSearch.outcome !== 'pick_for_me') discoverSession.save(myUserId, intentSearch);
+    if (!intentSearch || intentSearch.outcome === 'pick_for_me' || !intentSearch.sessionId) return;
+    discoverSession.save(myUserId, intentSearch);
+    if (!myUserId || sameSession(intentSearch, lastSynced.current)) return;
+    const snap = { ...intentSearch, typedText: intentSearch.typedText ?? searchQuery };
+    lastSynced.current = { sessionId: snap.sessionId, updatedAt: snap.updatedAt };
+    clearedSession.current = null;
+    const editAtStart = localEdit.current;
+    pushSession(myUserId, snap)
+      .then((account) => {
+        // behind another device: show the account's newer session (or its clear)
+        if (account && !account.cleared && sameSession(account, snap)) return;
+        applyAccountSession(account?.cleared ? null : account, editAtStart);
+      })
+      .catch((e) => console.warn('Discover session not synced; kept on this device', e?.message));
   }, [intentSearch, myUserId]);
 
   // Item 108: a Browse category narrows the typed ask on screen (same words, same constraints, category added), inline.
@@ -1267,6 +1326,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const prev = intentSearch;
     if (!prev || intentRefining) return;
     const thisRequestId = intentSearchRequestId.current;
+    ++localEdit.current;
     setIntentRefining(true);
     try {
       const next = await narrowTypedAsk('discover', prev, group.key);

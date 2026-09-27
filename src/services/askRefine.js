@@ -18,7 +18,8 @@ async function rerunAsk(surface, prev, refined, key, action) {
     ...next, outcome, classifyResult: refined, submissionId: prev.submissionId ?? null,
     refinement: { key, action, parentSnapshotId: rootSnapshotId },
   });
-  return { ...prev, ...next, outcome, classifyResult: refined, shown, rootSnapshotId, refined: true };
+  // updatedAt: when the person changed the ask (Discover's cross-device session uses it for latest-wins; unused on Home)
+  return { ...prev, ...next, outcome, classifyResult: refined, shown, rootSnapshotId, refined: true, updatedAt: Date.now() };
 }
 
 // `prev` = the surface's current typed-ask state ({ classifyResult, typedText, submissionId, shown, rootSnapshotId? ... }).
@@ -41,6 +42,6 @@ export async function restoreDiscoverAsk(saved) {
   const outcome = next.items.length > 0 ? 'results' : 'empty';
   return {
     ...next, outcome, classifyResult: saved.classifyResult, typedText: saved.typedText, submissionId: saved.submissionId,
-    rootSnapshotId: saved.rootSnapshotId, askedAt: saved.askedAt, shown: null, refined: saved.refined === true, restored: true,
+    rootSnapshotId: saved.rootSnapshotId, askedAt: saved.askedAt, sessionId: saved.sessionId, updatedAt: saved.updatedAt, shown: null, refined: saved.refined === true, restored: true,
   };
 }

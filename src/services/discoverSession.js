@@ -8,12 +8,15 @@
 //
 // Restore = restoreDiscoverAsk in services/askRefine.js (kept there so this store stays free of the resolver and can be cleared
 // from auth code).
-// Stored on the device only (AsyncStorage), keyed by the signed-in user, versioned; removed on sign-out and account deletion.
-// No server copy exists (no session-sync mechanism exists, and a second server copy of the words would need the retention purge).
-// Retention: the words may not outlive raw_ask_retention_days() (180) from when the ask was made, so the whole session ends then.
+// Cross-device (owner, 2026-09-27): the ACCOUNT's one active session (public.discover_sessions, services/discoverSessionSync.js)
+// is the source of truth; this device store is only its cache, for an instant restore while the account copy loads. A session
+// carries its own id (kept across refinements, new per ask) and updatedAt (when the person last changed it), which decide
+// latest-wins between devices. Keyed by the signed-in user, versioned; removed from the device on sign-out (the account copy
+// stays; account deletion removes it). Retention: the words may not outlive raw_ask_retention_days() (180) from when the ask
+// was made, here and on the server.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const SESSION_VERSION = 1;
+export const SESSION_VERSION = 2;
 export const RAW_ASK_RETENTION_DAYS = 180; // = public.raw_ask_retention_days() (a test keeps them equal)
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PREFIX = 'discoverSession:';
@@ -25,11 +28,13 @@ const isUuid = (v) => typeof v === 'string' && /^[0-9a-f-]{36}$/.test(v);
 export function sessionFromState(state, userId) {
   if (!userId || !state || typeof state.typedText !== 'string' || !state.typedText.trim() || !state.classifyResult) return null;
   const askedAt = Number.isFinite(state.askedAt) ? state.askedAt : null;
-  if (askedAt == null) return null;
+  if (askedAt == null || !isUuid(state.sessionId)) return null;
   return {
     v: SESSION_VERSION,
     userId,
+    sessionId: state.sessionId,
     askedAt,
+    updatedAt: Number.isFinite(state.updatedAt) ? state.updatedAt : askedAt,
     typedText: state.typedText,
     classifyResult: state.classifyResult,
     submissionId: isUuid(state.submissionId) ? state.submissionId : null,
@@ -52,9 +57,14 @@ export function createDiscoverSessionStore(storage = AsyncStorage, now = () => D
       if (!userId) return null;
       try {
         const raw = await storage.getItem(sessionKey(userId));
-        if (!raw) return null;
+        if (!raw) {
+          // an older cache format for this user is dropped (the account copy is the source of truth)
+          const old = (await storage.getAllKeys()).filter((k) => k.startsWith(PREFIX) && k.endsWith(`:${userId}`) && k !== sessionKey(userId));
+          if (old.length) await storage.multiRemove(old);
+          return null;
+        }
         const s = JSON.parse(raw);
-        if (!s || s.v !== SESSION_VERSION || s.userId !== userId || !Number.isFinite(s.askedAt) || typeof s.typedText !== 'string' || !s.classifyResult || expired(s)) {
+        if (!s || s.v !== SESSION_VERSION || s.userId !== userId || !Number.isFinite(s.askedAt) || !isUuid(s.sessionId) || typeof s.typedText !== 'string' || !s.classifyResult || expired(s)) {
           await storage.removeItem(sessionKey(userId));
           return null;
         }

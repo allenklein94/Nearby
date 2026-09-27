@@ -63,12 +63,13 @@ const CLASSIFY = { intent: 'gathering', category: null, dateWindow: 'tonight', p
 const USER = 'aaaaaaaa-0000-4000-8000-000000000001';
 const OTHER = 'bbbbbbbb-0000-4000-8000-000000000002';
 const T0 = Date.UTC(2026, 8, 27, 18);
+const SESSION = 'cccccccc-0000-4000-8000-000000000003';
 
 // Discover's state after "something fun tonight with friends" + Activities (what the screen holds and saves).
 async function searchedAndNarrowed() {
   classifyCreateRequest.mockResolvedValue(CLASSIFY);
   const r = await runIntentSearch(TEXT);
-  const first = { ...r, shown: recordTypedAsk('discover', r), askedAt: T0 };
+  const first = { ...r, shown: recordTypedAsk('discover', r), askedAt: T0, updatedAt: T0, sessionId: SESSION };
   return narrowTypedAsk('discover', first, 'activities_recreation');
 }
 
@@ -172,7 +173,7 @@ describe('Discover typed-ask session persistence', () => {
     expect(supabase.rpc).not.toHaveBeenCalled();
   });
 
-  it('9. the words never outlive the 180-day raw-ask retention; the session is device-only and never sent anywhere', async () => {
+  it('9. the words never outlive the 180-day raw-ask retention; the device store is only a cache (sync lives in discoverSessionSync.js)', async () => {
     const sql = read('../../supabase/migrations/20270237_raw_ask_text_retention.sql').match(/raw_ask_retention_days\(\)\s*returns integer language sql immutable as \$\$ select (\d+) \$\$/);
     expect(Number(sql[1])).toBe(RAW_ASK_RETENTION_DAYS);
     const storage = deviceStorage();
@@ -188,8 +189,8 @@ describe('Discover typed-ask session persistence', () => {
     // no results are stored, only the ask
     await createDiscoverSessionStore(storage, () => T0).save(USER, live);
     expect(Object.keys(JSON.parse(storage.map.get(sessionKey(USER)))).sort())
-      .toEqual(['askedAt', 'classifyResult', 'refined', 'rootSnapshotId', 'submissionId', 'typedText', 'userId', 'v']);
-    // nothing on the server or any business path reads it
+      .toEqual(['askedAt', 'classifyResult', 'refined', 'rootSnapshotId', 'sessionId', 'submissionId', 'typedText', 'updatedAt', 'userId', 'v']);
+    // the cache itself never talks to the server; account sync is its own module (discoverSessionSync.test.js)
     const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
     for (const f of walk(path.join(__dirname, '../../supabase'))) expect(fs.readFileSync(f, 'utf8')).not.toMatch(/discoverSession/);
     expect(read('./discoverSession.js')).not.toMatch(/supabase/);
