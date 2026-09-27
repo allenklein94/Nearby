@@ -96,7 +96,8 @@ describe('Discover typed search: declared genre is a weak lift', () => {
     const items = await discoverSearch('rock show tonight', [full, gathering('jazz', 'jazz')]);
     const row = items.find((i) => i.id === 'rock');
     expect(row.subtitle).toMatch(/Full — Join Waitlist/);
-    expect(row.score).toBeGreaterThan(items.find((i) => i.id === 'jazz').score);
+    // still lifted: the asked genre (intent, tier 1) keeps it ahead of a gathering with room (availability, tier 4)
+    expect(items.map((i) => i.id)).toEqual(['rock', 'jazz']);
   });
 
   it('the genre reason alone never makes a strong-match headline', () => {

@@ -7,6 +7,7 @@ import { occasionLabel, occasionIcon, CALENDAR_SAVEABLE_OCCASION_KEYS } from '..
 import { experienceTemplateForOccasion } from '../constants/experienceTemplates';
 import { relevantAddonTypesForOccasion } from '../constants/planAddons';
 import { moneyLabel, moneyNumber } from '../utils/outcomeDisplay';
+import { compareRanked } from '../constants/signalPriority';
 
 // The wizard's own 7 real activity types (CelebrateSomethingScreen.js's
 // 'activity' step) -- exported so occasion_group_plan_options' own
@@ -381,7 +382,7 @@ export function dedupeBusinessCandidates(optionsResult) {
 export function extractBusinessCandidateIds(optionsResult, limit = 5) {
   return dedupeBusinessCandidates(optionsResult)
     .filter((c) => c.type === 'business_availability')
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    .sort(compareRanked)
     .slice(0, limit)
     .map((c) => c.id);
 }

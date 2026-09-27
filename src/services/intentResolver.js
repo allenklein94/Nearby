@@ -68,7 +68,8 @@ import { cleanFeatures } from '../utils/gatheringPractical';
 import { applyDeclaredFeatures } from '../constants/declaredFeatures';
 import { parseAskFacets, applyAskFacets, partnerPartyType, attributesFromAsk } from '../constants/askFacets';
 import { isPreferredCategory, PREFERRED_CATEGORY_POINTS } from '../utils/askPreferences';
-import { createScoreTrace, guardTrace } from '../utils/typedAskAudit';
+import { createScoreTrace, createRankLedger, guardTrace } from '../utils/typedAskAudit';
+import { compareRanked, typedAskRankVector } from '../constants/signalPriority';
 import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitmentLevel';
 import { formatsFromText, applyFormatToCandidates } from '../constants/activityFormat';
 import { skillLevelsFromText, applySkillToCandidates } from '../constants/skillLevel';
@@ -96,6 +97,13 @@ const RESULT_CAP = 4;
 
 // weatherPromise is no longer read here: weather is applied after dedupe (utils/askWeather.js), judged at each gathering's own
 // start time. The parameter stays so the call site is unchanged.
+// A result's score as NAMED parts (the ranking framework reads their tiers, constants/signalPriority.js; the typed-ask audit
+// records them). score is always their sum.
+function scored(parts) {
+  const baseSignals = parts.filter((p) => p.delta);
+  return { score: baseSignals.reduce((n, p) => n + p.delta, 0), baseSignals };
+}
+
 async function resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise = null, travel = false) {
   const nearby = await getNearbyGatherings(travel ? 'travel' : 'wide');
   const relevant = nearby.filter((g) => {
@@ -153,15 +161,17 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       isFull,
       // item 114: the part of the score that comes from the PERSON (a declared interest), not the ask (constants/sessionIntent.js)
       historyScore: gatheringResolverScoreParts(gathering).filter((p) => p.code === 'base_interest_match').reduce((n, p) => n + p.delta, 0),
-      score: scoreGatheringForResolver(gathering)
-        + titleMentionBonus(gathering.title, meaningfulWords)
-        + priceAndPartyBonus(gathering, priceLevel, partyType),
-      // typed-ask audit only (utils/typedAskAudit.js): the same three terms, named; never read by ranking
-      baseSignals: [
+      // scoreGatheringForResolver's parts, the title and price/party bonuses, and the asked category (every gathering here was
+      // filtered to it, so it carries the same category credit a matching business or perk does)
+      ...scored([
         ...gatheringResolverScoreParts(gathering),
+        { code: 'base_category_match', delta: category && gathering.interest_tag === category ? SCORE_INTEREST_MATCH : 0 },
+        // a real upcoming gathering with room can actually happen: the same availability credit a live business posting earns
+        // (a full one only offers a waitlist spot)
+        { code: 'base_availability', delta: isFull ? 0 : SCORE_CONFIRMED_AVAILABILITY_FLOOR },
         { code: 'base_title_mention', delta: titleMentionBonus(gathering.title, meaningfulWords) },
         { code: 'base_price_party', delta: priceAndPartyBonus(gathering, priceLevel, partyType) },
-      ],
+      ]),
     };
   });
 }
@@ -213,7 +223,11 @@ async function resolveCommunities(category, location, myCity) {
       id: c.id,
       title: c.name,
       subtitle: "You're already a member",
-      score: SCORE_OWN_NETWORK + communityAreaBonus(c, location, myCity),
+      ...scored([
+        { code: 'base_own_network', delta: SCORE_OWN_NETWORK },
+        { code: 'base_category_match', delta: SCORE_INTEREST_MATCH },
+        { code: 'base_area', delta: communityAreaBonus(c, location, myCity) },
+      ]),
     }));
 }
 
@@ -267,7 +281,7 @@ export async function resolveCommunityIntent({ category, rawText }) {
       score: SCORE_INTEREST_MATCH + titleMentionBonus(c.name, meaningfulWords),
     }));
 
-  return [...joined, ...discoverable].sort((a, b) => b.score - a.score).slice(0, RESULT_CAP);
+  return [...joined, ...discoverable].sort(compareRanked).slice(0, RESULT_CAP);
 }
 
 async function resolveConnectedRequests(category, dateWindow) {
@@ -289,7 +303,11 @@ async function resolveConnectedRequests(category, dateWindow) {
     // offered when the RPC's own match_id genuinely resolves to one, not
     // assumed just because this is a "connected" result.
     matchId: r.match_id ?? null,
-    score: SCORE_OWN_NETWORK,
+    // the server filtered these to the asked category when there is one
+    ...scored([
+      { code: 'base_own_network', delta: SCORE_OWN_NETWORK },
+      { code: 'base_category_match', delta: category ? SCORE_INTEREST_MATCH : 0 },
+    ]),
   }));
 }
 
@@ -315,7 +333,7 @@ async function resolvePerks(category, location) {
     // match signal); one that's actually targeted at this category is a
     // real, comparable match, same weight as a gathering's own interest
     // match.
-    score: offer.target_interest_tag && offer.target_interest_tag === category ? SCORE_INTEREST_MATCH : 0,
+    ...scored([{ code: 'base_category_match', delta: offer.target_interest_tag && offer.target_interest_tag === category ? SCORE_INTEREST_MATCH : 0 }]),
     // read by the open-now resolver (utils/operatingStatus.js): expiry and the perk's own time-of-day window
     expiresAt: offer.expires_at ?? null,
     validFromTime: offer.valid_from_time ?? null,
@@ -351,65 +369,28 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
     whoForSignalsPromise,
   ]);
   return rows.map((row) => {
-    let score = 0;
-    // Only count as a real category match when the posting itself is
-    // targeted -- an untargeted posting matching by virtue of category
-    // being null isn't a genuine signal, same reasoning as perks above.
-    if (category && row.category && row.category === category) score += SCORE_INTEREST_MATCH;
-    if (row.distance_miles != null && row.distance_miles < 2) score += SCORE_CLOSE_DISTANCE;
-    // P0 item 3 (CLAUDE.md, Aug 28 2026): a structural confidence floor,
-    // not a relevance bonus -- eligibility already guarantees ends_at >
-    // now(), so any result here is, by construction, both available right
-    // now AND confirmed (unlike business_policy_match's own "may be able
-    // to help"). Previously plain SCORE_HAPPENING_NOW, whose real minimum
-    // (2) could lose to policy-only's real maximum (SCORE_CLOSE_DISTANCE,
-    // 3) -- a documented cross-tier ranking violation. This floor
-    // structurally exceeds that maximum, closing it for good.
-    score += SCORE_CONFIRMED_AVAILABILITY_FLOOR;
-    // Taxonomy Post-Implementation Audit remediation (CLAUDE.md, Aug 28
-    // 2026), item 3: a real cuisine/attribute overlap between what the ask
-    // implies and this posting's own business is a meaningful ranking
-    // bonus, not a hard filter -- a relevant business can now outrank a
-    // less relevant but slightly closer one, without ever hiding an
-    // otherwise-eligible posting outright.
-    score += attributeAndCuisineBonus(row, attributes, cuisine);
-    score += hobbyAttributeBonus(row, affinitySignals?.declaredInterests);
-    // Activity (item 37): what the person asked to DO, against what this business declared it supports.
-    score += activityFitBonus(row, askedActivities);
-    // "10/10 blueprint" audit, Finding 8 (CLAUDE.md, Aug 30 2026): the
-    // business's own real accommodates_party_types now propagates all the
-    // way to a consumer-facing ranking bonus, not just its public profile.
-    score += accommodatesPartyTypeBonus(row, partyType, partySize);
-    // Intent engine vision, first increment (2026-09-06): a business that
-    // has declared this exact occasion among its own real
-    // priority_occasions is a genuinely stronger match than one that
-    // hasn't -- same "real signal, flat bonus, never a filter" shape as
-    // the two bonuses above.
-    score += occasionBonus(row, occasion);
-    // Intent engine vision, layer 2 (subcategory) -- third increment
-    // (2026-09-06): the business's own standing identity, not just this
-    // one posting's own row.category (already scored a few lines above).
-    score += subcategoryBonus(row, category);
-    // Intent engine vision, multi-classification businesses (resumed
-    // 2026-09-10): the business's own secondary categories array -- a
-    // cross-major self-classification distinct from both row.category
-    // (this posting's own tag) and row.subcategory (the business's single
-    // primary-major leaf tag), scored at the same flat weight as
-    // occasionBonus()/attributeAndCuisineBonus() per the user's own
-    // specified hierarchy (primary category > subcategory > secondary
-    // category ≈ semantic tag/occasion).
-    score += secondaryCategoryBonus(row, category);
-    // "Anniversaries could work the same way" follow-up (CLAUDE.md): two
-    // real personalization signals -- a business the caller has actually
-    // transacted with before (repeat-visit affinity) outranks a business
-    // the caller has merely followed, since a real past transaction is a
-    // stronger signal than a standing follow, matching the reasons-text
-    // ordering below.
-    score += pastPlanBonus(row, affinitySignals?.pastPartnerIds);
-    score += favoriteBusinessBonus(row, affinitySignals?.followedPartnerIds);
-    // Item 100 (CLAUDE.md): a real signal about the person the ask is FOR,
-    // not the caller -- see whoForPreferenceBonus()'s own header comment.
-    score += whoForPreferenceBonus(row, whoForSignals);
+    // Each bonus is a named part (constants/signalPriority.js TYPED_ASK_SIGNAL_TIER decides its tier); the history of the
+    // comments for each lives in intentResolverScoring.js beside the bonus itself.
+    const { score, baseSignals } = scored([
+      // only a TARGETED posting matching the asked category is a real category match
+      { code: 'base_category_match', delta: category && row.category && row.category === category ? SCORE_INTEREST_MATCH : 0 },
+      { code: 'base_close_distance', delta: row.distance_miles != null && row.distance_miles < 2 ? SCORE_CLOSE_DISTANCE : 0 },
+      // P0 item 3: a live posting is, by construction, available now AND confirmed (the RPC requires ends_at > now())
+      { code: 'base_availability', delta: SCORE_CONFIRMED_AVAILABILITY_FLOOR },
+      { code: 'base_attribute_match', delta: attributeAndCuisineBonus(row, attributes, cuisine) },
+      { code: 'base_hobby_link', delta: hobbyAttributeBonus(row, affinitySignals?.declaredInterests) },
+      // Activity (item 37): what the person asked to DO, against what this business declared it supports.
+      { code: 'base_activity_fit', delta: activityFitBonus(row, askedActivities) },
+      { code: 'base_party_type_fit', delta: accommodatesPartyTypeBonus(row, partyType, partySize) },
+      { code: 'base_occasion_fit', delta: occasionBonus(row, occasion) },
+      { code: 'base_subcategory', delta: subcategoryBonus(row, category) },
+      { code: 'base_secondary_category', delta: secondaryCategoryBonus(row, category) },
+      // a real past transaction and a standing follow (who the person usually is)
+      { code: 'base_past_plan', delta: pastPlanBonus(row, affinitySignals?.pastPartnerIds) },
+      { code: 'base_followed', delta: favoriteBusinessBonus(row, affinitySignals?.followedPartnerIds) },
+      // Item 100: a real signal about the person the ask is FOR, not the caller
+      { code: 'base_who_for', delta: whoForPreferenceBonus(row, whoForSignals) },
+    ]);
     // Thursday plan item 23: real "why" text for the same bonuses just
     // scored above, never a second computation -- appended to the
     // existing title/price subtitle rather than replacing it, so no
@@ -475,6 +456,7 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
         remainingCapacity: row.remaining_capacity ?? null,
       },
       score,
+      baseSignals,
     };
   });
 }
@@ -506,7 +488,7 @@ async function resolvePolicyOnlyBusinesses(location, partySize, searchMiles = un
     // Exact wording per direct instruction: never "Available" -- this is a
     // standing willingness, not confirmed inventory.
     subtitle: 'May be available — business confirmation required',
-    score: row.distance_miles != null && row.distance_miles < 2 ? SCORE_CLOSE_DISTANCE : 0,
+    ...scored([{ code: 'base_close_distance', delta: row.distance_miles != null && row.distance_miles < 2 ? SCORE_CLOSE_DISTANCE : 0 }]),
   }));
 }
 
@@ -530,7 +512,11 @@ async function resolveOccasionOfferingBusinesses(location, occasion, searchMiles
     distanceMiles: row.distance_miles ?? null,
     title: `${row.partner_name} offers ${occasionLabel(occasion)} experiences`,
     subtitle: 'Ask what they can do — business confirmation required',
-    score: occasionOfferingScore(row.distance_miles),
+    // occasionOfferingScore = the offering itself + the close-by bonus, named apart
+    ...scored([
+      { code: 'base_occasion_offering', delta: occasionOfferingScore(null) },
+      { code: 'base_close_distance', delta: occasionOfferingScore(row.distance_miles) - occasionOfferingScore(null) },
+    ]),
   }));
 }
 
@@ -558,8 +544,10 @@ async function resolveOccasionPackages(location, occasion, partySize, searchMile
     ...(searchMiles ? { radiusMiles: Math.max(searchMiles, 25) } : {}),
   });
   return rows.map((row) => {
-    let score = SCORE_OCCASION_PACKAGE_FLOOR;
-    if (row.distance_miles != null && row.distance_miles < 2) score += SCORE_CLOSE_DISTANCE;
+    const { score, baseSignals } = scored([
+      { code: 'base_package', delta: SCORE_OCCASION_PACKAGE_FLOOR },
+      { code: 'base_close_distance', delta: row.distance_miles != null && row.distance_miles < 2 ? SCORE_CLOSE_DISTANCE : 0 },
+    ]);
     const detail = formatOccasionPackageDetail({
       pricePerPerson: row.price_per_person, minGuests: row.min_guests, availableDays: row.available_days,
     });
@@ -573,6 +561,7 @@ async function resolveOccasionPackages(location, occasion, partySize, searchMile
       category: row.category ?? null,
       includedItems: row.included_items ?? [],
       score,
+      baseSignals,
     };
   });
 }
@@ -734,6 +723,13 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Typed-ask audit (utils/typedAskAudit.js): READ-ONLY. Each trace.step names what the pass just before it changed; it never
   // writes to a candidate, never reorders, and swallows its own errors.
   const trace = guardTrace(() => createScoreTrace(deduped, { removedBeforeStart: candidates.length - deduped.length }));
+  // The ranking ledger (constants/signalPriority.js, the one ranking framework): the same per-pass diff as the audit trace, kept
+  // apart from it so the audit can never change an order. It also sees the two passes the audit never records. Each result's
+  // order comes from its tier vector: a stronger tier always beats any amount of a weaker one. A ledger failure = order by score.
+  let ledger = null;
+  try { ledger = createRankLedger(deduped); } catch (e) { ledger = null; }
+  const step = (code) => { ledger?.step(code, deduped); trace.step(code, deduped); };
+  const unrecorded = (code) => { ledger?.step(code, deduped); trace.rebase(deduped); };
 
   // Weather nudges, never dictates (2026-09-26, utils/askWeather.js): a gathering is judged at its own start, everything else at
   // the window the person's words anchor ("tonight", "tomorrow", "Saturday before 3 PM"); no anchor or "this weekend" = no
@@ -750,7 +746,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   } catch (e) {
     console.error('weather nudge skipped', e);
   }
-  trace.step('weather', deduped);
+  step('weather');
 
   // Items 40 + 82: a business whose declared tier fits the asked price, or whose typical spend fits a stated budget, ranks up;
   // a typical spend clearly over the budget, or a $$$/$$$$ tier on "not too expensive", ranks down. Never a filter.
@@ -762,33 +758,33 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
       console.error('business price nudge skipped', e);
     }
   }
-  trace.step('price_budget', deduped);
+  step('price_budget');
 
   // Energy level (item 44): "something low-key" lifts tags that carry that energy; ranking only (constants/energyLevel.js).
   // Item 65: an energy the person PICKED ("What kind of night?") joins the ones their words name.
   // Item 66: a format the person named ("a pickleball tournament") lifts that format and sinks a known different one; never hides.
   deduped = applyFormatToCandidates(deduped, formatsFromText(rawText));
-  trace.step('format', deduped);
+  step('format');
   // Item 67: "beginner pickleball" lifts a declared Beginner / All levels / Casual game and sinks a Competitive one; never hides.
   deduped = applySkillToCandidates(deduped, skillLevelsFromText(rawText));
-  trace.step('skill_level', deduped);
+  step('skill_level');
   // "rock show tonight" lifts gatherings whose host declared Rock; a different/undeclared genre is neutral, nothing hidden.
   deduped = applyGenreToCandidates(deduped, genresFromText(rawText));
-  trace.step('genre', deduped);
+  step('genre');
   // Intensity (the host's Energy scale) and effort, only from "easy hike" / "high intensity workout"-style phrases; never hides.
   const askedIntensity = intensityFromText(rawText);
   deduped = applyIntensityToCandidates(deduped, askedIntensity);
-  trace.step('intensity', deduped);
+  step('intensity');
   deduped = applyEffortToCandidates(deduped, effortFromText(rawText));
-  trace.step('effort', deduped);
+  step('effort');
   // Social context (2026-09-26): "a few friends" / "big group hike" / "meet new people" compared against the gathering's existing
   // party_type, capacity and group_size_feel; gatherings only, ranking only, nothing stored.
   deduped = applySocialToCandidates(deduped, socialSignalsFromText(rawText), { partyType });
-  trace.step('social_context', deduped);
+  step('social_context');
   // Item 69: "walking distance" / "not too far" lift the closer results by their real measured distance (relative, no mile cutoffs);
   // "willing to travel" already widened the search above. Nothing is removed.
   deduped = applyDistanceWillingness(deduped, distanceWillingness);
-  trace.step('distance_willingness', deduped);
+  step('distance_willingness');
   // Transportation mode (2026-09-26): "I'm walking" / "on my bike" lift closer results relative to the others; "I'm driving" /
   // "an Uber" drop the close-by bonus; transit changes nothing without real travel times. A stated distance stays primary and the
   // mode only refines (small weight, same direction). Never widens the search. getTravelTimes has NO provider today (returns
@@ -796,21 +792,21 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const transportMode = transportModeFromText(rawText);
   const travelTimes = transportMode ? await getTravelTimes(deduped, transportMode, location, { keyOf: candidateKey }) : null;
   deduped = applyTransportMode(deduped, transportMode, travelTimes, { statedDistance: distanceWillingness });
-  trace.step('transport_mode', deduped);
+  step('transport_mode');
   // Item 68: "I only have an hour" lifts what fits (declared length, else the category's typical one) and sinks what clearly
   // does not; unknown lengths are untouched, nothing is removed.
   const timeBudget = timeBudgetFromText(rawText);
   deduped = applyTimeBudgetToCandidates(deduped, timeBudget);
-  trace.step('time_budget', deduped);
+  step('time_budget');
   // "today before 3 PM" / "Saturday until 5": used only when the person's words anchor it to a date ("before 3 PM" alone
   // constrains nothing). A gathering whose real start (and usual length) fits lifts, a clear miss sinks; never hides.
   const clockWindow = clockWindowFromText(rawText);
   const dateAnchor = clockWindow ? dateAnchorFromText(rawText) : null;
   deduped = applyClockWindowToCandidates(deduped, clockWindow, dateAnchor);
-  trace.step('clock_window', deduped);
+  step('clock_window');
   const askedEnergies = energiesWithoutIntensity([...new Set([...(Array.isArray(energies) ? energies : []), ...energiesFromText(rawText)])], askedIntensity);
   deduped = applyEnergyToCandidates(deduped, energiesWithoutIntensity([...new Set([...(Array.isArray(energies) ? energies : []), ...energiesFromText(rawText)])], askedIntensity));
-  trace.step('energy', deduped);
+  step('energy');
 
   // Commitment (item 45) and spontaneity (item 46): ranking only. An immediate ask implies a light commitment unless the person
   // said otherwise; "plan ahead" / "next few hours" have no dateWindow bucket, so they come from the person's own words.
@@ -853,30 +849,30 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     }
   }
   deduped = restrictions.items;
-  trace.step('compatibility', deduped);
+  step('compatibility');
   // Item 88: dietary needs the person's own words state ("vegan", "gluten-free", "halal") lift a business that DECLARED every one
   // of them (its partner row, attached above). Ranking only; a business that did not say is kept where it was.
   deduped = applyDietaryToCandidates(deduped, dietaryFromAsk(rawText));
-  trace.rebase(deduped); // a stated dietary need is never recorded (UNRECORDED_PASSES)
+  unrecorded('dietary'); // a stated dietary need moves the order but is never recorded (UNRECORDED_PASSES)
   // Item 80: declared capabilities vs the ask: largest group vs the stated party size, private events / catering only when the
   // words ask for them. Ranking only; unknown is neutral; business results only (perks carry no partner row).
   deduped = applyCapabilitiesToCandidates(deduped, { partySize, text: rawText });
-  trace.step('capabilities', deduped);
+  step('capabilities');
   deduped = applyCommitmentToCandidates(deduped, commitAsk);
-  trace.step('commitment', deduped);
+  step('commitment');
   deduped = applySpontaneityToCandidates(deduped, spontaneity);
-  trace.step('spontaneity', deduped);
+  step('spontaneity');
 
   // Open-ended ask ("something fun tonight"): no category named, so only inventory in social groups is eligible and it gets a
   // small lift (utils/openEndedAsk.js, rule-based). A real category or occasion in the ask leaves everything untouched.
   const openEndedGroups = openEndedAskGroups({ category, rawText, occasion, attributes, force: !!openEnded });
   deduped = applyOpenEndedAsk(deduped, openEndedGroups, { dateWindow, partyType, hour: new Date().getHours() });
-  trace.step('open_ended', deduped);
+  step('open_ended');
   // Item 108: a Browse category tapped on top of this ask narrows it (only results confirmed in that group stay); every other
   // constraint above and below is the ask's own, unchanged. No category = untouched.
   const narrowedGroup = isCategoryGroup(narrowGroup) ? narrowGroup : null;
   deduped = narrowToGroup(deduped, narrowedGroup);
-  trace.step('category_narrow', deduped);
+  step('category_narrow');
 
   // Age range (item 50): "with my 5 year old" ranks a place or gathering whose declared suited ages cover it; an unknown range is untouched.
   const childAges = askedChildAges(rawText);
@@ -888,34 +884,34 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
       console.error('suited age nudge skipped', e);
     }
   }
-  trace.rebase(deduped); // a stated child's age is never recorded (UNRECORDED_PASSES)
+  unrecorded('suited_ages'); // a stated child's age moves the order but is never recorded (UNRECORDED_PASSES)
 
   // Accessibility / family (items 49/50): a gathering the HOST declared these features for ranks up (declared only, never inferred).
   deduped = applyDeclaredFeatures(deduped, attributes);
-  trace.step('declared_features', deduped);
+  step('declared_features');
   // Vibe (item 83): a declared vibe the person said to avoid, or the declared opposite of one they want, sinks a little. Never hides.
   deduped = applyVibeSinks(deduped, vibesFromAsk(rawText));
-  trace.step('vibe', deduped);
+  step('vibe');
   // Item 114: what the person asked for tonight outranks who they usually are (constants/sessionIntent.js).
   deduped = applySessionIntent(deduped, sessionIntentFromText(rawText));
-  trace.step('session_intent', deduped);
+  step('session_intent');
   // Item 85: more of the asked qualities declared = higher; a date ask offers a declared date spot as "Date night at X?"; a
   // gathering carrying the date tag the words named keeps a lift now that the tag no longer filters.
   deduped = applyQualityDepth(deduped, attributes);
-  trace.step('quality_depth', deduped);
+  step('quality_depth');
   deduped = frameDatePlaces(deduped, { isDate: dateAsk, frame: dateFrame({ occasion, dateWindow }), businessTypes: BUSINESS_RESULT_TYPES });
-  trace.step('date_place', deduped);
+  step('date_place');
   if (dateTag) deduped = deduped.map((c) => (c.category === dateTag ? { ...c, score: (c.score ?? 0) + SCORE_HAPPENING_NOW } : c));
-  trace.step('date_tag', deduped);
+  step('date_tag');
   if (preferredTag) deduped = deduped.map((c) => (c.category === preferredTag ? { ...c, score: (c.score ?? 0) + PREFERRED_CATEGORY_POINTS } : c));
-  trace.step('preferred_category', deduped);
+  step('preferred_category');
 
   // Combinations + negative intent (items 47/48): "outside", "no alcohol", "nothing crowded", "not too expensive" from the person's
   // own words. Exclusions drop only KNOWN conflicts; the caption says what was left out (constants/askFacets.js).
   const parsedFacets = parseAskFacets(rawText);
   const askFacets = applyAskFacets(deduped, parsedFacets);
   deduped = askFacets.items;
-  trace.step('ask_facets', deduped);
+  step('ask_facets');
 
   // Open now (owner item 71, utils/operatingStatus.js, the one resolver): "what's open" / "still open" / "somewhere I can go
   // right now" keeps ONLY confirmed-usable results (unknown and closed both drop out). An immediate ask without that language
@@ -927,9 +923,10 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
       ? filterOpenNow(deduped, toEntity)
       : deduped.map((c) => (c.type === 'gathering' ? c : { ...c, score: (c.score ?? 0) + openNowLift(toEntity(c)) }));
   }
-  trace.step('open_now', deduped);
+  step('open_now');
 
-  deduped.sort((a, b) => b.score - a.score);
+  if (ledger) deduped = deduped.map((c) => ({ ...c, rankVector: typedAskRankVector(ledger.signalsFor(c)) }));
+  deduped.sort(compareRanked);
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
   const openEndedNote = [openNowOnly ? OPEN_NOW_CAPTION : null, planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacets.caption, restrictions.caption].filter(Boolean).join(' · ') || null;

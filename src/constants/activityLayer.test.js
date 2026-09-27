@@ -56,7 +56,7 @@ describe('activity layer is wired into ranking', () => {
     expect(getBusinessAvailabilityReasons(row, { askedActivities: ['work_remotely'] })).toContain('Good for working remotely');
     const src = require('fs').readFileSync(require('path').join(__dirname, '../services/intentResolver.js'), 'utf8');
     expect(src).toMatch(/activitiesFromText\(rawText\)/);
-    expect(src).toMatch(/score \+= activityFitBonus\(row, askedActivities\)/);
+    expect(src).toMatch(/code: 'base_activity_fit', delta: activityFitBonus\(row, askedActivities\)/);
   });
 });
 

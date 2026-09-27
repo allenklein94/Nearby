@@ -61,8 +61,8 @@ describe('ranking on real measured distances only', () => {
     expect(scoreGatheringForResolver({ distanceMiles: 1, scheduled_at: '2000-01-01' }) - scoreGatheringForResolver({ distanceMiles: 3, scheduled_at: '2000-01-01' })).toBe(closeBonusOf(g(1)));
     expect(occasionOfferingScore(1) - occasionOfferingScore(3)).toBe(closeBonusOf({ type: 'business_policy_match', viaOccasionOffering: true, distanceMiles: 1 }));
     const src = read('src/services/intentResolver.js');
-    expect((src.match(/row\.distance_miles < 2\) score \+= SCORE_CLOSE_DISTANCE/g) ?? []).length).toBe(2);
-    expect(src).toContain('row.distance_miles != null && row.distance_miles < 2 ? SCORE_CLOSE_DISTANCE : 0');
+    // live postings, policy-only businesses and packages each name the close-by bonus the same way
+    expect((src.match(/row\.distance_miles != null && row\.distance_miles < 2 \? SCORE_CLOSE_DISTANCE : 0/g) ?? []).length).toBe(3);
   });
   it('unknown distance untouched, nothing removed, no ask = same array', () => {
     const cands = [g(0.4, { id: 'a' }), g(null, { id: 'b' }), g(9, { id: 'c' })];

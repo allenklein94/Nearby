@@ -53,10 +53,11 @@ describe('score trace', () => {
 
   it('every trace call in resolveIntent uses a registered code, and the dietary/age passes are rebased, not stepped', () => {
     const src = read('../services/intentResolver.js');
-    const codes = [...src.matchAll(/trace\.step\('([a-z_]+)'/g)].map((m) => m[1]);
+    const codes = [...src.matchAll(/\bstep\('([a-z_]+)'\)/g)].map((m) => m[1]);
     expect(codes.length).toBeGreaterThan(25);
     for (const c of codes) expect(SIGNAL_CODES[c]).toBeDefined();
-    expect(src).toMatch(/applyDietaryToCandidates\(deduped, dietaryFromAsk\(rawText\)\);\n\s*trace\.rebase\(deduped\)/);
+    expect(src).toMatch(/applyDietaryToCandidates\(deduped, dietaryFromAsk\(rawText\)\);\n\s*unrecorded\('dietary'\)/);
+    expect(src).toMatch(/const unrecorded = \(code\) => \{ ledger\?\.step\(code, deduped\); trace\.rebase\(deduped\); \}/);
     expect(codes).not.toContain('dietary');
   });
 });

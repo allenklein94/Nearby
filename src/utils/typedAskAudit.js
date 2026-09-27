@@ -8,7 +8,7 @@
 // services/typedAskAudit.js.
 
 // Bump whenever what is recorded (fields, codes, layout) changes, so rows stay comparable.
-export const TYPED_ASK_AUDIT_VERSION = 'typed-ask-audit-v1';
+export const TYPED_ASK_AUDIT_VERSION = 'typed-ask-audit-v2'; // v2: results ordered by the tier framework; business/perk/community base split into named codes
 
 // Every code a score contribution or a removal can carry. `class` is what analysis aggregates by ("how often did an explicit
 // requirement contribute", "how often did weather"...). A pass that is traced must use one of these; a test keeps resolveIntent's
@@ -21,6 +21,22 @@ export const SIGNAL_CODES = {
   base_today: 'time',
   base_title_mention: 'explicit_match',
   base_price_party: 'explicit_requirement',
+  base_category_match: 'explicit_match',
+  base_subcategory: 'explicit_match',
+  base_secondary_category: 'explicit_match',
+  base_attribute_match: 'explicit_preference',
+  base_activity_fit: 'explicit_preference',
+  base_occasion_fit: 'explicit_preference',
+  base_party_type_fit: 'explicit_requirement',
+  base_own_network: 'social',
+  base_who_for: 'social',
+  base_availability: 'availability',
+  base_package: 'availability',
+  base_occasion_offering: 'business_opportunity',
+  base_hobby_link: 'personal_interest',
+  base_past_plan: 'personal_interest',
+  base_followed: 'personal_interest',
+  base_area: 'proximity',
   // ask-specific passes in resolveIntent, in the order they run
   weather: 'weather',
   price_budget: 'explicit_requirement',
@@ -74,6 +90,18 @@ const num = (n) => (Number.isFinite(n) ? Math.round(n * 1000) / 1000 : 0);
 // Records, per candidate, the score change each named pass made. Read-only: it never writes to a candidate or the list, and every
 // method swallows its own errors so a bug here can never break a search.
 export function createScoreTrace(initial, { removedBeforeStart = 0 } = {}) {
+  return diffTrace(initial, { removedBeforeStart });
+}
+
+// The RANKING ledger (constants/signalPriority.js): the same per-pass diff, a separate instance so the audit can never change an
+// order. It also accepts UNRECORDED_PASSES (a stated dietary need / child's age must still move the order); nothing reads it into
+// the audit, so they stay unrecorded.
+export function createRankLedger(initial) {
+  return diffTrace(initial, { extraCodes: UNRECORDED_PASSES });
+}
+
+function diffTrace(initial, { removedBeforeStart = 0, extraCodes = [] } = {}) {
+  const known = (code) => !!SIGNAL_CODES[code] || extraCodes.includes(code);
   const last = new Map();
   const signals = new Map();
   const exclusions = {};
@@ -90,7 +118,7 @@ export function createScoreTrace(initial, { removedBeforeStart = 0 } = {}) {
     for (const c of Array.isArray(initial) ? initial : []) {
       const k = keyOf(c);
       if (!k) continue;
-      const parts = Array.isArray(c.baseSignals) ? c.baseSignals.filter((p) => SIGNAL_CODES[p?.code] && p.delta) : [];
+      const parts = Array.isArray(c.baseSignals) ? c.baseSignals.filter((p) => known(p?.code) && p.delta) : [];
       const explained = parts.reduce((s, p) => s + p.delta, 0);
       const rest = num((c.score ?? 0) - explained);
       signals.set(k, [...parts.map((p) => ({ code: p.code, delta: num(p.delta) })), ...(rest ? [{ code: 'base', delta: rest }] : [])]);
@@ -100,7 +128,7 @@ export function createScoreTrace(initial, { removedBeforeStart = 0 } = {}) {
   return {
     step(code, list) {
       safe(() => {
-        if (!SIGNAL_CODES[code]) return;
+        if (!known(code)) return;
         const seen = new Set();
         for (const c of Array.isArray(list) ? list : []) {
           const k = keyOf(c);

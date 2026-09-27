@@ -93,3 +93,85 @@ export function reasonKind(signalOrText) {
     default: return null;
   }
 }
+
+// ---- The canonical ranking framework (unified ranking, 2026-09-27) ----
+// One rule for every surface that orders things: a signal in a stronger tier always beats any amount of signal in a weaker
+// tier; within a tier, points add. An item's ranking key is its TIER VECTOR, the points it earned in each tier (1..10), compared
+// tier by tier from the strongest. `bestTier` above is the flag form of the same rule (a surface whose signals are yes/no).
+// Surfaces keep their own eligibility (filters) and presentation; only the ORDER of what is eligible comes from here.
+export const TIER_COUNT = WORST_TIER;
+
+export function emptyTierVector() {
+  return new Array(TIER_COUNT).fill(0);
+}
+
+// parts: [{ tier, delta }] -> [points in tier 1, ..., points in tier 10]. Unknown tiers count as general discovery.
+export function tierVector(parts = []) {
+  const v = emptyTierVector();
+  for (const p of Array.isArray(parts) ? parts : []) {
+    const d = Number(p?.delta);
+    if (!Number.isFinite(d) || d === 0) continue;
+    const t = Number.isInteger(p?.tier) && p.tier >= 1 && p.tier <= TIER_COUNT ? p.tier : WORST_TIER;
+    v[t - 1] = Math.round((v[t - 1] + d) * 1000) / 1000;
+  }
+  return v;
+}
+
+// < 0 when `a` ranks ahead of `b`. Strongest tier first; 0 = a full tie (callers keep their own stable order).
+export function compareTierVectors(a, b) {
+  for (let i = 0; i < TIER_COUNT; i += 1) {
+    const d = (b?.[i] ?? 0) - (a?.[i] ?? 0);
+    if (d !== 0) return d;
+  }
+  return 0;
+}
+
+// The one comparator for ranked result items: by `rankVector` when both carry one, else by plain score (older callers).
+export function compareRanked(a, b) {
+  if (Array.isArray(a?.rankVector) && Array.isArray(b?.rankVector)) {
+    const d = compareTierVectors(a.rankVector, b.rankVector);
+    if (d !== 0) return d;
+  }
+  return (b?.score ?? 0) - (a?.score ?? 0);
+}
+
+// Typed search (Home, Discover, Surprise Me, Celebrate): the tier of every named signal the resolver scores with (the same codes
+// the typed-ask audit records, utils/typedAskAudit.js SIGNAL_CODES, plus the two passes the audit never records). A new pass
+// needs a row here; a test fails otherwise.
+export const TYPED_ASK_SIGNAL_TIER = {
+  // 1 explicit current intent: how well the result matches what was asked
+  base_category_match: SIGNAL_TIERS.intent, base_subcategory: SIGNAL_TIERS.intent, base_secondary_category: SIGNAL_TIERS.intent,
+  base_title_mention: SIGNAL_TIERS.intent, base_attribute_match: SIGNAL_TIERS.intent, base_activity_fit: SIGNAL_TIERS.intent,
+  base_occasion_fit: SIGNAL_TIERS.intent,
+  format: SIGNAL_TIERS.intent, genre: SIGNAL_TIERS.intent, intensity: SIGNAL_TIERS.intent, effort: SIGNAL_TIERS.intent,
+  energy: SIGNAL_TIERS.intent, vibe: SIGNAL_TIERS.intent, quality_depth: SIGNAL_TIERS.intent, date_place: SIGNAL_TIERS.intent,
+  date_tag: SIGNAL_TIERS.intent, preferred_category: SIGNAL_TIERS.intent, open_ended: SIGNAL_TIERS.intent,
+  social_context: SIGNAL_TIERS.intent, commitment: SIGNAL_TIERS.intent, category_narrow: SIGNAL_TIERS.intent,
+  // 2 hard constraints the person stated (enforced first as filters where verifiable; these are the ranked remainder)
+  base_price_party: SIGNAL_TIERS.constraint, base_party_type_fit: SIGNAL_TIERS.constraint, price_budget: SIGNAL_TIERS.constraint,
+  skill_level: SIGNAL_TIERS.constraint, distance_willingness: SIGNAL_TIERS.constraint, transport_mode: SIGNAL_TIERS.constraint,
+  time_budget: SIGNAL_TIERS.constraint, clock_window: SIGNAL_TIERS.constraint, capabilities: SIGNAL_TIERS.constraint,
+  declared_features: SIGNAL_TIERS.constraint, ask_facets: SIGNAL_TIERS.constraint, compatibility: SIGNAL_TIERS.constraint,
+  dietary: SIGNAL_TIERS.constraint, suited_ages: SIGNAL_TIERS.constraint,
+  // 3 friends / social context
+  base_own_network: SIGNAL_TIERS.planFriend, base_who_for: SIGNAL_TIERS.planFriend,
+  // 4 availability: can it actually happen
+  base_availability: SIGNAL_TIERS.availability, base_package: SIGNAL_TIERS.availability, open_now: SIGNAL_TIERS.availability,
+  // 5 time relevance
+  base_today: SIGNAL_TIERS.time, spontaneity: SIGNAL_TIERS.time,
+  // 6 strong interests (who the person usually is)
+  base_interest_match: SIGNAL_TIERS.interest, base_hobby_link: SIGNAL_TIERS.interest, base_past_plan: SIGNAL_TIERS.interest,
+  base_followed: SIGNAL_TIERS.interest, session_intent: SIGNAL_TIERS.interest,
+  // 7 business opportunity (may be able to help, not confirmed)
+  base_occasion_offering: SIGNAL_TIERS.business,
+  // 8 weather
+  weather: SIGNAL_TIERS.weather,
+  // 10 general discovery
+  base_close_distance: SIGNAL_TIERS.discovery, base_area: SIGNAL_TIERS.discovery, base: SIGNAL_TIERS.discovery,
+  // removals only (never a score)
+  dedupe: SIGNAL_TIERS.discovery,
+};
+
+export function typedAskRankVector(signals = []) {
+  return tierVector((Array.isArray(signals) ? signals : []).map((s) => ({ tier: TYPED_ASK_SIGNAL_TIER[s?.code] ?? WORST_TIER, delta: s?.delta })));
+}

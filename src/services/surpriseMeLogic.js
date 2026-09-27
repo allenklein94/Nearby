@@ -15,6 +15,7 @@ import { CUISINE_OPTIONS } from '../constants/businessAttributes';
 import { undecidedAskFromText, stripUndecidedPhrase } from '../constants/undecidedAsk';
 import { energiesFromHost, energiesForTag, energiesFromText, ENERGY_LEVELS } from '../constants/energyLevel';
 import { commitmentOf } from '../constants/commitmentLevel';
+import { compareRanked } from '../constants/signalPriority';
 
 export const WHEN_OPTIONS = [
   { key: 'now', label: 'Now' },
@@ -118,7 +119,7 @@ export function mergeCandidatePools(itemArrays) {
       merged.push(item);
     }
   }
-  merged.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  merged.sort(compareRanked);
   return merged;
 }
 
@@ -402,7 +403,7 @@ export function undecidedHeader(dateWindow) {
 export function pickLanes(pool, { experience = null, excludeKeys = new Set(), level = 'broad', max = SURPRISE_PICK_COUNT } = {}) {
   const eligible = eligibleCandidates(pool)
     .filter((c) => !excludeKeys.has(`${c.type}:${c.id}`))
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    .sort(compareRanked);
   const usedKeys = new Set();
   const usedPartners = new Set();
   const usedKinds = new Set();

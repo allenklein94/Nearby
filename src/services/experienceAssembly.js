@@ -50,6 +50,7 @@
 import { orderByBudget } from '../utils/experienceBudget';
 import { cafeFitsDatePlan, dateFoodLabel } from '../utils/dateCafe';
 import { experienceTemplateForOccasion, experienceTemplateForContext } from '../constants/experienceTemplates';
+import { compareRanked } from '../constants/signalPriority';
 
 const EXPERIENCE_ELIGIBLE_TYPES = ['business_availability', 'gathering'];
 
@@ -107,7 +108,7 @@ export function assembleExperience(occasion, candidates, context = null) {
       componentLabels: coveredKeys.map((key) => template.components.find((comp) => comp.key === key)?.label).filter(Boolean),
     });
   }
-  bundles.sort((a, b) => b.score - a.score);
+  bundles.sort(compareRanked);
 
   const components = [];
   for (const component of template.components) {
@@ -124,7 +125,7 @@ export function assembleExperience(occasion, candidates, context = null) {
     // already computed it for the flat list -- a real, already-computed
     // relevance ranking, never a second invented scoring pass just for this
     // grouping.
-    const items = orderByBudget(matches.sort((a, b) => b.score - a.score), context).slice(0, 3).map((m) => attachPerk(m, perks));
+    const items = orderByBudget(matches.sort(compareRanked), context).slice(0, 3).map((m) => attachPerk(m, perks));
     components.push({
       key: component.key,
       label: component.cafeOnDate ? dateFoodLabel(items, component.label) : component.label,
