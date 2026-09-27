@@ -87,7 +87,7 @@ describe('request progress by reply kind + Next line', () => {
     expect(justSentLine(0)).toBeNull();
     const screen = fs.readFileSync(path.join(__dirname, '../screens/BusinessRequestDetailScreen.js'), 'utf8');
     expect(screen).not.toMatch(/as offers come in/);
-    expect(screen).toMatch(/justSentLine\(notifiedCount\)/);
+    expect(screen).toMatch(/justSentLine\(notifiedCount, targetPartnerName\)/);
     expect(screen).toMatch(/requestNextStep\(request, offers\)/);
     // the no-business and duplicate lines and the wider-radius action are unchanged
     expect(screen).toMatch(/We couldn't find a nearby business to ask within/);

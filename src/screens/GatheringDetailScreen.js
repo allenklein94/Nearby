@@ -3,7 +3,7 @@ import { attendeeSummary } from '../utils/gatheringAttendeeDisplay';
 import { presentRecoverableError } from '../utils/recoverableError';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
-import { NLoader } from '../motion';
+import { NLoader, showSuccessToast } from '../motion';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
@@ -66,6 +66,7 @@ import { gatheringJoinAction } from '../utils/primaryAction';
 import { expiredDateLabel } from '../utils/inviteExpiry';
 import { gatheringViewerState } from '../utils/objectState';
 import { canDo, gatheringLifecycleState } from '../utils/objectLifecycle';
+import { interestedConfirmation } from '../utils/actionConfirmations';
 
 const VIBE_SCALES = [
   { key: 'energy_level', label: 'Energy', lowLabel: 'Chill', highLabel: 'High energy' },
@@ -308,6 +309,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
     setTogglingInterested(true);
     try {
       await setGatheringInterested(gatheringId, next);
+      showSuccessToast(...interestedConfirmation(next));
       if (next) {
         // One-time, inline (no screen): interest may feed anonymous local demand trends. Never repeats once acknowledged.
         const prefs = await getInterestedDemandPrefs().catch(() => null);

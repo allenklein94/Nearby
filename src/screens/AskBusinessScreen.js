@@ -530,6 +530,7 @@ export default function AskBusinessScreen({ navigation, route }) {
         requestId: result.requestId,
         justSubmitted: true,
         notifiedCount: result.notifiedCount,
+        targetPartnerName: targetPartner?.name ?? null,
         duplicate: result.duplicate,
         prefillText: finalText,
         prefillCategory: category,

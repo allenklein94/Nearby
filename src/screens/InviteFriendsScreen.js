@@ -70,7 +70,7 @@ export default function InviteFriendsScreen() {
     try {
       await redeemReferralCode(redeemInput);
       posthog.capture('referral_code_redeemed');
-      showSuccessToast('Success!', "You've both received 3 bonus Notices.");
+      showSuccessToast('Bonus Notices added', "You've both received 3 bonus Notices.");
       setRedeemInput('');
       load();
     } catch (e) {

@@ -111,6 +111,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const requestId = route.params?.requestId;
   const justSubmitted = route.params?.justSubmitted ?? false;
   const notifiedCount = route.params?.notifiedCount ?? 0;
+  const targetPartnerName = route.params?.targetPartnerName ?? null;
   const isDuplicate = route.params?.duplicate ?? false;
   // Item 55 fast-follow ("deep links should preserve context too" --
   // CLAUDE.md): a business_offer_received/business_offer_withdrawn/
@@ -1161,7 +1162,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               {isDuplicate
                 ? "You already have an open request just like this — here it is, no need to ask twice."
                 : notifiedCount > 0
-                ? justSentLine(notifiedCount)
+                ? justSentLine(notifiedCount, targetPartnerName)
                 : `We couldn't find a nearby business to ask within ${priorRadiusMiles} miles — try widening your search.`}
             </Text>
             {!isDuplicate && notifiedCount === 0 && (

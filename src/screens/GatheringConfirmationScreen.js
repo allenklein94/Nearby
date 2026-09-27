@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share, Animated } from 'react-native';
-import { NLoader } from '../motion';
+import { NLoader, showSuccessToast } from '../motion';
 import { getGatheringById, getFriendsWithSharedContext, isFirstGatheringHosted, gatheringInviteShareUrl } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
 import { sendInvite } from '../services/invites';
@@ -15,6 +15,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
+import { inviteSentConfirmation } from '../utils/actionConfirmations';
 // Replaces the old plain Alert.alert('Posted!', ...) dead end with two
 // real actions — a working shareable deep link (needs the `linking`
 // config added to RootNavigator.js; a "shareable link" that silently
@@ -120,6 +121,7 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
       await sendInvite('gathering', gatheringId, friendId);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setInvitedIds((prev) => ({ ...prev, [friendId]: true }));
+      showSuccessToast(...inviteSentConfirmation(friends.find((f) => f.id === friendId)?.display_name));
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleInvite(friendId) });
     }

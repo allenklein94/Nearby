@@ -60,8 +60,10 @@ export function requestNextStep(request, offers, now = new Date()) {
   return request.group_plan_id ? 'Pick one to confirm with your group.' : 'Pick one to book it.';
 }
 
-// The line right after sending (AskBusiness and the other creators land here with justSubmitted).
-export function justSentLine(notifiedCount) {
+// The line right after sending (AskBusiness and the other creators land here with justSubmitted). A request addressed to
+// ONE business names it (item 123: "Request sent to Coastal Coffee").
+export function justSentLine(notifiedCount, targetName = null) {
   if (!(notifiedCount > 0)) return null;
+  if (targetName) return `Request sent to ${targetName}. You'll be notified when they respond.`;
   return `We asked ${notifiedCount} nearby business${notifiedCount === 1 ? '' : 'es'}. You'll be notified when they respond.`;
 }

@@ -11,6 +11,7 @@ import { conflictMessages, hasPending, shownValue } from '../utils/settingConfli
 import OfferCustomerBody from '../components/OfferCustomerBody';
 import { offerValueLines } from '../utils/offerValue';
 import { offerRevealHeader } from '../utils/offerCopy';
+import { replySentConfirmation, OFFER_QUEUED_CONFIRMATION } from '../utils/actionConfirmations';
 import useFormDraft from '../hooks/useFormDraft';
 import { serializableAsset, assetStillExists } from '../services/formDrafts';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -2149,9 +2150,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // for a real admin decision (nothing sent to the customer yet), HIGH is
   // rejected outright.
   // Shared by the full offer editor and the one-tap paths: what to do with the screening result.
-  async function handleOfferResult(result, close) {
+  async function handleOfferResult(result, close, sent = null) {
     if (result.published) {
       close();
+      if (sent) showSuccessToast(...replySentConfirmation(sent));
       await loadOpportunities(selectedPartner.id);
     } else if (result.blocked) {
       Alert.alert(
@@ -2229,7 +2231,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setRespondingOpportunityId(requestId);
     try {
       const result = await submitBusinessOfferResponseForScreening(selectedPartner.id, requestId, { offerType, offerDescription, proposedTime, availableFrom, availableUntil });
-      await handleOfferResult(result, () => { setAcceptSheetRequestId(null); setAltSheetRequestId(null); });
+      await handleOfferResult(result, () => { setAcceptSheetRequestId(null); setAltSheetRequestId(null); }, { offer_type: offerType });
     } catch (e) {
       presentRecoverableError(Alert, { what: 'send your response', error: e, draftKept: true, onRetry: () => submitQuickResponse(requestId, { offerType, offerDescription, proposedTime, availableFrom, availableUntil }) });
     }
@@ -2400,8 +2402,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         setOfferModalRequestId(null);
         if (resendingSubmissionId) { try { await dismissOfferSubmission(resendingSubmissionId); } catch (_e) { /* the old note just stays listed */ } setResendingSubmissionId(null); }
         await loadOfferSubmissions(selectedPartner.id);
+        showSuccessToast(...OFFER_QUEUED_CONFIRMATION);
       } else {
-        await handleOfferResult(result, () => { offerDraft.clear(); setOfferModalRequestId(null); });
+        await handleOfferResult(result, () => { offerDraft.clear(); setOfferModalRequestId(null); }, { offer_type: 'standard', offer_title: 'offer' });
       }
     } catch (e) {
       presentRecoverableError(Alert, { what: 'send this offer', error: e, draftKept: true, onRetry: () => handleSubmitOffer() });

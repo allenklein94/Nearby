@@ -67,6 +67,7 @@ import { getUserLocation } from '../services/userLocation';
 import { placeDistanceLabel } from '../services/places';
 import { gatheringPrimaryAction } from '../utils/primaryAction';
 import { homeQuickStatRows } from '../utils/homeQuiet';
+import { interestedConfirmation } from '../utils/actionConfirmations';
 
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
@@ -363,6 +364,7 @@ export default function HomeScreen({ navigation }) {
     setInterestedOverride((o) => ({ ...o, [g.id]: !on }));
     try {
       await setGatheringInterested(g.id, !on);
+      showSuccessToast(...interestedConfirmation(!on));
     } catch (e) {
       setInterestedOverride((o) => ({ ...o, [g.id]: on }));
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => toggleCardInterested(g, on) });

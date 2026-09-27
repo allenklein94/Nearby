@@ -12,7 +12,8 @@ import StaggeredReveal from './StaggeredReveal';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
-import { NLoader, modalAnimation } from '../motion';
+import { NLoader, modalAnimation, showSuccessToast } from '../motion';
+import { inviteSentConfirmation } from '../utils/actionConfirmations';
 // Gathering invites go through the older, gathering-specific
 // invite_friend_to_gathering RPC (women-only + blocks-aware, already
 // wired here before this component also learned to invite to
@@ -73,6 +74,7 @@ export default function InviteFriendsModal({
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setInvitedIds((prev) => ({ ...prev, [friendId]: true }));
+      showSuccessToast(...inviteSentConfirmation(friends.find((f) => f.id === friendId)?.display_name));
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleInvite(friendId) });
     }
