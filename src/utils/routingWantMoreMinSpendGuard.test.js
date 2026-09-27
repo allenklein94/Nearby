@@ -77,3 +77,21 @@ describe('check 6: want more is a ranking key only', () => {
     expect(w).toMatch(/time '18:00'/);
   });
 });
+
+// Owner decision (2026-09-27, LOCKED): hard, explicit business constraints decide eligibility; softer preferences only order.
+// "Reservations required" (booking mode) and "Groups we take" (accommodates_party_types) are NEVER a routing exclusion; the
+// declared largest group is. No routing path reads either soft field, and routing always asks _business_declines with no
+// walk-in fact (the walk-in conflict exists only for a typed ask whose own words say walk in).
+describe('soft business preferences never exclude in routing', () => {
+  test.each(['_business_request_fanout', '_match_request_to_availability_core', '_match_request_to_package_core', '_match_request_to_policy_core', '_business_declines_request'])(
+    '%s reads neither booking_mode nor accommodates_party_types', (fn) => {
+      expect(latestBody(fn)).not.toMatch(/booking_mode|accommodates_party_types/);
+    });
+  it('routing passes walk_in = false to the one compatibility rule', () => {
+    const b = latestBody('_business_declines_request').replace(/\s+/g, ' ');
+    expect(b).toMatch(/'outdoor_seating' = any\(coalesce\(r\.attributes, '\{\}'\)\), false, false \)/);
+  });
+  it('the declared largest group stays a hard exclusion', () => {
+    expect(latestBody('_business_request_fanout')).toMatch(/'capacity_too_small'/);
+  });
+});
