@@ -48,8 +48,13 @@ export function whenPresetFromText(text) {
 }
 
 // "4 people" -> 4; "3 friends" / "me and 3 friends" -> 4 (the friends plus the host). Only a stated number, never a guess.
+// Spelled-out counts ("four people", "table for six") read the same as digits. "one" is left out on purpose ("for one more drink").
+const COUNT_WORDS = { two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12,
+  thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20 };
+const COUNT_WORD_RE = new RegExp(`\\b(${Object.keys(COUNT_WORDS).join('|')})\\b`, 'gi');
+
 export function partySizeFromText(text) {
-  const t = String(text ?? '');
+  const t = String(text ?? '').replace(COUNT_WORD_RE, (w) => String(COUNT_WORDS[w.toLowerCase()]));
   const people = t.match(/\b(\d{1,3})\s+(people|of\s+us|persons)\b/i);
   if (people) return Number(people[1]);
   const friends = t.match(/\b(\d{1,2})\s+(friends|buddies|coworkers|colleagues)\b/i);

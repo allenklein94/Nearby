@@ -19,6 +19,9 @@ const NEG_ALCOHOL = /\b(?:no|without|avoid|skip)\s+(?:any\s+)?(?:alcohol|booze|d
 const NEG_CROWD = /\b(?:no|nothing|not|avoid|without)\s+(?:anything\s+|too\s+|be\s+|a\s+)?(?:crowded|packed|busy)\b|\bno\s+crowds?\b|\b(?:don'?t|do not)\s+want\s+(?:anything\s+|to\s+be\s+)?(?:crowded|packed|busy)\b/gi;
 const NEG_PRICEY = /\bnot\s+too\s+(?:expensive|pricey)\b|\b(?:no|nothing)\s+(?:too\s+)?(?:expensive|pricey)\b/gi;
 const POS_OUTDOOR = /\b(?:outside|outdoors?|open[- ]air)\b/i;
+// Sitting outside AT a place ("coffee where we can sit outside") is the outdoor_seating attribute, not an outdoor activity: it must
+// not sink an indoor-category place (a café with a patio is exactly the answer). Read as the attribute, removed before the environment test.
+const OUTSIDE_SEATING = /\b(?:sit(?:ting)?|eat(?:ing)?|dine|dining|drink(?:ing)?)\s+(?:outside|outdoors)\b|\b(?:outside|outdoor)\s+(?:seating|tables?)\b/gi;
 const POS_INDOOR = /\bindoors?\b/i;
 const PARTNER = /\b(girlfriend|boyfriend|wife|husband|fianc[ée]e?|partner|spouse|my\s+date|date\s+night)\b/i;
 
@@ -35,6 +38,7 @@ export function parseAskFacets(text) {
   take(NEG_ALCOHOL, () => out.exclude.push('alcohol'));
   take(NEG_CROWD, () => out.exclude.push('crowded'));
   take(NEG_PRICEY, () => { out.pricey = true; });
+  rest = rest.replace(OUTSIDE_SEATING, ' ');
   // Positive environment only from what is left after the negations were removed ("nothing outdoors" must not read as outdoors).
   if (POS_OUTDOOR.test(rest) && !out.exclude.includes('outdoor')) out.environment = 'outdoor';
   else if (POS_INDOOR.test(rest) && !out.exclude.includes('indoor')) out.environment = 'indoor';
@@ -102,12 +106,15 @@ const ATTRIBUTE_ASKS = [
   ['pet_friendly', /\b(?:with|bring(?:ing)?|take|taking)\s+(?:my|our|the)\s+(?:dog|dogs|puppy|pup|cat|cats|pet|pets)\b|\bpets?[- ]friendly\b|\bdog[- ]friendly\b|\bpets?\s+(?:allowed|welcome)\b/i],
   ['dog_friendly', /\b(?:with|bring(?:ing)?|take|taking)\s+(?:my|our|the)\s+(?:dog|dogs|puppy|pup)\b|\b(?:dog|pet)[- ]friendly\b|\bpets?\s+(?:allowed|welcome)\b|\bpet[- ]friendly\b/i],
   ['date_friendly', /\b(?:date\s+night|first\s+date|on\s+a\s+date|for\s+a\s+date|date\s+spot|romantic|date[- ]friendly)\b/i],
-  ['outdoor_seating', /\b(?:patio|outdoor\s+seating|al\s+fresco|terrace)\b/i],
+  ['outdoor_seating', /\b(?:patio|outdoor\s+seating|al\s+fresco|terrace)\b|\b(?:sit(?:ting)?|eat(?:ing)?|dine|dining|drink(?:ing)?)\s+(?:outside|outdoors)\b|\boutside\s+(?:seating|tables?)\b/i],
   ...ACCESSIBILITY_ASKS,
 ];
 export function attributesFromAsk(text, { partyType = null } = {}) {
   if (typeof text !== 'string') return partyType === 'date' ? ['date_friendly'] : [];
   const out = ATTRIBUTE_ASKS.filter(([, re]) => re.test(text)).map(([k]) => k);
+  // "nothing outside" / "don't want to sit outside" is never an ask for outdoor seating.
+  const negSeating = /\b(?:don'?t|do\s+not|can'?t|cannot|won'?t|not|never|no)\s+(?:want\s+to\s+|wanna\s+|like\s+to\s+)?(?:sit|eat|dine|drink)\w*\s+(?:outside|outdoors)\b/i;
+  if ((negSeating.test(text) || parseAskFacets(text).exclude.includes('outdoor')) && out.includes('outdoor_seating')) out.splice(out.indexOf('outdoor_seating'), 1);
   // Items 83/84: the vibes the person asked for (quiet and romantic included), from the ONE synonym table in businessVibes.js ("relaxed and quiet"); a negated vibe is never an ask.
   const vibes = vibesFromAsk(text);
   for (const k of vibes.want) if (!out.includes(k)) out.push(k);
