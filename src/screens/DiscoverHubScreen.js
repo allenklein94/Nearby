@@ -34,8 +34,9 @@ import { filterToMyConnections } from '../services/connections';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { runIntentSearch, navigateToIntentResultItem } from '../services/intentResolver';
 import { recordTypedAsk } from '../services/typedAskAudit';
-import { refineTypedAsk, narrowTypedAsk } from '../services/askRefine';
+import { refineTypedAsk, narrowTypedAsk, restoreDiscoverAsk } from '../services/askRefine';
 import { narrowGroupLabel } from '../utils/categoryNarrow';
+import { discoverSession } from '../services/discoverSession';
 import AskRefinementChips from '../components/AskRefinementChips';
 import { displayedPosition } from '../utils/typedAskAudit';
 import { submitSurprise, shuffleSurprise, navigateToSurprisePick, surpriseTypesForTab } from '../services/surpriseMe';
@@ -362,6 +363,30 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const [intentPhase, setIntentPhase] = useState(null); // Item 135: real pipeline phase
 
   const intentSearchRequestId = useRef(0);
+  // The active typed-ask session (item 108 follow-up, services/discoverSession.js): saved on the device for this user whenever the
+  // ask or its refinements change, restored (fresh results, no AI call) when Discover opens with no ask, ended only by clearing
+  // or changing the search. restoreFailed keeps the saved session and offers Try again.
+  const [restoreFailed, setRestoreFailed] = useState(null);
+  const sessionCheckedFor = useRef(null);
+  async function restoreSession(saved) {
+    const thisRequestId = ++intentSearchRequestId.current;
+    setRestoreFailed(null);
+    setIntentSearching(true);
+    try {
+      const next = await restoreDiscoverAsk(saved);
+      if (thisRequestId !== intentSearchRequestId.current) return;
+      if (next.openNowOnly) setOpenNowOnly(true);
+      setIntentSearch(next);
+    } catch (e) {
+      console.error('Discover session restore failed', e);
+      if (thisRequestId === intentSearchRequestId.current) setRestoreFailed(saved);
+    }
+    if (thisRequestId === intentSearchRequestId.current) setIntentSearching(false);
+  }
+  function endSearchSession() {
+    setRestoreFailed(null);
+    discoverSession.clear(myUserId);
+  }
   // Surprise Me typed into this search box (owner, 2026-09-26): the SAME engine as Home (services/surpriseMe.js), shown inline
   // here; never a keyword search for the phrase, never logged as a search.
   const [discoverSurprise, setDiscoverSurprise] = useState(null);
@@ -1196,7 +1221,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         // Typed-ask audit (item 105): records what this search understood and the rows rendered below, in their order.
         // Fire-and-forget; the result is set unchanged.
         const shown = result.outcome === 'pick_for_me' ? null : recordTypedAsk('discover', result);
-        setIntentSearch({ ...result, shown });
+        setIntentSearch({ ...result, shown, askedAt: Date.now() });
       }
     } catch (e) {
       console.error('Discover intent search failed', e);
@@ -1220,6 +1245,22 @@ export default function DiscoverHubScreen({ navigation, route }) {
     }
     setIntentRefining(false);
   }
+
+  // Restore once per signed-in user when Discover has no ask of its own; a different account never sees this one's session.
+  useEffect(() => {
+    if (!myUserId || sessionCheckedFor.current === myUserId) return;
+    sessionCheckedFor.current = myUserId;
+    if (searchQuery || intentSearch) return;
+    discoverSession.load(myUserId).then((saved) => {
+      if (!saved || sessionCheckedFor.current !== myUserId) return;
+      setSearchQuery(saved.typedText);
+      restoreSession(saved);
+    });
+  }, [myUserId]);
+  // Save every change of the ask (first search, a chip, a category, a restore); the one place the session is written.
+  useEffect(() => {
+    if (intentSearch && intentSearch.outcome !== 'pick_for_me') discoverSession.save(myUserId, intentSearch);
+  }, [intentSearch, myUserId]);
 
   // Item 108: a Browse category narrows the typed ask on screen (same words, same constraints, category added), inline.
   async function handleIntentNarrow(group) {
@@ -1814,6 +1855,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   // discipline searchRequestId/placesRequestId already use.
                   intentSearchRequestId.current += 1;
                   setIntentSearch(null);
+                  endSearchSession(); // a changed search is a new ask; the saved one ends
                   clearDiscoverSurprise();
                 }}
                 onSubmitEditing={handleUnderstandSearch}
@@ -1827,6 +1869,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                     setSearchTab('top');
                     intentSearchRequestId.current += 1;
                     setIntentSearch(null);
+                    endSearchSession();
                     clearDiscoverSurprise();
                   }}
                   accessibilityLabel="Clear search"
@@ -2372,6 +2415,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {isSearching && onTopOrNotTabbed && intentSearching && (
             <View style={styles.intentSearchLoadingRow}>
               <NLoader fullScreen={false} size="inline" caption={intentPhaseCaption(intentPhase?.phase ?? 'understanding', intentPhase?.classifyResult)} />
+            </View>
+          )}
+          {isSearching && onTopOrNotTabbed && !intentSearching && !!restoreFailed && !intentSearch && (
+            <View style={styles.intentSearchBlock}>
+              <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>We couldn't bring back your ideas for this search. Your search and choices are kept.</Text>
+              <TouchableOpacity onPress={() => restoreSession(restoreFailed)} accessibilityLabel="Try again" accessibilityRole="button">
+                <Text style={styles.emptyActionText}>Try again →</Text>
+              </TouchableOpacity>
             </View>
           )}
           {isSearching && onTopOrNotTabbed && !intentSearching && (intentSearch?.outcome === 'results' || intentSearch?.refined) && (

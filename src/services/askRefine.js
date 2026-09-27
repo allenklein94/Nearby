@@ -32,3 +32,15 @@ export async function narrowTypedAsk(surface, prev, groupKey) {
   const refined = toggleCategoryNarrow(prev.classifyResult, groupKey);
   return rerunAsk(surface, prev, refined, 'category', refined.narrowGroup ? 'applied' : 'removed');
 }
+
+// Rebuilds the Discover ask state from a saved session with fresh results. Throws on a failed search (the caller keeps the
+// session and offers Try again). Not recorded as a new audit snapshot: the person asked nothing new; a later refinement still
+// links to the original ask, and a tap links by submission id.
+export async function restoreDiscoverAsk(saved) {
+  const next = await resolveClassifiedAsk(saved.classifyResult, saved.typedText);
+  const outcome = next.items.length > 0 ? 'results' : 'empty';
+  return {
+    ...next, outcome, classifyResult: saved.classifyResult, typedText: saved.typedText, submissionId: saved.submissionId,
+    rootSnapshotId: saved.rootSnapshotId, askedAt: saved.askedAt, shown: null, refined: saved.refined === true, restored: true,
+  };
+}

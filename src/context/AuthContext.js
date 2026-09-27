@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../services/supabase';
 import { hydrateCategoryTags } from '../services/categoryTags';
+import { discoverSession } from '../services/discoverSession';
 
 const AuthContext = createContext(null);
 
@@ -38,7 +39,9 @@ export function AuthProvider({ children }) {
       checkProfile(data.session);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
+      // A saved Discover search belongs to the account that made it; signing out removes every one on this device.
+      if (event === 'SIGNED_OUT') discoverSession.clearAll();
       setSession(newSession);
       checkProfile(newSession);
     });
