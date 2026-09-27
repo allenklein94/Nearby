@@ -77,8 +77,9 @@ weaker one; within a tier, points add (so two asked qualities beat one). `tierVe
    now win before weaker reasons are counted (before: total reason count, so interest + trending + weather beat two
    interests). Tests in `homeAttention.test.js`. All five consumer surfaces are now on the one framework.
 6. **Business routing.** **DECIDED (owner, 2026-09-27): its eligibility rules stay separate from recommendation ranking.**
-   Filters first, then its own lexicographic order; no consumer tiers imposed. Minimum spend and want-more are NOT changed
-   until each has an exact definition of how it should work.
+   Filters first, then its own lexicographic order; no consumer tiers imposed. **Checks 6 + 7 DONE (owner defined them,
+   2026-09-27, migration `20270245`):** a per-person budget below a declared minimum spend is excluded from automatic
+   routing (unknown on either side = eligible); want-more is one ranking key after every relevance key, never eligibility.
 
 ## 4. Decisions
 
