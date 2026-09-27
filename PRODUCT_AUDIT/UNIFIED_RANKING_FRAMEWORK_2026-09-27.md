@@ -85,3 +85,4 @@ weaker one; within a tier, points add (so two asked qualities beat one). `tierVe
 - Discover section order: decided (step 4).
 - Business routing: eligibility stays separate; minimum-spend and want-more unchanged until defined (step 6).
 - Confirmed availability outranks "may be able to help" even when the latter is closer: confirmed by the owner.
+- **Accepted (owner, 2026-09-27, LOCKED):** the ten-tier order is canonical for all five consumer surfaces; stronger tiers always beat weaker; hard constraints stay filters; business routing separate; session intent stays typed-asks only (no untyped mood feature).
