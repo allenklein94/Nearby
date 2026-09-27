@@ -89,6 +89,7 @@ import { attendeeTotal, isGatheringFull, peopleGoing } from '../utils/gatheringF
 import { planAsk, occasionFromAsk, planCaption } from '../utils/planAsk';
 import { recognizeCombination } from '../constants/planCombinations';
 import { openEndedAskGroups, applyOpenEndedAsk, openEndedCaption } from '../utils/openEndedAsk';
+import { narrowToGroup, isCategoryGroup } from '../utils/categoryNarrow';
 
 const RESULT_CAP = 4;
 
@@ -592,7 +593,7 @@ async function resolveOccasionPackages(location, occasion, partySize, searchMile
 // 2026-09-06) -- only ever a ranking bonus against a business's own real,
 // declared priority_occasions (resolveBusinessAvailability), never a
 // filter and never written anywhere.
-export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null, energies = [], openNowChip = false, openEnded = false }) {
+export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null, energies = [], openNowChip = false, openEnded = false, narrowGroup = null }) {
   // "my girlfriend" = a date party when the extractor named none (constants/askFacets.js, deterministic).
   partyType = partyType ?? partnerPartyType(rawText);
   // Item 63: an ask naming two or more parts of an outing ("dinner and something to do after") is ONE plan. A single
@@ -864,6 +865,11 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const openEndedGroups = openEndedAskGroups({ category, rawText, occasion, attributes, force: !!openEnded });
   deduped = applyOpenEndedAsk(deduped, openEndedGroups, { dateWindow, partyType, hour: new Date().getHours() });
   trace.step('open_ended', deduped);
+  // Item 108: a Browse category tapped on top of this ask narrows it (only results confirmed in that group stay); every other
+  // constraint above and below is the ask's own, unchanged. No category = untouched.
+  const narrowedGroup = isCategoryGroup(narrowGroup) ? narrowGroup : null;
+  deduped = narrowToGroup(deduped, narrowedGroup);
+  trace.step('category_narrow', deduped);
 
   // Age range (item 50): "with my 5 year old" ranks a place or gathering whose declared suited ages cover it; an unknown range is untouched.
   const childAges = askedChildAges(rawText);
@@ -951,7 +957,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
         transport_mode: transportMode, time_budget_minutes: timeBudget, clock_window: clockWindow,
         date_anchor: dateAnchor?.kind ?? null, commitment: commitAsk, spontaneity, open_now: openNowOnly, open_now_chip: !!openNowChip,
         environment: parsedFacets.environment, environment_required: !!parsedFacets.environmentRequired, exclude: parsedFacets.exclude,
-        avoid_pricey: !!parsedFacets.pricey, open_ended_groups: openEndedGroups, vibes_avoid: [...(vibesFromAsk(rawText).avoid ?? [])],
+        avoid_pricey: !!parsedFacets.pricey, open_ended_groups: openEndedGroups, narrow_group: narrowedGroup, vibes_avoid: [...(vibesFromAsk(rawText).avoid ?? [])],
       },
     };
   } catch (e) {
@@ -1066,9 +1072,10 @@ export async function resolveClassifiedAsk(classifyResult, typedText) {
     category: classifyResult.category, dateWindow: classifyResult.dateWindow, rawText: typedText,
     partySize: classifyResult.partySize ?? null, priceLevel: classifyResult.priceLevel ?? null, budgetMax: classifyResult.budgetMax ?? null,
     partyType: classifyResult.partyType ?? null, attributes: classifyResult.attributes ?? [],
-    cuisine: classifyResult.cuisine ?? null, occasion: classifyResult.occasion ?? null,
+    cuisine: classifyResult.cuisine ?? null, occasion: classifyResult.occasion ?? null, narrowGroup: classifyResult.narrowGroup ?? null,
   });
-  const items = detectFriendDiscoveryIntent(typedText) && !openNowOnly
+  // The meet-people row is not in any category, so it is not added while a category narrows the ask (item 108).
+  const items = detectFriendDiscoveryIntent(typedText) && !openNowOnly && !classifyResult.narrowGroup
     ? [...resolved, buildFriendDiscoveryResultItem(classifyResult.category)]
     : resolved;
   return { items, experience, openEndedNote, openNowOnly: openNowOnly === true, audit };

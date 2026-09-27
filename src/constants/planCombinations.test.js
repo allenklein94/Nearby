@@ -110,7 +110,7 @@ describe('item 65: Create asks only what a combination is missing', () => {
   });
   it('a picked energy reaches the resolver\'s ranking', () => {
     const src = fs.readFileSync(path.join(__dirname, '../services/intentResolver.js'), 'utf8');
-    expect(src).toMatch(/whoForName = null, energies = \[\](, openNowChip = false)?(, openEnded = false)? \}/);
+    expect(src).toMatch(/whoForName = null, energies = \[\](, openNowChip = false)?(, openEnded = false)?(, narrowGroup = null)? \}/);
     expect(src).toMatch(/applyEnergyToCandidates\(deduped, energiesWithoutIntensity\(\[\.\.\.new Set\(\[\.\.\.\(Array\.isArray\(energies\)/);
   });
 });

@@ -34,7 +34,8 @@ import { filterToMyConnections } from '../services/connections';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { runIntentSearch, navigateToIntentResultItem } from '../services/intentResolver';
 import { recordTypedAsk } from '../services/typedAskAudit';
-import { refineTypedAsk } from '../services/askRefine';
+import { refineTypedAsk, narrowTypedAsk } from '../services/askRefine';
+import { narrowGroupLabel } from '../utils/categoryNarrow';
 import AskRefinementChips from '../components/AskRefinementChips';
 import { displayedPosition } from '../utils/typedAskAudit';
 import { submitSurprise, shuffleSurprise, navigateToSurprisePick, surpriseTypesForTab } from '../services/surpriseMe';
@@ -1220,6 +1221,60 @@ export default function DiscoverHubScreen({ navigation, route }) {
     setIntentRefining(false);
   }
 
+  // Item 108: a Browse category narrows the typed ask on screen (same words, same constraints, category added), inline.
+  async function handleIntentNarrow(group) {
+    const prev = intentSearch;
+    if (!prev || intentRefining) return;
+    const thisRequestId = intentSearchRequestId.current;
+    setIntentRefining(true);
+    try {
+      const next = await narrowTypedAsk('discover', prev, group.key);
+      if (thisRequestId === intentSearchRequestId.current) setIntentSearch(next);
+    } catch (e) {
+      presentRecoverableError(Alert, { what: 'update these ideas', error: e, onRetry: () => handleIntentNarrow(group) });
+    }
+    setIntentRefining(false);
+  }
+
+  // The Browse rail (item 34/91), one rendering for both uses: while browsing a tap opens the category view; with a typed ask on
+  // screen (item 108) a tap narrows that ask instead, the selected category shows ✕ and tapping it again clears it.
+  function renderBrowseRail(onPress, { selectedKey = null, disabled = false } = {}) {
+    return (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
+        {[...rail.primary, ...(showMoreCategories ? rail.more : [])].map(({ group, label }) => {
+          const selected = selectedKey === group.key;
+          return (
+            <TouchableOpacity
+              key={group.key}
+              style={[styles.categoryChip, selected && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+              onPress={() => onPress(group)}
+              disabled={disabled}
+              activeOpacity={0.85}
+              accessibilityLabel={selected ? `${label}, selected. Tap to clear` : label}
+              accessibilityRole="button"
+              accessibilityState={{ selected, disabled }}
+            >
+              <Text style={styles.categoryChipIcon}>{group.icon}</Text>
+              <Text style={[styles.categoryChipText, selected && { color: '#fff' }]}>{selected ? `${label} ✕` : label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+        {rail.more.length > 0 ? (
+          <TouchableOpacity
+            style={styles.categoryChip}
+            onPress={() => { animateLayout(); setShowMoreCategories((v) => !v); }}
+            activeOpacity={0.85}
+            accessibilityLabel={showMoreCategories ? 'Show fewer categories' : 'More categories'}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showMoreCategories }}
+          >
+            <Text style={styles.categoryChipText}>{showMoreCategories ? 'Less' : 'More'}</Text>
+          </TouchableOpacity>
+        ) : null}
+      </ScrollView>
+    );
+  }
+
   async function handleDiscoverSurprise(typedText) {
     intentSearchRequestId.current += 1;
     setIntentSearch(null);
@@ -2191,33 +2246,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {isAll && !isSearching && (
             <>
               <Text style={styles.sectionHeader}>Browse</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
-                {[...rail.primary, ...(showMoreCategories ? rail.more : [])].map(({ group, label }) => (
-                  <TouchableOpacity
-                    key={group.key}
-                    style={styles.categoryChip}
-                    onPress={() => openCategoryContext(group)}
-                    activeOpacity={0.85}
-                    accessibilityLabel={label}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.categoryChipIcon}>{group.icon}</Text>
-                    <Text style={styles.categoryChipText}>{label}</Text>
-                  </TouchableOpacity>
-                ))}
-                {rail.more.length > 0 ? (
-                  <TouchableOpacity
-                    style={styles.categoryChip}
-                    onPress={() => { animateLayout(); setShowMoreCategories((v) => !v); }}
-                    activeOpacity={0.85}
-                    accessibilityLabel={showMoreCategories ? 'Show fewer categories' : 'More categories'}
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded: showMoreCategories }}
-                  >
-                    <Text style={styles.categoryChipText}>{showMoreCategories ? 'Less' : 'More'}</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </ScrollView>
+              {renderBrowseRail(openCategoryContext)}
             </>
           )}
 
@@ -2352,8 +2381,22 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 classifyResult={intentSearch.classifyResult}
                 onRefine={handleIntentRefine}
                 refining={intentRefining}
-                empty={!(intentSearch.items?.length > 0)}
+                empty={!(intentSearch.items?.length > 0) && !intentSearch.classifyResult?.narrowGroup}
               />
+              {/* Item 108: the same Browse rail narrows this ask (it never replaces it). */}
+              {renderBrowseRail(handleIntentNarrow, { selectedKey: intentSearch.classifyResult?.narrowGroup ?? null, disabled: intentRefining })}
+              {!intentRefining && !(intentSearch.items?.length > 0) && !!intentSearch.classifyResult?.narrowGroup && (
+                <>
+                  <EmptyCopy id="category_narrow_none" vars={{ topic: narrowGroupLabel(intentSearch.classifyResult.narrowGroup) }} />
+                  <TouchableOpacity
+                    onPress={() => handleIntentNarrow({ key: intentSearch.classifyResult.narrowGroup })}
+                    accessibilityLabel="Show all ideas"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.emptyActionText}>Show all ideas →</Text>
+                  </TouchableOpacity>
+                </>
+              )}
               {!!intentSearch.openEndedNote && (
                 <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{intentSearch.openEndedNote}</Text>
               )}
@@ -2362,6 +2405,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
               </Text>
               <View style={styles.intentSearchTagsRow}>
                 <Text style={styles.intentSearchTag}>📍 Nearby</Text>
+                {!!intentSearch.classifyResult?.narrowGroup && (
+                  <Text style={styles.intentSearchTag}>{narrowGroupLabel(intentSearch.classifyResult.narrowGroup)}</Text>
+                )}
                 {intentSearchDateLabel(intentSearch.classifyResult?.dateWindow) && (
                   <Text style={styles.intentSearchTag}>📅 {intentSearchDateLabel(intentSearch.classifyResult.dateWindow)}</Text>
                 )}

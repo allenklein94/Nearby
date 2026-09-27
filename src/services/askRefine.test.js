@@ -25,7 +25,9 @@ jest.mock('./createAssistant', () => ({ classifyCreateRequest: jest.fn() }));
 jest.mock('./intentOutcomes', () => ({ recordIntentSubmission: jest.fn(async () => 'sub-1') }));
 
 import { runIntentSearch } from './intentResolver';
-import { refineTypedAsk } from './askRefine';
+import { refineTypedAsk, narrowTypedAsk } from './askRefine';
+import fs from 'fs';
+import path from 'path';
 import { recordTypedAsk } from './typedAskAudit';
 import { supabase } from './supabase';
 import { getNearbyGatherings } from './gatherings';
@@ -151,5 +153,120 @@ describe('refinement chips on Home and Discover', () => {
     expect(JSON.stringify(payloads())).not.toMatch(/live music tonight|Plan cheap/);
     expect(new Set(r.items.map((i) => i.type))).toEqual(new Set(s.items.map((i) => i.type)));
     expect(r.items.every((i) => !['person', 'profile', 'stranger'].includes(i.type))).toBe(true);
+  });
+});
+
+// Owner item 108: a Browse category tapped on Discover narrows the typed ask on screen; it never replaces it.
+describe('category narrows the ask (item 108)', () => {
+  const MIXED = [
+    g('music', { interest_tag: 'Live Music' }),
+    g('pickle', { interest_tag: 'Pickleball', party_type: 'friends' }),
+    g('bowl', { interest_tag: 'Bowling', price_level: '$' }),
+    g('hike', { interest_tag: 'Hiking' }),
+    g('untagged', { interest_tag: null }),
+  ];
+  const FUN = 'something fun tonight with friends under $30';
+  const FUN_CLASSIFY = { intent: 'gathering', category: null, dateWindow: 'tonight', partyType: 'friends', budgetMax: 30, priceLevel: '$', attributes: ['quiet'] };
+  const ACTIVITIES = 'activities_recreation';
+  beforeEach(() => { getNearbyGatherings.mockResolvedValue(MIXED); });
+
+  it('1. keeps every original constraint and adds only the category', async () => {
+    const s = await firstSearch('discover', FUN_CLASSIFY, FUN);
+    supabase.rpc.mockClear();
+    const n = await narrowTypedAsk('discover', s, ACTIVITIES);
+    expect(n.classifyResult).toEqual({ ...FUN_CLASSIFY, narrowGroup: ACTIVITIES });
+    expect(n.typedText).toBe(FUN);
+    expect(n.items.map((i) => i.id).sort()).toEqual(['bowl', 'pickle']);
+    const p = payloads()[0];
+    expect(p.interpretation).toMatchObject({ date_window: 'tonight', party_type: 'friends', budget_max: 30, price_level: '$', attributes: ['quiet'], narrow_group: ACTIVITIES });
+  });
+
+  it('1b. a tentative preference stays a preference under the category (never a hard filter)', async () => {
+    const text = 'something outdoors, maybe';
+    const s = await firstSearch('discover', { intent: 'gathering', category: null, dateWindow: null, attributes: [] }, text);
+    supabase.rpc.mockClear();
+    await narrowTypedAsk('discover', s, ACTIVITIES);
+    expect(payloads()[0].interpretation).toMatchObject({ environment: 'outdoor', environment_required: false, narrow_group: ACTIVITIES });
+  });
+
+  it('1c. chips and the category survive each other', async () => {
+    let s = await firstSearch('discover', FUN_CLASSIFY, FUN);
+    s = await narrowTypedAsk('discover', s, ACTIVITIES);
+    s = await refineTypedAsk('discover', s, 'solo');
+    expect(s.classifyResult).toMatchObject({ narrowGroup: ACTIVITIES, partyType: 'solo', dateWindow: 'tonight', budgetMax: 30 });
+    expect(s.items.every((i) => ['bowl', 'pickle'].includes(i.id))).toBe(true);
+  });
+
+  it('2. the tap never invents time, party size or social context', async () => {
+    const bare = { intent: 'gathering', category: null, dateWindow: null, attributes: [] };
+    const s = await firstSearch('discover', bare, 'something fun');
+    const n = await narrowTypedAsk('discover', s, ACTIVITIES);
+    expect(n.classifyResult).toEqual({ ...bare, narrowGroup: ACTIVITIES });
+    const p = payloads().at(-1).interpretation;
+    expect(p.date_window).toBeUndefined();
+    expect(p.party_type).toBeUndefined();
+    expect(p.party_size_stated).toBe(false);
+  });
+
+  it('3. tapping the category again restores the original results; another category switches', async () => {
+    const s = await firstSearch('discover', FUN_CLASSIFY, FUN);
+    const n = await narrowTypedAsk('discover', s, ACTIVITIES);
+    const other = await narrowTypedAsk('discover', n, 'outdoors_nature');
+    expect(other.items.map((i) => i.id)).toEqual(['hike']);
+    const back = await narrowTypedAsk('discover', other, 'outdoors_nature');
+    expect(back.classifyResult).toEqual(FUN_CLASSIFY);
+    expect(back.items.map((i) => i.id)).toEqual(s.items.map((i) => i.id));
+  });
+
+  it('3b. an empty combination keeps the ask and the category, and can be removed', async () => {
+    const s = await firstSearch('discover', FUN_CLASSIFY, FUN);
+    const n = await narrowTypedAsk('discover', s, 'pets');
+    expect(n).toMatchObject({ outcome: 'empty', refined: true, items: [] });
+    expect(n.classifyResult.narrowGroup).toBe('pets');
+    const back = await narrowTypedAsk('discover', n, 'pets');
+    expect(back.items.map((i) => i.id)).toEqual(s.items.map((i) => i.id));
+  });
+
+  it('5. Home and Discover share the interpretation and refinement logic', async () => {
+    const home = await firstSearch('home', FUN_CLASSIFY, FUN);
+    const discover = await firstSearch('discover', FUN_CLASSIFY, FUN);
+    supabase.rpc.mockClear();
+    await narrowTypedAsk('home', home, ACTIVITIES);
+    await narrowTypedAsk('discover', discover, ACTIVITIES);
+    const [ph, pd] = payloads();
+    expect(shape(ph)).toEqual(shape(pd));
+  });
+
+  it('6. recorded against the original ask with the interpretation and the results shown, in order', async () => {
+    const s = await firstSearch('discover', FUN_CLASSIFY, FUN);
+    supabase.rpc.mockClear();
+    const a = await narrowTypedAsk('discover', s, ACTIVITIES);
+    const b = await narrowTypedAsk('discover', a, ACTIVITIES);
+    const [pa, pb] = payloads();
+    expect(pa).toMatchObject({ refinement_key: 'category', refinement_action: 'applied', parent_snapshot_id: s.shown.snapshotId, submission_id: 'sub-1' });
+    expect(pb).toMatchObject({ refinement_key: 'category', refinement_action: 'removed', parent_snapshot_id: s.shown.snapshotId });
+    expect(pa.results.map((x) => x.result_id)).toEqual(a.items.map((i) => i.id));
+    expect(pb.interpretation.narrow_group).toBeUndefined();
+    expect(JSON.stringify(payloads())).not.toMatch(/something fun/);
+  });
+
+  it('7. no AI call and no new ranking: kept results keep their exact scores and relative order', async () => {
+    const s = await firstSearch('discover', FUN_CLASSIFY, FUN);
+    classifyCreateRequest.mockClear();
+    const n = await narrowTypedAsk('discover', s, ACTIVITIES);
+    expect(classifyCreateRequest).not.toHaveBeenCalled();
+    const before = s.items.filter((i) => ['bowl', 'pickle'].includes(i.id));
+    expect(n.items.map((i) => [i.id, i.score])).toEqual(before.map((i) => [i.id, i.score]));
+  });
+
+  it('4. clearing the typed ask returns to normal browsing (source guard)', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../screens/DiscoverHubScreen.js'), 'utf8');
+    expect(src).toMatch(/isAll && !isSearching && \([\s\S]{0,200}renderBrowseRail\(openCategoryContext\)/);
+    expect(src).toMatch(/renderBrowseRail\(handleIntentNarrow/);
+    expect(src).toMatch(/accessibilityLabel="Clear search"/);
+    const clear = src.slice(src.indexOf("setSearchQuery('');"), src.indexOf('accessibilityLabel="Clear search"'));
+    expect(clear).toMatch(/setIntentSearch\(null\)/);
+    // one narrowing path: the screen never builds its own category filter for an ask
+    expect(src).not.toMatch(/narrowToGroup/);
   });
 });

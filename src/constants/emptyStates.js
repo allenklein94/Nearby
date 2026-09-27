@@ -16,6 +16,7 @@ export const EMPTY_STATES = {
   cuisine_none: { title: 'No {cuisine} places here yet', body: 'Only businesses that list {cuisine} as their cuisine show here. Clear the filter to see every restaurant.' },
   // Item 107: a refinement chip on Home's typed ask left nothing.
   refine_none: { title: 'Nothing nearby fits that yet', body: 'Tap the chip again to go back to all the ideas.' },
+  category_narrow_none: { title: 'No {topic} ideas for this yet', body: 'Your ask is kept. Clear the category to see all the ideas again.' },
   surprise_none: { title: 'Nothing to pick from nearby right now', body: 'Try another time or place in your words, or clear the search to see everything around you.' },
   places_search: { title: 'No places match "{query}"', body: 'Try a different word, or clear the search.' },
   // Item 80 sweep: the rest of the bare-fragment empties.

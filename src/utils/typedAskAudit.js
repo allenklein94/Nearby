@@ -39,6 +39,7 @@ export const SIGNAL_CODES = {
   commitment: 'explicit_preference',
   spontaneity: 'time',
   open_ended: 'context',
+  category_narrow: 'explicit_requirement',
   declared_features: 'explicit_requirement',
   vibe: 'explicit_preference',
   quality_depth: 'explicit_preference',
@@ -62,7 +63,7 @@ const SECTION = /^[a-z_]{1,20}(:[a-z_]{1,40})?$/;
 const TYPE = /^[a-z_]{1,40}$/;
 const UUID = /^[0-9a-f-]{36}$/;
 // The refinement chips (utils/askRefinements.js); the server CHECK carries the same list.
-export const REFINEMENT_KEYS = ['friends', 'date', 'solo', 'under_25'];
+export const REFINEMENT_KEYS = ['friends', 'date', 'solo', 'under_25', 'category']; // 'category' = a Browse category narrowing the ask (item 108)
 const KEY = /^[a-z][a-z0-9_]{0,39}$/;
 const ID = /^[A-Za-z0-9_:.-]{1,64}$/;
 
@@ -142,7 +143,7 @@ export const INTERPRETATION_FIELDS = [
   'energies', 'formats', 'skill_levels', 'genres', 'intensity', 'effort', 'social_context', 'meet_new_people',
   'distance_willingness', 'search_widened', 'transport_mode', 'time_budget_minutes', 'clock_window', 'date_anchor',
   'commitment', 'spontaneity', 'open_now', 'open_now_chip', 'environment', 'environment_required', 'exclude', 'avoid_pricey',
-  'open_ended_groups', 'vibes_avoid',
+  'open_ended_groups', 'vibes_avoid', 'narrow_group',
 ];
 
 function cleanValue(v, depth = 0) {

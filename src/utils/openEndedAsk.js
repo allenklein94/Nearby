@@ -37,7 +37,7 @@ export function openEndedAskGroups({ category = null, rawText = '', occasion = n
     .filter((k) => !SUPPLY_GROUPS.includes(k) && (k !== FAMILY_GROUP || kidFriendly));
 }
 
-function groupKeyOf(candidate) {
+export function groupKeyOf(candidate) {
   const c = candidate?.category;
   if (!c) return null;
   if (CATEGORY_GROUPS.some((g) => g.key === c)) return c; // a business known only by its major
