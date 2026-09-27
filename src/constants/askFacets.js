@@ -89,24 +89,42 @@ export const PRICEY_POINTS = -2;
 
 // Applies the parsed facets to scored candidates: exclusions drop known conflicts, an environment lifts its match, "not too expensive"
 // sinks a known $$$. Returns { items, caption } (caption null when the ask stated none of these).
-export function applyAskFacets(candidates, facets) {
-  if (!facets || (!facets.environment && !facets.exclude.length && !facets.pricey)) return { items: candidates, caption: null };
+// Item 118: the eligibility half (typed-ask Stage 1, utils/askEligibility.js). A firm environment removes KNOWN opposites; an
+// exclusion removes a result only when its own known property conflicts. Unknown is kept.
+export function askFacetsEligible(candidates, facets) {
+  if (!facets || (!facets.environment && !facets.exclude.length && !facets.pricey)) return { items: candidates, removedOpposite: false };
   const opposite = facets.environmentRequired ? (facets.environment === 'outdoor' ? 'indoor' : 'outdoor') : null;
-  const before = candidates.length;
   const kept = candidates.filter((c) => !opposite || environmentOf(c?.category) !== opposite);
-  const removedOpposite = kept.length < before;
-  const items = kept
-    .filter((c) => !facets.exclude.some((k) => conflicts(c, k)))
-    .map((c) => {
-      let delta = 0;
-      const env = environmentOf(c?.category);
-      if (facets.environment && env) delta += env === facets.environment ? ENVIRONMENT_POINTS : -1;
-      if (facets.pricey && c?.priceLevel === '$$$') delta += PRICEY_POINTS;
-      return delta ? { ...c, score: (c.score ?? 0) + delta } : c;
-    });
+  const removedOpposite = kept.length < candidates.length;
+  return { items: kept.filter((c) => !facets.exclude.some((k) => conflicts(c, k))), removedOpposite };
+}
+
+// The ranking half (Stage 2): a stated environment lifts its match and nudges a known opposite; "not too expensive" sinks $$$.
+export function askFacetsLift(candidates, facets) {
+  if (!facets || (!facets.environment && !facets.pricey)) return candidates;
+  return candidates.map((c) => {
+    let delta = 0;
+    const env = environmentOf(c?.category);
+    if (facets.environment && env) delta += env === facets.environment ? ENVIRONMENT_POINTS : -1;
+    if (facets.pricey && c?.priceLevel === '$$$') delta += PRICEY_POINTS;
+    return delta ? { ...c, score: (c.score ?? 0) + delta } : c;
+  });
+}
+
+// What was left out, in one line (the exclusions the words named, the opposite environment only when one was really removed).
+export function askFacetsCaption(facets, removedOpposite = false) {
+  if (!facets || (!facets.environment && !facets.exclude.length && !facets.pricey)) return null;
+  const opposite = facets.environment === 'outdoor' ? 'indoor' : 'outdoor';
   const parts = [...facets.exclude.map((k) => EXCLUSION_LABELS[k]), ...(removedOpposite ? [EXCLUSION_LABELS[opposite]] : []), ...(facets.pricey ? ['pricier options'] : [])];
   const list = parts.length <= 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
-  return { items, caption: parts.length ? `Leaving out ${list}` : null };
+  return parts.length ? `Leaving out ${list}` : null;
+}
+
+// All three in one call (older callers and tests).
+export function applyAskFacets(candidates, facets) {
+  if (!facets || (!facets.environment && !facets.exclude.length && !facets.pricey)) return { items: candidates, caption: null };
+  const { items, removedOpposite } = askFacetsEligible(candidates, facets);
+  return { items: askFacetsLift(items, facets), caption: askFacetsCaption(facets, removedOpposite) };
 }
 
 // Attributes the person's own words name (owner items 51/52). A coffee shop stays Food & Drink -> Coffee and CARRIES dog_friendly /

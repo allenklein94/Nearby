@@ -157,7 +157,8 @@ describe('scope', () => {
     const users = fs.readdirSync(path.join(ROOT, 'src'), { recursive: true })
       .filter((f) => /\.js$/.test(f) && !/test\.js$/.test(f) && /from '[^']*businessRestrictions'/.test(read(`src/${f}`)))
       .map((f) => f.split(path.sep).join('/')).sort();
-    expect(users).toEqual(['screens/BusinessDashboardScreen.js', 'screens/BusinessProfileScreen.js', 'services/intentResolver.js']);
+    // utils/askEligibility.js = the typed-ask eligibility stage the resolver runs (item 118)
+    expect(users).toEqual(['screens/BusinessDashboardScreen.js', 'screens/BusinessProfileScreen.js', 'services/intentResolver.js', 'utils/askEligibility.js']);
     expect(read('src/constants/businessRestrictions.js').replace(/^\s*\/\/.*$/gm, '')).not.toMatch(/fetch\(|supabase|functions\.invoke|anthropic/i);
   });
   it('never in a business-facing payload', () => {

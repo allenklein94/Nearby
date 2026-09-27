@@ -8,7 +8,7 @@
 // services/typedAskAudit.js.
 
 // Bump whenever what is recorded (fields, codes, layout) changes, so rows stay comparable.
-export const TYPED_ASK_AUDIT_VERSION = 'typed-ask-audit-v2'; // v2: results ordered by the tier framework; business/perk/community base split into named codes
+export const TYPED_ASK_AUDIT_VERSION = 'typed-ask-audit-v3'; // v2: results ordered by the tier framework; business/perk/community base split into named codes. v3 (item 118): eligibility runs before ranking; `exclusions` = removals by eligibility rule
 
 // Every code a score contribution or a removal can carry. `class` is what analysis aggregates by ("how often did an explicit
 // requirement contribute", "how often did weather"...). A pass that is traced must use one of these; a test keeps resolveIntent's
@@ -89,8 +89,9 @@ const num = (n) => (Number.isFinite(n) ? Math.round(n * 1000) / 1000 : 0);
 
 // Records, per candidate, the score change each named pass made. Read-only: it never writes to a candidate or the list, and every
 // method swallows its own errors so a bug here can never break a search.
-export function createScoreTrace(initial, { removedBeforeStart = 0 } = {}) {
-  return diffTrace(initial, { removedBeforeStart });
+// `removed`: Stage 1's removals by eligibility rule (utils/askEligibility.js), recorded as this ask's exclusions.
+export function createScoreTrace(initial, { removedBeforeStart = 0, removed = null } = {}) {
+  return diffTrace(initial, { removedBeforeStart, removed });
 }
 
 // The RANKING ledger (constants/signalPriority.js): the same per-pass diff, a separate instance so the audit can never change an
@@ -100,7 +101,7 @@ export function createRankLedger(initial) {
   return diffTrace(initial, { extraCodes: UNRECORDED_PASSES });
 }
 
-function diffTrace(initial, { removedBeforeStart = 0, extraCodes = [] } = {}) {
+function diffTrace(initial, { removedBeforeStart = 0, removed = null, extraCodes = [] } = {}) {
   const known = (code) => !!SIGNAL_CODES[code] || extraCodes.includes(code);
   const last = new Map();
   const signals = new Map();
@@ -115,6 +116,7 @@ function diffTrace(initial, { removedBeforeStart = 0, extraCodes = [] } = {}) {
   };
   safe(() => {
     if (removedBeforeStart > 0) exclusions.dedupe = removedBeforeStart;
+    for (const [code, n] of Object.entries(removed ?? {})) if (Number.isInteger(n) && n > 0) exclusions[code] = n;
     for (const c of Array.isArray(initial) ? initial : []) {
       const k = keyOf(c);
       if (!k) continue;

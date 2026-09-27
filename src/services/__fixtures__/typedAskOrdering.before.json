@@ -1,0 +1,520 @@
+[
+  {
+    "label": "open-ended",
+    "order": [
+      "gathering:g-club",
+      "gathering:g-coffee",
+      "gathering:g-live",
+      "gathering:g-wine"
+    ],
+    "fullOrder": [
+      "g-club@11",
+      "g-coffee@11",
+      "g-live@11",
+      "g-wine@8",
+      "g-trivia@8",
+      "g-rest@8",
+      "b-bar@9",
+      "b-rest@9",
+      "b-cafe@6",
+      "b-patio@6",
+      "b-arcade@6",
+      "g-yoga@10",
+      "g-hike@7",
+      "g-soccer@7",
+      "g-museum@7",
+      "k-coffee@0",
+      "k-bar@0"
+    ],
+    "experience": null,
+    "note": "Looking across Entertainment & Nightlife and Food & Drink",
+    "candidateCount": 17,
+    "exclusions": {
+      "open_ended": 2
+    }
+  },
+  {
+    "label": "open-ended + walking distance",
+    "order": [
+      "gathering:g-club",
+      "gathering:g-coffee",
+      "business_availability:b-bar",
+      "gathering:g-live"
+    ],
+    "fullOrder": [
+      "g-club@12.919",
+      "g-coffee@12.811",
+      "b-bar@10.784",
+      "g-live@12.73",
+      "b-rest@10.703",
+      "b-cafe@7.351",
+      "g-rest@9.27",
+      "b-arcade@7.135",
+      "b-patio@6.946",
+      "g-wine@8.676",
+      "g-trivia@8.405",
+      "g-yoga@11.622",
+      "g-soccer@8.432",
+      "g-hike@8.216",
+      "g-museum@7",
+      "k-coffee@0",
+      "k-bar@0"
+    ],
+    "experience": null,
+    "note": "Looking across Entertainment & Nightlife and Food & Drink · Keeping it very close by",
+    "candidateCount": 17,
+    "exclusions": {
+      "open_ended": 2
+    }
+  },
+  {
+    "label": "open-ended + not too far",
+    "order": [
+      "gathering:g-club",
+      "gathering:g-coffee",
+      "business_availability:b-bar",
+      "gathering:g-live"
+    ],
+    "fullOrder": [
+      "g-club@11.959",
+      "g-coffee@11.905",
+      "b-bar@9.892",
+      "g-live@11.865",
+      "b-rest@9.851",
+      "b-cafe@6.676",
+      "g-rest@8.635",
+      "b-arcade@6.568",
+      "b-patio@6.473",
+      "g-wine@8.338",
+      "g-trivia@8.203",
+      "g-yoga@10.811",
+      "g-soccer@7.716",
+      "g-hike@7.608",
+      "g-museum@7",
+      "k-coffee@0",
+      "k-bar@0"
+    ],
+    "experience": null,
+    "note": "Looking across Entertainment & Nightlife and Food & Drink · Keeping it nearby",
+    "candidateCount": 17,
+    "exclusions": {
+      "open_ended": 2
+    }
+  },
+  {
+    "label": "open-ended + biking",
+    "order": [
+      "gathering:g-club",
+      "gathering:g-coffee",
+      "business_availability:b-bar",
+      "gathering:g-live"
+    ],
+    "fullOrder": [
+      "g-club@11.959",
+      "g-coffee@11.905",
+      "b-bar@9.892",
+      "g-live@11.865",
+      "b-rest@9.851",
+      "b-cafe@6.676",
+      "g-rest@8.635",
+      "b-arcade@6.568",
+      "b-patio@6.473",
+      "g-wine@8.338",
+      "g-trivia@8.203",
+      "g-yoga@10.811",
+      "g-soccer@7.716",
+      "g-hike@7.608",
+      "g-museum@7",
+      "k-coffee@0",
+      "k-bar@0"
+    ],
+    "experience": null,
+    "note": "Looking across Entertainment & Nightlife and Food & Drink · Leaning closer since you’re biking",
+    "candidateCount": 17,
+    "exclusions": {
+      "open_ended": 2
+    }
+  },
+  {
+    "label": "open-ended + driving",
+    "order": [
+      "gathering:g-wine",
+      "gathering:g-trivia",
+      "gathering:g-rest",
+      "business_availability:b-cafe"
+    ],
+    "fullOrder": [
+      "g-wine@8",
+      "g-trivia@8",
+      "g-rest@8",
+      "b-cafe@6",
+      "b-patio@6",
+      "b-arcade@6",
+      "g-club@8",
+      "g-coffee@8",
+      "g-live@8",
+      "b-bar@6",
+      "b-rest@6",
+      "g-hike@7",
+      "g-soccer@7",
+      "g-museum@7",
+      "g-yoga@7",
+      "k-coffee@0",
+      "k-bar@0"
+    ],
+    "experience": null,
+    "note": "Looking across Food & Drink and Entertainment & Nightlife · Not just the closest, since you’re going by car",
+    "candidateCount": 17,
+    "exclusions": {
+      "open_ended": 2
+    }
+  },
+  {
+    "label": "kids dinner (compatibility)",
+    "order": [
+      "gathering:g-rest",
+      "business_availability:b-patio",
+      "perk:k-bar"
+    ],
+    "fullOrder": [
+      "g-rest@11",
+      "b-patio@9",
+      "k-bar@0"
+    ],
+    "experience": null,
+    "note": "Leaving out places that don't take children",
+    "candidateCount": 3,
+    "exclusions": {
+      "compatibility": 1
+    }
+  },
+  {
+    "label": "kids dinner walking distance",
+    "order": [
+      "gathering:g-rest",
+      "business_availability:b-patio",
+      "perk:k-bar"
+    ],
+    "fullOrder": [
+      "g-rest@11.857",
+      "b-patio@9",
+      "k-bar@0"
+    ],
+    "experience": null,
+    "note": "Keeping it very close by · Leaving out places that don't take children",
+    "candidateCount": 3,
+    "exclusions": {
+      "compatibility": 1
+    }
+  },
+  {
+    "label": "firm outside",
+    "order": [
+      "gathering:g-hike",
+      "perk:k-coffee",
+      "perk:k-bar"
+    ],
+    "fullOrder": [
+      "g-hike@9",
+      "k-coffee@0",
+      "k-bar@0"
+    ],
+    "experience": null,
+    "note": "Looking across Outdoors & Nature · Weather data unavailable",
+    "candidateCount": 3,
+    "exclusions": {
+      "open_ended": 16
+    }
+  },
+  {
+    "label": "firm outside walking",
+    "order": [
+      "gathering:g-hike",
+      "perk:k-coffee",
+      "perk:k-bar"
+    ],
+    "fullOrder": [
+      "g-hike@10.216",
+      "k-coffee@0",
+      "k-bar@0"
+    ],
+    "experience": null,
+    "note": "Looking across Outdoors & Nature · Keeping it very close by · Weather data unavailable",
+    "candidateCount": 3,
+    "exclusions": {
+      "open_ended": 16
+    }
+  },
+  {
+    "label": "tentative outdoors",
+    "order": [
+      "gathering:g-hike",
+      "gathering:g-club",
+      "gathering:g-live",
+      "gathering:g-trivia"
+    ],
+    "fullOrder": [
+      "g-hike@8",
+      "g-club@9",
+      "g-live@9",
+      "g-trivia@6",
+      "g-soccer@6",
+      "g-rest@6",
+      "b-carwash@7",
+      "b-plumb@7",
+      "b-bar@7",
+      "b-rest@7",
+      "b-patio@4",
+      "b-arcade@4",
+      "k-coffee@0",
+      "k-bar@0",
+      "g-coffee@8",
+      "g-yoga@8",
+      "g-wine@5",
+      "g-museum@5",
+      "b-cafe@3"
+    ],
+    "experience": null,
+    "note": "Weather data unavailable",
+    "candidateCount": 19,
+    "exclusions": {}
+  },
+  {
+    "label": "open now",
+    "order": [
+      "business_availability:b-bar"
+    ],
+    "fullOrder": [
+      "b-bar@9"
+    ],
+    "experience": null,
+    "note": "Showing only what is open right now · Showing what is happening right now",
+    "candidateCount": 1,
+    "exclusions": {
+      "open_now": 9
+    }
+  },
+  {
+    "label": "open now walking",
+    "order": [
+      "business_availability:b-bar"
+    ],
+    "fullOrder": [
+      "b-bar@10.784"
+    ],
+    "experience": null,
+    "note": "Showing only what is open right now · Showing what is happening right now · Keeping it very close by",
+    "candidateCount": 1,
+    "exclusions": {
+      "open_now": 9
+    }
+  },
+  {
+    "label": "coffee walking",
+    "order": [
+      "gathering:g-coffee",
+      "business_availability:b-cafe",
+      "perk:k-coffee",
+      "perk:k-bar"
+    ],
+    "fullOrder": [
+      "g-coffee@18",
+      "b-cafe@9",
+      "k-coffee@5",
+      "k-bar@0"
+    ],
+    "experience": null,
+    "note": "Keeping it very close by",
+    "candidateCount": 4,
+    "exclusions": {}
+  },
+  {
+    "label": "quiet drink",
+    "order": [
+      "gathering:g-coffee",
+      "gathering:g-wine",
+      "business_availability:b-cafe",
+      "gathering:g-yoga"
+    ],
+    "fullOrder": [
+      "g-coffee@13",
+      "g-wine@10",
+      "b-cafe@8",
+      "g-yoga@12",
+      "g-museum@9",
+      "g-live@11",
+      "g-trivia@8",
+      "g-rest@8",
+      "b-bar@9",
+      "b-rest@9",
+      "b-patio@6",
+      "g-club@10",
+      "b-arcade@5",
+      "g-hike@6",
+      "g-soccer@6",
+      "k-coffee@0",
+      "k-bar@0"
+    ],
+    "experience": null,
+    "note": "Looking across Food & Drink and Activities & Recreation",
+    "candidateCount": 17,
+    "exclusions": {
+      "open_ended": 2
+    }
+  },
+  {
+    "label": "no alcohol fun",
+    "order": [
+      "gathering:g-coffee",
+      "gathering:g-live",
+      "gathering:g-trivia",
+      "gathering:g-rest"
+    ],
+    "fullOrder": [
+      "g-coffee@11",
+      "g-live@11",
+      "g-trivia@8",
+      "g-rest@8",
+      "b-rest@9",
+      "b-cafe@6",
+      "b-patio@6",
+      "b-arcade@6",
+      "g-yoga@10",
+      "g-hike@7",
+      "g-soccer@7",
+      "g-museum@7",
+      "k-coffee@0",
+      "k-bar@0"
+    ],
+    "experience": null,
+    "note": "Looking across Food & Drink and Entertainment & Nightlife · Leaving out alcohol",
+    "candidateCount": 14,
+    "exclusions": {
+      "open_ended": 2,
+      "ask_facets": 3
+    }
+  },
+  {
+    "label": "narrowed to activities",
+    "order": [
+      "gathering:g-yoga",
+      "gathering:g-soccer"
+    ],
+    "fullOrder": [
+      "g-yoga@10",
+      "g-soccer@7"
+    ],
+    "experience": null,
+    "note": "Looking across Activities & Recreation",
+    "candidateCount": 2,
+    "exclusions": {
+      "open_ended": 2,
+      "category_narrow": 15
+    }
+  },
+  {
+    "label": "narrowed + walking",
+    "order": [
+      "gathering:g-yoga",
+      "gathering:g-soccer"
+    ],
+    "fullOrder": [
+      "g-yoga@11.622",
+      "g-soccer@8.432"
+    ],
+    "experience": null,
+    "note": "Looking across Activities & Recreation · Keeping it very close by",
+    "candidateCount": 2,
+    "exclusions": {
+      "open_ended": 2,
+      "category_narrow": 15
+    }
+  },
+  {
+    "label": "party of 12",
+    "order": [
+      "gathering:g-club",
+      "gathering:g-coffee",
+      "gathering:g-yoga",
+      "gathering:g-live"
+    ],
+    "fullOrder": [
+      "g-club@9",
+      "g-coffee@9",
+      "g-yoga@9",
+      "g-live@9",
+      "g-hike@6",
+      "g-wine@6",
+      "g-trivia@6",
+      "g-soccer@6",
+      "g-museum@6",
+      "g-rest@6",
+      "b-carwash@7",
+      "b-plumb@7",
+      "b-bar@7",
+      "b-rest@7",
+      "b-cafe@4",
+      "b-patio@4",
+      "b-arcade@4",
+      "k-coffee@0",
+      "k-bar@0"
+    ],
+    "experience": null,
+    "note": null,
+    "candidateCount": 19,
+    "exclusions": {}
+  },
+  {
+    "label": "one hour",
+    "order": [
+      "gathering:g-coffee",
+      "business_availability:b-cafe",
+      "business_availability:b-arcade",
+      "gathering:g-club"
+    ],
+    "fullOrder": [
+      "g-coffee@13",
+      "b-cafe@8",
+      "b-arcade@8",
+      "g-club@11",
+      "g-wine@8",
+      "g-live@9",
+      "g-trivia@6",
+      "g-rest@6",
+      "b-bar@7",
+      "b-rest@7",
+      "b-patio@4",
+      "g-yoga@12",
+      "g-soccer@7",
+      "g-hike@5",
+      "g-museum@5",
+      "k-coffee@0",
+      "k-bar@0"
+    ],
+    "experience": null,
+    "note": "Looking across Food & Drink and Entertainment & Nightlife · Picking things that fit in about an hour",
+    "candidateCount": 17,
+    "exclusions": {
+      "open_ended": 2
+    }
+  },
+  {
+    "label": "vegan dinner",
+    "order": [
+      "gathering:g-rest",
+      "business_availability:b-rest",
+      "business_availability:b-patio",
+      "perk:k-bar"
+    ],
+    "fullOrder": [
+      "g-rest@11",
+      "b-rest@12",
+      "b-patio@9",
+      "k-bar@0"
+    ],
+    "experience": null,
+    "note": null,
+    "candidateCount": 4,
+    "exclusions": {}
+  }
+]

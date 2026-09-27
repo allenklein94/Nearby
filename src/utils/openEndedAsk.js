@@ -62,20 +62,31 @@ export function timeTiltGroups({ dateWindow = null, partyType = null, hour = nul
 
 // Filters and lifts a scored candidate list for an open-ended ask. `groups` from openEndedAskGroups (null = untouched);
 // `ctx` = { dateWindow, partyType, hour } for the time tilt.
-export function applyOpenEndedAsk(candidates, groups, ctx = {}) {
+// Item 118: the eligibility half (typed-ask Stage 1, utils/askEligibility.js): only inventory in the ask's groups stays; an
+// unknown category is kept, never dropped.
+export function openEndedEligible(candidates, groups) {
   if (!Array.isArray(groups)) return candidates;
   const eligible = new Set(groups);
+  return candidates.filter((c) => {
+    const k = groupKeyOf(c);
+    return k == null || eligible.has(k);
+  });
+}
+
+// The ranking half (Stage 2): the small lift for results in the ask's groups, plus the time tilt.
+export function openEndedLift(candidates, groups, ctx = {}) {
+  if (!Array.isArray(groups)) return candidates;
   const tilt = new Set(timeTiltGroups(ctx));
-  return candidates
-    .filter((c) => {
-      const k = groupKeyOf(c);
-      return k == null || eligible.has(k); // unknown category is kept, never dropped
-    })
-    .map((c) => {
-      const k = groupKeyOf(c);
-      if (!k) return c;
-      return { ...c, score: (c.score ?? 0) + OPEN_ENDED_GROUP_BONUS + (tilt.has(k) ? TIME_TILT_POINTS : 0) };
-    });
+  return candidates.map((c) => {
+    const k = groupKeyOf(c);
+    if (!k) return c;
+    return { ...c, score: (c.score ?? 0) + OPEN_ENDED_GROUP_BONUS + (tilt.has(k) ? TIME_TILT_POINTS : 0) };
+  });
+}
+
+// Both halves in one call (older callers and tests).
+export function applyOpenEndedAsk(candidates, groups, ctx = {}) {
+  return openEndedLift(openEndedEligible(candidates, groups), groups, ctx);
 }
 
 // "Activities, Entertainment and Food & Drink" -- the groups that actually contributed results, for an honest one-line caption.

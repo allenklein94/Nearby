@@ -6,7 +6,7 @@ import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, get
 import { Linking } from 'react-native';
 import { bookingModeOf } from '../constants/bookingMode';
 import { BUSINESS_RESULT_TYPES, intentResultBusinessRoute } from '../utils/businessAction';
-import { openNowAskFromText, candidateEntity, filterOpenNow, openNowLift, OPEN_NOW_CAPTION } from '../utils/operatingStatus';
+import { openNowAskFromText, candidateEntity, openNowLift, OPEN_NOW_CAPTION } from '../utils/operatingStatus';
 import { applyBusinessPriceToCandidates } from '../utils/priceBias';
 import { vibesFromAsk, applyVibeSinks, applyQualityDepth, frameDatePlaces, isDateAsk, datePartySize, dateFrame } from '../constants/businessVibes';
 import { canonicalGroupForTag } from '../constants/categoryMapping';
@@ -66,7 +66,7 @@ import { askedChildAges, applySuitedAgesToCandidates } from '../utils/suitedAges
 import { dietaryFromAsk, applyDietaryToCandidates } from '../constants/dietaryOptions';
 import { cleanFeatures } from '../utils/gatheringPractical';
 import { applyDeclaredFeatures } from '../constants/declaredFeatures';
-import { parseAskFacets, applyAskFacets, partnerPartyType, attributesFromAsk } from '../constants/askFacets';
+import { parseAskFacets, askFacetsLift, askFacetsCaption, partnerPartyType, attributesFromAsk } from '../constants/askFacets';
 import { isPreferredCategory, PREFERRED_CATEGORY_POINTS } from '../utils/askPreferences';
 import { createScoreTrace, createRankLedger, guardTrace } from '../utils/typedAskAudit';
 import { compareRanked, typedAskRankVector } from '../constants/signalPriority';
@@ -74,7 +74,7 @@ import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitm
 import { formatsFromText, applyFormatToCandidates } from '../constants/activityFormat';
 import { skillLevelsFromText, applySkillToCandidates } from '../constants/skillLevel';
 import { wordsBackedAttributes, applyCapabilitiesToCandidates } from '../constants/businessCapabilities';
-import { restrictionAsk, askRaisesRestriction, applyRestrictionsToCandidates } from '../constants/businessRestrictions';
+import { restrictionAsk } from '../constants/businessRestrictions';
 import { genresFromText, applyGenreToCandidates } from '../constants/genreMatch';
 import { timeBudgetFromText, applyTimeBudgetToCandidates, timeBudgetCaption } from '../constants/timeBudget';
 import { clockWindowFromText, dateAnchorFromText, applyClockWindowToCandidates, clockWindowCaption, windowSpan, clockLabel } from '../constants/clockWindow';
@@ -90,8 +90,9 @@ import { moneyLabel } from '../utils/outcomeDisplay';
 import { attendeeTotal, isGatheringFull, peopleGoing } from '../utils/gatheringFullness';
 import { planAsk, occasionFromAsk, planCaption } from '../utils/planAsk';
 import { recognizeCombination } from '../constants/planCombinations';
-import { openEndedAskGroups, applyOpenEndedAsk, openEndedCaption } from '../utils/openEndedAsk';
-import { narrowToGroup, isCategoryGroup } from '../utils/categoryNarrow';
+import { openEndedAskGroups, openEndedLift, openEndedCaption } from '../utils/openEndedAsk';
+import { runAskEligibility } from '../utils/askEligibility';
+import { isCategoryGroup } from '../utils/categoryNarrow';
 
 const RESULT_CAP = 4;
 
@@ -720,9 +721,49 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // The same rule now spans all four business tiers (live posting > package > offers-this-occasion >
   // policy-only): a weaker tier is dropped when the same business has a stronger one.
   let deduped = dedupeBusinessTiers(candidates);
+  const removedAsDuplicates = candidates.length - deduped.length;
+
+  // One best-effort partner lookup (hours, pulse, booking mode) shared by eligibility (open now) and ranking (commitment,
+  // capabilities, dietary, vibe); a failure is an empty map (every business unknown, no booking mode), never a broken search.
+  let partnerInfo = new Map();
+  const businessIds = deduped.filter((c) => c.partnerId && (BUSINESS_RESULT_TYPES.includes(c.type) || c.type === 'perk')).map((c) => c.partnerId);
+  if (businessIds.length > 0) {
+    try {
+      partnerInfo = await getPartnerOperatingInfo(businessIds);
+    } catch (e) {
+      console.error('partner operating lookup skipped', e);
+    }
+  }
+  // Item 72: every BUSINESS result carries its partner row, so its tap follows the same booking-mode action as its profile
+  // (utils/businessAction.js), and its declared mode feeds commitment (walk-in = drop in, book/request first = reservation).
+  // Perks get neither: a perk keeps its own validity rules and is never turned into Book/Request.
+  deduped = deduped.map((c) => {
+    if (!BUSINESS_RESULT_TYPES.includes(c.type) || !c.partnerId || !partnerInfo.has(c.partnerId)) return c;
+    const partner = partnerInfo.get(c.partnerId);
+    const mode = bookingModeOf(partner);
+    return { ...c, businessPartner: partner, ...(mode ? { bookingMode: mode } : {}) };
+  });
+
+  // ---- Stage 1: ELIGIBILITY (item 118, utils/askEligibility.js). Every existing hard constraint of the ask, in one ordered
+  // pass, BEFORE any ranking: what fails a rule is removed here and recorded by rule, so nothing that will not be shown can move
+  // another result (the stated-distance and travel-mode passes compare results with each other). Unknown stays eligible.
+  // The person's words, or Discover's Open-now chip they switched on (openNowChip): one filter either way.
+  const openNowOnly = !!openNowChip || openNowAskFromText(rawText);
+  const restrictionFacts = restrictionAsk(rawText, statedPartySize);
+  const openEndedGroups = openEndedAskGroups({ category, rawText, occasion, attributes, force: !!openEnded });
+  const narrowedGroup = isCategoryGroup(narrowGroup) ? narrowGroup : null;
+  const parsedFacets = parseAskFacets(rawText);
+  const isPartnerResult = (c) => c.partnerId && (BUSINESS_RESULT_TYPES.includes(c.type) || c.type === 'perk');
+  const eligibility = await runAskEligibility(deduped, {
+    restrictionFacts, declinedLookup: getDeclinedBusinesses, isPartnerResult, isBusiness: (c) => BUSINESS_RESULT_TYPES.includes(c.type),
+    openEndedGroups, narrowGroup: narrowedGroup, facets: parsedFacets, openNowOnly, toEntity: (c) => candidateEntity(c, partnerInfo),
+  });
+  deduped = eligibility.items;
+
+  // ---- Stage 2: RANKING, only on the eligible candidates.
   // Typed-ask audit (utils/typedAskAudit.js): READ-ONLY. Each trace.step names what the pass just before it changed; it never
-  // writes to a candidate, never reorders, and swallows its own errors.
-  const trace = guardTrace(() => createScoreTrace(deduped, { removedBeforeStart: candidates.length - deduped.length }));
+  // writes to a candidate, never reorders, and swallows its own errors. Its exclusions = Stage 1's removals by rule (+ dedupe).
+  const trace = guardTrace(() => createScoreTrace(deduped, { removedBeforeStart: removedAsDuplicates, removed: eligibility.removed }));
   // The ranking ledger (constants/signalPriority.js, the one ranking framework): the same per-pass diff as the audit trace, kept
   // apart from it so the audit can never change an order. It also sees the two passes the audit never records. Each result's
   // order comes from its tier vector: a stronger tier always beats any amount of a weaker one. A ledger failure = order by score.
@@ -812,44 +853,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // said otherwise; "plan ahead" / "next few hours" have no dateWindow bucket, so they come from the person's own words.
   const spontaneity = spontaneityOf({ dateWindow, rawText });
   const commitAsk = commitmentAsk(rawText) ?? (isImmediate(spontaneity) ? 'light' : null);
-  // One best-effort partner lookup (hours, pulse, booking mode) shared by the commitment and open-now passes; a failure is an
-  // empty map (every business unknown, no booking mode), never a broken search.
-  // The person's words, or Discover's Open-now chip they switched on (openNowChip): one filter either way.
-  const openNowOnly = !!openNowChip || openNowAskFromText(rawText);
-  let partnerInfo = new Map();
-  const businessIds = deduped.filter((c) => c.partnerId && (BUSINESS_RESULT_TYPES.includes(c.type) || c.type === 'perk')).map((c) => c.partnerId);
-  if (businessIds.length > 0) {
-    try {
-      partnerInfo = await getPartnerOperatingInfo(businessIds);
-    } catch (e) {
-      console.error('partner operating lookup skipped', e);
-    }
-  }
-  // Item 72: every BUSINESS result carries its partner row, so its tap follows the same booking-mode action as its profile
-  // (utils/businessAction.js), and its declared mode feeds commitment (walk-in = drop in, book/request first = reservation).
-  // Perks get neither: a perk keeps its own validity rules and is never turned into Book/Request.
-  deduped = deduped.map((c) => {
-    if (!BUSINESS_RESULT_TYPES.includes(c.type) || !c.partnerId || !partnerInfo.has(c.partnerId)) return c;
-    const partner = partnerInfo.get(c.partnerId);
-    const mode = bookingModeOf(partner);
-    return { ...c, businessPartner: partner, ...(mode ? { bookingMode: mode } : {}) };
-  });
-  // Item 86: customer intent -> compatibility check -> eligible businesses. Only what the person's WORDS state ("with my kids",
-  // "my dog", "for 10", "outside", "walk in") is checked, by the server's one rule (the same one routing and auto-offers use); a
-  // business or perk whose business declared a conflict is removed. "Dinner tonight" raises nothing. A failed lookup keeps everyone.
-  const restrictionFacts = restrictionAsk(rawText, statedPartySize);
-  let restrictions = { items: deduped, caption: null };
-  if (askRaisesRestriction(restrictionFacts)) {
-    const isPartnerResult = (c) => c.partnerId && (BUSINESS_RESULT_TYPES.includes(c.type) || c.type === 'perk');
-    try {
-      const declined = await getDeclinedBusinesses(deduped.filter(isPartnerResult).map((c) => c.partnerId), restrictionFacts);
-      restrictions = applyRestrictionsToCandidates(deduped, declined, { partnerIdOf: (c) => (isPartnerResult(c) ? c.partnerId : null), isBusiness: (c) => BUSINESS_RESULT_TYPES.includes(c.type) });
-    } catch (e) {
-      console.error('restriction check skipped', e);
-    }
-  }
-  deduped = restrictions.items;
-  step('compatibility');
+  // Item 86 compatibility (what the words state vs what a business declared) was decided in Stage 1.
   // Item 88: dietary needs the person's own words state ("vegan", "gluten-free", "halal") lift a business that DECLARED every one
   // of them (its partner row, attached above). Ranking only; a business that did not say is kept where it was.
   deduped = applyDietaryToCandidates(deduped, dietaryFromAsk(rawText));
@@ -863,16 +867,11 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   deduped = applySpontaneityToCandidates(deduped, spontaneity);
   step('spontaneity');
 
-  // Open-ended ask ("something fun tonight"): no category named, so only inventory in social groups is eligible and it gets a
-  // small lift (utils/openEndedAsk.js, rule-based). A real category or occasion in the ask leaves everything untouched.
-  const openEndedGroups = openEndedAskGroups({ category, rawText, occasion, attributes, force: !!openEnded });
-  deduped = applyOpenEndedAsk(deduped, openEndedGroups, { dateWindow, partyType, hour: new Date().getHours() });
+  // Open-ended ask ("something fun tonight"): Stage 1 kept only inventory in the ask's groups; here those results get the small
+  // lift (utils/openEndedAsk.js, rule-based). A real category or occasion in the ask leaves everything untouched.
+  deduped = openEndedLift(deduped, openEndedGroups, { dateWindow, partyType, hour: new Date().getHours() });
   step('open_ended');
-  // Item 108: a Browse category tapped on top of this ask narrows it (only results confirmed in that group stay); every other
-  // constraint above and below is the ask's own, unchanged. No category = untouched.
-  const narrowedGroup = isCategoryGroup(narrowGroup) ? narrowGroup : null;
-  deduped = narrowToGroup(deduped, narrowedGroup);
-  step('category_narrow');
+  // Item 108's Browse-category narrowing was applied in Stage 1.
 
   // Age range (item 50): "with my 5 year old" ranks a place or gathering whose declared suited ages cover it; an unknown range is untouched.
   const childAges = askedChildAges(rawText);
@@ -908,20 +907,18 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
 
   // Combinations + negative intent (items 47/48): "outside", "no alcohol", "nothing crowded", "not too expensive" from the person's
   // own words. Exclusions drop only KNOWN conflicts; the caption says what was left out (constants/askFacets.js).
-  const parsedFacets = parseAskFacets(rawText);
-  const askFacets = applyAskFacets(deduped, parsedFacets);
-  deduped = askFacets.items;
+  // Stage 1 removed the known conflicts; the stated environment's lift and the "not too expensive" sink apply here.
+  deduped = askFacetsLift(deduped, parsedFacets);
   step('ask_facets');
 
   // Open now (owner item 71, utils/operatingStatus.js, the one resolver): "what's open" / "still open" / "somewhere I can go
   // right now" keeps ONLY confirmed-usable results (unknown and closed both drop out). An immediate ask without that language
   // only lifts businesses and perks that are confirmed usable (available +2, open +1); gatherings already rank by their real
   // start in the spontaneity pass, so they get no second lift. Nothing about this is stored or sent to a business.
-  if (openNowOnly || isImmediate(spontaneity)) {
+  // The open-now filter itself ran in Stage 1; an immediate ask without that language gets only this lift.
+  if (!openNowOnly && isImmediate(spontaneity)) {
     const toEntity = (c) => candidateEntity(c, partnerInfo);
-    deduped = openNowOnly
-      ? filterOpenNow(deduped, toEntity)
-      : deduped.map((c) => (c.type === 'gathering' ? c : { ...c, score: (c.score ?? 0) + openNowLift(toEntity(c)) }));
+    deduped = deduped.map((c) => (c.type === 'gathering' ? c : { ...c, score: (c.score ?? 0) + openNowLift(toEntity(c)) }));
   }
   step('open_now');
 
@@ -929,7 +926,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   deduped.sort(compareRanked);
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
-  const openEndedNote = [openNowOnly ? OPEN_NOW_CAPTION : null, planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacets.caption, restrictions.caption].filter(Boolean).join(' · ') || null;
+  const openEndedNote = [openNowOnly ? OPEN_NOW_CAPTION : null, planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacetsCaption(parsedFacets, eligibility.removedOpposite), eligibility.compatibilityCaption].filter(Boolean).join(' · ') || null;
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,

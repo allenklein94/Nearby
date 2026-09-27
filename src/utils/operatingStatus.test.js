@@ -195,7 +195,10 @@ describe('guards', () => {
   });
   test('one definition: Discover, typed asks and the profile use operatingStatus, never their own open-now logic', () => {
     expect(resolver).toMatch(/from '\.\.\/utils\/operatingStatus'/);
-    expect(resolver).toMatch(/filterOpenNow\(deduped/);
+    // item 118: the open-now FILTER is typed-ask eligibility (utils/askEligibility.js), fed the resolver's one candidateEntity
+    expect(read('src/utils/askEligibility.js')).toMatch(/from '\.\/operatingStatus'/);
+    expect(read('src/utils/askEligibility.js')).toMatch(/filterOpenNow\(items, ctx\.toEntity\)/);
+    expect(resolver).toMatch(/toEntity: \(c\) => candidateEntity\(c, partnerInfo\)/);
     expect(discover).toMatch(/from '\.\.\/utils\/operatingStatus'/);
     expect(discover).toMatch(/if \(result\.openNowOnly\) setOpenNowOnly\(true\)/);
     for (const f of [discover, resolver]) expect(f).not.toMatch(/openNow\s*===\s*true|open_now\s*===/);
