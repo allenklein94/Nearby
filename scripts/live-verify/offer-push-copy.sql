@@ -17,7 +17,7 @@ begin
   select convert_from(body, 'utf8')::jsonb->>'title', convert_from(body, 'utf8')::jsonb->>'body' into v_title, v_body
   from net.http_request_queue where convert_from(body,'utf8') like '%business_offer_received%' order by id desc limit 1;
   assert v_title = '☕ Coastal Coffee responded', 'title: ' || coalesce(v_title,'null');
-  assert v_body = 'They sent an offer for your coffee gathering.', 'body: ' || coalesce(v_body,'null');
+  assert v_body = 'They can take you for your coffee gathering.', 'body: ' || coalesce(v_body,'null');
   assert v_body not like '%secret%';
   raise notice 'offer-push-copy ok';
 end $$;

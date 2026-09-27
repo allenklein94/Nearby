@@ -83,3 +83,38 @@ describe('business reply kinds', () => {
     for (const c of ['offer_title', 'discount_pct', 'included_items']) expect(sel).toContain(c);
   });
 });
+
+// Item 121 follow-up: the push (server) and the booked request header use the same three kinds.
+describe('push copy and booked header match the reply kind', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270246_business_reply_push_copy.sql'), 'utf8');
+  it('the SQL kind rules mirror businessReplyKind', () => {
+    const kindFn = sql.slice(sql.indexOf('function public._business_reply_kind'), sql.indexOf('function public._business_reply_push'));
+    expect(kindFn).toMatch(/when offer_type_param = 'alt_time' then 'alternative'/);
+    expect(kindFn).toMatch(/offer_type_param in \('discount', 'perk', 'upgrade'\)/);
+    for (const col of ['offer_title_param', 'offer_price_param is not null', 'discount_pct_param is not null', 'array_length(included_items_param']) expect(kindFn).toContain(col);
+    expect(kindFn).toMatch(/else 'availability'/);
+    // same order of precedence as the client: alt_time wins even with a price
+    expect(businessReplyKind({ offer_type: 'alt_time', offer_price: 10 })).toBe('alternative');
+  });
+  it('the push says "can take you" / "suggested another time" / "sent an offer" by kind', () => {
+    expect(sql).toContain("when 'availability' then 'They can take you for your '");
+    expect(sql).toContain("when 'alternative' then 'They suggested another time for your '");
+    expect(sql).toContain("else 'They sent an offer for your '");
+  });
+  it('both offer-publishing paths build the push through the one builder, with the old copy gone', () => {
+    expect(sql).toContain('from public._business_reply_push(v_row.id)');
+    expect(sql).toContain('public._business_reply_push(o.id)');
+    const bodies = sql.slice(sql.indexOf('CREATE OR REPLACE FUNCTION public.submit_business_offer'));
+    expect(bodies).not.toMatch(/New offer for your request!/);
+    expect(bodies).not.toMatch(/v_push_body := 'They sent an offer/);
+    expect(bodies).toContain("'business_offer_received'");
+  });
+  it('the booked request header names what was chosen', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../screens/BusinessRequestDetailScreen.js'), 'utf8');
+    expect(src).toMatch(/acceptedReplyTitle\(winningOffer\.brand_partners\?\.name, winningOffer\)/);
+    expect(src).not.toMatch(/You accepted an offer/);
+    expect(acceptedReplyTitle('Coastal Coffee', { status: 'accepted', offer_type: 'standard' })).toBe('You chose Coastal Coffee');
+    expect(acceptedReplyTitle('Coastal Coffee', { status: 'completed', offer_type: 'alt_time' })).toBe("You took Coastal Coffee's suggested time");
+    expect(acceptedReplyTitle('Coastal Coffee', { status: 'accepted', offer_title: '2 coffees + 2 pastries', offer_price: 12 })).toBe("You accepted Coastal Coffee's offer");
+  });
+});

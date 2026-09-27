@@ -44,12 +44,12 @@ import OfferOutcomeModal from '../components/OfferOutcomeModal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
-import { businessReplyStatus } from '../utils/offerCopy';
+import { businessReplyStatus, acceptedReplyTitle, businessReplyKind } from '../utils/offerCopy';
 
 import { countLabel } from '../utils/plural';
 const STATUS_COPY = {
   open: { label: 'Open — waiting for responses', color: null },
-  fulfilled: { label: 'You accepted an offer', color: 'success' },
+  fulfilled: { label: "You're booked", color: 'success' }, // label comes from acceptedReplyTitle (item 121)
   expired: { label: 'This request expired', color: null },
   cancelled: { label: 'You cancelled this request', color: null },
   merged: { label: 'Combined into a group plan', color: 'info' },
@@ -793,8 +793,12 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
 
   if (!request) return null;
 
-  const statusCopy = STATUS_COPY[request.status] ?? { label: request.status, color: null };
-  const hasWinner = offers.some((o) => o.status === 'accepted' || o.status === 'completed');
+  const winningOffer = offers.find((o) => o.status === 'accepted' || o.status === 'completed');
+  const hasWinner = !!winningOffer;
+  // Item 121: the booked header names what was chosen (availability / suggested time / offer), never "an offer" for a plain reply.
+  const statusCopy = request.status === 'fulfilled'
+    ? { ...STATUS_COPY.fulfilled, label: winningOffer ? acceptedReplyTitle(winningOffer.brand_partners?.name, winningOffer) : "You're booked" }
+    : (STATUS_COPY[request.status] ?? { label: request.status, color: null });
   const isGroupPlanRequest = !!request.group_plan_id;
   const isMergedIntoGroupPlan = request.status === 'merged' && !!request.superseded_by_group_plan_id;
   // Offer System Phase 3 (see CLAUDE.md's own plan): the real evidence
@@ -1335,7 +1339,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                         style={styles.acceptButton}
                         onPress={() => handleAccept(o.id)}
                         disabled={actingOfferId === o.id}
-                        accessibilityLabel={`Accept offer from ${o.brand_partners?.name ?? 'this business'}`}
+                        accessibilityLabel={businessReplyKind(o) === 'offer' ? `Accept offer from ${o.brand_partners?.name ?? 'this business'}` : `Choose ${o.brand_partners?.name ?? 'this business'}`}
                         accessibilityRole="button"
                       >
                         {actingOfferId === o.id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>{action.label}</Text>}
