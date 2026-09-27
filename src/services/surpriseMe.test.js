@@ -9,8 +9,6 @@ const {
   pickSampleCategories,
   mergeCandidatePools,
   eligibleCandidates,
-  pickSuggestion,
-  pickNextFromPool,
   suggestionTags,
   suggestionCandidateKeys,
   findConnectedPerson,
@@ -85,37 +83,6 @@ describe('eligibleCandidates', () => {
   it('excludes friend_request results (no honest "surprise activity" framing for someone else\'s ask)', () => {
     const pool = [candidate({ id: 'a', type: 'gathering' }), candidate({ id: 'b', type: 'friend_request' })];
     expect(eligibleCandidates(pool).map((c) => c.id)).toEqual(['a']);
-  });
-});
-
-describe('pickSuggestion', () => {
-  it('prefers a real assembled experience when one exists', () => {
-    const experience = { title: 'x', occasion: 'date_night', bundles: [], components: [{ key: 'dinner', label: 'Dinner', items: [candidate({ id: 'd' })] }] };
-    const result = pickSuggestion(experience, [candidate({ id: 'z', score: 100 })]);
-    expect(result).toEqual({ kind: 'experience', experience });
-  });
-
-  it('falls back to the top-scored eligible candidate when there is no experience', () => {
-    const pool = [candidate({ id: 'low', score: 1 }), candidate({ id: 'high', score: 9 })];
-    expect(pickSuggestion(null, pool)).toEqual({ kind: 'candidate', candidate: pool[1] });
-  });
-
-  it('returns null when there is genuinely nothing real to suggest', () => {
-    expect(pickSuggestion(null, [])).toBeNull();
-    expect(pickSuggestion({ bundles: [], components: [] }, [])).toBeNull();
-  });
-});
-
-describe('pickNextFromPool', () => {
-  it('re-rolls among the already-fetched pool, excluding what was already shown', () => {
-    const pool = [candidate({ id: 'a', score: 9 }), candidate({ id: 'b', score: 5 })];
-    const next = pickNextFromPool(pool, new Set(['business_availability:a']));
-    expect(next).toEqual({ kind: 'candidate', candidate: pool[1] });
-  });
-
-  it('returns null when the real pool is exhausted rather than fabricating an alternative', () => {
-    const pool = [candidate({ id: 'a' })];
-    expect(pickNextFromPool(pool, new Set(['business_availability:a']))).toBeNull();
   });
 });
 

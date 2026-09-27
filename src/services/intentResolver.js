@@ -582,7 +582,7 @@ async function resolveOccasionPackages(location, occasion, partySize, searchMile
 // 2026-09-06) -- only ever a ranking bonus against a business's own real,
 // declared priority_occasions (resolveBusinessAvailability), never a
 // filter and never written anywhere.
-export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null, energies = [], openNowChip = false }) {
+export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null, energies = [], openNowChip = false, openEnded = false }) {
   // "my girlfriend" = a date party when the extractor named none (constants/askFacets.js, deterministic).
   partyType = partyType ?? partnerPartyType(rawText);
   // Item 63: an ask naming two or more parts of an outing ("dinner and something to do after") is ONE plan. A single
@@ -826,7 +826,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
 
   // Open-ended ask ("something fun tonight"): no category named, so only inventory in social groups is eligible and it gets a
   // small lift (utils/openEndedAsk.js, rule-based). A real category or occasion in the ask leaves everything untouched.
-  const openEndedGroups = openEndedAskGroups({ category, rawText, occasion, attributes });
+  const openEndedGroups = openEndedAskGroups({ category, rawText, occasion, attributes, force: !!openEnded });
   deduped = applyOpenEndedAsk(deduped, openEndedGroups, { dateWindow, partyType, hour: new Date().getHours() });
 
   // Age range (item 50): "with my 5 year old" ranks a place or gathering whose declared suited ages cover it; an unknown range is untouched.

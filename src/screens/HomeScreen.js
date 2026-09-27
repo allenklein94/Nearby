@@ -39,7 +39,6 @@ import useMyGoals from '../hooks/useMyGoals';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { iconNameForCategory } from '../constants/quickPickIcons';
 import LoadErrorState from '../components/LoadErrorState';
-import ExperiencePerkLine from '../components/ExperiencePerkLine';
 import ExperienceComponentList from '../components/ExperienceComponentList';
 import TabHeaderActions from '../components/TabHeaderActions';
 import { useTheme } from '../context/ThemeContext';
@@ -1150,9 +1149,9 @@ export default function HomeScreen({ navigation }) {
     setIntentText('');
   }
 
-  // "Surprise Me": the sheet ({ when, mood }) or, item 89, the person SAID it in the ask box ({ text }). One engine
-  // (runSurpriseMe) either way; it returns a small DIVERSE set (picks) or a real multi-part experience. Dismisses any typed-ask
-  // results first so the two result blocks never show at once.
+  // Surprise Me: the sheet ({ when, mood }) or typed words ({ text }: "surprise me", "I don't know what I want"). One shared flow
+  // (services/surpriseMe.js), one result model: up to 3 labeled rows. Dismisses any typed-ask results first so the two result
+  // blocks never show at once.
   async function handleSurpriseSubmit(args) {
     setIntentResults(null);
     setIntentEmptyFallback(null);
@@ -1642,72 +1641,7 @@ export default function HomeScreen({ navigation }) {
                         </Text>
                       )}
                     </View>
-                  ) : surprise.suggestion.kind === 'experience' ? (
-                    <View style={{ marginBottom: spacing.sm }}>
-                      <Text style={styles.intentResultsHeading}>{surprise.suggestion.experience.title}</Text>
-                      {(surprise.suggestion.experience.bundles ?? []).map((bundle) => (
-                        <View key={bundle.id} style={{ marginBottom: spacing.sm }}>
-                          <Text style={styles.intentGroupLabel}>
-                            ✨ One place has it all: {bundle.componentLabels.join(' + ')}
-                          </Text>
-                          <TouchableOpacity style={styles.intentResultRow} onPress={() => handleSurpriseResultTap(bundle)}>
-                            <Ionicons name={INTENT_RESULT_ICONS[bundle.type] ?? 'sparkles-outline'} size={18} color={colors.primary} style={styles.intentResultIcon} />
-                            <View style={styles.intentResultTextCol}>
-                              <Text style={styles.intentResultTitle} numberOfLines={1}>{bundle.title}</Text>
-                              {bundle.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{bundle.subtitle}</Text> : null}
-                            </View>
-                            <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
-                          </TouchableOpacity>
-                        </View>
-                      ))}
-                      {surprise.suggestion.experience.components.map((component) => (
-                        <View key={component.key} style={{ marginBottom: spacing.sm }}>
-                          <Text style={styles.intentGroupLabel}>{component.label}</Text>
-                          {component.items.map((item) => (
-                            <React.Fragment key={`${item.type}-${item.id}`}>
-                            <TouchableOpacity style={styles.intentResultRow} onPress={() => handleSurpriseResultTap(item)}>
-                              <Ionicons name={INTENT_RESULT_ICONS[item.type] ?? 'sparkles-outline'} size={18} color={colors.primary} style={styles.intentResultIcon} />
-                              <View style={styles.intentResultTextCol}>
-                                <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
-                                {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
-                              </View>
-                              <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
-                            </TouchableOpacity>
-                            <ExperiencePerkLine item={item} />
-                            </React.Fragment>
-                          ))}
-                        </View>
-                      ))}
-                    </View>
-                  ) : (
-                    <View style={styles.surpriseCard}>
-                      {/* Item 89: a small, diverse set (different kinds of things), each row opens its own action. */}
-                      <Text style={styles.intentResultsHeading}>✨ A few ideas for you</Text>
-                      {!!surprise.basis && <Text style={styles.surpriseConnectedText}>{surprise.basis}</Text>}
-                      {(surprise.picks?.length ? surprise.picks : [surprise.suggestion.candidate]).map((item) => (
-                        <TouchableOpacity
-                          key={`${item.type}-${item.id}`}
-                          style={styles.intentResultRow}
-                          onPress={() => handleSurpriseResultTap(item)}
-                          accessibilityRole="button"
-                          accessibilityLabel={item.title}
-                        >
-                          <Ionicons name={INTENT_RESULT_ICONS[item.type] ?? 'sparkles-outline'} size={20} color={colors.primary} style={styles.intentResultIcon} />
-                          <View style={styles.intentResultTextCol}>
-                            <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
-                            {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
-                          </View>
-                          <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
-                        </TouchableOpacity>
-                      ))}
-                      {/* People/privacy hard rule: only a real connected friend/match with a declared-interest link, never a stranger. */}
-                      {surprise.connectedPerson && (
-                        <Text style={styles.surpriseConnectedText}>
-                          You could go with {surprise.connectedPerson.name}{surprise.connectedPerson.forTitle ? ` to ${surprise.connectedPerson.forTitle}` : ''} 👋
-                        </Text>
-                      )}
-                    </View>
-                  )}
+                  ) : null}
                   {/* Item 75 (CLAUDE.md): a real, best-effort calendar
                       signal -- only ever rendered when the user has
                       already opted in to calendar integration elsewhere

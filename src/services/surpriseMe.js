@@ -24,10 +24,7 @@ import {
   categoryPoolForMood,
   pickSampleCategories,
   mergeCandidatePools,
-  pickSuggestion,
-  findConnectedPerson,
   stripSurprisePhrase,
-  pickDiverse,
   surpriseCategories,
   surpriseBasis,
   findConnectedPersonForPicks,
@@ -35,7 +32,6 @@ import {
   inSurpriseScope,
   surpriseStateFrom,
   EMPTY_SURPRISE,
-  pickForMeKind,
   pickLanes,
   undecidedPlanRecipe,
   undecidedHeader,
@@ -53,14 +49,11 @@ export {
   pickSampleCategories,
   mergeCandidatePools,
   eligibleCandidates,
-  pickSuggestion,
-  pickNextFromPool,
   suggestionTags,
   suggestionCandidateKeys,
   findConnectedPerson,
   surpriseAskFromText,
   stripSurprisePhrase,
-  pickDiverse,
   surpriseCategories,
   surpriseBasis,
   findConnectedPersonForPicks,
@@ -150,40 +143,35 @@ async function getCalendarHint() {
 // already resolves the device's own location internally and degrades to
 // fewer/no candidates (never a crash, never a fabricated result) when
 // permission is denied.
-// Two ways in, ONE engine:
-//   the sheet: { when, mood } picked with chips (unchanged vocabulary)
-//   item 89:   { text } -- the person SAID "surprise me ..." in the ask box; the rest of the sentence carries the real signals
-//              (time words, budget, who with, dietary / access needs, indoor/outdoor), read by the same resolver as any ask.
-// Signals, all from existing sources: time (words or the chip, never invented), location + weather (resolveIntent: each gathering
-// judged at its own start, businesses at the stated window), interests (two declared + one new tag for range), budget and party
-// (the words), connected friends (the existing line). Output: up to SURPRISE_PICK_COUNT picks from DIFFERENT category groups and
-// businesses (pickDiverse), or a real multi-part experience when the resolver assembled one.
-// Contract (owner, 2026-09-26, LOCKED): up to 3 real suggestions; different category groups when the request is broad, variety
-// WITHIN the named scope when the words narrow it ("surprise me with coffee" = up to 3 different coffee places); never two from
-// one business; a real multi-part plan replaces the picks; Shuffle Again is a fresh fetch that avoids the immediately previous
-// set (`exclude`); the basis line names only signals that shaped the selection; no time is ever invented; typed surprises are
-// never written to the search log. The AI can neither narrow nor broaden: its category, cuisine, attributes and occasion guesses
-// are ignored here (the resolver reads the same facts from the words themselves).
-// Surface options (never AI): `types` = result types the surface's own explicit filter allows (Discover's type tab), `openNow` =
-// the person switched on Discover's Open-now chip. Both only narrow.
+// Ways in, ONE engine: the Home sheet ({ when, mood } chips), or typed words ({ text }) in Home's ask box or Discover's search box
+// ("surprise me ...", "I don't know what I want", "what's good tonight"). Signals, all from existing sources: time (words or the
+// chip, never invented), location + weather (resolveIntent), interests (broad only), budget and party (the words), connected friends.
+// ONE Surprise Me (owner, 2026-09-27, LOCKED): "surprise me", "I don't know what I want", "what's good tonight" and the Home sheet
+// are the same intent and produce the same result model -- up to SURPRISE_PICK_COUNT (3) labeled rows (Best Pick, With Friends,
+// Something Active, Something Easy), each shown only when a real result backs its label (pickLanes). The varied-picks rules are the
+// selection underneath the rows: different kinds of things when the request is broad, variety within the named scope when the
+// words narrow it, never an item or a business twice. Explicit words decide the scope (category, cuisine, group, energy); the AI can
+// neither narrow nor broaden (its category, cuisine, attributes and occasion are ignored; time comes from the words only, never
+// invented). Surface options (never AI): `types` = Discover's type tab, `openNow` = Discover's Open-now chip; both only narrow.
+// Shuffle Again passes `exclude` = the previous set. Nothing here writes the search log.
 export async function runSurpriseMe({ when = null, mood = null, text = null, exclude = null, types = null, openNow = false } = {}) {
   const typed = typeof text === 'string';
-  if (typed && pickForMeKind(text) === 'undecided') return runUndecided({ text, exclude, types, openNow });
-  const rest = typed ? stripSurprisePhrase(text) : '';
+  const rest = typed ? stripUndecidedPhrase(stripSurprisePhrase(text)) : '';
   let ask = {};
   if (typed && rest.length >= 2) {
     try { ask = await classifyCreateRequest(rest); } catch (e) { console.error('surprise classify skipped', e); ask = {}; }
   }
-  // Typed: only word-backed facts (time, budget, who with, party size are words-only in resolveAsk). Attributes, occasion and
-  // cuisine are left to the resolver's own word readers, so an AI guess can never narrow the set.
+  // Typed: only word-backed facts (who with, party size, budget are words-only in resolveAsk); attributes, occasion and cuisine are
+  // left to the resolver's own word readers, so an AI guess can never narrow the set.
   const params = typed ? { occasion: null, attributes: [], partyType: ask.partyType ?? null } : moodToParams(mood);
   const scope = typed ? surpriseScope(rest) : { level: 'broad' };
   const broad = scope.level === 'broad';
   const myInterests = (typed && broad) || mood === 'something_new' ? await fetchMyInterests() : [];
+  // Broad: two declared interests + one new tag for range, plus one uncategorized open search (no category forced). A named tag
+  // searches that tag; any other explicit scope searches without a category and keeps only what is confirmed inside it.
   const categories = typed
-    ? (scope.level === 'tags' ? scope.tags : broad ? surpriseCategories(myInterests) : [null])
+    ? (scope.level === 'tags' ? scope.tags : broad ? [...new Set([...surpriseCategories(myInterests), null])] : [null])
     : pickSampleCategories(categoryPoolForMood(mood, myInterests), CATEGORY_SAMPLE_SIZE);
-  // Time: the person's own words (the same words-only reader the shared resolver uses), never the AI's, never invented.
   const dateWindow = typed ? dateWindowFromText(rest) : when;
   const cuisine = typed ? cuisineFromText(rest) : null;
 
@@ -202,81 +190,39 @@ export async function runSurpriseMe({ when = null, mood = null, text = null, exc
           attributes: params.attributes,
           occasion: params.occasion,
           openNowChip: !!openNow,
+          // an uncategorized broad search is open-ended: service businesses are left out (utils/openEndedAsk.js)
+          openEnded: typed && broad && category == null,
         }).catch(() => ({ items: [], experience: null }))
       )
     ),
     getCalendarHint(),
   ]);
 
-  // An explicit scope keeps only what is confirmed inside it; a broad request keeps everything the resolver returned.
-  const merged = mergeCandidatePools(results.map((r) => r.items))
+  const pool = mergeCandidatePools(results.map((r) => r.items))
     .filter((c) => inSurpriseScope(c, scope))
     .filter((c) => !Array.isArray(types) || types.includes(c.type));
-  // Only one call can produce a real cross-category experience (all calls share one occasion); never merged into a fabricated one.
-  const experience = results.find((r) => r.experience)?.experience ?? null;
+  // Best Pick's plan: a real plan the resolver assembled from the words, else the existing recipe the stated time names.
+  const recipe = undecidedPlanRecipe(dateWindow);
+  const experience = results.find((r) => r.experience)?.experience
+    ?? (recipe ? assembleExperience(null, pool, { dateWindow, intentRecipe: recipe }) : null);
 
   const excludeKeys = exclude instanceof Set ? exclude : new Set(exclude ?? []);
-  const picks = pickDiverse(merged, undefined, excludeKeys, broad ? 'broad' : 'scoped');
-  const suggestion = pickSuggestion(experience, picks);
-  const shownPicks = suggestion?.kind === 'experience' ? [] : picks;
+  const lanes = pickLanes(pool, { experience, excludeKeys, level: broad ? 'broad' : 'scoped' });
+  const suggestion = lanes.length > 0 ? { kind: 'lanes' } : null;
   const connectedPeople = suggestion ? await getConnectedPeopleWithInterests().catch(logSoftFailure('surprise connected people')) : [];
-  const connectedPerson = suggestion
-    ? (shownPicks.length > 0 ? findConnectedPersonForPicks(shownPicks, connectedPeople) : findConnectedPerson(suggestion, connectedPeople))
-    : null;
-  const usedInterests = broad && categories.some(Boolean);
+  const connectedPerson = suggestion ? findConnectedPersonForPicks(lanes.flatMap((l) => l.items), connectedPeople) : null;
   const basis = typed
     ? surpriseBasis({
-      usedInterests, scope, dateWindow, budgetMax: ask.budgetMax ?? null,
+      usedInterests: broad && categories.some(Boolean), scope, budgetMax: ask.budgetMax ?? null,
       priceLevel: ask.priceLevel ?? null, partyType: ask.partyType ?? null,
     })
-    : surpriseBasis({ dateWindow: when, partyType: params.partyType });
+    : surpriseBasis({ partyType: params.partyType });
   // Every eligible real result was already shown last time: say so rather than repeating it.
-  const exhausted = !suggestion && excludeKeys.size > 0 && merged.length > 0;
-
-  return { suggestion, picks: shownPicks, pool: merged, connectedPeople, connectedPerson, calendarHint, basis, dateWindow, ask, rest, scope, exhausted };
-}
-
-// Item 90: "I don't know what I want" / "what's good tonight". No category is forced: ONE search with no category (the open-ended
-// rule leaves out service businesses), then labeled rows, each only when a real result backs its label (pickLanes). Best Pick may be
-// a real two-part plan from an existing recipe chosen by the person's own time words. Same scope, time, budget, privacy and
-// never-logged rules as a surprise; the same submit / shuffle / tap flow.
-async function runUndecided({ text, exclude = null, types = null, openNow = false }) {
-  const rest = stripUndecidedPhrase(text);
-  let ask = {};
-  if (rest.length >= 2) {
-    try { ask = await classifyCreateRequest(rest); } catch (e) { console.error('undecided classify skipped', e); ask = {}; }
-  }
-  const dateWindow = dateWindowFromText(text);
-  const [result, calendarHint] = await Promise.all([
-    resolveIntent({
-      category: null,
-      dateWindow,
-      rawText: text, // the whole sentence, so the open-ended rule sees "I don't know what I want"
-      partyType: ask.partyType ?? null,
-      partySize: ask.partySize ?? null,
-      priceLevel: ask.priceLevel ?? null,
-      budgetMax: ask.budgetMax ?? null,
-      cuisine: null,
-      attributes: [],
-      occasion: null,
-      openNowChip: !!openNow,
-    }).catch(() => ({ items: [], experience: null })),
-    getCalendarHint(),
-  ]);
-  const pool = mergeCandidatePools([result.items]).filter((c) => !Array.isArray(types) || types.includes(c.type));
-  const recipe = undecidedPlanRecipe(dateWindow);
-  const experience = recipe ? assembleExperience(null, pool, { dateWindow, intentRecipe: recipe }) : null;
-  const excludeKeys = exclude instanceof Set ? exclude : new Set(exclude ?? []);
-  const lanes = pickLanes(pool, { experience, excludeKeys });
-  const suggestion = lanes.length > 0 ? { kind: 'lanes' } : null;
-  const laneItems = lanes.flatMap((l) => l.items);
-  const connectedPeople = suggestion ? await getConnectedPeopleWithInterests().catch(logSoftFailure('undecided connected people')) : [];
-  const connectedPerson = suggestion ? findConnectedPersonForPicks(laneItems, connectedPeople) : null;
-  const basis = surpriseBasis({ budgetMax: ask.budgetMax ?? null, priceLevel: ask.priceLevel ?? null, partyType: ask.partyType ?? null });
   const exhausted = !suggestion && excludeKeys.size > 0 && pool.length > 0;
+
   return {
-    kind: 'undecided', header: undecidedHeader(dateWindow), lanes, suggestion, picks: [], pool, connectedPeople, connectedPerson,
-    calendarHint, basis, dateWindow, ask, rest, scope: { level: 'broad' }, exhausted,
+    header: undecidedHeader(dateWindow), lanes, suggestion, pool, connectedPeople, connectedPerson,
+    calendarHint, basis, dateWindow, ask, rest, scope, exhausted,
   };
 }
 

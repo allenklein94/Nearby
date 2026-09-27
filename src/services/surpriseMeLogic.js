@@ -133,36 +133,6 @@ export function eligibleCandidates(pool) {
   return (pool ?? []).filter((c) => SURPRISE_ELIGIBLE_TYPES.includes(c.type));
 }
 
-// The single "one assembled suggestion" the user asked for: a real
-// multi-component experience when resolveIntent() found one (whatever
-// combination of real supply it assembled -- never forced into a fixed
-// Activity+Place+Business shape, per direct user instruction), otherwise
-// the single best-scored real candidate. Returns null only when there is
-// genuinely nothing real to suggest.
-export function pickSuggestion(experience, pool) {
-  if (experience && ((experience.bundles?.length ?? 0) > 0 || (experience.components?.length ?? 0) > 0)) {
-    return { kind: 'experience', experience };
-  }
-  const eligible = eligibleCandidates(pool);
-  if (eligible.length === 0) return null;
-  // Picked by explicit max score rather than assuming index 0 is highest --
-  // mergeCandidatePools() already sorts its output desc, but this function's
-  // own contract ("the best-scored candidate") shouldn't silently depend on
-  // every caller pre-sorting.
-  return { kind: 'candidate', candidate: eligible.reduce((best, c) => ((c.score ?? 0) > (best.score ?? 0) ? c : best)) };
-}
-
-// Shuffle Again: re-roll among the pool already fetched, never a fabricated
-// alternative. `excludeIds` is every candidate already shown this session
-// (so shuffling never repeats the same suggestion back-to-back); returns
-// null when the real pool is genuinely exhausted, telling the caller a
-// fresh fetch is the only honest option left.
-export function pickNextFromPool(pool, excludeIds) {
-  const eligible = eligibleCandidates(pool).filter((c) => !excludeIds.has(`${c.type}:${c.id}`));
-  if (eligible.length === 0) return null;
-  return { kind: 'candidate', candidate: eligible[0] };
-}
-
 // Every real candidate `type:id` key a given suggestion is actually built
 // from -- used by the caller to mark those candidates "already shown" so
 // Shuffle Again never repeats one of them back-to-back. Mirrors
@@ -311,30 +281,6 @@ function diversityKey(c, level = 'broad') {
   return group ?? `type:${c?.type ?? 'unknown'}`;
 }
 
-// A small, DIVERSE set from the real pool: best score first, then the best of each not-yet-used kind; only when there are not
-// enough kinds does a second pick of a used kind fill in. Two picks from one business are never both shown. Never invents, never
-// pads. `excludeKeys` = the `type:id` keys of the immediately previous set (Shuffle Again avoids them).
-export function pickDiverse(pool, count = SURPRISE_PICK_COUNT, excludeKeys = new Set(), level = 'broad') {
-  const eligible = eligibleCandidates(pool)
-    .filter((c) => !excludeKeys.has(`${c.type}:${c.id}`))
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-  const picks = [];
-  const kinds = new Set();
-  const partners = new Set();
-  const take = (c) => { picks.push(c); kinds.add(diversityKey(c, level)); if (c.partnerId) partners.add(c.partnerId); };
-  for (const c of eligible) {
-    if (picks.length >= count) break;
-    if (kinds.has(diversityKey(c, level)) || (c.partnerId && partners.has(c.partnerId))) continue;
-    take(c);
-  }
-  for (const c of eligible) {
-    if (picks.length >= count) break;
-    if (picks.includes(c) || (c.partnerId && partners.has(c.partnerId))) continue;
-    take(c);
-  }
-  return picks;
-}
-
 // The categories a typed surprise samples: up to two of the person's DECLARED interests (the personal part) plus one tag they have
 // not declared (the "something new" part, for range). No declared interests = one unfiltered search ([null]).
 export function surpriseCategories(myInterests = [], rand = Math.random) {
@@ -448,20 +394,24 @@ export function undecidedHeader(dateWindow) {
   return LANE_HEADERS[dateWindow] ?? 'Near you';
 }
 
-// Rows from the real pool: Best Pick (a real assembled plan's first two parts, else the top result), then each labeled row gets
-// the best not-yet-used result that genuinely fits it. A row with nothing real behind it is left out; one item and one business
-// never appear twice; `excludeKeys` = the previous set (Shuffle Again).
-export function pickLanes(pool, { experience = null, excludeKeys = new Set() } = {}) {
+// The ONE Surprise Me result (owner, 2026-09-27): up to `max` (3) labeled rows from the real pool. Best Pick = a real two-part plan
+// (two different businesses) when one was assembled, else the top result; then each labeled row takes the best not-yet-used result
+// that genuinely fits it, preferring a different kind of thing than the rows already shown (the varied-picks rule: category group
+// when broad, leaf tag within a named scope). A row with nothing real behind it is left out (2 rows is a valid answer); an item
+// or business never appears twice; `excludeKeys` = the previous set (Shuffle Again).
+export function pickLanes(pool, { experience = null, excludeKeys = new Set(), level = 'broad', max = SURPRISE_PICK_COUNT } = {}) {
   const eligible = eligibleCandidates(pool)
     .filter((c) => !excludeKeys.has(`${c.type}:${c.id}`))
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   const usedKeys = new Set();
   const usedPartners = new Set();
+  const usedKinds = new Set();
   const free = (c) => !usedKeys.has(`${c.type}:${c.id}`) && !(c.partnerId && usedPartners.has(c.partnerId));
-  const use = (c) => { usedKeys.add(`${c.type}:${c.id}`); if (c.partnerId) usedPartners.add(c.partnerId); };
+  const use = (c) => { usedKeys.add(`${c.type}:${c.id}`); if (c.partnerId) usedPartners.add(c.partnerId); usedKinds.add(diversityKey(c, level)); };
+  const bestFor = (test) => eligible.find((c) => free(c) && test(c) && !usedKinds.has(diversityKey(c, level)))
+    ?? eligible.find((c) => free(c) && test(c));
   const lanes = [];
 
-  // Best Pick: a real plan from two different parts, when the recipe found them.
   const parts = (experience?.components ?? [])
     .map((comp) => ({ comp, item: (comp.items ?? []).find((i) => SURPRISE_ELIGIBLE_TYPES.includes(i.type) && !excludeKeys.has(`${i.type}:${i.id}`) && free(i)) }))
     .filter((p) => p.item);
@@ -479,7 +429,8 @@ export function pickLanes(pool, { experience = null, excludeKeys = new Set() } =
     if (top) { use(top); lanes.push({ key: 'best', label: 'Best Pick', plan: null, items: [top] }); }
   }
   for (const lane of UNDECIDED_LANES.slice(1)) {
-    const hit = eligible.find((c) => free(c) && LANE_TEST[lane.key](c));
+    if (lanes.length >= max) break;
+    const hit = bestFor(LANE_TEST[lane.key]);
     if (hit) { use(hit); lanes.push({ key: lane.key, label: lane.label, plan: null, items: [hit] }); }
   }
   return lanes;

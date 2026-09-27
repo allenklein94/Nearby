@@ -108,7 +108,7 @@ describe('the engine', () => {
     const r = await submitSurprise({ text: "I don't know. What's good tonight?" });
     expect(resolveIntent).toHaveBeenCalledTimes(1);
     expect(resolveIntent.mock.calls[0][0]).toMatchObject({ category: null, dateWindow: 'tonight', cuisine: null, attributes: [], occasion: null });
-    expect(r.kind).toBe('undecided');
+    expect(resolveIntent.mock.calls[0][0].openEnded).toBe(true); // service businesses left out
     expect(r.header).toBe('Tonight near you');
     expect(r.lanes.map((l) => l.key)).toEqual(['best', 'active', 'easy']);
   });

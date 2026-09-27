@@ -18,14 +18,15 @@ const OPEN_ENDED = /\b(something|anything|stuff|things?)\b[^.?!]{0,30}\b(fun|to 
 export const OPEN_ENDED_GROUP_BONUS = 1; // below every real category/interest match (SCORE_INTEREST_MATCH is 5)
 
 // Group keys the ask can mean, or null when this is not an open-ended ask (a real category, an occasion, or no open phrase).
-export function openEndedAskGroups({ category = null, rawText = '', occasion = null, attributes = [] } = {}) {
+// `force`: the caller already knows the ask names no category (a broad Surprise Me), so it is open-ended without a phrase.
+export function openEndedAskGroups({ category = null, rawText = '', occasion = null, attributes = [], force = false } = {}) {
   if (category || occasion) return null;
   // A recognised intent (constants/intentRoutes.js) that names category groups limits the ask to exactly those groups.
   const routed = detectIntentRoute(rawText);
   // (A tagged intent like coffee or live music leaves the choice of category to the extractor, so it never limits groups here.)
   if (routed?.route.surface === ROUTE_SURFACES.CATEGORY_GROUPS && !routed.route.category) return [...routed.route.groups];
   // Item 90: "I don't know what I want" / "what's good tonight" names no category either.
-  if (typeof rawText !== 'string' || !(OPEN_ENDED.test(rawText) || undecidedAskFromText(rawText) || energiesFromText(rawText).length > 0)) return null; // an energy alone ("something low-key") names no category either
+  if (!force && (typeof rawText !== 'string' || !(OPEN_ENDED.test(rawText) || undecidedAskFromText(rawText) || energiesFromText(rawText).length > 0))) return null; // an energy alone ("something low-key") names no category either
   const kidFriendly = Array.isArray(attributes) && attributes.includes('kid_friendly');
   return CATEGORY_GROUPS
     .map((g) => g.key)

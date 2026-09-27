@@ -2221,7 +2221,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
           {surpriseTyped && !surpriseLoading && discoverSurprise && (
             <View style={styles.intentSearchBlock}>
-              <Text style={styles.intentSearchTitle}>{discoverSurprise.kind === 'undecided' ? discoverSurprise.header : '✨ A few ideas for you'}</Text>
+              <Text style={styles.intentSearchTitle}>{discoverSurprise.header}</Text>
               {!!discoverSurprise.basis && (
                 <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{discoverSurprise.basis}</Text>
               )}
@@ -2235,18 +2235,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                     {lane.items.map((item, index) => renderIntentSearchResultRow(item, index, { onPress: (it) => navigateToSurprisePick(navigation, it, discoverSurprise), pickBadge: false }))}
                   </View>
                 ))
-              ) : discoverSurprise.suggestion.kind === 'experience' ? (
-                <ExperienceComponentList
-                  experience={discoverSurprise.suggestion.experience}
-                  renderItem={(item, index) => renderIntentSearchResultRow(item, index, { onPress: (it) => navigateToSurprisePick(navigation, it, discoverSurprise), pickBadge: false })}
-                  navigation={navigation}
-                  partySize={discoverSurprise.ask?.partySize ?? null}
-                  labelStyle={styles.intentSearchGroupLabel}
-                />
-              ) : (
-                (discoverSurprise.picks?.length ? discoverSurprise.picks : [discoverSurprise.suggestion.candidate]).map((item, index) =>
-                  renderIntentSearchResultRow(item, index, { onPress: (it) => navigateToSurprisePick(navigation, it, discoverSurprise), pickBadge: false }))
-              )}
+              ) : null}
               {discoverSurprise.connectedPerson && (
                 <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 6 }}>
                   You could go with {discoverSurprise.connectedPerson.name}{discoverSurprise.connectedPerson.forTitle ? ` to ${discoverSurprise.connectedPerson.forTitle}` : ''} 👋
