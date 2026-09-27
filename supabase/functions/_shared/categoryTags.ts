@@ -15,7 +15,9 @@ let cache: { at: number; all: CategoryVocab; consumer: CategoryVocab } | null = 
 export async function loadCategoryVocab(admin: any, opts: { includeBusinessOnly?: boolean } = {}): Promise<CategoryVocab> {
   const pick = (c: NonNullable<typeof cache>) => (opts.includeBusinessOnly ? c.all : c.consumer);
   if (cache && Date.now() - cache.at < TTL_MS) return pick(cache);
-  const { data, error } = await admin.from('category_tag_groups').select('tag, group_key, business_only').order('created_at').order('tag');
+  // Retired tags (migration 20270232) keep their row for history and stored data, but are never offered or assigned.
+  const { data, error } = await admin.from('category_tag_groups').select('tag, group_key, business_only')
+    .is('retired_at', null).order('created_at').order('tag');
   if (error || !Array.isArray(data)) {
     console.warn('category_tag_groups read failed', error?.message);
     return cache ? pick(cache) : { tags: [], byGroup: {} };

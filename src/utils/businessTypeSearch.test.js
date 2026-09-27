@@ -109,7 +109,7 @@ describe('web signup checklist is a faithful copy of the app checklist', () => {
     const fn = fs.readFileSync(require.resolve('../../supabase/functions/submit-business-application/index.ts'), 'utf8');
     const m = fn.match(/const VALID_ATTRIBUTES = (\[.*?\]);/);
     expect(JSON.parse(m[1])).toEqual(BUSINESS_ATTRIBUTE_OPTIONS.map((o) => o.key));
-    expect(fn).toMatch(/eq\('group_key', category\)\.in\('tag', wanted\)/);
+    expect(fn).toMatch(/eq\('group_key', category\)(\.is\('retired_at', null\))?\.in\('tag', wanted\)/);
     expect(html).toContain('attributes: selectedApplyCategory ? applyAttributes : []');
   });
 });

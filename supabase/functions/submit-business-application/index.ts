@@ -175,10 +175,20 @@ serve(async (req) => {
   }
 
   // A specific type ("Coffee") is kept only when it is a real tag of the chosen major (the tag registry decides).
+  // The static web form carries a copy of the taxonomy, so a type renamed or merged since it was built is mapped to its
+  // current name (migration 20270232: resolve_category_tag follows former names and merges); a retired type is dropped.
+  const currentName = async (name: string): Promise<string | null> => {
+    const { data } = await supabase.rpc('resolve_category_tag', { name_param: name });
+    const row = Array.isArray(data) ? data[0] : null;
+    if (!row) return name; // not a category name: the group check below decides
+    return row.retired && row.current_tag === row.tag ? null : row.current_tag;
+  };
   let subcategory: string | null = null;
   if (category && subcategoryRaw) {
-    const { data: tagRow } = await supabase
-      .from('category_tag_groups').select('tag').eq('tag', subcategoryRaw).eq('group_key', category).maybeSingle();
+    const wantedSub = await currentName(subcategoryRaw);
+    const { data: tagRow } = wantedSub ? await supabase
+      .from('category_tag_groups').select('tag').eq('tag', wantedSub).eq('group_key', category).is('retired_at', null).maybeSingle()
+      : { data: null };
     subcategory = tagRow?.tag ?? null;
   }
 
@@ -189,9 +199,10 @@ serve(async (req) => {
     : [];
   let categories: string[] = [];
   if (category && Array.isArray(body.categories) && body.categories.length > 0) {
-    const wanted = [...new Set(body.categories.filter((t: unknown): t is string => typeof t === 'string'))].slice(0, 6);
+    const asked = [...new Set(body.categories.filter((t: unknown): t is string => typeof t === 'string'))].slice(0, 6);
+    const wanted = (await Promise.all(asked.map(currentName))).filter((t): t is string => !!t);
     const { data: tagRows } = await supabase
-      .from('category_tag_groups').select('tag').eq('group_key', category).in('tag', wanted);
+      .from('category_tag_groups').select('tag').eq('group_key', category).is('retired_at', null).in('tag', wanted);
     categories = (tagRows ?? []).map((r: { tag: string }) => r.tag).filter((t: string) => t !== subcategory);
   }
 

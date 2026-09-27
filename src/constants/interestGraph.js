@@ -5,6 +5,7 @@
 // mood, `monthly_interests`) as exact canonical strings, so every exact-match consumer (Discover,
 // recommendations, Home, business matching) sees them unchanged.
 import { CATEGORY_GROUPS, INTEREST_OPTIONS } from './gatheringCategories';
+import { currentTagName } from './categoryRegistry';
 
 // Groups that make sense as "what I'm into." Excluded: groups with no leaf tags (services), Dating &
 // Social (handled by the mode/intent questions, not an interest), and business/lodging/health/shopping
@@ -50,12 +51,12 @@ export const LEGACY_MONTHLY_LABEL_TO_TAG = {
 };
 
 // Any stored/typed interest labels -> canonical tags (legacy-mapped, case-insensitive, deduped,
-// unknowns dropped).
+// unknowns dropped). A renamed or merged tag's old name maps to its current name (taxonomy history, 20270232).
 export function canonicalizeInterests(labels) {
   const byLower = new Map(INTEREST_OPTIONS.map((t) => [t.toLowerCase(), t]));
   const out = [];
   for (const raw of Array.isArray(labels) ? labels : []) {
-    const mapped = LEGACY_MONTHLY_LABEL_TO_TAG[raw] ?? raw;
+    const mapped = currentTagName(LEGACY_MONTHLY_LABEL_TO_TAG[raw] ?? raw);
     const tag = byLower.get(String(mapped).toLowerCase());
     if (tag && !out.includes(tag)) out.push(tag);
   }
