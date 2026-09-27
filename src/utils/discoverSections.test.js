@@ -78,4 +78,52 @@ describe('Discover contextual sections (item 91)', () => {
     expect(sections).toBeGreaterThan(browse);
     expect(src).not.toContain('What are you into?</Text>');
   });
+
+  it('a gathering that qualifies for every section lands only in the first (Happening Now)', () => {
+    const s = run([g('all', { scheduled_at: at(20), approvedCount: 9, interest_tag: 'Jazz' })],
+      { declared: ['Jazz'], friendInterestByTag: { Jazz: { friend_count: 3, sample_names: [] } } });
+    expect(keys(s)).toEqual(['now']);
+  });
+  it('a right-now start that overflows Happening Now is never headed "Tonight"', () => {
+    const list = Array.from({ length: 8 }, (_, i) => g(`n${i}`, { scheduled_at: at(21) }));
+    const today = run(list).find((x) => x.key === 'tonight');
+    expect(today.title).toBe('🌅 Today');
+  });
+  it('Trending reads the server attendee count, so no hidden identities are needed', () => {
+    const s = run([g('x', { approvedCount: 6, attendees: [{ user_id: 'friend' }] })]);
+    expect(keys(s)).toEqual(['trending']);
+  });
+  it('Because you like has no behavior input: an undeclared tag never gets the section', () => {
+    const s = run([g('1', { interest_tag: 'Tennis' })], { declared: ['Yoga'], behavior: { Tennis: 10 } });
+    expect(keys(s)).toEqual([]);
+  });
+  it('Friends wording: names where the server gave them, counts otherwise', () => {
+    const f = (entry) => run([g('1', { interest_tag: 'Jazz' })], { friendInterestByTag: { Jazz: entry } })[0].title;
+    expect(f({ friend_count: 4, sample_names: ['Sam', 'Alex'] })).toBe('🤝 Sam, Alex and 2 more friends are into Jazz');
+    expect(f({ friend_count: 3, sample_names: [] })).toBe('🤝 3 friends are into Jazz');
+  });
+  it('friend signals come only from the accepted-friends server lookup', () => {
+    const read = (f) => require('fs').readFileSync(require('path').join(__dirname, '..', f), 'utf8');
+    expect(read('services/friendInterests.js')).toMatch(/rpc\('get_friends_interested_in'/);
+    const d = read('screens/DiscoverHubScreen.js');
+    expect(d).toMatch(/setFriendInterestByTag\(m\)/);
+    expect(d).toMatch(/getFriendsInterestedIn\(gatheringTagKey/);
+    expect(read('utils/discoverSections.js').replace(/^\s*\/\/.*$/gm, '')).not.toMatch(/supabase|attendees|user_id/);
+  });
+  it('Discover wiring: declared interests only, repeat-search section first and excluded, Open now respected', () => {
+    const d = require('fs').readFileSync(require('path').join(__dirname, '../screens/DiscoverHubScreen.js'), 'utf8');
+    expect(d).toMatch(/declared: personalization\.declared,/);
+    expect(d).toMatch(/excludeIds: topCategoryIds,/);
+    expect(d).toMatch(/gatherings: filteredGatherings,/);
+    expect(d).toMatch(/const filteredGatherings = applyOpenNow\(/);
+    expect(d.indexOf('{topCategoryGatherings.map(renderGatheringTile)}')).toBeLessThan(d.indexOf('discoverSections.map('));
+    expect(d).toMatch(/railGroups\(CATEGORY_GROUPS\)/);
+    expect(d).toMatch(/\.\.\.\(showMoreCategories \? rail\.more : \[\]\)/);
+  });
+  it('the rail keeps seven visible categories with "Activities"', () => {
+    const { DISCOVER_RAIL_PRIMARY } = require('../constants/discoverCategoryRail');
+    expect(DISCOVER_RAIL_PRIMARY).toHaveLength(7);
+    expect(DISCOVER_RAIL_PRIMARY.map((p) => p.label)).toContain('Activities');
+    expect(DISCOVER_RAIL_PRIMARY.map((p) => p.label)).not.toContain('Things To Do');
+  });
 });
