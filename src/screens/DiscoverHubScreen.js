@@ -57,6 +57,7 @@ import { splitTonight } from '../utils/categoryTonight';
 import { buildDiscoverSections } from '../utils/discoverSections';
 import { searchTopic, matchBusinesses, friendsLineForTopic } from '../utils/unifiedSearch';
 import { formatDistance } from '../utils/formatDistance';
+import { searchResultTabs, topResultKinds, effectiveResultTab, resultKindView } from '../utils/searchResultTabs';
 import { matchesDateFilter } from '../utils/gatheringDateFilter';
 import { lightenHex } from '../utils/colorUtils';
 import GatheringsMapView from '../components/GatheringsMapView';
@@ -335,6 +336,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const [postingStory, setPostingStory] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
+  // Item 93: which result tab an All-view search is showing (Top Results until the person picks another).
+  const [searchTab, setSearchTab] = useState('top');
   const [showMoreCategories, setShowMoreCategories] = useState(false);
   const rail = useMemo(() => railGroups(CATEGORY_GROUPS), []);
   // Item 39 (CLAUDE.md, "search should understand the same language as the
@@ -1039,27 +1042,22 @@ export default function DiscoverHubScreen({ navigation, route }) {
       .catch((e) => console.error('Discover context connections failed', e));
   }, [expandedContext, contextGatheringKey, myUserId]);
 
-  const showGatherings = typeFilter === 'all' || typeFilter === 'gatherings';
+  const typeShowsGatherings = typeFilter === 'all' || typeFilter === 'gatherings';
   // P1 UX critique reply item 14: the old flat "Gatherings" preview
   // section (below) is now redundant with the new Happening Now/Today/
   // This Weekend hierarchy for the default "All" browse case -- it stays
   // exactly as before for the dedicated Gatherings tab, and for search
   // results (which the new hierarchy deliberately doesn't cover either).
-  const showFlatGatheringsSection = showGatherings && !(isAll && !isSearching);
-  const showCommunities = typeFilter === 'all' || typeFilter === 'communities';
-  const showPlaces = typeFilter === 'all' || typeFilter === 'places';
-  const showPerks = typeFilter === 'all' || typeFilter === 'perks';
+  const typeShowsCommunities = typeFilter === 'all' || typeFilter === 'communities';
+  const typeShowsPlaces = typeFilter === 'all' || typeFilter === 'places';
+  const typeShowsPerks = typeFilter === 'all' || typeFilter === 'perks';
   const showViewToggle = typeFilter === 'all' || typeFilter === 'gatherings' || typeFilter === 'perks';
 
   // Whatever already surfaced above doesn't repeat in the plain catch-all
   // list right below it. A no-op when `notableGatherings` is empty
   // (Communities/Places/Perks views, or while actively searching).
   const dedupedGatherings = filteredGatherings.filter((g) => !notableGatheringIds.has(g.id));
-  const gatheringsToShow = isAll ? dedupedGatherings.slice(0, PREVIEW_COUNT) : dedupedGatherings;
-  const communitiesToShow = isAll ? filteredCommunities.slice(0, PREVIEW_COUNT) : filteredCommunities;
-  const offersToShow = isAll ? filteredOffers.slice(0, PREVIEW_COUNT) : filteredOffers;
   const visiblePlaces = applyOpenNow(places, placeEntity);
-  const placesToShow = isAll ? visiblePlaces.slice(0, PREVIEW_COUNT) : visiblePlaces;
 
   // Decision 5 (CLAUDE.md, Aug 27 2026): a real "nothing anywhere matched"
   // state, checked against all three real searchable sections regardless of
@@ -1074,6 +1072,38 @@ export default function DiscoverHubScreen({ navigation, route }) {
     ? applyOpenNow(matchBusinesses(businesses, query.literalTerm, searchedTopic), (b) => businessEntity(b))
     : [];
   const searchFriendsLine = isAll ? friendsLineForTopic(searchedTopic, searchTopicFriendMap) : null;
+  // Item 93: the search covers everything, the UI shows it in tabs. Only tabs with results (or still loading) exist;
+  // Top Results previews at most three kinds, two items each (utils/searchResultTabs.js).
+  const resultTabsActive = isAll && isSearching;
+  const resultCounts = {
+    plans: dedupedGatherings.length,
+    places: searchedBusinesses.length + (userLocation ? visiblePlaces.length : 0),
+    offers: filteredOffers.length,
+    activities: filteredCommunities.length + (searchedTopic ? 1 : 0),
+  };
+  const resultLoading = { plans: loadingSearch, places: loadingPlaces && !!userLocation, offers: loadingSearch, activities: loadingSearch };
+  const resultTabs = resultTabsActive ? searchResultTabs(resultCounts, resultLoading) : [];
+  const resultTab = resultTabsActive ? effectiveResultTab(searchTab, resultTabs) : null;
+  const topKinds = resultTabsActive ? topResultKinds(resultCounts, resultLoading) : [];
+  const kindView = (kind) => (resultTabsActive ? resultKindView(kind, resultTab, topKinds) : { show: true, cap: isAll ? PREVIEW_COUNT : null });
+  const capList = (list, kind) => { const { cap } = kindView(kind); return cap == null ? list : list.slice(0, cap); };
+  const showGatherings = typeShowsGatherings && kindView('plans').show;
+  const showFlatGatheringsSection = showGatherings && !(isAll && !isSearching);
+  const showCommunities = typeShowsCommunities && kindView('activities').show;
+  const showPlaces = typeShowsPlaces && kindView('places').show;
+  const showPerks = typeShowsPerks && kindView('offers').show;
+  const showSearchTopic = resultTabsActive && !!searchedTopic && (resultTab === 'top' || resultTab === 'activities');
+  const businessesToShow = kindView('places').show ? capList(searchedBusinesses, 'places') : [];
+  const gatheringsToShow = capList(dedupedGatherings, 'plans');
+  const communitiesToShow = capList(filteredCommunities, 'activities');
+  const offersToShow = capList(filteredOffers, 'offers');
+  const placesToShow = capList(visiblePlaces, 'places');
+  const onTopOrNotTabbed = !resultTabsActive || resultTab === 'top';
+  // "See all" inside a preview: switches to that result tab during a search, else to the type tab as before.
+  const seeAllVisible = (kind) => (resultTabsActive ? resultTab === 'top' : isAll);
+  function openKind(kind, typeKey) {
+    if (resultTabsActive) { animateLayout(); setSearchTab(kind); } else setTypeTab(typeKey);
+  }
   const nothingMatchedAnywhere = isSearching && !loadingSearch
     && filteredGatherings.length === 0 && filteredCommunities.length === 0 && filteredOffers.length === 0
     && searchedBusinesses.length === 0;
@@ -1671,6 +1701,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 value={searchQuery}
                 onChangeText={(t) => {
                   setSearchQuery(t);
+                  setSearchTab('top');
                   // Item 39: the previous "understood as" block described
                   // the old text -- invalidate it (and any in-flight
                   // request for it) the moment the text changes, same
@@ -1687,6 +1718,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 <TouchableOpacity
                   onPress={() => {
                     setSearchQuery('');
+                    setSearchTab('top');
                     intentSearchRequestId.current += 1;
                     setIntentSearch(null);
                     clearDiscoverSurprise();
@@ -1701,14 +1733,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
             <View style={styles.filterRow}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
-                {TYPE_FILTERS.map((f) => {
-                  const active = typeFilter === f.key;
+                {(resultTabsActive ? resultTabs : TYPE_FILTERS).map((f) => {
+                  const active = resultTabsActive ? resultTab === f.key : typeFilter === f.key;
                   return (
                     <TapActiveChip
                       key={f.key}
                       active={active}
                       style={[styles.filterChip, active && styles.filterChipActive]}
-                      onPress={() => setTypeTab(f.key)}
+                      onPress={() => (resultTabsActive ? (animateLayout(), setSearchTab(f.key)) : setTypeTab(f.key))}
                       accessibilityLabel={f.label}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
@@ -2257,12 +2289,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>Press search and Nearby will find a few ideas for you.</Text>
           )}
 
-          {isSearching && intentSearching && (
+          {isSearching && onTopOrNotTabbed && intentSearching && (
             <View style={styles.intentSearchLoadingRow}>
               <NLoader fullScreen={false} size="inline" caption={intentPhaseCaption(intentPhase?.phase ?? 'understanding', intentPhase?.classifyResult)} />
             </View>
           )}
-          {isSearching && !intentSearching && intentSearch?.outcome === 'results' && (
+          {isSearching && onTopOrNotTabbed && !intentSearching && intentSearch?.outcome === 'results' && (
             <View style={styles.intentSearchBlock}>
               <FoundLine />
               {!!intentSearch.openEndedNote && (
@@ -2319,7 +2351,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
 
           {/* Item 92: one search, every kind of result -- the activity itself, friends into it, and Nearby businesses. */}
-          {isSearching && isAll && searchedTopic && (
+          {showSearchTopic && (
             <TouchableOpacity
               style={styles.searchTopicRow}
               onPress={() => openSearchTopic(searchedTopic)}
@@ -2335,10 +2367,17 @@ export default function DiscoverHubScreen({ navigation, route }) {
               <Text style={styles.emptyActionText}>Explore →</Text>
             </TouchableOpacity>
           )}
-          {searchedBusinesses.length > 0 && (
+          {businessesToShow.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>Businesses</Text>
-              {searchedBusinesses.map((b) => (
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeaderRowLabel}>Businesses</Text>
+                {resultTabsActive && resultTab === 'top' && searchedBusinesses.length > businessesToShow.length && (
+                  <TouchableOpacity onPress={() => openKind('places', 'places')} accessibilityLabel="See all businesses" accessibilityRole="button">
+                    <Text style={styles.seeAllInline}>See all →</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              {businessesToShow.map((b) => (
                 <TouchableOpacity
                   key={`biz-${b.id}`}
                   style={styles.searchTopicRow}
@@ -2386,8 +2425,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionHeaderRowLabel}>Gatherings</Text>
-                {isAll && (
-                  <TouchableOpacity onPress={() => setTypeTab('gatherings')} accessibilityLabel="See all gatherings" accessibilityRole="button">
+                {seeAllVisible('plans') && (
+                  <TouchableOpacity onPress={() => openKind('plans', 'gatherings')} accessibilityLabel="See all gatherings" accessibilityRole="button">
                     <Text style={styles.seeAllInline}>See all →</Text>
                   </TouchableOpacity>
                 )}
@@ -2451,8 +2490,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionHeaderRowLabel}>Communities</Text>
-                {isAll && (
-                  <TouchableOpacity onPress={() => setTypeTab('communities')} accessibilityLabel="See all communities" accessibilityRole="button">
+                {seeAllVisible('activities') && (
+                  <TouchableOpacity onPress={() => openKind('activities', 'communities')} accessibilityLabel="See all communities" accessibilityRole="button">
                     <Text style={styles.seeAllInline}>See all →</Text>
                   </TouchableOpacity>
                 )}
@@ -2498,8 +2537,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionHeaderRowLabel}>Places</Text>
-                {isAll && visiblePlaces.length > 0 && (
-                  <TouchableOpacity onPress={() => setTypeTab('places')} accessibilityLabel="See all places" accessibilityRole="button">
+                {seeAllVisible('places') && visiblePlaces.length > 0 && (
+                  <TouchableOpacity onPress={() => openKind('places', 'places')} accessibilityLabel="See all places" accessibilityRole="button">
                     <Text style={styles.seeAllInline}>See all →</Text>
                   </TouchableOpacity>
                 )}
@@ -2601,8 +2640,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionHeaderRowLabel}>Perks</Text>
-                {isAll && (
-                  <TouchableOpacity onPress={() => setTypeTab('perks')} accessibilityLabel="See all perks" accessibilityRole="button">
+                {seeAllVisible('offers') && (
+                  <TouchableOpacity onPress={() => openKind('offers', 'perks')} accessibilityLabel="See all perks" accessibilityRole="button">
                     <Text style={styles.seeAllInline}>See all →</Text>
                   </TouchableOpacity>
                 )}
@@ -2649,7 +2688,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               call Home's own intent box already uses, then lands on
               whichever real creation screen it returns, term carried
               forward as a real, editable prefill. Never auto-submitted. */}
-          {nothingMatchedAnywhere && !openNowActive && (
+          {nothingMatchedAnywhere && onTopOrNotTabbed && !openNowActive && (
             <View style={styles.createItCard}>
               <Text style={styles.createItTitle}>Don't see what you're looking for?</Text>
               <Text style={styles.createItSubtitle}>Tell Nearby what you want to do.</Text>
