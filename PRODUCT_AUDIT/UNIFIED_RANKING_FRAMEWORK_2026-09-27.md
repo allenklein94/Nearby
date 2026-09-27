@@ -52,21 +52,26 @@ weaker one; within a tier, points add (so two asked qualities beat one). `tierVe
    gathering with room gets the same availability credit a live posting gets (a full one does not); intent beats interest;
    a stated requirement beats time + interest together; a friend asking for the same thing beats a business posting. Filters
    and presentation unchanged. Audit rules version `typed-ask-audit-v2`.
-2. **Best Pick hero: next.** Give each fit reason a tier (friends 3, today 5, declared interest 6, attendance 9, distance 10,
-   first-timers 10) and pick by tier vector. Effect: a well-attended stranger event no longer beats a friend's or a declared
-   interest's.
+2. **Best Pick hero: DONE (2026-09-27).** `getGatheringFitReasons` returns named `parts` with tiers (`GATHERING_FIT_TIER`:
+   friends attending 3, room to join 4, today 5, declared interest 6, attendance 9, distance and first-timers 10) and a
+   `rankVector`; `pickBestGathering` keeps the surface's eligibility (fit score >= 5, unchanged) and picks among the eligible
+   with `compareRanked`. Home now counts accepted friends among the visible approved attendees (it never passed them before,
+   so the friends tier could not count). "Room to join" is rank-only, so `score`, Discover's hero/standard thresholds and the
+   eligibility bar are unchanged. Not counted: a friend HOSTING (hosts are not attendee rows; Home's merge still adds that
+   reason to the card).
 3. **Gatherings feed.** Keep its job (a personal ordering of the nearby list): declared interest (6), broad/related (7),
    behavior (6, maturity-dampened, still below declared), comfort (10), plus friends going (3) and today (5) where the feed
    already has them. Same comparator.
-4. **Discover sections.** Order inside each section by the same comparator (`fit` becomes a tier vector). Section ORDER is
-   presentation, but it currently contradicts the ladder: **needs an owner decision** (item 91 locked it). Proposed: Now,
-   Tonight, Because you like, Friends are into, Trending, This Weekend (Trending moves below the two personal sections).
+4. **Discover sections.** Order inside each section by the same comparator (`fit` becomes a tier vector). **Section order
+   DECIDED (owner, 2026-09-27): keep the agreed sections, reorder to the ladder: Now, Tonight, Because you like, Friends are
+   into, Trending, This Weekend** (Trending moves below the two personal sections; supersedes item 91's order).
 5. **Home.** Move from the flag form to the vector form (same tiers; reason count becomes points within a tier). Small.
-6. **Business routing.** Keep its filters first (eligibility, never ranking). Name each key of its order with a business-side
-   tier so the audit reads the same way; no consumer tiers are imposed on it. Steps 6 (want-more) and 7 (economics) remain
-   owner decisions.
+6. **Business routing.** **DECIDED (owner, 2026-09-27): its eligibility rules stay separate from recommendation ranking.**
+   Filters first, then its own lexicographic order; no consumer tiers imposed. Minimum spend and want-more are NOT changed
+   until each has an exact definition of how it should work.
 
-## 4. Decisions the owner needs to make
+## 4. Decisions
 
-- Discover section order (step 4).
-- Whether business routing adopts want-more (step 6) and minimum-spend vs budget (step 7).
+- Discover section order: decided (step 4).
+- Business routing: eligibility stays separate; minimum-spend and want-more unchanged until defined (step 6).
+- Confirmed availability outranks "may be able to help" even when the latter is closer: confirmed by the owner.

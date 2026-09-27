@@ -11,6 +11,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { getMyFriends } from './friends';
 import { getMyCommunities } from './communities';
 import { REASON_TEXT, becauseYouLikeReason } from '../constants/recommendationReasonVocabulary';
+import { SIGNAL_TIERS, tierVector, compareRanked } from '../constants/signalPriority';
 import { getUserLocation, requireUserLocation } from './userLocation';
 import { isGatheringPast, isGatheringUpcoming } from '../utils/objectState';
 import { attendeeTotal, isGatheringFull } from '../utils/gatheringFullness';
@@ -1152,53 +1153,77 @@ export async function getGatheringFirstTimerCount(gatheringId) {
 // detail screen's "Why this fits you" section — real signals only
 // (attendance, distance, interest match, real flags), never an
 // invented percentage or preference claim.
+// Unified ranking (constants/signalPriority.js): every signal is also a named part with its tier, and `rankVector` orders
+// candidates by the one ladder (friends 3 > room to join 4 > today 5 > declared interest 6 > attendance 9 > distance 10).
+// `score` keeps its old meaning (the 0-22 sum Discover's hero/standard thresholds and Best Pick's "clears 5" eligibility read);
+// "has room" is rank-only so those thresholds are unchanged.
+export const GATHERING_FIT_TIER = {
+  friends_attending: SIGNAL_TIERS.planFriend,
+  has_room: SIGNAL_TIERS.availability,
+  today: SIGNAL_TIERS.time,
+  interest_match: SIGNAL_TIERS.interest,
+  attendance: SIGNAL_TIERS.popularity,
+  close_distance: SIGNAL_TIERS.discovery,
+  first_timers: SIGNAL_TIERS.discovery,
+};
+const HAS_ROOM_POINTS = 4; // rank-only; the same availability credit typed search gives a gathering with room
+
 export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendAttendeeCount = 0 } = {}) {
   const reasons = [];
-  let score = 0;
+  const parts = [];
+  const add = (code, delta, reason = null, { rankOnly = false } = {}) => {
+    parts.push({ code, tier: GATHERING_FIT_TIER[code], delta, rankOnly });
+    if (reason) reasons.push(reason);
+  };
   const attendeeCount = attendeeTotal(gathering);
 
   if (attendeeCount > 0) {
-    score += Math.min(attendeeCount, 10);
-    reasons.push(`${attendeeCount} ${attendeeCount === 1 ? 'person' : 'people'} attending`);
+    add('attendance', Math.min(attendeeCount, 10), `${attendeeCount} ${attendeeCount === 1 ? 'person' : 'people'} attending`);
   }
   if (gathering.matchesYourInterests) {
-    score += 5;
     // P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): shared,
     // canonical text -- reused verbatim by homeRecommendations.js's own
     // scoreGathering(), so the two surfaces can never silently drift.
-    reasons.push(becauseYouLikeReason(gathering.interest_tag));
+    add('interest_match', 5, becauseYouLikeReason(gathering.interest_tag));
   }
   if (friendAttendeeCount > 0) {
-    // Group Insights plan (2026-09-18): a real, already-connected-only
-    // signal (filterToMyConnections() over this gathering's own approved
-    // attendees) -- weighted like a second interest match (+5), not a
-    // generic popularity count, because "someone I already know is going"
-    // is a stronger personal fit signal than a raw attendance number.
-    score += 4;
-    reasons.push(`${friendAttendeeCount} of your friends ${friendAttendeeCount === 1 ? 'is' : 'are'} attending`);
+    // Group Insights plan (2026-09-18): a real, already-connected-only signal (accepted friends among the approved attendees).
+    add('friends_attending', 4, `${friendAttendeeCount} of your friends ${friendAttendeeCount === 1 ? 'is' : 'are'} attending`);
   }
   if (gathering.distanceMiles !== null && gathering.distanceMiles !== undefined && gathering.distanceMiles < 2 && gathering.distanceLabel) {
-    score += 3;
     // Deliberately NOT the shared REASON_TEXT constant -- distanceLabel
     // is a real, more specific formatted string ("0.3 mi away") than any
     // shared generic text could honestly say; still classified as a
     // real DISTANCE reason by categorizeReasonText() wherever it's
     // rendered (see ReasonList.js).
-    reasons.push(gathering.distanceLabel);
+    add('close_distance', 3, gathering.distanceLabel);
   }
   const scheduled = new Date(gathering.scheduled_at);
   const now = new Date();
   const isToday = scheduled.getFullYear() === now.getFullYear() && scheduled.getMonth() === now.getMonth() && scheduled.getDate() === now.getDate();
-  if (isToday) {
-    score += 2;
-    reasons.push(REASON_TEXT.HAPPENING_TODAY.text);
-  }
+  if (isToday) add('today', 2, REASON_TEXT.HAPPENING_TODAY.text);
   if (firstTimerCount > 0) {
-    score += 1;
-    reasons.push(`${firstTimerCount} ${firstTimerCount === 1 ? 'attendee is' : 'attendees are'} also first-timers`);
+    add('first_timers', 1, `${firstTimerCount} ${firstTimerCount === 1 ? 'attendee is' : 'attendees are'} also first-timers`);
   }
+  // Can it actually happen: a gathering with room (a full one offers only a waitlist spot). Rank-only, no reason line.
+  if (!isGatheringFull(gathering, attendeeCount)) add('has_room', HAS_ROOM_POINTS, null, { rankOnly: true });
 
-  return { score, reasons };
+  const score = parts.filter((p) => !p.rankOnly).reduce((n, p) => n + p.delta, 0);
+  return { score, reasons, parts, rankVector: tierVector(parts) };
+}
+
+// Home's Best Pick: ONE gathering. Eligibility is the surface's own rule (a pick must clear a fit score of 5, so an ordinary
+// night has no pick); among the eligible, the one ranking ladder picks (compareRanked on the tier vector). Friends attending are
+// counted from the approved attendees the viewer can already see, accepted friends only.
+export const BEST_PICK_MIN_SCORE = 5;
+export function pickBestGathering(pool, { friendIds = null, myUserId = null } = {}) {
+  const friends = friendIds instanceof Set ? friendIds : new Set(friendIds ?? []);
+  const scored = (pool ?? []).map((g) => {
+    const friendAttendeeCount = (g?.approvedAttendees ?? []).filter((a) => a?.user_id && a.user_id !== myUserId && friends.has(a.user_id)).length;
+    return { gathering: g, ...getGatheringFitReasons(g, { friendAttendeeCount }) };
+  }).filter((x) => x.score >= BEST_PICK_MIN_SCORE);
+  const top = scored.sort(compareRanked)[0];
+  return top ? { ...top.gathering, reasons: top.reasons } : null;
 }
 
 const GREAT_BECAUSE_LABELS = {

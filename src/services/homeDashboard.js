@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { getNearbyMatches } from './proximity';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
-import { getNearbyGatherings, getMyInterestedGatherings, getGatheringFitReasons, getMyTopGatheringCategories, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
+import { getNearbyGatherings, getMyInterestedGatherings, pickBestGathering, getMyTopGatheringCategories, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { createWeatherLoader } from './weatherLoader';
 import { getMyGroupPlans } from './groupPlans';
@@ -488,20 +488,9 @@ export async function getHomeDashboard() {
     .sort(nearestThenSoonest)
     .slice(0, 6);
 
-  // A single, genuine best pick rather than another list — scored on
-  // real signals only (attendance, closeness, actual shared
-  // interest), with honest reasons attached rather than invented
-  // ones. If nothing scores meaningfully, there's no pick — the app
-  // doesn't pretend an ordinary night is special.
+  // A single, genuine best pick rather than another list: chosen below (pickBestGathering) once friends are known and the
+  // person's own plans are excluded. If nothing clears the bar there is no pick; an ordinary night is not made special.
   let bestPick = null;
-  if (nearbyGatherings.length > 0) {
-    const scored = nearbyGatherings.map((g) => ({ gathering: g, ...getGatheringFitReasons(g) }));
-
-    const top = scored.sort((a, b) => b.score - a.score)[0];
-    if (top && top.score >= 5) {
-      bestPick = { ...top.gathering, reasons: top.reasons };
-    }
-  }
 
   const mostRecentSighting = nearbyPeople.length > 0
     ? [...nearbyPeople].sort((a, b) => new Date(b.last_seen_at) - new Date(a.last_seen_at))[0]
@@ -609,6 +598,7 @@ export async function getHomeDashboard() {
   ]);
   // One object, one place (global rule 3): a gathering already in "Your Plans" (attending or hosting) is not ALSO
   // recommended as trending, Best Pick or starting soon. Recomputed from the same nearby list, so the slots refill.
+  let bestPickPool = [];
   {
     const notMine = (g) => !upcomingPlanIds.has(g.id);
     const pool = nearbyGatherings.filter(notMine);
@@ -617,9 +607,7 @@ export async function getHomeDashboard() {
       .sort((a, b) => attendeeTotal(b) - attendeeTotal(a))
       .slice(0, 3);
     happeningNow = happeningNow.filter(notMine);
-    bestPick = null;
-    const top = pool.map((g) => ({ gathering: g, ...getGatheringFitReasons(g) })).sort((a, b) => b.score - a.score)[0];
-    if (top && top.score >= 5) bestPick = { ...top.gathering, reasons: top.reasons };
+    bestPickPool = pool;
   }
   const byStart = (a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at);
   const directMatches = topInterestCategories.length > 0
@@ -645,6 +633,8 @@ export async function getHomeDashboard() {
     .or(`user_a.eq.${myId},user_b.eq.${myId}`);
 
   const friendIds = (myFriendships ?? []).map((f) => (f.user_a === myId ? f.user_b : f.user_a));
+  // Best Pick by the one ranking ladder (services/gatherings.js pickBestGathering): friends attending count, then room, time, interest.
+  bestPick = pickBestGathering(bestPickPool, { friendIds, myUserId: myId });
 
   let friendsActivity = [];
   if (friendIds.length > 0) {
