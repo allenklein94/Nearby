@@ -205,7 +205,7 @@ export async function linkExperienceStop(stopId, requestId) {
 export const EXPERIENCE_STOP_STATE_LABEL = {
   chosen: 'Not requested yet',
   requested: 'Waiting for the business',
-  offer_received: 'Offer received',
+  offer_received: 'A business responded', // item 121/122: the reply may be availability, not an offer
   booked: "You're booked",
   done: 'Done',
   cancelled: 'Cancelled',

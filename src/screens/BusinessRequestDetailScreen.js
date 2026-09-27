@@ -10,7 +10,7 @@ import { useStripe, initStripe } from '@stripe/stripe-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import { isAllDeclined } from '../utils/requestOutcome';
-import { requestTimeline, timelineStepLine } from '../utils/requestTimeline';
+import { requestTimeline, timelineStepLine, requestNextStep, justSentLine } from '../utils/requestTimeline';
 import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, reopenBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon, setPlanItemTime, getPlanOrganizers, addPlanOrganizer, removePlanOrganizer } from '../services/businessFulfillment';
 import { getPlanChatInfo } from '../services/planChat';
 import { getPlanIdForResource } from '../services/plans';
@@ -1161,7 +1161,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               {isDuplicate
                 ? "You already have an open request just like this — here it is, no need to ask twice."
                 : notifiedCount > 0
-                ? `We asked ${notifiedCount} nearby business${notifiedCount === 1 ? '' : 'es'} — you'll be notified as offers come in.`
+                ? justSentLine(notifiedCount)
                 : `We couldn't find a nearby business to ask within ${priorRadiusMiles} miles — try widening your search.`}
             </Text>
             {!isDuplicate && notifiedCount === 0 && (
@@ -1180,7 +1180,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         <Text style={styles.rawText}>{request.raw_text}</Text>
         <Text style={[styles.statusLine, statusCopy.color !== 'muted' && colors[statusCopy.color] && { color: colors[statusCopy.color] }]}>{statusCopy.label}</Text>
 
-        {/* Request sent -> Offer received -> Offer accepted: only steps that really happened, no "viewed" step. */}
+        {/* Request sent -> the reply (by kind) -> You're booked: only steps that really happened, no "viewed" step; then Next. */}
         <View style={styles.timeline} accessibilityLabel="Request progress">
           {requestTimeline(request, offers).map((step) => (
             <View key={step.key} style={styles.timelineStep}>
@@ -1188,6 +1188,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               {timelineStepLine(step) ? <Text style={styles.timelineDetail}>{timelineStepLine(step)}</Text> : null}
             </View>
           ))}
+          {requestNextStep(request, offers) ? (
+            <Text style={styles.timelineDetail}>Next: {requestNextStep(request, offers)}</Text>
+          ) : null}
         </View>
 
         {myPendingGroupPlanId && (
