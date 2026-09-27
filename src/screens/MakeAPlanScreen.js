@@ -1,18 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
-import EmptyCopy from '../components/EmptyCopy';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Platform } from 'react-native';
 import { NLoader } from '../motion';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../services/supabase';
 import { getOfferById, getBusinessProfile } from '../services/brandOffers';
-import { createGathering, getFriendsWithSharedContext } from '../services/gatherings';
-import { sendInvite } from '../services/invites';
-import { getSignedPhotoUrl } from '../services/photos';
+import { createGathering } from '../services/gatherings';
+import { sendGatheringInvites } from '../services/invites';
+import FriendInviteSelector, { selectedFriendIdList } from '../components/FriendInviteSelector';
 import { checkTextModeration } from '../services/textModeration';
 import LoadErrorState from '../components/LoadErrorState';
-import { NearbyMark } from '../components/brand';
 import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -55,15 +53,11 @@ export default function MakeAPlanScreen({ route, navigation }) {
   const [scheduledAt, setScheduledAt] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [myUserId, setMyUserId] = useState(null);
-  const [friends, setFriends] = useState([]);
-  const [photoUrls, setPhotoUrls] = useState({});
-  const [loadingFriends, setLoadingFriends] = useState(true);
   const [selectedFriendIds, setSelectedFriendIds] = useState({});
   const [confirming, setConfirming] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setLoadingFriends(true);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const myId = sessionData?.session?.user?.id;
@@ -74,8 +68,7 @@ export default function MakeAPlanScreen({ route, navigation }) {
         if (!found) {
           setLoadError(true);
           setLoading(false);
-          setLoadingFriends(false);
-          return;
+            return;
         }
         setOffer(found);
         setDirectPartner(null);
@@ -86,8 +79,7 @@ export default function MakeAPlanScreen({ route, navigation }) {
         if (!found) {
           setLoadError(true);
           setLoading(false);
-          setLoadingFriends(false);
-          return;
+            return;
         }
         setOffer(null);
         setDirectPartner(found);
@@ -104,28 +96,15 @@ export default function MakeAPlanScreen({ route, navigation }) {
       } else {
         setLoadError(true);
         setLoading(false);
-        setLoadingFriends(false);
         return;
       }
       setLoadError(false);
 
-      if (myId) {
-        const list = await getFriendsWithSharedContext(myId);
-        setFriends(list);
-        const urlEntries = await Promise.all(
-          list.map(async (f) => {
-            if (!f.photo_url) return [f.id, null];
-            return [f.id, await getSignedPhotoUrl(f.photo_url)];
-          })
-        );
-        setPhotoUrls(Object.fromEntries(urlEntries));
-      }
     } catch (e) {
       console.error('MakeAPlanScreen load failed', e);
       setLoadError(true);
     }
     setLoading(false);
-    setLoadingFriends(false);
   }, [offerId, partnerId]);
 
   useEffect(() => {
@@ -142,10 +121,6 @@ export default function MakeAPlanScreen({ route, navigation }) {
     setScheduledAt(dateForPreset(preset));
   }
 
-  function toggleFriend(id) {
-    Haptics.selectionAsync();
-    setSelectedFriendIds((prev) => ({ ...prev, [id]: !prev[id] }));
-  }
 
   async function handleConfirm() {
     if (!title.trim()) {
@@ -185,20 +160,13 @@ export default function MakeAPlanScreen({ route, navigation }) {
         showOnMap: true,
       });
 
-      const selectedIds = Object.keys(selectedFriendIds).filter((id) => selectedFriendIds[id]);
-      let sentCount = 0;
-      if (selectedIds.length > 0) {
-        const results = await Promise.allSettled(
-          selectedIds.map((friendId) => sendInvite('gathering', created.id, friendId))
-        );
-        sentCount = results.filter((r) => r.status === 'fulfilled').length;
-      }
+      const preInviteResult = await sendGatheringInvites(created.id, selectedFriendIdList(selectedFriendIds));
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       navigation.replace('GatheringConfirmation', {
         gatheringId: created.id,
         placeName: partner?.name ?? null,
-        preInviteResult: selectedIds.length > 0 ? { sent: sentCount, total: selectedIds.length } : null,
+        preInviteResult,
       });
     } catch (e) {
       // Partial failure surfaces honestly rather than a fake all-or-
@@ -283,55 +251,7 @@ export default function MakeAPlanScreen({ route, navigation }) {
 
         <Text style={styles.label}>Invite Friends</Text>
         <Text style={styles.helperText}>Only people you're already friends with — never nearby strangers.</Text>
-        {loadingFriends ? (
-          <NLoader fullScreen={false} size="inline" caption="Loading friends…" />
-        ) : friends.length === 0 ? (
-          <View>
-            {/* Item 57 ("N mark as product language, but don't overdo it"):
-                a small muted mark on this one real, self-contained empty-
-                state block. */}
-            <NearbyMark size={24} style={{ opacity: 0.3, alignSelf: 'center' }} />
-            <EmptyCopy id="no_friends_to_invite" />
-            {/* Item 56 ("no dead ends"): a real way to actually go add
-                friends, not just copy telling the user what to do. */}
-            <TouchableOpacity
-              onPress={() => navigation.navigate('FriendDiscovery')}
-              accessibilityLabel="Discover people to add as friends"
-              accessibilityRole="button"
-              style={{ alignItems: 'center' }}
-            >
-              <Text style={styles.emptyActionText}>Discover People →</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          friends.map((f) => {
-            const selected = !!selectedFriendIds[f.id];
-            return (
-              <TouchableOpacity
-                key={f.id}
-                style={styles.friendRow}
-                onPress={() => toggleFriend(f.id)}
-                activeOpacity={0.85}
-                accessibilityLabel={`${selected ? 'Deselect' : 'Select'} ${f.display_name}`}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: selected }}
-              >
-                {photoUrls[f.id] ? (
-                  <Image source={{ uri: photoUrls[f.id] }} style={styles.avatar} />
-                ) : (
-                  <View style={[styles.avatar, styles.avatarPlaceholder]} />
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.friendName}>{f.display_name}</Text>
-                  {f.sharedContext && <Text style={styles.friendContext}>{f.sharedContext}</Text>}
-                </View>
-                <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
-                  {selected && <Text style={styles.checkboxMark}>✓</Text>}
-                </View>
-              </TouchableOpacity>
-            );
-          })
-        )}
+        <FriendInviteSelector selectedIds={selectedFriendIds} onChange={setSelectedFriendIds} navigation={navigation} />
       </ScrollView>
 
       <View style={styles.footer}>
@@ -376,17 +296,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   whenSummary: { ...typography.small, color: colors.textSecondary, marginTop: spacing.sm },
   emptyText: { color: colors.textTertiary, textAlign: 'center', paddingVertical: spacing.lg, lineHeight: 20 },
   emptyActionText: { color: colors.primary, fontWeight: '700', fontSize: 13, marginTop: -spacing.sm },
-  friendRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
-  avatar: { width: 40, height: 40, borderRadius: 20, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
-  avatarPlaceholder: {},
-  friendName: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
-  friendContext: { color: colors.textTertiary, fontSize: 11, marginTop: 1 },
-  checkbox: {
-    width: 24, height: 24, borderRadius: radius.sm, borderWidth: 1.5, borderColor: colors.border,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  checkboxSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  checkboxMark: { color: '#fff', fontWeight: '800', fontSize: 14 },
   footer: {
     paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
     borderTopWidth: 1, borderTopColor: colors.border,

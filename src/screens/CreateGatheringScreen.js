@@ -21,6 +21,8 @@ import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { CATEGORY_GROUPS, groupForTag } from '../constants/gatheringCategories';
+import FriendInviteSelector, { selectedFriendIdList } from '../components/FriendInviteSelector';
+import { sendGatheringInvites } from '../services/invites';
 import { whatStepProblem, canSkipWhatStep, startAfterWhatStep, capacityForPartySize } from '../utils/gatheringStructure';
 import useMyInterests from '../hooks/useMyInterests';
 import { orderGroupsByInterests } from '../constants/interestGraph';
@@ -124,9 +126,13 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const styles = getStyles(colors, shadow);
 
   const skipWhat = canSkipWhatStep(route.params);
+  // Item 109: "Who do you want to invite?" comes right after When, only when the ask said who it is with (quickStartInvite,
+  // set by createParamsFromAsk). Ordinary gatherings keep the same steps as before.
+  const askInvite = route.params?.quickStartInvite === true;
   const STEP_DEFS = [
     { key: 'what', label: 'What' },
     { key: 'when', label: 'When' },
+    ...(askInvite ? [{ key: 'invite', label: 'Invite' }] : []),
     { key: 'where', label: 'Where' },
     { key: 'details', label: 'Details' },
     { key: 'settings', label: 'Settings' },
@@ -192,13 +198,15 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [allowAttendeeInvites, setAllowAttendeeInvites] = useState(true);
   const [hostNotifications, setHostNotifications] = useState(true);
   const [requiresApproval, setRequiresApproval] = useState(false);
+  // Friends picked on the invite step ({ [friendId]: true }); sent only after the gathering is published.
+  const [inviteIds, setInviteIds] = useState({});
 
   // Item 82: an unfinished gathering survives a failed publish, leaving the screen and an app restart.
   const gatheringSnapshot = {
     step, title, description, interestTag, visibility, discoverable, communityId,
     scheduledAt: scheduledAt instanceof Date ? scheduledAt.toISOString() : null, whenPreset,
     locationMode, customLocation, placeName, showOnMap, womenOnly, recurrenceRule, capacityOption, capacityCustom,
-    askLocalBusinesses, priceLevel, partyType, showGroupInsights, allowAttendeeInvites, hostNotifications, requiresApproval, equipmentProvided, durationMinutes, genre, format, skillLevel, effortLevel, features, ageMin, ageMax,
+    askLocalBusinesses, priceLevel, partyType, showGroupInsights, allowAttendeeInvites, hostNotifications, requiresApproval, inviteIds, equipmentProvided, durationMinutes, genre, format, skillLevel, effortLevel, features, ageMin, ageMax,
   };
   const gatheringDraft = useFormDraft('gathering', gatheringSnapshot, {
     isEmpty: (d) => !String(d.title ?? '').trim() && !String(d.description ?? '').trim(),
@@ -216,6 +224,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
     setAskLocalBusinesses(!!d.askLocalBusinesses); setPriceLevel(d.priceLevel ?? null); setEquipmentProvided(d.equipmentProvided ?? null); setDurationMinutes(d.durationMinutes ?? null); setGenre(d.genre ?? null); setFormat(d.format ?? null); setSkillLevel(d.skillLevel ?? null); setEffortLevel(d.effortLevel ?? null); setFeatures(cleanFeatures(d.features)); setAgeMin(cleanAgeRange(d.ageMin, d.ageMax).min); setAgeMax(cleanAgeRange(d.ageMin, d.ageMax).max); setPartyType(d.partyType ?? null);
     setShowGroupInsights(d.showGroupInsights !== false); setAllowAttendeeInvites(d.allowAttendeeInvites !== false);
     setHostNotifications(d.hostNotifications !== false); setRequiresApproval(!!d.requiresApproval);
+    setInviteIds(d.inviteIds && typeof d.inviteIds === 'object' ? d.inviteIds : {});
   }
 
   useEffect(() => {
@@ -443,6 +452,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
       });
       gatheringDraft.clear();
       recordBehaviorEvent('create', 'gathering', created.id, interestTag);
+      // Item 109: only now that the gathering exists; a failed send never undoes it (the count shows on the next screen).
+      const preInviteResult = await sendGatheringInvites(created.id, selectedFriendIdList(inviteIds));
 
       // Checking the box only stores real consent/intent on the
       // gathering itself (ask_local_businesses) -- it deliberately does
@@ -468,6 +479,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         gatheringId: created.id,
         placeName,
         businessesAsked: askLocalBusinesses,
+        preInviteResult,
         // Item 71 (CLAUDE.md): "Occasions can automatically suggest
         // people" -- carries CelebrateSomethingScreen's own real,
         // organizer-picked invite suggestions through to the confirmation
@@ -642,6 +654,14 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 }}
               />
             )}
+          </>
+        )}
+
+        {stepKey === 'invite' && (
+          <>
+            <Text style={styles.label}>Who do you want to invite?</Text>
+            <Text style={styles.helperText}>Only people you're already friends with. Invitations go out when you publish. You can skip this.</Text>
+            <FriendInviteSelector selectedIds={inviteIds} onChange={setInviteIds} navigation={navigation} />
           </>
         )}
 
@@ -1228,6 +1248,12 @@ export default function CreateGatheringScreen({ navigation, route }) {
               <View style={styles.previewRow}>
                 <Text style={styles.previewRowIcon}>👥</Text>
                 <Text style={styles.previewRowText}>Up to {countLabel(capacityValue, 'person', 'people') ?? `${capacityValue} people`} including you — waitlist after that</Text>
+              </View>
+            )}
+            {selectedFriendIdList(inviteIds).length > 0 && (
+              <View style={styles.previewRow}>
+                <Text style={styles.previewRowIcon}>🤝</Text>
+                <Text style={styles.previewRowText}>Invites {countLabel(selectedFriendIdList(inviteIds).length, 'friend', 'friends')} when you publish</Text>
               </View>
             )}
             {askLocalBusinesses && (

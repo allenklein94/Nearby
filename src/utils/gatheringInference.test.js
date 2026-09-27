@@ -85,8 +85,8 @@ describe('Create flow: ask only what is missing', () => {
   it('does not ask for energy, commitment, occasion, activity or attributes at creation', () => {
     const params = createParamsFromInference(null, 'Coffee tonight with some friends');
     expect(Object.keys(params).sort()).toEqual([
-      'inferredFromText', 'inferredSummary', 'quickStartCategory', 'quickStartPartySize', 'quickStartPartyType', 'quickStartTitle', 'quickStartWhenPreset',
-    ]);
+      'inferredFromText', 'inferredSummary', 'quickStartCategory', 'quickStartInvite', 'quickStartPartySize', 'quickStartPartyType', 'quickStartTitle', 'quickStartWhenPreset',
+    ]); // quickStartInvite (item 109) is not a question about the plan: "with some friends" opens the friend picker step
   });
 });
 

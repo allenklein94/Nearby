@@ -122,3 +122,17 @@ export function inferredSummary(inf) {
 
 // The merged/structured result and the no-AI classification now live in utils/askResolver.js (resolveAsk), shared by every
 // entry point; this file keeps the per-layer word rules it reads.
+
+// Item 109: does this ask say the person is doing it WITH people they would invite? Only then does Create ask "Who do you want
+// to invite?" (right after When). From what they said or chose only: a who-it's-with party type (friends, date, family,
+// coworkers, a big group), or the words naming people ("with Sam and Alex"). The names are never matched to friends: the step
+// only opens the friend list, and nobody is preselected. Solo, meet-new-people and no who at all = no step.
+const INVITE_PARTY_TYPES = new Set(['friends', 'date', 'family', 'coworkers', 'groups']);
+const NOT_A_NAME = /^(?:I|My|Some|A|An|The|Friends?|Family|Kids?|Coworkers?|People|Someone|Anyone|Everyone|Others?|Me|Us|Them)$/;
+export function namesPeopleFromText(text) {
+  const m = String(text ?? '').match(/\bwith\s+([A-Z][a-z]+)\b/);
+  return !!m && !NOT_A_NAME.test(m[1]);
+}
+export function inviteStepApplies(partyType, text) {
+  return INVITE_PARTY_TYPES.has(partyType) || namesPeopleFromText(text);
+}

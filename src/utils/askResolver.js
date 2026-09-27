@@ -21,7 +21,7 @@ import { energiesFromText } from '../constants/energyLevel';
 import { commitmentAsk } from '../constants/commitmentLevel';
 import { spontaneityOf } from '../constants/spontaneity';
 import { tagsForPhrase } from '../constants/categorySynonyms';
-import { groupFromText, whenPresetFromText, partySizeFromText, titleFromText, inferredSummary } from './gatheringInference';
+import { groupFromText, whenPresetFromText, partySizeFromText, titleFromText, inferredSummary, inviteStepApplies } from './gatheringInference';
 import { planAsk, occasionFromAsk } from './planAsk';
 import { recognizeCombination } from '../constants/planCombinations';
 import { formatsFromText } from '../constants/activityFormat';
@@ -244,5 +244,6 @@ export function createParamsFromAsk(r, typedText, current = null) {
     ...(r.time.whenPreset ? { quickStartWhenPreset: r.time.whenPreset } : {}),
     inferredSummary: inferredSummary(inf),
     inferredFromText: !!(r.title && r.subcategory),
+    ...(inviteStepApplies(partyType, typedText) ? { quickStartInvite: true } : {}),
   };
 }

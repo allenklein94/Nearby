@@ -68,3 +68,14 @@ export async function getMyReceivedInvites() {
     targetTitle: i.invite_type === 'gathering' ? gatheringTitles[i.target_id] : communityNames[i.target_id],
   }));
 }
+
+// Invitations picked BEFORE the gathering existed (MakeAPlan, and Create's "Who do you want to invite?" step, item 109): sent
+// once, right after the gathering is created, through the same send_social_invite (accepted friends only, never across a
+// block; the server decides). Never throws: a failed send is counted, not rolled back, and shown on the confirmation screen
+// ("We invited 1 of 2"), where the regular Invite Connections panel is the retry.
+export async function sendGatheringInvites(gatheringId, friendIds) {
+  const ids = [...new Set((friendIds ?? []).filter(Boolean))];
+  if (!gatheringId || ids.length === 0) return null;
+  const results = await Promise.allSettled(ids.map((id) => sendInvite('gathering', gatheringId, id)));
+  return { sent: results.filter((r) => r.status === 'fulfilled').length, total: ids.length };
+}
