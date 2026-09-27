@@ -42,6 +42,7 @@ export const SIGNAL_CODES = {
   category_narrow: 'explicit_requirement',
   declared_features: 'explicit_requirement',
   vibe: 'explicit_preference',
+  session_intent: 'personal_interest', // item 114: history lift removed/capped when the ask states what it wants now
   quality_depth: 'explicit_preference',
   date_place: 'explicit_preference',
   date_tag: 'explicit_preference',

@@ -61,6 +61,7 @@ import {
 } from './intentResolverScoring';
 import { activitiesFromText } from '../constants/activityLayer';
 import { energiesFromText, applyEnergyToCandidates } from '../constants/energyLevel';
+import { sessionIntentFromText, applySessionIntent } from '../constants/sessionIntent';
 import { askedChildAges, applySuitedAgesToCandidates } from '../utils/suitedAges';
 import { dietaryFromAsk, applyDietaryToCandidates } from '../constants/dietaryOptions';
 import { cleanFeatures } from '../utils/gatheringPractical';
@@ -150,6 +151,8 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       priceLevel: gathering.price_level ?? null,
       attendeeCount,
       isFull,
+      // item 114: the part of the score that comes from the PERSON (a declared interest), not the ask (constants/sessionIntent.js)
+      historyScore: gatheringResolverScoreParts(gathering).filter((p) => p.code === 'base_interest_match').reduce((n, p) => n + p.delta, 0),
       score: scoreGatheringForResolver(gathering)
         + titleMentionBonus(gathering.title, meaningfulWords)
         + priceAndPartyBonus(gathering, priceLevel, partyType),
@@ -419,8 +422,12 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
       whoForSignals, whoForName, askedActivities,
     });
     const baseSubtitle = row.price != null ? `${row.title} · ${moneyLabel(row.price)}` : row.title;
+    // item 114: the part of the score that comes from the PERSON's history, not the ask (constants/sessionIntent.js)
+    const historyScore = hobbyAttributeBonus(row, affinitySignals?.declaredInterests)
+      + pastPlanBonus(row, affinitySignals?.pastPartnerIds) + favoriteBusinessBonus(row, affinitySignals?.followedPartnerIds);
     return {
       type: 'business_availability',
+      historyScore,
       id: row.id,
       partnerId: row.partner_id,
       // the posting's live window, read by the open-now resolver (named apart from a gathering's startsAt on purpose)
@@ -889,6 +896,9 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Vibe (item 83): a declared vibe the person said to avoid, or the declared opposite of one they want, sinks a little. Never hides.
   deduped = applyVibeSinks(deduped, vibesFromAsk(rawText));
   trace.step('vibe', deduped);
+  // Item 114: what the person asked for tonight outranks who they usually are (constants/sessionIntent.js).
+  deduped = applySessionIntent(deduped, sessionIntentFromText(rawText));
+  trace.step('session_intent', deduped);
   // Item 85: more of the asked qualities declared = higher; a date ask offers a declared date spot as "Date night at X?"; a
   // gathering carrying the date tag the words named keeps a lift now that the tag no longer filters.
   deduped = applyQualityDepth(deduped, attributes);
