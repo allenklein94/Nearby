@@ -910,8 +910,8 @@ export default function HomeScreen({ navigation }) {
   // Phase 1a behavior, now only reached (a) for community/business_partner
   // intents, which the resolver doesn't apply to, or (b) once Phase 1b's
   // resolver has already checked Tiers 1/3 and genuinely found nothing.
-  function proceedToCreation(result, typedText, submissionId) {
-    routeClassifiedIntentToCreation(navigation, result, typedText);
+  function proceedToCreation(result, typedText, submissionId, opts) {
+    routeClassifiedIntentToCreation(navigation, result, typedText, opts);
     // Only a real "no existing supply matched, I'm creating something new"
     // moment counts as a trackable intent outcome -- a business_partner
     // proposal has no existing-supply concept to have checked against, so
@@ -1783,7 +1783,7 @@ export default function HomeScreen({ navigation }) {
                 <Ionicons name="storefront-outline" size={18} color="#fff" style={styles.intentResultIcon} />
                 <Text style={styles.askBusinessButtonText}>Ask Nearby Businesses</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => proceedToCreation(intentResults.classifyResult, intentResults.typedText, intentResults.submissionId)}>
+              <TouchableOpacity onPress={() => proceedToCreation(intentResults.classifyResult, intentResults.typedText, intentResults.submissionId, { explicitCreate: true })}>
                 <Text style={styles.intentResultsCreateNew}>None of these? Create it yourself →</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleIntentResultsDismiss}>
@@ -1805,7 +1805,7 @@ export default function HomeScreen({ navigation }) {
                 <Ionicons name="storefront-outline" size={18} color="#fff" style={styles.intentResultIcon} />
                 <Text style={styles.askBusinessButtonText}>Ask Nearby Businesses</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => proceedToCreation(intentEmptyFallback.classifyResult, intentEmptyFallback.typedText, intentEmptyFallback.submissionId)}>
+              <TouchableOpacity onPress={() => proceedToCreation(intentEmptyFallback.classifyResult, intentEmptyFallback.typedText, intentEmptyFallback.submissionId, { explicitCreate: true })}>
                 <Text style={styles.intentResultsCreateNew}>Or create it yourself →</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleIntentResultsDismiss}>

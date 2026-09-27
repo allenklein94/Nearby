@@ -223,11 +223,14 @@ export function toClassification(r) {
 }
 
 // Create Gathering prefill from the structured result (all entry points). Title + real category = start after What.
-export function createParamsFromAsk(r, typedText) {
+// Item 109: `current` = the ask's classification as it stands NOW (a Home/Discover chip may have changed who it is for after the
+// search); a party type the person chose there wins over the one first read from the words. Nothing else is taken from it.
+export function createParamsFromAsk(r, typedText, current = null) {
+  const partyType = current && 'partyType' in current ? (current.partyType ?? null) : r.group.partyType;
   const inf = {
     tag: r.subcategory,
     categoryLabel: r.category?.label ?? null,
-    partyType: r.group.partyType,
+    partyType,
     partySize: r.group.partySize,
     whenPreset: r.time.whenPreset,
     activities: r.activities,
@@ -237,7 +240,7 @@ export function createParamsFromAsk(r, typedText) {
     quickStartTitle: title,
     quickStartCategory: r.subcategory,
     quickStartPartySize: r.group.partySize,
-    quickStartPartyType: r.group.partyType,
+    quickStartPartyType: partyType,
     ...(r.time.whenPreset ? { quickStartWhenPreset: r.time.whenPreset } : {}),
     inferredSummary: inferredSummary(inf),
     inferredFromText: !!(r.title && r.subcategory),

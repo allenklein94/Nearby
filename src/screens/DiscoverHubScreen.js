@@ -1460,13 +1460,22 @@ export default function DiscoverHubScreen({ navigation, route }) {
     );
   }
 
+  // Item 109: Create from the typed ask Discover already understood (with its chips), never a second AI read of the words.
+  function createFromAsk() {
+    if (!intentSearch?.classifyResult) return;
+    routeClassifiedIntentToCreation(navigation, intentSearch.classifyResult, intentSearch.typedText ?? searchQuery.trim(), { explicitCreate: true });
+  }
   async function handleCreateItFromSearch() {
     const typedText = searchQuery.trim();
     if (!typedText) return;
+    if (intentSearch?.classifyResult && (intentSearch.typedText ?? '').trim() === typedText) {
+      createFromAsk();
+      return;
+    }
     setCreatingFromSearch(true);
     try {
       const result = await classifyCreateRequest(typedText);
-      routeClassifiedIntentToCreation(navigation, result, typedText);
+      routeClassifiedIntentToCreation(navigation, result, typedText, { explicitCreate: true });
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleCreateItFromSearch() });
     }
@@ -2561,6 +2570,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
               ) : (
                 intentSearch.items.map(renderIntentSearchResultRow)
               )}
+              {/* Item 109: nothing here fits -> Create starts from this ask as it stands (what, when, who incl. a chip). */}
+              <TouchableOpacity onPress={createFromAsk} accessibilityLabel="Create it yourself" accessibilityRole="button">
+                <Text style={styles.emptyActionText}>None of these? Create it yourself →</Text>
+              </TouchableOpacity>
             </View>
           )}
 

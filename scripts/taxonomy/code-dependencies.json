@@ -7996,6 +7996,20 @@
    "group": null
   },
   {
+   "tag": "Bowling",
+   "file": "src/utils/gatheringInference.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pickleball",
+   "file": "src/utils/gatheringInference.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Concerts",
    "file": "src/utils/gatheringPractical.js",
    "consumer": "code",

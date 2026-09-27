@@ -72,8 +72,11 @@ export function partySizeFromText(text) {
 // The title is the person's OWN words with the timing taken out (timing lives on the When step), so nothing is invented:
 // "Coffee tonight with some friends" -> "Coffee with some friends". Editable on the What step like any prefill.
 const TIME_PHRASES = /\b(right\s+now|now|tonight|tonite|this\s+evening|tomorrow|today|this\s+weekend|this\s+afternoon|this\s+morning)\b/gi;
+// Item 109: a first-person lead-in is how the person ASKED, not the plan's name: "I want to play pickleball tonight" ->
+// "Pickleball" ("I'd like to go bowling" -> "Bowling"). Only a lead-in at the very start, then at most one plain verb.
+const LEAD_IN = /^\s*(?:(?:i\s+(?:really\s+)?(?:want|wanna|would\s+like|'d\s+like|feel\s+like|am\s+looking|'m\s+looking)|i'd\s+like|let'?s|looking)\s*(?:to\s+)?(?:(?:go|play|do|grab|get|have)\s+(?:some\s+|a\s+)?)?)/i;
 export function titleFromText(text) {
-  const t = String(text ?? '').replace(TIME_PHRASES, ' ').replace(/\s+/g, ' ').replace(/^[\s,.-]+|[\s,.!?-]+$/g, '').trim();
+  const t = String(text ?? '').replace(LEAD_IN, '').replace(TIME_PHRASES, ' ').replace(/\s+/g, ' ').replace(/^[\s,.-]+|[\s,.!?-]+$/g, '').trim();
   if (!t) return null;
   return (t[0].toUpperCase() + t.slice(1)).slice(0, 60);
 }
