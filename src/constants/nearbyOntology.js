@@ -1,5 +1,5 @@
-// The Nearby ontology (owner item 60, 2026-09-25, LOCKED). Thirteen questions every object, ask and surface is described
-// by, in the owner's order. This file owns NO data: each layer names its ONE existing source (client + database) so a new
+// The Nearby ontology (owner item 60, 2026-09-25, LOCKED; ENTITY and STATE named 2026-09-27, owner item 100). Fifteen
+// questions every object, ask and surface is described by, in the owner's order. This file owns NO data: each layer names its ONE existing source (client + database) so a new
 // feature asks "which layer is this, and where does that layer already live?" instead of inventing a second list.
 // It extends the six-dimension model (items 35/36: WHAT/WHEN/WHERE/WHO/WHY/WHAT'S NEXT) and the taxonomy front door
 // (nearbyTaxonomy.js), and does not replace either. nearbyOntology.test.js checks every named source really exists.
@@ -11,8 +11,13 @@
 //  - SOCIAL SIGNAL is friends-only and never exposes Interested (private, item 37) or a stranger's identity (item 75).
 //  - BUSINESS SIGNAL reaches a business as minimum payload, and every aggregate respects demand_min_people() (5).
 //  - AVAILABILITY never invents business hours (none exist); a business is "available" only through a real posting.
+//  - ENTITY, STATE and ACTION are one chain: every object has a kind (a LIFECYCLE key), a state (stored + CHECKed, or
+//    derived ONLY in objectState.js), and only the actions LIFECYCLE allows for that state (canDo). Naming only: these
+//    two layers add no kind, state, action or field; there is no second lifecycle table or state machine.
 
 export const NEARBY_ONTOLOGY = [
+  { key: 'entity', question: 'What kind of object is this?',
+    client: { file: 'utils/objectLifecycle.js', export: 'LIFECYCLE' }, db: 'one table per object (gatherings, business_requests, business_request_offers, social_invites, ...)', note: 'the LIFECYCLE keys are the object kinds; primaryActionFor dispatches on them' },
   { key: 'category', question: 'What broad market is this?',
     client: { file: 'constants/gatheringCategories.js', export: 'CATEGORY_GROUPS' }, db: 'category_major_keys() (19 majors; a migration)' },
   { key: 'subcategory', question: 'What specifically is it?',
@@ -37,6 +42,8 @@ export const NEARBY_ONTOLOGY = [
     client: { file: 'utils/recommendationFacts.js', export: 'friendGoingReason' }, db: 'gathering_interest (RLS: members + friends), get_friends_interested_in, get_gathering_approved_counts', note: 'friends only; Interested is private; strangers are counts' },
   { key: 'business_signal', question: 'Who can fulfill it?',
     client: { file: 'constants/activityLayer.js', export: 'activitiesForBusiness' }, db: '_business_request_fanout, get_business_opportunities, get_partner_demand_signals (floor 5)' },
+  { key: 'state', question: 'What state is it in?',
+    client: { file: 'utils/objectState.js', export: 'gatheringViewerState' }, db: 'object state columns + CHECKs (global rule 1)', note: 'stored states are CHECK-constrained; derived states (past, expired) come only from objectState.js; per-kind states are listed in LIFECYCLE' },
   { key: 'action', question: 'What can I do next?',
     client: { file: 'utils/objectLifecycle.js', export: 'canDo' }, db: 'object state columns + CHECKs (global rule 1)', note: 'CTA chosen by utils/primaryAction.js from the real state' },
 ];
