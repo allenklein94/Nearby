@@ -99,7 +99,7 @@ begin
 
   -- ---------- 2. the decision for request 1 ----------
   select * into d from routing_decisions where request_id = req;
-  assert d.path = 'fanout' and d.rules_version = 'fanout.2026-09-27.1', 'path + rules version recorded';
+  assert d.path = 'fanout' and d.rules_version = _routing_rules_version('fanout'), 'path + rules version recorded';
   assert d.consideration_radius_miles = 30 and d.request_radius_miles = 15, 'radii recorded';
   -- considered: 13 + far + wrongcat + nokids + small + both + farwrong = 19 (veryfar at ~62 mi and the inactive one never)
   assert d.considered_count = 19, format('19 considered (got %s)', d.considered_count);
