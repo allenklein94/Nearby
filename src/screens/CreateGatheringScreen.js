@@ -21,7 +21,7 @@ import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { CATEGORY_GROUPS, groupForTag } from '../constants/gatheringCategories';
-import FriendInviteSelector, { selectedFriendIdList } from '../components/FriendInviteSelector';
+import FriendInviteSelector, { selectedFriendIdList, selectionFromSuggested } from '../components/FriendInviteSelector';
 import { sendGatheringInvites } from '../services/invites';
 import { whatStepProblem, canSkipWhatStep, startAfterWhatStep, capacityForPartySize } from '../utils/gatheringStructure';
 import useMyInterests from '../hooks/useMyInterests';
@@ -128,7 +128,9 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const skipWhat = canSkipWhatStep(route.params);
   // Item 109: "Who do you want to invite?" comes right after When, only when the ask said who it is with (quickStartInvite,
   // set by createParamsFromAsk). Ordinary gatherings keep the same steps as before.
-  const askInvite = route.params?.quickStartInvite === true;
+  // Celebrate Something's own suggested friends (explicit, organizer-picked) also open the step and start checked.
+  const suggestedInviteeIds = Array.isArray(route.params?.suggestedInviteeIds) ? route.params.suggestedInviteeIds : [];
+  const askInvite = route.params?.quickStartInvite === true || suggestedInviteeIds.length > 0;
   const STEP_DEFS = [
     { key: 'what', label: 'What' },
     { key: 'when', label: 'When' },
@@ -199,7 +201,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [hostNotifications, setHostNotifications] = useState(true);
   const [requiresApproval, setRequiresApproval] = useState(false);
   // Friends picked on the invite step ({ [friendId]: true }); sent only after the gathering is published.
-  const [inviteIds, setInviteIds] = useState({});
+  const [inviteIds, setInviteIds] = useState(() => selectionFromSuggested(suggestedInviteeIds));
 
   // Item 82: an unfinished gathering survives a failed publish, leaving the screen and an app restart.
   const gatheringSnapshot = {
@@ -480,14 +482,6 @@ export default function CreateGatheringScreen({ navigation, route }) {
         placeName,
         businessesAsked: askLocalBusinesses,
         preInviteResult,
-        // Item 71 (CLAUDE.md): "Occasions can automatically suggest
-        // people" -- carries CelebrateSomethingScreen's own real,
-        // organizer-picked invite suggestions through to the confirmation
-        // screen's real invite panel. Still just a suggestion there too --
-        // nothing is sent until the organizer taps that screen's own
-        // per-friend "Invite" button.
-        suggestedInviteeIds: route.params?.suggestedInviteeIds ?? null,
-        suggestedInviteeLabel: route.params?.suggestedInviteeLabel ?? null,
       });
     } catch (e) {
       presentRecoverableError(Alert, { what: 'create your gathering', error: e, draftKept: true, onRetry: () => submit() });
@@ -661,7 +655,12 @@ export default function CreateGatheringScreen({ navigation, route }) {
           <>
             <Text style={styles.label}>Who do you want to invite?</Text>
             <Text style={styles.helperText}>Only people you're already friends with. Invitations go out when you publish. You can skip this.</Text>
-            <FriendInviteSelector selectedIds={inviteIds} onChange={setInviteIds} navigation={navigation} />
+            {suggestedInviteeIds.length > 0 && (
+              <Text style={styles.helperText}>
+                ✨ We've checked the people you picked{route.params?.suggestedInviteeLabel ? ` (${route.params.suggestedInviteeLabel})` : ''}. Uncheck anyone you'd rather not invite.
+              </Text>
+            )}
+            <FriendInviteSelector selectedIds={inviteIds} onChange={setInviteIds} navigation={navigation} suggestedIds={suggestedInviteeIds} />
           </>
         )}
 

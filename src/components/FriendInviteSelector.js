@@ -2,7 +2,7 @@
 // invite?" step, item 109). Accepted friends only (getFriendsWithSharedContext; never strangers, never inferred picks). It only
 // SELECTS: the caller sends with sendGatheringInvites (services/invites.js) after the gathering is created. The post-publish
 // panel on GatheringConfirmation sends one invite per tap and stays separate.
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { NLoader } from '../motion';
@@ -13,10 +13,16 @@ import { getFriendsWithSharedContext } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
+import { selectedFriendIdList, keepEligible, selectionFromSuggested } from '../utils/inviteSelection';
 
-export default function FriendInviteSelector({ selectedIds, onChange, navigation }) {
+// `suggestedIds`: friends an earlier step explicitly suggested (Celebrate Something's own picks); shown first with 🤝. Whether
+// they start checked is the caller's initial selectedIds; anyone can be unchecked. Typed names never become suggestions.
+export default function FriendInviteSelector({ selectedIds, onChange, navigation, suggestedIds = null }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
+  const selectedRef = useRef(selectedIds);
+  selectedRef.current = selectedIds;
+  const suggested = new Set(suggestedIds ?? []);
   const [friends, setFriends] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
   const [loading, setLoading] = useState(true);
@@ -30,6 +36,9 @@ export default function FriendInviteSelector({ selectedIds, onChange, navigation
         const list = myId ? await getFriendsWithSharedContext(myId) : [];
         if (!alive) return;
         setFriends(list);
+        // a picked (or suggested) person who is no longer an accepted friend is not kept selected
+        const kept = keepEligible(selectedRef.current, list);
+        if (Object.keys(kept).length !== selectedFriendIdList(selectedRef.current).length) onChange(kept);
         const urls = await Promise.all(list.map(async (f) => [f.id, f.photo_url ? await getSignedPhotoUrl(f.photo_url) : null]));
         if (alive) setPhotoUrls(Object.fromEntries(urls));
       } catch (e) {
@@ -62,7 +71,7 @@ export default function FriendInviteSelector({ selectedIds, onChange, navigation
       </View>
     );
   }
-  return friends.map((f) => {
+  return [...friends].sort((a, b) => (suggested.has(b.id) ? 1 : 0) - (suggested.has(a.id) ? 1 : 0)).map((f) => {
     const selected = !!selectedIds[f.id];
     return (
       <TouchableOpacity
@@ -76,7 +85,7 @@ export default function FriendInviteSelector({ selectedIds, onChange, navigation
       >
         {photoUrls[f.id] ? <Image source={{ uri: photoUrls[f.id] }} style={styles.avatar} /> : <View style={styles.avatar} />}
         <View style={{ flex: 1 }}>
-          <Text style={styles.friendName}>{f.display_name}</Text>
+          <Text style={styles.friendName}>{suggested.has(f.id) ? '🤝 ' : ''}{f.display_name}</Text>
           {f.sharedContext && <Text style={styles.friendContext}>{f.sharedContext}</Text>}
         </View>
         <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
@@ -87,8 +96,7 @@ export default function FriendInviteSelector({ selectedIds, onChange, navigation
   });
 }
 
-// Selected ids as a list (selectedIds is { [friendId]: boolean }).
-export const selectedFriendIdList = (selectedIds) => Object.keys(selectedIds ?? {}).filter((id) => selectedIds[id]);
+export { selectedFriendIdList, keepEligible, selectionFromSuggested };
 
 const getStyles = (colors) => StyleSheet.create({
   emptyActionText: { color: colors.primary, fontWeight: '700', fontSize: 13, marginTop: -spacing.sm },

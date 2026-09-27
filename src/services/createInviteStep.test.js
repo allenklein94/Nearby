@@ -56,7 +56,7 @@ describe('1-2. prefill, then the invite step only with invite context', () => {
   it('the step order is What, When, Invite, Where, Details, Settings, Publish, and Invite exists only with the flag', () => {
     const defs = CREATE.slice(CREATE.indexOf('const STEP_DEFS = ['), CREATE.indexOf('].filter('));
     expect(defs.replace(/\s+/g, ' ')).toMatch(/'what'.*'when'.*\.\.\.\(askInvite \? \[\{ key: 'invite', label: 'Invite' \}\] : \[\]\).*'where'.*'details'.*'settings'.*'publish'/);
-    expect(CREATE).toMatch(/const askInvite = route\.params\?\.quickStartInvite === true;/);
+    expect(CREATE).toMatch(/const askInvite = route\.params\?\.quickStartInvite === true \|\| suggestedInviteeIds\.length > 0;/);
     expect(CREATE).toMatch(/Who do you want to invite\?/);
   });
 });
@@ -123,5 +123,52 @@ describe('6-8. eligibility, no strangers, no second system', () => {
   it('9. without invite context Create keeps its old steps', () => {
     expect(params('Pickleball tonight')).not.toHaveProperty('quickStartInvite');
     expect(CREATE).not.toMatch(/quickStartInvite\s*\?\?|quickStartInvite\s*\|\|/); // no default that turns it on
+  });
+});
+
+// Follow-up (owner, same day): Celebrate Something's explicitly suggested friends start checked on the same step.
+import { keepEligible, selectionFromSuggested, selectedFriendIdList } from '../utils/inviteSelection';
+
+describe('Celebrate suggestions are preselected on the shared step', () => {
+  const FRIENDS = [{ id: 'sam' }, { id: 'alex' }, { id: 'jo' }];
+  it('suggested accepted friends start checked; the user can uncheck one and add another', () => {
+    let sel = selectionFromSuggested(['sam', 'alex']);
+    sel = keepEligible(sel, FRIENDS);
+    expect(selectedFriendIdList(sel).sort()).toEqual(['alex', 'sam']);
+    sel = { ...sel, alex: false }; // uncheck (what the picker's toggle sends)
+    sel = { ...sel, jo: true }; // add another accepted friend
+    expect(selectedFriendIdList(sel).sort()).toEqual(['jo', 'sam']);
+  });
+  it('a suggested friend who is no longer an accepted friend is not kept selected', () => {
+    expect(keepEligible(selectionFromSuggested(['sam', 'gone']), FRIENDS)).toEqual({ sam: true });
+    expect(selectionFromSuggested([null, 3, 'sam'])).toEqual({ sam: true });
+    expect(selectionFromSuggested(undefined)).toEqual({});
+    const picker = read('../components/FriendInviteSelector.js');
+    expect(picker).toMatch(/const kept = keepEligible\(selectedRef\.current, list\);/); // applied as soon as the friend list loads
+  });
+  it('Create starts from the suggestions only, opens the step for them, and says they can be unchecked', () => {
+    expect(CREATE).toMatch(/useState\(\(\) => selectionFromSuggested\(suggestedInviteeIds\)\)/);
+    expect(CREATE).toMatch(/const askInvite = route\.params\?\.quickStartInvite === true \|\| suggestedInviteeIds\.length > 0;/);
+    expect(CREATE).toMatch(/Uncheck anyone you'd rather not invite\./);
+    expect(CREATE).toMatch(/suggestedIds=\{suggestedInviteeIds\}/);
+    const celebrate = read('../screens/CelebrateSomethingScreen.js');
+    const toCreate = celebrate.slice(celebrate.lastIndexOf('params.suggestedInviteeIds', celebrate.indexOf("navigation.navigate('CreateGathering', params)")), celebrate.indexOf("navigation.navigate('CreateGathering', params)"));
+    expect(toCreate).toMatch(/params\.suggestedInviteeIds = Array\.from\(selectedInviteeIds\)/);
+  });
+  it('typed names and ordinary asks never preselect anyone', () => {
+    for (const t of ['Pickleball tonight', 'Pickleball tonight with Sam and Alex', 'meet new people tonight', 'solo yoga tonight', 'dinner with my wife tonight', 'lunch with coworkers']) {
+      expect(params(t)).not.toHaveProperty('suggestedInviteeIds');
+    }
+    for (const f of ['../utils/askResolver.js', '../utils/gatheringInference.js', './createAssistant.js']) expect(read(f)).not.toMatch(/suggestedInvitee/);
+  });
+  it('the suggestion is handled once: Create sends it at publish, the confirmation no longer re-offers it', () => {
+    const submit = CREATE.slice(CREATE.indexOf('async function submit()'), CREATE.indexOf('const selectedStyle'));
+    expect(submit).not.toMatch(/suggestedInvitee/);
+    expect(read('../screens/GatheringConfirmationScreen.js')).not.toMatch(/suggestedInviteeIds|suggestedIdSet/);
+  });
+  it('no selection reaches a business', () => {
+    const businessFiles = SRC.filter((f) => /business|Business/.test(path.basename(f)) && !/BusinessRequestDetailScreen|AskBusinessScreen/.test(f));
+    for (const f of businessFiles) expect(fs.readFileSync(f, 'utf8')).not.toMatch(/inviteIds|selectedFriendIdList|sendGatheringInvites/);
+    for (const f of walk(path.join(__dirname, '../../supabase'))) expect(fs.readFileSync(f, 'utf8')).not.toMatch(/suggestedInviteeIds|inviteIds/);
   });
 });
