@@ -12,31 +12,36 @@ const order = (cards, extra = {}) => selectHomeAttention({ cards, now, ...extra 
 describe('tier table', () => {
   it('is the owner ranking, strongest first', () => {
     expect(Object.entries(SIGNAL_TIERS).sort((a, b) => a[1] - b[1]).map(([k]) => k)).toEqual(
-      ['intent', 'planFriend', 'time', 'interest', 'business', 'popularity', 'weather', 'discovery'],
+      ['intent', 'constraint', 'planFriend', 'availability', 'time', 'interest', 'business', 'weather', 'popularity', 'discovery'],
     );
   });
   it('signal kinds and reason text map to the right tier', () => {
-    expect(signalTier(sig('going'))).toBe(2);
-    expect(signalTier(sig('friend'))).toBe(2);
-    expect(signalTier(sig('soon'))).toBe(3);
-    expect(signalTier(sig('interest'))).toBe(4);
-    expect(signalTier(sig('trending'))).toBe(6);
-    expect(reasonTier('Because you like Coffee')).toBe(4);
-    expect(reasonTier('Sam is going')).toBe(2);
-    expect(reasonTier('Sam is hosting this')).toBe(2);
-    expect(reasonTier('Happening today')).toBe(3);
-    expect(reasonTier('5 people attending')).toBe(6);
-    expect(reasonTier('Great weather for this')).toBe(7);
-    expect(reasonTier('Close by')).toBe(8);
-    expect(reasonTier('something unrecognised')).toBe(8); // unknown is never stronger than a known reason
-    expect(reasonTier(null)).toBe(8);
+    expect(signalTier(sig('going'))).toBe(3);
+    expect(signalTier(sig('friend'))).toBe(3);
+    expect(signalTier(sig('availability'))).toBe(4);
+    expect(signalTier(sig('soon'))).toBe(5);
+    expect(signalTier(sig('interest'))).toBe(6);
+    expect(signalTier(sig('trending'))).toBe(9);
+    expect(reasonTier('Because you like Coffee')).toBe(6);
+    expect(reasonTier('Sam is going')).toBe(3);
+    expect(reasonTier('Sam is hosting this')).toBe(3);
+    expect(reasonTier('🟢 A business has this ready')).toBe(4);
+    expect(reasonTier('🟡 A business may be able to help')).toBe(7);
+    expect(reasonTier('Happening today')).toBe(5);
+    expect(reasonTier('5 people attending')).toBe(9);
+    expect(reasonTier('Great weather for this')).toBe(8);
+    expect(reasonTier('Close by')).toBe(10);
+    expect(reasonTier('something unrecognised')).toBe(10); // unknown is never stronger than a known reason
+    expect(reasonTier(null)).toBe(10);
   });
   it('the strongest signal wins, and flags count', () => {
-    expect(bestTier([sig('trending'), sig('interest')])).toBe(4);
+    expect(bestTier([sig('trending'), sig('interest')])).toBe(6);
     expect(bestTier([sig('trending')], { intent: true })).toBe(1);
-    expect(bestTier([], { urgent: true })).toBe(3);
-    expect(bestTier([], { business: true })).toBe(5);
-    expect(bestTier([])).toBe(8);
+    expect(bestTier([sig('going')], { constraint: true })).toBe(2);
+    expect(bestTier([sig('interest')], { available: true })).toBe(4);
+    expect(bestTier([], { urgent: true })).toBe(5);
+    expect(bestTier([], { business: true })).toBe(7);
+    expect(bestTier([])).toBe(10);
   });
 });
 
@@ -46,7 +51,7 @@ describe('Home ranking follows the priority', () => {
     expect(order(cards, { intentTags: new Set(['wine']) })[0]).toBe('asked');
     expect(order(cards)[0]).toBe('asked'); // even with no ask, interest still beats popularity
   });
-  it('intent > friend > time > interest > business > popularity > weather > discovery', () => {
+  it('intent > friend > time > interest > business > weather > popularity > discovery (item 115)', () => {
     const cards = [
       card('discovery', [sig('recommended', 'Close by')]),
       card('weather', [sig('recommended', 'Great weather for this')]),
@@ -58,7 +63,7 @@ describe('Home ranking follows the priority', () => {
     ];
     const recommended = [{ type: 'perk', id: 'p', title: 'Perk', reasons: [], data: {} }];
     const ids = order(cards, { recommended, intentTags: new Set(['wine']), max: 10 });
-    expect(ids).toEqual(['intent', 'friend', 'timed', 'interest', 'perk-p', 'popular', 'weather', 'discovery']);
+    expect(ids).toEqual(['intent', 'friend', 'timed', 'interest', 'perk-p', 'weather', 'popular', 'discovery']);
   });
   it('many weak signals cannot add up to beat one strong one', () => {
     const many = card('many', [sig('trending'), sig('recommended', 'Close by'), sig('recommended', 'Great weather for this'), sig('recommended', '5 people attending')]);
