@@ -24,6 +24,9 @@ const POS_OUTDOOR = /\b(?:outside|outdoors?|open[- ]air)\b/i;
 // not sink an indoor-category place (a café with a patio is exactly the answer). Read as the attribute, removed before the environment test.
 const OUTSIDE_SEATING = /\b(?:sit(?:ting)?|eat(?:ing)?|dine|dining|drink(?:ing)?)\s+(?:outside|outdoors)\b|\b(?:outside|outdoor)\s+(?:seating|tables?)\b/gi;
 const POS_INDOOR = /\bindoors?\b/i;
+// Item 105: how sure the person sounds about an environment. Tentative = a preference, firm (or plain) = a must.
+const TENTATIVE = /\b(?:maybe|perhaps|possibly|probably|might|could\s+be|or\s+something|not\s+sure|i\s+guess|kind\s+of|sort\s+of|open\s+to)\b/i;
+const FIRM = /\b(?:definitely|absolutely|must|has\s+to|have\s+to|needs?\s+to|only|really\s+want|for\s+sure)\b/i;
 const PARTNER = /\b(girlfriend|boyfriend|wife|husband|fianc[ée]e?|partner|spouse|my\s+date|date\s+night)\b/i;
 
 export const EXCLUSION_LABELS = { alcohol: 'alcohol', outdoor: 'outdoor options', indoor: 'indoor options', crowded: 'crowded places' };
@@ -45,11 +48,13 @@ export function parseAskFacets(text) {
   else if (POS_INDOOR.test(rest) && !out.exclude.includes('indoor')) out.environment = 'indoor';
   // Item 103: a plainly stated environment is a MUST ("somewhere outside tonight": known-indoor results are removed, unknown kept);
   // one said only after a hedge ("preferably outside") stays a preference (the lift below, nothing removed).
+  // Item 105 (2026-09-27): tentative wording in the SAME sentence ("maybe something outdoors?", "perhaps outside") is also only a
+  // preference; firm wording ("definitely outside", "has to be outdoors") keeps it a must even beside a "maybe".
   if (out.environment) {
     const h = splitHedge(text);
     const plainRe = out.environment === 'outdoor' ? POS_OUTDOOR : POS_INDOOR;
-    const plain = h ? `${h.before} ${h.rest}`.replace(OUTSIDE_SEATING, ' ') : null;
-    out.environmentRequired = !h || plainRe.test(plain);
+    const plain = (h ? `${h.before}. ${h.rest}` : text).replace(OUTSIDE_SEATING, ' ');
+    out.environmentRequired = plain.split(/[.;!?\n]+/).some((sentence) => plainRe.test(sentence) && (FIRM.test(sentence) || !TENTATIVE.test(sentence)));
   }
   return out;
 }

@@ -49,3 +49,35 @@ describe('must-have vs nice-to-have (item 103)', () => {
     expect(src).toMatch(/c\.category === preferredTag \? \{ \.\.\.c, score: \(c\.score \?\? 0\) \+ PREFERRED_CATEGORY_POINTS/);
   });
 });
+
+// Item 105 (2026-09-27): how sure the words sound decides whether an environment is a must or a preference.
+describe('environment certainty', () => {
+  const { parseAskFacets, applyAskFacets } = require('../constants/askFacets');
+  test.each([
+    ['Maybe something outdoors?', false],
+    ['perhaps something outside tonight', false],
+    ['something outdoors or something', false],
+    ['I definitely want to be outside.', true],
+    ['somewhere outside tonight', true],
+    ['maybe dinner, but it has to be outside', true],
+    ['Maybe coffee. Somewhere outside.', true],
+    ['preferably outside', false],
+  ])('%s -> required %s', (text, required) => {
+    const f = parseAskFacets(text);
+    expect(f.environment).toBe('outdoor');
+    expect(f.environmentRequired).toBe(required);
+  });
+
+  test('a tentative outdoors keeps indoor results (lifted, not removed); a firm one removes them', () => {
+    const list = [{ type: 'gathering', id: 'in', category: 'Movies', score: 1 }, { type: 'gathering', id: 'out', category: 'Hiking', score: 1 }];
+    const soft = applyAskFacets(list, parseAskFacets('Maybe something outdoors?')).items;
+    expect(soft.map((c) => c.id).sort()).toEqual(['in', 'out']);
+    expect(soft.find((c) => c.id === 'out').score).toBeGreaterThan(soft.find((c) => c.id === 'in').score);
+    const firm = applyAskFacets(list, parseAskFacets('I definitely want to be outside.')).items;
+    expect(firm.map((c) => c.id)).toEqual(['out']);
+  });
+
+  test('"maybe" still does not soften a category (unchanged)', () => {
+    expect(splitHedge("I don't know, maybe coffee")).toBeNull();
+  });
+});

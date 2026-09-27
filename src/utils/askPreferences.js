@@ -2,7 +2,7 @@
 // hedge word ("preferably", "ideally", "if possible", "bonus if", "would be nice") is a PREFERENCE, never a filter, so a hedged
 // category ranks its matches up instead of removing everything else. Everything the person states plainly stays as it was
 // (a category filters, a time window filters). Deterministic, the person's own words only; "maybe" is deliberately not a hedge
-// ("I don't know, maybe coffee" is an ordinary ask).
+// for the CATEGORY ("I don't know, maybe coffee" is an ordinary ask). For the environment it is (item 105, constants/askFacets.js).
 import { tagsForPhrase } from '../constants/categorySynonyms';
 
 const HEDGE = /\b(?:preferably|preferrably|ideally|if\s+possible|optionally|bonus\s+(?:if|for)|even\s+better\s+if|(?:it\s+)?would\s+be\s+nice|nice\s+to\s+have|nice\s+if|if\s+there(?:'s|\s+is)\s+any)\b/i;
