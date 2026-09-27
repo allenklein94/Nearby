@@ -3,6 +3,7 @@
 // (rule-based, never AI) step that recognises such an ask and says which category GROUPS it can reasonably mean. The resolver then
 // (a) drops results whose own category belongs to a non-social group and (b) gives a small lift to the ones that fit. Only
 // candidates with a KNOWN category are ever dropped; uncategorized ones are kept, and a real category in the ask turns all of this off.
+import { parseAskFacets } from '../constants/askFacets';
 import { CATEGORY_GROUPS, groupForTag } from '../constants/gatheringCategories';
 import { energiesFromText } from '../constants/energyLevel';
 import { detectIntentRoute, ROUTE_SURFACES } from '../constants/intentRoutes';
@@ -24,7 +25,10 @@ export function openEndedAskGroups({ category = null, rawText = '', occasion = n
   // A recognised intent (constants/intentRoutes.js) that names category groups limits the ask to exactly those groups.
   const routed = detectIntentRoute(rawText);
   // (A tagged intent like coffee or live music leaves the choice of category to the extractor, so it never limits groups here.)
-  if (routed?.route.surface === ROUTE_SURFACES.CATEGORY_GROUPS && !routed.route.category) return [...routed.route.groups];
+  // Item 105: "be outdoors" limits to Outdoors only when the outdoor ask is a MUST (the one certainty decision, askFacets); a
+  // tentative or hedged one ("maybe something outdoors?") falls through, so indoor options stay and the outdoor lift ranks them.
+  const tentativeOutdoors = routed?.key === 'be_outdoors' && !parseAskFacets(rawText).environmentRequired;
+  if (routed?.route.surface === ROUTE_SURFACES.CATEGORY_GROUPS && !routed.route.category && !tentativeOutdoors) return [...routed.route.groups];
   // Item 90: "I don't know what I want" / "what's good tonight" names no category either.
   if (!force && (typeof rawText !== 'string' || !(OPEN_ENDED.test(rawText) || undecidedAskFromText(rawText) || energiesFromText(rawText).length > 0))) return null; // an energy alone ("something low-key") names no category either
   const kidFriendly = Array.isArray(attributes) && attributes.includes('kid_friendly');

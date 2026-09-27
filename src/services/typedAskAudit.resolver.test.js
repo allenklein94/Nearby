@@ -129,4 +129,41 @@ describe('typed-ask audit on the real resolver', () => {
     const b = await resolveIntent(args);
     expect(b.items.map((i) => [i.id, i.score])).toEqual(a.items.map((i) => [i.id, i.score]));
   });
+
+  // Item 105 follow-up (owner, 2026-09-27): the record must show whether the outdoor ask was tentative or firm, and the recorded
+  // rows must be what that reading produced.
+  describe('outdoor certainty is recorded and matches what is shown', () => {
+    const MIX = [gathering('movie', { interest_tag: 'Movies' }), gathering('hike', { interest_tag: 'Hiking' }), gathering('open', { interest_tag: null })];
+    const run = async (text) => {
+      getNearbyGatherings.mockResolvedValue(MIX);
+      classifyCreateRequest.mockResolvedValue({ intent: 'gathering', category: null, dateWindow: null, attributes: [] });
+      const r = await runIntentSearch(text);
+      supabase.rpc.mockClear();
+      recordTypedAsk('discover', r);
+      const snap = supabase.rpc.mock.calls[0][1].snapshot;
+      return snap;
+    };
+    const idsOf = (snap) => snap.results.map((x) => x.result_id);
+
+    it('tentative: recorded as not required; indoor stays shown, outdoor ranked above it by the recorded ask_facets lift', async () => {
+      const snap = await run('Maybe something outdoors?');
+      expect(snap.interpretation).toMatchObject({ environment: 'outdoor', environment_required: false });
+      expect(snap.exclusions.ask_facets).toBeUndefined();
+      expect(idsOf(snap)).toContain('movie');
+      expect(idsOf(snap).indexOf('hike')).toBeLessThan(idsOf(snap).indexOf('movie'));
+      const code = (id) => snap.results.find((x) => x.result_id === id).signals.filter((sg) => sg.code === 'ask_facets');
+      expect(code('hike')).toEqual([{ code: 'ask_facets', delta: 2 }]);
+      expect(code('movie')).toEqual([{ code: 'ask_facets', delta: -1 }]);
+    });
+
+    it.each(['It has to be outside', 'Somewhere outside tonight', 'maybe dinner, but it has to be outside'])(
+      'firm or plain (%s): recorded as required; the known-indoor result is gone and its removal is counted; unknown kept', async (text) => {
+        const snap = await run(text);
+        expect(snap.interpretation).toMatchObject({ environment: 'outdoor', environment_required: true });
+        expect(idsOf(snap)).not.toContain('movie');
+        expect(idsOf(snap)).toContain('open');
+        // removed by the outdoor route (open_ended, it runs first) or the environment must (ask_facets); the record names which
+        expect((snap.exclusions.open_ended ?? 0) + (snap.exclusions.ask_facets ?? 0)).toBeGreaterThanOrEqual(1);
+      });
+  });
 });

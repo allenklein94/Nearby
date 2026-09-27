@@ -81,3 +81,13 @@ describe('environment certainty', () => {
     expect(splitHedge("I don't know, maybe coffee")).toBeNull();
   });
 });
+
+describe('the "be outdoors" route follows the same certainty (item 105)', () => {
+  const { openEndedAskGroups } = require('./openEndedAsk');
+  test('a must limits to Outdoors; a tentative or hedged one does not', () => {
+    expect(openEndedAskGroups({ rawText: 'It has to be outside' })).toEqual(['outdoors_nature']);
+    expect(openEndedAskGroups({ rawText: 'somewhere outside tonight' })).toEqual(['outdoors_nature']);
+    expect(openEndedAskGroups({ rawText: 'Maybe something outdoors?' })).not.toEqual(['outdoors_nature']);
+    expect(openEndedAskGroups({ rawText: 'preferably outside' })).not.toEqual(['outdoors_nature']);
+  });
+});
