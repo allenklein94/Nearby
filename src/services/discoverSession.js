@@ -14,7 +14,10 @@
 // latest-wins between devices. Keyed by the signed-in user, versioned; removed from the device on sign-out (the account copy
 // stays; account deletion removes it). Retention: the words may not outlive raw_ask_retention_days() (180) from when the ask
 // was made, here and on the server.
+// Item 113: an ask that named a time ("dinner tonight") also ends once that time is over (utils/intentExpiry.js); an ask with
+// no time word keeps only the retention limit.
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isIntentExpired } from '../utils/intentExpiry';
 
 export const SESSION_VERSION = 2;
 export const RAW_ASK_RETENTION_DAYS = 180; // = public.raw_ask_retention_days() (a test keeps them equal)
@@ -44,7 +47,7 @@ export function sessionFromState(state, userId) {
 }
 
 export function createDiscoverSessionStore(storage = AsyncStorage, now = () => Date.now()) {
-  const expired = (s) => now() >= s.askedAt + RAW_ASK_RETENTION_DAYS * DAY_MS;
+  const expired = (s) => now() >= s.askedAt + RAW_ASK_RETENTION_DAYS * DAY_MS || isIntentExpired(s.classifyResult, s.askedAt, now());
   return {
     async save(userId, state) {
       const s = sessionFromState(state, userId);

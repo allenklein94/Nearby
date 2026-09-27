@@ -7,6 +7,7 @@
 // no AI call). The server enforces the 180-day raw-text limit and keeps it private to the account (caller-only RPCs).
 import { supabase } from './supabase';
 import { discoverSession } from './discoverSession';
+import { isIntentExpired } from '../utils/intentExpiry';
 
 const iso = (ms) => new Date(ms).toISOString();
 
@@ -63,10 +64,16 @@ export async function pushClear(sessionId, at = Date.now()) {
 
 // Reads the account, reconciles with the device cache, pushes when this device is newer, and writes the cache to match.
 // Returns the session this device should show (null = none). Throws when the account cannot be reached (the cache stands).
-export async function syncDiscoverSession(userId) {
+export async function syncDiscoverSession(userId, now = () => Date.now()) {
   const local = await discoverSession.load(userId);
   const account = fromServer(await rpc('get_discover_session'), userId);
   let { session, push } = reconcile(local, account);
+  // Item 113: an ask whose named time is over ends everywhere (a clear leaves the tombstone every device follows).
+  if (session && isIntentExpired(session.classifyResult, session.askedAt, now())) {
+    if (!(account?.cleared && account.sessionId === session.sessionId)) await pushClear(session.sessionId, now());
+    session = null;
+    push = false;
+  }
   if (push) {
     const after = await pushSession(userId, session);
     session = after && !after.cleared ? after : (after?.cleared ? null : session);

@@ -102,7 +102,7 @@ describe('Discover typed-ask session persistence', () => {
         // fresh module instances = a cold start; only the device storage survives
         const fresh = require('./discoverSession');
         const freshRefine = require('./askRefine');
-        fresh.createDiscoverSessionStore(storage, () => T0 + 3 * 86400_000).load(USER)
+        fresh.createDiscoverSessionStore(storage, () => T0 + 2 * 3600_000).load(USER) // same evening (a 'tonight' ask ends at 4 AM, item 113)
           .then((s) => freshRefine.restoreDiscoverAsk(s)).then((r) => { restored = r; done(); });
       });
     });
@@ -177,7 +177,9 @@ describe('Discover typed-ask session persistence', () => {
     const sql = read('../../supabase/migrations/20270237_raw_ask_text_retention.sql').match(/raw_ask_retention_days\(\)\s*returns integer language sql immutable as \$\$ select (\d+) \$\$/);
     expect(Number(sql[1])).toBe(RAW_ASK_RETENTION_DAYS);
     const storage = deviceStorage();
-    const live = await searchedAndNarrowed();
+    // an ask with no time word: only the retention limit ends it (a timed ask ends sooner, item 113)
+    const narrowed = await searchedAndNarrowed();
+    const live = { ...narrowed, classifyResult: { ...narrowed.classifyResult, dateWindow: null } };
     await createDiscoverSessionStore(storage, () => T0).save(USER, live);
     const day = 86400_000;
     expect(await createDiscoverSessionStore(storage, () => T0 + 179 * day).load(USER)).not.toBeNull();
