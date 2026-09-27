@@ -59,6 +59,7 @@ import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
 import { formatDateTime } from '../utils/timeLabels';
 import { attendeeTotal, getGatheringFullness, gatheringBusinessPartySize } from '../utils/gatheringFullness';
+import { gatheringRequestText } from '../utils/gatheringBusinessAsk';
 import { countLabel } from '../utils/plural';
 import { spacing, radius, typography } from '../theme';
 import { gatheringJoinAction } from '../utils/primaryAction';
@@ -381,7 +382,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
       // risking a real name.
       await submitBusinessRequestForGathering({
         gatheringId,
-        text: gathering.interest_tag ? `A ${gathering.interest_tag} gathering looking for a place to go` : 'A gathering looking for a place to go',
+        text: gatheringRequestText(gathering.interest_tag),
         category: gathering.interest_tag ?? null,
       });
       posthog.capture('gathering_business_help_fired', { gatheringId });

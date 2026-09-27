@@ -7996,6 +7996,13 @@
    "group": null
   },
   {
+   "tag": "Foodie",
+   "file": "src/utils/gatheringBusinessAsk.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Bowling",
    "file": "src/utils/gatheringInference.js",
    "consumer": "code",

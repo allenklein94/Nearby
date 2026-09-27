@@ -1,7 +1,7 @@
 import { askMissingField } from '../utils/askMissing';
 import { DATE_VIBES } from '../constants/businessVibes';
 import { cleanDateVibes } from '../utils/dateProposalVibes';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SEARCH_RADIUS_OPTIONS } from '../constants/searchRadius';
 import useFormDraft from '../hooks/useFormDraft';
 import DraftBanner from '../components/DraftBanner';
@@ -28,6 +28,9 @@ import { requireUserLocation } from '../services/userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
 
 import { countLabel } from '../utils/plural';
+import { getGatheringById } from '../services/gatherings';
+import { gatheringBusinessPartySize } from '../utils/gatheringFullness';
+import { gatheringRequestText, gatheringAskFacts, gatheringAskInputs } from '../utils/gatheringBusinessAsk';
 // Same canonical 26-tag list business_requests.category's own (now-widened)
 // CHECK constraint validates against -- was a separate, independently-
 // drifting 24-tag copy (missing 'Faith & Spirituality' and 'Dating') before
@@ -150,6 +153,21 @@ function bookingAskHeading(mode, targetPartner) {
   return `Ask ${targetPartner.name}`;
 }
 
+// Item 111: the facts a gathering's request carries, shown read-only (change them on the gathering itself).
+function GatheringAskFacts({ styles, gathering, loadFailed }) {
+  if (loadFailed) return <Text style={styles.subtitle}>We couldn't load your gathering's details. Go back and try again.</Text>;
+  if (!gathering) return <ActivityIndicator style={{ marginVertical: spacing.md }} />;
+  const facts = gatheringAskFacts(gathering);
+  return (
+    <View style={styles.recapCard} accessibilityLabel={`From your gathering: ${facts.map((f) => f.label).join(', ')}`}>
+      <Text style={styles.factsKicker}>FROM YOUR GATHERING</Text>
+      {facts.map((f) => (
+        <Text key={f.key} style={styles.factLine}>{f.icon} {f.label}</Text>
+      ))}
+    </View>
+  );
+}
+
 export default function AskBusinessScreen({ navigation, route }) {
   const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -262,7 +280,27 @@ export default function AskBusinessScreen({ navigation, route }) {
   // fully editable/deselectable, the user still reviews before submitting.
   const [occasionInput, setOccasionInput] = useState(route.params?.prefillOccasion ?? null);
   const isSoloMode = !gatheringId && !matchId && !communityId;
-  const showItems = isSoloMode && REQUESTED_ITEM_CATEGORIES.includes(category);
+  // Item 111: a gathering's ask carries the gathering's own facts and asks only "Anything specific?" (utils/gatheringBusinessAsk.js).
+  const [gathering, setGathering] = useState(null);
+  const [gatheringLoadFailed, setGatheringLoadFailed] = useState(false);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  useEffect(() => {
+    if (!gatheringId) return undefined;
+    let cancelled = false;
+    getGatheringById(gatheringId)
+      .then((g) => {
+        if (cancelled) return;
+        if (!g) { setGatheringLoadFailed(true); return; }
+        setGathering(g);
+        if (g.interest_tag) setCategory((c) => c ?? g.interest_tag);
+      })
+      .catch(() => { if (!cancelled) setGatheringLoadFailed(true); });
+    return () => { cancelled = true; };
+  }, [gatheringId]);
+  const gatheringInputs = gatheringId ? gatheringAskInputs(category, { targeted: !!targetPartner }) : [];
+  // What the request says in words. A gathering's is fixed (never its title); every other mode is what the person typed.
+  const askText = gatheringId ? gatheringRequestText(category) : text;
+  const showItems = (isSoloMode && REQUESTED_ITEM_CATEGORIES.includes(category)) || gatheringInputs.includes('items');
   // Item 95 (CLAUDE.md, "Ask 'How important is the occasion?'"): solo mode
   // only, same gating as attributes/cuisine above -- a real, explicit,
   // never-inferred 'simple'/'special'/'go_all_out' answer that adjusts
@@ -344,7 +382,7 @@ export default function AskBusinessScreen({ navigation, route }) {
   // established), so a forced "must type a number" check would contradict
   // the whole point of this item -- keeping the initial interaction easy.
   function findMissingField() {
-    return askMissingField({ text, category, gatheringId, matchId, partySize, dateWindow, matchedAvailability });
+    return askMissingField({ text: askText, category, gatheringId, matchId, partySize, dateWindow, matchedAvailability });
   }
 
   // Read-only, contacts no business -- same "browsing is free, asking is
@@ -406,7 +444,7 @@ export default function AskBusinessScreen({ navigation, route }) {
       const safePartySize = Number.isInteger(partySizeNum) && partySizeNum > 0 ? partySizeNum : null;
 
       // Only one real raw_text column exists server-side -- the optional
-      const finalText = text.trim();
+      const finalText = askText.trim();
       // P0 #2 fix: resolveDateParam() honors a real picked date over the
       // preset math when PICK_DATE_KEY is selected -- computed once here
       // so every branch below and the navigation params after submit all
@@ -425,6 +463,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           dietary: category === 'Foodie' && dietaryInput.length > 0 ? dietaryInput : null,
           targetPartnerId: targetPartner?.id ?? null,
           note: noteToBusiness.trim() || null,
+          items: showItems && itemsInput.length > 0 ? itemsInput : null,
         });
         // From a gathering's "request a specific business": also send the co-host partnership request. It reuses the request just
         // made (no second offer). Best-effort -- the business already has the request either way.
@@ -526,8 +565,8 @@ export default function AskBusinessScreen({ navigation, route }) {
   const recapReady = findMissingField() === null;
   const recapParts = [];
   if (recapReady) {
-    recapParts.push(`Looking for: ${text.trim()}`);
-    if (category) recapParts.push(category);
+    if (!gatheringId) recapParts.push(`Looking for: ${text.trim()}`);
+    if (category && !gatheringId) recapParts.push(category);
     if (!gatheringId) {
       // P0 #2 fix: a genuinely picked date recaps as its own real,
       // formatted date -- never falls through to "undefined" now that
@@ -550,7 +589,7 @@ export default function AskBusinessScreen({ navigation, route }) {
     if (category === 'Foodie' && dietaryInput.length > 0) recapParts.push(dietaryInput.map(dietaryLabel).join(', '));
     if ((isSoloMode || matchId) && attributesInput.length > 0) recapParts.push(attributesInput.map(businessAttributeLabel).join(', '));
     if (isSoloMode && pickedAvailability) recapParts.push(`at ${pickedAvailability.partner_name}`);
-    recapParts.push(`within ${radiusMiles} mi`);
+    if (!gatheringId || radiusMiles !== 15) recapParts.push(`within ${radiusMiles} mi`);
   }
 
   return (
@@ -582,7 +621,7 @@ export default function AskBusinessScreen({ navigation, route }) {
             {targetPartner
               ? `Only ${targetPartner.name} will see this — they can answer with a real offer.`
               : gatheringId
-              ? `Asking on behalf of your ${gatheringPartySize ?? ''}-person gathering — real nearby businesses can respond with a real offer for the group.`
+              ? 'We’ll send your gathering’s details. Nearby businesses can answer with a real offer for the group.'
               : matchId
                 ? `You both agreed on a plan — real nearby businesses can respond with a real offer for the two of you.`
                 : communityId
@@ -613,6 +652,7 @@ export default function AskBusinessScreen({ navigation, route }) {
             </View>
           )}
 
+          {!gatheringId && (<>
           <Text style={styles.label}>What do you want?</Text>
           <TextInput
             style={styles.textArea}
@@ -623,7 +663,13 @@ export default function AskBusinessScreen({ navigation, route }) {
             multiline
             accessibilityLabel="What do you want?"
           />
+          </>)}
 
+          {gatheringId && (
+            <GatheringAskFacts styles={styles} gathering={gathering} loadFailed={gatheringLoadFailed} />
+          )}
+
+          {(!gatheringId || (gathering && !gathering.interest_tag)) && (<>
           <Text style={styles.label}>Category</Text>
           <View style={styles.chipRow}>
             {CATEGORY_OPTIONS.map((c) => (
@@ -642,6 +688,7 @@ export default function AskBusinessScreen({ navigation, route }) {
               </TouchableOpacity>
             ))}
           </View>
+          </>)}
 
           {!gatheringId && (
             <>
@@ -752,6 +799,40 @@ export default function AskBusinessScreen({ navigation, route }) {
               required "Budget max" number field -- defaults to "No
               preference," which keeps this screen submittable with zero
               budget friction unless the user actually wants precision. */}
+          {gatheringId && (
+            <>
+              <Text style={styles.questionHeading}>Anything specific you'd like the business to provide?</Text>
+              {gatheringInputs.includes('items') && <RequestedItemsPicker selected={itemsInput} onChange={setItemsInput} />}
+              {gatheringInputs.includes('dietary') && <DietaryPicker selected={dietaryInput} onChange={setDietaryInput} />}
+              {gatheringInputs.includes('note') && (
+                <>
+                  <TextInput
+                    style={[styles.textArea, { marginTop: spacing.sm }]}
+                    placeholder={`A note for ${targetPartner.name} (optional)`}
+                    placeholderTextColor={colors.textTertiary}
+                    value={noteToBusiness}
+                    onChangeText={(t) => setNoteToBusiness(t.slice(0, 300))}
+                    multiline
+                    accessibilityLabel={`Optional note for ${targetPartner.name}. Only they will see it.`}
+                  />
+                  <Text style={styles.subtitle}>Only {targetPartner.name} sees this note.</Text>
+                </>
+              )}
+              {gatheringInputs.length === 0 && (
+                <Text style={styles.subtitle}>Nothing else is needed. Your gathering's details are enough to send.</Text>
+              )}
+              <TouchableOpacity
+                onPress={() => setShowMoreOptions((v) => !v)}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: showMoreOptions }}
+                accessibilityLabel="More options: budget, occasion, search radius"
+              >
+                <Text style={styles.inlineLinkText}>{showMoreOptions ? '− Fewer options' : '+ More options (budget, occasion, radius)'}</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {(!gatheringId || showMoreOptions) && (<>
           <Text style={styles.label}>What's your budget?</Text>
           <View style={styles.chipRow}>
             {BUDGET_LEVEL_OPTIONS.map((o) => {
@@ -789,8 +870,9 @@ export default function AskBusinessScreen({ navigation, route }) {
               <Text style={styles.inlineLinkText}>+ Set a maximum per person</Text>
             </TouchableOpacity>
           )}
+          </>)}
 
-          {targetPartner && (
+          {targetPartner && !gatheringId && (
             <>
               <Text style={styles.label}>Anything else? (optional)</Text>
               <TextInput
@@ -874,6 +956,7 @@ export default function AskBusinessScreen({ navigation, route }) {
             </View>
           )}
 
+          {(!gatheringId || showMoreOptions) && (<>
           <Text style={styles.label}>What's this for? (optional)</Text>
           <View style={styles.chipRow}>
             {OCCASION_OPTIONS.map((o) => (
@@ -889,6 +972,7 @@ export default function AskBusinessScreen({ navigation, route }) {
               </TouchableOpacity>
             ))}
           </View>
+          </>)}
 
           {isSoloMode && (
             <>
@@ -983,9 +1067,10 @@ export default function AskBusinessScreen({ navigation, route }) {
             </>
           )}
 
-          {showItems && <RequestedItemsPicker selected={itemsInput} onChange={setItemsInput} />}
-          {category === 'Foodie' && <DietaryPicker selected={dietaryInput} onChange={setDietaryInput} />}
+          {showItems && !gatheringId && <RequestedItemsPicker selected={itemsInput} onChange={setItemsInput} />}
+          {category === 'Foodie' && !gatheringId && <DietaryPicker selected={dietaryInput} onChange={setDietaryInput} />}
 
+          {(!gatheringId || showMoreOptions) && (<>
           <Text style={styles.label}>Search radius</Text>
           <View style={styles.chipRow}>
             {RADIUS_OPTIONS.map((r) => (
@@ -1000,6 +1085,7 @@ export default function AskBusinessScreen({ navigation, route }) {
               </TouchableOpacity>
             ))}
           </View>
+          </>)}
 
           {recapReady && (
             <View style={styles.recapCard}>
@@ -1008,13 +1094,13 @@ export default function AskBusinessScreen({ navigation, route }) {
           )}
 
           <TouchableOpacity
-            style={[styles.submitButton, (submitting || !text.trim()) && styles.submitButtonDisabled]}
+            style={[styles.submitButton, (submitting || !askText.trim() || (gatheringId && !gathering)) && styles.submitButtonDisabled]}
             onPress={handleSubmit}
-            disabled={submitting || !text.trim()}
+            disabled={submitting || !askText.trim() || (!!gatheringId && !gathering)}
             accessibilityLabel="Ask nearby businesses"
             accessibilityRole="button"
           >
-            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>Ask Nearby Businesses</Text>}
+            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>{gatheringId && targetPartner ? `Ask ${targetPartner.name}` : 'Ask Nearby Businesses'}</Text>}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -1038,6 +1124,9 @@ const getStyles = (colors) => StyleSheet.create({
     padding: spacing.md, marginTop: spacing.lg,
   },
   recapText: { ...typography.caption, color: colors.textSecondary, lineHeight: 19 },
+  factsKicker: { ...typography.small, color: colors.textTertiary, fontWeight: '700', marginBottom: spacing.xs },
+  factLine: { ...typography.body, color: colors.textPrimary, marginBottom: 2 },
+  questionHeading: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginTop: spacing.lg },
   label: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', marginBottom: spacing.xs, marginTop: spacing.md },
   textArea: {
     ...typography.body, color: colors.textPrimary, backgroundColor: colors.surface,

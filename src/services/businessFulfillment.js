@@ -290,7 +290,7 @@ export async function submitBusinessRequest({
 // Host-only. party_size/date/location are all sourced server-side from the
 // gathering's own real data -- never re-collected from the device or
 // typed by the caller, unlike the solo submitBusinessRequest() above.
-export async function submitBusinessRequestForGathering({ gatheringId, text, category = null, budgetMax = null, radiusMiles = 15, occasion = null, dietary = null, targetPartnerId = null, note = null }) {
+export async function submitBusinessRequestForGathering({ gatheringId, text, category = null, budgetMax = null, radiusMiles = 15, occasion = null, dietary = null, targetPartnerId = null, note = null, items = null }) {
   // Item 65: the request stores the gathering's structured WHEN (local date + start time). The device knows its own
   // timezone, the server does not, so read the gathering's start and send it as local wall-clock parts. Best-effort:
   // without it the server falls back to the host's stored timezone, then to the UTC date with no time.
@@ -311,6 +311,7 @@ export async function submitBusinessRequestForGathering({ gatheringId, text, cat
     dietary_param: dietary && dietary.length > 0 ? dietary : null,
     target_partner_id_param: targetPartnerId,
     note_param: targetPartnerId ? note : null,
+    items_param: items && items.length > 0 ? items : null,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, partySize: data.partySize, duplicate: !!data.duplicate };
