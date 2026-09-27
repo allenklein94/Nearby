@@ -33,7 +33,8 @@ import { getSocialForecast } from '../services/homeDashboard';
 import { filterToMyConnections } from '../services/connections';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { runIntentSearch, navigateToIntentResultItem } from '../services/intentResolver';
-import { submitSurprise, shuffleSurprise, navigateToSurprisePick, pickForMeKind, surpriseTypesForTab } from '../services/surpriseMe';
+import { submitSurprise, shuffleSurprise, navigateToSurprisePick, surpriseTypesForTab } from '../services/surpriseMe';
+import { discoverQuery } from '../utils/discoverQuery';
 import { recordIntentSelection, getMyTopSearchedCategory } from '../services/intentOutcomes';
 import { recordPeopleSubModeUse, getMyPeopleSubModeUsage } from '../services/peopleSubModeUsage';
 import { resolveDefaultPeopleSubMode } from '../utils/peopleSubModePreference';
@@ -612,15 +613,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // actually looks at Places, or types a real search with location
   // available — never on every keystroke across every section.
   useEffect(() => {
-    const surpriseTyped = !!pickForMeKind(searchQuery);
-    const wantsPlaces = typeFilter === 'places' || (typeFilter === 'all' && searchQuery.trim().length >= 2 && !surpriseTyped);
+    const { literalTerm } = discoverQuery(searchQuery); // null for Surprise Me / undecided asks (never a keyword search)
+    const wantsPlaces = typeFilter === 'places' || (typeFilter === 'all' && !!literalTerm);
     if (!wantsPlaces || !userLocation) return;
     const thisRequestId = ++placesRequestId.current;
     const timer = setTimeout(async () => {
       setLoadingPlaces(true);
       try {
         const category = typeFilter === 'places' ? placesCategory : null;
-        const keyword = searchQuery.trim().length >= 2 && !surpriseTyped ? searchQuery.trim() : null;
+        const keyword = literalTerm;
         const results = await searchNearbyPlaces(userLocation.latitude, userLocation.longitude, category, keyword);
         if (thisRequestId === placesRequestId.current) setPlaces(results);
       } catch (e) {
@@ -637,8 +638,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Same 2-character minimum and 350ms debounce as the Places search above,
   // for the same reason — no query fired on every keystroke.
   useEffect(() => {
-    const term = searchQuery.trim();
-    if (term.length < 2 || pickForMeKind(term)) { // "surprise me" / "I don't know what I want" are asks, never keyword searches
+    const term = discoverQuery(searchQuery).literalTerm; // null for Surprise Me / undecided asks and too-short text
+    if (!term) {
       setSearchedGatherings([]);
       setSearchedCommunities([]);
       setSearchedOffers([]);
@@ -710,8 +711,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // threshold (and the debounced effect above, which only fires a real
   // gatherings/communities query at this same length) — a single keystroke
   // doesn't count as "searching" anywhere else on this screen either.
-  const surpriseTyped = !!pickForMeKind(searchQuery);
-  const isSearching = q.length >= 2 && !surpriseTyped; // a typed "surprise me" is not a keyword search
+  // One classification of the search box (utils/discoverQuery.js): a Surprise Me / undecided ask is its own intent, never a search.
+  const query = discoverQuery(searchQuery);
+  const surpriseTyped = query.kind === 'pick_for_me';
+  const isSearching = query.kind === 'search';
 
   // Gatherings/communities: real server-side, indexed search results
   // (searchedGatherings/searchedCommunities, populated by the debounced
@@ -1095,12 +1098,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // concept (matches HomeScreen's own proceedToCreation for that intent)
   // so it routes straight to creation instead of ever setting intentSearch.
   async function handleUnderstandSearch() {
-    const typedText = searchQuery.trim();
-    if (typedText.length < 2) return;
-    if (pickForMeKind(typedText)) {
+    const submitted = discoverQuery(searchQuery);
+    const typedText = submitted.text;
+    // First-class intent: detect Surprise Me -> the canonical engine -> inline results. Never an ordinary search.
+    if (submitted.kind === 'pick_for_me') {
       await handleDiscoverSurprise(typedText);
       return;
     }
+    if (submitted.kind !== 'search') return;
     const thisRequestId = ++intentSearchRequestId.current;
     setIntentSearching(true);
     try {

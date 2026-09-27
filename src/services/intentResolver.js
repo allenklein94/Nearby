@@ -17,6 +17,7 @@ import { searchOccasionPackages, formatOccasionPackageDetail } from './occasionP
 import { getSocialForecast } from './homeDashboard';
 import { classifyCreateRequest } from './createAssistant';
 import { recordIntentSubmission } from './intentOutcomes';
+import { pickForMeKind } from './surpriseMeLogic';
 import { assembleExperience } from './experienceAssembly';
 // P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): the identical
 // shared, canonical weather-reason text homeRecommendations.js's own
@@ -944,6 +945,10 @@ export function buildFriendDiscoveryResultItem(category) {
 // ('understanding' before the classify call, 'finding' once it returns), so a caller can narrate
 // real work. Fire-and-forget: it never delays or affects the search.
 export async function runIntentSearch(typedText, { onPhase } = {}) {
+  // Surprise Me / "I don't know what I want" are their own intent (services/surpriseMe.js): never classified, searched or logged
+  // here, whichever surface calls this. Callers route them to the Surprise Me engine first; this is the backstop.
+  const pick = pickForMeKind(typedText);
+  if (pick) return { outcome: 'pick_for_me', pick, typedText, items: [], experience: null };
   onPhase?.({ phase: 'understanding' });
   const classifyResult = await classifyCreateRequest(typedText);
   onPhase?.({ phase: 'finding', classifyResult });

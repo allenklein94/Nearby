@@ -375,7 +375,7 @@ describe('Discover uses the one Surprise Me engine, inline', () => {
 
   it('Discover routes a typed surprise before the normal search, into the shared flow, inline (no new screen or tab)', () => {
     const submit = discover.slice(discover.indexOf('async function handleUnderstandSearch'));
-    expect(submit.indexOf('pickForMeKind(typedText)')).toBeLessThan(submit.indexOf('runIntentSearch(typedText'));
+    expect(submit.indexOf("submitted.kind === 'pick_for_me'")).toBeLessThan(submit.indexOf('runIntentSearch(typedText'));
     expect(discover).toMatch(/submitSurprise\(\{ text: typedText, types: surpriseTypesForTab\(typeFilter\), openNow: openNowActive \}\)/);
     expect(discover).toMatch(/shuffleSurprise\(discoverSurprise\)/);
     expect(discover).toMatch(/navigateToSurprisePick\(navigation, it, discoverSurprise\)/);
@@ -385,9 +385,9 @@ describe('Discover uses the one Surprise Me engine, inline', () => {
   });
 
   it('"surprise me" is never a keyword search for the phrase in Discover', () => {
-    expect(discover).toMatch(/const isSearching = q\.length >= 2 && !surpriseTyped;/);
-    expect(discover).toMatch(/if \(term\.length < 2 \|\| pickForMeKind\(term\)\)/);
-    expect(discover).toMatch(/!surpriseTyped \? searchQuery\.trim\(\) : null/);
+    expect(discover).toMatch(/const isSearching = query\.kind === 'search';/);
+    expect(discover).toMatch(/const term = discoverQuery\(searchQuery\)\.literalTerm;/);
+    expect(discover).toMatch(/const keyword = literalTerm;/);
   });
 
   it('there is exactly one Surprise Me engine', () => {
@@ -398,5 +398,96 @@ describe('Discover uses the one Surprise Me engine, inline', () => {
       .map((f) => path.relative(src, f)).sort();
     expect(definers).toEqual(['services/surpriseMe.js', 'services/surpriseMeLogic.js']);
     for (const screen of [home, discover]) expect(screen).toMatch(/from '\.\.\/services\/surpriseMe'/);
+  });
+});
+
+// Owner correction (2026-09-27): in Discover, Surprise Me is a FIRST-CLASS intent -- detect -> canonical engine -> inline results --
+// never an ordinary keyword search with special post-processing.
+describe('Discover: Surprise Me is a first-class intent (regressions)', () => {
+  const { discoverQuery } = require('../utils/discoverQuery');
+  const discover = fs.readFileSync(path.join(__dirname, '../screens/DiscoverHubScreen.js'), 'utf8');
+
+  beforeEach(() => {
+    resolveIntent.mockReset();
+    classifyCreateRequest.mockReset();
+  });
+
+  it('1. "surprise me" is classified as its own intent, not a search', () => {
+    for (const t of ['surprise me', 'Surprise me tonight', 'surprise me with coffee', 'surprise me with coffee tonight', 'surprise me with something active'])
+      expect([t, discoverQuery(t)]).toEqual([t, expect.objectContaining({ kind: 'pick_for_me', pick: 'surprise', literalTerm: null })]);
+    expect(discoverQuery('coffee tonight')).toEqual({ kind: 'search', text: 'coffee tonight', literalTerm: 'coffee tonight' });
+    // Every Discover search path reads the one classification; the submit routes a pick before any ordinary search.
+    const submit = discover.slice(discover.indexOf('async function handleUnderstandSearch'));
+    expect(submit.indexOf("submitted.kind === 'pick_for_me'")).toBeLessThan(submit.indexOf('runIntentSearch('));
+    expect(discover).not.toMatch(/pickForMeKind|surpriseAskFromText/); // no second, screen-local detector
+  });
+
+  it('2. the literal phrase is never searched (keyword lists, Places, or the ordinary resolver)', async () => {
+    expect(discoverQuery('surprise me').literalTerm).toBeNull();
+    expect(discover).toMatch(/const term = discoverQuery\(searchQuery\)\.literalTerm;/);
+    expect(discover).toMatch(/const keyword = literalTerm;/);
+    // backstop in the ordinary resolver: a pick-for-me text returns before any classify, search or log
+    const resolver = fs.readFileSync(path.join(__dirname, 'intentResolver.js'), 'utf8');
+    const body = resolver.slice(resolver.indexOf('export async function runIntentSearch'));
+    const guard = body.indexOf("if (pick) return { outcome: 'pick_for_me'");
+    expect(guard).toBeGreaterThan(-1);
+    expect(guard).toBeLessThan(body.indexOf('classifyCreateRequest('));
+    expect(guard).toBeLessThan(body.indexOf('recordIntentSubmission('));
+  });
+
+  it('3. an explicit category is kept ("with coffee", "with coffee tonight", "with something active")', async () => {
+    classifyCreateRequest.mockResolvedValue({});
+    resolveIntent.mockResolvedValue({ items: [c('cafe', 'Coffee', 5), c('hike', 'Hiking', 9), c('pickle', 'Pickleball', 7)], experience: null });
+    const coffee = await submitSurprise({ text: 'surprise me with coffee tonight', types: surpriseTypesForTab('all') });
+    expect(coffee.scope).toEqual({ level: 'tags', tags: ['Coffee'] });
+    expect(coffee.picks.map((p) => p.id)).toEqual(['cafe']);
+    expect(coffee.dateWindow).toBe('tonight');
+    const active = await submitSurprise({ text: 'surprise me with something active' });
+    expect(active.scope).toEqual({ level: 'energy', energies: ['active'] });
+    expect(active.picks.map((p) => p.id).sort()).toEqual(['hike', 'pickle']); // only results the energy table calls active
+    expect(active.basis).toBe('Active');
+  });
+
+  it('4. an AI-only category guess never narrows a broad request', async () => {
+    classifyCreateRequest.mockResolvedValue({ category: 'Coffee', cuisine: 'italian', attributes: ['quiet'], occasion: 'date_night' });
+    resolveIntent.mockImplementation(async ({ category }) => ({ items: [c(`${category}-x`, category ?? 'Hiking', 5)], experience: null }));
+    const r = await submitSurprise({ text: 'surprise me tonight', types: surpriseTypesForTab('all') });
+    expect(r.scope).toEqual({ level: 'broad' });
+    for (const [a] of resolveIntent.mock.calls) expect(a).toMatchObject({ cuisine: null, attributes: [], occasion: null });
+    expect(resolveIntent.mock.calls.map(([a]) => a.category)).not.toEqual(['Coffee']);
+  });
+
+  it('5. explicit time is kept, and none is ever invented', async () => {
+    classifyCreateRequest.mockResolvedValue({ dateWindow: 'weekend' }); // the classifier's claim is ignored either way
+    resolveIntent.mockResolvedValue({ items: [c('a', 'Coffee', 1)], experience: null });
+    expect((await submitSurprise({ text: 'surprise me tonight' })).dateWindow).toBe('tonight');
+    expect((await submitSurprise({ text: 'surprise me with coffee' })).dateWindow).toBeNull();
+    expect(resolveIntent.mock.calls.map(([a]) => a.dateWindow)).toEqual(expect.arrayContaining(['tonight', null]));
+    expect(resolveIntent.mock.calls.map(([a]) => a.dateWindow)).not.toContain('weekend');
+  });
+
+  it('6. Discover and Home read equivalent typed requests identically', async () => {
+    classifyCreateRequest.mockResolvedValue({ category: 'Bars & Lounges' });
+    resolveIntent.mockResolvedValue({ items: [c('a', 'Coffee', 3), c('b', 'Pickleball', 2)], experience: null });
+    for (const text of ['surprise me', 'surprise me with coffee tonight', 'surprise me with something active', "I don't know. What's good tonight?"]) {
+      resolveIntent.mockClear();
+      const home = await submitSurprise({ text });
+      const homeCalls = resolveIntent.mock.calls.map(([a]) => a);
+      resolveIntent.mockClear();
+      const disc = await submitSurprise({ text: discoverQuery(text).text, types: surpriseTypesForTab('all'), openNow: false });
+      const discCalls = resolveIntent.mock.calls.map(([a]) => a);
+      const strip = (calls) => calls.map(({ category, ...rest }) => rest);
+      expect([text, strip(discCalls)]).toEqual([text, strip(homeCalls)]);
+      expect([text, disc.scope, disc.dateWindow, disc.kind]).toEqual([text, home.scope, home.dateWindow, home.kind]);
+    }
+  });
+
+  it('7. Discover\'s type tab and Open-now toggle are still respected', async () => {
+    classifyCreateRequest.mockResolvedValue({});
+    resolveIntent.mockResolvedValue({ items: [c('g', 'Coffee', 3), { type: 'perk', id: 'p', category: 'Coffee', score: 9 }], experience: null });
+    const perks = await submitSurprise({ text: 'surprise me with coffee', types: surpriseTypesForTab('perks'), openNow: true });
+    expect(perks.picks.map((p) => p.id)).toEqual(['p']);
+    expect(resolveIntent.mock.calls.every(([a]) => a.openNowChip === true)).toBe(true);
+    expect(discover).toMatch(/submitSurprise\(\{ text: typedText, types: surpriseTypesForTab\(typeFilter\), openNow: openNowActive \}\)/);
   });
 });

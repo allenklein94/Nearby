@@ -13,7 +13,7 @@ import { cuisineFromText, groupForPhrase } from '../constants/categoryTree';
 import { detectIntentRoute, ROUTE_SURFACES } from '../constants/intentRoutes';
 import { CUISINE_OPTIONS } from '../constants/businessAttributes';
 import { undecidedAskFromText, stripUndecidedPhrase } from '../constants/undecidedAsk';
-import { energiesFromHost, energiesForTag } from '../constants/energyLevel';
+import { energiesFromHost, energiesForTag, energiesFromText, ENERGY_LEVELS } from '../constants/energyLevel';
 import { commitmentOf } from '../constants/commitmentLevel';
 
 export const WHEN_OPTIONS = [
@@ -260,6 +260,9 @@ export function surpriseScope(rest) {
       ? { level: 'tags', tags: [routed.route.category] }
       : { level: 'groups', groups: [...routed.route.groups] };
   }
+  // "surprise me with something active / low-key": an energy from the existing energy vocabulary, in the person's words.
+  const energies = energiesFromText(rest);
+  if (energies.length > 0) return { level: 'energy', energies };
   return { level: 'broad' };
 }
 
@@ -282,6 +285,7 @@ export function inSurpriseScope(c, scope) {
   if (!scope || scope.level === 'broad') return true;
   if (scope.level === 'cuisine') return cuisineOf(c) === scope.cuisine;
   if (scope.level === 'groups') return scope.groups.includes(groupOf(c));
+  if (scope.level === 'energy') return energiesOf(c).some((e) => scope.energies.includes(e));
   if (scope.level === 'tags') {
     const own = [c?.category, c?.subcategory, ...(Array.isArray(c?.categories) ? c.categories : [])].filter(Boolean);
     return own.some((t) => scope.tags.includes(t));
@@ -294,6 +298,7 @@ export function scopeLabel(scope) {
   if (!scope || scope.level === 'broad') return null;
   if (scope.level === 'cuisine') return CUISINE_OPTIONS.find((o) => o.key === scope.cuisine)?.label ?? null;
   if (scope.level === 'tags') return scope.tags.join(' + ');
+  if (scope.level === 'energy') return scope.energies.map((k) => ENERGY_LEVELS.find((e) => e.key === k)?.display).filter(Boolean).join(' + ') || null;
   if (scope.groups.length === THINGS_TO_DO_GROUPS.length && scope.groups.every((g) => THINGS_TO_DO_GROUPS.includes(g))) return 'Things to do';
   return scope.groups.map((k) => CATEGORY_GROUPS.find((g) => g.key === k)?.label).filter(Boolean).join(' + ') || null;
 }

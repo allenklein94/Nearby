@@ -134,10 +134,13 @@ describe('the engine', () => {
 describe('wiring: Home and Discover share it, nothing is logged', () => {
   const read = (rel) => fs.readFileSync(path.join(__dirname, rel), 'utf8');
   it('both surfaces route it through the one flow and render the rows inline', () => {
-    for (const screen of [read('../screens/HomeScreen.js'), read('../screens/DiscoverHubScreen.js')]) {
-      expect(screen).toMatch(/pickForMeKind\(typedText\)/);
-      expect(screen).toMatch(/suggestion\.kind === 'lanes'/);
-    }
+    const home = read('../screens/HomeScreen.js');
+    const discover = read('../screens/DiscoverHubScreen.js');
+    expect(home).toMatch(/pickForMeKind\(typedText\)/);
+    expect(discover).toMatch(/submitted\.kind === 'pick_for_me'/); // Discover's one classification (utils/discoverQuery.js)
+    for (const screen of [home, discover]) expect(screen).toMatch(/suggestion\.kind === 'lanes'/);
+    const { discoverQuery } = require('../utils/discoverQuery');
+    expect(discoverQuery("what's good tonight")).toMatchObject({ kind: 'pick_for_me', pick: 'undecided', literalTerm: null });
     const eng = read('surpriseMe.js');
     expect(eng).not.toMatch(/recordIntentSubmission|intent_submissions|intent_outcomes/);
   });
