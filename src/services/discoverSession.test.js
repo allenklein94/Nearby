@@ -55,6 +55,11 @@ function deviceStorage() {
   };
 }
 
+// A FIXED local clock (item 118 follow-up): every relative time below ("now + 3 h" = this evening) is computed from it, so the
+// suite gives the same result at any hour and in any timezone. Only Date is faked; real timers keep async mocks running.
+const FIXED_NOW = new Date(2026, 8, 27, 15, 0, 0); // a Sunday, 3 PM local
+jest.useFakeTimers({ now: FIXED_NOW, doNotFake: ['nextTick', 'setImmediate', 'clearImmediate', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'queueMicrotask', 'hrtime', 'performance', 'requestAnimationFrame', 'cancelAnimationFrame', 'requestIdleCallback', 'cancelIdleCallback'] });
+afterAll(() => jest.useRealTimers());
 const soon = new Date(Date.now() + 3 * 3600 * 1000).toISOString();
 const g = (id, tag, extra = {}) => ({ id, title: `Plan ${id}`, interest_tag: tag, scheduled_at: soon, capacity: null, approvedCount: 0, ...extra });
 const LIST = [g('music', 'Live Music'), g('pickle', 'Pickleball', { party_type: 'friends' }), g('bowl', 'Bowling', { price_level: '$' }), g('hike', 'Hiking')];
@@ -62,7 +67,7 @@ const TEXT = 'something fun tonight with friends';
 const CLASSIFY = { intent: 'gathering', category: null, dateWindow: 'tonight', partyType: 'friends', attributes: [] };
 const USER = 'aaaaaaaa-0000-4000-8000-000000000001';
 const OTHER = 'bbbbbbbb-0000-4000-8000-000000000002';
-const T0 = Date.UTC(2026, 8, 27, 18);
+const T0 = new Date(2026, 8, 27, 18).getTime(); // 6 PM LOCAL: a 'tonight' ask made then is still live 2 h later in any timezone
 const SESSION = 'cccccccc-0000-4000-8000-000000000003';
 
 // Discover's state after "something fun tonight with friends" + Activities (what the screen holds and saves).

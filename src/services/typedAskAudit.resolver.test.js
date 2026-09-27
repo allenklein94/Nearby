@@ -31,6 +31,11 @@ import { getNearbyGatherings } from './gatherings';
 import { classifyCreateRequest } from './createAssistant';
 import * as auditUtils from '../utils/typedAskAudit';
 
+// A FIXED local clock (item 118 follow-up): every relative time below ("now + 3 h" = this evening) is computed from it, so the
+// suite gives the same result at any hour and in any timezone. Only Date is faked; real timers keep async mocks running.
+const FIXED_NOW = new Date(2026, 8, 30, 15, 0, 0); // a Wednesday, 3 PM local
+jest.useFakeTimers({ now: FIXED_NOW, doNotFake: ['nextTick', 'setImmediate', 'clearImmediate', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'queueMicrotask', 'hrtime', 'performance', 'requestAnimationFrame', 'cancelAnimationFrame', 'requestIdleCallback', 'cancelIdleCallback'] });
+afterAll(() => jest.useRealTimers());
 const soon = new Date(Date.now() + 3 * 3600 * 1000).toISOString();
 const gathering = (id, extra = {}) => ({
   id, title: `Show ${id}`, interest_tag: 'Live Music', scheduled_at: soon, genre: null, capacity: null, approvedCount: 0, ...extra,

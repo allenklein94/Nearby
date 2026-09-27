@@ -1,19 +1,27 @@
-const PREV_TZ = process.env.TZ;
-process.env.TZ = 'UTC';
-afterAll(() => { if (PREV_TZ === undefined) delete process.env.TZ; else process.env.TZ = PREV_TZ; });
 const fs = require('fs');
 const path = require('path');
 const { askWeatherWindow, judgeWeatherWindow, applyAskWeather, weatherDelta, WEATHER_POINTS } = require('./askWeather');
 const ROOT = path.join(__dirname, '../..');
+// Every fixture time is LOCAL wall-clock time on the machine running the test ("2026-09-23T17:00" = 5 PM local), because the
+// product reads the person's own local time ("tonight" = 5-11 PM local). So the same assertions hold in any timezone; nothing
+// here depends on the machine being in UTC. (Setting process.env.TZ inside a Jest test does not change Date: the sandbox's env
+// is a copy.)
+const local = (s) => {
+  const [d, t = '00:00'] = s.split('T');
+  const [y, mo, day] = d.split('-').map(Number);
+  const [h, mi] = t.split(':').map(Number);
+  return new Date(y, mo - 1, day, h, mi);
+};
+const at = (s) => local(s).getTime();
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 
-// Wednesday 2026-09-23 10:00 UTC. Forecast: 3-hour blocks for 5 days; sun 06:00-19:00 UTC.
-const NOW = new Date('2026-09-23T10:00:00Z');
+// Wednesday 2026-09-23 10:00 local. Forecast: 3-hour blocks for 5 days; sun 06:00-19:00 local.
+const NOW = local('2026-09-23T10:00');
 const H = 3600;
-const START = Date.parse('2026-09-23T09:00:00Z') / 1000;
+const START = at('2026-09-23T09:00') / 1000;
 const mk = (fn) => ({
-  sunrise: Date.parse('2026-09-23T06:00:00Z') / 1000,
-  sunset: Date.parse('2026-09-23T19:00:00Z') / 1000,
+  sunrise: at('2026-09-23T06:00') / 1000,
+  sunset: at('2026-09-23T19:00') / 1000,
   forecast_blocks: Array.from({ length: 40 }, (_, i) => {
     const dt = START + i * 3 * H;
     return { dt, ...fn(new Date(dt * 1000)) };
@@ -49,11 +57,11 @@ describe('suitability (small deterministic model, modest weight)', () => {
     const list = [biz('hike', 'Hiking'), biz('coffee', 'Coffee')];
     expect(scores(applyAskWeather(list, null, opts('hike tomorrow')))).toEqual({ hike: 10, coffee: 10 });
     expect(scores(applyAskWeather(list, { forecast_blocks: [] }, opts('hike tomorrow')))).toEqual({ hike: 10, coffee: 10 });
-    const mixed = mk((d) => (d.getUTCHours() < 15 ? rainy() : nice()));
+    const mixed = mk((d) => (d.getHours() < 15 ? rainy() : nice()));
     expect(scores(applyAskWeather(list, mixed, opts('something tomorrow')))).toEqual({ hike: 10, coffee: 10 });
     expect(judgeWeatherWindow(mixed, askWeatherWindow('something tomorrow', NOW))).toBeNull();
     // beyond the forecast horizon = not covered = unknown
-    expect(judgeWeatherWindow(mk(nice), { startMs: Date.parse('2026-10-10T12:00:00Z'), endMs: Date.parse('2026-10-10T14:00:00Z') })).toEqual({ unknown: true });
+    expect(judgeWeatherWindow(mk(nice), { startMs: at('2026-10-10T12:00'), endMs: at('2026-10-10T14:00') })).toEqual({ unknown: true });
   });
   it('unclassified categories get nothing either way', () => {
     expect(weatherDelta(null, { bias: 'indoor' })).toBe(0);
@@ -64,14 +72,14 @@ describe('suitability (small deterministic model, modest weight)', () => {
 
 describe('ranking only, intent first', () => {
   it('5. weather never hard-filters: same results, same length, in any weather', () => {
-    const list = [biz('hike', 'Hiking'), biz('coffee', 'Coffee'), g('trail', 'Trails', '2026-09-24T15:00:00Z'), biz('x', null)];
+    const list = [biz('hike', 'Hiking'), biz('coffee', 'Coffee'), g('trail', 'Trails', local('2026-09-24T15:00').toISOString()), biz('x', null)];
     for (const w of [nice, rainy, hot, cold]) {
       const r = applyAskWeather(list, mk(w), opts('something tomorrow'));
       expect(r.items.map((c) => c.id)).toEqual(list.map((c) => c.id));
     }
   });
   it('6. explicit outdoor intent stays eligible and is never reinterpreted as indoor', () => {
-    const list = [biz('pickle', 'Pickleball'), g('park', 'Parks', '2026-09-23T20:00:00Z'), biz('coffee', 'Coffee')];
+    const list = [biz('pickle', 'Pickleball'), g('park', 'Parks', local('2026-09-23T20:00').toISOString()), biz('coffee', 'Coffee')];
     const r = applyAskWeather(list, mk(rainy), opts('outdoor pickleball tonight', { explicitEnvironment: 'outdoor' }));
     expect(r.items).toHaveLength(3);
     expect(scores(r)).toEqual({ pickle: 10, park: 10, coffee: 10 }); // no indoor alternative lifted
@@ -85,19 +93,19 @@ describe('ranking only, intent first', () => {
 
 describe('7/8. weather is for the actual date/time, never guessed', () => {
   it('tonight uses tonight, tomorrow uses tomorrow, a named day uses that day', () => {
-    expect(askWeatherWindow('dinner tonight', NOW)).toMatchObject({ startMs: Date.parse('2026-09-23T17:00:00Z'), endMs: Date.parse('2026-09-23T23:00:00Z'), when: 'tonight' });
-    expect(askWeatherWindow('hike tomorrow', NOW)).toMatchObject({ startMs: Date.parse('2026-09-24T09:00:00Z'), when: 'tomorrow' });
-    expect(askWeatherWindow('hike Saturday before 3 pm', NOW)).toMatchObject({ startMs: Date.parse('2026-09-26T09:00:00Z'), endMs: Date.parse('2026-09-26T15:00:00Z'), when: 'Saturday' });
+    expect(askWeatherWindow('dinner tonight', NOW)).toMatchObject({ startMs: at('2026-09-23T17:00'), endMs: at('2026-09-23T23:00'), when: 'tonight' });
+    expect(askWeatherWindow('hike tomorrow', NOW)).toMatchObject({ startMs: at('2026-09-24T09:00'), when: 'tomorrow' });
+    expect(askWeatherWindow('hike Saturday before 3 pm', NOW)).toMatchObject({ startMs: at('2026-09-26T09:00'), endMs: at('2026-09-26T15:00'), when: 'Saturday' });
     expect(askWeatherWindow('coffee right now', NOW)).toMatchObject({ startMs: NOW.getTime(), when: 'right now' });
   });
   it("today's weather is never used for Saturday", () => {
-    const todayRainOnly = mk((d) => (d.getUTCDate() === 23 ? rainy() : nice()));
+    const todayRainOnly = mk((d) => (d.getDate() === 23 ? rainy() : nice()));
     const r = applyAskWeather([biz('hike', 'Hiking')], todayRainOnly, opts('a hike Saturday'));
     expect(r.items[0].score).toBe(10 + WEATHER_POINTS); // Saturday's own (good) forecast, not today's rain
   });
   it('a gathering is judged at its own start time', () => {
-    const rainTomorrowOnly = mk((d) => (d.getUTCDate() === 24 ? rainy() : nice()));
-    const r = applyAskWeather([g('a', 'Hiking', '2026-09-24T15:00:00Z'), g('b', 'Hiking', '2026-09-25T15:00:00Z')], rainTomorrowOnly, opts('a hike'));
+    const rainTomorrowOnly = mk((d) => (d.getDate() === 24 ? rainy() : nice()));
+    const r = applyAskWeather([g('a', 'Hiking', local('2026-09-24T15:00').toISOString()), g('b', 'Hiking', local('2026-09-25T15:00').toISOString())], rainTomorrowOnly, opts('a hike'));
     expect(scores(r)).toEqual({ a: 10 - WEATHER_POINTS, b: 10 + WEATHER_POINTS });
   });
   it('"this weekend" with no day chosen, "next weekend", or no date = no window, no weather effect', () => {

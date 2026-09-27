@@ -341,12 +341,14 @@ describe('matchesDateWindow', () => {
 
   it('matches "weekend" for a Saturday and a Sunday, not a weekday', () => {
     // Anchor "now" to a known Wednesday (2026-08-12) so this test is
-    // deterministic regardless of when it actually runs.
-    jest.useFakeTimers().setSystemTime(new Date('2026-08-12T12:00:00Z'));
+    // deterministic regardless of when it actually runs. Every time here is
+    // LOCAL wall-clock (the product matches the person's own local day), so
+    // the same assertions hold in any timezone.
+    jest.useFakeTimers().setSystemTime(new Date(2026, 7, 12, 12, 0));
     try {
-      const saturday = new Date('2026-08-15T20:00:00Z').toISOString();
-      const sunday = new Date('2026-08-16T10:00:00Z').toISOString();
-      const monday = new Date('2026-08-17T10:00:00Z').toISOString();
+      const saturday = new Date(2026, 7, 15, 20, 0).toISOString();
+      const sunday = new Date(2026, 7, 16, 10, 0).toISOString();
+      const monday = new Date(2026, 7, 17, 10, 0).toISOString();
       expect(matchesDateWindow(saturday, 'weekend')).toBe(true);
       expect(matchesDateWindow(sunday, 'weekend')).toBe(true);
       expect(matchesDateWindow(monday, 'weekend')).toBe(false);
@@ -360,13 +362,13 @@ describe('matchesDateWindow', () => {
   // (utils/rightNowWindow.js), not the same full-day match "today"/
   // "tonight" get -- anchored to a known instant so this is deterministic.
   it('matches "now" only within the real, narrow [-30min, +2h] window, not the full day', () => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-08-12T12:00:00Z'));
+    jest.useFakeTimers().setSystemTime(new Date(2026, 7, 12, 12, 0));
     try {
-      const justStarted = new Date('2026-08-12T11:45:00Z').toISOString(); // 15 min ago
-      const startingSoon = new Date('2026-08-12T13:30:00Z').toISOString(); // 1.5h from now
-      const tooLongAgo = new Date('2026-08-12T11:00:00Z').toISOString(); // 1h ago -- outside the 30min past bound
-      const tooFarAhead = new Date('2026-08-12T15:00:00Z').toISOString(); // 3h from now -- outside the 2h future bound
-      const laterTonight = new Date('2026-08-12T20:00:00Z').toISOString(); // same calendar day, but well outside the narrow window
+      const justStarted = new Date(2026, 7, 12, 11, 45).toISOString(); // 15 min ago
+      const startingSoon = new Date(2026, 7, 12, 13, 30).toISOString(); // 1.5h from now
+      const tooLongAgo = new Date(2026, 7, 12, 11, 0).toISOString(); // 1h ago -- outside the 30min past bound
+      const tooFarAhead = new Date(2026, 7, 12, 15, 0).toISOString(); // 3h from now -- outside the 2h future bound
+      const laterTonight = new Date(2026, 7, 12, 20, 0).toISOString(); // same calendar day, but well outside the narrow window
 
       expect(matchesDateWindow(justStarted, 'now')).toBe(true);
       expect(matchesDateWindow(startingSoon, 'now')).toBe(true);

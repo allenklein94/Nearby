@@ -34,6 +34,11 @@ import { getNearbyGatherings } from './gatherings';
 import { classifyCreateRequest } from './createAssistant';
 import { refinementChips } from '../utils/askRefinements';
 
+// A FIXED local clock (item 118 follow-up): every relative time below ("now + 3 h" = this evening) is computed from it, so the
+// suite gives the same result at any hour and in any timezone. Only Date is faked; real timers keep async mocks running.
+const FIXED_NOW = new Date(2026, 8, 30, 15, 0, 0); // a Wednesday, 3 PM local
+jest.useFakeTimers({ now: FIXED_NOW, doNotFake: ['nextTick', 'setImmediate', 'clearImmediate', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'queueMicrotask', 'hrtime', 'performance', 'requestAnimationFrame', 'cancelAnimationFrame', 'requestIdleCallback', 'cancelIdleCallback'] });
+afterAll(() => jest.useRealTimers());
 const soon = new Date(Date.now() + 3 * 3600 * 1000).toISOString();
 const g = (id, extra = {}) => ({ id, title: `Plan ${id}`, interest_tag: 'Live Music', scheduled_at: soon, capacity: null, approvedCount: 0, ...extra });
 const LIST = [g('cheap', { price_level: '$' }), g('pricey', { price_level: '$$$' }), g('friends', { party_type: 'friends' }), g('solo', { party_type: 'solo' })];

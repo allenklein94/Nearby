@@ -15,7 +15,7 @@ const read = (rel) => fs.readFileSync(path.join(__dirname, rel), 'utf8');
 const USER = 'aaaaaaaa-0000-4000-8000-000000000001';
 const S1 = 'cccccccc-0000-4000-8000-000000000001';
 const S2 = 'cccccccc-0000-4000-8000-000000000002';
-const T0 = Date.UTC(2026, 8, 27, 18);
+const T0 = new Date(2026, 8, 27, 18).getTime(); // 6 PM LOCAL: a 'tonight' ask made then is still live minutes later in any timezone
 const sess = (sessionId, updatedAt, extra = {}) => ({
   v: 2, userId: USER, sessionId, typedText: 'something fun tonight with friends', askedAt: T0, updatedAt,
   classifyResult: { intent: 'gathering', dateWindow: 'tonight', partyType: 'friends', narrowGroup: 'activities_recreation' },
@@ -62,7 +62,7 @@ function device(now) {
     jest.doMock('./discoverSession', () => ({ ...jest.requireActual('./discoverSession'), discoverSession: store }));
     mod = require('./discoverSessionSync');
   });
-  return { store, sync: () => mod.syncDiscoverSession(USER), push: (s) => mod.pushSession(USER, s), clear: (id, at) => mod.pushClear(id, at) };
+  return { store, sync: () => mod.syncDiscoverSession(USER, now), push: (s) => mod.pushSession(USER, s), clear: (id, at) => mod.pushClear(id, at) };
 }
 
 beforeEach(() => supabase.rpc.mockReset());
