@@ -235,7 +235,7 @@ export async function getNearbyBusinesses(lat, lng, radiusMiles = 50) {
   const { lat: myLat, lng: myLng } = await resolveCoords(lat, lng);
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, name, logo_url, latitude, longitude, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode')
+    .select('id, name, logo_url, latitude, longitude, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, category, subcategory, categories, cuisine')
     .eq('active', true)
     .not('latitude', 'is', null)
     .not('longitude', 'is', null)

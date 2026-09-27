@@ -55,6 +55,8 @@ import { becauseYouLikeReason, categorizeReasonText, REASON_CATEGORIES } from '.
 import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
 import { splitTonight } from '../utils/categoryTonight';
 import { buildDiscoverSections } from '../utils/discoverSections';
+import { searchTopic, matchBusinesses, friendsLineForTopic } from '../utils/unifiedSearch';
+import { formatDistance } from '../utils/formatDistance';
 import { matchesDateFilter } from '../utils/gatheringDateFilter';
 import { lightenHex } from '../utils/colorUtils';
 import GatheringsMapView from '../components/GatheringsMapView';
@@ -379,6 +381,17 @@ export default function DiscoverHubScreen({ navigation, route }) {
     getFriendsInterestedIn(gatheringTagKey.split('|')).then((m) => { if (!cancelled) setFriendInterestByTag(m); });
     return () => { cancelled = true; };
   }, [gatheringTagKey]);
+  // Item 92: accepted friends into the searched topic (the same server-enforced lookup; names only as it returns them).
+  const [searchTopicFriendMap, setSearchTopicFriendMap] = useState({});
+  const searchTopicTagKey = (searchTopic(discoverQuery(searchQuery).literalTerm)?.tags ?? []).slice(0, 20).join('|');
+  useEffect(() => {
+    if (!searchTopicTagKey) { setSearchTopicFriendMap({}); return undefined; }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      getFriendsInterestedIn(searchTopicTagKey.split('|')).then((m) => { if (!cancelled) setSearchTopicFriendMap(m ?? {}); });
+    }, 350);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [searchTopicTagKey]);
   const [communities, setCommunities] = useState([]);
   const [offers, setOffers] = useState([]);
   const [businesses, setBusinesses] = useState([]);
@@ -453,6 +466,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
       categoryIcon: group.icon,
       categoryKey: group.key,
     });
+  }
+
+  // Item 92: the searched topic opens the same in-place category view (a group, one tag, or a declared cuisine).
+  function openSearchTopic(topic) {
+    if (!topic) return;
+    if (topic.kind === 'group') { openCategoryContext(topic.group); return; }
+    if (topic.kind === 'cuisine') { openCuisineContext(topic.cuisine); return; }
+    openCategoryContext({ tags: topic.tags, label: topic.label, icon: topic.icon, key: null });
   }
 
   // A typed cuisine ("Italian dinner tonight") opens the SAME Restaurants view with the same exact constraint the chip sets.
@@ -1046,8 +1067,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // would have gotten a real Gatherings match never sees a "create it"
   // prompt implying total failure. Places is deliberately excluded (a
   // Google-Places-backed browse, not a create-it candidate).
+  // Item 92: one search across everything. The topic (activity/category), matching Nearby businesses and friends into
+  // it join the gatherings / communities / perks / places the search already returned (utils/unifiedSearch.js).
+  const searchedTopic = isSearching ? searchTopic(query.literalTerm) : null;
+  const searchedBusinesses = isSearching && (isAll || typeFilter === 'places')
+    ? applyOpenNow(matchBusinesses(businesses, query.literalTerm, searchedTopic), (b) => businessEntity(b))
+    : [];
+  const searchFriendsLine = isAll ? friendsLineForTopic(searchedTopic, searchTopicFriendMap) : null;
   const nothingMatchedAnywhere = isSearching && !loadingSearch
-    && filteredGatherings.length === 0 && filteredCommunities.length === 0 && filteredOffers.length === 0;
+    && filteredGatherings.length === 0 && filteredCommunities.length === 0 && filteredOffers.length === 0
+    && searchedBusinesses.length === 0;
 
   function renderOpenNowChip() {
     return (
@@ -2289,6 +2318,45 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </View>
           )}
 
+          {/* Item 92: one search, every kind of result -- the activity itself, friends into it, and Nearby businesses. */}
+          {isSearching && isAll && searchedTopic && (
+            <TouchableOpacity
+              style={styles.searchTopicRow}
+              onPress={() => openSearchTopic(searchedTopic)}
+              accessibilityLabel={`Explore ${searchedTopic.label} nearby`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.categoryChipIcon}>{searchedTopic.icon}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle} numberOfLines={1}>{searchedTopic.label}</Text>
+                {!!searchedTopic.groupLabel && <Text style={styles.cardSubtitle} numberOfLines={1}>{searchedTopic.groupLabel}</Text>}
+                {!!searchFriendsLine && <Text style={styles.cardSubtitle} numberOfLines={1}>🤝 {searchFriendsLine}</Text>}
+              </View>
+              <Text style={styles.emptyActionText}>Explore →</Text>
+            </TouchableOpacity>
+          )}
+          {searchedBusinesses.length > 0 && (
+            <>
+              <Text style={styles.sectionHeader}>Businesses</Text>
+              {searchedBusinesses.map((b) => (
+                <TouchableOpacity
+                  key={`biz-${b.id}`}
+                  style={styles.searchTopicRow}
+                  onPress={() => navigation.navigate('BusinessProfile', { partnerId: b.id })}
+                  accessibilityLabel={b.name}
+                  accessibilityRole="button"
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cardTitle} numberOfLines={1}>{b.name}</Text>
+                    <Text style={styles.cardSubtitle} numberOfLines={1}>
+                      {[b.searchReason, formatDistance(b.distanceMiles)].filter(Boolean).join(' · ')}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+
           {/* The dedicated Gatherings tab's own real scored/tiered list
               (unaffected by the P1 item 14 redesign above, which only
               replaces the default "All" landing view). */}
@@ -2733,6 +2801,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   // same horizontal padding as the outer `header`/`scrollContent` blocks
   // so it lines up visually.
   peopleFixedArea: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  searchTopicRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surface, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm,
+  },
   searchPrompt: { fontSize: 17, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.xs },
   // Item 44: the screen's one visual hero -- taller, a slightly heavier
   // border, and a subtle card shadow, so it reads as the obvious place for
