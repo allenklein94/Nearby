@@ -11,7 +11,7 @@
 // "techno music", "techno night" -> Techno. Words without their own key map onto a declared one only where listed below
 // (house music / deep house / EDM -> Electronic, rap -> Hip-Hop, salsa / reggaeton -> Latin); bare "house" maps to nothing.
 import { GENRE_OPTIONS, genreLabel } from '../utils/gatheringPractical';
-import { appendReason } from './recommendationReasonVocabulary';
+import { appendReason, reasonText } from './recommendationReasonVocabulary';
 
 export const GENRE_KEYS = GENRE_OPTIONS.filter((o) => o.key).map((o) => o.key);
 
@@ -44,7 +44,7 @@ export function genresFromText(text) {
 export const GENRE_FIT_POINTS = 2;
 export const genreReason = (key) => {
   const label = genreLabel(key);
-  return label ? `Related to your interest in ${label}` : null;
+  return label ? reasonText('genreInterest', { genre: label }) : null;
 };
 
 // A candidate's genre is only its declared `genre` (carried from `gatherings.genre`); nothing else is read.

@@ -123,7 +123,7 @@ export function gatheringSocialFacts(c) {
 export const FIT_POINTS = 2;
 export const MISMATCH_POINTS = -1;
 const MISMATCH = { one_on_one: ['group'], small_group: ['group'], group: ['one_on_one', 'small_group'], solo: [] };
-const REASON = { solo: '🧘 Solo-friendly', one_on_one: '👥 Just one other person', small_group: '👥 Small-group feel', group: '👥 Big-group feel' };
+const REASON = Object.fromEntries(['solo', 'one_on_one', 'small_group', 'group'].map((k) => [k, reasonText(`socialFit.${k}`)]));
 // party_type values the existing party-type match (priceAndPartyBonus) already credits when the ask's partyType is the same.
 const PARTY_TYPE_OF = { solo: 'solo', group: 'groups' };
 

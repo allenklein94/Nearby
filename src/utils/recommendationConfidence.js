@@ -7,6 +7,7 @@
 //   low     nothing strong: only popularity, timing, activity or facts (distance, weather...)
 // A card with no real reason gets no confidence and no headline (nothing is said).
 import { reasonKind, REASON_KINDS } from '../constants/signalPriority';
+import { translate } from '../i18n/translate';
 
 export const CONFIDENCE_HEADLINE = {
   high: 'A strong match for you',
@@ -36,7 +37,9 @@ export function recommendationConfidence(signals = [], { intent = false } = {}) 
   return 'low';
 }
 
+// The headline in the person's language (opts.language; the English CONFIDENCE_HEADLINE is the canonical form and the key).
 export function confidenceHeadline(signals, opts) {
   const c = recommendationConfidence(signals, opts);
-  return c ? CONFIDENCE_HEADLINE[c] : null;
+  if (!c) return null;
+  return opts?.language && opts.language !== 'en' ? translate(opts.language, `vocab.confidence.${c}`) : CONFIDENCE_HEADLINE[c];
 }

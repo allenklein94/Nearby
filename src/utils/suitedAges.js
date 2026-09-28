@@ -57,6 +57,14 @@ export function askedChildAges(text) {
   return found.slice(0, 4);
 }
 
+// "Suited to ages 5–10" as a template per shape (never the display label spliced into a sentence), so every language words it.
+export function suitedAgesReason(min, max) {
+  const { min: a, max: b } = cleanAgeRange(min, max);
+  if (a == null && b == null) return null;
+  if (a != null && b != null) return a === b ? reasonText('suitedAge', { age: a }) : reasonText('suitedAgesRange', { min: a, max: b });
+  return a != null ? reasonText('suitedAgesFrom', { min: a }) : reasonText('suitedAgesUpTo', { max: b });
+}
+
 export const AGE_FIT_POINTS = 2;
 export const AGE_MISMATCH_POINTS = -2;
 
@@ -69,7 +77,7 @@ export function applySuitedAgesToCandidates(candidates, ages) {
     if (fits.every((f) => f === null)) return c;
     const delta = fits.every((f) => f === true) ? AGE_FIT_POINTS : AGE_MISMATCH_POINTS;
     const band = ageBandOf(c.ageMin, c.ageMax);
-    const reason = delta > 0 ? (band ? band.reason : `Suited to ${ageRangeLabel(c.ageMin, c.ageMax).replace(/^Age /, 'age ').replace(/^Ages /, 'ages ')}`) : null;
+    const reason = delta > 0 ? (band ? band.reason : suitedAgesReason(c.ageMin, c.ageMax)) : null;
     return { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle, reasons: appendReason(c.reasons, reason) };
   });
 }

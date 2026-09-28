@@ -4,7 +4,7 @@
 // the host's declared format first, else its canonical tag when the tag itself names a format (Concerts, Workshops, Farmers
 // Markets...; near-certain tags only, test-verified). Nothing else is guessed. The ask names a format by deterministic phrase rules
 // on the person's own words (never AI). Ranking only: a fit lifts, a known different format sinks a little, never a filter.
-import { appendReason } from './recommendationReasonVocabulary';
+import { appendReason, reasonText } from './recommendationReasonVocabulary';
 export const ACTIVITY_FORMATS = [
   { key: 'drop_in', label: 'Drop-in', icon: '🚪', ask: /\bdrop[- ]in\b/i, commitment: 'drop_in' },
   { key: 'class', label: 'Class', icon: '🎓', ask: /\bclass(es)?\b|\blessons?\b/i, commitment: 'planned_event' },
@@ -59,7 +59,7 @@ export function formatFit(candidate, asked) {
   if (!Array.isArray(asked) || !asked.length) return { delta: 0, reason: null };
   const f = formatOf(candidate);
   if (!f) return { delta: 0, reason: null };
-  if (asked.includes(f)) return { delta: FORMAT_FIT_POINTS, reason: `${formatIcon(f)} ${formatLabel(f)}` };
+  if (asked.includes(f)) return { delta: FORMAT_FIT_POINTS, reason: reasonText('format', { format: `${formatIcon(f)} ${formatLabel(f)}` }) };
   return { delta: FORMAT_MISMATCH_POINTS, reason: null };
 }
 

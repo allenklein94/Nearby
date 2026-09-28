@@ -7,7 +7,7 @@
 // phrase rules ONLY when an activity word sits next to the qualifier ("easy hike", "high intensity workout"), so "easy dinner",
 // "high-energy restaurant", "low-key birthday" and "hard decision" declare nothing. Ranking only: a fit lifts, a clear opposite
 // sinks modestly, unknown is neutral, nothing is removed. Typed requests only (never Home/Discover feeds or business payloads).
-import { appendReason } from './recommendationReasonVocabulary';
+import { appendReason, reasonText } from './recommendationReasonVocabulary';
 
 export const INTENSITY_LEVELS = [
   { key: 'low_key', label: 'Low-key' },
@@ -59,8 +59,8 @@ function fit(declared, asked, label) {
   if (asked.some((a) => OPPOSITE[a] === declared)) return { delta: MISMATCH_POINTS, reason: null };
   return { delta: 0, reason: null };
 }
-export const intensityFit = (c, asked) => fit(intensityOfHostEnergy(c?.hostEnergy), asked ?? [], (k) => `⚡ ${INTENSITY_LEVELS.find((i) => i.key === k).label} pace`);
-export const effortFit = (c, asked) => fit(EFFORT_KEYS.includes(c?.effortLevel) ? c.effortLevel : null, asked ?? [], (k) => `💪 ${effortLabel(k)} effort`);
+export const intensityFit = (c, asked) => fit(intensityOfHostEnergy(c?.hostEnergy), asked ?? [], (k) => reasonText(`intensityPace.${k}`));
+export const effortFit = (c, asked) => fit(EFFORT_KEYS.includes(c?.effortLevel) ? c.effortLevel : null, asked ?? [], (k) => reasonText(`effortLevel.${k}`));
 
 function apply(candidates, asked, fitFn) {
   if (!Array.isArray(asked) || !asked.length) return candidates;

@@ -379,14 +379,14 @@ export function getBusinessAvailabilityReasons(row, { category, attributes, cuis
   }
   if (cuisine && row.cuisine && row.cuisine === cuisine) {
     const label = CUISINE_OPTIONS.find((c) => c.key === cuisine)?.label ?? cuisine;
-    reasons.push(askedForReason(`${label} food`));
+    reasons.push(reasonText('askedForCuisine', { cuisineFood: `${label} food` }));
   }
   const rowAttributes = Array.isArray(row.attributes) ? row.attributes : [];
   if (Array.isArray(attributes) && attributes.length > 0) {
     // Item 83: every matched quality, so "relaxed and quiet" reads "Quiet · Relaxed", not just the first.
     const matched = rowAttributes.filter((a) => attributes.includes(a));
     if (matched.length) {
-      reasons.push(matched.map((k) => BUSINESS_ATTRIBUTE_OPTIONS.find((o) => o.key === k)?.label ?? k).join(' · '));
+      reasons.push(reasonText('attributeList', { attributes: matched.map((k) => BUSINESS_ATTRIBUTE_OPTIONS.find((o) => o.key === k)?.label ?? k).join(' · ') }));
     }
   }
   const hobbyLink = hobbyAttributeMatch(row.attributes, declaredInterests);
@@ -412,9 +412,9 @@ export function getBusinessAvailabilityReasons(row, { category, attributes, cuis
     const rowAttributes = Array.isArray(row.attributes) ? row.attributes : [];
     if (row.cuisine && cuisineKeys.includes(row.cuisine)) {
       const label = CUISINE_OPTIONS.find((c) => c.key === row.cuisine)?.label ?? row.cuisine;
-      reasons.push(whoForName ? `${whoForName} tends to like ${label}` : `They tend to like ${label}`);
+      reasons.push(whoForName ? reasonText('whoForLikes', { name: whoForName, cuisine: label }) : reasonText('theyLike', { cuisine: label }));
     } else if (venueKeys.length > 0 && rowAttributes.some((a) => venueKeys.includes(a))) {
-      reasons.push(whoForName ? `Matches ${whoForName}'s taste` : 'Matches their taste');
+      reasons.push(whoForName ? reasonText('whoForTaste', { name: whoForName }) : reasonText('theirTaste'));
     }
   }
   return reasons.filter(Boolean);

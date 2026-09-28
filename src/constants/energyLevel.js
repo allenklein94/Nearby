@@ -3,7 +3,7 @@
 // deterministic phrase rules (never AI), ranking only (a lift for a fit, a small drop for a clear opposite, never a filter), one
 // honest reason line. A tag not listed has NO energy and is untouched -- nothing is guessed, and a major-only business is
 // never classified. Energy is a mood of the plan, not a fact about a person: it is never stored on a profile.
-import { appendReason } from './recommendationReasonVocabulary';
+import { appendReason, reasonText } from './recommendationReasonVocabulary';
 export const ENERGY_LEVELS = [
   { key: 'low_key', label: 'low-key', display: 'Low-key', icon: '🛋️',
     ask: /\blow[- ]?key\b|\blaid[- ]back\b|\bchill(ed)?\b|\brelax(ed|ing)?\b|\bmellow\b|\bcalm\b|\bquiet\b|\bcozy\b|\bcosy\b|\bnothing (too )?(crazy|wild)\b/i,
@@ -61,7 +61,7 @@ export function energyFit(tag, asked, hostEnergy = null) {
   const mine = energiesFromHost(hostEnergy) ?? energiesForTag(tag);
   if (mine.length === 0) return { delta: 0, reason: null };
   const hit = ENERGY_LEVELS.find((e) => asked.includes(e.key) && mine.includes(e.key));
-  if (hit) return { delta: ENERGY_FIT_POINTS, reason: `Fits a ${hit.label} plan` };
+  if (hit) return { delta: ENERGY_FIT_POINTS, reason: reasonText(`energyFit.${hit.key}`) };
   const clash = asked.some((k) => ENERGY_LEVELS.find((e) => e.key === k)?.opposite.some((o) => mine.includes(o)));
   return clash ? { delta: ENERGY_MISMATCH_POINTS, reason: null } : { delta: 0, reason: null };
 }

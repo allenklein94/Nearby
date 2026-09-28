@@ -1,5 +1,5 @@
 import { moneyLabel } from './outcomeDisplay';
-import { countLabel } from './plural';
+import { resultNoteText } from '../constants/recommendationReasonVocabulary';
 // Item 68 ("Businesses could create occasion-specific offers," CLAUDE.md) --
 // pure display helpers for a business's own occasion packages, split out
 // from services/occasionPackages.js (which also imports supabase, an
@@ -40,8 +40,8 @@ export function formatIncludedItemsLabel(includedItems) {
 // genuinely didn't set, never fabricating a placeholder for it.
 export function formatOccasionPackageDetail({ pricePerPerson, minGuests, availableDays }) {
   const parts = [];
-  if (pricePerPerson != null) parts.push(`${moneyLabel(pricePerPerson)}/person`);
-  if (minGuests != null) parts.push(`min ${countLabel(minGuests, 'guest')}`);
+  if (pricePerPerson != null) parts.push(resultNoteText('pricePerPerson', { price: moneyLabel(pricePerPerson) }));
+  if (minGuests != null) parts.push(minGuests === 1 ? resultNoteText('minGuest') : resultNoteText('minGuests', { count: minGuests }));
   const daysLabel = formatAvailableDaysLabel(availableDays);
   if (daysLabel) parts.push(daysLabel);
   return parts.join(' · ') || null;

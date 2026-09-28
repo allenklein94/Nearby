@@ -17,7 +17,9 @@ import { formatDistance } from './formatDistance';
 import { timeWindowState, windowPhrase } from './timeWindow';
 import { gatheringPrimaryAction, offerPrimaryAction } from './primaryAction';
 import { isContextRestatement } from '../constants/recommendationReasonVocabulary';
-import { localizeReasons } from './reasonLocalization';
+import { localizeReasons, localizeNote } from './reasonLocalization';
+import { localDistance, localWindow } from '../i18n/format';
+import { translate, DEFAULT_LANGUAGE } from '../i18n/translate';
 import { BUSINESS_RESULT_TYPES, businessActionForItem, intentResultBusinessRoute } from './businessAction';
 import { buildDirectionsUrl } from './planLogisticsActions';
 
@@ -37,18 +39,27 @@ export function validReasons(item) {
   return out;
 }
 
-function whenFor(item, now) {
+// The when half of the context line. English reads the time engine's own label; another language words the SAME decision
+// (i18n/format.js localWindow reads timeWindowParts), so the two can never disagree on phase.
+function whenFor(item, now, language = DEFAULT_LANGUAGE) {
+  const english = !language || language === DEFAULT_LANGUAGE;
   if (item?.type === 'gathering' && item.startsAt) {
     // a finished gathering (a friend's past plan) says so plainly instead of dropping its time
-    const st = timeWindowState({ start: item.startsAt, durationMinutes: item.durationMinutes }, now, 'event');
-    if (st.phase === 'over') return 'Already happened';
-    return st.label ?? null;
+    const win = { start: item.startsAt, durationMinutes: item.durationMinutes };
+    const st = timeWindowState(win, now, 'event');
+    if (st.phase === 'over') return english ? 'Already happened' : translate(language, 'vocab.when.alreadyHappened');
+    return english ? st.label ?? null : localWindow(win, now, 'event', language);
   }
   if (item?.type === 'business_availability' && (item.postingStartsAt || item.postingEndsAt)) {
-    return windowPhrase(item.postingStartsAt, item.postingEndsAt, 'availability', now);
+    return english
+      ? windowPhrase(item.postingStartsAt, item.postingEndsAt, 'availability', now)
+      : localWindow({ start: item.postingStartsAt, end: item.postingEndsAt }, now, 'availability', language);
   }
   return null;
 }
+
+// "1.2 mi" in English; the same figure in the person's words otherwise (miles stay miles, i18n/format.js).
+const distanceFor = (miles, language) => (!language || language === DEFAULT_LANGUAGE ? formatDistance(miles) : localDistance(miles, language));
 
 // Where a typed-ask result goes when tapped (the ONE mapping; side effects such as view logging stay with the caller).
 export function intentResultDestination(item, { typedText, classifyResult, submissionId, at = new Date() } = {}) {
@@ -102,7 +113,7 @@ function actionFor(item, { myUserId = null, now = new Date(), actionOpts = {} } 
 export function recommendationContext(item, opts = {}) {
   const now = opts.now instanceof Date ? opts.now : new Date(opts.now ?? Date.now());
   if (!item || !item.type) return { entity: null, reason: null, context: null, destination: null, action: null, reasons: [], canonicalReasons: [], fields: [] };
-  const context = [formatDistance(item.distanceMiles), whenFor(item, now)].filter(Boolean).join(' · ') || null;
+  const context = [distanceFor(item.distanceMiles, opts.language), whenFor(item, now, opts.language)].filter(Boolean).join(' · ') || null;
   // selection happens on the canonical English reasons; only the shown text is put in the person's language (opts.language)
   const canonical = validReasons(item);
   const reasons = localizeReasons(canonical, opts.language);
@@ -173,7 +184,7 @@ export function resultRowView(item, opts = {}) {
   let note = typeof item?.subtitle === 'string' && item.subtitle.trim() ? item.subtitle.trim() : null;
   if (note) {
     const parts = note.split(' · ').filter((p) => !c.canonicalReasons.includes(p.trim()));
-    note = parts.length ? parts.join(' · ') : null;
+    note = parts.length ? localizeNote(parts.join(' · '), opts.language) : null;
   }
   return {
     title: item?.title ?? null,

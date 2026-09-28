@@ -1,3 +1,5 @@
+import { reasonText } from '../constants/recommendationReasonVocabulary';
+
 // The one distance format for the whole app (owner item 48). Never a raw float ("1.23456 miles").
 //   under ~1000 ft  -> feet, rounded to the nearest 50:  "800 ft"   (under 100 ft reads "Under 100 ft")
 //   up to 10 mi     -> one decimal:                        "1.2 mi"
@@ -15,5 +17,5 @@ export function formatDistance(miles) {
 // "1.2 mi away" / "800 ft away" for reason lines; "Under 100 ft away".
 export function formatDistanceAway(miles) {
   const d = formatDistance(miles);
-  return d ? `${d} away` : null;
+  return d ? reasonText('distanceAway', { distance: d }) : null;
 }

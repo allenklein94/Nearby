@@ -4,7 +4,7 @@
 // Same keys, so a need matches an offer exactly. Structured and declared only: never inferred from a menu, a description, a cuisine,
 // a category or photos. Empty = not said (unknown), never "offers none". Matching ranks, it never removes.
 import { DIETARY_OPTIONS } from './businessAttributes';
-import { appendReason } from './recommendationReasonVocabulary';
+import { appendReason, reasonText } from './recommendationReasonVocabulary';
 
 export const DIETARY_KEYS = DIETARY_OPTIONS.map((o) => o.key);
 
@@ -78,7 +78,7 @@ export function applyDietaryToCandidates(candidates, needs) {
     const offered = dietaryOptionsOf(c?.businessPartner);
     if (offered.length === 0 || !needs.every((n) => offered.includes(n))) return c;
     const labels = BUSINESS_DIETARY_OPTIONS.filter((o) => needs.includes(o.key)).map((o) => o.label).join(' · ');
-    const reason = dietarySafetyNote(needs) ? `Business-declared: ${labels}` : labels;
+    const reason = reasonText(dietarySafetyNote(needs) ? 'dietaryDeclared' : 'dietaryList', { dietary: labels });
     return { ...c, score: (c.score ?? 0) + DIETARY_FIT_POINTS, dietaryReason: reason, subtitle: c.subtitle ?? reason, reasons: appendReason(c.reasons, reason) };
   });
 }

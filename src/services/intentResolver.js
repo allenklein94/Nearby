@@ -7,7 +7,7 @@ import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, get
 import { bookingModeOf } from '../constants/bookingMode';
 import { BUSINESS_RESULT_TYPES } from '../utils/businessAction';
 import { intentResultDestination } from '../utils/recommendationContext';
-import { askedForReason, occasionOfferedReason } from '../constants/recommendationReasonVocabulary';
+import { askedForReason, occasionOfferedReason, resultNoteText } from '../constants/recommendationReasonVocabulary';
 import { openNowAskFromText, candidateEntity, openNowLift, OPEN_NOW_CAPTION } from '../utils/operatingStatus';
 import { applyBusinessPriceToCandidates } from '../utils/priceBias';
 import { vibesFromAsk, applyVibeSinks, applyQualityDepth, frameDatePlaces, isDateAsk, datePartySize, dateFrame } from '../constants/businessVibes';
@@ -141,7 +141,7 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       // N/M spots taken" copy, not a new visual language invented here.
       // item 135: every real reason, for the context object's `reason` (utils/recommendationContext.js)
       reasons,
-      subtitle: isFull ? `🔒 Full — Join Waitlist (${peopleGoing(gathering, attendeeCount)}/${gathering.capacity} spots taken)` : (reasons[0] ?? null),
+      subtitle: isFull ? resultNoteText('fullWaitlistCount', { going: peopleGoing(gathering, attendeeCount), capacity: gathering.capacity }) : (reasons[0] ?? null),
       // Intent engine vision -- Experiences assembly, extended to gatherings
       // (2026-09-10): the gathering's own real interest_tag, carried onto
       // the candidate itself the same way resolveBusinessAvailability
@@ -504,7 +504,7 @@ async function resolvePolicyOnlyBusinesses(location, partySize, searchMiles = un
     title: `${row.partner_name} may be able to help`,
     // Exact wording per direct instruction: never "Available" -- this is a
     // standing willingness, not confirmed inventory.
-    subtitle: 'May be available — business confirmation required',
+    subtitle: resultNoteText('mayBeAvailable'),
     ...scored([{ code: 'base_close_distance', delta: row.distance_miles != null && row.distance_miles < 2 ? SCORE_CLOSE_DISTANCE : 0 }]),
   }));
 }
@@ -528,7 +528,7 @@ async function resolveOccasionOfferingBusinesses(location, occasion, searchMiles
     partnerId: row.partner_id,
     distanceMiles: row.distance_miles ?? null,
     title: `${row.partner_name} offers ${occasionLabel(occasion)} experiences`,
-    subtitle: 'Ask what they can do — business confirmation required',
+    subtitle: resultNoteText('askWhatTheyCan'),
     // found BECAUSE the business declared it offers this occasion (search_occasion_offering_businesses)
     reasons: [occasionOfferedReason(occasionLabel(occasion))].filter(Boolean),
     // occasionOfferingScore = the offering itself + the close-by bonus, named apart
@@ -1007,7 +1007,7 @@ export function buildFriendDiscoveryResultItem(category) {
     type: 'friend_discovery',
     id: 'friend-discovery',
     title: category ? `Meet people who like ${category}` : 'Meet new people nearby',
-    subtitle: 'People nearby who are also here to make friends — separate from dating.',
+    subtitle: resultNoteText('friendDiscovery'),
   };
 }
 

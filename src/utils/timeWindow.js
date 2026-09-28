@@ -33,29 +33,41 @@ export function windowEnd({ start, end, durationMinutes } = {}) {
   return s != null && Number.isFinite(durationMinutes) && durationMinutes >= 15 ? s + durationMinutes * 60000 : null;
 }
 
-// phase: 'unknown' | 'upcoming' | 'live' | 'ending_soon' | 'over'.  kind: 'event' | 'offer' | 'availability'.
-export function timeWindowState(win, now = new Date(), kind = 'event') {
+// The decision behind timeWindowState, as data, so another language can word the same answer (i18n/format.js).
+//   form: 'unknown' | 'upcoming' | 'justStarted' | 'over' | 'overEnded' | 'endingSoon' | 'until'
+export function timeWindowParts(win, now = new Date(), kind = 'event') {
   const nowMs = now instanceof Date ? now.getTime() : Number(now);
   const s = toMs(win?.start);
   const e = windowEnd(win ?? {});
-  if (s == null && e == null) return { phase: 'unknown', label: null, minutesLeft: null };
-
-  if (s != null && s > nowMs) return { phase: 'upcoming', label: whenLabel(new Date(s).toISOString(), new Date(nowMs)), minutesLeft: null };
-
+  if (s == null && e == null) return { phase: 'unknown', form: 'unknown', kind, nowMs };
+  if (s != null && s > nowMs) return { phase: 'upcoming', form: 'upcoming', kind, nowMs, startMs: s };
   if (e == null) {
     // Start only: the shared "just started" rule; never claims it is still going after that.
-    return nowMs - s <= JUST_STARTED_MIN * 60000
-      ? { phase: 'live', label: 'Happening now', minutesLeft: null }
-      : { phase: 'over', label: null, minutesLeft: null };
+    return nowMs - s <= JUST_STARTED_MIN * 60000 ? { phase: 'live', form: 'justStarted', kind, nowMs } : { phase: 'over', form: 'over', kind, nowMs };
   }
-  if (e <= nowMs) return { phase: 'over', label: kind === 'offer' ? 'Expired' : 'Ended', minutesLeft: 0 };
-
+  if (e <= nowMs) return { phase: 'over', form: 'overEnded', kind, nowMs, minutesLeft: 0 };
   const minutesLeft = Math.ceil((e - nowMs) / 60000);
-  if (minutesLeft <= ENDING_SOON_MIN) return { phase: 'ending_soon', label: `Ends in ${minutesLeft} min`, minutesLeft };
+  if (minutesLeft <= ENDING_SOON_MIN) return { phase: 'ending_soon', form: 'endingSoon', kind, nowMs, minutesLeft };
   const sameDay = new Date(e).toDateString() === new Date(nowMs).toDateString();
-  const until = sameDay ? clock(e) : `${new Date(e).toLocaleDateString([], { weekday: 'short' })} ${clock(e)}`;
-  const lead = s != null && kind === 'event' ? 'Happening now · until' : VERB[kind] ?? 'Until';
-  return { phase: 'live', label: `${lead} ${until}`, minutesLeft };
+  return { phase: 'live', form: 'until', kind, nowMs, endMs: e, sameDay, hasStart: s != null, minutesLeft };
+}
+
+// phase: 'unknown' | 'upcoming' | 'live' | 'ending_soon' | 'over'.  kind: 'event' | 'offer' | 'availability'.
+export function timeWindowState(win, now = new Date(), kind = 'event') {
+  const p = timeWindowParts(win, now, kind);
+  switch (p.form) {
+    case 'unknown': return { phase: 'unknown', label: null, minutesLeft: null };
+    case 'upcoming': return { phase: 'upcoming', label: whenLabel(new Date(p.startMs).toISOString(), new Date(p.nowMs)), minutesLeft: null };
+    case 'justStarted': return { phase: 'live', label: 'Happening now', minutesLeft: null };
+    case 'over': return { phase: 'over', label: null, minutesLeft: null };
+    case 'overEnded': return { phase: 'over', label: kind === 'offer' ? 'Expired' : 'Ended', minutesLeft: 0 };
+    case 'endingSoon': return { phase: 'ending_soon', label: `Ends in ${p.minutesLeft} min`, minutesLeft: p.minutesLeft };
+    default: {
+      const until = p.sameDay ? clock(p.endMs) : `${new Date(p.endMs).toLocaleDateString([], { weekday: 'short' })} ${clock(p.endMs)}`;
+      const lead = p.hasStart && kind === 'event' ? 'Happening now · until' : VERB[kind] ?? 'Until';
+      return { phase: 'live', label: `${lead} ${until}`, minutesLeft: p.minutesLeft };
+    }
+  }
 }
 
 // A gathering's wording, using its host-declared duration when it has one (else the start-only rule).

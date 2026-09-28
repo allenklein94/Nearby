@@ -2548,8 +2548,8 @@ export default function HomeScreen({ navigation }) {
                   <View style={styles.heroBody}>
                     <View style={{ flex: 1, marginRight: spacing.sm }}>
                       <Text style={styles.heroTitle} numberOfLines={1}>{attention.hero.title}</Text>
-                      {confidenceHeadline(attention.hero.reasons.map((text) => ({ text }))) ? (
-                        <Text style={styles.heroMeta} numberOfLines={1}>{confidenceHeadline(attention.hero.reasons.map((text) => ({ text })))}</Text>
+                      {confidenceHeadline(attention.hero.reasons.map((text) => ({ text })), { language }) ? (
+                        <Text style={styles.heroMeta} numberOfLines={1}>{confidenceHeadline(attention.hero.reasons.map((text) => ({ text })), { language })}</Text>
                       ) : null}
                       {heroCard.why ? <Text style={styles.heroMeta} numberOfLines={1}>{heroCard.why}</Text> : null}
                       {heroCard.meta ? <Text style={styles.heroMeta} numberOfLines={1}>{heroCard.meta}</Text> : null}
@@ -2603,7 +2603,7 @@ export default function HomeScreen({ navigation }) {
                   accessibilityRole="button"
                 >
                   <Text style={styles.trendingTitle}>{categoryStyleFor(g.interest_tag).icon} {g.title}</Text>
-                  {confidenceHeadline(signals) ? <Text style={styles.trendingMeta}>{confidenceHeadline(signals)}</Text> : null}
+                  {confidenceHeadline(signals, { language }) ? <Text style={styles.trendingMeta}>{confidenceHeadline(signals, { language })}</Text> : null}
                   {card.why ? <Text style={styles.trendingMeta}>{card.why}</Text> : null}
                   <Text style={styles.trendingMeta}>
                     {[card.meta, g.approvedAttendees ? `${attendeeTotal(g)} attending` : null].filter(Boolean).join(' · ')}

@@ -23,6 +23,12 @@ export function reasonText(key, vars = null) {
   return translate('en', `reasons.${key}`, vars);
 }
 
+// A typed-ask result row's status note ("🔒 Full — Join Waitlist"), canonical English from `resultNotes`; shown translated by
+// utils/reasonLocalization.js localizeNote.
+export function resultNoteText(key, vars = null) {
+  return translate('en', `resultNotes.${key}`, vars);
+}
+
 export const REASON_CATEGORIES = {
   INTEREST: 'interest',
   DISTANCE: 'distance',

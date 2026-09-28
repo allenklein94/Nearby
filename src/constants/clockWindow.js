@@ -9,7 +9,7 @@
 // Clock reading: AM/PM, noon/midnight and 24-hour hours are read as said; a bare hour 1-7 ("until 5", "before 3") is read as PM
 // (nobody means 5 in the morning); a bare 8-11 is ambiguous and is NOT guessed.
 import { lengthOf } from './timeBudget';
-import { appendReason } from './recommendationReasonVocabulary';
+import { appendReason, reasonText } from './recommendationReasonVocabulary';
 
 export const WINDOW_FIT_POINTS = 2;
 export const WINDOW_MISS_POINTS = -2;
@@ -77,6 +77,14 @@ export function clockLabel(minutes) {
   return `${h12}${m ? `:${String(m).padStart(2, '0')}` : ''} ${h < 12 ? 'AM' : 'PM'}`;
 }
 
+// "🕒 Fits before 3 PM" (the same phrase as windowPhrase, one template per shape so it can be worded in any language).
+export function windowFitReason(w) {
+  if (!w) return null;
+  if (w.after != null && w.before != null) return reasonText('clockBetween', { time1: clockLabel(w.after), time2: clockLabel(w.before) });
+  if (w.before != null) return reasonText('clockBefore', { time: clockLabel(w.before) });
+  return reasonText('clockAfter', { time: clockLabel(w.after) });
+}
+
 export function windowPhrase(w) {
   if (!w) return null;
   if (w.after != null && w.before != null) return `between ${clockLabel(w.after)} and ${clockLabel(w.before)}`;
@@ -140,10 +148,10 @@ export function windowFit(c, w, anchor) {
 // No date anchor = no constraint at all (returns the same array).
 export function applyClockWindowToCandidates(candidates, w, anchor) {
   if (!w || !anchor) return candidates;
-  const phrase = windowPhrase(w);
+  const reason = windowFitReason(w);
   return candidates.map((c) => {
     const fit = windowFit(c, w, anchor);
-    if (fit === 'fit') return { ...c, score: (c.score ?? 0) + WINDOW_FIT_POINTS, subtitle: c.subtitle ?? `🕒 Fits ${phrase}`, reasons: appendReason(c.reasons, `🕒 Fits ${phrase}`) };
+    if (fit === 'fit') return { ...c, score: (c.score ?? 0) + WINDOW_FIT_POINTS, subtitle: c.subtitle ?? reason, reasons: appendReason(c.reasons, reason) };
     if (fit === 'miss') return { ...c, score: (c.score ?? 0) + WINDOW_MISS_POINTS };
     return c;
   });

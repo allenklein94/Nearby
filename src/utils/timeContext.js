@@ -13,19 +13,32 @@ function shortTime(d) {
   return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/^(\d{1,2}):00(\s?[AP]M)$/i, '$1$2');
 }
 
-export function whenLabel(iso, now = new Date()) {
+// The decision behind whenLabel, as data, so another language can word the same answer (i18n/format.js localWhen).
+//   { form: 'now' } | { form: 'startsIn', minutes } | { form: 'today' | 'tonight' | 'tomorrow' | 'date', date }
+export function whenParts(iso, now = new Date()) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   const diffMs = d.getTime() - now.getTime();
-  if (diffMs <= 0 && -diffMs <= HAPPENING_NOW_PAST_MS) return 'Happening now';
-  if (diffMs > 0 && diffMs <= STARTS_IN_WINDOW_MIN * 60000) return `Starts in ${Math.max(1, Math.ceil(diffMs / 60000))} min`;
+  if (diffMs <= 0 && -diffMs <= HAPPENING_NOW_PAST_MS) return { form: 'now', date: d };
+  if (diffMs > 0 && diffMs <= STARTS_IN_WINDOW_MIN * 60000) return { form: 'startsIn', minutes: Math.max(1, Math.ceil(diffMs / 60000)), date: d };
   const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   const tomorrow = new Date(now);
   tomorrow.setDate(now.getDate() + 1);
-  const time = shortTime(d);
-  if (isSameDay(d, now)) return `${d.getHours() >= 18 ? 'Tonight' : 'Today'} · ${time}`;
-  if (isSameDay(d, tomorrow)) return `Tomorrow · ${time}`;
-  return `${d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} · ${time}`;
+  if (isSameDay(d, now)) return { form: d.getHours() >= 18 ? 'tonight' : 'today', date: d };
+  if (isSameDay(d, tomorrow)) return { form: 'tomorrow', date: d };
+  return { form: 'date', date: d };
+}
+
+export function whenLabel(iso, now = new Date()) {
+  const p = whenParts(iso, now);
+  if (!p) return null;
+  if (p.form === 'now') return 'Happening now';
+  if (p.form === 'startsIn') return `Starts in ${p.minutes} min`;
+  const time = shortTime(p.date);
+  if (p.form === 'today') return `Today · ${time}`;
+  if (p.form === 'tonight') return `Tonight · ${time}`;
+  if (p.form === 'tomorrow') return `Tomorrow · ${time}`;
+  return `${p.date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} · ${time}`;
 }
 
 // Kept as the shared name every card already calls; it now picks the clearest wording (see whenLabel).

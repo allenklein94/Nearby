@@ -6,7 +6,7 @@
 // unknown is untouched, nothing is removed. Scoped to typed requests only (never Home/Discover feeds).
 import { CATEGORY_GROUPS } from './gatheringCategories';
 import { TAG_FORMAT } from './activityFormat';
-import { appendReason } from './recommendationReasonVocabulary';
+import { appendReason, reasonText } from './recommendationReasonVocabulary';
 
 export const SKILL_LEVELS = [
   { key: 'beginner', label: 'Beginner' },
@@ -96,7 +96,7 @@ export const SKILL_MISMATCH_POINTS = -1;
 export function skillFit(candidate, asked) {
   const level = candidate?.skillLevel;
   if (!Array.isArray(asked) || !asked.length || !SKILL_LEVEL_KEYS.includes(level)) return { delta: 0, reason: null };
-  if (asked.some((a) => FITS[a]?.includes(level))) return { delta: SKILL_FIT_POINTS, reason: `🎯 ${skillLabel(level)}` };
+  if (asked.some((a) => FITS[a]?.includes(level))) return { delta: SKILL_FIT_POINTS, reason: reasonText('skill', { skill: skillLabel(level) }) };
   if (asked.some((a) => CONFLICTS[a]?.includes(level))) return { delta: SKILL_MISMATCH_POINTS, reason: null };
   return { delta: 0, reason: null };
 }
