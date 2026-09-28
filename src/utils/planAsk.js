@@ -6,6 +6,10 @@
 // supply. Nothing is invented: a part with no real supply is dropped by assembleExperience as before, and a plan still needs
 // a planning window (tonight / today / tomorrow / weekend) the person actually gave.
 
+import { tagsInText } from '../constants/categorySynonyms';
+import { canonicalGroupForTag } from '../constants/categoryMapping';
+import { ALCOHOL_TAGS } from '../constants/askFacets';
+
 // The parts of an outing, in the order they are usually done. First regex that matches a part wins; the order of the
 // person's own words decides the order shown.
 const PARTS = [
@@ -15,11 +19,28 @@ const PARTS = [
   { key: 'dessert', label: 'dessert', re: /\b(dessert|ice\s+cream|gelato|something\s+sweet)\b/i },
 ];
 
-// Explicit occasion words the person used. Deterministic; only these, never a guess from the category.
+// Item 130: a thing-to-do the person NAMES by its canonical tag ("live music", "mini golf", "dancing", "escape room") is the
+// activity part too, so the taxonomy keeps this current instead of a word list. Drink tags stay the drinks part (never both).
+// Not a part: a tag that says WHERE ("dinner near the park", "lunch at a museum cafe") and 'Outdoors', which is the
+// environment facet (askFacets, item 103), not a thing to do.
+const PLACE_WORD = /(^|\s)(near|by|at|in|around|beside|behind|inside|outside)(\s(the|a|an|my|our|this|that))?$/;
+const NOT_A_PART = new Set(['Outdoors']);
+// How far / how they get there is never an activity ("walking distance", "on my bike", "I'm driving": items 69/70).
+const TRAVEL_WORDS = /\bwalk(?:ing|able)?\s+distance\b|\bwithin\s+(?:a\s+)?walk(?:ing)?\b|\bwalk(?:ing)?\s+(?:there|over|from)\b|\bwalkable\b|\bon\s+(?:my|a|our)\s+bikes?\b|\bby\s+(?:bike|car|bus|train)\b|\bbik(?:e|ing)\s+(?:there|over)\b|\b(?:i'?m|we'?re|i\s+am|we\s+are)\s+(?:driving|walking|biking)\b|\b(?:a\s+)?short\s+drive\b|\bworth\s+the\s+drive\b/gi;
+const ACTIVITY_GROUPS = new Set(['activities_recreation', 'entertainment_nightlife', 'arts_culture_learning', 'outdoors_nature', 'attractions_things_to_see', 'family_kids']);
+
+// Explicit occasion words the person used. Deterministic; only these, never a guess from the category. Item 130 added the
+// unambiguous event words (graduation, baby shower, housewarming, bachelor(ette), engagement party, going-away party).
 const OCCASION_WORDS = [
   ['first_date', /\bfirst\s+date\b/i],
   ['date_night', /\bdate\s+night\b/i],
   ['anniversary', /\banniversary\b/i],
+  ['baby_shower', /\bbaby\s+shower\b/i],
+  ['bachelor_bachelorette', /\bbachelor(ette)?\s+part(y|ies)\b|\bhen\s+(party|do)\b|\bstag\s+(party|do)\b/i],
+  ['graduation', /\bgraduation\b|\bgrad\s+party\b/i],
+  ['housewarming', /\bhouse\s?warming\b/i],
+  ['engagement', /\bengagement\s+(party|dinner|celebration)\b/i],
+  ['farewell', /\b(farewell|going[- ]away)\s+(party|dinner|drinks|lunch)\b/i],
   ['birthday', /\bbirthday\b/i],
 ];
 
@@ -31,6 +52,13 @@ export function planParts(text) {
   for (const p of PARTS) {
     const m = t.match(p.re);
     if (m) found.push({ key: p.key, label: p.key === 'food' ? m[0].toLowerCase().replace(/^(a|an)\s+/, '') : p.label, at: m.index });
+  }
+  if (!found.some((p) => p.key === 'activity')) {
+    const named = tagsInText(t.replace(TRAVEL_WORDS, ' ')).find(({ tag, prev }) => ACTIVITY_GROUPS.has(canonicalGroupForTag(tag)) && !ALCOHOL_TAGS.includes(tag) && !NOT_A_PART.has(tag) && !PLACE_WORD.test(prev));
+    if (named) {
+      const at = t.toLowerCase().search(new RegExp(`\\b${named.word}`));
+      found.push({ key: 'activity', label: 'something to do', at: at >= 0 ? at : t.length });
+    }
   }
   return found.sort((a, b) => a.at - b.at).map(({ key, label }) => ({ key, label }));
 }

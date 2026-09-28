@@ -8050,6 +8050,13 @@
    "consumer": "code",
    "occurrences": 1,
    "group": null
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/utils/planAsk.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
   }
  ]
 }

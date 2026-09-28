@@ -130,6 +130,34 @@ export function tagsForPhrase(text) {
   return best ? [...best.tags] : [];
 }
 
+// Every canonical tag the text NAMES, in word order (item 130): "dinner and live music" -> [Restaurants?, Live Music]. Same
+// phrase map and whole-word rule as tagsForPhrase; longest phrase first, and a word belongs to at most one phrase, so
+// "mini golf" is Mini Golf, never Golf too. `word` = the first matched word as it appears normalized (for locating it);
+// `prev` = up to two normalized words right before the phrase ("near the" in "dinner near the park").
+export function tagsInText(text) {
+  const words = key(text).split(' ').filter(Boolean);
+  if (!words.length) return [];
+  const map = phraseMap();
+  const hits = [];
+  for (const [phrase, tags] of map) {
+    if (phrase.length < 3 || !tags.length) continue;
+    const pw = phrase.split(' ');
+    for (let i = 0; i + pw.length <= words.length; i++) {
+      if (pw.every((w, j) => words[i + j] === w)) hits.push({ start: i, len: pw.length, chars: phrase.length, tags });
+    }
+  }
+  hits.sort((a, b) => b.chars - a.chars || a.start - b.start);
+  const taken = new Set();
+  const kept = [];
+  for (const h of hits) {
+    const span = Array.from({ length: h.len }, (_, j) => h.start + j);
+    if (span.some((i) => taken.has(i))) continue;
+    span.forEach((i) => taken.add(i));
+    kept.push(h);
+  }
+  return kept.sort((a, b) => a.start - b.start).flatMap((h) => h.tags.map((tag) => ({ tag, word: words[h.start], prev: words.slice(Math.max(0, h.start - 2), h.start).join(' ') })));
+}
+
 // Everything a search should look for: the person's own words first, then the canonical tag names their words stand for.
 export function expandSearchTerms(text) {
   const own = String(text ?? '').trim();
