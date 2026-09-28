@@ -53,3 +53,58 @@ export const ONTOLOGY_KEYS = NEARBY_ONTOLOGY.map((l) => l.key);
 export function ontologyLayer(key) {
   return NEARBY_ONTOLOGY.find((l) => l.key === key) ?? null;
 }
+
+// ---- The locked pipeline (owner item 131, 2026-09-28, LOCKED) ----
+// How every ask/object is understood and acted on, in order. The first six stages ARE ontology layers above (description of
+// the thing); the rest is the reasoning chain. Naming only: each stage points at its ONE existing source. Differences from
+// the owner's sketch, kept on purpose: the category stage is the 19 groups (the owner's 16 plus Health & Personal Care,
+// Education & Classes and Attractions & Things to See, item 33); time, location, budget, availability and the social /
+// business signals stay ontology layers that feed the constraint and preference stages; ENTITY -> STATE -> ACTION stays the
+// lifecycle chain (item 100), and the ACTION stage below is that same primaryActionFor.
+export const NEARBY_PIPELINE = [
+  { key: 'category', layer: 'category' },
+  { key: 'subcategory', layer: 'subcategory' },
+  { key: 'activity', layer: 'activity' },
+  { key: 'tags', layer: 'tags', note: 'normalized tags/attributes: the one attribute vocabulary + category_synonyms' },
+  { key: 'occasion', layer: 'occasion' },
+  { key: 'group', layer: 'group', note: 'party type + stated size; "probably a group" (item 130) is a ranking signal, never a size' },
+  { key: 'temporary_intent', question: 'What do they want right now?',
+    client: { file: 'utils/askResolver.js', export: 'resolveAsk' }, note: 'words-first, AI only enhances; ends by intentExpiresAt (item 113); never becomes a preference' },
+  { key: 'persistent_interests', question: 'What do they generally like?',
+    client: { file: 'constants/blendedRanking.js', export: 'blendedCategoryScore' }, note: 'declared interests (profiles.interests) > learned affinity (private, item 95); only the person turns a learned affinity into an interest' },
+  { key: 'hard_constraints', question: 'What must be true?',
+    client: { file: 'utils/askEligibility.js', export: 'ELIGIBILITY_RULES' }, db: '_business_declines, hours, largest group, min spend, category, radius (item 117)', note: 'explicit facts only; unknown stays eligible' },
+  { key: 'soft_preferences', question: 'What would be nice?',
+    client: { file: 'utils/askPreferences.js', export: 'isPreferredCategory' }, note: 'hedged words, vibes, budget, distance, weather: lift or sink, never remove; session intent beats history (item 114)' },
+  { key: 'eligibility', question: 'What can be shown or routed at all?',
+    client: { file: 'utils/askEligibility.js', export: 'runAskEligibility' }, db: '_business_request_fanout filters', note: 'filter first, then rank (item 118)' },
+  { key: 'ranking', question: 'In what order?',
+    client: { file: 'constants/signalPriority.js', export: 'compareRanked' }, db: '_business_request_fanout order (separate by owner decision)', note: 'the ten-tier ladder (item 115); stronger tier always wins' },
+  { key: 'action', layer: 'action', client: { file: 'utils/primaryAction.js', export: 'primaryActionFor' }, note: 'from the object state (items 73/74)' },
+];
+export const PIPELINE_KEYS = NEARBY_PIPELINE.map((s) => s.key);
+
+// Which stages shape each surface TODAY, and which are locked out and why. A surface never re-implements a stage: it calls the
+// stage's source. `never` entries are locked decisions, guarded by nearbyOntology.test.js.
+const ALL = PIPELINE_KEYS;
+export const SURFACE_PIPELINE = {
+  home: { uses: ['category', 'subcategory', 'occasion', 'group', 'persistent_interests', 'eligibility', 'ranking', 'action'],
+    never: { temporary_intent: 'the feed has no current intent; a typed ask on Home is the search surface (item 114: no untyped mood control)' } },
+  discover: { uses: ALL, never: {} },
+  search: { uses: ALL, never: {}, note: 'typed asks on Home and Discover: resolveAsk -> resolveIntent' },
+  create: { uses: ['category', 'subcategory', 'activity', 'tags', 'occasion', 'group', 'temporary_intent', 'action'],
+    never: { ranking: 'creating is not choosing among results', persistent_interests: 'a prefill comes from the words, never the profile' } },
+  gatherings: { uses: ['category', 'subcategory', 'tags', 'group', 'persistent_interests', 'eligibility', 'ranking', 'action'],
+    never: { temporary_intent: 'feed, not an ask (item 114)' } },
+  people: { uses: ['group', 'persistent_interests', 'hard_constraints', 'eligibility', 'action'],
+    never: { temporary_intent: 'no stranger discovery via intent (hard privacy rule)' }, note: 'deck order is not on the ten-tier ladder' },
+  business: { uses: ['category', 'subcategory', 'activity', 'tags', 'occasion', 'group', 'temporary_intent', 'hard_constraints', 'soft_preferences', 'eligibility', 'ranking', 'action'],
+    never: { persistent_interests: 'a consumer\'s interests never reach a business (minimum payload)' },
+    note: 'temporary intent arrives only as the request\'s structured fields; routing eligibility + order are its own (item 116/117)' },
+  offers: { uses: ['eligibility', 'ranking', 'action'], never: {}, note: 'valid_until / request open gate the action; reliability orders the list' },
+  notifications: { uses: ['category', 'subcategory', 'persistent_interests', 'eligibility', 'action'],
+    never: { ranking: 'an event notifies its recipients; nothing is ranked (item 125)' }, note: 'eligibility = dedupe, block, mute in _notify_event_recipient' },
+  analytics: { uses: ['category', 'subcategory', 'occasion', 'group', 'temporary_intent', 'eligibility', 'ranking'],
+    never: { persistent_interests: 'internal views are structured and aggregated; no individual profile interests (items 126/127)' },
+    note: 'internal, service-role-only views over the typed-ask and routing audits (items 105, 126, 127)' },
+};

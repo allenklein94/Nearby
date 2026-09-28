@@ -97,3 +97,40 @@ describe('ENTITY and STATE layers (item 100)', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+// Item 131: the locked pipeline and which surfaces use which stage. Naming only; every stage points at a real source.
+describe('the locked pipeline (item 131)', () => {
+  const { NEARBY_PIPELINE, PIPELINE_KEYS, SURFACE_PIPELINE } = require('./nearbyOntology');
+
+  it('has the owner\'s thirteen stages in order', () => {
+    expect(PIPELINE_KEYS).toEqual(['category', 'subcategory', 'activity', 'tags', 'occasion', 'group', 'temporary_intent',
+      'persistent_interests', 'hard_constraints', 'soft_preferences', 'eligibility', 'ranking', 'action']);
+  });
+
+  it('every stage is an ontology layer or names a real, existing source', () => {
+    for (const s of NEARBY_PIPELINE) {
+      if (s.layer) expect(ONTOLOGY_KEYS).toContain(s.layer);
+      const client = s.client ?? ontologyLayer(s.layer)?.client;
+      expect(client).toBeTruthy();
+      const text = fs.readFileSync(path.join(SRC, client.file), 'utf8');
+      expect([s.key, new RegExp(`export (const|function|async function) ${client.export}\\b`).test(text)]).toEqual([s.key, true]);
+    }
+  });
+
+  it('covers the ten surfaces, each naming only real stages, never a stage it also uses', () => {
+    expect(Object.keys(SURFACE_PIPELINE).sort()).toEqual(['analytics', 'business', 'create', 'discover', 'gatherings', 'home', 'notifications', 'offers', 'people', 'search']);
+    for (const [name, s] of Object.entries(SURFACE_PIPELINE)) {
+      for (const k of [...s.uses, ...Object.keys(s.never)]) expect([name, PIPELINE_KEYS.includes(k)]).toEqual([name, true]);
+      for (const k of Object.keys(s.never)) expect([name, k, s.uses.includes(k)]).toEqual([name, k, false]);
+    }
+  });
+
+  it('keeps the locked separations', () => {
+    expect(SURFACE_PIPELINE.business.never.persistent_interests).toBeTruthy();
+    expect(SURFACE_PIPELINE.home.never.temporary_intent).toBeTruthy();
+    expect(SURFACE_PIPELINE.gatherings.never.temporary_intent).toBeTruthy();
+    expect(SURFACE_PIPELINE.people.never.temporary_intent).toBeTruthy();
+    expect(SURFACE_PIPELINE.notifications.never.ranking).toBeTruthy();
+    expect(NEARBY_PIPELINE.find((s) => s.key === 'ranking').db).toMatch(/separate/);
+  });
+});
