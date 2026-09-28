@@ -10,7 +10,9 @@ import path from 'path';
 import { translations } from '../i18n/translations';
 import { translate, interpolate, hasOwnTranslation, valueForms, pluralCategory, DEFAULT_LANGUAGE } from '../i18n/translate';
 import { localDistance, localDuration, localClock, localWhen, localWindow, localNumber, localDate } from '../i18n/format';
-import { parseReason, localizeReason, localizeReasons, localizeNote, REASON_PARSE_ORDER, LOCALIZED_NAMESPACES } from './reasonLocalization';
+import { parseReason, localizeReason, localizeReasons, localizeNote, localizeTitle, REASON_PARSE_ORDER, LOCALIZED_NAMESPACES } from './reasonLocalization';
+import { resultTitleText } from '../constants/recommendationReasonVocabulary';
+import { resultRowView as rowViewForTitles } from './recommendationContext';
 import { recommendationContext, contextItem, resultRowView, REASONLESS_KINDS } from './recommendationContext';
 import { gatheringCardModel } from './recommendationCard';
 import { recommendationRow, friendGoingReason } from './recommendationFacts';
@@ -391,6 +393,45 @@ describe('informational, sponsored and transactional rows stay reasonless in eve
       expect(c.reason).toBeNull();
       expect(c.reasons).toEqual([]);
     }
+  });
+});
+
+describe('result titles Nearby composes around a name', () => {
+  const titles = () => [
+    resultTitleText('hasAvailability', { business: 'Coastal Coffee' }),
+    resultTitleText('mayHelp', { business: 'Coastal Coffee' }),
+    resultTitleText('offersOccasion', { business: 'Coastal Coffee', occasion: 'Birthday' }),
+    resultTitleText('friendAlsoLooking', { name: 'Sam' }),
+    resultTitleText('aFriendAlsoLooking'),
+  ];
+  it('the English is byte-identical to the titles the resolver wrote before', () => {
+    expect(titles()).toEqual(['Coastal Coffee has availability', 'Coastal Coffee may be able to help', 'Coastal Coffee offers Birthday experiences',
+      'Sam is also looking for this', 'A friend is also looking for this']);
+    for (const t of titles()) expect(localizeTitle(t, 'en')).toBe(t);
+  });
+  it.each(OTHER_LANGS)('%s: every title is translated, the business/person name kept as written', (lang) => {
+    const out = titles().map((t) => localizeTitle(t, lang));
+    out.forEach((t, i) => expect([lang, i, t === titles()[i]]).toEqual([lang, i, false]));
+    for (const t of out.slice(0, 3)) expect(t).toContain('Coastal Coffee');
+    expect(out[3]).toContain('Sam');
+    expect(out[3]).not.toMatch(/\{\w+\}/);
+  });
+  it('German and Tagalog put the name where their grammar wants it', () => {
+    expect(localizeTitle('Coastal Coffee has availability', 'de')).toBe('Bei Coastal Coffee ist etwas frei');
+    expect(localizeTitle('Coastal Coffee offers Birthday experiences', 'de')).toBe('Coastal Coffee bietet Birthday-Erlebnisse an');
+    expect(localizeTitle('Sam is also looking for this', 'tl')).toBe('Hinahanap din ito ni Sam');
+  });
+  it('a title that is someone\'s own words is never re-read, whatever it says', () => {
+    const gathering = { type: 'gathering', id: 'g1', title: 'Bob has availability' };
+    expect(rowViewForTitles(gathering, { language: 'es' }).title).toBe('Bob has availability');
+    const posting = { type: 'business_availability', id: 'p1', title: 'Coastal Coffee has availability' };
+    expect(rowViewForTitles(posting, { language: 'es' }).title).toBe('Coastal Coffee tiene disponibilidad');
+    expect(localizeTitle('Taco Tuesday at the park', 'fr')).toBe('Taco Tuesday at the park');
+  });
+  it('the resolver builds these titles through the templates, and the rows render the localized title', () => {
+    const resolver = read('services/intentResolver.js');
+    expect(resolver).not.toMatch(/has availability`|may be able to help`|is also looking for this`|experiences`,/);
+    for (const f of ['screens/HomeScreen.js', 'screens/DiscoverHubScreen.js']) expect(read(f)).not.toMatch(/numberOfLines=\{1\}>\{item\.title\}<\/Text>\s*\{row\.reason/);
   });
 });
 

@@ -1135,7 +1135,7 @@ export default function HomeScreen({ navigation }) {
         style={styles.intentResultRow}
         onPress={() => handleIntentResultTap(item)}
         accessibilityRole="button"
-        accessibilityLabel={[item.title, row.reason, row.meta, row.action?.label].filter(Boolean).join(', ')}
+        accessibilityLabel={[row.title, row.reason, row.meta, row.action?.label].filter(Boolean).join(', ')}
       >
         <Ionicons
           name={INTENT_RESULT_ICONS[item.type] ?? 'people-outline'}
@@ -1145,7 +1145,7 @@ export default function HomeScreen({ navigation }) {
         />
         <View style={styles.intentResultTextCol}>
           {isTopPick && <NearbyPickBadge />}
-          <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
+          <Text style={styles.intentResultTitle} numberOfLines={1}>{row.title}</Text>
           {row.reason ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{row.reason}</Text> : null}
           {row.meta ? (
             <Text style={[styles.intentResultSubtitle, row.warn && { color: colors.danger }]} numberOfLines={1}>{row.meta}</Text>
@@ -1619,11 +1619,11 @@ export default function HomeScreen({ navigation }) {
                               style={styles.intentResultRow}
                               onPress={() => handleSurpriseResultTap(item)}
                               accessibilityRole="button"
-                              accessibilityLabel={[`${lane.label}: ${item.title}`, row.reason, row.meta, row.action?.label].filter(Boolean).join(', ')}
+                              accessibilityLabel={[`${lane.label}: ${row.title}`, row.reason, row.meta, row.action?.label].filter(Boolean).join(', ')}
                             >
                               <Ionicons name={INTENT_RESULT_ICONS[item.type] ?? 'sparkles-outline'} size={18} color={colors.primary} style={styles.intentResultIcon} />
                               <View style={styles.intentResultTextCol}>
-                                <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
+                                <Text style={styles.intentResultTitle} numberOfLines={1}>{row.title}</Text>
                                 {row.reason ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{row.reason}</Text> : null}
                                 {row.meta ? <Text style={[styles.intentResultSubtitle, row.warn && { color: colors.danger }]} numberOfLines={1}>{row.meta}</Text> : null}
                               </View>

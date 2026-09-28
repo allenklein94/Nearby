@@ -1456,13 +1456,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
         style={styles.intentSearchResultRow}
         onPress={() => onPress(item)}
         activeOpacity={0.85}
-        accessibilityLabel={[item.title, isTopPick ? 'Nearby Pick' : null, row.reason, row.meta, row.action?.label].filter(Boolean).join(', ')}
+        accessibilityLabel={[row.title, isTopPick ? 'Nearby Pick' : null, row.reason, row.meta, row.action?.label].filter(Boolean).join(', ')}
         accessibilityRole="button"
       >
         <Text style={styles.intentSearchResultEmoji}>{INTENT_SEARCH_TYPE_EMOJI[item.type] ?? '📌'}</Text>
         <View style={{ flex: 1 }}>
           {isTopPick && <NearbyPickBadge />}
-          <Text style={styles.intentSearchResultTitle} numberOfLines={1}>{item.title}</Text>
+          <Text style={styles.intentSearchResultTitle} numberOfLines={1}>{row.title}</Text>
           {row.reason ? <Text style={styles.intentSearchResultSubtitle} numberOfLines={1}>{row.reason}</Text> : null}
           {row.meta ? <Text style={[styles.intentSearchResultSubtitle, row.warn && { color: colors.danger }]} numberOfLines={1}>{row.meta}</Text> : null}
         </View>

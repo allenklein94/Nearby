@@ -7,7 +7,7 @@ import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, get
 import { bookingModeOf } from '../constants/bookingMode';
 import { BUSINESS_RESULT_TYPES } from '../utils/businessAction';
 import { intentResultDestination } from '../utils/recommendationContext';
-import { askedForReason, occasionOfferedReason, resultNoteText } from '../constants/recommendationReasonVocabulary';
+import { askedForReason, occasionOfferedReason, resultNoteText, resultTitleText } from '../constants/recommendationReasonVocabulary';
 import { openNowAskFromText, candidateEntity, openNowLift, OPEN_NOW_CAPTION } from '../utils/operatingStatus';
 import { applyBusinessPriceToCandidates } from '../utils/priceBias';
 import { vibesFromAsk, applyVibeSinks, applyQualityDepth, frameDatePlaces, isDateAsk, datePartySize, dateFrame } from '../constants/businessVibes';
@@ -309,7 +309,7 @@ async function resolveConnectedRequests(category, dateWindow) {
     type: 'friend_request',
     id: r.id,
     userId: r.requester_id,
-    title: `${r.requester_display_name ?? 'A friend'} is also looking for this`,
+    title: r.requester_display_name ? resultTitleText('friendAlsoLooking', { name: r.requester_display_name }) : resultTitleText('aFriendAlsoLooking'),
     subtitle: r.raw_text,
     // Product-critique follow-through, Aug 14 2026 (recommendation 3):
     // a plain accepted friendship has no messages/matches row behind it
@@ -431,7 +431,7 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
       postingStartsAt: row.starts_at ?? null,
       postingEndsAt: row.ends_at ?? null,
       distanceMiles: row.distance_miles ?? null,
-      title: `${row.partner_name} has availability`,
+      title: resultTitleText('hasAvailability', { business: row.partner_name }),
       subtitle: bonusReasons[0] ? `${baseSubtitle} · ${bonusReasons[0]}` : baseSubtitle,
       reasons: bonusReasons,
       // Intent engine vision -- Experiences assembly, first increment
@@ -501,7 +501,7 @@ async function resolvePolicyOnlyBusinesses(location, partySize, searchMiles = un
     id: row.partner_id,
     partnerId: row.partner_id,
     distanceMiles: row.distance_miles ?? null,
-    title: `${row.partner_name} may be able to help`,
+    title: resultTitleText('mayHelp', { business: row.partner_name }),
     // Exact wording per direct instruction: never "Available" -- this is a
     // standing willingness, not confirmed inventory.
     subtitle: resultNoteText('mayBeAvailable'),
@@ -527,7 +527,7 @@ async function resolveOccasionOfferingBusinesses(location, occasion, searchMiles
     id: row.partner_id,
     partnerId: row.partner_id,
     distanceMiles: row.distance_miles ?? null,
-    title: `${row.partner_name} offers ${occasionLabel(occasion)} experiences`,
+    title: resultTitleText('offersOccasion', { business: row.partner_name, occasion: occasionLabel(occasion) }),
     subtitle: resultNoteText('askWhatTheyCan'),
     // found BECAUSE the business declared it offers this occasion (search_occasion_offering_businesses)
     reasons: [occasionOfferedReason(occasionLabel(occasion))].filter(Boolean),

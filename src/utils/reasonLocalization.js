@@ -25,7 +25,7 @@ import { GENRE_OPTIONS } from './gatheringPractical';
 import { BUSINESS_DIETARY_OPTIONS } from '../constants/dietaryOptions';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS } from '../constants/businessAttributes';
 
-export const LOCALIZED_NAMESPACES = ['reasons', 'resultNotes'];
+export const LOCALIZED_NAMESPACES = ['reasons', 'resultNotes', 'resultTitles'];
 
 // Most specific first: a longer sentence that contains a shorter template's shape must be tried before it; typed templates
 // (closed vocabularies) before generic ones.
@@ -53,6 +53,7 @@ export const REASON_PARSE_ORDER = [
   'resultNotes.fullWaitlistCount', 'resultNotes.fullWaitlist', 'resultNotes.mayBeAvailable', 'resultNotes.askWhatTheyCan', 'resultNotes.friendDiscovery',
   'resultNotes.pricePerPerson', 'resultNotes.price', 'resultNotes.minGuest', 'resultNotes.minGuests', 'resultNotes.days',
   'reasons.atBusiness',
+  'resultTitles.offersOccasion', 'resultTitles.hasAvailability', 'resultTitles.mayHelp', 'resultTitles.aFriendAlsoLooking', 'resultTitles.friendAlsoLooking',
 ];
 
 // ---- typed placeholders: English value <-> localized value ----
@@ -175,6 +176,14 @@ export function localizeReasons(list, language = DEFAULT_LANGUAGE) {
 
 // A result row's detail line: each " · " part is its own note (a status line, a price, a registered reason); unregistered
 // parts (a business's own posting title) are kept as written.
+// A result row's title: a composed title ("Coastal Coffee has availability") in the person's language; any other title (a
+// gathering's or business's own words) exactly as stored.
+export function localizeTitle(text, language = DEFAULT_LANGUAGE) {
+  if (!text || !language || language === DEFAULT_LANGUAGE) return text;
+  const parsed = parseReason(text);
+  return parsed && parsed.key.startsWith('resultTitles.') ? localizeReason(text, language) : text;
+}
+
 export function localizeNote(text, language = DEFAULT_LANGUAGE) {
   if (!text || !language || language === DEFAULT_LANGUAGE) return text;
   const whole = localizeReason(text, language);

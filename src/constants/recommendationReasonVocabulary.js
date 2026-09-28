@@ -29,6 +29,12 @@ export function resultNoteText(key, vars = null) {
   return translate('en', `resultNotes.${key}`, vars);
 }
 
+// A typed-ask result title Nearby composes around a business or friend name ("Coastal Coffee has availability"), canonical
+// English from `resultTitles`; shown translated by utils/reasonLocalization.js localizeTitle.
+export function resultTitleText(key, vars = null) {
+  return translate('en', `resultTitles.${key}`, vars);
+}
+
 export const REASON_CATEGORIES = {
   INTEREST: 'interest',
   DISTANCE: 'distance',

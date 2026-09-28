@@ -17,7 +17,7 @@ import { formatDistance } from './formatDistance';
 import { timeWindowState, windowPhrase } from './timeWindow';
 import { gatheringPrimaryAction, offerPrimaryAction } from './primaryAction';
 import { isContextRestatement } from '../constants/recommendationReasonVocabulary';
-import { localizeReasons, localizeNote } from './reasonLocalization';
+import { localizeReasons, localizeNote, localizeTitle } from './reasonLocalization';
 import { localDistance, localWindow } from '../i18n/format';
 import { translate, DEFAULT_LANGUAGE } from '../i18n/translate';
 import { BUSINESS_RESULT_TYPES, businessActionForItem, intentResultBusinessRoute } from './businessAction';
@@ -176,6 +176,8 @@ export function contextItem(kind, row, { reasons = [], ...extra } = {}) {
   }
 }
 
+const COMPOSED_TITLE_TYPES = ['business_availability', 'business_policy_match', 'friend_request'];
+
 // The row a typed-ask or Surprise Me result renders (Home and Discover): the context's reason, its when/where line, the item's
 // own status note (price, "business confirmation required", a full gathering's waitlist line) only when it is NOT an explanation
 // already shown, and the action. The resolver's `subtitle` is a detail line, never a second explanation system.
@@ -187,7 +189,8 @@ export function resultRowView(item, opts = {}) {
     note = parts.length ? localizeNote(parts.join(' · '), opts.language) : null;
   }
   return {
-    title: item?.title ?? null,
+    // only the kinds whose title Nearby composes; everyone else's title is their own words, never re-read
+    title: COMPOSED_TITLE_TYPES.includes(item?.type) ? localizeTitle(item?.title ?? null, opts.language) : item?.title ?? null,
     reason: c.reason,
     meta: [c.context, note].filter(Boolean).join(' · ') || null,
     warn: Boolean(item?.isFull),

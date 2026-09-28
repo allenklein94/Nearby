@@ -3,6 +3,14 @@ export const translations = {
     // Shared recommendation reasons (explanation layer). {placeholders} are filled by i18n/translate.js; names, tags and
     // occasion names are inserted as stored. English is the canonical form the reason code builds and ranks on.
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    // Typed-ask result titles Nearby composes around a business or friend name (localization pass 3).
+    resultTitles: {
+      "friendAlsoLooking": "{name} is also looking for this",
+      "aFriendAlsoLooking": "A friend is also looking for this",
+      "hasAvailability": "{business} has availability",
+      "mayHelp": "{business} may be able to help",
+      "offersOccasion": "{business} offers {occasion} experiences"
+    },
     resultNotes: {
       "fullWaitlistCount": "🔒 Full — Join Waitlist ({going}/{capacity} spots taken)",
       "fullWaitlist": "🔒 Full — Join Waitlist",
@@ -658,6 +666,13 @@ export const translations = {
     },  },
   es: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    resultTitles: {
+      "friendAlsoLooking": "{name} también busca esto",
+      "aFriendAlsoLooking": "Un amigo también busca esto",
+      "hasAvailability": "{business} tiene disponibilidad",
+      "mayHelp": "{business} podría ayudarte",
+      "offersOccasion": "{business} ofrece experiencias de {occasion}"
+    },
     resultNotes: {
       "fullWaitlistCount": "🔒 Completo — Únete a la lista de espera ({going}/{capacity} lugares ocupados)",
       "fullWaitlist": "🔒 Completo — Únete a la lista de espera",
@@ -1337,6 +1352,13 @@ export const translations = {
   },
   de: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    resultTitles: {
+      "friendAlsoLooking": "{name} sucht auch danach",
+      "aFriendAlsoLooking": "Jemand aus deinem Freundeskreis sucht auch danach",
+      "hasAvailability": "Bei {business} ist etwas frei",
+      "mayHelp": "{business} kann dir vielleicht helfen",
+      "offersOccasion": "{business} bietet {occasion}-Erlebnisse an"
+    },
     resultNotes: {
       "fullWaitlistCount": "🔒 Ausgebucht — Auf die Warteliste ({going}/{capacity} Plätze belegt)",
       "fullWaitlist": "🔒 Ausgebucht — Auf die Warteliste",
@@ -1987,6 +2009,13 @@ export const translations = {
   },
   fr: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    resultTitles: {
+      "friendAlsoLooking": "{name} cherche aussi ça",
+      "aFriendAlsoLooking": "Un ami cherche aussi ça",
+      "hasAvailability": "{business} a des disponibilités",
+      "mayHelp": "{business} pourrait vous aider",
+      "offersOccasion": "{business} propose des expériences {occasion}"
+    },
     resultNotes: {
       "fullWaitlistCount": "🔒 Complet — Rejoindre la liste d’attente ({going}/{capacity} places prises)",
       "fullWaitlist": "🔒 Complet — Rejoindre la liste d’attente",
@@ -2646,6 +2675,13 @@ export const translations = {
   },
   pt: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    resultTitles: {
+      "friendAlsoLooking": "{name} também está procurando isso",
+      "aFriendAlsoLooking": "Um amigo também está procurando isso",
+      "hasAvailability": "{business} tem disponibilidade",
+      "mayHelp": "{business} pode ajudar",
+      "offersOccasion": "{business} oferece experiências de {occasion}"
+    },
     resultNotes: {
       "fullWaitlistCount": "🔒 Lotado — Entre na lista de espera ({going}/{capacity} vagas ocupadas)",
       "fullWaitlist": "🔒 Lotado — Entre na lista de espera",
@@ -3311,6 +3347,13 @@ export const translations = {
   },
   ht: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    resultTitles: {
+      "friendAlsoLooking": "{name} ap chèche sa tou",
+      "aFriendAlsoLooking": "Yon zanmi ap chèche sa tou",
+      "hasAvailability": "{business} gen disponiblite",
+      "mayHelp": "{business} ka ede w",
+      "offersOccasion": "{business} ofri eksperyans {occasion}"
+    },
     resultNotes: {
       "fullWaitlistCount": "🔒 Plen — Antre nan lis datant ({going}/{capacity} plas pran)",
       "fullWaitlist": "🔒 Plen — Antre nan lis datant",
@@ -3963,6 +4006,13 @@ export const translations = {
   },
   zh: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    resultTitles: {
+      "friendAlsoLooking": "{name}也在找这个",
+      "aFriendAlsoLooking": "有位朋友也在找这个",
+      "hasAvailability": "{business}有空位",
+      "mayHelp": "{business}或许能帮上忙",
+      "offersOccasion": "{business}提供{occasion}体验"
+    },
     resultNotes: {
       "fullWaitlistCount": "🔒 已满 — 加入候补名单（已占{going}/{capacity}个名额）",
       "fullWaitlist": "🔒 已满 — 加入候补名单",
@@ -4615,6 +4665,13 @@ export const translations = {
   },
   vi: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    resultTitles: {
+      "friendAlsoLooking": "{name} cũng đang tìm điều này",
+      "aFriendAlsoLooking": "Một người bạn cũng đang tìm điều này",
+      "hasAvailability": "{business} còn chỗ",
+      "mayHelp": "{business} có thể giúp bạn",
+      "offersOccasion": "{business} có trải nghiệm {occasion}"
+    },
     resultNotes: {
       "fullWaitlistCount": "🔒 Đã đủ chỗ — Vào danh sách chờ (đã có {going}/{capacity} chỗ)",
       "fullWaitlist": "🔒 Đã đủ chỗ — Vào danh sách chờ",
@@ -5265,6 +5322,13 @@ export const translations = {
   },
   tl: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    resultTitles: {
+      "friendAlsoLooking": "Hinahanap din ito ni {name}",
+      "aFriendAlsoLooking": "May kaibigang naghahanap din nito",
+      "hasAvailability": "May bakante ang {business}",
+      "mayHelp": "Baka makatulong ang {business}",
+      "offersOccasion": "May mga karanasan para sa {occasion} ang {business}"
+    },
     resultNotes: {
       "fullWaitlistCount": "🔒 Puno na — Sumali sa waitlist ({going}/{capacity} puwesto ang kuha na)",
       "fullWaitlist": "🔒 Puno na — Sumali sa waitlist",
@@ -5917,6 +5981,13 @@ export const translations = {
   },
   ru: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    resultTitles: {
+      "friendAlsoLooking": "{name} тоже ищет это",
+      "aFriendAlsoLooking": "Кто-то из друзей тоже ищет это",
+      "hasAvailability": "{business}: есть свободные места",
+      "mayHelp": "{business} может помочь",
+      "offersOccasion": "{business} предлагает впечатления: {occasion}"
+    },
     resultNotes: {
       "fullWaitlistCount": "🔒 Мест нет — В лист ожидания (занято {going}/{capacity})",
       "fullWaitlist": "🔒 Мест нет — В лист ожидания",
@@ -6599,6 +6670,13 @@ export const translations = {
   },
   ko: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    resultTitles: {
+      "friendAlsoLooking": "{name}님도 이걸 찾고 있어요",
+      "aFriendAlsoLooking": "친구도 이걸 찾고 있어요",
+      "hasAvailability": "{business}에 자리가 있어요",
+      "mayHelp": "{business}에서 도와줄 수 있을지도 몰라요",
+      "offersOccasion": "{business}에서 {occasion} 경험을 제공해요"
+    },
     resultNotes: {
       "fullWaitlistCount": "🔒 마감 — 대기자 명단 참여 ({going}/{capacity}명 참여 중)",
       "fullWaitlist": "🔒 마감 — 대기자 명단 참여",
