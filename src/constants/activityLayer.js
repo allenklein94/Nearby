@@ -19,12 +19,12 @@ export const ACTIVITIES = [
     fits: (b) => b.tags.includes('Coworking') || (b.tags.some((t) => ['Coffee', 'Bakeries'].includes(t)) && b.attributes.some((a) => ['laptop_friendly', 'quiet'].includes(a))),
   },
   {
-    key: 'first_date', label: 'a first date', icon: '💕', display: 'First date',
+    key: 'first_date', label: 'a first date', icon: '💕', display: 'First date', businessOnly: true,
     ask: /\bfirst\s+date\b/i,
     fits: (b) => b.occasions.includes('first_date') || (b.attributes.includes('date_friendly') && b.attributes.includes('quiet')),
   },
   {
-    key: 'meet_a_friend', label: 'meeting a friend', icon: '👥', display: 'Meet friends',
+    key: 'meet_a_friend', label: 'meeting a friend', icon: '👥', display: 'Meet friends', friendsPlan: true,
     ask: /\b(meet|meeting|see)\s+(up\s+with\s+)?(a\s+|my\s+)?(friends?|buddy|buddies|pals?)\b|\bcatch(ing)?\s+up\b|\bwith\s+(some\s+|my\s+|a\s+few\s+|a\s+couple\s+(of\s+)?|\d{1,2}\s+)?(friends|buddies|pals)\b/i,
     fits: (b) => b.tags.some((t) => ['Coffee', 'Brunch', 'Bars & Lounges', 'Restaurants', 'Dessert & Ice Cream', 'Bakeries'].includes(t)),
   },
@@ -39,7 +39,7 @@ export const ACTIVITIES = [
     fits: (b) => b.tags.some((t) => ['Breakfast', 'Brunch', 'Bakeries'].includes(t)),
   },
   {
-    key: 'group_hangout', label: 'a group hangout', icon: '🎈', display: 'Hang out as a group',
+    key: 'group_hangout', label: 'a group hangout', icon: '🎈', display: 'Hang out as a group', friendsPlan: true,
     ask: /\b(group|crew|team)\s+(hangout|outing|get[- ]together|night)\b|\bhang\s*out\s+with\s+(a\s+)?group\b/i,
     fits: (b) => b.attributes.includes('group_friendly') || b.partyTypes.includes('groups'),
   },
@@ -76,25 +76,42 @@ export function activitiesForBusiness(row) {
   return ACTIVITIES.filter((a) => a.fits(b)).map((a) => a.key);
 }
 
-// Item 132 (entity links, Activity -> Gathering): the SAME table answers "what can someone do at this gathering?", from what the
-// HOST declared: its category tag, its declared features (the gathering half of the attribute vocabulary) and its plan kind
-// (party_type). A gathering has no offered occasions, so occasion-only activities (a first date) never fit one. Nothing stored.
+// Item 132 (entity links, Activity -> Gathering; owner rules 2026-09-28): the SAME table answers "what can someone do at this
+// gathering?", from what the HOST declared only: its category tag, its declared features and its plan kind (party_type). Never
+// from attendees or profiles. Two gathering-only rules on top of the shared `fits`:
+//  - businessOnly (First date): never a gathering.
+//  - friendsPlan (Meet a friend, Hang out as a group): a gathering the host marked as a friends plan fits EXPLICITLY and is
+//    preferred; any other gathering still fits when its declared facts do (a Coffee gathering, a groups plan) -- compatible,
+//    never hidden. Businesses are unaffected (their accommodates_party_types keep the shared rule).
+// A gathering has no offered occasions, so occasion-only fits never apply. Nothing is stored.
 export function gatheringSignals(g) {
   return { tags: g?.interest_tag ? [g.interest_tag] : [], attributes: asArray(g?.features), occasions: [], partyTypes: g?.party_type ? [g.party_type] : [] };
 }
 
-export function activitiesForGathering(g) {
-  const s = gatheringSignals(g);
-  return ACTIVITIES.filter((a) => a.fits(s)).map((a) => a.key);
+// 'explicit' = the host marked it a friends plan for a friends activity; 'compatible' = its declared facts fit; null = no fit.
+export function gatheringActivityMatch(g, activity) {
+  if (!activity || activity.businessOnly) return null;
+  if (activity.friendsPlan && g?.party_type === 'friends') return 'explicit';
+  return activity.fits(gatheringSignals(g)) ? 'compatible' : null;
 }
 
-// The first asked activity this gathering fits, else null (same shape as activityFit for businesses).
+export function activitiesForGathering(g) {
+  return ACTIVITIES.filter((a) => gatheringActivityMatch(g, a)).map((a) => a.key);
+}
+
+// The best asked activity this gathering fits (an explicit friends plan beats a compatible fit), else null.
 export function gatheringActivityFit(g, askedActivities) {
   const asked = asArray(askedActivities);
   if (asked.length === 0) return null;
-  const mine = new Set(activitiesForGathering(g));
-  const hit = ACTIVITIES.find((a) => asked.includes(a.key) && mine.has(a.key));
-  return hit ? { key: hit.key, reason: `Good for ${hit.label}` } : null;
+  let best = null;
+  for (const a of ACTIVITIES) {
+    if (!asked.includes(a.key)) continue;
+    const match = gatheringActivityMatch(g, a);
+    if (!match) continue;
+    if (match === 'explicit') return { key: a.key, explicit: true, reason: `A friends plan, good for ${a.label}` };
+    if (!best) best = { key: a.key, explicit: false, reason: `Good for ${a.label}` };
+  }
+  return best;
 }
 
 // What the person's own words ask to do. Empty when the words name none (most asks).

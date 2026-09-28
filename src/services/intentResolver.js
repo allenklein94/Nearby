@@ -176,7 +176,8 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
         // (a full one only offers a waitlist spot)
         { code: 'base_availability', delta: isFull ? 0 : SCORE_CONFIRMED_AVAILABILITY_FLOOR },
         { code: 'base_title_mention', delta: titleMentionBonus(gathering.title, meaningfulWords) },
-        { code: 'base_activity_fit', delta: activityHit ? SCORE_ACTIVITY_FIT : 0 },
+        // an explicit friends plan is preferred over a merely compatible gathering (same tier, one more point)
+        { code: 'base_activity_fit', delta: activityHit ? SCORE_ACTIVITY_FIT + (activityHit.explicit ? 1 : 0) : 0 },
         { code: 'base_price_party', delta: priceAndPartyBonus(gathering, priceLevel, partyType) },
       ]),
     };

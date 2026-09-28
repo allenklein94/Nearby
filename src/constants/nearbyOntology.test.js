@@ -215,13 +215,22 @@ describe('Activity -> Gathering (item 132)', () => {
     expect(activitiesForGathering({ interest_tag: 'Coffee', party_type: 'date', features: ['quiet'] })).not.toContain('first_date');
   });
   it('fit gives the same reason wording as a business', () => {
-    expect(gatheringActivityFit({ interest_tag: 'Coffee' }, ['grab_coffee'])).toEqual({ key: 'grab_coffee', reason: 'Good for grabbing a coffee' });
+    expect(gatheringActivityFit({ interest_tag: 'Coffee' }, ['grab_coffee'])).toEqual({ key: 'grab_coffee', explicit: false, reason: 'Good for grabbing a coffee' });
     expect(gatheringActivityFit({ interest_tag: 'Coffee' }, [])).toBeNull();
     expect(gatheringActivityFit({ interest_tag: 'Hiking' }, ['grab_coffee'])).toBeNull();
   });
   it('the resolver ranks gatherings by it', () => {
     const src = fs.readFileSync(path.join(SRC, 'services/intentResolver.js'), 'utf8');
     expect(src).toMatch(/gatheringActivityFit\(gathering, askedActivities\)/);
-    expect(src).toMatch(/code: 'base_activity_fit', delta: activityHit \? SCORE_ACTIVITY_FIT : 0/);
+    expect(src).toMatch(/code: 'base_activity_fit', delta: activityHit \? SCORE_ACTIVITY_FIT \+ \(activityHit\.explicit \? 1 : 0\) : 0/);
+  });
+});
+
+describe('Activity -> Gathering owner rules leave businesses unchanged (item 132)', () => {
+  const { activitiesForBusiness } = require('./activityLayer');
+  it('First date still fits a business that declared it; friends-plan preference is gathering-only', () => {
+    expect(activitiesForBusiness({ offered_occasions: ['first_date'] })).toContain('first_date');
+    expect(activitiesForBusiness({ accommodates_party_types: ['friends'] })).not.toContain('meet_a_friend');
+    expect(activitiesForBusiness({ accommodates_party_types: ['groups'] })).toContain('group_hangout');
   });
 });
