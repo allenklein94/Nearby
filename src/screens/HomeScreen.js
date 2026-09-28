@@ -364,10 +364,21 @@ export default function HomeScreen({ navigation }) {
     setInterestedOverride((o) => ({ ...o, [g.id]: !on }));
     try {
       await setGatheringInterested(g.id, !on);
-      showSuccessToast(...interestedConfirmation(!on));
+      // Item 124: low-risk and private, so Undo sits on the toast and puts it back exactly as it was.
+      showSuccessToast(...interestedConfirmation(!on), { undo: () => undoCardInterested(g, on) });
     } catch (e) {
       setInterestedOverride((o) => ({ ...o, [g.id]: on }));
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => toggleCardInterested(g, on) });
+    }
+  }
+
+  async function undoCardInterested(g, previous) {
+    setInterestedOverride((o) => ({ ...o, [g.id]: previous }));
+    try {
+      await setGatheringInterested(g.id, previous);
+    } catch (e) {
+      setInterestedOverride((o) => ({ ...o, [g.id]: !previous }));
+      presentRecoverableError(Alert, { what: 'undo that', error: e, onRetry: () => undoCardInterested(g, previous) });
     }
   }
 

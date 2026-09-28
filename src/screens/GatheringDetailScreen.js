@@ -309,7 +309,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
     setTogglingInterested(true);
     try {
       await setGatheringInterested(gatheringId, next);
-      showSuccessToast(...interestedConfirmation(next));
+      // Item 124: low-risk and private, so Undo sits on the toast and puts it back exactly as it was.
+      showSuccessToast(...interestedConfirmation(next), { undo: () => undoInterested(!next) });
       if (next) {
         // One-time, inline (no screen): interest may feed anonymous local demand trends. Never repeats once acknowledged.
         const prefs = await getInterestedDemandPrefs().catch(() => null);
@@ -320,6 +321,16 @@ export default function GatheringDetailScreen({ route, navigation }) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => toggleInterested() });
     }
     setTogglingInterested(false);
+  }
+
+  async function undoInterested(previous) {
+    try {
+      await setGatheringInterested(gatheringId, previous);
+      if (previous === false) setShowDemandDisclosure(false);
+      await load();
+    } catch (e) {
+      presentRecoverableError(Alert, { what: 'undo that', error: e, onRetry: () => undoInterested(previous) });
+    }
   }
 
   async function handleConfirmIntent() {

@@ -58,3 +58,18 @@ export async function addLearnedInterestToProfile(tag) {
   if (updateError) throw new Error(updateError.message);
   return next;
 }
+
+// Undo for "Add to my interests" (item 124): takes back only the tag that tap added. Never used for anything else.
+export async function removeAddedInterestFromProfile(tag) {
+  const { data: auth } = await supabase.auth.getUser();
+  const userId = auth?.user?.id;
+  if (!userId || !tag) throw new Error('Not signed in.');
+  const { data, error } = await supabase.from('profiles').select('interests').eq('id', userId).single();
+  if (error) throw new Error(error.message);
+  const current = Array.isArray(data?.interests) ? data.interests : [];
+  if (!current.includes(tag)) return current;
+  const next = current.filter((t) => t !== tag);
+  const { error: updateError } = await supabase.from('profiles').update({ interests: next }).eq('id', userId);
+  if (updateError) throw new Error(updateError.message);
+  return next;
+}

@@ -9,7 +9,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { deleteAccount } from '../services/account';
 import { requestDataExport } from '../services/dataExport';
 import { clearNotificationArea } from '../services/notificationArea';
-import { clearMyBehaviorHistory, getMyBehaviorCategories, forgetBehaviorCategory, addLearnedInterestToProfile } from '../services/behaviorSignals';
+import { clearMyBehaviorHistory, getMyBehaviorCategories, forgetBehaviorCategory, addLearnedInterestToProfile, removeAddedInterestFromProfile } from '../services/behaviorSignals';
 import { learnedAffinities } from '../utils/learnedAffinity';
 import RecommendationCustomizePanel from '../components/RecommendationCustomizePanel';
 import { ONBOARDING_INTEREST_GROUPS, sanitizeInterestGroups } from '../constants/interestGraph';
@@ -882,7 +882,16 @@ export default function SettingsScreen({ navigation, route }) {
                       {!a.inProfile && (
                         <TouchableOpacity
                           onPress={() => addLearnedInterestToProfile(a.category)
-                            .then((next) => { setMyInterests(next); showSuccessToast('Added to your interests', `${a.category} is now on your profile.`); })
+                            .then((next) => {
+                            setMyInterests(next);
+                            // Item 124: Undo takes back only this tag, and only if the tap really added it.
+                            const added = !(myInterests ?? []).includes(a.category);
+                            showSuccessToast('Added to your interests', `${a.category} is now on your profile.`, added ? {
+                              undo: () => removeAddedInterestFromProfile(a.category)
+                                .then(setMyInterests)
+                                .catch((e) => presentRecoverableError(Alert, { what: 'undo that', error: e })),
+                            } : undefined);
+                          })
                             .catch((e) => presentRecoverableError(Alert, { what: 'add that interest', error: e }))}
                           accessibilityLabel={`Add ${a.category} to my interests`}
                           accessibilityRole="button"
