@@ -189,3 +189,39 @@ describe('item 131 audit guards', () => {
     expect(t).toMatch(/\.order\('id', \{ ascending: true \}\)\s*\n\s*\.range\(offset/);
   });
 });
+
+// Item 132: the entity links. Each names a real code path; the chain is connected end to end.
+describe('entity links', () => {
+  const { ENTITY_LINKS } = require('./nearbyOntology');
+  it.each(ENTITY_LINKS.map((l) => [`${l.from} ${l.verb} ${l.to}`, l]))('%s has a real source', (_, l) => {
+    const text = fs.readFileSync(path.join(SRC, l.client.file), 'utf8');
+    expect(text).toMatch(new RegExp(`export (?:default )?(?:const|function|async function) ${l.client.export}\\b`));
+  });
+  it('forms one chain from business to transaction', () => {
+    const order = ['business', 'activity', 'gathering', 'person', 'interest', 'recommendation', 'gathering', 'business_request', 'offer', 'transaction'];
+    expect(ENTITY_LINKS.map((l) => l.from).concat(ENTITY_LINKS[ENTITY_LINKS.length - 1].to)).toEqual(order);
+  });
+});
+
+describe('Activity -> Gathering (item 132)', () => {
+  const { activitiesForGathering, gatheringActivityFit } = require('./activityLayer');
+  it('a gathering fits an activity only through what its host declared', () => {
+    expect(activitiesForGathering({ interest_tag: 'Coffee' })).toEqual(expect.arrayContaining(['grab_coffee', 'meet_a_friend']));
+    expect(activitiesForGathering({ interest_tag: 'Hiking' })).toEqual([]);
+    expect(activitiesForGathering({ interest_tag: 'Hiking', party_type: 'groups' })).toContain('group_hangout');
+    expect(activitiesForGathering({})).toEqual([]);
+  });
+  it('occasion-only activities never fit a gathering (it declares no occasions)', () => {
+    expect(activitiesForGathering({ interest_tag: 'Coffee', party_type: 'date', features: ['quiet'] })).not.toContain('first_date');
+  });
+  it('fit gives the same reason wording as a business', () => {
+    expect(gatheringActivityFit({ interest_tag: 'Coffee' }, ['grab_coffee'])).toEqual({ key: 'grab_coffee', reason: 'Good for grabbing a coffee' });
+    expect(gatheringActivityFit({ interest_tag: 'Coffee' }, [])).toBeNull();
+    expect(gatheringActivityFit({ interest_tag: 'Hiking' }, ['grab_coffee'])).toBeNull();
+  });
+  it('the resolver ranks gatherings by it', () => {
+    const src = fs.readFileSync(path.join(SRC, 'services/intentResolver.js'), 'utf8');
+    expect(src).toMatch(/gatheringActivityFit\(gathering, askedActivities\)/);
+    expect(src).toMatch(/code: 'base_activity_fit', delta: activityHit \? SCORE_ACTIVITY_FIT : 0/);
+  });
+});

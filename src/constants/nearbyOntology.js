@@ -129,3 +129,23 @@ export const STAGE_CALLERS = {
   'services/experienceAssembly.js': 'search', 'services/surpriseMeLogic.js': 'search', 'services/celebrateSomething.js': 'celebrate',
   'services/gatherings.js': 'home',
 };
+
+// ---- Entity links (owner item 132, 2026-09-28) ----
+// Every entity connects to the next, so one intent can travel the whole ecosystem. Naming only: each link points at the ONE
+// existing code path that creates or reads it (nearbyOntology.test.js fails if one disappears). The one link that was missing,
+// Activity -> Gathering, was built with this item (activityLayer.js gatheringActivityFit, ranked in the typed-ask resolver).
+// Rules kept: an activity is derived, never stored; People on a gathering are counts to strangers, names only to members and
+// friends (item 75); Interests reach a business only as an aggregate of 5+ (item 131); a recommendation becomes a gathering
+// only when the person chooses "Create it yourself" (never automatically); a transaction = the accepted offer's reservation
+// and its redemption (Nearby-collected payment stays behind the Stripe live gates).
+export const ENTITY_LINKS = [
+  { from: 'business', to: 'activity', verb: 'offers', client: { file: 'constants/activityLayer.js', export: 'activitiesForBusiness' } },
+  { from: 'activity', to: 'gathering', verb: 'appears in', client: { file: 'constants/activityLayer.js', export: 'gatheringActivityFit' } },
+  { from: 'gathering', to: 'person', verb: 'has', client: { file: 'services/gatherings.js', export: 'expressInterest' }, db: 'gathering_interest (join_gathering)' },
+  { from: 'person', to: 'interest', verb: 'has', client: { file: 'hooks/useMyInterests.js', export: 'useMyInterests' }, db: 'profiles.interests (declared) + behavior_events (learned, private)' },
+  { from: 'interest', to: 'recommendation', verb: 'drives', client: { file: 'constants/blendedRanking.js', export: 'blendedCategoryScore' } },
+  { from: 'recommendation', to: 'gathering', verb: 'can become', client: { file: 'services/createAssistant.js', export: 'routeClassifiedIntentToCreation' } },
+  { from: 'gathering', to: 'business_request', verb: 'can create', client: { file: 'services/businessFulfillment.js', export: 'submitBusinessRequestForGathering' }, db: 'create_business_request_for_gathering' },
+  { from: 'business_request', to: 'offer', verb: 'creates', client: { file: 'services/businessFulfillment.js', export: 'submitBusinessOfferResponseForScreening' }, db: 'submit_business_offer (business_request_offers)' },
+  { from: 'offer', to: 'transaction', verb: 'creates', client: { file: 'services/businessFulfillment.js', export: 'acceptBusinessOffer' }, db: 'accept_business_offer -> business_reservations; complete_business_reservation = redemption' },
+];

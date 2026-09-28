@@ -76,6 +76,27 @@ export function activitiesForBusiness(row) {
   return ACTIVITIES.filter((a) => a.fits(b)).map((a) => a.key);
 }
 
+// Item 132 (entity links, Activity -> Gathering): the SAME table answers "what can someone do at this gathering?", from what the
+// HOST declared: its category tag, its declared features (the gathering half of the attribute vocabulary) and its plan kind
+// (party_type). A gathering has no offered occasions, so occasion-only activities (a first date) never fit one. Nothing stored.
+export function gatheringSignals(g) {
+  return { tags: g?.interest_tag ? [g.interest_tag] : [], attributes: asArray(g?.features), occasions: [], partyTypes: g?.party_type ? [g.party_type] : [] };
+}
+
+export function activitiesForGathering(g) {
+  const s = gatheringSignals(g);
+  return ACTIVITIES.filter((a) => a.fits(s)).map((a) => a.key);
+}
+
+// The first asked activity this gathering fits, else null (same shape as activityFit for businesses).
+export function gatheringActivityFit(g, askedActivities) {
+  const asked = asArray(askedActivities);
+  if (asked.length === 0) return null;
+  const mine = new Set(activitiesForGathering(g));
+  const hit = ACTIVITIES.find((a) => asked.includes(a.key) && mine.has(a.key));
+  return hit ? { key: hit.key, reason: `Good for ${hit.label}` } : null;
+}
+
 // What the person's own words ask to do. Empty when the words name none (most asks).
 export function activitiesFromText(text) {
   const t = String(text ?? '');

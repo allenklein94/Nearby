@@ -46,6 +46,7 @@ import {
   attributeAndCuisineBonus,
   hobbyAttributeBonus,
   activityFitBonus,
+  SCORE_ACTIVITY_FIT,
   accommodatesPartyTypeBonus,
   occasionBonus,
   occasionOfferingScore,
@@ -59,7 +60,7 @@ import {
   detectFriendDiscoveryIntent,
   SCORE_OCCASION_PACKAGE_FLOOR,
 } from './intentResolverScoring';
-import { activitiesFromText } from '../constants/activityLayer';
+import { activitiesFromText, gatheringActivityFit } from '../constants/activityLayer';
 import { energiesFromText, applyEnergyToCandidates } from '../constants/energyLevel';
 import { sessionIntentFromText, applySessionIntent } from '../constants/sessionIntent';
 import { askedChildAges, applySuitedAgesToCandidates } from '../utils/suitedAges';
@@ -112,8 +113,12 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
     return matchesDateWindow(g.scheduled_at, dateWindow);
   });
   const meaningfulWords = extractMeaningfulWords(rawText);
+  const askedActivities = activitiesFromText(rawText);
   return relevant.map((gathering) => {
-    const { reasons } = getGatheringFitReasons(gathering);
+    const { reasons: fitReasons } = getGatheringFitReasons(gathering);
+    // item 132: the asked activity reaches gatherings too (same table and weight as businesses, from host-declared facts)
+    const activityHit = gatheringActivityFit(gathering, askedActivities);
+    const reasons = activityHit ? [activityHit.reason, ...fitReasons] : fitReasons;
     // Universal Signal Remediation Pass, P0 item 1 (CLAUDE.md, Aug 28 2026):
     // capacity/approvedAttendees are already fetched by getNearbyGatherings()
     // -- this was a pure mapping omission, not a missing query. A full
@@ -171,6 +176,7 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
         // (a full one only offers a waitlist spot)
         { code: 'base_availability', delta: isFull ? 0 : SCORE_CONFIRMED_AVAILABILITY_FLOOR },
         { code: 'base_title_mention', delta: titleMentionBonus(gathering.title, meaningfulWords) },
+        { code: 'base_activity_fit', delta: activityHit ? SCORE_ACTIVITY_FIT : 0 },
         { code: 'base_price_party', delta: priceAndPartyBonus(gathering, priceLevel, partyType) },
       ]),
     };
