@@ -23,7 +23,7 @@ const SENSITIVE = ['birthdate', 'gender', 'gender_hidden', 'gender_identity', 'p
 
 // Reviewed exceptions: each reads a profile column for a stated, aggregate or first-party reason.
 const REVIEWED = {
-  get_business_insights: 'interests: top 5 interests aggregated over the business\'s own FOLLOWERS (no floor; open owner decision, item 131 audit)',
+  get_business_insights: 'interests: top 5 interests over the business\'s own FOLLOWERS, each shared by >= demand_min_people() distinct followers (item 131 decision)',
   get_partner_demand_signals: 'share_interest_in_demand: consent opt-out filter only, nothing returned',
   get_business_top_members: 'display_name: members of the business\'s OWN community (first-party)',
   get_business_conversations_summary: 'display_name: a customer who messaged this business',
@@ -60,7 +60,7 @@ describe('the opportunity payload', () => {
 });
 
 describe('demand a business sees about people it has not served stays floored', () => {
-  it.each(['get_partner_demand_signals', 'get_aggregated_demand_for_partner', 'get_occasion_demand_for_partner', 'get_availability_demand_preview'])('%s uses demand_min_people()', (n) => {
+  it.each(['get_partner_demand_signals', 'get_aggregated_demand_for_partner', 'get_occasion_demand_for_partner', 'get_availability_demand_preview', 'get_business_insights'])('%s uses demand_min_people()', (n) => {
     expect(latest.get(n).body).toMatch(/demand_min_people\(\)/);
   });
 });
@@ -68,5 +68,13 @@ describe('demand a business sees about people it has not served stays floored', 
 describe('group insights never expose a one-person interest', () => {
   it('a shared interest needs at least two attendees', () => {
     expect(latest.get('get_gathering_group_insights').body).toMatch(/having count\(\*\) >= 2/i);
+  });
+});
+
+// Item 131 decision (owner, LOCKED): lasting consumer interests reach a business only as an aggregate of >= 5 distinct people,
+// first-party or not. Every business-facing function that reads profiles.interests must floor it per interest.
+describe('lasting interests reach a business only through the floor of 5', () => {
+  it('get_business_insights suppresses any interest shared by fewer than demand_min_people() followers', () => {
+    expect(latest.get('get_business_insights').body).toMatch(/having\s+count\(distinct bf\.user_id\)\s*>=\s*demand_min_people\(\)/i);
   });
 });
