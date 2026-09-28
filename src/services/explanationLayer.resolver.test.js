@@ -118,7 +118,8 @@ describe('centralized, presentation only', () => {
     }
   });
   it('only the vocabulary writes the explanation phrases', () => {
-    for (const f of files.filter((x) => !x.endsWith('recommendationReasonVocabulary.js'))) {
+    // the vocabulary builds them; the localization system (i18n/translations.js) holds their wording in every language
+    for (const f of files.filter((x) => !x.endsWith('recommendationReasonVocabulary.js') && !x.endsWith('i18n/translations.js'))) {
       expect([f, /[`'"](Because you asked for |Good for \$|A friends plan, good for |Offers \$\{)/.test(fs.readFileSync(f, 'utf8'))]).toEqual([f, false]);
     }
   });

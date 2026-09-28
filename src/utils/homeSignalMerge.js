@@ -10,6 +10,7 @@ import { interestMatch } from './interestMatch';
 import { friendsInterestReason } from './friendInterests';
 import { attendeeTotal } from './gatheringFullness';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
+import { reasonText } from '../constants/recommendationReasonVocabulary';
 
 export const SIGNAL_TEXT = {
   // The reason is decided by interestMatch (item 60): a tag the person declared reads "Because you like X"; one that is
@@ -19,12 +20,13 @@ export const SIGNAL_TEXT = {
   // Popular, not personal: says how many are really going (approved attendees; Interested is private and never counted).
   trending: (g) => {
     const n = attendeeTotal(g);
-    return n >= TRENDING_ATTENDANCE_MIN ? `Trending nearby · ${n} going` : 'Trending nearby';
+    return n >= TRENDING_ATTENDANCE_MIN ? reasonText('trendingGoing', { count: n }) : reasonText('trendingNearby');
   },
-  soon: () => 'Starting soon',
+  soon: () => reasonText('startingSoon'),
   friend: (g, isPast) => {
     const name = g?.profiles?.display_name;
-    return `${name || 'A friend'} ${isPast ? 'hosted' : 'is hosting'} this`;
+    if (!name) return reasonText(isPast ? 'aFriendHosted' : 'aFriendHosting');
+    return reasonText(isPast ? 'friendHosted' : 'friendHosting', { name });
   },
 };
 

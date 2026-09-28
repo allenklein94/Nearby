@@ -15,6 +15,13 @@
 // a real, previously-existing risk: the weather-context reason strings
 // were independently re-typed, verbatim, in both homeRecommendations.js
 // and intentResolver.js before this, with no shared source between them.
+import { translate } from '../i18n/translate';
+
+// Reason wording lives in the app's localization system (i18n/translations.js `reasons`). The code builds and ranks on the
+// canonical ENGLISH form (reasonText); screens show it in the person's language through utils/reasonLocalization.js.
+export function reasonText(key, vars = null) {
+  return translate('en', `reasons.${key}`, vars);
+}
 
 export const REASON_CATEGORIES = {
   INTEREST: 'interest',
@@ -53,9 +60,9 @@ export const REASON_CATEGORY_ICONS = {
 // that another doesn't.
 export const REASON_TEXT = {
   MATCHES_INTERESTS: { text: 'Matches your interests', category: REASON_CATEGORIES.INTEREST },
-  HAPPENING_TODAY: { text: 'Happening today', category: REASON_CATEGORIES.TIME },
-  WEATHER_GOOD_INDOOR: { text: 'A good indoor option with weather coming in', category: REASON_CATEGORIES.CONTEXT },
-  WEATHER_GOOD_OUTDOOR: { text: 'Great weather for this', category: REASON_CATEGORIES.CONTEXT },
+  HAPPENING_TODAY: { text: reasonText('happeningToday'), category: REASON_CATEGORIES.TIME },
+  WEATHER_GOOD_INDOOR: { text: reasonText('weatherIndoor'), category: REASON_CATEGORIES.CONTEXT },
+  WEATHER_GOOD_OUTDOOR: { text: reasonText('weatherOutdoor'), category: REASON_CATEGORIES.CONTEXT },
 };
 
 // "Matches your interests" says nothing checkable. When the matched interest is known (it is the gathering's own
@@ -64,7 +71,7 @@ export const REASON_TEXT = {
 // Item 135 follow-up (owner, 2026-09-28): no generic fallback -- with nothing to name, there is no reason (null, omitted).
 export function becauseYouLikeReason(tag) {
   const clean = typeof tag === 'string' ? tag.trim() : '';
-  return clean ? `Because you like ${clean}` : null;
+  return clean ? reasonText('becauseYouLike', { category: clean }) : null;
 }
 
 // ---- The explanation layer (owner, 2026-09-28, LOCKED) ----
@@ -82,26 +89,26 @@ const cleanLabel = (v) => (typeof v === 'string' ? v.trim() : '');
 // The ask named this category or cuisine (the result really is in it).
 export function askedForReason(label) {
   const clean = cleanLabel(label);
-  return clean ? `Because you asked for ${clean}` : null;
+  return clean ? reasonText('askedFor', { category: clean }) : null;
 }
 
 // The ask wants to do this activity and the business/gathering declared what supports it (constants/activityLayer.js).
 export function activityReason(activityLabel) {
   const clean = cleanLabel(activityLabel);
-  return clean ? `Good for ${clean}` : null;
+  return clean ? reasonText('activity', { activity: clean }) : null;
 }
 
 // An explicit friends plan for a friends activity (a gathering the HOST marked as a friends plan, item 132).
 export function friendsPlanActivityReason(activityLabel) {
   const clean = cleanLabel(activityLabel);
-  return clean ? `A friends plan, good for ${clean}` : null;
+  return clean ? reasonText('friendsPlanActivity', { activity: clean }) : null;
 }
 
 // The ask's occasion, and the BUSINESS declared that it offers it (brand_partners.offered_occasions). Never for a gathering
 // (a gathering has no occasion); a business that only wants more of it (priority_occasions) gets no occasion reason.
 export function occasionOfferedReason(occasionLabel) {
   const clean = cleanLabel(occasionLabel);
-  return clean ? `Offers ${clean} experiences` : null;
+  return clean ? reasonText('occasionOffered', { occasion: clean }) : null;
 }
 
 const EXPLANATION_PATTERNS = [

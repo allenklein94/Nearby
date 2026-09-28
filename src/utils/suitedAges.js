@@ -2,7 +2,7 @@
 // join or buy, and it is never inferred. NULL bound = open ("Ages 5+", "Up to age 12"); both null = not said = nothing shown.
 // Options stop at 17 on purpose (item 87 lock, migration 20270229): 18+ / 21+ are business house rules only, never a descriptive
 // label, and a gathering age limit stays parked. Every declared range therefore includes someone under 18.
-import { appendReason } from '../constants/recommendationReasonVocabulary';
+import { appendReason, reasonText } from '../constants/recommendationReasonVocabulary';
 export const AGE_MIN_OPTIONS = [0, 1, 2, 3, 5, 8, 13];
 export const AGE_MAX_OPTIONS = [2, 5, 12, 17];
 
@@ -19,9 +19,9 @@ export function cleanAgeRange(min, max) {
 // All ages = from 0 with no upper end, an explicit declaration that is distinct from unset (both null = not said).
 // It describes suitability only; it never promises the business admits everyone (its own rules still apply).
 export const AGE_BANDS = [
-  { key: 'all_ages', label: 'All ages', min: 0, max: null, reason: 'Suited to all ages' },
-  { key: 'kids', label: 'Kids (up to 12)', min: 0, max: 12, reason: 'Suited to kids up to 12' },
-  { key: 'teens', label: 'Teens (13–17)', min: 13, max: 17, reason: 'Suited to teens 13–17' },
+  { key: 'all_ages', label: 'All ages', min: 0, max: null, reason: reasonText('suitedAllAges') },
+  { key: 'kids', label: 'Kids (up to 12)', min: 0, max: 12, reason: reasonText('suitedKids') },
+  { key: 'teens', label: 'Teens (13–17)', min: 13, max: 17, reason: reasonText('suitedTeens') },
 ];
 
 // The band a stored range is exactly equal to, else null (an exact range such as 3–8, or nothing declared).

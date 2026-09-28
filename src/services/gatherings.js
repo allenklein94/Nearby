@@ -10,7 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { getMyFriends } from './friends';
 import { getMyCommunities } from './communities';
-import { REASON_TEXT, becauseYouLikeReason } from '../constants/recommendationReasonVocabulary';
+import { REASON_TEXT, becauseYouLikeReason, reasonText } from '../constants/recommendationReasonVocabulary';
 import { SIGNAL_TIERS, tierVector, compareRanked } from '../constants/signalPriority';
 import { getUserLocation, requireUserLocation } from './userLocation';
 import { isGatheringPast, isGatheringUpcoming } from '../utils/objectState';
@@ -1178,7 +1178,7 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendA
   const attendeeCount = attendeeTotal(gathering);
 
   if (attendeeCount > 0) {
-    add('attendance', Math.min(attendeeCount, 10), `${attendeeCount} ${attendeeCount === 1 ? 'person' : 'people'} attending`);
+    add('attendance', Math.min(attendeeCount, 10), attendeeCount === 1 ? reasonText('onePersonAttending') : reasonText('peopleAttending', { count: attendeeCount }));
   }
   if (gathering.matchesYourInterests) {
     // P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): shared,
@@ -1188,7 +1188,7 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendA
   }
   if (friendAttendeeCount > 0) {
     // Group Insights plan (2026-09-18): a real, already-connected-only signal (accepted friends among the approved attendees).
-    add('friends_attending', 4, `${friendAttendeeCount} of your friends ${friendAttendeeCount === 1 ? 'is' : 'are'} attending`);
+    add('friends_attending', 4, friendAttendeeCount === 1 ? reasonText('oneFriendAttending') : reasonText('friendsAttending', { count: friendAttendeeCount }));
   }
   if (gathering.distanceMiles !== null && gathering.distanceMiles !== undefined && gathering.distanceMiles < 2 && gathering.distanceLabel) {
     // Deliberately NOT the shared REASON_TEXT constant -- distanceLabel
@@ -1203,7 +1203,7 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendA
   const isToday = scheduled.getFullYear() === now.getFullYear() && scheduled.getMonth() === now.getMonth() && scheduled.getDate() === now.getDate();
   if (isToday) add('today', 2, REASON_TEXT.HAPPENING_TODAY.text);
   if (firstTimerCount > 0) {
-    add('first_timers', 1, `${firstTimerCount} ${firstTimerCount === 1 ? 'attendee is' : 'attendees are'} also first-timers`);
+    add('first_timers', 1, firstTimerCount === 1 ? reasonText('oneFirstTimer') : reasonText('firstTimers', { count: firstTimerCount }));
   }
   // Can it actually happen: a gathering with room (a full one offers only a waitlist spot). Rank-only, no reason line.
   if (!isGatheringFull(gathering, attendeeCount)) add('has_room', HAS_ROOM_POINTS, null, { rankOnly: true });

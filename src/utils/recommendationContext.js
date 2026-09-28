@@ -17,6 +17,7 @@ import { formatDistance } from './formatDistance';
 import { timeWindowState, windowPhrase } from './timeWindow';
 import { gatheringPrimaryAction, offerPrimaryAction } from './primaryAction';
 import { isContextRestatement } from '../constants/recommendationReasonVocabulary';
+import { localizeReasons } from './reasonLocalization';
 import { BUSINESS_RESULT_TYPES, businessActionForItem, intentResultBusinessRoute } from './businessAction';
 import { buildDirectionsUrl } from './planLogisticsActions';
 
@@ -100,9 +101,11 @@ function actionFor(item, { myUserId = null, now = new Date(), actionOpts = {} } 
 
 export function recommendationContext(item, opts = {}) {
   const now = opts.now instanceof Date ? opts.now : new Date(opts.now ?? Date.now());
-  if (!item || !item.type) return { entity: null, reason: null, context: null, destination: null, action: null, reasons: [], fields: [] };
+  if (!item || !item.type) return { entity: null, reason: null, context: null, destination: null, action: null, reasons: [], canonicalReasons: [], fields: [] };
   const context = [formatDistance(item.distanceMiles), whenFor(item, now)].filter(Boolean).join(' · ') || null;
-  const reasons = validReasons(item);
+  // selection happens on the canonical English reasons; only the shown text is put in the person's language (opts.language)
+  const canonical = validReasons(item);
+  const reasons = localizeReasons(canonical, opts.language);
   const model = {
     entity: { kind: item.type, id: item.id ?? null, title: item.title ?? null },
     reason: reasons[0] ?? null,
@@ -111,7 +114,7 @@ export function recommendationContext(item, opts = {}) {
     action: actionFor(item, { myUserId: opts.myUserId ?? null, now, actionOpts: opts.actionOpts ?? {} }),
   };
   // `reasons` = every valid reason (a card with room may show several; `reason` is always the first of them)
-  return { ...model, reasons, fields: CONTEXT_FIELDS.filter((f) => model[f]) };
+  return { ...model, reasons, canonicalReasons: canonical, fields: CONTEXT_FIELDS.filter((f) => model[f]) };
 }
 
 // The action label a typed-ask result ROW shows beside its chevron (Home, Discover). Business results only, as before item 135,
@@ -169,7 +172,7 @@ export function resultRowView(item, opts = {}) {
   const c = recommendationContext(item, opts);
   let note = typeof item?.subtitle === 'string' && item.subtitle.trim() ? item.subtitle.trim() : null;
   if (note) {
-    const parts = note.split(' · ').filter((p) => !c.reasons.includes(p.trim()));
+    const parts = note.split(' · ').filter((p) => !c.canonicalReasons.includes(p.trim()));
     note = parts.length ? parts.join(' · ') : null;
   }
   return {

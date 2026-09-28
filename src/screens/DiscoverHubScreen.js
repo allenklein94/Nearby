@@ -1,3 +1,4 @@
+import { useLanguage } from '../context/LanguageContext';
 import { peopleTonightBanner, countTonightSupply } from '../utils/meetTonight';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
@@ -60,7 +61,7 @@ import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { railGroups } from '../constants/discoverCategoryRail';
 import { friendGoingReason, communityReason } from '../utils/recommendationFacts';
 import { getMyFriends } from '../services/friends';
-import { becauseYouLikeReason } from '../constants/recommendationReasonVocabulary';
+import { becauseYouLikeReason, reasonText } from '../constants/recommendationReasonVocabulary';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { splitTonight } from '../utils/categoryTonight';
 import { buildDiscoverSections, compareDiscover } from '../utils/discoverSections';
@@ -195,6 +196,7 @@ const LAST_PEOPLE_SUBMODE_KEY = 'discover_last_people_submode';
 // no-new-API-cost convention.
 export default function DiscoverHubScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
+  const { language } = useLanguage(); // recommendation reasons are shown in the person's language (utils/reasonLocalization.js)
   const styles = getStyles(colors, shadow);
   const { session } = useAuth();
   const myUserId = session?.user?.id ?? null;
@@ -897,14 +899,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
       fit.reasons = [...fit.reasons, 'Good for the weather'];
     } else if (weatherOutdoorBias && isOutdoorCategory(g.interest_tag)) {
       fit.score += WEATHER_BONUS;
-      fit.reasons = [...fit.reasons, 'Great weather for it'];
+      fit.reasons = [...fit.reasons, reasonText('greatWeatherForIt')];
     }
     // Behavior (what this user actually opens/creates/joins) nudges the score as the account matures; declared interests are
     // already inside fit.score, so only the behavioral part is added here.
     const nudge = behaviorNudge(g.interest_tag, personalization);
     if (nudge > 0) {
       fit.score += nudge;
-      fit.reasons = [...fit.reasons, 'Like what you\'ve joined'];
+      fit.reasons = [...fit.reasons, reasonText('likeWhatYouJoined')];
     }
     const relatedHobby = relatedHobbyFor(g.interest_tag, personalization.declared);
     const related = relatedHobbyNudge(g.interest_tag, personalization);
@@ -915,7 +917,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const broad = broadGroupNudge(g.interest_tag, personalization);
     if (broad > 0) {
       fit.score += broad;
-      fit.reasons = [...fit.reasons, 'In a category you like'];
+      fit.reasons = [...fit.reasons, reasonText('inCategoryYouLike')];
     }
     // The one ranking ladder (constants/signalPriority.js): the fit parts carry their tiers; the extras above join theirs
     // (weather 8, own activity 6, related / broad 7), and an accepted friend going counts as friends (3). The friend part is
@@ -1447,7 +1449,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     // friend_discovery is a synthetic fallback item appended after the real ranked candidates,
     // never itself a scored "pick" -- excluded even in the edge case where it's the only item.
     const isTopPick = pickBadge && index === 0 && item.type !== 'friend_discovery';
-    const row = resultRowView(item); // typed-ask AND Surprise Me rows: the one context object's reason / context / action
+    const row = resultRowView(item, { language }); // typed-ask AND Surprise Me rows: the one context object's reason / context / action
     return (
       <StaggeredReveal key={`${item.type}-${item.id}`} index={index}>
       <TouchableOpacity
@@ -1558,28 +1560,28 @@ export default function DiscoverHubScreen({ navigation, route }) {
       friendGoingReason(g, myFriendIds, myUserId),
       g.matchesYourInterests && g.interest_tag ? becauseYouLikeReason(g.interest_tag) : null,
       friendsInterestReason(g.interest_tag, friendInterestByTag[g.interest_tag]),
-      attendeeCount >= TRENDING_ATTENDANCE_MIN ? `${attendeeCount} attending` : null,
+      attendeeCount >= TRENDING_ATTENDANCE_MIN ? reasonText('attendingCount', { count: attendeeCount }) : null,
       ...(g.fit?.reasons ?? []),
     ].filter(Boolean);
   }
 
   function discoverCard(g) {
-    return gatheringCardModel(g, { signals: discoverReasons(g).map((text) => ({ kind: 'reason', text })), myUserId });
+    return gatheringCardModel(g, { signals: discoverReasons(g).map((text) => ({ kind: 'reason', text })), myUserId, language });
   }
 
   function communityContext(c) {
-    return recommendationContext(contextItem('community', c, { reasons: [communityReason(c, personalization.declared)] }));
+    return recommendationContext(contextItem('community', c, { reasons: [communityReason(c, personalization.declared)] }), { language });
   }
 
   function perkContext(o) {
     return recommendationContext(contextItem('perk', o, {
       reasons: [o.target_interest_tag ? becauseYouLikeReason(o.target_interest_tag) : null],
       redeemed: redeemedOfferIds.has(o.id),
-    }));
+    }), { language });
   }
 
   function businessContext(b) {
-    return recommendationContext(contextItem('business', b, { reasons: [b.searchReason] }));
+    return recommendationContext(contextItem('business', b, { reasons: [b.searchReason] }), { language });
   }
 
   function primaryReasonLine(g) {

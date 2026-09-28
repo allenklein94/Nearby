@@ -15,23 +15,24 @@
 // ever shown to another viewer. A bare attendee count is a fact about the event, not social proof, and stays in the meta line.
 import { recommendationFacts } from './recommendationFacts';
 import { recommendationContext, contextItem } from './recommendationContext';
+import { localizeReasons } from './reasonLocalization';
 
 export const CARD_FIELD_ORDER = ['what', 'why', 'meta', 'social', 'action'];
 const SOCIAL_KINDS = ['going', 'friend'];
 
 // signals: [{ kind, text }] from mergeHomeGatheringSignals (optional). Without them WHY is the facts helper's reason
 // and there is no social proof line.
-export function gatheringCardModel(g, { signals = null, myUserId = null, now = Date.now(), actionOpts = {} } = {}) {
+export function gatheringCardModel(g, { signals = null, myUserId = null, now = Date.now(), actionOpts = {}, language } = {}) {
   if (!g) return { what: null, why: null, meta: null, social: null, action: null, destination: null, entity: null, reasons: [], fields: [] };
   const list = Array.isArray(signals) ? signals : null;
   const whyParts = list ? list.filter((s) => !SOCIAL_KINDS.includes(s.kind)).map((s) => s.text) : [recommendationFacts(g).why].filter(Boolean);
   const socialParts = list ? list.filter((s) => SOCIAL_KINDS.includes(s.kind)).map((s) => s.text) : [];
-  const c = recommendationContext(contextItem('gathering', g, { reasons: whyParts }), { myUserId, now: new Date(now), actionOpts });
+  const c = recommendationContext(contextItem('gathering', g, { reasons: whyParts }), { myUserId, now: new Date(now), actionOpts, language });
   const model = {
     what: g.title || null,
     why: c.reasons.join(' · ') || null,
     meta: c.context,
-    social: socialParts.join(' · ') || null,
+    social: localizeReasons(socialParts, language).join(' · ') || null,
     action: c.action,
   };
   return { ...model, destination: c.destination, entity: c.entity, reasons: c.reasons, fields: CARD_FIELD_ORDER.filter((f) => model[f]) };

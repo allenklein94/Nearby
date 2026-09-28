@@ -7,6 +7,7 @@
 //   - client-side only: no server, no business ever sees it. Every tag must be a real canonical tag (guarded by a test).
 import { canonicalizeInterests } from './interestGraph';
 import { relatedActivities } from './activityDictionary';
+import { reasonText } from './recommendationReasonVocabulary';
 
 export const RELATED_POINTS = 2;
 
@@ -40,7 +41,7 @@ export function relatedHobbyFor(tag, declared = []) {
 }
 
 export function relatedInterestReason(hobby) {
-  return hobby ? `Related to your interest in ${hobby}` : null;
+  return hobby ? reasonText('relatedInterest', { interest: hobby }) : null;
 }
 
 // Hobby -> the business ATTRIBUTES (layer 3, businessAttributes.js) that suit it: "a coffee shop to edit photos" is a coffee shop

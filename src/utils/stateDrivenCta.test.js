@@ -110,7 +110,7 @@ describe('screens do not decide CTAs themselves', () => {
   });
   test('each converted screen goes through the shared functions', () => {
     // the feed's action comes from the context object (gatheringCardModel -> gatheringPrimaryAction)
-    expect(read('src/screens/GatheringsScreen.js')).toContain('gatheringCardModel(g, { myUserId })');
+    expect(read('src/screens/GatheringsScreen.js')).toContain('gatheringCardModel(g, { myUserId, language })');
     expect(read('src/screens/GatheringsScreen.js')).not.toMatch(/gatheringPrimaryAction\(/);
     // Discover's gathering action comes from the context object (gatheringCardModel -> gatheringPrimaryAction)
     expect(read('src/screens/DiscoverHubScreen.js')).toContain('gatheringCardModel(g, {');

@@ -16,7 +16,7 @@
 // Ranking only, typed consumer asks only: a fit lifts, a clear mismatch sinks modestly, unknown on either side is neutral, nothing
 // is removed. Gathering candidates only: it never adds a result and never touches people, so "meet new people" can never become
 // stranger discovery. Never in Home/Discover feeds, business requests/opportunities, notifications, badges or profiles.
-import { appendReason } from './recommendationReasonVocabulary';
+import { appendReason, reasonText } from './recommendationReasonVocabulary';
 
 export const SOCIAL_CONTEXTS = ['solo', 'one_on_one', 'small_group', 'group'];
 const SCALE = ['one_on_one', 'small_group', 'group'];
@@ -144,7 +144,7 @@ export function socialFit(c, signals, { partyType = null } = {}) {
   }
   if (signals.meet_new_people === true && facts.meetNewPeople && partyType !== 'new_people') {
     delta += FIT_POINTS;
-    reason = reason ?? '🙋 Good for meeting new people';
+    reason = reason ?? reasonText('meetNewPeople');
   } else if (signals.meet_new_people === false && facts.meetNewPeople) {
     delta += MISMATCH_POINTS;
   }

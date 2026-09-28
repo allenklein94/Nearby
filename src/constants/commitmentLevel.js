@@ -5,7 +5,7 @@
 // category tag (table below, near-certain tags only). Anything unknown has no commitment and is untouched.
 import { ACTIVITY_FORMATS } from './activityFormat';
 import { BOOKING_MODE_COMMITMENT } from './bookingMode';
-import { appendReason } from './recommendationReasonVocabulary';
+import { appendReason, reasonText } from './recommendationReasonVocabulary';
 
 export const COMMITMENT_LEVELS = ['drop_in', 'easy', 'reservation', 'planned_event', 'multi_hour', 'all_day'];
 const HEAVY = ['reservation', 'planned_event', 'multi_hour', 'all_day'];
@@ -55,11 +55,11 @@ export function commitmentFit(candidate, ask) {
   const level = commitmentOf(candidate);
   if (!ask || !level) return { delta: 0, reason: null };
   if (ask === 'light') {
-    if (level === 'drop_in') return { delta: COMMITMENT_FIT_POINTS, reason: 'Easy to drop into' };
-    if (level === 'easy') return { delta: 1, reason: 'Low commitment' };
+    if (level === 'drop_in') return { delta: COMMITMENT_FIT_POINTS, reason: reasonText('easyDropIn') };
+    if (level === 'easy') return { delta: 1, reason: reasonText('lowCommitment') };
     return { delta: COMMITMENT_MISMATCH_POINTS, reason: null };
   }
-  return ['multi_hour', 'all_day'].includes(level) ? { delta: COMMITMENT_FIT_POINTS, reason: 'Worth setting time aside' } : { delta: 0, reason: null };
+  return ['multi_hour', 'all_day'].includes(level) ? { delta: COMMITMENT_FIT_POINTS, reason: reasonText('worthSettingTime') } : { delta: 0, reason: null };
 }
 
 export function applyCommitmentToCandidates(candidates, ask) {

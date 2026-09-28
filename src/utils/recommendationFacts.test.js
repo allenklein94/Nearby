@@ -75,10 +75,11 @@ describe('Discover and Gatherings cards use the same rule', () => {
     expect(src).toMatch(/card\.meta/);
     expect(src).not.toMatch(/factsMeta\(/);
   });
-  test('Gatherings feed badge names the interest; every locale has the key', () => {
-    expect(read('../screens/GatheringsScreen.js')).toMatch(/gatherings\.becauseYouLike/);
-    const tr = read('../i18n/translations.js');
-    expect((tr.match(/becauseYouLike:/g) ?? []).length).toBe((tr.match(/matchesInterests:/g) ?? []).length);
+  test('Gatherings feed badge names the interest through the shared reason key; every locale has it', () => {
+    // one sentence with the tag interpolated (reasons.becauseYouLike), never a translated prefix + an English tag
+    expect(read('../screens/GatheringsScreen.js')).toMatch(/t\('reasons\.becauseYouLike', \{ category: item\.interest_tag \}\)/);
+    const { translations } = require('../i18n/translations');
+    for (const lang of Object.keys(translations)) expect([lang, translations[lang].reasons.becauseYouLike]).toEqual([lang, expect.stringContaining('{category}')]);
   });
 });
 
@@ -117,7 +118,7 @@ describe('recommendationRow (Nearby Right Now)', () => {
   test('Home renders the rows through it', () => {
     const fs = require('fs');
     const home = fs.readFileSync(require('path').join(__dirname, '../screens/HomeScreen.js'), 'utf8');
-    expect(home).toMatch(/recommendationRow\(item\)/);
+    expect(home).toMatch(/recommendationRow\(item, \{ language \}\)/);
     expect(home).not.toMatch(/item\.reasons\.join/);
   });
 });

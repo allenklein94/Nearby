@@ -5,10 +5,11 @@ import { canonicalizeInterests } from '../constants/interestGraph';
 //   Because you like Coffee
 //   1.3 mi · Today · 6:30 PM
 // Each part appears only when it is real: no distance without a measured distance, no reason without a real signal.
-import { becauseYouLikeReason, isContextRestatement } from '../constants/recommendationReasonVocabulary';
+import { becauseYouLikeReason, isContextRestatement, reasonText } from '../constants/recommendationReasonVocabulary';
 import { formatHeroDateTime } from './timeContext';
 import { formatDistance } from './formatDistance';
 import { recommendationContext, contextItemFromRecommendation } from './recommendationContext';
+import { localizeReasons } from './reasonLocalization';
 
 // The one distance format lives in utils/formatDistance.js (re-exported for existing callers).
 export { formatDistance };
@@ -37,7 +38,7 @@ export function factsMeta(g, when = null) {
 export function recommendationRow(item, opts = {}) {
   const reasons = item?.reasons ?? [];
   const c = recommendationContext(contextItemFromRecommendation(item), opts);
-  if (!c.context) return { why: reasons.join(' · ') || null, meta: null, destination: c.destination };
+  if (!c.context) return { why: localizeReasons(reasons, opts.language).join(' · ') || null, meta: null, destination: c.destination };
   return { why: c.reasons.join(' · ') || null, meta: c.context, destination: c.destination };
 }
 
@@ -49,11 +50,13 @@ export function friendGoingReason(g, friendIds, myUserId = null) {
   const going = (g?.approvedAttendees ?? []).filter((a) => a?.user_id && a.user_id !== myUserId && friendIds.has(a.user_id));
   if (going.length === 0) return null;
   const names = going.map((a) => a.profiles?.display_name).filter(Boolean);
-  if (names.length === 0) return going.length === 1 ? 'A friend is going' : `${going.length} friends are going`;
+  if (names.length === 0) return going.length === 1 ? reasonText('aFriendGoing') : reasonText('friendsGoingCount', { count: going.length });
   const others = going.length - Math.min(names.length, 2);
-  if (going.length === 1) return `${names[0]} is going`;
-  if (others <= 0) return `${names[0]} and ${names[1]} are going`;
-  return `${names[0]}, ${names[1]} and ${others} more friend${others === 1 ? '' : 's'} are going`;
+  if (going.length === 1) return reasonText('friendGoingOne', { name: names[0] });
+  if (others <= 0) return reasonText('friendGoingTwo', { name1: names[0], name2: names[1] });
+  return others === 1
+    ? reasonText('friendGoingManyOne', { name1: names[0], name2: names[1] })
+    : reasonText('friendGoingMany', { name1: names[0], name2: names[1], count: others });
 }
 
 // A community card's WHY: named only when its own interest tag is one the person really declared. No declared match =

@@ -18,7 +18,7 @@
 // public business profile shows the number as "Largest group · Up to 40 people" (maxGroupLine), only when the owner set it.
 import { attributesFromAsk, parseAskFacets } from './askFacets';
 import { socialSignalsFromText } from './socialContext';
-import { appendReason } from './recommendationReasonVocabulary';
+import { appendReason, reasonText } from './recommendationReasonVocabulary';
 
 export const CAPABILITIES = [
   { key: 'private_events', attribute: 'private_dining', label: 'Private events', icon: '🥂' },
@@ -106,9 +106,9 @@ export const outdoorSpaceAsk = (text) => typeof text === 'string'
 // Any known limit below the party = too small; otherwise a known limit that covers it = fits; nothing known = neutral.
 export function groupCapacityFit(partner, partySize, { privateAsk = false, outdoorAsk = false } = {}) {
   if (!Number.isInteger(partySize) || partySize < 1) return { delta: 0, reason: null };
-  const limits = [{ n: cleanMaxGroupSize(partner?.max_group_size), reason: 'Can host your group' }];
-  if (privateAsk) limits.push({ n: spaceCapacity(partner, 'private_room'), reason: 'Private room fits your group' });
-  if (outdoorAsk) limits.push({ n: spaceCapacity(partner, 'outdoor'), reason: 'Outdoor area fits your group' });
+  const limits = [{ n: cleanMaxGroupSize(partner?.max_group_size), reason: reasonText('canHostGroup') }];
+  if (privateAsk) limits.push({ n: spaceCapacity(partner, 'private_room'), reason: reasonText('privateRoomFits') });
+  if (outdoorAsk) limits.push({ n: spaceCapacity(partner, 'outdoor'), reason: reasonText('outdoorAreaFits') });
   const known = limits.filter((l) => l.n !== null);
   if (known.length === 0) return { delta: 0, reason: null };
   if (known.some((l) => l.n < partySize)) return { delta: CAPACITY_TOO_SMALL_POINTS, reason: null };
@@ -148,7 +148,7 @@ export function welcomesGroups(partner) {
 export function applyLikelyGroupToCandidates(candidates, likelyGroup) {
   if (!likelyGroup) return candidates;
   return candidates.map((c) => (welcomesGroups(c?.businessPartner)
-    ? { ...c, score: (c.score ?? 0) + LIKELY_GROUP_POINTS, subtitle: c.subtitle ?? 'Welcomes groups', reasons: appendReason(c.reasons, 'Welcomes groups') }
+    ? { ...c, score: (c.score ?? 0) + LIKELY_GROUP_POINTS, subtitle: c.subtitle ?? reasonText('welcomesGroups'), reasons: appendReason(c.reasons, reasonText('welcomesGroups')) }
     : c));
 }
 
@@ -165,14 +165,14 @@ export function applyCapabilitiesToCandidates(candidates, { partySize = null, te
     const attrs = Array.isArray(partner.attributes) ? partner.attributes : [];
     let delta = 0;
     const reasons = [];
-    if (wantPrivate && attrs.includes('private_dining')) { delta += PRIVATE_EVENTS_POINTS; reasons.push('Hosts private events'); }
-    if (wantCatering && attrs.includes('catering')) { delta += CATERING_POINTS; reasons.push('Offers catering'); }
+    if (wantPrivate && attrs.includes('private_dining')) { delta += PRIVATE_EVENTS_POINTS; reasons.push(reasonText('hostsPrivateEvents')); }
+    if (wantCatering && attrs.includes('catering')) { delta += CATERING_POINTS; reasons.push(reasonText('offersCatering')); }
     const cap = groupCapacityFit(partner, size, { privateAsk: wantPrivate, outdoorAsk: wantOutdoor });
     delta += cap.delta;
     if (cap.reason) reasons.push(cap.reason);
     if (!delta) return c;
     // A space that fits the group, or an explicitly asked capability, leads; a plain overall fit keeps an existing line.
-    const lead = reasons.find((r) => r !== 'Can host your group');
+    const lead = reasons.find((r) => r !== reasonText('canHostGroup'));
     return { ...c, score: (c.score ?? 0) + delta, subtitle: lead ?? c.subtitle ?? reasons[0] ?? null, reasons: reasons.reduce(appendReason, c.reasons ?? []) };
   });
 }

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Localization from 'expo-localization';
-import { translations } from '../i18n/translations';
+import { translate } from '../i18n/translate';
 
 const LanguageContext = createContext(null);
 const STORAGE_KEY = 'nearby-language-preference';
@@ -28,22 +28,10 @@ export function LanguageProvider({ children }) {
     await AsyncStorage.setItem(STORAGE_KEY, lang);
   }
 
-  function t(keyPath) {
-    const parts = keyPath.split('.');
-    let value = translations[language];
-    for (const part of parts) {
-      value = value?.[part];
-    }
-    if (value === undefined) {
-      // Fall back to English if a key is missing in the current
-      // language, rather than showing the raw key path to the user.
-      let fallback = translations.en;
-      for (const part of parts) {
-        fallback = fallback?.[part];
-      }
-      return fallback ?? keyPath;
-    }
-    return value;
+  // Missing key in the current language falls back to English, then to the key path (i18n/translate.js). `vars` fills
+  // {placeholders}.
+  function t(keyPath, vars) {
+    return translate(language, keyPath, vars);
   }
 
   if (!loaded) return null;

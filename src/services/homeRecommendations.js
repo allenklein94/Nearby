@@ -21,7 +21,7 @@ import { businessWeatherAdjustment } from '../utils/weatherBias';
 // weather strings were independently re-typed, verbatim, in
 // intentResolver.js's own resolveGatherings() (see that file's own
 // weatherBonus block).
-import { REASON_TEXT, becauseYouLikeReason } from '../constants/recommendationReasonVocabulary';
+import { REASON_TEXT, becauseYouLikeReason, reasonText } from '../constants/recommendationReasonVocabulary';
 // Phase J (CLAUDE.md, Sep 3 2026 audit finding 8 / locked "Phase J" text) --
 // the real signal-source-priority-by-maturity model. Every bonus below is
 // tagged with its real provenance class; weightSignal() only ever scales
@@ -90,7 +90,7 @@ function weatherAdjustment(interestTag, weather, scheduledAt) {
 // file's own repeated convention.
 function socialComfortBonus(groupSizeFeel, socialComfortLevel) {
   return comfortFits(groupSizeFeel, socialComfortLevel)
-    ? { points: SCORE_INTEREST_MATCH, reason: 'Matches how you like to hang out' }
+    ? { points: SCORE_INTEREST_MATCH, reason: reasonText('hangOutStyle') }
     : null;
 }
 
@@ -106,7 +106,7 @@ function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel,
   } else if (interestGroups.length > 0 && interestGroups.includes(groupKeyForTag(gathering.interest_tag))) {
     // EXPLICIT but broad: a group picked without specific tags -- a weaker match than a declared tag, never a stand-in for one.
     score += weightSignal(BROAD_GROUP_POINTS, SIGNAL_SOURCES.EXPLICIT, maturity);
-    reasons.push('In a category you like');
+    reasons.push(reasonText('inCategoryYouLike'));
   }
   if (gathering.distanceMiles !== null && gathering.distanceMiles !== undefined && gathering.distanceMiles < 2) {
     // CONTEXTUAL: a fact about the world (how far away this is), not
@@ -116,7 +116,7 @@ function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel,
     // distanceLabel -- this function never has a formatted distance
     // string in scope, only the raw distanceMiles number, so "Close by"
     // stays its own real, honest (if less specific) DISTANCE reason.
-    reasons.push('Close by');
+    reasons.push(reasonText('closeBy'));
   }
   if (isToday(gathering.scheduled_at)) {
     // CONTEXTUAL: today's real date, always full weight.
@@ -141,12 +141,12 @@ function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel,
   // actually dampens for a low-maturity caller.
   if (gathering.host_id && positiveHostIds?.has(gathering.host_id)) {
     score += weightSignal(SCORE_OWN_NETWORK, SIGNAL_SOURCES.TRANSACTIONAL, maturity);
-    reasons.push('You loved a gathering with this host before');
+    reasons.push(reasonText('lovedHost'));
   } else if (gathering.interest_tag && positiveCategories?.has(gathering.interest_tag)) {
     // The feedback loop at the level of a KIND of experience (the same real feedback, not a repeat host): weaker than a
     // repeat host, never stacked on it. TRANSACTIONAL like the host bonus, so a low-maturity account is dampened the same.
     score += weightSignal(SCORE_INTEREST_MATCH, SIGNAL_SOURCES.TRANSACTIONAL, maturity);
-    reasons.push('You loved this kind of experience last time');
+    reasons.push(reasonText('lovedKind'));
   }
   const comfortBonus = socialComfortBonus(gathering.group_size_feel, socialComfortLevel);
   if (comfortBonus) {
@@ -174,7 +174,7 @@ function scoreOffer(offer, positivePartnerIds, maturity, weather = null) {
     reasons.push(becauseYouLikeReason(offer.target_interest_tag));
   }
   if (offer.brand_partners?.name) {
-    reasons.push(`At ${offer.brand_partners.name}`);
+    reasons.push(reasonText('atBusiness', { business: offer.brand_partners.name }));
   }
   // "The Plan Engine" Phase 4 (CLAUDE.md) -- same real closing-the-loop
   // bonus as scoreGathering above, for a business the caller has genuinely
@@ -183,7 +183,7 @@ function scoreOffer(offer, positivePartnerIds, maturity, weather = null) {
   // reasoning as the positiveHostIds bonus above.
   if (offer.partner_id && positivePartnerIds?.has(offer.partner_id)) {
     score += weightSignal(SCORE_OWN_NETWORK, SIGNAL_SOURCES.TRANSACTIONAL, maturity);
-    reasons.push('You loved this business last time');
+    reasons.push(reasonText('lovedBusiness'));
   }
 
   // A business's own indoor/outdoor/weather-dependent declaration against today's weather (item 63). Ranks, never hides,

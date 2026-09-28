@@ -215,7 +215,7 @@ describe('wiring guards', () => {
     const discover = read('src/screens/DiscoverHubScreen.js');
     for (const src of [home, discover]) {
       expect(src).toContain('navigateToIntentResultItem(navigation, item');
-      expect(src).toContain('resultRowView(item)');
+      expect(src).toContain('resultRowView(item, { language })');
       expect(src).not.toMatch(/item\.type === 'business_(availability|policy_match)'\)\s*\{[^}]*navigate\('AskBusiness'/);
     }
   });

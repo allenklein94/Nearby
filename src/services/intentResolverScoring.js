@@ -15,7 +15,7 @@ import { formatDistanceAway } from '../utils/formatDistance';
 // copies -- same values, same logic, just factored out.
 import { isWithinRightNowWindow } from '../utils/rightNowWindow';
 import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS, OCCASION_OPTIONS } from '../constants/businessAttributes';
-import { askedForReason, occasionOfferedReason } from '../constants/recommendationReasonVocabulary';
+import { askedForReason, occasionOfferedReason, reasonText } from '../constants/recommendationReasonVocabulary';
 import { hobbyAttributeMatch, relatedInterestReason } from '../constants/hobbyRelations';
 import { activityFit } from '../constants/activityLayer';
 import { localDateParam } from '../utils/nightDate';
@@ -393,15 +393,15 @@ export function getBusinessAvailabilityReasons(row, { category, attributes, cuis
   if (hobbyLink) reasons.push(relatedInterestReason(hobbyLink.hobby));
   if (partyType) {
     const accommodates = Array.isArray(row.accommodates_party_types) ? row.accommodates_party_types : [];
-    if (accommodates.includes(partyType)) reasons.push('Accommodates your group');
+    if (accommodates.includes(partyType)) reasons.push(reasonText('accommodatesGroup'));
   }
   if (occasion) {
     // Only a business that DECLARED it offers this occasion is explained by it (ranking still uses businessFitsOccasion).
     const offered = Array.isArray(row.offered_occasions) && row.offered_occasions.includes(occasion);
     if (offered) reasons.push(occasionOfferedReason(OCCASION_OPTIONS.find((o) => o.key === occasion)?.label ?? null));
   }
-  if (row.partner_id && pastPartnerIds && pastPartnerIds.has(row.partner_id)) reasons.push("You've been here before");
-  if (row.partner_id && followedPartnerIds && followedPartnerIds.has(row.partner_id)) reasons.push('A business you follow');
+  if (row.partner_id && pastPartnerIds && pastPartnerIds.has(row.partner_id)) reasons.push(reasonText('beenHereBefore'));
+  if (row.partner_id && followedPartnerIds && followedPartnerIds.has(row.partner_id)) reasons.push(reasonText('businessYouFollow'));
   // Item 100: never names the source (a saved preference vs. an answered
   // disguised question look identical from here on out) and never says
   // WHY it's asking -- just that it fits who the plan is for, the same

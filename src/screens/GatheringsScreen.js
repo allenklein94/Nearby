@@ -52,6 +52,7 @@ import { forYouBlend } from '../constants/blendedRanking';
 import { rankGatheringFeed } from '../utils/gatheringFeedRanking';
 import usePersonalization from '../hooks/usePersonalization';
 import { useLanguage } from '../context/LanguageContext';
+import { localizeReason } from '../utils/reasonLocalization';
 import { typography, spacing, radius } from '../theme';
 import { getUserLocation } from '../services/userLocation';
 
@@ -73,7 +74,7 @@ const PARTY_TYPE_FILTER_OPTIONS = [{ key: null, label: 'Any' }, ...EXPERIENCE_PA
 
 export default function GatheringsScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   // Gatherings is browse-only now; my plans (attending + hosting) live in Plans.
@@ -306,7 +307,7 @@ export default function GatheringsScreen({ navigation, route }) {
   // Shared context layer: identity, when/where, join action and tap destination come from the ONE context object
   // (gatheringCardModel -> utils/recommendationContext.js). The feed's reason badges stay its own translated chips.
   function feedCard(g) {
-    return gatheringCardModel(g, { myUserId });
+    return gatheringCardModel(g, { myUserId, language });
   }
 
   function toggleExpandGathering(gatheringId) {
@@ -926,12 +927,12 @@ export default function GatheringsScreen({ navigation, route }) {
                 )}
                 {item.matchesYourInterests && item.interest_tag && (
                   <View style={styles.matchBadge}>
-                    <Text style={styles.matchBadgeText}>{`${t('gatherings.becauseYouLike')} ${item.interest_tag}`}</Text>
+                    <Text style={styles.matchBadgeText}>{`✨ ${t('reasons.becauseYouLike', { category: item.interest_tag })}`}</Text>
                   </View>
                 )}
                 {!item.matchesYourInterests && item.relatedHobby && (
                   <View style={styles.matchBadge}>
-                    <Text style={styles.matchBadgeText}>{relatedInterestReason(item.relatedHobby)}</Text>
+                    <Text style={styles.matchBadgeText}>{localizeReason(relatedInterestReason(item.relatedHobby), language)}</Text>
                   </View>
                 )}
                 {(() => {
@@ -940,7 +941,7 @@ export default function GatheringsScreen({ navigation, route }) {
                     ?? friendsInterestReason(item.interest_tag, friendInterestByTag[item.interest_tag]);
                   return friendReason ? (
                     <View style={styles.friendsInterestedBadge}>
-                      <Text style={styles.friendsInterestedText}>🤝 {friendReason}</Text>
+                      <Text style={styles.friendsInterestedText}>🤝 {localizeReason(friendReason, language)}</Text>
                     </View>
                   ) : null;
                 })()}

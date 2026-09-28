@@ -8,6 +8,7 @@
 //                (hobbyRelations.js: "Related to your interest in Photography", never "you like"), null for none
 import { canonicalizeInterests } from '../constants/interestGraph';
 import { relatedHobbyFor, relatedInterestReason } from '../constants/hobbyRelations';
+import { reasonText } from '../constants/recommendationReasonVocabulary';
 
 export const MATCH_TYPES = { DECLARED: 'declared_interest', ACTIVITY: 'recent_activity', RELATED: 'related_interest', NONE: 'none' };
 
@@ -16,10 +17,10 @@ export function interestMatch(tag, { declared = [], activity = [] } = {}) {
   const none = { match_type: MATCH_TYPES.NONE, match_value: value || null, match_reason: null, confidence: null };
   if (!value) return none;
   if (canonicalizeInterests(declared).includes(value)) {
-    return { match_type: MATCH_TYPES.DECLARED, match_value: value, match_reason: `Because you like ${value}`, confidence: 'high' };
+    return { match_type: MATCH_TYPES.DECLARED, match_value: value, match_reason: reasonText('becauseYouLike', { category: value }), confidence: 'high' };
   }
   if ((activity ?? []).includes(value)) {
-    return { match_type: MATCH_TYPES.ACTIVITY, match_value: value, match_reason: `Based on your recent activity: ${value}`, confidence: 'medium' };
+    return { match_type: MATCH_TYPES.ACTIVITY, match_value: value, match_reason: reasonText('recentActivity', { category: value }), confidence: 'medium' };
   }
   const hobby = relatedHobbyFor(value, declared);
   if (hobby) {

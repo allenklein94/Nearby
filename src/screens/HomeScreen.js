@@ -1,3 +1,4 @@
+import { useLanguage } from '../context/LanguageContext';
 import { resultRowView } from '../utils/recommendationContext';
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -185,6 +186,7 @@ function formatWeeklyRecap(recap) {
 
 export default function HomeScreen({ navigation }) {
   const { colors, shadow } = useTheme();
+  const { language } = useLanguage(); // recommendation reasons are shown in the person's language (utils/reasonLocalization.js)
   const styles = getStyles(colors);
   const [dashboard, setDashboard] = useState(null);
   // Real, computed Place status for "Your Plans" gathering rows (CLAUDE.md,
@@ -438,7 +440,7 @@ export default function HomeScreen({ navigation }) {
   // Shared context layer: the card's action and tap destination come from the ONE context object (gatheringCardModel ->
   // utils/recommendationContext.js); this only lays them out.
   function homeGatheringCard(g, { signals = null, variant = 'row' } = {}) {
-    return gatheringCardModel(g, { signals, myUserId, actionOpts: variant === 'trending' ? { lowCommitment: true, interestedIds: interestedSet } : {} });
+    return gatheringCardModel(g, { signals, myUserId, language, actionOpts: variant === 'trending' ? { lowCommitment: true, interestedIds: interestedSet } : {} });
   }
 
   function renderGatheringCta(g, card, variant) {
@@ -1126,7 +1128,7 @@ export default function HomeScreen({ navigation }) {
         </View>
       );
     }
-    const row = resultRowView(item); // the one context object: reason, when/where, status note, action
+    const row = resultRowView(item, { language }); // the one context object: reason, when/where, status note, action
     return (
       <TouchableOpacity
         key={`${item.type}-${item.id}`}
@@ -1610,7 +1612,7 @@ export default function HomeScreen({ navigation }) {
                         <View key={lane.key} style={{ marginBottom: spacing.sm }}>
                           <Text style={styles.intentGroupLabel}>{lane.plan ? `${lane.label} · ${lane.plan}` : lane.label}</Text>
                           {lane.items.map((item) => {
-                            const row = resultRowView(item); // Surprise Me rows read the same context object as every result
+                            const row = resultRowView(item, { language }); // Surprise Me rows read the same context object as every result
                             return (
                             <TouchableOpacity
                               key={`${item.type}-${item.id}`}
@@ -1831,7 +1833,7 @@ export default function HomeScreen({ navigation }) {
                   We looked at what's real nearby right now — here's {homeRecommendations.length === 1 ? 'what we found' : 'a couple of things we found'}:
                 </Text>
                 {homeRecommendations.slice(0, 2).map((item) => {
-                  const row = recommendationRow(item);
+                  const row = recommendationRow(item, { language });
                   return (
                   <View key={`firstrun-${item.type}-${item.id}`} style={styles.firstRunItemRow}>
                     <Text style={styles.firstRunItemIcon}>{item.type === 'perk' ? '🎁' : categoryStyleFor(item.data?.interest_tag).icon}</Text>
@@ -2569,7 +2571,7 @@ export default function HomeScreen({ navigation }) {
             {attention.items.map((entry) => {
               if (entry.kind === 'perk') {
                 const item = entry.item;
-                const row = recommendationRow(item);
+                const row = recommendationRow(item, { language });
                 return (
                   <TouchableOpacity
                     key={`perk-${item.id}`}
