@@ -9,8 +9,15 @@ const hasToken = !!process.env.SUPABASE_ACCESS_TOKEN;
 
 // `body` is plpgsql that may use `log` (jsonb array) and the helper pattern:
 //   log := log || jsonb_build_array(jsonb_build_object('step', 'name', 'ok', <boolean>, 'data', <jsonb>));
+// JOURNEY_PRELUDE_FILE (optional): SQL run first in the same transaction, e.g. a migration not yet applied, so a
+// change can be proven by its journey before it goes live. Everything still rolls back.
+function prelude() {
+  const f = process.env.JOURNEY_PRELUDE_FILE;
+  return f ? `begin;\n${require('fs').readFileSync(f, 'utf8')}\n` : '';
+}
+
 async function runJourney(declare, body) {
-  const sql = `do $j$ declare log jsonb := '[]'::jsonb; ${declare}
+  const sql = `${prelude()}do $j$ declare log jsonb := '[]'::jsonb; ${declare}
 begin
 ${body}
 raise exception 'JOURNEY_LOG %', log::text;
