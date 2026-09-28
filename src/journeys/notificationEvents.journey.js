@@ -21,7 +21,8 @@ d('journey: domain events -> one notification layer (item 125)', () => {
       v_a uuid := '${a}'; v_b uuid := '${b}'; v_c uuid := '${c}';
       v_g1 uuid; v_g2 uuid; v_g3 uuid; v_g4 uuid; v_inv1 uuid; v_inv4 uuid; v_res jsonb; v_req uuid; v_req2 uuid; v_req3 uuid;
       v_offer uuid; v_ev bigint; v_n int; v_n2 int; v_q int; v_before int; v_title text; v_body text; v_x record;
-      v_start bigint;`, `
+      v_start bigint; v_g5 uuid; v_inv5 uuid; v_req4 uuid; v_prop uuid; v_part uuid; v_plan uuid; v_tok uuid; v_ob text; v_ob2 text;
+      v_retry_before int;`, `
   -- queue helper view: what send-push would receive, as jsonb
   create temp view jq as
     select id, convert_from(body, 'utf8')::jsonb as b from net.http_request_queue where url like '%/send-push';
@@ -94,15 +95,54 @@ d('journey: domain events -> one notification layer (item 125)', () => {
     'data', jsonb_build_object('outcome', (select n.outcome from domain_event_notifications n join domain_events e on e.id = n.event_id
       join social_invites i on i.id = e.object_id where i.target_id = v_g2 and n.recipient_id = v_b))));
 
-  -- 2c. send_social_invite: recorded as INVITATION_SENT, no push (it never pushed)
+  -- 2c. send_social_invite (Create's invite step, Make a Plan, the post-publish panel): the same gathering-invite push,
+  --     once; the panel's retry (sending again) sends nothing new
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility, is_public)
     values (v_a, 'Journey soon past', now() + interval '6 days', 40.0, -75.0, 'Coffee', 'journey', 8, 'everyone', true) returning id into v_g4;
-  select count(*) into v_before from jq;
+  perform send_social_invite('gathering', v_g4, v_b);
   perform send_social_invite('gathering', v_g4, v_b);
   select id into v_inv4 from social_invites where inviter_id = v_a and invitee_id = v_b and target_id = v_g4;
-  log := log || jsonb_build_array(jsonb_build_object('step','invitation_sent_record_only','ok',
+  log := log || jsonb_build_array(jsonb_build_object('step','invitation_sent_create_path','ok',
     (select count(*) from domain_events where type = 'INVITATION_SENT' and object_id = v_inv4) = 1
-    and (select count(*) from jq) = v_before));
+    and (select count(*) from jq where b->>'recipient_id' = v_b::text and b->'data'->>'gathering_id' = v_g4::text) = 1,
+    'data', jsonb_build_object(
+      'title', (select b->>'title' from jq where b->>'recipient_id' = v_b::text and b->'data'->>'gathering_id' = v_g4::text limit 1),
+      'body', (select b->>'body' from jq where b->>'recipient_id' = v_b::text and b->'data'->>'gathering_id' = v_g4::text limit 1),
+      'type', (select b->'data'->>'type' from jq where b->>'recipient_id' = v_b::text and b->'data'->>'gathering_id' = v_g4::text limit 1),
+      'inviter', (select display_name from profiles where id = v_a))));
+
+  -- 2d. an invitation is never sent before the gathering exists (nothing is created, nothing pushed)
+  select count(*) into v_before from jq;
+  begin
+    perform send_social_invite('gathering', gen_random_uuid(), v_b);
+  exception when others then null;
+  end;
+  log := log || jsonb_build_array(jsonb_build_object('step','invitation_needs_published_gathering','ok',
+    (select count(*) from jq) = v_before));
+
+  -- 2e. B invites C to A's gathering; C blocked the host -> the invitation stands (eligibility unchanged) but no push.
+  --     Women-only gathering + an invitee who cannot join -> no push either.
+  if not exists (select 1 from friendships where (user_a = v_b and user_b = v_c) or (user_a = v_c and user_b = v_b)) then
+    insert into friendships (user_a, user_b, status, requested_by) values (v_b, v_c, 'accepted', v_b);
+  else
+    update friendships set status = 'accepted' where (user_a = v_b and user_b = v_c) or (user_a = v_c and user_b = v_b);
+  end if;
+  insert into blocks (blocker_id, blocked_id) values (v_c, v_a);
+  perform set_config('request.jwt.claims', json_build_object('sub', v_b, 'role', 'authenticated')::text, true);
+  perform send_social_invite('gathering', v_g1, v_c);
+  delete from blocks where blocker_id = v_c and blocked_id = v_a;
+  update profiles set gender = 'Man' where id = v_c;
+  insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility, is_public, women_only)
+    values (v_b, 'Journey women only', now() + interval '6 days', 40.0, -75.0, 'Coffee', 'journey', 8, 'everyone', true, true) returning id into v_g5;
+  perform send_social_invite('gathering', v_g5, v_c);
+  log := log || jsonb_build_array(jsonb_build_object('step','invitation_host_block_and_women_only','ok',
+    exists (select 1 from social_invites where invitee_id = v_c and target_id = v_g1)
+    and (select count(*) from jq where b->>'recipient_id' = v_c::text and b->'data'->>'type' = 'gathering_invite'
+           and b->'data'->>'gathering_id' in (v_g1::text, v_g5::text)) = 0
+    and exists (select 1 from social_invites where invitee_id = v_c and target_id = v_g5),
+    'data', jsonb_build_object('host_block_outcome', (select n.outcome from domain_event_notifications n join domain_events e on e.id = n.event_id
+      join social_invites i on i.id = e.object_id where i.target_id = v_g1 and i.invitee_id = v_c))));
+  perform set_config('request.jwt.claims', json_build_object('sub', v_a, 'role', 'authenticated')::text, true);
 
   -- 3. INVITATION_ACCEPTED (record only) and 3b. INVITATION_EXPIRED (record only)
   perform set_config('request.jwt.claims', json_build_object('sub', v_b, 'role', 'authenticated')::text, true);
@@ -198,6 +238,84 @@ d('journey: domain events -> one notification layer (item 125)', () => {
     (select count(*) from domain_events where type = 'OFFER_REDEEMED' and object_id = v_offer) = 1
     and (select count(*) from jq) = v_q));
 
+  -- 10. other invitation kinds are recorded as the canonical events; their own pushes are unchanged and sent once
+  perform set_config('request.jwt.claims', json_build_object('sub', v_a, 'role', 'authenticated')::text, true);
+  v_res := create_business_request('journey plan', 40.0, -75.0, 'Coffee', 1, null, 40, null, null, null, 15, null);
+  v_req4 := (v_res->>'requestId')::uuid;
+  v_res := invite_to_business_request(v_req4, array[v_b]);
+  v_prop := (v_res->>'proposalId')::uuid;
+  select id into v_part from group_plan_participants where proposal_id = v_prop and user_id = v_b;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_b, 'role', 'authenticated')::text, true);
+  perform respond_to_group_plan(v_prop, true);
+  log := log || jsonb_build_array(jsonb_build_object('step','business_request_invitation','ok',
+    (select count(*) from domain_events where type = 'INVITATION_SENT' and object_kind = 'group_plan_participant' and object_id = v_part) = 1
+    and (select count(*) from domain_events where type = 'INVITATION_ACCEPTED' and object_kind = 'group_plan_participant' and object_id = v_part) = 1
+    and (select count(*) from jq where b->>'recipient_id' = v_b::text and b->'data'->>'type' = 'group_plan_invite'
+           and b->'data'->>'proposal_id' = v_prop::text) = 1
+    and (select count(*) from domain_event_notifications n join domain_events e on e.id = n.event_id where e.object_id = v_part) = 0,
+    'data', jsonb_build_object('invite_title', (select b->>'title' from jq where b->'data'->>'proposal_id' = v_prop::text
+                                                  and b->'data'->>'type' = 'group_plan_invite' limit 1),
+      'accept_push_to_initiator', (select count(*) from jq where b->>'recipient_id' = v_a::text and b->'data'->>'proposal_id' = v_prop::text))));
+
+  perform set_config('request.jwt.claims', json_build_object('sub', v_a, 'role', 'authenticated')::text, true);
+  v_res := create_occasion_group_plan('birthday', 'Journey birthday', 'Sam', null, 'pick_date', current_date + 10, array[v_b], false, null, null, null);
+  v_plan := (v_res->>'planId')::uuid;
+  v_res := invite_guest_to_occasion_group_plan(v_plan, 'Guest Pat');
+  v_tok := (v_res->>'guestToken')::uuid;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_b, 'role', 'authenticated')::text, true);
+  perform respond_to_occasion_group_plan(v_plan, true);
+  perform set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
+  perform respond_to_occasion_group_plan_guest_invite(v_tok, true);
+  log := log || jsonb_build_array(jsonb_build_object('step','occasion_invitations','ok',
+    (select count(*) from domain_events where type = 'INVITATION_SENT' and object_kind = 'occasion_group_plan_participant'
+       and payload->>'plan_id' = v_plan::text) = 2
+    and (select count(*) from domain_events where type = 'INVITATION_ACCEPTED' and object_kind = 'occasion_group_plan_participant'
+       and payload->>'plan_id' = v_plan::text) = 2
+    and (select count(*) from jq where b->>'recipient_id' = v_b::text and b->'data'->>'type' = 'occasion_group_plan_invite'
+           and b->'data'->>'plan_id' = v_plan::text) = 1
+    and (select count(*) from jq where b->>'recipient_id' = v_a::text and b->'data'->>'type' = 'occasion_group_plan_guest_rsvp'
+           and b->'data'->>'plan_id' = v_plan::text) = 1
+    and not exists (select 1 from domain_events e where e.payload->>'plan_id' = v_plan::text
+           and (e.payload::text like '%Guest Pat%' or e.payload::text like '%' || v_tok::text || '%')),
+    'data', jsonb_build_object('rsvp_title', (select b->>'title' from jq where b->'data'->>'type' = 'occasion_group_plan_guest_rsvp'
+                                                and b->'data'->>'plan_id' = v_plan::text limit 1))));
+  perform set_config('request.jwt.claims', json_build_object('sub', v_a, 'role', 'authenticated')::text, true);
+
+  -- 11. the one sender: dedupe key = at most once; a failed hand-off never rolls back the action and is retried once
+  v_ob := _send_push(v_c, 'journey t', 'journey b', jsonb_build_object('type', 'journey_probe'), 'journey:probe:1');
+  v_ob2 := _send_push(v_c, 'journey t', 'journey b', jsonb_build_object('type', 'journey_probe'), 'journey:probe:1');
+  log := log || jsonb_build_array(jsonb_build_object('step','sender_dedupe','ok',
+    v_ob = 'queued' and v_ob2 = 'duplicate'
+    and (select count(*) from push_outbox where dedupe_key = 'journey:probe:1') = 1
+    and (select count(*) from jq where b->'data'->>'type' = 'journey_probe') = 1));
+
+  perform set_config('app.push_handoff_test_failure', 'on', true);
+  select count(*) into v_before from jq;
+  perform invite_friend_to_gathering(v_g3, v_b);                 -- a real user action whose push hand-off fails
+  select id into v_inv5 from social_invites where inviter_id = v_a and invitee_id = v_b and target_id = v_g3 and status = 'pending';
+  select count(*) into v_retry_before from push_outbox where status = 'retry' and recipient_id = v_b and data->>'gathering_id' = v_g3::text;
+  perform set_config('app.push_handoff_test_failure', 'off', true);
+  update push_outbox set next_attempt_at = now() where status = 'retry';
+  perform retry_push_outbox();
+  perform retry_push_outbox();
+  log := log || jsonb_build_array(jsonb_build_object('step','sender_failure_then_retry','ok',
+    v_inv5 is not null and v_retry_before = 1
+    and (select n.outcome from domain_event_notifications n join domain_events e on e.id = n.event_id where e.object_id = v_inv5) = 'retrying'
+    and (select status from push_outbox where recipient_id = v_b and data->>'gathering_id' = v_g3::text) = 'queued'
+    and (select count(*) from jq where b->>'recipient_id' = v_b::text and b->'data'->>'gathering_id' = v_g3::text) = 1));
+
+  insert into push_outbox (recipient_id, title, body, data, status, created_at, next_attempt_at)
+    values (v_c, 'stale', 'stale', '{"type":"journey_stale"}', 'retry', now() - interval '2 hours', now());
+  perform retry_push_outbox();
+  log := log || jsonb_build_array(jsonb_build_object('step','sender_gives_up_on_stale','ok',
+    (select status from push_outbox where data->>'type' = 'journey_stale') = 'failed'
+    and (select count(*) from jq where b->'data'->>'type' = 'journey_stale') = 0));
+
+  -- 12. the sender is the only path: every send-push request in this journey came from an outbox row
+  log := log || jsonb_build_array(jsonb_build_object('step','single_delivery_path','ok',
+    not exists (select 1 from jq where not exists (select 1 from push_outbox o where o.net_request_id = jq.id)),
+    'data', jsonb_build_object('pushes', (select count(*) from jq))));
+
   -- 9. privacy: event payloads carry ids and flags only (no text); every push came through a recorded decision
   log := log || jsonb_build_array(jsonb_build_object('step','payload_minimum','ok', true,
     'data', jsonb_build_object(
@@ -237,7 +355,17 @@ d('journey: domain events -> one notification layer (item 125)', () => {
     expect(s.invitation_sent.data.source).toBe('invite_friend_to_gathering');
     expect(s.invitation_sent_muted.ok).toBe(true);
     expect(s.invitation_sent_muted.data.outcome).toBe('muted');
-    expect(s.invitation_sent_record_only.ok).toBe(true);
+  });
+  it('every gathering entry point notifies the invited friend once, with the same wording (item 125 decision 1)', () => {
+    // popup = invite_friend_to_gathering; Create's invite step, Make a Plan, the post-publish panel = send_social_invite
+    const c = s.invitation_sent_create_path;
+    expect(c.ok).toBe(true);
+    expect(c.data.title).toBe(`${c.data.inviter || 'A friend'} invited you to a gathering`);
+    expect(c.data.body).toBe('Journey soon past — tap to see the details.');
+    expect(c.data.type).toBe('gathering_invite');
+    expect(s.invitation_needs_published_gathering.ok).toBe(true);
+    expect(s.invitation_host_block_and_women_only.ok).toBe(true);
+    expect(s.invitation_host_block_and_women_only.data.host_block_outcome).toBe('blocked');
   });
   it('acceptance and expiry are recorded, never pushed', () => {
     expect(s.invitation_accepted_expired.ok).toBe(true);
@@ -270,6 +398,20 @@ d('journey: domain events -> one notification layer (item 125)', () => {
   });
   it('OFFER_REDEEMED is recorded only', () => {
     expect(s.offer_redeemed.ok).toBe(true);
+  });
+  it('business-request and occasion invitations are recorded as the canonical events, pushes unchanged', () => {
+    expect(s.business_request_invitation.ok).toBe(true);
+    expect(s.business_request_invitation.data.invite_title).toBe('You\'re invited to a plan');
+    expect(s.business_request_invitation.data.accept_push_to_initiator).toBe(1);
+    expect(s.occasion_invitations.ok).toBe(true);
+    expect(s.occasion_invitations.data.rsvp_title).toBe('🎉 Guest Pat is in!');
+  });
+  it('the one sender: at most once per dedupe key, a failed hand-off keeps the action and is retried once', () => {
+    expect(s.sender_dedupe.ok).toBe(true);
+    expect(s.sender_failure_then_retry.ok).toBe(true);
+    expect(s.sender_gives_up_on_stale.ok).toBe(true);
+    expect(s.single_delivery_path.ok).toBe(true);
+    expect(s.single_delivery_path.data.pushes).toBeGreaterThan(8);
   });
   it('event payloads are canonical ids only, and every push is a recorded decision', () => {
     const p = s.payload_minimum.data;

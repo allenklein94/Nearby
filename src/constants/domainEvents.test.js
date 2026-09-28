@@ -7,17 +7,51 @@ import { DOMAIN_EVENTS, RECORD_ONLY_EVENTS } from './domainEvents';
 const MIG_DIR = path.join(__dirname, '../../supabase/migrations');
 const MIGRATION = fs.readFileSync(path.join(MIG_DIR, '20270247_domain_events_notification_layer.sql'), 'utf8');
 
-// latest definition of each public function across all migrations, in filename (replay) order
-function latestDefinitions() {
+// Every public function's definition in replay order (filename, then position), following each body's own dollar tag,
+// minus the functions a later statement drops. dropped=false keeps dropped ones too (latest text of each name).
+function definitionsFromMigrations({ dropped = true } = {}) {
   const defs = {};
+  const token = /create\s+or\s+replace\s+function\s+(?:public\.)?"?([a-z_0-9]+)"?\s*\(|drop\s+function\s+(?:if\s+exists\s+)?(?:public\.)?([a-z_0-9]+)\s*\(/gi;
   for (const f of fs.readdirSync(MIG_DIR).filter((x) => x.endsWith('.sql')).sort()) {
     const sql = fs.readFileSync(path.join(MIG_DIR, f), 'utf8');
-    const re = /create\s+or\s+replace\s+function\s+(?:public\.)?"?([a-z_0-9]+)"?\s*\(([\s\S]*?)\$function\$\s*;/gi;
+    token.lastIndex = 0;
     let m;
-    while ((m = re.exec(sql))) defs[m[1]] = m[0];
+    while ((m = token.exec(sql))) {
+      if (m[2]) { if (dropped) delete defs[m[2]]; continue; }
+      const open = /\bas\s+(\$[a-z_]*\$)/i.exec(sql.slice(m.index));
+      if (!open) continue;
+      const bodyStart = m.index + open.index + open[0].length;
+      const close = sql.indexOf(open[1], bodyStart);
+      if (close < 0) continue;
+      defs[m[1]] = sql.slice(m.index, close + open[1].length);
+      token.lastIndex = close + open[1].length;
+    }
   }
   return defs;
 }
+const latestDefinitions = () => definitionsFromMigrations({ dropped: false });
+const liveDefinitionsFromMigrations = () => definitionsFromMigrations();
+
+describe('one push sender (item 125 completion)', () => {
+  it('only _push_outbox_deliver calls send-push; every other push goes through _send_push', () => {
+    const defs = liveDefinitionsFromMigrations();
+    const direct = Object.keys(defs).filter((n) => /functions\/v1\/send-push/.test(defs[n]));
+    expect(direct).toEqual(['_push_outbox_deliver']);
+    const viaSender = Object.keys(defs).filter((n) => /_send_push\(/.test(defs[n]) && n !== '_send_push');
+    expect(viaSender.length).toBeGreaterThanOrEqual(80);
+  });
+
+  it('the sender owns dedupe, hand-off failure and retry', () => {
+    const mig = fs.readFileSync(path.join(MIG_DIR, '20270248_push_sender_owns_delivery.sql'), 'utf8');
+    expect(mig).toMatch(/create unique index if not exists push_outbox_dedupe_key/);
+    expect(mig).toMatch(/exception when others then\s+update push_outbox set status = 'retry'/);
+    expect(mig).toMatch(/cron\.schedule\('retry-push-outbox'/);
+    // callers never read the service key for pushing any more
+    const defs = liveDefinitionsFromMigrations();
+    const keyReaders = Object.keys(defs).filter((n) => /\bservice_key\b/.test(defs[n]) && /send-push|_send_push\(/.test(defs[n]));
+    expect(keyReaders).toEqual([]);
+  });
+});
 
 describe('domain event registry (item 125)', () => {
   it('the client registry equals the domain_events.type CHECK', () => {
@@ -54,7 +88,7 @@ describe('domain event registry (item 125)', () => {
       expect(defs[name]).toBeDefined();
       expect(defs[name]).not.toMatch(/functions\/v1\/send-push/);
     });
-    expect(defs._send_push).toMatch(/functions\/v1\/send-push/);
+    expect(defs._push_outbox_deliver).toMatch(/functions\/v1\/send-push/);
     // the old direct gathering-created trigger function is gone
     expect(MIGRATION).toMatch(/drop function if exists public\.notify_matching_things_to_do\(\)/);
   });
