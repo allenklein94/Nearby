@@ -4,6 +4,109 @@ export const translations = {
     // occasion names are inserted as stored. English is the canonical form the reason code builds and ranks on.
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
     // Typed-ask result titles Nearby composes around a business or friend name (localization pass 3).
+    // Surprise Me result block + sheet (localization pass 3). English = the engine's own wording (tested).
+    surprise: {
+      "lanes": {
+        "best": "Best Pick",
+        "friends": "With Friends",
+        "active": "Something Active",
+        "easy": "Something Easy"
+      },
+      "headers": {
+        "now": "Right now near you",
+        "today": "Today near you",
+        "tonight": "Tonight near you",
+        "tomorrow": "Tomorrow near you",
+        "weekend": "This weekend near you",
+        "none": "Near you"
+      },
+      "basis": {
+        "interests": "Picked from your interests",
+        "thingsToDo": "Things to do",
+        "under": "under {price}",
+        "free": "free",
+        "when": {
+          "now": "right now",
+          "today": "today",
+          "tonight": "tonight",
+          "tomorrow": "tomorrow",
+          "weekend": "this weekend"
+        },
+        "party": {
+          "date": "for a date",
+          "friends": "with friends",
+          "family": "with family",
+          "solo": "on your own",
+          "coworkers": "with coworkers",
+          "groups": "for a group"
+        }
+      },
+      "energies": {
+        "low_key": "Low-key",
+        "social": "Social",
+        "active": "Active",
+        "high_energy": "High-energy",
+        "romantic": "Romantic",
+        "adventurous": "Adventurous"
+      },
+      "planParts": {
+        "dinner": "Dinner",
+        "somethingToDo": "Something to Do",
+        "finishTheNight": "Finish the Night",
+        "somethingFun": "Something Fun",
+        "sweetTreat": "Sweet Treat",
+        "food": "Food",
+        "familyFun": "Family Fun",
+        "treatYourself": "Treat Yourself",
+        "refuel": "Refuel",
+        "slowDown": "Slow Down",
+        "whereToStay": "Where to Stay",
+        "thingsToSee": "Things to See",
+        "eatOut": "Eat Out",
+        "meetPeople": "Meet People",
+        "somewhereToTalk": "Somewhere to Talk",
+        "stayOver": "Stay Over",
+        "drinks": "Drinks",
+        "getOutAndPlay": "Get Out and Play",
+        "entertainment": "Entertainment",
+        "browseLocal": "Browse Local",
+        "theBeach": "The Beach",
+        "somewhereToEat": "Somewhere to Eat",
+        "professional": "Professional",
+        "coffee": "Coffee",
+        "dinnerOrCoffee": "Dinner or Coffee"
+      },
+      "goWith": "You could go with {name} 👋",
+      "goWithTo": "You could go with {name} to {title} 👋",
+      "exhausted": "That's everything nearby that fits right now.",
+      "shuffle": "🔀 Shuffle Again",
+      "shuffleLabel": "Shuffle Again",
+      "nothing": "Nothing real to suggest right now",
+      "trySomethingElse": "Try something else",
+      "calendarHint": "📅 You also have \"{title}\" coming up ({date})",
+      "picking": "Picking a few ideas…",
+      "pressSearch": "Press search and Nearby will find a few ideas for you.",
+      "sheet": {
+        "title": "✨ Surprise Me",
+        "cancel": "Cancel",
+        "when": "When?",
+        "mood": "Mood?",
+        "submit": "✨ Surprise Me",
+        "whenOptions": {
+          "now": "Now",
+          "today": "Today",
+          "weekend": "This Weekend"
+        },
+        "moods": {
+          "social": "Social",
+          "chill": "Chill",
+          "active": "Active",
+          "foodie": "Foodie",
+          "date": "Date",
+          "something_new": "Something New"
+        }
+      }
+    },
     resultTitles: {
       "friendAlsoLooking": "{name} is also looking for this",
       "aFriendAlsoLooking": "A friend is also looking for this",
@@ -666,6 +769,108 @@ export const translations = {
     },  },
   es: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    surprise: {
+      "lanes": {
+        "best": "Mejor opción",
+        "friends": "Con amigos",
+        "active": "Algo activo",
+        "easy": "Algo tranquilo"
+      },
+      "headers": {
+        "now": "Ahora mismo cerca de ti",
+        "today": "Hoy cerca de ti",
+        "tonight": "Esta noche cerca de ti",
+        "tomorrow": "Mañana cerca de ti",
+        "weekend": "Este fin de semana cerca de ti",
+        "none": "Cerca de ti"
+      },
+      "basis": {
+        "interests": "Elegido según tus intereses",
+        "thingsToDo": "Cosas que hacer",
+        "under": "menos de {price}",
+        "free": "gratis",
+        "when": {
+          "now": "ahora mismo",
+          "today": "hoy",
+          "tonight": "esta noche",
+          "tomorrow": "mañana",
+          "weekend": "este fin de semana"
+        },
+        "party": {
+          "date": "para una cita",
+          "friends": "con amigos",
+          "family": "en familia",
+          "solo": "por tu cuenta",
+          "coworkers": "con compañeros de trabajo",
+          "groups": "para un grupo"
+        }
+      },
+      "energies": {
+        "low_key": "Tranquilo",
+        "social": "Social",
+        "active": "Activo",
+        "high_energy": "Con mucha energía",
+        "romantic": "Romántico",
+        "adventurous": "Aventurero"
+      },
+      "planParts": {
+        "dinner": "Cena",
+        "somethingToDo": "Algo que hacer",
+        "finishTheNight": "Cerrar la noche",
+        "somethingFun": "Algo divertido",
+        "sweetTreat": "Algo dulce",
+        "food": "Comida",
+        "familyFun": "Diversión en familia",
+        "treatYourself": "Date un gusto",
+        "refuel": "Recargar energía",
+        "slowDown": "Bajar el ritmo",
+        "whereToStay": "Dónde quedarse",
+        "thingsToSee": "Qué ver",
+        "eatOut": "Comer fuera",
+        "meetPeople": "Conocer gente",
+        "somewhereToTalk": "Un lugar para charlar",
+        "stayOver": "Quedarse a dormir",
+        "drinks": "Bebidas",
+        "getOutAndPlay": "Salir a jugar",
+        "entertainment": "Entretenimiento",
+        "browseLocal": "Tiendas locales",
+        "theBeach": "La playa",
+        "somewhereToEat": "Dónde comer",
+        "professional": "Profesional",
+        "coffee": "Café",
+        "dinnerOrCoffee": "Cena o café"
+      },
+      "goWith": "Podrías ir con {name} 👋",
+      "goWithTo": "Podrías ir con {name} a {title} 👋",
+      "exhausted": "Eso es todo lo que hay cerca que encaja ahora mismo.",
+      "shuffle": "🔀 Mezclar otra vez",
+      "shuffleLabel": "Mezclar otra vez",
+      "nothing": "Ahora mismo no hay nada real que sugerir",
+      "trySomethingElse": "Probar otra cosa",
+      "calendarHint": "📅 También tienes «{title}» pronto ({date})",
+      "picking": "Eligiendo algunas ideas…",
+      "pressSearch": "Pulsa buscar y Nearby encontrará algunas ideas para ti.",
+      "sheet": {
+        "title": "✨ Sorpréndeme",
+        "cancel": "Cancelar",
+        "when": "¿Cuándo?",
+        "mood": "¿Qué te apetece?",
+        "submit": "✨ Sorpréndeme",
+        "whenOptions": {
+          "now": "Ahora",
+          "today": "Hoy",
+          "weekend": "Este fin de semana"
+        },
+        "moods": {
+          "social": "Social",
+          "chill": "Tranquilo",
+          "active": "Activo",
+          "foodie": "Comer bien",
+          "date": "Cita",
+          "something_new": "Algo nuevo"
+        }
+      }
+    },
     resultTitles: {
       "friendAlsoLooking": "{name} también busca esto",
       "aFriendAlsoLooking": "Un amigo también busca esto",
@@ -1352,6 +1557,108 @@ export const translations = {
   },
   de: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    surprise: {
+      "lanes": {
+        "best": "Beste Wahl",
+        "friends": "Mit Freunden",
+        "active": "Etwas Aktives",
+        "easy": "Etwas Entspanntes"
+      },
+      "headers": {
+        "now": "Gerade jetzt in deiner Nähe",
+        "today": "Heute in deiner Nähe",
+        "tonight": "Heute Abend in deiner Nähe",
+        "tomorrow": "Morgen in deiner Nähe",
+        "weekend": "Dieses Wochenende in deiner Nähe",
+        "none": "In deiner Nähe"
+      },
+      "basis": {
+        "interests": "Nach deinen Interessen ausgewählt",
+        "thingsToDo": "Unternehmungen",
+        "under": "unter {price}",
+        "free": "kostenlos",
+        "when": {
+          "now": "gerade jetzt",
+          "today": "heute",
+          "tonight": "heute Abend",
+          "tomorrow": "morgen",
+          "weekend": "dieses Wochenende"
+        },
+        "party": {
+          "date": "für ein Date",
+          "friends": "mit Freunden",
+          "family": "mit der Familie",
+          "solo": "allein",
+          "coworkers": "mit Kollegen",
+          "groups": "für eine Gruppe"
+        }
+      },
+      "energies": {
+        "low_key": "Entspannt",
+        "social": "Gesellig",
+        "active": "Aktiv",
+        "high_energy": "Energiegeladen",
+        "romantic": "Romantisch",
+        "adventurous": "Abenteuerlich"
+      },
+      "planParts": {
+        "dinner": "Abendessen",
+        "somethingToDo": "Etwas unternehmen",
+        "finishTheNight": "Den Abend ausklingen lassen",
+        "somethingFun": "Etwas Lustiges",
+        "sweetTreat": "Etwas Süßes",
+        "food": "Essen",
+        "familyFun": "Familienspaß",
+        "treatYourself": "Gönn dir was",
+        "refuel": "Auftanken",
+        "slowDown": "Durchatmen",
+        "whereToStay": "Übernachtung",
+        "thingsToSee": "Sehenswertes",
+        "eatOut": "Auswärts essen",
+        "meetPeople": "Leute kennenlernen",
+        "somewhereToTalk": "Ein Ort zum Reden",
+        "stayOver": "Über Nacht bleiben",
+        "drinks": "Getränke",
+        "getOutAndPlay": "Raus zum Spielen",
+        "entertainment": "Unterhaltung",
+        "browseLocal": "Lokal stöbern",
+        "theBeach": "Der Strand",
+        "somewhereToEat": "Ein Ort zum Essen",
+        "professional": "Beruflich",
+        "coffee": "Kaffee",
+        "dinnerOrCoffee": "Abendessen oder Kaffee"
+      },
+      "goWith": "Du könntest mit {name} hingehen 👋",
+      "goWithTo": "Du könntest mit {name} zu {title} gehen 👋",
+      "exhausted": "Mehr passt gerade nicht in deiner Nähe.",
+      "shuffle": "🔀 Neu mischen",
+      "shuffleLabel": "Neu mischen",
+      "nothing": "Gerade gibt es nichts Konkretes vorzuschlagen",
+      "trySomethingElse": "Etwas anderes versuchen",
+      "calendarHint": "📅 Bald steht auch „{title}“ an ({date})",
+      "picking": "Ein paar Ideen werden ausgesucht…",
+      "pressSearch": "Tippe auf Suchen und Nearby findet ein paar Ideen für dich.",
+      "sheet": {
+        "title": "✨ Überrasch mich",
+        "cancel": "Abbrechen",
+        "when": "Wann?",
+        "mood": "Stimmung?",
+        "submit": "✨ Überrasch mich",
+        "whenOptions": {
+          "now": "Jetzt",
+          "today": "Heute",
+          "weekend": "Dieses Wochenende"
+        },
+        "moods": {
+          "social": "Gesellig",
+          "chill": "Gemütlich",
+          "active": "Aktiv",
+          "foodie": "Genießer",
+          "date": "Date",
+          "something_new": "Etwas Neues"
+        }
+      }
+    },
     resultTitles: {
       "friendAlsoLooking": "{name} sucht auch danach",
       "aFriendAlsoLooking": "Jemand aus deinem Freundeskreis sucht auch danach",
@@ -2009,6 +2316,108 @@ export const translations = {
   },
   fr: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    surprise: {
+      "lanes": {
+        "best": "Meilleur choix",
+        "friends": "Entre amis",
+        "active": "Quelque chose d’actif",
+        "easy": "Quelque chose de tranquille"
+      },
+      "headers": {
+        "now": "En ce moment près de chez vous",
+        "today": "Aujourd’hui près de chez vous",
+        "tonight": "Ce soir près de chez vous",
+        "tomorrow": "Demain près de chez vous",
+        "weekend": "Ce week-end près de chez vous",
+        "none": "Près de chez vous"
+      },
+      "basis": {
+        "interests": "Choisi selon vos centres d’intérêt",
+        "thingsToDo": "Choses à faire",
+        "under": "moins de {price}",
+        "free": "gratuit",
+        "when": {
+          "now": "en ce moment",
+          "today": "aujourd’hui",
+          "tonight": "ce soir",
+          "tomorrow": "demain",
+          "weekend": "ce week-end"
+        },
+        "party": {
+          "date": "pour un rendez-vous",
+          "friends": "entre amis",
+          "family": "en famille",
+          "solo": "en solo",
+          "coworkers": "entre collègues",
+          "groups": "pour un groupe"
+        }
+      },
+      "energies": {
+        "low_key": "Tranquille",
+        "social": "Convivial",
+        "active": "Actif",
+        "high_energy": "Plein d’énergie",
+        "romantic": "Romantique",
+        "adventurous": "Aventureux"
+      },
+      "planParts": {
+        "dinner": "Dîner",
+        "somethingToDo": "Quelque chose à faire",
+        "finishTheNight": "Finir la soirée",
+        "somethingFun": "Quelque chose d’amusant",
+        "sweetTreat": "Une douceur",
+        "food": "À manger",
+        "familyFun": "Fun en famille",
+        "treatYourself": "Se faire plaisir",
+        "refuel": "Recharger les batteries",
+        "slowDown": "Ralentir",
+        "whereToStay": "Où dormir",
+        "thingsToSee": "À voir",
+        "eatOut": "Manger dehors",
+        "meetPeople": "Rencontrer du monde",
+        "somewhereToTalk": "Un endroit pour discuter",
+        "stayOver": "Rester dormir",
+        "drinks": "Boissons",
+        "getOutAndPlay": "Sortir jouer",
+        "entertainment": "Divertissement",
+        "browseLocal": "Commerces locaux",
+        "theBeach": "La plage",
+        "somewhereToEat": "Où manger",
+        "professional": "Professionnel",
+        "coffee": "Café",
+        "dinnerOrCoffee": "Dîner ou café"
+      },
+      "goWith": "Vous pourriez y aller avec {name} 👋",
+      "goWithTo": "Vous pourriez aller à {title} avec {name} 👋",
+      "exhausted": "C’est tout ce qui correspond à proximité pour le moment.",
+      "shuffle": "🔀 Mélanger à nouveau",
+      "shuffleLabel": "Mélanger à nouveau",
+      "nothing": "Rien de concret à proposer pour le moment",
+      "trySomethingElse": "Essayer autre chose",
+      "calendarHint": "📅 Vous avez aussi « {title} » bientôt ({date})",
+      "picking": "Sélection de quelques idées…",
+      "pressSearch": "Appuyez sur Rechercher et Nearby trouvera quelques idées pour vous.",
+      "sheet": {
+        "title": "✨ Surprenez-moi",
+        "cancel": "Annuler",
+        "when": "Quand ?",
+        "mood": "Humeur ?",
+        "submit": "✨ Surprenez-moi",
+        "whenOptions": {
+          "now": "Maintenant",
+          "today": "Aujourd’hui",
+          "weekend": "Ce week-end"
+        },
+        "moods": {
+          "social": "Convivial",
+          "chill": "Détente",
+          "active": "Actif",
+          "foodie": "Gourmand",
+          "date": "Rendez-vous",
+          "something_new": "Quelque chose de nouveau"
+        }
+      }
+    },
     resultTitles: {
       "friendAlsoLooking": "{name} cherche aussi ça",
       "aFriendAlsoLooking": "Un ami cherche aussi ça",
@@ -2675,6 +3084,108 @@ export const translations = {
   },
   pt: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    surprise: {
+      "lanes": {
+        "best": "Melhor escolha",
+        "friends": "Com amigos",
+        "active": "Algo ativo",
+        "easy": "Algo tranquilo"
+      },
+      "headers": {
+        "now": "Agora perto de você",
+        "today": "Hoje perto de você",
+        "tonight": "Hoje à noite perto de você",
+        "tomorrow": "Amanhã perto de você",
+        "weekend": "Neste fim de semana perto de você",
+        "none": "Perto de você"
+      },
+      "basis": {
+        "interests": "Escolhido pelos seus interesses",
+        "thingsToDo": "Coisas para fazer",
+        "under": "até {price}",
+        "free": "grátis",
+        "when": {
+          "now": "agora",
+          "today": "hoje",
+          "tonight": "hoje à noite",
+          "tomorrow": "amanhã",
+          "weekend": "neste fim de semana"
+        },
+        "party": {
+          "date": "para um encontro",
+          "friends": "com amigos",
+          "family": "com a família",
+          "solo": "sozinho",
+          "coworkers": "com colegas de trabalho",
+          "groups": "para um grupo"
+        }
+      },
+      "energies": {
+        "low_key": "Tranquilo",
+        "social": "Social",
+        "active": "Ativo",
+        "high_energy": "Cheio de energia",
+        "romantic": "Romântico",
+        "adventurous": "Aventureiro"
+      },
+      "planParts": {
+        "dinner": "Jantar",
+        "somethingToDo": "Algo para fazer",
+        "finishTheNight": "Fechar a noite",
+        "somethingFun": "Algo divertido",
+        "sweetTreat": "Um docinho",
+        "food": "Comida",
+        "familyFun": "Diversão em família",
+        "treatYourself": "Se mimar",
+        "refuel": "Recarregar",
+        "slowDown": "Desacelerar",
+        "whereToStay": "Onde ficar",
+        "thingsToSee": "O que ver",
+        "eatOut": "Comer fora",
+        "meetPeople": "Conhecer pessoas",
+        "somewhereToTalk": "Um lugar para conversar",
+        "stayOver": "Dormir fora",
+        "drinks": "Bebidas",
+        "getOutAndPlay": "Sair para brincar",
+        "entertainment": "Entretenimento",
+        "browseLocal": "Comércio local",
+        "theBeach": "A praia",
+        "somewhereToEat": "Onde comer",
+        "professional": "Profissional",
+        "coffee": "Café",
+        "dinnerOrCoffee": "Jantar ou café"
+      },
+      "goWith": "Você poderia ir com {name} 👋",
+      "goWithTo": "Você poderia ir com {name} a {title} 👋",
+      "exhausted": "Isso é tudo o que combina por perto agora.",
+      "shuffle": "🔀 Embaralhar de novo",
+      "shuffleLabel": "Embaralhar de novo",
+      "nothing": "Nada concreto para sugerir agora",
+      "trySomethingElse": "Tentar outra coisa",
+      "calendarHint": "📅 Você também tem “{title}” em breve ({date})",
+      "picking": "Escolhendo algumas ideias…",
+      "pressSearch": "Toque em buscar e o Nearby vai encontrar algumas ideias para você.",
+      "sheet": {
+        "title": "✨ Me surpreenda",
+        "cancel": "Cancelar",
+        "when": "Quando?",
+        "mood": "Qual o clima?",
+        "submit": "✨ Me surpreenda",
+        "whenOptions": {
+          "now": "Agora",
+          "today": "Hoje",
+          "weekend": "Neste fim de semana"
+        },
+        "moods": {
+          "social": "Social",
+          "chill": "Tranquilo",
+          "active": "Ativo",
+          "foodie": "Gastronomia",
+          "date": "Encontro",
+          "something_new": "Algo novo"
+        }
+      }
+    },
     resultTitles: {
       "friendAlsoLooking": "{name} também está procurando isso",
       "aFriendAlsoLooking": "Um amigo também está procurando isso",
@@ -3347,6 +3858,108 @@ export const translations = {
   },
   ht: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    surprise: {
+      "lanes": {
+        "best": "Pi bon chwa",
+        "friends": "Ak zanmi",
+        "active": "Yon bagay aktif",
+        "easy": "Yon bagay trankil"
+      },
+      "headers": {
+        "now": "Kounye a toupre w",
+        "today": "Jodi a toupre w",
+        "tonight": "Aswè a toupre w",
+        "tomorrow": "Demen toupre w",
+        "weekend": "Wikenn sa a toupre w",
+        "none": "Toupre w"
+      },
+      "basis": {
+        "interests": "Chwazi dapre enterè w",
+        "thingsToDo": "Bagay pou fè",
+        "under": "mwens pase {price}",
+        "free": "gratis",
+        "when": {
+          "now": "kounye a",
+          "today": "jodi a",
+          "tonight": "aswè a",
+          "tomorrow": "demen",
+          "weekend": "wikenn sa a"
+        },
+        "party": {
+          "date": "pou yon randevou",
+          "friends": "ak zanmi",
+          "family": "ak fanmi",
+          "solo": "pou kont ou",
+          "coworkers": "ak kòlèg travay",
+          "groups": "pou yon gwoup"
+        }
+      },
+      "energies": {
+        "low_key": "Trankil",
+        "social": "Sosyal",
+        "active": "Aktif",
+        "high_energy": "Anpil enèji",
+        "romantic": "Womantik",
+        "adventurous": "Avantirye"
+      },
+      "planParts": {
+        "dinner": "Dine",
+        "somethingToDo": "Yon bagay pou fè",
+        "finishTheNight": "Fini aswè a",
+        "somethingFun": "Yon bagay amizan",
+        "sweetTreat": "Yon ti dous",
+        "food": "Manje",
+        "familyFun": "Plezi an fanmi",
+        "treatYourself": "Fè tèt ou plezi",
+        "refuel": "Reprann fòs",
+        "slowDown": "Pran san w",
+        "whereToStay": "Kote pou rete",
+        "thingsToSee": "Bagay pou wè",
+        "eatOut": "Manje deyò",
+        "meetPeople": "Rankontre moun",
+        "somewhereToTalk": "Yon kote pou pale",
+        "stayOver": "Rete dòmi",
+        "drinks": "Bwason",
+        "getOutAndPlay": "Soti al jwe",
+        "entertainment": "Divètisman",
+        "browseLocal": "Magazen lokal",
+        "theBeach": "Plaj la",
+        "somewhereToEat": "Kote pou manje",
+        "professional": "Pwofesyonèl",
+        "coffee": "Kafe",
+        "dinnerOrCoffee": "Dine oswa kafe"
+      },
+      "goWith": "Ou ta ka ale ak {name} 👋",
+      "goWithTo": "Ou ta ka ale nan {title} ak {name} 👋",
+      "exhausted": "Se tout sa ki koresponn toupre w kounye a.",
+      "shuffle": "🔀 Melanje ankò",
+      "shuffleLabel": "Melanje ankò",
+      "nothing": "Pa gen anyen reyèl pou sijere kounye a",
+      "trySomethingElse": "Eseye yon lòt bagay",
+      "calendarHint": "📅 Ou gen “{title}” k ap vini tou ({date})",
+      "picking": "N ap chwazi kèk lide…",
+      "pressSearch": "Peze Chèche epi Nearby ap jwenn kèk lide pou ou.",
+      "sheet": {
+        "title": "✨ Sipriz mwen",
+        "cancel": "Anile",
+        "when": "Kilè?",
+        "mood": "Ki atitid?",
+        "submit": "✨ Sipriz mwen",
+        "whenOptions": {
+          "now": "Kounye a",
+          "today": "Jodi a",
+          "weekend": "Wikenn sa a"
+        },
+        "moods": {
+          "social": "Sosyal",
+          "chill": "Trankil",
+          "active": "Aktif",
+          "foodie": "Bon manje",
+          "date": "Randevou",
+          "something_new": "Yon bagay nouvo"
+        }
+      }
+    },
     resultTitles: {
       "friendAlsoLooking": "{name} ap chèche sa tou",
       "aFriendAlsoLooking": "Yon zanmi ap chèche sa tou",
@@ -4006,6 +4619,108 @@ export const translations = {
   },
   zh: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    surprise: {
+      "lanes": {
+        "best": "最佳推荐",
+        "friends": "和朋友一起",
+        "active": "动起来",
+        "easy": "轻松一点"
+      },
+      "headers": {
+        "now": "此刻在你附近",
+        "today": "今天在你附近",
+        "tonight": "今晚在你附近",
+        "tomorrow": "明天在你附近",
+        "weekend": "这个周末在你附近",
+        "none": "在你附近"
+      },
+      "basis": {
+        "interests": "根据你的兴趣挑选",
+        "thingsToDo": "可以做的事",
+        "under": "{price}以内",
+        "free": "免费",
+        "when": {
+          "now": "此刻",
+          "today": "今天",
+          "tonight": "今晚",
+          "tomorrow": "明天",
+          "weekend": "这个周末"
+        },
+        "party": {
+          "date": "适合约会",
+          "friends": "和朋友一起",
+          "family": "和家人一起",
+          "solo": "一个人",
+          "coworkers": "和同事一起",
+          "groups": "适合团体"
+        }
+      },
+      "energies": {
+        "low_key": "轻松",
+        "social": "社交",
+        "active": "活跃",
+        "high_energy": "高能量",
+        "romantic": "浪漫",
+        "adventurous": "冒险"
+      },
+      "planParts": {
+        "dinner": "晚餐",
+        "somethingToDo": "做点什么",
+        "finishTheNight": "完美收尾",
+        "somethingFun": "找点乐子",
+        "sweetTreat": "来点甜的",
+        "food": "吃饭",
+        "familyFun": "家庭欢乐",
+        "treatYourself": "犒劳自己",
+        "refuel": "补充能量",
+        "slowDown": "慢下来",
+        "whereToStay": "住哪儿",
+        "thingsToSee": "看看风景",
+        "eatOut": "出去吃",
+        "meetPeople": "认识新朋友",
+        "somewhereToTalk": "找地方聊聊",
+        "stayOver": "留宿",
+        "drinks": "喝一杯",
+        "getOutAndPlay": "出去玩",
+        "entertainment": "娱乐",
+        "browseLocal": "逛逛本地小店",
+        "theBeach": "海滩",
+        "somewhereToEat": "找地方吃饭",
+        "professional": "商务",
+        "coffee": "咖啡",
+        "dinnerOrCoffee": "晚餐或咖啡"
+      },
+      "goWith": "你可以和{name}一起去 👋",
+      "goWithTo": "你可以和{name}一起去{title} 👋",
+      "exhausted": "附近目前合适的就这些了。",
+      "shuffle": "🔀 换一批",
+      "shuffleLabel": "换一批",
+      "nothing": "现在没有可推荐的内容",
+      "trySomethingElse": "换个试试",
+      "calendarHint": "📅 你还有即将到来的“{title}”（{date}）",
+      "picking": "正在挑选几个点子…",
+      "pressSearch": "点击搜索，Nearby 会为你找到一些点子。",
+      "sheet": {
+        "title": "✨ 给我惊喜",
+        "cancel": "取消",
+        "when": "什么时候？",
+        "mood": "什么心情？",
+        "submit": "✨ 给我惊喜",
+        "whenOptions": {
+          "now": "现在",
+          "today": "今天",
+          "weekend": "这个周末"
+        },
+        "moods": {
+          "social": "社交",
+          "chill": "放松",
+          "active": "活跃",
+          "foodie": "美食",
+          "date": "约会",
+          "something_new": "新鲜事"
+        }
+      }
+    },
     resultTitles: {
       "friendAlsoLooking": "{name}也在找这个",
       "aFriendAlsoLooking": "有位朋友也在找这个",
@@ -4665,6 +5380,108 @@ export const translations = {
   },
   vi: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    surprise: {
+      "lanes": {
+        "best": "Lựa chọn tốt nhất",
+        "friends": "Đi cùng bạn bè",
+        "active": "Năng động một chút",
+        "easy": "Nhẹ nhàng thôi"
+      },
+      "headers": {
+        "now": "Ngay lúc này gần bạn",
+        "today": "Hôm nay gần bạn",
+        "tonight": "Tối nay gần bạn",
+        "tomorrow": "Ngày mai gần bạn",
+        "weekend": "Cuối tuần này gần bạn",
+        "none": "Gần bạn"
+      },
+      "basis": {
+        "interests": "Chọn theo sở thích của bạn",
+        "thingsToDo": "Việc để làm",
+        "under": "dưới {price}",
+        "free": "miễn phí",
+        "when": {
+          "now": "ngay lúc này",
+          "today": "hôm nay",
+          "tonight": "tối nay",
+          "tomorrow": "ngày mai",
+          "weekend": "cuối tuần này"
+        },
+        "party": {
+          "date": "cho buổi hẹn hò",
+          "friends": "cùng bạn bè",
+          "family": "cùng gia đình",
+          "solo": "một mình",
+          "coworkers": "cùng đồng nghiệp",
+          "groups": "cho một nhóm"
+        }
+      },
+      "energies": {
+        "low_key": "Thư thái",
+        "social": "Giao lưu",
+        "active": "Năng động",
+        "high_energy": "Sôi động",
+        "romantic": "Lãng mạn",
+        "adventurous": "Phiêu lưu"
+      },
+      "planParts": {
+        "dinner": "Bữa tối",
+        "somethingToDo": "Việc gì đó để làm",
+        "finishTheNight": "Kết thúc buổi tối",
+        "somethingFun": "Điều gì đó vui",
+        "sweetTreat": "Món ngọt",
+        "food": "Đồ ăn",
+        "familyFun": "Vui cùng gia đình",
+        "treatYourself": "Tự thưởng",
+        "refuel": "Nạp năng lượng",
+        "slowDown": "Chậm lại",
+        "whereToStay": "Chỗ ở",
+        "thingsToSee": "Điểm tham quan",
+        "eatOut": "Ăn ngoài",
+        "meetPeople": "Gặp gỡ mọi người",
+        "somewhereToTalk": "Chỗ để trò chuyện",
+        "stayOver": "Ở lại qua đêm",
+        "drinks": "Đồ uống",
+        "getOutAndPlay": "Ra ngoài chơi",
+        "entertainment": "Giải trí",
+        "browseLocal": "Cửa hàng địa phương",
+        "theBeach": "Bãi biển",
+        "somewhereToEat": "Chỗ để ăn",
+        "professional": "Công việc",
+        "coffee": "Cà phê",
+        "dinnerOrCoffee": "Bữa tối hoặc cà phê"
+      },
+      "goWith": "Bạn có thể đi cùng {name} 👋",
+      "goWithTo": "Bạn có thể đi {title} cùng {name} 👋",
+      "exhausted": "Đó là tất cả những gì phù hợp gần bạn lúc này.",
+      "shuffle": "🔀 Đổi gợi ý khác",
+      "shuffleLabel": "Đổi gợi ý khác",
+      "nothing": "Hiện chưa có gì thực sự để gợi ý",
+      "trySomethingElse": "Thử cái khác",
+      "calendarHint": "📅 Bạn cũng sắp có “{title}” ({date})",
+      "picking": "Đang chọn vài ý tưởng…",
+      "pressSearch": "Nhấn tìm kiếm và Nearby sẽ tìm vài ý tưởng cho bạn.",
+      "sheet": {
+        "title": "✨ Làm tôi bất ngờ",
+        "cancel": "Hủy",
+        "when": "Khi nào?",
+        "mood": "Tâm trạng?",
+        "submit": "✨ Làm tôi bất ngờ",
+        "whenOptions": {
+          "now": "Bây giờ",
+          "today": "Hôm nay",
+          "weekend": "Cuối tuần này"
+        },
+        "moods": {
+          "social": "Giao lưu",
+          "chill": "Thư giãn",
+          "active": "Năng động",
+          "foodie": "Ăn uống",
+          "date": "Hẹn hò",
+          "something_new": "Điều gì đó mới"
+        }
+      }
+    },
     resultTitles: {
       "friendAlsoLooking": "{name} cũng đang tìm điều này",
       "aFriendAlsoLooking": "Một người bạn cũng đang tìm điều này",
@@ -5322,6 +6139,108 @@ export const translations = {
   },
   tl: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    surprise: {
+      "lanes": {
+        "best": "Pinakamagandang pili",
+        "friends": "Kasama ang mga kaibigan",
+        "active": "Medyo aktibo",
+        "easy": "Magaan lang"
+      },
+      "headers": {
+        "now": "Ngayon malapit sa iyo",
+        "today": "Ngayong araw malapit sa iyo",
+        "tonight": "Mamayang gabi malapit sa iyo",
+        "tomorrow": "Bukas malapit sa iyo",
+        "weekend": "Ngayong weekend malapit sa iyo",
+        "none": "Malapit sa iyo"
+      },
+      "basis": {
+        "interests": "Pinili ayon sa mga hilig mo",
+        "thingsToDo": "Mga puwedeng gawin",
+        "under": "wala pang {price}",
+        "free": "libre",
+        "when": {
+          "now": "ngayon",
+          "today": "ngayong araw",
+          "tonight": "mamayang gabi",
+          "tomorrow": "bukas",
+          "weekend": "ngayong weekend"
+        },
+        "party": {
+          "date": "para sa date",
+          "friends": "kasama ang mga kaibigan",
+          "family": "kasama ang pamilya",
+          "solo": "mag-isa",
+          "coworkers": "kasama ang mga katrabaho",
+          "groups": "para sa grupo"
+        }
+      },
+      "energies": {
+        "low_key": "Relaks",
+        "social": "Sosyal",
+        "active": "Aktibo",
+        "high_energy": "Masigla",
+        "romantic": "Romantiko",
+        "adventurous": "Mapangahas"
+      },
+      "planParts": {
+        "dinner": "Hapunan",
+        "somethingToDo": "Puwedeng gawin",
+        "finishTheNight": "Pantapos ng gabi",
+        "somethingFun": "Masayang gawin",
+        "sweetTreat": "Matamis",
+        "food": "Pagkain",
+        "familyFun": "Saya ng pamilya",
+        "treatYourself": "Pasayahin ang sarili",
+        "refuel": "Magpalakas",
+        "slowDown": "Magdahan-dahan",
+        "whereToStay": "Matutuluyan",
+        "thingsToSee": "Mga makikita",
+        "eatOut": "Kumain sa labas",
+        "meetPeople": "Makakilala ng tao",
+        "somewhereToTalk": "Lugar para mag-usap",
+        "stayOver": "Mag-overnight",
+        "drinks": "Inumin",
+        "getOutAndPlay": "Lumabas at maglaro",
+        "entertainment": "Libangan",
+        "browseLocal": "Mga lokal na tindahan",
+        "theBeach": "Ang beach",
+        "somewhereToEat": "Makakainan",
+        "professional": "Pangtrabaho",
+        "coffee": "Kape",
+        "dinnerOrCoffee": "Hapunan o kape"
+      },
+      "goWith": "Puwede kang sumama kay {name} 👋",
+      "goWithTo": "Puwede kayong pumunta ni {name} sa {title} 👋",
+      "exhausted": "Iyan na ang lahat ng bagay malapit sa iyo na swak ngayon.",
+      "shuffle": "🔀 I-shuffle ulit",
+      "shuffleLabel": "I-shuffle ulit",
+      "nothing": "Wala pang totoong maimumungkahi ngayon",
+      "trySomethingElse": "Subukan ang iba",
+      "calendarHint": "📅 May paparating ka ring “{title}” ({date})",
+      "picking": "Pumipili ng ilang ideya…",
+      "pressSearch": "Pindutin ang Hanapin at hahanap ang Nearby ng ilang ideya para sa iyo.",
+      "sheet": {
+        "title": "✨ Sorpresahin mo ako",
+        "cancel": "Kanselahin",
+        "when": "Kailan?",
+        "mood": "Anong mood?",
+        "submit": "✨ Sorpresahin mo ako",
+        "whenOptions": {
+          "now": "Ngayon",
+          "today": "Ngayong araw",
+          "weekend": "Ngayong weekend"
+        },
+        "moods": {
+          "social": "Sosyal",
+          "chill": "Relaks",
+          "active": "Aktibo",
+          "foodie": "Pagkain",
+          "date": "Date",
+          "something_new": "Bago"
+        }
+      }
+    },
     resultTitles: {
       "friendAlsoLooking": "Hinahanap din ito ni {name}",
       "aFriendAlsoLooking": "May kaibigang naghahanap din nito",
@@ -5981,6 +6900,108 @@ export const translations = {
   },
   ru: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    surprise: {
+      "lanes": {
+        "best": "Лучший вариант",
+        "friends": "С друзьями",
+        "active": "Что-то активное",
+        "easy": "Что-то спокойное"
+      },
+      "headers": {
+        "now": "Прямо сейчас рядом",
+        "today": "Сегодня рядом",
+        "tonight": "Сегодня вечером рядом",
+        "tomorrow": "Завтра рядом",
+        "weekend": "В эти выходные рядом",
+        "none": "Рядом с вами"
+      },
+      "basis": {
+        "interests": "Подобрано по вашим интересам",
+        "thingsToDo": "Чем заняться",
+        "under": "до {price}",
+        "free": "бесплатно",
+        "when": {
+          "now": "прямо сейчас",
+          "today": "сегодня",
+          "tonight": "сегодня вечером",
+          "tomorrow": "завтра",
+          "weekend": "в эти выходные"
+        },
+        "party": {
+          "date": "для свидания",
+          "friends": "с друзьями",
+          "family": "с семьёй",
+          "solo": "в одиночку",
+          "coworkers": "с коллегами",
+          "groups": "для компании"
+        }
+      },
+      "energies": {
+        "low_key": "Спокойно",
+        "social": "Общение",
+        "active": "Активно",
+        "high_energy": "Много энергии",
+        "romantic": "Романтично",
+        "adventurous": "Приключения"
+      },
+      "planParts": {
+        "dinner": "Ужин",
+        "somethingToDo": "Чем заняться",
+        "finishTheNight": "Завершить вечер",
+        "somethingFun": "Что-то весёлое",
+        "sweetTreat": "Сладкое",
+        "food": "Еда",
+        "familyFun": "Семейный досуг",
+        "treatYourself": "Побаловать себя",
+        "refuel": "Подкрепиться",
+        "slowDown": "Сбавить темп",
+        "whereToStay": "Где остановиться",
+        "thingsToSee": "Что посмотреть",
+        "eatOut": "Поесть в городе",
+        "meetPeople": "Познакомиться с людьми",
+        "somewhereToTalk": "Где поговорить",
+        "stayOver": "Остаться на ночь",
+        "drinks": "Напитки",
+        "getOutAndPlay": "Выбраться поиграть",
+        "entertainment": "Развлечения",
+        "browseLocal": "Местные магазины",
+        "theBeach": "Пляж",
+        "somewhereToEat": "Где поесть",
+        "professional": "Для работы",
+        "coffee": "Кофе",
+        "dinnerOrCoffee": "Ужин или кофе"
+      },
+      "goWith": "Можно сходить вместе — {name} 👋",
+      "goWithTo": "Можно сходить вместе — {name}: «{title}» 👋",
+      "exhausted": "Это всё, что сейчас подходит поблизости.",
+      "shuffle": "🔀 Перемешать ещё раз",
+      "shuffleLabel": "Перемешать ещё раз",
+      "nothing": "Сейчас нечего предложить",
+      "trySomethingElse": "Попробовать другое",
+      "calendarHint": "📅 Скоро у вас также «{title}» ({date})",
+      "picking": "Подбираем несколько идей…",
+      "pressSearch": "Нажмите «Поиск», и Nearby найдёт для вас несколько идей.",
+      "sheet": {
+        "title": "✨ Удиви меня",
+        "cancel": "Отмена",
+        "when": "Когда?",
+        "mood": "Настроение?",
+        "submit": "✨ Удиви меня",
+        "whenOptions": {
+          "now": "Сейчас",
+          "today": "Сегодня",
+          "weekend": "В эти выходные"
+        },
+        "moods": {
+          "social": "Общение",
+          "chill": "Спокойно",
+          "active": "Активно",
+          "foodie": "Вкусно поесть",
+          "date": "Свидание",
+          "something_new": "Что-то новое"
+        }
+      }
+    },
     resultTitles: {
       "friendAlsoLooking": "{name} тоже ищет это",
       "aFriendAlsoLooking": "Кто-то из друзей тоже ищет это",
@@ -6670,6 +7691,108 @@ export const translations = {
   },
   ko: {
     // Localization pass 2 (2026-09-28): row status notes and the vocabulary reasons/context lines are composed from.
+    surprise: {
+      "lanes": {
+        "best": "베스트 추천",
+        "friends": "친구와 함께",
+        "active": "활동적인 것",
+        "easy": "편안한 것"
+      },
+      "headers": {
+        "now": "지금 근처에서",
+        "today": "오늘 근처에서",
+        "tonight": "오늘 밤 근처에서",
+        "tomorrow": "내일 근처에서",
+        "weekend": "이번 주말 근처에서",
+        "none": "근처에서"
+      },
+      "basis": {
+        "interests": "관심사에 맞춰 골랐어요",
+        "thingsToDo": "할 거리",
+        "under": "{price} 이하",
+        "free": "무료",
+        "when": {
+          "now": "지금",
+          "today": "오늘",
+          "tonight": "오늘 밤",
+          "tomorrow": "내일",
+          "weekend": "이번 주말"
+        },
+        "party": {
+          "date": "데이트용",
+          "friends": "친구와 함께",
+          "family": "가족과 함께",
+          "solo": "혼자서",
+          "coworkers": "동료와 함께",
+          "groups": "단체용"
+        }
+      },
+      "energies": {
+        "low_key": "여유롭게",
+        "social": "사교적으로",
+        "active": "활동적으로",
+        "high_energy": "에너지 넘치게",
+        "romantic": "로맨틱하게",
+        "adventurous": "모험적으로"
+      },
+      "planParts": {
+        "dinner": "저녁 식사",
+        "somethingToDo": "할 거리",
+        "finishTheNight": "마무리",
+        "somethingFun": "재미있는 것",
+        "sweetTreat": "달콤한 것",
+        "food": "식사",
+        "familyFun": "가족과 즐기기",
+        "treatYourself": "나를 위한 시간",
+        "refuel": "재충전",
+        "slowDown": "여유 갖기",
+        "whereToStay": "숙소",
+        "thingsToSee": "볼거리",
+        "eatOut": "외식",
+        "meetPeople": "사람 만나기",
+        "somewhereToTalk": "이야기 나눌 곳",
+        "stayOver": "하룻밤 묵기",
+        "drinks": "음료",
+        "getOutAndPlay": "나가서 놀기",
+        "entertainment": "엔터테인먼트",
+        "browseLocal": "동네 가게 구경",
+        "theBeach": "해변",
+        "somewhereToEat": "식사할 곳",
+        "professional": "업무용",
+        "coffee": "커피",
+        "dinnerOrCoffee": "저녁 식사 또는 커피"
+      },
+      "goWith": "{name}님과 함께 가도 좋아요 👋",
+      "goWithTo": "{name}님과 {title}에 함께 가도 좋아요 👋",
+      "exhausted": "지금 근처에서 맞는 건 이게 전부예요.",
+      "shuffle": "🔀 다시 섞기",
+      "shuffleLabel": "다시 섞기",
+      "nothing": "지금은 추천할 만한 게 없어요",
+      "trySomethingElse": "다른 걸 해 보기",
+      "calendarHint": "📅 곧 “{title}” 일정도 있어요 ({date})",
+      "picking": "아이디어를 고르는 중…",
+      "pressSearch": "검색을 누르면 Nearby가 아이디어를 찾아 드려요.",
+      "sheet": {
+        "title": "✨ 놀라게 해 줘",
+        "cancel": "취소",
+        "when": "언제?",
+        "mood": "기분은?",
+        "submit": "✨ 놀라게 해 줘",
+        "whenOptions": {
+          "now": "지금",
+          "today": "오늘",
+          "weekend": "이번 주말"
+        },
+        "moods": {
+          "social": "사교",
+          "chill": "여유",
+          "active": "활동",
+          "foodie": "맛집",
+          "date": "데이트",
+          "something_new": "새로운 것"
+        }
+      }
+    },
     resultTitles: {
       "friendAlsoLooking": "{name}님도 이걸 찾고 있어요",
       "aFriendAlsoLooking": "친구도 이걸 찾고 있어요",

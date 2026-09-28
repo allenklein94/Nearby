@@ -1,4 +1,5 @@
 import { useLanguage } from '../context/LanguageContext';
+import { surpriseView, surpriseText } from '../i18n/surpriseView';
 import { peopleTonightBanner, countTonightSupply } from '../utils/meetTonight';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
@@ -431,6 +432,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Surprise Me typed into this search box (owner, 2026-09-26): the SAME engine as Home (services/surpriseMe.js), shown inline
   // here; never a keyword search for the phrase, never logged as a search.
   const [discoverSurprise, setDiscoverSurprise] = useState(null);
+  const discoverSurpriseShown = surpriseView(discoverSurprise, language); // the same decisions, worded in the person's language
   const [surpriseLoading, setSurpriseLoading] = useState(false);
   const surpriseRequestId = useRef(0);
   const [typeFilter, setTypeFilter] = useState(() => route.params?.initialTypeTab ?? 'all');
@@ -2491,43 +2493,41 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {/* Surprise Me typed into the search box: inline, in the results area, same engine as Home (no new screen or tab). */}
           {surpriseTyped && surpriseLoading && (
             <View style={styles.intentSearchLoadingRow}>
-              <NLoader fullScreen={false} size="inline" caption="Picking a few ideas…" />
+              <NLoader fullScreen={false} size="inline" caption={surpriseText(language, 'picking')} />
             </View>
           )}
           {surpriseTyped && !surpriseLoading && discoverSurprise && (
             <View style={styles.intentSearchBlock}>
-              <Text style={styles.intentSearchTitle}>{discoverSurprise.header}</Text>
-              {!!discoverSurprise.basis && (
-                <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{discoverSurprise.basis}</Text>
+              <Text style={styles.intentSearchTitle}>{discoverSurpriseShown.header}</Text>
+              {!!discoverSurpriseShown.basis && (
+                <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{discoverSurpriseShown.basis}</Text>
               )}
               {!discoverSurprise.suggestion ? (
                 <EmptyCopy id="surprise_none" />
               ) : discoverSurprise.suggestion.kind === 'lanes' ? (
                 // Item 90: labeled rows, each only when a real result backs its label (same engine as Home).
-                discoverSurprise.lanes.map((lane) => (
+                discoverSurpriseShown.lanes.map((lane) => (
                   <View key={lane.key} style={{ marginBottom: spacing.sm }}>
-                    <Text style={styles.intentSearchGroupLabel}>{lane.plan ? `${lane.label} · ${lane.plan}` : lane.label}</Text>
+                    <Text style={styles.intentSearchGroupLabel}>{lane.heading}</Text>
                     {lane.items.map((item, index) => renderIntentSearchResultRow(item, index, { onPress: (it) => navigateToSurprisePick(navigation, it, discoverSurprise), pickBadge: false }))}
                   </View>
                 ))
               ) : null}
-              {discoverSurprise.connectedPerson && (
-                <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 6 }}>
-                  You could go with {discoverSurprise.connectedPerson.name}{discoverSurprise.connectedPerson.forTitle ? ` to ${discoverSurprise.connectedPerson.forTitle}` : ''} 👋
-                </Text>
+              {!!discoverSurpriseShown.connectedLine && (
+                <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 6 }}>{discoverSurpriseShown.connectedLine}</Text>
               )}
               {discoverSurprise.exhausted && (
-                <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 6 }}>That's everything nearby that fits right now.</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 6 }}>{surpriseText(language, 'exhausted')}</Text>
               )}
               {!!discoverSurprise.suggestion && (
-                <TouchableOpacity onPress={handleDiscoverSurpriseShuffle} accessibilityLabel="Shuffle Again" accessibilityRole="button">
-                  <Text style={styles.emptyActionText}>🔀 Shuffle Again</Text>
+                <TouchableOpacity onPress={handleDiscoverSurpriseShuffle} accessibilityLabel={surpriseText(language, 'shuffleLabel')} accessibilityRole="button">
+                  <Text style={styles.emptyActionText}>{surpriseText(language, 'shuffle')}</Text>
                 </TouchableOpacity>
               )}
             </View>
           )}
           {surpriseTyped && !surpriseLoading && !discoverSurprise && (
-            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>Press search and Nearby will find a few ideas for you.</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{surpriseText(language, 'pressSearch')}</Text>
           )}
 
           {isSearching && onTopOrNotTabbed && intentSearching && (

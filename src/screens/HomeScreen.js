@@ -1,4 +1,6 @@
 import { useLanguage } from '../context/LanguageContext';
+import { surpriseView, surpriseText } from '../i18n/surpriseView';
+import { translate } from '../i18n/translate';
 import { resultRowView } from '../utils/recommendationContext';
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -261,6 +263,7 @@ export default function HomeScreen({ navigation }) {
   const [surpriseSheetVisible, setSurpriseSheetVisible] = useState(false);
   const [surpriseLoading, setSurpriseLoading] = useState(false);
   const [surprise, setSurprise] = useState(null);
+  const surpriseShown = surpriseView(surprise, language); // the same decisions, worded in the person's language
   const [outcomePrompt, setOutcomePrompt] = useState(null);
   const [outcomeSubmitting, setOutcomeSubmitting] = useState(false);
   // Nearby 2.0 vision, partial build (see CLAUDE.md's "Nearby 2.0 Vision"
@@ -1573,10 +1576,10 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity
               style={styles.surpriseMeLink}
               onPress={() => setSurpriseSheetVisible(true)}
-              accessibilityLabel="Surprise Me"
+              accessibilityLabel={surpriseText(language, 'sheet.title')}
               accessibilityRole="button"
             >
-              <Text style={styles.surpriseMeLinkText}>✨ Surprise Me</Text>
+              <Text style={styles.surpriseMeLinkText}>{surpriseText(language, 'sheet.title')}</Text>
             </TouchableOpacity>
           )}
 
@@ -1596,9 +1599,9 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.intentResults}>
               {!surprise.suggestion ? (
                 <>
-                  <Text style={styles.intentResultsHeading}>Nothing real to suggest right now</Text>
+                  <Text style={styles.intentResultsHeading}>{surpriseText(language, 'nothing')}</Text>
                   <TouchableOpacity onPress={handleSurpriseDismiss}>
-                    <Text style={styles.intentResultsDismiss}>Try something else</Text>
+                    <Text style={styles.intentResultsDismiss}>{surpriseText(language, 'trySomethingElse')}</Text>
                   </TouchableOpacity>
                 </>
               ) : (
@@ -1606,11 +1609,11 @@ export default function HomeScreen({ navigation }) {
                   {surprise.suggestion.kind === 'lanes' ? (
                     <View style={styles.surpriseCard}>
                       {/* Item 90: no category forced. Each labeled row is shown only when a real result backs its label. */}
-                      <Text style={styles.intentResultsHeading}>{surprise.header}</Text>
-                      {!!surprise.basis && <Text style={styles.surpriseConnectedText}>{surprise.basis}</Text>}
-                      {surprise.lanes.map((lane) => (
+                      <Text style={styles.intentResultsHeading}>{surpriseShown.header}</Text>
+                      {!!surpriseShown.basis && <Text style={styles.surpriseConnectedText}>{surpriseShown.basis}</Text>}
+                      {surpriseShown.lanes.map((lane) => (
                         <View key={lane.key} style={{ marginBottom: spacing.sm }}>
-                          <Text style={styles.intentGroupLabel}>{lane.plan ? `${lane.label} · ${lane.plan}` : lane.label}</Text>
+                          <Text style={styles.intentGroupLabel}>{lane.heading}</Text>
                           {lane.items.map((item) => {
                             const row = resultRowView(item, { language }); // Surprise Me rows read the same context object as every result
                             return (
@@ -1634,10 +1637,8 @@ export default function HomeScreen({ navigation }) {
                           })}
                         </View>
                       ))}
-                      {surprise.connectedPerson && (
-                        <Text style={styles.surpriseConnectedText}>
-                          You could go with {surprise.connectedPerson.name}{surprise.connectedPerson.forTitle ? ` to ${surprise.connectedPerson.forTitle}` : ''} 👋
-                        </Text>
+                      {!!surpriseShown.connectedLine && (
+                        <Text style={styles.surpriseConnectedText}>{surpriseShown.connectedLine}</Text>
                       )}
                     </View>
                   ) : null}
@@ -1648,25 +1649,23 @@ export default function HomeScreen({ navigation }) {
                       exists. Purely informational context, never a gate
                       on the suggestion itself. */}
                   {surprise.exhausted && (
-                    <Text style={styles.surpriseConnectedText}>That's everything nearby that fits right now.</Text>
+                    <Text style={styles.surpriseConnectedText}>{surpriseText(language, 'exhausted')}</Text>
                   )}
-                  {surprise.calendarHint && (
-                    <Text style={styles.surpriseConnectedText}>
-                      📅 You also have "{surprise.calendarHint.title}" coming up ({surprise.calendarHint.dateLabel})
-                    </Text>
+                  {!!surpriseShown.calendarLine && (
+                    <Text style={styles.surpriseConnectedText}>{surpriseShown.calendarLine}</Text>
                   )}
                   <View style={styles.surpriseActionsRow}>
                     <TouchableOpacity
                       style={styles.surpriseShuffleButton}
                       onPress={handleSurpriseShuffle}
-                      accessibilityLabel="Shuffle Again"
+                      accessibilityLabel={surpriseText(language, 'shuffleLabel')}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.surpriseShuffleButtonText}>🔀 Shuffle Again</Text>
+                      <Text style={styles.surpriseShuffleButtonText}>{surpriseText(language, 'shuffle')}</Text>
                     </TouchableOpacity>
                   </View>
                   <TouchableOpacity onPress={handleSurpriseDismiss}>
-                    <Text style={styles.intentResultsDismiss}>Try something else</Text>
+                    <Text style={styles.intentResultsDismiss}>{surpriseText(language, 'trySomethingElse')}</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -2606,7 +2605,7 @@ export default function HomeScreen({ navigation }) {
                   {confidenceHeadline(signals, { language }) ? <Text style={styles.trendingMeta}>{confidenceHeadline(signals, { language })}</Text> : null}
                   {card.why ? <Text style={styles.trendingMeta}>{card.why}</Text> : null}
                   <Text style={styles.trendingMeta}>
-                    {[card.meta, g.approvedAttendees ? `${attendeeTotal(g)} attending` : null].filter(Boolean).join(' · ')}
+                    {[card.meta, g.approvedAttendees ? translate(language, 'reasons.attendingCount', { count: attendeeTotal(g) }) : null].filter(Boolean).join(' · ')}
                   </Text>
                   {card.social ? <Text style={styles.trendingMeta}>{card.social}</Text> : null}
                   {gatheringFullnessLabel(g) && (

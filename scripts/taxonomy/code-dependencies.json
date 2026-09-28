@@ -7863,6 +7863,20 @@
    "group": null
   },
   {
+   "tag": "Coffee",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Foodie",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Live Music",
    "file": "src/i18n/translations.js",
    "consumer": "code",

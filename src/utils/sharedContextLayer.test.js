@@ -231,7 +231,7 @@ describe('guards: surfaces render the shared object and do not rebuild its rules
     expect(home.match(rawSubtitle) ?? []).toHaveLength(1);
     expect(home.slice(home.indexOf("if (item.type === 'friend_request') {"), home.indexOf('const row = resultRowView(item, { language });'))).toMatch(rawSubtitle);
     // Home's surprise lane rows specifically
-    const lanes = home.slice(home.indexOf('surprise.lanes.map'), home.indexOf('surprise.connectedPerson &&'));
+    const lanes = home.slice(home.indexOf('surpriseShown.lanes.map'), home.indexOf('surpriseShown.connectedLine &&'));
     expect(lanes).toMatch(/resultRowView\(item, \{ language \}\)/);
   });
   it('only openDestination follows a destination; the context object is the one place destinations are built', () => {

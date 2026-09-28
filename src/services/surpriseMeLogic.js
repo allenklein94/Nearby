@@ -295,16 +295,27 @@ export function surpriseCategories(myInterests = [], rand = Math.random) {
 // One honest line naming only the signals that really shaped the set ("Picked from your interests · tonight · under $30").
 const WHEN_WORDS = { now: 'right now', today: 'today', tonight: 'tonight', tomorrow: 'tomorrow', weekend: 'this weekend' };
 const PARTY_WORDS = { date: 'for a date', friends: 'with friends', family: 'with family', solo: 'on your own', coworkers: 'with coworkers', groups: 'for a group' };
-export function surpriseBasis({ usedInterests = false, scope = null, dateWindow = null, budgetMax = null, priceLevel = null, partyType = null } = {}) {
+// The same line as structured parts (i18n/surpriseView.js words them in the person's language); surpriseBasis is its English.
+export function surpriseBasisParts({ usedInterests = false, scope = null, dateWindow = null, budgetMax = null, priceLevel = null, partyType = null } = {}) {
   const parts = [];
-  const named = scopeLabel(scope);
-  if (named) parts.push(named);
-  else if (usedInterests) parts.push('Picked from your interests');
-  if (WHEN_WORDS[dateWindow]) parts.push(WHEN_WORDS[dateWindow]);
-  if (Number.isFinite(budgetMax) && budgetMax > 0) parts.push(`under $${budgetMax}`);
-  else if (priceLevel) parts.push(priceLevel === 'free' ? 'free' : priceLevel);
-  if (PARTY_WORDS[partyType]) parts.push(PARTY_WORDS[partyType]);
-  return parts.length > 0 ? parts.join(' · ') : null;
+  if (scopeLabel(scope)) parts.push({ kind: 'scope', scope });
+  else if (usedInterests) parts.push({ kind: 'interests' });
+  if (WHEN_WORDS[dateWindow]) parts.push({ kind: 'when', dateWindow });
+  if (Number.isFinite(budgetMax) && budgetMax > 0) parts.push({ kind: 'budget', amount: budgetMax });
+  else if (priceLevel) parts.push({ kind: 'price', priceLevel });
+  if (PARTY_WORDS[partyType]) parts.push({ kind: 'party', partyType });
+  return parts;
+}
+export function surpriseBasis(opts = {}) {
+  const words = surpriseBasisParts(opts).map((p) => {
+    if (p.kind === 'scope') return scopeLabel(p.scope);
+    if (p.kind === 'interests') return 'Picked from your interests';
+    if (p.kind === 'when') return WHEN_WORDS[p.dateWindow];
+    if (p.kind === 'budget') return `under $${p.amount}`;
+    if (p.kind === 'price') return p.priceLevel === 'free' ? 'free' : p.priceLevel;
+    return PARTY_WORDS[p.partyType];
+  });
+  return words.length > 0 ? words.join(' · ') : null;
 }
 
 // The connected-friend line for a SET: the first pick a real friend/match has a declared-interest link to (never a stranger).
@@ -424,7 +435,8 @@ export function pickLanes(pool, { experience = null, excludeKeys = new Set(), le
   }
   if (pair.length === 2) {
     pair.forEach((p) => use(p.item));
-    lanes.push({ key: 'best', label: 'Best Pick', plan: pair.map((p) => p.comp.label.replace(/^\S+\s+/, '')).join(' + '), items: pair.map((p) => p.item) });
+    const planParts = pair.map((p) => p.comp.label.replace(/^\S+\s+/, '')); // the parts' English names (worded per language on display)
+    lanes.push({ key: 'best', label: 'Best Pick', plan: planParts.join(' + '), planParts, items: pair.map((p) => p.item) });
   } else {
     const top = eligible.find(free);
     if (top) { use(top); lanes.push({ key: 'best', label: 'Best Pick', plan: null, items: [top] }); }

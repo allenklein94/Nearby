@@ -5,6 +5,11 @@ import { spacing, radius, typography } from '../theme';
 import { WHEN_OPTIONS, MOOD_OPTIONS } from '../services/surpriseMeLogic';
 
 import { modalAnimation } from '../motion';
+import { useLanguage } from '../context/LanguageContext';
+import { surpriseText } from '../i18n/surpriseView';
+
+// A mood chip keeps its emoji; the word is the person's language.
+const moodChip = (opt, language) => `${opt.label.split(' ')[0]} ${surpriseText(language, `sheet.moods.${opt.key}`)}`;
 // "Surprise Me" (critique item 28) -- the locked-spec quick-picker: When
 // (Now/Today/This Weekend, the real gatheringDateFilter.js DATE_OPTIONS
 // keys) and Mood (six real chips, mapped to real vocabulary in
@@ -13,6 +18,8 @@ import { modalAnimation } from '../motion';
 // for this app's own "in-place sheet" pattern, not a new presentation.
 export default function SurpriseMeSheet({ visible, onClose, onSubmit }) {
   const { colors } = useTheme();
+  const { language } = useLanguage();
+  const t = (key) => surpriseText(language, `sheet.${key}`);
   const styles = getStyles(colors);
   const [when, setWhen] = useState('now');
   const [mood, setMood] = useState(null);
@@ -34,13 +41,13 @@ export default function SurpriseMeSheet({ visible, onClose, onSubmit }) {
       <View style={styles.overlay}>
         <SafeAreaView style={styles.sheet}>
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>✨ Surprise Me</Text>
-            <TouchableOpacity onPress={onClose} accessibilityLabel="Close" accessibilityRole="button">
-              <Text style={styles.headerClose}>Cancel</Text>
+            <Text style={styles.headerTitle}>{t('title')}</Text>
+            <TouchableOpacity onPress={onClose} accessibilityLabel={t('cancel')} accessibilityRole="button">
+              <Text style={styles.headerClose}>{t('cancel')}</Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.sectionLabel}>When?</Text>
+          <Text style={styles.sectionLabel}>{t('when')}</Text>
           <View style={styles.chipsWrap}>
             {WHEN_OPTIONS.map((opt) => (
               <TouchableOpacity
@@ -50,12 +57,12 @@ export default function SurpriseMeSheet({ visible, onClose, onSubmit }) {
                 accessibilityRole="button"
                 accessibilityState={{ selected: when === opt.key }}
               >
-                <Text style={[styles.chipText, when === opt.key && styles.chipTextActive]}>{opt.label}</Text>
+                <Text style={[styles.chipText, when === opt.key && styles.chipTextActive]}>{t(`whenOptions.${opt.key}`)}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text style={styles.sectionLabel}>Mood?</Text>
+          <Text style={styles.sectionLabel}>{t('mood')}</Text>
           <View style={styles.chipsWrap}>
             {MOOD_OPTIONS.map((opt) => (
               <TouchableOpacity
@@ -65,7 +72,7 @@ export default function SurpriseMeSheet({ visible, onClose, onSubmit }) {
                 accessibilityRole="button"
                 accessibilityState={{ selected: mood === opt.key }}
               >
-                <Text style={[styles.chipText, mood === opt.key && styles.chipTextActive]}>{opt.label}</Text>
+                <Text style={[styles.chipText, mood === opt.key && styles.chipTextActive]}>{moodChip(opt, language)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -74,10 +81,10 @@ export default function SurpriseMeSheet({ visible, onClose, onSubmit }) {
             style={[styles.submitButton, !mood && styles.submitButtonDisabled]}
             onPress={submit}
             disabled={!mood}
-            accessibilityLabel="Surprise Me"
+            accessibilityLabel={t('title')}
             accessibilityRole="button"
           >
-            <Text style={styles.submitButtonText}>✨ Surprise Me</Text>
+            <Text style={styles.submitButtonText}>{t('submit')}</Text>
           </TouchableOpacity>
         </SafeAreaView>
       </View>

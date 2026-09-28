@@ -27,6 +27,7 @@ import {
   stripSurprisePhrase,
   surpriseCategories,
   surpriseBasis,
+  surpriseBasisParts,
   findConnectedPersonForPicks,
   surpriseScope,
   inSurpriseScope,
@@ -56,6 +57,7 @@ export {
   stripSurprisePhrase,
   surpriseCategories,
   surpriseBasis,
+  surpriseBasisParts,
   findConnectedPersonForPicks,
   SURPRISE_PICK_COUNT,
   saidCategory,
@@ -130,7 +132,7 @@ async function getCalendarHint() {
     const events = await getUpcomingCalendarEvents(7);
     const hint = nearestCalendarHint(events, 5);
     if (!hint) return null;
-    return { title: hint.title, dateLabel: formatCalendarEventDateLabel(hint.startDate) };
+    return { title: hint.title, dateLabel: formatCalendarEventDateLabel(hint.startDate), startDate: hint.startDate };
   } catch (e) {
     console.error('getCalendarHint failed', e);
     return null;
@@ -211,18 +213,20 @@ export async function runSurpriseMe({ when = null, mood = null, text = null, exc
   const suggestion = lanes.length > 0 ? { kind: 'lanes' } : null;
   const connectedPeople = suggestion ? await getConnectedPeopleWithInterests().catch(logSoftFailure('surprise connected people')) : [];
   const connectedPerson = suggestion ? findConnectedPersonForPicks(lanes.flatMap((l) => l.items), connectedPeople) : null;
-  const basis = typed
-    ? surpriseBasis({
+  const basisOpts = typed
+    ? {
       usedInterests: broad && categories.some(Boolean), scope, budgetMax: ask.budgetMax ?? null,
       priceLevel: ask.priceLevel ?? null, partyType: ask.partyType ?? null,
-    })
-    : surpriseBasis({ partyType: params.partyType });
+    }
+    : { partyType: params.partyType };
+  const basis = surpriseBasis(basisOpts);
+  const basisParts = surpriseBasisParts(basisOpts);
   // Every eligible real result was already shown last time: say so rather than repeating it.
   const exhausted = !suggestion && excludeKeys.size > 0 && pool.length > 0;
 
   return {
     header: undecidedHeader(dateWindow), lanes, suggestion, pool, connectedPeople, connectedPerson,
-    calendarHint, basis, dateWindow, ask, rest, scope, exhausted,
+    calendarHint, basis, basisParts, dateWindow, ask, rest, scope, exhausted,
   };
 }
 
