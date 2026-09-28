@@ -3,13 +3,14 @@ import { practicalFacts } from '../utils/gatheringPractical';
 import { attendeeSummary } from '../utils/gatheringAttendeeDisplay';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
-import { factsMeta, friendGoingReason } from '../utils/recommendationFacts';
+import { friendGoingReason } from '../utils/recommendationFacts';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { PullToRefresh, FilterTransition, TapActiveChip, NLoader, SkeletonFeed } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
-import { gatheringPrimaryAction } from '../utils/primaryAction';
+import { gatheringCardModel } from '../utils/recommendationCard';
+import { openDestination } from '../services/openDestination';
 import { getNearbyGatherings, searchGatherings, expressInterest, getMyTopGatheringCategories } from '../services/gatherings';
 import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { getMyFriends } from '../services/friends';
@@ -300,6 +301,12 @@ export default function GatheringsScreen({ navigation, route }) {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+  }
+
+  // Shared context layer: identity, when/where, join action and tap destination come from the ONE context object
+  // (gatheringCardModel -> utils/recommendationContext.js). The feed's reason badges stay its own translated chips.
+  function feedCard(g) {
+    return gatheringCardModel(g, { myUserId });
   }
 
   function toggleExpandGathering(gatheringId) {
@@ -791,7 +798,7 @@ export default function GatheringsScreen({ navigation, route }) {
             stories={mapStories}
             storyPhotoUrls={mapStoryPhotoUrls}
             userLocation={userLocation}
-            onSelectGathering={(gathering) => navigation.navigate('GatheringDetail', { gatheringId: gathering.id })}
+            onSelectGathering={(gathering) => openDestination(navigation, feedCard(gathering).destination)}
             onSelectStory={(story) => {
               setMapStoryViewerTarget({
                 userId: story.user_id,
@@ -896,7 +903,7 @@ export default function GatheringsScreen({ navigation, route }) {
                   {photoUrls[item.id] && <Image source={{ uri: photoUrls[item.id] }} style={styles.hostAvatar} accessibilityLabel={`${item.host?.display_name}'s photo`} />}
                   <TouchableOpacity
                     style={{ flex: 1 }}
-                    onPress={() => navigation.navigate('GatheringDetail', { gatheringId: item.id })}
+                    onPress={() => openDestination(navigation, feedCard(item).destination)}
                     accessibilityLabel={`View details for ${item.title}`}
                     accessibilityRole="button"
                   >
@@ -956,7 +963,8 @@ export default function GatheringsScreen({ navigation, route }) {
                 <GatheringOfferBadge gatheringId={item.id} />
                 {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
                 <View style={styles.metaRow}>
-                  <Text style={styles.time}>{factsMeta(item) ?? formatDate(item.scheduled_at)}</Text>
+                  {/* when/where from the one context object; no time = nothing, never a made-up date */}
+                  {feedCard(item).meta ? <Text style={styles.time}>{feedCard(item).meta}</Text> : null}
                 </View>
 
                 <TouchableOpacity
@@ -1001,12 +1009,13 @@ export default function GatheringsScreen({ navigation, route }) {
                       Join / Request to Join / Join Waitlist open the join confirmation; going, hosting, requested, past or
                       unknown open the gathering instead of offering a join that would be wrong. */}
                   {(() => {
-                    const action = gatheringPrimaryAction(item, myUserId);
+                    const card = feedCard(item);
+                    const action = card.action ?? { kind: 'view', label: 'View' };
                     const label = action.kind === 'join' ? action.label : action.status && action.kind !== 'view_plan' ? action.status : action.label;
                     return (
                       <TouchableOpacity
                         style={[styles.interestButton, { backgroundColor: action.kind === 'join' ? categoryStyle.color : colors.surfaceElevated, flex: 1 }]}
-                        onPress={() => (action.kind === 'join' ? setIntentModalGathering(item) : navigation.navigate('GatheringDetail', { gatheringId: item.id }))}
+                        onPress={() => (action.kind === 'join' ? setIntentModalGathering(item) : openDestination(navigation, card.destination))}
                         activeOpacity={0.85}
                         accessibilityLabel={label}
                         accessibilityRole="button"
@@ -1064,7 +1073,7 @@ export default function GatheringsScreen({ navigation, route }) {
           setIntentModalGathering(null);
           if (gathering) handleExpressInterest(gathering.id);
         }}
-        confirmLabel={intentModalGathering ? gatheringPrimaryAction(intentModalGathering, myUserId).label : ''}
+        confirmLabel={intentModalGathering ? (feedCard(intentModalGathering).action?.label ?? '') : ''}
       />
       <StoryViewerModal
         visible={!!mapStoryViewerTarget}

@@ -109,7 +109,9 @@ describe('screens do not decide CTAs themselves', () => {
     expect(read('src/screens/BusinessRequestDetailScreen.js')).not.toContain("canDo('request', request.status, 'accept_offer')");
   });
   test('each converted screen goes through the shared functions', () => {
-    expect(read('src/screens/GatheringsScreen.js')).toContain('gatheringPrimaryAction(item, myUserId)');
+    // the feed's action comes from the context object (gatheringCardModel -> gatheringPrimaryAction)
+    expect(read('src/screens/GatheringsScreen.js')).toContain('gatheringCardModel(g, { myUserId })');
+    expect(read('src/screens/GatheringsScreen.js')).not.toMatch(/gatheringPrimaryAction\(/);
     // Discover's gathering action comes from the context object (gatheringCardModel -> gatheringPrimaryAction)
     expect(read('src/screens/DiscoverHubScreen.js')).toContain('gatheringCardModel(g, {');
     expect(read('src/screens/DiscoverHubScreen.js')).not.toMatch(/gatheringPrimaryAction\(/);

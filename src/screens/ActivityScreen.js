@@ -25,7 +25,9 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
-import { offerPrimaryAction, inviteAction } from '../utils/primaryAction';
+import { inviteAction } from '../utils/primaryAction';
+import { recommendationContext, contextItem } from '../utils/recommendationContext';
+import { openDestination } from '../services/openDestination';
 import { activityLoadNotice } from '../utils/homeLoadNotice';
 import { formatAgo } from '../utils/timeLabels';
 
@@ -309,11 +311,9 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
       await respondToInvite(invite.id, accept);
       loadInvitations();
       if (accept) {
-        const screen = invite.inviteType === 'gathering' ? 'GatheringDetail' : 'CommunityDetail';
-        const params = invite.inviteType === 'gathering'
-          ? { gatheringId: invite.targetId }
-          : { communityId: invite.targetId, communityName: invite.targetTitle };
-        navigation.navigate(screen, params);
+        // the accepted invitation opens its object through the shared destination rule
+        const kind = invite.inviteType === 'gathering' ? 'gathering' : 'community';
+        openDestination(navigation, recommendationContext(contextItem(kind, { id: invite.targetId, title: invite.targetTitle, name: invite.targetTitle })).destination);
       }
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRespondSocialInvite(invite, accept) });
@@ -509,7 +509,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
             <TouchableOpacity
               key={item.id}
               style={styles.row}
-              onPress={() => navigation.navigate('GatheringDetail', { gatheringId: item.id })}
+              onPress={() => openDestination(navigation, recommendationContext(contextItem('gathering', { id: item.id, title: item.title })).destination)}
               accessibilityLabel={`${item.title}, ${formatTimeUntil(item.scheduledAt)}`}
               accessibilityRole="button"
             >
@@ -619,7 +619,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
               return (
                 <TouchableOpacity
                   style={styles.row}
-                  onPress={() => navigation.navigate('BusinessProfile', { partnerId: u.partner_id })}
+                  onPress={() => openDestination(navigation, recommendationContext(contextItem('business', { id: u.partner_id })).destination)}
                   accessibilityLabel={`${u.brand_partners?.name}: ${u.title}`}
                   accessibilityRole="button"
                 >
@@ -643,10 +643,15 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                   ? acceptedReplyTitle(partnerName, offer)
                   : `${partnerName} confirmed your reservation`;
               const subtitleParts = [formatOfferSummary(offer), request?.raw_text].filter(Boolean);
+              // Shared context layer: the row's destination and action come from the one context object. Transactional, so no
+              // recommendation reason; the action exists only while the offer can still be taken AND its request is readable.
+              const ctx = recommendationContext(contextItem('business_offer', { ...offer, request_id: request?.id ?? null }));
+              const action = item.type === 'business_reply' ? ctx.action : null;
               return (
                 <TouchableOpacity
                   style={styles.row}
-                  onPress={() => request?.id && navigation.navigate('BusinessRequestDetail', { requestId: request.id })}
+                  onPress={() => openDestination(navigation, ctx.destination)}
+                  disabled={!ctx.destination}
                   accessibilityLabel={`${title}${subtitleParts.length > 0 ? `, ${subtitleParts.join(', ')}` : ''}`}
                   accessibilityRole="button"
                 >
@@ -657,8 +662,8 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                     <Text style={styles.rowTitle}>{title}</Text>
                     {subtitleParts.length > 0 && <Text style={styles.rowSubtitle}>{subtitleParts.join(' · ')}</Text>}
                   </View>
-                  {item.type === 'business_reply' && offerPrimaryAction(offer) && (
-                    <View style={styles.offerCta}><Text style={styles.offerCtaText}>{offerPrimaryAction(offer).label}</Text></View>
+                  {action && (
+                    <View style={styles.offerCta}><Text style={styles.offerCtaText}>{action.label}</Text></View>
                   )}
                 </TouchableOpacity>
               );

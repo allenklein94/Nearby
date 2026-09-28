@@ -241,3 +241,122 @@ describe('guards: surfaces render the shared object and do not rebuild its rules
     expect(read('services/openDestination.js')).toMatch(/navigation\.navigate\(destination\.screen/);
   });
 });
+
+// ---- Remaining surfaces (owner, 2026-09-28): Gatherings feed, Activity rows, Google Places, the sponsored slot ----------------
+describe('Gatherings feed', () => {
+  const feedCard = (g) => gatheringCardModel(g, { myUserId: ME, now: NOW.getTime() });
+  it('identity, when/where, destination and join action from the context object', () => {
+    const card = feedCard(gathering());
+    expect(card.entity).toEqual({ kind: 'gathering', id: 'g1', title: 'Coffee meetup' });
+    expect(card.meta).toBe('1.1 mi · Tonight · 6:30 PM');
+    expect(card.destination).toEqual({ kind: 'navigate', screen: 'GatheringDetail', params: { gatheringId: 'g1' } });
+    expect(card.action).toMatchObject({ kind: 'join', label: 'Join' });
+  });
+  it('join states are preserved (full = waitlist, approval, invite-only is not joinable from a card)', () => {
+    expect(feedCard(gathering({ capacity: 2, approvedCount: 1 })).action.label).toBe('Join Waitlist');
+    expect(feedCard(gathering({ requires_approval: true })).action.label).toBe('Request to Join');
+    expect(feedCard(gathering({ visibility: 'invite_only' })).action).toMatchObject({ kind: 'view', status: 'Invite only' });
+  });
+  it('missing data: no time or distance = no line, no id = no destination and no action', () => {
+    expect(feedCard(gathering({ scheduled_at: null, distanceMiles: null })).meta).toBeNull();
+    const noId = feedCard(gathering({ id: null }));
+    expect(noId.destination).toBeNull();
+    expect(noId.action).toBeNull();
+  });
+});
+
+describe('Activity rows (transactional: destination + action, never a reason)', () => {
+  const row = (offer, requestId = 'r1') => recommendationContext(contextItem('business_offer', { ...offer, request_id: requestId }, { reasons: ['Because you like Coffee'] }));
+  const offered = { id: 'o1', status: 'offered', offer_title: 'Latte + pastry', price: 8 };
+  it('an open offer reply shows View Offer and opens its request', () => {
+    const c = row(offered);
+    expect(c.action).toEqual({ kind: 'view_offer', label: 'View Offer' });
+    expect(c.destination).toEqual({ kind: 'navigate', screen: 'BusinessRequestDetail', params: { requestId: 'r1' } });
+    expect(c.reason).toBeNull(); // a reason passed to a transactional row is dropped
+  });
+  it('plain availability is not called an offer', () => {
+    expect(row({ id: 'o2', status: 'offered' }).action).toEqual({ kind: 'view_offer', label: 'View' });
+  });
+  it('expired, declined, withdrawn, accepted: no action (the row is history), still opens the request', () => {
+    for (const over of [{ valid_until: at(9, 0, -1) }, { status: 'declined' }, { status: 'withdrawn' }, { status: 'accepted' }]) {
+      const c = row({ ...offered, ...over });
+      expect(c.action).toBeNull();
+      expect(c.destination.params.requestId).toBe('r1');
+    }
+  });
+  it('authorization failure: the request row could not be read = no destination and no action', () => {
+    const c = row(offered, null);
+    expect(c.destination).toBeNull();
+    expect(c.action).toBeNull();
+  });
+  it('the screen routes offers, requests, updates, reminders and accepted invites through the shared rule', () => {
+    const src = read('screens/ActivityScreen.js');
+    expect(src).toMatch(/contextItem\('business_offer'/);
+    expect(src).toMatch(/disabled=\{!ctx\.destination\}/);
+    expect(src).not.toMatch(/offerPrimaryAction\(/);
+    expect(src).not.toMatch(/navigation\.navigate\('(GatheringDetail|BusinessRequestDetail|BusinessProfile|CommunityDetail)'/);
+  });
+});
+
+describe('Google Places', () => {
+  it('distance + directions from the context; no reason, no booking mode, no action', () => {
+    const c = recommendationContext(contextItem('place', { placeId: 'pl1', name: 'Blue Cafe', latitude: 40, longitude: -75, distanceMiles: 0.6 }, { reasons: ['Because you like Coffee'] }));
+    expect(c.context).toBe('0.6 mi');
+    expect(c.destination).toEqual({ kind: 'url', url: 'https://www.google.com/maps/dir/?api=1&destination=40,-75&destination_place_id=pl1' });
+    expect(c.reason).toBeNull();
+    expect(c.action).toBeNull();
+  });
+  it('address only = directions by address; nothing known = no destination (the old code opened a null URL)', () => {
+    expect(recommendationContext(contextItem('place', { placeId: 'pl2', name: 'X', address: '1 Main St' })).destination.url).toContain('1%20Main%20St');
+    const none = recommendationContext(contextItem('place', { placeId: 'pl3', name: 'Y' }));
+    expect(none.destination).toBeNull();
+    expect(none.context).toBeNull();
+  });
+  it('Discover and the Places screen open places only through openDestination', () => {
+    for (const f of ['screens/DiscoverHubScreen.js', 'screens/PlacesScreen.js']) {
+      const src = read(f);
+      expect(src).toMatch(/contextItem\('place'/);
+      expect(src).not.toMatch(/Linking\.openURL\(buildDirectionsUrl/);
+    }
+  });
+});
+
+describe('sponsored slot: shared destination only, never organic', () => {
+  const card = { placement_id: 'pl', title: 'Latte week', partner_id: 'bp1', partner_name: 'Coastal Coffee', item_kind: 'offer', item_id: 'p9' };
+  it('opens the promoted offer or business; carries no reason and no action', () => {
+    const c = recommendationContext(contextItem('sponsored', card, { reasons: ['Because you like Coffee'] }));
+    expect(c.destination).toEqual({ kind: 'navigate', screen: 'BrandOffers', params: { highlightOfferId: 'p9' } });
+    expect(c.reason).toBeNull();
+    expect(c.action).toBeNull();
+    expect(recommendationContext(contextItem('sponsored', { ...card, item_kind: 'business', item_id: null })).destination)
+      .toEqual({ kind: 'navigate', screen: 'BusinessProfile', params: { partnerId: 'bp1' } });
+    expect(recommendationContext(contextItem('sponsored', { ...card, item_id: null })).destination).toBeNull();
+  });
+  it('the label stays, the tap is recorded then follows the shared rule, and no organic code reads sponsorship', () => {
+    const slot = read('components/SponsoredSpotlightSlot.js');
+    expect(slot).toMatch(/recordSponsoredTap\(card\.placement_id\)[\s\S]*openDestination\(navigation, recommendationContext\(contextItem\('sponsored', card\)\)\.destination\)/);
+    expect(slot).not.toMatch(/navigation\.navigate\(/);
+    expect(read('components/SponsoredCard.js')).toMatch(/SPONSORED_LABEL/);
+    // ranking / selection code only (the context module maps a sponsored card's ids for its destination, nothing else)
+    for (const f of ['utils/homeAttention.js', 'constants/signalPriority.js', 'utils/discoverSections.js', 'utils/gatheringFeedRanking.js']) {
+      const code = read(f).split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+      expect(code).not.toMatch(/placement_id|sponsored_(seen|payments)|getSponsoredSpotlight/);
+    }
+  });
+});
+
+describe('exceptions kept on purpose', () => {
+  it('literal keyword search rows show only when/where, no recommendation reason', () => {
+    const src = read('screens/DiscoverHubScreen.js');
+    const block = src.slice(src.indexOf('{gatheringsToShow.map((g) =>'), src.indexOf('{showCommunities && isSearching && loadingSearch'));
+    expect(block).toMatch(/card\.meta/);
+    expect(block).not.toMatch(/card\.reasons|card\.why|primaryReasonLine/);
+  });
+});
+
+describe('the context module never ranks', () => {
+  it('builds presentation only: no score, tier or compare function reads it', () => {
+    const code = read('utils/recommendationContext.js').split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+    expect(code).not.toMatch(/\bscore\b|rankVector|compareRanked|tierVector/);
+  });
+});

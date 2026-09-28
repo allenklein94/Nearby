@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import EmptyCopy from '../components/EmptyCopy';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, SafeAreaView, ActivityIndicator, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { FilterTransition, TapActiveChip, NLoader } from '../motion';
 import { Ionicons } from '@expo/vector-icons';
-import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, placeDistanceLabel, getGoogleMapsRequestHeaders } from '../services/places';
-import { buildDirectionsUrl } from '../utils/planLogisticsActions';
+import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, getGoogleMapsRequestHeaders } from '../services/places';
+import { recommendationContext, contextItem } from '../utils/recommendationContext';
+import { openDestination } from '../services/openDestination';
 import { PLACE_CATEGORIES as CATEGORIES } from '../constants/placeCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -217,7 +218,7 @@ export default function PlacesScreen({ navigation }) {
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.placeCard}
-              onPress={() => Linking.openURL(buildDirectionsUrl(item))}
+              onPress={() => openDestination(navigation, recommendationContext(contextItem('place', item)).destination)}
               activeOpacity={0.85}
               accessibilityLabel={`${item.name}${item.openNow !== null ? (item.openNow ? ', open now' : ', closed now') : ''}${item.gatheringCount > 0 ? `, ${countLabel(item.gatheringCount, 'gathering')} hosted here` : ''}`}
               accessibilityRole="button"
@@ -229,7 +230,7 @@ export default function PlacesScreen({ navigation }) {
               )}
               <View style={{ flex: 1 }}>
                 <Text style={styles.placeName}>{item.name}</Text>
-                {item.address || item.distanceMiles != null ? <Text style={styles.placeAddress}>{[item.address, placeDistanceLabel(item.distanceMiles)].filter(Boolean).join(' · ')}</Text> : null}
+                {item.address || item.distanceMiles != null ? <Text style={styles.placeAddress}>{[item.address, recommendationContext(contextItem('place', item)).context].filter(Boolean).join(' · ')}</Text> : null}
                 <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, marginTop: 4 }}>
                   {item.rating !== null && (
                     <Text style={styles.placeRating}>

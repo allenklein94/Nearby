@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import SponsoredCard from './SponsoredCard';
+import { recommendationContext, contextItem } from '../utils/recommendationContext';
+import { openDestination } from '../services/openDestination';
 import { getSponsoredSpotlight, recordSponsoredTap, hideSponsoredPartner, reportSponsoredPlacement } from '../services/sponsored';
 
 // The one sponsored slot on Perks/Places browse (item 44). It is a separate card above the organic list: it never
@@ -28,8 +30,8 @@ export default function SponsoredSpotlightSlot({ userLocation, categoryGroup, ca
       categoryLabel={categoryLabel}
       onView={() => {
         recordSponsoredTap(card.placement_id).catch(() => {});
-        if (card.item_kind === 'offer') navigation.navigate('BrandOffers', { highlightOfferId: card.item_id });
-        else navigation.navigate('BusinessProfile', { partnerId: card.partner_id });
+        // shared destination rule only: the sponsored item never takes an organic reason, rank or action
+        openDestination(navigation, recommendationContext(contextItem('sponsored', card)).destination);
       }}
       onHide={async () => {
         if (await hideSponsoredPartner(card.partner_id)) setCard(null);

@@ -13,7 +13,7 @@ import { behaviorNudge, broadGroupNudge, relatedHobbyNudge } from '../constants/
 import { relatedHobbyFor, relatedInterestReason } from '../constants/hobbyRelations';
 import { getFriendsInterestedIn } from '../services/friendInterests';
 import { friendsInterestReason } from '../utils/friendInterests';
-import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Linking, Alert, BackHandler } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Alert, BackHandler } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Video } from 'expo-av';
 import { useFocusEffect } from '@react-navigation/native';
@@ -23,8 +23,7 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
 import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptions } from '../services/brandOffers';
-import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, placeDistanceLabel, getGoogleMapsRequestHeaders } from '../services/places';
-import { buildDirectionsUrl } from '../utils/planLogisticsActions';
+import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, getGoogleMapsRequestHeaders } from '../services/places';
 import { resultRowView, recommendationContext, contextItem } from '../utils/recommendationContext';
 import { gatheringCardModel } from '../utils/recommendationCard';
 import { openDestination } from '../services/openDestination';
@@ -1637,18 +1636,24 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // than written out twice. Every part of it is a real Google Places
   // Basic-Data field or this app's own real gathering count -- falls back
   // to the address when none of them came back.
+  // Shared context layer: a Google place gets its distance and directions destination from the one context object; it has no
+  // recommendation reason and no booking mode (neither is invented). Rating / price / open now are the provider's own facts.
+  function placeContext(p) {
+    return recommendationContext(contextItem('place', p));
+  }
+
   function placeReasonLine(p) {
     return [
       p.rating !== null ? `⭐ ${p.rating}${p.reviewCount !== null ? ` (${p.reviewCount})` : ''}` : null,
       priceLevelLabel(p.priceLevel),
       p.openNow !== null ? (p.openNow ? 'Open now' : 'Closed') : null,
-      placeDistanceLabel(p.distanceMiles),
+      placeContext(p).context,
       p.gatheringCount > 0 ? `🎉 ${p.gatheringCount} gathering${p.gatheringCount === 1 ? '' : 's'} here` : null,
     ].filter(Boolean).join('  ·  ') || p.address;
   }
 
   function openPlaceInMaps(p) {
-    Linking.openURL(buildDirectionsUrl(p));
+    openDestination(navigation, placeContext(p).destination); // no coordinates or address = no link, never a broken URL
   }
 
   // The standard gathering row inside an expanded context. Tapping it does

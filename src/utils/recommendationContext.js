@@ -18,6 +18,7 @@ import { timeWindowState, windowPhrase } from './timeWindow';
 import { gatheringPrimaryAction, offerPrimaryAction } from './primaryAction';
 import { isContextRestatement } from '../constants/recommendationReasonVocabulary';
 import { BUSINESS_RESULT_TYPES, businessActionForItem, intentResultBusinessRoute } from './businessAction';
+import { buildDirectionsUrl } from './planLogisticsActions';
 
 export const CONTEXT_FIELDS = ['entity', 'reason', 'context', 'destination', 'action'];
 
@@ -59,6 +60,15 @@ export function intentResultDestination(item, { typedText, classifyResult, submi
     case 'business': return item.id ? { kind: 'navigate', screen: 'BusinessProfile', params: { partnerId: item.id } } : null;
     case 'business_request': return item.id ? { kind: 'navigate', screen: 'BusinessRequestDetail', params: { requestId: item.id } } : null;
     case 'business_offer': return item.requestId ? { kind: 'navigate', screen: 'BusinessRequestDetail', params: { requestId: item.requestId } } : null;
+    // A Google place: directions only (from its own coordinates, else its address); nothing known = no destination.
+    case 'place': {
+      const url = buildDirectionsUrl({ latitude: item.latitude, longitude: item.longitude, address: item.address, placeId: item.placeId });
+      return url ? { kind: 'url', url } : null;
+    }
+    // A sponsored placement opens the thing it promotes; it shares the destination rule, never ranking or reasons.
+    case 'sponsored':
+      if (item.itemKind === 'offer') return item.itemId ? { kind: 'navigate', screen: 'BrandOffers', params: { highlightOfferId: item.itemId } } : null;
+      return item.partnerId ? { kind: 'navigate', screen: 'BusinessProfile', params: { partnerId: item.partnerId } } : null;
     case 'friend_discovery': return { kind: 'navigate', screen: 'FriendDiscovery', params: undefined };
     default:
       return BUSINESS_RESULT_TYPES.includes(item.type) ? intentResultBusinessRoute(item, { typedText, classifyResult, submissionId, at }) : null;
@@ -115,11 +125,14 @@ export function resultRowAction(item, opts = {}) {
 // ---------------------------------------------------------------------------------------------------------------------------
 // Raw rows -> the one item shape. A surface that holds a database row (not a typed-ask result) converts it here; `reasons` are
 // the real explanations the surface already earned for it (built by constants/recommendationReasonVocabulary.js), in order.
-export const CONTEXT_KINDS = ['gathering', 'perk', 'community', 'business', 'business_request', 'business_offer'];
+export const CONTEXT_KINDS = ['gathering', 'perk', 'community', 'business', 'business_request', 'business_offer', 'place', 'sponsored'];
+// Kinds that never carry a recommendation reason: a Google place (no Nearby signal), a sponsored placement (paid, its own
+// disclosure), a request or an offer (transactional: the row says what happened, not why it was shown).
+export const REASONLESS_KINDS = ['place', 'sponsored', 'business_request', 'business_offer'];
 
 export function contextItem(kind, row, { reasons = [], ...extra } = {}) {
   if (!row || !CONTEXT_KINDS.includes(kind)) return null;
-  const list = (Array.isArray(reasons) ? reasons : [reasons]).filter(Boolean);
+  const list = REASONLESS_KINDS.includes(kind) ? [] : (Array.isArray(reasons) ? reasons : [reasons]).filter(Boolean);
   const distanceMiles = row.distanceMiles ?? row.distance_miles ?? null;
   switch (kind) {
     case 'gathering':
@@ -135,6 +148,13 @@ export function contextItem(kind, row, { reasons = [], ...extra } = {}) {
       return { type: 'business', id: row.id ?? null, title: row.name ?? row.title ?? null, distanceMiles, reasons: list };
     case 'business_request':
       return { type: 'business_request', id: row.id ?? null, title: row.title ?? null, reasons: list };
+    case 'place':
+      // no booking mode and no reason are ever invented for a Google result; rating / price / open now stay the card's own facts
+      return { type: 'place', id: row.placeId ?? row.id ?? null, placeId: row.placeId ?? null, title: row.name ?? row.title ?? null,
+        latitude: row.latitude ?? null, longitude: row.longitude ?? null, address: row.address ?? null, distanceMiles, reasons: list };
+    case 'sponsored':
+      return { type: 'sponsored', id: row.placement_id ?? null, title: row.title ?? null, itemKind: row.item_kind ?? null,
+        itemId: row.item_id ?? null, partnerId: row.partner_id ?? null, reasons: list };
     case 'business_offer':
       return { type: 'business_offer', id: row.id ?? null, title: row.title ?? row.offer_title ?? null, requestId: row.request_id ?? row.requestId ?? null,
         offer: row, reasons: list };
