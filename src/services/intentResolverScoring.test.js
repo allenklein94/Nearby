@@ -266,9 +266,9 @@ describe('getBusinessAvailabilityReasons', () => {
   });
 
   it('reports a category match from row.category, row.subcategory, or row.categories, each honestly', () => {
-    expect(getBusinessAvailabilityReasons({ category: 'Coffee' }, { category: 'Coffee' })).toEqual(["Matches what you're looking for"]);
-    expect(getBusinessAvailabilityReasons({ subcategory: 'Coffee' }, { category: 'Coffee' })).toEqual(["Matches what you're looking for"]);
-    expect(getBusinessAvailabilityReasons({ categories: ['Coffee'] }, { category: 'Coffee' })).toEqual(["Matches what you're looking for"]);
+    expect(getBusinessAvailabilityReasons({ category: 'Coffee' }, { category: 'Coffee' })).toEqual(["Because you asked for Coffee"]);
+    expect(getBusinessAvailabilityReasons({ subcategory: 'Coffee' }, { category: 'Coffee' })).toEqual(["Because you asked for Coffee"]);
+    expect(getBusinessAvailabilityReasons({ categories: ['Coffee'] }, { category: 'Coffee' })).toEqual(["Because you asked for Coffee"]);
     expect(getBusinessAvailabilityReasons({ category: 'Wine' }, { category: 'Coffee' })).toEqual([]);
   });
 
@@ -280,10 +280,12 @@ describe('getBusinessAvailabilityReasons', () => {
   });
 
   it('names the real matching cuisine, attribute, party-type, and occasion signals', () => {
-    expect(getBusinessAvailabilityReasons({ cuisine: 'italian' }, { cuisine: 'italian' })).toEqual(['Italian cuisine, as you asked']);
+    expect(getBusinessAvailabilityReasons({ cuisine: 'italian' }, { cuisine: 'italian' })).toEqual(['Because you asked for Italian food']);
     expect(getBusinessAvailabilityReasons({ attributes: ['dog_friendly'] }, { attributes: ['dog_friendly'] })).toEqual(['Dog-Friendly']);
     expect(getBusinessAvailabilityReasons({ accommodates_party_types: ['date'] }, { partyType: 'date' })).toEqual(['Accommodates your group']);
-    expect(getBusinessAvailabilityReasons({ priority_occasions: ['anniversary'] }, { occasion: 'anniversary' })).toEqual(['Great fit for the occasion']);
+    // only a business that DECLARED it offers the occasion is explained by it; wanting more of it still ranks, but says nothing
+    expect(getBusinessAvailabilityReasons({ priority_occasions: ['anniversary'] }, { occasion: 'anniversary' })).toEqual([]);
+    expect(getBusinessAvailabilityReasons({ offered_occasions: ['anniversary'] }, { occasion: 'anniversary' })).toEqual(['Offers Anniversary experiences']);
   });
 
   it('names a real favorite-business / past-plan match, in past-plan-before-favorite priority order', () => {
@@ -321,7 +323,7 @@ describe('getBusinessAvailabilityReasons', () => {
   it('returns multiple real reasons together, in the same priority order resolveBusinessAvailability scores them', () => {
     const row = { category: 'Coffee', distance_miles: 0.5, cuisine: 'italian', attributes: ['dog_friendly'] };
     const reasons = getBusinessAvailabilityReasons(row, { category: 'Coffee', cuisine: 'italian', attributes: ['dog_friendly'] });
-    expect(reasons).toEqual(["Matches what you're looking for", '0.5 mi away', 'Italian cuisine, as you asked', 'Dog-Friendly']);
+    expect(reasons).toEqual(['Because you asked for Coffee', '0.5 mi away', 'Because you asked for Italian food', 'Dog-Friendly']);
   });
 });
 

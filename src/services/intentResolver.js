@@ -7,6 +7,7 @@ import { Linking } from 'react-native';
 import { bookingModeOf } from '../constants/bookingMode';
 import { BUSINESS_RESULT_TYPES } from '../utils/businessAction';
 import { intentResultDestination } from '../utils/recommendationContext';
+import { askedForReason, occasionOfferedReason } from '../constants/recommendationReasonVocabulary';
 import { openNowAskFromText, candidateEntity, openNowLift, OPEN_NOW_CAPTION } from '../utils/operatingStatus';
 import { applyBusinessPriceToCandidates } from '../utils/priceBias';
 import { vibesFromAsk, applyVibeSinks, applyQualityDepth, frameDatePlaces, isDateAsk, datePartySize, dateFrame } from '../constants/businessVibes';
@@ -119,7 +120,9 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
     const { reasons: fitReasons } = getGatheringFitReasons(gathering);
     // item 132: the asked activity reaches gatherings too (same table and weight as businesses, from host-declared facts)
     const activityHit = gatheringActivityFit(gathering, askedActivities);
-    const reasons = activityHit ? [activityHit.reason, ...fitReasons] : fitReasons;
+    // the explanation layer: what the ask wants to DO, then the category it named (every gathering here is in it), then fit reasons.
+    // Never an occasion reason: a gathering has no occasion.
+    const reasons = [activityHit?.reason, category && gathering.interest_tag === category ? askedForReason(category) : null, ...fitReasons].filter(Boolean);
     // Universal Signal Remediation Pass, P0 item 1 (CLAUDE.md, Aug 28 2026):
     // capacity/approvedAttendees are already fetched by getNearbyGatherings()
     // -- this was a pure mapping omission, not a missing query. A full
@@ -345,6 +348,8 @@ async function resolvePerks(category, location) {
     // real, comparable match, same weight as a gathering's own interest
     // match.
     ...scored([{ code: 'base_category_match', delta: offer.target_interest_tag && offer.target_interest_tag === category ? SCORE_INTEREST_MATCH : 0 }]),
+    // a perk explicitly targeted at the category the ask named says so; an untargeted perk gets no reason (none to name)
+    reasons: offer.target_interest_tag && offer.target_interest_tag === category ? [askedForReason(category)] : [],
     // read by the open-now resolver (utils/operatingStatus.js): expiry and the perk's own time-of-day window
     expiresAt: offer.expires_at ?? null,
     validFromTime: offer.valid_from_time ?? null,
@@ -524,6 +529,8 @@ async function resolveOccasionOfferingBusinesses(location, occasion, searchMiles
     distanceMiles: row.distance_miles ?? null,
     title: `${row.partner_name} offers ${occasionLabel(occasion)} experiences`,
     subtitle: 'Ask what they can do — business confirmation required',
+    // found BECAUSE the business declared it offers this occasion (search_occasion_offering_businesses)
+    reasons: [occasionOfferedReason(occasionLabel(occasion))].filter(Boolean),
     // occasionOfferingScore = the offering itself + the close-by bonus, named apart
     ...scored([
       { code: 'base_occasion_offering', delta: occasionOfferingScore(null) },

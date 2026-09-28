@@ -102,7 +102,7 @@ function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel,
     // EXPLICIT: profiles.interests is a direct self-report -- always full
     // weight, weightSignal() never dampens this class.
     score += weightSignal(SCORE_INTEREST_MATCH, SIGNAL_SOURCES.EXPLICIT, maturity);
-    reasons.push(becauseYouLikeReason(gathering.interest_tag));
+    if (gathering.interest_tag) reasons.push(becauseYouLikeReason(gathering.interest_tag));
   } else if (interestGroups.length > 0 && interestGroups.includes(groupKeyForTag(gathering.interest_tag))) {
     // EXPLICIT but broad: a group picked without specific tags -- a weaker match than a declared tag, never a stand-in for one.
     score += weightSignal(BROAD_GROUP_POINTS, SIGNAL_SOURCES.EXPLICIT, maturity);

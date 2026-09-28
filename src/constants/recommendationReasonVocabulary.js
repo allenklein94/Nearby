@@ -61,9 +61,63 @@ export const REASON_TEXT = {
 // "Matches your interests" says nothing checkable. When the matched interest is known (it is the gathering's own
 // interest_tag / the offer's target_interest_tag, which is what the match was computed from) say which one.
 // Falls back to the generic text only when there is no tag to name.
+// Item 135 follow-up (owner, 2026-09-28): no generic fallback -- with nothing to name, there is no reason (null, omitted).
 export function becauseYouLikeReason(tag) {
   const clean = typeof tag === 'string' ? tag.trim() : '';
-  return clean ? `Because you like ${clean}` : REASON_TEXT.MATCHES_INTERESTS.text;
+  return clean ? `Because you like ${clean}` : null;
+}
+
+// ---- The explanation layer (owner, 2026-09-28, LOCKED) ----
+// Nearby explains WHY something appeared, never just that it "matched". Every surface builds these three kinds of explanation
+// here, so Home, Discover, search results and Surprise Me read the same words. Presentation only: none of these changes ranking.
+//   category  "Because you asked for Coffee"      the thing the person's own ask named (a tag, a declared cuisine)
+//   activity  "Good for grabbing a coffee"         what the ask wants to DO, against what the business/host declared
+//   personal  "Sam is going" / "Sam is into Coffee" only from real, permitted friend data (accepted friends; never an inferred
+//             interest, never a stranger, never anyone's private Interested) -- the existing friend reasons
+// A builder returns null when the data to name is missing; the caller then shows nothing (never a generic fallback).
+export const EXPLANATION_TYPES = { CATEGORY: 'category', ACTIVITY: 'activity', PERSONAL: 'personal' };
+
+const cleanLabel = (v) => (typeof v === 'string' ? v.trim() : '');
+
+// The ask named this category or cuisine (the result really is in it).
+export function askedForReason(label) {
+  const clean = cleanLabel(label);
+  return clean ? `Because you asked for ${clean}` : null;
+}
+
+// The ask wants to do this activity and the business/gathering declared what supports it (constants/activityLayer.js).
+export function activityReason(activityLabel) {
+  const clean = cleanLabel(activityLabel);
+  return clean ? `Good for ${clean}` : null;
+}
+
+// An explicit friends plan for a friends activity (a gathering the HOST marked as a friends plan, item 132).
+export function friendsPlanActivityReason(activityLabel) {
+  const clean = cleanLabel(activityLabel);
+  return clean ? `A friends plan, good for ${clean}` : null;
+}
+
+// The ask's occasion, and the BUSINESS declared that it offers it (brand_partners.offered_occasions). Never for a gathering
+// (a gathering has no occasion); a business that only wants more of it (priority_occasions) gets no occasion reason.
+export function occasionOfferedReason(occasionLabel) {
+  const clean = cleanLabel(occasionLabel);
+  return clean ? `Offers ${clean} experiences` : null;
+}
+
+const EXPLANATION_PATTERNS = [
+  { pattern: /^Because you asked for .+$/, type: EXPLANATION_TYPES.CATEGORY },
+  { pattern: /^(A friends plan, good|Good) for .+$/, type: EXPLANATION_TYPES.ACTIVITY },
+  // friend data only: an accepted friend hosting / going / attending / declared into it
+  { pattern: /^.+ (is|are) (going|hosting|into .+)$/, type: EXPLANATION_TYPES.PERSONAL },
+  { pattern: /^\d+ of your friends (is|are) attending$/, type: EXPLANATION_TYPES.PERSONAL },
+  { pattern: /^.+ (and \d+ more friends )?(is|are) going$/, type: EXPLANATION_TYPES.PERSONAL },
+];
+
+// Which of the three kinds a reason is, or null (distance, time, availability... are facts, not one of the three).
+export function explanationType(text) {
+  if (!text) return null;
+  const t = String(text);
+  return EXPLANATION_PATTERNS.find((p) => p.pattern.test(t))?.type ?? null;
 }
 
 // A real, deterministic classifier over every reason string already in
@@ -97,6 +151,9 @@ const EXACT_MATCHES = new Map([
 const PATTERN_MATCHES = [
   { pattern: /^Trending nearby( · \d+ going)?$/, category: REASON_CATEGORIES.POPULARITY },
   { pattern: /^Because you like .+$/, category: REASON_CATEGORIES.INTEREST },
+  { pattern: /^Because you asked for .+$/, category: REASON_CATEGORIES.CONTEXT },
+  { pattern: /^(A friends plan, good|Good) for .+$/, category: REASON_CATEGORIES.CONTEXT },
+  { pattern: /^Offers .+ experiences$/, category: REASON_CATEGORIES.AVAILABILITY },
   { pattern: /^Based on your recent activity: .+$/, category: REASON_CATEGORIES.INTEREST },
   { pattern: /^Related to your interest in .+$/, category: REASON_CATEGORIES.INTEREST },
   // A friend's declared interest (utils/friendInterests.js): "Sam is into Coffee".

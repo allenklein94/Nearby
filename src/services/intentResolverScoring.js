@@ -14,7 +14,8 @@ import { formatDistanceAway } from '../utils/formatDistance';
 // intentResolver.js imports every export here instead of defining its own
 // copies -- same values, same logic, just factored out.
 import { isWithinRightNowWindow } from '../utils/rightNowWindow';
-import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS } from '../constants/businessAttributes';
+import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS, OCCASION_OPTIONS } from '../constants/businessAttributes';
+import { askedForReason, occasionOfferedReason } from '../constants/recommendationReasonVocabulary';
 import { hobbyAttributeMatch, relatedInterestReason } from '../constants/hobbyRelations';
 import { activityFit } from '../constants/activityLayer';
 import { localDateParam } from '../utils/nightDate';
@@ -369,7 +370,8 @@ export function getBusinessAvailabilityReasons(row, { category, attributes, cuis
     || (row.subcategory && row.subcategory === category)
     || (Array.isArray(row.categories) && row.categories.includes(category))
   ));
-  if (matchesCategory) reasons.push("Matches what you're looking for");
+  // The explanation layer (constants/recommendationReasonVocabulary.js): say what the ask named, never just "matched".
+  if (matchesCategory) reasons.push(askedForReason(category));
   const activityHit = activityFit(row, askedActivities);
   if (activityHit) reasons.push(activityHit.reason);
   if (row.distance_miles != null && row.distance_miles < 2) {
@@ -377,7 +379,7 @@ export function getBusinessAvailabilityReasons(row, { category, attributes, cuis
   }
   if (cuisine && row.cuisine && row.cuisine === cuisine) {
     const label = CUISINE_OPTIONS.find((c) => c.key === cuisine)?.label ?? cuisine;
-    reasons.push(`${label} cuisine, as you asked`);
+    reasons.push(askedForReason(`${label} food`));
   }
   const rowAttributes = Array.isArray(row.attributes) ? row.attributes : [];
   if (Array.isArray(attributes) && attributes.length > 0) {
@@ -394,7 +396,9 @@ export function getBusinessAvailabilityReasons(row, { category, attributes, cuis
     if (accommodates.includes(partyType)) reasons.push('Accommodates your group');
   }
   if (occasion) {
-    if (businessFitsOccasion(row, occasion)) reasons.push('Great fit for the occasion');
+    // Only a business that DECLARED it offers this occasion is explained by it (ranking still uses businessFitsOccasion).
+    const offered = Array.isArray(row.offered_occasions) && row.offered_occasions.includes(occasion);
+    if (offered) reasons.push(occasionOfferedReason(OCCASION_OPTIONS.find((o) => o.key === occasion)?.label ?? null));
   }
   if (row.partner_id && pastPartnerIds && pastPartnerIds.has(row.partner_id)) reasons.push("You've been here before");
   if (row.partner_id && followedPartnerIds && followedPartnerIds.has(row.partner_id)) reasons.push('A business you follow');
@@ -413,7 +417,7 @@ export function getBusinessAvailabilityReasons(row, { category, attributes, cuis
       reasons.push(whoForName ? `Matches ${whoForName}'s taste` : 'Matches their taste');
     }
   }
-  return reasons;
+  return reasons.filter(Boolean);
 }
 
 export function startOfDay(d) {

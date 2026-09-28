@@ -33,8 +33,9 @@ describe('recommendationFacts (why / how far / when)', () => {
     expect(formatDistance(-1)).toBeNull();
   });
 
-  test('generic text only when there is no interest to name; new reason is classified as interest', () => {
-    expect(becauseYouLikeReason('')).toBe('Matches your interests');
+  test('no generic fallback: nothing to name = no reason; the reason is classified as interest', () => {
+    expect(becauseYouLikeReason('')).toBeNull();
+    expect(becauseYouLikeReason(null)).toBeNull();
     expect(categorizeReasonText(becauseYouLikeReason('Coffee'))).toBe(REASON_CATEGORIES.INTEREST);
   });
 });

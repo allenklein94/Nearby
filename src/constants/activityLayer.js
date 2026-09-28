@@ -60,6 +60,7 @@ export const ACTIVITIES = [
   },
 ];
 
+import { activityReason, friendsPlanActivityReason } from './recommendationReasonVocabulary';
 import { BUSINESS_ATTRIBUTE_OPTIONS, OCCASION_OPTIONS, OFFERED_OCCASION_KEYS, ACCOMMODATE_PARTY_TYPE_OPTIONS } from './businessAttributes';
 
 const asArray = (v) => (Array.isArray(v) ? v : []);
@@ -108,8 +109,8 @@ export function gatheringActivityFit(g, askedActivities) {
     if (!asked.includes(a.key)) continue;
     const match = gatheringActivityMatch(g, a);
     if (!match) continue;
-    if (match === 'explicit') return { key: a.key, explicit: true, reason: `A friends plan, good for ${a.label}` };
-    if (!best) best = { key: a.key, explicit: false, reason: `Good for ${a.label}` };
+    if (match === 'explicit') return { key: a.key, explicit: true, reason: friendsPlanActivityReason(a.label) };
+    if (!best) best = { key: a.key, explicit: false, reason: activityReason(a.label) };
   }
   return best;
 }
@@ -221,5 +222,5 @@ export function activityFit(row, askedActivities) {
   if (asked.length === 0) return null;
   const mine = new Set(activitiesForBusiness(row));
   const hit = ACTIVITIES.find((a) => asked.includes(a.key) && mine.has(a.key));
-  return hit ? { key: hit.key, reason: `Good for ${hit.label}` } : null;
+  return hit ? { key: hit.key, reason: activityReason(hit.label) } : null;
 }
