@@ -118,7 +118,8 @@ describe('the locked pipeline (item 131)', () => {
   });
 
   it('covers the ten surfaces, each naming only real stages, never a stage it also uses', () => {
-    expect(Object.keys(SURFACE_PIPELINE).sort()).toEqual(['analytics', 'business', 'create', 'discover', 'gatherings', 'home', 'notifications', 'offers', 'people', 'search']);
+    expect(Object.keys(SURFACE_PIPELINE).sort()).toEqual(['analytics', 'business', 'celebrate', 'create', 'discover', 'gatherings', 'home', 'notifications', 'offers', 'people', 'search']);
+    for (const [name, s] of Object.entries(SURFACE_PIPELINE)) expect([name, typeof s.population, typeof s.ordering]).toEqual([name, 'string', 'string']);
     for (const [name, s] of Object.entries(SURFACE_PIPELINE)) {
       for (const k of [...s.uses, ...Object.keys(s.never)]) expect([name, PIPELINE_KEYS.includes(k)]).toEqual([name, true]);
       for (const k of Object.keys(s.never)) expect([name, k, s.uses.includes(k)]).toEqual([name, k, false]);
@@ -132,5 +133,59 @@ describe('the locked pipeline (item 131)', () => {
     expect(SURFACE_PIPELINE.people.never.temporary_intent).toBeTruthy();
     expect(SURFACE_PIPELINE.notifications.never.ranking).toBeTruthy();
     expect(NEARBY_PIPELINE.find((s) => s.key === 'ranking').db).toMatch(/separate/);
+  });
+});
+
+describe('item 131 audit guards', () => {
+  const { SURFACE_PIPELINE, STAGE_CALLERS } = require('./nearbyOntology');
+  const walk = (dir, out = []) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) { if (e.name !== '__fixtures__') walk(p, out); } else if (/\.js$/.test(e.name) && !/\.test\.js$/.test(e.name) && !/\.journey\.js$/.test(e.name)) out.push(p);
+    }
+    return out;
+  };
+  const files = walk(SRC).map((f) => [path.relative(SRC, f).split(path.sep).join('/'), fs.readFileSync(f, 'utf8')]);
+  // real calls only (not comments); the stage's own defining files are exempt
+  const CALL = /^(?!\s*(\/\/|\*)).*\b(resolveIntent|runIntentSearch|classifyCreateRequest|compareRanked|runAskEligibility)\(/m;
+  const OWNERS = new Set(['constants/signalPriority.js', 'utils/askEligibility.js']);
+
+  it('every file calling a stage entry point is registered under a surface', () => {
+    for (const [rel, text] of files) {
+      if (OWNERS.has(rel) || !CALL.test(text)) continue;
+      expect([rel, STAGE_CALLERS[rel] ?? null]).toEqual([rel, expect.any(String)]);
+      expect(SURFACE_PIPELINE[STAGE_CALLERS[rel]]).toBeTruthy();
+    }
+  });
+
+  it('notifications and business-side code never call consumer ranking or ask stages', () => {
+    const forbidden = /\b(compareRanked|resolveIntent|runIntentSearch|selectHomeAttention|rankGatheringFeed|compareDiscover|applySessionIntent|blendedCategoryScore)\b/;
+    for (const [rel, text] of files) {
+      if (/^services\/notifications|^screens\/Business|^services\/business|^utils\/business/.test(rel)) {
+        const code = text.split('\n').filter((l) => !/^\s*(\/\/|\*)/.test(l)).join('\n');
+        expect([rel, forbidden.test(code)]).toEqual([rel, false]);
+      }
+    }
+  });
+
+  it('Create never prefills from profile interests (they only order the category picker)', () => {
+    const create = fs.readFileSync(path.join(SRC, 'screens/CreateGatheringScreen.js'), 'utf8');
+    const uses = create.split('\n').filter((l) => /\bmyInterests\b/.test(l) && !/useMyInterests\(\)/.test(l));
+    expect(uses.length).toBeGreaterThan(0);
+    for (const l of uses) expect(l).toMatch(/orderGroupsByInterests\(CATEGORY_GROUPS, myInterests\)/);
+    for (const f of ['utils/askResolver.js', 'utils/gatheringInference.js', 'services/createAssistant.js']) {
+      expect([f, /useMyInterests|profiles\.interests|from\('profiles'\)/.test(fs.readFileSync(path.join(SRC, f), 'utf8'))]).toEqual([f, false]);
+    }
+  });
+
+  it('Home candidates are not cut by points before the shared ladder picks', () => {
+    const { MAX_HOME_RECOMMENDATIONS } = require('../services/homeRecommendations');
+    const { MAX_HOME_ATTENTION } = require('../utils/homeAttention');
+    expect(MAX_HOME_RECOMMENDATIONS).toBeGreaterThan(MAX_HOME_ATTENTION * 2);
+  });
+
+  it('Browse paging has a stable order', () => {
+    const t = fs.readFileSync(path.join(SRC, 'services/proximity.js'), 'utf8');
+    expect(t).toMatch(/\.order\('id', \{ ascending: true \}\)\s*\n\s*\.range\(offset/);
   });
 });

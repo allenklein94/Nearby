@@ -462,6 +462,9 @@ export async function getBrowseMatches(offset = 0) {
     .from('profiles')
     .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
     .in('wide_area', neighborBuckets)
+    // A stable order is required for paging: without one, Postgres may return rows in any order per request, so
+    // consecutive pages could repeat or skip people (item 131 audit). The batch is then ordered by compatibility below.
+    .order('id', { ascending: true })
     .range(offset, offset + BROWSE_BATCH_SIZE - 1);
 
   if (error) {

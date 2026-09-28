@@ -86,25 +86,46 @@ export const PIPELINE_KEYS = NEARBY_PIPELINE.map((s) => s.key);
 
 // Which stages shape each surface TODAY, and which are locked out and why. A surface never re-implements a stage: it calls the
 // stage's source. `never` entries are locked decisions, guarded by nearbyOntology.test.js.
+// LOCKED RULE (owner, 2026-09-28): shared stages define reusable reasoning; each surface is allowed to define its own ELIGIBLE
+// POPULATION and FINAL ORDERING (`population`, `ordering` below). Consistency comes from the shared stages, not from forcing
+// every surface into one algorithm. A new surface is registered here, and every file that calls a stage's entry point is
+// listed in STAGE_CALLERS (guarded).
 const ALL = PIPELINE_KEYS;
 export const SURFACE_PIPELINE = {
-  home: { uses: ['category', 'subcategory', 'occasion', 'group', 'persistent_interests', 'eligibility', 'ranking', 'action'],
+  home: { population: 'upcoming nearby gatherings + perks, minus your own plans (one placement per object, item 52)', ordering: 'selectHomeAttention: shared tier ladder, capped at 5', uses: ['category', 'subcategory', 'occasion', 'group', 'persistent_interests', 'eligibility', 'ranking', 'action'],
     never: { temporary_intent: 'the feed has no current intent; a typed ask on Home is the search surface (item 114: no untyped mood control)' } },
-  discover: { uses: ALL, never: {} },
-  search: { uses: ALL, never: {}, note: 'typed asks on Home and Discover: resolveAsk -> resolveIntent' },
-  create: { uses: ['category', 'subcategory', 'activity', 'tags', 'occasion', 'group', 'temporary_intent', 'action'],
+  discover: { population: 'what exists nearby (gatherings, places, perks, communities; visibility + discoverable filters)', ordering: 'compareDiscover (shared tier vector, then nearest) per section', uses: ALL, never: {} },
+  search: { population: 'the ask\'s eligible candidates (runAskEligibility)', ordering: 'resolveIntent -> compareRanked', uses: ALL, never: {}, note: 'typed asks on Home and Discover: resolveAsk -> resolveIntent' },
+  create: { population: 'n/a (makes an object)', ordering: 'n/a', uses: ['category', 'subcategory', 'activity', 'tags', 'occasion', 'group', 'temporary_intent', 'action'],
     never: { ranking: 'creating is not choosing among results', persistent_interests: 'a prefill comes from the words, never the profile' } },
-  gatherings: { uses: ['category', 'subcategory', 'tags', 'group', 'persistent_interests', 'eligibility', 'ranking', 'action'],
+  gatherings: { population: 'upcoming discoverable gatherings the viewer may see', ordering: 'rankGatheringFeed (shared ladder, then nearest)', uses: ['category', 'subcategory', 'tags', 'group', 'persistent_interests', 'eligibility', 'ranking', 'action'],
     never: { temporary_intent: 'feed, not an ask (item 114)' } },
-  people: { uses: ['group', 'persistent_interests', 'hard_constraints', 'eligibility', 'action'],
+  people: {
+    population: 'OPT-IN people discovery, never connected friends: Dating = people you crossed paths with (proximity sightings + shared past gatherings) or, in Browse, profiles in your ~7-mile area buckets, minus matches/blocks/friends, filtered by your dating preferences; Friends = people who opted into friend discovery (get_friend_discovery_candidates, server-side exclusions)',
+    ordering: 'Dating Crossed Paths: most recent sighting first, gathering-only people after (merge order, getNearbyMatches); Dating Browse: stable id paging, each batch by compatibility score (getBrowseMatches); Friends: shared interests + shared communities + mutual friends desc, then distance, then random (server)',
+    why: 'a person is not supply: the ladder\'s tiers (intent, availability, business, weather, trending) do not describe a person, and the no-stranger-discovery rule forbids surfacing people from an ask; so People keeps its own opt-in pool and order',
+    uses: ['group', 'persistent_interests', 'hard_constraints', 'eligibility', 'action'],
     never: { temporary_intent: 'no stranger discovery via intent (hard privacy rule)' }, note: 'deck order is not on the ten-tier ladder' },
-  business: { uses: ['category', 'subcategory', 'activity', 'tags', 'occasion', 'group', 'temporary_intent', 'hard_constraints', 'soft_preferences', 'eligibility', 'ranking', 'action'],
+  business: { population: 'businesses passing hard routing checks (_business_request_fanout; item 117)', ordering: 'routing\'s own lexicographic order, cap 10 (separate by owner decision)', uses: ['category', 'subcategory', 'activity', 'tags', 'occasion', 'group', 'temporary_intent', 'hard_constraints', 'soft_preferences', 'eligibility', 'ranking', 'action'],
     never: { persistent_interests: 'a consumer\'s interests never reach a business (minimum payload)' },
     note: 'temporary intent arrives only as the request\'s structured fields; routing eligibility + order are its own (item 116/117)' },
-  offers: { uses: ['eligibility', 'ranking', 'action'], never: {}, note: 'valid_until / request open gate the action; reliability orders the list' },
-  notifications: { uses: ['category', 'subcategory', 'persistent_interests', 'eligibility', 'action'],
+  offers: { population: 'offers on your own request', ordering: 'established reliability record first ("Our pick")', uses: ['eligibility', 'ranking', 'action'], never: {}, note: 'valid_until / request open gate the action; reliability orders the list' },
+  notifications: { population: 'recipients chosen by the event handler (dedupe, block, mute)', ordering: 'none', uses: ['category', 'subcategory', 'persistent_interests', 'eligibility', 'action'],
     never: { ranking: 'an event notifies its recipients; nothing is ranked (item 125)' }, note: 'eligibility = dedupe, block, mute in _notify_event_recipient' },
-  analytics: { uses: ['category', 'subcategory', 'occasion', 'group', 'temporary_intent', 'eligibility', 'ranking'],
+  analytics: { population: 'internal records only', ordering: 'none', uses: ['category', 'subcategory', 'occasion', 'group', 'temporary_intent', 'eligibility', 'ranking'],
     never: { persistent_interests: 'internal views are structured and aggregated; no individual profile interests (items 126/127)' },
     note: 'internal, service-role-only views over the typed-ask and routing audits (items 105, 126, 127)' },
+  celebrate: { population: 'the eligible candidates for the occasion (the same resolver)', ordering: 'resolveIntent -> compareRanked',
+    uses: ['category', 'subcategory', 'occasion', 'group', 'temporary_intent', 'hard_constraints', 'soft_preferences', 'eligibility', 'ranking', 'action'],
+    never: {}, note: 'Plan for Someone + group occasion plans: the intent is the answers the person PICKED (chips, empty words), never inferred' },
+};
+
+// Every non-test file that calls a stage entry point, by surface. A file not listed here that starts calling one fails
+// nearbyOntology.test.js: register the surface (and its population/ordering) first.
+export const STAGE_CALLERS = {
+  'screens/HomeScreen.js': 'search', 'screens/DiscoverHubScreen.js': 'search', 'services/intentResolver.js': 'search',
+  'services/surpriseMe.js': 'search', 'screens/CreateHubScreen.js': 'create', 'services/createAssistant.js': 'create',
+  'screens/CelebrateSomethingScreen.js': 'celebrate', 'screens/GroupOccasionPlanScreen.js': 'celebrate',
+  'services/experienceAssembly.js': 'search', 'services/surpriseMeLogic.js': 'search', 'services/celebrateSomething.js': 'celebrate',
+  'services/gatherings.js': 'home',
 };

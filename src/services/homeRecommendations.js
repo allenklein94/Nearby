@@ -34,7 +34,10 @@ import { REASON_TEXT, becauseYouLikeReason } from '../constants/recommendationRe
 // behavior lever.
 import { SIGNAL_SOURCES, computeAccountMaturity, weightSignal } from '../constants/signalSourceMaturity';
 
-export const MAX_HOME_RECOMMENDATIONS = 5;
+// Item 131 audit: this is the CANDIDATE pool, not what Home shows. Home's attention list (utils/homeAttention.js) picks and
+// caps at MAX_HOME_ATTENTION by the shared tier ladder; a cut here at 5 let this file's point total decide which candidates the
+// ladder ever saw (a second ranking). The point order now only breaks ties and feeds the first-run card's top two.
+export const MAX_HOME_RECOMMENDATIONS = 20;
 
 function isToday(iso) {
   if (!iso) return false;

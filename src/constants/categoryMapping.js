@@ -3,10 +3,11 @@
 // business's subcategory/secondary categories. It is the SAME explicit list as CATEGORY_GROUPS -- nothing is inferred,
 // no fuzzy or AI matching. Mirrored in SQL by public.category_tag_groups + business_served_tags() (migration
 // 20270118); categoryMapping.test.js fails if the two drift. Neither taxonomy's stored values are changed.
-import { CATEGORY_GROUPS } from './gatheringCategories';
+import { CATEGORY_GROUPS, groupForTag } from './gatheringCategories';
 
+// One lookup (gatheringCategories.groupForTag); this is its key form.
 export function canonicalGroupForTag(tag) {
-  return CATEGORY_GROUPS.find((g) => g.tags.includes(tag))?.key ?? null;
+  return groupForTag(tag)?.key ?? null;
 }
 
 export function tagsForGroup(groupKey) {
