@@ -1,4 +1,4 @@
-import { resultRowAction } from '../utils/recommendationContext';
+import { resultRowView } from '../utils/recommendationContext';
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
@@ -49,8 +49,8 @@ import TabHeaderActions from '../components/TabHeaderActions';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { isGatheringPast } from '../utils/objectState';
-import { recommendationFacts, recommendationRow } from '../utils/recommendationFacts';
-import { categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
+import { recommendationRow } from '../utils/recommendationFacts';
+import { openDestination } from '../services/openDestination';
 import { selectHomeAttention, cardWithoutIds } from '../utils/homeAttention';
 import { gatheringCardModel } from '../utils/recommendationCard';
 import { confidenceHeadline } from '../utils/recommendationConfidence';
@@ -65,7 +65,6 @@ import { lightenHex } from '../utils/colorUtils';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { getUserLocation } from '../services/userLocation';
 import { placeDistanceLabel } from '../services/places';
-import { gatheringPrimaryAction } from '../utils/primaryAction';
 import { homeQuickStatRows } from '../utils/homeQuiet';
 import { interestedConfirmation } from '../utils/actionConfirmations';
 
@@ -436,9 +435,16 @@ export default function HomeScreen({ navigation }) {
     soon: (dashboard?.happeningNow ?? []).filter((g) => !shownInMergeIds.has(g.id)),
   });
 
-  function renderGatheringCta(g, variant) {
-    const action = gatheringPrimaryAction(g, myUserId, Date.now(), variant === 'trending' ? { lowCommitment: true, interestedIds: interestedSet } : {});
-    const openDetail = (extra = {}) => navigation.navigate('GatheringDetail', { gatheringId: g.id, ...extra });
+  // Shared context layer: the card's action and tap destination come from the ONE context object (gatheringCardModel ->
+  // utils/recommendationContext.js); this only lays them out.
+  function homeGatheringCard(g, { signals = null, variant = 'row' } = {}) {
+    return gatheringCardModel(g, { signals, myUserId, actionOpts: variant === 'trending' ? { lowCommitment: true, interestedIds: interestedSet } : {} });
+  }
+
+  function renderGatheringCta(g, card, variant) {
+    const action = card.action;
+    if (!action) return null;
+    const openDetail = (extra = {}) => openDestination(navigation, card.destination, Object.keys(extra).length ? extra : null);
     const hero = variant === 'hero';
     const primaryStyle = hero ? styles.heroCta : styles.rowCta;
     const primaryText = hero ? styles.heroCtaText : styles.rowCtaText;
@@ -896,14 +902,6 @@ export default function HomeScreen({ navigation }) {
   // Phase 1 of the "Build everything" plan -- taps through to the same
   // real detail screens every other Home section already links to, per
   // the locked design (no new destination screens for this section).
-  function handleRecommendationTap(item) {
-    if (item.type === 'gathering') {
-      navigation.navigate('GatheringDetail', { gatheringId: item.id });
-    } else if (item.type === 'perk') {
-      navigation.navigate('BrandOffers', { highlightOfferId: item.id });
-    }
-  }
-
   async function saveQuickPicks(categories) {
     setQuickPicksEditVisible(false);
     setPinnedQuickPicks(categories);
@@ -1128,11 +1126,14 @@ export default function HomeScreen({ navigation }) {
         </View>
       );
     }
+    const row = resultRowView(item); // the one context object: reason, when/where, status note, action
     return (
       <TouchableOpacity
         key={`${item.type}-${item.id}`}
         style={styles.intentResultRow}
         onPress={() => handleIntentResultTap(item)}
+        accessibilityRole="button"
+        accessibilityLabel={[item.title, row.reason, row.meta, row.action?.label].filter(Boolean).join(', ')}
       >
         <Ionicons
           name={INTENT_RESULT_ICONS[item.type] ?? 'people-outline'}
@@ -1143,18 +1144,14 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.intentResultTextCol}>
           {isTopPick && <NearbyPickBadge />}
           <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
-          {item.subtitle ? (
-            <Text
-              style={[styles.intentResultSubtitle, item.isFull && { color: colors.danger }]}
-              numberOfLines={1}
-            >
-              {item.subtitle}
-            </Text>
+          {row.reason ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{row.reason}</Text> : null}
+          {row.meta ? (
+            <Text style={[styles.intentResultSubtitle, row.warn && { color: colors.danger }]} numberOfLines={1}>{row.meta}</Text>
           ) : null}
         </View>
         {/* Item 72/135: a business result names the action its tap takes, from the one context object. */}
-        {resultRowAction(item) ? (
-          <Text style={{ color: colors.primary, fontWeight: '700', marginRight: 4 }}>{resultRowAction(item).label}</Text>
+        {row.action ? (
+          <Text style={{ color: colors.primary, fontWeight: '700', marginRight: 4 }}>{row.action.label}</Text>
         ) : null}
         <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
       </TouchableOpacity>
@@ -1612,22 +1609,27 @@ export default function HomeScreen({ navigation }) {
                       {surprise.lanes.map((lane) => (
                         <View key={lane.key} style={{ marginBottom: spacing.sm }}>
                           <Text style={styles.intentGroupLabel}>{lane.plan ? `${lane.label} · ${lane.plan}` : lane.label}</Text>
-                          {lane.items.map((item) => (
+                          {lane.items.map((item) => {
+                            const row = resultRowView(item); // Surprise Me rows read the same context object as every result
+                            return (
                             <TouchableOpacity
                               key={`${item.type}-${item.id}`}
                               style={styles.intentResultRow}
                               onPress={() => handleSurpriseResultTap(item)}
                               accessibilityRole="button"
-                              accessibilityLabel={`${lane.label}: ${item.title}`}
+                              accessibilityLabel={[`${lane.label}: ${item.title}`, row.reason, row.meta, row.action?.label].filter(Boolean).join(', ')}
                             >
                               <Ionicons name={INTENT_RESULT_ICONS[item.type] ?? 'sparkles-outline'} size={18} color={colors.primary} style={styles.intentResultIcon} />
                               <View style={styles.intentResultTextCol}>
                                 <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
-                                {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
+                                {row.reason ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{row.reason}</Text> : null}
+                                {row.meta ? <Text style={[styles.intentResultSubtitle, row.warn && { color: colors.danger }]} numberOfLines={1}>{row.meta}</Text> : null}
                               </View>
+                              {row.action ? <Text style={{ color: colors.primary, fontWeight: '700', marginRight: 4 }}>{row.action.label}</Text> : null}
                               <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                             </TouchableOpacity>
-                          ))}
+                            );
+                          })}
                         </View>
                       ))}
                       {surprise.connectedPerson && (
@@ -2514,12 +2516,13 @@ export default function HomeScreen({ navigation }) {
               // instruction.
               const categoryStyle = categoryStyleFor(attention.hero.interest_tag);
               const fullness = gatheringFullnessLabel(attention.hero);
+              const heroCard = homeGatheringCard(attention.hero, { signals: (attention.hero.reasons ?? []).map((text) => ({ kind: 'reason', text })), variant: 'hero' });
               return (
                 <TouchableOpacity
                   style={[styles.heroCard, shadow.card]}
-                  onPress={() => navigation.navigate('GatheringDetail', { gatheringId: attention.hero.id })}
+                  onPress={() => openDestination(navigation, heroCard.destination)}
                   activeOpacity={0.85}
-                  accessibilityLabel={`Best Pick${gatheringTimeBadge(attention.hero.scheduled_at) === 'TONIGHT' ? ' Tonight' : ''}: ${attention.hero.title}, ${attention.hero.reasons.join(', ')}`}
+                  accessibilityLabel={`Best Pick${gatheringTimeBadge(attention.hero.scheduled_at) === 'TONIGHT' ? ' Tonight' : ''}: ${[attention.hero.title, heroCard.why, heroCard.meta].filter(Boolean).join(', ')}`}
                   accessibilityRole="button"
                 >
                   {bestPickCoverUrl ? (
@@ -2546,9 +2549,8 @@ export default function HomeScreen({ navigation }) {
                       {confidenceHeadline(attention.hero.reasons.map((text) => ({ text }))) ? (
                         <Text style={styles.heroMeta} numberOfLines={1}>{confidenceHeadline(attention.hero.reasons.map((text) => ({ text })))}</Text>
                       ) : null}
-                      <Text style={styles.heroMeta} numberOfLines={1}>
-                        {attention.hero.reasons.filter((r) => categorizeReasonText(r) !== REASON_CATEGORIES.TIME).join(' · ')}
-                      </Text>
+                      {heroCard.why ? <Text style={styles.heroMeta} numberOfLines={1}>{heroCard.why}</Text> : null}
+                      {heroCard.meta ? <Text style={styles.heroMeta} numberOfLines={1}>{heroCard.meta}</Text> : null}
                       {/* P1 remediation (CLAUDE.md, Aug 28 Full Coherence
                           Audit): the same real fullness signal every
                           recommendation surface shows, so a full gathering
@@ -2558,7 +2560,7 @@ export default function HomeScreen({ navigation }) {
                         <Text style={[styles.heroMeta, fullness.startsWith('🔒') && { color: '#FFB4B4' }]}>{fullness}</Text>
                       )}
                     </View>
-                    {renderGatheringCta(attention.hero, 'hero')}
+                    {renderGatheringCta(attention.hero, heroCard, 'hero')}
                   </View>
                 </TouchableOpacity>
               );
@@ -2572,7 +2574,7 @@ export default function HomeScreen({ navigation }) {
                   <TouchableOpacity
                     key={`perk-${item.id}`}
                     style={styles.trendingCard}
-                    onPress={() => handleRecommendationTap(item)}
+                    onPress={() => openDestination(navigation, row.destination)}
                     accessibilityLabel={`${item.title}, ${[row.why, row.meta].filter(Boolean).join(', ')}`}
                     accessibilityRole="button"
                   >
@@ -2585,25 +2587,24 @@ export default function HomeScreen({ navigation }) {
                   </TouchableOpacity>
                 );
               }
-              const { gathering: g, signals, reasons, hasFriend, trendingOnly } = entry;
-              const card = gatheringCardModel(g, { signals });
+              const { gathering: g, signals, hasFriend, trendingOnly } = entry;
+              const variant = trendingOnly ? 'trending' : 'row';
+              const card = homeGatheringCard(g, { signals, variant });
               const timing = hasFriend && g.scheduled_at ? describeFriendGatheringTiming(g.scheduled_at) : null;
               const past = !!timing?.isPast;
               return (
                 <TouchableOpacity
                   key={g.id}
                   style={styles.trendingCard}
-                  onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
-                  accessibilityLabel={`${g.title}, ${reasons.join(', ')}`}
+                  onPress={() => openDestination(navigation, card.destination)}
+                  accessibilityLabel={`${[g.title, card.why, card.meta].filter(Boolean).join(', ')}`}
                   accessibilityRole="button"
                 >
                   <Text style={styles.trendingTitle}>{categoryStyleFor(g.interest_tag).icon} {g.title}</Text>
                   {confidenceHeadline(signals) ? <Text style={styles.trendingMeta}>{confidenceHeadline(signals)}</Text> : null}
                   {card.why ? <Text style={styles.trendingMeta}>{card.why}</Text> : null}
                   <Text style={styles.trendingMeta}>
-                    {[recommendationFacts(g).distance,
-                      g.scheduled_at ? (past ? `${timing.text} · Already happened` : formatHeroDateTime(g.scheduled_at)) : null,
-                      g.approvedAttendees ? `${attendeeTotal(g)} attending` : null].filter(Boolean).join(' · ')}
+                    {[card.meta, g.approvedAttendees ? `${attendeeTotal(g)} attending` : null].filter(Boolean).join(' · ')}
                   </Text>
                   {card.social ? <Text style={styles.trendingMeta}>{card.social}</Text> : null}
                   {gatheringFullnessLabel(g) && (
@@ -2611,7 +2612,7 @@ export default function HomeScreen({ navigation }) {
                       {gatheringFullnessLabel(g)}
                     </Text>
                   )}
-                  {!past && <View style={{ marginTop: spacing.xs }}>{renderGatheringCta(g, trendingOnly ? 'trending' : 'row')}</View>}
+                  {!past && card.action && <View style={{ marginTop: spacing.xs }}>{renderGatheringCta(g, card, variant)}</View>}
                 </TouchableOpacity>
               );
             })}

@@ -9,6 +9,7 @@
 // Clock reading: AM/PM, noon/midnight and 24-hour hours are read as said; a bare hour 1-7 ("until 5", "before 3") is read as PM
 // (nobody means 5 in the morning); a bare 8-11 is ambiguous and is NOT guessed.
 import { lengthOf } from './timeBudget';
+import { appendReason } from './recommendationReasonVocabulary';
 
 export const WINDOW_FIT_POINTS = 2;
 export const WINDOW_MISS_POINTS = -2;
@@ -142,7 +143,7 @@ export function applyClockWindowToCandidates(candidates, w, anchor) {
   const phrase = windowPhrase(w);
   return candidates.map((c) => {
     const fit = windowFit(c, w, anchor);
-    if (fit === 'fit') return { ...c, score: (c.score ?? 0) + WINDOW_FIT_POINTS, subtitle: c.subtitle ?? `🕒 Fits ${phrase}` };
+    if (fit === 'fit') return { ...c, score: (c.score ?? 0) + WINDOW_FIT_POINTS, subtitle: c.subtitle ?? `🕒 Fits ${phrase}`, reasons: appendReason(c.reasons, `🕒 Fits ${phrase}`) };
     if (fit === 'miss') return { ...c, score: (c.score ?? 0) + WINDOW_MISS_POINTS };
     return c;
   });

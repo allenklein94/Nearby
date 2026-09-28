@@ -3,6 +3,7 @@
 // deterministic phrase rules (never AI), ranking only (a lift for a fit, a small drop for a clear opposite, never a filter), one
 // honest reason line. A tag not listed has NO energy and is untouched -- nothing is guessed, and a major-only business is
 // never classified. Energy is a mood of the plan, not a fact about a person: it is never stored on a profile.
+import { appendReason } from './recommendationReasonVocabulary';
 export const ENERGY_LEVELS = [
   { key: 'low_key', label: 'low-key', display: 'Low-key', icon: '🛋️',
     ask: /\blow[- ]?key\b|\blaid[- ]back\b|\bchill(ed)?\b|\brelax(ed|ing)?\b|\bmellow\b|\bcalm\b|\bquiet\b|\bcozy\b|\bcosy\b|\bnothing (too )?(crazy|wild)\b/i,
@@ -71,6 +72,6 @@ export function applyEnergyToCandidates(candidates, asked) {
   return candidates.map((c) => {
     const { delta, reason } = energyFit(c?.category, asked, c?.hostEnergy);
     if (!delta) return c;
-    return { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle };
+    return { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle, reasons: appendReason(c.reasons, reason) };
   });
 }

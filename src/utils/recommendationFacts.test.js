@@ -71,7 +71,9 @@ describe('Discover and Gatherings cards use the same rule', () => {
     const src = read('../screens/DiscoverHubScreen.js');
     expect(src).not.toMatch(/Matches your \$\{/);
     expect(src).not.toMatch(/timeLine, g\.distanceLabel/);
-    expect(src).toMatch(/factsMeta\(g, timeLine\)/);
+    // shared context layer: the when/where line comes from the one context object (card.meta), never a screen's own format
+    expect(src).toMatch(/card\.meta/);
+    expect(src).not.toMatch(/factsMeta\(/);
   });
   test('Gatherings feed badge names the interest; every locale has the key', () => {
     expect(read('../screens/GatheringsScreen.js')).toMatch(/gatherings\.becauseYouLike/);
@@ -108,7 +110,8 @@ describe('recommendationRow (Nearby Right Now)', () => {
 
   test('nothing measured: the reasons are shown as they are', () => {
     const r = recommendationRow({ type: 'perk', reasons: ['At Coastal Coffee'], data: {} });
-    expect(r).toEqual({ why: 'At Coastal Coffee', meta: null });
+    expect(r).toMatchObject({ why: 'At Coastal Coffee', meta: null });
+    expect(r.destination).toBeNull(); // no id = no destination, never a wrong screen
   });
 
   test('Home renders the rows through it', () => {

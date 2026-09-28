@@ -1,9 +1,9 @@
 import { recordSearchBehavior } from './behaviorSignals';
+import { openDestination } from './openDestination';
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
 import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, getPartnerPriceInfo, getPartnerSuitedAges, getPartnerOperatingInfo, getDeclinedBusinesses } from './brandOffers';
-import { Linking } from 'react-native';
 import { bookingModeOf } from '../constants/bookingMode';
 import { BUSINESS_RESULT_TYPES } from '../utils/businessAction';
 import { intentResultDestination } from '../utils/recommendationContext';
@@ -1135,10 +1135,5 @@ export function navigateToIntentResultItem(navigation, item, { typedText, classi
   // Item 135: the tap follows the context object's ONE destination (utils/recommendationContext.js). Item 72: a business result
   // follows its booking-mode route (maps for Go now / Directions, the request addressed to it for Reserve / Book / Request).
   if ((item.type === 'perk' || BUSINESS_RESULT_TYPES.includes(item.type)) && item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
-  const route = intentResultDestination(item, { typedText, classifyResult, submissionId });
-  if (route?.kind === 'url') {
-    if (route.url) Linking.openURL(route.url);
-  } else if (route) {
-    navigation.navigate(route.screen, route.params);
-  }
+  openDestination(navigation, intentResultDestination(item, { typedText, classifyResult, submissionId }));
 }

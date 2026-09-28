@@ -39,7 +39,8 @@ describe('gatheringCardModel', () => {
   });
   it('Home merged cards render from the model', () => {
     const home = fs.readFileSync(path.join(__dirname, '..', 'screens', 'HomeScreen.js'), 'utf8');
-    expect(home).toMatch(/gatheringCardModel\(g, \{ signals \}\)/);
+    expect(home).toMatch(/homeGatheringCard\(g, \{ signals, variant \}\)/);
+    expect(home).toMatch(/gatheringCardModel\(g, \{ signals, myUserId/);
     expect(home).toMatch(/card\.social/);
   });
 });

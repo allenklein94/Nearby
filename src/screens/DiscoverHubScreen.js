@@ -6,7 +6,6 @@ import { getNearbyMatches } from '../services/proximity';
 import { getFriendDiscoveryCandidates } from '../services/friendDiscovery';
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
-import { gatheringPrimaryAction } from '../utils/primaryAction';
 import ExperienceComponentList from '../components/ExperienceComponentList';
 import SponsoredSpotlightSlot from '../components/SponsoredSpotlightSlot';
 import usePersonalization from '../hooks/usePersonalization';
@@ -26,7 +25,9 @@ import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from 
 import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptions } from '../services/brandOffers';
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, placeDistanceLabel, getGoogleMapsRequestHeaders } from '../services/places';
 import { buildDirectionsUrl } from '../utils/planLogisticsActions';
-import { resultRowAction } from '../utils/recommendationContext';
+import { resultRowView, recommendationContext, contextItem } from '../utils/recommendationContext';
+import { gatheringCardModel } from '../utils/recommendationCard';
+import { openDestination } from '../services/openDestination';
 import { getSocialForecast } from '../services/homeDashboard';
 // Phase 8 section G (CLAUDE.md) -- accepted friends UNION real matches,
 // the one shared client-side definition of this app's connected set.
@@ -58,16 +59,15 @@ import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { PLACE_CATEGORIES } from '../constants/placeCategories';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { railGroups } from '../constants/discoverCategoryRail';
-import { factsMeta, friendGoingReason, communityReason } from '../utils/recommendationFacts';
+import { friendGoingReason, communityReason } from '../utils/recommendationFacts';
 import { getMyFriends } from '../services/friends';
-import { becauseYouLikeReason, categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
-import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
+import { becauseYouLikeReason } from '../constants/recommendationReasonVocabulary';
+import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { splitTonight } from '../utils/categoryTonight';
 import { buildDiscoverSections, compareDiscover } from '../utils/discoverSections';
 import { SIGNAL_TIERS, tierVector } from '../constants/signalPriority';
 import { recordSearchBehavior } from '../services/behaviorSignals';
 import { searchTopic, matchBusinesses, friendsLineForTopic } from '../utils/unifiedSearch';
-import { formatDistance } from '../utils/formatDistance';
 import { searchResultTabs, topResultKinds, effectiveResultTab, resultKindView } from '../utils/searchResultTabs';
 import { matchesDateFilter } from '../utils/gatheringDateFilter';
 import { lightenHex } from '../utils/colorUtils';
@@ -506,7 +506,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     // into -- honest fallback to the real detail screen rather than an
     // empty "· Tonight · Nearby" breadcrumb over a one-item list.
     if (!g.interest_tag) {
-      navigation.navigate('GatheringDetail', { gatheringId: g.id });
+      openDestination(navigation, discoverCard(g).destination);
       return;
     }
     setContextPlaces([]);
@@ -1448,24 +1448,26 @@ export default function DiscoverHubScreen({ navigation, route }) {
     // friend_discovery is a synthetic fallback item appended after the real ranked candidates,
     // never itself a scored "pick" -- excluded even in the edge case where it's the only item.
     const isTopPick = pickBadge && index === 0 && item.type !== 'friend_discovery';
+    const row = resultRowView(item); // typed-ask AND Surprise Me rows: the one context object's reason / context / action
     return (
       <StaggeredReveal key={`${item.type}-${item.id}`} index={index}>
       <TouchableOpacity
         style={styles.intentSearchResultRow}
         onPress={() => onPress(item)}
         activeOpacity={0.85}
-        accessibilityLabel={isTopPick ? `${item.title}, Nearby Pick` : item.title}
+        accessibilityLabel={[item.title, isTopPick ? 'Nearby Pick' : null, row.reason, row.meta, row.action?.label].filter(Boolean).join(', ')}
         accessibilityRole="button"
       >
         <Text style={styles.intentSearchResultEmoji}>{INTENT_SEARCH_TYPE_EMOJI[item.type] ?? '📌'}</Text>
         <View style={{ flex: 1 }}>
           {isTopPick && <NearbyPickBadge />}
           <Text style={styles.intentSearchResultTitle} numberOfLines={1}>{item.title}</Text>
-          {item.subtitle ? <Text style={styles.intentSearchResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
+          {row.reason ? <Text style={styles.intentSearchResultSubtitle} numberOfLines={1}>{row.reason}</Text> : null}
+          {row.meta ? <Text style={[styles.intentSearchResultSubtitle, row.warn && { color: colors.danger }]} numberOfLines={1}>{row.meta}</Text> : null}
         </View>
         {/* Item 72/135: a business result names the action its tap takes, from the one context object. */}
-        {resultRowAction(item) ? (
-          <Text style={[styles.intentSearchResultChevron, { color: colors.primary, fontWeight: '700' }]}>{resultRowAction(item).label} ›</Text>
+        {row.action ? (
+          <Text style={[styles.intentSearchResultChevron, { color: colors.primary, fontWeight: '700' }]}>{row.action.label} ›</Text>
         ) : (
           <Text style={styles.intentSearchResultChevron}>›</Text>
         )}
@@ -1548,16 +1550,41 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // getGatheringFitReasons() itself ranked first for anything else that
   // still cleared STANDARD_SCORE (e.g. "Very close" / "0.3 mi away" /
   // "Happening today").
-  function primaryReasonLine(g) {
-    const friendReason = friendGoingReason(g, myFriendIds, myUserId);
-    if (friendReason) return friendReason;
-    if (g.matchesYourInterests && g.interest_tag) return becauseYouLikeReason(g.interest_tag);
-    const friendsInto = friendsInterestReason(g.interest_tag, friendInterestByTag[g.interest_tag]);
-    if (friendsInto) return friendsInto;
+  // Shared context layer (2026-09-28): the card's reason, when/where line, action and CTA destination come from the ONE context
+  // object (gatheringCardModel -> utils/recommendationContext.js). Discover only supplies its real candidate reasons, strongest
+  // first; the context picks the first valid one (distance/time restatements are the context line, never the reason).
+  function discoverReasons(g) {
     const attendeeCount = attendeeTotal(g);
-    if (attendeeCount >= TRENDING_ATTENDANCE_MIN) return `${attendeeCount} attending`;
-    // Distance and time are the card's own "how far / when" line; repeating them as the reason would say them twice.
-    return (g.fit.reasons ?? []).find((r) => ![REASON_CATEGORIES.DISTANCE, REASON_CATEGORIES.TIME].includes(categorizeReasonText(r))) ?? null;
+    return [
+      friendGoingReason(g, myFriendIds, myUserId),
+      g.matchesYourInterests && g.interest_tag ? becauseYouLikeReason(g.interest_tag) : null,
+      friendsInterestReason(g.interest_tag, friendInterestByTag[g.interest_tag]),
+      attendeeCount >= TRENDING_ATTENDANCE_MIN ? `${attendeeCount} attending` : null,
+      ...(g.fit?.reasons ?? []),
+    ].filter(Boolean);
+  }
+
+  function discoverCard(g) {
+    return gatheringCardModel(g, { signals: discoverReasons(g).map((text) => ({ kind: 'reason', text })), myUserId });
+  }
+
+  function communityContext(c) {
+    return recommendationContext(contextItem('community', c, { reasons: [communityReason(c, personalization.declared)] }));
+  }
+
+  function perkContext(o) {
+    return recommendationContext(contextItem('perk', o, {
+      reasons: [o.target_interest_tag ? becauseYouLikeReason(o.target_interest_tag) : null],
+      redeemed: redeemedOfferIds.has(o.id),
+    }));
+  }
+
+  function businessContext(b) {
+    return recommendationContext(contextItem('business', b, { reasons: [b.searchReason] }));
+  }
+
+  function primaryReasonLine(g) {
+    return discoverCard(g).reasons[0] ?? null;
   }
 
   // The hero card's small eyebrow label -- same three real signals as
@@ -1580,11 +1607,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // way GatheringDetailScreen itself computes `isFull` off approvedAttendees
   // vs. capacity. Tapping either kind still opens GatheringDetailScreen to
   // actually perform the join -- a real task change, not just more info.
-  function gatheringActionInfo(g) {
-    // Item 73: generated from the gathering's state for this viewer (utils/primaryAction.js), the same function Home and the
-    // Gatherings feed use: a join shows as the CTA; going / hosting / requested / waitlisted / past / expired show as a status
-    // badge; anything unknown is a plain View. Tapping either kind opens GatheringDetail, where the join itself happens.
-    const a = gatheringPrimaryAction(g, myUserId);
+  function gatheringActionInfo(g, card = discoverCard(g)) {
+    // Item 73: generated from the gathering's state for this viewer (the context object's action, from utils/primaryAction.js),
+    // the same source Home and the Gatherings feed use: a join shows as the CTA; going / hosting / requested / waitlisted / past /
+    // expired show as a status badge; anything unknown is a plain View. Tapping either opens the context's destination.
+    const a = card.action ?? { kind: 'view', label: 'View' };
     if (a.kind === 'join') return { kind: 'cta', label: a.label };
     if (a.status) return { kind: 'state', label: a.status };
     return { kind: 'cta', label: a.label };
@@ -1636,16 +1663,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // call site wraps the WHOLE mapped list in one outer StaggeredReveal
   // instead, so the group settles into place as one coordinated block.
   function renderContextGatheringRow(g) {
-    const action = gatheringActionInfo(g);
-    const timeLine = gatheringTimeLine(g.scheduled_at);
+    const card = discoverCard(g);
+    const action = gatheringActionInfo(g, card);
     const isSource = g.id === expandedContext?.sourceGatheringId;
     return (
       <TouchableOpacity
         key={g.id}
         style={[styles.card, isSource && styles.cardSourceHighlight]}
-        onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+        onPress={() => openDestination(navigation, card.destination)}
         activeOpacity={0.85}
-        accessibilityLabel={`${g.title}, ${factsMeta(g, gatheringTimeLine(g.scheduled_at)) ?? ''}`}
+        accessibilityLabel={[g.title, card.meta].filter(Boolean).join(', ')}
         accessibilityRole="button"
       >
         {coverPhotoUrls[g.id] ? (
@@ -1655,9 +1682,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
         )}
         <View style={{ flex: 1 }}>
           <Text style={styles.cardTitle}>{g.title}</Text>
-          {factsMeta(g, timeLine) && (
+          {card.meta && (
             <Text style={styles.cardSubtitle} numberOfLines={1}>
-              {factsMeta(g, timeLine)}
+              {card.meta}
             </Text>
           )}
           {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
@@ -1685,9 +1712,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Today/This Weekend sections below, instead of three copies of this
   // block drifting apart.
   function renderGatheringTile(g, index) {
-    const action = gatheringActionInfo(g);
-    const reasonLine = primaryReasonLine(g);
-    const timeLine = gatheringTimeLine(g.scheduled_at);
+    const card = discoverCard(g);
+    const action = gatheringActionInfo(g, card);
+    const reasonLine = card.reasons[0] ?? null;
 
     if (g.fit.score >= HERO_SCORE) {
       const categoryStyle = categoryStyleFor(g.interest_tag);
@@ -1738,13 +1765,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <View style={{ flex: 1, marginRight: spacing.sm }}>
               <Text style={styles.heroTitle} numberOfLines={1}>{g.title}</Text>
               <Text style={styles.heroMeta} numberOfLines={1}>
-                {[reasonLine, factsMeta(g, timeLine)].filter(Boolean).join(' · ')}
+                {[reasonLine, card.meta].filter(Boolean).join(' · ')}
               </Text>
             </View>
             {action.kind === 'cta' ? (
               <TouchableOpacity
                 style={styles.heroCta}
-                onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                onPress={() => openDestination(navigation, card.destination)}
                 accessibilityLabel={`${action.label}: ${g.title}`}
                 accessibilityRole="button"
               >
@@ -1781,9 +1808,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
         )}
         <View style={{ flex: 1 }}>
           <Text style={styles.cardTitle}>{g.title}</Text>
-          {(reasonLine || factsMeta(g, timeLine)) && (
+          {(reasonLine || card.meta) && (
             <Text style={styles.cardSubtitle} numberOfLines={1}>
-              {[reasonLine, factsMeta(g, timeLine)].filter(Boolean).join(' · ')}
+              {[reasonLine, card.meta].filter(Boolean).join(' · ')}
             </Text>
           )}
           {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
@@ -1797,7 +1824,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         </View>
         {action.kind === 'cta' ? (
           <TouchableOpacity
-            onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+            onPress={() => openDestination(navigation, card.destination)}
             accessibilityLabel={`${action.label}: ${g.title}`}
             accessibilityRole="button"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -1819,14 +1846,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Still taps into the same real expand-in-place context as every other
   // gathering tile on this screen.
   function renderHappeningNowTile(g, index) {
-    const timeLine = gatheringTimeLine(g.scheduled_at);
+    const card = discoverCard(g);
     return (
       <StaggeredReveal key={g.id} index={index}>
       <TouchableOpacity
         style={styles.nowCard}
         onPress={() => openContextFor(g)}
         activeOpacity={0.85}
-        accessibilityLabel={`${g.title}, ${factsMeta(g, timeLine)}. Shows more like this.`}
+        accessibilityLabel={`${[g.title, card.meta].filter(Boolean).join(', ')}. Shows more like this.`}
         accessibilityRole="button"
       >
         {coverPhotoUrls[g.id] ? (
@@ -1837,9 +1864,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
           </View>
         )}
         <Text style={styles.nowCardTitle} numberOfLines={1}>{g.title}</Text>
-        {factsMeta(g, timeLine) && (
+        {card.meta && (
           <Text style={styles.nowCardSubtitle} numberOfLines={1}>
-            {factsMeta(g, timeLine)}
+            {card.meta}
           </Text>
         )}
       </TouchableOpacity>
@@ -2183,23 +2210,24 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {contextCommunities.length > 0 && (
             <>
               <Text style={styles.sectionHeader}>Communities</Text>
-              {contextCommunities.slice(0, 3).map((c) => (
+              {contextCommunities.slice(0, 3).map((c) => { const cc = communityContext(c); return (
                 <TouchableOpacity
                   key={c.id}
                   style={styles.card}
-                  onPress={() => navigation.navigate('CommunityDetail', { communityId: c.id, communityName: c.name })}
+                  onPress={() => openDestination(navigation, cc.destination)}
                   activeOpacity={0.85}
-                  accessibilityLabel={c.name}
+                  accessibilityLabel={[c.name, cc.reason, cc.context].filter(Boolean).join(', ')}
                   accessibilityRole="button"
                 >
                   {renderCardIcon('🏘️', c.interest_tag)}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{c.name}</Text>
-                    {placeDistanceLabel(c.distanceMiles) ? <Text style={styles.cardSubtitle} numberOfLines={1}>{placeDistanceLabel(c.distanceMiles)}</Text> : null}
+                    {cc.reason ? <Text style={styles.cardSubtitle} numberOfLines={1}>{cc.reason}</Text> : null}
+                    {cc.context ? <Text style={styles.cardSubtitle} numberOfLines={1}>{cc.context}</Text> : null}
                   </View>
                   <Text style={styles.cardChevron}>›</Text>
                 </TouchableOpacity>
-              ))}
+              ); })}
             </>
           )}
 
@@ -2265,7 +2293,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <StaggeredReveal index={0}>
               <View>
                 {contextOffers.map((o) => {
-                  const isRedeemed = redeemedOfferIds.has(o.id);
+                  const pc = perkContext(o);
                   return (
                     <PlaceCard
                       key={o.id}
@@ -2273,11 +2301,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
                       photoUrl={o.target_interest_tag ? curatedCoverPhotoFor(o.target_interest_tag) : null}
                       tintColor={o.target_interest_tag ? categoryStyleFor(o.target_interest_tag).color : null}
                       title={o.title}
-                      reason={[o.brand_partners?.name, placeDistanceLabel(o.distanceMiles), businessSignalLine(o.brand_partners)].filter(Boolean).join(' · ')}
-                      onPress={() => navigation.navigate('BrandOffers', { highlightOfferId: o.id })}
-                      accessibilityLabel={`${o.title}, ${o.brand_partners?.name}, ${isRedeemed ? 'already redeemed' : 'Redeem'}`}
-                      actionLabel={isRedeemed ? 'Redeemed ✓' : 'Redeem'}
-                      actionIsState={isRedeemed}
+                      reason={[o.brand_partners?.name, pc.context, businessSignalLine(o.brand_partners), pc.reason].filter(Boolean).join(' · ')}
+                      onPress={() => openDestination(navigation, pc.destination)}
+                      accessibilityLabel={[o.title, o.brand_partners?.name, pc.action?.label].filter(Boolean).join(', ')}
+                      actionLabel={pc.action?.label}
+                      actionIsState={pc.action?.kind === 'status'}
                     />
                   );
                 })}
@@ -2341,9 +2369,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
             deals={mapDeals}
             businesses={mapBusinesses}
             userLocation={userLocation}
-            onSelectGathering={(g) => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
-            onSelectDeal={(d) => navigation.navigate('BrandOffers', { highlightOfferId: d.id })}
-            onSelectBusiness={(b) => navigation.navigate('BusinessProfile', { partnerId: b.id })}
+            onSelectGathering={(g) => openDestination(navigation, discoverCard(g).destination)}
+            onSelectDeal={(d) => openDestination(navigation, perkContext(d).destination)}
+            onSelectBusiness={(b) => openDestination(navigation, businessContext(b).destination)}
           />
         </View>
       ) : (
@@ -2631,22 +2659,22 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   </TouchableOpacity>
                 )}
               </View>
-              {businessesToShow.map((b) => (
+              {businessesToShow.map((b) => { const bc = businessContext(b); return (
                 <TouchableOpacity
                   key={`biz-${b.id}`}
                   style={styles.searchTopicRow}
-                  onPress={() => navigation.navigate('BusinessProfile', { partnerId: b.id })}
-                  accessibilityLabel={b.name}
+                  onPress={() => openDestination(navigation, bc.destination)}
+                  accessibilityLabel={[b.name, bc.reason, bc.context].filter(Boolean).join(', ')}
                   accessibilityRole="button"
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle} numberOfLines={1}>{b.name}</Text>
-                    <Text style={styles.cardSubtitle} numberOfLines={1}>
-                      {[b.searchReason, formatDistance(b.distanceMiles)].filter(Boolean).join(' · ')}
-                    </Text>
+                    {bc.reason || bc.context ? (
+                      <Text style={styles.cardSubtitle} numberOfLines={1}>{[bc.reason, bc.context].filter(Boolean).join(' · ')}</Text>
+                    ) : null}
                   </View>
                 </TouchableOpacity>
-              ))}
+              ); })}
             </>
           )}
 
@@ -2689,13 +2717,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   view -- one coordinated container settle, not N independent per-card slides. */}
               <StaggeredReveal index={0}>
               <View>
-              {gatheringsToShow.map((g) => (
+              {gatheringsToShow.map((g) => { const card = discoverCard(g); return (
                 <TouchableOpacity
                   key={g.id}
                   style={styles.card}
-                  onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                  onPress={() => openDestination(navigation, card.destination)}
                   activeOpacity={0.85}
-                  accessibilityLabel={`${g.title}, ${factsMeta(g, gatheringTimeLine(g.scheduled_at)) ?? ''}`}
+                  accessibilityLabel={[g.title, card.meta].filter(Boolean).join(', ')}
                   accessibilityRole="button"
                 >
                   {coverPhotoUrls[g.id] ? (
@@ -2705,7 +2733,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   )}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{g.title}</Text>
-                    <Text style={styles.cardSubtitle}>{factsMeta(g, gatheringTimeLine(g.scheduled_at))}</Text>
+                    {/* a literal keyword match: when/where from the context object, no recommendation reason claimed */}
+                    {card.meta ? <Text style={styles.cardSubtitle}>{card.meta}</Text> : null}
                     {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
                       <Text
                         style={[styles.cardSubtitle, gatheringFullnessLabel(g)?.startsWith('🔒') && { color: colors.danger }]}
@@ -2717,7 +2746,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   </View>
                   <Text style={styles.cardChevron}>›</Text>
                 </TouchableOpacity>
-              ))}
+              ); })}
               </View>
               </StaggeredReveal>
             </>
@@ -2754,24 +2783,24 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   view -- one coordinated container settle, not N independent per-card slides. */}
               <StaggeredReveal index={0}>
               <View>
-              {communitiesToShow.map((c) => (
+              {communitiesToShow.map((c) => { const cc = communityContext(c); return (
                 <TouchableOpacity
                   key={c.id}
                   style={styles.card}
-                  onPress={() => navigation.navigate('CommunityDetail', { communityId: c.id, communityName: c.name })}
+                  onPress={() => openDestination(navigation, cc.destination)}
                   activeOpacity={0.85}
-                  accessibilityLabel={c.name}
+                  accessibilityLabel={[c.name, cc.reason, cc.context].filter(Boolean).join(', ')}
                   accessibilityRole="button"
                 >
                   {renderCardIcon('🏘️', c.interest_tag)}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{c.name}</Text>
-                    {communityReason(c, personalization.declared) ? <Text style={styles.cardSubtitle} numberOfLines={1}>{communityReason(c, personalization.declared)}</Text> : null}
-                    {c.description || c.distanceMiles != null ? <Text style={styles.cardSubtitle} numberOfLines={1}>{[placeDistanceLabel(c.distanceMiles), c.description].filter(Boolean).join(' · ')}</Text> : null}
+                    {cc.reason ? <Text style={styles.cardSubtitle} numberOfLines={1}>{cc.reason}</Text> : null}
+                    {cc.context || c.description ? <Text style={styles.cardSubtitle} numberOfLines={1}>{[cc.context, c.description].filter(Boolean).join(' · ')}</Text> : null}
                   </View>
                   <Text style={styles.cardChevron}>›</Text>
                 </TouchableOpacity>
-              ))}
+              ); })}
               </View>
               </StaggeredReveal>
             </>
@@ -2905,7 +2934,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               <StaggeredReveal index={0}>
               <View>
               {offersToShow.map((o) => {
-                const isRedeemed = redeemedOfferIds.has(o.id);
+                const pc = perkContext(o);
                 return (
                   <PlaceCard
                     key={o.id}
@@ -2913,20 +2942,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
                     photoUrl={o.target_interest_tag ? curatedCoverPhotoFor(o.target_interest_tag) : null}
                     tintColor={o.target_interest_tag ? categoryStyleFor(o.target_interest_tag).color : null}
                     title={o.title}
-                    reason={[
-                      o.brand_partners?.name,
-                      placeDistanceLabel(o.distanceMiles),
-                      businessSignalLine(o.brand_partners),
-                      // Phase 8 (CLAUDE.md, Discover visual hierarchy) --
-                      // names the real matched tag, not the generic shared
-                      // "Matches your interests" string (o.target_interest_tag
-                      // is already the actual tag value on this row).
-                      o.target_interest_tag ? becauseYouLikeReason(o.target_interest_tag) : null,
-                    ].filter(Boolean).join(' · ')}
-                    onPress={() => navigation.navigate('BrandOffers', { highlightOfferId: o.id })}
-                    accessibilityLabel={`${o.title}, ${o.brand_partners?.name}, ${isRedeemed ? 'already redeemed' : 'Redeem'}`}
-                    actionLabel={isRedeemed ? 'Redeemed ✓' : 'Redeem'}
-                    actionIsState={isRedeemed}
+                    // reason + distance + action + destination from the one context object (the perk's own named tag,
+                    // never a generic "Matches your interests")
+                    reason={[o.brand_partners?.name, pc.context, businessSignalLine(o.brand_partners), pc.reason].filter(Boolean).join(' · ')}
+                    onPress={() => openDestination(navigation, pc.destination)}
+                    accessibilityLabel={[o.title, o.brand_partners?.name, pc.action?.label].filter(Boolean).join(', ')}
+                    actionLabel={pc.action?.label}
+                    actionIsState={pc.action?.kind === 'status'}
                   />
                 );
               })}

@@ -5,9 +5,10 @@ import { canonicalizeInterests } from '../constants/interestGraph';
 //   Because you like Coffee
 //   1.3 mi · Today · 6:30 PM
 // Each part appears only when it is real: no distance without a measured distance, no reason without a real signal.
-import { becauseYouLikeReason, categorizeReasonText, REASON_CATEGORIES } from '../constants/recommendationReasonVocabulary';
+import { becauseYouLikeReason, isContextRestatement } from '../constants/recommendationReasonVocabulary';
 import { formatHeroDateTime } from './timeContext';
 import { formatDistance } from './formatDistance';
+import { recommendationContext, contextItemFromRecommendation } from './recommendationContext';
 
 // The one distance format lives in utils/formatDistance.js (re-exported for existing callers).
 export { formatDistance };
@@ -16,8 +17,7 @@ export function recommendationFacts(g) {
   if (!g) return { why: null, distance: null, when: null, meta: null };
   const interestMatched = g.matchesYourInterests === true || (typeof g.matchScore === 'number' && g.matchScore > 0);
   // A distance/time reason ("Happening today") is the WHEN/WHERE fact, shown once as the measured meta line, never as the WHY.
-  const restated = [REASON_CATEGORIES.DISTANCE, REASON_CATEGORIES.TIME];
-  const firstWhy = (g.reasons ?? []).find((r) => !restated.includes(categorizeReasonText(r))) ?? null;
+  const firstWhy = (g.reasons ?? []).find((r) => r && !isContextRestatement(r)) ?? null;
   const why = interestMatched ? becauseYouLikeReason(g.interest_tag) : firstWhy;
   const distance = formatDistance(g.distanceMiles);
   const when = g.scheduled_at ? gatheringWhen(g) : null;
@@ -34,13 +34,11 @@ export function factsMeta(g, when = null) {
 // today") are the HOW-FAR / WHEN facts, so they show once as the measured meta line rather than as a reason too.
 // Every other reason is the WHY. With nothing measured to show, the reasons are shown as they are. A perk has a
 // measured distance but no event time, so it never shows a time.
-export function recommendationRow(item) {
+export function recommendationRow(item, opts = {}) {
   const reasons = item?.reasons ?? [];
-  const meta = factsMeta(item?.data);
-  if (!meta) return { why: reasons.join(' · ') || null, meta: null };
-  const restated = [REASON_CATEGORIES.DISTANCE, REASON_CATEGORIES.TIME];
-  const why = reasons.filter((r) => !restated.includes(categorizeReasonText(r)));
-  return { why: why.join(' · ') || null, meta };
+  const c = recommendationContext(contextItemFromRecommendation(item), opts);
+  if (!c.context) return { why: reasons.join(' · ') || null, meta: null, destination: c.destination };
+  return { why: c.reasons.join(' · ') || null, meta: c.context, destination: c.destination };
 }
 
 // "Sam is going" / "Sam and Alex are going" / "Sam, Alex and 2 more friends are going": connected FRIENDS (never a

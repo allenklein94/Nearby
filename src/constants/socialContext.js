@@ -16,6 +16,7 @@
 // Ranking only, typed consumer asks only: a fit lifts, a clear mismatch sinks modestly, unknown on either side is neutral, nothing
 // is removed. Gathering candidates only: it never adds a result and never touches people, so "meet new people" can never become
 // stranger discovery. Never in Home/Discover feeds, business requests/opportunities, notifications, badges or profiles.
+import { appendReason } from './recommendationReasonVocabulary';
 
 export const SOCIAL_CONTEXTS = ['solo', 'one_on_one', 'small_group', 'group'];
 const SCALE = ['one_on_one', 'small_group', 'group'];
@@ -155,6 +156,6 @@ export function applySocialToCandidates(candidates, signals, opts = {}) {
   if (!Array.isArray(candidates) || !isValidSocialSignals(signals) || (signals.social_context === null && signals.meet_new_people === null)) return candidates;
   return candidates.map((c) => {
     const { delta, reason } = socialFit(c, signals, opts);
-    return delta ? { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle } : c;
+    return delta ? { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle, reasons: appendReason(c.reasons, reason) } : c;
   });
 }

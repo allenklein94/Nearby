@@ -196,3 +196,21 @@ export function categorizeReasonText(text) {
   }
   return null;
 }
+
+// A "reason" that only restates WHERE or WHEN ("1.2 mi away", "Happening today", "Starts in 20 min", "Tonight") is the context
+// line of a recommendation, never its explanation (shared context layer, 2026-09-28). The distance/time categories above plus the
+// time words the ranking classifier deliberately leaves unclassified (so reason tiers are unchanged by this).
+const CONTEXT_ONLY = /^(happening now|starts in \d+ min|very close|today|tonight|tomorrow)\b/i;
+export function isContextRestatement(text) {
+  if (!text) return false;
+  const cat = categorizeReasonText(text);
+  return cat === REASON_CATEGORIES.DISTANCE || cat === REASON_CATEGORIES.TIME || CONTEXT_ONLY.test(String(text).trim());
+}
+
+// Add one explanation to a candidate's reasons (no duplicates, nothing added for a missing reason). Every ranking pass that
+// explains itself records the reason HERE, so the context object reads one list rather than a subtitle.
+export function appendReason(reasons, reason) {
+  const list = Array.isArray(reasons) ? reasons : [];
+  if (!reason || list.includes(reason)) return list;
+  return [...list, reason];
+}

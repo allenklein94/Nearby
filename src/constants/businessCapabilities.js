@@ -18,6 +18,7 @@
 // public business profile shows the number as "Largest group · Up to 40 people" (maxGroupLine), only when the owner set it.
 import { attributesFromAsk, parseAskFacets } from './askFacets';
 import { socialSignalsFromText } from './socialContext';
+import { appendReason } from './recommendationReasonVocabulary';
 
 export const CAPABILITIES = [
   { key: 'private_events', attribute: 'private_dining', label: 'Private events', icon: '🥂' },
@@ -147,7 +148,7 @@ export function welcomesGroups(partner) {
 export function applyLikelyGroupToCandidates(candidates, likelyGroup) {
   if (!likelyGroup) return candidates;
   return candidates.map((c) => (welcomesGroups(c?.businessPartner)
-    ? { ...c, score: (c.score ?? 0) + LIKELY_GROUP_POINTS, subtitle: c.subtitle ?? 'Welcomes groups' }
+    ? { ...c, score: (c.score ?? 0) + LIKELY_GROUP_POINTS, subtitle: c.subtitle ?? 'Welcomes groups', reasons: appendReason(c.reasons, 'Welcomes groups') }
     : c));
 }
 
@@ -172,6 +173,6 @@ export function applyCapabilitiesToCandidates(candidates, { partySize = null, te
     if (!delta) return c;
     // A space that fits the group, or an explicitly asked capability, leads; a plain overall fit keeps an existing line.
     const lead = reasons.find((r) => r !== 'Can host your group');
-    return { ...c, score: (c.score ?? 0) + delta, subtitle: lead ?? c.subtitle ?? reasons[0] ?? null };
+    return { ...c, score: (c.score ?? 0) + delta, subtitle: lead ?? c.subtitle ?? reasons[0] ?? null, reasons: reasons.reduce(appendReason, c.reasons ?? []) };
   });
 }

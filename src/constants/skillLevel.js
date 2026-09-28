@@ -6,6 +6,7 @@
 // unknown is untouched, nothing is removed. Scoped to typed requests only (never Home/Discover feeds).
 import { CATEGORY_GROUPS } from './gatheringCategories';
 import { TAG_FORMAT } from './activityFormat';
+import { appendReason } from './recommendationReasonVocabulary';
 
 export const SKILL_LEVELS = [
   { key: 'beginner', label: 'Beginner' },
@@ -104,6 +105,6 @@ export function applySkillToCandidates(candidates, asked) {
   if (!Array.isArray(asked) || !asked.length) return candidates;
   return candidates.map((c) => {
     const { delta, reason } = skillFit(c, asked);
-    return delta ? { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle } : c;
+    return delta ? { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle, reasons: appendReason(c.reasons, reason) } : c;
   });
 }

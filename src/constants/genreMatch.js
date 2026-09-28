@@ -11,6 +11,7 @@
 // "techno music", "techno night" -> Techno. Words without their own key map onto a declared one only where listed below
 // (house music / deep house / EDM -> Electronic, rap -> Hip-Hop, salsa / reggaeton -> Latin); bare "house" maps to nothing.
 import { GENRE_OPTIONS, genreLabel } from '../utils/gatheringPractical';
+import { appendReason } from './recommendationReasonVocabulary';
 
 export const GENRE_KEYS = GENRE_OPTIONS.filter((o) => o.key).map((o) => o.key);
 
@@ -58,6 +59,6 @@ export function applyGenreToCandidates(candidates, asked) {
   return candidates.map((c) => {
     const { delta, reason } = genreFit(c, asked);
     // The typed genre is explicit current intent (signal tier 1), so its reason leads, except over the Full / waitlist line.
-    return delta ? { ...c, score: (c.score ?? 0) + delta, subtitle: c.isFull && c.subtitle ? c.subtitle : reason } : c;
+    return delta ? { ...c, score: (c.score ?? 0) + delta, subtitle: c.isFull && c.subtitle ? c.subtitle : reason, reasons: appendReason(c.reasons, reason) } : c;
   });
 }

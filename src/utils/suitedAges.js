@@ -2,6 +2,7 @@
 // join or buy, and it is never inferred. NULL bound = open ("Ages 5+", "Up to age 12"); both null = not said = nothing shown.
 // Options stop at 17 on purpose (item 87 lock, migration 20270229): 18+ / 21+ are business house rules only, never a descriptive
 // label, and a gathering age limit stays parked. Every declared range therefore includes someone under 18.
+import { appendReason } from '../constants/recommendationReasonVocabulary';
 export const AGE_MIN_OPTIONS = [0, 1, 2, 3, 5, 8, 13];
 export const AGE_MAX_OPTIONS = [2, 5, 12, 17];
 
@@ -69,6 +70,6 @@ export function applySuitedAgesToCandidates(candidates, ages) {
     const delta = fits.every((f) => f === true) ? AGE_FIT_POINTS : AGE_MISMATCH_POINTS;
     const band = ageBandOf(c.ageMin, c.ageMax);
     const reason = delta > 0 ? (band ? band.reason : `Suited to ${ageRangeLabel(c.ageMin, c.ageMax).replace(/^Age /, 'age ').replace(/^Ages /, 'ages ')}`) : null;
-    return { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle };
+    return { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle, reasons: appendReason(c.reasons, reason) };
   });
 }

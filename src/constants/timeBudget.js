@@ -5,6 +5,7 @@
 // "Usually about 45 min". Ranking only: fits the time lifts, clearly too long sinks, unknown is untouched, nothing is removed.
 // Typed requests only; stores nothing.
 import { durationLabel } from '../utils/gatheringPractical';
+import { appendReason } from './recommendationReasonVocabulary';
 
 export const TAG_TYPICAL_MINUTES = {
   Coffee: 45, Bakeries: 30, 'Dessert & Ice Cream': 30, 'Food Trucks': 30, 'Fast Casual': 45, Breakfast: 60, Brunch: 90,
@@ -70,7 +71,7 @@ export function applyTimeBudgetToCandidates(candidates, budget) {
   if (!Number.isFinite(budget) || budget <= 0) return candidates;
   return candidates.map((c) => {
     const { delta, reason } = timeFit(c, budget);
-    return delta ? { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle } : c;
+    return delta ? { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle, reasons: appendReason(c.reasons, reason) } : c;
   });
 }
 

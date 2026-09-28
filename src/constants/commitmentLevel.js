@@ -5,6 +5,7 @@
 // category tag (table below, near-certain tags only). Anything unknown has no commitment and is untouched.
 import { ACTIVITY_FORMATS } from './activityFormat';
 import { BOOKING_MODE_COMMITMENT } from './bookingMode';
+import { appendReason } from './recommendationReasonVocabulary';
 
 export const COMMITMENT_LEVELS = ['drop_in', 'easy', 'reservation', 'planned_event', 'multi_hour', 'all_day'];
 const HEAVY = ['reservation', 'planned_event', 'multi_hour', 'all_day'];
@@ -65,7 +66,7 @@ export function applyCommitmentToCandidates(candidates, ask) {
   if (!ask) return candidates;
   return candidates.map((c) => {
     const { delta, reason } = commitmentFit(c, ask);
-    return delta ? { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle } : c;
+    return delta ? { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle, reasons: appendReason(c.reasons, reason) } : c;
   });
 }
 

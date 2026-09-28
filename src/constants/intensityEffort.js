@@ -7,6 +7,7 @@
 // phrase rules ONLY when an activity word sits next to the qualifier ("easy hike", "high intensity workout"), so "easy dinner",
 // "high-energy restaurant", "low-key birthday" and "hard decision" declare nothing. Ranking only: a fit lifts, a clear opposite
 // sinks modestly, unknown is neutral, nothing is removed. Typed requests only (never Home/Discover feeds or business payloads).
+import { appendReason } from './recommendationReasonVocabulary';
 
 export const INTENSITY_LEVELS = [
   { key: 'low_key', label: 'Low-key' },
@@ -65,7 +66,7 @@ function apply(candidates, asked, fitFn) {
   if (!Array.isArray(asked) || !asked.length) return candidates;
   return candidates.map((c) => {
     const { delta, reason } = fitFn(c, asked);
-    return delta ? { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle } : c;
+    return delta ? { ...c, score: (c.score ?? 0) + delta, subtitle: c.subtitle ?? reason ?? c.subtitle, reasons: appendReason(c.reasons, reason) } : c;
   });
 }
 export const applyIntensityToCandidates = (candidates, asked) => apply(candidates, asked, intensityFit);
