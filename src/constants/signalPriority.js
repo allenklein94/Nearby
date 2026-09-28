@@ -150,7 +150,7 @@ export const TYPED_ASK_SIGNAL_TIER = {
   // 2 hard constraints the person stated (enforced first as filters where verifiable; these are the ranked remainder)
   base_price_party: SIGNAL_TIERS.constraint, base_party_type_fit: SIGNAL_TIERS.constraint, price_budget: SIGNAL_TIERS.constraint,
   skill_level: SIGNAL_TIERS.constraint, distance_willingness: SIGNAL_TIERS.constraint, transport_mode: SIGNAL_TIERS.constraint,
-  time_budget: SIGNAL_TIERS.constraint, clock_window: SIGNAL_TIERS.constraint, capabilities: SIGNAL_TIERS.constraint,
+  time_budget: SIGNAL_TIERS.constraint, clock_window: SIGNAL_TIERS.constraint, capabilities: SIGNAL_TIERS.constraint, likely_group: SIGNAL_TIERS.business,
   declared_features: SIGNAL_TIERS.constraint, ask_facets: SIGNAL_TIERS.constraint, compatibility: SIGNAL_TIERS.constraint,
   dietary: SIGNAL_TIERS.constraint, suited_ages: SIGNAL_TIERS.constraint,
   // 3 friends / social context

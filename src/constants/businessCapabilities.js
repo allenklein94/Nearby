@@ -17,6 +17,7 @@
 // The number and the capabilities are never put in a business-facing payload; routing reads the number server-side only. The
 // public business profile shows the number as "Largest group · Up to 40 people" (maxGroupLine), only when the owner set it.
 import { attributesFromAsk, parseAskFacets } from './askFacets';
+import { socialSignalsFromText } from './socialContext';
 
 export const CAPABILITIES = [
   { key: 'private_events', attribute: 'private_dining', label: 'Private events', icon: '🥂' },
@@ -115,6 +116,40 @@ export function groupCapacityFit(partner, partySize, { privateAsk = false, outdo
 }
 // Kept for the overall maximum alone (item 80).
 export const capacityFit = (maxGroup, partySize) => groupCapacityFit({ max_group_size: maxGroup }, partySize);
+
+// ---- "Probably a group" (owner item 130, 2026-09-28, LOCKED) ----
+// A social-context signal, NOT a group-size fact: a birthday / family-type occasion or a family/group party with NO stated number
+// suggests a group. It only lifts (+1, below a stated party that fits, +2) businesses that DECLARED they take groups: the
+// group_friendly attribute, "groups" in the party types they take, or a declared largest group of LIKELY_GROUP_MIN_CAPACITY+.
+// Never a headcount, never a filter or a penalty, never in a business request; a stated number always wins (the explicit path),
+// and one-on-one asks (a date, solo, a couple's occasion, "just the two of us") never become a group.
+export const LIKELY_GROUP_POINTS = 1;
+export const LIKELY_GROUP_MIN_CAPACITY = 7; // = LARGE_GROUP_PARTY_SIZE (intentResolverScoring), kept equal by a test
+export const LIKELY_GROUP_OCCASIONS = ['birthday', 'graduation', 'baby_shower', 'housewarming', 'bachelor_bachelorette', 'farewell', 'family_gathering', 'fundraiser'];
+const ONE_ON_ONE_OCCASIONS = ['date_night', 'first_date', 'anniversary', 'self_care'];
+
+export function likelyGroupFromAsk({ text = '', occasion = null, partyType = null, partySize = null } = {}) {
+  if (Number.isInteger(partySize) && partySize > 0) return false; // the stated number decides
+  if (partyType === 'date' || partyType === 'solo' || ONE_ON_ONE_OCCASIONS.includes(occasion)) return false;
+  const scale = socialSignalsFromText(text).social_context;
+  if (scale === 'solo' || scale === 'one_on_one') return false;
+  return LIKELY_GROUP_OCCASIONS.includes(occasion) || partyType === 'family' || partyType === 'groups' || scale === 'group';
+}
+
+export function welcomesGroups(partner) {
+  if (!partner) return false;
+  const attrs = Array.isArray(partner.attributes) ? partner.attributes : [];
+  const takes = Array.isArray(partner.accommodates_party_types) ? partner.accommodates_party_types : [];
+  const max = cleanMaxGroupSize(partner.max_group_size);
+  return attrs.includes('group_friendly') || takes.includes('groups') || (max !== null && max >= LIKELY_GROUP_MIN_CAPACITY);
+}
+
+export function applyLikelyGroupToCandidates(candidates, likelyGroup) {
+  if (!likelyGroup) return candidates;
+  return candidates.map((c) => (welcomesGroups(c?.businessPartner)
+    ? { ...c, score: (c.score ?? 0) + LIKELY_GROUP_POINTS, subtitle: c.subtitle ?? 'Welcomes groups' }
+    : c));
+}
 
 // One pass over business candidates carrying their partner row (`businessPartner`: attributes + capacities).
 export function applyCapabilitiesToCandidates(candidates, { partySize = null, text = '' } = {}) {

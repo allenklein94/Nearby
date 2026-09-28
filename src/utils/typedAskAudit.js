@@ -52,6 +52,7 @@ export const SIGNAL_CODES = {
   clock_window: 'explicit_requirement',
   energy: 'explicit_preference',
   capabilities: 'explicit_requirement',
+  likely_group: 'context',
   commitment: 'explicit_preference',
   spontaneity: 'time',
   open_ended: 'context',

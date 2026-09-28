@@ -16,7 +16,7 @@ import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { activitiesFromText } from '../constants/activityLayer';
 import { attributesFromAsk, parseAskFacets } from '../constants/askFacets';
-import { wordsBackedAttributes } from '../constants/businessCapabilities';
+import { wordsBackedAttributes, likelyGroupFromAsk } from '../constants/businessCapabilities';
 import { energiesFromText } from '../constants/energyLevel';
 import { commitmentAsk } from '../constants/commitmentLevel';
 import { spontaneityOf } from '../constants/spontaneity';
@@ -168,6 +168,9 @@ export function resolveAsk(text, ai = null) {
     cuisine: a.cuisine ? set('cuisine', a.cuisine, 'ai') : set('cuisine', cuisineFromText(t), 'words'),
     occasion,
     group: { partyType, partySize },
+    // Item 130: "probably a group" (birthday / family occasion, no stated number). A ranking signal only, never a headcount:
+    // partySize above stays null, and nothing reads this into a business request.
+    likelyGroup: likelyGroupFromAsk({ text: t, occasion, partyType, partySize }),
     time: { dateWindow, whenPreset },
     budget: { priceLevel, budgetMax },
     plan,

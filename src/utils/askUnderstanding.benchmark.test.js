@@ -101,3 +101,10 @@ describe('how far / how they get there is not a thing to do', () => {
     expect(planAsk('dinner then a walk on the beach').parts.map((p) => p.key)).toEqual(['food', 'activity']);
   });
 });
+
+test('"probably a group" is a signal, never a number (item 130)', () => {
+  const b = resolveAsk("I need a place for my daughter's birthday Saturday.");
+  expect([b.likelyGroup, b.group.partySize]).toEqual([true, null]);
+  expect(resolveAsk('birthday dinner for 6').group.partySize).toBe(6);
+  expect(resolveAsk('birthday dinner with my wife').likelyGroup).toBe(false);
+});

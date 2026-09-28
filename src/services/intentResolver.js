@@ -73,7 +73,7 @@ import { compareRanked, typedAskRankVector } from '../constants/signalPriority';
 import { commitmentAsk, applyCommitmentToCandidates } from '../constants/commitmentLevel';
 import { formatsFromText, applyFormatToCandidates } from '../constants/activityFormat';
 import { skillLevelsFromText, applySkillToCandidates } from '../constants/skillLevel';
-import { wordsBackedAttributes, applyCapabilitiesToCandidates } from '../constants/businessCapabilities';
+import { wordsBackedAttributes, applyCapabilitiesToCandidates, applyLikelyGroupToCandidates, likelyGroupFromAsk } from '../constants/businessCapabilities';
 import { restrictionAsk } from '../constants/businessRestrictions';
 import { genresFromText, applyGenreToCandidates } from '../constants/genreMatch';
 import { timeBudgetFromText, applyTimeBudgetToCandidates, timeBudgetCaption } from '../constants/timeBudget';
@@ -862,6 +862,10 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // words ask for them. Ranking only; unknown is neutral; business results only (perks carry no partner row).
   deduped = applyCapabilitiesToCandidates(deduped, { partySize, text: rawText });
   step('capabilities');
+  // Item 130: "probably a group" (a birthday / family occasion with no stated number) lifts businesses that declared they take
+  // groups, +1. Never a headcount: `partySize` stays as said, and nothing here reaches a business.
+  deduped = applyLikelyGroupToCandidates(deduped, likelyGroupFromAsk({ text: rawText, occasion, partyType, partySize: statedPartySize }));
+  step('likely_group');
   deduped = applyCommitmentToCandidates(deduped, commitAsk);
   step('commitment');
   deduped = applySpontaneityToCandidates(deduped, spontaneity);
