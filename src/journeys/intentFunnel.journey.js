@@ -1,6 +1,7 @@
 // Item 126 (2026-09-28): the internal intent funnel (intent_funnel, intent_funnel_summary) read from existing records only.
 // One customer makes typed asks that end every way a real one can (redeemed, declined, expired with an offer, cancelled,
-// a gathering ask that ends in Interested + attending, nothing shown, shown but never tapped) plus a refinement, a
+// a gathering ask that ends in Interested -> attending, Interested removed without joining, attending without Interested, still
+// Interested, independent requests by the same person that must stay unattributed, nothing shown, shown but never tapped) plus a refinement, a
 // retried original and repeated taps; the view must give each ask exactly one row with only the milestones that really
 // happened, and the summary must count and divide by the right population. Fixture asks are moved into a week of their
 // own (2020-01-06) so the summary's week row is the fixture alone. Rolled back. Not covered: the app (no new client code).
@@ -16,10 +17,11 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
     const users = await runSql(`select id from profiles where id <> '${owner.id}' and managed_partner_id is null order by created_at limit 2;`);
     const log = await runJourney(`
       v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_u uuid := '${users[0].id}'; v_host uuid := '${users[1].id}';
-      v_g1 uuid; v_g2 uuid; v_g3 uuid; v_sub uuid; v_req uuid; v_offer uuid; v_n int; v_err text;
+      v_g1 uuid; v_g2 uuid; v_g3 uuid; v_g4 uuid; v_g5 uuid; v_g6 uuid; v_g7 uuid; v_ind1 uuid; v_ind2 uuid; v_sub uuid; v_req uuid; v_offer uuid; v_n int; v_err text;
       a_redeem uuid := gen_random_uuid(); a_decline uuid := gen_random_uuid(); a_expire uuid := gen_random_uuid();
       a_cancel uuid := gen_random_uuid(); a_gather uuid := gen_random_uuid(); a_empty uuid := gen_random_uuid();
       a_untapped uuid := gen_random_uuid(); a_retry uuid := gen_random_uuid(); a_refine uuid := gen_random_uuid();
+      a_removed uuid := gen_random_uuid(); a_direct uuid := gen_random_uuid(); a_still uuid := gen_random_uuid();
       s_redeem uuid; s_decline uuid; s_expire uuid; s_cancel uuid; s_gather uuid; s_untapped uuid;
       f record; w record;`, `
   update brand_partners set active = true, latitude = 40.0, longitude = -75.0 where id = v_partner;
@@ -32,6 +34,12 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
     values (v_host, 'Funnel walk 2', now() + interval '2 days', 40.0, -75.0, 'Walking', 'journey', 'everyone') returning id into v_g2;
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility)
     values (v_host, 'Funnel walk 3', now() + interval '2 days', 40.0, -75.0, 'Walking', 'journey', 'everyone') returning id into v_g3;
+  insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility)
+    values (v_host, 'Funnel walk 4', now() + interval '2 days', 40.0, -75.0, 'Walking', 'journey', 'everyone') returning id into v_g4;
+  insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility)
+    values (v_host, 'Funnel walk 5', now() + interval '2 days', 40.0, -75.0, 'Walking', 'journey', 'everyone') returning id into v_g5;
+  insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility)
+    values (v_host, 'Funnel walk 6', now() + interval '2 days', 40.0, -75.0, 'Walking', 'journey', 'everyone') returning id into v_g6;
 
   perform set_config('request.jwt.claims', json_build_object('sub', v_u, 'role', 'authenticated')::text, true);
 
@@ -69,6 +77,16 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
   perform record_typed_ask_snapshot(jsonb_build_object('id', a_untapped, 'surface', 'discover', 'rules_version', 'typed-ask-audit-v3', 'submission_id', s_untapped,
     'outcome', 'results', 'interpretation', jsonb_build_object('category', 'Walking'),
     'results', jsonb_build_array(jsonb_build_object('position', 1, 'section', 'list', 'result_type', 'gathering', 'result_id', v_g3::text))));
+  -- three more gathering asks: Interested then removed (g4), joined with no Interested (g5), still Interested (g6)
+  perform record_typed_ask_snapshot(jsonb_build_object('id', a_removed, 'surface', 'home', 'rules_version', 'typed-ask-audit-v3', 'outcome', 'results',
+    'interpretation', jsonb_build_object('category', 'Walking'),
+    'results', jsonb_build_array(jsonb_build_object('position', 1, 'section', 'list', 'result_type', 'gathering', 'result_id', v_g4::text))));
+  perform record_typed_ask_snapshot(jsonb_build_object('id', a_direct, 'surface', 'home', 'rules_version', 'typed-ask-audit-v3', 'outcome', 'results',
+    'interpretation', jsonb_build_object('category', 'Walking'),
+    'results', jsonb_build_array(jsonb_build_object('position', 1, 'section', 'list', 'result_type', 'gathering', 'result_id', v_g5::text))));
+  perform record_typed_ask_snapshot(jsonb_build_object('id', a_still, 'surface', 'home', 'rules_version', 'typed-ask-audit-v3', 'outcome', 'results',
+    'interpretation', jsonb_build_object('category', 'Walking'),
+    'results', jsonb_build_array(jsonb_build_object('position', 1, 'section', 'list', 'result_type', 'gathering', 'result_id', v_g6::text))));
   -- a refinement of the gathering ask, and a retried copy of its original (same submission, new id): still ONE row
   perform record_typed_ask_snapshot(jsonb_build_object('id', a_refine, 'surface', 'home', 'rules_version', 'typed-ask-audit-v3', 'submission_id', s_gather,
     'parent_snapshot_id', a_gather, 'refinement_key', 'friends', 'refinement_action', 'applied', 'outcome', 'results',
@@ -79,7 +97,7 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
   -- move every fixture ask into a week of its own (the milestones stay now, i.e. after the ask)
   update typed_ask_snapshots set created_at = timestamptz '2020-01-06 12:00+00' + (row_number_hack.n || ' minutes')::interval
     from (select id, row_number() over (order by created_at, id) n from typed_ask_snapshots
-          where id in (a_redeem, a_decline, a_expire, a_cancel, a_gather, a_empty, a_untapped, a_retry, a_refine)) row_number_hack
+          where id in (a_redeem, a_decline, a_expire, a_cancel, a_gather, a_empty, a_untapped, a_retry, a_refine, a_removed, a_direct, a_still)) row_number_hack
     where typed_ask_snapshots.id = row_number_hack.id;
   update typed_ask_snapshots set created_at = timestamptz '2020-01-06 11:00+00' where id = a_gather;   -- the original is first
   update typed_ask_snapshots set created_at = timestamptz '2020-01-07 12:00+00' where id = a_untapped;  -- g3 was joined 2020-01-01, before this ask
@@ -91,9 +109,15 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
   insert into intent_outcomes (user_id, result_type, result_id, selected_at, submission_id)
     values (v_u, 'business_availability', gen_random_uuid(), now() - interval '10 minutes', s_redeem);
 
-  -- ---- gathering ask: Interested on g1 (kept), attending g2 ----
+  -- ---- gathering ask: Interested on g1 then joins it (Interested -> Attending); joins g2 directly ----
   perform set_gathering_interested(v_g1, true);
+  perform join_gathering(v_g1);
   perform join_gathering(v_g2);
+  -- the other three: Interested then removed without joining; joined with no Interested; still Interested
+  perform set_gathering_interested(v_g4, true);
+  perform set_gathering_interested(v_g4, false);
+  perform join_gathering(v_g5);
+  perform set_gathering_interested(v_g6, true);
 
   -- ---- business asks ----
   -- redeemed: request -> reply -> accept -> visit completed
@@ -128,11 +152,19 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
   v_req := (create_business_request(raw_text_param := 'coffee cancelled case', latitude_param := 40.0, longitude_param := -75.0, category_param := 'Coffee',
      party_size_param := 2, submission_id_param := s_cancel, target_partner_id_param := v_partner)->>'requestId')::uuid;
   perform cancel_business_request(v_req);
+
+  -- independent requests by the SAME person after all those asks: a solo request with no ask, and one from a gathering
+  -- they host. Neither may be attributed to an earlier ask.
+  v_ind1 := (create_business_request(raw_text_param := 'independent coffee', latitude_param := 40.0, longitude_param := -75.0,
+     category_param := 'Coffee', party_size_param := 2, target_partner_id_param := v_partner)->>'requestId')::uuid;
+  insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
+    values (v_u, 'Funnel own coffee', now() + interval '3 days', 40.0, -75.0, 'Coffee', 'journey', 4, 'everyone') returning id into v_g7;
+  v_ind2 := (create_business_request_for_gathering(v_g7, 'Coffee for the group', 'Coffee', 20, 15, null, null, v_partner, null)->>'requestId')::uuid;
   perform set_config('request.jwt.claims', '', true);
 
   -- ---- assertions: one row per ask ----
   log := log || jsonb_build_array(jsonb_build_object('step','one_row_per_ask','ok',
-     (select count(*) from intent_funnel where ask_week = '2020-01-06') = 7
+     (select count(*) from intent_funnel where ask_week = '2020-01-06') = 10
      and (select count(*) from intent_funnel where ask_snapshot_id in (a_retry, a_refine)) = 0
      and (select count(*) from intent_funnel where submission_id = s_gather) = 1
      and (select count(*) from intent_funnel where submission_id = s_redeem) = 1,
@@ -165,7 +197,7 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
   select * into f from intent_funnel where ask_snapshot_id = a_gather;
   log := log || jsonb_build_array(jsonb_build_object('step','gathering_path','ok',
      f.showed_gathering and f.refinements = 2 and f.viewed_at = (select min(selected_at) from intent_outcomes where submission_id = s_gather)
-     and f.interested_at is not null and f.attending_at is not null and f.business_requested_at is null and f.request_outcome is null
+     and f.attending_at is not null and f.business_requested_at is null and f.request_outcome is null
      and f.shown_at = timestamptz '2020-01-06 11:00+00', 'data', to_jsonb(f)));
 
   select * into f from intent_funnel where ask_snapshot_id = a_empty;
@@ -176,25 +208,44 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
   log := log || jsonb_build_array(jsonb_build_object('step','join_before_ask_not_attributed','ok',
      f.shown_at is not null and f.viewed_at is null and f.attending_at is null and f.ask_week = '2020-01-06', 'data', to_jsonb(f)));
 
-  -- Interested is lost when the same person then joins that gathering (join_gathering clears it): a known gap, asserted
-  perform set_config('request.jwt.claims', json_build_object('sub', v_u, 'role', 'authenticated')::text, true);
-  perform join_gathering(v_g1);
-  perform set_config('request.jwt.claims', '', true);
-  log := log || jsonb_build_array(jsonb_build_object('step','interested_cleared_by_join','ok',
-     (select interested_at from intent_funnel where ask_snapshot_id = a_gather) is null
-     and (select attending_at from intent_funnel where ask_snapshot_id = a_gather) is not null));
-  -- (put the Interested row back for the summary numbers below)
-  insert into gathering_interested (gathering_id, user_id, created_at) values (v_g2, v_u, now());
+  -- 1. Interested -> Attending: the mark is gone (joined = not currently Interested) but the history counts
+  select * into f from intent_funnel where ask_snapshot_id = a_gather;
+  log := log || jsonb_build_array(jsonb_build_object('step','interested_then_attending','ok',
+     not exists (select 1 from gathering_interested where gathering_id = v_g1 and user_id = v_u)
+     and exists (select 1 from gathering_interested_joins where gathering_id = v_g1 and user_id = v_u and interested_at <= joined_at)
+     and f.interested_at is not null and not f.interested_now and f.interested_then_attending_at is not null
+     and f.interested_at <= f.interested_then_attending_at, 'data', to_jsonb(f)));
+  -- 2. Interested -> removed without joining: nothing kept, nothing counted
+  select * into f from intent_funnel where ask_snapshot_id = a_removed;
+  log := log || jsonb_build_array(jsonb_build_object('step','interested_removed','ok',
+     f.interested_at is null and not f.interested_now and f.attending_at is null and f.interested_then_attending_at is null
+     and not exists (select 1 from gathering_interested_joins where gathering_id = v_g4), 'data', to_jsonb(f)));
+  -- 3. Attending without Interested: attending, never counted as a conversion from Interested
+  select * into f from intent_funnel where ask_snapshot_id = a_direct;
+  log := log || jsonb_build_array(jsonb_build_object('step','attending_without_interested','ok',
+     f.attending_at is not null and f.interested_at is null and f.interested_then_attending_at is null
+     and not exists (select 1 from gathering_interested_joins where gathering_id = v_g5), 'data', to_jsonb(f)));
+  -- still Interested: current state
+  select * into f from intent_funnel where ask_snapshot_id = a_still;
+  log := log || jsonb_build_array(jsonb_build_object('step','still_interested','ok',
+     f.interested_at is not null and f.interested_now and f.attending_at is null and f.interested_then_attending_at is null, 'data', to_jsonb(f)));
+  -- 4 + 5. requests: only the ones carrying an ask's submission are the ask's; independent ones stay in request_journey unattributed
+  log := log || jsonb_build_array(jsonb_build_object('step','independent_requests_not_attributed','ok',
+     (select sum(requests) from intent_funnel where ask_week = '2020-01-06') = 5
+     and (select ask_snapshot_id is null and submission_id is null from request_journey where request_id = v_ind1)
+     and (select ask_snapshot_id is null and submission_id is null and request_source = 'gathering' from request_journey where request_id = v_ind2)
+     and (select count(*) from intent_funnel where ask_week = '2020-01-06' and business_requested_at is not null) = 4));
 
   -- ---- summary: the fixture week ----
   select * into w from intent_funnel_summary where dimension = 'week' and value = '2020-01-06';
   log := log || jsonb_build_array(jsonb_build_object('step','summary_counts','ok',
-     w.asks = 7 and w.shown = 6 and w.viewed = 2 and w.showed_gathering = 2 and w.interested = 1 and w.attending = 1
+     w.asks = 10 and w.shown = 9 and w.viewed = 2 and w.showed_gathering = 5 and w.interested = 2 and w.interested_now = 1
+     and w.attending = 2 and w.interested_then_attending = 1
      and w.business_requested = 4 and w.offer_received = 2 and w.offer_accepted = 1 and w.redeemed = 1, 'data', to_jsonb(w)));
   log := log || jsonb_build_array(jsonb_build_object('step','summary_rates','ok',
-     w.shown_rate = round(6/7.0, 4) and w.viewed_rate = round(2/6.0, 4) and w.interested_rate = 0.5 and w.attending_rate = 0.5
-     and w.business_requested_rate = round(4/7.0, 4) and w.offer_received_rate = 0.5 and w.offer_accepted_rate = 0.5 and w.redeemed_rate = 1
-     and w.offer_received_drop_off = 0.5 and w.viewed_drop_off = round(1 - 2/6.0, 4)));
+     w.shown_rate = 0.9 and w.viewed_rate = round(2/9.0, 4) and w.interested_rate = 0.4 and w.attending_rate = 0.4
+     and w.interested_to_attending_rate = 0.5 and w.business_requested_rate = 0.4 and w.offer_received_rate = 0.5 and w.offer_accepted_rate = 0.5 and w.redeemed_rate = 1
+     and w.offer_received_drop_off = 0.5 and w.viewed_drop_off = round(1 - 2/9.0, 4)));
   -- breakdowns add up: every dimension partitions the same asks as the overall row
   log := log || jsonb_build_array(jsonb_build_object('step','breakdowns_partition','ok',
      (select sum(asks) from intent_funnel_summary where dimension = 'area') = (select asks from intent_funnel_summary where dimension = 'overall')
@@ -214,7 +265,13 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
   begin perform 1 from intent_funnel limit 1; exception when insufficient_privilege then v_n := v_n + 1; end;
   begin perform 1 from intent_funnel_summary limit 1; exception when insufficient_privilege then v_n := v_n + 1; end;
   reset role;
-  log := log || jsonb_build_array(jsonb_build_object('step','internal_only','ok', v_n = 4
+  set local role authenticated;
+  begin perform 1 from gathering_interested_joins limit 1; exception when insufficient_privilege then v_n := v_n + 1; end;
+  reset role;
+  set local role anon;
+  begin perform 1 from gathering_interested_joins limit 1; exception when insufficient_privilege then v_n := v_n + 1; end;
+  reset role;
+  log := log || jsonb_build_array(jsonb_build_object('step','internal_only','ok', v_n = 6
      and not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name in ('intent_funnel', 'intent_funnel_summary')
                      and column_name in ('user_id', 'raw_text', 'requester_id', 'interpretation', 'latitude', 'longitude'))));
 `);
@@ -223,7 +280,8 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
 
   test.each([
     'one_row_per_ask', 'redeemed', 'declined', 'expired', 'cancelled', 'gathering_path', 'nothing_shown',
-    'join_before_ask_not_attributed', 'interested_cleared_by_join', 'summary_counts', 'summary_rates', 'breakdowns_partition', 'internal_only',
+    'join_before_ask_not_attributed', 'interested_then_attending', 'interested_removed', 'attending_without_interested',
+    'still_interested', 'independent_requests_not_attributed', 'summary_counts', 'summary_rates', 'breakdowns_partition', 'internal_only',
   ])('step %s', (name) => {
     expect(s[name]).toBeDefined();
     if (!s[name].ok) console.log(name, JSON.stringify(s[name].data));

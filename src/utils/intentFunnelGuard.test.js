@@ -36,4 +36,21 @@ describe('intent funnel (item 126)', () => {
       .filter((f) => /\.(js|ts)$/.test(f) && !f.endsWith('.test.js') && !f.endsWith('.journey.js'));
     for (const f of files) expect(fs.readFileSync(f, 'utf8')).not.toMatch(/(^|[^a-z_])intent_funnel(_summary)?\b/);
   });
+
+  it('keeps Interested-before-join history private and read only by the funnel (follow-up, 20270250)', () => {
+    const dir = path.join(root, 'supabase/migrations');
+    const follow = fs.readFileSync(path.join(dir, '20270250_interested_to_attending.sql'), 'utf8');
+    expect(follow).toMatch(/alter table public\.gathering_interested_joins enable row level security/);
+    expect(follow).toMatch(/revoke all on public\.gathering_interested_joins from public, anon, authenticated/);
+    expect(follow).not.toMatch(/\bgrant\b/i);
+    // joining still clears the current Interested mark
+    expect(follow).toMatch(/delete from gathering_interested where gathering_id = new\.gathering_id and user_id = new\.user_id/);
+    // no other migration, app file or edge function touches the history table
+    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.sql') && x !== '20270250_interested_to_attending.sql')) {
+      expect(fs.readFileSync(path.join(dir, f), 'utf8')).not.toMatch(/gathering_interested_joins/);
+    }
+    const files = [...walk(path.join(root, 'src')), ...walk(path.join(root, 'supabase/functions'))]
+      .filter((f) => /\.(js|ts)$/.test(f) && !f.endsWith('.test.js') && !f.endsWith('.journey.js'));
+    for (const f of files) expect(fs.readFileSync(f, 'utf8')).not.toMatch(/gathering_interested_joins/);
+  });
 });
