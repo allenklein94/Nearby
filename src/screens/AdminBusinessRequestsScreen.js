@@ -14,6 +14,7 @@ import { suggestBusinessCategory } from '../services/businessCategorySuggestion'
 import { subcategoryOptionsFor } from '../constants/gatheringCategories';
 import { adminAddCategoryTag } from '../services/categoryTags';
 import { applyRemoteCategoryTags } from '../constants/categoryRegistry';
+import { existingCategoryMatches, emergingResolveCopy } from '../utils/emergingCategoryHint';
 
 export default function AdminBusinessRequestsScreen() {
   const { colors, shadow } = useTheme();
@@ -57,20 +58,22 @@ export default function AdminBusinessRequestsScreen() {
     const name = (emName[flag.phrase_key] ?? flag.sample_phrase ?? '').trim();
     if (!group || name.length < 2) return Alert.alert('Pick a group and a name', 'Choose the category group and the name for the new category.');
     const groupLabel = BUSINESS_CATEGORIES.find((c) => c.key === group)?.label ?? group;
+    const copy = emergingResolveCopy({ name, group, groupLabel, applicants: flag.applicants });
+    if (copy.blocked) return Alert.alert(copy.title, copy.body);
     Alert.alert(
-      `Add "${name}" under ${groupLabel}?`,
-      `It becomes a permanent category, and the ${flag.applicants} applications that used these words are mapped to it. It cannot be renamed or removed here.`,
+      copy.title,
+      copy.body,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Add and map',
+          text: copy.action,
           onPress: async () => {
             const { data, error } = await supabase.rpc('admin_resolve_emerging_category', {
-              phrase_key_param: flag.phrase_key, tag_param: name, group_key_param: group,
+              phrase_key_param: flag.phrase_key, tag_param: copy.tag, group_key_param: group,
             });
             if (error) return presentRecoverableError(Alert, { what: 'complete that', error, onRetry: () => handleResolveEmerging(flag) });
-            applyRemoteCategoryTags([{ tag: name, group_key: group }]);
-            Alert.alert('Added', `${name} is now a category. ${data ?? 0} application${data === 1 ? '' : 's'} mapped.`);
+            if (!copy.existing) applyRemoteCategoryTags([{ tag: name, group_key: group }]);
+            Alert.alert(copy.existing ? 'Filed' : 'Added', copy.done(data ?? 0));
             load();
           },
         },
@@ -201,11 +204,31 @@ export default function AdminBusinessRequestsScreen() {
             <Text style={styles.contact}>Three or more different businesses described themselves, in their own words, in a way no category covers. Only that description counts, never searches.</Text>
             {emerging.map((flag) => (
               <View key={flag.phrase_key} style={{ marginTop: spacing.sm }}>
-                <Text style={styles.category}>Potential new subcategory: {flag.sample_phrase} · {flag.applicants} distinct businesses</Text>
+                <Text style={styles.category}>Potential emerging category: {flag.sample_phrase} · {flag.applicants} distinct businesses</Text>
                 {Array.isArray(flag.wordings) && flag.wordings.length ? (
                   <Text style={styles.contact}>They wrote: {flag.wordings.map((w) => `"${w}"`).join(', ')}</Text>
                 ) : null}
-                <Text style={styles.contact}>Add category creates it under the group you pick, maps these applications (an already-approved business is updated too) and remembers the wording. Nothing happens until you tap it.</Text>
+                {existingCategoryMatches(flag.sample_phrase).length ? (
+                  <View>
+                    <Text style={styles.contact}>Already covered? These existing categories match their words:</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                      {existingCategoryMatches(flag.sample_phrase).map((m) => (
+                        <TouchableOpacity
+                          key={`${m.category}|${m.subcategory}`}
+                          onPress={() => {
+                            setEmGroup((p) => ({ ...p, [flag.phrase_key]: m.category }));
+                            setEmName((p) => ({ ...p, [flag.phrase_key]: m.subcategory }));
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Use existing category ${m.pathLabel}`}
+                        >
+                          <Text style={[styles.contact, { fontWeight: '700', color: colors.primary }]}>{m.pathLabel}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                ) : null}
+                <Text style={styles.contact}>Pick a group and a name. An existing category's name files these applications under it; a new name creates the category. Either way the applications are mapped (an already-approved business is updated too) and the wording is remembered. Nothing happens until you confirm.</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
                   {BUSINESS_CATEGORIES.map((c) => (
                     <TouchableOpacity key={c.key} onPress={() => setEmGroup((p) => ({ ...p, [flag.phrase_key]: c.key }))} accessibilityRole="button" accessibilityState={{ selected: emGroup[flag.phrase_key] === c.key }} accessibilityLabel={c.label}>
