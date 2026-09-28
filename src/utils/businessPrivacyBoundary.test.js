@@ -65,9 +65,36 @@ describe('demand a business sees about people it has not served stays floored', 
   });
 });
 
-describe('group insights never expose a one-person interest', () => {
-  it('a shared interest needs at least two attendees', () => {
-    expect(latest.get('get_gathering_group_insights').body).toMatch(/having count\(\*\) >= 2/i);
+// Item 131 (owner, LOCKED, migration 20270253): gathering group insights are aggregate only, for accounts allowed to see
+// the gathering, and every interest list (names and the 10+ precise counts) uses one floor: 2 people, 5 for a business.
+describe('gathering group insights', () => {
+  const body = () => latest.get('get_gathering_group_insights').body;
+  it('refuses anyone not allowed to see the gathering, before reading anything', () => {
+    const b = body();
+    const gate = b.search(/if not public\._viewer_can_see_gathering\(gathering_id_param\) then\s+return;/i);
+    expect(gate).toBeGreaterThan(-1);
+    expect(gate).toBeLessThan(b.search(/from gathering_interest/i));
+  });
+  it('the visibility helper is never client-callable and handles every visibility value', () => {
+    const h = latest.get('_viewer_can_see_gathering');
+    expect(h).toBeDefined();
+    const sql = fs.readFileSync(path.join(dir, h.file), 'utf8');
+    expect(sql).toMatch(/revoke all on function public\._viewer_can_see_gathering\(uuid\) from public, anon, authenticated/i);
+    expect(h.body).toMatch(/viewer_blocked_either_way/);
+    expect(h.body).toMatch(/women_only/);
+    ["'everyone'", "'friends'", "'community'"].forEach((v) => expect(h.body).toContain(v));
+    expect(h.body).toMatch(/else false/i); // invite_only and anything unknown: no
+  });
+  it('every interest aggregate uses the one floor, never a hard-coded 1-person-capable count', () => {
+    const b = body();
+    expect(b).toMatch(/when exists \(select 1 from profiles where id = auth\.uid\(\) and managed_partner_id is not null\) then greatest\(public\.demand_min_people\(\), 2\)/i);
+    const havings = b.match(/having [^\n]*/gi) || [];
+    expect(havings.length).toBeGreaterThanOrEqual(2); // names + precise counts
+    havings.forEach((h) => expect(h).toMatch(/>= v_interest_floor/));
+  });
+  it('returns no identity columns', () => {
+    const ret = body().match(/RETURNS TABLE\(([^)]*)\)/i)[1];
+    expect(ret).not.toMatch(/user_id|display_name|photo|\bname\b/i);
   });
 });
 
