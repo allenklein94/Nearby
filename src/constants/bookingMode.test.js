@@ -208,12 +208,14 @@ describe('one action everywhere (profile, Discover, typed ask, Home, Surprise Me
 describe('wiring guards', () => {
   test('Home, Discover and Surprise Me route business results only through the shared router', () => {
     const resolver = read('src/services/intentResolver.js');
-    expect(resolver).toContain('intentResultBusinessRoute(item, { typedText, classifyResult, submissionId })');
+    // item 135: taps go through the context object's destination, which uses the shared business router
+    expect(resolver).toContain('intentResultDestination(item, { typedText, classifyResult, submissionId })');
+    expect(read('src/utils/recommendationContext.js')).toContain('intentResultBusinessRoute(item, { typedText, classifyResult, submissionId, at })');
     const home = read('src/screens/HomeScreen.js');
     const discover = read('src/screens/DiscoverHubScreen.js');
     for (const src of [home, discover]) {
       expect(src).toContain('navigateToIntentResultItem(navigation, item');
-      expect(src).toContain('businessActionForItem(item)');
+      expect(src).toContain('resultRowAction(item)');
       expect(src).not.toMatch(/item\.type === 'business_(availability|policy_match)'\)\s*\{[^}]*navigate\('AskBusiness'/);
     }
   });

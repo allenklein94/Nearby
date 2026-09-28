@@ -5,7 +5,8 @@ import { getMyCommunities, getPublicCommunities } from './communities';
 import { getActiveOffers, logBusinessProfileView, getPartnerWeatherSettings, getPartnerPriceInfo, getPartnerSuitedAges, getPartnerOperatingInfo, getDeclinedBusinesses } from './brandOffers';
 import { Linking } from 'react-native';
 import { bookingModeOf } from '../constants/bookingMode';
-import { BUSINESS_RESULT_TYPES, intentResultBusinessRoute } from '../utils/businessAction';
+import { BUSINESS_RESULT_TYPES } from '../utils/businessAction';
+import { intentResultDestination } from '../utils/recommendationContext';
 import { openNowAskFromText, candidateEntity, openNowLift, OPEN_NOW_CAPTION } from '../utils/operatingStatus';
 import { applyBusinessPriceToCandidates } from '../utils/priceBias';
 import { vibesFromAsk, applyVibeSinks, applyQualityDepth, frameDatePlaces, isDateAsk, datePartySize, dateFrame } from '../constants/businessVibes';
@@ -135,6 +136,8 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       title: gathering.title,
       // Matches GatheringDetailScreen's own established "🔒 Full —
       // N/M spots taken" copy, not a new visual language invented here.
+      // item 135: every real reason, for the context object's `reason` (utils/recommendationContext.js)
+      reasons,
       subtitle: isFull ? `🔒 Full — Join Waitlist (${peopleGoing(gathering, attendeeCount)}/${gathering.capacity} spots taken)` : (reasons[0] ?? null),
       // Intent engine vision -- Experiences assembly, extended to gatherings
       // (2026-09-10): the gathering's own real interest_tag, carried onto
@@ -425,6 +428,7 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
       distanceMiles: row.distance_miles ?? null,
       title: `${row.partner_name} has availability`,
       subtitle: bonusReasons[0] ? `${baseSubtitle} · ${bonusReasons[0]}` : baseSubtitle,
+      reasons: bonusReasons,
       // Intent engine vision -- Experiences assembly, first increment
       // (2026-09-10): the row's own real category/subcategory/categories,
       // carried onto the candidate itself (not just used internally for
@@ -1121,27 +1125,13 @@ export async function resolveClassifiedAsk(classifyResult, typedText) {
 // that doesn't have them (e.g. Surprise Me's own restricted result set,
 // which never reaches these two types in the first place).
 export function navigateToIntentResultItem(navigation, item, { typedText, classifyResult, submissionId } = {}) {
-  if (item.type === 'gathering') {
-    navigation.navigate('GatheringDetail', { gatheringId: item.id });
-  } else if (item.type === 'perk') {
-    if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
-    navigation.navigate('BrandOffers', { highlightOfferId: item.id });
-  } else if (item.type === 'friend_request') {
-    navigation.navigate('ViewProfile', { userId: item.userId });
-  } else if (item.type === 'community') {
-    navigation.navigate('CommunityDetail', { communityId: item.id });
-  } else if (item.type === 'friend_discovery') {
-    navigation.navigate('FriendDiscovery');
-  } else if (BUSINESS_RESULT_TYPES.includes(item.type)) {
-    // Item 72: every business result follows the ONE booking-mode action (utils/businessAction.js), the same as its profile:
-    // Go now / Get Directions open maps, Reserve / Book / Request open the request addressed to that business; no declared
-    // mode keeps the general request form (bound to the posting when the result is one).
-    if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
-    const route = intentResultBusinessRoute(item, { typedText, classifyResult, submissionId });
-    if (route?.kind === 'url') {
-      if (route.url) Linking.openURL(route.url);
-    } else if (route) {
-      navigation.navigate(route.screen, route.params);
-    }
+  // Item 135: the tap follows the context object's ONE destination (utils/recommendationContext.js). Item 72: a business result
+  // follows its booking-mode route (maps for Go now / Directions, the request addressed to it for Reserve / Book / Request).
+  if ((item.type === 'perk' || BUSINESS_RESULT_TYPES.includes(item.type)) && item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
+  const route = intentResultDestination(item, { typedText, classifyResult, submissionId });
+  if (route?.kind === 'url') {
+    if (route.url) Linking.openURL(route.url);
+  } else if (route) {
+    navigation.navigate(route.screen, route.params);
   }
 }

@@ -1,4 +1,4 @@
-import { businessActionForItem } from '../utils/businessAction';
+import { resultRowAction } from '../utils/recommendationContext';
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
@@ -1152,9 +1152,9 @@ export default function HomeScreen({ navigation }) {
             </Text>
           ) : null}
         </View>
-        {/* Item 72: a business result names the action its tap takes (same resolver as its profile). */}
-        {businessActionForItem(item) ? (
-          <Text style={{ color: colors.primary, fontWeight: '700', marginRight: 4 }}>{businessActionForItem(item).label}</Text>
+        {/* Item 72/135: a business result names the action its tap takes, from the one context object. */}
+        {resultRowAction(item) ? (
+          <Text style={{ color: colors.primary, fontWeight: '700', marginRight: 4 }}>{resultRowAction(item).label}</Text>
         ) : null}
         <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
       </TouchableOpacity>
