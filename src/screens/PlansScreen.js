@@ -8,7 +8,8 @@ import { getMyAttendingGatherings, getMyGatherings, getMyInterestedGatherings } 
 import { getMyGroupPlans } from '../services/groupPlans';
 import { getMyStandaloneBusinessRequestPlans, getMyDateProposalPlans, getMyExperiencePlans, getSharedExperiencePlans } from '../services/plans';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
-import { formatHeroDateTime } from '../utils/timeContext';
+import { displayHeroWhen } from '../i18n/display';
+import { useLanguage } from '../context/LanguageContext';
 import { GATHERING_STATUS_META } from '../components/GatheringStatusBadge';
 import PlanCard from '../components/PlanCard';
 import { resolveGatheringPlanStatus, resolveGroupPlanStatus, resolvePlanTableStatus } from '../constants/planStatus';
@@ -17,11 +18,8 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { attendeeTotal } from '../utils/gatheringFullness';
-const TABS = [
-  { key: 'upcoming', label: 'Upcoming' },
-  { key: 'hosting', label: 'My Hosting' },
-  { key: 'past', label: 'Past' },
-];
+// Tab labels are ui.plans.tab<Key> (display only; the key is the state).
+const TABS = [{ key: 'upcoming', labelKey: 'tabUpcoming' }, { key: 'hosting', labelKey: 'tabHosting' }, { key: 'past', labelKey: 'tabPast' }];
 
 // This is the caller's own complete commitment calendar — every upcoming/
 // hosted/past gathering, regardless of timing — distinct from Home's "Your
@@ -38,6 +36,8 @@ const TABS = [
 // old "Manage your hosted gatherings" bridge to the Gatherings screen is
 // gone -- Plans is preview -> collection -> object detail, nothing else.
 export default function PlansScreen({ navigation, route }) {
+  const { t, language } = useLanguage();
+  const p = (key, vars) => t(`ui.plans.${key}`, vars);
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [tab, setTab] = useState(route?.params?.initialTab ?? 'upcoming');
@@ -236,10 +236,10 @@ export default function PlansScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.subtitle}>Everything you're going to, hosting, or have been to.</Text>
+      <Text style={styles.subtitle}>{p('subtitle')}</Text>
 
       <View style={styles.tabRow}>
-        {TABS.map(({ key, label }) => (
+        {TABS.map(({ key, labelKey }) => { const label = p(labelKey); return (
           <TouchableOpacity
             key={key}
             style={[styles.tab, tab === key && styles.tabActive]}
@@ -250,7 +250,7 @@ export default function PlansScreen({ navigation, route }) {
           >
             <Text style={[styles.tabText, tab === key && styles.tabTextActive]}>{label}</Text>
           </TouchableOpacity>
-        ))}
+        ); })}
       </View>
 
       {loading ? (
@@ -258,7 +258,7 @@ export default function PlansScreen({ navigation, route }) {
           <SkeletonFeed count={3} />
         </View>
       ) : loadError ? (
-        <LoadErrorState message="Couldn't load your plans." onRetry={load} />
+        <LoadErrorState message={p('loadError')} onRetry={load} />
       ) : (
         <FlatList
           data={listData}
@@ -273,12 +273,12 @@ export default function PlansScreen({ navigation, route }) {
                   instead of leaving the user with nothing to do. */}
               <View style={styles.emptyActionsRow}>
                 {tab === 'hosting' ? (
-                  <TouchableOpacity onPress={() => navigation.navigate('CreateGathering')} accessibilityLabel="Host a gathering" accessibilityRole="button">
-                    <Text style={styles.emptyActionText}>+ Host a Gathering →</Text>
+                  <TouchableOpacity onPress={() => navigation.navigate('CreateGathering')} accessibilityLabel={p('hostA11y')} accessibilityRole="button">
+                    <Text style={styles.emptyActionText}>{p('hostCta')}</Text>
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity onPress={() => navigation.navigate('Discover')} accessibilityLabel="Explore things to do" accessibilityRole="button">
-                    <Text style={styles.emptyActionText}>Explore Things To Do →</Text>
+                  <TouchableOpacity onPress={() => navigation.navigate('Discover')} accessibilityLabel={p('exploreA11y')} accessibilityRole="button">
+                    <Text style={styles.emptyActionText}>{p('exploreCta')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -295,8 +295,8 @@ export default function PlansScreen({ navigation, route }) {
                   icon={categoryStyleFor(plan.category).icon}
                   iconColor={categoryStyleFor(plan.category).color}
                   title={plan.raw_text}
-                  roleLabel="Group plan"
-                  dateTimeText={plan.date ? formatHeroDateTime(plan.date) : null}
+                  roleLabel={p('groupPlan')}
+                  dateTimeText={plan.date ? displayHeroWhen(plan.date, language) : null}
                   peopleCount={plan.party_size}
                   status={resolveGroupPlanStatus(plan.status)}
                   onPress={() => openGroupPlan(plan.group_plan_id)}
@@ -311,9 +311,9 @@ export default function PlansScreen({ navigation, route }) {
                 <PlanCard
                   icon={categoryStyleFor(category).icon}
                   iconColor={categoryStyleFor(category).color}
-                  title={plan.title || 'A business request'}
-                  roleLabel="Business request"
-                  dateTimeText={plan.scheduled_at ? formatHeroDateTime(plan.scheduled_at) : null}
+                  title={plan.title || p('businessRequestFallback')}
+                  roleLabel={p('businessRequest')}
+                  dateTimeText={plan.scheduled_at ? displayHeroWhen(plan.scheduled_at, language) : null}
                   peopleCount={plan.party_size}
                   status={resolvePlanTableStatus(plan.status)}
                   onPress={() => openBusinessRequest(plan.resulting_business_request_id)}
@@ -325,8 +325,8 @@ export default function PlansScreen({ navigation, route }) {
               return (
                 <PlanCard
                   icon="✨"
-                  title={item.plan.title || 'A night out'}
-                  roleLabel={`Night out (shared)${item.plan.hostName ? ` · ${item.plan.hostName}` : ''}`}
+                  title={item.plan.title || p('nightOutFallback')}
+                  roleLabel={item.plan.hostName ? p('nightOutSharedBy', { name: item.plan.hostName }) : p('nightOutShared')}
                   status={resolvePlanTableStatus(item.plan.status)}
                   onPress={() => navigation.navigate('SharedNight', { planId: item.plan.id })}
                   style={styles.planCardSpacing}
@@ -337,8 +337,8 @@ export default function PlansScreen({ navigation, route }) {
               return (
                 <PlanCard
                   icon="✨"
-                  title={item.plan.title || 'Your night'}
-                  roleLabel="Night out"
+                  title={item.plan.title || p('yourNight')}
+                  roleLabel={p('nightOut')}
                   status={resolvePlanTableStatus(item.plan.status)}
                   onPress={() => navigation.navigate('PlanDetail', { planId: item.plan.id })}
                   style={styles.planCardSpacing}
@@ -359,8 +359,8 @@ export default function PlansScreen({ navigation, route }) {
               return (
                 <PlanCard
                   icon={isFriendHangout ? '🤝' : '💗'}
-                  title={plan.title || (isFriendHangout ? 'A hangout' : 'A date')}
-                  roleLabel={isFriendHangout ? 'Hangout' : 'Date'}
+                  title={plan.title || (isFriendHangout ? p('hangoutFallback') : p('dateFallback'))}
+                  roleLabel={isFriendHangout ? p('hangout') : p('date')}
                   status={resolvePlanTableStatus(plan.status)}
                   onPress={() => matchId && openDatePlan(matchId)}
                   style={styles.planCardSpacing}
@@ -375,7 +375,7 @@ export default function PlansScreen({ navigation, route }) {
                 iconColor={categoryStyleFor(g.interest_tag).color}
                 title={g.title}
                 roleLabel={needsRoleLabel ? GATHERING_STATUS_META[item.status]?.label : null}
-                dateTimeText={formatHeroDateTime(g.scheduled_at)}
+                dateTimeText={displayHeroWhen(g.scheduled_at, language)}
                 peopleCount={peopleCountFor(item)}
                 hostingPartnerId={g.hosting_partner_id}
                 status={item.status === 'maybe' ? null : resolveGatheringPlanStatus(legacy)}

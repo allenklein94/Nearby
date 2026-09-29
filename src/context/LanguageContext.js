@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Localization from 'expo-localization';
-import { translate } from '../i18n/translate';
+import { translate, setCurrentLanguage } from '../i18n/translate';
 
 const LanguageContext = createContext(null);
 const STORAGE_KEY = 'nearby-language-preference';
@@ -10,6 +10,7 @@ const SUPPORTED_LANGUAGES = ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl
 export function LanguageProvider({ children }) {
   const [language, setLanguageState] = useState('en');
   const [loaded, setLoaded] = useState(false);
+  setCurrentLanguage(language); // keep tr() (code outside components) on the same language as this render
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((stored) => {

@@ -1,0 +1,15 @@
+// Ordinary screen text, one module per screen/component namespace (localization pass 5, 2026-09-29). Each module exports
+// { en: {...}, es: {...}, ... } for all 11 languages; read through the ONE lookup as t('ui.<namespace>.<key>', vars) (or tr()
+// outside a component). English is the app's own wording; the other ten are machine-authored and need native-speaker review.
+// Display text only: never a stored value, a canonical key, a name or anything a person typed.
+import common from './common';
+import plans from './plans';
+
+export const UI_NAMESPACES = { common, plans };
+
+export const UI_LANGUAGES = ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl', 'ru', 'ko'];
+
+export const UI_STRINGS = Object.fromEntries(UI_LANGUAGES.map((lang) => [
+  lang,
+  Object.fromEntries(Object.entries(UI_NAMESPACES).map(([ns, mod]) => [ns, mod[lang] ?? {}])),
+]));

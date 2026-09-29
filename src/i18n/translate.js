@@ -70,3 +70,11 @@ export function valueForms(value) {
   if (isPluralObject(value)) return Object.values(value).filter((v) => typeof v === 'string');
   return [];
 }
+
+// The app's current language for code that runs outside a component (shared copy modules, alert text built in a service).
+// LanguageProvider keeps it in step with the person's choice; it starts as English, so tests and pure callers read English.
+let currentLanguage = DEFAULT_LANGUAGE;
+export function setCurrentLanguage(language) { currentLanguage = language || DEFAULT_LANGUAGE; }
+export function getCurrentLanguage() { return currentLanguage; }
+// translate() in the current language: the same lookup, fallback and plural rules as t().
+export function tr(keyPath, vars = null) { return translate(currentLanguage, keyPath, vars); }

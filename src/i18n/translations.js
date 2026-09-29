@@ -1,3 +1,5 @@
+// Ordinary screen text (localization pass 5) lives per screen under i18n/ui/ and is merged in below as translations.<lang>.ui.
+import { UI_STRINGS } from './ui';
 export const translations = {
   en: {
     // Shared recommendation reasons (explanation layer). {placeholders} are filled by i18n/translate.js; names, tags and
@@ -11885,3 +11887,4 @@ export const translations = {
     },
   },
 };
+for (const language of Object.keys(translations)) translations[language].ui = UI_STRINGS[language] ?? {};
