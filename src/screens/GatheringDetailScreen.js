@@ -57,7 +57,9 @@ import { getGatheringPlanCompletion, formatPlaceStatusLabel } from '../utils/pla
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
-import { formatDateTime } from '../utils/timeLabels';
+import { displayDateTime } from '../i18n/display';
+import { useLanguage } from '../context/LanguageContext';
+import useCategoryNames from '../hooks/useCategoryNames';
 import { attendeeTotal, getGatheringFullness, gatheringBusinessPartySize } from '../utils/gatheringFullness';
 import { gatheringRequestText } from '../utils/gatheringBusinessAsk';
 import { countLabel } from '../utils/plural';
@@ -68,19 +70,14 @@ import { gatheringViewerState } from '../utils/objectState';
 import { canDo, gatheringLifecycleState } from '../utils/objectLifecycle';
 import { interestedConfirmation } from '../utils/actionConfirmations';
 
-const VIBE_SCALES = [
-  { key: 'energy_level', label: 'Energy', lowLabel: 'Chill', highLabel: 'High energy' },
-  { key: 'conversation_level', label: 'Conversation', lowLabel: 'Quiet', highLabel: 'Chatty' },
-  { key: 'group_size_feel', label: 'Group feel', lowLabel: 'Intimate', highLabel: 'Big group' },
-];
-
-function formatDate(iso) {
-  return formatDateTime(iso);
-}
+// Labels: ui.gatheringVocab.vibe.<key>.{label, low, high} (shared with Create/Edit).
+const VIBE_SCALES = [{ key: 'energy_level' }, { key: 'conversation_level' }, { key: 'group_size_feel' }];
 
 export default function GatheringDetailScreen({ route, navigation }) {
   const { gatheringId } = route.params;
   const { colors, shadow } = useTheme();
+  const { t, language } = useLanguage();
+  const names = useCategoryNames(); // category names in the person's language (display only)
   const styles = getStyles(colors, shadow);
   const posthog = usePostHog();
 
@@ -297,7 +294,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
       const planId = await getPlanIdForResource('gathering', gatheringId);
       if (planId) navigation.navigate('PlanDetail', { planId });
     } catch (e) {
-      Alert.alert('Error', 'Could not open this plan.');
+      Alert.alert(t('ui.common.error'), t('ui.gatheringDetail.couldNotOpenPlan'));
     }
   }
 
@@ -339,11 +336,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
     const limitCheck = await checkGatheringInterestLimit();
     if (!limitCheck.allowed) {
       Alert.alert(
-        'Daily limit reached',
+        t('ui.gatherings.limitTitle'),
         limitCheck.reason,
         [
-          { text: 'Not now', style: 'cancel' },
-          { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
+          { text: t('ui.common.notNow'), style: 'cancel' },
+          { text: t('ui.gatherings.upgrade'), onPress: () => navigation.navigate('Paywall') },
         ]
       );
       return;
@@ -409,16 +406,12 @@ export default function GatheringDetailScreen({ route, navigation }) {
   function confirmLeave() {
     const isPending = gathering.myStatus === 'pending';
     Alert.alert(
-      isPending ? 'Withdraw your request?' : 'Leave this gathering?',
-      gathering.myStatus === 'approved'
-        ? "If someone's waiting on the waitlist, they'll take your spot."
-        : isPending
-        ? "The host won't see your request anymore."
-        : "You'll be removed from the waitlist.",
+      t(isPending ? 'ui.gatheringDetail.withdrawTitle' : 'ui.gatheringDetail.leaveTitle'),
+      t(gathering.myStatus === 'approved' ? 'ui.gatheringDetail.leaveBodyApproved' : isPending ? 'ui.gatheringDetail.leaveBodyPending' : 'ui.gatheringDetail.leaveBodyWaitlist'),
       [
-        { text: 'Stay', style: 'cancel' },
+        { text: t('ui.gatheringDetail.stay'), style: 'cancel' },
         {
-          text: isPending ? 'Withdraw' : 'Leave',
+          text: t(isPending ? 'ui.gatheringDetail.withdraw' : 'ui.common.leave'),
           style: 'destructive',
           onPress: async () => {
             setLeaving(true);
@@ -443,12 +436,12 @@ export default function GatheringDetailScreen({ route, navigation }) {
   function confirmCancelGatheringInDetail() {
     if (gathering.recurrence_rule) {
       Alert.alert(
-        `Cancel "${gathering.title}"?`,
-        'This is a recurring gathering. Do you want to cancel just this one, or stop the whole series?',
+        t('ui.gatheringDetail.cancelTitle', { title: gathering.title }),
+        t('ui.gatheringDetail.cancelRecurringBody'),
         [
-          { text: 'Keep It', style: 'cancel' },
+          { text: t('ui.gatheringDetail.keepIt'), style: 'cancel' },
           {
-            text: 'Just This One',
+            text: t('ui.gatheringDetail.justThisOne'),
             onPress: async () => {
               try {
                 await cancelGathering(gatheringId);
@@ -459,13 +452,13 @@ export default function GatheringDetailScreen({ route, navigation }) {
             },
           },
           {
-            text: 'Stop The Whole Series',
+            text: t('ui.gatheringDetail.stopSeries'),
             style: 'destructive',
             onPress: async () => {
               try {
                 await stopRecurringSeries(gatheringId);
                 await load();
-                Alert.alert('Series Stopped', "This one will still happen as scheduled, but no future ones will be created.");
+                Alert.alert(t('ui.gatheringDetail.seriesStoppedTitle'), t('ui.gatheringDetail.seriesStoppedBody'));
               } catch (e) {
                 presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmCancelGatheringInDetail() });
               }
@@ -477,12 +470,12 @@ export default function GatheringDetailScreen({ route, navigation }) {
     }
 
     Alert.alert(
-      `Cancel "${gathering.title}"?`,
-      "This cancels the gathering and notifies everyone who's approved to attend. Any business requests or confirmed reservations tied to it are cancelled too (unless a payment's already gone through — that side will be told to sort it out directly with the business). This can't be undone.",
+      t('ui.gatheringDetail.cancelTitle', { title: gathering.title }),
+      t('ui.gatheringDetail.cancelBody'),
       [
-        { text: 'Keep It', style: 'cancel' },
+        { text: t('ui.gatheringDetail.keepIt'), style: 'cancel' },
         {
-          text: 'Cancel Gathering',
+          text: t('ui.gatheringDetail.cancelGathering'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -501,7 +494,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
     return (
       <View style={styles.loadingContainer}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading gathering...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.gatheringDetail.loading')}</Text>
       </View>
     );
   }
@@ -509,7 +502,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   if (loadError) {
     return (
       <View style={styles.loadingContainer}>
-        <LoadErrorState message="Couldn't load this gathering." onRetry={load} />
+        <LoadErrorState message={t('ui.gatheringDetail.loadError')} onRetry={load} />
       </View>
     );
   }
@@ -517,7 +510,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   if (!gathering) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.notFoundText}>This gathering isn't available anymore.</Text>
+        <Text style={styles.notFoundText}>{t('ui.gatheringDetail.notAvailable')}</Text>
       </View>
     );
   }
@@ -554,7 +547,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const planPlaceLabels = {
     done: formatPlaceStatusLabel({ place: 'done', venueName: acceptedBusinessOffer?.brand_partners?.name ?? null }),
     pending: formatPlaceStatusLabel({ place: 'pending', ...placeOfferCounts }),
-    todo: 'Find a place',
+    todo: t('ui.gatheringDetail.findAPlace'),
   };
   const gatheringIsUpcoming = viewer?.actionable ?? false;
   const canActOnPlace = Boolean(businessRequest || acceptedBusinessOffer || gatheringIsUpcoming);
@@ -572,9 +565,9 @@ export default function GatheringDetailScreen({ route, navigation }) {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl * 2 }}>
         {coverUrl ? (
-          <Image source={{ uri: coverUrl }} style={styles.hero} accessibilityLabel={`${gathering.title} cover photo`} />
+          <Image source={{ uri: coverUrl }} style={styles.hero} accessibilityLabel={t('ui.gatherings.coverA11y', { name: gathering.title })} />
         ) : curatedCover ? (
-          <Image source={{ uri: curatedCover }} style={styles.hero} accessibilityLabel={`${gathering.interest_tag} cover photo`} />
+          <Image source={{ uri: curatedCover }} style={styles.hero} accessibilityLabel={t('ui.gatherings.coverA11y', { name: names.tag(gathering.interest_tag) })} />
         ) : (
           <View style={[styles.hero, styles.heroFallback, { backgroundColor: categoryStyle.color + '30' }]}>
             <Text style={styles.heroFallbackIcon}>{categoryStyle.icon}</Text>
@@ -590,15 +583,15 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   <TouchableOpacity
                     onPress={() => setInviteModalVisible(true)}
                     style={styles.notificationReasonInviteButton}
-                    accessibilityLabel="Invite friends to this gathering"
+                    accessibilityLabel={t('ui.gatheringDetail.inviteA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.notificationReasonInviteButtonText}>🤝 Invite Friends</Text>
+                    <Text style={styles.notificationReasonInviteButtonText}>{t('ui.gatheringDetail.inviteFriendsCap')}</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
                   onPress={() => setShowReasonBanner(false)}
-                  accessibilityLabel="Dismiss"
+                  accessibilityLabel={t('ui.common.dismiss')}
                   accessibilityRole="button"
                   style={styles.notificationReasonDismiss}
                 >
@@ -614,11 +607,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
             <Text style={styles.title}>{gathering.title}</Text>
           </View>
           <Text style={styles.metaLine}>
-            {formatDate(gathering.scheduled_at)}{gathering.distanceLabel ? ` · ${gathering.distanceLabel}` : ''}
+            {displayDateTime(gathering.scheduled_at, language)}{gathering.distanceLabel ? ` · ${gathering.distanceLabel}` : ''}
           </Text>
           {(gathering.isHost || gathering.myStatus === 'approved') && (
-            <TouchableOpacity onPress={openPlanDetail} accessibilityRole="button" accessibilityLabel="View the whole plan">
-              <Text style={{ color: colors.primary, fontWeight: '700', marginTop: spacing.xs }}>View the whole plan →</Text>
+            <TouchableOpacity onPress={openPlanDetail} accessibilityRole="button" accessibilityLabel={t('ui.gatheringDetail.wholePlanA11y')}>
+              <Text style={{ color: colors.primary, fontWeight: '700', marginTop: spacing.xs }}>{t('ui.gatheringDetail.wholePlan')}</Text>
             </TouchableOpacity>
           )}
           {/* Item 109 (CLAUDE.md, "make the visibility model explicit"): a
@@ -628,7 +621,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
               attendee never has to trust an invisible rule. */}
           {visibilityMeta(gathering.visibility) && (
             <Text style={styles.metaLine}>
-              {visibilityMeta(gathering.visibility).icon} {visibilityMeta(gathering.visibility).label}
+              {visibilityMeta(gathering.visibility).icon} {t(`ui.gatheringVocab.visibility.${gathering.visibility}.label`)}
               {gathering.visibility === 'community' && gathering.community?.name ? ` · ${gathering.community.name}` : ''}
             </Text>
           )}
@@ -647,14 +640,14 @@ export default function GatheringDetailScreen({ route, navigation }) {
             <Text style={styles.capacityLine}>
               {/* capacity counts everyone, including the host */}
               {gathering.isFull
-                ? `🔒 Full — ${getGatheringFullness(gathering).people}/${gathering.capacity} spots taken`
-                : `${getGatheringFullness(gathering).people}/${gathering.capacity} spots filled`}
+                ? t('ui.gatheringDetail.fullTaken', { n: getGatheringFullness(gathering).people, cap: gathering.capacity })
+                : t('ui.gatheringDetail.spotsFilled', { n: getGatheringFullness(gathering).people, cap: gathering.capacity })}
             </Text>
           )}
           <TouchableOpacity
             onPress={() => navigation.navigate('ViewProfile', { userId: gathering.host_id })}
             style={styles.hostLineRow}
-            accessibilityLabel={`Hosted by ${gathering.host?.display_name}, view profile`}
+            accessibilityLabel={t('ui.gatheringDetail.hostedByA11y', { name: gathering.host?.display_name ?? '' })}
             accessibilityRole="button"
           >
             {hostPhotoUrl ? (
@@ -662,12 +655,12 @@ export default function GatheringDetailScreen({ route, navigation }) {
             ) : (
               <View style={[styles.hostAvatarSmall, styles.hostAvatarPlaceholder]} />
             )}
-            <Text style={styles.hostLine}>Hosted by {gathering.host?.display_name}</Text>
+            <Text style={styles.hostLine}>{t('ui.gatheringDetail.hostedBy', { name: gathering.host?.display_name ?? '' })}</Text>
           </TouchableOpacity>
 
           {gathering.women_only && (
             <View style={styles.womenOnlyBadge}>
-              <Text style={styles.womenOnlyBadgeText}>👩 Women Only</Text>
+              <Text style={styles.womenOnlyBadgeText}>{t('ui.gatherings.womenOnly')}</Text>
             </View>
           )}
 
@@ -679,7 +672,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
               rather than replaced with a guess. */}
           {!gathering.isHost && reasons.length > 0 && (
             <View style={styles.reasonsCard}>
-              <Text style={styles.sectionLabel}>Why this fits you</Text>
+              <Text style={styles.sectionLabel}>{t('ui.gatheringDetail.whyFits')}</Text>
               <ReasonList reasons={reasons} textStyle={styles.reasonLine} iconColor={colors.textPrimary} />
             </View>
           )}
@@ -693,7 +686,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
           {attendeeTotal(gathering) > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Who's Going</Text>
+              <Text style={styles.sectionLabel}>{t('ui.gatheringDetail.whosGoing')}</Text>
               <View style={styles.attendeesRow}>
                 <View style={styles.attendeeAvatars}>
                   {gathering.approvedAttendees.slice(0, 6).map((attendee, i) => {
@@ -716,7 +709,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
               </View>
               {firstTimerCount > 0 && (
                 <Text style={styles.firstTimerText}>
-                  🌱 {firstTimerCount} {firstTimerCount === 1 ? "attendee's" : "attendees'"} first gathering
+                  {t('ui.gatheringDetail.firstTimers', { count: firstTimerCount })}
                 </Text>
               )}
             </View>
@@ -732,9 +725,9 @@ export default function GatheringDetailScreen({ route, navigation }) {
               demographic. */}
           {(groupInsightsInterestLine || groupInsights?.makeup_tier === 'coarse' || groupInsights?.makeup_tier === 'precise') && (
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Group Insights</Text>
+              <Text style={styles.sectionLabel}>{t('ui.gatheringDetail.groupInsights')}</Text>
               {groupInsightsInterestLine && (
-                <Text style={styles.groupInsightsLine}>Shared interests: {groupInsightsInterestLine}</Text>
+                <Text style={styles.groupInsightsLine}>{t('ui.gatheringDetail.sharedInterests', { list: groupInsightsInterestLine })}</Text>
               )}
               {groupInsights.makeup_tier === 'coarse' && (
                 <>
@@ -750,7 +743,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 <>
                   {groupInsights.age_buckets?.length > 0 && (
                     <View style={styles.groupInsightsBucketGroup}>
-                      <Text style={styles.subLabel}>Age</Text>
+                      <Text style={styles.subLabel}>{t('ui.gatheringDetail.age')}</Text>
                       {groupInsights.age_buckets.map((b) => (
                         <Text key={b.label} style={styles.groupInsightsLine}>{formatPreciseBucketLine(b)}</Text>
                       ))}
@@ -758,7 +751,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   )}
                   {groupInsights.gender_buckets?.length > 0 && (
                     <View style={styles.groupInsightsBucketGroup}>
-                      <Text style={styles.subLabel}>Gender</Text>
+                      <Text style={styles.subLabel}>{t('ui.gatheringDetail.gender')}</Text>
                       {groupInsights.gender_buckets.map((b) => (
                         <Text key={b.label} style={styles.groupInsightsLine}>{formatPreciseBucketLine(b)}</Text>
                       ))}
@@ -771,25 +764,25 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
           {(hasVibe || gathering.timeline_steps?.length > 0) && (
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>📋 What to Expect</Text>
+              <Text style={styles.sectionLabel}>{t('ui.gatheringDetail.whatToExpect')}</Text>
 
               {hasVibe && (
                 <View style={gathering.timeline_steps?.length > 0 ? { marginBottom: spacing.lg } : null}>
-                  <Text style={styles.subLabel}>The Vibe</Text>
+                  <Text style={styles.subLabel}>{t('ui.gatheringDetail.thevibe')}</Text>
                   {VIBE_SCALES.map((scale) => {
                     const value = gathering[scale.key];
                     if (value == null) return null;
                     return (
                       <View key={scale.key} style={styles.vibeScaleRow}>
-                        <Text style={styles.vibeScaleLabel}>{scale.label}</Text>
+                        <Text style={styles.vibeScaleLabel}>{t(`ui.gatheringVocab.vibe.${scale.key}.label`)}</Text>
                         <View style={styles.vibeDotsRow}>
                           {[1, 2, 3, 4, 5].map((n) => (
                             <View key={n} style={[styles.vibeDot, n <= value && { backgroundColor: categoryStyle.color, borderColor: categoryStyle.color }]} />
                           ))}
                         </View>
                         <View style={styles.vibeEndLabels}>
-                          <Text style={styles.vibeEndLabel}>{scale.lowLabel}</Text>
-                          <Text style={styles.vibeEndLabel}>{scale.highLabel}</Text>
+                          <Text style={styles.vibeEndLabel}>{t(`ui.gatheringVocab.vibe.${scale.key}.low`)}</Text>
+                          <Text style={styles.vibeEndLabel}>{t(`ui.gatheringVocab.vibe.${scale.key}.high`)}</Text>
                         </View>
                       </View>
                     );
@@ -799,7 +792,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
               {gathering.timeline_steps?.length > 0 && (
                 <View>
-                  <Text style={styles.subLabel}>Timeline</Text>
+                  <Text style={styles.subLabel}>{t('ui.gatheringDetail.timeline')}</Text>
                   {gathering.timeline_steps.map((step, i) => (
                     <View key={i} style={styles.timelineRow}>
                       <View style={styles.timelineDotColumn}>
@@ -819,19 +812,19 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
           {(offer || gathering.community) && (
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>🏘️ Community & Perks</Text>
+              <Text style={styles.sectionLabel}>{t('ui.gatheringDetail.communityPerks')}</Text>
 
               {offer && (
                 <View style={styles.perkCard}>
-                  <Text style={styles.perkKicker}>🎁 Community Perk</Text>
+                  <Text style={styles.perkKicker}>{t('ui.gatheringDetail.communityPerk')}</Text>
                   <Text style={styles.perkTitle}>{offer.title}</Text>
                   {offer.brand_partners?.name && (
                     <TouchableOpacity
                       onPress={() => navigation.navigate('BusinessProfile', { partnerId: offer.partner_id })}
-                      accessibilityLabel={`View ${offer.brand_partners.name}'s business profile`}
+                      accessibilityLabel={t('ui.gatheringDetail.businessProfileA11y', { name: offer.brand_partners.name })}
                       accessibilityRole="button"
                     >
-                      <Text style={[styles.perkSub, styles.perkSubLink]}>at {offer.brand_partners.name}</Text>
+                      <Text style={[styles.perkSub, styles.perkSubLink]}>{t('ui.gatheringDetail.atBusiness', { name: offer.brand_partners.name })}</Text>
                     </TouchableOpacity>
                   )}
                   {offer.description ? <Text style={styles.perkDesc}>{offer.description}</Text> : null}
@@ -842,23 +835,23 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 <TouchableOpacity
                   style={[styles.communityCard, offer && { marginTop: spacing.sm }]}
                   onPress={() => navigation.navigate('CommunityDetail', { communityId: gathering.community.id, communityName: gathering.community.name })}
-                  accessibilityLabel={`View the ${gathering.community.name} community`}
+                  accessibilityLabel={t('ui.gatheringDetail.communityA11y', { name: gathering.community.name })}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.communityKicker}>🏘️ Part of a community</Text>
+                  <Text style={styles.communityKicker}>{t('ui.gatheringDetail.partOfCommunity')}</Text>
                   <Text style={styles.communityTitle}>{gathering.community.name}</Text>
-                  <Text style={styles.communitySub}>View community →</Text>
+                  <Text style={styles.communitySub}>{t('ui.gatheringDetail.viewCommunity')}</Text>
                 </TouchableOpacity>
               )}
             </View>
           )}
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Meet the Organizer</Text>
+            <Text style={styles.sectionLabel}>{t('ui.gatheringDetail.meetOrganizer')}</Text>
             <TouchableOpacity
               style={styles.organizerRow}
               onPress={() => navigation.navigate('ViewProfile', { userId: gathering.host_id })}
-              accessibilityLabel={`View ${gathering.host?.display_name}'s profile`}
+              accessibilityLabel={t('ui.gatheringDetail.profileA11y', { name: gathering.host?.display_name ?? '' })}
               accessibilityRole="button"
             >
               {hostPhotoUrl ? (
@@ -870,16 +863,16 @@ export default function GatheringDetailScreen({ route, navigation }) {
             </TouchableOpacity>
             {hostStats && hostStats.gatherings_hosted > 0 && (
               <Text style={styles.organizerStatLine}>
-                🎉 Hosted {hostStats.gatherings_hosted} gathering{hostStats.gatherings_hosted === 1 ? '' : 's'}, averaging {Math.round(hostStats.avg_attendance)} attendee{Math.round(hostStats.avg_attendance) === 1 ? '' : 's'}
+                {t('ui.gatheringDetail.hostedStats', { hosted: t('ui.gatheringDetail.hostedCount', { count: hostStats.gatherings_hosted }), avg: t('ui.gatheringDetail.avgAttendees', { count: Math.round(hostStats.avg_attendance) }) })}
               </Text>
             )}
             {hostReputation && hostReputation.feedback_count > 0 && (
               <Text style={styles.organizerStatLine}>
-                ⭐ {hostReputation.welcoming_pct}% said welcoming · {hostReputation.would_return_pct}% would attend again ({hostReputation.feedback_count} review{hostReputation.feedback_count === 1 ? '' : 's'})
+                {t('ui.gatheringDetail.reputation', { welcoming: hostReputation.welcoming_pct, again: hostReputation.would_return_pct, reviews: t('ui.gatheringDetail.reviews', { count: hostReputation.feedback_count }) })}
               </Text>
             )}
             {lovedTags.length > 0 && (
-              <Text style={styles.organizerStatLine}>💛 What people loved: {lovedTags.join(' · ')}</Text>
+              <Text style={styles.organizerStatLine}>{t('ui.gatheringDetail.lovedList', { list: lovedTags.join(' · ') })}</Text>
             )}
           </View>
 
@@ -887,10 +880,10 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
           {gathering.isHost ? (
             <View style={styles.hostBanner}>
-              <Text style={styles.hostBannerText}>You're hosting this gathering.</Text>
+              <Text style={styles.hostBannerText}>{t('ui.gatheringDetail.youreHosting')}</Text>
               {gathering.interestedCount > 0 && (
                 <Text style={styles.hostBannerText}>
-                  ☆ {gathering.interestedCount} {gathering.interestedCount === 1 ? 'person is' : 'people are'} interested but haven't joined yet.
+                  {t('ui.gatheringDetail.interestedCount', { count: gathering.interestedCount })}
                 </Text>
               )}
               <PlanCompletionRow
@@ -905,24 +898,24 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 <View style={styles.countdownRow}>
                   <View style={styles.countdownStat}>
                     <Text style={styles.countdownNumber}>{countdownStats.going}</Text>
-                    <Text style={styles.countdownLabel}>Going</Text>
+                    <Text style={styles.countdownLabel}>{t('ui.gatheringDetail.statGoing')}</Text>
                   </View>
                   <View style={styles.countdownDivider} />
                   <View style={styles.countdownStat}>
                     <Text style={styles.countdownNumber}>{countdownStats.interested}</Text>
-                    <Text style={styles.countdownLabel}>Interested</Text>
+                    <Text style={styles.countdownLabel}>{t('ui.gatheringDetail.statInterested')}</Text>
                   </View>
                   <View style={styles.countdownDivider} />
                   <View style={styles.countdownStat}>
                     <Text style={styles.countdownNumber}>{countdownStats.messages}</Text>
-                    <Text style={styles.countdownLabel}>Messages</Text>
+                    <Text style={styles.countdownLabel}>{t('ui.gatheringDetail.statMessages')}</Text>
                   </View>
                   {gathering.capacity != null && countdownStats.waitlisted > 0 && (
                     <>
                       <View style={styles.countdownDivider} />
                       <View style={styles.countdownStat}>
                         <Text style={styles.countdownNumber}>{countdownStats.waitlisted}</Text>
-                        <Text style={styles.countdownLabel}>Waitlisted</Text>
+                        <Text style={styles.countdownLabel}>{t('ui.gatheringDetail.statWaitlisted')}</Text>
                       </View>
                     </>
                   )}
@@ -933,7 +926,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   const { spotsLeft, almostFull } = getGatheringFullness(gathering);
                   return almostFull ? (
                     <Text style={styles.almostFullNudge}>
-                      🔥 Almost full — only {spotsLeft} spot{spotsLeft === 1 ? '' : 's'} left. Invite more people before it fills up!
+                      {t('ui.gatheringDetail.almostFull', { count: spotsLeft })}
                     </Text>
                   ) : null;
                 })()
@@ -942,18 +935,18 @@ export default function GatheringDetailScreen({ route, navigation }) {
               <TouchableOpacity
                 onPress={() => navigation.navigate('GatheringChat', { gatheringId, gatheringTitle: gathering.title })}
                 style={{ marginTop: spacing.sm }}
-                accessibilityLabel="Open group chat"
+                accessibilityLabel={t('ui.gatheringDetail.groupChatA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.hostBannerLink}>💬 Group Chat →</Text>
+                <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.groupChat')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => navigation.navigate('GatheringHub', { gatheringId })}
                 style={{ marginTop: spacing.xs }}
-                accessibilityLabel="Open the Gathering Hub"
+                accessibilityLabel={t('ui.gatheringDetail.hubA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.hostBannerLink}>🚀 Open Gathering Hub →</Text>
+                <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.hubRocket')}</Text>
               </TouchableOpacity>
               {/* Host cancellation lifecycle parity (2026-09-10 follow-up):
                   Communities already group Edit/Pause/Cancel under a
@@ -962,32 +955,32 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   same behavior, just now grouped and named to match. */}
               {can('edit') && (
                 <>
-                  <Text style={styles.manageSectionLabel}>Manage Gathering</Text>
+                  <Text style={styles.manageSectionLabel}>{t('ui.gatheringDetail.manage')}</Text>
                   <TouchableOpacity
                     onPress={() => navigation.navigate('EditGathering', { gathering })}
                     style={{ marginTop: spacing.xs }}
-                    accessibilityLabel="Edit gathering"
+                    accessibilityLabel={t('ui.gatheringDetail.editA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.hostBannerLink}>✏️ Edit Gathering →</Text>
+                    <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.edit')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={confirmCancelGatheringInDetail}
                     style={{ marginTop: spacing.xs }}
-                    accessibilityLabel="Cancel gathering"
+                    accessibilityLabel={t('ui.gatheringDetail.cancelA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={[styles.hostBannerLink, { color: colors.danger }]}>Cancel Gathering</Text>
+                    <Text style={[styles.hostBannerLink, { color: colors.danger }]}>{t('ui.gatheringDetail.cancelGathering')}</Text>
                   </TouchableOpacity>
                 </>
               )}
               <TouchableOpacity
                 onPress={() => setInviteModalVisible(true)}
                 style={{ marginTop: spacing.xs }}
-                accessibilityLabel="Invite friends to this gathering"
+                accessibilityLabel={t('ui.gatheringDetail.inviteA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.hostBannerLink}>🤝 Invite friends →</Text>
+                <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.inviteFriendsArrow')}</Text>
               </TouchableOpacity>
               {viewer.actionable && (
                 acceptedBusinessOffer ? (
@@ -1007,13 +1000,13 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   />
                 ) : businessRequest ? (
                   <View style={{ marginTop: spacing.xs }}>
-                    <Text style={styles.hostBannerLink}>🍽️ Waiting to hear back from local businesses.</Text>
+                    <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.waitingBusinesses')}</Text>
                     <TouchableOpacity
                       onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
-                      accessibilityLabel="View your business request"
+                      accessibilityLabel={t('ui.gatheringDetail.viewRequestA11y')}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.hostBannerLink}>View request →</Text>
+                      <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.viewRequest')}</Text>
                     </TouchableOpacity>
                   </View>
                 ) : gathering.ask_local_businesses ? (
@@ -1024,7 +1017,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   // ask from right now, whenever the host actually taps
                   // this.
                   <View style={styles.businessReadyBanner}>
-                    <Text style={styles.businessReadyText}>You asked us to look for local business options. Ready to see what's available?</Text>
+                    <Text style={styles.businessReadyText}>{t('ui.gatheringDetail.businessReady')}</Text>
                     {/* Aug 23 2026 Product Coherence Audit P2 (CLAUDE.md):
                         this banner's own wording was the third, visually
                         disconnected narration of the same one decision (the
@@ -1033,15 +1026,15 @@ export default function GatheringDetailScreen({ route, navigation }) {
                         small caption naming where "You asked us" actually
                         came from closes that gap without changing the real
                         underlying flow. */}
-                    <Text style={styles.businessReadyCaption}>You turned this on when you created this gathering.</Text>
+                    <Text style={styles.businessReadyCaption}>{t('ui.gatheringDetail.businessReadyCaption')}</Text>
                     <TouchableOpacity
                       style={styles.businessReadyButton}
                       onPress={handleAskBusinessesNow}
                       disabled={firingBusinessRequest}
-                      accessibilityLabel="Look for local business options now"
+                      accessibilityLabel={t('ui.gatheringDetail.lookNowA11y')}
                       accessibilityRole="button"
                     >
-                      {firingBusinessRequest ? <ActivityIndicator color="#fff" /> : <Text style={styles.businessReadyButtonText}>Yes, look now →</Text>}
+                      {firingBusinessRequest ? <ActivityIndicator color="#fff" /> : <Text style={styles.businessReadyButtonText}>{t('ui.gatheringDetail.lookNow')}</Text>}
                     </TouchableOpacity>
                   </View>
                 ) : myPartnershipRequest?.status === 'approved' ? (
@@ -1051,13 +1044,13 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   // as the broadcast mechanism's "Local Business
                   // Confirmed" card above rather than a third invented one.
                   <View style={[styles.businessOfferCard, { marginTop: spacing.xs }]}>
-                    <Text style={styles.businessOfferKicker}>🎯 Business Partner Confirmed</Text>
+                    <Text style={styles.businessOfferKicker}>{t('ui.gatheringDetail.partnerConfirmed')}</Text>
                     <Text style={styles.businessOfferTitle}>{myPartnershipRequest.partnerName}</Text>
-                    <Text style={styles.businessOfferSub}>Confirmed as your business partner for this gathering</Text>
+                    <Text style={styles.businessOfferSub}>{t('ui.gatheringDetail.partnerConfirmedSub')}</Text>
                   </View>
                 ) : myPartnershipRequest?.status === 'pending' ? (
                   <View style={{ marginTop: spacing.xs }}>
-                    <Text style={styles.hostBannerLink}>🎯 Waiting to hear back from {myPartnershipRequest.partnerName}.</Text>
+                    <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.waitingPartner', { name: myPartnershipRequest.partnerName })}</Text>
                   </View>
                 ) : (
                   // The merged front door itself: neither mechanism has any
@@ -1070,11 +1063,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
                     <TouchableOpacity
                       onPress={() => setBusinessHelpChooserOpen((v) => !v)}
                       style={{ marginTop: spacing.xs }}
-                      accessibilityLabel="Find a business for this plan"
+                      accessibilityLabel={t('ui.gatheringDetail.findBusinessA11y')}
                       accessibilityRole="button"
                       accessibilityState={{ expanded: businessHelpChooserOpen }}
                     >
-                      <Text style={styles.hostBannerLink}>🏪 Find a Business for This Plan →</Text>
+                      <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.findBusiness')}</Text>
                     </TouchableOpacity>
                     {businessHelpChooserOpen && (
                       <View style={styles.businessHelpChooser}>
@@ -1084,11 +1077,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
                             setBusinessHelpChooserOpen(false);
                             navigation.navigate('RequestBusinessPartner', { targetType: 'gathering', targetId: gatheringId, targetTitle: gathering.title });
                           }}
-                          accessibilityLabel="Request a specific business"
+                          accessibilityLabel={t('ui.gatheringDetail.specificA11y')}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.businessHelpChooserOptionTitle}>🎯 Request a specific business</Text>
-                          <Text style={styles.businessHelpChooserOptionSub}>You already have a place in mind.</Text>
+                          <Text style={styles.businessHelpChooserOptionTitle}>{t('ui.gatheringDetail.specific')}</Text>
+                          <Text style={styles.businessHelpChooserOptionSub}>{t('ui.gatheringDetail.specificSub')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.businessHelpChooserOption, { marginTop: spacing.xs }]}
@@ -1101,11 +1094,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
                               prefillCategory: gathering.interest_tag ?? null,
                             });
                           }}
-                          accessibilityLabel="Ask nearby businesses"
+                          accessibilityLabel={t('ui.gatheringDetail.askNearbyA11y')}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.businessHelpChooserOptionTitle}>📍 Ask nearby businesses</Text>
-                          <Text style={styles.businessHelpChooserOptionSub}>Let businesses nearby make offers.</Text>
+                          <Text style={styles.businessHelpChooserOptionTitle}>{t('ui.gatheringDetail.askNearby')}</Text>
+                          <Text style={styles.businessHelpChooserOptionSub}>{t('ui.gatheringDetail.askNearbySub')}</Text>
                         </TouchableOpacity>
                       </View>
                     )}
@@ -1120,17 +1113,17 @@ export default function GatheringDetailScreen({ route, navigation }) {
                     quickStartCategory: gathering.interest_tag,
                   })}
                   style={{ marginTop: spacing.xs }}
-                  accessibilityLabel="Create a community from this gathering"
+                  accessibilityLabel={t('ui.gatheringDetail.createCommunityA11y')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.hostBannerLink}>🏘️ Create a Community from This Gathering →</Text>
+                  <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.createCommunity')}</Text>
                 </TouchableOpacity>
               )}
             </View>
           ) : gathering.myStatus === 'approved' ? (
             <View style={styles.youreInPanel}>
-              <Text style={styles.youreInTitle}>You're in! 🎉</Text>
-              <Text style={styles.youreInSub}>Say hello before it starts?</Text>
+              <Text style={styles.youreInTitle}>{t('ui.gatheringDetail.youreIn')}</Text>
+              <Text style={styles.youreInSub}>{t('ui.gatheringDetail.sayHelloPrompt')}</Text>
               {acceptedBusinessOffer && (
                 // P0 #1 fix (CLAUDE.md, Aug 29 2026 Full Coherence Audit
                 // remediation): the real confirmed venue, now widened to
@@ -1151,75 +1144,75 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 style={styles.sayHelloButton}
                 onPress={() => navigation.navigate('GatheringHub', { gatheringId })}
                 activeOpacity={0.85}
-                accessibilityLabel="Open the Gathering Hub"
+                accessibilityLabel={t('ui.gatheringDetail.hubA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.sayHelloButtonText}>Open Gathering Hub →</Text>
+                <Text style={styles.sayHelloButtonText}>{t('ui.gatheringDetail.hub')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => navigation.navigate('GatheringChat', { gatheringId, gatheringTitle: gathering.title })}
                 style={{ marginTop: spacing.sm }}
-                accessibilityLabel="Open group chat and say hello"
+                accessibilityLabel={t('ui.gatheringDetail.sayHelloA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.sayHelloLink}>💬 Say Hello</Text>
+                <Text style={styles.sayHelloLink}>{t('ui.gatheringDetail.sayHello')}</Text>
               </TouchableOpacity>
 {canInvite && (
               <TouchableOpacity
                 onPress={() => setInviteModalVisible(true)}
                 style={{ marginTop: spacing.sm }}
-                accessibilityLabel="Invite friends to this gathering"
+                accessibilityLabel={t('ui.gatheringDetail.inviteA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.sayHelloLink}>🤝 Invite friends</Text>
+                <Text style={styles.sayHelloLink}>{t('ui.gatheringDetail.inviteFriends')}</Text>
               </TouchableOpacity>
               )}
               <TouchableOpacity
                 onPress={confirmLeave}
                 disabled={leaving}
                 style={{ marginTop: spacing.sm }}
-                accessibilityLabel="Leave this gathering"
+                accessibilityLabel={t('ui.gatheringDetail.leaveA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.leaveLink}>{leaving ? 'Leaving...' : 'Leave Gathering'}</Text>
+                <Text style={styles.leaveLink}>{t(leaving ? 'ui.gatheringDetail.leaving' : 'ui.gatheringDetail.leaveGathering')}</Text>
               </TouchableOpacity>
             </View>
           ) : gathering.myStatus === 'waitlisted' ? (
             <View style={styles.pendingPanel}>
-              <Text style={styles.pendingText}>🕒 You're on the waitlist — we'll let you know if a spot opens up.</Text>
+              <Text style={styles.pendingText}>{t('ui.gatheringDetail.onWaitlist')}</Text>
               <TouchableOpacity
                 onPress={confirmLeave}
                 disabled={leaving}
                 style={{ marginTop: spacing.sm }}
-                accessibilityLabel="Leave the waitlist"
+                accessibilityLabel={t('ui.gatheringDetail.leaveWaitlistA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.leaveLink}>{leaving ? 'Leaving...' : 'Leave Waitlist'}</Text>
+                <Text style={styles.leaveLink}>{t(leaving ? 'ui.gatheringDetail.leaving' : 'ui.gatheringDetail.leaveWaitlist')}</Text>
               </TouchableOpacity>
             </View>
           ) : gathering.myStatus === 'pending' ? (
             <View style={styles.pendingPanel}>
               {can('dismiss') ? (
                 <>
-                  <Text style={styles.pendingText}>Request expired</Text>
+                  <Text style={styles.pendingText}>{t('ui.actions.requestExpired')}</Text>
                   <Text style={styles.pendingText}>{expiredDateLabel(gathering.scheduled_at)}</Text>
                 </>
               ) : (
-                <Text style={styles.pendingText}>Request sent — the host will review and let you know.</Text>
+                <Text style={styles.pendingText}>{t('ui.gatheringDetail.requestSent')}</Text>
               )}
               <TouchableOpacity
                 onPress={confirmLeave}
                 disabled={leaving}
                 style={{ marginTop: spacing.sm }}
-                accessibilityLabel="Withdraw your request to join"
+                accessibilityLabel={t('ui.gatheringDetail.withdrawA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.leaveLink}>{leaving ? 'Withdrawing...' : viewer.expired ? 'Dismiss' : 'Withdraw Request'}</Text>
+                <Text style={styles.leaveLink}>{t(leaving ? 'ui.gatheringDetail.withdrawing' : viewer.expired ? 'ui.common.dismiss' : 'ui.gatheringDetail.withdrawRequest')}</Text>
               </TouchableOpacity>
             </View>
           ) : gathering.visibility === 'invite_only' && !gathering.hasInviteOnlyAccess ? (
             <View style={styles.pendingPanel}>
-              <Text style={styles.pendingText}>🔒 This gathering is invite-only. Ask {gathering.host?.display_name} for an invite to join.</Text>
+              <Text style={styles.pendingText}>{t('ui.gatheringDetail.inviteOnly', { name: gathering.host?.display_name ?? '' })}</Text>
             </View>
           ) : (
             <>
@@ -1232,7 +1225,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 accessibilityRole="button"
               >
                 <Text style={styles.joinButtonText}>
-                  {joining ? 'Joining...' : gatheringJoinAction(gathering, { isFull: gathering.isFull, interested: gathering.myInterested === true }).label.toUpperCase()}
+                  {joining ? t('ui.gatheringDetail.joining') : gatheringJoinAction(gathering, { isFull: gathering.isFull, interested: gathering.myInterested === true }).label.toUpperCase()}
                 </Text>
               </TouchableOpacity>
               {can('interested') && (
@@ -1241,36 +1234,36 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   onPress={toggleInterested}
                   disabled={togglingInterested}
                   style={{ marginTop: spacing.sm, alignItems: 'center' }}
-                  accessibilityLabel={gathering.myInterested ? 'Remove from Interested' : 'Mark as Interested'}
+                  accessibilityLabel={t(gathering.myInterested ? 'ui.gatheringDetail.removeInterestedA11y' : 'ui.gatheringDetail.markInterestedA11y')}
                   accessibilityRole="button"
                   accessibilityState={{ selected: !!gathering.myInterested }}
                 >
                   <Text style={styles.sayHelloLink}>
-                    {gathering.myInterested ? "★ Interested — I might go (tap to undo)" : '☆ Interested — I might go'}
+                    {t(gathering.myInterested ? 'ui.gatheringDetail.interestedOn' : 'ui.gatheringDetail.interestedOff')}
                   </Text>
                   {gathering.myInterested && (
                     <Text style={{ color: colors.textTertiary, fontSize: 12, marginTop: 2, textAlign: 'center' }}>
-                      We'll let you know if the time or place changes, or it's cancelled.
+                      {t('ui.gatheringDetail.interestedNote')}
                     </Text>
                   )}
                 </TouchableOpacity>
               {gathering.myInterested && showDemandDisclosure && (
                 <View style={styles.pendingPanel}>
-                  <Text style={styles.pendingText}>Your interest may be included in anonymous local demand trends. Businesses won't see you or your profile.</Text>
+                  <Text style={styles.pendingText}>{t('ui.gatheringDetail.demandDisclosure')}</Text>
                   <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.lg, marginTop: spacing.sm }}>
                     <TouchableOpacity
                       onPress={() => { setShowDemandDisclosure(false); acknowledgeInterestedDisclosure(); }}
-                      accessibilityLabel="Got it"
+                      accessibilityLabel={t('ui.common.gotIt')}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.sayHelloLink}>Got it</Text>
+                      <Text style={styles.sayHelloLink}>{t('ui.common.gotIt')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => { setShowDemandDisclosure(false); acknowledgeInterestedDisclosure(); navigation.navigate('Settings'); }}
-                      accessibilityLabel="Change in Settings"
+                      accessibilityLabel={t('ui.gatheringDetail.changeInSettings')}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.leaveLink}>Change in Settings</Text>
+                      <Text style={styles.leaveLink}>{t('ui.gatheringDetail.changeInSettings')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1281,10 +1274,10 @@ export default function GatheringDetailScreen({ route, navigation }) {
               <TouchableOpacity
                 onPress={() => setInviteModalVisible(true)}
                 style={{ marginTop: spacing.sm, alignItems: 'center' }}
-                accessibilityLabel="Invite a friend to this gathering"
+                accessibilityLabel={t('ui.gatheringDetail.inviteOneA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.sayHelloLink}>🤝 Invite a friend</Text>
+                <Text style={styles.sayHelloLink}>{t('ui.gatheringDetail.inviteOne')}</Text>
               </TouchableOpacity>
               )}
             </>

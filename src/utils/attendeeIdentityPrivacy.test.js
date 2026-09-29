@@ -79,7 +79,7 @@ describe('attendee identities: friends see names, strangers see counts (item 75)
       expect(detail).toMatch(/attendeeSummary\(gathering/);
     });
     it('the Who\'s Going block shows on a count, not on visible rows, so a hidden-only crowd is still a count', () => {
-      expect(detail).toMatch(/attendeeTotal\(gathering\) > 0 && \(\s*<View style=\{styles\.section\}>\s*<Text style=\{styles\.sectionLabel\}>Who's Going/);
+      expect(detail).toMatch(/attendeeTotal\(gathering\) > 0 && \(\s*<View style=\{styles\.section\}>\s*<Text style=\{styles\.sectionLabel\}>\{t\('ui\.gatheringDetail\.whosGoing'\)\}/);
     });
     it('capacity and fullness come from the server count, never the visible rows', () => {
       expect(read('./primaryAction.js')).toMatch(/isGatheringFull\(gathering, Math\.max\(attendeeTotal\(gathering\), visibleApproved\)\)/);
