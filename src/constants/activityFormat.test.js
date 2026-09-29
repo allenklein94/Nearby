@@ -84,7 +84,7 @@ describe('wiring', () => {
   it('stored and edited through the one gathering service, offered in Create and Edit', () => {
     expect(read('src/services/gatherings.js')).toMatch(/genre, format, (skill_level, )?(effort_level, )?features/);
     for (const f of ['src/screens/CreateGatheringScreen.js', 'src/screens/EditGatheringScreen.js']) {
-      expect(read(f)).toContain('How does it run?');
+      expect(read(f)).toContain("t('ui.gatheringForm.formatQ')");
       expect(read(f)).toContain('FORMAT_OPTIONS.map');
     }
   });

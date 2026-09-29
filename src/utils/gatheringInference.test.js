@@ -78,7 +78,7 @@ describe('Create flow: ask only what is missing', () => {
     const screen = read('screens/CreateGatheringScreen.js');
     expect(screen).toMatch(/startAfterWhatStep\(route\.params\) \? 1 : 0/);
     expect(screen).toMatch(/quickStartPartyType/);
-    expect(screen).toMatch(/From what you said/);
+    expect(screen).toMatch(/ui\.gatheringForm\.fromWhatYouSaid'/);
     // The When step still validates a picked, future time before moving on.
     expect(screen).toMatch(/stepKey === 'when' && \(!whenPreset/);
   });

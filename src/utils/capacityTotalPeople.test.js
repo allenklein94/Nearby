@@ -68,8 +68,12 @@ describe('capacity counts the host', () => {
 describe('Create / Edit use the same meaning', () => {
   it('"2-4 people" stores 4 = 4 people total; the copy says it includes the host', () => {
     const create = read('src/screens/CreateGatheringScreen.js');
-    expect(create).toContain("{ key: '2-4', label: '2-4 people', capacity: 4 }");
-    expect(create).toContain('Counts everyone, including you.');
+    expect(create).toContain("{ key: '2-4', capacity: 4 }");
+    expect(create).toContain("t('ui.gatheringForm.capacityHelp')");
+    const { default: opts } = require('../i18n/ui/gatheringOptions');
+    const { default: form } = require('../i18n/ui/gatheringForm');
+    expect(opts.en.capacity['2-4']).toBe('2-4 people');
+    expect(form.en.capacityHelp).toMatch(/^Counts everyone, including you\./);
     expect(capacityForPartySize(4)).toMatchObject({ option: '2-4' });
     const edit = read('src/screens/EditGatheringScreen.js');
     expect(edit).toMatch(/Math\.max\(peopleGoing\(gathering\), n - 1\)/);

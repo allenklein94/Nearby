@@ -12,7 +12,7 @@ import { linkOccasionGroupPlanToPlan } from '../services/occasionGroupPlans';
 import { getMyCommunities } from '../services/communities';
 import AgeRangePicker from '../components/AgeRangePicker';
 import { cleanAgeRange } from '../utils/suitedAges';
-import { FORMAT_OPTIONS } from '../constants/activityFormat';
+import { FORMAT_OPTIONS, formatIcon } from '../constants/activityFormat';
 import { skillContext, skillOptionsFor, cleanSkillLevel } from '../constants/skillLevel';
 import { EFFORT_OPTIONS } from '../constants/intensityEffort';
 import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_OPTIONS, cleanFeatures, toggleFeature, isMusicTag } from '../utils/gatheringPractical';
@@ -30,11 +30,11 @@ import { VISIBILITY_OPTIONS } from '../constants/gatheringVisibility';
 import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { displayDateTime } from '../i18n/display';
 import { typography, spacing, radius } from '../theme';
 
 import { NLoader } from '../motion';
 import { getUserLocation } from '../services/userLocation';
-import { countLabel } from '../utils/plural';
 import useCategoryNames from '../hooks/useCategoryNames';
 // Real Free/$/$$/$$$ chip labels for the new Price field -- mirrors the
 // visual convention services/places.js's own priceLevelLabel() already
@@ -42,11 +42,11 @@ import useCategoryNames from '../hooks/useCategoryNames';
 // directly (it expects a Google 0-4 integer; this is a genuinely
 // different, host-declared enum shape).
 const PRICE_OPTIONS = [
-  { key: null, label: 'Not specified' },
-  { key: 'free', label: 'Free' },
-  { key: '$', label: '$' },
-  { key: '$$', label: '$$' },
-  { key: '$$$', label: '$$$' },
+  { key: null, labelKey: 'ui.gatheringOptions.notSpecified' },
+  { key: 'free', labelKey: 'ui.gatheringOptions.free' },
+  { key: '$', symbol: '$' },
+  { key: '$$', symbol: '$$' },
+  { key: '$$$', symbol: '$$$' },
 ];
 
 // "Who's this for?" -- a real, host-declared field, deliberately not
@@ -57,16 +57,9 @@ const PRICE_OPTIONS = [
 // "What kind of plan is this?" (owner item 54): the same `party_type` column and vocabulary as everywhere else, worded as the KIND of
 // plan. Networking is the existing `coworkers` value and a casual hangout is `friends` (one value each, no second list); a plan is one
 // kind, so this stays single-select. Not specified stays the default.
-const PARTY_TYPE_OPTIONS = [
-  { key: null, label: 'Not specified' },
-  { key: 'friends', label: '👥 Friends / casual hangout' },
-  { key: 'date', label: '💕 Date' },
-  { key: 'family', label: '👨‍👩‍👧 Family' },
-  { key: 'coworkers', label: '💼 Networking / work' },
-  { key: 'new_people', label: '🤝 Meet new people' },
-  { key: 'groups', label: '👨‍👩‍👧‍👦 Big group' },
-  { key: 'solo', label: '🧍 Solo-friendly' },
-];
+const PARTY_TYPE_OPTIONS = [null, 'friends', 'date', 'family', 'coworkers', 'new_people', 'groups', 'solo'].map((key) => ({
+  key, labelKey: key ? `ui.gatheringOptions.kind.${key}` : 'ui.gatheringOptions.notSpecified',
+}));
 
 // Capacity buckets match the original mockup language. "10+" doesn't map to
 // a single hard number on its own, but a real waitlist needs one to
@@ -75,10 +68,10 @@ const PARTY_TYPE_OPTIONS = [
 // Capacity / Waitlist" section for the full design discussion.
 // Capacity = TOTAL people including the host (migration 20270209): "2-4 people" stores 4 and holds 4 people, not 4 guests + host.
 const CAPACITY_OPTIONS = [
-  { key: 'no_limit', label: 'No Limit' },
-  { key: '2-4', label: '2-4 people', capacity: 4 },
-  { key: '5-10', label: '5-10 people', capacity: 10 },
-  { key: '10+', label: '10+ people' },
+  { key: 'no_limit' },
+  { key: '2-4', capacity: 4 },
+  { key: '5-10', capacity: 10 },
+  { key: '10+' },
 ];
 
 
@@ -102,10 +95,15 @@ function approxMiles(lat1, lng1, lat2, lng2) {
   return Math.sqrt(dLat * dLat + dLng * dLng);
 }
 
-function walkTimeLabel(miles) {
+function walkTimeLabel(miles, t) {
   const minutes = Math.max(1, Math.round(miles * 20));
-  return `${minutes} min walk`;
+  return t('ui.gatheringForm.walk', { min: minutes });
 }
+// Chip label for an option: a translation key, a price symbol, or (practical/format/skill/effort lists) its stored key.
+const optionText = (t, ns, o) => (o.key === null || o.key === undefined ? t('ui.gatheringOptions.notSpecified') : t(`ui.gatheringOptions.${ns}.${o.key}`));
+const equipmentText = (t, o) => (o.key === null ? t('ui.gatheringOptions.notSpecified') : t(o.key ? 'ui.gatheringOptions.equipment.provided' : 'ui.gatheringOptions.equipment.byo'));
+const priceText = (t, o) => o.symbol ?? t(o.labelKey);
+const formatText = (t, o) => (o.key === null ? t('ui.gatheringOptions.notSpecified') : `${formatIcon(o.key)} ${t(`ui.gatheringOptions.format.${o.key}`)}`);
 
 // The conversational, one-decision-per-screen rebuild ("Create 2.0") —
 // What (skippable via fromQuickPick) → When → Where → Anything people should know?
@@ -123,7 +121,7 @@ function walkTimeLabel(miles) {
 export default function CreateGatheringScreen({ navigation, route }) {
   const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
   const { colors, shadow, isDark } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const myInterests = useMyInterests();
   const styles = getStyles(colors, shadow);
 
@@ -134,13 +132,13 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const suggestedInviteeIds = Array.isArray(route.params?.suggestedInviteeIds) ? route.params.suggestedInviteeIds : [];
   const askInvite = route.params?.quickStartInvite === true || suggestedInviteeIds.length > 0;
   const STEP_DEFS = [
-    { key: 'what', label: 'What' },
-    { key: 'when', label: 'When' },
-    ...(askInvite ? [{ key: 'invite', label: 'Invite' }] : []),
-    { key: 'where', label: 'Where' },
-    { key: 'details', label: 'Details' },
-    { key: 'settings', label: 'Settings' },
-    { key: 'publish', label: 'Publish' },
+    { key: 'what', label: t('ui.gatheringForm.step.what') },
+    { key: 'when', label: t('ui.gatheringForm.step.when') },
+    ...(askInvite ? [{ key: 'invite', label: t('ui.gatheringForm.step.invite') }] : []),
+    { key: 'where', label: t('ui.gatheringForm.step.where') },
+    { key: 'details', label: t('ui.gatheringForm.step.details') },
+    { key: 'settings', label: t('ui.gatheringForm.step.settings') },
+    { key: 'publish', label: t('ui.gatheringForm.step.publish') },
   ].filter((s) => !(s.key === 'what' && skipWhat));
 
   const [step, setStep] = useState(() => (startAfterWhatStep(route.params) ? 1 : 0));
@@ -378,22 +376,22 @@ export default function CreateGatheringScreen({ navigation, route }) {
   function goNext() {
     if (stepKey === 'what') {
       const problem = whatStepProblem({ title, interestTag });
-      if (problem === 'title') return Alert.alert('Title required', 'Give your gathering a short title.');
+      if (problem === 'title') return Alert.alert(t('ui.gatheringForm.alert.titleRequired'), t('ui.gatheringForm.alert.titleRequiredBody'));
       // Item 64: the category is structured input everything downstream reads (business requests, recommendations,
       // weather, demand), so it is asked for here rather than guessed later from the title.
-      if (problem === 'category') return Alert.alert('Pick a category', 'Choose what kind of gathering this is, so the right people and businesses can find it.');
+      if (problem === 'category') return Alert.alert(t('ui.gatheringForm.alert.pickCategory'), t('ui.gatheringForm.alert.pickCategoryBody'));
     }
     if (stepKey === 'settings' && visibility === 'community' && !communityId) {
       if (!loadingCommunities && myCommunities.length === 0) {
-        return Alert.alert('No communities yet', "You're not a member of any community yet — pick a different option, or join a community first.");
+        return Alert.alert(t('ui.gatheringForm.alert.noCommunities'), t('ui.gatheringForm.alert.noCommunitiesBody'));
       }
-      return Alert.alert('Pick a community', 'Choose which community can discover this gathering.');
+      return Alert.alert(t('ui.gatheringForm.alert.pickCommunity'), t('ui.gatheringForm.alert.pickCommunityBody'));
     }
     if (stepKey === 'when' && (!whenPreset || scheduledAt.getTime() <= Date.now())) {
-      return Alert.alert('Pick a time', "Your gathering's date and time needs to be in the future.");
+      return Alert.alert(t('ui.gatheringForm.alert.pickTime'), t('ui.gatheringForm.alert.pickTimeBody'));
     }
     if (stepKey === 'where' && locationMode === 'choose_place' && !customLocation) {
-      return Alert.alert('Pick a place', 'Choose a suggested spot, or switch to "Near Me".');
+      return Alert.alert(t('ui.gatheringForm.alert.pickPlace'), t('ui.gatheringForm.alert.pickPlaceBody'));
     }
     Haptics.selectionAsync();
     setStep((s) => Math.min(s + 1, STEP_DEFS.length - 1));
@@ -410,12 +408,12 @@ export default function CreateGatheringScreen({ navigation, route }) {
   async function submit() {
     const titleCheck = await checkTextModeration(title);
     if (!titleCheck.safe) {
-      return Alert.alert('Title not allowed', 'Please revise your title and try again.');
+      return Alert.alert(t('ui.gatheringForm.alert.titleNotAllowed'), t('ui.gatheringForm.alert.reviseBody'));
     }
     if (description.trim()) {
       const descCheck = await checkTextModeration(description);
       if (!descCheck.safe) {
-        return Alert.alert('Description not allowed', 'Please revise your description and try again.');
+        return Alert.alert(t('ui.gatheringForm.alert.descNotAllowed'), t('ui.gatheringForm.alert.reviseDescBody'));
       }
     }
 
@@ -511,7 +509,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
           />
         )}
 
-        <View style={styles.progressRow} accessibilityLabel={`Step ${step + 1} of ${STEP_DEFS.length}: ${STEP_DEFS[step].label}`}>
+        <View style={styles.progressRow} accessibilityLabel={t('ui.gatheringForm.stepA11y', { n: step + 1, total: STEP_DEFS.length, label: STEP_DEFS[step].label })}>
           {STEP_DEFS.map((s, i) => (
             <View key={s.key} style={styles.progressStep}>
               <View style={[styles.progressDot, i <= step && styles.progressDotActive]} />
@@ -529,7 +527,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
               placeholderTextColor={colors.textTertiary}
               value={title}
               onChangeText={setTitle}
-              accessibilityLabel="Gathering title"
+              accessibilityLabel={t('ui.gatheringForm.titleA11y')}
             />
 
             <Text style={styles.label}>{t('gatherings.categoryLabel')}</Text>
@@ -555,7 +553,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                         ]}
                         onPress={() => setInterestTag(interestTag === option ? null : option)}
                         activeOpacity={0.85}
-                        accessibilityLabel={`Category: ${names.tag(option)}`}
+                        accessibilityLabel={t('ui.gatheringForm.categoryA11y', { name: names.tag(option) })}
                         accessibilityRole="button"
                         accessibilityState={{ selected: isSelected }}
                       >
@@ -587,25 +585,25 @@ export default function CreateGatheringScreen({ navigation, route }) {
         )}
 
         {stepKey === 'when' && inferredRows.length > 0 && !inferredDismissed && (
-          <View style={{ marginBottom: spacing.md, padding: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }} accessibilityLabel="From what you said">
-            <Text style={[styles.label, { marginTop: 0 }]}>From what you said</Text>
+          <View style={{ marginBottom: spacing.md, padding: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }} accessibilityLabel={t('ui.gatheringForm.fromWhatYouSaid')}>
+            <Text style={[styles.label, { marginTop: 0 }]}>{t('ui.gatheringForm.fromWhatYouSaid')}</Text>
             {inferredRows.map((r) => (
               <Text key={r.layer} style={{ color: colors.text, marginTop: 2 }}>
                 <Text style={{ color: colors.textSecondary }}>{r.label}: </Text>{r.value}
               </Text>
             ))}
             <Text style={{ color: colors.textSecondary, marginTop: spacing.xs }}>
-              {whenPreset ? 'Check the time below, then pick a place. ' : 'Pick a time, then a place. '}Change anything on its step (Back for the title and category).
+              {whenPreset ? t('ui.gatheringForm.checkTimeThenPlace') : t('ui.gatheringForm.pickTimeThenPlace')} {t('ui.gatheringForm.changeOnStep')}
             </Text>
-            <TouchableOpacity onPress={() => setInferredDismissed(true)} accessibilityRole="button" accessibilityLabel="Hide this summary" style={{ marginTop: spacing.xs, alignSelf: 'flex-start' }}>
-              <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Hide</Text>
+            <TouchableOpacity onPress={() => setInferredDismissed(true)} accessibilityRole="button" accessibilityLabel={t('ui.gatheringForm.hideSummaryA11y')} style={{ marginTop: spacing.xs, alignSelf: 'flex-start' }}>
+              <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{t('ui.gatheringForm.hide')}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {stepKey === 'when' && (
           <>
-            <Text style={styles.label}>When?</Text>
+            <Text style={styles.label}>{t('ui.gatheringForm.whenQ')}</Text>
             <View style={styles.chipsWrap}>
               {WHEN_PRESETS.map((p) => {
                 const selected = whenPreset === p.key;
@@ -615,23 +613,23 @@ export default function CreateGatheringScreen({ navigation, route }) {
                     style={[styles.presetButton, selected && styles.presetButtonActive]}
                     onPress={() => pickPreset(p.key)}
                     activeOpacity={0.85}
-                    accessibilityLabel={p.label}
+                    accessibilityLabel={t(`ui.gatheringOptions.when.${p.key}`)}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
                   >
                     <Text style={styles.presetIcon}>{p.icon}</Text>
-                    <Text style={[styles.presetLabel, selected && styles.presetLabelActive]}>{p.label}</Text>
+                    <Text style={[styles.presetLabel, selected && styles.presetLabelActive]}>{t(`ui.gatheringOptions.when.${p.key}`)}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
 
             {whenPreset && (
-              <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.whenResultRow} accessibilityLabel="Adjust the exact time" accessibilityRole="button">
+              <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.whenResultRow} accessibilityLabel={t('ui.gatheringForm.adjustA11y')} accessibilityRole="button">
                 <Text style={styles.whenResultText}>
-                  {scheduledAt.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                  {displayDateTime(scheduledAt, language)}
                 </Text>
-                <Text style={styles.whenAdjustLink}>✏️ Adjust</Text>
+                <Text style={styles.whenAdjustLink}>{t('ui.gatheringForm.adjust')}</Text>
               </TouchableOpacity>
             )}
             {showPicker && (
@@ -655,11 +653,11 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
         {stepKey === 'invite' && (
           <>
-            <Text style={styles.label}>Who do you want to invite?</Text>
-            <Text style={styles.helperText}>Only people you're already friends with. Invitations go out when you publish. You can skip this.</Text>
+            <Text style={styles.label}>{t('ui.gatheringForm.inviteQ')}</Text>
+            <Text style={styles.helperText}>{t('ui.gatheringForm.inviteHelp')}</Text>
             {suggestedInviteeIds.length > 0 && (
               <Text style={styles.helperText}>
-                ✨ We've checked the people you picked{route.params?.suggestedInviteeLabel ? ` (${route.params.suggestedInviteeLabel})` : ''}. Uncheck anyone you'd rather not invite.
+                {route.params?.suggestedInviteeLabel ? t('ui.gatheringForm.suggestedCheckedWith', { label: route.params.suggestedInviteeLabel }) : t('ui.gatheringForm.suggestedChecked')}
               </Text>
             )}
             <FriendInviteSelector selectedIds={inviteIds} onChange={setInviteIds} navigation={navigation} suggestedIds={suggestedInviteeIds} />
@@ -668,41 +666,41 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
         {stepKey === 'where' && (
           <>
-            <Text style={styles.label}>Where?</Text>
+            <Text style={styles.label}>{t('ui.gatheringForm.whereQ')}</Text>
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
               <TouchableOpacity
                 style={[styles.publicToggle, locationMode === 'near_me' && styles.publicToggleActive]}
                 onPress={() => pickLocationMode('near_me')}
                 activeOpacity={0.85}
-                accessibilityLabel="Near Me — use your current location"
+                accessibilityLabel={t('ui.gatheringForm.nearMeA11y')}
                 accessibilityRole="button"
                 accessibilityState={{ selected: locationMode === 'near_me' }}
               >
-                <Text style={[styles.publicToggleText, locationMode === 'near_me' && styles.publicToggleTextActive]}>📍 Near Me</Text>
-                <Text style={[styles.publicToggleHint, locationMode === 'near_me' && styles.publicToggleHintActive]}>Your current location</Text>
+                <Text style={[styles.publicToggleText, locationMode === 'near_me' && styles.publicToggleTextActive]}>{t('ui.gatheringForm.nearMe')}</Text>
+                <Text style={[styles.publicToggleHint, locationMode === 'near_me' && styles.publicToggleHintActive]}>{t('ui.gatheringForm.currentLocation')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.publicToggle, locationMode === 'choose_place' && styles.publicToggleActive]}
                 onPress={() => pickLocationMode('choose_place')}
                 activeOpacity={0.85}
-                accessibilityLabel="Choose a Place — pick a real nearby venue"
+                accessibilityLabel={t('ui.gatheringForm.choosePlaceA11y')}
                 accessibilityRole="button"
                 accessibilityState={{ selected: locationMode === 'choose_place' }}
               >
-                <Text style={[styles.publicToggleText, locationMode === 'choose_place' && styles.publicToggleTextActive]}>🔍 Choose a Place</Text>
-                <Text style={[styles.publicToggleHint, locationMode === 'choose_place' && styles.publicToggleHintActive]}>Pick a real spot nearby</Text>
+                <Text style={[styles.publicToggleText, locationMode === 'choose_place' && styles.publicToggleTextActive]}>{t('ui.gatheringForm.choosePlace')}</Text>
+                <Text style={[styles.publicToggleHint, locationMode === 'choose_place' && styles.publicToggleHintActive]}>{t('ui.gatheringForm.choosePlaceHint')}</Text>
               </TouchableOpacity>
             </View>
 
             {locationMode === 'choose_place' && (
               <View>
-                <Text style={styles.subLabel}>Popular Nearby</Text>
+                <Text style={styles.subLabel}>{t('ui.gatheringForm.popularNearby')}</Text>
                 {loadingPlaces ? (
                   <View style={{ marginTop: spacing.sm }}>
                     <NLoader fullScreen={false} size="inline" kind="places" />
                   </View>
                 ) : (popularPlaces ?? []).length === 0 ? (
-                  <Text style={styles.helperText}>No nearby places found — try "Near Me" instead, or drop a pin below.</Text>
+                  <Text style={styles.helperText}>{t('ui.gatheringForm.noPlaces')}</Text>
                 ) : (
                   popularPlaces.map((place) => {
                     const selected = placeName === place.name && customLocation?.latitude === place.latitude;
@@ -721,10 +719,10 @@ export default function CreateGatheringScreen({ navigation, route }) {
                           <Text style={[styles.placeRowTitle, selected && styles.optionCardTitleActive]}>{place.name}</Text>
                           <Text style={styles.placeRowSub}>
                             {[
-                              miles !== null ? walkTimeLabel(miles) : place.address,
+                              miles !== null ? walkTimeLabel(miles, t) : place.address,
                               place.rating !== null ? `⭐ ${place.rating}` : null,
                               priceLevelLabel(place.priceLevel),
-                              place.openNow !== null ? (place.openNow ? 'Open now' : 'Closed') : null,
+                              place.openNow !== null ? (place.openNow ? t('ui.gatheringForm.openNow') : t('ui.gatheringForm.closed')) : null,
                             ].filter(Boolean).join('  ·  ')}
                           </Text>
                         </View>
@@ -739,10 +737,10 @@ export default function CreateGatheringScreen({ navigation, route }) {
                     initialLng: customLocation?.longitude,
                   })}
                   style={{ marginTop: spacing.sm }}
-                  accessibilityLabel="Drop a pin on the map instead"
+                  accessibilityLabel={t('ui.gatheringForm.dropPinA11y')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.mapPinLink}>📍 Or drop a pin on the map</Text>
+                  <Text style={styles.mapPinLink}>{t('ui.gatheringForm.dropPin')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -751,7 +749,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
         {stepKey === 'details' && (
           <>
-            <Text style={styles.label}>Anything people should know?</Text>
+            <Text style={styles.label}>{t('ui.gatheringForm.detailsQ')}</Text>
             <TextInput
               style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
               placeholder={t('gatherings.descriptionPlaceholder')}
@@ -759,28 +757,23 @@ export default function CreateGatheringScreen({ navigation, route }) {
               value={description}
               onChangeText={setDescription}
               multiline
-              accessibilityLabel="Gathering description, optional"
+              accessibilityLabel={t('ui.gatheringForm.descriptionA11y')}
             />
 
             <TouchableOpacity
               onPress={() => setShowMoreOptions((v) => !v)}
               style={styles.moreOptionsToggle}
-              accessibilityLabel={showMoreOptions ? 'Hide more options' : 'Show more options'}
+              accessibilityLabel={showMoreOptions ? t('ui.gatheringForm.hideMoreA11y') : t('ui.gatheringForm.showMoreA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.moreOptionsToggleText}>{showMoreOptions ? '▾' : '▸'} More options</Text>
+              <Text style={styles.moreOptionsToggleText}>{showMoreOptions ? '▾' : '▸'} {t('ui.gatheringForm.moreOptions')}</Text>
             </TouchableOpacity>
 
             {showMoreOptions && (
               <>
-                <Text style={styles.label}>Repeats</Text>
+                <Text style={styles.label}>{t('ui.gatheringForm.repeats')}</Text>
                 <View style={styles.chipsWrap}>
-                  {[
-                    { key: null, label: "Doesn't repeat" },
-                    { key: 'weekly', label: 'Weekly' },
-                    { key: 'biweekly', label: 'Every 2 weeks' },
-                    { key: 'monthly', label: 'Monthly' },
-                  ].map((option) => {
+                  {[null, 'weekly', 'biweekly', 'monthly'].map((key) => ({ key, label: t(`ui.gatheringOptions.repeat.${key ?? 'none'}`) })).map((option) => {
                     const selected = recurrenceRule === option.key;
                     return (
                       <TouchableOpacity
@@ -798,9 +791,9 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   })}
                 </View>
 
-                <Text style={styles.label}>Price</Text>
+                <Text style={styles.label}>{t('ui.gatheringForm.price')}</Text>
                 <View style={styles.chipsWrap}>
-                  {PRICE_OPTIONS.map((option) => {
+                  {PRICE_OPTIONS.map((o) => ({ ...o, label: priceText(t, o) })).map((option) => {
                     const selected = priceLevel === option.key;
                     return (
                       <TouchableOpacity
@@ -818,9 +811,9 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   })}
                 </View>
 
-                <Text style={styles.label}>Accessibility, family & venue</Text>
+                <Text style={styles.label}>{t('ui.gatheringForm.features')}</Text>
                 <View style={styles.chipsWrap}>
-                  {GATHERING_FEATURE_OPTIONS.map((option) => {
+                  {GATHERING_FEATURE_OPTIONS.map((o) => ({ ...o, label: optionText(t, 'feature', o) })).map((option) => {
                     const selected = features.includes(option.key);
                     return (
                       <TouchableOpacity
@@ -840,9 +833,9 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
                 <AgeRangePicker min={ageMin} max={ageMax} onChange={(a, b) => { setAgeMin(a); setAgeMax(b); }} />
 
-                <Text style={styles.label}>Equipment</Text>
+                <Text style={styles.label}>{t('ui.gatheringForm.equipment')}</Text>
                 <View style={styles.chipsWrap}>
-                  {EQUIPMENT_OPTIONS.map((option) => {
+                  {EQUIPMENT_OPTIONS.map((o) => ({ ...o, label: equipmentText(t, o) })).map((option) => {
                     const selected = equipmentProvided === option.key;
                     return (
                       <TouchableOpacity
@@ -860,9 +853,9 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   })}
                 </View>
 
-                <Text style={styles.label}>How long</Text>
+                <Text style={styles.label}>{t('ui.gatheringForm.howLong')}</Text>
                 <View style={styles.chipsWrap}>
-                  {DURATION_OPTIONS.map((option) => {
+                  {DURATION_OPTIONS.map((o) => ({ ...o, label: optionText(t, 'duration', o) })).map((option) => {
                     const selected = durationMinutes === option.key;
                     return (
                       <TouchableOpacity
@@ -882,9 +875,9 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
                 {isMusicTag(interestTag) && (
                   <>
-                    <Text style={styles.label}>Genre</Text>
+                    <Text style={styles.label}>{t('ui.gatheringForm.genre')}</Text>
                     <View style={styles.chipsWrap}>
-                      {GENRE_OPTIONS.map((option) => {
+                      {GENRE_OPTIONS.map((o) => ({ ...o, label: optionText(t, 'genre', o) })).map((option) => {
                         const selected = genre === option.key;
                         return (
                           <TouchableOpacity key={option.label} style={[styles.chip, selected && styles.chipSelected]} onPress={() => { Haptics.selectionAsync(); setGenre(option.key); }} activeOpacity={0.85} accessibilityLabel={option.label} accessibilityRole="button" accessibilityState={{ selected }}>
@@ -896,9 +889,9 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
                   </>
                 )}
-                <Text style={styles.label}>How does it run?</Text>
+                <Text style={styles.label}>{t('ui.gatheringForm.formatQ')}</Text>
                 <View style={styles.chipsWrap}>
-                  {FORMAT_OPTIONS.map((option) => {
+                  {FORMAT_OPTIONS.map((o) => ({ ...o, label: formatText(t, o) })).map((option) => {
                     const selected = format === option.key;
                     return (
                       <TouchableOpacity key={option.label} style={[styles.chip, selected && styles.chipSelected]} onPress={() => { Haptics.selectionAsync(); setFormat(option.key); }} activeOpacity={0.85} accessibilityLabel={option.label} accessibilityRole="button" accessibilityState={{ selected }}>
@@ -909,12 +902,12 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 </View>
                 {skillOptionsFor(skillContext({ tag: interestTag, format })) && (
                   <>
-                    <Text style={styles.label}>Skill level</Text>
+                    <Text style={styles.label}>{t('ui.gatheringForm.skill')}</Text>
                     <View style={styles.chipsWrap}>
-                      {skillOptionsFor(skillContext({ tag: interestTag, format })).map((option) => {
+                      {skillOptionsFor(skillContext({ tag: interestTag, format })).map((o) => ({ ...o, label: optionText(t, 'skill', o) })).map((option) => {
                         const selected = skillLevel === option.key;
                         return (
-                          <TouchableOpacity key={option.label} style={[styles.chip, selected && styles.chipSelected]} onPress={() => { Haptics.selectionAsync(); setSkillLevel(option.key); }} activeOpacity={0.85} accessibilityLabel={`Skill level ${option.label}`} accessibilityRole="button" accessibilityState={{ selected }}>
+                          <TouchableOpacity key={option.label} style={[styles.chip, selected && styles.chipSelected]} onPress={() => { Haptics.selectionAsync(); setSkillLevel(option.key); }} activeOpacity={0.85} accessibilityLabel={t('ui.gatheringForm.skillA11y', { level: option.label })} accessibilityRole="button" accessibilityState={{ selected }}>
                             <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
                           </TouchableOpacity>
                         );
@@ -924,12 +917,12 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 )}
                 {skillOptionsFor(skillContext({ tag: interestTag, format })) && (
                   <>
-                    <Text style={styles.label}>Effort</Text>
+                    <Text style={styles.label}>{t('ui.gatheringForm.effort')}</Text>
                     <View style={styles.chipsWrap}>
-                      {EFFORT_OPTIONS.map((option) => {
+                      {EFFORT_OPTIONS.map((o) => ({ ...o, label: optionText(t, 'effort', o) })).map((option) => {
                         const selected = effortLevel === option.key;
                         return (
-                          <TouchableOpacity key={option.label} style={[styles.chip, selected && styles.chipSelected]} onPress={() => { Haptics.selectionAsync(); setEffortLevel(option.key); }} activeOpacity={0.85} accessibilityLabel={`Effort ${option.label}`} accessibilityRole="button" accessibilityState={{ selected }}>
+                          <TouchableOpacity key={option.label} style={[styles.chip, selected && styles.chipSelected]} onPress={() => { Haptics.selectionAsync(); setEffortLevel(option.key); }} activeOpacity={0.85} accessibilityLabel={t('ui.gatheringForm.effortA11y', { level: option.label })} accessibilityRole="button" accessibilityState={{ selected }}>
                             <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
                           </TouchableOpacity>
                         );
@@ -937,9 +930,9 @@ export default function CreateGatheringScreen({ navigation, route }) {
                     </View>
                   </>
                 )}
-                <Text style={styles.label}>What kind of plan is this?</Text>
+                <Text style={styles.label}>{t('ui.gatheringForm.kindQ')}</Text>
                 <View style={styles.chipsWrap}>
-                  {PARTY_TYPE_OPTIONS.map((option) => {
+                  {PARTY_TYPE_OPTIONS.map((o) => ({ ...o, label: t(o.labelKey) })).map((option) => {
                     const selected = partyType === option.key;
                     return (
                       <TouchableOpacity
@@ -961,14 +954,14 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   style={styles.womenOnlyToggle}
                   onPress={() => { Haptics.selectionAsync(); setShowGroupInsights((v) => !v); }}
                   activeOpacity={0.85}
-                  accessibilityLabel={showGroupInsights ? 'Group insights shown to attendees, tap to hide' : 'Group insights hidden, tap to show'}
+                  accessibilityLabel={showGroupInsights ? t('ui.gatheringForm.insightsOnA11y') : t('ui.gatheringForm.insightsOffA11y')}
                   accessibilityRole="switch"
                   accessibilityState={{ checked: showGroupInsights }}
                 >
-                  <Text style={styles.womenOnlyToggleText}>{showGroupInsights ? '✓ ' : ''}Show Group Insights</Text>
+                  <Text style={styles.womenOnlyToggleText}>{showGroupInsights ? '✓ ' : ''}{t('ui.gatheringForm.insights')}</Text>
                 </TouchableOpacity>
                 <Text style={styles.helperText}>
-                  Lets attendees see a shared-interests and age/gender-makeup summary once there are enough people — never anyone's individual info, and never shown at all below a minimum group size.
+                  {t('ui.gatheringForm.insightsHelp')}
                 </Text>
               </>
             )}
@@ -977,8 +970,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
         {stepKey === 'settings' && (
           <>
-            <Text style={styles.label}>Visibility</Text>
-            {VISIBILITY_OPTIONS.map((opt) => {
+            <Text style={styles.label}>{t('ui.gatheringForm.visibility')}</Text>
+            {VISIBILITY_OPTIONS.map((o) => ({ ...o, label: t(`ui.gatheringVocab.visibility.${o.key}.label`), hint: t(`ui.gatheringVocab.visibility.${o.key}.hint`) })).map((opt) => {
               const selected = visibility === opt.key;
               return (
                 <TouchableOpacity
@@ -1001,9 +994,9 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
             {visibility === 'community' && (
               loadingCommunities ? (
-                <NLoader fullScreen={false} size="inline" caption="Loading communities…" />
+                <NLoader fullScreen={false} size="inline" caption={t('ui.gatheringForm.loadingCommunities')} />
               ) : myCommunities.length === 0 ? (
-                <Text style={styles.helperText}>You're not a member of any community yet.</Text>
+                <Text style={styles.helperText}>{t('ui.gatheringForm.noCommunityYet')}</Text>
               ) : (
                 <View style={{ marginTop: spacing.sm }}>
                   {myCommunities.map((c) => {
@@ -1029,10 +1022,10 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
             {visibility === 'everyone' && (
               <>
-                <Text style={[styles.label, { marginTop: spacing.lg }]}>How can people find it?</Text>
+                <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.gatheringForm.findQ')}</Text>
                 {[
-                  { key: true, title: 'Discoverable', hint: 'People can find this in Nearby.' },
-                  { key: false, title: 'Link only', hint: 'Only people with the link can find it. It is not listed anywhere.' },
+                  { key: true, title: t('ui.gatheringForm.discoverable'), hint: t('ui.gatheringForm.discoverableHint') },
+                  { key: false, title: t('ui.gatheringForm.linkOnly'), hint: t('ui.gatheringForm.linkOnlyHint') },
                 ].map((opt) => {
                   const selected = discoverable === opt.key;
                   return (
@@ -1057,10 +1050,10 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
             {visibility !== 'invite_only' && (
               <>
-                <Text style={[styles.label, { marginTop: spacing.lg }]}>Who can join it?</Text>
+                <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.gatheringForm.joinQ')}</Text>
                 {[
-                  { key: false, title: 'Anyone', hint: 'One tap to join. You can still remove people.' },
-                  { key: true, title: 'Require approval', hint: 'People request to join and you approve or decline.' },
+                  { key: false, title: t('ui.gatheringForm.anyone'), hint: t('ui.gatheringForm.anyoneHint') },
+                  { key: true, title: t('ui.gatheringForm.approval'), hint: t('ui.gatheringForm.approvalHint') },
                 ].map((opt) => {
                   const selected = requiresApproval === opt.key;
                   return (
@@ -1083,10 +1076,10 @@ export default function CreateGatheringScreen({ navigation, route }) {
               </>
             )}
 
-            <Text style={[styles.label, { marginTop: spacing.lg }]}>Capacity</Text>
-                {suggestedPartySize ? <Text style={styles.helperText}>Planning for {suggestedPartySize}? We set this from what you told us. Change it any time.</Text> : null}
+            <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.gatheringForm.capacity')}</Text>
+                {suggestedPartySize ? <Text style={styles.helperText}>{t('ui.gatheringForm.planningFor', { count: suggestedPartySize })}</Text> : null}
                 <View style={styles.chipsWrap}>
-                  {CAPACITY_OPTIONS.map((option) => {
+                  {CAPACITY_OPTIONS.map((o) => ({ ...o, label: t(`ui.gatheringOptions.capacity.${o.key}`) })).map((option) => {
                     const selected = capacityOption === option.key;
                     return (
                       <TouchableOpacity
@@ -1108,16 +1101,16 @@ export default function CreateGatheringScreen({ navigation, route }) {
                     <TouchableOpacity
                       onPress={() => { Haptics.selectionAsync(); setCapacityCustom((n) => Math.max(10, n - 1)); }}
                       style={styles.stepperButton}
-                      accessibilityLabel="Decrease capacity"
+                      accessibilityLabel={t('ui.gatheringForm.decreaseA11y')}
                       accessibilityRole="button"
                     >
                       <Text style={styles.stepperButtonText}>−</Text>
                     </TouchableOpacity>
-                    <Text style={styles.stepperValue}>{countLabel(capacityCustom, 'person', 'people') ?? `${capacityCustom} people`}</Text>
+                    <Text style={styles.stepperValue}>{t('ui.common.count.people', { count: capacityCustom })}</Text>
                     <TouchableOpacity
                       onPress={() => { Haptics.selectionAsync(); setCapacityCustom((n) => n + 1); }}
                       style={styles.stepperButton}
-                      accessibilityLabel="Increase capacity"
+                      accessibilityLabel={t('ui.gatheringForm.increaseA11y')}
                       accessibilityRole="button"
                     >
                       <Text style={styles.stepperButtonText}>+</Text>
@@ -1125,23 +1118,23 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   </View>
                 )}
                 {capacityOption !== 'no_limit' && (
-                  <Text style={styles.helperText}>Counts everyone, including you. Once full, new joins go to a waitlist — if a spot opens, the next person in line is added automatically.</Text>
+                  <Text style={styles.helperText}>{t('ui.gatheringForm.capacityHelp')}</Text>
                 )}
 
 
-            <Text style={[styles.label, { marginTop: spacing.lg }]}>Business requests</Text>
+            <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.gatheringForm.businessRequests')}</Text>
                 <TouchableOpacity
                   style={styles.womenOnlyToggle}
                   onPress={() => { Haptics.selectionAsync(); setAskLocalBusinesses((v) => !v); }}
                   activeOpacity={0.85}
-                  accessibilityLabel={askLocalBusinesses ? 'Ask local businesses about this gathering, tap to turn off' : "Let relevant local businesses know about this gathering, so they can potentially offer options"}
+                  accessibilityLabel={askLocalBusinesses ? t('ui.gatheringForm.askBizOnA11y') : t('ui.gatheringForm.askBizOffA11y')}
                   accessibilityRole="switch"
                   accessibilityState={{ checked: askLocalBusinesses }}
                 >
-                  <Text style={styles.womenOnlyToggleText}>{askLocalBusinesses ? '✓ ' : ''}Ask Local Businesses</Text>
+                  <Text style={styles.womenOnlyToggleText}>{askLocalBusinesses ? '✓ ' : ''}{t('ui.gatheringForm.askBiz')}</Text>
                 </TouchableOpacity>
                 <Text style={styles.helperText}>
-                  Let relevant local businesses know about this gathering so they can potentially offer options — never contacted on your behalf beyond that.
+                  {t('ui.gatheringForm.askBizHelp')}
                 </Text>
 
 
@@ -1149,64 +1142,64 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   style={styles.womenOnlyToggle}
                   onPress={() => { Haptics.selectionAsync(); setWomenOnly(!womenOnly); }}
                   activeOpacity={0.85}
-                  accessibilityLabel={womenOnly ? 'Women-only gathering, tap to make open to everyone' : 'Open to everyone, tap to make women-only'}
+                  accessibilityLabel={womenOnly ? t('ui.gatheringForm.womenOnlyOnA11y') : t('ui.gatheringForm.womenOnlyOffA11y')}
                   accessibilityRole="switch"
                   accessibilityState={{ checked: womenOnly }}
                 >
-                  <Text style={styles.womenOnlyToggleText}>{womenOnly ? '✓ ' : ''}Women-Only Gathering</Text>
+                  <Text style={styles.womenOnlyToggleText}>{womenOnly ? '✓ ' : ''}{t('ui.gatheringForm.womenOnly')}</Text>
                 </TouchableOpacity>
 
                 {visibility === 'invite_only' && (
                   <>
-                    <Text style={styles.label}>Map Visibility</Text>
+                    <Text style={styles.label}>{t('ui.gatheringForm.mapVisibility')}</Text>
                     <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
                       <TouchableOpacity
                         style={[styles.publicToggle, showOnMap && styles.publicToggleActive]}
                         onPress={() => { Haptics.selectionAsync(); setShowOnMap(true); }}
                         activeOpacity={0.85}
-                        accessibilityLabel="Show an approximate pin on the map"
+                        accessibilityLabel={t('ui.gatheringForm.onMapA11y')}
                         accessibilityRole="button"
                         accessibilityState={{ selected: showOnMap }}
                       >
-                        <Text style={[styles.publicToggleText, showOnMap && styles.publicToggleTextActive]}>🗺️ On Map</Text>
-                        <Text style={[styles.publicToggleHint, showOnMap && styles.publicToggleHintActive]}>Approximate pin shown</Text>
+                        <Text style={[styles.publicToggleText, showOnMap && styles.publicToggleTextActive]}>{t('ui.gatheringForm.onMap')}</Text>
+                        <Text style={[styles.publicToggleHint, showOnMap && styles.publicToggleHintActive]}>{t('ui.gatheringForm.onMapHint')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.publicToggle, !showOnMap && styles.publicToggleActive]}
                         onPress={() => { Haptics.selectionAsync(); setShowOnMap(false); }}
                         activeOpacity={0.85}
-                        accessibilityLabel="Hide from the map entirely, only visible in list search"
+                        accessibilityLabel={t('ui.gatheringForm.offMapA11y')}
                         accessibilityRole="button"
                         accessibilityState={{ selected: !showOnMap }}
                       >
-                        <Text style={[styles.publicToggleText, !showOnMap && styles.publicToggleTextActive]}>🚫 Off Map</Text>
-                        <Text style={[styles.publicToggleHint, !showOnMap && styles.publicToggleHintActive]}>List only, hidden from map</Text>
+                        <Text style={[styles.publicToggleText, !showOnMap && styles.publicToggleTextActive]}>{t('ui.gatheringForm.offMap')}</Text>
+                        <Text style={[styles.publicToggleHint, !showOnMap && styles.publicToggleHintActive]}>{t('ui.gatheringForm.offMapHint')}</Text>
                       </TouchableOpacity>
                     </View>
                   </>
                 )}
 
 
-            <Text style={[styles.label, { marginTop: spacing.lg }]}>Invitations & notifications</Text>
+            <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.gatheringForm.invitesNotif')}</Text>
             <TouchableOpacity
               style={styles.womenOnlyToggle}
               onPress={() => { Haptics.selectionAsync(); setAllowAttendeeInvites((v) => !v); }}
               activeOpacity={0.85}
-              accessibilityLabel={allowAttendeeInvites ? 'Guests can invite friends, tap to turn off' : 'Only you can invite, tap to let guests invite'}
+              accessibilityLabel={allowAttendeeInvites ? t('ui.gatheringForm.guestsInviteOnA11y') : t('ui.gatheringForm.guestsInviteOffA11y')}
               accessibilityRole="switch"
               accessibilityState={{ checked: allowAttendeeInvites }}
             >
-              <Text style={styles.womenOnlyToggleText}>{allowAttendeeInvites ? '✓ ' : ''}Allow guests to invite</Text>
+              <Text style={styles.womenOnlyToggleText}>{allowAttendeeInvites ? '✓ ' : ''}{t('ui.gatheringForm.guestsInvite')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.womenOnlyToggle}
               onPress={() => { Haptics.selectionAsync(); setHostNotifications((v) => !v); }}
               activeOpacity={0.85}
-              accessibilityLabel={hostNotifications ? 'Notify me about joins and requests, tap to turn off' : 'Not notifying about joins and requests, tap to turn on'}
+              accessibilityLabel={hostNotifications ? t('ui.gatheringForm.notifyOnA11y') : t('ui.gatheringForm.notifyOffA11y')}
               accessibilityRole="switch"
               accessibilityState={{ checked: hostNotifications }}
             >
-              <Text style={styles.womenOnlyToggleText}>{hostNotifications ? '✓ ' : ''}Notify me about joins and requests</Text>
+              <Text style={styles.womenOnlyToggleText}>{hostNotifications ? '✓ ' : ''}{t('ui.gatheringForm.notify')}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -1216,7 +1209,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
             <View style={styles.previewHeaderRow}>
               <Text style={styles.previewIcon}>{selectedStyle ? selectedStyle.icon : '🎉'}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={styles.previewTitle}>{title || 'Untitled gathering'}</Text>
+                <Text style={styles.previewTitle}>{title || t('ui.gatheringForm.preview.untitled')}</Text>
                 {interestTag ? <Text style={styles.previewMeta}>{names.tag(interestTag)}</Text> : null}
               </View>
             </View>
@@ -1224,61 +1217,61 @@ export default function CreateGatheringScreen({ navigation, route }) {
             <View style={styles.previewRow}>
               <Text style={styles.previewRowIcon}>🗓️</Text>
               <Text style={styles.previewRowText}>
-                {scheduledAt.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                {recurrenceRule ? ` · repeats ${recurrenceRule === 'biweekly' ? 'every 2 weeks' : recurrenceRule}` : ''}
+                {displayDateTime(scheduledAt, language)}
+                {recurrenceRule ? t(`ui.gatheringForm.preview.repeats.${recurrenceRule}`) : ''}
               </Text>
             </View>
             <View style={styles.previewRow}>
               <Text style={styles.previewRowIcon}>📍</Text>
-              <Text style={styles.previewRowText}>{placeName ? placeName : customLocation ? 'Custom location set' : 'Your current location'}</Text>
+              <Text style={styles.previewRowText}>{placeName ? placeName : customLocation ? t('ui.gatheringForm.preview.customLocation') : t('ui.gatheringForm.currentLocation')}</Text>
             </View>
             <View style={styles.previewRow}>
               <Text style={styles.previewRowIcon}>{selectedVisibility?.icon}</Text>
               <Text style={styles.previewRowText}>
-                {selectedVisibility?.label}{visibility === 'community' && selectedCommunity ? ` — ${selectedCommunity.name}` : ''}
-                {visibility === 'invite_only' ? `${!showOnMap ? ', hidden from map' : ''}` : ''}
+                {selectedVisibility ? t(`ui.gatheringVocab.visibility.${selectedVisibility.key}.label`) : null}{visibility === 'community' && selectedCommunity ? ` — ${selectedCommunity.name}` : ''}
+                {visibility === 'invite_only' && !showOnMap ? t('ui.gatheringForm.preview.hiddenFromMap') : ''}
               </Text>
             </View>
             {womenOnly && (
               <View style={styles.previewRow}>
                 <Text style={styles.previewRowIcon}>♀️</Text>
-                <Text style={styles.previewRowText}>Women-only gathering</Text>
+                <Text style={styles.previewRowText}>{t('ui.gatheringForm.preview.womenOnly')}</Text>
               </View>
             )}
             {capacityValue != null && (
               <View style={styles.previewRow}>
                 <Text style={styles.previewRowIcon}>👥</Text>
-                <Text style={styles.previewRowText}>Up to {countLabel(capacityValue, 'person', 'people') ?? `${capacityValue} people`} including you — waitlist after that</Text>
+                <Text style={styles.previewRowText}>{t('ui.gatheringForm.preview.upTo', { people: t('ui.common.count.people', { count: capacityValue }) })}</Text>
               </View>
             )}
             {selectedFriendIdList(inviteIds).length > 0 && (
               <View style={styles.previewRow}>
                 <Text style={styles.previewRowIcon}>🤝</Text>
-                <Text style={styles.previewRowText}>Invites {countLabel(selectedFriendIdList(inviteIds).length, 'friend', 'friends')} when you publish</Text>
+                <Text style={styles.previewRowText}>{t('ui.gatheringForm.preview.invites', { friends: t('ui.common.count.friends', { count: selectedFriendIdList(inviteIds).length }) })}</Text>
               </View>
             )}
             {askLocalBusinesses && (
               <View style={styles.previewRow}>
                 <Text style={styles.previewRowIcon}>🍽️</Text>
-                <Text style={styles.previewRowText}>We'll look for local business options once your gathering has real attendees</Text>
+                <Text style={styles.previewRowText}>{t('ui.gatheringForm.preview.business')}</Text>
               </View>
             )}
             {!showGroupInsights && (
               <View style={styles.previewRow}>
                 <Text style={styles.previewRowIcon}>🙈</Text>
-                <Text style={styles.previewRowText}>Group insights hidden from attendees</Text>
+                <Text style={styles.previewRowText}>{t('ui.gatheringForm.preview.insightsHidden')}</Text>
               </View>
             )}
             {priceLevel && (
               <View style={styles.previewRow}>
                 <Text style={styles.previewRowIcon}>💵</Text>
-                <Text style={styles.previewRowText}>{PRICE_OPTIONS.find((o) => o.key === priceLevel)?.label}</Text>
+                <Text style={styles.previewRowText}>{priceText(t, PRICE_OPTIONS.find((o) => o.key === priceLevel))}</Text>
               </View>
             )}
             {partyType && (
               <View style={styles.previewRow}>
                 <Text style={styles.previewRowIcon}>🙋</Text>
-                <Text style={styles.previewRowText}>{PARTY_TYPE_OPTIONS.find((o) => o.key === partyType)?.label}</Text>
+                <Text style={styles.previewRowText}>{t(PARTY_TYPE_OPTIONS.find((o) => o.key === partyType).labelKey)}</Text>
               </View>
             )}
           </View>
@@ -1289,20 +1282,20 @@ export default function CreateGatheringScreen({ navigation, route }) {
             style={styles.backButton}
             onPress={goBack}
             activeOpacity={0.85}
-            accessibilityLabel={step === 0 ? 'Cancel' : 'Back'}
+            accessibilityLabel={step === 0 ? t('ui.common.cancel') : t('ui.gatheringForm.back')}
             accessibilityRole="button"
           >
-            <Text style={styles.backButtonText}>{step === 0 ? 'Cancel' : 'Back'}</Text>
+            <Text style={styles.backButtonText}>{step === 0 ? t('ui.common.cancel') : t('ui.gatheringForm.back')}</Text>
           </TouchableOpacity>
           {step < STEP_DEFS.length - 1 ? (
             <TouchableOpacity
               style={[styles.nextButton, selectedStyle && { backgroundColor: selectedStyle.color }]}
               onPress={goNext}
               activeOpacity={0.85}
-              accessibilityLabel="Next"
+              accessibilityLabel={t('ui.common.next')}
               accessibilityRole="button"
             >
-              <Text style={styles.nextButtonText}>Next</Text>
+              <Text style={styles.nextButtonText}>{t('ui.common.next')}</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity

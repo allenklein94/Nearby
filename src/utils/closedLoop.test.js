@@ -18,8 +18,8 @@ describe('the closed loop, end to end (item 85)', () => {
     const resolver = read('./askResolver.js');
     expect(resolver).toContain('quickStartPartySize: r.group.partySize');
     const screen = read('../screens/CreateGatheringScreen.js');
-    expect(screen).toContain('Planning for {suggestedPartySize}?');
-    expect(screen).toContain('Change it any time');
+    expect(screen).toContain("t('ui.gatheringForm.planningFor', { count: suggestedPartySize })");
+    expect(require('../i18n/ui/gatheringForm').default.en.planningFor).toBe('Planning for {count}? We set this from what you told us. Change it any time.');
   });
   test('redemptions and dollars come only from real rows, and unpriced ones are said so', () => {
     expect(offerValueLines(null)).toBeNull();

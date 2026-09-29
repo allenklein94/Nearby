@@ -61,10 +61,9 @@ describe('discoverable vs joinable (item 74)', () => {
 
   it('create sends it only for Everyone; the choice appears only for Everyone', () => {
     expect(svc).toMatch(/discoverable: visibility === 'everyone' \? discoverable !== false : true/);
-    expect(create).toMatch(/How can people find it\?/);
-    expect(create).toMatch(/visibility === 'everyone' && \(\s*<>\s*<Text[^>]*>How can people find it\?/);
-    expect(create).toMatch(/Who can join it\?/);
-    expect(create).toMatch(/Link only/);
+    expect(create).toMatch(/visibility === 'everyone' && \(\s*<>\s*<Text[^>]*>\{t\('ui\.gatheringForm\.findQ'\)\}/);
+    expect(create).toMatch(/ui\.gatheringForm\.joinQ'/);
+    expect(create).toMatch(/ui\.gatheringForm\.linkOnly'/);
   });
 
   it('edit exposes it only for an Everyone gathering', () => {

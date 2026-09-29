@@ -19,24 +19,25 @@ describe('capacity rules (item 71)', () => {
   });
   it('the edit screen exposes the limit', () => {
     expect(edit).toMatch(/setGatheringCapacity/);
-    expect(edit).toMatch(/Limit attendees/);
+    expect(edit).toMatch(/ui\.gatheringForm\.edit\.limit'/);
   });
 });
 
 describe('host controls are centralized (item 73)', () => {
   it('the edit screen has one "Gathering settings" section holding the controls in order', () => {
-    const i = edit.indexOf('Gathering settings');
+    // Localization pass 5: the screen reads keys from ui.gatheringForm (English wording pinned in gatheringOptions/form tests).
+    const i = edit.indexOf("ui.gatheringForm.edit.settings'");
     expect(i).toBeGreaterThan(-1);
     const after = edit.slice(i);
-    const order = ['Visibility:', 'Require approval to join', 'Limit attendees', 'Allow business requests'].map((t) => after.indexOf(t));
+    const order = ['edit.visibilityLine', 'edit.approval', 'edit.limit', 'edit.allowBiz'].map((t) => after.indexOf(`ui.gatheringForm.${t}'`));
     order.forEach((n) => expect(n).toBeGreaterThan(-1));
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
   it('every listed setting is backed by a real column', () => {
     const svc = fs.readFileSync(path.join(__dirname, '../services/gatherings.js'), 'utf8');
     const m2 = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270170_host_gathering_settings.sql'), 'utf8');
-    expect(edit).toMatch(/Allow guests to invite/);
-    expect(edit).toMatch(/Notify me about joins and requests/);
+    expect(edit).toMatch(/ui\.gatheringForm\.guestsInvite'/);
+    expect(edit).toMatch(/ui\.gatheringForm\.notify'/);
     expect(m2).toMatch(/add column if not exists host_notifications/);
     expect(m2).toMatch(/add column if not exists allow_attendee_invites/);
     expect(svc).toMatch(/host_notifications, allow_attendee_invites/);
@@ -50,12 +51,12 @@ describe('the Create wizard centralizes the same settings (item 73)', () => {
   const settings = create.slice(create.indexOf("stepKey === 'settings' && ("), create.indexOf("stepKey === 'publish' && ("));
   const details = create.slice(create.indexOf("stepKey === 'details' && ("), create.indexOf("stepKey === 'settings' && ("));
   it('has one Settings step after Details and no separate Who step', () => {
-    expect(create).toMatch(/key: 'settings', label: 'Settings'/);
+    expect(create).toMatch(/key: 'settings', label: t\('ui\.gatheringForm\.step\.settings'\)/);
     expect(create).not.toMatch(/key: 'who'/);
     expect(create.indexOf("key: 'details'")).toBeLessThan(create.indexOf("key: 'settings'"));
   });
-  it.each(['Visibility', 'How can people find it?', 'Who can join it?', 'Capacity', 'Business requests', 'Women-Only', 'Allow guests to invite', 'Notify me about joins and requests'])('Settings holds %s', (t) => {
-    expect(settings).toContain(t);
+  it.each(['visibility', 'findQ', 'joinQ', 'capacity', 'businessRequests', 'womenOnly', 'guestsInvite', 'notify'])('Settings holds %s', (k) => {
+    expect(settings).toContain(`ui.gatheringForm.${k}'`);
   });
   it('More options no longer scatters those controls', () => {
     ['How many people?', 'Ask Local Businesses', 'Women-Only', 'Map Visibility'].forEach((t) => expect(details).not.toContain(t));

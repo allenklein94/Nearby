@@ -119,7 +119,7 @@ describe('wiring', () => {
     expect(read('src/services/gatherings.js')).toMatch(/genre, format, skill_level, (effort_level, )?features/);
     for (const f of ['src/screens/CreateGatheringScreen.js', 'src/screens/EditGatheringScreen.js']) {
       const s = read(f);
-      expect(s).toContain('Skill level');
+      expect(s).toContain("t('ui.gatheringForm.skill')");
       expect(s).toMatch(/skillOptionsFor\(skillContext\(/);
       expect(s).toMatch(/skillLevel: cleanSkillLevel\(skillLevel, skillContext\(/);
     }

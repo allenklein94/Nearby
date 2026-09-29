@@ -55,9 +55,9 @@ describe('1-2. prefill, then the invite step only with invite context', () => {
   });
   it('the step order is What, When, Invite, Where, Details, Settings, Publish, and Invite exists only with the flag', () => {
     const defs = CREATE.slice(CREATE.indexOf('const STEP_DEFS = ['), CREATE.indexOf('].filter('));
-    expect(defs.replace(/\s+/g, ' ')).toMatch(/'what'.*'when'.*\.\.\.\(askInvite \? \[\{ key: 'invite', label: 'Invite' \}\] : \[\]\).*'where'.*'details'.*'settings'.*'publish'/);
+    expect(defs.replace(/\s+/g, ' ')).toMatch(/'what'.*'when'.*\.\.\.\(askInvite \? \[\{ key: 'invite', label: t\('ui\.gatheringForm\.step\.invite'\) \}\] : \[\]\).*'where'.*'details'.*'settings'.*'publish'/);
     expect(CREATE).toMatch(/const askInvite = route\.params\?\.quickStartInvite === true \|\| suggestedInviteeIds\.length > 0;/);
-    expect(CREATE).toMatch(/Who do you want to invite\?/);
+    expect(CREATE).toMatch(/ui\.gatheringForm\.inviteQ'/);
   });
 });
 
@@ -149,7 +149,8 @@ describe('Celebrate suggestions are preselected on the shared step', () => {
   it('Create starts from the suggestions only, opens the step for them, and says they can be unchecked', () => {
     expect(CREATE).toMatch(/useState\(\(\) => selectionFromSuggested\(suggestedInviteeIds\)\)/);
     expect(CREATE).toMatch(/const askInvite = route\.params\?\.quickStartInvite === true \|\| suggestedInviteeIds\.length > 0;/);
-    expect(CREATE).toMatch(/Uncheck anyone you'd rather not invite\./);
+    expect(CREATE).toMatch(/ui\.gatheringForm\.suggestedChecked(With)?'/);
+    expect(require('../i18n/ui/gatheringForm').default.en.suggestedChecked).toMatch(/Uncheck anyone you'd rather not invite\./);
     expect(CREATE).toMatch(/suggestedIds=\{suggestedInviteeIds\}/);
     const celebrate = read('../screens/CelebrateSomethingScreen.js');
     const toCreate = celebrate.slice(celebrate.lastIndexOf('params.suggestedInviteeIds', celebrate.indexOf("navigation.navigate('CreateGathering', params)")), celebrate.indexOf("navigation.navigate('CreateGathering', params)"));

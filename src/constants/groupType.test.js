@@ -17,7 +17,7 @@ describe('group type (owner item 43): one closed vocabulary everywhere', () => {
     }
     const mig = read('supabase/migrations/20270197_group_type_vocabulary.sql');
     for (const k of ['family', 'coworkers', 'new_people']) expect(mig).toContain(`'${k}'`);
-    expect(read('src/screens/CreateGatheringScreen.js')).toMatch(/key: 'coworkers'/);
+    expect(read('src/screens/CreateGatheringScreen.js')).toMatch(/'coworkers'/);
   });
   it('"coffee" and "coffee with 8 coworkers" rank differently for a business that takes big groups', () => {
     const bigGroupShop = { accommodates_party_types: ['groups'] };
