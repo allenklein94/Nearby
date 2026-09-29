@@ -29,7 +29,8 @@ import { inviteAction } from '../utils/primaryAction';
 import { recommendationContext, contextItem } from '../utils/recommendationContext';
 import { openDestination } from '../services/openDestination';
 import { activityLoadNotice } from '../utils/homeLoadNotice';
-import { formatAgo } from '../utils/timeLabels';
+import { displayAgo } from '../i18n/display';
+import useCategoryNames from '../hooks/useCategoryNames';
 
 // A genuinely unified feed — notices/waves, recent crossed paths,
 // and other activity all interleaved by recency into one
@@ -58,7 +59,8 @@ import { formatAgo } from '../utils/timeLabels';
 
 export default function ActivityScreen({ navigation, route, initialSubSection: initialSubSectionProp }) {
   const { colors, shadow } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const names = useCategoryNames(); // category names in the person's language (display only)
   const styles = getStyles(colors, shadow);
   // Reached two ways: as the real bottom-tab route (name 'Activity',
   // Phase 5's bottom-nav restructuring) and as the standalone pushed
@@ -289,16 +291,21 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
   function formatTimeUntil(iso) {
     const diffMs = new Date(iso).getTime() - Date.now();
     const diffHours = Math.round(diffMs / (60 * 60 * 1000));
-    if (diffHours < 1) return 'starting soon';
-    if (diffHours === 1) return 'in 1 hour';
-    return `in ${diffHours} hours`;
+    if (diffHours < 1) return t('ui.activity.startingSoon');
+    return t('ui.activity.inHours', { count: diffHours });
+  }
+
+  // The reminder's role line, from the structured fields (the service's English `role` is kept for other callers).
+  function reminderRole(item) {
+    if (item.isHost) return t('ui.activity.youreHosting');
+    return item.hostName ? t('ui.activity.hostedBy', { name: item.hostName }) : t('ui.activity.hostedByUnknown');
   }
 
   async function handleApproveConnectionRequest(request) {
     try {
       const result = await approveInterest(request.id);
       if (result?.status === 'waitlisted') {
-        Alert.alert('Gathering full', "This gathering is already at capacity — they've been added to the waitlist instead.");
+        Alert.alert(t('ui.activity.gatheringFullTitle'), t('ui.activity.gatheringFullBody'));
       }
       loadConnectionRequests();
     } catch (e) {
@@ -343,9 +350,9 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
     try {
       await sendNoticeTo(item.raw.from_user, false);
       setNoticedBackIds((prev) => ({ ...prev, [item.key]: true }));
-      Alert.alert("It's a Match! 🎉", `You and ${item.raw.profiles?.display_name} noticed each other.`, [
-        { text: 'Keep Browsing', style: 'cancel' },
-        { text: 'Send a Message', onPress: () => navigation.navigate('Messages') },
+      Alert.alert(t('ui.activity.matchTitle'), t('ui.activity.matchBody', { name: item.raw.profiles?.display_name }), [
+        { text: t('ui.activity.keepBrowsing'), style: 'cancel' },
+        { text: t('ui.activity.sendMessage'), onPress: () => navigation.navigate('Messages') },
       ]);
       load();
     } catch (e) {
@@ -372,7 +379,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
   }
 
   function formatTimeAgo(iso) {
-    const ago = formatAgo(iso);
+    const ago = displayAgo(iso, language);
     return ago ? ago.charAt(0).toUpperCase() + ago.slice(1) : '';
   }
 
@@ -389,7 +396,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
     if (groupName === 'requests' && connectionRequests.length > 0) {
       return (
         <View key="requests" style={styles.group}>
-          <Text style={styles.groupHeader}>🙋 Connection Requests ({connectionRequests.length})</Text>
+          <Text style={styles.groupHeader}>{t('ui.activity.connectionRequests', { count: connectionRequests.length })}</Text>
           {connectionRequests.map((item) => (
             <View key={item.id} style={styles.row}>
               {requestPhotoUrls[item.id] ? (
@@ -399,15 +406,15 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
               )}
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowTitle}>{item.profiles?.display_name}</Text>
-                <Text style={styles.rowSubtitle}>wants to join {item.gatherings?.title}</Text>
+                <Text style={styles.rowSubtitle}>{t('ui.activity.wantsToJoin', { title: item.gatherings?.title })}</Text>
               </View>
               <TouchableOpacity
                 style={styles.textButton}
                 onPress={() => handleApproveConnectionRequest(item)}
-                accessibilityLabel={`Approve ${item.profiles?.display_name}'s request`}
+                accessibilityLabel={t('ui.activity.approveA11y', { name: item.profiles?.display_name })}
                 accessibilityRole="button"
               >
-                <Text style={styles.textButtonLabel}>Approve</Text>
+                <Text style={styles.textButtonLabel}>{t('ui.activity.approve')}</Text>
               </TouchableOpacity>
             </View>
           ))}
@@ -418,21 +425,21 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
     if (groupName === 'invitations' && combinedInvites.length > 0) {
       return (
         <View key="invitations" style={styles.group}>
-          <Text style={styles.groupHeader}>🤝 Invitations ({combinedInvites.length})</Text>
+          <Text style={styles.groupHeader}>{t('ui.activity.invitations', { count: combinedInvites.length })}</Text>
           {combinedInvites.map((item) => item.kind === 'groupPlan' ? (
             <TouchableOpacity
               key={`group-plan-${item.proposalId}`}
               style={styles.row}
               onPress={() => navigation.navigate('GroupPlan', { proposalId: item.proposalId })}
-              accessibilityLabel={`${item.initiatorName} wants to make a group plan with you`}
+              accessibilityLabel={t('ui.activity.groupPlanA11y', { name: item.initiatorName })}
               accessibilityRole="button"
             >
               <View style={[styles.rowAvatar, styles.avatarPlaceholder]} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowTitle}>{item.initiatorName}</Text>
-                <Text style={styles.rowSubtitle}>wants to make your {item.category} request a group plan</Text>
+                <Text style={styles.rowSubtitle}>{t('ui.activity.groupPlanLine', { category: names.tag(item.category) })}</Text>
               </View>
-              <Text style={styles.textButtonLabel}>View & Respond →</Text>
+              <Text style={styles.textButtonLabel}>{t('ui.activity.viewRespond')}</Text>
             </TouchableOpacity>
           ) : item.kind === 'friend' ? (
             <View key={`friend-${item.friendshipId}`} style={styles.row}>
@@ -443,15 +450,15 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
               )}
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowTitle}>{item.display_name}</Text>
-                <Text style={styles.rowSubtitle}>wants to be friends</Text>
+                <Text style={styles.rowSubtitle}>{t('ui.activity.wantsFriends')}</Text>
               </View>
               <TouchableOpacity
                 style={styles.textButton}
                 onPress={() => handleFriendRespond(item, true)}
-                accessibilityLabel={`Accept ${item.display_name}'s friend request`}
+                accessibilityLabel={t('ui.activity.acceptFriendA11y', { name: item.display_name })}
                 accessibilityRole="button"
               >
-                <Text style={styles.textButtonLabel}>Accept</Text>
+                <Text style={styles.textButtonLabel}>{t('ui.common.accept')}</Text>
               </TouchableOpacity>
             </View>
           ) : inviteAction(item).kind === 'dismiss' ? (
@@ -459,13 +466,13 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
             <View key={`social-${item.id}`} style={styles.row}>
               <View style={[styles.rowAvatar, styles.avatarPlaceholder]} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.rowTitle}>{expiredInviteLabel(item).title}</Text>
-                <Text style={styles.rowSubtitle}>{item.targetTitle} · {expiredInviteLabel(item).detail}</Text>
+                <Text style={styles.rowTitle}>{expiredInviteLabel(item, language).title}</Text>
+                <Text style={styles.rowSubtitle}>{item.targetTitle} · {expiredInviteLabel(item, language).detail}</Text>
               </View>
               <TouchableOpacity
                 style={[styles.textButton, styles.declineTextButton]}
                 onPress={() => handleRespondSocialInvite(item, false)}
-                accessibilityLabel={`Dismiss expired invite to ${item.targetTitle}`}
+                accessibilityLabel={t('ui.activity.dismissExpiredA11y', { title: item.targetTitle })}
                 accessibilityRole="button"
               >
                 <Text style={styles.declineTextButtonLabel}>{inviteAction(item).label}</Text>
@@ -477,13 +484,13 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowTitle}>{item.inviterName}</Text>
                 <Text style={styles.rowSubtitle}>
-                  invited you to {item.inviteType === 'gathering' ? 'a gathering' : 'a community'}: {item.targetTitle}
+                  {t(item.inviteType === 'gathering' ? 'ui.activity.invitedGathering' : 'ui.activity.invitedCommunity', { title: item.targetTitle })}
                 </Text>
               </View>
               <TouchableOpacity
                 style={[styles.textButton, styles.declineTextButton]}
                 onPress={() => handleRespondSocialInvite(item, false)}
-                accessibilityLabel={`Decline invite to ${item.targetTitle}`}
+                accessibilityLabel={t('ui.activity.declineInviteA11y', { title: item.targetTitle })}
                 accessibilityRole="button"
               >
                 <Text style={styles.declineTextButtonLabel}>{inviteAction(item).alternatives[0].label}</Text>
@@ -491,7 +498,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
               <TouchableOpacity
                 style={styles.textButton}
                 onPress={() => handleRespondSocialInvite(item, true)}
-                accessibilityLabel={`Accept invite to ${item.targetTitle}`}
+                accessibilityLabel={t('ui.activity.acceptInviteA11y', { title: item.targetTitle })}
                 accessibilityRole="button"
               >
                 <Text style={styles.textButtonLabel}>{inviteAction(item).label}</Text>
@@ -515,8 +522,8 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
             >
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowTitle}>{item.title}</Text>
-                <Text style={styles.rowSubtitle}>{item.role} · {formatTimeUntil(item.scheduledAt)}</Text>
-                <Text style={styles.viewLink}>View Plan →</Text>
+                <Text style={styles.rowSubtitle}>{reminderRole(item)} · {formatTimeUntil(item.scheduledAt)}</Text>
+                <Text style={styles.viewLink}>{t('ui.activity.viewPlan')}</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -531,7 +538,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
     if (connectionRequests.length === 0 && combinedInvites.length === 0) return null;
     return (
       <View key="needsAttention" style={styles.cluster}>
-        <Text style={styles.clusterHeader}>🎯 Needs Your Attention</Text>
+        <Text style={styles.clusterHeader}>{t('ui.activity.needsAttention')}</Text>
         {attentionSubOrder.map((groupName) => renderGroup(groupName))}
       </View>
     );
@@ -541,7 +548,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
     if (reminders.length === 0) return null;
     return (
       <View key="today" style={styles.cluster}>
-        <Text style={styles.clusterHeader}>📅 Today ({reminders.length})</Text>
+        <Text style={styles.clusterHeader}>{t('ui.activity.today', { count: reminders.length })}</Text>
         {renderGroup('reminders')}
       </View>
     );
@@ -553,7 +560,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Text style={[styles.headerTitle, { flex: 1 }]} accessibilityRole="header">Activity</Text>
+          <Text style={[styles.headerTitle, { flex: 1 }]} accessibilityRole="header">{t('ui.activity.title')}</Text>
           {showHeaderActions && <TabHeaderActions navigation={navigation} />}
         </View>
       </View>
@@ -576,15 +583,15 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
       )}
 
       {!loading && !loadError && activityLoadNotice(loadFailures) && (
-        <TouchableOpacity onPress={load} style={{ marginHorizontal: spacing.lg, marginBottom: spacing.sm }} accessibilityRole="button" accessibilityLabel="Try loading Activity again">
-          <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{activityLoadNotice(loadFailures)} <Text style={{ color: colors.primary, fontWeight: '700' }}>Try again →</Text></Text>
+        <TouchableOpacity onPress={load} style={{ marginHorizontal: spacing.lg, marginBottom: spacing.sm }} accessibilityRole="button" accessibilityLabel={t('ui.activity.retryA11y')}>
+          <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{activityLoadNotice(loadFailures)} <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('ui.common.tryAgainArrow')}</Text></Text>
         </TouchableOpacity>
       )}
 
       {loading ? (
         <SkeletonFeed variant="grid" count={4} />
       ) : loadError ? (
-        <LoadErrorState message="Couldn't load your activity." onRetry={load} />
+        <LoadErrorState message={t('ui.activity.loadError')} onRetry={load} />
       ) : (
         <FlatList
           data={items}
@@ -594,7 +601,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
           ListHeaderComponent={(hasAnyGroupContent || items.length > 0) ? (
             <View style={{ marginBottom: spacing.md }}>
               {clusterOrder.map((cluster) => cluster === 'needsAttention' ? renderNeedsAttentionCluster() : renderTodayCluster())}
-              {items.length > 0 && <Text style={styles.clusterHeader}>🕰️ Earlier</Text>}
+              {items.length > 0 && <Text style={styles.clusterHeader}>{t('ui.activity.earlier')}</Text>}
             </View>
           ) : null}
           ListEmptyComponent={hasAnyGroupContent ? null : (
@@ -604,11 +611,11 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
               {/* Thursday plan item 25: a real next action instead of a
                   dead end while waiting for something to show up here. */}
               <View style={styles.emptyActionsRow}>
-                <TouchableOpacity onPress={() => navigation.navigate('Discover')} accessibilityLabel="Explore things to do" accessibilityRole="button">
-                  <Text style={styles.emptyActionText}>Explore Things To Do →</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Discover')} accessibilityLabel={t('ui.activity.exploreA11y')} accessibilityRole="button">
+                  <Text style={styles.emptyActionText}>{t('ui.activity.exploreCta')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => navigation.navigate('FriendDiscovery')} accessibilityLabel="Discover people" accessibilityRole="button">
-                  <Text style={styles.emptyActionText}>Discover People →</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('FriendDiscovery')} accessibilityLabel={t('ui.activity.peopleA11y')} accessibilityRole="button">
+                  <Text style={styles.emptyActionText}>{t('ui.activity.peopleCta')}</Text>
                 </TouchableOpacity>
               </View>
             </FadeInState>
@@ -641,8 +648,8 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                 ? businessReplyTitle(partnerName, offer)
                 : item.type === 'business_offer_accepted'
                   ? acceptedReplyTitle(partnerName, offer)
-                  : `${partnerName} confirmed your reservation`;
-              const subtitleParts = [formatOfferSummary(offer), request?.raw_text].filter(Boolean);
+                  : t('ui.activity.reservationConfirmed', { name: partnerName || t('ui.offerCopy.aLocalBusiness') });
+              const subtitleParts = [formatOfferSummary(offer, language), request?.raw_text].filter(Boolean);
               // Shared context layer: the row's destination and action come from the one context object. Transactional, so no
               // recommendation reason; the action exists only while the offer can still be taken AND its request is readable.
               const ctx = recommendationContext(contextItem('business_offer', { ...offer, request_id: request?.id ?? null }));
@@ -679,7 +686,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                   style={[styles.row, n.is_super && styles.waveRow]}
                   onPress={() => handleCardPress(item)}
                   activeOpacity={0.85}
-                  accessibilityLabel={premium ? `${n.profiles?.display_name} ${n.is_super ? 'sent you a Wave' : 'noticed you'}` : `Someone ${n.is_super ? 'sent you a Wave' : 'noticed you'}, unlock Premium to see who`}
+                  accessibilityLabel={premium ? t(n.is_super ? 'ui.activity.waveA11y' : 'ui.activity.noticeTitle', { name: n.profiles?.display_name }) : t(n.is_super ? 'ui.activity.lockedWaveA11y' : 'ui.activity.lockedNoticeA11y')}
                   accessibilityRole="button"
                 >
                   {photoUrls[item.key] ? (
@@ -690,12 +697,14 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                   {!premium && <Text style={styles.lockIconSmall}>🔒</Text>}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowTitle}>
-                      {premium ? n.profiles?.display_name : 'Someone'} {n.is_super ? '👋 sent you a Wave' : 'noticed you'}
+                      {premium
+                        ? t(n.is_super ? 'ui.activity.waveTitle' : 'ui.activity.noticeTitle', { name: n.profiles?.display_name })
+                        : t(n.is_super ? 'ui.activity.lockedWaveTitle' : 'ui.activity.lockedNoticeTitle')}
                     </Text>
                     <Text style={styles.rowSubtitle}>
                       {formatTimeAgo(item.timestamp)}
                       {hasScore && (
-                        <Text> · <Text style={{ color: compatibilityColor(score), fontWeight: '700' }}>{score}% compatible</Text></Text>
+                        <Text> · <Text style={{ color: compatibilityColor(score), fontWeight: '700' }}>{t('ui.activity.compatible', { score })}</Text></Text>
                       )}
                     </Text>
                   </View>
@@ -704,7 +713,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                       style={[styles.inlineButton, alreadyNoticedBack && styles.inlineButtonDone]}
                       onPress={() => handleNoticeBack(item)}
                       disabled={alreadyNoticedBack}
-                      accessibilityLabel={alreadyNoticedBack ? 'Already noticed back' : `Notice ${n.profiles?.display_name} back`}
+                      accessibilityLabel={alreadyNoticedBack ? t('ui.activity.alreadyNoticedBackA11y') : t('ui.activity.noticeBackA11y', { name: n.profiles?.display_name })}
                       accessibilityRole="button"
                     >
                       <Text style={styles.inlineButtonText}>{alreadyNoticedBack ? '✓' : '👋'}</Text>
@@ -720,7 +729,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                 style={styles.row}
                 onPress={() => handleCardPress(item)}
                 activeOpacity={0.85}
-                accessibilityLabel={`Crossed paths with ${s.profiles?.display_name}`}
+                accessibilityLabel={t('ui.activity.crossedA11y', { name: s.profiles?.display_name })}
                 accessibilityRole="button"
               >
                 {photoUrls[item.key] ? (
@@ -729,7 +738,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                   <View style={[styles.rowAvatar, styles.avatarPlaceholder]} />
                 )}
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.rowTitle}>📍 Crossed paths with {s.profiles?.display_name}</Text>
+                  <Text style={styles.rowTitle}>{t('ui.activity.crossedTitle', { name: s.profiles?.display_name })}</Text>
                   <Text style={styles.rowSubtitle}>{formatTimeAgo(item.timestamp)}</Text>
                 </View>
               </TouchableOpacity>

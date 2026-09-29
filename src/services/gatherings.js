@@ -780,12 +780,16 @@ export async function getUpcomingReminders() {
     title: a.gatherings.title,
     scheduledAt: a.gatherings.scheduled_at,
     role: `Hosted by ${a.gatherings.profiles?.display_name ?? 'someone'}`,
+    isHost: false,
+    hostName: a.gatherings.profiles?.display_name ?? null,
   }));
   const hostingItems = (hosting ?? []).map((g) => ({
     id: g.id,
     title: g.title,
     scheduledAt: g.scheduled_at,
     role: "You're hosting",
+    isHost: true,
+    hostName: null,
   }));
 
   return [...attendingItems, ...hostingItems].sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));

@@ -7,6 +7,8 @@
 //   alternative   Offer Alternative (offer_type alt_time)                                            -> "X suggested another time"
 //   offer         a title, price, discount, included items, or a discount/perk/upgrade type          -> "X made you an offer"
 // Plain availability is never called an offer. This file is the one place consumer surfaces word a reply.
+import { tr } from '../i18n/translate';
+
 const REAL_OFFER = ['offered', 'accepted', 'completed'];
 const OFFER_TYPES = ['discount', 'perk', 'upgrade'];
 
@@ -19,31 +21,34 @@ export function businessReplyKind(offer) {
   return 'availability';
 }
 
-const PHRASE = { availability: 'can take you', alternative: 'suggested another time', offer: 'made you an offer' };
+// Localization pass 5: every consumer line below reads ui.offerCopy in the current language; its English is the locked copy
+// ("X can take you" / "X suggested another time" / "X made you an offer").
+const KIND_KEY = { availability: 'Availability', alternative: 'Alternative', offer: 'Offer' };
 
 // Activity's reply row. A decline / withdrawal / expiry is only "responded to your request".
 export function businessReplyTitle(partnerName, offer) {
-  const name = partnerName || 'A local business';
-  return REAL_OFFER.includes(offer?.status) ? `${name} ${PHRASE[businessReplyKind(offer)]}` : `${name} responded to your request`;
+  const name = partnerName || tr('ui.offerCopy.aLocalBusiness');
+  return REAL_OFFER.includes(offer?.status)
+    ? tr(`ui.offerCopy.reply${KIND_KEY[businessReplyKind(offer)]}`, { name })
+    : tr('ui.offerCopy.replyResponded', { name });
 }
 
 // The status line on the offer card in BusinessRequestDetail while the reply is open ("Can take you").
 export function businessReplyStatus(offer) {
-  const p = PHRASE[businessReplyKind(offer)];
-  return p.charAt(0).toUpperCase() + p.slice(1);
+  return tr(`ui.offerCopy.status${KIND_KEY[businessReplyKind(offer)]}`);
 }
 
 // Activity's "you accepted" row.
 export function acceptedReplyTitle(partnerName, offer) {
-  const name = partnerName || 'A local business';
+  const name = partnerName || tr('ui.offerCopy.aLocalBusiness');
   switch (businessReplyKind(offer)) {
-    case 'offer': return `You accepted ${name}'s offer`;
-    case 'alternative': return `You took ${name}'s suggested time`;
-    default: return `You chose ${name}`;
+    case 'offer': return tr('ui.offerCopy.acceptedOffer', { name });
+    case 'alternative': return tr('ui.offerCopy.acceptedAlternative', { name });
+    default: return tr('ui.offerCopy.acceptedChose', { name });
   }
 }
 
 // Only rich offers (a title or media) get the reveal, so this is always a real offer.
 export function offerRevealHeader(partnerName) {
-  return `${partnerName || 'A business'} made you an offer`;
+  return tr('ui.offerCopy.revealHeader', { name: partnerName || tr('ui.offerCopy.aBusiness') });
 }

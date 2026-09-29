@@ -1,3 +1,5 @@
+import { translate } from '../i18n/translate';
+import { displayMoney } from '../i18n/display';
 import { localWhenParts } from '../utils/gatheringStructure';
 import { serviceError } from '../utils/recoverableError';
 import { Platform } from 'react-native';
@@ -510,8 +512,18 @@ const OFFER_TYPE_LABELS = {
 // business (or a matched Occasion Package) genuinely said so via the real
 // price_is_per_person column -- never inferred, since a flat total and a
 // per-person rate are both honestly possible for the same raw number.
-export function formatOfferSummary(offer) {
+// `language` (optional, consumer surfaces): English stays exactly as below (the business dashboard calls it without one).
+export function formatOfferSummary(offer, language = 'en') {
   if (!offer) return null;
+  if (language && language !== 'en') {
+    const local = [];
+    if (offer.offer_type && OFFER_TYPE_LABELS[offer.offer_type]) local.push(translate(language, `ui.offerCopy.type.${offer.offer_type}`));
+    if (offer.offer_price != null) {
+      const price = displayMoney(Number(Number(offer.offer_price).toFixed(2)), language);
+      local.push(offer.price_is_per_person ? translate(language, 'ui.offerCopy.perPerson', { price }) : price);
+    }
+    return local.length > 0 ? local.join(' · ') : null;
+  }
   const parts = [];
   if (offer.offer_type && OFFER_TYPE_LABELS[offer.offer_type]) parts.push(OFFER_TYPE_LABELS[offer.offer_type]);
   if (offer.offer_price != null) parts.push(`$${Number(offer.offer_price).toFixed(2)}${offer.price_is_per_person ? '/person' : ''}`);
