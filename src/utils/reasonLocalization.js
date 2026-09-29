@@ -39,7 +39,7 @@ export const REASON_PARSE_ORDER = [
   'reasons.trendingGoing', 'reasons.trendingNearby', 'reasons.startingSoon', 'reasons.happeningToday',
   'reasons.onePersonAttending', 'reasons.peopleAttending', 'reasons.oneFriendAttending', 'reasons.friendsAttending', 'reasons.oneFirstTimer', 'reasons.firstTimers', 'reasons.attendingCount',
   'reasons.lovedHost', 'reasons.lovedKind', 'reasons.lovedBusiness', 'reasons.inCategoryYouLike', 'reasons.weatherIndoor', 'reasons.weatherOutdoor',
-  'reasons.closeBy', 'reasons.hangOutStyle', 'reasons.likeWhatYouJoined', 'reasons.greatWeatherForIt', 'reasons.canHostGroup', 'reasons.privateRoomFits', 'reasons.outdoorAreaFits',
+  'reasons.closeBy', 'reasons.hangOutStyle', 'reasons.likeWhatYouJoined', 'reasons.greatWeatherForIt', 'reasons.goodForWeather', 'reasons.canHostGroup', 'reasons.privateRoomFits', 'reasons.outdoorAreaFits',
   'reasons.welcomesGroups', 'reasons.hostsPrivateEvents', 'reasons.offersCatering', 'reasons.easyDropIn', 'reasons.lowCommitment', 'reasons.worthSettingTime', 'reasons.suitedAllAges',
   'reasons.suitedKids', 'reasons.suitedTeens', 'reasons.accommodatesGroup', 'reasons.beenHereBefore', 'reasons.businessYouFollow', 'reasons.meetNewPeople', 'reasons.alreadyMember',
   'reasons.publicCommunity',

@@ -268,8 +268,8 @@ describe('category narrows the ask (item 108)', () => {
     const src = fs.readFileSync(path.join(__dirname, '../screens/DiscoverHubScreen.js'), 'utf8');
     expect(src).toMatch(/isAll && !isSearching && \([\s\S]{0,200}renderBrowseRail\(openCategoryContext\)/);
     expect(src).toMatch(/renderBrowseRail\(handleIntentNarrow/);
-    expect(src).toMatch(/accessibilityLabel="Clear search"/);
-    const clear = src.slice(src.indexOf("setSearchQuery('');"), src.indexOf('accessibilityLabel="Clear search"'));
+    expect(src).toContain("accessibilityLabel={t('ui.discover.clearSearchA11y')}");
+    const clear = src.slice(src.indexOf("setSearchQuery('');"), src.indexOf("accessibilityLabel={t('ui.discover.clearSearchA11y')}"));
     expect(clear).toMatch(/setIntentSearch\(null\)/);
     // one narrowing path: the screen never builds its own category filter for an ask
     expect(src).not.toMatch(/narrowToGroup/);

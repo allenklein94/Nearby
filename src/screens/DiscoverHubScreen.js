@@ -65,6 +65,7 @@ import { railGroups } from '../constants/discoverCategoryRail';
 import { friendGoingReason, communityReason } from '../utils/recommendationFacts';
 import { getMyFriends } from '../services/friends';
 import { becauseYouLikeReason, reasonText } from '../constants/recommendationReasonVocabulary';
+import { localizeReason } from '../utils/reasonLocalization';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { splitTonight } from '../utils/categoryTonight';
 import { buildDiscoverSections, compareDiscover } from '../utils/discoverSections';
@@ -128,13 +129,8 @@ const TIME_SECTION_CAP = 4;
 // separately by the hero card's own dark scrim (styles.heroScrim below),
 // not by this function -- this never needs to hit a real contrast ratio
 // on its own.
-const TYPE_FILTERS = [
-  { key: 'all', label: 'All' },
-  { key: 'gatherings', label: 'Gatherings' },
-  { key: 'communities', label: 'Communities' },
-  { key: 'places', label: 'Places' },
-  { key: 'perks', label: 'Perks' },
-];
+// Labels: ui.discover.typeFilter.<key> (the person's language).
+const TYPE_FILTERS = [{ key: 'all' }, { key: 'gatherings' }, { key: 'communities' }, { key: 'places' }, { key: 'perks' }];
 
 const PREVIEW_COUNT = 3;
 
@@ -159,9 +155,10 @@ const PREVIEW_COUNT = 3;
 // beneath it ("What are you looking for?"), not a disconnected status
 // line -- title+subtitle+search now read as one hero block instead of
 // three separate elements each pulling their own weight.
+// Labels: ui.discover.mode.<key> and ui.discover.mode.<key>Subtitle.
 const DISCOVER_MODES = [
-  { key: 'things', icon: '🔎', label: 'Things to Do', subtitle: 'What are you looking for?' },
-  { key: 'people', icon: '👥', label: 'People', subtitle: "Who's around you." },
+  { key: 'things', icon: '🔎' },
+  { key: 'people', icon: '👥' },
 ];
 // Aug 24 2026 (CLAUDE.md, direct follow-up): People mode itself now gets the
 // identical segmented-toggle treatment as the outer Things-to-Do|People
@@ -173,9 +170,10 @@ const DISCOVER_MODES = [
 // `embedded` prop suppresses each screen's own redundant title, since this
 // toggle already names the surface) -- still two genuinely separate matching
 // systems underneath, this is a navigation-layer merge only.
+// Labels: ui.discover.submode.<key>.
 const PEOPLE_SUBMODES = [
-  { key: 'dating', icon: '💗', label: 'Dating' },
-  { key: 'friends', icon: '🤝', label: 'Friends' },
+  { key: 'dating', icon: '💗' },
+  { key: 'friends', icon: '🤝' },
 ];
 const LAST_MODE_KEY = 'discover_last_mode';
 const LAST_PEOPLE_SUBMODE_KEY = 'discover_last_people_submode';
@@ -200,7 +198,7 @@ const LAST_PEOPLE_SUBMODE_KEY = 'discover_last_people_submode';
 export default function DiscoverHubScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const names = useCategoryNames(); // category / group names on chips and headings, in the person's language (display only)
-  const { language } = useLanguage(); // recommendation reasons are shown in the person's language (utils/reasonLocalization.js)
+  const { t, language } = useLanguage(); // recommendation reasons are shown in the person's language (utils/reasonLocalization.js)
   const styles = getStyles(colors, shadow);
   const { session } = useAuth();
   const myUserId = session?.user?.id ?? null;
@@ -814,8 +812,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
       kind: 'business',
       key: `business-${group.partnerId}`,
       icon: '🔴',
-      title: group.partnerName ?? 'A local business',
-      posterLabelFallback: group.partnerName ?? 'A local business',
+      title: group.partnerName ?? t('ui.discover.aLocalBusiness'),
+      posterLabelFallback: group.partnerName ?? t('ui.discover.aLocalBusiness'),
       stories: group.stories,
     })),
   ].sort((a, b) => new Date(b.stories[0]?.created_at ?? 0) - new Date(a.stories[0]?.created_at ?? 0));
@@ -876,9 +874,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const weatherIndoorBias = isWeatherIndoorBiased(weatherSignal);
   const weatherOutdoorBias = isWeatherOutdoorBiased(weatherSignal);
   const weatherBanner = weatherIndoorBias
-    ? '🌧️ Rain expected — showing indoor options first'
+    ? t('ui.discover.weatherIndoor')
     : weatherOutdoorBias
-      ? '☀️ Great day out — showing outdoor options first'
+      ? t('ui.discover.weatherOutdoor')
       : null;
 
   // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- one real scored list,
@@ -901,7 +899,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const fit = getGatheringFitReasons(g);
     if (weatherIndoorBias && isIndoorCategory(g.interest_tag)) {
       fit.score += WEATHER_BONUS;
-      fit.reasons = [...fit.reasons, 'Good for the weather'];
+      fit.reasons = [...fit.reasons, reasonText('goodForWeather')];
     } else if (weatherOutdoorBias && isOutdoorCategory(g.interest_tag)) {
       fit.score += WEATHER_BONUS;
       fit.reasons = [...fit.reasons, reasonText('greatWeatherForIt')];
@@ -1229,11 +1227,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
         active={openNowOnly}
         style={[styles.filterChip, openNowOnly && styles.filterChipActive]}
         onPress={() => setOpenNowOnly((v) => !v)}
-        accessibilityLabel="Open now"
+        accessibilityLabel={t('ui.discover.openNow')}
         accessibilityRole="switch"
         accessibilityState={{ checked: openNowOnly }}
       >
-        <Text style={[styles.filterChipText, openNowOnly && styles.filterChipTextActive]}>🕒 Open now</Text>
+        <Text style={[styles.filterChipText, openNowOnly && styles.filterChipTextActive]}>{t('ui.discover.openNowChip')}</Text>
       </TapActiveChip>
     );
   }
@@ -1242,8 +1240,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
     return (
       <>
         <EmptyCopy id="open_now_none" />
-        <TouchableOpacity onPress={() => setOpenNowOnly(false)} accessibilityLabel="Show everything" accessibilityRole="button">
-          <Text style={styles.emptyActionText}>Show Everything →</Text>
+        <TouchableOpacity onPress={() => setOpenNowOnly(false)} accessibilityLabel={t('ui.discover.showEverythingA11y')} accessibilityRole="button">
+          <Text style={styles.emptyActionText}>{t('ui.discover.showEverything')}</Text>
         </TouchableOpacity>
       </>
     );
@@ -1372,7 +1370,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               onPress={() => onPress(group)}
               disabled={disabled}
               activeOpacity={0.85}
-              accessibilityLabel={selected ? `${label}, selected. Tap to clear` : label}
+              accessibilityLabel={selected ? t('ui.discover.selectedTapClear', { label }) : label}
               accessibilityRole="button"
               accessibilityState={{ selected, disabled }}
             >
@@ -1386,7 +1384,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             style={styles.categoryChip}
             onPress={() => { animateLayout(); setShowMoreCategories((v) => !v); }}
             activeOpacity={0.85}
-            accessibilityLabel={showMoreCategories ? 'Show fewer categories' : 'More categories'}
+            accessibilityLabel={t(showMoreCategories ? 'ui.discover.fewerCategories' : 'ui.discover.moreCategories')}
             accessibilityRole="button"
             accessibilityState={{ expanded: showMoreCategories }}
           >
@@ -1519,19 +1517,19 @@ export default function DiscoverHubScreen({ navigation, route }) {
       }
 
       Alert.alert(
-        'Who can see this?',
+        t('ui.discover.storyWho'),
         '',
         [
-          { text: 'Cancel', style: 'cancel', onPress: () => setPostingStory(false) },
+          { text: t('ui.common.cancel'), style: 'cancel', onPress: () => setPostingStory(false) },
           {
-            text: 'Matches & Friends Only',
+            text: t('ui.discover.storyConnections'),
             onPress: async () => {
               await uploadStory(myUserId, captured.uri, captured.type, false);
               setPostingStory(false);
             },
           },
           {
-            text: 'Public — Anyone',
+            text: t('ui.discover.storyPublic'),
             onPress: async () => {
               await uploadStory(myUserId, captured.uri, captured.type, true);
               setPostingStory(false);
@@ -1599,10 +1597,24 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // sentence, falling back to the real time badge (gatheringTimeBadge)
   // when neither a matched interest nor real popularity is what earned
   // this gathering its spot (e.g. it qualified purely on distance/today).
+  // Discover section headings (utils/discoverSections.js builds English titles) in the person's language: fixed sections by key,
+  // "Because you like X" with the category's translated name, the friends heading through the shared reason localizer.
+  function sectionTitle(section) {
+    switch (section.key) {
+      case 'now': return t('ui.discover.section.now');
+      case 'tonight': return t(String(section.title).startsWith('🌙') ? 'ui.discover.section.tonight' : 'ui.discover.section.today');
+      case 'because': return t('ui.discover.section.because', { tag: names.tag(section.tag) });
+      case 'friends': return `🤝 ${localizeReason(String(section.title).replace(/^🤝 /, ''), language)}`;
+      case 'trending': return t('ui.discover.section.trending');
+      case 'weekend': return t('ui.discover.section.weekend');
+      default: return section.title;
+    }
+  }
+
   function heroEyebrow(g) {
-    if (g.matchesYourInterests) return 'PERSONALIZED';
-    if (attendeeTotal(g) >= TRENDING_ATTENDANCE_MIN) return 'TRENDING';
-    return gatheringTimeBadge(g.scheduled_at) ?? 'RECOMMENDED';
+    // Codes are fixed English; shown as ui.discover.badge.<code> in the person's language.
+    const code = g.matchesYourInterests ? 'PERSONALIZED' : attendeeTotal(g) >= TRENDING_ATTENDANCE_MIN ? 'TRENDING' : (gatheringTimeBadge(g.scheduled_at) ?? 'RECOMMENDED');
+    return t(`ui.discover.badge.${code.replace(/ /g, '_')}`);
   }
 
   // Real action vocabulary, reused verbatim from GatheringDetailScreen.js
@@ -1618,7 +1630,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     // Item 73: generated from the gathering's state for this viewer (the context object's action, from utils/primaryAction.js),
     // the same source Home and the Gatherings feed use: a join shows as the CTA; going / hosting / requested / waitlisted / past /
     // expired show as a status badge; anything unknown is a plain View. Tapping either opens the context's destination.
-    const a = card.action ?? { kind: 'view', label: 'View' };
+    const a = card.action ?? { kind: 'view', label: t('ui.actions.view') };
     if (a.kind === 'join') return { kind: 'cta', label: a.label };
     if (a.status) return { kind: 'state', label: a.status };
     return { kind: 'cta', label: a.label };
@@ -1741,7 +1753,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
              still navigates, because joining is a real task change. */
           onPress={() => openContextFor(g)}
           activeOpacity={0.85}
-          accessibilityLabel={`${g.title}, ${heroEyebrow(g)}${reasonLine ? `, ${reasonLine}` : ''}. Shows more like this.`}
+          accessibilityLabel={t('ui.discover.showsMoreA11y', { text: `${g.title}, ${heroEyebrow(g)}${reasonLine ? `, ${reasonLine}` : ''}` })}
           accessibilityRole="button"
         >
           {coverPhotoUrls[g.id] ? (
@@ -1752,7 +1764,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             // a host's own uploaded photo always wins when one
             // exists, this is the next-best real picture, not a
             // fabricated one.
-            <Image source={{ uri: curatedCoverPhotoFor(g.interest_tag) }} style={styles.heroImage} accessibilityLabel={`${g.interest_tag} cover photo`} />
+            <Image source={{ uri: curatedCoverPhotoFor(g.interest_tag) }} style={styles.heroImage} accessibilityLabel={t('ui.discover.coverPhotoA11y', { name: names.tag(g.interest_tag) })} />
           ) : (
             // Real, disclosed fallback: this app's own existing
             // categoryStyleFor() color/icon (never a fabricated
@@ -1811,7 +1823,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         style={styles.card}
         onPress={() => openContextFor(g)}
         activeOpacity={0.85}
-        accessibilityLabel={`${g.title}${reasonLine ? `, ${reasonLine}` : ''}. Shows more like this.`}
+        accessibilityLabel={t('ui.discover.showsMoreA11y', { text: `${g.title}${reasonLine ? `, ${reasonLine}` : ''}` })}
         accessibilityRole="button"
       >
         {coverPhotoUrls[g.id] ? (
@@ -1866,7 +1878,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         style={styles.nowCard}
         onPress={() => openContextFor(g)}
         activeOpacity={0.85}
-        accessibilityLabel={`${[g.title, card.meta].filter(Boolean).join(', ')}. Shows more like this.`}
+        accessibilityLabel={t('ui.discover.showsMoreA11y', { text: [g.title, card.meta].filter(Boolean).join(', ') })}
         accessibilityRole="button"
       >
         {coverPhotoUrls[g.id] ? (
@@ -1892,8 +1904,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Discover</Text>
-            <Text style={styles.subtitle}>{activeModeInfo.subtitle}</Text>
+            <Text style={styles.title}>{t('ui.discover.title')}</Text>
+            <Text style={styles.subtitle}>{t(`ui.discover.mode.${activeModeInfo.key}Subtitle`)}</Text>
           </View>
           <TabHeaderActions navigation={navigation} />
         </View>
@@ -1907,12 +1919,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 active={active}
                 style={[styles.modeToggleButton, active && styles.modeToggleButtonActive]}
                 onPress={() => selectMode(m.key)}
-                accessibilityLabel={m.label}
+                accessibilityLabel={t(`ui.discover.mode.${m.key}`)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
               >
                 <Text style={styles.modeToggleIcon}>{m.icon}</Text>
-                <Text style={[styles.modeToggleText, active && styles.modeToggleTextActive]}>{m.label}</Text>
+                <Text style={[styles.modeToggleText, active && styles.modeToggleTextActive]}>{t(`ui.discover.mode.${m.key}`)}</Text>
               </TapActiveChip>
             );
           })}
@@ -1929,7 +1941,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <TouchableOpacity
               style={styles.breadcrumbBackButton}
               onPress={closeContext}
-              accessibilityLabel="Back to Discover"
+              accessibilityLabel={t('ui.discover.backA11y')}
               accessibilityRole="button"
             >
               <Text style={styles.breadcrumbBack}>←</Text>
@@ -1946,7 +1958,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 active={c.active}
                 style={[styles.filterChip, c.active && styles.filterChipActive]}
                 onPress={() => setCuisineFilter(c.active ? null : c.key)}
-                accessibilityLabel={c.active ? `${names.cuisine(c.key, c.label)}, selected. Tap to clear` : names.cuisine(c.key, c.label)}
+                accessibilityLabel={c.active ? t('ui.discover.selectedTapClear', { label: names.cuisine(c.key, c.label) }) : names.cuisine(c.key, c.label)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: c.active }}
               >
@@ -1956,17 +1968,17 @@ export default function DiscoverHubScreen({ navigation, route }) {
           </ScrollView>
         )}
         {mode === 'things' && openNowActive && (
-          <Text style={styles.openNowNote}>Only what we can confirm is open right now. Places without posted hours are left out.</Text>
+          <Text style={styles.openNowNote}>{t('ui.discover.openNowNote')}</Text>
         )}
 
         {mode === 'things' && !expandedContext && (
           <>
-            <Text style={styles.searchPrompt} accessibilityRole="header">What are you looking for?</Text>
+            <Text style={styles.searchPrompt} accessibilityRole="header">{t('ui.discover.lookingFor')}</Text>
             <View style={styles.searchBarWrap}>
               <Text style={styles.searchIcon}>🔍</Text>
               <TextInput
                 style={styles.searchInput}
-                placeholder='Search anything, or try "something fun Saturday"'
+                placeholder={t('ui.discover.searchPlaceholder')}
                 placeholderTextColor={colors.textTertiary}
                 value={searchQuery}
                 onChangeText={(t) => {
@@ -1983,7 +1995,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 }}
                 onSubmitEditing={handleUnderstandSearch}
                 returnKeyType="search"
-                accessibilityLabel="Search Discover, or describe what you want in plain English"
+                accessibilityLabel={t('ui.discover.searchA11y')}
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity
@@ -1995,7 +2007,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                     endSearchSession();
                     clearDiscoverSurprise();
                   }}
-                  accessibilityLabel="Clear search"
+                  accessibilityLabel={t('ui.discover.clearSearchA11y')}
                   accessibilityRole="button"
                 >
                   <Text style={styles.searchClear}>✕</Text>
@@ -2013,11 +2025,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
                       active={active}
                       style={[styles.filterChip, active && styles.filterChipActive]}
                       onPress={() => (resultTabsActive ? (animateLayout(), setSearchTab(f.key)) : setTypeTab(f.key))}
-                      accessibilityLabel={f.label}
+                      accessibilityLabel={t(`ui.discover.${resultTabsActive ? 'resultTab' : 'typeFilter'}.${f.key}`)}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
                     >
-                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{f.label}</Text>
+                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{t(`ui.discover.${resultTabsActive ? 'resultTab' : 'typeFilter'}.${f.key}`)}</Text>
                     </TapActiveChip>
                   );
                 })}
@@ -2027,7 +2039,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 <TouchableOpacity
                   style={styles.viewToggleButton}
                   onPress={() => setViewStyle(viewStyle === 'list' ? 'map' : 'list')}
-                  accessibilityLabel={viewStyle === 'list' ? 'Switch to map view' : 'Switch to list view'}
+                  accessibilityLabel={t(viewStyle === 'list' ? 'ui.discover.toMap' : 'ui.discover.toList')}
                   accessibilityRole="button"
                 >
                   <Text style={styles.viewToggleIcon}>{viewStyle === 'list' ? '🗺️' : '📋'}</Text>
@@ -2118,12 +2130,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
                       active={active}
                       style={[styles.peopleSubToggleButton, active && styles.peopleSubToggleButtonActive]}
                       onPress={() => selectPeopleSubMode(pm.key)}
-                      accessibilityLabel={pm.label}
+                      accessibilityLabel={t(`ui.discover.submode.${pm.key}`)}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
                     >
                       <Text style={styles.peopleSubToggleIcon}>{pm.icon}</Text>
-                      <Text style={[styles.peopleSubToggleText, active && styles.peopleSubToggleTextActive]}>{pm.label}</Text>
+                      <Text style={[styles.peopleSubToggleText, active && styles.peopleSubToggleTextActive]}>{t(`ui.discover.submode.${pm.key}`)}</Text>
                     </TapActiveChip>
                   );
                 })}
@@ -2132,7 +2144,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 style={styles.postStoryButton}
                 onPress={handlePostStory}
                 disabled={postingStory}
-                accessibilityLabel="Post a story"
+                accessibilityLabel={t('ui.discover.postStory')}
                 accessibilityRole="button"
               >
                 {postingStory ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.postStoryButtonIcon}>📷</Text>}
@@ -2175,19 +2187,19 @@ export default function DiscoverHubScreen({ navigation, route }) {
            secondary section underneath, never a peer tab. */
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {activeCuisine ? (
-            <Text style={styles.contextGroupNote}>Showing businesses that list {activeCuisineLabel} as their cuisine.</Text>
+            <Text style={styles.contextGroupNote}>{t('ui.discover.cuisineNote', { cuisine: activeCuisineLabel })}</Text>
           ) : null}
           {!activeCuisine && (<>
           {contextFriendLine ? <Text style={styles.contextGroupNote}>{contextFriendLine}</Text> : null}
           {contextTonight.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>Happening tonight</Text>
+              <Text style={styles.sectionHeader}>{t('ui.discover.happeningTonight')}</Text>
               <StaggeredReveal index={0}>
                 <View>{contextTonight.map(renderContextGatheringRow)}</View>
               </StaggeredReveal>
             </>
           )}
-          {contextTonight.length > 0 && contextGatherings.length === 0 ? null : <Text style={styles.sectionHeader}>Gatherings</Text>}
+          {contextTonight.length > 0 && contextGatherings.length === 0 ? null : <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.gatherings')}</Text>}
           {contextGatherings.length === 0 && contextTonight.length > 0 ? null : contextGatherings.length === 0 ? (
             <>
               <EmptyCopy id="context_gatherings" vars={{ topic: contextTopicLabel.toLowerCase() }} />
@@ -2196,10 +2208,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   quickStartTitle: contextTopicLabel,
                   quickStartCategory: expandedContext.interestTag ?? expandedContext.categoryTags?.[0] ?? null,
                 })}
-                accessibilityLabel={`Create a ${contextTopicLabel} gathering`}
+                accessibilityLabel={t('ui.discover.createTopicA11y', { topic: contextTopicLabel })}
                 accessibilityRole="button"
               >
-                <Text style={styles.emptyActionText}>+ Create a {contextTopicLabel} Gathering →</Text>
+                <Text style={styles.emptyActionText}>{t('ui.discover.createTopic', { topic: contextTopicLabel })}</Text>
               </TouchableOpacity>
             </>
           ) : (
@@ -2212,8 +2224,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
           {contextOtherTimeGatherings.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>More {expandedContext.interestTag} Nearby</Text>
-              <Text style={styles.contextGroupNote}>Same interest, a different time.</Text>
+              <Text style={styles.sectionHeader}>{t('ui.discover.moreNearby', { topic: names.tag(expandedContext.interestTag) })}</Text>
+              <Text style={styles.contextGroupNote}>{t('ui.discover.sameInterest')}</Text>
               <StaggeredReveal index={0}>
                 <View>{contextOtherTimeGatherings.map(renderContextGatheringRow)}</View>
               </StaggeredReveal>
@@ -2222,7 +2234,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
           {contextCommunities.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>Communities</Text>
+              <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.communities')}</Text>
               {contextCommunities.slice(0, 3).map((c) => { const cc = communityContext(c); return (
                 <TouchableOpacity
                   key={c.id}
@@ -2244,12 +2256,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </>
           )}
 
-          <Text style={styles.sectionHeader}>Places</Text>
+          <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.places')}</Text>
           {!userLocation ? (
             <>
-              <Text style={styles.emptyTextTight}>Enable location to see places nearby.</Text>
-              <TouchableOpacity onPress={enableLocation} accessibilityLabel="Enable location" accessibilityRole="button">
-                <Text style={styles.emptyActionText}>Enable Location →</Text>
+              <Text style={styles.emptyTextTight}>{t('ui.discover.enableLocationPlaces')}</Text>
+              <TouchableOpacity onPress={enableLocation} accessibilityLabel={t('ui.discover.enableLocationA11y')} accessibilityRole="button">
+                <Text style={styles.emptyActionText}>{t('ui.discover.enableLocation')}</Text>
               </TouchableOpacity>
             </>
           ) : loadingContextPlaces ? (
@@ -2261,8 +2273,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
           ) : contextPlacesShown.length === 0 ? (
             <>
               <EmptyCopy id="context_places" vars={{ topic: contextTopicLabel.toLowerCase() }} />
-              <TouchableOpacity onPress={closeContext} accessibilityLabel="Browse other categories" accessibilityRole="button">
-                <Text style={styles.emptyActionText}>← Browse Other Categories</Text>
+              <TouchableOpacity onPress={closeContext} accessibilityLabel={t('ui.discover.browseOtherA11y')} accessibilityRole="button">
+                <Text style={styles.emptyActionText}>{t('ui.discover.browseOther')}</Text>
               </TouchableOpacity>
             </>
           ) : (
@@ -2283,12 +2295,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
           </>)}
 
-          <Text style={styles.sectionHeader}>Perks</Text>
+          <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.perks')}</Text>
           {activeCuisine && contextOffers.length === 0 && !(openNowActive && cuisineMatchesAnyTime.length > 0) ? (
             <>
               <EmptyCopy id="cuisine_none" vars={{ cuisine: activeCuisineLabel }} />
-              <TouchableOpacity onPress={() => setCuisineFilter(null)} accessibilityLabel="Clear cuisine filter" accessibilityRole="button">
-                <Text style={styles.emptyActionText}>Show all restaurants →</Text>
+              <TouchableOpacity onPress={() => setCuisineFilter(null)} accessibilityLabel={t('ui.discover.clearCuisineA11y')} accessibilityRole="button">
+                <Text style={styles.emptyActionText}>{t('ui.discover.showAllRestaurants')}</Text>
               </TouchableOpacity>
             </>
           ) : openNowActive && contextOffers.length === 0 ? (
@@ -2296,8 +2308,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
           ) : contextOffers.length === 0 ? (
             <>
               <EmptyCopy id="context_perks" vars={{ topic: contextTopicLabel.toLowerCase() }} />
-              <TouchableOpacity onPress={closeContext} accessibilityLabel="Browse other categories" accessibilityRole="button">
-                <Text style={styles.emptyActionText}>← Browse Other Categories</Text>
+              <TouchableOpacity onPress={closeContext} accessibilityLabel={t('ui.discover.browseOtherA11y')} accessibilityRole="button">
+                <Text style={styles.emptyActionText}>{t('ui.discover.browseOther')}</Text>
               </TouchableOpacity>
             </>
           ) : (
@@ -2330,10 +2342,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
             onPress={() => navigation.navigate('AskBusiness', expandedContext.interestTag
               ? { prefillCategory: expandedContext.interestTag }
               : { prefillText: `Looking for ${contextTopicLabel} nearby` })}
-            accessibilityLabel={`Get an offer for ${contextTopicLabel}`}
+            accessibilityLabel={t('ui.discover.getOfferA11y', { topic: contextTopicLabel })}
             accessibilityRole="button"
           >
-            <Text style={styles.emptyActionText}>Get an offer from nearby businesses →</Text>
+            <Text style={styles.emptyActionText}>{t('ui.discover.getOffer')}</Text>
           </TouchableOpacity>
 
           {/* Phase 8 section G -- secondary by construction: it renders
@@ -2342,17 +2354,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
               placeholder, and nobody who isn't already a real connection. */}
           {contextConnections.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>People You Know</Text>
-              <Text style={styles.contextGroupNote}>
-                Friends and matches who are already going to one of these.
-              </Text>
+              <Text style={styles.sectionHeader}>{t('ui.discover.peopleYouKnow')}</Text>
+              <Text style={styles.contextGroupNote}>{t('ui.discover.peopleYouKnowNote')}</Text>
               {contextConnections.map((person) => (
                 <TouchableOpacity
                   key={person.id}
                   style={styles.card}
                   onPress={() => navigation.navigate('ViewProfile', { userId: person.id })}
                   activeOpacity={0.85}
-                  accessibilityLabel={`${person.display_name}, ${person.connection === 'friend' ? 'friend' : 'match'}${person.gatheringTitle ? `, going to ${person.gatheringTitle}` : ''}`}
+                  accessibilityLabel={[person.display_name, t(person.connection === 'friend' ? 'ui.discover.friend' : 'ui.discover.match'), person.gatheringTitle ? t('ui.discover.goingTo', { title: person.gatheringTitle }) : null].filter(Boolean).join(', ')}
                   accessibilityRole="button"
                 >
                   {contextConnectionPhotos[person.id] ? (
@@ -2412,7 +2422,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               whole group's tags instead of one gathering's own tag. */}
           {isAll && !isSearching && (
             <>
-              <Text style={styles.sectionHeader}>Browse</Text>
+              <Text style={styles.sectionHeader}>{t('ui.discover.browse')}</Text>
               {renderBrowseRail(openCategoryContext)}
             </>
           )}
@@ -2429,9 +2439,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {topCategoryGatherings.length > 0 && (
             <>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderRowLabel}>{names.tag(topSearchedCategory.category)} Near You</Text>
-                <TouchableOpacity onPress={openTopCategoryContext} accessibilityLabel={`See all ${topSearchedCategory.category} nearby`} accessibilityRole="button">
-                  <Text style={styles.seeAllInline}>See all →</Text>
+                <Text style={styles.sectionHeaderRowLabel}>{t('ui.common.nearYou', { topic: names.tag(topSearchedCategory.category) })}</Text>
+                <TouchableOpacity onPress={openTopCategoryContext} accessibilityLabel={t('ui.discover.seeAllTopicA11y', { topic: names.tag(topSearchedCategory.category) })} accessibilityRole="button">
+                  <Text style={styles.seeAllInline}>{t('ui.common.seeAll')}</Text>
                 </TouchableOpacity>
               </View>
               {topCategoryGatherings.map(renderGatheringTile)}
@@ -2451,9 +2461,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
               other section on this screen -- no fabricated placeholder. */}
           {!loadingCore && !userLocation && isAll && !isSearching && (
             <View style={{ marginBottom: spacing.md }}>
-              <Text style={styles.emptyTextTight}>Turn on location and Nearby will show what's happening around you, right now, today and this weekend.</Text>
-              <TouchableOpacity onPress={enableLocation} accessibilityLabel="Turn on location" accessibilityRole="button">
-                <Text style={styles.emptyActionText}>Turn on location →</Text>
+              <Text style={styles.emptyTextTight}>{t('ui.discover.locationBody')}</Text>
+              <TouchableOpacity onPress={enableLocation} accessibilityLabel={t('ui.home.locationA11y')} accessibilityRole="button">
+                <Text style={styles.emptyActionText}>{t('ui.home.locationCta')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -2461,7 +2471,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <React.Fragment key={section.key}>
               {section.key === 'now' ? (
                 <>
-                  <Text style={styles.sectionHeader}>{section.title}</Text>
+                  <Text style={styles.sectionHeader}>{sectionTitle(section)}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
                     {section.items.map(renderHappeningNowTile)}
                   </ScrollView>
@@ -2469,10 +2479,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
               ) : (
                 <>
                   <View style={styles.sectionHeaderRow}>
-                    <Text style={styles.sectionHeaderRowLabel} numberOfLines={1}>{section.title}</Text>
+                    <Text style={styles.sectionHeaderRowLabel} numberOfLines={1}>{sectionTitle(section)}</Text>
                     {section.hasMore && section.dateFilter ? (
-                      <TouchableOpacity onPress={() => navigation.navigate('Gatherings', { initialDateFilter: section.dateFilter })} accessibilityLabel={`See all: ${section.title}`} accessibilityRole="button">
-                        <Text style={styles.seeAllInline}>See all →</Text>
+                      <TouchableOpacity onPress={() => navigation.navigate('Gatherings', { initialDateFilter: section.dateFilter })} accessibilityLabel={t('ui.discover.seeAllA11y', { title: sectionTitle(section) })} accessibilityRole="button">
+                        <Text style={styles.seeAllInline}>{t('ui.common.seeAll')}</Text>
                       </TouchableOpacity>
                     ) : null}
                   </View>
@@ -2541,9 +2551,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
           {isSearching && onTopOrNotTabbed && !intentSearching && !!restoreFailed && !intentSearch && (
             <View style={styles.intentSearchBlock}>
-              <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>We couldn't bring back your ideas for this search. Your search and choices are kept.</Text>
-              <TouchableOpacity onPress={() => restoreSession(restoreFailed)} accessibilityLabel="Try again" accessibilityRole="button">
-                <Text style={styles.emptyActionText}>Try again →</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{t('ui.discover.restoreFailed')}</Text>
+              <TouchableOpacity onPress={() => restoreSession(restoreFailed)} accessibilityLabel={t('ui.common.tryAgain')} accessibilityRole="button">
+                <Text style={styles.emptyActionText}>{t('ui.common.tryAgainArrow')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -2563,10 +2573,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   <EmptyCopy id="category_narrow_none" vars={{ topic: names.group(intentSearch.classifyResult.narrowGroup, narrowGroupLabel(intentSearch.classifyResult.narrowGroup)) }} />
                   <TouchableOpacity
                     onPress={() => handleIntentNarrow({ key: intentSearch.classifyResult.narrowGroup })}
-                    accessibilityLabel="Show all ideas"
+                    accessibilityLabel={t('ui.discover.showAllIdeasA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.emptyActionText}>Show all ideas →</Text>
+                    <Text style={styles.emptyActionText}>{t('ui.discover.showAllIdeas')}</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -2577,17 +2587,17 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 {intentSearch.experience?.title ?? intentSearchFallbackTitle(intentSearch.classifyResult)}
               </Text>
               <View style={styles.intentSearchTagsRow}>
-                <Text style={styles.intentSearchTag}>📍 Nearby</Text>
+                <Text style={styles.intentSearchTag}>{t('ui.discover.tagNearby')}</Text>
                 {!!intentSearch.classifyResult?.narrowGroup && (
                   <Text style={styles.intentSearchTag}>{names.group(intentSearch.classifyResult.narrowGroup, narrowGroupLabel(intentSearch.classifyResult.narrowGroup))}</Text>
                 )}
                 {intentSearchDateLabel(intentSearch.classifyResult?.dateWindow) && (
                   <Text style={styles.intentSearchTag}>📅 {intentSearchDateLabel(intentSearch.classifyResult.dateWindow)}</Text>
                 )}
-                {intentSearch.classifyResult?.partyType === 'date' && <Text style={styles.intentSearchTag}>❤️ For two</Text>}
-                {intentSearch.classifyResult?.partyType === 'groups' && <Text style={styles.intentSearchTag}>👨‍👩‍👧‍👦 Big group</Text>}
-                {intentSearch.classifyResult?.partyType === 'friends' && <Text style={styles.intentSearchTag}>👥 Bring friends</Text>}
-                {intentSearch.classifyResult?.partyType === 'solo' && <Text style={styles.intentSearchTag}>🧍 Solo</Text>}
+                {intentSearch.classifyResult?.partyType === 'date' && <Text style={styles.intentSearchTag}>{t('ui.discover.tagForTwo')}</Text>}
+                {intentSearch.classifyResult?.partyType === 'groups' && <Text style={styles.intentSearchTag}>{t('ui.discover.tagBigGroup')}</Text>}
+                {intentSearch.classifyResult?.partyType === 'friends' && <Text style={styles.intentSearchTag}>{t('ui.discover.tagFriends')}</Text>}
+                {intentSearch.classifyResult?.partyType === 'solo' && <Text style={styles.intentSearchTag}>{t('ui.discover.tagSolo')}</Text>}
                 {['family', 'coworkers', 'new_people'].includes(intentSearch.classifyResult?.partyType) && (
                   <Text style={styles.intentSearchTag}>{PARTY_TYPE_LABELS[intentSearch.classifyResult.partyType]}</Text>
                 )}
@@ -2596,10 +2606,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
               {!!cuisineConstraintFromText(intentSearch.typedText) && (
                 <TouchableOpacity
                   onPress={() => openCuisineContext(cuisineConstraintFromText(intentSearch.typedText))}
-                  accessibilityLabel={`See ${cuisineLabel(cuisineConstraintFromText(intentSearch.typedText))} restaurants`}
+                  accessibilityLabel={t('ui.discover.seeCuisineA11y', { cuisine: names.cuisine(cuisineConstraintFromText(intentSearch.typedText), cuisineLabel(cuisineConstraintFromText(intentSearch.typedText))) })}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.emptyActionText}>See {cuisineLabel(cuisineConstraintFromText(intentSearch.typedText))} restaurants →</Text>
+                  <Text style={styles.emptyActionText}>{t('ui.discover.seeCuisine', { cuisine: names.cuisine(cuisineConstraintFromText(intentSearch.typedText), cuisineLabel(cuisineConstraintFromText(intentSearch.typedText))) })}</Text>
                 </TouchableOpacity>
               )}
               {intentSearch.experience ? (
@@ -2607,7 +2617,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   {(intentSearch.experience.bundles ?? []).map((bundle) => (
                     <View key={bundle.id} style={{ marginBottom: spacing.sm }}>
                       <Text style={styles.intentSearchGroupLabel}>
-                        ✨ One place has it all: {bundle.componentLabels.join(' + ')}
+                        {t('ui.home.onePlace', { parts: bundle.componentLabels.join(' + ') })}
                       </Text>
                       {renderIntentSearchResultRow(bundle)}
                     </View>
@@ -2627,13 +2637,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
               {/* Item 110: ask businesses with what was already said (what, how many, which day). */}
               <TouchableOpacity
                 onPress={() => askBusinessFromAsk(navigation, { classifyResult: intentSearch.classifyResult, typedText: intentSearch.typedText ?? searchQuery.trim(), submissionId: intentSearch.submissionId })}
-                accessibilityLabel="Ask nearby businesses"
+                accessibilityLabel={t('ui.discover.askBusinessesA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.emptyActionText}>Ask Nearby Businesses →</Text>
+                <Text style={styles.emptyActionText}>{t('ui.discover.askBusinesses')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={createFromAsk} accessibilityLabel="Create it yourself" accessibilityRole="button">
-                <Text style={styles.emptyActionText}>None of these? Create it yourself →</Text>
+              <TouchableOpacity onPress={createFromAsk} accessibilityLabel={t('ui.discover.createYourselfA11y')} accessibilityRole="button">
+                <Text style={styles.emptyActionText}>{t('ui.home.noneCreate')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -2641,14 +2651,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {/* Item 92: one search, every kind of result -- the activity itself, friends into it, and Nearby businesses. */}
           {resultTabsActive && !resultsSettled && (
             <View style={styles.intentSearchLoadingRow}>
-              <NLoader fullScreen={false} size="inline" caption="Searching everything nearby…" />
+              <NLoader fullScreen={false} size="inline" caption={t('ui.discover.searchingEverything')} />
             </View>
           )}
           {showSearchTopic && (
             <TouchableOpacity
               style={styles.searchTopicRow}
               onPress={() => openSearchTopic(searchedTopic)}
-              accessibilityLabel={`Explore ${searchedTopic.label} nearby`}
+              accessibilityLabel={t('ui.discover.exploreA11y', { topic: searchedTopic.label })}
               accessibilityRole="button"
             >
               <Text style={styles.categoryChipIcon}>{searchedTopic.icon}</Text>
@@ -2657,16 +2667,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 {!!searchedTopic.groupLabel && <Text style={styles.cardSubtitle} numberOfLines={1}>{searchedTopic.groupLabel}</Text>}
                 {!!searchFriendsLine && <Text style={styles.cardSubtitle} numberOfLines={1}>🤝 {searchFriendsLine}</Text>}
               </View>
-              <Text style={styles.emptyActionText}>Explore →</Text>
+              <Text style={styles.emptyActionText}>{t('ui.discover.explore')}</Text>
             </TouchableOpacity>
           )}
           {businessesToShow.length > 0 && (
             <>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderRowLabel}>Businesses</Text>
+                <Text style={styles.sectionHeaderRowLabel}>{t('ui.discover.businesses')}</Text>
                 {resultTabsActive && resultTab === 'top' && searchedBusinesses.length > businessesToShow.length && (
-                  <TouchableOpacity onPress={() => openKind('places', 'places')} accessibilityLabel="See all businesses" accessibilityRole="button">
-                    <Text style={styles.seeAllInline}>See all →</Text>
+                  <TouchableOpacity onPress={() => openKind('places', 'places')} accessibilityLabel={t('ui.discover.seeAllBusinessesA11y')} accessibilityRole="button">
+                    <Text style={styles.seeAllInline}>{t('ui.common.seeAll')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -2693,23 +2703,23 @@ export default function DiscoverHubScreen({ navigation, route }) {
               (unaffected by the P1 item 14 redesign above, which only
               replaces the default "All" landing view). */}
           {notableGatherings.length > 0 && (
-            <Text style={styles.sectionHeader}>Recommended For You</Text>
+            <Text style={styles.sectionHeader}>{t('ui.discover.recommended')}</Text>
           )}
           {notableGatherings.map(renderGatheringTile)}
 
           {showFlatGatheringsSection && isSearching && loadingSearch && (
             <>
-              <Text style={styles.sectionHeader}>Gatherings</Text>
-              <NLoader fullScreen={false} size="compact" caption="Searching gatherings…" />
+              <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.gatherings')}</Text>
+              <NLoader fullScreen={false} size="compact" caption={t('ui.discover.searchingGatherings')} />
             </>
           )}
 
           {showFlatGatheringsSection && isSearching && !loadingSearch && gatheringsToShow.length === 0 && (
             <>
-              <Text style={styles.sectionHeader}>Gatherings</Text>
+              <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.gatherings')}</Text>
               <EmptyCopy id="gatherings_search" vars={{ query: searchQuery.trim() }} />
-              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
-                <Text style={styles.emptyActionText}>Clear Search →</Text>
+              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel={t('ui.discover.clearSearchA11y')} accessibilityRole="button">
+                <Text style={styles.emptyActionText}>{t('ui.discover.clearSearch')}</Text>
               </TouchableOpacity>
             </>
           )}
@@ -2717,10 +2727,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {showFlatGatheringsSection && !(isSearching && loadingSearch) && gatheringsToShow.length > 0 && (
             <>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderRowLabel}>Gatherings</Text>
+                <Text style={styles.sectionHeaderRowLabel}>{t('ui.discover.typeFilter.gatherings')}</Text>
                 {seeAllVisible('plans') && (
-                  <TouchableOpacity onPress={() => openKind('plans', 'gatherings')} accessibilityLabel="See all gatherings" accessibilityRole="button">
-                    <Text style={styles.seeAllInline}>See all →</Text>
+                  <TouchableOpacity onPress={() => openKind('plans', 'gatherings')} accessibilityLabel={t('ui.discover.seeAllGatheringsA11y')} accessibilityRole="button">
+                    <Text style={styles.seeAllInline}>{t('ui.common.seeAll')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -2765,17 +2775,17 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
           {showCommunities && isSearching && loadingSearch && (
             <>
-              <Text style={styles.sectionHeader}>Communities</Text>
-              <NLoader fullScreen={false} size="compact" caption="Searching communities…" />
+              <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.communities')}</Text>
+              <NLoader fullScreen={false} size="compact" caption={t('ui.discover.searchingCommunities')} />
             </>
           )}
 
           {showCommunities && isSearching && !loadingSearch && communitiesToShow.length === 0 && (
             <>
-              <Text style={styles.sectionHeader}>Communities</Text>
+              <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.communities')}</Text>
               <EmptyCopy id="communities_search" vars={{ query: searchQuery.trim() }} />
-              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
-                <Text style={styles.emptyActionText}>Clear Search →</Text>
+              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel={t('ui.discover.clearSearchA11y')} accessibilityRole="button">
+                <Text style={styles.emptyActionText}>{t('ui.discover.clearSearch')}</Text>
               </TouchableOpacity>
             </>
           )}
@@ -2783,10 +2793,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {showCommunities && !(isSearching && loadingSearch) && communitiesToShow.length > 0 && (
             <>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderRowLabel}>Communities</Text>
+                <Text style={styles.sectionHeaderRowLabel}>{t('ui.discover.typeFilter.communities')}</Text>
                 {seeAllVisible('activities') && (
-                  <TouchableOpacity onPress={() => openKind('activities', 'communities')} accessibilityLabel="See all communities" accessibilityRole="button">
-                    <Text style={styles.seeAllInline}>See all →</Text>
+                  <TouchableOpacity onPress={() => openKind('activities', 'communities')} accessibilityLabel={t('ui.discover.seeAllCommunitiesA11y')} accessibilityRole="button">
+                    <Text style={styles.seeAllInline}>{t('ui.common.seeAll')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -2830,18 +2840,18 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {showPlaces && (
             <>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderRowLabel}>Places</Text>
+                <Text style={styles.sectionHeaderRowLabel}>{t('ui.discover.typeFilter.places')}</Text>
                 {seeAllVisible('places') && visiblePlaces.length > 0 && (
-                  <TouchableOpacity onPress={() => openKind('places', 'places')} accessibilityLabel="See all places" accessibilityRole="button">
-                    <Text style={styles.seeAllInline}>See all →</Text>
+                  <TouchableOpacity onPress={() => openKind('places', 'places')} accessibilityLabel={t('ui.discover.seeAllPlacesA11y')} accessibilityRole="button">
+                    <Text style={styles.seeAllInline}>{t('ui.common.seeAll')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
               {!userLocation ? (
                 <>
-                  <Text style={styles.emptyTextTight}>Enable location to discover places nearby.</Text>
-                  <TouchableOpacity onPress={enableLocation} accessibilityLabel="Enable location" accessibilityRole="button">
-                    <Text style={styles.emptyActionText}>Enable Location →</Text>
+                  <Text style={styles.emptyTextTight}>{t('ui.discover.enableLocationDiscover')}</Text>
+                  <TouchableOpacity onPress={enableLocation} accessibilityLabel={t('ui.discover.enableLocationA11y')} accessibilityRole="button">
+                    <Text style={styles.emptyActionText}>{t('ui.discover.enableLocation')}</Text>
                   </TouchableOpacity>
                 </>
               ) : placesPending ? (
@@ -2854,12 +2864,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 <>
                   <EmptyCopy id={isSearching ? 'places_search' : 'places_category'} vars={{ query: (searchQuery ?? '').trim() }} />
                   {isSearching ? (
-                    <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
-                      <Text style={styles.emptyActionText}>Clear Search →</Text>
+                    <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel={t('ui.discover.clearSearchA11y')} accessibilityRole="button">
+                      <Text style={styles.emptyActionText}>{t('ui.discover.clearSearch')}</Text>
                     </TouchableOpacity>
                   ) : typeFilter === 'places' ? (
-                    <TouchableOpacity onPress={() => setTypeFilter('all')} accessibilityLabel="Browse everything" accessibilityRole="button">
-                      <Text style={styles.emptyActionText}>← Browse Everything</Text>
+                    <TouchableOpacity onPress={() => setTypeFilter('all')} accessibilityLabel={t('ui.discover.browseEverythingA11y')} accessibilityRole="button">
+                      <Text style={styles.emptyActionText}>{t('ui.discover.browseEverything')}</Text>
                     </TouchableOpacity>
                   ) : null}
                   {/* Item 26 escape hatch: a real place can't be "created"
@@ -2879,10 +2889,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
                         ? `Looking for "${searchQuery.trim()}" nearby`
                         : `Looking for ${PLACE_CATEGORIES.find((c) => c.key === placesCategory)?.label || 'something'} nearby`,
                     })}
-                    accessibilityLabel="Ask nearby businesses"
+                    accessibilityLabel={t('ui.discover.askBusinessesA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.emptyActionText}>Ask Nearby Businesses →</Text>
+                    <Text style={styles.emptyActionText}>{t('ui.discover.askBusinesses')}</Text>
                   </TouchableOpacity>
                 </>
               ) : (
@@ -2910,17 +2920,17 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
           {showPerks && isSearching && loadingSearch && (
             <>
-              <Text style={styles.sectionHeader}>Perks</Text>
-              <NLoader fullScreen={false} size="compact" caption="Searching perks…" />
+              <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.perks')}</Text>
+              <NLoader fullScreen={false} size="compact" caption={t('ui.discover.searchingPerks')} />
             </>
           )}
 
           {showPerks && isSearching && !loadingSearch && offersToShow.length === 0 && (
             <>
-              <Text style={styles.sectionHeader}>Perks</Text>
+              <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.perks')}</Text>
               <EmptyCopy id="perks_search" vars={{ query: searchQuery.trim() }} />
-              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
-                <Text style={styles.emptyActionText}>Clear Search →</Text>
+              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel={t('ui.discover.clearSearchA11y')} accessibilityRole="button">
+                <Text style={styles.emptyActionText}>{t('ui.discover.clearSearch')}</Text>
               </TouchableOpacity>
             </>
           )}
@@ -2933,10 +2943,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {showPerks && !(isSearching && loadingSearch) && offersToShow.length > 0 && (
             <>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderRowLabel}>Perks</Text>
+                <Text style={styles.sectionHeaderRowLabel}>{t('ui.discover.typeFilter.perks')}</Text>
                 {seeAllVisible('offers') && (
-                  <TouchableOpacity onPress={() => openKind('offers', 'perks')} accessibilityLabel="See all perks" accessibilityRole="button">
-                    <Text style={styles.seeAllInline}>See all →</Text>
+                  <TouchableOpacity onPress={() => openKind('offers', 'perks')} accessibilityLabel={t('ui.discover.seeAllPerksA11y')} accessibilityRole="button">
+                    <Text style={styles.seeAllInline}>{t('ui.common.seeAll')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -2977,8 +2987,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
               forward as a real, editable prefill. Never auto-submitted. */}
           {nothingMatchedAnywhere && onTopOrNotTabbed && !openNowActive && (
             <View style={styles.createItCard}>
-              <Text style={styles.createItTitle}>Don't see what you're looking for?</Text>
-              <Text style={styles.createItSubtitle}>Tell Nearby what you want to do.</Text>
+              <Text style={styles.createItTitle}>{t('ui.discover.dontSee')}</Text>
+              <Text style={styles.createItSubtitle}>{t('ui.discover.tellNearby')}</Text>
               {/* Item 37 (context-aware primary CTA): "looking at search
                   results" with nothing real to show -- the primary action
                   is creating the thing itself, in the user's own words. */}
@@ -2986,13 +2996,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 style={styles.createItButton}
                 onPress={handleCreateItFromSearch}
                 disabled={creatingFromSearch}
-                accessibilityLabel="Create what you're looking for"
+                accessibilityLabel={t('ui.discover.createLookingA11y')}
                 accessibilityRole="button"
               >
                 {creatingFromSearch ? (
                   <ActivityIndicator color={colors.surface} />
                 ) : (
-                  <Text style={styles.createItButtonText}>Create What You're Looking For →</Text>
+                  <Text style={styles.createItButtonText}>{t('ui.discover.createLooking')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -3000,7 +3010,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
           {isAll && happeningNearby.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>🔴 Happening Nearby</Text>
+              <Text style={styles.sectionHeader}>{t('ui.discover.happeningNearby')}</Text>
               {happeningNearby.map((group) => (
                 <TouchableOpacity
                   key={group.key}
@@ -3032,8 +3042,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
         <SafeAreaView style={styles.container}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', margin: spacing.lg }}>
             <Text style={styles.title}>{gatheringStoryViewer?.title}</Text>
-            <TouchableOpacity onPress={() => setGatheringStoryViewer(null)} accessibilityLabel="Close" accessibilityRole="button">
-              <Text style={{ color: colors.primary, fontWeight: '700' }}>Close</Text>
+            <TouchableOpacity onPress={() => setGatheringStoryViewer(null)} accessibilityLabel={t('ui.common.close')} accessibilityRole="button">
+              <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('ui.common.close')}</Text>
             </TouchableOpacity>
           </View>
           <FlatList
@@ -3063,7 +3073,7 @@ function GatheringStoryItem({ story, colors, posterLabelFallback }) {
             style={{ width: '100%', height: 400, borderRadius: radius.lg }}
             resizeMode="cover"
             useNativeControls
-            accessibilityLabel={`${posterLabel}'s video story`}
+            accessibilityLabel={t('ui.discover.videoStoryA11y', { name: posterLabel })}
           />
         ) : (
           <Image source={{ uri: url }} style={{ width: '100%', height: 400, borderRadius: radius.lg }} resizeMode="cover" />

@@ -75,7 +75,7 @@ describe('Discover contextual sections (item 91)', () => {
   it('Discover renders search prompt, then Browse, then the sections', () => {
     const src = require('fs').readFileSync(require('path').join(__dirname, '../screens/DiscoverHubScreen.js'), 'utf8');
     expect(src).toContain('What are you looking for?');
-    const browse = src.indexOf('>Browse</Text>');
+    const browse = src.indexOf("{t('ui.discover.browse')}</Text>");
     const sections = src.indexOf('discoverSections.map(');
     expect(browse).toBeGreaterThan(0);
     expect(sections).toBeGreaterThan(browse);

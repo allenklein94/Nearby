@@ -20,6 +20,7 @@ export const LOCALIZED_FILES = [
   'src/utils/upcomingWorld.js',
   'src/utils/occasionRecall.js',
   'src/utils/gatheringFullness.js',
+  'src/screens/DiscoverHubScreen.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).

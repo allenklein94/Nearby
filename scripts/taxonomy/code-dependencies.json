@@ -9550,6 +9550,13 @@
    "group": null
   },
   {
+   "tag": "Dating",
+   "file": "src/i18n/ui/discover.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
    "tag": "Breakfast",
    "file": "src/i18n/ui/homeParts.js",
    "consumer": "code",
@@ -9614,13 +9621,6 @@
   },
   {
    "tag": "Coffee",
-   "file": "src/screens/DiscoverHubScreen.js",
-   "consumer": "code",
-   "occurrences": 1,
-   "group": null
-  },
-  {
-   "tag": "Dating",
    "file": "src/screens/DiscoverHubScreen.js",
    "consumer": "code",
    "occurrences": 1,

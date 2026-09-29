@@ -30,7 +30,8 @@ describe('surface vocabulary', () => {
   });
   it('Happening Nearby remains the expiring-moments row on Discover', () => {
     const d = read('screens/DiscoverHubScreen.js');
-    expect(d).toMatch(/Happening Nearby<\/Text>/);
+    expect(d).toMatch(/t\('ui\.discover\.happeningNearby'\)\}<\/Text>/);
+    expect(require('../i18n/ui/discover').default.en.happeningNearby).toMatch(/Happening Nearby$/);
     expect(d).toMatch(/happeningNearby = \[\s*\.\.\.gatheringStories/);
   });
   it('Trending shares one attendance floor', () => {
