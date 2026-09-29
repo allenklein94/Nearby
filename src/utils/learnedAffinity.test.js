@@ -57,7 +57,9 @@ describe('interests evolve from behavior, transparently (item 95)', () => {
     expect(mig).toMatch(/when be\.event_type in \('open', 'search'\) then 1 else 3/);
   });
   it('Settings shows what was learned, with Forget and the explicit add, and says it never changes interests on its own', () => {
-    const s = read('screens/SettingsScreen.js');
+    // the wording lives in the Settings ui namespace (localization pass 5); the screen reads it by key
+    const s = read('screens/SettingsScreen.js') + JSON.stringify(require('../i18n/ui/settings').default.en);
+    expect(s).toContain("t('ui.settings.whatNearbyHasNoticed')");
     expect(s).toContain('What Nearby has noticed');
     expect(s).toContain('It never changes your interests on its own.');
     expect(s).toMatch(/forgetBehaviorCategory\(a\.category\)/);

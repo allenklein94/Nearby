@@ -275,7 +275,7 @@ export default function SettingsScreen({ navigation, route }) {
   async function sendPhoneChangeOtp() {
     const formatted = toE164(newPhoneInput);
     if (!formatted) {
-      return Alert.alert('Invalid number', 'Enter a 10-digit US phone number.');
+      return Alert.alert(t('ui.settings.invalidNumber'), t('ui.settings.enterA10DigitUs'));
     }
     const { error } = await supabase.auth.updateUser({ phone: formatted });
     if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => sendPhoneChangeOtp() });
@@ -290,7 +290,7 @@ export default function SettingsScreen({ navigation, route }) {
       type: 'phone_change',
     });
     if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => verifyPhoneChange() });
-    showSuccessToast('Phone number updated', 'Your new number is now linked to your account.');
+    showSuccessToast(t('ui.settings.phoneNumberUpdated'), t('ui.settings.yourNewNumberIsNow'));
     setChangingPhone(false);
     setOtpSent(false);
     setNewPhoneInput('');
@@ -323,22 +323,22 @@ export default function SettingsScreen({ navigation, route }) {
 
   function confirmDeleteAccount() {
     Alert.alert(
-      'Delete your account?',
-      'This permanently deletes your profile, photo, matches, and messages. This cannot be undone.',
+      t('ui.settings.deleteYourAccount'),
+      t('ui.settings.thisPermanentlyDeletesYourProfile'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Continue', style: 'destructive', onPress: confirmDeleteAccountFinal },
+        { text: t('ui.settings.cancel'), style: 'cancel' },
+        { text: t('ui.settings.continue'), style: 'destructive', onPress: confirmDeleteAccountFinal },
       ]
     );
   }
 
   function confirmDeleteAccountFinal() {
     Alert.alert(
-      'Are you absolutely sure?',
-      'Your account and all associated data will be permanently deleted right now.',
+      t('ui.settings.areYouAbsolutelySure'),
+      t('ui.settings.yourAccountAndAllAssociated'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete My Account', style: 'destructive', onPress: handleDeleteAccount },
+        { text: t('ui.settings.cancel'), style: 'cancel' },
+        { text: t('ui.settings.deleteMyAccount'), style: 'destructive', onPress: handleDeleteAccount },
       ]
     );
   }
@@ -349,7 +349,7 @@ export default function SettingsScreen({ navigation, route }) {
       await deleteAccount();
     } catch (e) {
       setDeleting(false);
-      Alert.alert('Deletion failed', e.message);
+      Alert.alert(t('ui.settings.deletionFailed'), e.message);
     }
   }
 
@@ -363,21 +363,21 @@ export default function SettingsScreen({ navigation, route }) {
             style={styles.permissionBanner}
             onPress={openSystemSettings}
             activeOpacity={0.85}
-            accessibilityLabel="Notifications are turned off in your device settings, tap to enable"
+            accessibilityLabel={t('ui.settings.notificationsAreTurnedOffInA11y')}
             accessibilityRole="button"
           >
             <Text style={styles.permissionBannerIcon}>🔕</Text>
             <View style={{ flex: 1 }}>
-              <Text style={styles.permissionBannerTitle}>Notifications are off</Text>
+              <Text style={styles.permissionBannerTitle}>{t('ui.settings.notificationsAreOff')}</Text>
               <Text style={styles.permissionBannerText}>
-                You won't get alerts for matches, messages, or Waves until you enable notifications in your device settings.
+                {t('ui.settings.youWontGetAlertsFor')}
               </Text>
             </View>
             <Text style={styles.permissionBannerArrow}>›</Text>
           </TouchableOpacity>
         )}
 
-        <Text style={styles.groupHeader} accessibilityRole="header">Account</Text>
+        <Text style={styles.groupHeader} accessibilityRole="header">{t('ui.settings.account')}</Text>
         <View style={styles.card}>
           {!changingPhone ? (
             <TouchableOpacity
@@ -391,7 +391,7 @@ export default function SettingsScreen({ navigation, route }) {
             </TouchableOpacity>
           ) : !otpSent ? (
             <View>
-              <Text style={styles.label}>New Phone Number</Text>
+              <Text style={styles.label}>{t('ui.settings.newPhoneNumber')}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="(555) 555-5555"
@@ -399,46 +399,46 @@ export default function SettingsScreen({ navigation, route }) {
                 keyboardType="phone-pad"
                 value={newPhoneInput}
                 onChangeText={setNewPhoneInput}
-                accessibilityLabel="New phone number"
+                accessibilityLabel={t('ui.settings.newPhoneNumberA11y')}
               />
               <TouchableOpacity
                 style={styles.button}
                 onPress={sendPhoneChangeOtp}
                 activeOpacity={0.85}
-                accessibilityLabel="Send verification code"
+                accessibilityLabel={t('ui.settings.sendVerificationCodeA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.buttonText}>Send Verification Code</Text>
+                <Text style={styles.buttonText}>{t('ui.settings.sendVerificationCode')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setChangingPhone(false)}
                 style={{ marginTop: spacing.sm }}
-                accessibilityLabel="Cancel"
+                accessibilityLabel={t('ui.settings.cancelA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={styles.cancelText}>{t('ui.settings.cancel')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View>
-              <Text style={styles.label}>Enter the code sent to {newPhoneInput}</Text>
+              <Text style={styles.label}>{t('ui.settings.enterTheCodeSentTo', { newPhoneInput: newPhoneInput })}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="6-digit code"
+                placeholder={t('ui.settings.n6DigitCode')}
                 placeholderTextColor={colors.textTertiary}
                 keyboardType="number-pad"
                 value={otp}
                 onChangeText={setOtp}
-                accessibilityLabel="Verification code"
+                accessibilityLabel={t('ui.settings.verificationCodeA11y')}
               />
               <TouchableOpacity
                 style={styles.button}
                 onPress={verifyPhoneChange}
                 activeOpacity={0.85}
-                accessibilityLabel="Confirm new number"
+                accessibilityLabel={t('ui.settings.confirmNewNumberA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.buttonText}>Confirm New Number</Text>
+                <Text style={styles.buttonText}>{t('ui.settings.confirmNewNumber')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -459,21 +459,21 @@ export default function SettingsScreen({ navigation, route }) {
           style={styles.signOutButton}
           onPress={handleDataExport}
           disabled={exporting}
-          accessibilityLabel={exporting ? 'Preparing export' : 'Request my data'}
+          accessibilityLabel={exporting ? t('ui.settings.preparingExportA11y') : t('ui.settings.requestMyDataA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.signOutText}>{exporting ? 'Preparing export...' : 'Request My Data'}</Text>
+          <Text style={styles.signOutText}>{exporting ? t('ui.settings.preparingExport') : t('ui.settings.requestMyData')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={confirmDeleteAccount}
           disabled={deleting}
-          accessibilityLabel={deleting ? 'Deleting account' : 'Delete account, this permanently removes your profile and cannot be undone'}
+          accessibilityLabel={deleting ? t('ui.settings.deletingAccountA11y') : t('ui.settings.deleteAccountThisPermanentlyRemovesA11y')}
           accessibilityRole="button"
         >
           <Text style={styles.deleteText}>
-            {deleting ? 'Deleting account...' : 'Delete Account'}
+            {deleting ? t('ui.settings.deletingAccount') : t('ui.settings.deleteAccount')}
           </Text>
         </TouchableOpacity>
 
@@ -482,7 +482,7 @@ export default function SettingsScreen({ navigation, route }) {
           accessibilityRole="header"
           onLayout={(e) => { preferencesYRef.current = e.nativeEvent.layout.y; }}
         >
-          Preferences
+          {t('ui.settings.preferences')}
         </Text>
 
         {/* Aug 30 2026 (CLAUDE.md, external product-critique reply): "Dating
@@ -495,16 +495,16 @@ export default function SettingsScreen({ navigation, route }) {
             written; it's just a pointer, matching the same "don't delete
             legacy data, just stop asking" posture the taxonomy pass already
             established for discovery_gender/show_me above. */}
-        <Text style={styles.sectionLabel} accessibilityRole="header">❤️ Dating Preferences</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.settings.datingPreferences')}</Text>
         <TouchableOpacity
           style={[styles.card, styles.settingRow]}
           onPress={() => navigation.navigate('DatingPreferences')}
           activeOpacity={0.85}
-          accessibilityLabel="Dating Preferences, manage in your Dating Profile"
+          accessibilityLabel={t('ui.settings.datingPreferencesManageInYourA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.settingLabel}>Dating Preferences</Text>
-          <Text style={styles.linkText}>Manage →</Text>
+          <Text style={styles.settingLabel}>{t('ui.settings.datingPreferences2')}</Text>
+          <Text style={styles.linkText}>{t('ui.settings.manage')}</Text>
         </TouchableOpacity>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.appearance')}</Text>
@@ -515,33 +515,33 @@ export default function SettingsScreen({ navigation, route }) {
               value={isDark}
               onValueChange={toggleTheme}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Dark mode"
+              accessibilityLabel={t('ui.settings.darkModeA11y')}
             />
           </View>
           <View style={styles.divider} />
           <View style={{ paddingVertical: spacing.sm }}>
-            <Text style={styles.settingLabel}>Nearby Display Style</Text>
-            <Text style={styles.helperText}>Choose how profiles are shown in Nearby. Entirely optional — the list stays the default.</Text>
+            <Text style={styles.settingLabel}>{t('ui.settings.nearbyDisplayStyle')}</Text>
+            <Text style={styles.helperText}>{t('ui.settings.chooseHowProfilesAreShown')}</Text>
             <View style={[styles.chipsWrap, { marginTop: spacing.sm }]}>
               <TouchableOpacity
                 style={[styles.chip, discoveryViewStyle === 'list' && styles.chipSelected]}
                 onPress={() => updateDiscoveryViewStyle('list')}
                 activeOpacity={0.85}
-                accessibilityLabel="List view"
+                accessibilityLabel={t('ui.settings.listViewA11y')}
                 accessibilityRole="button"
                 accessibilityState={{ selected: discoveryViewStyle === 'list' }}
               >
-                <Text style={[styles.chipText, discoveryViewStyle === 'list' && styles.chipTextSelected]}>📋 List</Text>
+                <Text style={[styles.chipText, discoveryViewStyle === 'list' && styles.chipTextSelected]}>{t('ui.settings.list')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.chip, discoveryViewStyle === 'cards' && styles.chipSelected]}
                 onPress={() => updateDiscoveryViewStyle('cards')}
                 activeOpacity={0.85}
-                accessibilityLabel="Card swipe view"
+                accessibilityLabel={t('ui.settings.cardSwipeViewA11y')}
                 accessibilityRole="button"
                 accessibilityState={{ selected: discoveryViewStyle === 'cards' }}
               >
-                <Text style={[styles.chipText, discoveryViewStyle === 'cards' && styles.chipTextSelected]}>🃏 Cards</Text>
+                <Text style={[styles.chipText, discoveryViewStyle === 'cards' && styles.chipTextSelected]}>{t('ui.settings.cards')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -667,40 +667,40 @@ export default function SettingsScreen({ navigation, route }) {
         <View style={styles.card}>
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>🤝 Friends</Text>
-              <Text style={styles.helperText}>Friend requests, friends' stories, and birthday and occasion reminders.</Text>
+              <Text style={styles.settingLabel}>{t('ui.settings.friends')}</Text>
+              <Text style={styles.helperText}>{t('ui.settings.friendRequestsFriendsStoriesAnd')}</Text>
             </View>
             <Switch
               value={notifySocial}
               onValueChange={(v) => toggleNotifPref('notify_social', v, setNotifySocial)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me about friends -- friend requests, stories, and occasion reminders"
+              accessibilityLabel={t('ui.settings.notifyMeAboutFriendsFriendA11y')}
             />
           </View>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>❤️ Dating</Text>
-              <Text style={styles.helperText}>Matches, messages, waves, calls, and shared-space updates with your matches.</Text>
+              <Text style={styles.settingLabel}>{t('ui.settings.dating')}</Text>
+              <Text style={styles.helperText}>{t('ui.settings.matchesMessagesWavesCallsAnd')}</Text>
             </View>
             <Switch
               value={notifyDating}
               onValueChange={(v) => toggleNotifPref('notify_dating', v, setNotifyDating)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me about dating -- matches, messages, waves, and calls"
+              accessibilityLabel={t('ui.settings.notifyMeAboutDatingMatchesA11y')}
             />
           </View>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>🎯 Discovery</Text>
-              <Text style={styles.helperText}>A new gathering or business that matches your interests, near where you are. Nearby uses your approximate area (about a mile) for this -- it's never shown to anyone.</Text>
+              <Text style={styles.settingLabel}>{t('ui.settings.discovery')}</Text>
+              <Text style={styles.helperText}>{t('ui.settings.aNewGatheringOrBusiness')}</Text>
             </View>
             <Switch
               value={notifyDiscovery}
               onValueChange={(v) => { toggleNotifPref('notify_discovery', v, setNotifyDiscovery); if (!v) clearNotificationArea().catch(() => {}); }}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me when something new matches my interests"
+              accessibilityLabel={t('ui.settings.notifyMeWhenSomethingNewA11y')}
             />
           </View>
           {notifyDiscovery && (
@@ -708,22 +708,22 @@ export default function SettingsScreen({ navigation, route }) {
               <TouchableOpacity
                 style={styles.customizeLink}
                 onPress={() => clearNotificationArea()
-                  .then(() => showSuccessToast('Saved area cleared', 'Nearby will save a fresh one next time you use it.'))
+                  .then(() => showSuccessToast(t('ui.settings.savedAreaCleared'), t('ui.settings.nearbyWillSaveAFresh')))
                   .catch((e) => presentRecoverableError(Alert, { what: 'complete that', error: e }))}
-                accessibilityLabel="Clear my saved area"
+                accessibilityLabel={t('ui.settings.clearMySavedAreaA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.customizeLinkText}>📍 Clear my saved area (refreshes next time you use Nearby)</Text>
+                <Text style={styles.customizeLinkText}>{t('ui.settings.clearMySavedAreaRefreshes')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.customizeLink}
                 onPress={() => setExpandedRecPanel(expandedRecPanel === 'things_to_do' ? null : 'things_to_do')}
-                accessibilityLabel="Customize Things To Do notifications"
+                accessibilityLabel={t('ui.settings.customizeThingsToDoNotificationsA11y')}
                 accessibilityRole="button"
                 accessibilityState={{ expanded: expandedRecPanel === 'things_to_do' }}
               >
                 <Text style={styles.customizeLinkText}>
-                  {expandedRecPanel === 'things_to_do' ? '⚙️ Hide Things To Do frequency, categories, distance & time' : '⚙️ Things To Do: frequency, categories, distance & time'}
+                  {expandedRecPanel === 'things_to_do' ? t('ui.settings.hideThingsToDoFrequency') : t('ui.settings.thingsToDoFrequencyCategories')}
                 </Text>
               </TouchableOpacity>
               {expandedRecPanel === 'things_to_do' && (
@@ -744,12 +744,12 @@ export default function SettingsScreen({ navigation, route }) {
               <TouchableOpacity
                 style={styles.customizeLink}
                 onPress={() => setExpandedRecPanel(expandedRecPanel === 'nearby_opportunities' ? null : 'nearby_opportunities')}
-                accessibilityLabel="Customize Nearby Opportunities notifications"
+                accessibilityLabel={t('ui.settings.customizeNearbyOpportunitiesNotificationsA11y')}
                 accessibilityRole="button"
                 accessibilityState={{ expanded: expandedRecPanel === 'nearby_opportunities' }}
               >
                 <Text style={styles.customizeLinkText}>
-                  {expandedRecPanel === 'nearby_opportunities' ? '⚙️ Hide Nearby Opportunities frequency, categories, distance & time' : '⚙️ Nearby Opportunities: frequency, categories, distance & time'}
+                  {expandedRecPanel === 'nearby_opportunities' ? t('ui.settings.hideNearbyOpportunitiesFrequencyCategories') : t('ui.settings.nearbyOpportunitiesFrequencyCategoriesDistance')}
                 </Text>
               </TouchableOpacity>
               {expandedRecPanel === 'nearby_opportunities' && (
@@ -772,60 +772,60 @@ export default function SettingsScreen({ navigation, route }) {
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>👋 Proximity</Text>
-              <Text style={styles.helperText}>When you cross paths with someone nearby.</Text>
+              <Text style={styles.settingLabel}>{t('ui.settings.proximity')}</Text>
+              <Text style={styles.helperText}>{t('ui.settings.whenYouCrossPathsWith')}</Text>
             </View>
             <Switch
               value={notifyProximity}
               onValueChange={(v) => toggleNotifPref('notify_proximity', v, setNotifyProximity)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me when I cross paths with someone nearby"
+              accessibilityLabel={t('ui.settings.notifyMeWhenICrossA11y')}
             />
           </View>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>📅 Planning</Text>
-              <Text style={styles.helperText}>Gathering interest, approvals, and reminders as your plans come up.</Text>
+              <Text style={styles.settingLabel}>{t('ui.settings.planning')}</Text>
+              <Text style={styles.helperText}>{t('ui.settings.gatheringInterestApprovalsAndReminders')}</Text>
             </View>
             <Switch
               value={notifyPlanning}
               onValueChange={(v) => toggleNotifPref('notify_planning', v, setNotifyPlanning)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me about plans I'm making -- gathering interest, approvals, and reminders"
+              accessibilityLabel={t('ui.settings.notifyMeAboutPlansImA11y')}
             />
           </View>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>🏪 Business</Text>
-              <Text style={styles.helperText}>A place you've interacted with has an offer or update -- or, if you manage a business, activity on your own listings.</Text>
+              <Text style={styles.settingLabel}>{t('ui.settings.business')}</Text>
+              <Text style={styles.helperText}>{t('ui.settings.aPlaceYouveInteractedWith')}</Text>
             </View>
             <Switch
               value={notifyBusiness}
               onValueChange={(v) => toggleNotifPref('notify_business', v, setNotifyBusiness)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me about business offers and updates"
+              accessibilityLabel={t('ui.settings.notifyMeAboutBusinessOffersA11y')}
             />
           </View>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>🏘️ Community</Text>
-              <Text style={styles.helperText}>New activity in a community you're part of.</Text>
+              <Text style={styles.settingLabel}>{t('ui.settings.community')}</Text>
+              <Text style={styles.helperText}>{t('ui.settings.newActivityInACommunity')}</Text>
             </View>
             <Switch
               value={notifyCommunity}
               onValueChange={(v) => toggleNotifPref('notify_community', v, setNotifyCommunity)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me about activity in my communities"
+              accessibilityLabel={t('ui.settings.notifyMeAboutActivityInA11y')}
             />
           </View>
         </View>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">What you're here to do</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.settings.whatYoureHereToDo')}</Text>
         <View style={styles.card}>
-          <Text style={styles.helperText}>Shapes the shortcuts on your Home screen.</Text>
+          <Text style={styles.helperText}>{t('ui.settings.shapesTheShortcutsOnYour')}</Text>
           {ONBOARDING_GOALS.map((g) => {
             const selected = motivations.includes(g.label);
             return (
@@ -844,9 +844,9 @@ export default function SettingsScreen({ navigation, route }) {
           })}
         </View>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Broad interests</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.settings.broadInterests')}</Text>
         <View style={styles.card}>
-          <Text style={styles.helperText}>Categories you like in general. Nearby uses them as a gentle hint; the specific interests you pick on your profile count for more.</Text>
+          <Text style={styles.helperText}>{t('ui.settings.categoriesYouLikeInGeneral')}</Text>
           {ONBOARDING_INTEREST_GROUPS.map((g) => {
             const selected = interestGroups.includes(g.key);
             return (
@@ -865,20 +865,20 @@ export default function SettingsScreen({ navigation, route }) {
           })}
         </View>
 
-        <Text style={styles.groupHeader} accessibilityRole="header">Privacy & Safety</Text>
+        <Text style={styles.groupHeader} accessibilityRole="header">{t('ui.settings.privacySafety')}</Text>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Privacy</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.settings.privacy')}</Text>
         <View style={styles.card}>
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>Activity that shapes your picks</Text>
-              <Text style={styles.helperText}>Nearby notices which kinds of things you open, create, join, search for and book, only to order what you see. It never changes your interests on its own. It's private, kept 90 days, and never shared with anyone or any business.</Text>
+              <Text style={styles.settingLabel}>{t('ui.settings.activityThatShapesYourPicks')}</Text>
+              <Text style={styles.helperText}>{t('ui.settings.nearbyNoticesWhichKindsOf')}</Text>
               {learned.length > 0 && (
                 <View style={{ marginTop: spacing.sm }}>
-                  <Text style={styles.settingLabel}>What Nearby has noticed</Text>
+                  <Text style={styles.settingLabel}>{t('ui.settings.whatNearbyHasNoticed')}</Text>
                   {learned.map((a) => (
                     <View key={a.category} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, gap: spacing.sm }}>
-                      <Text style={[styles.helperText, { flex: 1 }]}>{a.category}{a.inProfile ? ' · already in your interests' : ''}</Text>
+                      <Text style={[styles.helperText, { flex: 1 }]}>{a.category}{a.inProfile ? t('ui.settings.alreadyInYourInterests') : ''}</Text>
                       {!a.inProfile && (
                         <TouchableOpacity
                           onPress={() => addLearnedInterestToProfile(a.category)
@@ -886,27 +886,27 @@ export default function SettingsScreen({ navigation, route }) {
                             setMyInterests(next);
                             // Item 124: Undo takes back only this tag, and only if the tap really added it.
                             const added = !(myInterests ?? []).includes(a.category);
-                            showSuccessToast('Added to your interests', `${a.category} is now on your profile.`, added ? {
+                            showSuccessToast(t('ui.settings.addedToYourInterests'), t('ui.settings.isNowOnYourProfile', { category: a.category }), added ? {
                               undo: () => removeAddedInterestFromProfile(a.category)
                                 .then(setMyInterests)
                                 .catch((e) => presentRecoverableError(Alert, { what: 'undo that', error: e })),
                             } : undefined);
                           })
                             .catch((e) => presentRecoverableError(Alert, { what: 'add that interest', error: e }))}
-                          accessibilityLabel={`Add ${a.category} to my interests`}
+                          accessibilityLabel={t('ui.settings.addToMyInterestsA11y', { category: a.category })}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.customizeLinkText}>Add to my interests</Text>
+                          <Text style={styles.customizeLinkText}>{t('ui.settings.addToMyInterests')}</Text>
                         </TouchableOpacity>
                       )}
                       <TouchableOpacity
                         onPress={() => forgetBehaviorCategory(a.category)
-                          .then(() => { loadLearned(); showSuccessToast('Forgotten', `Nearby will stop using your ${a.category} activity.`); })
+                          .then(() => { loadLearned(); showSuccessToast(t('ui.settings.forgotten'), t('ui.settings.nearbyWillStopUsingYour', { category: a.category })); })
                           .catch((e) => presentRecoverableError(Alert, { what: 'forget that', error: e }))}
-                        accessibilityLabel={`Forget my ${a.category} activity`}
+                        accessibilityLabel={t('ui.settings.forgetMyActivityA11y', { category: a.category })}
                         accessibilityRole="button"
                       >
-                        <Text style={styles.customizeLinkText}>Forget</Text>
+                        <Text style={styles.customizeLinkText}>{t('ui.settings.forget')}</Text>
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -915,115 +915,113 @@ export default function SettingsScreen({ navigation, route }) {
               <TouchableOpacity
                 style={styles.customizeLink}
                 onPress={() => clearMyBehaviorHistory()
-                  .then(() => { setBehaviorRows([]); return showSuccessToast('Activity cleared', 'Your picks will rely on what you told us until new activity builds up.'); })
+                  .then(() => { setBehaviorRows([]); return showSuccessToast(t('ui.settings.activityCleared'), t('ui.settings.yourPicksWillRelyOn')); })
                   .catch((e) => presentRecoverableError(Alert, { what: 'complete that', error: e }))}
-                accessibilityLabel="Clear my activity history"
+                accessibilityLabel={t('ui.settings.clearMyActivityHistoryA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.customizeLinkText}>Clear my activity history</Text>
+                <Text style={styles.customizeLinkText}>{t('ui.settings.clearMyActivityHistory')}</Text>
               </TouchableOpacity>
             </View>
           </View>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>Include my "Interested" in anonymous local trends</Text>
-              <Text style={styles.helperText}>When you tap Interested on a public gathering, it can count toward anonymous, area-level demand that local businesses see, only when at least 5 different people are interested. Businesses never see you, your profile or which gathering. Turning this off removes you from those counts.</Text>
+              <Text style={styles.settingLabel}>{t('ui.settings.includeMyInterestedInAnonymous')}</Text>
+              <Text style={styles.helperText}>{t('ui.settings.whenYouTapInterestedOn')}</Text>
             </View>
             <Switch
               value={shareInterestInDemand}
               onValueChange={(v) => toggleNotifPref('share_interest_in_demand', v, setShareInterestInDemand)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Include my Interested activity in anonymous local demand trends"
+              accessibilityLabel={t('ui.settings.includeMyInterestedActivityInA11y')}
             />
           </View>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>Show sponsored places</Text>
-              <Text style={styles.helperText}>Businesses can pay to be shown in Perks and Places. They're always labeled Sponsored, and it doesn't change your other results. We keep a short-lived record (7 days) of which sponsor was shown to you so none repeats more than once a week; "Clear my activity history" doesn't clear it.</Text>
+              <Text style={styles.settingLabel}>{t('ui.settings.showSponsoredPlaces')}</Text>
+              <Text style={styles.helperText}>{t('ui.settings.businessesCanPayToBe')}</Text>
               <TouchableOpacity
                 onPress={async () => {
                   const ok = await clearHiddenSponsors();
-                  Alert.alert(ok ? 'Done' : 'Error', ok ? 'Sponsors you hid can appear again.' : 'Could not reset. Please try again.');
+                  Alert.alert(ok ? t('ui.settings.done') : t('ui.settings.error'), ok ? t('ui.settings.sponsorsYouHidCanAppear') : t('ui.settings.couldNotResetPleaseTry'));
                 }}
                 accessibilityRole="button"
-                accessibilityLabel="Reset hidden sponsors"
+                accessibilityLabel={t('ui.settings.resetHiddenSponsorsA11y')}
               >
-                <Text style={[styles.helperText, { textDecorationLine: 'underline' }]}>Reset hidden sponsors</Text>
+                <Text style={[styles.helperText, { textDecorationLine: 'underline' }]}>{t('ui.settings.resetHiddenSponsors')}</Text>
               </TouchableOpacity>
             </View>
             <Switch
               value={showSponsoredPlaces}
               onValueChange={(v) => toggleNotifPref('show_sponsored_places', v, setShowSponsoredPlaces)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Show sponsored places"
+              accessibilityLabel={t('ui.settings.showSponsoredPlacesA11y')}
             />
           </View>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>Read Receipts</Text>
-              <Text style={styles.helperText}>Let matches see when you've read their messages. Turning this off also hides when they've read yours.</Text>
+              <Text style={styles.settingLabel}>{t('ui.settings.readReceipts')}</Text>
+              <Text style={styles.helperText}>{t('ui.settings.letMatchesSeeWhenYouve')}</Text>
             </View>
             <Switch
               value={readReceiptsEnabled}
               onValueChange={(v) => toggleNotifPref('read_receipts_enabled', v, setReadReceiptsEnabled)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Read receipts"
+              accessibilityLabel={t('ui.settings.readReceiptsA11y')}
             />
           </View>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>I Message First</Text>
-              <Text style={styles.helperText}>When you match with someone, they won't be able to send a message until you send the first one.</Text>
+              <Text style={styles.settingLabel}>{t('ui.settings.iMessageFirst')}</Text>
+              <Text style={styles.helperText}>{t('ui.settings.whenYouMatchWithSomeone')}</Text>
             </View>
             <Switch
               value={womenMessageFirst}
               onValueChange={(v) => toggleNotifPref('women_message_first', v, setWomenMessageFirst)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="I message first"
+              accessibilityLabel={t('ui.settings.iMessageFirstA11y')}
             />
           </View>
           <View style={styles.divider} />
           <View>
-            <Text style={styles.settingLabel}>Who can see my requests</Text>
+            <Text style={styles.settingLabel}>{t('ui.settings.whoCanSeeMyRequests')}</Text>
             <Text style={styles.helperText}>
-              A "Coffee tonight?" request you post stays within Nearby's usual friends/matches-only
-              boundary either way — this only controls whether a friend or match can see it as a
-              suggested match for their own ask.
+              {t('ui.settings.aCoffeeTonightRequestYou')}
             </Text>
             <View style={[styles.chipsWrap, { marginTop: spacing.sm }]}>
               <TouchableOpacity
                 style={[styles.chip, intentVisibility === 'friends_and_matches' && styles.chipSelected]}
                 onPress={() => updateIntentVisibility('friends_and_matches')}
                 accessibilityRole="button"
-                accessibilityLabel="Friends & matches"
+                accessibilityLabel={t('ui.settings.friendsMatchesA11y')}
               >
-                <Text style={[styles.chipText, intentVisibility === 'friends_and_matches' && styles.chipTextSelected]}>Friends & Matches</Text>
+                <Text style={[styles.chipText, intentVisibility === 'friends_and_matches' && styles.chipTextSelected]}>{t('ui.settings.friendsMatches')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.chip, intentVisibility === 'nobody' && styles.chipSelected]}
                 onPress={() => updateIntentVisibility('nobody')}
                 accessibilityRole="button"
-                accessibilityLabel="Nobody"
+                accessibilityLabel={t('ui.settings.nobodyA11y')}
               >
-                <Text style={[styles.chipText, intentVisibility === 'nobody' && styles.chipTextSelected]}>Nobody</Text>
+                <Text style={[styles.chipText, intentVisibility === 'nobody' && styles.chipTextSelected]}>{t('ui.settings.nobody')}</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Safety</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.settings.safety')}</Text>
         <TouchableOpacity
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('BlockedUsers')}
           activeOpacity={0.85}
-          accessibilityLabel="Blocked users"
+          accessibilityLabel={t('ui.settings.blockedUsersA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>🚫 Blocked Users</Text>
+          <Text style={styles.rowButtonText}>{t('ui.settings.blockedUsers')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
@@ -1031,10 +1029,10 @@ export default function SettingsScreen({ navigation, route }) {
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('IdVerification')}
           activeOpacity={0.85}
-          accessibilityLabel="Verify your identity"
+          accessibilityLabel={t('ui.settings.verifyYourIdentityA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>✓ Verify Identity</Text>
+          <Text style={styles.rowButtonText}>{t('ui.settings.verifyIdentity')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
@@ -1042,10 +1040,10 @@ export default function SettingsScreen({ navigation, route }) {
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('EmergencyContacts')}
           activeOpacity={0.85}
-          accessibilityLabel="Emergency contacts"
+          accessibilityLabel={t('ui.settings.emergencyContactsA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>🛡️ Emergency Contacts</Text>
+          <Text style={styles.rowButtonText}>{t('ui.settings.emergencyContacts')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
@@ -1152,15 +1150,15 @@ export default function SettingsScreen({ navigation, route }) {
           </>
         )}
 
-        <Text style={styles.groupHeader} accessibilityRole="header">Connect</Text>
+        <Text style={styles.groupHeader} accessibilityRole="header">{t('ui.settings.connect')}</Text>
         <TouchableOpacity
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('Friends')}
           activeOpacity={0.85}
-          accessibilityLabel="Friends, manage friend requests and see your friends list"
+          accessibilityLabel={t('ui.settings.friendsManageFriendRequestsAndA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>🤝 Friends</Text>
+          <Text style={styles.rowButtonText}>{t('ui.settings.friends')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
@@ -1168,10 +1166,10 @@ export default function SettingsScreen({ navigation, route }) {
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('MusicMode')}
           activeOpacity={0.85}
-          accessibilityLabel="Music Mode, connect Spotify and pick favorite tracks for your profile"
+          accessibilityLabel={t('ui.settings.musicModeConnectSpotifyAndA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>🎵 Music Mode</Text>
+          <Text style={styles.rowButtonText}>{t('ui.settings.musicMode')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
@@ -1179,10 +1177,10 @@ export default function SettingsScreen({ navigation, route }) {
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('InviteFriends')}
           activeOpacity={0.85}
-          accessibilityLabel="Invite friends"
+          accessibilityLabel={t('ui.settings.inviteFriendsA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>🎁 Invite Friends</Text>
+          <Text style={styles.rowButtonText}>{t('ui.settings.inviteFriends')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
@@ -1190,10 +1188,10 @@ export default function SettingsScreen({ navigation, route }) {
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('BrandOffers')}
           activeOpacity={0.85}
-          accessibilityLabel="Offers and perks"
+          accessibilityLabel={t('ui.settings.offersAndPerksA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>🎁 Offers & Perks</Text>
+          <Text style={styles.rowButtonText}>{t('ui.settings.offersPerks')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
@@ -1201,22 +1199,22 @@ export default function SettingsScreen({ navigation, route }) {
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('RelationshipHub')}
           activeOpacity={0.85}
-          accessibilityLabel="Relationship, tools and reflection for a specific match or on your own"
+          accessibilityLabel={t('ui.settings.relationshipToolsAndReflectionForA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>❤️ Relationship</Text>
+          <Text style={styles.rowButtonText}>{t('ui.settings.relationship')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
-        <Text style={styles.groupHeader} accessibilityRole="header">Support</Text>
+        <Text style={styles.groupHeader} accessibilityRole="header">{t('ui.settings.support')}</Text>
         <TouchableOpacity
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('FeaturesOverview')}
           activeOpacity={0.85}
-          accessibilityLabel="Everything in Nearby, a guide to all features"
+          accessibilityLabel={t('ui.settings.everythingInNearbyAGuideA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>✨ Everything In Nearby</Text>
+          <Text style={styles.rowButtonText}>{t('ui.settings.everythingInNearby')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
@@ -1235,10 +1233,10 @@ export default function SettingsScreen({ navigation, route }) {
           style={styles.signOutButton}
           onPress={signOut}
           disabled={signingOut}
-          accessibilityLabel="Sign out"
+          accessibilityLabel={t('ui.settings.signOutA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.signOutText}>{signingOut ? 'Signing Out...' : 'Sign Out'}</Text>
+          <Text style={styles.signOutText}>{signingOut ? t('ui.settings.signingOut') : t('ui.settings.signOut')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

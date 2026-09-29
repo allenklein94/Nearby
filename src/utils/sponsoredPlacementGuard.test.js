@@ -170,7 +170,9 @@ describe('retention and no device-local cap', () => {
     }
   });
   it('the Settings switch is disclosed and the exposure record is not cleared by "Clear my activity history"', () => {
-    const s = read('src/screens/SettingsScreen.js');
+    // the wording lives in the Settings ui namespace (localization pass 5); the screen reads it by key
+    const s = read('src/screens/SettingsScreen.js') + JSON.stringify(require('../i18n/ui/settings').default.en);
+    expect(s).toContain("t('ui.settings.showSponsoredPlaces')");
     expect(s).toContain('Show sponsored places');
     expect(s).toContain('Reset hidden sponsors');
     expect(s).toMatch(/7 days/);

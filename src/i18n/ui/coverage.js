@@ -29,6 +29,7 @@ export const LOCALIZED_FILES = [
   'src/utils/offerCopy.js',
   'src/utils/inviteExpiry.js',
   'src/screens/ProfileScreen.js',
+  'src/screens/SettingsScreen.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
@@ -49,6 +50,16 @@ export const INTENTIONAL_ENGLISH = {
     'Meet friends': 'stored connection-goal value (profiles.connection_goal); shown through ui.profile.goal.*',
     Date: 'stored connection-goal value', Network: 'stored connection-goal value', 'Explore my city': 'stored connection-goal value',
     'Find community': 'stored connection-goal value', 'Get out more': 'stored connection-goal value',
+  },
+  'src/screens/SettingsScreen.js': {
+    English: 'language name in its own language (endonym)', 'Español': 'endonym', Deutsch: 'endonym', 'Français': 'endonym', 'Português': 'endonym',
+    'Kreyòl Ayisyen': 'endonym', 'Tiếng Việt': 'endonym', Tagalog: 'endonym',
+    'Review Reports (Admin)': 'admin tooling', 'Business (Admin)': 'admin tooling', 'Business Dashboard (Admin)': 'admin tooling',
+    'Business Requests (Admin)': 'admin tooling', 'Sponsored Refunds (Admin)': 'admin tooling', 'Review Verifications (Admin)': 'admin tooling',
+    'Market Validation (Admin)': 'admin tooling', 'Business Tier Switch (Admin, Dev)': 'admin tooling', 'Content Review Queue (Admin)': 'admin tooling',
+    'Review reports, admin': 'admin tooling', 'Business dashboard, admin': 'admin tooling', 'Review business partner requests, admin': 'admin tooling',
+    'Sponsored refunds, admin': 'admin tooling', 'Review pending verifications, admin': 'admin tooling', 'Market validation dashboard, admin': 'admin tooling',
+    'Business tier switch, admin, development tooling': 'admin tooling', 'Content review queue, admin': 'admin tooling',
   },
   'src/utils/recoverableError.js': {
     "We couldn't {} right now.": 'fallback frame for an action phrase with no ui.shared.errors.what entry (the phrase itself is English)',
