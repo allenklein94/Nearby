@@ -77,7 +77,7 @@ describe('Discover and Gatherings cards use the same rule', () => {
   });
   test('Gatherings feed badge names the interest through the shared reason key; every locale has it', () => {
     // one sentence with the tag interpolated (reasons.becauseYouLike), never a translated prefix + an English tag
-    expect(read('../screens/GatheringsScreen.js')).toMatch(/t\('reasons\.becauseYouLike', \{ category: item\.interest_tag \}\)/);
+    expect(read('../screens/GatheringsScreen.js')).toMatch(/t\('reasons\.becauseYouLike', \{ category: names\.tag\(item\.interest_tag\) \}\)/);
     const { translations } = require('../i18n/translations');
     for (const lang of Object.keys(translations)) expect([lang, translations[lang].reasons.becauseYouLike]).toEqual([lang, expect.stringContaining('{category}')]);
   });

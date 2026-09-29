@@ -61,17 +61,13 @@ import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 import useCategoryNames from '../hooks/useCategoryNames';
 // Real Free/$/$$/$$$ filter options, backed by gatherings.price_level --
 // mirrors CreateGatheringScreen's own PRICE_OPTIONS chip labels.
-const PRICE_FILTER_OPTIONS = [
-  { key: null, label: 'Any' },
-  { key: 'free', label: 'Free' },
-  { key: '$', label: '$' },
-  { key: '$$', label: '$$' },
-  { key: '$$$', label: '$$$' },
-];
+// Labels: ui.gatherings.any / ui.gatherings.free in the person's language; the $ tiers are symbols.
+const PRICE_FILTER_OPTIONS = [{ key: null }, { key: 'free' }, { key: '$' }, { key: '$$' }, { key: '$$$' }];
 
 // "Who's this for?" filter, backed by gatherings.party_type -- mirrors
 // CreateGatheringScreen's own PARTY_TYPE_OPTIONS chip labels.
-const PARTY_TYPE_FILTER_OPTIONS = [{ key: null, label: 'Any' }, ...EXPERIENCE_PARTY_TYPE_OPTIONS.filter((o) => o.key)];
+// Labels: ui.gatherings.partyType.<key> (the stored key is what filters; the label is display only).
+const PARTY_TYPE_FILTER_OPTIONS = [{ key: null }, ...EXPERIENCE_PARTY_TYPE_OPTIONS.filter((o) => o.key).map((o) => ({ key: o.key }))];
 
 export default function GatheringsScreen({ navigation, route }) {
   const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
@@ -320,11 +316,11 @@ export default function GatheringsScreen({ navigation, route }) {
     const limitCheck = await checkGatheringInterestLimit();
     if (!limitCheck.allowed) {
       Alert.alert(
-        'Daily limit reached',
+        t('ui.gatherings.limitTitle'),
         limitCheck.reason,
         [
-          { text: 'Not now', style: 'cancel' },
-          { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
+          { text: t('ui.common.notNow'), style: 'cancel' },
+          { text: t('ui.gatherings.upgrade'), onPress: () => navigation.navigate('Paywall') },
         ]
       );
       return;
@@ -335,14 +331,14 @@ export default function GatheringsScreen({ navigation, route }) {
       recordBehaviorEvent('join', 'gathering', gatheringId, nearby.find((g) => g.id === gatheringId)?.interest_tag);
       posthog.capture('gathering_interest_expressed');
       if (result?.status === 'waitlisted') {
-        Alert.alert("You're on the waitlist", "This gathering is full right now — we'll let you know if a spot opens up.");
+        Alert.alert(t('ui.gatherings.waitlistTitle'), t('ui.gatherings.waitlistBody'));
       } else if (result?.autoApproved) {
-        Alert.alert("You're In! ✓", "This gathering is public, so you're confirmed to attend — you can chat with the host anytime.", [
-          { text: 'Keep Browsing', style: 'cancel' },
-          { text: 'Send a Message', onPress: () => navigation.navigate('Messages') },
+        Alert.alert(t('ui.gatherings.inTitle'), t('ui.gatherings.inBody'), [
+          { text: t('ui.gatherings.keepBrowsing'), style: 'cancel' },
+          { text: t('ui.gatherings.sendMessage'), onPress: () => navigation.navigate('Messages') },
         ]);
       } else {
-        Alert.alert('Request sent', "The host will review and let you know.");
+        Alert.alert(t('ui.gatherings.requestTitle'), t('ui.gatherings.requestBody'));
       }
       load();
     } catch (e) {
@@ -363,9 +359,9 @@ export default function GatheringsScreen({ navigation, route }) {
       <View style={styles.vibeSection}>
         {(item.energy_level != null || item.conversation_level != null || item.group_size_feel != null) && (
           <View style={styles.vibeRow}>
-            {item.energy_level != null && <Text style={styles.vibeBadgeText}>⚡ Energy {item.energy_level}/5</Text>}
-            {item.conversation_level != null && <Text style={styles.vibeBadgeText}>💬 Chat {item.conversation_level}/5</Text>}
-            {item.group_size_feel != null && <Text style={styles.vibeBadgeText}>👥 Group {item.group_size_feel}/5</Text>}
+            {item.energy_level != null && <Text style={styles.vibeBadgeText}>{t('ui.gatherings.energy', { n: item.energy_level })}</Text>}
+            {item.conversation_level != null && <Text style={styles.vibeBadgeText}>{t('ui.gatherings.chat', { n: item.conversation_level })}</Text>}
+            {item.group_size_feel != null && <Text style={styles.vibeBadgeText}>{t('ui.gatherings.group', { n: item.group_size_feel })}</Text>}
           </View>
         )}
         {practicalFacts(item).map((f) => <Text key={f} style={styles.beginnerText}>{f}</Text>)}
@@ -399,12 +395,18 @@ export default function GatheringsScreen({ navigation, route }) {
     setExpandedFilterSection((prev) => (prev === section ? null : section));
   }
 
-  const distanceSummary = radiusTier === 'local' ? 'Local (~1 mi)' : 'Wider Area (~15 mi)';
-  const dateSummaryLabel = DATE_OPTIONS.find((d) => d.key === dateFilter)?.label ?? 'Anytime';
-  const categorySummary = forYouActive ? 'For You' : (interestFilter || 'All Categories');
-  const environmentSummary = environmentFilter === 'indoor' ? 'Indoor' : environmentFilter === 'outdoor' ? 'Outdoor' : 'Either';
-  const priceSummary = PRICE_FILTER_OPTIONS.find((o) => o.key === priceFilter)?.label ?? 'Any';
-  const partyTypeSummary = PARTY_TYPE_FILTER_OPTIONS.find((o) => o.key === partyTypeFilter)?.label ?? 'Any';
+  // Option labels in the person's language; the keys are what filter.
+  const dateLabel = (key) => t(`ui.gatherings.dateFilter.${key}`);
+  const priceLabel = (key) => (key === null ? t('ui.gatherings.any') : key === 'free' ? t('ui.gatherings.free') : key);
+  const partyLabel = (key) => (key === null ? t('ui.gatherings.any') : t(`ui.gatherings.partyType.${key}`));
+  const distanceSummary = t(radiusTier === 'local' ? 'ui.gatherings.distanceLocal' : 'ui.gatherings.distanceWide');
+  const dateSummaryLabel = DATE_OPTIONS.some((d) => d.key === dateFilter) ? dateLabel(dateFilter) : dateLabel('anytime');
+  const categorySummary = forYouActive ? t('ui.gatherings.forYou') : (interestFilter ? names.tag(interestFilter) : t('ui.gatherings.allCategories'));
+  const environmentSummary = t(environmentFilter === 'indoor' ? 'ui.gatherings.envIndoor' : environmentFilter === 'outdoor' ? 'ui.gatherings.envOutdoor' : 'ui.gatherings.envEither');
+  const priceSummary = priceLabel(PRICE_FILTER_OPTIONS.some((o) => o.key === priceFilter) ? priceFilter : null);
+  const partyTypeSummary = partyLabel(PARTY_TYPE_FILTER_OPTIONS.some((o) => o.key === partyTypeFilter) ? partyTypeFilter : null);
+  // "Distance: Local (~1 mi), tap to expand" for a filter section's header, read by a screen reader.
+  const sectionA11y = (labelKey, value, open) => t(open ? 'ui.gatherings.sectionOpenA11y' : 'ui.gatherings.sectionClosedA11y', { label: t(`ui.gatherings.s${labelKey[0].toUpperCase()}${labelKey.slice(1)}`), value });
 
   // Real server-side search results (searchedNearby) once actively
   // searching (2+ characters — matches the debounced effect above), the
@@ -430,9 +432,9 @@ export default function GatheringsScreen({ navigation, route }) {
   // up, never that they come first.
   const weatherBanner = weatherSignal
     ? (isWeatherIndoorBiased(weatherSignal)
-        ? '🌧️ Weather coming in — indoor options move up'
+        ? t('ui.gatherings.weatherIndoor')
         : isWeatherOutdoorBiased(weatherSignal)
-          ? '☀️ Great weather — outdoor options move up'
+          ? t('ui.gatherings.weatherOutdoor')
           : null)
     : null;
   // FilterTransition (the Nearby Motion System, CLAUDE.md Item 116): a
@@ -465,24 +467,24 @@ export default function GatheringsScreen({ navigation, route }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle} accessibilityRole="header">
-          {tab === 'nearby' && interestFilter && !forYouActive ? `${names.tag(interestFilter)} Near You` : t('gatherings.title')}
+          {tab === 'nearby' && interestFilter && !forYouActive ? t('ui.common.nearYou', { topic: names.tag(interestFilter) }) : t('gatherings.title')}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {tab === 'nearby' && (
             <TouchableOpacity
               style={styles.viewToggleButton}
               onPress={() => setViewStyle(viewStyle === 'map' ? 'list' : 'map')}
-              accessibilityLabel={viewStyle === 'map' ? 'Currently on map view, switch to list view' : 'Currently on list view, switch to map view'}
+              accessibilityLabel={t(viewStyle === 'map' ? 'ui.gatherings.onMapA11y' : 'ui.gatherings.onListA11y')}
               accessibilityRole="button"
             >
               <Text style={styles.viewToggleIcon}>{viewStyle === 'map' ? '📋' : '🗺️'}</Text>
-              <Text style={styles.viewToggleLabel}>{viewStyle === 'map' ? 'List' : 'Map'}</Text>
+              <Text style={styles.viewToggleLabel}>{t(viewStyle === 'map' ? 'ui.gatherings.list' : 'ui.gatherings.map')}</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
             style={styles.createButton}
             onPress={() => navigation.navigate('CreateGathering')}
-            accessibilityLabel="Host a new gathering"
+            accessibilityLabel={t('ui.gatherings.hostA11y')}
             accessibilityRole="button"
           >
             <Text style={styles.createButtonText}>{t('gatherings.hostButton')}</Text>
@@ -495,10 +497,10 @@ export default function GatheringsScreen({ navigation, route }) {
           style={styles.offersBanner}
           onPress={() => navigation.navigate('BrandOffers')}
           activeOpacity={0.85}
-          accessibilityLabel={`${newOfferCount} new offer${newOfferCount === 1 ? '' : 's'} available, tap to view`}
+          accessibilityLabel={t('ui.gatherings.newOffersA11y', { text: t('ui.gatherings.newOffers', { count: newOfferCount }) })}
           accessibilityRole="button"
         >
-          <Text style={styles.offersBannerText}>🎁 {newOfferCount} new offer{newOfferCount === 1 ? '' : 's'} available</Text>
+          <Text style={styles.offersBannerText}>🎁 {t('ui.gatherings.newOffers', { count: newOfferCount })}</Text>
           <Text style={styles.offersBannerArrow}>›</Text>
         </TouchableOpacity>
       )}
@@ -509,14 +511,14 @@ export default function GatheringsScreen({ navigation, route }) {
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search gatherings..."
+            placeholder={t('ui.gatherings.searchPlaceholder')}
             placeholderTextColor={colors.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            accessibilityLabel="Search gatherings by title or description"
+            accessibilityLabel={t('ui.gatherings.searchA11y')}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
+            <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel={t('ui.gatherings.clearSearchA11y')} accessibilityRole="button">
               <Text style={styles.searchClear}>✕</Text>
             </TouchableOpacity>
           )}
@@ -526,11 +528,11 @@ export default function GatheringsScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.accordionHeader}
             onPress={() => toggleFilterSection('distance')}
-            accessibilityLabel={`Distance: ${distanceSummary}, ${expandedFilterSection === 'distance' ? 'tap to collapse' : 'tap to expand'}`}
+            accessibilityLabel={sectionA11y('distance', distanceSummary, expandedFilterSection === 'distance')}
             accessibilityRole="button"
             accessibilityState={{ expanded: expandedFilterSection === 'distance' }}
           >
-            <Text style={styles.accordionHeaderLabel}>📍 Distance</Text>
+            <Text style={styles.accordionHeaderLabel}>{t('ui.gatherings.hDistance')}</Text>
             <View style={styles.accordionHeaderRight}>
               <Text style={styles.accordionHeaderValue}>{distanceSummary}</Text>
               <Text style={styles.accordionChevron}>{expandedFilterSection === 'distance' ? '⌃' : '⌄'}</Text>
@@ -542,20 +544,20 @@ export default function GatheringsScreen({ navigation, route }) {
                 <TouchableOpacity
                   style={[styles.radiusToggle, radiusTier === 'local' && styles.radiusToggleActive]}
                   onPress={() => setRadiusTier('local')}
-                  accessibilityLabel="Local gatherings, within about a mile"
+                  accessibilityLabel={t('ui.gatherings.localA11y')}
                   accessibilityRole="button"
                   accessibilityState={{ selected: radiusTier === 'local' }}
                 >
-                  <Text style={[styles.radiusToggleText, radiusTier === 'local' && styles.radiusToggleTextActive]}>📍 Local (~1 mi)</Text>
+                  <Text style={[styles.radiusToggleText, radiusTier === 'local' && styles.radiusToggleTextActive]}>{t('ui.gatherings.localChip')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.radiusToggle, radiusTier === 'wide' && styles.radiusToggleActive]}
                   onPress={() => setRadiusTier('wide')}
-                  accessibilityLabel="Wider area gatherings, within about 15 miles"
+                  accessibilityLabel={t('ui.gatherings.wideA11y')}
                   accessibilityRole="button"
                   accessibilityState={{ selected: radiusTier === 'wide' }}
                 >
-                  <Text style={[styles.radiusToggleText, radiusTier === 'wide' && styles.radiusToggleTextActive]}>🗺️ Wider Area (~15 mi)</Text>
+                  <Text style={[styles.radiusToggleText, radiusTier === 'wide' && styles.radiusToggleTextActive]}>{t('ui.gatherings.wideChip')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -566,11 +568,11 @@ export default function GatheringsScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.accordionHeader}
             onPress={() => toggleFilterSection('when')}
-            accessibilityLabel={`When: ${dateSummaryLabel}, ${expandedFilterSection === 'when' ? 'tap to collapse' : 'tap to expand'}`}
+            accessibilityLabel={sectionA11y('when', dateSummaryLabel, expandedFilterSection === 'when')}
             accessibilityRole="button"
             accessibilityState={{ expanded: expandedFilterSection === 'when' }}
           >
-            <Text style={styles.accordionHeaderLabel}>📅 When</Text>
+            <Text style={styles.accordionHeaderLabel}>{t('ui.gatherings.hWhen')}</Text>
             <View style={styles.accordionHeaderRight}>
               <Text style={styles.accordionHeaderValue}>{dateSummaryLabel}</Text>
               <Text style={styles.accordionChevron}>{expandedFilterSection === 'when' ? '⌃' : '⌄'}</Text>
@@ -587,11 +589,11 @@ export default function GatheringsScreen({ navigation, route }) {
                       active={active}
                       style={[styles.dateChip, active && styles.dateChipActive]}
                       onPress={() => setDateFilter(option.key)}
-                      accessibilityLabel={`Filter by ${option.label}`}
+                      accessibilityLabel={t('ui.gatherings.filterBy', { label: dateLabel(option.key) })}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
                     >
-                      <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{option.label}</Text>
+                      <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{dateLabel(option.key)}</Text>
                     </TapActiveChip>
                   );
                 })}
@@ -604,11 +606,11 @@ export default function GatheringsScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.accordionHeader}
             onPress={() => toggleFilterSection('category')}
-            accessibilityLabel={`Category: ${categorySummary}, ${expandedFilterSection === 'category' ? 'tap to collapse' : 'tap to expand'}`}
+            accessibilityLabel={sectionA11y('category', categorySummary, expandedFilterSection === 'category')}
             accessibilityRole="button"
             accessibilityState={{ expanded: expandedFilterSection === 'category' }}
           >
-            <Text style={styles.accordionHeaderLabel}>🏷️ Category</Text>
+            <Text style={styles.accordionHeaderLabel}>{t('ui.gatherings.hCategory')}</Text>
             <View style={styles.accordionHeaderRight}>
               <Text style={styles.accordionHeaderValue}>{categorySummary}</Text>
               <Text style={styles.accordionChevron}>{expandedFilterSection === 'category' ? '⌃' : '⌄'}</Text>
@@ -621,29 +623,29 @@ export default function GatheringsScreen({ navigation, route }) {
                   <TouchableOpacity
                     style={[styles.forYouChip, forYouActive && styles.forYouChipActive]}
                     onPress={toggleForYou}
-                    accessibilityLabel="For You — based on gatherings you've attended or shown interest in before"
+                    accessibilityLabel={t('ui.gatherings.forYouA11y')}
                     accessibilityRole="button"
                     accessibilityState={{ selected: forYouActive }}
                   >
-                    <Text style={[styles.forYouChipText, forYouActive && styles.forYouChipTextActive]}>⭐ For You</Text>
+                    <Text style={[styles.forYouChipText, forYouActive && styles.forYouChipTextActive]}>{t('ui.gatherings.forYouChip')}</Text>
                   </TouchableOpacity>
                 ) : (
                   <View
                     style={styles.forYouChipLocked}
-                    accessibilityLabel="For You — will unlock once you've shown interest in a gathering"
+                    accessibilityLabel={t('ui.gatherings.forYouLockedA11y')}
                   >
-                    <Text style={styles.forYouChipLockedText}>⭐ For You (soon)</Text>
+                    <Text style={styles.forYouChipLockedText}>{t('ui.gatherings.forYouSoon')}</Text>
                   </View>
                 )}
                 <TapActiveChip
                   active={trendingActive}
                   style={[styles.forYouChip, trendingActive && styles.forYouChipActive]}
                   onPress={() => setTrendingActive((v) => !v)}
-                  accessibilityLabel="Trending — most popular gatherings nearby right now"
+                  accessibilityLabel={t('ui.gatherings.trendingA11y')}
                   accessibilityRole="button"
                   accessibilityState={{ selected: trendingActive }}
                 >
-                  <Text style={[styles.forYouChipText, trendingActive && styles.forYouChipTextActive]}>🔥 Trending</Text>
+                  <Text style={[styles.forYouChipText, trendingActive && styles.forYouChipTextActive]}>{t('ui.gatherings.trendingChip')}</Text>
                 </TapActiveChip>
               </View>
               {CATEGORY_GROUPS.map((group) => (
@@ -659,7 +661,7 @@ export default function GatheringsScreen({ navigation, route }) {
                           active={active}
                           style={[styles.filterChip, active && { backgroundColor: style.color, borderColor: style.color }]}
                           onPress={() => selectInterestFilter(option)}
-                          accessibilityLabel={`Filter by ${names.tag(option)}`}
+                          accessibilityLabel={t('ui.gatherings.filterBy', { label: names.tag(option) })}
                           accessibilityRole="button"
                           accessibilityState={{ selected: active }}
                         >
@@ -678,11 +680,11 @@ export default function GatheringsScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.accordionHeader}
             onPress={() => toggleFilterSection('environment')}
-            accessibilityLabel={`Indoor or outdoor: ${environmentSummary}, ${expandedFilterSection === 'environment' ? 'tap to collapse' : 'tap to expand'}`}
+            accessibilityLabel={sectionA11y('environment', environmentSummary, expandedFilterSection === 'environment')}
             accessibilityRole="button"
             accessibilityState={{ expanded: expandedFilterSection === 'environment' }}
           >
-            <Text style={styles.accordionHeaderLabel}>🏠 Indoor / Outdoor</Text>
+            <Text style={styles.accordionHeaderLabel}>{t('ui.gatherings.hEnvironment')}</Text>
             <View style={styles.accordionHeaderRight}>
               <Text style={styles.accordionHeaderValue}>{environmentSummary}</Text>
               <Text style={styles.accordionChevron}>{expandedFilterSection === 'environment' ? '⌃' : '⌄'}</Text>
@@ -691,15 +693,15 @@ export default function GatheringsScreen({ navigation, route }) {
           {expandedFilterSection === 'environment' && (
             <View style={styles.accordionBody}>
               <View style={styles.chipsWrapInline}>
-                {[{ key: null, label: 'Either' }, { key: 'indoor', label: '🏠 Indoor' }, { key: 'outdoor', label: '🌳 Outdoor' }].map((option) => {
+                {[{ key: null, label: t('ui.gatherings.envEither') }, { key: 'indoor', label: t('ui.gatherings.envIndoorChip') }, { key: 'outdoor', label: t('ui.gatherings.envOutdoorChip') }].map((option) => {
                   const active = environmentFilter === option.key;
                   return (
                     <TapActiveChip
-                      key={option.label}
+                      key={option.key ?? 'either'}
                       active={active}
                       style={[styles.dateChip, active && styles.dateChipActive]}
                       onPress={() => setEnvironmentFilter(option.key)}
-                      accessibilityLabel={`Filter by ${option.label}`}
+                      accessibilityLabel={t('ui.gatherings.filterBy', { label: option.label })}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
                     >
@@ -716,11 +718,11 @@ export default function GatheringsScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.accordionHeader}
             onPress={() => toggleFilterSection('price')}
-            accessibilityLabel={`Price: ${priceSummary}, ${expandedFilterSection === 'price' ? 'tap to collapse' : 'tap to expand'}`}
+            accessibilityLabel={sectionA11y('price', priceSummary, expandedFilterSection === 'price')}
             accessibilityRole="button"
             accessibilityState={{ expanded: expandedFilterSection === 'price' }}
           >
-            <Text style={styles.accordionHeaderLabel}>💵 Price</Text>
+            <Text style={styles.accordionHeaderLabel}>{t('ui.gatherings.hPrice')}</Text>
             <View style={styles.accordionHeaderRight}>
               <Text style={styles.accordionHeaderValue}>{priceSummary}</Text>
               <Text style={styles.accordionChevron}>{expandedFilterSection === 'price' ? '⌃' : '⌄'}</Text>
@@ -733,15 +735,15 @@ export default function GatheringsScreen({ navigation, route }) {
                   const active = priceFilter === option.key;
                   return (
                     <TapActiveChip
-                      key={option.label}
+                      key={option.key ?? 'any'}
                       active={active}
                       style={[styles.dateChip, active && styles.dateChipActive]}
                       onPress={() => setPriceFilter(option.key)}
-                      accessibilityLabel={`Filter by ${option.label}`}
+                      accessibilityLabel={t('ui.gatherings.filterBy', { label: priceLabel(option.key) })}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
                     >
-                      <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{option.label}</Text>
+                      <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{priceLabel(option.key)}</Text>
                     </TapActiveChip>
                   );
                 })}
@@ -754,11 +756,11 @@ export default function GatheringsScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.accordionHeader}
             onPress={() => toggleFilterSection('people')}
-            accessibilityLabel={`People: ${partyTypeSummary}, ${expandedFilterSection === 'people' ? 'tap to collapse' : 'tap to expand'}`}
+            accessibilityLabel={sectionA11y('people', partyTypeSummary, expandedFilterSection === 'people')}
             accessibilityRole="button"
             accessibilityState={{ expanded: expandedFilterSection === 'people' }}
           >
-            <Text style={styles.accordionHeaderLabel}>🙋 People</Text>
+            <Text style={styles.accordionHeaderLabel}>{t('ui.gatherings.hPeople')}</Text>
             <View style={styles.accordionHeaderRight}>
               <Text style={styles.accordionHeaderValue}>{partyTypeSummary}</Text>
               <Text style={styles.accordionChevron}>{expandedFilterSection === 'people' ? '⌃' : '⌄'}</Text>
@@ -771,15 +773,15 @@ export default function GatheringsScreen({ navigation, route }) {
                   const active = partyTypeFilter === option.key;
                   return (
                     <TapActiveChip
-                      key={option.label}
+                      key={option.key ?? 'any'}
                       active={active}
                       style={[styles.dateChip, active && styles.dateChipActive]}
                       onPress={() => setPartyTypeFilter(option.key)}
-                      accessibilityLabel={`Filter by ${option.label}`}
+                      accessibilityLabel={t('ui.gatherings.filterBy', { label: partyLabel(option.key) })}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
                     >
-                      <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{option.label}</Text>
+                      <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{partyLabel(option.key)}</Text>
                     </TapActiveChip>
                   );
                 })}
@@ -815,9 +817,9 @@ export default function GatheringsScreen({ navigation, route }) {
                 deal.title,
                 `${deal.brand_partners?.name}${deal.description ? '\n\n' + deal.description : ''}`,
                 [
-                  { text: 'Close', style: 'cancel' },
+                  { text: t('ui.common.close'), style: 'cancel' },
                   {
-                    text: 'Host a Gathering Here',
+                    text: t('ui.gatherings.hostHere'),
                     onPress: () => navigation.navigate('CreateGathering', {
                       selectedLat: deal.latitude,
                       selectedLng: deal.longitude,
@@ -830,7 +832,7 @@ export default function GatheringsScreen({ navigation, route }) {
         </View>
       ) : tab === 'nearby' && isSearchingGatherings && loadingGatheringSearch ? (
         <View style={{ marginVertical: spacing.lg }}>
-          <NLoader fullScreen={false} size="compact" caption="Searching gatherings…" />
+          <NLoader fullScreen={false} size="compact" caption={t('ui.gatherings.searching')} />
         </View>
       ) : tab === 'nearby' && (
         <FilterTransition activeKey={nearbyFilterKey} style={{ flex: 1 }}>
@@ -841,7 +843,7 @@ export default function GatheringsScreen({ navigation, route }) {
           refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
           ListHeaderComponent={
             forYouActive ? (
-              <Text style={styles.forYouHint}>Based on gatherings you've attended or shown interest in before.</Text>
+              <Text style={styles.forYouHint}>{t('ui.gatherings.forYouHint')}</Text>
             ) : weatherBanner ? (
               <Text style={styles.forYouHint}>{weatherBanner}</Text>
             ) : null
@@ -857,7 +859,7 @@ export default function GatheringsScreen({ navigation, route }) {
             // case (where "check back later" is the honest framing, not
             // "go create one"), with a real category/title prefill only
             // when one genuinely exists.
-            const label = isSearchingGatherings ? searchQuery.trim() : (interestFilter || '');
+            const label = isSearchingGatherings ? searchQuery.trim() : (interestFilter ? names.tag(interestFilter) : '');
             return (
               <FadeInState opportunity style={styles.emptyState}>
                 <Text style={styles.emptyEmoji}>🎉</Text>
@@ -872,9 +874,9 @@ export default function GatheringsScreen({ navigation, route }) {
                       quickStartTitle: isSearchingGatherings ? searchQuery.trim() : undefined,
                     })}
                     accessibilityRole="button"
-                    accessibilityLabel={`Start a${label ? ` ${label}` : ''} gathering`}
+                    accessibilityLabel={label ? t('ui.gatherings.startTopicA11y', { topic: label }) : t('ui.gatherings.startA11y')}
                   >
-                    <Text style={styles.emptyStateCreateButtonText}>+ Start a{label ? ` ${label}` : ''} Gathering</Text>
+                    <Text style={styles.emptyStateCreateButtonText}>{label ? t('ui.gatherings.startTopic', { topic: label }) : t('ui.gatherings.start')}</Text>
                   </TouchableOpacity>
                 )}
               </FadeInState>
@@ -892,22 +894,22 @@ export default function GatheringsScreen({ navigation, route }) {
               // get_bounded_nearby_gathering_ids' own row_limit).
               <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }, item.matchesYourInterests && styles.matchCard]}>
                 {coverPhotoUrls[item.id] ? (
-                  <Image source={{ uri: coverPhotoUrls[item.id] }} style={styles.coverPhoto} accessibilityLabel={`${item.title} cover photo`} />
+                  <Image source={{ uri: coverPhotoUrls[item.id] }} style={styles.coverPhoto} accessibilityLabel={t('ui.gatherings.coverA11y', { name: item.title })} />
                 ) : curatedCoverPhotoFor(item.interest_tag) ? (
-                  <Image source={{ uri: curatedCoverPhotoFor(item.interest_tag) }} style={styles.coverPhoto} accessibilityLabel={`${item.interest_tag} cover photo`} />
+                  <Image source={{ uri: curatedCoverPhotoFor(item.interest_tag) }} style={styles.coverPhoto} accessibilityLabel={t('ui.gatherings.coverA11y', { name: names.tag(item.interest_tag) })} />
                 ) : null}
                 <View style={styles.cardTopRow}>
                   <View
                     style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}
-                    accessibilityLabel={item.interest_tag ? `Category: ${item.interest_tag}` : 'Category: General'}
+                    accessibilityLabel={item.interest_tag ? t('ui.gatherings.categoryA11y', { name: names.tag(item.interest_tag) }) : t('ui.gatherings.categoryGeneralA11y')}
                   >
                     <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
                   </View>
-                  {photoUrls[item.id] && <Image source={{ uri: photoUrls[item.id] }} style={styles.hostAvatar} accessibilityLabel={`${item.host?.display_name}'s photo`} />}
+                  {photoUrls[item.id] && <Image source={{ uri: photoUrls[item.id] }} style={styles.hostAvatar} accessibilityLabel={t('ui.gatherings.hostPhotoA11y', { name: item.host?.display_name ?? '' })} />}
                   <TouchableOpacity
                     style={{ flex: 1 }}
                     onPress={() => openDestination(navigation, feedCard(item).destination)}
-                    accessibilityLabel={`View details for ${item.title}`}
+                    accessibilityLabel={t('ui.gatherings.viewDetailsA11y', { title: item.title })}
                     accessibilityRole="button"
                   >
                     <Text style={styles.title}>{item.title}</Text>
@@ -916,7 +918,7 @@ export default function GatheringsScreen({ navigation, route }) {
                   <TouchableOpacity
                     style={styles.moreButton}
                     onPress={() => setReportTarget({ id: item.host_id, name: item.host?.display_name })}
-                    accessibilityLabel={`Report or block ${item.host?.display_name}`}
+                    accessibilityLabel={t('ui.gatherings.reportA11y', { name: item.host?.display_name ?? '' })}
                     accessibilityRole="button"
                   >
                     <Text style={styles.moreButtonText}>⋯</Text>
@@ -924,12 +926,12 @@ export default function GatheringsScreen({ navigation, route }) {
                 </View>
                 {item.women_only && (
                   <View style={styles.womenOnlyBadge}>
-                    <Text style={styles.womenOnlyBadgeText}>👩 Women Only</Text>
+                    <Text style={styles.womenOnlyBadgeText}>{t('ui.gatherings.womenOnly')}</Text>
                   </View>
                 )}
                 {item.matchesYourInterests && item.interest_tag && (
                   <View style={styles.matchBadge}>
-                    <Text style={styles.matchBadgeText}>{`✨ ${t('reasons.becauseYouLike', { category: item.interest_tag })}`}</Text>
+                    <Text style={styles.matchBadgeText}>{`✨ ${t('reasons.becauseYouLike', { category: names.tag(item.interest_tag) }) /* shared reason wording, category name in the person's language */}`}</Text>
                   </View>
                 )}
                 {!item.matchesYourInterests && item.relatedHobby && (
@@ -972,11 +974,11 @@ export default function GatheringsScreen({ navigation, route }) {
 
                 <TouchableOpacity
                   onPress={() => toggleExpandGathering(item.id)}
-                  accessibilityLabel={`${expandedGathering === item.id ? 'Hide' : 'Show'} details and questions for ${item.title}`}
+                  accessibilityLabel={t(expandedGathering === item.id ? 'ui.gatherings.hideDetailsA11y' : 'ui.gatherings.showDetailsA11y', { title: item.title })}
                   accessibilityRole="button"
                   accessibilityState={{ expanded: expandedGathering === item.id }}
                 >
-                  <Text style={styles.detailsToggleText}>{expandedGathering === item.id ? 'Hide details ⌃' : 'Details & questions ⌄'}</Text>
+                  <Text style={styles.detailsToggleText}>{t(expandedGathering === item.id ? 'ui.gatherings.hideDetails' : 'ui.gatherings.showDetails')}</Text>
                 </TouchableOpacity>
                 {expandedGathering === item.id && (
                   <View>
@@ -1013,7 +1015,7 @@ export default function GatheringsScreen({ navigation, route }) {
                       unknown open the gathering instead of offering a join that would be wrong. */}
                   {(() => {
                     const card = feedCard(item);
-                    const action = card.action ?? { kind: 'view', label: 'View' };
+                    const action = card.action ?? { kind: 'view', label: t('ui.actions.view') };
                     const label = action.kind === 'join' ? action.label : action.status && action.kind !== 'view_plan' ? action.status : action.label;
                     return (
                       <TouchableOpacity
@@ -1032,7 +1034,7 @@ export default function GatheringsScreen({ navigation, route }) {
                       style={styles.inviteFriendsButton}
                       onPress={() => setInviteModalGathering(item)}
                       activeOpacity={0.85}
-                      accessibilityLabel={`Invite friends to ${item.title}`}
+                      accessibilityLabel={t('ui.gatherings.inviteA11y', { title: item.title })}
                       accessibilityRole="button"
                     >
                       <Text style={styles.inviteFriendsButtonText}>🤝</Text>

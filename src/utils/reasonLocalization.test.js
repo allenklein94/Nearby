@@ -452,7 +452,7 @@ describe('wiring guards', () => {
   });
   it('the Gatherings feed badges use the shared reason wording (no translated prefix + English tag)', () => {
     const src = read('screens/GatheringsScreen.js');
-    expect(src).toMatch(/t\('reasons\.becauseYouLike', \{ category: item\.interest_tag \}\)/);
+    expect(src).toMatch(/t\('reasons\.becauseYouLike', \{ category: names\.tag\(item\.interest_tag\) \}\)/);
     expect(src).toMatch(/localizeReason\(relatedInterestReason\(item\.relatedHobby\), language\)/);
     expect(src).toMatch(/localizeReason\(friendReason, language\)/);
     expect(src).not.toMatch(/gatherings\.becauseYouLike/);
