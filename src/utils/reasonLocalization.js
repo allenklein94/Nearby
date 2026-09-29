@@ -18,6 +18,7 @@
 import { translations } from '../i18n/translations';
 import { translate, DEFAULT_LANGUAGE } from '../i18n/translate';
 import { localClock, clockCount, localDuration, localNumber, localMoney, vocabValue } from '../i18n/format';
+import { categoryName } from '../i18n/categoryNames';
 import { ACTIVITIES } from '../constants/activityLayer';
 import { ACTIVITY_FORMATS } from '../constants/activityFormat';
 import { SKILL_LEVELS } from '../constants/skillLevel';
@@ -101,7 +102,11 @@ function localDistanceText(text, lang) {
 
 const NUMBER = { re: '\\d+', render: (value) => value };
 
+// A category / occasion name: matched like any free value, then named in the language by its permanent key (as stored if unknown).
+const CATEGORY = { re: '.+?', render: (value, lang) => categoryName(value, lang) };
+
 const TYPES = {
+  category: CATEGORY, interest: CATEGORY, occasion: CATEGORY,
   count: NUMBER, min: NUMBER, max: NUMBER, age: NUMBER, going: NUMBER, capacity: NUMBER,
   activity: { re: alt(ACTIVITIES.map((a) => a.label)), render: (value, lang) => { const a = ACTIVITIES.find((x) => x.label === value); return a ? translate(lang, `reasons.activities.${a.key}`) : value; } },
   format: oneOf(FORMAT_VOCAB),

@@ -3,6 +3,8 @@ import { Animated, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import useReduceMotion from '../hooks/useReduceMotion';
+import { useLanguage } from '../context/LanguageContext';
+import { translate } from '../i18n/translate';
 
 // NearbyPickBadge -- Item 125 ("Make 'Nearby found this for you' visually recognizable"): ✨ as a
 // standalone, RECURRING product signal, not just the transition beat the Nearby Motion Language
@@ -18,6 +20,7 @@ import useReduceMotion from '../hooks/useReduceMotion';
 export default function NearbyPickBadge({ style }) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
+  const { language } = useLanguage();
   const opacity = useRef(new Animated.Value(reduceMotion ? 1 : 0)).current;
   const scale = useRef(new Animated.Value(reduceMotion ? 1 : 0.7)).current;
 
@@ -33,7 +36,7 @@ export default function NearbyPickBadge({ style }) {
   const styles = getStyles(colors);
   return (
     <Animated.View style={[styles.badge, style, { opacity, transform: [{ scale }] }]}>
-      <Text style={styles.text}>✨ Nearby Pick</Text>
+      <Text style={styles.text}>✨ {translate(language, 'vocab.labels.nearbyPick')}</Text>
     </Animated.View>
   );
 }

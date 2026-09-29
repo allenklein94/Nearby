@@ -36,6 +36,7 @@ export function applyRemoteCategoryTags(rows) {
 //   - a retired tag leaves every picker list (nobody can newly choose it) but still resolves: to its replacement when
 //     it was merged, else to itself, so stored data keeps its meaning.
 // Nothing is removed on a MISSING signal (a partial or failed read never shrinks the list).
+export const TAG_KEYS = new Map(); // tag name -> its permanent key (category_tag_groups.key, item 97), from the synced taxonomy
 export const LEGACY_TAG_NAMES = new Map(); // lower(former name, or name merged away) -> the name it points to now
 export const RETIRED_TAGS = new Set();
 
@@ -73,6 +74,7 @@ export function applyTaxonomySnapshot(snapshot) {
   }
   for (const t of tags) {
     if (typeof t?.tag !== 'string' || !t.tag) continue;
+    if (typeof t.key === 'string' && t.key) TAG_KEYS.set(t.tag, t.key);
     if (t.retired) {
       RETIRED_TAGS.add(t.tag);
       if (t.replaced_by) LEGACY_TAG_NAMES.set(t.tag.toLowerCase(), t.replaced_by);

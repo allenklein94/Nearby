@@ -1,5 +1,6 @@
 import { useLanguage } from '../context/LanguageContext';
 import { surpriseView, surpriseText } from '../i18n/surpriseView';
+import { translate } from '../i18n/translate';
 import { peopleTonightBanner, countTonightSupply } from '../utils/meetTonight';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
@@ -1458,7 +1459,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         style={styles.intentSearchResultRow}
         onPress={() => onPress(item)}
         activeOpacity={0.85}
-        accessibilityLabel={[row.title, isTopPick ? 'Nearby Pick' : null, row.reason, row.meta, row.action?.label].filter(Boolean).join(', ')}
+        accessibilityLabel={[row.title, isTopPick ? translate(language, 'vocab.labels.nearbyPick') : null, row.reason, row.meta, row.action?.label].filter(Boolean).join(', ')}
         accessibilityRole="button"
       >
         <Text style={styles.intentSearchResultEmoji}>{INTENT_SEARCH_TYPE_EMOJI[item.type] ?? '📌'}</Text>

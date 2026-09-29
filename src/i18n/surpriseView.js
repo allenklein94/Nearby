@@ -10,6 +10,7 @@ import { translate, DEFAULT_LANGUAGE } from './translate';
 import { localMoney, localDate } from './format';
 import { scopeLabel, THINGS_TO_DO_GROUPS } from '../services/surpriseMeLogic';
 import { CUISINE_OPTIONS } from '../constants/businessAttributes';
+import { categoryNames } from './categoryNames';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 
 export const surpriseText = (language, key, vars = null) => translate(language || DEFAULT_LANGUAGE, `surprise.${key}`, vars);
@@ -33,9 +34,11 @@ function scopeText(scope, language) {
   if (scope.level === 'groups') {
     const groups = scope.groups ?? [];
     if (groups.length === THINGS_TO_DO_GROUPS.length && groups.every((g) => THINGS_TO_DO_GROUPS.includes(g))) return surpriseText(language, 'basis.thingsToDo');
-    return groups.map((k) => CATEGORY_GROUPS.find((g) => g.key === k)?.label).filter(Boolean).join(' + ') || null;
+    const labels = groups.map((k) => CATEGORY_GROUPS.find((g) => g.key === k)?.label).filter(Boolean);
+    return categoryNames(labels, language) || null;
   }
-  return scopeLabel(scope); // category tags, as stored
+  if (scope.level === 'tags') return categoryNames(scope.tags ?? [], language) || null;
+  return scopeLabel(scope);
 }
 
 export function surpriseBasisText(parts, language = DEFAULT_LANGUAGE) {

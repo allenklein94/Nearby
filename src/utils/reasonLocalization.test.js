@@ -12,6 +12,7 @@ import { translate, interpolate, hasOwnTranslation, valueForms, pluralCategory, 
 import { localDistance, localDuration, localClock, localWhen, localWindow, localNumber, localDate } from '../i18n/format';
 import { parseReason, localizeReason, localizeReasons, localizeNote, localizeTitle, REASON_PARSE_ORDER, LOCALIZED_NAMESPACES } from './reasonLocalization';
 import { resultTitleText } from '../constants/recommendationReasonVocabulary';
+import { categoryName } from '../i18n/categoryNames';
 import { resultRowView as rowViewForTitles } from './recommendationContext';
 import { recommendationContext, contextItem, resultRowView, REASONLESS_KINDS } from './recommendationContext';
 import { gatheringCardModel } from './recommendationCard';
@@ -211,7 +212,7 @@ describe('dynamic values and grammar', () => {
     expect(localizeReason(energyFit('Coffee', ['low_key']).reason, 'de')).toBe('Passt zu einem entspannten Plan');
     expect(localizeReason(reasonText('askedForCuisine', { cuisineFood: 'Italian food' }), 'de')).toBe('Weil du nach italienischem Essen gefragt hast');
     expect(localizeReason(reasonText('whoForLikes', { name: 'Sam', cuisine: 'Italian' }), 'de')).toBe('Sam mag meist italienisches Essen');
-    expect(localizeReason(becauseYouLikeReason('Coffee'), 'de')).toBe('Weil du Coffee magst');
+    expect(localizeReason(becauseYouLikeReason('Coffee'), 'de')).toBe('Weil du Kaffee magst');
   });
   it('clock times follow each language\'s convention, and Spanish agrees "la 1" / "las 3"', () => {
     const w = (before) => windowFitReason({ before });
@@ -257,11 +258,11 @@ describe('dynamic values and grammar', () => {
     expect(askedForReason(null)).toBeNull();
   });
   it('earlier dynamic reasons still localize (category, activity, friends)', () => {
-    expect(localizeReason(askedForReason('Coffee'), 'es')).toBe('Porque pediste Coffee');
+    expect(localizeReason(askedForReason('Coffee'), 'es')).toBe('Porque pediste Café');
     expect(localizeReason(activityReason('grabbing a coffee'), 'es')).toBe('Ideal para tomar un café');
     expect(localizeReason(friendsPlanActivityReason('meeting a friend'), 'es')).toBe('Un plan con amigos, ideal para ver a un amigo');
-    expect(localizeReason(occasionOfferedReason('Birthday'), 'de')).toBe('Bietet Birthday-Erlebnisse an');
-    expect(localizeReason(friendsInterestReason('Coffee', { friend_count: 1, sample_names: ['Sam'] }), 'es')).toBe('A Sam le gusta Coffee');
+    expect(localizeReason(occasionOfferedReason('Birthday'), 'de')).toBe('Bietet Erlebnisse zum Anlass „Geburtstag“ an');
+    expect(localizeReason(friendsInterestReason('Coffee', { friend_count: 1, sample_names: ['Sam'] }), 'es')).toBe('A Sam le gusta Café');
     const g = { approvedAttendees: [{ user_id: 'f1', profiles: { display_name: 'Zoë' } }] };
     expect(localizeReason(friendGoingReason(g, new Set(['f1'])), 'es')).toBe('Zoë va');
   });
@@ -362,7 +363,7 @@ describe('the context line, notes and headline on the shared layer', () => {
   });
   it.each(['es', 'ko', 'de', 'en'])('the same match reads the same on every converted surface (%s)', (language) => {
     const reason = becauseYouLikeReason('Coffee');
-    const expected = translate(language, 'reasons.becauseYouLike', { category: 'Coffee' });
+    const expected = translate(language, 'reasons.becauseYouLike', { category: categoryName('Coffee', language) });
     const card = gatheringCardModel(g, { signals: [{ kind: 'reason', text: reason }], myUserId: 'me', now: NOW.getTime(), language });
     const row = resultRowView({ type: 'gathering', ...g, startsAt: g.scheduled_at, reasons: [reason] }, { myUserId: 'me', now: NOW, language });
     const perk = recommendationContext(contextItem('perk', { id: 'p1', title: '10% off', distanceMiles: 0.3 }, { reasons: [reason] }), { language });
@@ -380,7 +381,7 @@ describe('the context line, notes and headline on the shared layer', () => {
   it('a subtitle that restates a reason is still deduped when the reason is shown translated', () => {
     const reason = becauseYouLikeReason('Coffee');
     const row = resultRowView({ type: 'gathering', ...g, startsAt: g.scheduled_at, reasons: [reason], subtitle: `${reason} · 🔒 Full — Join Waitlist` }, { myUserId: 'me', now: NOW, language: 'es' });
-    expect(row.reason).toBe('Porque te gusta Coffee');
+    expect(row.reason).toBe('Porque te gusta Café');
     expect(row.meta).toMatch(/🔒 Completo — Únete a la lista de espera$/);
     expect(row.meta).not.toMatch(/Because you like/);
   });
@@ -418,7 +419,7 @@ describe('result titles Nearby composes around a name', () => {
   });
   it('German and Tagalog put the name where their grammar wants it', () => {
     expect(localizeTitle('Coastal Coffee has availability', 'de')).toBe('Bei Coastal Coffee ist etwas frei');
-    expect(localizeTitle('Coastal Coffee offers Birthday experiences', 'de')).toBe('Coastal Coffee bietet Birthday-Erlebnisse an');
+    expect(localizeTitle('Coastal Coffee offers Birthday experiences', 'de')).toBe('Coastal Coffee bietet Erlebnisse zum Anlass „Geburtstag“ an');
     expect(localizeTitle('Sam is also looking for this', 'tl')).toBe('Hinahanap din ito ni Sam');
   });
   it('a title that is someone\'s own words is never re-read, whatever it says', () => {

@@ -7863,7 +7863,658 @@
    "group": null
   },
   {
+   "tag": "Adult Education",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Adventure",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Adventure Experiences",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Amusement Park",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Aquariums",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Arcade",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Art",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Art Classes",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Art Galleries",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Auto Repair",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bakeries",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Barbers",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bars & Lounges",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Basketball",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Beaches",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Birthday Activities",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Board Games",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Boat Tours",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Boating",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Boutiques",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Bowling",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 5,
+   "group": null
+  },
+  {
+   "tag": "Breakfast",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Breweries",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Brunch",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 6,
+   "group": null
+  },
+  {
+   "tag": "Camera Shops",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Camping",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 4,
+   "group": null
+  },
+  {
+   "tag": "Camps",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Car Rental",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Car Wash",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Career Events",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cars",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Casinos",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 4,
+   "group": null
+  },
+  {
+   "tag": "Cats",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Certifications",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Charity",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Chiropractic",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Classes",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cleaning",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cleanups",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Climbing",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Clothing",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Coffee",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Collecting",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Comedy",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Community Events",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Concerts",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Conferences",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cooking",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cooking Class",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Couples",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Coworking",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 7,
+   "group": null
+  },
+  {
+   "tag": "Crafts",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cultural Events",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Cycling",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "D&D",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 10,
+   "group": null
+  },
+  {
+   "tag": "DJs",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 4,
+   "group": null
+  },
+  {
+   "tag": "Dance Classes",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dancing",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Date Night",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Dating",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Day Trip",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dental",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Dessert & Ice Cream",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Detailing",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Diving",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Dog Meetup",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dog Parks",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dog Walking",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dogs",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Donation Drives",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Double Date",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "EV Charging",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Electrical",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Electronics",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Entrepreneurship",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Escape Rooms",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Excursions",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Exhibits",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Faith & Spirituality",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Family Dining",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Family Events",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Family Playdate",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Family Resorts",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Farmers Markets",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fashion",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Fast Casual",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Festivals",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Finance",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Fine Dining",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "First Date",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Fishing",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fitness",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 6,
+   "group": null
+  },
+  {
+   "tag": "Florist",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Food Trucks",
    "file": "src/i18n/translations.js",
    "consumer": "code",
    "occurrences": 1,
@@ -7873,6 +8524,244 @@
    "tag": "Foodie",
    "file": "src/i18n/translations.js",
    "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Fundraiser",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 4,
+   "group": null
+  },
+  {
+   "tag": "Gaming",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Gardening",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gardens",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "General Wellness",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gift Shop",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Glamping",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 7,
+   "group": null
+  },
+  {
+   "tag": "Golf",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 6,
+   "group": null
+  },
+  {
+   "tag": "Grooming",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Group Hangouts",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gyms",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "HVAC",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Handyman",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Happy Hour",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Hiking",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Historic Sites",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "History",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Home & Furniture",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Hotels",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Indoor Play",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Interior Design",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Jewelry",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Karaoke",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 6,
+   "group": null
+  },
+  {
+   "tag": "Kayaking",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Kids Activity",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Kids Education",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Kids Museums",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Kids Sports",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Landmarks",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Landscaping",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Language Classes",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Language Exchange",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Lectures",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Libraries",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
    "occurrences": 1,
    "group": null
   },
@@ -7880,7 +8769,784 @@
    "tag": "Live Music",
    "file": "src/i18n/translations.js",
    "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Local Attractions",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
    "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Local Experiences",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Local Shopping",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Make New Friends",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Markets",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Martial Arts",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Massage",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Medical Services",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Meditation",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Mini Golf",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Movies",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Moving",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Museums",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Music",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Music Lessons",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Nails",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Neighborhood Events",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Networking",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 10,
+   "group": null
+  },
+  {
+   "tag": "Nightclubs",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Nightlife",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Nutrition",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Observation Decks",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Oil Change",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Paddleboarding",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Padel",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 6,
+   "group": null
+  },
+  {
+   "tag": "Parking",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Parks",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Party & Event Decor",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pastries",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Performing Arts",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Personal Care",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pest Control",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pet Boarding",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pet Events",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pet Friendly Places",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pet Friendly Stays",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pet Stores",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pet Training",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pharmacies",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Photography",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Physical Therapy",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pickleball",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 7,
+   "group": null
+  },
+  {
+   "tag": "Picnics",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pilates",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 7,
+   "group": null
+  },
+  {
+   "tag": "Playgrounds",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Plumbing",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pop-Ups",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pottery",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Professional Development",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Professional Events",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Reading",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Real Estate",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Recovery",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Repairs",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Resorts",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 4,
+   "group": null
+  },
+  {
+   "tag": "Restaurants",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Road Trip",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Romantic Getaways",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Running",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Salons",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sauna",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 6,
+   "group": null
+  },
+  {
+   "tag": "Scenic Views",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Self-Care",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Sightseeing",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Singles Events",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Skating",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Skin Care",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Snorkeling",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Soccer",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Social Clubs",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Spa Day",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Spa Resorts",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Special Events",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Speed Dating",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sports",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Staycation",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Street Events",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Study Group",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Surfing",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Swimming",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Takeout & Delivery",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tech Meetup",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Technology",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Technology Classes",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tennis",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 4,
+   "group": null
+  },
+  {
+   "tag": "Theater",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Thrift & Vintage",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tires",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tourist Attractions",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tours",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Towing",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Trails",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Travel",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Trivia",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Tutoring",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Vacation Rentals",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Veterinary",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Vision",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Volleyball",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Volunteering",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Walking",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Water Sports",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Weekend Getaway",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wellness Centers",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wildlife",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wine",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wineries",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Workshops",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Yoga",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 7,
+   "group": null
+  },
+  {
+   "tag": "Zoos",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 3,
    "group": null
   },
   {

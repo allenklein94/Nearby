@@ -103,11 +103,12 @@ describe('dynamic values are composed from localized parts', () => {
     expect(surpriseView(full, 'es').header).toBe('Este fin de semana cerca de ti');
     expect(surpriseView(full, 'ko').basis).toBe('관심사에 맞춰 골랐어요 · 이번 주말 · $25 이하 · 친구와 함께');
   });
-  it('a scope keeps its meaning: cuisine and energy translated, category tags as stored', () => {
+  it('a scope keeps its meaning: cuisine and energy translated, category tags and groups translated', () => {
     expect(surpriseBasisText(surpriseBasisParts({ scope: { level: 'cuisine', cuisine: 'italian' } }), 'es')).toBe(translations.es.vocab.cuisines.italian);
     expect(surpriseBasisText(surpriseBasisParts({ scope: { level: 'energy', energies: ['active'] } }), 'fr')).toBe('Actif');
     expect(surpriseBasisText(surpriseBasisParts({ scope: { level: 'groups', groups: [...THINGS_TO_DO_GROUPS] } }), 'ru')).toBe('Чем заняться');
-    expect(surpriseBasisText(surpriseBasisParts({ scope: { level: 'tags', tags: ['Coffee'] } }), 'de')).toBe('Coffee');
+    expect(surpriseBasisText(surpriseBasisParts({ scope: { level: 'tags', tags: ['Coffee', 'Movies'] } }), 'de')).toBe('Kaffee + Kino');
+    expect(surpriseBasisText(surpriseBasisParts({ scope: { level: 'groups', groups: ['food_drink'] } }), 'es')).toBe('Comida y bebida');
   });
   it('missing parts stay missing in every language', () => {
     for (const lang of LANGS) {
