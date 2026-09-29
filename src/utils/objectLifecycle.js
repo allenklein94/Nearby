@@ -8,6 +8,7 @@
 // Request: open | fulfilled | expired | cancelled | merged.   Offer: pending | offered | accepted | completed |
 // declined | expired | cancelled | withdrawn.   Invite: pending | accepted | declined | expired.
 import { gatheringViewerState, isOfferExpired, isSocialInviteExpired } from './objectState';
+import { tr } from '../i18n/translate';
 
 export const LIFECYCLE = {
   gathering: {
@@ -126,11 +127,11 @@ export function lifecycleClass(kind, state) {
 export function viewLabel(kind, state) {
   const cls = lifecycleClass(kind, state);
   if (kind === 'gathering') {
-    if (state.startsWith('past_') && cls === 'completed') return 'View Past Event';
-    if (cls === 'expired') return 'Expired';
-    if (state === 'upcoming_attending' || state === 'upcoming_hosting') return 'View Plan';
+    if (state.startsWith('past_') && cls === 'completed') return tr('ui.actions.viewPastEvent');
+    if (cls === 'expired') return tr('ui.actions.expired');
+    if (state === 'upcoming_attending' || state === 'upcoming_hosting') return tr('ui.actions.viewPlan');
   }
-  if (cls === 'expired') return 'Expired';
-  if (kind === 'offer' && state === 'completed') return 'View Plan';
-  return 'View';
+  if (cls === 'expired') return tr('ui.actions.expired');
+  if (kind === 'offer' && state === 'completed') return tr('ui.actions.viewPlan');
+  return tr('ui.actions.view');
 }

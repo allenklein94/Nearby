@@ -117,3 +117,24 @@ describe('recoverable-error copy', () => {
     expect(recoverableErrorCopy({ what: 'send your request', error: { status: 503 } }).title).toBe('Deine Anfrage konnte gerade nicht gesendet werden.');
   });
 });
+
+describe('action labels', () => {
+  const { gatheringPrimaryAction, consumerOfferAction, opportunityPrimaryAction } = require('../utils/primaryAction');
+  const { interestedConfirmation, replySentConfirmation } = require('../utils/actionConfirmations');
+  const { setCurrentLanguage } = require('./translate');
+  afterEach(() => setCurrentLanguage('en'));
+  const g = { id: 'g1', host_id: 'h', scheduled_at: new Date(Date.now() + 86400000).toISOString(), is_public: true, capacity: null, attendees: [] };
+  test('English wording is unchanged (locked copy)', () => {
+    expect(gatheringPrimaryAction(g, 'me', Date.now()).label).toBe('Join');
+    expect(consumerOfferAction({ status: 'accepted' }, { request: { status: 'fulfilled' } }).status).toBe("You're booked");
+    expect(interestedConfirmation(true)[0]).toBe('Saved to Interested');
+  });
+  test('consumer labels follow the language, business labels stay English', () => {
+    setCurrentLanguage('de');
+    expect(gatheringPrimaryAction(g, 'me', Date.now()).label).toBe('Mitmachen');
+    expect(consumerOfferAction({ status: 'accepted' }, { request: { status: 'fulfilled' } }).status).toBe('Du hast gebucht');
+    expect(interestedConfirmation(false)[0]).toBe('Aus „Interessiert“ entfernt');
+    expect(opportunityPrimaryAction({ status: 'pending', business_requests: { status: 'open' } }).label).toBe('Accept & Offer');
+    expect(replySentConfirmation({ offer_type: 'alt_time' })[0]).toBe('New time suggested');
+  });
+});

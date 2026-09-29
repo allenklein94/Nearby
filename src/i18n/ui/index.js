@@ -6,8 +6,9 @@ import common from './common';
 import empty from './empty';
 import shared from './shared';
 import plans from './plans';
+import actions from './actions';
 
-export const UI_NAMESPACES = { common, plans, shared, empty };
+export const UI_NAMESPACES = { common, plans, shared, empty, actions };
 
 export const UI_LANGUAGES = ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl', 'ru', 'ko'];
 

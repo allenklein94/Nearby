@@ -11,12 +11,17 @@ export const LOCALIZED_FILES = [
   'src/constants/planStatus.js',
   'src/utils/recoverableError.js',
   'src/components/EmptyCopy.js',
+  'src/utils/actionConfirmations.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
 export const INTENTIONAL_ENGLISH = {
   '*': {
     Nearby: 'the app name',
+  },
+  'src/utils/actionConfirmations.js': {
+    'Offer saved': 'business-side confirmation (business experience stays English)',
+    "We're checking it now. It goes to the customer as soon as it clears.": 'business-side confirmation',
   },
   'src/utils/recoverableError.js': {
     "We couldn't {} right now.": 'fallback frame for an action phrase with no ui.shared.errors.what entry (the phrase itself is English)',
