@@ -4,6 +4,15 @@
 //   input problem (the server refused THIS content: over the cap, a rule): retrying the same thing would fail the same
 //     way, so the message says what to change and offers no Try Again.
 // The draft claim is only made by callers whose form really stays populated on failure (state is cleared on success only).
+// Wording is ui.shared.errors (one sentence pair per `what` phrase); a phrase with no entry keeps the English frame.
+import { tr } from '../i18n/translate';
+
+const whatSlug = (what) => String(what).replace(/\W+/g, '_');
+function whatLine(what, form) {
+  const key = `ui.shared.errors.what.${whatSlug(what)}.${form}`;
+  const v = tr(key);
+  return v === key ? null : v;
+}
 
 export function serviceError(response, result, fallback) {
   const e = new Error(result?.error || fallback);
@@ -33,20 +42,20 @@ export function isOffline(e) {
 export function recoverableErrorCopy({ what, error, draftKept = false }) {
   if (isServiceFailure(error)) {
     const parts = [];
-    if (isOffline(error)) parts.push('Check your connection.');
-    parts.push(draftKept ? 'Your draft is saved.' : 'Nothing was lost. Please try again.');
-    return { title: `We couldn't ${what} right now.`, message: parts.join(' '), canRetry: true };
+    if (isOffline(error)) parts.push(tr('ui.shared.errors.checkConnection'));
+    parts.push(tr(draftKept ? 'ui.shared.errors.draftSaved' : 'ui.shared.errors.nothingLost'));
+    return { title: whatLine(what, 'service') ?? `We couldn't ${what} right now.`, message: parts.join(' '), canRetry: true };
   }
   const detail = String(error?.message ?? '').trim();
-  return { title: "That didn't go through", message: detail || `We couldn't ${what}. Please check it and try again.`, canRetry: false };
+  return { title: tr('ui.shared.errors.didntGoThrough'), message: detail || (whatLine(what, 'input') ?? `We couldn't ${what}. Please check it and try again.`), canRetry: false };
 }
 
 export function presentRecoverableError(Alert, { what, error, draftKept = false, onRetry }) {
   const copy = recoverableErrorCopy({ what, error, draftKept });
   if (copy.canRetry && typeof onRetry === 'function') {
     Alert.alert(copy.title, copy.message, [
-      { text: 'Not now', style: 'cancel' },
-      { text: 'Try Again', onPress: onRetry },
+      { text: tr('ui.shared.errors.notNow'), style: 'cancel' },
+      { text: tr('ui.shared.errors.tryAgain'), onPress: onRetry },
     ]);
   } else {
     Alert.alert(copy.title, copy.message);

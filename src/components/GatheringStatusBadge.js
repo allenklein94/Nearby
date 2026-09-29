@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme';
+import { tr } from '../i18n/translate';
 
 // Single source of truth for how a caller's own relationship to a
 // gathering ("Going" / "Hosting" / "Waitlisted" / ...) is labeled and
@@ -14,15 +15,18 @@ import { radius, spacing } from '../theme';
 //
 // `tone` is resolved against the live theme inside the component (not
 // baked in here) so this stays correct in both light and dark mode.
+// `label` is read in the person's language (ui.shared.gatheringStatus.<status>); English: Hosting, Going, Requested,
+// Interested, Waitlisted, Attended, Hosted, Didn't attend.
+const statusMeta = (key, icon, tone) => ({ icon, tone, get label() { return tr(`ui.shared.gatheringStatus.${key}`); } });
 export const GATHERING_STATUS_META = {
-  hosting: { icon: '🎤', label: 'Hosting', tone: 'active' },
-  going: { icon: '✓', label: 'Going', tone: 'active' },
-  interested: { icon: '🕒', label: 'Requested', tone: 'pending' },
-  maybe: { icon: '☆', label: 'Interested', tone: 'pending' },
-  waitlisted: { icon: '⏳', label: 'Waitlisted', tone: 'pending' },
-  attended: { icon: '✓', label: 'Attended', tone: 'past' },
-  hosted: { icon: '🎤', label: 'Hosted', tone: 'past' },
-  didNotAttend: { icon: '—', label: "Didn't attend", tone: 'past' },
+  hosting: statusMeta('hosting', '🎤', 'active'),
+  going: statusMeta('going', '✓', 'active'),
+  interested: statusMeta('interested', '🕒', 'pending'),
+  maybe: statusMeta('maybe', '☆', 'pending'),
+  waitlisted: statusMeta('waitlisted', '⏳', 'pending'),
+  attended: statusMeta('attended', '✓', 'past'),
+  hosted: statusMeta('hosted', '🎤', 'past'),
+  didNotAttend: statusMeta('didNotAttend', '—', 'past'),
 };
 
 // `label`, when passed, fully replaces the default "{icon} {label}" text

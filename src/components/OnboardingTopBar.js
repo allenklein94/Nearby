@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing } from '../theme';
@@ -9,6 +10,7 @@ import { spacing } from '../theme';
 // Questions/Notifications screens also persist drafts). "Sign in" is the
 // persistent escape for someone who already has an account.
 export default function OnboardingTopBar({ navigation, showSignIn = true, onBack }) {
+  const { t, language } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const canGoBack = navigation.canGoBack();
@@ -18,20 +20,20 @@ export default function OnboardingTopBar({ navigation, showSignIn = true, onBack
         <TouchableOpacity
           onPress={onBack ?? (() => navigation.goBack())}
           style={styles.hit}
-          accessibilityLabel="Back"
+          accessibilityLabel={t('ui.shared.onboarding.back')}
           accessibilityRole="button"
         >
-          <Text style={styles.back}>← Back</Text>
+          <Text style={styles.back}>{t('ui.shared.onboarding.backArrow')}</Text>
         </TouchableOpacity>
       ) : <View />}
       {showSignIn && (
         <TouchableOpacity
           onPress={() => navigation.navigate('Login')}
           style={styles.hit}
-          accessibilityLabel="Already have an account? Sign in"
+          accessibilityLabel={t('ui.shared.onboarding.signInA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.signIn}>Already have an account? <Text style={styles.signInStrong}>Sign in</Text></Text>
+          <Text style={styles.signIn}>{t('ui.shared.onboarding.haveAccount')} <Text style={styles.signInStrong}>{t('ui.shared.onboarding.signIn')}</Text></Text>
         </TouchableOpacity>
       )}
     </View>

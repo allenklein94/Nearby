@@ -82,3 +82,38 @@ describe('translated labels are never saved as values', () => {
     expect(bad).toEqual([]);
   });
 });
+
+describe('empty states', () => {
+  const { EMPTY_STATES } = require('../constants/emptyStates');
+  test('ui.empty English is the registry, word for word, for every consumer id it carries', () => {
+    const en = UI_NAMESPACES.empty.en;
+    for (const [id, copy] of Object.entries(en)) expect([id, copy]).toEqual([id, EMPTY_STATES[id]]);
+  });
+  test('business and admin empty states are not localized (business experience and staff tooling stay English)', () => {
+    for (const id of Object.keys(UI_NAMESPACES.empty.en)) expect(/^(business_|admin_|ai_)/.test(id)).toBe(false);
+  });
+  test('every consumer empty state in the registry is localized', () => {
+    const consumer = Object.keys(EMPTY_STATES).filter((id) => !/^(business_|admin_|ai_)/.test(id));
+    expect(consumer.filter((id) => !(id in UI_NAMESPACES.empty.en))).toEqual([]);
+  });
+});
+
+describe('recoverable-error copy', () => {
+  const { recoverableErrorCopy } = require('../utils/recoverableError');
+  const { setCurrentLanguage } = require('./translate');
+  afterEach(() => setCurrentLanguage('en'));
+  test('English is unchanged and every known action phrase has a sentence pair', () => {
+    const net = new Error('Network request failed');
+    expect(recoverableErrorCopy({ what: 'send your request', error: net, draftKept: true })).toEqual({ title: "We couldn't send your request right now.", message: 'Check your connection. Your draft is saved.', canRetry: true });
+    expect(recoverableErrorCopy({ what: 'do a new thing', error: { status: 500 } }).title).toBe("We couldn't do a new thing right now.");
+    for (const [slug, pair] of Object.entries(UI_NAMESPACES.shared.en.errors.what)) {
+      const what = slug.replace(/_/g, ' ');
+      expect(pair.service).toBe(`We couldn't ${what} right now.`);
+      expect(pair.input).toBe(`We couldn't ${what}. Please check it and try again.`);
+    }
+  });
+  test('another language reads its own sentence', () => {
+    setCurrentLanguage('de');
+    expect(recoverableErrorCopy({ what: 'send your request', error: { status: 503 } }).title).toBe('Deine Anfrage konnte gerade nicht gesendet werden.');
+  });
+});

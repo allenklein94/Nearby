@@ -3,12 +3,24 @@
 // Files NOT listed are either not converted yet or deliberately English (NOT_LOCALIZED below).
 export const LOCALIZED_FILES = [
   'src/screens/PlansScreen.js',
+  'src/components/LoadErrorState.js',
+  'src/components/DraftBanner.js',
+  'src/components/OnboardingTopBar.js',
+  'src/components/TabHeaderActions.js',
+  'src/components/GatheringStatusBadge.js',
+  'src/constants/planStatus.js',
+  'src/utils/recoverableError.js',
+  'src/components/EmptyCopy.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
 export const INTENTIONAL_ENGLISH = {
   '*': {
     Nearby: 'the app name',
+  },
+  'src/utils/recoverableError.js': {
+    "We couldn't {} right now.": 'fallback frame for an action phrase with no ui.shared.errors.what entry (the phrase itself is English)',
+    "We couldn't {}. Please check it and try again.": 'same fallback, input form',
   },
 };
 

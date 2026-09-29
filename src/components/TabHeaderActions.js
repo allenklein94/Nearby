@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -31,6 +32,7 @@ const HINT_AUTO_HIDE_MS = 6000;
 // gap: this renders on the 4 main tab screens, not on every one of the
 // ~70 other pushed detail screens in the app.
 export default function TabHeaderActions({ navigation }) {
+  const { t, language } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [photoUrl, setPhotoUrl] = useState(null);
@@ -91,7 +93,7 @@ export default function TabHeaderActions({ navigation }) {
       <TouchableOpacity
         onPress={() => navigation.navigate('Messages')}
         style={styles.messageButton}
-        accessibilityLabel={unreadCount > 0 ? `Messages, ${unreadCount} unread` : 'Messages'}
+        accessibilityLabel={unreadCount > 0 ? t('ui.shared.header.messagesUnread', { count: unreadCount }) : t('ui.shared.header.messages')}
         accessibilityRole="button"
       >
         {/* A tappable-and-advances-the-user action gets real coral weight
@@ -108,7 +110,7 @@ export default function TabHeaderActions({ navigation }) {
       <TouchableOpacity
         onPress={() => navigation.navigate('Profile')}
         style={styles.iconButton}
-        accessibilityLabel="Your Profile"
+        accessibilityLabel={t('ui.shared.header.profile')}
         accessibilityRole="button"
       >
         {photoUrl ? (
@@ -120,9 +122,9 @@ export default function TabHeaderActions({ navigation }) {
 
       {showHint && (
         <View style={styles.hintBubble} pointerEvents="box-none">
-          <Text style={styles.hintText}>💬 Messages and your profile live here now</Text>
-          <TouchableOpacity onPress={dismissHint} accessibilityLabel="Dismiss this tip" accessibilityRole="button">
-            <Text style={styles.hintDismiss}>Got it</Text>
+          <Text style={styles.hintText}>{t('ui.shared.header.hint')}</Text>
+          <TouchableOpacity onPress={dismissHint} accessibilityLabel={t('ui.shared.header.dismissHint')} accessibilityRole="button">
+            <Text style={styles.hintDismiss}>{t('ui.shared.header.gotIt')}</Text>
           </TouchableOpacity>
         </View>
       )}

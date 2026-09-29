@@ -1,3 +1,4 @@
+import { tr } from '../i18n/translate';
 // Phase 2 of the "Build everything" plan (CLAUDE.md) -- the controlled
 // status vocabulary the UX critique asked for (Pending/Accepted/Confirmed/
 // Declined/Cancelled/Completed), built as part of PlanCard rather than as
@@ -26,13 +27,16 @@ export const PLAN_STATUS = {
 // here) plus one new tone, 'negative', for the two words that mean the
 // plan genuinely didn't happen -- distinct from 'past', which just means
 // it's over, not that anything went wrong.
+// `label` is read in the person's language (ui.shared.planStatus.<status>); English: Pending, Accepted, Confirmed, Declined,
+// Cancelled, Completed.
+const planMeta = (status, tone) => ({ tone, get label() { return tr(`ui.shared.planStatus.${status}`); } });
 export const PLAN_STATUS_META = {
-  [PLAN_STATUS.PENDING]: { label: 'Pending', tone: 'pending' },
-  [PLAN_STATUS.ACCEPTED]: { label: 'Accepted', tone: 'active' },
-  [PLAN_STATUS.CONFIRMED]: { label: 'Confirmed', tone: 'active' },
-  [PLAN_STATUS.DECLINED]: { label: 'Declined', tone: 'negative' },
-  [PLAN_STATUS.CANCELLED]: { label: 'Cancelled', tone: 'negative' },
-  [PLAN_STATUS.COMPLETED]: { label: 'Completed', tone: 'past' },
+  [PLAN_STATUS.PENDING]: planMeta(PLAN_STATUS.PENDING, 'pending'),
+  [PLAN_STATUS.ACCEPTED]: planMeta(PLAN_STATUS.ACCEPTED, 'active'),
+  [PLAN_STATUS.CONFIRMED]: planMeta(PLAN_STATUS.CONFIRMED, 'active'),
+  [PLAN_STATUS.DECLINED]: planMeta(PLAN_STATUS.DECLINED, 'negative'),
+  [PLAN_STATUS.CANCELLED]: planMeta(PLAN_STATUS.CANCELLED, 'negative'),
+  [PLAN_STATUS.COMPLETED]: planMeta(PLAN_STATUS.COMPLETED, 'past'),
 };
 
 // A gathering-shaped plan's real lifecycle stage. `role` is the caller's

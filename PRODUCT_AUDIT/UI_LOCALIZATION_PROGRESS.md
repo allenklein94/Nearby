@@ -10,8 +10,10 @@ How: `src/i18n/ui/<ns>.js` (11 languages) merged as `translations.<lang>.ui`; sc
 ## Done
 - infra (translate `tr`, ui merge, display wrappers, common namespace, scanner, tests)
 - PlansScreen (ns `plans`)
+- shared components (ns `shared`): LoadErrorState, DraftBanner, OnboardingTopBar, TabHeaderActions, GatheringStatusBadge, planStatus labels, recoverableError copy (sentence pair per `what` phrase)
+- EmptyCopy (ns `empty`): every consumer empty-state id; business/admin/ai ids stay English (tested)
 
 ## Next (in order)
-shared copy modules (EmptyCopy registry, PlanCard/status labels, LoadErrorState, recoverableError, primaryAction, confirmations),
+primaryAction labels, actionConfirmations,
 Home, Discover, Gatherings, GatheringDetail, Create/EditGathering, Activity, Profile, Settings, AskBusiness, BusinessRequestDetail,
 chat screens, onboarding, remaining screens, components.

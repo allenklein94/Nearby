@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { Animated, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing, typography } from '../theme';
@@ -22,6 +23,7 @@ import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 // full-vividness gradient NLoader/Login/Onboarding use, since this is
 // a quiet, secondary moment, not a hero one.
 export default function LoadErrorState({ message, onRetry }) {
+  const { t, language } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const reduceMotion = useReduceMotion();
@@ -43,15 +45,15 @@ export default function LoadErrorState({ message, onRetry }) {
   return (
     <Animated.View style={[styles.container, { opacity }]}>
       <NearbyMark size={28} style={styles.mark} />
-      <Text style={styles.title}>Couldn't load this</Text>
-      <Text style={styles.message}>{message ?? 'Check your connection and try again.'}</Text>
+      <Text style={styles.title}>{t('ui.shared.loadError.title')}</Text>
+      <Text style={styles.message}>{message ?? t('ui.shared.loadError.message')}</Text>
       <TouchableOpacity
         style={styles.button}
         onPress={onRetry}
-        accessibilityLabel="Try again"
+        accessibilityLabel={t('ui.shared.loadError.retryA11y')}
         accessibilityRole="button"
       >
-        <Text style={styles.buttonText}>Try Again</Text>
+        <Text style={styles.buttonText}>{t('ui.shared.loadError.retry')}</Text>
       </TouchableOpacity>
     </Animated.View>
   );
