@@ -58,6 +58,7 @@ import { getUserLocation } from '../services/userLocation';
 
 
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
+import useCategoryNames from '../hooks/useCategoryNames';
 // Real Free/$/$$/$$$ filter options, backed by gatherings.price_level --
 // mirrors CreateGatheringScreen's own PRICE_OPTIONS chip labels.
 const PRICE_FILTER_OPTIONS = [
@@ -73,6 +74,7 @@ const PRICE_FILTER_OPTIONS = [
 const PARTY_TYPE_FILTER_OPTIONS = [{ key: null, label: 'Any' }, ...EXPERIENCE_PARTY_TYPE_OPTIONS.filter((o) => o.key)];
 
 export default function GatheringsScreen({ navigation, route }) {
+  const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
   const { colors, shadow } = useTheme();
   const { t, language } = useLanguage();
   const posthog = usePostHog();
@@ -463,7 +465,7 @@ export default function GatheringsScreen({ navigation, route }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle} accessibilityRole="header">
-          {tab === 'nearby' && interestFilter && !forYouActive ? `${interestFilter} Near You` : t('gatherings.title')}
+          {tab === 'nearby' && interestFilter && !forYouActive ? `${names.tag(interestFilter)} Near You` : t('gatherings.title')}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {tab === 'nearby' && (
@@ -646,7 +648,7 @@ export default function GatheringsScreen({ navigation, route }) {
               </View>
               {CATEGORY_GROUPS.map((group) => (
                 <View key={group.key} style={{ marginTop: spacing.sm }}>
-                  <Text style={styles.groupCaption}>{group.icon} {group.label}</Text>
+                  <Text style={styles.groupCaption}>{group.icon} {names.group(group.key, group.label)}</Text>
                   <View style={styles.chipsWrapInline}>
                     {group.tags.map((option) => {
                       const active = interestFilter === option;
@@ -657,11 +659,11 @@ export default function GatheringsScreen({ navigation, route }) {
                           active={active}
                           style={[styles.filterChip, active && { backgroundColor: style.color, borderColor: style.color }]}
                           onPress={() => selectInterestFilter(option)}
-                          accessibilityLabel={`Filter by ${option}`}
+                          accessibilityLabel={`Filter by ${names.tag(option)}`}
                           accessibilityRole="button"
                           accessibilityState={{ selected: active }}
                         >
-                          <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{style.icon} {option}</Text>
+                          <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{style.icon} {names.tag(option)}</Text>
                         </TapActiveChip>
                       );
                     })}

@@ -35,6 +35,7 @@ import { typography, spacing, radius } from '../theme';
 import { NLoader } from '../motion';
 import { getUserLocation } from '../services/userLocation';
 import { countLabel } from '../utils/plural';
+import useCategoryNames from '../hooks/useCategoryNames';
 // Real Free/$/$$/$$$ chip labels for the new Price field -- mirrors the
 // visual convention services/places.js's own priceLevelLabel() already
 // established for Google Places results, without reusing that function
@@ -120,6 +121,7 @@ function walkTimeLabel(miles) {
 // options" below (optional, defaults to No Limit, matching every
 // pre-existing gathering's real behavior).
 export default function CreateGatheringScreen({ navigation, route }) {
+  const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
   const { colors, shadow, isDark } = useTheme();
   const { t } = useLanguage();
   const myInterests = useMyInterests();
@@ -533,7 +535,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
             <Text style={styles.label}>{t('gatherings.categoryLabel')}</Text>
             {orderGroupsByInterests(CATEGORY_GROUPS, myInterests).map((group) => (
               <View key={group.key} style={{ marginBottom: spacing.sm }}>
-                <Text style={styles.subLabel}>{group.icon} {group.label}</Text>
+                <Text style={styles.subLabel}>{group.icon} {names.group(group.key, group.label)}</Text>
                 <View style={styles.chipsWrap}>
                   {group.tags.map((option) => {
                     const style = categoryStyleFor(option);
@@ -553,7 +555,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                         ]}
                         onPress={() => setInterestTag(interestTag === option ? null : option)}
                         activeOpacity={0.85}
-                        accessibilityLabel={`Category: ${option}`}
+                        accessibilityLabel={`Category: ${names.tag(option)}`}
                         accessibilityRole="button"
                         accessibilityState={{ selected: isSelected }}
                       >
@@ -574,7 +576,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                             2.03-3.19:1 white-on-color contrast -- below
                             the WCAG floor). See gatheringCategoryStyles.js's
                             own CATEGORY_BUTTON_TEXT_COLOR comment. */}
-                        <Text style={[styles.chipText, isSelected && styles.chipTextSelected, isSelected && { color: CATEGORY_BUTTON_TEXT_COLOR }]}>{photoUrl ? '' : `${style.icon} `}{option}</Text>
+                        <Text style={[styles.chipText, isSelected && styles.chipTextSelected, isSelected && { color: CATEGORY_BUTTON_TEXT_COLOR }]}>{photoUrl ? '' : `${style.icon} `}{names.tag(option)}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -1215,7 +1217,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
               <Text style={styles.previewIcon}>{selectedStyle ? selectedStyle.icon : '🎉'}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.previewTitle}>{title || 'Untitled gathering'}</Text>
-                {interestTag ? <Text style={styles.previewMeta}>{interestTag}</Text> : null}
+                {interestTag ? <Text style={styles.previewMeta}>{names.tag(interestTag)}</Text> : null}
               </View>
             </View>
             {description ? <Text style={styles.previewDescription}>{description}</Text> : null}

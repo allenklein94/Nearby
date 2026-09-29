@@ -10,7 +10,9 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { showSuccessToast } from '../motion';
+import useCategoryNames from '../hooks/useCategoryNames';
 export default function EditCommunityScreen({ route, navigation }) {
+  const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
   const { community } = route.params;
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -97,12 +99,12 @@ export default function EditCommunityScreen({ route, navigation }) {
                   ]}
                   onPress={() => setInterestTag(interestTag === option ? null : option)}
                   activeOpacity={0.85}
-                  accessibilityLabel={`Category: ${option}`}
+                  accessibilityLabel={`Category: ${names.tag(option)}`}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
                 >
                   {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.chipPhoto} /> : null}
-                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{photoUrl ? '' : `${style.icon} `}{option}</Text>
+                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{photoUrl ? '' : `${style.icon} `}{names.tag(option)}</Text>
                 </TouchableOpacity>
               );
             })}

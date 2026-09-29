@@ -1,4 +1,5 @@
 import { useLanguage } from '../context/LanguageContext';
+import useCategoryNames from '../hooks/useCategoryNames';
 import { surpriseView, surpriseText } from '../i18n/surpriseView';
 import { translate } from '../i18n/translate';
 import { peopleTonightBanner, countTonightSupply } from '../utils/meetTonight';
@@ -198,6 +199,7 @@ const LAST_PEOPLE_SUBMODE_KEY = 'discover_last_people_submode';
 // no-new-API-cost convention.
 export default function DiscoverHubScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
+  const names = useCategoryNames(); // category / group names on chips and headings, in the person's language (display only)
   const { language } = useLanguage(); // recommendation reasons are shown in the person's language (utils/reasonLocalization.js)
   const styles = getStyles(colors, shadow);
   const { session } = useAuth();
@@ -1360,8 +1362,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
   function renderBrowseRail(onPress, { selectedKey = null, disabled = false } = {}) {
     return (
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
-        {[...rail.primary, ...(showMoreCategories ? rail.more : [])].map(({ group, label }) => {
+        {[...rail.primary, ...(showMoreCategories ? rail.more : [])].map(({ group, label: englishLabel }) => {
           const selected = selectedKey === group.key;
+          const label = names.rail(group.key, englishLabel);
           return (
             <TouchableOpacity
               key={group.key}
@@ -1387,7 +1390,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             accessibilityRole="button"
             accessibilityState={{ expanded: showMoreCategories }}
           >
-            <Text style={styles.categoryChipText}>{showMoreCategories ? 'Less' : 'More'}</Text>
+            <Text style={styles.categoryChipText}>{showMoreCategories ? names.label('less') : names.label('more')}</Text>
           </TouchableOpacity>
         ) : null}
       </ScrollView>
@@ -1632,8 +1635,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
   const contextLabel = expandedContext
     ? (expandedContext.categoryTags
-        ? [expandedContext.categoryIcon, expandedContext.categoryLabel, 'Nearby'].filter(Boolean).join(' ')
-        : [expandedContext.interestTag, titleCaseBadge(expandedContext.timeBucket), 'Nearby'].filter(Boolean).join(' · '))
+        ? [expandedContext.categoryIcon, names.tag(expandedContext.categoryLabel), 'Nearby'].filter(Boolean).join(' ')
+        : [names.tag(expandedContext.interestTag), titleCaseBadge(expandedContext.timeBucket), 'Nearby'].filter(Boolean).join(' · '))
     : null;
 
   // The one real "why this place, right now" line, shared verbatim by the
@@ -1943,11 +1946,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 active={c.active}
                 style={[styles.filterChip, c.active && styles.filterChipActive]}
                 onPress={() => setCuisineFilter(c.active ? null : c.key)}
-                accessibilityLabel={c.active ? `${c.label} cuisine, selected. Tap to clear` : `${c.label} cuisine`}
+                accessibilityLabel={c.active ? `${names.cuisine(c.key, c.label)}, selected. Tap to clear` : names.cuisine(c.key, c.label)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: c.active }}
               >
-                <Text style={[styles.filterChipText, c.active && styles.filterChipTextActive]}>{c.active ? `${c.label} ✕` : c.label}</Text>
+                <Text style={[styles.filterChipText, c.active && styles.filterChipTextActive]}>{c.active ? `${names.cuisine(c.key, c.label)} ✕` : names.cuisine(c.key, c.label)}</Text>
               </TapActiveChip>
             ))}
           </ScrollView>
@@ -2426,7 +2429,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {topCategoryGatherings.length > 0 && (
             <>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeaderRowLabel}>{topSearchedCategory.category} Near You</Text>
+                <Text style={styles.sectionHeaderRowLabel}>{names.tag(topSearchedCategory.category)} Near You</Text>
                 <TouchableOpacity onPress={openTopCategoryContext} accessibilityLabel={`See all ${topSearchedCategory.category} nearby`} accessibilityRole="button">
                   <Text style={styles.seeAllInline}>See all →</Text>
                 </TouchableOpacity>
@@ -2557,7 +2560,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               {renderBrowseRail(handleIntentNarrow, { selectedKey: intentSearch.classifyResult?.narrowGroup ?? null, disabled: intentRefining })}
               {!intentRefining && !(intentSearch.items?.length > 0) && !!intentSearch.classifyResult?.narrowGroup && (
                 <>
-                  <EmptyCopy id="category_narrow_none" vars={{ topic: narrowGroupLabel(intentSearch.classifyResult.narrowGroup) }} />
+                  <EmptyCopy id="category_narrow_none" vars={{ topic: names.group(intentSearch.classifyResult.narrowGroup, narrowGroupLabel(intentSearch.classifyResult.narrowGroup)) }} />
                   <TouchableOpacity
                     onPress={() => handleIntentNarrow({ key: intentSearch.classifyResult.narrowGroup })}
                     accessibilityLabel="Show all ideas"
@@ -2576,7 +2579,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               <View style={styles.intentSearchTagsRow}>
                 <Text style={styles.intentSearchTag}>📍 Nearby</Text>
                 {!!intentSearch.classifyResult?.narrowGroup && (
-                  <Text style={styles.intentSearchTag}>{narrowGroupLabel(intentSearch.classifyResult.narrowGroup)}</Text>
+                  <Text style={styles.intentSearchTag}>{names.group(intentSearch.classifyResult.narrowGroup, narrowGroupLabel(intentSearch.classifyResult.narrowGroup))}</Text>
                 )}
                 {intentSearchDateLabel(intentSearch.classifyResult?.dateWindow) && (
                   <Text style={styles.intentSearchTag}>📅 {intentSearchDateLabel(intentSearch.classifyResult.dateWindow)}</Text>
@@ -2650,7 +2653,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             >
               <Text style={styles.categoryChipIcon}>{searchedTopic.icon}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle} numberOfLines={1}>{searchedTopic.label}</Text>
+                <Text style={styles.cardTitle} numberOfLines={1}>{searchedTopic.kind === 'cuisine' ? searchedTopic.label : names.tag(searchedTopic.label)}</Text>
                 {!!searchedTopic.groupLabel && <Text style={styles.cardSubtitle} numberOfLines={1}>{searchedTopic.groupLabel}</Text>}
                 {!!searchFriendsLine && <Text style={styles.cardSubtitle} numberOfLines={1}>🤝 {searchFriendsLine}</Text>}
               </View>

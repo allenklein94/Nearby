@@ -130,9 +130,20 @@ export const translations = {
       // Category, group and occasion names by their permanent key (category_tag_groups.key, item 97), for the text
       // Nearby composes (reasons, titles, Surprise Me); a tag with no entry here is shown as stored.
       "labels": {
-        "nearbyPick": "Nearby Pick"
+        "nearbyPick": "Nearby Pick",
+        "more": "More",
+        "less": "Less"
       },
       "categories": {
+        "rail": {
+          "food_drink": "Food & Drink",
+          "activities_recreation": "Activities",
+          "entertainment_nightlife": "Entertainment",
+          "outdoors_nature": "Outdoors",
+          "shopping": "Shopping",
+          "wellness_beauty": "Wellness",
+          "family_kids": "Family"
+        },
         "tags": {
           "adult_education": "Adult Education",
           "adventure": "Adventure",
@@ -1195,9 +1206,20 @@ export const translations = {
     },
     vocab: {
       "labels": {
-        "nearbyPick": "Elección de Nearby"
+        "nearbyPick": "Elección de Nearby",
+        "more": "Más",
+        "less": "Menos"
       },
       "categories": {
+        "rail": {
+          "food_drink": "Comida y bebida",
+          "activities_recreation": "Actividades",
+          "entertainment_nightlife": "Entretenimiento",
+          "outdoors_nature": "Aire libre",
+          "shopping": "Compras",
+          "wellness_beauty": "Bienestar",
+          "family_kids": "Familia"
+        },
         "tags": {
           "adult_education": "Educación para adultos",
           "adventure": "Aventura",
@@ -2284,9 +2306,20 @@ export const translations = {
     },
     vocab: {
       "labels": {
-        "nearbyPick": "Nearby-Tipp"
+        "nearbyPick": "Nearby-Tipp",
+        "more": "Mehr",
+        "less": "Weniger"
       },
       "categories": {
+        "rail": {
+          "food_drink": "Essen & Trinken",
+          "activities_recreation": "Aktivitäten",
+          "entertainment_nightlife": "Unterhaltung",
+          "outdoors_nature": "Draußen",
+          "shopping": "Shopping",
+          "wellness_beauty": "Wellness",
+          "family_kids": "Familie"
+        },
         "tags": {
           "adult_education": "Erwachsenenbildung",
           "adventure": "Abenteuer",
@@ -3344,9 +3377,20 @@ export const translations = {
     },
     vocab: {
       "labels": {
-        "nearbyPick": "Choix Nearby"
+        "nearbyPick": "Choix Nearby",
+        "more": "Plus",
+        "less": "Moins"
       },
       "categories": {
+        "rail": {
+          "food_drink": "Cuisine et boissons",
+          "activities_recreation": "Activités",
+          "entertainment_nightlife": "Divertissement",
+          "outdoors_nature": "Plein air",
+          "shopping": "Shopping",
+          "wellness_beauty": "Bien-être",
+          "family_kids": "Famille"
+        },
         "tags": {
           "adult_education": "Formation pour adultes",
           "adventure": "Aventure",
@@ -4413,9 +4457,20 @@ export const translations = {
     },
     vocab: {
       "labels": {
-        "nearbyPick": "Escolha do Nearby"
+        "nearbyPick": "Escolha do Nearby",
+        "more": "Mais",
+        "less": "Menos"
       },
       "categories": {
+        "rail": {
+          "food_drink": "Comida e bebida",
+          "activities_recreation": "Atividades",
+          "entertainment_nightlife": "Entretenimento",
+          "outdoors_nature": "Ar livre",
+          "shopping": "Compras",
+          "wellness_beauty": "Bem-estar",
+          "family_kids": "Família"
+        },
         "tags": {
           "adult_education": "Educação de adultos",
           "adventure": "Aventura",
@@ -5488,9 +5543,20 @@ export const translations = {
     },
     vocab: {
       "labels": {
-        "nearbyPick": "Chwa Nearby"
+        "nearbyPick": "Chwa Nearby",
+        "more": "Plis",
+        "less": "Mwens"
       },
       "categories": {
+        "rail": {
+          "food_drink": "Manje ak bwason",
+          "activities_recreation": "Aktivite",
+          "entertainment_nightlife": "Divètisman",
+          "outdoors_nature": "Deyò",
+          "shopping": "Fè makèt",
+          "wellness_beauty": "Byennèt",
+          "family_kids": "Fanmi"
+        },
         "tags": {
           "adult_education": "Edikasyon pou granmoun",
           "adventure": "Avanti",
@@ -6550,9 +6616,20 @@ export const translations = {
     },
     vocab: {
       "labels": {
-        "nearbyPick": "Nearby 精选"
+        "nearbyPick": "Nearby 精选",
+        "more": "更多",
+        "less": "收起"
       },
       "categories": {
+        "rail": {
+          "food_drink": "餐饮",
+          "activities_recreation": "活动",
+          "entertainment_nightlife": "娱乐",
+          "outdoors_nature": "户外",
+          "shopping": "购物",
+          "wellness_beauty": "健康",
+          "family_kids": "家庭"
+        },
         "tags": {
           "adult_education": "成人教育",
           "adventure": "探险",
@@ -7612,9 +7689,20 @@ export const translations = {
     },
     vocab: {
       "labels": {
-        "nearbyPick": "Nearby đề xuất"
+        "nearbyPick": "Nearby đề xuất",
+        "more": "Thêm",
+        "less": "Thu gọn"
       },
       "categories": {
+        "rail": {
+          "food_drink": "Ăn uống",
+          "activities_recreation": "Hoạt động",
+          "entertainment_nightlife": "Giải trí",
+          "outdoors_nature": "Ngoài trời",
+          "shopping": "Mua sắm",
+          "wellness_beauty": "Chăm sóc sức khỏe",
+          "family_kids": "Gia đình"
+        },
         "tags": {
           "adult_education": "Giáo dục người lớn",
           "adventure": "Phiêu lưu",
@@ -8672,9 +8760,20 @@ export const translations = {
     },
     vocab: {
       "labels": {
-        "nearbyPick": "Pinili ng Nearby"
+        "nearbyPick": "Pinili ng Nearby",
+        "more": "Higit pa",
+        "less": "Mas kaunti"
       },
       "categories": {
+        "rail": {
+          "food_drink": "Pagkain at inumin",
+          "activities_recreation": "Mga aktibidad",
+          "entertainment_nightlife": "Libangan",
+          "outdoors_nature": "Labas",
+          "shopping": "Pamimili",
+          "wellness_beauty": "Wellness",
+          "family_kids": "Pamilya"
+        },
         "tags": {
           "adult_education": "Edukasyon para sa matatanda",
           "adventure": "Pakikipagsapalaran",
@@ -9737,9 +9836,20 @@ export const translations = {
     },
     vocab: {
       "labels": {
-        "nearbyPick": "Выбор Nearby"
+        "nearbyPick": "Выбор Nearby",
+        "more": "Ещё",
+        "less": "Свернуть"
       },
       "categories": {
+        "rail": {
+          "food_drink": "Еда и напитки",
+          "activities_recreation": "Активности",
+          "entertainment_nightlife": "Развлечения",
+          "outdoors_nature": "На природе",
+          "shopping": "Покупки",
+          "wellness_beauty": "Велнес",
+          "family_kids": "Семья"
+        },
         "tags": {
           "adult_education": "Образование для взрослых",
           "adventure": "Приключения",
@@ -10826,9 +10936,20 @@ export const translations = {
     },
     vocab: {
       "labels": {
-        "nearbyPick": "Nearby 추천"
+        "nearbyPick": "Nearby 추천",
+        "more": "더보기",
+        "less": "접기"
       },
       "categories": {
+        "rail": {
+          "food_drink": "음식 & 음료",
+          "activities_recreation": "액티비티",
+          "entertainment_nightlife": "엔터테인먼트",
+          "outdoors_nature": "아웃도어",
+          "shopping": "쇼핑",
+          "wellness_beauty": "웰니스",
+          "family_kids": "가족"
+        },
         "tags": {
           "adult_education": "성인 교육",
           "adventure": "모험",

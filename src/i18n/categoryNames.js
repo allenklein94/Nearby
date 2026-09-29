@@ -37,3 +37,22 @@ export function categoryName(value, language = DEFAULT_LANGUAGE) {
 
 // "Coffee + Movies" style lists (Surprise Me's scope line): each name localized, the joiner kept.
 export const categoryNames = (values, language = DEFAULT_LANGUAGE, sep = ' + ') => values.map((v) => categoryName(v, language)).join(sep);
+
+// By key, for pickers that already hold the key (a group chip, an occasion chip whose own label may differ, e.g. an
+// "offered occasion" shown as "Group/Family"). `fallback` = what English shows; unknown keys return it unchanged.
+export function groupName(key, language = DEFAULT_LANGUAGE, fallback = null) {
+  const english = fallback ?? CATEGORY_GROUPS.find((g) => g.key === key)?.label ?? key;
+  if (!language || language === DEFAULT_LANGUAGE || !has(DEFAULT_LANGUAGE, `categories.groups.${key}`)) return english;
+  return translate(language, `vocab.categories.groups.${key}`);
+}
+export function occasionName(key, language = DEFAULT_LANGUAGE, fallback = null) {
+  const english = fallback ?? OCCASION_OPTIONS.find((o) => o.key === key)?.label ?? key;
+  if (!language || language === DEFAULT_LANGUAGE || !has(DEFAULT_LANGUAGE, `categories.occasions.${key}`)) return english;
+  return translate(language, `vocab.categories.occasions.${key}`);
+}
+// Discover's Browse row uses short names for its seven leading groups ("Activities"); the rest use the group name.
+export function railName(key, language = DEFAULT_LANGUAGE, fallback = null) {
+  if (!language || language === DEFAULT_LANGUAGE) return fallback ?? groupName(key, language);
+  if (has(DEFAULT_LANGUAGE, `categories.rail.${key}`)) return translate(language, `vocab.categories.rail.${key}`);
+  return groupName(key, language, fallback);
+}

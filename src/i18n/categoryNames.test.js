@@ -2,7 +2,8 @@
 import fs from 'fs';
 import path from 'path';
 import { translations } from './translations';
-import { categoryName, categoryNames, deriveCategoryKey, tagKey } from './categoryNames';
+import { categoryName, categoryNames, deriveCategoryKey, tagKey, groupName, occasionName, railName } from './categoryNames';
+import { DISCOVER_RAIL_PRIMARY } from '../constants/discoverCategoryRail';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { localizeReason } from '../utils/reasonLocalization';
@@ -101,5 +102,38 @@ describe('the Nearby Pick label', () => {
     expect(read('motion/NearbyPickBadge.js')).toMatch(/translate\(language, 'vocab\.labels\.nearbyPick'\)/);
     expect(read('motion/NearbyPickBadge.js')).not.toMatch(/✨ Nearby Pick</);
     expect(read('screens/DiscoverHubScreen.js')).not.toMatch(/'Nearby Pick'/);
+  });
+});
+
+describe('chips and pickers (display only)', () => {
+  it('group, occasion and rail names: English as given, other languages translated, unknown keys fall back', () => {
+    for (const g of CATEGORY_GROUPS) {
+      expect(groupName(g.key, 'en')).toBe(g.label);
+      for (const lang of OTHER) expect(groupName(g.key, lang)).toBe(translations[lang].vocab.categories.groups[g.key]);
+    }
+    expect(occasionName('family_gathering', 'en', 'Group/Family')).toBe('Group/Family');
+    expect(occasionName('birthday', 'es')).toBe(translations.es.vocab.categories.occasions.birthday);
+    expect(groupName('not_a_group', 'de', 'Stored')).toBe('Stored');
+    expect(occasionName('not_an_occasion', 'de')).toBe('not_an_occasion');
+  });
+  it('the Browse rail has a short name for each leading chip in every language, and More/Less are translated', () => {
+    for (const lang of LANGS) {
+      for (const p of DISCOVER_RAIL_PRIMARY) expect(typeof translations[lang].vocab.categories.rail[p.key]).toBe('string');
+      expect(typeof translations[lang].vocab.labels.more).toBe('string');
+      expect(typeof translations[lang].vocab.labels.less).toBe('string');
+    }
+    for (const p of DISCOVER_RAIL_PRIMARY) {
+      expect(translations.en.vocab.categories.rail[p.key]).toBe(p.label); // English copy = the rail's own label
+      expect(railName(p.key, 'en', p.label)).toBe(p.label);
+    }
+    expect(railName('activities_recreation', 'de')).toBe('Aktivitäten');
+    expect(railName('pets', 'fr')).toBe(translations.fr.vocab.categories.groups.pets); // non-leading group = its group name
+  });
+  it('pickers render names through the hook but keep storing the canonical value', () => {
+    for (const f of ['CreateGatheringScreen', 'EditGatheringScreen', 'CreateCommunityScreen', 'EditCommunityScreen', 'GatheringsScreen', 'ProfileScreen', 'ViewProfileScreen', 'DiscoverHubScreen']) {
+      const src = read(`screens/${f}.js`);
+      expect([f, /useCategoryNames\(\)/.test(src)]).toEqual([f, true]);
+      expect([f, /set\w+\(names\./.test(src)]).toEqual([f, false]); // a translated name is never saved
+    }
   });
 });

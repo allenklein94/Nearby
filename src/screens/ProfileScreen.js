@@ -22,6 +22,7 @@ import { typography, spacing, radius } from '../theme';
 
 import { modalAnimation, showSuccessToast, animateLayout } from '../motion';
 import { countLabel } from '../utils/plural';
+import useCategoryNames from '../hooks/useCategoryNames';
 const MAX_VOICE_INTRO_SECONDS = 30;
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -93,6 +94,7 @@ const getAccordionStyles = (colors) => StyleSheet.create({
 });
 
 export default function ProfileScreen({ navigation, route }) {
+  const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
@@ -722,7 +724,7 @@ export default function ProfileScreen({ navigation, route }) {
             <View style={styles.chipsWrap}>
               {interests.map((interest) => (
                 <View key={interest} style={styles.interestSummaryChip}>
-                  <Text style={styles.interestSummaryChipText}>{interest}</Text>
+                  <Text style={styles.interestSummaryChipText}>{names.tag(interest)}</Text>
                 </View>
               ))}
             </View>
@@ -1313,11 +1315,11 @@ export default function ProfileScreen({ navigation, route }) {
                 style={[styles.chip, selected && styles.chipSelected]}
                 onPress={() => toggleInterest(interest)}
                 activeOpacity={0.85}
-                accessibilityLabel={interest}
+                accessibilityLabel={names.tag(interest)}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
               >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{interest}</Text>
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{names.tag(interest)}</Text>
               </TouchableOpacity>
             );
           })}

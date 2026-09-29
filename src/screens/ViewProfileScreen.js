@@ -28,6 +28,7 @@ import useReduceMotion from '../hooks/useReduceMotion';
 import { typography, spacing, radius } from '../theme';
 
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
+import useCategoryNames from '../hooks/useCategoryNames';
 const { width } = Dimensions.get('window');
 const NEW_HERE_DAYS = 7;
 const FREQUENT_CHANGE_THRESHOLD = 3;
@@ -51,6 +52,7 @@ function isNewHere(createdAt) {
 }
 
 export default function ViewProfileScreen({ route, navigation }) {
+  const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
   // "10/10 blueprint" audit, Finding 9 (CLAUDE.md, Aug 30 2026), resolved by
   // a direct decision from the user: gender_identity/interested_in_genders
   // are a real hard match-gate but were never shown to a viewer anywhere --
@@ -733,7 +735,7 @@ export default function ViewProfileScreen({ route, navigation }) {
               <View style={styles.chipsWrap}>
                 {profile.interests.map((interest) => (
                   <View key={interest} style={styles.interestChip}>
-                    <Text style={styles.interestChipText}>{interest}</Text>
+                    <Text style={styles.interestChipText}>{names.tag(interest)}</Text>
                   </View>
                 ))}
               </View>

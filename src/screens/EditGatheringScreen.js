@@ -16,6 +16,7 @@ import { spacing, radius, typography } from '../theme';
 
 import { showSuccessToast } from '../motion';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
+import useCategoryNames from '../hooks/useCategoryNames';
 const VIBE_SCALES = [
   { key: 'energyLevel', label: 'Energy', lowLabel: 'Chill', highLabel: 'High energy' },
   { key: 'conversationLevel', label: 'Conversation', lowLabel: 'Quiet', highLabel: 'Chatty' },
@@ -31,6 +32,7 @@ function visibilityLabel(g) {
 }
 
 export default function EditGatheringScreen({ route, navigation }) {
+  const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
   const { gathering } = route.params;
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -191,7 +193,7 @@ export default function EditGatheringScreen({ route, navigation }) {
               <Text style={styles.helper}>This gathering has no category yet. Pick one so the right people and businesses can find it. It can't be changed once set.</Text>
               {CATEGORY_GROUPS.map((group) => (
                 <View key={group.key} style={{ marginTop: spacing.sm }}>
-                  <Text style={styles.helper}>{group.icon} {group.label}</Text>
+                  <Text style={styles.helper}>{group.icon} {names.group(group.key, group.label)}</Text>
                   <View style={styles.chipsWrap}>
                     {group.tags.map((tag) => {
                       const selected = newCategory === tag;
@@ -201,10 +203,10 @@ export default function EditGatheringScreen({ route, navigation }) {
                           style={[styles.chip, selected && styles.chipSelected]}
                           onPress={() => setNewCategory(selected ? null : tag)}
                           accessibilityRole="button"
-                          accessibilityLabel={`Category: ${tag}`}
+                          accessibilityLabel={`Category: ${names.tag(tag)}`}
                           accessibilityState={{ selected }}
                         >
-                          <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{tag}</Text>
+                          <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{names.tag(tag)}</Text>
                         </TouchableOpacity>
                       );
                     })}

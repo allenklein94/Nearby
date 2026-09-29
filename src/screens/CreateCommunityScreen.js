@@ -10,8 +10,10 @@ import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import useCategoryNames from '../hooks/useCategoryNames';
 
 export default function CreateCommunityScreen({ navigation, route }) {
+  const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [name, setName] = useState('');
@@ -154,12 +156,12 @@ export default function CreateCommunityScreen({ navigation, route }) {
                   ]}
                   onPress={() => setInterestTag(interestTag === option ? null : option)}
                   activeOpacity={0.85}
-                  accessibilityLabel={`Category: ${option}`}
+                  accessibilityLabel={`Category: ${names.tag(option)}`}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
                 >
                   {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.chipPhoto} /> : null}
-                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{photoUrl ? '' : `${style.icon} `}{option}</Text>
+                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{photoUrl ? '' : `${style.icon} `}{names.tag(option)}</Text>
                 </TouchableOpacity>
               );
             })}
