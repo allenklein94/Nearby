@@ -115,7 +115,8 @@ describe('dating asks find places by what they are like (item 85)', () => {
     expect(mig).toMatch(/drop function if exists public\.create_business_request_for_match\(uuid, text, double precision, double precision, text, integer, date, time without time zone, time without time zone, double precision, text, text\[\]\);/);
     expect(read('src/services/dateProposals.js')).toMatch(/attributes_param:/);
     const screen = read('src/screens/AskBusinessScreen.js');
-    expect(screen).toMatch(/What kind of date\?/);
+    expect(screen).toContain("t('ui.askBusiness.whatKindOfDateOptional')"); // wording in the askBusiness ui namespace (localization pass 5)
+    expect(require('../i18n/ui/askBusiness').default.en.whatKindOfDateOptional).toMatch(/What kind of date\?/);
     expect(screen).toMatch(/attributes: attributesInput,\n\s+\}\);\n\s+\} else if \(communityId\)/);
   });
 });

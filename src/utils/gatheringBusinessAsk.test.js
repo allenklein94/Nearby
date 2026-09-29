@@ -54,8 +54,10 @@ describe('wiring guards', () => {
   const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
   const screen = read('screens/AskBusinessScreen.js');
   it('gathering mode asks the one question and hides the retyped fields', () => {
-    expect(screen).toContain("Anything specific you'd like the business to provide?");
-    expect(screen).toContain('{!gatheringId && (<>\n          <Text style={styles.label}>What do you want?</Text>');
+    // wording lives in the askBusiness ui namespace (localization pass 5); the screen reads it by key
+    expect(require('../i18n/ui/askBusiness').default.en.anythingSpecificYoudLikeThe).toBe("Anything specific you'd like the business to provide?");
+    expect(screen).toContain("t('ui.askBusiness.anythingSpecificYoudLikeThe')");
+    expect(screen).toContain("{!gatheringId && (<>\n          <Text style={styles.label}>{t('ui.askBusiness.whatDoYouWant')}</Text>");
     expect(screen).toContain('(!gatheringId || showMoreOptions)');
     expect(screen).toMatch(/submitBusinessRequestForGathering\(\{[\s\S]*?items: showItems/);
   });

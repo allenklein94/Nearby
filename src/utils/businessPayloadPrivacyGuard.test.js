@@ -65,13 +65,13 @@ describe('client does not read or collect what a business must not receive', () 
     const ask = fs.readFileSync(path.join(__dirname, '../screens/AskBusinessScreen.js'), 'utf8');
     expect(ask).not.toMatch(/sharedInterests|Share my interests with businesses/);
     // A free-text note exists ONLY when the request is addressed to one chosen business (item 29); the server drops it otherwise.
-    const idx = ask.indexOf('Anything else?');
+    const idx = ask.indexOf("t('ui.askBusiness.anythingElseOptional')"); // "Anything else? (optional)", askBusiness ui namespace
     expect(idx).toBeGreaterThan(-1);
     expect(ask.slice(Math.max(0, idx - 200), idx)).toMatch(/\{targetPartner && (!gatheringId && )?\(/);
     // Item 111: a gathering's ask offers its note only when targeted too (gatheringAskInputs adds 'note' only for targeted).
     expect(ask).toContain('gatheringAskInputs(category, { targeted: !!targetPartner })');
     expect(ask).toMatch(/gatheringInputs\.includes\('note'\) && \([\s\S]{0,200}targetPartner\.name/);
-    expect(ask.match(/Anything else\?/g)).toHaveLength(1);
+    expect(ask.match(/ui\.askBusiness\.anythingElseOptional/g)).toHaveLength(1);
   });
 });
 

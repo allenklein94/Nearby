@@ -30,6 +30,7 @@ export const LOCALIZED_FILES = [
   'src/utils/inviteExpiry.js',
   'src/screens/ProfileScreen.js',
   'src/screens/SettingsScreen.js',
+  'src/screens/AskBusinessScreen.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
@@ -41,6 +42,12 @@ export const INTENTIONAL_ENGLISH = {
     'Go on dates': 'stored onboarding token (profiles.onboarding_motivations), matched, never shown',
     'Make new friends': 'stored onboarding token, matched, never shown',
     'Meet new people': 'stored onboarding token, matched, never shown',
+  },
+  'src/screens/AskBusinessScreen.js': {
+    Today: 'English fallback of DATE_OPTIONS; shown through i18n/optionLabels dateOptionLabel',
+    Tomorrow: 'English fallback of DATE_OPTIONS; shown through dateOptionLabel',
+    'This weekend': 'English fallback of DATE_OPTIONS; shown through dateOptionLabel',
+    "I'm flexible": 'English fallback of DATE_OPTIONS; shown through dateOptionLabel',
   },
   'src/utils/actionConfirmations.js': {
     'Offer saved': 'business-side confirmation (business experience stays English)',

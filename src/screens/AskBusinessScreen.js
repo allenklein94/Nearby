@@ -1,4 +1,8 @@
 import { askMissingField } from '../utils/askMissing';
+import { tr } from '../i18n/translate';
+import { useLanguage } from '../context/LanguageContext';
+import useCategoryNames from '../hooks/useCategoryNames';
+import { budgetOptionLabel, experienceOptionLabel, dateOptionLabel as dateOptionText, attributeLabel, dietaryOptionLabel } from '../i18n/optionLabels';
 import { DATE_VIBES } from '../constants/businessVibes';
 import { cleanDateVibes } from '../utils/dateProposalVibes';
 import React, { useState, useEffect } from 'react';
@@ -27,7 +31,6 @@ import { typography, spacing, radius } from '../theme';
 import { requireUserLocation } from '../services/userLocation';
 import { moneyLabel } from '../utils/outcomeDisplay';
 
-import { countLabel } from '../utils/plural';
 import { getGatheringById } from '../services/gatherings';
 import { gatheringBusinessPartySize } from '../utils/gatheringFullness';
 import { gatheringRequestText, gatheringAskFacts, gatheringAskInputs } from '../utils/gatheringBusinessAsk';
@@ -147,20 +150,21 @@ function resolveDateParam(dateWindow, pickedDate) {
 // device's own GPS.
 // Item 72: the targeted ask reached from a business's booking CTA says what the person tapped (the flow is the same request).
 function bookingAskHeading(mode, targetPartner) {
-  if (mode === 'reservation_required') return `Book with ${targetPartner.name}`;
-  if (mode === 'reservation_recommended') return `Reserve at ${targetPartner.name}`;
-  if (mode === 'request_required') return `Request from ${targetPartner.name}`;
-  return `Ask ${targetPartner.name}`;
+  if (mode === 'reservation_required') return tr('ui.askBusiness.bookWith', { name: targetPartner.name });
+  if (mode === 'reservation_recommended') return tr('ui.askBusiness.reserveAt', { name: targetPartner.name });
+  if (mode === 'request_required') return tr('ui.askBusiness.requestFrom', { name: targetPartner.name });
+  return tr('ui.askBusiness.ask', { name: targetPartner.name });
 }
 
 // Item 111: the facts a gathering's request carries, shown read-only (change them on the gathering itself).
 function GatheringAskFacts({ styles, gathering, loadFailed }) {
-  if (loadFailed) return <Text style={styles.subtitle}>We couldn't load your gathering's details. Go back and try again.</Text>;
+  const { t } = useLanguage();
+  if (loadFailed) return <Text style={styles.subtitle}>{t('ui.askBusiness.weCouldntLoadYourGatherings')}</Text>;
   if (!gathering) return <ActivityIndicator style={{ marginVertical: spacing.md }} />;
   const facts = gatheringAskFacts(gathering);
   return (
-    <View style={styles.recapCard} accessibilityLabel={`From your gathering: ${facts.map((f) => f.label).join(', ')}`}>
-      <Text style={styles.factsKicker}>FROM YOUR GATHERING</Text>
+    <View style={styles.recapCard} accessibilityLabel={t('ui.askBusiness.fromYourGatheringA11y', { join: facts.map((f) => f.label).join(', ') })}>
+      <Text style={styles.factsKicker}>{t('ui.askBusiness.fromYourGathering')}</Text>
       {facts.map((f) => (
         <Text key={f.key} style={styles.factLine}>{f.icon} {f.label}</Text>
       ))}
@@ -169,6 +173,8 @@ function GatheringAskFacts({ styles, gathering, loadFailed }) {
 }
 
 export default function AskBusinessScreen({ navigation, route }) {
+  const { t, language } = useLanguage();
+  const names = useCategoryNames();
   const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
 
@@ -229,7 +235,7 @@ export default function AskBusinessScreen({ navigation, route }) {
   const normalizedPrefillDateWindow = rawPrefillDateWindow === 'tonight' || rawPrefillDateWindow === 'now' ? 'today' : rawPrefillDateWindow;
   // Item 110: "tonight" is today's date (what is sent), but the chip says what the person said.
   const saidTonight = rawPrefillDateWindow === 'tonight';
-  const dateOptionLabel = (d) => (d.key === 'today' && saidTonight ? 'Tonight' : d.label);
+  const dateOptionLabel = (d) => (d.key === 'today' && saidTonight ? dateOptionText('tonight', 'Tonight', language) : dateOptionText(d.key, d.label, language));
   // Item 106: unanswered (null) unless the person's words gave a day; sending asks "What day?" once (utils/askMissing.js).
   const [dateWindow, setDateWindow] = useState(normalizedPrefillDateWindow || null);
   // P0 #2 fix: a genuinely picked date, independent of the preset chips --
@@ -394,7 +400,7 @@ export default function AskBusinessScreen({ navigation, route }) {
     setSearchingNearby(true);
     setNearbyResults(null);
     try {
-      const location = await requireUserLocation('Location access is needed to find nearby options.');
+      const location = await requireUserLocation(t('ui.askBusiness.locationAccessIsNeededTo'));
       const partySizeNum = partySize.trim() ? parseInt(partySize.trim(), 10) : null;
       const results = await searchActiveBusinessAvailability({
         category,
@@ -426,13 +432,13 @@ export default function AskBusinessScreen({ navigation, route }) {
   async function handleSubmit() {
     const missing = findMissingField();
     if (missing) {
-      Alert.alert(missing.title, missing.body);
+      Alert.alert(t(`ui.askBusiness.missing.${missing.key}.title`), t(`ui.askBusiness.missing.${missing.key}.body`));
       return;
     }
     if (targetPartner && noteToBusiness.trim()) {
       const check = await checkTextModeration(noteToBusiness);
       if (!check.safe) {
-        Alert.alert('Note not allowed', 'Please revise your note and try again.');
+        Alert.alert(t('ui.askBusiness.noteNotAllowed'), t('ui.askBusiness.pleaseReviseYourNoteAnd'));
         return;
       }
     }
@@ -566,8 +572,8 @@ export default function AskBusinessScreen({ navigation, route }) {
   const recapReady = findMissingField() === null;
   const recapParts = [];
   if (recapReady) {
-    if (!gatheringId) recapParts.push(`Looking for: ${text.trim()}`);
-    if (category && !gatheringId) recapParts.push(category);
+    if (!gatheringId) recapParts.push(t('ui.askBusiness.recapLookingFor', { text: text.trim() }));
+    if (category && !gatheringId) recapParts.push(names.tag(category));
     if (!gatheringId) {
       // P0 #2 fix: a genuinely picked date recaps as its own real,
       // formatted date -- never falls through to "undefined" now that
@@ -577,20 +583,20 @@ export default function AskBusinessScreen({ navigation, route }) {
         : (() => { const d = DATE_OPTIONS.find((o) => o.key === dateWindow); return d ? dateOptionLabel(d) : null; })();
       if (dateLabel) recapParts.push(dateLabel);
     }
-    if (!gatheringId && !matchId && partySize.trim()) recapParts.push(countLabel(partySize.trim(), 'person', 'people') ?? `${partySize.trim()} people`);
+    if (!gatheringId && !matchId && partySize.trim()) recapParts.push(Number.isFinite(Number(partySize.trim())) ? t('ui.common.count.people', { count: Number(partySize.trim()) }) : partySize.trim());
     const recapBudgetMax = resolveBudgetMax(budgetRangeKey, budgetMaxOverride);
-    if (recapBudgetMax) recapParts.push(`up to ${moneyLabel(recapBudgetMax)}`);
-    if (occasionInput) recapParts.push(occasionLabel(occasionInput));
+    if (recapBudgetMax) recapParts.push(t('ui.askBusiness.recapUpTo', { amount: moneyLabel(recapBudgetMax) }));
+    if (occasionInput) recapParts.push(names.occasion(occasionInput, occasionLabel(occasionInput)));
     if (isSoloMode && experienceLevel && experienceLevel !== 'special') {
-      recapParts.push(EXPERIENCE_LEVEL_OPTIONS.find((o) => o.key === experienceLevel)?.label ?? null);
+      recapParts.push(experienceOptionLabel(EXPERIENCE_LEVEL_OPTIONS.find((o) => o.key === experienceLevel), language));
     }
-    if (surpriseMode) recapParts.push('🎁 kept as a surprise');
-    if (isSoloMode && category === 'Foodie' && cuisineInput) recapParts.push(cuisineLabel(cuisineInput));
+    if (surpriseMode) recapParts.push(t('ui.askBusiness.recapSurprise'));
+    if (isSoloMode && category === 'Foodie' && cuisineInput) recapParts.push(names.cuisine(cuisineInput, cuisineLabel(cuisineInput)));
     if (showItems && itemsInput.length > 0) recapParts.push(itemsInput.map(requestedItemLabel).join(' + '));
-    if (category === 'Foodie' && dietaryInput.length > 0) recapParts.push(dietaryInput.map(dietaryLabel).join(', '));
-    if ((isSoloMode || matchId) && attributesInput.length > 0) recapParts.push(attributesInput.map(businessAttributeLabel).join(', '));
-    if (isSoloMode && pickedAvailability) recapParts.push(`at ${pickedAvailability.partner_name}`);
-    if (!gatheringId || radiusMiles !== 15) recapParts.push(`within ${radiusMiles} mi`);
+    if (category === 'Foodie' && dietaryInput.length > 0) recapParts.push(dietaryInput.map((k) => dietaryOptionLabel(k, dietaryLabel(k), language)).join(', '));
+    if ((isSoloMode || matchId) && attributesInput.length > 0) recapParts.push(attributesInput.map((k) => attributeLabel(k, businessAttributeLabel(k), language)).join(', '));
+    if (isSoloMode && pickedAvailability) recapParts.push(t('ui.askBusiness.recapAt', { name: pickedAvailability.partner_name }));
+    if (!gatheringId || radiusMiles !== 15) recapParts.push(t('ui.askBusiness.recapWithin', { n: radiusMiles }));
   }
 
   return (
@@ -611,25 +617,25 @@ export default function AskBusinessScreen({ navigation, route }) {
               : matchedAvailability && route.params?.bookingMode
               ? bookingAskHeading(route.params.bookingMode, { name: matchedAvailability.partnerName })
               : gatheringId
-              ? `Find ${gatheringTitle ?? 'your gathering'} somewhere to go`
+              ? t('ui.askBusiness.findSomewhereToGo', { gatheringTitle: gatheringTitle ?? t('ui.askBusiness.yourGathering') })
               : matchId
-                ? `Find something for you and ${matchName ?? 'your match'}`
+                ? t('ui.askBusiness.findSomethingForYouAnd', { matchName: matchName ?? t('ui.askBusiness.yourMatch') })
                 : communityId
-                  ? `Ask nearby businesses for ${communityName ?? 'your community'}`
-                  : 'Can Nearby make this happen?'}
+                  ? t('ui.askBusiness.askNearbyBusinessesFor', { communityName: communityName ?? t('ui.askBusiness.yourCommunity') })
+                  : t('ui.askBusiness.canNearbyMakeThisHappen')}
           </Text>
           <Text style={styles.subtitle}>
             {targetPartner
-              ? `Only ${targetPartner.name} will see this — they can answer with a real offer.`
+              ? t('ui.askBusiness.onlyWillSeeThisThey', { name: targetPartner.name })
               : gatheringId
-              ? 'We’ll send your gathering’s details. Nearby businesses can answer with a real offer for the group.'
+              ? t('ui.askBusiness.weLlSendYourGathering')
               : matchId
-                ? `You both agreed on a plan — real nearby businesses can respond with a real offer for the two of you.`
+                ? t('ui.askBusiness.youBothAgreedOnA')
                 : communityId
-                  ? `Describe what you need — every eligible business near your community's Area can respond with a real, custom offer.`
+                  ? t('ui.askBusiness.describeWhatYouNeedEvery')
                   : matchedAvailability
-                    ? `${matchedAvailability.partnerName} already has this available — review below and send your ask.`
-                    : 'Tell us what you want, then see real nearby availability right away — or just ask, and businesses can respond with a real offer.'}
+                    ? t('ui.askBusiness.alreadyHasThisAvailableReview', { partnerName: matchedAvailability.partnerName })
+                    : t('ui.askBusiness.tellUsWhatYouWant')}
           </Text>
 
           {matchedAvailability && (
@@ -654,15 +660,15 @@ export default function AskBusinessScreen({ navigation, route }) {
           )}
 
           {!gatheringId && (<>
-          <Text style={styles.label}>What do you want?</Text>
+          <Text style={styles.label}>{t('ui.askBusiness.whatDoYouWant')}</Text>
           <TextInput
             style={styles.textArea}
-            placeholder="Dinner for 4 tonight…"
+            placeholder={t('ui.askBusiness.dinnerFor4Tonight')}
             placeholderTextColor={colors.textTertiary}
             value={text}
             onChangeText={setText}
             multiline
-            accessibilityLabel="What do you want?"
+            accessibilityLabel={t('ui.askBusiness.whatDoYouWantA11y')}
           />
           </>)}
 
@@ -671,7 +677,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           )}
 
           {(!gatheringId || (gathering && !gathering.interest_tag)) && (<>
-          <Text style={styles.label}>Category</Text>
+          <Text style={styles.label}>{t('ui.askBusiness.category')}</Text>
           <View style={styles.chipRow}>
             {CATEGORY_OPTIONS.map((c) => (
               <TouchableOpacity
@@ -682,10 +688,10 @@ export default function AskBusinessScreen({ navigation, route }) {
                   setNearbyResults(null);
                   setPickedAvailability(null);
                 }}
-                accessibilityLabel={c}
+                accessibilityLabel={names.tag(c)}
                 accessibilityRole="button"
               >
-                <Text style={[styles.chipText, category === c && styles.chipTextSelected]}>{c}</Text>
+                <Text style={[styles.chipText, category === c && styles.chipTextSelected]}>{names.tag(c)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -693,7 +699,7 @@ export default function AskBusinessScreen({ navigation, route }) {
 
           {!gatheringId && (
             <>
-              <Text style={styles.label}>When?</Text>
+              <Text style={styles.label}>{t('ui.askBusiness.when')}</Text>
               <View style={styles.chipRow}>
                 {DATE_OPTIONS.map((d) => (
                   <TouchableOpacity
@@ -715,13 +721,13 @@ export default function AskBusinessScreen({ navigation, route }) {
                 <TouchableOpacity
                   style={[styles.chip, dateWindow === PICK_DATE_KEY && styles.chipSelected]}
                   onPress={() => setShowDatePicker(true)}
-                  accessibilityLabel="Pick a specific date"
+                  accessibilityLabel={t('ui.askBusiness.pickASpecificDateA11y')}
                   accessibilityRole="button"
                 >
                   <Text style={[styles.chipText, dateWindow === PICK_DATE_KEY && styles.chipTextSelected]}>
                     📅 {dateWindow === PICK_DATE_KEY && pickedDate
                       ? pickedDate.toLocaleDateString([], { month: 'short', day: 'numeric' })
-                      : 'Pick a date'}
+                      : t('ui.askBusiness.pickADate')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -746,23 +752,23 @@ export default function AskBusinessScreen({ navigation, route }) {
 
           {isSoloMode && (
             <>
-              <Text style={styles.label}>Time (optional)</Text>
+              <Text style={styles.label}>{t('ui.askBusiness.timeOptional')}</Text>
               <View style={styles.chipRow}>
                 <TouchableOpacity
                   style={[styles.chip, !startTime && styles.chipSelected]}
                   onPress={() => { setStartTime(null); setShowTimePicker(false); }}
                   accessibilityRole="button"
-                  accessibilityLabel="Any time"
+                  accessibilityLabel={t('ui.askBusiness.anyTimeA11y')}
                 >
-                  <Text style={[styles.chipText, !startTime && styles.chipTextSelected]}>Any time</Text>
+                  <Text style={[styles.chipText, !startTime && styles.chipTextSelected]}>{t('ui.askBusiness.anyTime')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.chip, !!startTime && styles.chipSelected]}
                   onPress={() => { if (!startTime) { const d = new Date(); d.setHours(18, 0, 0, 0); setStartTime(d); } setShowTimePicker(true); }}
                   accessibilityRole="button"
-                  accessibilityLabel="Pick a time"
+                  accessibilityLabel={t('ui.askBusiness.pickATimeA11y')}
                 >
-                  <Text style={[styles.chipText, !!startTime && styles.chipTextSelected]}>🕐 {startTime ? timeLabel(startTime) : 'Pick a time'}</Text>
+                  <Text style={[styles.chipText, !!startTime && styles.chipTextSelected]}>🕐 {startTime ? timeLabel(startTime) : t('ui.askBusiness.pickATime')}</Text>
                 </TouchableOpacity>
               </View>
               {showTimePicker && (
@@ -782,15 +788,15 @@ export default function AskBusinessScreen({ navigation, route }) {
 
           {!gatheringId && !matchId && (
             <>
-              <Text style={styles.label}>Party size</Text>
+              <Text style={styles.label}>{t('ui.askBusiness.partySize')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. 4"
+                placeholder={t('ui.askBusiness.partySizePlaceholder')}
                 placeholderTextColor={colors.textTertiary}
                 value={partySize}
                 onChangeText={setPartySize}
                 keyboardType="number-pad"
-                accessibilityLabel="Party size"
+                accessibilityLabel={t('ui.askBusiness.partySizeA11y')}
               />
             </>
           )}
@@ -802,39 +808,39 @@ export default function AskBusinessScreen({ navigation, route }) {
               budget friction unless the user actually wants precision. */}
           {gatheringId && (
             <>
-              <Text style={styles.questionHeading}>Anything specific you'd like the business to provide?</Text>
+              <Text style={styles.questionHeading}>{t('ui.askBusiness.anythingSpecificYoudLikeThe')}</Text>
               {gatheringInputs.includes('items') && <RequestedItemsPicker selected={itemsInput} onChange={setItemsInput} />}
               {gatheringInputs.includes('dietary') && <DietaryPicker selected={dietaryInput} onChange={setDietaryInput} />}
               {gatheringInputs.includes('note') && (
                 <>
                   <TextInput
                     style={[styles.textArea, { marginTop: spacing.sm }]}
-                    placeholder={`A note for ${targetPartner.name} (optional)`}
+                    placeholder={t('ui.askBusiness.aNoteForOptional', { name: targetPartner.name })}
                     placeholderTextColor={colors.textTertiary}
                     value={noteToBusiness}
                     onChangeText={(t) => setNoteToBusiness(t.slice(0, 300))}
                     multiline
-                    accessibilityLabel={`Optional note for ${targetPartner.name}. Only they will see it.`}
+                    accessibilityLabel={t('ui.askBusiness.optionalNoteForOnlyTheyA11y', { name: targetPartner.name })}
                   />
-                  <Text style={styles.subtitle}>Only {targetPartner.name} sees this note.</Text>
+                  <Text style={styles.subtitle}>{t('ui.askBusiness.onlySeesThisNote', { name: targetPartner.name })}</Text>
                 </>
               )}
               {gatheringInputs.length === 0 && (
-                <Text style={styles.subtitle}>Nothing else is needed. Your gathering's details are enough to send.</Text>
+                <Text style={styles.subtitle}>{t('ui.askBusiness.nothingElseIsNeededYour')}</Text>
               )}
               <TouchableOpacity
                 onPress={() => setShowMoreOptions((v) => !v)}
                 accessibilityRole="button"
                 accessibilityState={{ expanded: showMoreOptions }}
-                accessibilityLabel="More options: budget, occasion, search radius"
+                accessibilityLabel={t('ui.askBusiness.moreOptionsBudgetOccasionSearchA11y')}
               >
-                <Text style={styles.inlineLinkText}>{showMoreOptions ? '− Fewer options' : '+ More options (budget, occasion, radius)'}</Text>
+                <Text style={styles.inlineLinkText}>{showMoreOptions ? t('ui.askBusiness.fewerOptions') : t('ui.askBusiness.moreOptionsBudgetOccasionRadius')}</Text>
               </TouchableOpacity>
             </>
           )}
 
           {(!gatheringId || showMoreOptions) && (<>
-          <Text style={styles.label}>What's your budget?</Text>
+          <Text style={styles.label}>{t('ui.askBusiness.whatsYourBudget')}</Text>
           <View style={styles.chipRow}>
             {BUDGET_LEVEL_OPTIONS.map((o) => {
               const selected = budgetRangeKey === o.key;
@@ -844,10 +850,10 @@ export default function AskBusinessScreen({ navigation, route }) {
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => setBudgetRangeKey(o.key)}
                   accessibilityRole="button"
-                  accessibilityLabel={o.label}
+                  accessibilityLabel={budgetOptionLabel(o, language)}
                   accessibilityState={{ selected }}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{budgetOptionLabel(o, language)}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -855,62 +861,62 @@ export default function AskBusinessScreen({ navigation, route }) {
           {showBudgetMaxOverride ? (
             <TextInput
               style={styles.input}
-              placeholder="Maximum per person (optional)"
+              placeholder={t('ui.askBusiness.maximumPerPersonOptional')}
               placeholderTextColor={colors.textTertiary}
               value={budgetMaxOverride}
               onChangeText={setBudgetMaxOverride}
               keyboardType="number-pad"
-              accessibilityLabel="Maximum budget per person, optional"
+              accessibilityLabel={t('ui.askBusiness.maximumBudgetPerPersonOptionalA11y')}
             />
           ) : (
             <TouchableOpacity
               onPress={() => setShowBudgetMaxOverride(true)}
               accessibilityRole="button"
-              accessibilityLabel="Set a maximum per person"
+              accessibilityLabel={t('ui.askBusiness.setAMaximumPerPersonA11y')}
             >
-              <Text style={styles.inlineLinkText}>+ Set a maximum per person</Text>
+              <Text style={styles.inlineLinkText}>{t('ui.askBusiness.setAMaximumPerPerson')}</Text>
             </TouchableOpacity>
           )}
           </>)}
 
           {targetPartner && !gatheringId && (
             <>
-              <Text style={styles.label}>Anything else? (optional)</Text>
+              <Text style={styles.label}>{t('ui.askBusiness.anythingElseOptional')}</Text>
               <TextInput
                 style={styles.textArea}
-                placeholder={`A note for ${targetPartner.name}`}
+                placeholder={t('ui.askBusiness.aNoteFor', { name: targetPartner.name })}
                 placeholderTextColor={colors.textTertiary}
                 value={noteToBusiness}
                 onChangeText={(t) => setNoteToBusiness(t.slice(0, 300))}
                 multiline
-                accessibilityLabel={`Optional note for ${targetPartner.name}. Only they will see it.`}
+                accessibilityLabel={t('ui.askBusiness.optionalNoteForOnlyTheyA11y', { name: targetPartner.name })}
               />
-              <Text style={styles.subtitle}>Only {targetPartner.name} sees this note.</Text>
+              <Text style={styles.subtitle}>{t('ui.askBusiness.onlySeesThisNote', { name: targetPartner.name })}</Text>
             </>
           )}
 
           {isSoloMode && !matchedAvailability && !targetPartner && (
             <View style={{ marginTop: spacing.md }}>
-              <Text style={styles.label}>See what's actually available first?</Text>
+              <Text style={styles.label}>{t('ui.askBusiness.seeWhatsActuallyAvailableFirst')}</Text>
               <TouchableOpacity
                 style={styles.findNearbyButton}
                 onPress={handleFindNearby}
                 disabled={searchingNearby}
-                accessibilityLabel="Find options nearby"
+                accessibilityLabel={t('ui.askBusiness.findOptionsNearbyA11y')}
                 accessibilityRole="button"
               >
                 {searchingNearby ? (
                   <ActivityIndicator color={colors.primary} />
                 ) : (
-                  <Text style={styles.findNearbyButtonText}>🔎 Find options nearby</Text>
+                  <Text style={styles.findNearbyButtonText}>{t('ui.askBusiness.findOptionsNearby')}</Text>
                 )}
               </TouchableOpacity>
 
-              {searchingNearby && <Text style={styles.nearbyEmptyText}>Finding availability…</Text>}
+              {searchingNearby && <Text style={styles.nearbyEmptyText}>{t('ui.askBusiness.findingAvailability')}</Text>}
 
               {nearbyResults && nearbyResults.length === 0 && (
                 <Text style={styles.nearbyEmptyText}>
-                  Nothing real available right now — you can still send your ask below and hear back from a business directly.
+                  {t('ui.askBusiness.nothingRealAvailableRightNow')}
                 </Text>
               )}
 
@@ -924,7 +930,7 @@ export default function AskBusinessScreen({ navigation, route }) {
                     <TouchableOpacity
                       style={[styles.nearbyResultCard, pickedAvailability?.id === result.id && styles.nearbyResultCardSelected]}
                       onPress={() => handleChooseNearby(result)}
-                      accessibilityLabel={`Choose ${result.partner_name}`}
+                      accessibilityLabel={t('ui.askBusiness.chooseA11y', { partnerName: result.partner_name })}
                       accessibilityRole="button"
                     >
                       <Text style={styles.nearbyResultTitle}>{result.partner_name}</Text>
@@ -934,7 +940,7 @@ export default function AskBusinessScreen({ navigation, route }) {
                           result.offer_type,
                           result.price != null ? `${moneyLabel(result.price)}` : null,
                           formatDistance(result.distance_miles),
-                          result.remaining_capacity != null ? `${countLabel(result.remaining_capacity, 'spot')} left` : null,
+                          result.remaining_capacity != null ? t('ui.askBusiness.spotsLeft', { count: result.remaining_capacity }) : null,
                         ]
                           .filter(Boolean)
                           .join(' · ')}
@@ -958,18 +964,18 @@ export default function AskBusinessScreen({ navigation, route }) {
           )}
 
           {(!gatheringId || showMoreOptions) && (<>
-          <Text style={styles.label}>What's this for? (optional)</Text>
+          <Text style={styles.label}>{t('ui.askBusiness.whatsThisForOptional')}</Text>
           <View style={styles.chipRow}>
             {OCCASION_OPTIONS.map((o) => (
               <TouchableOpacity
                 key={o.key}
                 style={[styles.chip, occasionInput === o.key && styles.chipSelected]}
                 onPress={() => setOccasionInput(occasionInput === o.key ? null : o.key)}
-                accessibilityLabel={o.label}
+                accessibilityLabel={names.occasion(o.key, o.label)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: occasionInput === o.key }}
               >
-                <Text style={[styles.chipText, occasionInput === o.key && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                <Text style={[styles.chipText, occasionInput === o.key && styles.chipTextSelected]}>{o.icon} {names.occasion(o.key, o.label)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -982,18 +988,18 @@ export default function AskBusinessScreen({ navigation, route }) {
                   adjusts what "Find options nearby" above surfaces and
                   what the business sees, never forced ("special" is
                   already a real, deterministic default). */}
-              <Text style={styles.label}>What kind of experience are you looking for?</Text>
+              <Text style={styles.label}>{t('ui.askBusiness.whatKindOfExperienceAre')}</Text>
               <View style={styles.chipRow}>
                 {EXPERIENCE_LEVEL_OPTIONS.map((o) => (
                   <TouchableOpacity
                     key={o.key}
                     style={[styles.chip, experienceLevel === o.key && styles.chipSelected]}
                     onPress={() => setExperienceLevel(o.key)}
-                    accessibilityLabel={o.label}
+                    accessibilityLabel={experienceOptionLabel(o, language)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: experienceLevel === o.key }}
                   >
-                    <Text style={[styles.chipText, experienceLevel === o.key && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                    <Text style={[styles.chipText, experienceLevel === o.key && styles.chipTextSelected]}>{o.icon} {experienceOptionLabel(o, language)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -1004,7 +1010,7 @@ export default function AskBusinessScreen({ navigation, route }) {
               The same attribute vocabulary; the business sees them as "Customer is looking for", never who the pair is. */}
           {!!matchId && (
             <>
-              <Text style={styles.label}>What kind of date? (optional)</Text>
+              <Text style={styles.label}>{t('ui.askBusiness.whatKindOfDateOptional')}</Text>
               <View style={styles.chipRow}>
                 {DATE_VIBES.map((v) => {
                   const selected = attributesInput.includes(v.key);
@@ -1014,11 +1020,11 @@ export default function AskBusinessScreen({ navigation, route }) {
                       key={v.key}
                       style={[styles.chip, selected && styles.chipSelected]}
                       onPress={() => setAttributesInput((prev) => (selected ? prev.filter((k) => k !== v.key) : [...prev, v.key]))}
-                      accessibilityLabel={v.label}
+                      accessibilityLabel={attributeLabel(v.key, v.label, language)}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
                     >
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{opt?.icon} {v.label}</Text>
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{opt?.icon} {attributeLabel(v.key, v.label, language)}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -1028,7 +1034,7 @@ export default function AskBusinessScreen({ navigation, route }) {
 
           {isSoloMode && (
             <>
-              <Text style={styles.label}>Preferences (optional)</Text>
+              <Text style={styles.label}>{t('ui.askBusiness.preferencesOptional')}</Text>
               <View style={styles.chipRow}>
                 {BUSINESS_ATTRIBUTE_OPTIONS.map((a) => {
                   const selected = attributesInput.includes(a.key);
@@ -1037,29 +1043,29 @@ export default function AskBusinessScreen({ navigation, route }) {
                       key={a.key}
                       style={[styles.chip, selected && styles.chipSelected]}
                       onPress={() => setAttributesInput((prev) => (selected ? prev.filter((k) => k !== a.key) : [...prev, a.key]))}
-                      accessibilityLabel={a.label}
+                      accessibilityLabel={attributeLabel(a.key, a.label, language)}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
                     >
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{a.icon} {a.label}</Text>
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{a.icon} {attributeLabel(a.key, a.label, language)}</Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
               {category === 'Foodie' && (
                 <>
-                  <Text style={styles.label}>Cuisine (optional)</Text>
+                  <Text style={styles.label}>{t('ui.askBusiness.cuisineOptional')}</Text>
                   <View style={styles.chipRow}>
                     {CUISINE_OPTIONS.map((c) => (
                       <TouchableOpacity
                         key={c.key}
                         style={[styles.chip, cuisineInput === c.key && styles.chipSelected]}
                         onPress={() => setCuisineInput(cuisineInput === c.key ? null : c.key)}
-                        accessibilityLabel={c.label}
+                        accessibilityLabel={names.cuisine(c.key, c.label)}
                         accessibilityRole="button"
                         accessibilityState={{ selected: cuisineInput === c.key }}
                       >
-                        <Text style={[styles.chipText, cuisineInput === c.key && styles.chipTextSelected]}>{c.label}</Text>
+                        <Text style={[styles.chipText, cuisineInput === c.key && styles.chipTextSelected]}>{names.cuisine(c.key, c.label)}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -1072,17 +1078,17 @@ export default function AskBusinessScreen({ navigation, route }) {
           {category === 'Foodie' && !gatheringId && <DietaryPicker selected={dietaryInput} onChange={setDietaryInput} />}
 
           {(!gatheringId || showMoreOptions) && (<>
-          <Text style={styles.label}>Search radius</Text>
+          <Text style={styles.label}>{t('ui.askBusiness.searchRadius')}</Text>
           <View style={styles.chipRow}>
             {RADIUS_OPTIONS.map((r) => (
               <TouchableOpacity
                 key={r}
                 style={[styles.chip, radiusMiles === r && styles.chipSelected]}
                 onPress={() => setRadiusMiles(r)}
-                accessibilityLabel={`${r} miles`}
+                accessibilityLabel={t('ui.askBusiness.radiusMilesA11y', { n: r })}
                 accessibilityRole="button"
               >
-                <Text style={[styles.chipText, radiusMiles === r && styles.chipTextSelected]}>{r} mi</Text>
+                <Text style={[styles.chipText, radiusMiles === r && styles.chipTextSelected]}>{t('ui.askBusiness.radiusMi', { n: r })}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -1098,10 +1104,10 @@ export default function AskBusinessScreen({ navigation, route }) {
             style={[styles.submitButton, (submitting || !askText.trim() || (gatheringId && !gathering)) && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={submitting || !askText.trim() || (!!gatheringId && !gathering)}
-            accessibilityLabel="Ask nearby businesses"
+            accessibilityLabel={t('ui.askBusiness.askNearbyBusinessesA11y')}
             accessibilityRole="button"
           >
-            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>{gatheringId && targetPartner ? `Ask ${targetPartner.name}` : 'Ask Nearby Businesses'}</Text>}
+            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>{gatheringId && targetPartner ? t('ui.askBusiness.ask', { name: targetPartner.name }) : t('ui.askBusiness.askNearbyBusinesses')}</Text>}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

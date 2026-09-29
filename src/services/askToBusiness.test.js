@@ -42,7 +42,7 @@ describe('screens', () => {
   it('"tonight" is today\'s date, and the chip and summary say Tonight', () => {
     const s = read('../screens/AskBusinessScreen.js');
     expect(s).toMatch(/rawPrefillDateWindow === 'tonight' \|\| rawPrefillDateWindow === 'now' \? 'today'/); // what is sent: unchanged
-    expect(s).toMatch(/const dateOptionLabel = \(d\) => \(d\.key === 'today' && saidTonight \? 'Tonight' : d\.label\);/);
+    expect(s).toMatch(/const dateOptionLabel = \(d\) => \(d\.key === 'today' && saidTonight \? dateOptionText\('tonight', 'Tonight', language\) : dateOptionText\(d\.key, d\.label, language\)\);/);
     expect(s).toMatch(/\{dateOptionLabel\(d\)\}<\/Text>/);
   });
   it('Home and Discover share the one implementation', () => {
