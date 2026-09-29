@@ -11,6 +11,7 @@ import { getProfileQuickStats, getAchievements, getEarnedProfileStats } from '..
 import { getMyBusinessPartnerRequest } from '../services/businessPartnerApply';
 import { startRecording, stopRecording, uploadVoiceIntro, getSignedVoiceIntroUrl, deleteVoiceIntro } from '../services/voiceNotes';
 import { BASICS_FIELDS } from '../constants/basicsFields';
+import { basicsLabel, basicsPlaceholder, basicsOption } from '../i18n/basicsVocab';
 import { PROMPT_QUESTIONS } from '../constants/promptQuestions';
 import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
@@ -30,15 +31,13 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const MAX_EXTRA_PHOTOS = 6;
+// The connection-goal chips store the English value; the label is ui.profile.goal.<key>.
+const GOAL_KEYS = { 'Meet friends': 'meetFriends', Date: 'date', Network: 'network', 'Explore my city': 'exploreCity', 'Find community': 'findCommunity', 'Get out more': 'getOutMore' };
 const MAX_PROMPTS = 3;
 
 const PROFILE_COMPLETENESS_ITEMS = [
-  { key: 'photo', label: 'Add a main photo' },
-  { key: 'bio', label: 'Write a short bio' },
-  { key: 'prompt', label: 'Answer a prompt' },
-  { key: 'interests', label: 'Pick a few interests' },
-  { key: 'connectionGoal', label: "Say what you're hoping to find" },
-  { key: 'extraPhoto', label: 'Add another photo' },
+  // labels: ui.profile.completeness.<key>
+  { key: 'photo' }, { key: 'bio' }, { key: 'prompt' }, { key: 'interests' }, { key: 'connectionGoal' }, { key: 'extraPhoto' },
 ];
 
 function getProfileCompleteness({ photoUrl, bio, prompts, interests, connectionGoal, extraPhotos }) {
@@ -57,7 +56,10 @@ function getProfileCompleteness({ photoUrl, bio, prompts, interests, connectionG
   return { percent, missing };
 }
 
-function AccordionField({ field, value, expanded, onToggle, children }) {
+function AccordionField({ field, value: storedValue, expanded, onToggle, children }) {
+  const { t, language } = useLanguage();
+  const label = basicsLabel(field, language);
+  const value = field.type === 'select' ? basicsOption(field.key, storedValue, language) : storedValue;
   const { colors } = useTheme();
   const styles = getAccordionStyles(colors);
 
@@ -67,12 +69,12 @@ function AccordionField({ field, value, expanded, onToggle, children }) {
         style={styles.header}
         onPress={onToggle}
         activeOpacity={0.85}
-        accessibilityLabel={`${field.label}${value ? `, currently ${value}` : ', not set'}`}
+        accessibilityLabel={`${label}${value ? t('ui.profile.currentlyA11y', { value: value }) : t('ui.profile.notSetA11y')}`}
         accessibilityRole="button"
         accessibilityState={{ expanded }}
-        accessibilityHint={expanded ? 'Double tap to collapse' : 'Double tap to expand and edit'}
+        accessibilityHint={expanded ? t('ui.profile.doubleTapToCollapseA11y') : t('ui.profile.doubleTapToExpandAndA11y')}
       >
-        <Text style={styles.headerLabel}>{field.icon} {field.label}</Text>
+        <Text style={styles.headerLabel}>{field.icon} {label}</Text>
         <View style={styles.headerRight}>
           {value ? <Text style={styles.headerValue} numberOfLines={1}>{value}</Text> : null}
           <Text style={styles.chevron}>{expanded ? '⌃' : '⌄'}</Text>
@@ -96,7 +98,7 @@ const getAccordionStyles = (colors) => StyleSheet.create({
 export default function ProfileScreen({ navigation, route }) {
   const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
   const { colors, shadow } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
@@ -343,7 +345,7 @@ export default function ProfileScreen({ navigation, route }) {
 
   function openAddPrompt() {
     if (prompts.length >= MAX_PROMPTS) {
-      return Alert.alert('Limit reached', `You can add up to ${MAX_PROMPTS} prompts.`);
+      return Alert.alert(t('ui.profile.limitReached'), t('ui.profile.youCanAddUpTo', { max: MAX_PROMPTS }));
     }
     setEditingPromptIndex(null);
     setQuestionPickerVisible(true);
@@ -365,11 +367,11 @@ export default function ProfileScreen({ navigation, route }) {
 
   async function saveDraftPrompt() {
     if (!draftAnswer.trim()) {
-      return Alert.alert('Answer required', 'Write a short answer to this prompt.');
+      return Alert.alert(t('ui.profile.answerRequired'), t('ui.profile.writeAShortAnswerTo'));
     }
     const check = await checkTextModeration(draftAnswer);
     if (!check.safe) {
-      return Alert.alert('Answer not allowed', 'Please revise your answer and try again.');
+      return Alert.alert(t('ui.profile.answerNotAllowed'), t('ui.profile.pleaseReviseYourAnswerAnd'));
     }
 
     setPrompts((prev) => {
@@ -457,10 +459,10 @@ export default function ProfileScreen({ navigation, route }) {
   }
 
   function removeVoiceIntro() {
-    Alert.alert('Remove voice intro?', '', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('ui.profile.removeVoiceIntro'), '', [
+      { text: t('ui.profile.cancel'), style: 'cancel' },
       {
-        text: 'Remove',
+        text: t('ui.profile.remove'),
         style: 'destructive',
         onPress: async () => {
           const pathToDelete = voiceIntroPath;
@@ -480,17 +482,17 @@ export default function ProfileScreen({ navigation, route }) {
   async function save() {
     const nameCheck = await checkTextModeration(displayName);
     if (!nameCheck.safe) {
-      return Alert.alert('Display name not allowed', 'Please revise your display name and try again.');
+      return Alert.alert(t('ui.profile.displayNameNotAllowed'), t('ui.profile.pleaseReviseYourDisplayName'));
     }
     const bioCheck = await checkTextModeration(bio);
     if (!bioCheck.safe) {
-      return Alert.alert('Bio not allowed', 'Please revise your bio and try again.');
+      return Alert.alert(t('ui.profile.bioNotAllowed'), t('ui.profile.pleaseReviseYourBioAnd'));
     }
-    for (const [label, value] of [['Pronouns', pronouns], ['Gender', gender], ['Sexual orientation', sexualOrientation]]) {
+    for (const [label, value] of [[t('ui.profile.fieldPronouns'), pronouns], [t('ui.profile.fieldGender'), gender], [t('ui.profile.fieldOrientation'), sexualOrientation]]) {
       if (value.trim()) {
         const check = await checkTextModeration(value);
         if (!check.safe) {
-          return Alert.alert(`${label} not allowed`, `Please revise this field and try again.`);
+          return Alert.alert(t('ui.profile.notAllowed', { label: label }), t('ui.profile.pleaseReviseThisFieldAnd'));
         }
       }
     }
@@ -501,7 +503,7 @@ export default function ProfileScreen({ navigation, route }) {
       if (value && value.trim()) {
         const check = await checkTextModeration(value);
         if (!check.safe) {
-          return Alert.alert(`${field.label} not allowed`, `Please revise this field and try again.`);
+          return Alert.alert(t('ui.profile.notAllowed', { label: basicsLabel(field, language) }), t('ui.profile.pleaseReviseThisFieldAnd'));
         }
       }
     }
@@ -517,7 +519,7 @@ export default function ProfileScreen({ navigation, route }) {
     if (!isBlankHeightPair(heightFeet, heightInchesVal)) {
       heightInchesToSave = feetInchesToTotalInches(heightFeet, heightInchesVal);
       if (heightInchesToSave === null) {
-        return Alert.alert('Invalid height', "Enter a real height between 4'0\" and 7'0\", or leave both fields blank.");
+        return Alert.alert(t('ui.profile.invalidHeight'), t('ui.profile.enterARealHeightBetween'));
       }
     }
 
@@ -542,7 +544,7 @@ export default function ProfileScreen({ navigation, route }) {
       })
       .eq('id', userId);
     if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => save() });
-    showSuccessToast('Saved');
+    showSuccessToast(t('ui.profile.saved'));
   }
 
   async function changePhoto() {
@@ -552,7 +554,7 @@ export default function ProfileScreen({ navigation, route }) {
       setUploading(true);
       await uploadProfilePhoto(userId, asset);
       setUploading(false);
-      showSuccessToast('Photo updated', 'Your new photo is being reviewed before it appears to others.');
+      showSuccessToast(t('ui.profile.photoUpdated'), t('ui.profile.yourNewPhotoIsBeing'));
       load();
     } catch (e) {
       setUploading(false);
@@ -562,7 +564,7 @@ export default function ProfileScreen({ navigation, route }) {
 
   async function addExtraPhoto() {
     if (extraPhotos.length >= MAX_EXTRA_PHOTOS) {
-      return Alert.alert('Limit reached', `You can add up to ${MAX_EXTRA_PHOTOS} additional photos.`);
+      return Alert.alert(t('ui.profile.limitReached'), t('ui.profile.youCanAddUpTo2', { max: MAX_EXTRA_PHOTOS }));
     }
     try {
       const asset = await pickExtraPhoto();
@@ -578,10 +580,10 @@ export default function ProfileScreen({ navigation, route }) {
   }
 
   function confirmDeleteExtraPhoto(photo) {
-    Alert.alert('Photo options', '', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('ui.profile.photoOptions'), '', [
+      { text: t('ui.profile.cancel'), style: 'cancel' },
       {
-        text: 'Set as Main Photo',
+        text: t('ui.profile.setAsMainPhoto'),
         onPress: async () => {
           try {
             await setAsMainPhoto(userId, photo.id);
@@ -592,7 +594,7 @@ export default function ProfileScreen({ navigation, route }) {
         },
       },
       {
-        text: 'Remove',
+        text: t('ui.profile.remove'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -617,13 +619,13 @@ export default function ProfileScreen({ navigation, route }) {
           <TouchableOpacity
             onPress={() => navigation.navigate('Settings')}
             style={styles.settingsGear}
-            accessibilityLabel="Settings"
+            accessibilityLabel={t('ui.profile.settingsA11y')}
             accessibilityRole="button"
           >
             <Text style={styles.settingsGearText}>⚙️</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.subtitle}>Your story, your stats, your circle.</Text>
+        <Text style={styles.subtitle}>{t('ui.profile.yourStoryYourStatsYour')}</Text>
 
         {/* Aug 27 2026 plan (CLAUDE.md), Decision 7: a real, distinct
             "Preferences ->" entry point, separate from the generic Settings
@@ -637,12 +639,12 @@ export default function ProfileScreen({ navigation, route }) {
           style={styles.timelineLink}
           onPress={() => navigation.navigate('Settings', { scrollToPreferences: true })}
           activeOpacity={0.85}
-          accessibilityLabel="Preferences, control who and what Nearby shows you"
+          accessibilityLabel={t('ui.profile.preferencesControlWhoAndWhatA11y')}
           accessibilityRole="button"
         >
           <View style={styles.timelineLinkTextCol}>
-            <Text style={styles.timelineLinkText}>🎛️ Preferences</Text>
-            <Text style={styles.timelineLinkSubtitle}>Control who and what Nearby shows you</Text>
+            <Text style={styles.timelineLinkText}>{t('ui.profile.preferences')}</Text>
+            <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.controlWhoAndWhatNearby')}</Text>
           </View>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
@@ -662,16 +664,16 @@ export default function ProfileScreen({ navigation, route }) {
             <View style={[styles.snapshotPhoto, styles.snapshotPhotoPlaceholder]} />
           )}
           <View style={styles.snapshotInfo}>
-            <Text style={styles.snapshotName} numberOfLines={1}>{displayName || 'Your name'}</Text>
+            <Text style={styles.snapshotName} numberOfLines={1}>{displayName || t('ui.profile.yourName')}</Text>
             <Text style={styles.snapshotBio} numberOfLines={2}>
-              {bio ? bio : 'Add a bio so people know a bit about you.'}
+              {bio ? bio : t('ui.profile.addABioSoPeople')}
             </Text>
             <TouchableOpacity
               onPress={() => scrollRef.current?.scrollTo({ y: editSectionYRef.current, animated: true })}
-              accessibilityLabel="Edit your profile"
+              accessibilityLabel={t('ui.profile.editYourProfileA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.snapshotEditLink}>Edit Profile ›</Text>
+              <Text style={styles.snapshotEditLink}>{t('ui.profile.editProfile')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -679,9 +681,9 @@ export default function ProfileScreen({ navigation, route }) {
         {completeness.percent < 100 && (
           <View
             style={styles.completenessCard}
-            accessibilityLabel={`Your profile is ${completeness.percent}% complete. Missing: ${completeness.missing.map((m) => m.label).join(', ')}.`}
+            accessibilityLabel={t('ui.profile.yourProfileIsCompleteMissingA11y', { percent: completeness.percent, join: completeness.missing.map((m) => t(`ui.profile.completeness.${m.key}`)).join(', ') })}
           >
-            <Text style={styles.completenessTitle}>Your profile is {completeness.percent}% complete</Text>
+            <Text style={styles.completenessTitle}>{t('ui.profile.yourProfileIsComplete', { percent: completeness.percent })}</Text>
             <View style={styles.completenessBarTrack}>
               <View style={[styles.completenessBarFill, { width: `${completeness.percent}%` }]} />
             </View>
@@ -689,17 +691,17 @@ export default function ProfileScreen({ navigation, route }) {
               {completeness.missing.map((item) => (
                 <View key={item.key} style={styles.completenessMissingRow}>
                   <Text style={styles.completenessMissingBullet}>○</Text>
-                  <Text style={styles.completenessMissingText}>{item.label}</Text>
+                  <Text style={styles.completenessMissingText}>{t(`ui.profile.completeness.${item.key}`)}</Text>
                 </View>
               ))}
             </View>
             <TouchableOpacity
               style={styles.completenessCta}
               onPress={() => scrollRef.current?.scrollTo({ y: editSectionYRef.current, animated: true })}
-              accessibilityLabel="Complete your profile"
+              accessibilityLabel={t('ui.profile.completeYourProfileA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.completenessCtaText}>Complete Profile →</Text>
+              <Text style={styles.completenessCtaText}>{t('ui.profile.completeProfile')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -720,7 +722,7 @@ export default function ProfileScreen({ navigation, route }) {
             edit affordance needed here. */}
         {interests.length > 0 && (
           <>
-            <Text style={styles.sectionLabel} accessibilityRole="header">My Interests</Text>
+            <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.myInterests')}</Text>
             <View style={styles.chipsWrap}>
               {interests.map((interest) => (
                 <View key={interest} style={styles.interestSummaryChip}>
@@ -738,7 +740,7 @@ export default function ProfileScreen({ navigation, route }) {
             profile header, instead of buried inside the activity group
             below it. Same two real quick-stat tiles, same destination
             (the existing Plans screen) -- only the grouping moved. */}
-        <Text style={styles.sectionLabel} accessibilityRole="header">Your Plans</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.yourPlans')}</Text>
         {/* Item 77 follow-up (CLAUDE.md), direct user request ("i want
             that polish so it feels more integrated"): Occasions moved from
             its own separate bordered row below this card into a third row
@@ -751,13 +753,13 @@ export default function ProfileScreen({ navigation, route }) {
             (untouched) since it has no third row to integrate. */}
         <View style={styles.plansCard}>
           <View style={styles.plansStatsRow}>
-            <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'upcoming' })} accessibilityLabel={`${quickStats.upcomingPlans} upcoming plans`} accessibilityRole="button">
+            <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'upcoming' })} accessibilityLabel={t('ui.profile.upcomingPlansA11y', { upcomingPlans: quickStats.upcomingPlans })} accessibilityRole="button">
               <Text style={styles.quickStatNumber}>{quickStats.upcomingPlans}</Text>
-              <Text style={styles.quickStatLabel}>Upcoming</Text>
+              <Text style={styles.quickStatLabel}>{t('ui.profile.upcoming')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'past' })} accessibilityLabel={`${quickStats.pastGatherings} past experiences`} accessibilityRole="button">
+            <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'past' })} accessibilityLabel={t('ui.profile.pastExperiencesA11y', { pastGatherings: quickStats.pastGatherings })} accessibilityRole="button">
               <Text style={styles.quickStatNumber}>{quickStats.pastGatherings}</Text>
-              <Text style={styles.quickStatLabel}>Past</Text>
+              <Text style={styles.quickStatLabel}>{t('ui.profile.past')}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.plansCardDivider} />
@@ -765,26 +767,26 @@ export default function ProfileScreen({ navigation, route }) {
             style={styles.plansOccasionRow}
             onPress={() => navigation.navigate('Occasions')}
             activeOpacity={0.85}
-            accessibilityLabel="View your saved occasions"
+            accessibilityLabel={t('ui.profile.viewYourSavedOccasionsA11y')}
             accessibilityRole="button"
           >
             <View style={styles.timelineLinkTextCol}>
-              <Text style={styles.timelineLinkText}>📅 Occasions</Text>
-              <Text style={styles.timelineLinkSubtitle}>Anniversaries, graduations, and other real dates</Text>
+              <Text style={styles.timelineLinkText}>{t('ui.profile.occasions')}</Text>
+              <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.anniversariesGraduationsAndOtherReal')}</Text>
             </View>
             <Text style={styles.timelineLinkChevron}>›</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Your Connections</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.yourConnections')}</Text>
         <View style={styles.quickStatsRow}>
           <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Communities')} accessibilityLabel={countLabel(quickStats.communities, 'community', 'communities')} accessibilityRole="button">
             <Text style={styles.quickStatNumber}>{quickStats.communities}</Text>
-            <Text style={styles.quickStatLabel}>Communities</Text>
+            <Text style={styles.quickStatLabel}>{t('ui.profile.communities')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Friends')} accessibilityLabel={countLabel(quickStats.friends, 'friend')} accessibilityRole="button">
             <Text style={styles.quickStatNumber}>{quickStats.friends}</Text>
-            <Text style={styles.quickStatLabel}>Friends</Text>
+            <Text style={styles.quickStatLabel}>{t('ui.profile.friends')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -792,7 +794,7 @@ export default function ProfileScreen({ navigation, route }) {
             leading Plans section above; this group is the "how am I
             doing / what have I earned" set of links, not the plans
             themselves. */}
-        <Text style={styles.sectionLabel} accessibilityRole="header">Your Story</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.yourStory')}</Text>
         {/* Aug 23 2026 Product Coherence Audit P2 (CLAUDE.md): "Your
             Activity" and "Your Rewards" read as two similar "how am I
             doing" rows with no framing telling a reader why they're
@@ -806,12 +808,12 @@ export default function ProfileScreen({ navigation, route }) {
           style={styles.timelineLink}
           onPress={() => navigation.navigate('Timeline')}
           activeOpacity={0.85}
-          accessibilityLabel="View your timeline, how your social life has grown"
+          accessibilityLabel={t('ui.profile.viewYourTimelineHowYourA11y')}
           accessibilityRole="button"
         >
           <View style={styles.timelineLinkTextCol}>
-            <Text style={styles.timelineLinkText}>📖 View Your Timeline</Text>
-            <Text style={styles.timelineLinkSubtitle}>How your social life has grown over time</Text>
+            <Text style={styles.timelineLinkText}>{t('ui.profile.viewYourTimeline')}</Text>
+            <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.howYourSocialLifeHas')}</Text>
           </View>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
@@ -819,12 +821,12 @@ export default function ProfileScreen({ navigation, route }) {
           style={styles.timelineLink}
           onPress={() => navigation.navigate('MemoryVaultIndex')}
           activeOpacity={0.85}
-          accessibilityLabel="View your memory vaults, one per match"
+          accessibilityLabel={t('ui.profile.viewYourMemoryVaultsOneA11y')}
           accessibilityRole="button"
         >
           <View style={styles.timelineLinkTextCol}>
-            <Text style={styles.timelineLinkText}>💫 Memory Vault</Text>
-            <Text style={styles.timelineLinkSubtitle}>Saved moments, one collection per match</Text>
+            <Text style={styles.timelineLinkText}>{t('ui.profile.memoryVault')}</Text>
+            <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.savedMomentsOneCollectionPer')}</Text>
           </View>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
@@ -836,12 +838,12 @@ export default function ProfileScreen({ navigation, route }) {
           style={styles.timelineLink}
           onPress={() => navigation.navigate('Momentum')}
           activeOpacity={0.85}
-          accessibilityLabel="View your activity, stats, and streak"
+          accessibilityLabel={t('ui.profile.viewYourActivityStatsAndA11y')}
           accessibilityRole="button"
         >
           <View style={styles.timelineLinkTextCol}>
-            <Text style={styles.timelineLinkText}>🔥 Your Activity</Text>
-            <Text style={styles.timelineLinkSubtitle}>Your weekly streak and social stats</Text>
+            <Text style={styles.timelineLinkText}>{t('ui.profile.yourActivity')}</Text>
+            <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.yourWeeklyStreakAndSocial')}</Text>
           </View>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
@@ -849,12 +851,12 @@ export default function ProfileScreen({ navigation, route }) {
           style={styles.timelineLink}
           onPress={() => navigation.navigate('Rewards')}
           activeOpacity={0.85}
-          accessibilityLabel="View your rewards tier"
+          accessibilityLabel={t('ui.profile.viewYourRewardsTierA11y')}
           accessibilityRole="button"
         >
           <View style={styles.timelineLinkTextCol}>
-            <Text style={styles.timelineLinkText}>🎁 Your Rewards</Text>
-            <Text style={styles.timelineLinkSubtitle}>Your loyalty tier, from perks you've redeemed</Text>
+            <Text style={styles.timelineLinkText}>{t('ui.profile.yourRewards')}</Text>
+            <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.yourLoyaltyTierFromPerks')}</Text>
           </View>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
@@ -862,13 +864,13 @@ export default function ProfileScreen({ navigation, route }) {
           <View style={styles.earnedStatsRow}>
             {earnedStats.favoriteVibe && (
               <View style={styles.earnedStat}>
-                <Text style={styles.earnedStatLabel}>Favorite vibe</Text>
+                <Text style={styles.earnedStatLabel}>{t('ui.profile.favoriteVibe')}</Text>
                 <Text style={styles.earnedStatValue}>{earnedStats.favoriteVibe}</Text>
               </View>
             )}
             {earnedStats.usuallyActive && (
               <View style={styles.earnedStat}>
-                <Text style={styles.earnedStatLabel}>Usually active</Text>
+                <Text style={styles.earnedStatLabel}>{t('ui.profile.usuallyActive')}</Text>
                 <Text style={styles.earnedStatValue}>{earnedStats.usuallyActive}s</Text>
               </View>
             )}
@@ -876,7 +878,7 @@ export default function ProfileScreen({ navigation, route }) {
         )}
         {achievements.some((a) => a.earned) && (
           <>
-            <Text style={styles.sectionLabel} accessibilityRole="header">Achievements</Text>
+            <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.achievements')}</Text>
             <View style={styles.achievementsGrid}>
               {achievements.filter((a) => a.earned).map((a) => (
                 <View key={a.label} style={styles.achievementBadge} accessibilityLabel={`${a.label}: ${a.description}`}>
@@ -888,16 +890,16 @@ export default function ProfileScreen({ navigation, route }) {
           </>
         )}
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Business</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.business')}</Text>
         {managesBusiness ? (
           <TouchableOpacity
             style={styles.businessModeButton}
             onPress={() => navigation.navigate('BusinessDashboard')}
             activeOpacity={0.85}
-            accessibilityLabel="Business"
+            accessibilityLabel={t('ui.profile.businessA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.businessModeButtonText}>🏪 Business</Text>
+            <Text style={styles.businessModeButtonText}>{t('ui.profile.business2')}</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -908,10 +910,10 @@ export default function ProfileScreen({ navigation, route }) {
                 : 'BusinessPartnerApply'
             )}
             activeOpacity={0.85}
-            accessibilityLabel="List your business on Nearby"
+            accessibilityLabel={t('ui.profile.listYourBusinessOnNearbyA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.businessModeButtonText}>🏪 List Your Business</Text>
+            <Text style={styles.businessModeButtonText}>{t('ui.profile.listYourBusiness')}</Text>
           </TouchableOpacity>
         )}
 
@@ -925,21 +927,21 @@ export default function ProfileScreen({ navigation, route }) {
           style={styles.editSectionDivider}
           onLayout={(e) => { editSectionYRef.current = e.nativeEvent.layout.y; }}
         >
-          <Text style={styles.editSectionTitle} accessibilityRole="header">Edit Your Profile</Text>
-          <Text style={styles.editSectionSubtitle}>Your photos, bio, and what people see about you.</Text>
+          <Text style={styles.editSectionTitle} accessibilityRole="header">{t('ui.profile.editYourProfile')}</Text>
+          <Text style={styles.editSectionSubtitle}>{t('ui.profile.yourPhotosBioAndWhat')}</Text>
         </View>
         <TouchableOpacity
           style={styles.photoWrap}
           onPress={changePhoto}
           disabled={uploading}
           activeOpacity={0.85}
-          accessibilityLabel={photoUrl ? 'Change your main profile photo' : 'Add a main profile photo'}
+          accessibilityLabel={photoUrl ? t('ui.profile.changeYourMainProfilePhotoA11y') : t('ui.profile.addAMainProfilePhotoA11y')}
           accessibilityRole="button"
         >
           {photoUrl ? (
             <Image source={{ uri: photoUrl }} style={styles.photoPreview} />
           ) : (
-            <Text style={styles.photoPickerText}>{uploading ? 'Uploading...' : 'Tap to\nadd a photo'}</Text>
+            <Text style={styles.photoPickerText}>{uploading ? t('ui.profile.uploading') : t('ui.profile.tapToAddAPhoto')}</Text>
           )}
           <View style={styles.photoEditBadge}>
             <Text style={styles.photoEditBadgeText}>✎</Text>
@@ -948,7 +950,7 @@ export default function ProfileScreen({ navigation, route }) {
         <View style={styles.verifiedRow}>
           <View style={[styles.verifiedDot, photoVerified && styles.verifiedDotActive]} />
           <Text style={styles.verifiedText}>
-            {photoVerified ? 'Main photo verified' : 'Main photo pending review'}
+            {photoVerified ? t('ui.profile.mainPhotoVerified') : t('ui.profile.mainPhotoPendingReview')}
           </Text>
         </View>
 
@@ -960,13 +962,13 @@ export default function ProfileScreen({ navigation, route }) {
               style={styles.galleryItem}
               onLongPress={() => confirmDeleteExtraPhoto(photo)}
               activeOpacity={0.85}
-              accessibilityLabel={`Additional photo ${index + 1}${!photo.photo_verified ? ', pending review' : ''}`}
-              accessibilityHint="Double tap and hold for options to set as main photo or remove"
+              accessibilityLabel={t('ui.profile.additionalPhotoA11y', { number: index + 1, pending: !photo.photo_verified ? t('ui.profile.pendingReviewA11y') : '' })}
+              accessibilityHint={t('ui.profile.doubleTapAndHoldForA11y')}
             >
               {photo.signedUrl && <Image source={{ uri: photo.signedUrl }} style={styles.galleryImage} />}
               {!photo.photo_verified && (
                 <View style={styles.pendingOverlay}>
-                  <Text style={styles.pendingOverlayText}>Pending</Text>
+                  <Text style={styles.pendingOverlayText}>{t('ui.profile.pending')}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -977,18 +979,18 @@ export default function ProfileScreen({ navigation, route }) {
               onPress={addExtraPhoto}
               disabled={uploadingExtra}
               activeOpacity={0.85}
-              accessibilityLabel="Add another photo"
+              accessibilityLabel={t('ui.profile.addAnotherPhotoA11y')}
               accessibilityRole="button"
             >
               <Text style={styles.addPhotoText}>{uploadingExtra ? '...' : '+'}</Text>
             </TouchableOpacity>
           )}
         </View>
-        <Text style={styles.helperText}>Tap and hold a photo for options — set as main or remove. Up to {MAX_EXTRA_PHOTOS} additional photos.</Text>
+        <Text style={styles.helperText}>{t('ui.profile.tapAndHoldAPhoto', { max: MAX_EXTRA_PHOTOS })}</Text>
 
         <View style={styles.formCard}>
           <Text style={styles.label}>{t('profile.displayName')}</Text>
-          <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholderTextColor={colors.textTertiary} accessibilityLabel="Display name" />
+          <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholderTextColor={colors.textTertiary} accessibilityLabel={t('ui.profile.displayNameA11y')} />
 
           <Text style={styles.label}>{t('profile.bio')}</Text>
           <TextInput
@@ -997,7 +999,7 @@ export default function ProfileScreen({ navigation, route }) {
             onChangeText={setBio}
             multiline
             placeholderTextColor={colors.textTertiary}
-            accessibilityLabel="Bio"
+            accessibilityLabel={t('ui.profile.bioA11y')}
           />
         </View>
 
@@ -1009,7 +1011,7 @@ export default function ProfileScreen({ navigation, route }) {
               style={styles.promptCard}
               onPress={() => openEditPrompt(index)}
               activeOpacity={0.85}
-              accessibilityLabel={`Prompt: ${prompt.question}, answer: ${prompt.answer}. Double tap to edit`}
+              accessibilityLabel={t('ui.profile.promptAnswerDoubleTapToA11y', { question: prompt.question, answer: prompt.answer })}
               accessibilityRole="button"
             >
               <View style={{ flex: 1 }}>
@@ -1019,7 +1021,7 @@ export default function ProfileScreen({ navigation, route }) {
               <TouchableOpacity
                 onPress={() => removePrompt(index)}
                 style={styles.promptRemove}
-                accessibilityLabel={`Remove this prompt`}
+                accessibilityLabel={t('ui.profile.removeThisPromptA11y')}
                 accessibilityRole="button"
               >
                 <Text style={styles.promptRemoveText}>✕</Text>
@@ -1031,29 +1033,29 @@ export default function ProfileScreen({ navigation, route }) {
               style={styles.addPromptButton}
               onPress={openAddPrompt}
               activeOpacity={0.85}
-              accessibilityLabel="Add a prompt"
+              accessibilityLabel={t('ui.profile.addAPromptA11y')}
               accessibilityRole="button"
             >
               <Text style={styles.addPromptText}>{t('profile.addPrompt')}</Text>
             </TouchableOpacity>
           )}
-          <Text style={styles.helperText}>Add up to {MAX_PROMPTS} prompts to show more of your personality.</Text>
+          <Text style={styles.helperText}>{t('ui.profile.addUpToPromptsTo', { max: MAX_PROMPTS })}</Text>
         </View>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Voice Intro</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.voiceIntro')}</Text>
         <View style={styles.formCard}>
           {voiceIntroPath ? (
             <View style={styles.voiceIntroRow}>
               <VoicePlayButton
                 getUrl={() => getSignedVoiceIntroUrl(voiceIntroPath)}
-                label="Your voice intro"
+                label={t('ui.profile.yourVoiceIntro')}
                 style={styles.voicePlayButton}
               />
-              <Text style={styles.voiceIntroLabel}>Your voice intro</Text>
+              <Text style={styles.voiceIntroLabel}>{t('ui.profile.yourVoiceIntro')}</Text>
               <TouchableOpacity
                 onPress={removeVoiceIntro}
                 style={styles.promptRemove}
-                accessibilityLabel="Remove voice intro"
+                accessibilityLabel={t('ui.profile.removeVoiceIntroA11y')}
                 accessibilityRole="button"
               >
                 <Text style={styles.promptRemoveText}>✕</Text>
@@ -1065,17 +1067,17 @@ export default function ProfileScreen({ navigation, route }) {
               <TouchableOpacity
                 onPress={stopVoiceIntroRecording}
                 style={styles.addPromptButton}
-                accessibilityLabel="Stop recording"
+                accessibilityLabel={t('ui.profile.stopRecordingA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.addPromptText}>Stop</Text>
+                <Text style={styles.addPromptText}>{t('ui.profile.stop')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={cancelVoiceIntroRecording}
-                accessibilityLabel="Cancel recording"
+                accessibilityLabel={t('ui.profile.cancelRecordingA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={styles.modalCancelText}>{t('ui.profile.cancel')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -1084,16 +1086,16 @@ export default function ProfileScreen({ navigation, route }) {
               onPress={startVoiceIntroRecording}
               disabled={uploadingIntro}
               activeOpacity={0.85}
-              accessibilityLabel="Record a voice intro"
+              accessibilityLabel={t('ui.profile.recordAVoiceIntroA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.addPromptText}>{uploadingIntro ? 'Uploading...' : '🎙️ Record a Voice Intro'}</Text>
+              <Text style={styles.addPromptText}>{uploadingIntro ? t('ui.profile.uploading') : t('ui.profile.recordAVoiceIntro')}</Text>
             </TouchableOpacity>
           )}
-          <Text style={styles.helperText}>Up to {MAX_VOICE_INTRO_SECONDS} seconds. A quick voice intro helps you stand out.</Text>
+          <Text style={styles.helperText}>{t('ui.profile.upToSecondsAQuick', { seconds: MAX_VOICE_INTRO_SECONDS })}</Text>
         </View>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">What are you hoping to find?</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.whatAreYouHopingTo')}</Text>
         <View style={styles.chipsWrap}>
           {['Meet friends', 'Date', 'Network', 'Explore my city', 'Find community', 'Get out more'].map((goal) => {
             const selected = connectionGoal === goal;
@@ -1103,20 +1105,20 @@ export default function ProfileScreen({ navigation, route }) {
                 style={[styles.chip, selected && styles.chipSelected]}
                 onPress={() => setConnectionGoal(selected ? '' : goal)}
                 activeOpacity={0.85}
-                accessibilityLabel={goal}
+                accessibilityLabel={t(`ui.profile.goal.${GOAL_KEYS[goal]}`)}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
               >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{goal}</Text>
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{t(`ui.profile.goal.${GOAL_KEYS[goal]}`)}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
-        <Text style={styles.helperText}>This helps us tailor what we show you — you can change it anytime.</Text>
+        <Text style={styles.helperText}>{t('ui.profile.thisHelpsUsTailorWhat')}</Text>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.aboutYou')}</Text>
         <View style={styles.formCard}>
-          <Text style={styles.label}>I identify as</Text>
+          <Text style={styles.label}>{t('ui.profile.iIdentifyAs')}</Text>
           <View style={styles.chipsWrap}>
             {GENDER_IDENTITY_OPTIONS.map((option) => {
               const selected = genderIdentity.includes(option);
@@ -1130,14 +1132,14 @@ export default function ProfileScreen({ navigation, route }) {
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{basicsOption(field.key, option, language)}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-          <Text style={styles.helperText}>Select all that apply — this affects who you're matched with.</Text>
+          <Text style={styles.helperText}>{t('ui.profile.selectAllThatApplyThis')}</Text>
 
-          <Text style={[styles.label, { marginTop: spacing.lg }]}>I'm interested in dating</Text>
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.profile.imInterestedInDating')}</Text>
           <View style={styles.chipsWrap}>
             {GENDER_IDENTITY_OPTIONS.map((option) => {
               const selected = interestedInGenders.includes(option);
@@ -1151,27 +1153,27 @@ export default function ProfileScreen({ navigation, route }) {
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{basicsOption(field.key, option, language)}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-          <Text style={styles.helperText}>Select all that apply. Matching is mutual — you'll only see people whose preferences also include you.</Text>
+          <Text style={styles.helperText}>{t('ui.profile.selectAllThatApplyMatching')}</Text>
 
           <View style={[styles.settingRow, { marginTop: spacing.md }]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.label}>Hide my gender</Text>
-              <Text style={styles.helperText}>Your gender won't be shown on your profile.</Text>
+              <Text style={styles.label}>{t('ui.profile.hideMyGender')}</Text>
+              <Text style={styles.helperText}>{t('ui.profile.yourGenderWontBeShown')}</Text>
             </View>
             <Switch
               value={genderHidden}
               onValueChange={(v) => toggleHiddenPref('gender_hidden', v, setGenderHidden)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Hide my gender"
+              accessibilityLabel={t('ui.profile.hideMyGenderA11y')}
             />
           </View>
 
-          <Text style={[styles.label, { marginTop: spacing.lg }]}>My Ethnicity</Text>
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.profile.myEthnicity')}</Text>
           <View style={styles.chipsWrap}>
             {ETHNICITY_OPTIONS.map((option) => (
               <TouchableOpacity
@@ -1189,18 +1191,18 @@ export default function ProfileScreen({ navigation, route }) {
           </View>
           <View style={[styles.settingRow, { marginTop: spacing.sm }]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.label}>Hide my ethnicity</Text>
-              <Text style={styles.helperText}>Your ethnicity won't be shown on your profile.</Text>
+              <Text style={styles.label}>{t('ui.profile.hideMyEthnicity')}</Text>
+              <Text style={styles.helperText}>{t('ui.profile.yourEthnicityWontBeShown')}</Text>
             </View>
             <Switch
               value={ethnicityHidden}
               onValueChange={(v) => toggleHiddenPref('ethnicity_hidden', v, setEthnicityHidden)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Hide my ethnicity"
+              accessibilityLabel={t('ui.profile.hideMyEthnicityA11y')}
             />
           </View>
 
-          <Text style={[styles.label, { marginTop: spacing.lg }]}>My Height</Text>
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.profile.myHeight')}</Text>
           <View style={styles.heightRow}>
             <TextInput
               style={[styles.input, styles.heightInput]}
@@ -1209,7 +1211,7 @@ export default function ProfileScreen({ navigation, route }) {
               keyboardType="number-pad"
               placeholder="ft"
               placeholderTextColor={colors.textTertiary}
-              accessibilityLabel="Height, feet"
+              accessibilityLabel={t('ui.profile.heightFeetA11y')}
               maxLength={1}
             />
             <Text style={styles.heightDash}>'</Text>
@@ -1220,12 +1222,12 @@ export default function ProfileScreen({ navigation, route }) {
               keyboardType="number-pad"
               placeholder="in"
               placeholderTextColor={colors.textTertiary}
-              accessibilityLabel="Height, inches"
+              accessibilityLabel={t('ui.profile.heightInchesA11y')}
               maxLength={2}
             />
             <Text style={styles.heightDash}>"</Text>
           </View>
-          <Text style={styles.helperText}>Optional — leave both blank if you'd rather not say.</Text>
+          <Text style={styles.helperText}>{t('ui.profile.optionalLeaveBothBlankIf')}</Text>
 
           <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('profile.pronounsLabel')}</Text>
           <TextInput
@@ -1234,7 +1236,7 @@ export default function ProfileScreen({ navigation, route }) {
             onChangeText={setPronouns}
             placeholder={t('profile.pronounsPlaceholder')}
             placeholderTextColor={colors.textTertiary}
-            accessibilityLabel="Pronouns"
+            accessibilityLabel={t('ui.profile.pronounsA11y')}
           />
 
           <Text style={styles.label}>{t('profile.orientationLabel')}</Text>
@@ -1244,7 +1246,7 @@ export default function ProfileScreen({ navigation, route }) {
             onChangeText={setSexualOrientation}
             placeholder={t('profile.optionalPlaceholder')}
             placeholderTextColor={colors.textTertiary}
-            accessibilityLabel="Sexual orientation"
+            accessibilityLabel={t('ui.profile.sexualOrientationA11y')}
           />
         </View>
 
@@ -1262,10 +1264,10 @@ export default function ProfileScreen({ navigation, route }) {
                 style={styles.input}
                 value={basics[field.key] || ''}
                 onChangeText={(v) => setBasicTextField(field.key, v)}
-                placeholder={field.placeholder}
+                placeholder={basicsPlaceholder(field, language)}
                 placeholderTextColor={colors.textTertiary}
                 autoFocus
-                accessibilityLabel={field.label}
+                accessibilityLabel={basicsLabel(field, language)}
               />
             </AccordionField>
           ))}
@@ -1290,11 +1292,11 @@ export default function ProfileScreen({ navigation, route }) {
                       style={[styles.chip, selected && styles.chipSelected]}
                       onPress={() => setBasicField(field.key, option)}
                       activeOpacity={0.85}
-                      accessibilityLabel={option}
+                      accessibilityLabel={basicsOption(field.key, option, language)}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
                     >
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{basicsOption(field.key, option, language)}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -1330,9 +1332,9 @@ export default function ProfileScreen({ navigation, route }) {
             standing declaration, same shape as Interests above. A friend
             planning something for you can use this (getWhoForPreferenceSignals)
             without ever telling you anything's being planned. */}
-        <Text style={styles.sectionLabel} accessibilityRole="header">Dining & Venue Preferences</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.diningVenuePreferences')}</Text>
         <Text style={styles.sublabel}>
-          Optional. A friend planning something for you can quietly use this to pick better options.
+          {t('ui.profile.optionalAFriendPlanningSomething')}
         </Text>
         <View style={styles.chipsWrap}>
           {CUISINE_OPTIONS.map((o) => {
@@ -1375,7 +1377,7 @@ export default function ProfileScreen({ navigation, route }) {
           style={styles.button}
           onPress={save}
           activeOpacity={0.85}
-          accessibilityLabel="Save changes"
+          accessibilityLabel={t('ui.profile.saveChangesA11y')}
           accessibilityRole="button"
         >
           <Text style={styles.buttonText}>{t('profile.save')}</Text>
@@ -1385,13 +1387,13 @@ export default function ProfileScreen({ navigation, route }) {
       <Modal visible={questionPickerVisible} animationType={modalAnimation('slide')} onRequestClose={() => setQuestionPickerVisible(false)}>
         <SafeAreaView style={styles.container}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle} accessibilityRole="header">Choose a Prompt</Text>
+            <Text style={styles.modalTitle} accessibilityRole="header">{t('ui.profile.chooseAPrompt')}</Text>
             <TouchableOpacity
               onPress={() => setQuestionPickerVisible(false)}
-              accessibilityLabel="Cancel"
+              accessibilityLabel={t('ui.profile.cancelA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.modalCancelText}>Cancel</Text>
+              <Text style={styles.modalCancelText}>{t('ui.profile.cancel')}</Text>
             </TouchableOpacity>
           </View>
           <FlatList
@@ -1419,30 +1421,30 @@ export default function ProfileScreen({ navigation, route }) {
             <Text style={styles.sheetQuestion} accessibilityRole="header">{draftQuestion}</Text>
             <TextInput
               style={[styles.input, { height: 90, textAlignVertical: 'top', marginTop: spacing.md }]}
-              placeholder="Your answer..."
+              placeholder={t('ui.profile.yourAnswer')}
               placeholderTextColor={colors.textTertiary}
               value={draftAnswer}
               onChangeText={setDraftAnswer}
               multiline
               autoFocus
-              accessibilityLabel="Your answer"
+              accessibilityLabel={t('ui.profile.yourAnswerA11y')}
             />
             <TouchableOpacity
               style={styles.button}
               onPress={saveDraftPrompt}
               activeOpacity={0.85}
-              accessibilityLabel="Save prompt answer"
+              accessibilityLabel={t('ui.profile.savePromptAnswerA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.buttonText}>Save</Text>
+              <Text style={styles.buttonText}>{t('ui.profile.save')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setAnswerModalVisible(false)}
               style={{ marginTop: spacing.md }}
-              accessibilityLabel="Cancel"
+              accessibilityLabel={t('ui.profile.cancelA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.modalCancelText}>Cancel</Text>
+              <Text style={styles.modalCancelText}>{t('ui.profile.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
