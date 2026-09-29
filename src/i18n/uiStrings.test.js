@@ -138,3 +138,22 @@ describe('action labels', () => {
     expect(replySentConfirmation({ offer_type: 'alt_time' })[0]).toBe('New time suggested');
   });
 });
+
+describe('Home helper lines', () => {
+  const { setCurrentLanguage } = require('./translate');
+  const { homeQuickStatRows } = require('../utils/homeQuiet');
+  const { homeLoadNotice } = require('../utils/homeLoadNotice');
+  const { firstRunInterestLine } = require('../utils/firstRunInterests');
+  afterEach(() => setCurrentLanguage('en'));
+  test('English is unchanged', () => {
+    expect(homeQuickStatRows({ gatheringsTodayCount: 1, unreadCount: 2 }).map((r) => r.text)).toEqual(['1 gathering today', '2 unread messages']);
+    expect(homeLoadNotice(['people', 'offers'])).toBe("Part of Home didn't load (people nearby and nearby perks), so what's shown may be incomplete.");
+    expect(firstRunInterestLine(['Coffee'], []).text).toBe("You told us you're into Coffee. Nothing upcoming nearby matches yet, so we'll surface it as soon as something does.");
+  });
+  test('German reads German, with the category name translated', () => {
+    setCurrentLanguage('de');
+    expect(homeQuickStatRows({ unreadCount: 2 })[0].text).toBe('2 ungelesene Nachrichten');
+    expect(homeLoadNotice(['people', 'offers'])).toBe('Ein Teil von Start wurde nicht geladen (Leute in der Nähe und Vorteile in der Nähe), daher fehlt vielleicht etwas.');
+    expect(firstRunInterestLine(['Coffee'], []).text).toMatch(/^Du hast uns gesagt, dass du Kaffee magst\./);
+  });
+});

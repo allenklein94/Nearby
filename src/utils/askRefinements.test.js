@@ -78,7 +78,8 @@ describe('one implementation on both surfaces', () => {
     expect(discover).toMatch(/\(intentSearch\?\.outcome === 'results' \|\| intentSearch\?\.refined\)/);
   });
   it('conversational acknowledgement on Home', () => {
-    expect(home).toMatch(/<FoundLine text="Got it\. Here are a few ideas\." \/>/);
+    expect(home).toMatch(/<FoundLine text=\{t\('ui\.home\.foundIdeas'\)\} \/>/);
+    expect(require('../i18n/ui/home').default.en.foundIdeas).toBe('Got it. Here are a few ideas.');
   });
   it('typed-ask only: the chips are not a persistent Discover filter', () => {
     const d = discover.slice(discover.indexOf('async function handleIntentRefine'), discover.indexOf('async function handleDiscoverSurprise'));

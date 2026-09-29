@@ -204,7 +204,7 @@ describe('incomplete data is omitted, never invented', () => {
 describe('guards: surfaces render the shared object and do not rebuild its rules', () => {
   const home = read('screens/HomeScreen.js');
   const discover = read('screens/DiscoverHubScreen.js');
-  const pickedForYou = home.slice(home.indexOf('Picked For You</Text>'), home.indexOf('dashboard?.weeklyRecap &&'));
+  const pickedForYou = home.slice(home.indexOf("{t('ui.home.pickedForYou')}</Text>"), home.indexOf('dashboard?.weeklyRecap &&'));
   it('Home Picked For You + Best Pick build from the card model and tap its destination', () => {
     expect(pickedForYou).toMatch(/homeGatheringCard\(attention\.hero/);
     expect(pickedForYou).toMatch(/homeGatheringCard\(g, \{ signals, variant \}\)/);

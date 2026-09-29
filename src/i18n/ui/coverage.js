@@ -12,12 +12,25 @@ export const LOCALIZED_FILES = [
   'src/utils/recoverableError.js',
   'src/components/EmptyCopy.js',
   'src/utils/actionConfirmations.js',
+  'src/screens/HomeScreen.js',
+  'src/utils/homeQuiet.js',
+  'src/utils/meetTonight.js',
+  'src/utils/homeLoadNotice.js',
+  'src/utils/firstRunInterests.js',
+  'src/utils/upcomingWorld.js',
+  'src/utils/occasionRecall.js',
+  'src/utils/gatheringFullness.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
 export const INTENTIONAL_ENGLISH = {
   '*': {
     Nearby: 'the app name',
+  },
+  'src/utils/meetTonight.js': {
+    'Go on dates': 'stored onboarding token (profiles.onboarding_motivations), matched, never shown',
+    'Make new friends': 'stored onboarding token, matched, never shown',
+    'Meet new people': 'stored onboarding token, matched, never shown',
   },
   'src/utils/actionConfirmations.js': {
     'Offer saved': 'business-side confirmation (business experience stays English)',

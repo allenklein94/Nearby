@@ -8,6 +8,7 @@
 // to defend. The CTA names its destination ("Meet People") and goes to People mode, where Discover already picks
 // Dating vs Friends from the person's own usage and goals.
 import { subModeFromMotivations } from './peopleSubModePreference';
+import { tr } from '../i18n/translate';
 
 export const MEET_TONIGHT_MIN_PEOPLE = 3;
 export const EVENING_START_HOUR = 17;
@@ -49,11 +50,11 @@ export function meetSomeoneTonight({ now = new Date(), nearbyPeopleCount = 0, mo
   const subMode = subModeFromMotivations(motivations);
   return {
     kind: 'meet_tonight',
-    text: 'Tonight looks like a great night to meet someone new.',
+    text: tr('ui.homeParts.meet.tonight'),
     basis: subMode === 'friends'
-      ? `You're here to make friends, and ${nearbyPeopleCount} people within a few miles could be new friends.`
-      : `You're here to meet people, and ${nearbyPeopleCount} ${nearbyPeopleCount === 1 ? 'was' : 'were'} near you in the last day.`,
-    cta: { label: 'Meet People', screen: 'Discover', params: { initialMode: 'people', initialPeopleSubMode: subMode, context: 'meet_tonight' } },
+      ? tr('ui.homeParts.meet.basisFriends', { count: nearbyPeopleCount })
+      : tr('ui.homeParts.meet.basisDating', { count: nearbyPeopleCount }),
+    cta: { label: tr('ui.actions.meetPeople'), screen: 'Discover', params: { initialMode: 'people', initialPeopleSubMode: subMode, context: 'meet_tonight' } },
   };
 }
 
@@ -62,23 +63,22 @@ export function meetSomeoneTonight({ now = new Date(), nearbyPeopleCount = 0, mo
 // failed) says nothing about people; zero says so plainly and offers the other pool instead of an empty deck.
 export function peopleTonightBanner({ subMode = 'dating', count = null } = {}) {
   // `count` must come from countTonightSupply (same rule as the Home claim), so the two can never disagree.
-  const title = 'People worth meeting tonight';
+  const title = tr('ui.homeParts.meet.bannerTitle');
   if (typeof count !== 'number') return { title, line: null, empty: false };
   if (count === 0) {
     return {
       title,
       line: subMode === 'friends'
-        ? 'Nobody new within a few miles right now. Check back later, or see what is happening nearby.'
-        : 'Nobody who fits your preferences was near you in the last day. Try Friends, or check back later.',
+        ? tr('ui.homeParts.meet.emptyFriends')
+        : tr('ui.homeParts.meet.emptyDating'),
       empty: true,
     };
   }
-  const people = count === 1 ? '1 person' : `${count} people`;
   return {
     title,
     line: subMode === 'friends'
-      ? `${people} within a few miles could be new friends.`
-      : `${people} near you in the last day who fit your dating preferences.`,
+      ? tr('ui.homeParts.meet.lineFriends', { count })
+      : tr('ui.homeParts.meet.lineDating', { count }),
     empty: false,
   };
 }
@@ -88,10 +88,10 @@ export function peopleTonightBanner({ subMode = 'dating', count = null } = {}) {
 // (failed lookup) says nothing about people -- no "0" -- and offers no Meet People pill.
 export function nearbyToMeetRow(meetPeopleCount) {
   if (typeof meetPeopleCount !== 'number' || !Number.isFinite(meetPeopleCount)) {
-    return { text: "See who's nearby", count: null, showCta: false };
+    return { text: tr('ui.homeParts.meet.seeWhoNearby'), count: null, showCta: false };
   }
   return {
-    text: `${meetPeopleCount === 1 ? '1 person' : `${meetPeopleCount} people`} nearby to meet`,
+    text: tr('ui.homeParts.meet.nearbyToMeet', { count: meetPeopleCount }),
     count: meetPeopleCount,
     showCta: meetPeopleCount > 0,
   };

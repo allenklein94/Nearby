@@ -1,3 +1,4 @@
+import { tr } from '../i18n/translate';
 // Item 104 (CLAUDE.md, "There could eventually be an 'Occasions'
 // recommendation engine"). User's own mock: "Upcoming in your world / 🎂
 // Sarah's birthday — 10 days / 💍 Anniversary — 22 days / 🎓 John's
@@ -35,7 +36,7 @@ export function buildUpcomingWorldItems({ occasions = [], birthdays = [], skip =
     key: `birthday_${b.connection_id}`,
     kind: 'birthday',
     icon: '🎂',
-    label: `${b.display_name}'s birthday`,
+    label: tr('ui.homeParts.upcoming.birthday', { name: b.display_name }),
     daysUntil: b.days_until,
     occasionId: null,
     occasionType: 'birthday',
@@ -65,7 +66,7 @@ export function buildUpcomingWorldItems({ occasions = [], birthdays = [], skip =
 // days", not two that could drift). formatUpcomingWorldItemLine below is now a thin join of this.
 export function formatUpcomingWorldItemParts(item) {
   if (!item) return { prefix: '', days: '' };
-  const days = item.daysUntil === 0 ? 'today' : item.daysUntil === 1 ? 'tomorrow' : `${item.daysUntil} days`;
+  const days = item.daysUntil === 0 ? tr('ui.homeParts.upcoming.today') : item.daysUntil === 1 ? tr('ui.homeParts.upcoming.tomorrow') : tr('ui.homeParts.upcoming.days', { count: item.daysUntil });
   const label = item.label ?? '';
   const alreadyIconSuffixed = !!item.icon && label.trim().endsWith(item.icon);
   const prefix = alreadyIconSuffixed ? label : `${item.icon} ${label}`.trim();

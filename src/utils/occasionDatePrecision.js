@@ -1,3 +1,4 @@
+import { tr } from '../i18n/translate';
 // Item 98 (CLAUDE.md, "Don't require exact dates"): "Her birthday is
 // sometime next month" is a completely normal thing to know -- the app
 // used to force a single exact day through a native date picker with no
@@ -78,14 +79,15 @@ export function formatOccasionDateForPrecision(precision, occasionDateStr, { sho
 // phrasing instead of a fake day count.
 export function occasionDueLabel(precision, occasionDateStr, daysUntil) {
   if (precision === 'exact' || !precision) {
-    if (daysUntil === 0) return 'is today';
-    if (daysUntil === 1) return 'is tomorrow';
-    return `is in ${daysUntil} days`;
+    if (daysUntil === 0) return tr('ui.homeParts.occasion.dueToday');
+    if (daysUntil === 1) return tr('ui.homeParts.occasion.dueTomorrow');
+    return tr('ui.homeParts.occasion.dueIn', { count: daysUntil });
   }
   // formatOccasionDateForPrecision's short form already reads naturally
   // lowercased mid-sentence ("weekend of Sept 20" / "around Sept 20" /
   // "sometime in Sept") -- just lowercase its own leading word.
   const dateText = formatOccasionDateForPrecision(precision, occasionDateStr, { short: true });
-  if (!dateText) return 'is coming up';
-  return `is coming up ${dateText.charAt(0).toLowerCase()}${dateText.slice(1)}`;
+  // The fuzzy date text itself is still English (formatOccasionDateForPrecision, converted with the Occasions screens).
+  if (!dateText) return tr('ui.homeParts.occasion.comingUp');
+  return tr('ui.homeParts.occasion.comingUpDate', { date: `${dateText.charAt(0).toLowerCase()}${dateText.slice(1)}` });
 }

@@ -1,3 +1,4 @@
+import { tr } from '../i18n/translate';
 // The clearest honest temporal wording for an upcoming/current scheduled time (owner item 47). One function decides:
 //   started <= 30 min ago         -> "Happening now"     (the canonical Right Now past window; no duration is invented,
 //                                                          so anything that started earlier just shows its start time)
@@ -78,9 +79,10 @@ export function describeFriendGatheringTiming(iso) {
 
 export function getGreeting() {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
+  // Read in the person's language (ui.homeParts.greeting); English: Good morning / Good afternoon / Good evening.
+  if (hour < 12) return tr('ui.homeParts.greeting.morning');
+  if (hour < 18) return tr('ui.homeParts.greeting.afternoon');
+  return tr('ui.homeParts.greeting.evening');
 }
 
 export function getTimePeriod(date = new Date()) {

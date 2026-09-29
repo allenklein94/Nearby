@@ -1,3 +1,4 @@
+import { tr } from '../i18n/translate';
 // Onboarding step 1 ("What do you want Nearby to help you do?") and step 3 ("What are you looking for?").
 // Both are stored in the one existing profiles.onboarding_motivations array (no schema change): goals as their labels, and the
 // looking-for choice as the SAME tokens the rest of the app already reads ('Go on dates' / 'Make new friends' drive the starting
@@ -48,7 +49,7 @@ export function goalShortcuts(motivations) {
   if (!Array.isArray(motivations)) return [];
   return ONBOARDING_GOALS
     .filter((g) => motivations.includes(g.label) && GOAL_DESTINATIONS[g.label])
-    .map((g) => ({ key: g.key, icon: g.icon, label: GOAL_DESTINATIONS[g.label].action, ...GOAL_DESTINATIONS[g.label] }));
+    .map((g) => ({ key: g.key, icon: g.icon, ...GOAL_DESTINATIONS[g.label], label: tr(`ui.homeParts.goal.${g.key}`) })); // label: the person's language; English = `action`
 }
 
 // Editing goals later (Settings) changes only the goal labels; the looking-for tokens and any other stored values stay as they are.

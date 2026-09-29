@@ -12,8 +12,9 @@ How: `src/i18n/ui/<ns>.js` (11 languages) merged as `translations.<lang>.ui`; sc
 - PlansScreen (ns `plans`)
 - shared components (ns `shared`): LoadErrorState, DraftBanner, OnboardingTopBar, TabHeaderActions, GatheringStatusBadge, planStatus labels, recoverableError copy (sentence pair per `what` phrase)
 - action labels + consumer confirmations (ns `actions`): primaryAction consumer CTAs/statuses, viewLabel, invite/Interested toasts; business-side labels stay English (tested)
+- Home (ns `home` + `homeParts`): the screen, plus the helper lines it shows (greeting, quick picks, weekly recap, quick stats, insight lines + meet-tonight, load notice, first-run line, weather card, upcoming-world rows, occasion due/recall lines, goal shortcuts, spots-left labels); dates via `displayHeroWhen`; shared list joiner `i18n/list.js`. Still English on Home: the smart ask placeholder from a repeated pattern (`formatSmartPlaceholder`), the fuzzy occasion date text (`formatOccasionDateForPrecision`, with Occasions), `intentPhaseCaption` loader captions, Start Something / Quick Picks edit / dining / feedback modals (components pass)
 - EmptyCopy (ns `empty`): every consumer empty-state id; business/admin/ai ids stay English (tested)
 
 ## Next (in order)
-Home, Discover, Gatherings, GatheringDetail, Create/EditGathering, Activity, Profile, Settings, AskBusiness, BusinessRequestDetail,
+Discover, Gatherings, GatheringDetail, Create/EditGathering, Activity, Profile, Settings, AskBusiness, BusinessRequestDetail,
 chat screens, onboarding, remaining screens, components.

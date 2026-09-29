@@ -1,3 +1,4 @@
+import { tr } from '../i18n/translate';
 // P1 remediation (CLAUDE.md, Aug 28 2026 Full Coherence Audit, item "🟠
 // Fullness needs to be universal"): a real, shared gathering-card
 // fullness contract, reused by every surface that recommends/ranks/
@@ -68,7 +69,8 @@ export function getGatheringFullness(gathering) {
 export function gatheringFullnessLabel(gathering) {
   const f = getGatheringFullness(gathering);
   if (!f) return null;
-  if (f.isFull) return '🔒 Full — Join Waitlist';
-  if (f.almostFull) return `🔥 ${f.spotsLeft} spot${f.spotsLeft === 1 ? '' : 's'} left`;
-  return `🟢 ${f.spotsLeft} spot${f.spotsLeft === 1 ? '' : 's'} left`;
+  // Read in the person's language (ui.homeParts.fullness); every form keeps its leading 🔒/🔥/🟢 (callers test for 🔒).
+  if (f.isFull) return tr('ui.homeParts.fullness.full');
+  if (f.almostFull) return tr('ui.homeParts.fullness.almost', { count: f.spotsLeft });
+  return tr('ui.homeParts.fullness.open', { count: f.spotsLeft });
 }

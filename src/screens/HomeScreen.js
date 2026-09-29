@@ -1,6 +1,8 @@
 import { useLanguage } from '../context/LanguageContext';
 import { surpriseView, surpriseText } from '../i18n/surpriseView';
-import { translate } from '../i18n/translate';
+import { translate, tr } from '../i18n/translate';
+import { displayHeroWhen } from '../i18n/display';
+import { categoryName } from '../i18n/categoryNames';
 import { resultRowView } from '../utils/recommendationContext';
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -59,7 +61,7 @@ import { gatheringCardModel } from '../utils/recommendationCard';
 import { confidenceHeadline } from '../utils/recommendationConfidence';
 import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { homeLoadNotice } from '../utils/homeLoadNotice';
-import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime, describeFriendGatheringTiming } from '../utils/timeContext';
+import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, describeFriendGatheringTiming } from '../utils/timeContext';
 import { firstRunInterestLine } from '../utils/firstRunInterests';
 import { homeWeatherCard, goodWeatherCardAllowed, localDayKey } from '../constants/weatherRelevance';
 import { attendeeTotal, gatheringFullnessLabel } from '../utils/gatheringFullness';
@@ -73,7 +75,8 @@ import { interestedConfirmation } from '../utils/actionConfirmations';
 
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
-const PERIOD_SECTION_LABELS = { morning: 'Good Morning', afternoon: 'This Afternoon', evening: 'Tonight', weekend: 'This Weekend' };
+// Labels are ui.home.period.<period> / ui.home.periodSubtitle.<period> (read in the person's language at render).
+const PERIOD_SECTION_LABEL_KEYS = { morning: 'goodMorning', afternoon: 'thisAfternoon', evening: 'tonight', weekend: 'thisWeekend' };
 
 // Phase 1a of the Intent Layer plan (CLAUDE.md) -- rotating placeholder
 // examples for the new "What do you want to do?" box. Picked once per
@@ -83,7 +86,8 @@ const PERIOD_SECTION_LABELS = { morning: 'Good Morning', afternoon: 'This Aftern
 // also part of the app -- "Meet new people…" is a real, already-supported
 // intent phrase (detectFriendDiscoveryIntent in intentResolverScoring.js), not
 // a placeholder that would resolve to nothing if actually typed.
-const INTENT_PLACEHOLDER_EXAMPLES = ['Dinner tonight…', 'Something fun Saturday…', 'Find a pickleball game…', 'Meet new people…'];
+// Each is { key } (ui.home.placeholder.<key>), { key, vars }, or { raw } (a server/helper-composed line shown as given).
+const INTENT_PLACEHOLDER_EXAMPLES = [{ key: 'dinnerTonight' }, { key: 'funSaturday' }, { key: 'pickleball' }, { key: 'meetPeople' }];
 
 // One icon per real resolver candidate type (intentResolver.js) -- kept as
 // a lookup rather than a ternary chain now that there are 4 real types,
@@ -119,21 +123,22 @@ const INTENT_RESULT_ICONS = {
 // real result types) to group in the first place. A single-type result
 // set (by far the common case today) renders exactly as before -- no
 // visual change, no risk of dressing up one real result as "three ways."
+// Values are ui.home.resultType.<type> keys.
 const INTENT_RESULT_TYPE_LABELS = {
-  gathering: '🎉 Already happening',
-  community: '🏘️ A community for this',
-  friend_request: '👥 Someone you know wants this too',
-  perk: '🎁 A perk that fits',
+  gathering: 'gathering',
+  community: 'community',
+  friend_request: 'friend_request',
+  perk: 'perk',
   // 🟢/🟡: real hierarchy per direct instruction -- confirmed live supply
   // is ranked and labeled distinctly from a business's standing willingness
   // to fulfill, which is never called "Available."
-  business_availability: '🟢 A business has this ready',
-  business_policy_match: '🟡 A business may be able to help',
+  business_availability: 'business_availability',
+  business_policy_match: 'business_policy_match',
   // P1 remediation (CLAUDE.md, Aug 28 Full Coherence Audit, Scenario D) --
   // see detectFriendDiscoveryIntent()'s own header comment: a real,
   // honest navigation action, grouped separately from any real resolver
   // candidate so it never reads as "we found this gathering/perk."
-  friend_discovery: '💗 Meet new people',
+  friend_discovery: 'friend_discovery',
 };
 
 // buildFriendDiscoveryResultItem moved to services/intentResolver.js
@@ -143,12 +148,7 @@ const INTENT_RESULT_TYPE_LABELS = {
 // groupIntentResultsByType / remainingIntentItems live in utils/typedAskAudit.js: the typed-ask audit records the order this
 // screen renders from the same functions, so the record cannot drift from what is shown (item 105).
 
-const PERIOD_SUBTITLES = {
-  morning: 'What sounds good this morning?',
-  afternoon: 'What sounds good this afternoon?',
-  evening: 'What sounds good tonight?',
-  weekend: 'What sounds good this weekend?',
-};
+const PERIOD_SUBTITLES = { morning: 'morning', afternoon: 'afternoon', evening: 'evening', weekend: 'weekend' }; // ui.home.periodSubtitle.<key>
 
 // Same icon set OccasionsScreen.js's OCCASION_TYPES already uses -- kept
 // in sync manually since neither file imports the other. 'birthday' was
@@ -178,17 +178,30 @@ function occasionTypeIcon(occasionType) {
 function formatWeeklyRecap(recap) {
   const parts = [];
   if (recap.gatheringsAttended > 0) {
-    parts.push(`${recap.gatheringsAttended} gathering${recap.gatheringsAttended === 1 ? '' : 's'}`);
+    parts.push(tr('ui.homeParts.recap.gatherings', { count: recap.gatheringsAttended }));
   }
   if (recap.newFriends > 0) {
-    parts.push(`${recap.newFriends} new connection${recap.newFriends === 1 ? '' : 's'}`);
+    parts.push(tr('ui.homeParts.recap.connections', { count: recap.newFriends }));
   }
   return parts.join(' · ');
 }
 
+// A quick pick's label in the person's language: a pick whose label IS its category shows the category's translated name;
+// a time-flavored label (Morning Run, Beach Volleyball...) reads ui.homeParts.quickPick.<key>. The stored item is unchanged.
+const QUICK_PICK_KEYS = { 'Morning Run': 'morningRun', Breakfast: 'breakfast', Lunch: 'lunch', Dinner: 'dinner', Concert: 'concert', Walk: 'walk', 'Beach Volleyball': 'beachVolleyball', 'Beach Cleanup': 'beachCleanup', 'Wine Tasting': 'wineTasting' };
+function quickPickLabel(item, language) {
+  if (QUICK_PICK_KEYS[item.label]) return tr(`ui.homeParts.quickPick.${QUICK_PICK_KEYS[item.label]}`);
+  return categoryName(item.label, language);
+}
+
 export default function HomeScreen({ navigation }) {
   const { colors, shadow } = useTheme();
-  const { language } = useLanguage(); // recommendation reasons are shown in the person's language (utils/reasonLocalization.js)
+  const { t, language } = useLanguage(); // recommendation reasons are shown in the person's language (utils/reasonLocalization.js)
+  // A stored category in a nudge sentence: English keeps the lowercase phrasing it always had; other languages use the
+  // category's translated name (i18n/categoryNames.js).
+  const nudgeCategory = (cat) => (language === 'en' ? String(cat ?? '').toLowerCase() : categoryName(cat, language));
+  // gatheringTimeBadge returns fixed English codes (compared elsewhere); the hero shows ui.home.badge.<code>.
+  const heroBadgeText = (badge) => t(`ui.home.badge.${badge ? badge.replace(/ /g, '_') : 'BEST_PICK'}`);
   const styles = getStyles(colors);
   const [dashboard, setDashboard] = useState(null);
   // Real, computed Place status for "Your Plans" gathering rows (CLAUDE.md,
@@ -361,7 +374,7 @@ export default function HomeScreen({ navigation }) {
       const prefs = await getInterestedDemandPrefs().catch(() => null);
       if (prefs && prefs.share && !prefs.acknowledged) {
         navigation.navigate('GatheringDetail', { gatheringId: g.id });
-        showSuccessToast('One quick step', 'Tap ☆ Interested there. We\'ll explain how it works once.');
+        showSuccessToast(t('ui.home.oneQuickStep'), t('ui.home.oneQuickStepBody'));
         return;
       }
     }
@@ -465,7 +478,7 @@ export default function HomeScreen({ navigation }) {
     return (
       <View style={styles.ctaRow}>
         {action.kind === 'interested' ? (
-          <TouchableOpacity style={action.on ? styles.rowCtaGhost : primaryStyle} onPress={() => toggleCardInterested(g, action.on)} accessibilityRole="button" accessibilityState={{ selected: action.on }} accessibilityLabel={action.on ? `Remove Interested: ${g.title}` : `Mark Interested: ${g.title}`}>
+          <TouchableOpacity style={action.on ? styles.rowCtaGhost : primaryStyle} onPress={() => toggleCardInterested(g, action.on)} accessibilityRole="button" accessibilityState={{ selected: action.on }} accessibilityLabel={t(action.on ? 'ui.home.removeInterestedA11y' : 'ui.home.markInterestedA11y', { title: g.title })}>
             <Text style={action.on ? styles.rowCtaGhostText : primaryText}>{action.label}</Text>
           </TouchableOpacity>
         ) : action.kind === 'join' ? (
@@ -475,8 +488,8 @@ export default function HomeScreen({ navigation }) {
         ) : (
           <Text style={hero ? styles.heroMeta : styles.trendingMeta}>{action.label}</Text>
         )}
-        <TouchableOpacity style={viewStyle} onPress={() => openDetail()} accessibilityRole="button" accessibilityLabel={`View ${g.title}`}>
-          <Text style={viewText}>View</Text>
+        <TouchableOpacity style={viewStyle} onPress={() => openDetail()} accessibilityRole="button" accessibilityLabel={t('ui.home.viewTitleA11y', { title: g.title })}>
+          <Text style={viewText}>{t('ui.actions.view')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -557,7 +570,7 @@ export default function HomeScreen({ navigation }) {
       const intentPatternTask = getMyIntentPatterns()
         .then((pattern) => {
           if (pattern?.placeholderText) {
-            const pool = [...INTENT_PLACEHOLDER_EXAMPLES, pattern.placeholderText];
+            const pool = [...INTENT_PLACEHOLDER_EXAMPLES, { raw: pattern.placeholderText }];
             setIntentPlaceholder(pool[Math.floor(Math.random() * pool.length)]);
           }
           return pattern;
@@ -754,7 +767,7 @@ export default function HomeScreen({ navigation }) {
           const events = await getUpcomingCalendarEvents(7);
           const hint = nearestCalendarHint(events, 5);
           if (!hint) return;
-          const pool = [...INTENT_PLACEHOLDER_EXAMPLES, `Plan something for ${hint.title}…`];
+          const pool = [...INTENT_PLACEHOLDER_EXAMPLES, { key: 'planFor', vars: { title: hint.title } }];
           setIntentPlaceholder(pool[Math.floor(Math.random() * pool.length)]);
         } catch (e) {
           console.error('calendarHintTask failed', e);
@@ -1099,8 +1112,8 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
             {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
             <View style={styles.friendRequestActions}>
-              <TouchableOpacity onPress={() => handleIntentResultTap(item)} accessibilityLabel="View Profile" accessibilityRole="button">
-                <Text style={styles.friendRequestActionText}>View Profile</Text>
+              <TouchableOpacity onPress={() => handleIntentResultTap(item)} accessibilityLabel={t('ui.home.viewProfile')} accessibilityRole="button">
+                <Text style={styles.friendRequestActionText}>{t('ui.home.viewProfile')}</Text>
               </TouchableOpacity>
               {item.matchId && (
                 <TouchableOpacity
@@ -1120,10 +1133,10 @@ export default function HomeScreen({ navigation }) {
                     });
                     navigation.navigate('Chat', { matchId: item.matchId });
                   }}
-                  accessibilityLabel="Message"
+                  accessibilityLabel={t('ui.home.message')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.friendRequestActionTextPrimary}>Message</Text>
+                  <Text style={styles.friendRequestActionTextPrimary}>{t('ui.home.message')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -1503,7 +1516,7 @@ export default function HomeScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={styles.loadingText}>Finding what's happening near you...</Text>
+        <Text style={styles.loadingText}>{t('ui.home.loading')}</Text>
       </SafeAreaView>
     );
   }
@@ -1511,7 +1524,7 @@ export default function HomeScreen({ navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load your home feed." onRetry={load} />
+        <LoadErrorState message={t('ui.home.loadError')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -1529,7 +1542,7 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.greeting}>{getGreeting()}{myName ? `, ${myName}` : ''} 👋</Text>
-            <Text style={styles.subtitle}>{PERIOD_SUBTITLES[period]}</Text>
+            <Text style={styles.subtitle}>{t(`ui.home.periodSubtitle.${PERIOD_SUBTITLES[period]}`)}</Text>
           </View>
           <TabHeaderActions navigation={navigation} />
         </View>
@@ -1537,33 +1550,33 @@ export default function HomeScreen({ navigation }) {
         {homeLoadNotice([...(dashboard?.loadFailures ?? []), ...(offersLoadFailed ? ['offers'] : [])]) && (
           <View style={styles.outcomePromptCard}>
             <Text style={styles.outcomePromptText}>{homeLoadNotice([...(dashboard?.loadFailures ?? []), ...(offersLoadFailed ? ['offers'] : [])])}</Text>
-            <TouchableOpacity style={styles.predictiveActButton} onPress={onRefresh} accessibilityLabel="Try loading Home again" accessibilityRole="button">
-              <Text style={styles.predictiveActButtonText}>Try again →</Text>
+            <TouchableOpacity style={styles.predictiveActButton} onPress={onRefresh} accessibilityLabel={t('ui.home.retryA11y')} accessibilityRole="button">
+              <Text style={styles.predictiveActButtonText}>{t('ui.common.tryAgainArrow')}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         <View style={[styles.intentSection, shadow.card]}>
-          <Text style={styles.intentHeading}>What do you want to do?</Text>
+          <Text style={styles.intentHeading}>{t('ui.home.askHeading')}</Text>
           <View style={styles.intentInputRow}>
             <TextInput
               style={styles.intentInput}
-              placeholder={intentPlaceholder}
+              placeholder={intentPlaceholder.raw ?? t(`ui.home.placeholder.${intentPlaceholder.key}`, intentPlaceholder.vars)}
               placeholderTextColor={colors.textTertiary}
               value={intentText}
               onChangeText={setIntentText}
               onSubmitEditing={handleHomeIntentSubmit}
               returnKeyType="go"
-              accessibilityLabel="What do you want to do?"
+              accessibilityLabel={t('ui.home.askHeading')}
             />
             <TouchableOpacity
               style={[styles.intentButton, shadow.button, (intentThinking || !intentText.trim()) && styles.intentButtonDisabled]}
               onPress={handleHomeIntentSubmit}
               disabled={intentThinking || !intentText.trim()}
-              accessibilityLabel="Find it"
+              accessibilityLabel={t('ui.home.findIt')}
               accessibilityRole="button"
             >
-              {intentThinking ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.intentButtonText}>Find it</Text>}
+              {intentThinking ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.intentButtonText}>{t('ui.home.findIt')}</Text>}
             </TouchableOpacity>
           </View>
 
@@ -1674,7 +1687,7 @@ export default function HomeScreen({ navigation }) {
 
           {intentResults && (
             <View style={styles.intentResults}>
-              {intentResults.items?.length > 0 && <FoundLine text="Got it. Here are a few ideas." />}
+              {intentResults.items?.length > 0 && <FoundLine text={t('ui.home.foundIdeas')} />}
               {/* Item 107: refine in place (shared with Discover). A tap re-runs the same ask with one change. */}
               <AskRefinementChips
                 classifyResult={intentResults.classifyResult}
@@ -1688,8 +1701,8 @@ export default function HomeScreen({ navigation }) {
               {intentResults.classifyResult?.intent === 'unclear' && (
                 <Text style={styles.intentUnclearNote}>
                   {detectFriendDiscoveryIntent(intentResults.typedText)
-                    ? 'Nearby doesn\'t search for individual people directly, but Friend Discovery below is a real, opt-in way to meet someone new — separate from dating.'
-                    : 'Nearby doesn\'t search for individual people directly — gatherings and communities are how you meet people here. Here\'s what\'s already happening that might fit.'}
+                    ? t('ui.home.unclearFriendDiscovery')
+                    : t('ui.home.unclearPeople')}
                 </Text>
               )}
               {/* Intent engine vision -- cross-category "Experiences"
@@ -1717,7 +1730,7 @@ export default function HomeScreen({ navigation }) {
                   {(intentResults.experience.bundles ?? []).map((bundle) => (
                     <View key={bundle.id} style={{ marginBottom: spacing.sm }}>
                       <Text style={styles.intentGroupLabel}>
-                        ✨ One place has it all: {bundle.componentLabels.join(' + ')}
+                        {t('ui.home.onePlace', { parts: bundle.componentLabels.join(' + ') })}
                       </Text>
                       {renderIntentResultItem(bundle)}
                     </View>
@@ -1742,7 +1755,7 @@ export default function HomeScreen({ navigation }) {
                 if (remainingItems.length === 1 && remainingItems[0].type === 'friend_discovery') {
                   return (
                     <>
-                      <Text style={styles.intentResultsHeading}>{INTENT_RESULT_TYPE_LABELS.friend_discovery}</Text>
+                      <Text style={styles.intentResultsHeading}>{t(`ui.home.resultType.${INTENT_RESULT_TYPE_LABELS.friend_discovery}`)}</Text>
                       {renderIntentResultItem(remainingItems[0])}
                     </>
                   );
@@ -1753,12 +1766,12 @@ export default function HomeScreen({ navigation }) {
                   return (
                     <>
                       <Text style={styles.intentResultsHeading}>
-                        I found {grouped.length} ways to make this happen
+                        {t('ui.home.waysFound', { count: grouped.length })}
                       </Text>
                       {grouped.map((group) => (
                         <View key={group.type} style={{ marginBottom: spacing.sm }}>
                           <Text style={styles.intentGroupLabel}>
-                            {INTENT_RESULT_TYPE_LABELS[group.type] ?? group.type}
+                            {INTENT_RESULT_TYPE_LABELS[group.type] ? t(`ui.home.resultType.${INTENT_RESULT_TYPE_LABELS[group.type]}`) : group.type}
                           </Text>
                           {group.items.map((item, index) => renderIntentResultItem(item, index))}
                         </View>
@@ -1768,20 +1781,20 @@ export default function HomeScreen({ navigation }) {
                 }
                 return (
                   <>
-                    <Text style={styles.intentResultsHeading}>Already happening near you</Text>
+                    <Text style={styles.intentResultsHeading}>{t('ui.home.alreadyHappening')}</Text>
                     {remainingItems.map((item, index) => renderIntentResultItem(item, index))}
                   </>
                 );
               })()}
               <TouchableOpacity style={styles.askBusinessButton} onPress={handleAskBusinessFromResults}>
                 <Ionicons name="storefront-outline" size={18} color="#fff" style={styles.intentResultIcon} />
-                <Text style={styles.askBusinessButtonText}>Ask Nearby Businesses</Text>
+                <Text style={styles.askBusinessButtonText}>{t('ui.home.askBusinesses')}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => proceedToCreation(intentResults.classifyResult, intentResults.typedText, intentResults.submissionId, { explicitCreate: true })}>
-                <Text style={styles.intentResultsCreateNew}>None of these? Create it yourself →</Text>
+                <Text style={styles.intentResultsCreateNew}>{t('ui.home.noneCreate')}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleIntentResultsDismiss}>
-                <Text style={styles.intentResultsDismiss}>Try something else</Text>
+                <Text style={styles.intentResultsDismiss}>{t('ui.home.trySomethingElse')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -1790,20 +1803,19 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.intentResults}>
               {intentEmptyFallback.classifyResult?.intent === 'unclear' && (
                 <Text style={styles.intentUnclearNote}>
-                  Nearby doesn't search for individual people directly — gatherings and
-                  communities are how you meet people here.
+                  {t('ui.home.unclearShort')}
                 </Text>
               )}
-              <Text style={styles.intentResultsHeading}>Nothing already happening for this</Text>
+              <Text style={styles.intentResultsHeading}>{t('ui.home.nothingHappening')}</Text>
               <TouchableOpacity style={styles.askBusinessButton} onPress={handleAskBusiness}>
                 <Ionicons name="storefront-outline" size={18} color="#fff" style={styles.intentResultIcon} />
-                <Text style={styles.askBusinessButtonText}>Ask Nearby Businesses</Text>
+                <Text style={styles.askBusinessButtonText}>{t('ui.home.askBusinesses')}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => proceedToCreation(intentEmptyFallback.classifyResult, intentEmptyFallback.typedText, intentEmptyFallback.submissionId, { explicitCreate: true })}>
-                <Text style={styles.intentResultsCreateNew}>Or create it yourself →</Text>
+                <Text style={styles.intentResultsCreateNew}>{t('ui.home.orCreate')}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleIntentResultsDismiss}>
-                <Text style={styles.intentResultsDismiss}>Try something else</Text>
+                <Text style={styles.intentResultsDismiss}>{t('ui.home.trySomethingElse')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -1821,7 +1833,7 @@ export default function HomeScreen({ navigation }) {
                 it ->" button -- both called the same dismiss handler, no
                 real distinction between them. "Got it ->" is the one real
                 dismiss action now; the redundant X is gone. */}
-            <Text style={styles.firstRunHeading}>👋 This is Nearby</Text>
+            <Text style={styles.firstRunHeading}>{t('ui.home.firstRunHeading')}</Text>
             {(() => {
               const line = firstRunInterestLine(myDeclaredInterests, homeRecommendations);
               return line ? <Text style={styles.firstRunBody}>{line.text}</Text> : null;
@@ -1829,7 +1841,7 @@ export default function HomeScreen({ navigation }) {
             {homeRecommendations.length > 0 ? (
               <>
                 <Text style={styles.firstRunBody}>
-                  We looked at what's real nearby right now — here's {homeRecommendations.length === 1 ? 'what we found' : 'a couple of things we found'}:
+                  {t(homeRecommendations.length === 1 ? 'ui.home.firstRunFoundOne' : 'ui.home.firstRunFoundMany')}
                 </Text>
                 {homeRecommendations.slice(0, 2).map((item) => {
                   const row = recommendationRow(item, { language });
@@ -1845,18 +1857,16 @@ export default function HomeScreen({ navigation }) {
                   );
                 })}
                 <Text style={styles.firstRunFooter}>
-                  That's the idea — real things nearby, with a real reason attached. Ask for
-                  anything up top, or scroll down for more.
+                  {t('ui.home.firstRunFooter')}
                 </Text>
               </>
             ) : (
               <Text style={styles.firstRunBody}>
-                Nothing real to show you here just yet — as you explore gatherings, communities,
-                and perks nearby, Nearby gets smarter about what's actually worth your time.
+                {t('ui.home.firstRunEmpty')}
               </Text>
             )}
-            <TouchableOpacity onPress={handleDismissFirstRunMoment} accessibilityLabel="Got it" accessibilityRole="button">
-              <Text style={styles.firstRunGotIt}>Got it →</Text>
+            <TouchableOpacity onPress={handleDismissFirstRunMoment} accessibilityLabel={t('ui.common.gotIt')} accessibilityRole="button">
+              <Text style={styles.firstRunGotIt}>{t('ui.home.gotItArrow')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -1890,18 +1900,18 @@ export default function HomeScreen({ navigation }) {
                 every other section uses -- makes the primary/context split
                 from the locked target model visually real, not just implied
                 by position below the intent box. */}
-            <Text style={styles.primaryHeader}>Your Plans</Text>
+            <Text style={styles.primaryHeader}>{t('ui.home.yourPlans')}</Text>
             <View style={styles.plansCard}>
               {dashboard.plansGoing.length > 0 && (
                 <>
-                  <Text style={styles.subLabel}>Going</Text>
+                  <Text style={styles.subLabel}>{t('ui.actions.going')}</Text>
                   {dashboard.plansGoing.map((plan) => (
                     <PlanCard
                       key={plan.id}
                       icon={categoryStyleFor(plan.interest_tag).icon}
                       iconColor={categoryStyleFor(plan.interest_tag).color}
                       title={plan.title}
-                      dateTimeText={formatHeroDateTime(plan.scheduled_at)}
+                      dateTimeText={displayHeroWhen(plan.scheduled_at, language)}
                       peopleCount={plan.peopleCount}
                       hostingPartnerId={plan.hosting_partner_id}
                       venueName={venueNameForPlan(plan.id)}
@@ -1913,14 +1923,14 @@ export default function HomeScreen({ navigation }) {
               )}
               {dashboard.plansHosting.length > 0 && (
                 <>
-                  <Text style={[styles.subLabel, dashboard.plansGoing.length > 0 && styles.subLabelSpaced]}>Hosting</Text>
+                  <Text style={[styles.subLabel, dashboard.plansGoing.length > 0 && styles.subLabelSpaced]}>{t('ui.actions.hosting')}</Text>
                   {dashboard.plansHosting.map((plan) => (
                     <PlanCard
                       key={plan.id}
                       icon={categoryStyleFor(plan.interest_tag).icon}
                       iconColor={categoryStyleFor(plan.interest_tag).color}
                       title={plan.title}
-                      dateTimeText={formatHeroDateTime(plan.scheduled_at)}
+                      dateTimeText={displayHeroWhen(plan.scheduled_at, language)}
                       peopleCount={plan.peopleCount}
                       hostingPartnerId={plan.hosting_partner_id}
                       venueName={venueNameForPlan(plan.id)}
@@ -1932,15 +1942,15 @@ export default function HomeScreen({ navigation }) {
               )}
               {dashboard.plansInterested?.length > 0 && (
                 <>
-                  <Text style={[styles.subLabel, (dashboard.plansGoing.length > 0 || dashboard.plansHosting.length > 0) && styles.subLabelSpaced]}>Your interest</Text>
+                  <Text style={[styles.subLabel, (dashboard.plansGoing.length > 0 || dashboard.plansHosting.length > 0) && styles.subLabelSpaced]}>{t('ui.home.yourInterest')}</Text>
                   {dashboard.plansInterested.map((plan) => (
                     <PlanCard
                       key={plan.id}
                       icon={categoryStyleFor(plan.interest_tag).icon}
                       iconColor={categoryStyleFor(plan.interest_tag).color}
                       title={plan.title}
-                      roleLabel="Interested"
-                      dateTimeText={formatHeroDateTime(plan.scheduled_at)}
+                      roleLabel={t('ui.home.interested')}
+                      dateTimeText={displayHeroWhen(plan.scheduled_at, language)}
                       hostingPartnerId={plan.hosting_partner_id}
                       onPress={() => navigation.navigate('GatheringDetail', { gatheringId: plan.id })}
                     />
@@ -1949,14 +1959,14 @@ export default function HomeScreen({ navigation }) {
               )}
               {dashboard.plansGroup?.length > 0 && (
                 <>
-                  <Text style={[styles.subLabel, (dashboard.plansGoing.length > 0 || dashboard.plansHosting.length > 0 || dashboard.plansInterested?.length > 0) && styles.subLabelSpaced]}>Group Plans</Text>
+                  <Text style={[styles.subLabel, (dashboard.plansGoing.length > 0 || dashboard.plansHosting.length > 0 || dashboard.plansInterested?.length > 0) && styles.subLabelSpaced]}>{t('ui.home.groupPlans')}</Text>
                   {dashboard.plansGroup.map((plan) => (
                     <PlanCard
                       key={plan.id}
                       icon={categoryStyleFor(plan.category).icon}
                       iconColor={categoryStyleFor(plan.category).color}
                       title={plan.raw_text}
-                      dateTimeText={plan.date ? formatHeroDateTime(plan.date) : null}
+                      dateTimeText={plan.date ? displayHeroWhen(plan.date, language) : null}
                       peopleCount={plan.party_size}
                       status={resolveGroupPlanStatus(plan.status)}
                       onPress={() => navigation.navigate('GroupPlan', { proposalId: plan.group_plan_id })}
@@ -1968,10 +1978,10 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity
               style={styles.seeAllPlansButton}
               onPress={() => navigation.navigate('Plans')}
-              accessibilityLabel="See all plans"
+              accessibilityLabel={t('ui.home.seeAllPlansA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.seeAllPlansText}>See All Plans →</Text>
+              <Text style={styles.seeAllPlansText}>{t('ui.home.seeAllPlans')}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -1990,14 +2000,14 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.outcomePromptCard}>
                 <View style={styles.outcomePromptHeaderRow}>
                   <Text style={styles.outcomePromptText} numberOfLines={2}>
-                    🔮 Want me to find something for {predictivePattern.category.toLowerCase()}?
+                    {t('ui.home.predictive', { category: nudgeCategory(predictivePattern.category) })}
                   </Text>
-                  <TouchableOpacity onPress={handlePredictiveDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <TouchableOpacity onPress={handlePredictiveDismiss} accessibilityLabel={t('ui.common.dismiss')} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="close" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={[styles.predictiveActButton, intentThinking && styles.intentButtonDisabled]} onPress={handlePredictiveAct} disabled={intentThinking} accessibilityLabel="Find something" accessibilityRole="button">
-                  <Text style={styles.predictiveActButtonText}>Yes, find something →</Text>
+                <TouchableOpacity style={[styles.predictiveActButton, intentThinking && styles.intentButtonDisabled]} onPress={handlePredictiveAct} disabled={intentThinking} accessibilityLabel={t('ui.home.findSomethingA11y')} accessibilityRole="button">
+                  <Text style={styles.predictiveActButtonText}>{t('ui.home.findSomething')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -2005,27 +2015,27 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.outcomePromptCard}>
                 <View style={styles.outcomePromptHeaderRow}>
                   <Text style={styles.outcomePromptText} numberOfLines={2}>
-                    👥 {groupIntentSignal.request_count} people you know are looking for {groupIntentSignal.category.toLowerCase()}
+                    {t('ui.home.groupIntent', { count: groupIntentSignal.request_count, category: nudgeCategory(groupIntentSignal.category) })}
                   </Text>
-                  <TouchableOpacity onPress={handleGroupIntentDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <TouchableOpacity onPress={handleGroupIntentDismiss} accessibilityLabel={t('ui.common.dismiss')} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="close" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={[styles.predictiveActButton, intentThinking && styles.intentButtonDisabled]} onPress={handleGroupIntentAct} disabled={intentThinking} accessibilityLabel="Find something together" accessibilityRole="button">
-                  <Text style={styles.predictiveActButtonText}>Find something for the group →</Text>
+                <TouchableOpacity style={[styles.predictiveActButton, intentThinking && styles.intentButtonDisabled]} onPress={handleGroupIntentAct} disabled={intentThinking} accessibilityLabel={t('ui.home.findTogetherA11y')} accessibilityRole="button">
+                  <Text style={styles.predictiveActButtonText}>{t('ui.home.findTogether')}</Text>
                 </TouchableOpacity>
               </View>
             )}
             {diningNudge && (
               <View style={styles.outcomePromptCard}>
                 <View style={styles.outcomePromptHeaderRow}>
-                  <Text style={styles.outcomePromptText} numberOfLines={2}>🍽️ Into food? Tell us what you like to eat and we'll find better spots.</Text>
-                  <TouchableOpacity onPress={handleDiningDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={styles.outcomePromptText} numberOfLines={2}>{t('ui.home.diningNudge')}</Text>
+                  <TouchableOpacity onPress={handleDiningDismiss} accessibilityLabel={t('ui.common.dismiss')} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="close" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.predictiveActButton} onPress={() => setDiningModalVisible(true)} accessibilityLabel="Set my tastes" accessibilityRole="button">
-                  <Text style={styles.predictiveActButtonText}>Set my tastes →</Text>
+                <TouchableOpacity style={styles.predictiveActButton} onPress={() => setDiningModalVisible(true)} accessibilityLabel={t('ui.home.setTastesA11y')} accessibilityRole="button">
+                  <Text style={styles.predictiveActButtonText}>{t('ui.home.setTastes')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -2036,18 +2046,18 @@ export default function HomeScreen({ navigation }) {
                       10 days" example -- a subtle, proximity-scaled treatment on just the
                       day-count fragment, not the whole card. */}
                   <Text style={styles.outcomePromptText} numberOfLines={2}>
-                    🎂 {birthdayNudge.display_name}'s birthday is{' '}
+                    {t('ui.home.birthdayIs', { name: birthdayNudge.display_name })}{' '}
                     <AnticipationText daysUntil={birthdayNudge.days_until}>
-                      {birthdayNudge.days_until === 0 ? 'today' : birthdayNudge.days_until === 1 ? 'tomorrow' : `in ${birthdayNudge.days_until} days`}
+                      {birthdayNudge.days_until === 0 ? t('ui.home.dueToday') : birthdayNudge.days_until === 1 ? t('ui.home.dueTomorrow') : t('ui.home.dueInDays', { count: birthdayNudge.days_until })}
                     </AnticipationText>
-                    {' '}— want to plan something?
+                    {' '}{t('ui.home.wantToPlan')}
                   </Text>
-                  <TouchableOpacity onPress={handleBirthdayDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <TouchableOpacity onPress={handleBirthdayDismiss} accessibilityLabel={t('ui.common.dismiss')} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="close" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.predictiveActButton} onPress={handleBirthdayAct} accessibilityLabel="Plan something" accessibilityRole="button">
-                  <Text style={styles.predictiveActButtonText}>Yes, let's plan something →</Text>
+                <TouchableOpacity style={styles.predictiveActButton} onPress={handleBirthdayAct} accessibilityLabel={t('ui.home.planSomethingA11y')} accessibilityRole="button">
+                  <Text style={styles.predictiveActButtonText}>{t('ui.home.planSomething')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -2060,7 +2070,7 @@ export default function HomeScreen({ navigation }) {
                       {occasionDueLabel(occasionNudge.date_precision, occasionNudge.occasion_date, occasionNudge.days_until)}
                     </AnticipationText>
                   </Text>
-                  <TouchableOpacity onPress={handleOccasionDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <TouchableOpacity onPress={handleOccasionDismiss} accessibilityLabel={t('ui.common.dismiss')} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="close" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
@@ -2068,28 +2078,28 @@ export default function HomeScreen({ navigation }) {
                     of this line traces to get_occasion_recall()'s own
                     real resolved data. */}
                 <Text style={styles.outcomePromptSubtext} numberOfLines={2}>
-                  Nearby remembers: {formatOccasionRecallSummary(occasionRecall)}
+                  {t('ui.home.remembers')} {formatOccasionRecallSummary(occasionRecall)}
                   {occasionRecallLikedText(occasionRecall) ? ` · ${occasionRecallLikedText(occasionRecall)}` : ''}
                 </Text>
                 <Text style={[styles.outcomePromptText, { marginTop: spacing.xs }]} numberOfLines={2}>
-                  Want to return to {occasionRecall.partnerName} or try something new?
+                  {t('ui.home.returnOrNew', { name: occasionRecall.partnerName })}
                 </Text>
                 <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
                   <TouchableOpacity
                     style={[styles.predictiveActButton, { flex: 1 }]}
                     onPress={handleOccasionRecallReturn}
-                    accessibilityLabel={`Return to ${occasionRecall.partnerName}`}
+                    accessibilityLabel={t('ui.home.returnTo', { name: occasionRecall.partnerName })}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.predictiveActButtonText} numberOfLines={1}>🔄 Return to {occasionRecall.partnerName}</Text>
+                    <Text style={styles.predictiveActButtonText} numberOfLines={1}>🔄 {t('ui.home.returnTo', { name: occasionRecall.partnerName })}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.predictiveActButton, { flex: 1 }]}
                     onPress={handleOccasionRecallNew}
-                    accessibilityLabel="Try something new"
+                    accessibilityLabel={t('ui.home.trySomethingNewA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.predictiveActButtonText}>✨ Try Something New</Text>
+                    <Text style={styles.predictiveActButtonText}>{t('ui.home.trySomethingNew')}</Text>
                   </TouchableOpacity>
                 </View>
                 {/* Item 102: a real, explicit, opt-in (default OFF)
@@ -2099,7 +2109,7 @@ export default function HomeScreen({ navigation }) {
                 <TouchableOpacity
                   style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}
                   onPress={handleToggleRecallShareable}
-                  accessibilityLabel={`${occasionRecall.recall_shareable_with_business ? 'Stop letting' : 'Let'} ${occasionRecall.partnerName} recognize you next time`}
+                  accessibilityLabel={t(occasionRecall.recall_shareable_with_business ? 'ui.home.stopRecognizeA11y' : 'ui.home.recognizeA11y', { name: occasionRecall.partnerName })}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: !!occasionRecall.recall_shareable_with_business }}
                 >
@@ -2109,7 +2119,7 @@ export default function HomeScreen({ navigation }) {
                     color={occasionRecall.recall_shareable_with_business ? colors.primary : colors.textTertiary}
                   />
                   <Text style={[styles.outcomePromptSubtext, { marginLeft: spacing.xs, flex: 1 }]} numberOfLines={2}>
-                    Let {occasionRecall.partnerName} recognize you as a returning customer next time
+                    {t('ui.home.recognize', { name: occasionRecall.partnerName })}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -2122,14 +2132,14 @@ export default function HomeScreen({ navigation }) {
                     <AnticipationText daysUntil={occasionNudge.days_until}>
                       {occasionDueLabel(occasionNudge.date_precision, occasionNudge.occasion_date, occasionNudge.days_until)}
                     </AnticipationText>
-                    {' '}— want to plan something?
+                    {' '}{t('ui.home.wantToPlan')}
                   </Text>
-                  <TouchableOpacity onPress={handleOccasionDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <TouchableOpacity onPress={handleOccasionDismiss} accessibilityLabel={t('ui.common.dismiss')} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="close" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.predictiveActButton} onPress={handleOccasionAct} accessibilityLabel="Plan something" accessibilityRole="button">
-                  <Text style={styles.predictiveActButtonText}>Yes, let's plan something →</Text>
+                <TouchableOpacity style={styles.predictiveActButton} onPress={handleOccasionAct} accessibilityLabel={t('ui.home.planSomethingA11y')} accessibilityRole="button">
+                  <Text style={styles.predictiveActButtonText}>{t('ui.home.planSomething')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -2148,13 +2158,13 @@ export default function HomeScreen({ navigation }) {
                 one-shot nudge. */}
             {upcomingWorldItems.length > 0 && (
               <View style={styles.outcomePromptCard}>
-                <Text style={styles.outcomePromptText} numberOfLines={1}>📅 Upcoming in Your World</Text>
+                <Text style={styles.outcomePromptText} numberOfLines={1}>{t('ui.home.upcomingWorld')}</Text>
                 {upcomingWorldItems.map((item) => (
                   <TouchableOpacity
                     key={item.key}
                     style={styles.upcomingWorldRow}
                     onPress={() => handlePlanFromUpcomingWorldItem(item)}
-                    accessibilityLabel={`Plan something for ${item.label}`}
+                    accessibilityLabel={t('ui.home.planForA11y', { title: item.label })}
                     accessibilityRole="button"
                   >
                     <Text style={styles.outcomePromptSubtext} numberOfLines={1}>
@@ -2174,15 +2184,15 @@ export default function HomeScreen({ navigation }) {
             {pendingPollsCount > 0 && (
               <View style={styles.outcomePromptCard}>
                 <Text style={styles.outcomePromptText} numberOfLines={2}>
-                  💬 Someone you know has a quick question for you
+                  {t('ui.home.pollQuestion')}
                 </Text>
                 <TouchableOpacity
                   style={styles.predictiveActButton}
                   onPress={() => navigation.navigate('PreferencePolls')}
-                  accessibilityLabel="Answer question"
+                  accessibilityLabel={t('ui.home.answerA11y')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.predictiveActButtonText}>Answer it →</Text>
+                  <Text style={styles.predictiveActButtonText}>{t('ui.home.answerIt')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -2191,17 +2201,17 @@ export default function HomeScreen({ navigation }) {
                 <View style={styles.outcomePromptHeaderRow}>
                   <Text style={styles.outcomePromptText} numberOfLines={2}>
                     {venueNeededGathering.requestId
-                      ? `🍽️ Still waiting to hear back from local businesses for ${venueNeededGathering.title}`
+                      ? t('ui.home.venueWaiting', { title: venueNeededGathering.title })
                       : venueNeededGathering.ask_local_businesses
-                        ? `🍽️ You asked us to look for local business options for ${venueNeededGathering.title} — ready to see what's available?`
-                        : `📍 ${venueNeededGathering.title} still doesn't have a venue — want Nearby to look for local business options?`}
+                        ? t('ui.home.venueAsked', { title: venueNeededGathering.title })
+                        : t('ui.home.venueNone', { title: venueNeededGathering.title })}
                   </Text>
-                  <TouchableOpacity onPress={handleVenueNeededDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <TouchableOpacity onPress={handleVenueNeededDismiss} accessibilityLabel={t('ui.common.dismiss')} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="close" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.predictiveActButton} onPress={handleVenueNeededAct} accessibilityLabel="View gathering" accessibilityRole="button">
-                  <Text style={styles.predictiveActButtonText}>View Gathering →</Text>
+                <TouchableOpacity style={styles.predictiveActButton} onPress={handleVenueNeededAct} accessibilityLabel={t('ui.home.viewGatheringA11y')} accessibilityRole="button">
+                  <Text style={styles.predictiveActButtonText}>{t('ui.home.viewGathering')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -2209,15 +2219,14 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.outcomePromptCard}>
                 <View style={styles.outcomePromptHeaderRow}>
                   <Text style={styles.outcomePromptText} numberOfLines={2}>
-                    🙋 {rsvpsOutstandingGathering.pendingCount} invite{rsvpsOutstandingGathering.pendingCount === 1 ? '' : 's'} to {rsvpsOutstandingGathering.title}{' '}
-                    {rsvpsOutstandingGathering.pendingCount === 1 ? "hasn't" : "haven't"} been answered yet — want to check in?
+                    {t('ui.home.rsvpsOutstanding', { count: rsvpsOutstandingGathering.pendingCount, title: rsvpsOutstandingGathering.title })}
                   </Text>
-                  <TouchableOpacity onPress={handleRsvpsOutstandingDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <TouchableOpacity onPress={handleRsvpsOutstandingDismiss} accessibilityLabel={t('ui.common.dismiss')} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="close" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.predictiveActButton} onPress={handleRsvpsOutstandingAct} accessibilityLabel="View gathering" accessibilityRole="button">
-                  <Text style={styles.predictiveActButtonText}>View Gathering →</Text>
+                <TouchableOpacity style={styles.predictiveActButton} onPress={handleRsvpsOutstandingAct} accessibilityLabel={t('ui.home.viewGatheringA11y')} accessibilityRole="button">
+                  <Text style={styles.predictiveActButtonText}>{t('ui.home.viewGathering')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -2225,24 +2234,24 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.outcomePromptCard}>
                 <View style={styles.outcomePromptHeaderRow}>
                   <Text style={styles.outcomePromptText} numberOfLines={2}>
-                    How did it go with {outcomePrompt.result_title ?? 'that'}?
+                    {outcomePrompt.result_title ? t('ui.home.howDidItGo', { title: outcomePrompt.result_title }) : t('ui.home.howDidItGoThat')}
                   </Text>
-                  <TouchableOpacity onPress={handleOutcomeDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <TouchableOpacity onPress={handleOutcomeDismiss} accessibilityLabel={t('ui.common.dismiss')} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="close" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
                 <View style={styles.outcomePromptRow}>
-                  <TouchableOpacity style={styles.outcomePromptButton} onPress={() => handleOutcomeAnswer('great')} disabled={outcomeSubmitting} accessibilityLabel="Great" accessibilityRole="button">
+                  <TouchableOpacity style={styles.outcomePromptButton} onPress={() => handleOutcomeAnswer('great')} disabled={outcomeSubmitting} accessibilityLabel={t('ui.home.outcomeGreat')} accessibilityRole="button">
                     <Text style={styles.outcomePromptButtonEmoji}>👍</Text>
-                    <Text style={styles.outcomePromptButtonLabel}>Great</Text>
+                    <Text style={styles.outcomePromptButtonLabel}>{t('ui.home.outcomeGreat')}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.outcomePromptButton} onPress={() => handleOutcomeAnswer('okay')} disabled={outcomeSubmitting} accessibilityLabel="Okay" accessibilityRole="button">
+                  <TouchableOpacity style={styles.outcomePromptButton} onPress={() => handleOutcomeAnswer('okay')} disabled={outcomeSubmitting} accessibilityLabel={t('ui.home.outcomeOkay')} accessibilityRole="button">
                     <Text style={styles.outcomePromptButtonEmoji}>😐</Text>
-                    <Text style={styles.outcomePromptButtonLabel}>Okay</Text>
+                    <Text style={styles.outcomePromptButtonLabel}>{t('ui.home.outcomeOkay')}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.outcomePromptButton} onPress={() => handleOutcomeAnswer('not_for_me')} disabled={outcomeSubmitting} accessibilityLabel="Not for me" accessibilityRole="button">
+                  <TouchableOpacity style={styles.outcomePromptButton} onPress={() => handleOutcomeAnswer('not_for_me')} disabled={outcomeSubmitting} accessibilityLabel={t('ui.home.outcomeNotForMe')} accessibilityRole="button">
                     <Text style={styles.outcomePromptButtonEmoji}>👎</Text>
-                    <Text style={styles.outcomePromptButtonLabel}>Not for me</Text>
+                    <Text style={styles.outcomePromptButtonLabel}>{t('ui.home.outcomeNotForMe')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -2252,13 +2261,13 @@ export default function HomeScreen({ navigation }) {
                 style={styles.pendingInvitesBanner}
                 onPress={() => navigation.navigate('Activity', { initialSubSection: 'invitations' })}
                 activeOpacity={0.85}
-                accessibilityLabel={`${pendingInvitesCount} pending invite${pendingInvitesCount === 1 ? '' : 's'} and requests`}
+                accessibilityLabel={t('ui.home.pendingInvites', { count: pendingInvitesCount })}
                 accessibilityRole="button"
               >
                 <View style={styles.bannerContent}>
                   <Ionicons name="notifications-outline" size={16} color={colors.primary} style={styles.bannerIcon} />
                   <Text style={styles.pendingInvitesBannerText}>
-                    {pendingInvitesCount} pending invite{pendingInvitesCount === 1 ? '' : 's'} &amp; request{pendingInvitesCount === 1 ? '' : 's'}
+                    {t('ui.home.pendingInvites', { count: pendingInvitesCount })}
                   </Text>
                 </View>
                 <Text style={styles.pendingInvitesBannerArrow}>›</Text>
@@ -2269,12 +2278,12 @@ export default function HomeScreen({ navigation }) {
                 style={styles.perksBanner}
                 onPress={() => navigation.navigate('BrandOffers')}
                 activeOpacity={0.85}
-                accessibilityLabel={`${perksCount} perks available to redeem`}
+                accessibilityLabel={t('ui.home.perksA11y', { count: perksCount })}
                 accessibilityRole="button"
               >
                 <View style={styles.bannerContent}>
                   <Ionicons name="gift-outline" size={16} color={colors.primary} style={styles.bannerIcon} />
-                  <Text style={styles.perksBannerText}>{perksCount} perk{perksCount === 1 ? '' : 's'} unlocked nearby</Text>
+                  <Text style={styles.perksBannerText}>{t('ui.home.perksUnlocked', { count: perksCount })}</Text>
                 </View>
                 <Text style={styles.perksBannerArrow}>›</Text>
               </TouchableOpacity>
@@ -2293,24 +2302,24 @@ export default function HomeScreen({ navigation }) {
                 <View style={styles.forecastCard}>
                   <View style={styles.forecastLabelRow}>
                     <Ionicons name="partly-sunny-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
-                    <Text style={styles.forecastLabel}>Right Now</Text>
+                    <Text style={styles.forecastLabel}>{t('ui.home.rightNow')}</Text>
                   </View>
-                  <Text style={styles.forecastValue}>{card.label}</Text>
+                  <Text style={styles.forecastValue}>{tr(`ui.homeParts.weather.${card.kind}`) === `ui.homeParts.weather.${card.kind}` ? card.label : tr(`ui.homeParts.weather.${card.kind}`)}</Text>
                   {!!card.detail && <Text style={styles.forecastDetail}>{card.detail}</Text>}
                   <TouchableOpacity
                     style={[styles.rowCta, { alignSelf: 'flex-start', marginTop: spacing.xs }]}
                     onPress={() => navigation.navigate('Discover', { initialMode: 'things', initialTypeTab: 'gatherings' })}
                     accessibilityRole="button"
-                    accessibilityLabel="See more things to do"
+                    accessibilityLabel={t('ui.home.moreThingsA11y')}
                   >
-                    <Text style={styles.rowCtaText}>See more things to do →</Text>
+                    <Text style={styles.rowCtaText}>{t('ui.home.moreThings')}</Text>
                   </TouchableOpacity>
                   {showIndoor && (
                     <View style={styles.weatherSuggestions}>
                       <View style={styles.weatherSuggestionsHeaderRow}>
                         <Ionicons name="home-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
                         <Text style={styles.weatherSuggestionsHeader}>
-                          {indoorUpcoming.length} indoor gathering{indoorUpcoming.length === 1 ? '' : 's'} today
+                          {t('ui.home.indoorToday', { count: indoorUpcoming.length })}
                         </Text>
                       </View>
                       {indoorUpcoming.map((g) => (
@@ -2319,7 +2328,7 @@ export default function HomeScreen({ navigation }) {
                           style={styles.weatherSuggestionRow}
                           onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
                           activeOpacity={0.85}
-                          accessibilityLabel={`${g.title}, ${formatHeroDateTime(g.scheduled_at)}`}
+                          accessibilityLabel={`${g.title}, ${displayHeroWhen(g.scheduled_at, language)}`}
                           accessibilityRole="button"
                         >
                           <Text style={styles.weatherSuggestionIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
@@ -2327,7 +2336,7 @@ export default function HomeScreen({ navigation }) {
                             <Text style={[styles.weatherSuggestionText, { flex: 0, flexGrow: 0, flexBasis: 'auto' }]} numberOfLines={1}>{g.title}</Text>
                             {attention.absorbed.get(g.id)?.length ? <Text style={styles.weatherSuggestionTime} numberOfLines={1}>{attention.absorbed.get(g.id).join(' · ')}</Text> : null}
                           </View>
-                          <Text style={styles.weatherSuggestionTime}>{formatHeroDateTime(g.scheduled_at)}</Text>
+                          <Text style={styles.weatherSuggestionTime}>{displayHeroWhen(g.scheduled_at, language)}</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -2337,7 +2346,7 @@ export default function HomeScreen({ navigation }) {
                       <View style={styles.weatherSuggestionsHeaderRow}>
                         <Ionicons name="sunny-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
                         <Text style={styles.weatherSuggestionsHeader}>
-                          {outdoorUpcoming.length} outdoor gathering{outdoorUpcoming.length === 1 ? '' : 's'} today
+                          {t('ui.home.outdoorToday', { count: outdoorUpcoming.length })}
                         </Text>
                       </View>
                       {outdoorUpcoming.map((g) => (
@@ -2346,7 +2355,7 @@ export default function HomeScreen({ navigation }) {
                           style={styles.weatherSuggestionRow}
                           onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
                           activeOpacity={0.85}
-                          accessibilityLabel={`${g.title}, ${formatHeroDateTime(g.scheduled_at)}`}
+                          accessibilityLabel={`${g.title}, ${displayHeroWhen(g.scheduled_at, language)}`}
                           accessibilityRole="button"
                         >
                           <Text style={styles.weatherSuggestionIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
@@ -2354,7 +2363,7 @@ export default function HomeScreen({ navigation }) {
                             <Text style={[styles.weatherSuggestionText, { flex: 0, flexGrow: 0, flexBasis: 'auto' }]} numberOfLines={1}>{g.title}</Text>
                             {attention.absorbed.get(g.id)?.length ? <Text style={styles.weatherSuggestionTime} numberOfLines={1}>{attention.absorbed.get(g.id).join(' · ')}</Text> : null}
                           </View>
-                          <Text style={styles.weatherSuggestionTime}>{formatHeroDateTime(g.scheduled_at)}</Text>
+                          <Text style={styles.weatherSuggestionTime}>{displayHeroWhen(g.scheduled_at, language)}</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -2364,17 +2373,17 @@ export default function HomeScreen({ navigation }) {
             })()}
             {dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0) && (
               <View style={styles.sinceAwayBanner}>
-                <Text style={styles.sinceAwayTitle}>Since you were away</Text>
+                <Text style={styles.sinceAwayTitle}>{t('ui.home.sinceAway')}</Text>
                 {dashboard.sinceAway.newPeopleCount > 0 && (
                   <View style={styles.sinceAwayItemRow}>
                     <Ionicons name="people-outline" size={14} color={colors.textPrimary} style={styles.bannerIcon} />
-                    <Text style={styles.sinceAwayItem}>{dashboard.sinceAway.newPeopleCount} new {dashboard.sinceAway.newPeopleCount === 1 ? 'person' : 'people'} nearby</Text>
+                    <Text style={styles.sinceAwayItem}>{t('ui.home.newPeople', { count: dashboard.sinceAway.newPeopleCount })}</Text>
                   </View>
                 )}
                 {dashboard.sinceAway.newGatheringsCount > 0 && (
                   <View style={styles.sinceAwayItemRow}>
                     <Ionicons name="calendar-outline" size={14} color={colors.textPrimary} style={styles.bannerIcon} />
-                    <Text style={styles.sinceAwayItem}>{dashboard.sinceAway.newGatheringsCount} new gathering{dashboard.sinceAway.newGatheringsCount === 1 ? '' : 's'}</Text>
+                    <Text style={styles.sinceAwayItem}>{t('ui.home.newGatherings', { count: dashboard.sinceAway.newGatheringsCount })}</Text>
                   </View>
                 )}
               </View>
@@ -2384,7 +2393,7 @@ export default function HomeScreen({ navigation }) {
 
         {goalRow.length > 0 && (
           <>
-            <Text style={styles.sectionHeader}>What you're here to do</Text>
+            <Text style={styles.sectionHeader}>{t('ui.home.hereToDo')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
               {goalRow.map((g) => (
                 <TouchableOpacity
@@ -2404,9 +2413,9 @@ export default function HomeScreen({ navigation }) {
         )}
 
         <View style={styles.quickPicksHeaderRow}>
-          <Text style={styles.sectionHeader}>{quickPicksAreCustom ? 'Quick Picks' : PERIOD_SECTION_LABELS[period]}</Text>
-          <TouchableOpacity onPress={() => setQuickPicksEditVisible(true)} accessibilityRole="button" accessibilityLabel="Edit quick picks">
-            <Text style={styles.quickPicksEditLink}>Edit</Text>
+          <Text style={styles.sectionHeader}>{t(quickPicksAreCustom ? 'ui.home.quickPicks' : `ui.home.period.${PERIOD_SECTION_LABEL_KEYS[period]}`)}</Text>
+          <TouchableOpacity onPress={() => setQuickPicksEditVisible(true)} accessibilityRole="button" accessibilityLabel={t('ui.home.editQuickPicksA11y')}>
+            <Text style={styles.quickPicksEditLink}>{t('ui.common.edit')}</Text>
           </TouchableOpacity>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
@@ -2416,29 +2425,29 @@ export default function HomeScreen({ navigation }) {
               style={styles.quickActionChip}
               onPress={() => handleQuickAction(item)}
               activeOpacity={0.85}
-              accessibilityLabel={item.label}
+              accessibilityLabel={quickPickLabel(item, language)}
               accessibilityRole="button"
             >
               <Ionicons name={iconNameForCategory(item.category)} size={22} color={colors.primary} style={styles.quickActionIcon} />
-              <Text style={styles.quickActionLabel}>{item.label}</Text>
+              <Text style={styles.quickActionLabel}>{quickPickLabel(item, language)}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
         {locationOff && (
           <View style={styles.quietCard}>
-            <Text style={styles.quietTitle}>See what's around you</Text>
-            <Text style={styles.quietText}>Turn on location and Nearby will find what's happening near you, right now, today and this weekend.</Text>
+            <Text style={styles.quietTitle}>{t('ui.home.locationTitle')}</Text>
+            <Text style={styles.quietText}>{t('ui.home.locationBody')}</Text>
             <TouchableOpacity
               onPress={async () => {
                 const position = await getUserLocation({ fresh: true, force: true });
                 if (position) load();
               }}
-              accessibilityLabel="Turn on location"
+              accessibilityLabel={t('ui.home.locationA11y')}
               accessibilityRole="button"
               style={{ marginTop: spacing.sm }}
             >
-              <Text style={styles.browseButtonText}>Turn on location →</Text>
+              <Text style={styles.browseButtonText}>{t('ui.home.locationCta')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -2447,7 +2456,7 @@ export default function HomeScreen({ navigation }) {
           <>
             <View style={styles.continueCommunityLabelRow}>
               <Ionicons name="business-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
-              <Text style={styles.continueCommunityLabel}>Your Communities</Text>
+              <Text style={styles.continueCommunityLabel}>{t('ui.home.yourCommunities')}</Text>
             </View>
             {continueCommunities.map((community) => (
               <TouchableOpacity
@@ -2455,12 +2464,12 @@ export default function HomeScreen({ navigation }) {
                 style={styles.continueCommunityCard}
                 onPress={() => navigation.navigate('CommunityDetail', { communityId: community.id })}
                 activeOpacity={0.85}
-                accessibilityLabel={`Continue ${community.name}${community.recentMessageCount > 0 ? `, ${community.recentMessageCount} recent messages` : ''}`}
+                accessibilityLabel={community.recentMessageCount > 0 ? t('ui.home.continueCommunityMsgsA11y', { name: community.name, count: community.recentMessageCount }) : t('ui.home.continueCommunityA11y', { name: community.name })}
                 accessibilityRole="button"
               >
                 <Text style={styles.continueCommunityName}>{community.name}</Text>
                 {community.recentMessageCount > 0 && (
-                  <Text style={styles.continueCommunityDetail}>{community.recentMessageCount} new message{community.recentMessageCount === 1 ? '' : 's'} in the last day</Text>
+                  <Text style={styles.continueCommunityDetail}>{t('ui.home.newMessagesDay', { count: community.recentMessageCount })}</Text>
                 )}
               </TouchableOpacity>
             ))}
@@ -2470,7 +2479,7 @@ export default function HomeScreen({ navigation }) {
         {/* Item 79: Quick Stats renders only rows with something real; with none, neither the label nor the card shows. */}
         {homeQuickStatRows(dashboard).length > 0 && (
           <>
-            <Text style={styles.sectionHeader}>Quick Stats</Text>
+            <Text style={styles.sectionHeader}>{t('ui.home.quickStats')}</Text>
             <View style={styles.card}>
               {homeQuickStatRows(dashboard).map((row, i) => (
                 <React.Fragment key={row.key}>
@@ -2478,7 +2487,7 @@ export default function HomeScreen({ navigation }) {
                   <TouchableOpacity
                     style={styles.cardRow}
                     onPress={() => navigation.navigate(row.screen, row.params)}
-                    accessibilityLabel={`${row.text}, tap to view`}
+                    accessibilityLabel={t('ui.home.tapToViewA11y', { text: row.text })}
                     accessibilityRole="button"
                   >
                     <Ionicons name={row.icon} size={20} color={colors.textPrimary} style={styles.cardIcon} />
@@ -2499,7 +2508,7 @@ export default function HomeScreen({ navigation }) {
           <>
             <View style={styles.sectionHeaderRow}>
               <Ionicons name="sparkles-outline" size={14} color={colors.textTertiary} style={styles.bannerIcon} />
-              <Text style={styles.sectionHeaderText}>Picked For You</Text>
+              <Text style={styles.sectionHeaderText}>{t('ui.home.pickedForYou')}</Text>
             </View>
 
             {attention.hero && (() => {
@@ -2523,7 +2532,7 @@ export default function HomeScreen({ navigation }) {
                   style={[styles.heroCard, shadow.card]}
                   onPress={() => openDestination(navigation, heroCard.destination)}
                   activeOpacity={0.85}
-                  accessibilityLabel={`Best Pick${gatheringTimeBadge(attention.hero.scheduled_at) === 'TONIGHT' ? ' Tonight' : ''}: ${[attention.hero.title, heroCard.why, heroCard.meta].filter(Boolean).join(', ')}`}
+                  accessibilityLabel={`${t(gatheringTimeBadge(attention.hero.scheduled_at) === 'TONIGHT' ? 'ui.home.bestPickTonight' : 'ui.home.bestPick')}: ${[attention.hero.title, heroCard.why, heroCard.meta].filter(Boolean).join(', ')}`}
                   accessibilityRole="button"
                 >
                   {bestPickCoverUrl ? (
@@ -2543,7 +2552,7 @@ export default function HomeScreen({ navigation }) {
                     style={styles.heroScrim}
                     pointerEvents="none"
                   />
-                  <Text style={styles.heroEyebrow}>{gatheringTimeBadge(attention.hero.scheduled_at) ?? 'BEST PICK'}</Text>
+                  <Text style={styles.heroEyebrow}>{heroBadgeText(gatheringTimeBadge(attention.hero.scheduled_at))}</Text>
                   <View style={styles.heroBody}>
                     <View style={{ flex: 1, marginRight: spacing.sm }}>
                       <Text style={styles.heroTitle} numberOfLines={1}>{attention.hero.title}</Text>
@@ -2582,8 +2591,8 @@ export default function HomeScreen({ navigation }) {
                     <Text style={styles.trendingTitle}>🎁 {item.title}</Text>
                     {row.why ? <Text style={styles.trendingMeta}>{row.why}</Text> : null}
                     {row.meta ? <Text style={styles.trendingMeta}>{row.meta}</Text> : null}
-                    <TouchableOpacity onPress={() => navigation.navigate('MakeAPlan', { offerId: item.id })} accessibilityLabel={`Make a plan around ${item.title}`} accessibilityRole="button">
-                      <Text style={styles.makePlanLink}>📅 Make a plan →</Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('MakeAPlan', { offerId: item.id })} accessibilityLabel={t('ui.home.makePlanA11y', { title: item.title })} accessibilityRole="button">
+                      <Text style={styles.makePlanLink}>{t('ui.home.makePlan')}</Text>
                     </TouchableOpacity>
                   </TouchableOpacity>
                 );
@@ -2624,16 +2633,16 @@ export default function HomeScreen({ navigation }) {
           <TouchableOpacity
             style={styles.recapCard}
             onPress={() => navigation.navigate('Momentum')}
-            accessibilityLabel={`This week: ${formatWeeklyRecap(dashboard.weeklyRecap)}. View your activity`}
+            accessibilityLabel={t('ui.home.weekRecapA11y', { recap: formatWeeklyRecap(dashboard.weeklyRecap) })}
             accessibilityRole="button"
           >
-            <Text style={styles.recapSummary}>This week: {formatWeeklyRecap(dashboard.weeklyRecap)}</Text>
-            <Text style={styles.recapLink}>View your activity →</Text>
+            <Text style={styles.recapSummary}>{t('ui.home.thisWeek', { recap: formatWeeklyRecap(dashboard.weeklyRecap) })}</Text>
+            <Text style={styles.recapLink}>{t('ui.home.viewActivity')}</Text>
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('Discover')} accessibilityLabel="Continue browsing" accessibilityRole="button">
-          <Text style={styles.browseButtonText}>Continue Browsing →</Text>
+        <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('Discover')} accessibilityLabel={t('ui.home.continueBrowsingA11y')} accessibilityRole="button">
+          <Text style={styles.browseButtonText}>{t('ui.home.continueBrowsing')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -2641,10 +2650,10 @@ export default function HomeScreen({ navigation }) {
         style={[styles.fab, shadow.button]}
         onPress={() => setStartModalVisible(true)}
         activeOpacity={0.85}
-        accessibilityLabel="Start something spontaneous"
+        accessibilityLabel={t('ui.home.startA11y')}
         accessibilityRole="button"
       >
-        <Text style={styles.fabText}>+ Start Something</Text>
+        <Text style={styles.fabText}>{t('ui.home.start')}</Text>
       </TouchableOpacity>
 
       {/* Aug 23 2026 (CLAUDE.md): topLevelOptions is now always the fixed
@@ -2675,7 +2684,7 @@ export default function HomeScreen({ navigation }) {
       <DiningPreferencesPromptModal
         visible={diningModalVisible}
         onClose={handleDiningDismiss}
-        onSaved={() => { setDiningNudge(false); setDiningModalVisible(false); showSuccessToast('Saved', 'Your tastes are set.'); }}
+        onSaved={() => { setDiningNudge(false); setDiningModalVisible(false); showSuccessToast(t('ui.home.saved'), t('ui.home.tastesSet')); }}
       />
       <QuickPicksEditModal
         visible={quickPicksEditVisible}

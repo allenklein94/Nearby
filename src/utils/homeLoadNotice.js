@@ -1,26 +1,17 @@
+import { tr } from '../i18n/translate';
+import { joinAnd } from '../i18n/list';
 // Global rule 7: a failed load is not an empty result. A screen records which sources threw and turns that into one
 // honest line, or null when everything loaded.
-const HOME_LABELS = {
-  people: 'people nearby',
-  gatherings: 'nearby gatherings',
-  interests: 'your interests',
-  interested: 'gatherings you are interested in',
-  groupPlans: 'your group plans',
-  offers: 'nearby perks',
-};
+// Parts, subject and sentence are read in the person's language (ui.homeParts.loadNotice); English is unchanged.
+const HOME_LABELS = { people: 'people', gatherings: 'gatherings', interests: 'interests', interested: 'interested', groupPlans: 'groupPlans', offers: 'offers' };
 
-const ACTIVITY_LABELS = {
-  people: 'people who crossed paths with you',
-  businessUpdates: 'updates from businesses you follow',
-  businessActivity: 'business request updates',
-};
+const ACTIVITY_LABELS = { people: 'crossedPaths', businessUpdates: 'businessUpdates', businessActivity: 'businessActivity' };
 
 export function loadNotice(failures, labels, subject) {
-  const names = [...new Set(failures ?? [])].map((k) => labels[k]).filter(Boolean);
+  const names = [...new Set(failures ?? [])].map((k) => labels[k]).filter(Boolean).map((k) => tr(`ui.homeParts.loadNotice.part.${k}`));
   if (names.length === 0) return null;
-  const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
-  return `Part of ${subject} didn't load (${list}), so what's shown may be incomplete.`;
+  return tr('ui.homeParts.loadNotice.frame', { subject: tr(`ui.homeParts.loadNotice.subject.${subject}`), list: joinAnd(names) });
 }
 
-export const homeLoadNotice = (failures) => loadNotice(failures, HOME_LABELS, 'Home');
-export const activityLoadNotice = (failures) => loadNotice(failures, ACTIVITY_LABELS, 'Activity');
+export const homeLoadNotice = (failures) => loadNotice(failures, HOME_LABELS, 'home');
+export const activityLoadNotice = (failures) => loadNotice(failures, ACTIVITY_LABELS, 'activity');

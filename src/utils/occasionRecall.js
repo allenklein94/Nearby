@@ -1,3 +1,4 @@
+import { tr } from '../i18n/translate';
 // Item 101 (CLAUDE.md, "Occasions can become recurring"). Pure, dependency-
 // free formatting over the real jsonb shape get_occasion_recall() returns
 // (src/services/occasions.js's getOccasionRecall) -- same split-out-for-
@@ -20,7 +21,7 @@ export function formatOccasionRecallSummary(recall) {
   const parts = [];
   if (recall.partnerName) parts.push(recall.partnerName);
   if (recall.offer_price != null) {
-    parts.push(`$${Number(recall.offer_price).toFixed(2)}${recall.price_is_per_person ? '/person' : ''}`);
+    parts.push(`$${Number(recall.offer_price).toFixed(2)}${recall.price_is_per_person ? tr('ui.homeParts.recall.perPerson') : ''}`);
   }
   if (recall.proposedTime) {
     const t = new Date(recall.proposedTime);
@@ -37,7 +38,7 @@ export function formatOccasionRecallSummary(recall) {
 // here rather than a fabricated "you liked it."
 export function occasionRecallLikedText(recall) {
   if (!recall || recall.planType !== 'business') return null;
-  if (recall.satisfactionRating === 'loved_it') return "You loved it last time!";
-  if (recall.satisfactionRating === 'good' && recall.wouldRepeat !== 'no') return 'You liked it last time.';
+  if (recall.satisfactionRating === 'loved_it') return tr('ui.homeParts.recall.lovedIt');
+  if (recall.satisfactionRating === 'good' && recall.wouldRepeat !== 'no') return tr('ui.homeParts.recall.likedIt');
   return null;
 }

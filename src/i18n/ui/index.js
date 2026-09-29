@@ -7,8 +7,10 @@ import empty from './empty';
 import shared from './shared';
 import plans from './plans';
 import actions from './actions';
+import home from './home';
+import homeParts from './homeParts';
 
-export const UI_NAMESPACES = { common, plans, shared, empty, actions };
+export const UI_NAMESPACES = { common, plans, shared, empty, actions, home, homeParts };
 
 export const UI_LANGUAGES = ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl', 'ru', 'ko'];
 
