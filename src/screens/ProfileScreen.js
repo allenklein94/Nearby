@@ -12,6 +12,7 @@ import { getMyBusinessPartnerRequest } from '../services/businessPartnerApply';
 import { startRecording, stopRecording, uploadVoiceIntro, getSignedVoiceIntroUrl, deleteVoiceIntro } from '../services/voiceNotes';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { basicsLabel, basicsPlaceholder, basicsOption } from '../i18n/basicsVocab';
+import { categoryName } from '../i18n/categoryNames';
 import { PROMPT_QUESTIONS } from '../constants/promptQuestions';
 import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
@@ -865,13 +866,13 @@ export default function ProfileScreen({ navigation, route }) {
             {earnedStats.favoriteVibe && (
               <View style={styles.earnedStat}>
                 <Text style={styles.earnedStatLabel}>{t('ui.profile.favoriteVibe')}</Text>
-                <Text style={styles.earnedStatValue}>{earnedStats.favoriteVibe}</Text>
+                <Text style={styles.earnedStatValue}>{categoryName(earnedStats.favoriteVibe, language)}</Text>
               </View>
             )}
             {earnedStats.usuallyActive && (
               <View style={styles.earnedStat}>
                 <Text style={styles.earnedStatLabel}>{t('ui.profile.usuallyActive')}</Text>
-                <Text style={styles.earnedStatValue}>{earnedStats.usuallyActive}s</Text>
+                <Text style={styles.earnedStatValue}>{earnedStats.usuallyActiveDay != null ? t(`ui.momentum.activeDay.${earnedStats.usuallyActiveDay}`) : `${earnedStats.usuallyActive}s`}</Text>
               </View>
             )}
           </View>
@@ -881,9 +882,9 @@ export default function ProfileScreen({ navigation, route }) {
             <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.achievements')}</Text>
             <View style={styles.achievementsGrid}>
               {achievements.filter((a) => a.earned).map((a) => (
-                <View key={a.label} style={styles.achievementBadge} accessibilityLabel={`${a.label}: ${a.description}`}>
+                <View key={a.label} style={styles.achievementBadge} accessibilityLabel={`${t(`ui.momentum.achievement.${a.key}.label`)}: ${t(`ui.momentum.achievement.${a.key}.description`)}`}>
                   <Text style={styles.achievementIcon}>{a.icon}</Text>
-                  <Text style={styles.achievementLabel}>{a.label}</Text>
+                  <Text style={styles.achievementLabel}>{t(`ui.momentum.achievement.${a.key}.label`)}</Text>
                 </View>
               ))}
             </View>

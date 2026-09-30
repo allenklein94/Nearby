@@ -43,11 +43,11 @@ export async function getAchievements() {
   // Each achievement is a genuine, real threshold against actual
   // data — no fabricated unlock dates, just current, honest state.
   const achievements = [
-    { icon: '🎉', label: 'First Gathering', earned: stats.pastGatherings >= 1, description: 'Attended your first gathering' },
-    { icon: '🌟', label: 'Regular', earned: stats.pastGatherings >= 5, description: 'Attended 5+ gatherings' },
-    { icon: '🎤', label: 'Host', earned: hostedCount >= 1, description: 'Hosted your first gathering' },
-    { icon: '🏘️', label: 'Community Builder', earned: createdCommunitiesCount >= 1, description: 'Started a community' },
-    { icon: '🤝', label: 'Connector', earned: stats.friends >= 5, description: 'Made 5+ friends' },
+    { icon: '🎉', key: 'first_gathering', label: 'First Gathering', earned: stats.pastGatherings >= 1, description: 'Attended your first gathering' },
+    { icon: '🌟', key: 'regular', label: 'Regular', earned: stats.pastGatherings >= 5, description: 'Attended 5+ gatherings' },
+    { icon: '🎤', key: 'host', label: 'Host', earned: hostedCount >= 1, description: 'Hosted your first gathering' },
+    { icon: '🏘️', key: 'community_builder', label: 'Community Builder', earned: createdCommunitiesCount >= 1, description: 'Started a community' },
+    { icon: '🤝', key: 'connector', label: 'Connector', earned: stats.friends >= 5, description: 'Made 5+ friends' },
   ];
 
   return achievements;
@@ -304,8 +304,10 @@ export async function getEarnedProfileStats() {
     dayCounts[day] = (dayCounts[day] ?? 0) + 1;
   });
   const usuallyActive = Object.entries(dayCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  // The same day as a number (0 = Sunday) so screens can name it in the person's language; `usuallyActive` stays English.
+  const usuallyActiveDay = usuallyActive == null ? null : dayNames.indexOf(usuallyActive);
 
-  return { favoriteVibe, usuallyActive };
+  return { favoriteVibe, usuallyActive, usuallyActiveDay };
 }
 
 export async function getMyTimeline() {

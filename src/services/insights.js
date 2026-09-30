@@ -45,6 +45,7 @@ export async function getInsightsStats() {
     friends: quickStats.friends,
     favoriteVibe: earnedStats.favoriteVibe,
     usuallyActive: earnedStats.usuallyActive,
+    usuallyActiveDay: earnedStats.usuallyActiveDay,
     achievementsEarned: achievements.filter((a) => a.earned).length,
     achievementsTotal: achievements.length,
     achievements,

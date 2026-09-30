@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { NLoader } from '../motion';
@@ -10,9 +11,13 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 import { NearbyMark } from '../components/brand';
-import { formatDay, parseDate } from '../utils/timeLabels';
+import { parseDate } from '../utils/timeLabels';
+import { displayDay } from '../i18n/display';
+import { translate } from '../i18n/translate';
 
-import { countLabel } from '../utils/plural';
+import { displayCount } from '../i18n/display';
+import { vocabValue } from '../i18n/format';
+import { categoryName } from '../i18n/categoryNames';
 // Convergence pass P2 (CLAUDE.md, "Insights vs. Momentum -- one user-facing
 // 'how am I doing?' concept"): this screen used to be Momentum-only (the
 // streak/weekly-chart/month-deltas content below); InsightsScreen.js used
@@ -36,17 +41,20 @@ function deltaSymbol(current, previous) {
   return '—';
 }
 
-function weekLabel(iso) {
-  return formatDay(iso) ?? '';
+function weekLabel(iso, language) {
+  return displayDay(iso, language) ?? '';
 }
 
-function formatMemberSince(iso) {
+// "September 2026" in English (unchanged); other languages read their own month name and order.
+function formatMemberSince(iso, language) {
   const d = parseDate(iso);
   if (!d) return null;
-  return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  if (!language || language === 'en') return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  return translate(language, 'ui.momentum.monthYear', { month: vocabValue(language, 'date.months')[d.getMonth()], year: d.getFullYear() });
 }
 
 export default function MomentumScreen({ navigation }) {
+  const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [momentum, setMomentum] = useState(null);
@@ -81,7 +89,7 @@ export default function MomentumScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your activity...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.momentum.loadingYourActivity')}</Text>
       </SafeAreaView>
     );
   }
@@ -89,7 +97,7 @@ export default function MomentumScreen({ navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load your activity." onRetry={load} />
+        <LoadErrorState message={t('ui.momentum.couldntLoadYourActivity')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -97,7 +105,7 @@ export default function MomentumScreen({ navigation }) {
   if (!momentum && !insights) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.emptyText}>Sign in to see your activity.</Text>
+        <Text style={styles.emptyText}>{t('ui.momentum.signInToSeeYour')}</Text>
       </SafeAreaView>
     );
   }
@@ -105,9 +113,9 @@ export default function MomentumScreen({ navigation }) {
   const maxWeekCount = momentum ? Math.max(...momentum.weeks.map((w) => w.count), 1) : 1;
   const hasAnyActivity = momentum ? momentum.weeks.some((w) => w.count > 0) : false;
   const deltas = [
-    { key: 'attended', label: 'Gatherings attended' },
-    { key: 'friends', label: 'New friends' },
-    { key: 'communities', label: 'Communities joined' },
+    { key: 'attended', label: t('ui.momentum.gatheringsAttended') },
+    { key: 'friends', label: t('ui.momentum.newFriends') },
+    { key: 'communities', label: t('ui.momentum.communitiesJoined') },
   ];
   const maxVibeCount = insights?.vibeBreakdown[0]?.count ?? 0;
 
@@ -115,8 +123,9 @@ export default function MomentumScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         <Text style={styles.subtitle}>
-          Your activity streak, lifetime stats, and achievements
-          {insights?.memberSince ? ` — member since ${formatMemberSince(insights.memberSince)}` : ''}.
+          {insights?.memberSince && formatMemberSince(insights.memberSince, language)
+            ? t('ui.momentum.subtitleWithSince', { since: formatMemberSince(insights.memberSince, language) })
+            : t('ui.momentum.yourActivityStreakLifetimeStats')}
         </Text>
 
         {momentum && (
@@ -126,17 +135,17 @@ export default function MomentumScreen({ navigation }) {
               <Text style={styles.streakNumber}>{momentum.currentStreak}</Text>
               <Text style={styles.streakLabel}>
                 {momentum.currentStreak === 0
-                  ? 'No active streak yet — attend or host something this week to start one'
-                  : `week${momentum.currentStreak === 1 ? '' : 's'} in a row with a gathering`}
+                  ? t('ui.momentum.noActiveStreakYetAttend')
+                  : t('ui.momentum.weeksInARow', { count: momentum.currentStreak })}
               </Text>
             </View>
 
-            <Text style={styles.sectionLabel} accessibilityRole="header">Last {momentum.weeks.length} Weeks</Text>
+            <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.momentum.lastWeeks', { length: momentum.weeks.length })}</Text>
             {hasAnyActivity ? (
               <View style={styles.chartCard}>
                 <View style={styles.chartRow}>
                   {momentum.weeks.map((w) => (
-                    <View key={w.weekStart} style={styles.barColumn} accessibilityLabel={`Week of ${weekLabel(w.weekStart)}, ${w.count} gathering${w.count === 1 ? '' : 's'}`}>
+                    <View key={w.weekStart} style={styles.barColumn} accessibilityLabel={t('ui.momentum.weekOfA11y', { week: weekLabel(w.weekStart, language), count: w.count })}>
                       <View style={styles.barTrack}>
                         <View
                           style={[
@@ -145,7 +154,7 @@ export default function MomentumScreen({ navigation }) {
                           ]}
                         />
                       </View>
-                      <Text style={styles.barWeekLabel}>{weekLabel(w.weekStart)}</Text>
+                      <Text style={styles.barWeekLabel}>{weekLabel(w.weekStart, language)}</Text>
                     </View>
                   ))}
                 </View>
@@ -159,25 +168,25 @@ export default function MomentumScreen({ navigation }) {
                 <EmptyCopy id="momentum_empty" vars={{ weeks: momentum.weeks.length }} />
                 {/* Item 56 ("no dead ends"): a real next action, same
                     destination ActivityScreen's own empty state already uses. */}
-                <TouchableOpacity onPress={() => navigation.navigate('Discover')} accessibilityLabel="Explore things to do" accessibilityRole="button" style={{ marginTop: spacing.md }}>
-                  <Text style={styles.emptyActionText}>Explore Things To Do →</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Discover')} accessibilityLabel={t('ui.momentum.exploreThingsToDoA11y')} accessibilityRole="button" style={{ marginTop: spacing.md }}>
+                  <Text style={styles.emptyActionText}>{t('ui.momentum.exploreThingsToDo')}</Text>
                 </TouchableOpacity>
               </View>
             )}
 
-            <Text style={styles.sectionLabel} accessibilityRole="header">This Month vs. Last Month</Text>
+            <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.momentum.thisMonthVsLastMonth')}</Text>
             <View style={styles.deltaCard}>
               {deltas.map(({ key, label }) => {
                 const current = momentum.thisMonth[key];
                 const previous = momentum.lastMonth[key];
                 const symbol = deltaSymbol(current, previous);
                 return (
-                  <View key={key} style={styles.deltaRow} accessibilityLabel={`${label}: ${current} this month, ${previous} last month`}>
+                  <View key={key} style={styles.deltaRow} accessibilityLabel={t('ui.momentum.thisMonthLastMonthA11y', { label: label, current: current, previous: previous })}>
                     <Text style={styles.deltaLabel}>{label}</Text>
                     <View style={styles.deltaNumbers}>
                       <Text style={styles.deltaCurrent}>{current}</Text>
                       <Text style={[styles.deltaSymbol, symbol === '▲' && styles.deltaUp, symbol === '▼' && styles.deltaDown]}>{symbol}</Text>
-                      <Text style={styles.deltaPrevious}>{previous} last month</Text>
+                      <Text style={styles.deltaPrevious}>{t('ui.momentum.lastMonth', { previous: previous })}</Text>
                     </View>
                   </View>
                 );
@@ -188,30 +197,30 @@ export default function MomentumScreen({ navigation }) {
 
         {insights && (
           <>
-            <Text style={styles.sectionLabel} accessibilityRole="header">Lifetime Stats</Text>
+            <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.momentum.lifetimeStats')}</Text>
             <View style={styles.statsGrid}>
               <View style={styles.statCard}>
                 <Text style={styles.statNumber}>{insights.pastGatherings}</Text>
-                <Text style={styles.statLabel}>Gatherings attended</Text>
+                <Text style={styles.statLabel}>{t('ui.momentum.gatheringsAttended')}</Text>
               </View>
               <View style={styles.statCard}>
                 <Text style={styles.statNumber}>{insights.hostedCount}</Text>
-                <Text style={styles.statLabel}>Gatherings hosted</Text>
+                <Text style={styles.statLabel}>{t('ui.momentum.gatheringsHosted')}</Text>
               </View>
               <View style={styles.statCard}>
                 <Text style={styles.statNumber}>{insights.communities}</Text>
-                <Text style={styles.statLabel}>Communities joined</Text>
+                <Text style={styles.statLabel}>{t('ui.momentum.communitiesJoined')}</Text>
               </View>
               <View style={styles.statCard}>
                 <Text style={styles.statNumber}>{insights.friends}</Text>
-                <Text style={styles.statLabel}>Friends made</Text>
+                <Text style={styles.statLabel}>{t('ui.momentum.friendsMade')}</Text>
               </View>
             </View>
 
             {insights.communitiesCreated > 0 && (
               <View style={styles.inlineStatRow}>
                 <Text style={styles.inlineStatText}>
-                  🏘️ You've started {insights.communitiesCreated} communit{insights.communitiesCreated === 1 ? 'y' : 'ies'}
+                  {t('ui.momentum.communitiesStarted', { count: insights.communitiesCreated })}
                 </Text>
               </View>
             )}
@@ -220,14 +229,14 @@ export default function MomentumScreen({ navigation }) {
               <View style={styles.earnedStatsRow}>
                 {insights.favoriteVibe && (
                   <View style={styles.earnedStat}>
-                    <Text style={styles.earnedStatLabel}>Favorite vibe</Text>
-                    <Text style={styles.earnedStatValue}>{insights.favoriteVibe}</Text>
+                    <Text style={styles.earnedStatLabel}>{t('ui.momentum.favoriteVibe')}</Text>
+                    <Text style={styles.earnedStatValue}>{categoryName(insights.favoriteVibe, language)}</Text>
                   </View>
                 )}
                 {insights.usuallyActive && (
                   <View style={styles.earnedStat}>
-                    <Text style={styles.earnedStatLabel}>Usually active</Text>
-                    <Text style={styles.earnedStatValue}>{insights.usuallyActive}s</Text>
+                    <Text style={styles.earnedStatLabel}>{t('ui.momentum.usuallyActive')}</Text>
+                    <Text style={styles.earnedStatValue}>{insights.usuallyActiveDay != null ? t(`ui.momentum.activeDay.${insights.usuallyActiveDay}`) : `${insights.usuallyActive}s`}</Text>
                   </View>
                 )}
               </View>
@@ -235,17 +244,17 @@ export default function MomentumScreen({ navigation }) {
 
             {insights.vibeBreakdown.length > 0 && (
               <>
-                <Text style={styles.sectionLabel} accessibilityRole="header">What you've been up to</Text>
+                <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.momentum.whatYouveBeenUpTo')}</Text>
                 <View style={styles.vibeSection}>
                   {insights.vibeBreakdown.map(({ tag, count }) => {
                     const style = categoryStyleFor(tag);
                     const pct = maxVibeCount > 0 ? count / maxVibeCount : 0;
                     return (
-                      <View key={tag} style={styles.vibeRow} accessibilityLabel={`${tag}, ${countLabel(count, 'gathering')}`}>
+                      <View key={tag} style={styles.vibeRow} accessibilityLabel={`${categoryName(tag, language)}, ${displayCount(count, 'gatherings', language)}`}>
                         <Text style={styles.vibeIcon}>{style.icon}</Text>
                         <View style={styles.vibeBarTrack}>
                           <View style={[styles.vibeBarFill, { width: `${Math.max(pct * 100, 8)}%`, backgroundColor: style.color }]} />
-                          <Text style={styles.vibeTag}>{tag}</Text>
+                          <Text style={styles.vibeTag}>{categoryName(tag, language)}</Text>
                         </View>
                         <Text style={styles.vibeCount}>{count}</Text>
                       </View>
@@ -255,18 +264,16 @@ export default function MomentumScreen({ navigation }) {
               </>
             )}
 
-            <Text style={styles.sectionLabel} accessibilityRole="header">
-              Achievements ({insights.achievementsEarned}/{insights.achievementsTotal})
-            </Text>
+            <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.momentum.achievements', { achievementsEarned: insights.achievementsEarned, achievementsTotal: insights.achievementsTotal })}</Text>
             <View style={styles.achievementsGrid}>
               {insights.achievements.map((a) => (
                 <View
                   key={a.label}
                   style={[styles.achievementBadge, !a.earned && styles.achievementBadgeLocked]}
-                  accessibilityLabel={`${a.label}: ${a.description}${a.earned ? '' : ', not yet earned'}`}
+                  accessibilityLabel={`${t(`ui.momentum.achievement.${a.key}.label`)}: ${t(`ui.momentum.achievement.${a.key}.description`)}${a.earned ? '' : t('ui.momentum.notYetEarnedA11y')}`}
                 >
                   <Text style={[styles.achievementIcon, !a.earned && styles.achievementIconLocked]}>{a.icon}</Text>
-                  <Text style={styles.achievementLabel}>{a.label}</Text>
+                  <Text style={styles.achievementLabel}>{t(`ui.momentum.achievement.${a.key}.label`)}</Text>
                 </View>
               ))}
             </View>
@@ -277,11 +284,11 @@ export default function MomentumScreen({ navigation }) {
           style={styles.ctaButton}
           onPress={() => navigation.navigate('Gatherings')}
           activeOpacity={0.85}
-          accessibilityLabel={momentum?.currentStreak > 0 ? 'Keep your streak going' : 'Find something to do this week'}
+          accessibilityLabel={momentum?.currentStreak > 0 ? t('ui.momentum.keepYourStreakGoingA11y') : t('ui.momentum.findSomethingToDoThisA11y')}
           accessibilityRole="button"
         >
           <Text style={styles.ctaButtonText}>
-            {momentum?.currentStreak > 0 ? '🔥 Keep the streak going' : '🌱 Find something to do this week'}
+            {momentum?.currentStreak > 0 ? t('ui.momentum.keepTheStreakGoing') : t('ui.momentum.findSomethingToDoThis')}
           </Text>
         </TouchableOpacity>
       </ScrollView>

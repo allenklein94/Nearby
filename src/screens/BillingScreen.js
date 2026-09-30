@@ -1,29 +1,27 @@
 import React, { useState, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { getSubscriptionDetails, restorePurchases, openSubscriptionManagement } from '../services/purchases';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { displayDay } from '../i18n/display';
 
-const STORE_LABELS = {
-  APP_STORE: 'the App Store',
-  MAC_APP_STORE: 'the Mac App Store',
-  PLAY_STORE: 'Google Play',
-  AMAZON: 'Amazon',
-  STRIPE: 'Stripe',
-  PROMOTIONAL: 'a promotional grant',
-  RC_BILLING: 'RevenueCat Billing',
-};
+// Stores we name, read from ui.billing.store.<STORE> (an unknown store id is shown as given).
+const KNOWN_STORES = ['APP_STORE', 'MAC_APP_STORE', 'PLAY_STORE', 'AMAZON', 'STRIPE', 'PROMOTIONAL', 'RC_BILLING'];
 
-function formatDate(iso) {
+// "September 30, 2026" in English (unchanged); other languages via the shared day formatter.
+function formatDate(iso, language) {
   if (!iso) return null;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return null;
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  if (!language || language === 'en') return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  return displayDay(iso, language, { withYear: true });
 }
 
 export default function BillingScreen({ navigation }) {
+  const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [details, setDetails] = useState(null);
@@ -51,12 +49,12 @@ export default function BillingScreen({ navigation }) {
     try {
       const restored = await restorePurchases();
       Alert.alert(
-        restored ? 'Restored' : 'Nothing to restore',
-        restored ? 'Your premium access has been restored.' : 'No active premium subscription found for this account.'
+        restored ? t('ui.billing.restored') : t('ui.billing.nothingToRestore'),
+        restored ? t('ui.billing.yourPremiumAccessHasBeen') : t('ui.billing.noActivePremiumSubscriptionFound')
       );
       if (restored) load();
     } catch (e) {
-      Alert.alert('Restore failed', e.message || 'Could not restore your purchases. Please try again.');
+      Alert.alert(t('ui.billing.restoreFailed'), e.message || t('ui.billing.couldNotRestoreYourPurchases'));
     } finally {
       setRestoring(false);
     }
@@ -64,7 +62,7 @@ export default function BillingScreen({ navigation }) {
 
   function handleManage() {
     openSubscriptionManagement(details?.managementURL || null).catch(() => {
-      Alert.alert('Could not open', 'Please open your device Settings app and look under Subscriptions to manage your plan.');
+      Alert.alert(t('ui.billing.couldNotOpen'), t('ui.billing.pleaseOpenYourDeviceSettings'));
     });
   }
 
@@ -72,14 +70,14 @@ export default function BillingScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your subscription...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.billing.loadingYourSubscription')}</Text>
       </SafeAreaView>
     );
   }
 
-  const since = formatDate(details?.latestPurchaseDate);
-  const until = formatDate(details?.expirationDate);
-  const storeLabel = details?.store ? (STORE_LABELS[details.store] || details.store) : null;
+  const since = formatDate(details?.latestPurchaseDate, language);
+  const until = formatDate(details?.expirationDate, language);
+  const storeLabel = details?.store ? (KNOWN_STORES.includes(details.store) ? t(`ui.billing.store.${details.store}`) : details.store) : null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -87,49 +85,49 @@ export default function BillingScreen({ navigation }) {
         {details?.unavailable ? (
           <View style={styles.planCard}>
             <Text style={styles.planEmoji}>💳</Text>
-            <Text style={styles.planTitle}>Subscription status unavailable</Text>
+            <Text style={styles.planTitle}>{t('ui.billing.subscriptionStatusUnavailable')}</Text>
             <Text style={styles.planSubtext}>
-              This device/build can't reach the store to check your plan right now. Try again from a real device build.
+              {t('ui.billing.thisDeviceBuildCantReach')}
             </Text>
           </View>
         ) : details?.active ? (
           <View style={[styles.planCard, styles.planCardActive]}>
             <Text style={styles.planEmoji}>✨</Text>
-            <Text style={styles.planTitle}>Premium</Text>
-            {since && <Text style={styles.planSubtext}>Member since {since}</Text>}
+            <Text style={styles.planTitle}>{t('ui.billing.premium')}</Text>
+            {since && <Text style={styles.planSubtext}>{t('ui.billing.memberSince', { since: since })}</Text>}
             {until ? (
               <Text style={styles.planSubtext}>
-                {details.willRenew ? 'Renews' : 'Ends'} {until}{!details.willRenew ? ' — auto-renew is off' : ''}
+                {details.willRenew ? t('ui.billing.renewsOn', { date: until }) : t('ui.billing.endsOnAutoRenewOff', { date: until })}
               </Text>
             ) : (
-              <Text style={styles.planSubtext}>Does not expire</Text>
+              <Text style={styles.planSubtext}>{t('ui.billing.doesNotExpire')}</Text>
             )}
-            {storeLabel && <Text style={styles.planStoreText}>Billed via {storeLabel}</Text>}
-            {details.isSandbox && <Text style={styles.sandboxText}>Sandbox / test purchase</Text>}
+            {storeLabel && <Text style={styles.planStoreText}>{t('ui.billing.billedVia', { storeLabel: storeLabel })}</Text>}
+            {details.isSandbox && <Text style={styles.sandboxText}>{t('ui.billing.sandboxTestPurchase')}</Text>}
 
             <TouchableOpacity
               style={styles.manageButton}
               onPress={handleManage}
               activeOpacity={0.85}
-              accessibilityLabel="Manage your subscription plan"
+              accessibilityLabel={t('ui.billing.manageYourSubscriptionPlanA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.manageButtonText}>Manage Subscription</Text>
+              <Text style={styles.manageButtonText}>{t('ui.billing.manageSubscription')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.planCard}>
             <Text style={styles.planEmoji}>🔓</Text>
-            <Text style={styles.planTitle}>Free plan</Text>
-            <Text style={styles.planSubtext}>Upgrade to unlock Premium features.</Text>
+            <Text style={styles.planTitle}>{t('ui.billing.freePlan')}</Text>
+            <Text style={styles.planSubtext}>{t('ui.billing.upgradeToUnlockPremiumFeatures')}</Text>
             <TouchableOpacity
               style={styles.manageButton}
               onPress={() => navigation.navigate('Paywall')}
               activeOpacity={0.85}
-              accessibilityLabel="Upgrade to Premium"
+              accessibilityLabel={t('ui.billing.upgradeToPremiumA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.manageButtonText}>Upgrade to Premium</Text>
+              <Text style={styles.manageButtonText}>{t('ui.billing.upgradeToPremium')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -138,25 +136,23 @@ export default function BillingScreen({ navigation }) {
           onPress={handleRestore}
           disabled={restoring}
           style={{ marginTop: spacing.md, alignSelf: 'center' }}
-          accessibilityLabel="Restore purchases"
+          accessibilityLabel={t('ui.billing.restorePurchasesA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.restoreText}>{restoring ? 'Restoring…' : 'Restore Purchases'}</Text>
+          <Text style={styles.restoreText}>{restoring ? t('ui.billing.restoring') : t('ui.billing.restorePurchases')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Payment Methods</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.billing.paymentMethods')}</Text>
         <View style={styles.infoCard}>
           <Text style={styles.infoText}>
-            Nearby doesn't store your card details. Your subscription is billed directly by Apple or Google using
-            whatever payment method is on file with your App Store or Google Play account — update it there, not here.
+            {t('ui.billing.nearbyDoesntStoreYourCard')}
           </Text>
         </View>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Billing History</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.billing.billingHistory')}</Text>
         <View style={styles.infoCard}>
           <Text style={styles.infoText}>
-            Receipts and charge history for this subscription live on your App Store or Google Play account, not in
-            Nearby. Tap "Manage Subscription" above to open it.
+            {t('ui.billing.receiptsAndChargeHistoryFor')}
           </Text>
         </View>
       </ScrollView>
