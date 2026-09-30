@@ -1,0 +1,459 @@
+{
+ "en": {
+  "deleteThisEntry": "Delete this entry?",
+  "thisIsPermanentAndCannot": "This is permanent and cannot be undone.",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "addAName": "Add a name",
+  "whoIsThisEntryAbout": "Who is this entry about? First name or however you'd like to remember them.",
+  "loadingYourCheckIns": "Loading your check-ins...",
+  "couldntLoadYourChemistryDiary": "Couldn't load your Chemistry Diary.",
+  "addAChemistryCheckInA11y": "Add a chemistry check-in entry",
+  "addEntry": "+ Add Entry",
+  "yourPatterns": "✨ Your Patterns",
+  "someone": "Someone",
+  "deleteEntryAboutA11y": "Delete entry about {aboutDisplayName}",
+  "thisPersonA11y": "this person",
+  "whoIsThisEntryAbout2": "Who is this entry about?",
+  "firstNameOrHoweverYoud": "First name or however you'd like to remember them",
+  "nameA11y": "Name",
+  "continueA11y": "Continue",
+  "continue": "Continue",
+  "cancelA11y": "Cancel",
+  "patternsCollapseA11y": {
+   "one": "Your patterns across {count} entry, tap to collapse",
+   "other": "Your patterns across {count} entries, tap to collapse"
+  },
+  "patternsExpandA11y": {
+   "one": "Your patterns across {count} entry, tap to see the full picture",
+   "other": "Your patterns across {count} entries, tap to see the full picture"
+  },
+  "topSignalTeaser": {
+   "one": "{signal} showed up most — {percent}% of the time across {count} entry.",
+   "other": "{signal} showed up most — {percent}% of the time across {count} entries."
+  },
+  "acrossEntries": {
+   "one": "Across {count} entry, here's what actually showed up:",
+   "other": "Across {count} entries, here's what actually showed up:"
+  },
+  "moreEntriesUntilPatterns": {
+   "one": "{count} more entry until your patterns start to show.",
+   "other": "{count} more entries until your patterns start to show."
+  }
+ },
+ "es": {
+  "deleteThisEntry": "¿Eliminar esta entrada?",
+  "thisIsPermanentAndCannot": "Es permanente y no se puede deshacer.",
+  "cancel": "Cancelar",
+  "delete": "Eliminar",
+  "addAName": "Añade un nombre",
+  "whoIsThisEntryAbout": "¿Sobre quién es esta entrada? Su nombre o como quieras recordarle.",
+  "loadingYourCheckIns": "Cargando tus registros...",
+  "couldntLoadYourChemistryDiary": "No se pudo cargar tu Diario de química.",
+  "addAChemistryCheckInA11y": "Añadir un registro de química",
+  "addEntry": "+ Añadir entrada",
+  "yourPatterns": "✨ Tus patrones",
+  "someone": "Alguien",
+  "deleteEntryAboutA11y": "Eliminar la entrada sobre {aboutDisplayName}",
+  "thisPersonA11y": "esta persona",
+  "whoIsThisEntryAbout2": "¿Sobre quién es esta entrada?",
+  "firstNameOrHoweverYoud": "Su nombre o como quieras recordarle",
+  "nameA11y": "Nombre",
+  "continueA11y": "Continuar",
+  "continue": "Continuar",
+  "cancelA11y": "Cancelar",
+  "patternsCollapseA11y": {
+   "one": "Tus patrones en {count} entrada, toca para contraer",
+   "other": "Tus patrones en {count} entradas, toca para contraer"
+  },
+  "patternsExpandA11y": {
+   "one": "Tus patrones en {count} entrada, toca para ver el panorama completo",
+   "other": "Tus patrones en {count} entradas, toca para ver el panorama completo"
+  },
+  "topSignalTeaser": {
+   "one": "{signal} fue lo más frecuente: el {percent}% de las veces en {count} entrada.",
+   "other": "{signal} fue lo más frecuente: el {percent}% de las veces en {count} entradas."
+  },
+  "acrossEntries": {
+   "one": "En {count} entrada, esto es lo que realmente apareció:",
+   "other": "En {count} entradas, esto es lo que realmente apareció:"
+  },
+  "moreEntriesUntilPatterns": {
+   "one": "{count} entrada más para que empiecen a verse tus patrones.",
+   "other": "{count} entradas más para que empiecen a verse tus patrones."
+  }
+ },
+ "de": {
+  "deleteThisEntry": "Diesen Eintrag löschen?",
+  "thisIsPermanentAndCannot": "Das ist endgültig und kann nicht rückgängig gemacht werden.",
+  "cancel": "Abbrechen",
+  "delete": "Löschen",
+  "addAName": "Namen hinzufügen",
+  "whoIsThisEntryAbout": "Um wen geht es in diesem Eintrag? Vorname oder wie du dich an die Person erinnern möchtest.",
+  "loadingYourCheckIns": "Deine Check-ins werden geladen...",
+  "couldntLoadYourChemistryDiary": "Dein Chemie-Tagebuch konnte nicht geladen werden.",
+  "addAChemistryCheckInA11y": "Einen Chemie-Check-in hinzufügen",
+  "addEntry": "+ Eintrag hinzufügen",
+  "yourPatterns": "✨ Deine Muster",
+  "someone": "Jemand",
+  "deleteEntryAboutA11y": "Eintrag über {aboutDisplayName} löschen",
+  "thisPersonA11y": "diese Person",
+  "whoIsThisEntryAbout2": "Um wen geht es in diesem Eintrag?",
+  "firstNameOrHoweverYoud": "Vorname oder wie du dich an die Person erinnern möchtest",
+  "nameA11y": "Name",
+  "continueA11y": "Weiter",
+  "continue": "Weiter",
+  "cancelA11y": "Abbrechen",
+  "patternsCollapseA11y": {
+   "one": "Deine Muster aus {count} Eintrag, tippen zum Einklappen",
+   "other": "Deine Muster aus {count} Einträgen, tippen zum Einklappen"
+  },
+  "patternsExpandA11y": {
+   "one": "Deine Muster aus {count} Eintrag, tippen für das ganze Bild",
+   "other": "Deine Muster aus {count} Einträgen, tippen für das ganze Bild"
+  },
+  "topSignalTeaser": {
+   "one": "{signal} kam am häufigsten vor – in {percent}% von {count} Eintrag.",
+   "other": "{signal} kam am häufigsten vor – in {percent}% von {count} Einträgen."
+  },
+  "acrossEntries": {
+   "one": "In {count} Eintrag hat sich tatsächlich Folgendes gezeigt:",
+   "other": "In {count} Einträgen hat sich tatsächlich Folgendes gezeigt:"
+  },
+  "moreEntriesUntilPatterns": {
+   "one": "Noch {count} Eintrag, bis sich deine Muster zeigen.",
+   "other": "Noch {count} Einträge, bis sich deine Muster zeigen."
+  }
+ },
+ "fr": {
+  "deleteThisEntry": "Supprimer cette entrée ?",
+  "thisIsPermanentAndCannot": "C'est définitif et irréversible.",
+  "cancel": "Annuler",
+  "delete": "Supprimer",
+  "addAName": "Ajoute un nom",
+  "whoIsThisEntryAbout": "De qui parle cette entrée ? Un prénom ou tout ce qui t'aidera à t'en souvenir.",
+  "loadingYourCheckIns": "Chargement de tes bilans...",
+  "couldntLoadYourChemistryDiary": "Impossible de charger ton Journal de l'alchimie.",
+  "addAChemistryCheckInA11y": "Ajouter un bilan d'affinités",
+  "addEntry": "+ Ajouter une entrée",
+  "yourPatterns": "✨ Tes tendances",
+  "someone": "Quelqu'un",
+  "deleteEntryAboutA11y": "Supprimer l'entrée sur {aboutDisplayName}",
+  "thisPersonA11y": "cette personne",
+  "whoIsThisEntryAbout2": "De qui parle cette entrée ?",
+  "firstNameOrHoweverYoud": "Un prénom ou tout ce qui t'aidera à t'en souvenir",
+  "nameA11y": "Nom",
+  "continueA11y": "Continuer",
+  "continue": "Continuer",
+  "cancelA11y": "Annuler",
+  "patternsCollapseA11y": {
+   "one": "Tes tendances sur {count} entrée, touche pour réduire",
+   "other": "Tes tendances sur {count} entrées, touche pour réduire"
+  },
+  "patternsExpandA11y": {
+   "one": "Tes tendances sur {count} entrée, touche pour tout voir",
+   "other": "Tes tendances sur {count} entrées, touche pour tout voir"
+  },
+  "topSignalTeaser": {
+   "one": "{signal} est ce qui revient le plus — {percent} % du temps sur {count} entrée.",
+   "other": "{signal} est ce qui revient le plus — {percent} % du temps sur {count} entrées."
+  },
+  "acrossEntries": {
+   "one": "Sur {count} entrée, voici ce qui est vraiment ressorti :",
+   "other": "Sur {count} entrées, voici ce qui est vraiment ressorti :"
+  },
+  "moreEntriesUntilPatterns": {
+   "one": "Encore {count} entrée avant que tes tendances apparaissent.",
+   "other": "Encore {count} entrées avant que tes tendances apparaissent."
+  }
+ },
+ "pt": {
+  "deleteThisEntry": "Excluir esta entrada?",
+  "thisIsPermanentAndCannot": "Isso é permanente e não pode ser desfeito.",
+  "cancel": "Cancelar",
+  "delete": "Excluir",
+  "addAName": "Adicione um nome",
+  "whoIsThisEntryAbout": "Sobre quem é esta entrada? O primeiro nome ou como você quiser lembrar da pessoa.",
+  "loadingYourCheckIns": "Carregando seus registros...",
+  "couldntLoadYourChemistryDiary": "Não foi possível carregar seu Diário de química.",
+  "addAChemistryCheckInA11y": "Adicionar um registro de química",
+  "addEntry": "+ Adicionar entrada",
+  "yourPatterns": "✨ Seus padrões",
+  "someone": "Alguém",
+  "deleteEntryAboutA11y": "Excluir a entrada sobre {aboutDisplayName}",
+  "thisPersonA11y": "esta pessoa",
+  "whoIsThisEntryAbout2": "Sobre quem é esta entrada?",
+  "firstNameOrHoweverYoud": "O primeiro nome ou como quiser lembrar da pessoa",
+  "nameA11y": "Nome",
+  "continueA11y": "Continuar",
+  "continue": "Continuar",
+  "cancelA11y": "Cancelar",
+  "patternsCollapseA11y": {
+   "one": "Seus padrões em {count} entrada, toque para recolher",
+   "other": "Seus padrões em {count} entradas, toque para recolher"
+  },
+  "patternsExpandA11y": {
+   "one": "Seus padrões em {count} entrada, toque para ver o quadro completo",
+   "other": "Seus padrões em {count} entradas, toque para ver o quadro completo"
+  },
+  "topSignalTeaser": {
+   "one": "{signal} apareceu mais — {percent}% das vezes em {count} entrada.",
+   "other": "{signal} apareceu mais — {percent}% das vezes em {count} entradas."
+  },
+  "acrossEntries": {
+   "one": "Em {count} entrada, isto é o que realmente apareceu:",
+   "other": "Em {count} entradas, isto é o que realmente apareceu:"
+  },
+  "moreEntriesUntilPatterns": {
+   "one": "Mais {count} entrada até seus padrões começarem a aparecer.",
+   "other": "Mais {count} entradas até seus padrões começarem a aparecer."
+  }
+ },
+ "ht": {
+  "deleteThisEntry": "Efase antre sa a?",
+  "thisIsPermanentAndCannot": "Sa a pèmanan, ou pa ka anile l.",
+  "cancel": "Anile",
+  "delete": "Efase",
+  "addAName": "Ajoute yon non",
+  "whoIsThisEntryAbout": "Sou ki moun antre sa a ye? Premye non oswa kijan w vle sonje moun nan.",
+  "loadingYourCheckIns": "N ap chaje nòt ou yo...",
+  "couldntLoadYourChemistryDiary": "Nou pa t kapab chaje Jounal chimi w.",
+  "addAChemistryCheckInA11y": "Ajoute yon nòt chimi",
+  "addEntry": "+ Ajoute yon antre",
+  "yourPatterns": "✨ Modèl ou yo",
+  "someone": "Yon moun",
+  "deleteEntryAboutA11y": "Efase antre sou {aboutDisplayName}",
+  "thisPersonA11y": "moun sa a",
+  "whoIsThisEntryAbout2": "Sou ki moun antre sa a ye?",
+  "firstNameOrHoweverYoud": "Premye non oswa kijan w vle sonje moun nan",
+  "nameA11y": "Non",
+  "continueA11y": "Kontinye",
+  "continue": "Kontinye",
+  "cancelA11y": "Anile",
+  "patternsCollapseA11y": {
+   "one": "Modèl ou yo nan {count} antre, tape pou fèmen",
+   "other": "Modèl ou yo nan {count} antre, tape pou fèmen"
+  },
+  "patternsExpandA11y": {
+   "one": "Modèl ou yo nan {count} antre, tape pou wè tout foto a",
+   "other": "Modèl ou yo nan {count} antre, tape pou wè tout foto a"
+  },
+  "topSignalTeaser": {
+   "one": "{signal} te parèt plis — {percent}% nan {count} antre.",
+   "other": "{signal} te parèt plis — {percent}% nan {count} antre."
+  },
+  "acrossEntries": {
+   "one": "Nan {count} antre, men sa ki te vrèman parèt:",
+   "other": "Nan {count} antre, men sa ki te vrèman parèt:"
+  },
+  "moreEntriesUntilPatterns": {
+   "one": "{count} antre ankò pou modèl ou yo kòmanse parèt.",
+   "other": "{count} antre ankò pou modèl ou yo kòmanse parèt."
+  }
+ },
+ "zh": {
+  "deleteThisEntry": "删除这条记录？",
+  "thisIsPermanentAndCannot": "此操作不可撤销。",
+  "cancel": "取消",
+  "delete": "删除",
+  "addAName": "添加名字",
+  "whoIsThisEntryAbout": "这条记录是关于谁的？填名字或任何你想用来记住对方的称呼。",
+  "loadingYourCheckIns": "正在加载你的记录...",
+  "couldntLoadYourChemistryDiary": "无法加载你的默契日记。",
+  "addAChemistryCheckInA11y": "添加一条心动记录",
+  "addEntry": "+ 添加记录",
+  "yourPatterns": "✨ 你的规律",
+  "someone": "某人",
+  "deleteEntryAboutA11y": "删除关于 {aboutDisplayName} 的记录",
+  "thisPersonA11y": "此人",
+  "whoIsThisEntryAbout2": "这条记录是关于谁的？",
+  "firstNameOrHoweverYoud": "名字或任何你想用来记住对方的称呼",
+  "nameA11y": "名字",
+  "continueA11y": "继续",
+  "continue": "继续",
+  "cancelA11y": "取消",
+  "patternsCollapseA11y": {
+   "other": "你在 {count} 条记录中的规律，点按收起"
+  },
+  "patternsExpandA11y": {
+   "other": "你在 {count} 条记录中的规律，点按查看完整情况"
+  },
+  "topSignalTeaser": {
+   "other": "最常出现的是{signal} — 在 {count} 条记录中占 {percent}%。"
+  },
+  "acrossEntries": {
+   "other": "在 {count} 条记录中，真实出现的是："
+  },
+  "moreEntriesUntilPatterns": {
+   "other": "再记录 {count} 条，你的规律就会开始显现。"
+  }
+ },
+ "vi": {
+  "deleteThisEntry": "Xóa mục này?",
+  "thisIsPermanentAndCannot": "Thao tác này là vĩnh viễn và không thể hoàn tác.",
+  "cancel": "Hủy",
+  "delete": "Xóa",
+  "addAName": "Thêm tên",
+  "whoIsThisEntryAbout": "Mục này về ai? Tên hoặc cách bạn muốn ghi nhớ người đó.",
+  "loadingYourCheckIns": "Đang tải các lần ghi nhận...",
+  "couldntLoadYourChemistryDiary": "Không tải được Nhật ký hòa hợp của bạn.",
+  "addAChemistryCheckInA11y": "Thêm một lần ghi nhận cảm xúc",
+  "addEntry": "+ Thêm mục",
+  "yourPatterns": "✨ Xu hướng của bạn",
+  "someone": "Ai đó",
+  "deleteEntryAboutA11y": "Xóa mục về {aboutDisplayName}",
+  "thisPersonA11y": "người này",
+  "whoIsThisEntryAbout2": "Mục này về ai?",
+  "firstNameOrHoweverYoud": "Tên hoặc cách bạn muốn ghi nhớ người đó",
+  "nameA11y": "Tên",
+  "continueA11y": "Tiếp tục",
+  "continue": "Tiếp tục",
+  "cancelA11y": "Hủy",
+  "patternsCollapseA11y": {
+   "other": "Xu hướng của bạn qua {count} mục, nhấn để thu gọn"
+  },
+  "patternsExpandA11y": {
+   "other": "Xu hướng của bạn qua {count} mục, nhấn để xem toàn cảnh"
+  },
+  "topSignalTeaser": {
+   "other": "{signal} xuất hiện nhiều nhất — {percent}% trong {count} mục."
+  },
+  "acrossEntries": {
+   "other": "Qua {count} mục, đây là những gì thực sự xuất hiện:"
+  },
+  "moreEntriesUntilPatterns": {
+   "other": "Thêm {count} mục nữa để xu hướng của bạn bắt đầu hiện ra."
+  }
+ },
+ "tl": {
+  "deleteThisEntry": "Burahin ang entry na ito?",
+  "thisIsPermanentAndCannot": "Permanente ito at hindi na maibabalik.",
+  "cancel": "Kanselahin",
+  "delete": "Burahin",
+  "addAName": "Magdagdag ng pangalan",
+  "whoIsThisEntryAbout": "Tungkol kanino ang entry na ito? Pangalan o kung paano mo siya gustong maalala.",
+  "loadingYourCheckIns": "Nilo-load ang iyong mga check-in...",
+  "couldntLoadYourChemistryDiary": "Hindi ma-load ang iyong Chemistry diary.",
+  "addAChemistryCheckInA11y": "Magdagdag ng chemistry check-in",
+  "addEntry": "+ Magdagdag ng Entry",
+  "yourPatterns": "✨ Ang Iyong mga Pattern",
+  "someone": "Isang tao",
+  "deleteEntryAboutA11y": "Burahin ang entry tungkol kay {aboutDisplayName}",
+  "thisPersonA11y": "taong ito",
+  "whoIsThisEntryAbout2": "Tungkol kanino ang entry na ito?",
+  "firstNameOrHoweverYoud": "Pangalan o kung paano mo siya gustong maalala",
+  "nameA11y": "Pangalan",
+  "continueA11y": "Magpatuloy",
+  "continue": "Magpatuloy",
+  "cancelA11y": "Kanselahin",
+  "patternsCollapseA11y": {
+   "one": "Ang iyong mga pattern sa {count} entry, i-tap para itago",
+   "other": "Ang iyong mga pattern sa {count} na entry, i-tap para itago"
+  },
+  "patternsExpandA11y": {
+   "one": "Ang iyong mga pattern sa {count} entry, i-tap para makita ang buong larawan",
+   "other": "Ang iyong mga pattern sa {count} na entry, i-tap para makita ang buong larawan"
+  },
+  "topSignalTeaser": {
+   "one": "Pinakamadalas ang {signal} — {percent}% ng pagkakataon sa {count} entry.",
+   "other": "Pinakamadalas ang {signal} — {percent}% ng pagkakataon sa {count} na entry."
+  },
+  "acrossEntries": {
+   "one": "Sa {count} entry, ito ang talagang lumitaw:",
+   "other": "Sa {count} na entry, ito ang talagang lumitaw:"
+  },
+  "moreEntriesUntilPatterns": {
+   "one": "{count} pang entry bago lumitaw ang iyong mga pattern.",
+   "other": "{count} pang entry bago lumitaw ang iyong mga pattern."
+  }
+ },
+ "ru": {
+  "deleteThisEntry": "Удалить эту запись?",
+  "thisIsPermanentAndCannot": "Это навсегда, отменить нельзя.",
+  "cancel": "Отмена",
+  "delete": "Удалить",
+  "addAName": "Добавьте имя",
+  "whoIsThisEntryAbout": "О ком эта запись? Имя или как вы хотите его запомнить.",
+  "loadingYourCheckIns": "Загружаем ваши записи...",
+  "couldntLoadYourChemistryDiary": "Не удалось загрузить дневник химии.",
+  "addAChemistryCheckInA11y": "Добавить запись о химии",
+  "addEntry": "+ Добавить запись",
+  "yourPatterns": "✨ Ваши закономерности",
+  "someone": "Кто-то",
+  "deleteEntryAboutA11y": "Удалить запись о: {aboutDisplayName}",
+  "thisPersonA11y": "этот человек",
+  "whoIsThisEntryAbout2": "О ком эта запись?",
+  "firstNameOrHoweverYoud": "Имя или как вы хотите его запомнить",
+  "nameA11y": "Имя",
+  "continueA11y": "Продолжить",
+  "continue": "Продолжить",
+  "cancelA11y": "Отмена",
+  "patternsCollapseA11y": {
+   "one": "Ваши закономерности по {count} записи, нажмите, чтобы свернуть",
+   "few": "Ваши закономерности по {count} записям, нажмите, чтобы свернуть",
+   "many": "Ваши закономерности по {count} записям, нажмите, чтобы свернуть",
+   "other": "Ваши закономерности по {count} записям, нажмите, чтобы свернуть"
+  },
+  "patternsExpandA11y": {
+   "one": "Ваши закономерности по {count} записи, нажмите, чтобы увидеть всё",
+   "few": "Ваши закономерности по {count} записям, нажмите, чтобы увидеть всё",
+   "many": "Ваши закономерности по {count} записям, нажмите, чтобы увидеть всё",
+   "other": "Ваши закономерности по {count} записям, нажмите, чтобы увидеть всё"
+  },
+  "topSignalTeaser": {
+   "one": "Чаще всего: {signal} — {percent}% из {count} записи.",
+   "few": "Чаще всего: {signal} — {percent}% из {count} записей.",
+   "many": "Чаще всего: {signal} — {percent}% из {count} записей.",
+   "other": "Чаще всего: {signal} — {percent}% из {count} записей."
+  },
+  "acrossEntries": {
+   "one": "Вот что на самом деле проявилось в {count} записи:",
+   "few": "Вот что на самом деле проявилось в {count} записях:",
+   "many": "Вот что на самом деле проявилось в {count} записях:",
+   "other": "Вот что на самом деле проявилось в {count} записях:"
+  },
+  "moreEntriesUntilPatterns": {
+   "one": "Ещё {count} запись, и начнут проявляться закономерности.",
+   "few": "Ещё {count} записи, и начнут проявляться закономерности.",
+   "many": "Ещё {count} записей, и начнут проявляться закономерности.",
+   "other": "Ещё {count} записи, и начнут проявляться закономерности."
+  }
+ },
+ "ko": {
+  "deleteThisEntry": "이 기록을 삭제할까요?",
+  "thisIsPermanentAndCannot": "영구적으로 삭제되며 되돌릴 수 없어요.",
+  "cancel": "취소",
+  "delete": "삭제",
+  "addAName": "이름 추가",
+  "whoIsThisEntryAbout": "누구에 대한 기록인가요? 이름이나 기억하고 싶은 방식으로 적어 주세요.",
+  "loadingYourCheckIns": "기록을 불러오는 중...",
+  "couldntLoadYourChemistryDiary": "케미 다이어리를 불러오지 못했어요.",
+  "addAChemistryCheckInA11y": "케미 기록 추가",
+  "addEntry": "+ 기록 추가",
+  "yourPatterns": "✨ 나의 패턴",
+  "someone": "누군가",
+  "deleteEntryAboutA11y": "{aboutDisplayName}에 대한 기록 삭제",
+  "thisPersonA11y": "이 사람",
+  "whoIsThisEntryAbout2": "누구에 대한 기록인가요?",
+  "firstNameOrHoweverYoud": "이름이나 기억하고 싶은 방식",
+  "nameA11y": "이름",
+  "continueA11y": "계속",
+  "continue": "계속",
+  "cancelA11y": "취소",
+  "patternsCollapseA11y": {
+   "other": "기록 {count}개에서 보인 패턴, 탭하여 접기"
+  },
+  "patternsExpandA11y": {
+   "other": "기록 {count}개에서 보인 패턴, 탭하여 전체 보기"
+  },
+  "topSignalTeaser": {
+   "other": "가장 자주 나타난 건 {signal}이에요 — 기록 {count}개 중 {percent}%."
+  },
+  "acrossEntries": {
+   "other": "기록 {count}개에서 실제로 나타난 것:"
+  },
+  "moreEntriesUntilPatterns": {
+   "other": "{count}개만 더 기록하면 패턴이 보이기 시작해요."
+  }
+ }
+}

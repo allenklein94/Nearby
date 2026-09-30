@@ -9,7 +9,7 @@ import { getMyChemistryEntries, deleteChemistryEntry } from '../services/chemist
 import { usePostHog } from 'posthog-react-native';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
-import { formatDay } from '../utils/timeLabels';
+import { displayDay } from '../i18n/display';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -23,8 +23,8 @@ const SIGNALS = [
 
 const MIN_ENTRIES_FOR_INSIGHTS = 3;
 
-function formatDate(iso) {
-  return formatDay(iso, { withYear: true });
+function formatDate(iso, language) {
+  return displayDay(iso, language, { withYear: true });
 }
 
 // A gentle, honest reflection of actual patterns — not a score or a
@@ -50,7 +50,7 @@ function computeInsights(entries) {
 
 export default function ChemistryDiaryListScreen({ navigation }) {
   const { colors } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const posthog = usePostHog();
   const styles = getStyles(colors);
   const [entries, setEntries] = useState([]);
@@ -87,12 +87,12 @@ export default function ChemistryDiaryListScreen({ navigation }) {
 
   function confirmDelete(entryId) {
     Alert.alert(
-      'Delete this entry?',
-      'This is permanent and cannot be undone.',
+      t('ui.chemistryDiary.deleteThisEntry'),
+      t('ui.chemistryDiary.thisIsPermanentAndCannot'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('ui.chemistryDiary.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('ui.chemistryDiary.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -121,7 +121,7 @@ export default function ChemistryDiaryListScreen({ navigation }) {
 
   function proceedToEntry() {
     if (!nameInput.trim()) {
-      return Alert.alert('Add a name', "Who is this entry about? First name or however you'd like to remember them.");
+      return Alert.alert(t('ui.chemistryDiary.addAName'), t('ui.chemistryDiary.whoIsThisEntryAbout'));
     }
     setNameModalVisible(false);
     posthog.capture('chemistry_diary_entry_started');
@@ -132,7 +132,7 @@ export default function ChemistryDiaryListScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your check-ins...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.chemistryDiary.loadingYourCheckIns')}</Text>
       </SafeAreaView>
     );
   }
@@ -140,7 +140,7 @@ export default function ChemistryDiaryListScreen({ navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load your Chemistry Diary." onRetry={load} />
+        <LoadErrorState message={t('ui.chemistryDiary.couldntLoadYourChemistryDiary')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -164,10 +164,10 @@ export default function ChemistryDiaryListScreen({ navigation }) {
           style={styles.addButton}
           onPress={startNewEntry}
           activeOpacity={0.85}
-          accessibilityLabel="Add a chemistry check-in entry"
+          accessibilityLabel={t('ui.chemistryDiary.addAChemistryCheckInA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.addButtonText}>+ Add Entry</Text>
+          <Text style={styles.addButtonText}>{t('ui.chemistryDiary.addEntry')}</Text>
         </TouchableOpacity>
 
         {canShowInsights && (
@@ -175,22 +175,22 @@ export default function ChemistryDiaryListScreen({ navigation }) {
             style={styles.insightsCard}
             onPress={toggleInsights}
             activeOpacity={0.85}
-            accessibilityLabel={`Your patterns across ${entries.length} entries, ${showInsights ? 'tap to collapse' : 'tap to see the full picture'}`}
+            accessibilityLabel={showInsights ? t('ui.chemistryDiary.patternsCollapseA11y', { count: entries.length }) : t('ui.chemistryDiary.patternsExpandA11y', { count: entries.length })}
             accessibilityRole="button"
             accessibilityState={{ expanded: showInsights }}
           >
             <View style={styles.insightsHeaderRow}>
-              <Text style={styles.insightsTitle}>✨ Your Patterns</Text>
+              <Text style={styles.insightsTitle}>{t('ui.chemistryDiary.yourPatterns')}</Text>
               <Text style={styles.insightsChevron}>{showInsights ? '⌃' : '⌄'}</Text>
             </View>
             {!showInsights && topSignal.count > 0 && (
               <Text style={styles.insightsTeaser}>
-                {topSignal.icon} {t(`chemistryDiary.${topSignal.labelKey}`)} showed up most — {topSignal.percent}% of the time across {entries.length} entries.
+                {topSignal.icon} {t('ui.chemistryDiary.topSignalTeaser', { signal: t(`chemistryDiary.${topSignal.labelKey}`), percent: topSignal.percent, count: entries.length })}
               </Text>
             )}
             {showInsights && (
               <View style={styles.insightsBody}>
-                <Text style={styles.insightsBodyText}>Across {entries.length} entries, here's what actually showed up:</Text>
+                <Text style={styles.insightsBodyText}>{t('ui.chemistryDiary.acrossEntries', { count: entries.length })}</Text>
                 {insights.map((signal) => (
                   <View key={signal.key} style={styles.insightRow}>
                     <Text style={styles.insightLabel}>{signal.icon} {t(`chemistryDiary.${signal.labelKey}`)}</Text>
@@ -207,7 +207,7 @@ export default function ChemistryDiaryListScreen({ navigation }) {
 
         {!canShowInsights && entries.length > 0 && (
           <Text style={styles.insightsHint}>
-            {MIN_ENTRIES_FOR_INSIGHTS - entries.length} more {MIN_ENTRIES_FOR_INSIGHTS - entries.length === 1 ? 'entry' : 'entries'} until your patterns start to show.
+            {t('ui.chemistryDiary.moreEntriesUntilPatterns', { count: MIN_ENTRIES_FOR_INSIGHTS - entries.length })}
           </Text>
         )}
 
@@ -224,15 +224,15 @@ export default function ChemistryDiaryListScreen({ navigation }) {
             <View key={entry.id} style={styles.card}>
               <View style={styles.cardHeader}>
                 <View>
-                  <Text style={styles.cardTitle}>{entry.about_display_name || 'Someone'}</Text>
-                  <Text style={styles.cardDate}>{formatDate(entry.created_at)}</Text>
+                  <Text style={styles.cardTitle}>{entry.about_display_name || t('ui.chemistryDiary.someone')}</Text>
+                  <Text style={styles.cardDate}>{formatDate(entry.created_at, language)}</Text>
                 </View>
                 <TouchableOpacity
                   onPress={() => confirmDelete(entry.id)}
-                  accessibilityLabel={`Delete entry about ${entry.about_display_name || 'this person'}`}
+                  accessibilityLabel={t('ui.chemistryDiary.deleteEntryAboutA11y', { aboutDisplayName: entry.about_display_name || t('ui.chemistryDiary.thisPersonA11y') })}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.deleteText}>Delete</Text>
+                  <Text style={styles.deleteText}>{t('ui.chemistryDiary.delete')}</Text>
                 </TouchableOpacity>
               </View>
               {filledSignals.length > 0 && (
@@ -253,32 +253,32 @@ export default function ChemistryDiaryListScreen({ navigation }) {
       <Modal visible={nameModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setNameModalVisible(false)}>
         <View style={styles.overlay}>
           <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>Who is this entry about?</Text>
+            <Text style={styles.sheetTitle}>{t('ui.chemistryDiary.whoIsThisEntryAbout2')}</Text>
             <TextInput
               style={styles.nameInput}
-              placeholder="First name or however you'd like to remember them"
+              placeholder={t('ui.chemistryDiary.firstNameOrHoweverYoud')}
               placeholderTextColor={colors.textTertiary}
               value={nameInput}
               onChangeText={setNameInput}
               autoFocus
-              accessibilityLabel="Name"
+              accessibilityLabel={t('ui.chemistryDiary.nameA11y')}
             />
             <TouchableOpacity
               style={styles.sheetButton}
               onPress={proceedToEntry}
               activeOpacity={0.85}
-              accessibilityLabel="Continue"
+              accessibilityLabel={t('ui.chemistryDiary.continueA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.sheetButtonText}>Continue</Text>
+              <Text style={styles.sheetButtonText}>{t('ui.chemistryDiary.continue')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setNameModalVisible(false)}
               style={{ marginTop: spacing.md }}
-              accessibilityLabel="Cancel"
+              accessibilityLabel={t('ui.chemistryDiary.cancelA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{t('ui.chemistryDiary.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>

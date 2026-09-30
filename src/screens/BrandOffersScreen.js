@@ -13,12 +13,12 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { getUserLocation } from '../services/userLocation';
-import { placeDistanceLabel } from '../services/places';
+import { displayDistanceAway } from '../i18n/display';
 
 import { unlockStatus } from '../utils/unlockProgress';
 export default function BrandOffersScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [offers, setOffers] = useState([]);
@@ -111,21 +111,21 @@ export default function BrandOffersScreen({ navigation, route }) {
       const { confirmationCode } = await redeemOffer(offer.id);
       posthog.capture('brand_offer_redeemed', { offer_id: offer.id, partner: offer.brand_partners?.name });
       Alert.alert(
-        'Redeemed!',
-        `Show staff this code to confirm: ${confirmationCode}\n\n${offer.redemption_instructions || 'Check your account for details on how to use this.'}`,
+        t('ui.brandOffersUi.redeemed'),
+        t('ui.brandOffersUi.showStaffCode', { code: confirmationCode, instructions: offer.redemption_instructions || t('ui.brandOffersUi.checkYourAccountForDetails') }),
         [
           {
-            text: 'Continue',
+            text: t('ui.brandOffersUi.continue'),
             onPress: () => {
               // A genuine, explicit choice — not a default opt-in.
               // The business only gets access if the person actually says yes.
               Alert.alert(
-                `Stay connected with ${offer.brand_partners?.name ?? 'this business'}?`,
-                "They'll be able to invite you to future events and offers.",
+                t('ui.brandOffersUi.stayConnectedWith', { name: offer.brand_partners?.name ?? t('ui.brandOffersUi.thisBusiness') }),
+                t('ui.brandOffersUi.theyllBeAbleToInvite'),
                 [
-                  { text: 'No thanks', style: 'cancel' },
+                  { text: t('ui.brandOffersUi.noThanks'), style: 'cancel' },
                   {
-                    text: 'Yes, stay connected',
+                    text: t('ui.brandOffersUi.yesStayConnected'),
                     onPress: () => followBusiness(offer.partner_id).catch(() => {}),
                   },
                 ]
@@ -137,11 +137,11 @@ export default function BrandOffersScreen({ navigation, route }) {
       load();
     } catch (e) {
       if (e.message === 'ALREADY_REDEEMED') {
-        Alert.alert('Already redeemed', "You've already claimed this offer.");
+        Alert.alert(t('ui.brandOffersUi.alreadyRedeemed'), t('ui.brandOffersUi.youveAlreadyClaimedThisOffer'));
       } else if (e.message === 'REDEMPTION_LIMIT_REACHED') {
-        Alert.alert('Offer fully claimed', "This offer's limited spots have all been claimed.");
+        Alert.alert(t('ui.brandOffersUi.offerFullyClaimed'), t('ui.brandOffersUi.thisOffersLimitedSpotsHave'));
       } else if (e.message === 'OFFER_LOCKED') {
-        Alert.alert('Not unlocked yet', "This offer needs more people to join first — check back soon.");
+        Alert.alert(t('ui.brandOffersUi.notUnlockedYet'), t('ui.brandOffersUi.thisOfferNeedsMorePeople'));
       } else {
         presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRedeem(offer) });
       }
@@ -153,7 +153,7 @@ export default function BrandOffersScreen({ navigation, route }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Finding perks near you...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.brandOffersUi.findingPerksNearYou')}</Text>
       </SafeAreaView>
     );
   }
@@ -161,7 +161,7 @@ export default function BrandOffersScreen({ navigation, route }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load perks nearby." onRetry={load} />
+        <LoadErrorState message={t('ui.brandOffersUi.couldntLoadPerksNearby')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -184,10 +184,10 @@ export default function BrandOffersScreen({ navigation, route }) {
             <Text style={styles.emptyText}>{t('brandOffers.noOffers')}</Text>
             <TouchableOpacity
               onPress={() => navigation.navigate('Discover')}
-              accessibilityLabel="Explore what's happening nearby"
+              accessibilityLabel={t('ui.brandOffersUi.exploreWhatsHappeningNearbyA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.emptyActionText}>Explore what's nearby →</Text>
+              <Text style={styles.emptyActionText}>{t('ui.brandOffersUi.exploreWhatsNearby')}</Text>
             </TouchableOpacity>
           </FadeInState>
         )}
@@ -207,7 +207,7 @@ export default function BrandOffersScreen({ navigation, route }) {
                 <TouchableOpacity
                   style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
                   onPress={() => navigation.navigate('BusinessProfile', { partnerId: offer.partner_id })}
-                  accessibilityLabel={`View ${offer.brand_partners?.name}'s business profile`}
+                  accessibilityLabel={t('ui.brandOffersUi.viewSBusinessProfileA11y', { name: offer.brand_partners?.name })}
                   accessibilityRole="button"
                 >
                   {offer.brand_partners?.logo_url ? (
@@ -216,7 +216,7 @@ export default function BrandOffersScreen({ navigation, route }) {
                     <View style={[styles.logo, styles.logoPlaceholder]} />
                   )}
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.partnerName}>{[offer.brand_partners?.name, placeDistanceLabel(offer.distanceMiles)].filter(Boolean).join(' · ')}</Text>
+                    <Text style={styles.partnerName}>{[offer.brand_partners?.name, displayDistanceAway(offer.distanceMiles, language)].filter(Boolean).join(' · ')}</Text>
                     <Text style={styles.offerTitle}>{offer.title}</Text>
                   </View>
                 </TouchableOpacity>
@@ -224,14 +224,14 @@ export default function BrandOffersScreen({ navigation, route }) {
               {offer.description ? <Text style={styles.description}>{offer.description}</Text> : null}
               {offer.redemption_limit != null && (
                 <Text style={styles.scarcityText}>
-                  {Math.max(0, offer.redemption_limit - (redemptionCounts[offer.id] ?? 0))} of {offer.redemption_limit} {offer.redemption_limit === 1 ? 'spot' : 'spots'} left
+                  {t('ui.brandOffersUi.spotsLeftOf', { left: Math.max(0, offer.redemption_limit - (redemptionCounts[offer.id] ?? 0)), count: offer.redemption_limit })}
                 </Text>
               )}
               {offer.unlock_scope != null && (
                 <Text style={styles.scarcityText}>
                   {isLocked
                     ? unlock.label
-                    : `🔓 Unlocked — ${offer.unlock_scope === 'community' ? 'community' : 'gathering'} goal reached`}
+                    : (offer.unlock_scope === 'community' ? t('ui.brandOffersUi.unlockedCommunity') : t('ui.brandOffersUi.unlockedGathering'))}
                 </Text>
               )}
               <TouchableOpacity
@@ -248,11 +248,11 @@ export default function BrandOffersScreen({ navigation, route }) {
                     presentRecoverableError(Alert, { what: 'complete that', error: e });
                   }
                 }}
-                accessibilityLabel={followingStatus[offer.partner_id] ? `Unfollow ${offer.brand_partners?.name}` : `Follow ${offer.brand_partners?.name}`}
+                accessibilityLabel={followingStatus[offer.partner_id] ? t('ui.brandOffersUi.unfollowA11y', { name: offer.brand_partners?.name }) : t('ui.brandOffersUi.followA11y', { name: offer.brand_partners?.name })}
                 accessibilityRole="button"
               >
                 <Text style={styles.followLinkText}>
-                  {followingStatus[offer.partner_id] ? '✓ Following' : '+ Follow'}
+                  {followingStatus[offer.partner_id] ? t('ui.brandOffersUi.following') : t('ui.brandOffersUi.follow')}
                 </Text>
               </TouchableOpacity>
               {alreadyRedeemed ? (
@@ -261,7 +261,7 @@ export default function BrandOffersScreen({ navigation, route }) {
                 </View>
               ) : isLocked ? (
                 <View style={[styles.redeemButton, styles.lockedButton]}>
-                  <Text style={styles.lockedButtonText}>Locked</Text>
+                  <Text style={styles.lockedButtonText}>{t('ui.brandOffersUi.locked')}</Text>
                 </View>
               ) : (
                 <TouchableOpacity
@@ -269,10 +269,10 @@ export default function BrandOffersScreen({ navigation, route }) {
                   onPress={() => handleRedeem(offer)}
                   disabled={redeemingId === offer.id}
                   activeOpacity={0.85}
-                  accessibilityLabel={`${t('brandOffers.redeem')}: ${offer.title}, from ${offer.brand_partners?.name}`}
+                  accessibilityLabel={t('ui.brandOffersUi.fromA11y', { value: t('brandOffers.redeem'), title: offer.title, name: offer.brand_partners?.name })}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.redeemButtonText}>{redeemingId === offer.id ? 'Redeeming...' : t('brandOffers.redeem')}</Text>
+                  <Text style={styles.redeemButtonText}>{redeemingId === offer.id ? t('ui.brandOffersUi.redeeming') : t('brandOffers.redeem')}</Text>
                 </TouchableOpacity>
               )}
             </View>

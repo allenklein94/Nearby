@@ -32,10 +32,11 @@ How: `src/i18n/ui/<ns>.js` (11 languages) merged as `translations.<lang>.ui`; sc
 - CreateHub (ns `createHub`): the whole screen; primary cards, who-for chips and quick actions keyed by their ids (the English labels were removed from the module lists, since nothing else read them). Create Hub's own who-for keeps "Family" (Celebrate says "Family Member")
 - Billing (ns `billing`): the whole screen; renew/end lines as whole sentences, store names by store id (`ui.billing.store.<STORE>`, an unknown id shown as given), dates via `displayDay` outside English (English date format unchanged)
 - Momentum / Your Activity (ns `momentum`): the whole screen; streak, week a11y and communities-started as plurals, member-since as month + year per language, vibe tags via `categoryName`. Shared with Profile (now translated there too): achievements keyed by a new stable `key` on `getAchievements()` (`ui.momentum.achievement.<key>.label/description`), and the usually-active day by a new `usuallyActiveDay` index from `getEarnedProfileStats()` (`ui.momentum.activeDay.<0-6>`; the English `usuallyActive` field is unchanged for other callers)
+- Chemistry Diary list (ns `chemistryDiary`): the whole screen; the patterns teaser, the "Across N entries" line and "N more entries" as plural sentences with the signal name inside, entry dates via `displayDay`; the load-error line uses the same diary name as the header in each language. The entry screen (ChemistryDiaryEntryScreen) is not done yet
+- Perks / BrandOffers (ns `brandOffersUi`; the older `brandOffers.*` keys stay in use): the whole screen; redeem code + instructions as one sentence, stay-connected prompt, "N of M spots left" as a plural, unlocked lines per scope, distance via `displayDistanceAway`
 - EmptyCopy (ns `empty`): every consumer empty-state id; business/admin/ai ids stay English (tested)
 
 ## Next (in order, by English strings left per the scanner, 2026-09-30)
-ChemistryDiaryList 32,
-BrandOffers 30, RelationshipLegacy 27, DateCheckInModal 26, Paywall 24, CompatibilityReportModal 24, EmergencyContacts 23,
+RelationshipLegacy 27, DateCheckInModal 26, Paywall 24, CompatibilityReportModal 24, EmergencyContacts 23,
 ReportBlockModal 23, then the long tail (<= 21 each). Re-run the list with the scanner over src/screens + src/components minus LOCALIZED_FILES
 and the business/admin/legal exclusions.
