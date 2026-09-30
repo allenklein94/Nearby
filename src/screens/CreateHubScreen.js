@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,9 +47,9 @@ import { NLoader } from '../motion';
 // and deliberately untouched, only label/subtitle changed, same posture
 // as every other internal-vs-user-facing rename in this codebase.
 const PRIMARY_CREATE_OPTIONS = [
-  { key: 'gathering', icon: 'people-outline', label: 'Gathering', subtitle: 'Bring people together.', route: 'CreateGathering' },
-  { key: 'community', icon: 'globe-outline', label: 'Community', subtitle: 'Build something ongoing.', route: 'CreateCommunity' },
-  { key: 'occasion', icon: 'sparkles-outline', label: 'Plan for Someone', subtitle: 'Create something special for someone else.', route: 'CelebrateSomething' },
+  { key: 'gathering', icon: 'people-outline', route: 'CreateGathering' },
+  { key: 'community', icon: 'globe-outline', route: 'CreateCommunity' },
+  { key: 'occasion', icon: 'sparkles-outline', route: 'CelebrateSomething' },
 ];
 
 // Demoted from three separate grouped rows (With people / With businesses
@@ -64,18 +65,18 @@ const PRIMARY_CREATE_OPTIONS = [
 // (initialWhoFor/initialWhoForName/initialWhoForFriendId, already-live
 // route params that screen supports).
 const WHO_FOR_OPTIONS = [
-  { key: 'me', label: 'Me', icon: '🙋' },
-  { key: 'friend', label: 'A Friend', icon: '🤝' },
-  { key: 'family', label: 'Family', icon: '👨‍👩‍👧' },
-  { key: 'someone_else', label: 'Someone Else', icon: '✨' },
+  { key: 'me', icon: '🙋' },
+  { key: 'friend', icon: '🤝' },
+  { key: 'family', icon: '👨‍👩‍👧' },
+  { key: 'someone_else', icon: '✨' },
 ];
 
 const QUICK_ACTIONS = [
-  { icon: 'person-add-outline', label: 'Invite Friends', route: 'InviteFriends' },
-  { icon: 'heart-outline', label: 'Plan a Date', route: 'Messages' },
-  { icon: 'people-outline', label: 'Meet New People', route: 'FriendDiscovery' },
-  { icon: 'storefront-outline', label: 'Ask Nearby Businesses', route: 'AskBusiness' },
-  { icon: 'repeat-outline', label: 'Start a Weekly Meetup', route: 'CreateGathering', params: { quickStartRecurring: true } },
+  { icon: 'person-add-outline', key: 'inviteFriends', route: 'InviteFriends' },
+  { icon: 'heart-outline', key: 'planADate', route: 'Messages' },
+  { icon: 'people-outline', key: 'meetNewPeople', route: 'FriendDiscovery' },
+  { icon: 'storefront-outline', key: 'askNearbyBusinesses', route: 'AskBusiness' },
+  { icon: 'repeat-outline', key: 'weeklyMeetup', route: 'CreateGathering', params: { quickStartRecurring: true } },
   // Item 111 ("We'll plan it for you" -- CLAUDE.md): the real front door
   // this feature was disclosed as missing when it shipped -- a "🤖 Let
   // Nearby Plan It" chip already exists inside the Occasion wizard's own
@@ -88,10 +89,11 @@ const QUICK_ACTIONS = [
   // (Occasion, Who) but arrives at its own 'activity' step with "Let
   // Nearby Plan It" already selected -- no new screen, no duplicated
   // occasion picker, same discipline as every other Quick Action here.
-  { icon: 'bulb-outline', label: 'Let Nearby Plan It', route: 'CelebrateSomething', params: { initialActivityType: 'auto_plan' } },
+  { icon: 'bulb-outline', key: 'letNearbyPlanIt', route: 'CelebrateSomething', params: { initialActivityType: 'auto_plan' } },
 ];
 
 export default function CreateHubScreen({ navigation, route }) {
+  const { t } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [showSomethingElse, setShowSomethingElse] = useState(false);
@@ -233,8 +235,8 @@ export default function CreateHubScreen({ navigation, route }) {
         <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
           <View style={styles.headerRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.title}>Create</Text>
-              <Text style={styles.subtitle}>Make Something Happen</Text>
+              <Text style={styles.title}>{t('ui.createHub.create')}</Text>
+              <Text style={styles.subtitle}>{t('ui.createHub.makeSomethingHappen')}</Text>
             </View>
             <TabHeaderActions navigation={navigation} />
           </View>
@@ -247,47 +249,47 @@ export default function CreateHubScreen({ navigation, route }) {
             <TouchableOpacity
               style={styles.browseLink}
               onPress={() => navigation.navigate('Discover')}
-              accessibilityLabel="Browse gatherings, communities, places, and perks"
+              accessibilityLabel={t('ui.createHub.browseGatheringsCommunitiesPlacesAndA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.browseLinkText}>🔎 Browse what's already out there</Text>
+              <Text style={styles.browseLinkText}>{t('ui.createHub.browseWhatsAlreadyOutThere')}</Text>
               <Text style={styles.browseLinkChevron}>›</Text>
             </TouchableOpacity>
           )}
 
           {showSomethingElse && (
-            <TouchableOpacity onPress={closeSomethingElse} accessibilityLabel="Back" accessibilityRole="button">
-              <Text style={styles.backLink}>← Back</Text>
+            <TouchableOpacity onPress={closeSomethingElse} accessibilityLabel={t('ui.createHub.backA11y')} accessibilityRole="button">
+              <Text style={styles.backLink}>{t('ui.createHub.back')}</Text>
             </TouchableOpacity>
           )}
 
           {showSomethingElse ? (
             <View style={styles.somethingElseBox}>
-              <Text style={styles.somethingElseLabel}>💡 What do you have in mind?</Text>
-              <Text style={styles.somethingElseSubtext}>We'll help you turn it into a plan.</Text>
+              <Text style={styles.somethingElseLabel}>{t('ui.createHub.whatDoYouHaveIn')}</Text>
+              <Text style={styles.somethingElseSubtext}>{t('ui.createHub.wellHelpYouTurnIt')}</Text>
               <View style={styles.assistantRow}>
                 <TextInput
                   style={styles.assistantInput}
-                  placeholder='e.g. "get some people together for coffee this weekend"'
+                  placeholder={t('ui.createHub.eGGetSomePeople')}
                   placeholderTextColor={colors.textTertiary}
                   value={assistantText}
                   onChangeText={setAssistantText}
                   onSubmitEditing={handleAskAssistant}
                   returnKeyType="go"
                   autoFocus
-                  accessibilityLabel="What do you have in mind?"
+                  accessibilityLabel={t('ui.createHub.whatDoYouHaveInA11y')}
                 />
                 <TouchableOpacity
                   style={styles.assistantButton}
                   onPress={handleAskAssistant}
                   disabled={thinking || !assistantText.trim()}
-                  accessibilityLabel="Submit"
+                  accessibilityLabel={t('ui.createHub.submitA11y')}
                   accessibilityRole="button"
                 >
                   {thinking ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.assistantButtonText}>→</Text>}
                 </TouchableOpacity>
               </View>
-              {thinking && <Text style={styles.somethingElseSubtext}>Building your options…</Text>}
+              {thinking && <Text style={styles.somethingElseSubtext}>{t('ui.createHub.buildingYourOptions')}</Text>}
             </View>
           ) : (
             <>
@@ -299,7 +301,7 @@ export default function CreateHubScreen({ navigation, route }) {
                   initialWhoForFriendId) and into Gathering/Ask Nearby
                   Businesses as an editable prefill -- see
                   createHubWhoFor.js for why Community isn't included. */}
-              <Text style={styles.fieldLabel}>Who is this for?</Text>
+              <Text style={styles.fieldLabel}>{t('ui.createHub.whoIsThisFor')}</Text>
               <View style={styles.chipRow}>
                 {WHO_FOR_OPTIONS.map((o) => (
                   <TouchableOpacity
@@ -307,20 +309,20 @@ export default function CreateHubScreen({ navigation, route }) {
                     style={[styles.chip, whoFor === o.key && styles.chipSelected]}
                     onPress={() => pickWhoFor(o.key)}
                     accessibilityRole="button"
-                    accessibilityLabel={o.label}
+                    accessibilityLabel={t(`ui.createHub.whoFor.${o.key}`)}
                     accessibilityState={{ selected: whoFor === o.key }}
                   >
-                    <Text style={[styles.chipText, whoFor === o.key && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                    <Text style={[styles.chipText, whoFor === o.key && styles.chipTextSelected]}>{o.icon} {t(`ui.createHub.whoFor.${o.key}`)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
               {whoFor !== 'me' && (
                 <View style={styles.whoForDetailBox}>
-                  {loadingFriends && <NLoader fullScreen={false} size="inline" caption="Loading friends…" />}
+                  {loadingFriends && <NLoader fullScreen={false} size="inline" caption={t('ui.createHub.loadingFriends')} />}
                   {!loadingFriends && friends.length > 0 && (
                     <>
-                      <Text style={styles.sublabel}>Pick a real friend (optional)</Text>
+                      <Text style={styles.sublabel}>{t('ui.createHub.pickARealFriendOptional')}</Text>
                       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs, marginBottom: spacing.sm }}>
                         {friends.map((f) => {
                           const selected = whoForFriendId === f.id;
@@ -345,11 +347,11 @@ export default function CreateHubScreen({ navigation, route }) {
                   )}
                   <TextInput
                     style={styles.input}
-                    placeholder="Or type a name (optional)"
+                    placeholder={t('ui.createHub.orTypeANameOptional')}
                     placeholderTextColor={colors.textTertiary}
                     value={whoForName}
                     onChangeText={(t) => { setWhoForName(t); setWhoForFriendId(null); }}
-                    accessibilityLabel="Name (optional)"
+                    accessibilityLabel={t('ui.createHub.nameOptionalA11y')}
                   />
                 </View>
               )}
@@ -365,43 +367,43 @@ export default function CreateHubScreen({ navigation, route }) {
                     style={styles.primaryCard}
                     onPress={() => handlePrimaryCardPress(opt)}
                     activeOpacity={0.85}
-                    accessibilityLabel={opt.label}
+                    accessibilityLabel={t(`ui.createHub.primary.${opt.key}.label`)}
                     accessibilityRole="button"
                   >
                     <View style={styles.primaryCardIconWrap}>
                       <Ionicons name={opt.icon} size={24} color={colors.primary} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.primaryCardLabel}>{opt.label}</Text>
-                      <Text style={styles.primaryCardSubtitle}>{opt.subtitle}</Text>
+                      <Text style={styles.primaryCardLabel}>{t(`ui.createHub.primary.${opt.key}.label`)}</Text>
+                      <Text style={styles.primaryCardSubtitle}>{t(`ui.createHub.primary.${opt.key}.subtitle`)}</Text>
                     </View>
                     <Text style={styles.primaryCardChevron}>›</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.secondaryRowHeader}>Quick Actions</Text>
+              <Text style={styles.secondaryRowHeader}>{t('ui.createHub.quickActions')}</Text>
               <View style={styles.quickActionsList}>
                 {QUICK_ACTIONS.map((action) => (
                   <TouchableOpacity
-                    key={action.label}
+                    key={action.key}
                     style={styles.quickActionRow}
                     onPress={() => handleQuickAction(action)}
-                    accessibilityLabel={action.label}
+                    accessibilityLabel={t(`ui.createHub.quick.${action.key}`)}
                     accessibilityRole="button"
                   >
                     <Ionicons name={action.icon} size={18} color={colors.textSecondary} />
-                    <Text style={styles.quickActionLabel}>{action.label}</Text>
+                    <Text style={styles.quickActionLabel}>{t(`ui.createHub.quick.${action.key}`)}</Text>
                   </TouchableOpacity>
                 ))}
                 <TouchableOpacity
                   style={styles.quickActionRow}
                   onPress={() => setShowSomethingElse(true)}
-                  accessibilityLabel="Something Else"
+                  accessibilityLabel={t('ui.createHub.somethingElseA11y')}
                   accessibilityRole="button"
                 >
                   <Ionicons name="bulb-outline" size={18} color={colors.textSecondary} />
-                  <Text style={styles.quickActionLabel}>Something Else</Text>
+                  <Text style={styles.quickActionLabel}>{t('ui.createHub.somethingElse')}</Text>
                 </TouchableOpacity>
               </View>
             </>

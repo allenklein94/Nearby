@@ -91,6 +91,7 @@ export const LOCALIZED_FILES = [
   'src/utils/dateProposalVibes.js',
   'src/screens/FeaturesOverviewScreen.js',
   'src/screens/DatingPreferencesScreen.js',
+  'src/screens/CreateHubScreen.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
