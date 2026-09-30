@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { supabase, functionUrl } from '../services/supabase';
+import { basicsOption } from '../i18n/basicsVocab';
+import { categoryName } from '../i18n/categoryNames';
 import { useTheme } from '../context/ThemeContext';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
@@ -36,6 +39,7 @@ import { showSuccessToast } from '../motion';
 // drift) -- this screen only surfaces them read-only, with a real link
 // back to Profile to actually change them.
 export default function DatingPreferencesScreen({ navigation }) {
+  const { t, language } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
@@ -127,7 +131,7 @@ export default function DatingPreferencesScreen({ navigation }) {
     const minAgeNum = parseInt(minAge, 10);
     const maxAgeNum = parseInt(maxAge, 10);
     if (Number.isNaN(minAgeNum) || Number.isNaN(maxAgeNum) || minAgeNum < 18 || maxAgeNum < minAgeNum) {
-      return Alert.alert('Invalid range', 'Enter a valid age range (minimum 18).');
+      return Alert.alert(t('ui.datingPrefs.invalidRange'), t('ui.datingPrefs.enterAValidAgeRange'));
     }
 
     // Phase F -- same hard-validation posture as the age range above: a
@@ -139,18 +143,18 @@ export default function DatingPreferencesScreen({ navigation }) {
     if (!isBlankHeightPair(minHeightFeet, minHeightInches)) {
       minHeightToSave = feetInchesToTotalInches(minHeightFeet, minHeightInches);
       if (minHeightToSave === null) {
-        return Alert.alert('Invalid height', "Enter a real minimum height between 4'0\" and 7'0\", or leave both fields blank.");
+        return Alert.alert(t('ui.datingPrefs.invalidHeight'), t('ui.datingPrefs.enterARealMinimumHeight'));
       }
     }
     let maxHeightToSave = null;
     if (!isBlankHeightPair(maxHeightFeet, maxHeightInches)) {
       maxHeightToSave = feetInchesToTotalInches(maxHeightFeet, maxHeightInches);
       if (maxHeightToSave === null) {
-        return Alert.alert('Invalid height', "Enter a real maximum height between 4'0\" and 7'0\", or leave both fields blank.");
+        return Alert.alert(t('ui.datingPrefs.invalidHeight'), t('ui.datingPrefs.enterARealMaximumHeight'));
       }
     }
     if (minHeightToSave !== null && maxHeightToSave !== null && maxHeightToSave < minHeightToSave) {
-      return Alert.alert('Invalid range', 'Maximum height must be at or above the minimum.');
+      return Alert.alert(t('ui.datingPrefs.invalidRange'), t('ui.datingPrefs.maximumHeightMustBeAt'));
     }
 
     const { error } = await supabase
@@ -167,7 +171,7 @@ export default function DatingPreferencesScreen({ navigation }) {
       })
       .eq('id', userId);
     if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => savePreferences() });
-    showSuccessToast('Saved');
+    showSuccessToast(t('ui.datingPrefs.saved'));
   }
 
   async function showStrengths() {
@@ -183,18 +187,18 @@ export default function DatingPreferencesScreen({ navigation }) {
       if (!response.ok) {
         if (response.status === 403) {
           Alert.alert(
-            'Premium Feature',
-            'Generating a personalized note about your profile uses AI and is a Premium feature.',
+            t('ui.datingPrefs.premiumFeature'),
+            t('ui.datingPrefs.generatingAPersonalizedNoteAbout'),
             [
-              { text: 'Not now', style: 'cancel' },
-              { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
+              { text: t('ui.datingPrefs.notNow'), style: 'cancel' },
+              { text: t('ui.datingPrefs.upgradeToPremium'), onPress: () => navigation.navigate('Paywall') },
             ]
           );
         } else {
-          Alert.alert('Error', result.error || 'Could not generate this right now.');
+          Alert.alert(t('ui.datingPrefs.error'), result.error || t('ui.datingPrefs.couldNotGenerateThisRight'));
         }
       } else {
-        Alert.alert('✨ A note for you', result.summary, [{ text: 'Thanks' }]);
+        Alert.alert(t('ui.datingPrefs.aNoteForYou'), result.summary, [{ text: t('ui.datingPrefs.thanks') }]);
       }
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => showStrengths() });
@@ -205,7 +209,7 @@ export default function DatingPreferencesScreen({ navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.loadingText}>Loading your dating profile...</Text>
+        <Text style={styles.loadingText}>{t('ui.datingPrefs.loadingYourDatingProfile')}</Text>
       </SafeAreaView>
     );
   }
@@ -213,20 +217,20 @@ export default function DatingPreferencesScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.subtitle}>How you show up when you're looking to date — separate from your general Profile.</Text>
+        <Text style={styles.subtitle}>{t('ui.datingPrefs.howYouShowUpWhen')}</Text>
 
         <TouchableOpacity
           style={styles.strengthsButton}
           onPress={showStrengths}
           disabled={loadingStrengths}
           activeOpacity={0.85}
-          accessibilityLabel="Generate a note about why someone would be lucky to date you"
+          accessibilityLabel={t('ui.datingPrefs.generateANoteAboutWhyA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.strengthsButtonText}>{loadingStrengths ? 'Thinking...' : '✨ Why someone would be lucky to date you'}</Text>
+          <Text style={styles.strengthsButtonText}>{loadingStrengths ? t('ui.datingPrefs.thinking') : t('ui.datingPrefs.whySomeoneWouldBeLucky')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">What I'm looking for</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.datingPrefs.whatImLookingFor')}</Text>
         <View style={styles.card}>
           <View style={styles.chipsWrap}>
             {INTENTION_OPTIONS.map((option) => {
@@ -237,25 +241,25 @@ export default function DatingPreferencesScreen({ navigation }) {
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleIntention(option.value)}
                   activeOpacity={0.85}
-                  accessibilityLabel={option.label}
+                  accessibilityLabel={t(`ui.viewProfile.intention.${option.value}`)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                    {option.icon} {option.label}
+                    {option.icon} {t(`ui.viewProfile.intention.${option.value}`)}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
           <Text style={styles.helperText}>
-            Select as many as apply. Shown on your profile — meant to keep expectations honest, for you and everyone you match with.
+            {t('ui.datingPrefs.selectAsManyAsApply')}
           </Text>
         </View>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Dating Preferences</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.datingPrefs.datingPreferences')}</Text>
         <View style={styles.card}>
-          <Text style={styles.label}>Age Range</Text>
+          <Text style={styles.label}>{t('ui.datingPrefs.ageRange')}</Text>
           <View style={styles.ageRow}>
             <TextInput
               style={[styles.input, styles.ageInput]}
@@ -263,20 +267,20 @@ export default function DatingPreferencesScreen({ navigation }) {
               onChangeText={setMinAge}
               keyboardType="number-pad"
               placeholderTextColor={colors.textTertiary}
-              accessibilityLabel="Minimum age"
+              accessibilityLabel={t('ui.datingPrefs.minimumAgeA11y')}
             />
-            <Text style={styles.ageDash}>to</Text>
+            <Text style={styles.ageDash}>{t('ui.datingPrefs.ageTo')}</Text>
             <TextInput
               style={[styles.input, styles.ageInput]}
               value={maxAge}
               onChangeText={setMaxAge}
               keyboardType="number-pad"
               placeholderTextColor={colors.textTertiary}
-              accessibilityLabel="Maximum age"
+              accessibilityLabel={t('ui.datingPrefs.maximumAgeA11y')}
             />
           </View>
 
-          <Text style={[styles.label, { marginTop: spacing.lg }]}>Ethnicity Preferences</Text>
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.datingPrefs.ethnicityPreferences')}</Text>
           <View style={styles.chipsWrap}>
             {ETHNICITY_OPTIONS.map((option) => {
               const selected = ethnicityPreferences.includes(option);
@@ -286,18 +290,18 @@ export default function DatingPreferencesScreen({ navigation }) {
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleEthnicityPreference(option)}
                   activeOpacity={0.85}
-                  accessibilityLabel={option}
+                  accessibilityLabel={basicsOption('ethnicity', option, language)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{basicsOption('ethnicity', option, language)}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-          <Text style={styles.helperText}>Who you'd like to be matched with. Leave blank for no preference.</Text>
+          <Text style={styles.helperText}>{t('ui.datingPrefs.whoYoudLikeToBe')}</Text>
 
-          <Text style={[styles.label, { marginTop: spacing.lg }]}>Hair Color Preferences</Text>
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.datingPrefs.hairColorPreferences')}</Text>
           <View style={styles.chipsWrap}>
             {HAIR_COLOR_OPTIONS.map((option) => {
               const selected = hairColorPreferences.includes(option);
@@ -307,18 +311,18 @@ export default function DatingPreferencesScreen({ navigation }) {
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleHairColorPreference(option)}
                   activeOpacity={0.85}
-                  accessibilityLabel={option}
+                  accessibilityLabel={basicsOption('hair_color', option, language)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{basicsOption('hair_color', option, language)}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-          <Text style={styles.helperText}>A real filter, not just a Profile description — leave blank for no preference.</Text>
+          <Text style={styles.helperText}>{t('ui.datingPrefs.aRealFilterNotJust')}</Text>
 
-          <Text style={[styles.label, { marginTop: spacing.lg }]}>Eye Color Preferences</Text>
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.datingPrefs.eyeColorPreferences')}</Text>
           <View style={styles.chipsWrap}>
             {EYE_COLOR_OPTIONS.map((option) => {
               const selected = eyeColorPreferences.includes(option);
@@ -328,21 +332,21 @@ export default function DatingPreferencesScreen({ navigation }) {
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleEyeColorPreference(option)}
                   activeOpacity={0.85}
-                  accessibilityLabel={option}
+                  accessibilityLabel={basicsOption('eye_color', option, language)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{basicsOption('eye_color', option, language)}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-          <Text style={styles.helperText}>A real filter, not just a Profile description — leave blank for no preference.</Text>
+          <Text style={styles.helperText}>{t('ui.datingPrefs.aRealFilterNotJust')}</Text>
 
-          <Text style={[styles.label, { marginTop: spacing.lg }]}>Height Preference</Text>
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.datingPrefs.heightPreference')}</Text>
           <View style={styles.heightRangeRow}>
             <View style={styles.heightRangeCol}>
-              <Text style={styles.heightRangeLabel}>Min</Text>
+              <Text style={styles.heightRangeLabel}>{t('ui.datingPrefs.min')}</Text>
               <View style={styles.heightRow}>
                 <TextInput
                   style={[styles.input, styles.heightInput]}
@@ -351,7 +355,7 @@ export default function DatingPreferencesScreen({ navigation }) {
                   keyboardType="number-pad"
                   placeholder="ft"
                   placeholderTextColor={colors.textTertiary}
-                  accessibilityLabel="Minimum height, feet"
+                  accessibilityLabel={t('ui.datingPrefs.minimumHeightFeetA11y')}
                   maxLength={1}
                 />
                 <Text style={styles.heightDash}>'</Text>
@@ -362,14 +366,14 @@ export default function DatingPreferencesScreen({ navigation }) {
                   keyboardType="number-pad"
                   placeholder="in"
                   placeholderTextColor={colors.textTertiary}
-                  accessibilityLabel="Minimum height, inches"
+                  accessibilityLabel={t('ui.datingPrefs.minimumHeightInchesA11y')}
                   maxLength={2}
                 />
                 <Text style={styles.heightDash}>"</Text>
               </View>
             </View>
             <View style={styles.heightRangeCol}>
-              <Text style={styles.heightRangeLabel}>Max</Text>
+              <Text style={styles.heightRangeLabel}>{t('ui.datingPrefs.max')}</Text>
               <View style={styles.heightRow}>
                 <TextInput
                   style={[styles.input, styles.heightInput]}
@@ -378,7 +382,7 @@ export default function DatingPreferencesScreen({ navigation }) {
                   keyboardType="number-pad"
                   placeholder="ft"
                   placeholderTextColor={colors.textTertiary}
-                  accessibilityLabel="Maximum height, feet"
+                  accessibilityLabel={t('ui.datingPrefs.maximumHeightFeetA11y')}
                   maxLength={1}
                 />
                 <Text style={styles.heightDash}>'</Text>
@@ -389,56 +393,56 @@ export default function DatingPreferencesScreen({ navigation }) {
                   keyboardType="number-pad"
                   placeholder="in"
                   placeholderTextColor={colors.textTertiary}
-                  accessibilityLabel="Maximum height, inches"
+                  accessibilityLabel={t('ui.datingPrefs.maximumHeightInchesA11y')}
                   maxLength={2}
                 />
                 <Text style={styles.heightDash}>"</Text>
               </View>
             </View>
           </View>
-          <Text style={styles.helperText}>A real filter, not just a Profile description — leave both blank for no preference.</Text>
+          <Text style={styles.helperText}>{t('ui.datingPrefs.aRealFilterNotJust2')}</Text>
 
           <TouchableOpacity
             style={styles.button}
             onPress={savePreferences}
             activeOpacity={0.85}
-            accessibilityLabel="Save preferences"
+            accessibilityLabel={t('ui.datingPrefs.savePreferencesA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.buttonText}>Save Preferences</Text>
+            <Text style={styles.buttonText}>{t('ui.datingPrefs.savePreferences')}</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Interests</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.datingPrefs.interests')}</Text>
         <View style={styles.card}>
           {interests.length > 0 ? (
             <View style={styles.chipsWrap}>
               {interests.map((interest) => (
                 <View key={interest} style={styles.chipReadOnly}>
-                  <Text style={styles.chipText}>{interest}</Text>
+                  <Text style={styles.chipText}>{categoryName(interest, language)}</Text>
                 </View>
               ))}
             </View>
           ) : (
-            <Text style={styles.helperText}>You haven't added any interests yet.</Text>
+            <Text style={styles.helperText}>{t('ui.datingPrefs.youHaventAddedAnyInterests')}</Text>
           )}
           <TouchableOpacity
             style={{ marginTop: spacing.md }}
             onPress={() => navigation.navigate('Profile')}
-            accessibilityLabel="Edit your interests on Profile"
+            accessibilityLabel={t('ui.datingPrefs.editYourInterestsOnProfileA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.linkText}>Edit your interests on Profile →</Text>
+            <Text style={styles.linkText}>{t('ui.datingPrefs.editYourInterestsOnProfile')}</Text>
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity
           style={{ marginTop: spacing.sm, marginBottom: spacing.xxl }}
           onPress={() => navigation.navigate('Profile', { scrollToGenderSection: true })}
-          accessibilityLabel="Gender identity, ethnicity, and their visibility are managed on your Profile"
+          accessibilityLabel={t('ui.datingPrefs.genderIdentityEthnicityAndTheirA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.linkText}>Gender identity, ethnicity, and their visibility are managed on your Profile →</Text>
+          <Text style={styles.linkText}>{t('ui.datingPrefs.genderIdentityEthnicityAndTheir')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
