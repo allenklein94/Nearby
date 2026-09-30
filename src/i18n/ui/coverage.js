@@ -87,6 +87,8 @@ export const LOCALIZED_FILES = [
   'src/utils/occasionVisibility.js',
   'src/screens/DiscoveryScreen.js',
   'src/components/FiltersModal.js',
+  'src/screens/DateProposalScreen.js',
+  'src/utils/dateProposalVibes.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).

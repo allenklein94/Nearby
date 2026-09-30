@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { formatDistance } from '../utils/formatDistance';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
@@ -24,14 +25,13 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { moneyLabel } from '../utils/outcomeDisplay';
 import { DATE_VIBES } from '../constants/businessVibes';
+import { attributeLabel } from '../i18n/optionLabels';
 import { BUSINESS_ATTRIBUTE_OPTIONS } from '../constants/businessAttributes';
 import { cleanDateVibes, requestAttributesFromProposal, dateVibesLine } from '../utils/dateProposalVibes';
 
 import { countLabel } from '../utils/plural';
-const TERMINAL_STATUS_COPY = {
-  declined: "Didn't work out that time",
-  withdrawn: 'Withdrawn',
-};
+// Worded by ui.dateProposal.terminal.<status>.
+const TERMINAL_STATUSES = ['declined', 'withdrawn'];
 
 // Discover/People-Friends parity plan, item 4: a quick "what do you want
 // to do" entry point instead of a blank text box, using the same 26-tag
@@ -42,13 +42,13 @@ const TERMINAL_STATUS_COPY = {
 // a real, well-supported "send to any nearby business" request, not a
 // missing value.
 const PLAN_QUICK_CATEGORIES = [
-  { key: 'dinner', emoji: '🍽️', label: 'Dinner', category: 'Foodie', planText: 'Dinner sometime?' },
-  { key: 'coffee', emoji: '☕', label: 'Coffee', category: 'Coffee', planText: 'Coffee sometime?' },
-  { key: 'fitness', emoji: '🏃', label: 'Fitness', category: 'Fitness', planText: 'Want to work out together?' },
-  { key: 'fun', emoji: '🎨', label: 'Something fun', category: null, planText: 'Want to do something fun?' },
-  { key: 'music', emoji: '🎵', label: 'Music', category: 'Music', planText: 'Want to check out some music?' },
-  { key: 'outdoors', emoji: '🌴', label: 'Outdoors', category: 'Outdoors', planText: 'Want to get outside?' },
-  { key: 'surprise', emoji: '✨', label: 'Surprise me', category: null, planText: 'Surprise me — you pick!' },
+  { key: 'dinner', emoji: '🍽️', category: 'Foodie' },
+  { key: 'coffee', emoji: '☕', category: 'Coffee' },
+  { key: 'fitness', emoji: '🏃', category: 'Fitness' },
+  { key: 'fun', emoji: '🎨', category: null },
+  { key: 'music', emoji: '🎵', category: 'Music' },
+  { key: 'outdoors', emoji: '🌴', category: 'Outdoors' },
+  { key: 'surprise', emoji: '✨', category: null },
 ];
 
 // "The Offer System" Phase 5 (see CLAUDE.md's own plan, Decision 4). The
@@ -60,6 +60,7 @@ const PLAN_QUICK_CATEGORIES = [
 // (propose_date/respond_to_date_proposal), not just by which button this
 // screen happens to show -- a stale client can never bypass it.
 export default function DateProposalScreen({ navigation, route }) {
+  const { t, language } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const matchId = route.params?.matchId;
@@ -162,7 +163,7 @@ export default function DateProposalScreen({ navigation, route }) {
 
   async function handlePropose() {
     if (!planText.trim()) {
-      Alert.alert('Tell them what you have in mind', 'A few words about the plan.');
+      Alert.alert(t('ui.dateProposal.tellThemWhatYouHave'), t('ui.dateProposal.aFewWordsAboutThe'));
       return;
     }
     setSubmitting(true);
@@ -200,8 +201,10 @@ export default function DateProposalScreen({ navigation, route }) {
 
   function handleChooseNearby(result) {
     const chip = PLAN_QUICK_CATEGORIES.find((qc) => qc.key === activeChipKey);
-    const label = chip ? chip.label : 'Plan';
-    setPlanText(`${label} at ${result.partner_name}${result.title ? ` — ${result.title}` : ''}`);
+    const label = chip ? t(`ui.dateProposal.quick.${chip.key}`) : t('ui.dateProposal.plan');
+    setPlanText(result.title
+      ? t('ui.dateProposal.atPlaceTitle', { label, place: result.partner_name, title: result.title })
+      : t('ui.dateProposal.atPlace', { label, place: result.partner_name }));
     setSelectedAvailabilityId(result.id);
     setNearbyResults(null);
   }
@@ -241,10 +244,10 @@ export default function DateProposalScreen({ navigation, route }) {
   }
 
   function handleWithdraw() {
-    Alert.alert('Withdraw this plan?', `${matchName} will no longer see it.`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('ui.dateProposal.withdrawThisPlan'), t('ui.dateProposal.willNoLongerSeeIt', { matchName: matchName }), [
+      { text: t('ui.dateProposal.cancel'), style: 'cancel' },
       {
-        text: 'Withdraw',
+        text: t('ui.dateProposal.withdraw'),
         style: 'destructive',
         onPress: async () => {
           setSubmitting(true);
@@ -271,7 +274,7 @@ export default function DateProposalScreen({ navigation, route }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load this plan." onRetry={load} />
+        <LoadErrorState message={t('ui.dateProposal.couldntLoadThisPlan')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -286,17 +289,15 @@ export default function DateProposalScreen({ navigation, route }) {
   const planPlaceLabels = {
     done: formatPlaceStatusLabel({ place: 'done', venueName: acceptedOffer?.brand_partners?.name ?? null }),
     pending: formatPlaceStatusLabel({ place: 'pending', ...placeOfferCounts }),
-    todo: 'Find a place',
+    todo: t('ui.dateProposal.findAPlace'),
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.heading}>Plan Something Together</Text>
-          <Text style={styles.subtitle}>
-            Propose a plan with {matchName} -- once they say yes, Nearby can ask real nearby businesses to help make it happen.
-          </Text>
+          <Text style={styles.heading}>{t('ui.dateProposal.planSomethingTogether')}</Text>
+          <Text style={styles.subtitle}>{t('ui.dateProposal.proposeAPlanWithOnce', { matchName: matchName })}</Text>
 
           {/* Persistent, computed People/Time/Place status (CLAUDE.md, Aug
               29 2026) -- this is the same real completion state Matches'
@@ -317,23 +318,23 @@ export default function DateProposalScreen({ navigation, route }) {
             style={{ marginBottom: spacing.lg }}
           />
 
-          {proposal && TERMINAL_STATUS_COPY[proposal.status] && (
+          {proposal && TERMINAL_STATUSES.includes(proposal.status) && (
             <View style={styles.priorPlanCard}>
-              <Text style={styles.priorPlanLabel}>Last plan: {TERMINAL_STATUS_COPY[proposal.status]}</Text>
+              <Text style={styles.priorPlanLabel}>{t('ui.dateProposal.lastPlan', { status: t(`ui.dateProposal.terminal.${proposal.status}`) })}</Text>
               <Text style={styles.priorPlanText}>"{proposal.plan_text}"</Text>
             </View>
           )}
 
           {proposal && proposal.status === 'proposed' && (
             <View style={styles.planCard}>
-              <Text style={styles.planCardLabel}>{isProposer ? `You proposed` : `${matchName} proposed`}</Text>
+              <Text style={styles.planCardLabel}>{isProposer ? t('ui.dateProposal.youProposed') : t('ui.dateProposal.nameProposed', { name: matchName })}</Text>
               <Text style={styles.planCardText}>"{proposal.plan_text}"</Text>
-              {!!dateVibesLine(proposal.attributes) && <Text style={styles.nearbyResultMeta}>{dateVibesLine(proposal.attributes)}</Text>}
+              {!!dateVibesLine(proposal.attributes, language) && <Text style={styles.nearbyResultMeta}>{dateVibesLine(proposal.attributes, language)}</Text>}
               {isProposer ? (
                 <>
-                  <Text style={styles.waitingText}>Waiting for {matchName} to respond.</Text>
-                  <TouchableOpacity style={styles.withdrawButton} onPress={handleWithdraw} disabled={submitting} accessibilityLabel="Withdraw this plan" accessibilityRole="button">
-                    <Text style={styles.withdrawButtonText}>Withdraw</Text>
+                  <Text style={styles.waitingText}>{t('ui.dateProposal.waitingForToRespond', { matchName: matchName })}</Text>
+                  <TouchableOpacity style={styles.withdrawButton} onPress={handleWithdraw} disabled={submitting} accessibilityLabel={t('ui.dateProposal.withdrawThisPlanA11y')} accessibilityRole="button">
+                    <Text style={styles.withdrawButtonText}>{t('ui.dateProposal.withdraw')}</Text>
                   </TouchableOpacity>
                 </>
               ) : (
@@ -346,19 +347,19 @@ export default function DateProposalScreen({ navigation, route }) {
                     style={[styles.respondButton, styles.acceptButton]}
                     onPress={() => handleRespond(true)}
                     disabled={submitting}
-                    accessibilityLabel="Accept this plan"
+                    accessibilityLabel={t('ui.dateProposal.acceptThisPlanA11y')}
                     accessibilityRole="button"
                   >
-                    {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.acceptButtonText}>I'm In</Text>}
+                    {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.acceptButtonText}>{t('ui.dateProposal.imIn')}</Text>}
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.respondButton, styles.declineButton]}
                     onPress={() => handleRespond(false)}
                     disabled={submitting}
-                    accessibilityLabel="Decline this plan"
+                    accessibilityLabel={t('ui.dateProposal.declineThisPlanA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.declineButtonText}>Not This Time</Text>
+                    <Text style={styles.declineButtonText}>{t('ui.dateProposal.notThisTime')}</Text>
                   </TouchableOpacity>
                 </View>
                 </>
@@ -368,9 +369,9 @@ export default function DateProposalScreen({ navigation, route }) {
 
           {proposal && proposal.status === 'accepted' && (
             <View style={styles.acceptedCard}>
-              <Text style={styles.acceptedTitle}>🎉 It's a plan!</Text>
+              <Text style={styles.acceptedTitle}>{t('ui.dateProposal.itsAPlan')}</Text>
               <Text style={styles.planCardText}>"{proposal.plan_text}"</Text>
-              {!!dateVibesLine(proposal.attributes) && <Text style={styles.nearbyResultMeta}>{dateVibesLine(proposal.attributes)}</Text>}
+              {!!dateVibesLine(proposal.attributes, language) && <Text style={styles.nearbyResultMeta}>{dateVibesLine(proposal.attributes, language)}</Text>}
               {businessRequest && acceptedOffer ? (
                 // Gap #2: the merged "your date is set" view -- the real
                 // accepted offer's own venue/time/what-they-offered,
@@ -381,7 +382,7 @@ export default function DateProposalScreen({ navigation, route }) {
                 // two hand-copied blocks.
                 <AcceptedBusinessOfferCard
                   offer={acceptedOffer}
-                  kicker={isRomanticMatch ? '❤️ Your date is set' : '🎉 Plan confirmed'}
+                  kicker={isRomanticMatch ? t('ui.dateProposal.yourDateIsSet') : t('ui.dateProposal.planConfirmed')}
                   bordered={false}
                   onViewRequest={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
                 />
@@ -389,19 +390,19 @@ export default function DateProposalScreen({ navigation, route }) {
                 <TouchableOpacity
                   style={styles.primaryButton}
                   onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
-                  accessibilityLabel="View your business request"
+                  accessibilityLabel={t('ui.dateProposal.viewYourBusinessRequestA11y')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.primaryButtonText}>View Request →</Text>
+                  <Text style={styles.primaryButtonText}>{t('ui.dateProposal.viewRequest')}</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   style={styles.primaryButton}
                   onPress={() => navigation.navigate('AskBusiness', { matchId, matchName, prefillCategory: proposal?.category ?? selectedCategory, prefillAttributes: requestAttributesFromProposal(proposal) })}
-                  accessibilityLabel="Find somewhere to go"
+                  accessibilityLabel={t('ui.dateProposal.findSomewhereToGoA11y')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.primaryButtonText}>Find Somewhere to Go →</Text>
+                  <Text style={styles.primaryButtonText}>{t('ui.dateProposal.findSomewhereToGo')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -409,7 +410,7 @@ export default function DateProposalScreen({ navigation, route }) {
 
           {showProposeForm && (
             <>
-              <Text style={styles.label}>What do you want to do?</Text>
+              <Text style={styles.label}>{t('ui.dateProposal.whatDoYouWantTo')}</Text>
               <View style={styles.quickCategoryRow}>
                 {PLAN_QUICK_CATEGORIES.map((qc) => {
                   const selected = activeChipKey === qc.key;
@@ -419,17 +420,17 @@ export default function DateProposalScreen({ navigation, route }) {
                       style={[styles.quickCategoryChip, selected && styles.quickCategoryChipSelected]}
                       onPress={() => {
                         setSelectedCategory(qc.category);
-                        setPlanText(qc.planText);
+                        setPlanText(t(`ui.dateProposal.quickText.${qc.key}`));
                         setActiveChipKey(qc.key);
                         setNearbyResults(null);
                         setSelectedAvailabilityId(null);
                       }}
-                      accessibilityLabel={qc.label}
+                      accessibilityLabel={t(`ui.dateProposal.quick.${qc.key}`)}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
                     >
                       <Text style={styles.quickCategoryEmoji}>{qc.emoji}</Text>
-                      <Text style={[styles.quickCategoryLabel, selected && styles.quickCategoryLabelSelected]}>{qc.label}</Text>
+                      <Text style={[styles.quickCategoryLabel, selected && styles.quickCategoryLabelSelected]}>{t(`ui.dateProposal.quick.${qc.key}`)}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -446,23 +447,23 @@ export default function DateProposalScreen({ navigation, route }) {
                     style={styles.findNearbyButton}
                     onPress={handleFindNearby}
                     disabled={searchingNearby}
-                    accessibilityLabel="Find something nearby"
+                    accessibilityLabel={t('ui.dateProposal.findSomethingNearbyA11y')}
                     accessibilityRole="button"
                   >
                     {searchingNearby ? (
                       <ActivityIndicator color={colors.primary} />
                     ) : (
-                      <Text style={styles.findNearbyButtonText}>🔎 Find something nearby</Text>
+                      <Text style={styles.findNearbyButtonText}>{t('ui.dateProposal.findSomethingNearby')}</Text>
                     )}
                   </TouchableOpacity>
 
                   {searchingNearby && (
-                    <Text style={styles.nearbyEmptyText}>Finding availability…</Text>
+                    <Text style={styles.nearbyEmptyText}>{t('ui.dateProposal.findingAvailability')}</Text>
                   )}
 
                   {nearbyResults && nearbyResults.length === 0 && (
                     <Text style={styles.nearbyEmptyText}>
-                      No real nearby options right now — you can still send a text invite below.
+                      {t('ui.dateProposal.noRealNearbyOptionsRight')}
                     </Text>
                   )}
 
@@ -473,7 +474,7 @@ export default function DateProposalScreen({ navigation, route }) {
                           key={result.id}
                           style={[styles.nearbyResultCard, selectedAvailabilityId === result.id && styles.nearbyResultCardSelected]}
                           onPress={() => handleChooseNearby(result)}
-                          accessibilityLabel={`Choose ${result.partner_name}`}
+                          accessibilityLabel={t('ui.dateProposal.chooseA11y', { partnerName: result.partner_name })}
                           accessibilityRole="button"
                         >
                           <Text style={styles.nearbyResultTitle}>{result.partner_name}</Text>
@@ -495,7 +496,7 @@ export default function DateProposalScreen({ navigation, route }) {
                 </View>
               )}
 
-              <Text style={styles.label}>{isRomanticMatch ? 'What kind of date? (optional)' : 'What kind of place? (optional)'}</Text>
+              <Text style={styles.label}>{isRomanticMatch ? t('ui.dateProposal.whatKindOfDateOptional') : t('ui.dateProposal.whatKindOfPlaceOptional')}</Text>
               <View style={styles.quickCategoryRow}>
                 {DATE_VIBES.map((v) => {
                   const selected = selectedVibes.includes(v.key);
@@ -505,20 +506,20 @@ export default function DateProposalScreen({ navigation, route }) {
                       key={v.key}
                       style={[styles.quickCategoryChip, selected && styles.quickCategoryChipSelected]}
                       onPress={() => setSelectedVibes((prev) => (selected ? prev.filter((k) => k !== v.key) : [...prev, v.key]))}
-                      accessibilityLabel={v.label}
+                      accessibilityLabel={attributeLabel(v.key, v.label, language)}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
                     >
-                      <Text style={[styles.quickCategoryLabel, selected && styles.quickCategoryLabelSelected]}>{opt?.icon} {v.label}</Text>
+                      <Text style={[styles.quickCategoryLabel, selected && styles.quickCategoryLabelSelected]}>{opt?.icon} {attributeLabel(v.key, v.label, language)}</Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
 
-              <Text style={styles.label}>Or say it your way</Text>
+              <Text style={styles.label}>{t('ui.dateProposal.orSayItYourWay')}</Text>
               <TextInput
                 style={styles.textArea}
-                placeholder="Dinner Friday around 7?"
+                placeholder={t('ui.dateProposal.dinnerFridayAround7')}
                 placeholderTextColor={colors.textTertiary}
                 value={planText}
                 onChangeText={(text) => {
@@ -529,16 +530,16 @@ export default function DateProposalScreen({ navigation, route }) {
                   setSelectedAvailabilityId(null);
                 }}
                 multiline
-                accessibilityLabel="What do you have in mind?"
+                accessibilityLabel={t('ui.dateProposal.whatDoYouHaveInA11y')}
               />
               <TouchableOpacity
                 style={[styles.primaryButton, (submitting || !planText.trim()) && styles.primaryButtonDisabled]}
                 onPress={handlePropose}
                 disabled={submitting || !planText.trim()}
-                accessibilityLabel="Propose this plan"
+                accessibilityLabel={t('ui.dateProposal.proposeThisPlanA11y')}
                 accessibilityRole="button"
               >
-                {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Propose Plan</Text>}
+                {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>{t('ui.dateProposal.proposePlan')}</Text>}
               </TouchableOpacity>
             </>
           )}

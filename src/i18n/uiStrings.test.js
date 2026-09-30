@@ -76,9 +76,18 @@ describe('translated labels are never saved as values', () => {
     /_param:\s*(t|tr)\(\s*['"`]ui\./, // an RPC argument that is ui text
     /(===|!==)\s*(t|tr)\(\s*['"`]ui\./, // comparing against a translated label
   ];
+  // Reasoned exceptions: text that IS the person's own words, only prefilled for them to edit and send.
+  const PREFILLED_OWN_WORDS = {
+    'screens/DateProposalScreen.js': 'setPlanText prefills the editable plan message the person sends to their match; it is their own words, in their language by design (never a stored option value)',
+  };
   test('no source file stores, sends or compares a translated ui label', () => {
     const bad = [];
-    for (const [file, src] of SOURCES) for (const re of SAVE_TRANSLATED) if (re.test(src)) bad.push(`${file}: ${re}`);
+    for (const [file, src] of SOURCES) {
+      for (const re of SAVE_TRANSLATED) {
+        const hit = PREFILLED_OWN_WORDS[file] ? src.replace(/\bsetPlanText\(\s*t\(/g, '') : src;
+        if (re.test(hit)) bad.push(`${file}: ${re}`);
+      }
+    }
     expect(bad).toEqual([]);
   });
 });

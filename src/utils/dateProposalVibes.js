@@ -4,6 +4,7 @@
 // looking for: Romantic · Quiet" and nothing about who the two people are.
 // Only what was tapped: a date never implies Romantic, and a plan with none picked carries none (null, never a default).
 import { DATE_VIBES } from '../constants/businessVibes';
+import { attributeLabel } from '../i18n/optionLabels';
 
 const DATE_VIBE_KEYS = DATE_VIBES.map((v) => v.key);
 export const MAX_DATE_VIBES = 8;
@@ -19,8 +20,9 @@ export function requestAttributesFromProposal(proposal) {
   return vibes.length > 0 ? vibes : null;
 }
 
-export function dateVibesLine(list) {
+// `language`: each vibe reads vocab.attributes.<key> (English = the vibe's own label, unchanged).
+export function dateVibesLine(list, language) {
   const vibes = cleanDateVibes(list);
   if (vibes.length === 0) return null;
-  return vibes.map((k) => DATE_VIBES.find((v) => v.key === k).label).join(' · ');
+  return vibes.map((k) => attributeLabel(k, DATE_VIBES.find((v) => v.key === k).label, language)).join(' · ');
 }
