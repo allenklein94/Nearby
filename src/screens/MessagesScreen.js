@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useLayoutEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,8 +25,8 @@ import { isGatheringPast } from '../utils/objectState';
 const HIDDEN_GATHERING_CHATS_KEY = 'hidden_gathering_chats';
 
 const MESSAGES_MODES = [
-  { key: 'matches', icon: '💬', label: 'Matches' },
-  { key: 'friends', icon: '🤝', label: 'Friends' },
+  { key: 'matches', icon: '💬', labelKey: 'ui.groupChat.mode.matches' },
+  { key: 'friends', icon: '🤝', labelKey: 'ui.groupChat.mode.friends' },
 ];
 
 // Phase 5 of the "build everything" plan (see CLAUDE.md): Messages left
@@ -50,6 +51,7 @@ const MESSAGES_MODES = [
 // is a second, embedded use of the same real component, same pattern
 // MatchesScreen was already embedded with here.
 export default function MessagesScreen({ navigation, route }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [mode, setMode] = useState('matches');
@@ -86,12 +88,12 @@ export default function MessagesScreen({ navigation, route }) {
 
   async function hideGatheringChat(chat) {
     Alert.alert(
-      'Hide this chat?',
-      `"${chat.title} Chat" won't show up here anymore. This only affects this device — it doesn't remove you from the gathering.`,
+      t('ui.groupChat.hideThisChat'),
+      t('ui.groupChat.chatWontShowUpHere', { title: chat.title }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('ui.groupChat.cancel'), style: 'cancel' },
         {
-          text: 'Hide',
+          text: t('ui.groupChat.hide'),
           style: 'destructive',
           onPress: async () => {
             const raw = await AsyncStorage.getItem(HIDDEN_GATHERING_CHATS_KEY);
@@ -116,12 +118,12 @@ export default function MessagesScreen({ navigation, route }) {
                 key={m.key}
                 style={[styles.modeToggleButton, active && styles.modeToggleButtonActive]}
                 onPress={() => setMode(m.key)}
-                accessibilityLabel={m.label}
+                accessibilityLabel={t(m.labelKey)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
               >
                 <Text style={styles.modeToggleIcon}>{m.icon}</Text>
-                <Text style={[styles.modeToggleText, active && styles.modeToggleTextActive]}>{m.label}</Text>
+                <Text style={[styles.modeToggleText, active && styles.modeToggleTextActive]}>{t(m.labelKey)}</Text>
               </TouchableOpacity>
             );
           })}
@@ -152,14 +154,14 @@ export default function MessagesScreen({ navigation, route }) {
                     activeOpacity={0.85}
                     accessibilityLabel={
                       chat.kind === 'gathering'
-                        ? `Open ${chat.title} group chat${chat.isPast ? ', this gathering already happened' : ''}. Long press to hide.`
-                        : `Open ${chat.title} group chat`
+                        ? t(chat.isPast ? 'ui.groupChat.openPastGroupChatLongPressA11y' : 'ui.groupChat.openGroupChatLongPressA11y', { title: chat.title })
+                        : t('ui.groupChat.openGroupChatA11y', { title: chat.title })
                     }
                     accessibilityRole="button"
                   >
                     <Text style={styles.groupChatChipIcon}>{chat.kind === 'gathering' ? '🎉' : '🏘️'}</Text>
-                    <Text style={styles.groupChatChipText} numberOfLines={1}>{chat.title} Chat</Text>
-                    {chat.isPast && <Text style={styles.groupChatChipPast}>Past</Text>}
+                    <Text style={styles.groupChatChipText} numberOfLines={1}>{t('ui.groupChat.chat', { title: chat.title })}</Text>
+                    {chat.isPast && <Text style={styles.groupChatChipPast}>{t('ui.groupChat.past')}</Text>}
                   </TouchableOpacity>
                 ))}
               </ScrollView>

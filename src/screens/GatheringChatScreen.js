@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image } from 'react-native';
@@ -15,9 +16,11 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { Alert, ActivityIndicator } from 'react-native';
 import useChatComposer from '../hooks/useChatComposer';
+import { categoryName } from '../i18n/categoryNames';
 import usePaginatedMessages from '../hooks/usePaginatedMessages';
 
 export default function GatheringChatScreen({ route, navigation }) {
+  const { t, language } = useLanguage();
   const { gatheringId, gatheringTitle, draftText } = route.params;
   const { colors } = useTheme();
   const [postingStory, setPostingStory] = useState(false);
@@ -47,7 +50,7 @@ export default function GatheringChatScreen({ route, navigation }) {
         .map(([interest]) => interest);
 
       if (sharedInterests.length === 0) {
-        Alert.alert('No shared interests yet', "This group doesn't have enough overlapping interests on their profiles to base a suggestion on.");
+        Alert.alert(t('ui.groupChat.noSharedInterestsYet'), t('ui.groupChat.thisGroupDoesntHaveEnough'));
         setSuggestingOffers(false);
         return;
       }
@@ -63,14 +66,14 @@ export default function GatheringChatScreen({ route, navigation }) {
         .limit(3);
 
       if (!offersData || offersData.length === 0) {
-        Alert.alert('No suggestions right now', "There aren't any active offers matching what this group likes yet — check back soon.");
+        Alert.alert(t('ui.groupChat.noSuggestionsRightNow'), t('ui.groupChat.thereArentAnyActiveOffers'));
         setSuggestingOffers(false);
         return;
       }
 
       const { data: sessionData } = await supabase.auth.getSession();
       const myId = sessionData?.session?.user?.id;
-      const suggestionText = `💡 Group ideas, since a few of you like ${sharedInterests.slice(0, 3).join(', ')}:\n${offersData.map((o) => `• ${o.title} at ${o.brand_partners?.name ?? 'a local spot'}`).join('\n')}`;
+      const suggestionText = `${t('ui.groupChat.groupIdeasHeading', { interests: sharedInterests.slice(0, 3).map((i) => categoryName(i, language)).join(', ') })}\n${offersData.map((o) => t('ui.groupChat.at', { title: o.title, name: o.brand_partners?.name ?? t('ui.groupChat.aLocalSpot') })).join('\n')}`;
       await sendGatheringMessage(gatheringId, suggestionText);
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSuggestOffers() });
@@ -86,7 +89,7 @@ export default function GatheringChatScreen({ route, navigation }) {
       const myId = sessionData?.session?.user?.id;
       setPostingStory(true);
       await uploadStory(myId, media.uri, media.type, false, gatheringId);
-      showSuccessToast('Posted!', `Your story is now shared with everyone at ${gatheringTitle}.`);
+      showSuccessToast(t('ui.groupChat.posted'), t('ui.groupChat.yourStoryIsNowShared', { gatheringTitle: gatheringTitle }));
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handlePostStory() });
     }
@@ -167,7 +170,7 @@ export default function GatheringChatScreen({ route, navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load this chat." onRetry={loadInitial} />
+        <LoadErrorState message={t('ui.groupChat.couldntLoadThisChat')} onRetry={loadInitial} />
       </SafeAreaView>
     );
   }
@@ -213,11 +216,11 @@ export default function GatheringChatScreen({ route, navigation }) {
                 <ActivityIndicator color={colors.textTertiary} />
               </View>
             ) : loadOlderError ? (
-              <TouchableOpacity onPress={loadOlder} accessibilityLabel="Couldn't load older messages, tap to retry" accessibilityRole="button">
-                <Text style={styles.historyErrorText}>Couldn't load older messages — tap to retry</Text>
+              <TouchableOpacity onPress={loadOlder} accessibilityLabel={t('ui.groupChat.couldntLoadOlderMessagesTapA11y')} accessibilityRole="button">
+                <Text style={styles.historyErrorText}>{t('ui.groupChat.couldntLoadOlderMessagesTap')}</Text>
               </TouchableOpacity>
             ) : !hasMore && messages.length > 0 ? (
-              <Text style={styles.historyStartText}>The start of this gathering's chat</Text>
+              <Text style={styles.historyStartText}>{t('ui.groupChat.theStartOfThisGatherings')}</Text>
             ) : null
           }
           renderItem={({ item }) => {
@@ -227,7 +230,7 @@ export default function GatheringChatScreen({ route, navigation }) {
                 {!isMe && (
                   <TouchableOpacity
                     onPress={() => navigation.navigate('ViewProfile', { userId: item.sender_id })}
-                    accessibilityLabel={`View ${item.profiles?.display_name ?? 'this person'}'s profile`}
+                    accessibilityLabel={t('ui.groupChat.viewSProfileA11y', { name: item.profiles?.display_name ?? 'this person' })}
                     accessibilityRole="button"
                   >
                     {photoUrls[item.sender_id] ? (
@@ -242,7 +245,7 @@ export default function GatheringChatScreen({ route, navigation }) {
                     <TouchableOpacity
                       onPress={() => navigation.navigate('ViewProfile', { userId: item.sender_id })}
                       onLongPress={() => setReportTarget({ id: item.sender_id, name: item.profiles?.display_name })}
-                      accessibilityLabel={`${item.profiles?.display_name}, view profile, hold to report or block`}
+                      accessibilityLabel={t('ui.groupChat.viewProfileHoldToReportA11y', { name: item.profiles?.display_name })}
                     >
                       <Text style={styles.senderName}>{item.profiles?.display_name}</Text>
                     </TouchableOpacity>
@@ -266,7 +269,7 @@ export default function GatheringChatScreen({ route, navigation }) {
           <TouchableOpacity
             onPress={handlePostStory}
             disabled={postingStory}
-            accessibilityLabel="Post a story from this gathering"
+            accessibilityLabel={t('ui.groupChat.postAStoryFromThisA11y')}
             accessibilityRole="button"
           >
             <Text style={{ fontSize: 22 }}>📸</Text>
@@ -274,22 +277,22 @@ export default function GatheringChatScreen({ route, navigation }) {
           <TouchableOpacity
             onPress={handleSuggestOffers}
             disabled={suggestingOffers}
-            accessibilityLabel="Suggest offers based on what this group likes"
+            accessibilityLabel={t('ui.groupChat.suggestOffersBasedOnWhatA11y')}
             accessibilityRole="button"
           >
             <Text style={{ fontSize: 22 }}>💡</Text>
           </TouchableOpacity>
           <TextInput
             style={styles.input}
-            placeholder="Message everyone..."
+            placeholder={t('ui.groupChat.messageEveryone')}
             placeholderTextColor={colors.textTertiary}
             value={text}
             onChangeText={setText}
             multiline
-            accessibilityLabel="Message the gathering group chat"
+            accessibilityLabel={t('ui.groupChat.messageTheGatheringGroupChatA11y')}
           />
-          <TouchableOpacity style={styles.sendButton} onPress={handleSend} accessibilityLabel="Send message" accessibilityRole="button">
-            <Text style={styles.sendButtonText}>Send</Text>
+          <TouchableOpacity style={styles.sendButton} onPress={handleSend} accessibilityLabel={t('ui.groupChat.sendMessageA11y')} accessibilityRole="button">
+            <Text style={styles.sendButtonText}>{t('ui.groupChat.send')}</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

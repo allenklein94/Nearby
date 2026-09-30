@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
@@ -14,8 +15,7 @@ import useChatComposer from '../hooks/useChatComposer';
 import usePaginatedMessages from '../hooks/usePaginatedMessages';
 
 import { NLoader } from '../motion';
-import { countLabel } from '../utils/plural';
-const ROLE_LABEL = { host: 'Host', organizer: 'Co-organizer', guest: 'Guest' };
+const ROLE_KEYS = ['host', 'organizer', 'guest'];
 
 // Item 89 (CLAUDE.md, "Give the occasion a single shared conversation"):
 // "Rather than Messages -> individual chats -> trying to coordinate, the
@@ -25,6 +25,7 @@ const ROLE_LABEL = { host: 'Host', organizer: 'Co-organizer', guest: 'Guest' };
 // GatheringChatScreen), so this is the genuinely missing piece, not a
 // duplicate. See 20261109_plan_group_chat.sql for the schema/RLS.
 export default function PlanChatScreen({ route, navigation }) {
+  const { t } = useLanguage();
   const { businessRequestId, initialTitle } = route.params;
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -52,7 +53,7 @@ export default function PlanChatScreen({ route, navigation }) {
     try {
       const info = await getPlanChatInfo(businessRequestId);
       setPlanId(info.planId);
-      const resolvedTitle = info.title ?? initialTitle ?? 'Plan Chat';
+      const resolvedTitle = info.title ?? initialTitle ?? t('ui.groupChat.planChat');
       setPlanTitle(resolvedTitle);
       navigation.setOptions({ title: resolvedTitle });
       setParticipants(info.participants ?? []);
@@ -116,7 +117,7 @@ export default function PlanChatScreen({ route, navigation }) {
   if (resolveError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load this chat." onRetry={resolvePlan} />
+        <LoadErrorState message={t('ui.groupChat.couldntLoadThisChat')} onRetry={resolvePlan} />
       </SafeAreaView>
     );
   }
@@ -134,16 +135,16 @@ export default function PlanChatScreen({ route, navigation }) {
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => setShowRoster((v) => !v)}
-          accessibilityLabel={`${countLabel(participants.length, 'person', 'people')} in this plan, tap to ${showRoster ? 'hide' : 'view'} the list`}
+          accessibilityLabel={t(showRoster ? 'ui.groupChat.rosterHideA11y' : 'ui.groupChat.rosterViewA11y', { countLabel: t('ui.common.count.people', { count: participants.length }) })}
           accessibilityRole="button"
         >
-          <Text style={styles.headerSubtitle}>👥 {participants.length} {participants.length === 1 ? 'person' : 'people'} {showRoster ? '▲' : '▼'}</Text>
+          <Text style={styles.headerSubtitle}>👥 {t('ui.common.count.people', { count: participants.length })} {showRoster ? '▲' : '▼'}</Text>
         </TouchableOpacity>
         {showRoster && (
           <View style={styles.rosterPanel}>
             {participants.map((p) => (
               <Text key={p.id} style={styles.rosterRow}>
-                {p.displayName ?? 'Someone'} · {ROLE_LABEL[p.role] ?? p.role}
+                {p.displayName ?? t('ui.groupChat.someone')} · {ROLE_KEYS.includes(p.role) ? t(`ui.groupChat.role.${p.role}`) : p.role}
               </Text>
             ))}
           </View>
@@ -152,7 +153,7 @@ export default function PlanChatScreen({ route, navigation }) {
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {loadError ? (
-          <LoadErrorState message="Couldn't load this chat." onRetry={loadInitial} />
+          <LoadErrorState message={t('ui.groupChat.couldntLoadThisChat')} onRetry={loadInitial} />
         ) : loadingInitial ? (
           <NLoader fullScreen={false} size="compact" kind="content" />
         ) : messages.length === 0 ? (
@@ -174,11 +175,11 @@ export default function PlanChatScreen({ route, navigation }) {
                   <ActivityIndicator color={colors.textTertiary} />
                 </View>
               ) : loadOlderError ? (
-                <TouchableOpacity onPress={loadOlder} accessibilityLabel="Couldn't load older messages, tap to retry" accessibilityRole="button">
-                  <Text style={styles.historyErrorText}>Couldn't load older messages — tap to retry</Text>
+                <TouchableOpacity onPress={loadOlder} accessibilityLabel={t('ui.groupChat.couldntLoadOlderMessagesTapA11y')} accessibilityRole="button">
+                  <Text style={styles.historyErrorText}>{t('ui.groupChat.couldntLoadOlderMessagesTap')}</Text>
                 </TouchableOpacity>
               ) : !hasMore && messages.length > 0 ? (
-                <Text style={styles.historyStartText}>The start of this plan's chat</Text>
+                <Text style={styles.historyStartText}>{t('ui.groupChat.theStartOfThisPlans')}</Text>
               ) : null
             }
             renderItem={({ item }) => {
@@ -188,7 +189,7 @@ export default function PlanChatScreen({ route, navigation }) {
                   {!isMe && (
                     <TouchableOpacity
                       onPress={() => navigation.navigate('ViewProfile', { userId: item.sender_id })}
-                      accessibilityLabel={`View ${item.profiles?.display_name ?? 'this person'}'s profile`}
+                      accessibilityLabel={t('ui.groupChat.viewSProfileA11y', { name: item.profiles?.display_name ?? 'this person' })}
                       accessibilityRole="button"
                     >
                       {photoUrls[item.sender_id] ? (
@@ -203,7 +204,7 @@ export default function PlanChatScreen({ route, navigation }) {
                       <TouchableOpacity
                         onPress={() => navigation.navigate('ViewProfile', { userId: item.sender_id })}
                         onLongPress={() => setReportTarget({ id: item.sender_id, name: item.profiles?.display_name })}
-                        accessibilityLabel={`${item.profiles?.display_name}, view profile, hold to report or block`}
+                        accessibilityLabel={t('ui.groupChat.viewProfileHoldToReportA11y', { name: item.profiles?.display_name })}
                       >
                         <Text style={styles.senderName}>{item.profiles?.display_name}</Text>
                       </TouchableOpacity>
@@ -226,15 +227,15 @@ export default function PlanChatScreen({ route, navigation }) {
         <View style={styles.inputRow}>
           <TextInput
             style={styles.input}
-            placeholder="Message everyone in this plan..."
+            placeholder={t('ui.groupChat.messageEveryoneInThisPlan')}
             placeholderTextColor={colors.textTertiary}
             value={text}
             onChangeText={setText}
             multiline
-            accessibilityLabel="Message everyone coordinating this plan"
+            accessibilityLabel={t('ui.groupChat.messageEveryoneCoordinatingThisPlanA11y')}
           />
-          <TouchableOpacity style={styles.sendButton} onPress={handleSend} accessibilityLabel="Send message" accessibilityRole="button">
-            <Text style={styles.sendButtonText}>Send</Text>
+          <TouchableOpacity style={styles.sendButton} onPress={handleSend} accessibilityLabel={t('ui.groupChat.sendMessageA11y')} accessibilityRole="button">
+            <Text style={styles.sendButtonText}>{t('ui.groupChat.send')}</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

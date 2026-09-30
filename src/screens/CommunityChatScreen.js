@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, ActivityIndicator, Modal } from 'react-native';
 import FadeInState from '../components/FadeInState';
@@ -14,9 +15,10 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import useChatComposer from '../hooks/useChatComposer';
 import usePaginatedMessages from '../hooks/usePaginatedMessages';
-import { memberCountLabel } from '../utils/outcomeDisplay';
+import { categoryName } from '../i18n/categoryNames';
 
 export default function CommunityChatScreen({ route, navigation }) {
+  const { t, language } = useLanguage();
   const { communityId, communityName } = route.params;
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -48,7 +50,7 @@ export default function CommunityChatScreen({ route, navigation }) {
         <TouchableOpacity
           onPress={() => setInfoVisible(true)}
           style={{ paddingHorizontal: 8 }}
-          accessibilityLabel={communityName ? `About ${communityName}` : 'About this community'}
+          accessibilityLabel={communityName ? t('ui.groupChat.aboutA11y', { communityName: communityName }) : t('ui.groupChat.aboutThisCommunityA11y')}
           accessibilityRole="button"
         >
           <Ionicons name="information-circle-outline" size={24} color={colors.textPrimary} />
@@ -130,7 +132,7 @@ export default function CommunityChatScreen({ route, navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load this chat." onRetry={loadInitial} />
+        <LoadErrorState message={t('ui.groupChat.couldntLoadThisChat')} onRetry={loadInitial} />
       </SafeAreaView>
     );
   }
@@ -175,11 +177,11 @@ export default function CommunityChatScreen({ route, navigation }) {
                 <ActivityIndicator color={colors.textTertiary} />
               </View>
             ) : loadOlderError ? (
-              <TouchableOpacity onPress={loadOlder} accessibilityLabel="Couldn't load older messages, tap to retry" accessibilityRole="button">
-                <Text style={styles.historyErrorText}>Couldn't load older messages — tap to retry</Text>
+              <TouchableOpacity onPress={loadOlder} accessibilityLabel={t('ui.groupChat.couldntLoadOlderMessagesTapA11y')} accessibilityRole="button">
+                <Text style={styles.historyErrorText}>{t('ui.groupChat.couldntLoadOlderMessagesTap')}</Text>
               </TouchableOpacity>
             ) : !hasMore && messages.length > 0 ? (
-              <Text style={styles.historyStartText}>The start of this community's chat</Text>
+              <Text style={styles.historyStartText}>{t('ui.groupChat.theStartOfThisCommunitys')}</Text>
             ) : null
           }
           renderItem={({ item }) => {
@@ -189,7 +191,7 @@ export default function CommunityChatScreen({ route, navigation }) {
                 {!isMe && (
                   <TouchableOpacity
                     onPress={() => navigation.navigate('ViewProfile', { userId: item.sender_id })}
-                    accessibilityLabel={`View ${item.profiles?.display_name ?? 'this person'}'s profile`}
+                    accessibilityLabel={t('ui.groupChat.viewSProfileA11y', { name: item.profiles?.display_name ?? 'this person' })}
                     accessibilityRole="button"
                   >
                     {photoUrls[item.sender_id] ? (
@@ -204,7 +206,7 @@ export default function CommunityChatScreen({ route, navigation }) {
                     <TouchableOpacity
                       onPress={() => navigation.navigate('ViewProfile', { userId: item.sender_id })}
                       onLongPress={() => setReportTarget({ id: item.sender_id, name: item.profiles?.display_name })}
-                      accessibilityLabel={`${item.profiles?.display_name}, view profile, hold to report or block`}
+                      accessibilityLabel={t('ui.groupChat.viewProfileHoldToReportA11y', { name: item.profiles?.display_name })}
                     >
                       <Text style={styles.senderName}>{item.profiles?.display_name}</Text>
                     </TouchableOpacity>
@@ -227,15 +229,15 @@ export default function CommunityChatScreen({ route, navigation }) {
         <View style={styles.inputRow}>
           <TextInput
             style={styles.input}
-            placeholder="Message everyone..."
+            placeholder={t('ui.groupChat.messageEveryone')}
             placeholderTextColor={colors.textTertiary}
             value={text}
             onChangeText={setText}
             multiline
-            accessibilityLabel="Message the community group chat"
+            accessibilityLabel={t('ui.groupChat.messageTheCommunityGroupChatA11y')}
           />
-          <TouchableOpacity style={styles.sendButton} onPress={handleSend} accessibilityLabel="Send message" accessibilityRole="button">
-            <Text style={styles.sendButtonText}>Send</Text>
+          <TouchableOpacity style={styles.sendButton} onPress={handleSend} accessibilityLabel={t('ui.groupChat.sendMessageA11y')} accessibilityRole="button">
+            <Text style={styles.sendButtonText}>{t('ui.groupChat.send')}</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -255,10 +257,10 @@ export default function CommunityChatScreen({ route, navigation }) {
               <NLoader fullScreen={false} size="compact" kind="recommendations" />
             ) : (
               <>
-                <Text style={styles.infoTitle}>{communitySummary?.name ?? communityName ?? 'Community'}</Text>
+                <Text style={styles.infoTitle}>{communitySummary?.name ?? communityName ?? t('ui.groupChat.community')}</Text>
                 <Text style={styles.infoMeta}>
-                  {[memberCountLabel(communitySummary?.memberCount), communitySummary?.interest_tag].filter(Boolean).join(' · ')}
-                  {communitySummary && !communitySummary.is_public ? ' · Private' : ''}
+                  {[Number.isFinite(communitySummary?.memberCount) ? t('ui.common.count.members', { count: communitySummary.memberCount }) : null, communitySummary?.interest_tag ? categoryName(communitySummary.interest_tag, language) : null].filter(Boolean).join(' · ')}
+                  {communitySummary && !communitySummary.is_public ? t('ui.groupChat.private') : ''}
                 </Text>
                 {communitySummary?.description ? (
                   <Text style={styles.infoDescription}>{communitySummary.description}</Text>
@@ -269,15 +271,15 @@ export default function CommunityChatScreen({ route, navigation }) {
                     setInfoVisible(false);
                     navigation.navigate('CommunityDetail', { communityId });
                   }}
-                  accessibilityLabel="View the full community page"
+                  accessibilityLabel={t('ui.groupChat.viewTheFullCommunityPageA11y')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.infoLinkText}>View Full Community Page →</Text>
+                  <Text style={styles.infoLinkText}>{t('ui.groupChat.viewFullCommunityPage')}</Text>
                 </TouchableOpacity>
               </>
             )}
-            <TouchableOpacity onPress={() => setInfoVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Close" accessibilityRole="button">
-              <Text style={styles.infoCloseText}>Close</Text>
+            <TouchableOpacity onPress={() => setInfoVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.groupChat.closeA11y')} accessibilityRole="button">
+              <Text style={styles.infoCloseText}>{t('ui.groupChat.close')}</Text>
             </TouchableOpacity>
           </View>
         </View>
