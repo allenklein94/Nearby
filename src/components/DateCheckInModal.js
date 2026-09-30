@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Platform, Alert, Share, Linking, ActivityIndicator } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -7,10 +8,12 @@ import { createCheckIn, buildShareMessage } from '../services/dateSafety';
 import { startLiveTracking, stopLiveTracking, getMyActiveLiveTrackingSession } from '../services/liveTracking';
 import { getMyEmergencyContacts } from '../services/emergencyContacts';
 import { useTheme } from '../context/ThemeContext';
+import { displayDateTime } from '../i18n/display';
 import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation } from '../motion';
 export default function DateCheckInModal({ visible, onClose, matchId, matchName, navigation, isRomanticMatch = true }) {
+  const { t, language } = useLanguage();
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors);
   const [scheduledAt, setScheduledAt] = useState(new Date(Date.now() + 2 * 60 * 60 * 1000));
@@ -51,13 +54,13 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Location needed', 'Location permission is required to share your live location.');
+        Alert.alert(t('ui.dateCheckIn.locationNeeded'), t('ui.dateCheckIn.locationPermissionIsRequiredTo'));
         setStartingTracking(false);
         return;
       }
       const { sessionId, shareUrl, expiresAt } = await startLiveTracking(3);
       setActiveLiveSession({ id: sessionId, expires_at: expiresAt });
-      await shareWithContact(`I'm sharing my live location with you for the next few hours as a safety check-in: ${shareUrl}`);
+      await shareWithContact(t('ui.dateCheckIn.imSharingMyLiveLocation', { shareUrl: shareUrl }));
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleStartLiveTracking() });
     }
@@ -80,14 +83,14 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
     try {
       await createCheckIn({ matchId, matchName, scheduledAt: scheduledAt.toISOString(), isRomanticMatch });
 
-      const message = buildShareMessage(matchName, scheduledAt.toISOString());
+      const message = buildShareMessage(matchName, scheduledAt.toISOString(), language);
       await shareWithContact(message);
 
       Alert.alert(
-        "You're all set",
+        t('ui.dateCheckIn.youreAllSet'),
         isRomanticMatch
-          ? "We'll check in with you after your date, and you've had a chance to share your plans with someone you trust."
-          : "We'll check in with you afterward, and you've had a chance to share your plans with someone you trust."
+          ? t('ui.dateCheckIn.wellCheckInWithYou')
+          : t('ui.dateCheckIn.wellCheckInWithYou2')
       );
       onClose();
     } catch (e) {
@@ -106,7 +109,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Location needed', 'Location access is needed to share your current spot.');
+        Alert.alert(t('ui.dateCheckIn.locationNeeded'), t('ui.dateCheckIn.locationAccessIsNeededTo'));
         setSharingLocation(false);
         return;
       }
@@ -115,7 +118,9 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
       const { latitude, longitude } = location.coords;
       const mapsUrl = `https://maps.google.com/?q=${latitude},${longitude}`;
 
-      await shareWithContact(`I'm currently here — sharing my location while I'm out with ${matchName || 'someone'}: ${mapsUrl}`);
+      await shareWithContact(matchName
+        ? t('ui.dateCheckIn.currentlyHereWith', { name: matchName, url: mapsUrl })
+        : t('ui.dateCheckIn.currentlyHereWithSomeone', { url: mapsUrl }));
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleShareLocationNow() });
     }
@@ -126,26 +131,26 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
-          <Text style={styles.title}>{isRomanticMatch ? '🛡️ Date Safety Check-In' : '🛡️ Safety Check-In'}</Text>
+          <Text style={styles.title}>{isRomanticMatch ? t('ui.dateCheckIn.dateSafetyCheckIn') : t('ui.dateCheckIn.safetyCheckIn')}</Text>
           <Text style={styles.description}>
             {isRomanticMatch
-              ? "Set a time for your date. We'll check in with you afterward, and you can share your plans with a trusted contact."
-              : "Set a time for when you're meeting up. We'll check in with you afterward, and you can share your plans with a trusted contact."}
+              ? t('ui.dateCheckIn.setATimeForYour')
+              : t('ui.dateCheckIn.setATimeForWhen')}
           </Text>
           {emergencyContact ? (
-            <Text style={styles.contactHint}>Sharing will text {emergencyContact.name}.</Text>
+            <Text style={styles.contactHint}>{t('ui.dateCheckIn.sharingWillText', { name: emergencyContact.name })}</Text>
           ) : (
             navigation && (
               <TouchableOpacity onPress={() => { onClose(); navigation.navigate('EmergencyContacts'); }} accessibilityRole="button">
-                <Text style={styles.contactHintLink}>No emergency contact saved yet — add one →</Text>
+                <Text style={styles.contactHintLink}>{t('ui.dateCheckIn.noEmergencyContactSavedYet')}</Text>
               </TouchableOpacity>
             )
           )}
 
-          <Text style={styles.label}>When are you meeting?</Text>
+          <Text style={styles.label}>{t('ui.dateCheckIn.whenAreYouMeeting')}</Text>
           <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
             <Text style={{ color: colors.textPrimary }}>
-              {scheduledAt.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+              {displayDateTime(scheduledAt.toISOString(), language)}
             </Text>
           </TouchableOpacity>
           {showPicker && (
@@ -163,7 +168,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
           )}
 
           <TouchableOpacity style={styles.button} onPress={handleCreate} disabled={submitting} activeOpacity={0.85}>
-            <Text style={styles.buttonText}>{submitting ? 'Setting up...' : 'Set Up Check-In & Share Plans'}</Text>
+            <Text style={styles.buttonText}>{submitting ? t('ui.dateCheckIn.settingUp') : t('ui.dateCheckIn.setUpCheckInShare')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -171,19 +176,19 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
             onPress={handleShareLocationNow}
             disabled={sharingLocation}
             activeOpacity={0.85}
-            accessibilityLabel="Share my current location right now"
+            accessibilityLabel={t('ui.dateCheckIn.shareMyCurrentLocationRightA11y')}
             accessibilityRole="button"
           >
             {sharingLocation ? (
               <ActivityIndicator color={colors.primary} />
             ) : (
-              <Text style={styles.locationButtonText}>📍 Share My Location Now</Text>
+              <Text style={styles.locationButtonText}>{t('ui.dateCheckIn.shareMyLocationNow')}</Text>
             )}
           </TouchableOpacity>
-          <Text style={styles.locationHint}>A one-time snapshot of where you are right now — not continuous tracking.</Text>
+          <Text style={styles.locationHint}>{t('ui.dateCheckIn.aOneTimeSnapshotOf')}</Text>
 
           <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.md }}>
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={styles.cancelText}>{t('ui.dateCheckIn.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </View>

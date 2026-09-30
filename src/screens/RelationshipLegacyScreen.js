@@ -24,14 +24,14 @@ export default function RelationshipLegacyScreen({ route, navigation }) {
   async function handleSubmit() {
     const fields = [whatSurprisedUs, whatAlmostEndedUs, whatMadeUsStronger, whatWeWishWeDiscussedEarlier];
     if (fields.every((f) => !f.trim())) {
-      return Alert.alert('Add at least one answer', 'Share whatever feels true — you don\u2019t need to answer all four.');
+      return Alert.alert(t('ui.relationshipLegacy.addAtLeastOneAnswer'), t('ui.relationshipLegacy.shareWhateverFeelsTrueYou'));
     }
 
     for (const field of fields) {
       if (field.trim()) {
         const check = await checkTextModeration(field);
         if (!check.safe) {
-          return Alert.alert('Not allowed', 'Please revise your answer and try again.');
+          return Alert.alert(t('ui.relationshipLegacy.notAllowed'), t('ui.relationshipLegacy.pleaseReviseYourAnswerAnd'));
         }
       }
     }
@@ -46,7 +46,7 @@ export default function RelationshipLegacyScreen({ route, navigation }) {
       });
      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('relationship_legacy_submitted');
-      Alert.alert('Thank you', 'Your wisdom is now part of the library for others to learn from.');
+      Alert.alert(t('ui.relationshipLegacy.thankYou'), t('ui.relationshipLegacy.yourWisdomIsNowPart'));
       navigation.goBack();
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSubmit() });
@@ -59,62 +59,60 @@ export default function RelationshipLegacyScreen({ route, navigation }) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           <Text style={styles.headerTitle} accessibilityRole="header">💌 {t('legacyLibrary.leaveWisdom')}</Text>
-          <Text style={styles.headerSubtitle}>
-            Anything you and {matchName} have learned together — shared publicly and anonymously to help others navigate their own relationships. Answer whatever feels true; skip the rest.
-          </Text>
+          <Text style={styles.headerSubtitle}>{t('ui.relationshipLegacy.anythingYouAndHaveLearned', { matchName: matchName })}</Text>
 
           <TouchableOpacity
             style={styles.libraryLink}
             activeOpacity={0.85}
             onPress={() => navigation.navigate('LegacyLibrary')}
             accessibilityRole="button"
-            accessibilityLabel="Browse what other couples have shared"
+            accessibilityLabel={t('ui.relationshipLegacy.browseWhatOtherCouplesHaveA11y')}
           >
-            <Text style={styles.libraryLinkText}>📖 See what others have shared →</Text>
+            <Text style={styles.libraryLinkText}>{t('ui.relationshipLegacy.seeWhatOthersHaveShared')}</Text>
           </TouchableOpacity>
 
-          <Text style={styles.label}>What surprised us</Text>
+          <Text style={styles.label}>{t('ui.relationshipLegacy.whatSurprisedUs')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. How much we laughed at things that weren't even that funny"
+            placeholder={t('ui.relationshipLegacy.eGHowMuchWe')}
             placeholderTextColor={colors.textTertiary}
             value={whatSurprisedUs}
             onChangeText={setWhatSurprisedUs}
             multiline
-            accessibilityLabel="What surprised us"
+            accessibilityLabel={t('ui.relationshipLegacy.whatSurprisedUsA11y')}
           />
 
-          <Text style={styles.label}>What almost ended us</Text>
+          <Text style={styles.label}>{t('ui.relationshipLegacy.whatAlmostEndedUs')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. Not talking about money early enough"
+            placeholder={t('ui.relationshipLegacy.eGNotTalkingAbout')}
             placeholderTextColor={colors.textTertiary}
             value={whatAlmostEndedUs}
             onChangeText={setWhatAlmostEndedUs}
             multiline
-            accessibilityLabel="What almost ended us"
+            accessibilityLabel={t('ui.relationshipLegacy.whatAlmostEndedUsA11y')}
           />
 
-          <Text style={styles.label}>What made us stronger</Text>
+          <Text style={styles.label}>{t('ui.relationshipLegacy.whatMadeUsStronger')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. Learning to actually say what we needed"
+            placeholder={t('ui.relationshipLegacy.eGLearningToActually')}
             placeholderTextColor={colors.textTertiary}
             value={whatMadeUsStronger}
             onChangeText={setWhatMadeUsStronger}
             multiline
-            accessibilityLabel="What made us stronger"
+            accessibilityLabel={t('ui.relationshipLegacy.whatMadeUsStrongerA11y')}
           />
 
-          <Text style={styles.label}>What we wish we'd discussed earlier</Text>
+          <Text style={styles.label}>{t('ui.relationshipLegacy.whatWeWishWedDiscussed')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. What we each actually wanted long-term"
+            placeholder={t('ui.relationshipLegacy.eGWhatWeEach')}
             placeholderTextColor={colors.textTertiary}
             value={whatWeWishWeDiscussedEarlier}
             onChangeText={setWhatWeWishWeDiscussedEarlier}
             multiline
-            accessibilityLabel="What we wish we'd discussed earlier"
+            accessibilityLabel={t('ui.relationshipLegacy.whatWeWishWedDiscussedA11y')}
           />
 
           <TouchableOpacity
@@ -122,10 +120,10 @@ export default function RelationshipLegacyScreen({ route, navigation }) {
             onPress={handleSubmit}
             disabled={submitting}
             activeOpacity={0.85}
-            accessibilityLabel={submitting ? 'Submitting' : 'Share this wisdom'}
+            accessibilityLabel={submitting ? t('ui.relationshipLegacy.submittingA11y') : t('ui.relationshipLegacy.shareThisWisdomA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.buttonText}>{submitting ? 'Sharing...' : 'Share This Wisdom'}</Text>
+            <Text style={styles.buttonText}>{submitting ? t('ui.relationshipLegacy.sharing') : t('ui.relationshipLegacy.shareThisWisdom')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

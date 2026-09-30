@@ -1,5 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { supabase } from './supabase';
+import { translate } from '../i18n/translate';
+import { displayDateTime } from '../i18n/display';
 
 // Item 59 fix ("Thursday acceptance test", Journey B): this check-in is a
 // universal in-person-meetup safety feature (matchId is any match --
@@ -33,7 +35,12 @@ export async function createCheckIn({ matchId, matchName, scheduledAt, isRomanti
   return data;
 }
 
-export function buildShareMessage(matchName, scheduledAt) {
+// The text the person sends their trusted contact from their own phone, so it is in the person's language.
+// English (no language, or 'en') is unchanged.
+export function buildShareMessage(matchName, scheduledAt, language) {
+  if (language && language !== 'en') {
+    return translate(language, 'ui.dateCheckIn.shareMessage', { name: matchName, when: displayDateTime(scheduledAt, language) });
+  }
   const formatted = new Date(scheduledAt).toLocaleString([], {
     weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit',
   });

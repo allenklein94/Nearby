@@ -34,9 +34,11 @@ How: `src/i18n/ui/<ns>.js` (11 languages) merged as `translations.<lang>.ui`; sc
 - Momentum / Your Activity (ns `momentum`): the whole screen; streak, week a11y and communities-started as plurals, member-since as month + year per language, vibe tags via `categoryName`. Shared with Profile (now translated there too): achievements keyed by a new stable `key` on `getAchievements()` (`ui.momentum.achievement.<key>.label/description`), and the usually-active day by a new `usuallyActiveDay` index from `getEarnedProfileStats()` (`ui.momentum.activeDay.<0-6>`; the English `usuallyActive` field is unchanged for other callers)
 - Chemistry Diary list (ns `chemistryDiary`): the whole screen; the patterns teaser, the "Across N entries" line and "N more entries" as plural sentences with the signal name inside, entry dates via `displayDay`; the load-error line uses the same diary name as the header in each language. The entry screen (ChemistryDiaryEntryScreen) is not done yet
 - Perks / BrandOffers (ns `brandOffersUi`; the older `brandOffers.*` keys stay in use): the whole screen; redeem code + instructions as one sentence, stay-connected prompt, "N of M spots left" as a plural, unlocked lines per scope, distance via `displayDistanceAway`
+- Relationship Legacy (ns `relationshipLegacy`): the whole screen (answers are stored by field, so the translated question labels change nothing stored). LegacyLibraryScreen (the read side) is not done yet
+- Date Check-In modal (ns `dateCheckIn`): the whole sheet, date via `displayDateTime` (English identical). The three texts the person sends their trusted contact from their own phone (live location, location snapshot, `buildShareMessage` in services/dateSafety.js, which now takes an optional language; English unchanged) are in the person's language, the same reasoning as the prefilled date-proposal message
 - EmptyCopy (ns `empty`): every consumer empty-state id; business/admin/ai ids stay English (tested)
 
 ## Next (in order, by English strings left per the scanner, 2026-09-30)
-RelationshipLegacy 27, DateCheckInModal 26, Paywall 24, CompatibilityReportModal 24, EmergencyContacts 23,
+Paywall 24, CompatibilityReportModal 24, EmergencyContacts 23,
 ReportBlockModal 23, then the long tail (<= 21 each). Re-run the list with the scanner over src/screens + src/components minus LOCALIZED_FILES
 and the business/admin/legal exclusions.
