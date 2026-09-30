@@ -45,11 +45,11 @@ export default function PaywallScreen({ navigation }) {
     try {
       const unlocked = await purchasePackage(pkg);
       if (unlocked) {
-        Alert.alert('Welcome to Premium', 'You can now see who noticed you.');
+        Alert.alert(t('ui.paywallUi.welcomeToPremium'), t('ui.paywallUi.youCanNowSeeWho'));
         navigation.goBack();
       }
     } catch (e) {
-      if (!e.userCancelled) Alert.alert('Purchase failed', e.message);
+      if (!e.userCancelled) Alert.alert(t('ui.paywallUi.purchaseFailed'), e.message);
     }
   }
 
@@ -57,19 +57,19 @@ export default function PaywallScreen({ navigation }) {
     try {
       const restored = await restorePurchases();
       if (restored) {
-        Alert.alert('Restored', 'Your premium access has been restored.');
+        Alert.alert(t('ui.paywallUi.restored'), t('ui.paywallUi.yourPremiumAccessHasBeen'));
         navigation.goBack();
       } else {
-        Alert.alert('Nothing to restore', 'No active premium subscription found.');
+        Alert.alert(t('ui.paywallUi.nothingToRestore'), t('ui.paywallUi.noActivePremiumSubscriptionFound'));
       }
     } catch (e) {
-      Alert.alert('Restore failed', e.message || 'Could not restore your purchases. Please try again.');
+      Alert.alert(t('ui.paywallUi.restoreFailed'), e.message || t('ui.paywallUi.couldNotRestoreYourPurchases'));
     }
   }
 
   function openNativeSubscriptionManagement() {
     openSubscriptionManagement(null).catch(() => {
-      Alert.alert('Could not open', 'Please open your device Settings app and look under Subscriptions to manage your plan.');
+      Alert.alert(t('ui.paywallUi.couldNotOpen'), t('ui.paywallUi.pleaseOpenYourDeviceSettings'));
     });
   }
 
@@ -87,7 +87,7 @@ export default function PaywallScreen({ navigation }) {
         onPress={() => navigation.goBack()}
         style={styles.closeButton}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        accessibilityLabel="Close"
+        accessibilityLabel={t('ui.paywallUi.closeA11y')}
         accessibilityRole="button"
       >
         <Ionicons name="close" size={24} color={colors.textSecondary} />
@@ -99,7 +99,7 @@ export default function PaywallScreen({ navigation }) {
       <Text style={styles.title} accessibilityRole="header">{t('paywall.title')}</Text>
       <Text style={styles.subtitle}>{t('paywall.subtitle')}</Text>
 
-      <View style={styles.featuresCard} accessible={true} accessibilityLabel={`Premium features: ${FEATURES.map((f) => f.text).join('. ')}`}>
+      <View style={styles.featuresCard} accessible={true} accessibilityLabel={t('ui.paywallUi.premiumFeaturesA11y', { list: FEATURES.map((f) => f.text).join('. ') })}>
         {FEATURES.map((f, i) => (
           <View key={f.text} style={[styles.featureRow, i > 0 && styles.featureRowBorder]}>
             <Text style={styles.featureIcon}>{f.icon}</Text>
@@ -113,19 +113,19 @@ export default function PaywallScreen({ navigation }) {
       ) : alreadyPremium ? (
         <View style={styles.alreadyPremiumCard}>
           <Text style={styles.alreadyPremiumEmoji}>🎉</Text>
-          <Text style={styles.alreadyPremiumTitle}>You're already Premium</Text>
-          <Text style={styles.alreadyPremiumText}>All these features are unlocked on your account.</Text>
+          <Text style={styles.alreadyPremiumTitle}>{t('ui.paywallUi.youreAlreadyPremium')}</Text>
+          <Text style={styles.alreadyPremiumText}>{t('ui.paywallUi.allTheseFeaturesAreUnlocked')}</Text>
           <TouchableOpacity
             style={styles.manageButton}
             onPress={openNativeSubscriptionManagement}
             activeOpacity={0.85}
-            accessibilityLabel="Manage your subscription plan"
+            accessibilityLabel={t('ui.paywallUi.manageYourSubscriptionPlanA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.manageButtonText}>Manage Subscription</Text>
+            <Text style={styles.manageButtonText}>{t('ui.paywallUi.manageSubscription')}</Text>
           </TouchableOpacity>
           <Text style={styles.manageHelperText}>
-            Change your plan, switch between monthly and annual, or cancel — all handled directly by {Platform.OS === 'ios' ? 'Apple' : 'Google'} through your device settings.
+            {Platform.OS === 'ios' ? t('ui.paywallUi.managedByApple') : t('ui.paywallUi.managedByGoogle')}
           </Text>
         </View>
       ) : offering ? (
@@ -139,7 +139,7 @@ export default function PaywallScreen({ navigation }) {
               activeOpacity={0.85}
               accessibilityLabel={`${pkg.product.title}, ${pkg.product.priceString}${featured ? ', ' + t('paywall.bestValue') : ''}`}
               accessibilityRole="button"
-              accessibilityHint="Starts a subscription purchase"
+              accessibilityHint={t('ui.paywallUi.startsASubscriptionPurchaseA11y')}
             >
               {featured && (
                 <View style={styles.saveBadge}>
@@ -155,10 +155,10 @@ export default function PaywallScreen({ navigation }) {
       ) : (
         <View style={styles.errorCard}>
           <Text style={styles.empty}>
-            Offerings not configured yet — set this up in RevenueCat + App Store Connect.
+            {t('ui.paywallUi.offeringsNotConfiguredYetSet')}
           </Text>
           {errorMessage && (
-            <Text style={styles.errorDetail}>Debug: {errorMessage}</Text>
+            <Text style={styles.errorDetail}>{t('ui.paywallUi.debug', { errorMessage: errorMessage })}</Text>
           )}
         </View>
       )}

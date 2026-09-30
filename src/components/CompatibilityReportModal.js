@@ -1,25 +1,29 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, ActivityIndicator } from 'react-native';
 import { supabase, functionUrl } from '../services/supabase';
 import { generateCompatibilityCompass, generateFrictionPoints } from '../services/compatibility';
 import { BASICS_FIELDS } from '../constants/basicsFields';
+import { basicsLabel, basicsOption } from '../i18n/basicsVocab';
+import { categoryName } from '../i18n/categoryNames';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { NLoader, modalAnimation } from '../motion';
-function fieldLabel(key) {
+function fieldLabel(key, language) {
   const field = BASICS_FIELDS.find((f) => f.key === key);
-  return field ? `${field.icon} ${field.label}` : key;
+  return field ? `${field.icon} ${basicsLabel(field, language)}` : key;
 }
 
 const COMPASS_DIRECTIONS = [
-  { key: 'north', icon: '🧭', label: 'North — What Connects You', color: 'success' },
-  { key: 'east', icon: '🗺️', label: 'East — What To Explore Together', color: 'primary' },
-  { key: 'south', icon: '💬', label: 'South — Worth Discussing Early', color: 'primary' },
-  { key: 'west', icon: '🌱', label: 'West — Room To Grow Together', color: 'textTertiary' },
+  { key: 'north', icon: '🧭', color: 'success' },
+  { key: 'east', icon: '🗺️', color: 'primary' },
+  { key: 'south', icon: '💬', color: 'primary' },
+  { key: 'west', icon: '🌱', color: 'textTertiary' },
 ];
 
 export default function CompatibilityReportModal({ visible, onClose, report, theirName }) {
+  const { t, language } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [introduction, setIntroduction] = useState(null);
@@ -28,8 +32,8 @@ export default function CompatibilityReportModal({ visible, onClose, report, the
 
   if (!report) return null;
 
-  const compass = generateCompatibilityCompass(report);
-  const friction = generateFrictionPoints(report);
+  const compass = generateCompatibilityCompass(report, language);
+  const friction = generateFrictionPoints(report, language);
 
   async function generateIntroduction() {
     setLoadingIntro(true);
@@ -73,43 +77,43 @@ export default function CompatibilityReportModal({ visible, onClose, report, the
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={resetAndClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
-          <Text style={styles.title}>{report.score}% Match with {theirName}</Text>
+          <Text style={styles.title}>{t('ui.compatibility.matchWith', { score: report.score, theirName: theirName })}</Text>
 
           <View style={styles.viewToggle}>
             <TouchableOpacity
               style={[styles.toggleButton, view === 'score' && styles.toggleButtonActive]}
               onPress={() => setView('score')}
-              accessibilityLabel="Show detailed breakdown"
+              accessibilityLabel={t('ui.compatibility.showDetailedBreakdownA11y')}
               accessibilityRole="button"
               accessibilityState={{ selected: view === 'score' }}
             >
-              <Text style={[styles.toggleButtonText, view === 'score' && styles.toggleButtonTextActive]}>Details</Text>
+              <Text style={[styles.toggleButtonText, view === 'score' && styles.toggleButtonTextActive]}>{t('ui.compatibility.details')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.toggleButton, view === 'compass' && styles.toggleButtonActive]}
               onPress={() => setView('compass')}
-              accessibilityLabel="Show compatibility compass"
+              accessibilityLabel={t('ui.compatibility.showCompatibilityCompassA11y')}
               accessibilityRole="button"
               accessibilityState={{ selected: view === 'compass' }}
             >
-              <Text style={[styles.toggleButtonText, view === 'compass' && styles.toggleButtonTextActive]}>🧭 Compass</Text>
+              <Text style={[styles.toggleButtonText, view === 'compass' && styles.toggleButtonTextActive]}>{t('ui.compatibility.compass')}</Text>
             </TouchableOpacity>
             {friction.points.length > 0 && (
               <TouchableOpacity
                 style={[styles.toggleButton, view === 'friction' && styles.toggleButtonActive]}
                 onPress={() => setView('friction')}
-                accessibilityLabel="Show specific talking points"
+                accessibilityLabel={t('ui.compatibility.showSpecificTalkingPointsA11y')}
                 accessibilityRole="button"
                 accessibilityState={{ selected: view === 'friction' }}
               >
-                <Text style={[styles.toggleButtonText, view === 'friction' && styles.toggleButtonTextActive]}>💡 Talk About</Text>
+                <Text style={[styles.toggleButtonText, view === 'friction' && styles.toggleButtonTextActive]}>{t('ui.compatibility.talkAbout')}</Text>
               </TouchableOpacity>
             )}
           </View>
 
           {view === 'score' && !introduction && !loadingIntro && (report.sharedInterests.length > 0 || report.matchingFields.length > 0) && (
             <TouchableOpacity style={styles.introButton} onPress={generateIntroduction} activeOpacity={0.85}>
-              <Text style={styles.introButtonText}>✨ Why you two might connect</Text>
+              <Text style={styles.introButtonText}>{t('ui.compatibility.whyYouTwoMightConnect')}</Text>
             </TouchableOpacity>
           )}
           {view === 'score' && loadingIntro && <NLoader fullScreen={false} size="inline" kind="recommendations" />}
@@ -124,11 +128,11 @@ export default function CompatibilityReportModal({ visible, onClose, report, the
               <>
                 {report.sharedInterests.length > 0 && (
                   <>
-                    <Text style={styles.sectionLabel}>You Both Like</Text>
+                    <Text style={styles.sectionLabel}>{t('ui.compatibility.youBothLike')}</Text>
                     <View style={styles.chipsWrap}>
                       {report.sharedInterests.map((interest) => (
                         <View key={interest} style={styles.matchChip}>
-                          <Text style={styles.matchChipText}>{interest}</Text>
+                          <Text style={styles.matchChipText}>{categoryName(interest, language)}</Text>
                         </View>
                       ))}
                     </View>
@@ -137,11 +141,11 @@ export default function CompatibilityReportModal({ visible, onClose, report, the
 
                 {report.matchingFields.length > 0 && (
                   <>
-                    <Text style={styles.sectionLabel}>You Match On</Text>
+                    <Text style={styles.sectionLabel}>{t('ui.compatibility.youMatchOn')}</Text>
                     {report.matchingFields.map((field) => (
                       <View key={field.key} style={styles.row}>
-                        <Text style={styles.rowLabel}>{fieldLabel(field.key)}</Text>
-                        <Text style={styles.rowValueMatch}>{field.value}</Text>
+                        <Text style={styles.rowLabel}>{fieldLabel(field.key, language)}</Text>
+                        <Text style={styles.rowValueMatch}>{basicsOption(field.key, field.value, language)}</Text>
                       </View>
                     ))}
                   </>
@@ -149,12 +153,12 @@ export default function CompatibilityReportModal({ visible, onClose, report, the
 
                 {report.differingFields.length > 0 && (
                   <>
-                    <Text style={styles.sectionLabel}>You Differ On</Text>
+                    <Text style={styles.sectionLabel}>{t('ui.compatibility.youDifferOn')}</Text>
                     {report.differingFields.map((field) => (
                       <View key={field.key} style={styles.differRow}>
-                        <Text style={styles.rowLabel}>{fieldLabel(field.key)}</Text>
-                        <Text style={styles.differText}>You: {field.myValue}</Text>
-                        <Text style={styles.differText}>Them: {field.theirValue}</Text>
+                        <Text style={styles.rowLabel}>{fieldLabel(field.key, language)}</Text>
+                        <Text style={styles.differText}>{t('ui.compatibility.you', { myValue: basicsOption(field.key, field.myValue, language) })}</Text>
+                        <Text style={styles.differText}>{t('ui.compatibility.them', { theirValue: basicsOption(field.key, field.theirValue, language) })}</Text>
                       </View>
                     ))}
                   </>
@@ -162,7 +166,7 @@ export default function CompatibilityReportModal({ visible, onClose, report, the
 
                 {report.sharedInterests.length === 0 && report.matchingFields.length === 0 && report.differingFields.length === 0 && (
                   <Text style={styles.emptyText}>
-                    Not enough shared profile info yet to show a detailed breakdown — fill out more of your profile to see this.
+                    {t('ui.compatibility.notEnoughSharedProfileInfo')}
                   </Text>
                 )}
               </>
@@ -171,19 +175,19 @@ export default function CompatibilityReportModal({ visible, onClose, report, the
             {view === 'compass' && (
               <>
                 <Text style={styles.compassIntro}>
-                  A single number can't capture something this nuanced — here's a fuller picture, in four directions.
+                  {t('ui.compatibility.aSingleNumberCantCapture')}
                 </Text>
                 {COMPASS_DIRECTIONS.map((dir) => {
                   const items = compass[dir.key];
                   return (
                     <View key={dir.key} style={styles.compassBlock}>
-                      <Text style={styles.compassLabel}>{dir.icon} {dir.label}</Text>
+                      <Text style={styles.compassLabel}>{dir.icon} {t(`ui.compatibility.direction.${dir.key}`)}</Text>
                       {items.length > 0 ? (
                         items.map((item, i) => (
                           <Text key={i} style={styles.compassItem}>• {item}</Text>
                         ))
                       ) : (
-                        <Text style={styles.compassEmptyItem}>Nothing here yet</Text>
+                        <Text style={styles.compassEmptyItem}>{t('ui.compatibility.nothingHereYet')}</Text>
                       )}
                     </View>
                   );
@@ -194,15 +198,15 @@ export default function CompatibilityReportModal({ visible, onClose, report, the
             {view === 'friction' && (
               <>
                 <Text style={styles.compassIntro}>
-                  Specific things worth an actual conversation — not red flags, just real differences worth naming.
+                  {t('ui.compatibility.specificThingsWorthAnActual')}
                 </Text>
                 {friction.points.map((point) => (
                   <View key={point.label} style={styles.frictionBlock}>
                     <Text style={styles.frictionLabel}>{point.label}</Text>
                     {point.details.map((d) => (
                       <View key={d.key} style={styles.frictionDetail}>
-                        <Text style={styles.differText}>You: {d.myValue}</Text>
-                        <Text style={styles.differText}>Them: {d.theirValue}</Text>
+                        <Text style={styles.differText}>{t('ui.compatibility.you', { myValue: basicsOption(d.key, d.myValue, language) })}</Text>
+                        <Text style={styles.differText}>{t('ui.compatibility.them', { theirValue: basicsOption(d.key, d.theirValue, language) })}</Text>
                       </View>
                     ))}
                   </View>
@@ -212,7 +216,7 @@ export default function CompatibilityReportModal({ visible, onClose, report, the
           </ScrollView>
 
           <TouchableOpacity onPress={resetAndClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>Close</Text>
+            <Text style={styles.closeButtonText}>{t('ui.compatibility.close')}</Text>
           </TouchableOpacity>
         </View>
       </View>

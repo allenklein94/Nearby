@@ -1,3 +1,8 @@
+import { translate } from '../i18n/translate';
+import { basicsLabel } from '../i18n/basicsVocab';
+import { categoryName } from '../i18n/categoryNames';
+import { BASICS_FIELDS } from '../constants/basicsFields';
+
 export function calculateCompatibility(myProfile, theirProfile) {
   const report = generateCompatibilityReport(myProfile, theirProfile);
   return report.score;
@@ -125,8 +130,11 @@ function labelFor(key) {
 const BIG_TOPIC_KEYS = ['relationship_intention', 'family_plans', 'financial_priority', 'relocation_openness', 'relationship_type'];
 const COMMUNICATION_TOPIC_KEYS = ['communication_style', 'love_style', 'independence_preference', 'social_energy'];
 
-export function generateCompatibilityCompass(report) {
+// `language` is optional: without it (or with 'en') the English output is unchanged; any other language names topics,
+// interests and the shared-interest lines in that language (display only; the report itself is untouched).
+export function generateCompatibilityCompass(report, language) {
   if (!report) return { north: [], east: [], south: [], west: [] };
+  if (language && language !== 'en') return localizedCompass(report, language);
 
   const north = [
     ...report.matchingFields.map((f) => labelFor(f.key)),
@@ -147,20 +155,43 @@ export function generateCompatibilityCompass(report) {
   return { north, east, south, west };
 }
 
+function localizedTopic(key, language) {
+  if (FIELD_LABELS[key]) return translate(language, `ui.compatibility.topic.${key}`);
+  const field = BASICS_FIELDS.find((f) => f.key === key);
+  return field ? basicsLabel(field, language) : key.replace(/_/g, ' ');
+}
+
+function localizedCompass(report, language) {
+  const two = (list) => translate(language, 'ui.homeParts.list.and', { rest: list[0], last: list[1] });
+  const pair = (list) => (list.length > 1 ? two(list) : list[0]);
+  const interests = report.sharedInterests.map((i) => categoryName(i, language));
+  const north = [
+    ...report.matchingFields.map((f) => localizedTopic(f.key, language)),
+    ...(interests.length > 0 ? [translate(language, 'ui.compatibility.sharedInterestIn', { list: pair(interests.slice(0, 2)) })] : []),
+    ...(report.sharedArtists?.length > 0 ? [translate(language, 'ui.compatibility.bothLike', { list: pair(report.sharedArtists.slice(0, 2)) })] : []),
+  ];
+  const east = [...interests, ...(report.sharedArtists ?? [])];
+  const south = report.differingFields.filter((f) => BIG_TOPIC_KEYS.includes(f.key)).map((f) => localizedTopic(f.key, language));
+  const west = report.differingFields
+    .filter((f) => COMMUNICATION_TOPIC_KEYS.includes(f.key) || !BIG_TOPIC_KEYS.includes(f.key))
+    .map((f) => localizedTopic(f.key, language));
+  return { north, east, south, west };
+}
+
 // "Compatibility Debugger" — turns vague "are we compatible?" into
 // specific, named friction points worth an actual conversation,
 // grouped the way the person would actually think about them.
 const FRICTION_CATEGORIES = [
-  { label: 'Communication expectations', keys: ['communication_style'] },
-  { label: 'Independence & space', keys: ['independence_preference', 'social_energy'] },
-  { label: 'Money & financial priorities', keys: ['financial_priority'] },
-  { label: 'Definitions of romance', keys: ['love_style'] },
-  { label: 'Family & long-term plans', keys: ['family_plans', 'family_closeness', 'relationship_intention'] },
-  { label: 'Lifestyle & daily rhythm', keys: ['weekend_style', 'morning_person', 'cooking_habits', 'workout'] },
-  { label: 'Location & relocation', keys: ['relocation_openness'] },
+  { key: 'communication', label: 'Communication expectations', keys: ['communication_style'] },
+  { key: 'independence', label: 'Independence & space', keys: ['independence_preference', 'social_energy'] },
+  { key: 'money', label: 'Money & financial priorities', keys: ['financial_priority'] },
+  { key: 'romance', label: 'Definitions of romance', keys: ['love_style'] },
+  { key: 'family', label: 'Family & long-term plans', keys: ['family_plans', 'family_closeness', 'relationship_intention'] },
+  { key: 'lifestyle', label: 'Lifestyle & daily rhythm', keys: ['weekend_style', 'morning_person', 'cooking_habits', 'workout'] },
+  { key: 'location', label: 'Location & relocation', keys: ['relocation_openness'] },
 ];
 
-export function generateFrictionPoints(report) {
+export function generateFrictionPoints(report, language) {
   if (!report) return { points: [], uncategorized: [] };
 
   const diffKeys = new Set(report.differingFields.map((f) => f.key));
@@ -170,7 +201,8 @@ export function generateFrictionPoints(report) {
       const matchedKeys = category.keys.filter((k) => diffKeys.has(k));
       if (matchedKeys.length === 0) return null;
       const details = matchedKeys.map((k) => report.differingFields.find((f) => f.key === k));
-      return { label: category.label, details };
+      const label = language && language !== 'en' ? translate(language, `ui.compatibility.friction.${category.key}`) : category.label;
+      return { label, details };
     })
     .filter(Boolean);
 
