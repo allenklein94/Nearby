@@ -30,6 +30,8 @@ import * as ScreenCapture from 'expo-screen-capture';
 import { getPlanIdForMatch } from '../services/plans';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { categoryName } from '../i18n/categoryNames';
+import { localClockOfDate } from '../i18n/format';
 import { typography, spacing, radius } from '../theme';
 
 const MAX_RECORDING_SECONDS = 60;
@@ -38,6 +40,7 @@ const STALLED_THRESHOLD_DAYS = 3;
 const REACTION_EMOJIS = ['❤️', '😂', '👍', '😮', '😢'];
 
 function VoiceBubble({ audioPath, isMe, colors }) {
+  const { t } = useLanguage();
   const [sound, setSound] = useState(null);
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -59,7 +62,7 @@ function VoiceBubble({ audioPath, isMe, colors }) {
     const url = await getSignedAudioUrl(audioPath);
     if (!url) {
       setLoading(false);
-      Alert.alert('Error', 'Could not load this voice note.');
+      Alert.alert(t('ui.chat.error'), t('ui.chat.couldNotLoadThisVoice'));
       return;
     }
 
@@ -89,7 +92,7 @@ function VoiceBubble({ audioPath, isMe, colors }) {
       style={[voiceStyles.bubble, isMe ? { backgroundColor: colors.primary } : { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}
       onPress={togglePlay}
       activeOpacity={0.85}
-      accessibilityLabel={`${isMe ? 'Your' : 'Their'} voice message, ${playing ? 'playing, tap to pause' : 'tap to play'}`}
+      accessibilityLabel={t(`ui.chat.voiceA11y.${isMe ? 'mine' : 'theirs'}${playing ? 'Playing' : 'Paused'}`)}
       accessibilityRole="button"
     >
       {loading ? (
@@ -97,7 +100,7 @@ function VoiceBubble({ audioPath, isMe, colors }) {
       ) : (
         <Text style={{ fontSize: 18 }}>{playing ? '⏸' : '▶️'}</Text>
       )}
-      <Text style={[voiceStyles.label, { color: isMe ? '#fff' : colors.textPrimary }]}>Voice message</Text>
+      <Text style={[voiceStyles.label, { color: isMe ? '#fff' : colors.textPrimary }]}>{t('ui.chat.voiceMessage')}</Text>
     </TouchableOpacity>
   );
 }
@@ -311,7 +314,7 @@ export default function ChatScreen({ route, navigation }) {
           <TouchableOpacity
             onPress={handleVideoCall}
             style={{ paddingHorizontal: spacing.sm }}
-            accessibilityLabel="Start a video call"
+            accessibilityLabel={t('ui.chat.startAVideoCallA11y')}
             accessibilityRole="button"
           >
             <Text style={{ fontSize: 18 }}>🎥</Text>
@@ -319,7 +322,7 @@ export default function ChatScreen({ route, navigation }) {
           <TouchableOpacity
             onPress={showTogetherMenu}
             style={{ paddingHorizontal: spacing.sm }}
-            accessibilityLabel="Do something together"
+            accessibilityLabel={t('ui.chat.doSomethingTogetherA11y')}
             accessibilityRole="button"
           >
             <Text style={{ fontSize: 18 }}>🎯</Text>
@@ -327,7 +330,7 @@ export default function ChatScreen({ route, navigation }) {
           <TouchableOpacity
             onPress={() => setCheckInModalVisible(true)}
             style={{ paddingHorizontal: spacing.sm }}
-            accessibilityLabel={isRomanticMatch ? 'Set up a date safety check-in' : 'Set up a safety check-in'}
+            accessibilityLabel={isRomanticMatch ? t('ui.chat.setUpADateSafetyA11y') : t('ui.chat.setUpASafetyCheckA11y')}
             accessibilityRole="button"
           >
             <Text style={{ fontSize: 18 }}>🛡️</Text>
@@ -335,7 +338,7 @@ export default function ChatScreen({ route, navigation }) {
           <TouchableOpacity
             onPress={showChatOptions}
             style={{ paddingHorizontal: spacing.sm }}
-            accessibilityLabel="Chat options"
+            accessibilityLabel={t('ui.chat.chatOptionsA11y')}
             accessibilityRole="button"
           >
             <Text style={{ color: colors.primary, fontSize: 20 }}>⋯</Text>
@@ -391,11 +394,11 @@ export default function ChatScreen({ route, navigation }) {
         headerTitle: () => (
           <TouchableOpacity
             onPress={() => navigation.navigate('ViewProfile', { userId: other?.id, ...(isRomanticMatch ? { viewContext: 'dating' } : null) })}
-            accessibilityLabel={`View ${other?.display_name}'s profile`}
+            accessibilityLabel={t('ui.chat.viewSProfileA11y', { name: other?.display_name })}
             accessibilityRole="button"
           >
             <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '600' }}>
-              {other?.display_name || 'Chat'}
+              {other?.display_name || t('ui.chat.chat')}
             </Text>
           </TouchableOpacity>
         ),
@@ -407,7 +410,7 @@ export default function ChatScreen({ route, navigation }) {
             <TouchableOpacity
               onPress={handleVideoCall}
               style={{ paddingHorizontal: spacing.sm }}
-              accessibilityLabel="Start a video call"
+              accessibilityLabel={t('ui.chat.startAVideoCallA11y')}
               accessibilityRole="button"
             >
               <Text style={{ fontSize: 18 }}>🎥</Text>
@@ -415,7 +418,7 @@ export default function ChatScreen({ route, navigation }) {
             <TouchableOpacity
               onPress={showTogetherMenu}
               style={{ paddingHorizontal: spacing.sm }}
-              accessibilityLabel="Do something together"
+              accessibilityLabel={t('ui.chat.doSomethingTogetherA11y')}
               accessibilityRole="button"
             >
               <Text style={{ fontSize: 18 }}>🎯</Text>
@@ -423,7 +426,7 @@ export default function ChatScreen({ route, navigation }) {
             <TouchableOpacity
               onPress={() => setCheckInModalVisible(true)}
               style={{ paddingHorizontal: spacing.sm }}
-              accessibilityLabel={isRomanticMatch ? 'Set up a date safety check-in' : 'Set up a safety check-in'}
+              accessibilityLabel={isRomanticMatch ? t('ui.chat.setUpADateSafetyA11y') : t('ui.chat.setUpASafetyCheckA11y')}
               accessibilityRole="button"
             >
               <Text style={{ fontSize: 18 }}>🛡️</Text>
@@ -431,7 +434,7 @@ export default function ChatScreen({ route, navigation }) {
             <TouchableOpacity
               onPress={showChatOptions}
               style={{ paddingHorizontal: spacing.sm }}
-              accessibilityLabel="Chat options"
+              accessibilityLabel={t('ui.chat.chatOptionsA11y')}
               accessibilityRole="button"
             >
               <Text style={{ color: colors.primary, fontSize: 20 }}>⋯</Text>
@@ -511,11 +514,11 @@ export default function ChatScreen({ route, navigation }) {
 
   function handleVideoCall() {
     Alert.alert(
-      'Video Call',
-      `Start a real-time video call with ${otherUser?.display_name || 'this match'}? This opens a private call room in your browser — they'll get a notification to join too.`,
+      t('ui.chat.videoCall'),
+      t('ui.chat.startARealTimeVideo', { name: otherUser?.display_name || 'this match' }),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Start Call', onPress: () => startVideoCall(matchId) },
+        { text: t('ui.chat.cancel'), style: 'cancel' },
+        { text: t('ui.chat.startCall'), onPress: () => startVideoCall(matchId) },
       ]
     );
   }
@@ -570,7 +573,7 @@ export default function ChatScreen({ route, navigation }) {
       const planId = await getPlanIdForMatch(matchId);
       if (planId) navigation.navigate('PlanDetail', { planId });
     } catch (e) {
-      Alert.alert('Error', 'Could not open your plans.');
+      Alert.alert(t('ui.chat.error'), t('ui.chat.couldNotOpenYourPlans'));
     }
   }
 
@@ -591,7 +594,7 @@ export default function ChatScreen({ route, navigation }) {
       const sharedInterests = myInterests.filter((i) => theirInterests.some((t) => t.toLowerCase() === i.toLowerCase()));
 
       if (sharedInterests.length === 0) {
-        Alert.alert('No shared interests yet', "You don't have any interests in common on your profiles yet to base a suggestion on.");
+        Alert.alert(t('ui.chat.noSharedInterestsYet'), t('ui.chat.youDontHaveAnyInterests'));
         return;
       }
 
@@ -606,12 +609,12 @@ export default function ChatScreen({ route, navigation }) {
         .limit(3);
 
       if (!offersData || offersData.length === 0) {
-        Alert.alert('No suggestions right now', "There aren't any active offers matching what you both like yet — check back soon.");
+        Alert.alert(t('ui.chat.noSuggestionsRightNow'), t('ui.chat.thereArentAnyActiveOffers'));
         return;
       }
 
-      const suggestionKicker = isRomanticMatch ? 'Date night ideas' : 'Ideas nearby';
-      const suggestionText = `💡 ${suggestionKicker}, since you both like ${sharedInterests.slice(0, 3).join(', ')}:\n${offersData.map((o) => `• ${o.title} at ${o.brand_partners?.name ?? 'a local spot'}`).join('\n')}`;
+      const suggestionKicker = isRomanticMatch ? t('ui.chat.dateNightIdeas') : t('ui.chat.ideasNearby');
+      const suggestionText = `${t('ui.chat.suggestionHeading', { kicker: suggestionKicker, interests: sharedInterests.slice(0, 3).map((i) => categoryName(i, language)).join(', ') })}\n${offersData.map((o) => t('ui.chat.at', { title: o.title, name: o.brand_partners?.name ?? t('ui.chat.aLocalSpot') })).join('\n')}`;
       const { data, error } = await supabase
         .from('messages')
         .insert({ match_id: matchId, sender_id: userId, body: suggestionText })
@@ -634,12 +637,12 @@ export default function ChatScreen({ route, navigation }) {
   // gathering-sourced chat would be genuinely wrong. Setting a
   // boundary is universal, so that one stays either way.
   const courageMenuOptions = [
-    { key: 'boundary', text: 'Set a boundary', onPress: () => getCourageMessage('set_boundary') },
+    { key: 'boundary', text: t('ui.chat.setABoundary'), onPress: () => getCourageMessage('set_boundary') },
     ...(isRomanticMatch
       ? [
-          { key: 'ask_out', text: 'Ask them out', onPress: () => getCourageMessage('ask_out') },
-          { key: 'say_interested', text: "Say I'm interested", onPress: () => getCourageMessage('say_interested') },
-          { key: 'say_not_interested', text: "Say I'm not interested", onPress: () => getCourageMessage('say_not_interested') },
+          { key: 'ask_out', text: t('ui.chat.askThemOut'), onPress: () => getCourageMessage('ask_out') },
+          { key: 'say_interested', text: t('ui.chat.sayImInterested'), onPress: () => getCourageMessage('say_interested') },
+          { key: 'say_not_interested', text: t('ui.chat.sayImNotInterested'), onPress: () => getCourageMessage('say_not_interested') },
         ]
       : []),
   ];
@@ -662,22 +665,22 @@ export default function ChatScreen({ route, navigation }) {
       if (!response.ok) {
         if (response.status === 403) {
           Alert.alert(
-            'Help Me Say It is Premium',
-            'This uses AI to help you find the right words. Upgrade to Premium to use it.',
+            t('ui.chat.helpMeSayItIs'),
+            t('ui.chat.thisUsesAiToHelp'),
             [
-              { text: 'Not now', style: 'cancel' },
-              { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
+              { text: t('ui.chat.notNow'), style: 'cancel' },
+              { text: t('ui.chat.upgradeToPremium'), onPress: () => navigation.navigate('Paywall') },
             ]
           );
           return;
         }
-        Alert.alert('Error', result.error || 'Could not generate a message right now.');
+        Alert.alert(t('ui.chat.error'), result.error || t('ui.chat.couldNotGenerateAMessage'));
         return;
       }
 
-      Alert.alert('Here\u2019s a draft', result.message, [
-        { text: 'Dismiss', style: 'cancel' },
-        { text: 'Use This', onPress: () => setText(result.message) },
+      Alert.alert(t('ui.chat.hereSADraft'), result.message, [
+        { text: t('ui.chat.dismiss'), style: 'cancel' },
+        { text: t('ui.chat.useThis'), onPress: () => setText(result.message) },
       ]);
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => getCourageMessage(goal) });
@@ -685,32 +688,32 @@ export default function ChatScreen({ route, navigation }) {
   }
 
   function showRandomExperiment() {
-    Alert.alert('💡 Try This Together', randomExperiment(), [{ text: 'OK' }]);
+    Alert.alert(t('ui.chat.tryThisTogether'), randomExperiment(), [{ text: t('ui.chat.ok') }]);
   }
 
   function showChatOptions() {
-    const modeLabel = disappearingMode === 'off' ? 'Off' : disappearingMode === '24h' ? '24 Hours' : 'Instant';
+    const modeLabel = disappearingMode === 'off' ? t('ui.chat.off2') : disappearingMode === '24h' ? t('ui.chat.n24Hours2') : t('ui.chat.instant');
     Alert.alert(
-      'Chat Options',
+      t('ui.chat.chatOptions'),
       '',
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: `Disappearing Messages: ${modeLabel} (tap to change)`, onPress: showDisappearingModeOptions },
-        { text: 'Unmatch', style: 'destructive', onPress: confirmUnmatch },
-        { text: 'Report or Block', onPress: () => setReportModalVisible(true) },
+        { text: t('ui.chat.cancel'), style: 'cancel' },
+        { text: t('ui.chat.disappearingMessagesTapToChange', { modeLabel: modeLabel }), onPress: showDisappearingModeOptions },
+        { text: t('ui.chat.unmatch'), style: 'destructive', onPress: confirmUnmatch },
+        { text: t('ui.chat.reportOrBlock'), onPress: () => setReportModalVisible(true) },
       ]
     );
   }
 
   function showDisappearingModeOptions() {
     Alert.alert(
-      'Disappearing Messages',
-      'Choose how long new messages stay in this chat, for both of you.',
+      t('ui.chat.disappearingMessages'),
+      t('ui.chat.chooseHowLongNewMessages'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: disappearingMode === 'off' ? '✓ Off' : 'Off', onPress: () => updateDisappearingMode(  'off') },
-        { text: disappearingMode === '24h' ? '✓ 24 Hours' : '24 Hours', onPress: () => updateDisappearingMode('24h') },
-        { text: disappearingMode === 'instant' ? '✓ Instant (view once)' : 'Instant (view once)', onPress: () => updateDisappearingMode('instant') },
+        { text: t('ui.chat.cancel'), style: 'cancel' },
+        { text: disappearingMode === 'off' ? t('ui.chat.off') : t('ui.chat.off2'), onPress: () => updateDisappearingMode(  'off') },
+        { text: disappearingMode === '24h' ? t('ui.chat.n24Hours') : t('ui.chat.n24Hours2'), onPress: () => updateDisappearingMode('24h') },
+        { text: disappearingMode === 'instant' ? t('ui.chat.instantViewOnce') : t('ui.chat.instantViewOnce2'), onPress: () => updateDisappearingMode('instant') },
       ]
     );
   }
@@ -722,18 +725,18 @@ export default function ChatScreen({ route, navigation }) {
       return;
     }
     setDisappearingMode(mode);
-    const labels = { off: 'Messages will now be kept normally.', '24h': 'New messages will automatically delete after 24 hours, for both of you.', instant: "New messages will disappear shortly after being read, for both of you — there's no window to reconsider once seen." };
-    Alert.alert('Updated', labels[mode]);
+    const labels = { off: t('ui.chat.messagesWillNowBeKept'), '24h': t('ui.chat.newMessagesWillAutomaticallyDelete'), instant: t('ui.chat.newMessagesWillDisappearShortly') };
+    Alert.alert(t('ui.chat.updated'), labels[mode]);
   }
 
   function confirmUnmatch() {
     Alert.alert(
-      `Unmatch with ${otherUser?.display_name || 'this person'}?`,
-      "This ends your match and removes this conversation. They won't be notified, and you can still Report or Block them separately if needed.",
+      t('ui.chat.unmatchWith', { name: otherUser?.display_name || 'this person' }),
+      t('ui.chat.thisEndsYourMatchAnd'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('ui.chat.cancel'), style: 'cancel' },
         {
-          text: 'Unmatch',
+          text: t('ui.chat.unmatch'),
           style: 'destructive',
           onPress: async () => {
             let otherPersonName = otherUser?.display_name;
@@ -754,12 +757,12 @@ export default function ChatScreen({ route, navigation }) {
               navigation.goBack();
               setTimeout(() => {
                 Alert.alert(
-                  'Want to reflect?',
-                  'You can privately write down what worked, what didn\u2019t, and what you\u2019d want next time. Only you will ever see it.',
+                  t('ui.chat.wantToReflect'),
+                  t('ui.chat.youCanPrivatelyWriteDown'),
                   [
-                    { text: 'Not now', style: 'cancel' },
+                    { text: t('ui.chat.notNow'), style: 'cancel' },
                     {
-                      text: 'Add a Reflection',
+                      text: t('ui.chat.addAReflection'),
                       onPress: () => navigation.navigate('GoodbyeArchiveEntry', { aboutDisplayName: otherPersonName }),
                     },
                   ]
@@ -777,10 +780,10 @@ export default function ChatScreen({ route, navigation }) {
   function showReactionPicker(messageId) {
     const myExisting = (reactions[messageId] ?? []).find((r) => r.user_id === userId);
     Alert.alert(
-      myExisting ? 'Change Reaction' : 'React',
+      myExisting ? t('ui.chat.changeReaction') : t('ui.chat.react'),
       '',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('ui.chat.cancel'), style: 'cancel' },
         ...REACTION_EMOJIS.map((emoji) => ({
           text: `${emoji}${myExisting?.emoji === emoji ? ' (tap to remove)' : ''}`,
           onPress: () => handleReact(messageId, emoji),
@@ -815,7 +818,7 @@ export default function ChatScreen({ route, navigation }) {
       const result = await response.json();
 
       if (!response.ok) {
-        Alert.alert('Error', result.error || 'Could not translate this message.');
+        Alert.alert(t('ui.chat.error'), result.error || t('ui.chat.couldNotTranslateThisMessage'));
         return;
       }
 
@@ -841,11 +844,11 @@ export default function ChatScreen({ route, navigation }) {
     const limitCheck = await checkVoiceNoteLimit();
     if (!limitCheck.allowed) {
       Alert.alert(
-        'Daily limit reached',
-        limitCheck.reason,
+        t('ui.chat.dailyLimitReached'),
+        limitCheck.reason ? t('ui.chat.voiceLimitReason') : undefined,
         [
-          { text: 'Not now', style: 'cancel' },
-          { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
+          { text: t('ui.chat.notNow'), style: 'cancel' },
+          { text: t('ui.chat.upgradeToPremium'), onPress: () => navigation.navigate('Paywall') },
         ]
       );
       return;
@@ -944,13 +947,13 @@ export default function ChatScreen({ route, navigation }) {
       const result = await response.json();
 
       if (!response.ok) {
-        Alert.alert('Error', result.error || 'Could not generate an icebreaker.');
+        Alert.alert(t('ui.chat.error'), result.error || t('ui.chat.couldNotGenerateAnIcebreaker'));
         return;
       }
 
-      Alert.alert('✨ Icebreaker suggestion', result.icebreaker, [
-        { text: 'Dismiss', style: 'cancel' },
-        { text: 'Use This', onPress: () => setText(result.icebreaker) },
+      Alert.alert(t('ui.chat.icebreakerSuggestion'), result.icebreaker, [
+        { text: t('ui.chat.dismiss'), style: 'cancel' },
+        { text: t('ui.chat.useThis'), onPress: () => setText(result.icebreaker) },
       ]);
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => getIcebreaker() });
@@ -1134,7 +1137,7 @@ export default function ChatScreen({ route, navigation }) {
 
   function formatTime(iso) {
     const d = new Date(iso);
-    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return Number.isNaN(d.getTime()) ? '' : localClockOfDate(d, language);
   }
 
   function formatRecordingTime(seconds) {
@@ -1157,7 +1160,7 @@ export default function ChatScreen({ route, navigation }) {
   // first match here is already the most recent — no reverse needed.
   const lastMyMessage = messages.find((m) => m.sender_id === userId);
   const emptyStateText = gatheringTitle
-    ? `Say hi — you're both attending "${gatheringTitle}"!`
+    ? t('ui.chat.sayHiYoureBothAttending', { gatheringTitle: gatheringTitle })
     : t('chat.sayHi');
 
   const designatedHasSentMessage = designatedFirstMessengerId
@@ -1168,7 +1171,7 @@ export default function ChatScreen({ route, navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load this conversation." onRetry={init} />
+        <LoadErrorState message={t('ui.chat.couldntLoadThisConversation')} onRetry={init} />
       </SafeAreaView>
     );
   }
@@ -1179,7 +1182,7 @@ export default function ChatScreen({ route, navigation }) {
   if (messagesLoadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load your messages." onRetry={loadInitial} />
+        <LoadErrorState message={t('ui.chat.couldntLoadYourMessages')} onRetry={loadInitial} />
       </SafeAreaView>
     );
   }
@@ -1210,22 +1213,20 @@ export default function ChatScreen({ route, navigation }) {
             <Text style={styles.emptyEmoji}>💬</Text>
             <Text style={styles.emptyText}>{emptyStateText}</Text>
             {isBlockedFromSending && (
-              <Text style={styles.firstMessageHint}>
-                {designatedFirstMessengerName} will send the first message.
-              </Text>
+              <Text style={styles.firstMessageHint}>{t('ui.chat.willSendTheFirstMessage', { designatedFirstMessengerName: designatedFirstMessengerName })}</Text>
             )}
             {isUserPremium && (
               <TouchableOpacity
                 style={styles.icebreakerEmptyButton}
                 onPress={getIcebreaker}
                 disabled={loadingIcebreaker}
-                accessibilityLabel="Get an AI icebreaker suggestion"
+                accessibilityLabel={t('ui.chat.getAnAiIcebreakerSuggestionA11y')}
                 accessibilityRole="button"
               >
                 {loadingIcebreaker ? (
                   <ActivityIndicator color={colors.primary} />
                 ) : (
-                  <Text style={styles.icebreakerEmptyText}>✨ Get an AI icebreaker suggestion</Text>
+                  <Text style={styles.icebreakerEmptyText}>{t('ui.chat.getAnAiIcebreakerSuggestion')}</Text>
                 )}
               </TouchableOpacity>
             )}
@@ -1255,16 +1256,16 @@ export default function ChatScreen({ route, navigation }) {
                 <ActivityIndicator color={colors.textTertiary} />
               </View>
             ) : loadOlderError ? (
-              <TouchableOpacity onPress={loadOlder} accessibilityLabel="Couldn't load older messages, tap to retry" accessibilityRole="button">
-                <Text style={styles.historyErrorText}>Couldn't load older messages — tap to retry</Text>
+              <TouchableOpacity onPress={loadOlder} accessibilityLabel={t('ui.chat.couldntLoadOlderMessagesTapA11y')} accessibilityRole="button">
+                <Text style={styles.historyErrorText}>{t('ui.chat.couldntLoadOlderMessagesTap')}</Text>
               </TouchableOpacity>
             ) : !hasMore && messages.length > 0 ? (
-              <Text style={styles.historyStartText}>The start of your conversation</Text>
+              <Text style={styles.historyStartText}>{t('ui.chat.theStartOfYourConversation')}</Text>
             ) : null
           }
           renderItem={({ item }) => {
             const isMe = item.sender_id === userId;
-            const senderLabel = isMe ? 'You' : (otherUser?.display_name || 'They');
+            const senderLabel = isMe ? t('ui.chat.youA11y') : (otherUser?.display_name || t('ui.chat.theyA11y'));
             const reactionText = reactionSummary(item.id);
             const isNewMessage = !seenMessageIdsRef.current.has(item.id);
             seenMessageIdsRef.current.add(item.id);
@@ -1283,11 +1284,11 @@ export default function ChatScreen({ route, navigation }) {
                       </View>
                     ) : mediaUrls[item.id] === null ? (
                       <View style={[styles.gifBubble, { justifyContent: 'center', alignItems: 'center', padding: spacing.md }]}>
-                        <Text style={{ color: colors.textTertiary, fontSize: 12, textAlign: 'center' }}>Couldn't load photo</Text>
+                        <Text style={{ color: colors.textTertiary, fontSize: 12, textAlign: 'center' }}>{t('ui.chat.couldntLoadPhoto')}</Text>
                       </View>
                     ) : imageLoadFailed[item.id] ? (
                       <View style={[styles.gifBubble, { justifyContent: 'center', alignItems: 'center', padding: spacing.md }]}>
-                        <Text style={{ color: colors.textTertiary, fontSize: 12, textAlign: 'center' }}>Couldn't load photo</Text>
+                        <Text style={{ color: colors.textTertiary, fontSize: 12, textAlign: 'center' }}>{t('ui.chat.couldntLoadPhoto')}</Text>
                       </View>
                     ) : item.media_type === 'video' ? (
                       <Video
@@ -1295,14 +1296,14 @@ export default function ChatScreen({ route, navigation }) {
                         style={styles.gifBubble}
                         resizeMode="cover"
                         useNativeControls
-                        accessibilityLabel={`${senderLabel} sent a video`}
+                        accessibilityLabel={t('ui.chat.sentAVideoA11y', { senderLabel: senderLabel })}
                       />
                     ) : (
                       <Image
                         source={{ uri: mediaUrls[item.id] }}
                         style={styles.gifBubble}
                         resizeMode="cover"
-                        accessibilityLabel={`${senderLabel} sent a photo`}
+                        accessibilityLabel={t('ui.chat.sentAPhotoA11y', { senderLabel: senderLabel })}
                         onError={(e) => {
                           console.error('Photo failed to load:', e.nativeEvent.error);
                           setImageLoadFailed((prev) => ({ ...prev, [item.id]: true }));
@@ -1316,7 +1317,7 @@ export default function ChatScreen({ route, navigation }) {
                       source={{ uri: item.gif_url }}
                       style={styles.gifBubble}
                       resizeMode="cover"
-                      accessibilityLabel={`${senderLabel} sent a GIF`}
+                      accessibilityLabel={t('ui.chat.sentAGifA11y', { senderLabel: senderLabel })}
                     />
                   </TouchableOpacity>
                 ) : (
@@ -1325,8 +1326,8 @@ export default function ChatScreen({ route, navigation }) {
                       style={[styles.bubble, isMe ? styles.myBubble : styles.theirBubble]}
                       onLongPress={() => showReactionPicker(item.id)}
                       activeOpacity={0.85}
-                      accessibilityLabel={`${senderLabel} said: ${item.body}, sent at ${formatTime(item.created_at)}`}
-                      accessibilityHint="Double tap and hold to react"
+                      accessibilityLabel={t('ui.chat.saidSentAtA11y', { senderLabel: senderLabel, body: item.body, createdAt: formatTime(item.created_at) })}
+                      accessibilityHint={t('ui.chat.doubleTapAndHoldToA11y')}
                     >
                       <Text style={[styles.bubbleText, isMe && styles.myBubbleText]}>{item.body}</Text>
                     </TouchableOpacity>
@@ -1334,7 +1335,7 @@ export default function ChatScreen({ route, navigation }) {
                       <TouchableOpacity
                         onPress={() => handleTranslate(item.body)}
                         style={styles.translateButton}
-                        accessibilityLabel="Translate this message"
+                        accessibilityLabel={t('ui.chat.translateThisMessageA11y')}
                         accessibilityRole="button"
                       >
                         <Text style={styles.translateButtonText}>🌐</Text>
@@ -1346,7 +1347,7 @@ export default function ChatScreen({ route, navigation }) {
                   <TouchableOpacity
                     onPress={() => showReactionPicker(item.id)}
                     style={styles.reactionBadge}
-                    accessibilityLabel={`Reactions: ${reactionText}, tap to change your reaction`}
+                    accessibilityLabel={t('ui.chat.reactionsTapToChangeYourA11y', { reactionText: reactionText })}
                     accessibilityRole="button"
                   >
                     <Text style={styles.reactionBadgeText}>{reactionText}</Text>
@@ -1354,7 +1355,7 @@ export default function ChatScreen({ route, navigation }) {
                 )}
                 <Text style={styles.timestamp}>{formatTime(item.created_at)}</Text>
                 {lastMyMessage?.id === item.id && item.read_at && otherUser?.read_receipts_enabled !== false && (
-                  <Text style={styles.seenText}>Seen</Text>
+                  <Text style={styles.seenText}>{t('ui.chat.seen')}</Text>
                 )}
               </View>
               </AnimatedMessageBubble>
@@ -1369,7 +1370,7 @@ export default function ChatScreen({ route, navigation }) {
             <TouchableOpacity
               onPress={getIcebreaker}
               disabled={loadingIcebreaker}
-              accessibilityLabel="Get an AI conversation suggestion"
+              accessibilityLabel={t('ui.chat.getAnAiConversationSuggestionA11y')}
               accessibilityRole="button"
             >
               <Text style={styles.stalledLink}>{loadingIcebreaker ? '...' : t('chat.stalledLink')}</Text>
@@ -1380,7 +1381,7 @@ export default function ChatScreen({ route, navigation }) {
         {otherIsTyping && !isRecording && (
           <View style={styles.typingRow} accessibilityLiveRegion="polite">
             <View style={styles.typingBubble}>
-              <Text style={styles.typingText}>{otherUser?.display_name} is typing...</Text>
+              <Text style={styles.typingText}>{t('ui.chat.isTyping', { name: otherUser?.display_name ?? '' })}</Text>
             </View>
           </View>
         )}
@@ -1393,19 +1394,17 @@ export default function ChatScreen({ route, navigation }) {
 
         {isBlockedFromSending ? (
           <View style={styles.blockedRow}>
-            <Text style={styles.blockedText}>
-              🔒 {designatedFirstMessengerName} needs to send the first message before you can reply.
-            </Text>
+            <Text style={styles.blockedText}>{t('ui.chat.needsToSendTheFirst', { designatedFirstMessengerName: designatedFirstMessengerName })}</Text>
           </View>
         ) : isRecording ? (
           <View style={styles.recordingRow}>
             <View style={styles.recordingIndicator} />
             <Text style={styles.recordingTime}>{formatRecordingTime(recordingSeconds)}</Text>
-            <Text style={styles.recordingHint}>Recording voice note...</Text>
+            <Text style={styles.recordingHint}>{t('ui.chat.recordingVoiceNote')}</Text>
             <TouchableOpacity
               style={styles.cancelRecordingButton}
               onPress={handleCancelRecording}
-              accessibilityLabel="Cancel recording without sending"
+              accessibilityLabel={t('ui.chat.cancelRecordingWithoutSendingA11y')}
               accessibilityRole="button"
             >
               <Text style={styles.cancelRecordingButtonText}>✕</Text>
@@ -1413,10 +1412,10 @@ export default function ChatScreen({ route, navigation }) {
             <TouchableOpacity
               style={styles.stopButton}
               onPress={handleStopRecording}
-              accessibilityLabel="Stop recording and send voice message"
+              accessibilityLabel={t('ui.chat.stopRecordingAndSendVoiceA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.stopButtonText}>Send</Text>
+              <Text style={styles.stopButtonText}>{t('ui.chat.send')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -1426,7 +1425,7 @@ export default function ChatScreen({ route, navigation }) {
                 style={styles.icebreakerButton}
                 onPress={getIcebreaker}
                 disabled={loadingIcebreaker}
-                accessibilityLabel="Get an AI icebreaker suggestion"
+                accessibilityLabel={t('ui.chat.getAnAiIcebreakerSuggestionA11y')}
                 accessibilityRole="button"
               >
                 {loadingIcebreaker ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.icebreakerButtonText}>✨</Text>}
@@ -1435,16 +1434,16 @@ export default function ChatScreen({ route, navigation }) {
             <TouchableOpacity
               style={styles.gifButton}
               onPress={() => setGifPickerVisible(true)}
-              accessibilityLabel="Send a GIF"
+              accessibilityLabel={t('ui.chat.sendAGifA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.gifButtonText}>GIF</Text>
+              <Text style={styles.gifButtonText}>{t('ui.chat.gif')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.gifButton}
               onPress={handlePickPhoto}
               disabled={uploadingPhoto}
-              accessibilityLabel={uploadingPhoto ? 'Checking photo' : 'Send a photo'}
+              accessibilityLabel={uploadingPhoto ? t('ui.chat.checkingPhotoA11y') : t('ui.chat.sendAPhotoA11y')}
               accessibilityRole="button"
             >
               {uploadingPhoto ? <ActivityIndicator size="small" color={colors.textSecondary} /> : <Text style={styles.gifButtonText}>📷</Text>}
@@ -1453,7 +1452,7 @@ export default function ChatScreen({ route, navigation }) {
               style={styles.gifButton}
               onPress={handlePickVideo}
               disabled={uploadingPhoto}
-              accessibilityLabel={uploadingPhoto ? 'Checking video' : 'Send a video'}
+              accessibilityLabel={uploadingPhoto ? t('ui.chat.checkingVideoA11y') : t('ui.chat.sendAVideoA11y')}
               accessibilityRole="button"
             >
               {uploadingPhoto ? <ActivityIndicator size="small" color={colors.textSecondary} /> : <Text style={styles.gifButtonText}>🎥</Text>}
@@ -1465,13 +1464,13 @@ export default function ChatScreen({ route, navigation }) {
               value={text}
               onChangeText={handleTextChange}
               multiline
-              accessibilityLabel="Message input"
+              accessibilityLabel={t('ui.chat.messageInputA11y')}
             />
             {text.trim() ? (
               <TouchableOpacity
                 style={styles.sendButton}
                 onPress={sendMessage}
-                accessibilityLabel="Send message"
+                accessibilityLabel={t('ui.chat.sendMessageA11y')}
                 accessibilityRole="button"
               >
                 <Text style={styles.sendText}>{t('chat.send')}</Text>
@@ -1481,7 +1480,7 @@ export default function ChatScreen({ route, navigation }) {
                 style={styles.micButton}
                 onPress={handleStartRecording}
                 disabled={uploadingVoice}
-                accessibilityLabel="Record a voice message"
+                accessibilityLabel={t('ui.chat.recordAVoiceMessageA11y')}
                 accessibilityRole="button"
               >
                 {uploadingVoice ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={{ fontSize: 18 }}>🎤</Text>}
@@ -1520,15 +1519,15 @@ export default function ChatScreen({ route, navigation }) {
       <ActionSheetModal
         visible={togetherMenuVisible}
         onClose={() => setTogetherMenuVisible(false)}
-        title="Do Something Together"
+        title={t('ui.chat.doSomethingTogether')}
         options={togetherMenuOptions}
       />
 
       <ActionSheetModal
         visible={courageMenuVisible}
         onClose={() => setCourageMenuVisible(false)}
-        title="Help Me Say It"
-        message="What are you trying to say? I'll help you find the words."
+        title={t('ui.chat.helpMeSayIt')}
+        message={t('ui.chat.whatAreYouTryingTo')}
         options={courageMenuOptions}
       />
     </SafeAreaView>
