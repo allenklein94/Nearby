@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { quickOptionLabel } from '../i18n/optionLabels';
 import { spacing, radius, typography } from '../theme';
 import { getQuickPrompts } from '../utils/timeContext';
 import { iconNameForOption } from '../constants/quickPickIcons';
@@ -11,6 +13,8 @@ import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { modalAnimation } from '../motion';
 const SOMETHING_ELSE = { icon: '➕', label: 'Something Else', category: null };
 
+// Labels here are the English identity of each option (compared and looked up by code); what is shown comes from
+// quickOptionLabel (i18n/optionLabels.js) in the person's language.
 // Fixed, non-time-adaptive option set for CreateHubScreen's "Start a
 // Gathering" card — unlike the default getQuickPrompts() list (which
 // changes by time of day), Create is reached at any hour and needs a
@@ -40,6 +44,7 @@ export const SUB_OPTIONS = {
 
 export default function StartSomethingModal({ visible, onClose, navigation, initialCategory = null, topLevelOptions = null }) {
   const { colors } = useTheme();
+  const { t, language } = useLanguage();
   const styles = getStyles(colors);
   const [activeCategory, setActiveCategory] = useState(null);
 
@@ -65,8 +70,9 @@ export default function StartSomethingModal({ visible, onClose, navigation, init
       return;
     }
     handleClose();
+    // The title is only a prefill the person edits, so it is in their language (like the date-proposal message)
     navigation.navigate('CreateGathering', {
-      quickStartTitle: item.label,
+      quickStartTitle: quickOptionLabel(item, language),
       quickStartCategory: item.category,
     });
   }
@@ -74,21 +80,21 @@ export default function StartSomethingModal({ visible, onClose, navigation, init
   function handlePickSub(subLabel) {
     handleClose();
     navigation.navigate('CreateGathering', {
-      quickStartTitle: subLabel === "Doesn't matter" || subLabel === 'Other' ? activeCategory.label : subLabel,
+      quickStartTitle: quickOptionLabel(subLabel === "Doesn't matter" || subLabel === 'Other' ? activeCategory : { label: subLabel }, language),
       quickStartCategory: activeCategory.category,
     });
   }
 
   const options = activeCategory ? SUB_OPTIONS[activeCategory.label] : topLevelOptions ?? [...getQuickPrompts(), SOMETHING_ELSE];
-  const title = activeCategory ? `What kind of ${activeCategory.label.toLowerCase()}?` : 'I want to...';
+  const title = activeCategory ? t('ui.startSomething.whatKindOfDinner') : t('ui.startSomething.iWantTo');
 
   return (
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={handleClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           {activeCategory && (
-            <TouchableOpacity onPress={() => setActiveCategory(null)} accessibilityLabel="Back" accessibilityRole="button">
-              <Text style={styles.backText}>← Back</Text>
+            <TouchableOpacity onPress={() => setActiveCategory(null)} accessibilityLabel={t('ui.startSomething.backA11y')} accessibilityRole="button">
+              <Text style={styles.backText}>{t('ui.startSomething.back')}</Text>
             </TouchableOpacity>
           )}
           <Text style={styles.title}>{title}</Text>
@@ -107,28 +113,28 @@ export default function StartSomethingModal({ visible, onClose, navigation, init
                     !photoUrl && (categoryColor ? { backgroundColor: `${categoryColor}20` } : { backgroundColor: colors.surfaceElevated }),
                   ]}
                   onPress={() => (activeCategory ? handlePickSub(item.label) : handlePick(item))}
-                  accessibilityLabel={item.label}
+                  accessibilityLabel={quickOptionLabel(item, language)}
                   accessibilityRole="button"
                 >
                   {photoUrl ? (
                     <ImageBackground source={{ uri: photoUrl }} style={styles.optionPhoto}>
                       <View style={styles.optionPhotoScrim}>
                         <Ionicons name={iconNameForOption(item)} size={24} color="#fff" style={styles.optionIcon} />
-                        <Text style={[styles.optionLabel, styles.optionLabelOnPhoto]}>{item.label}</Text>
+                        <Text style={[styles.optionLabel, styles.optionLabelOnPhoto]}>{quickOptionLabel(item, language)}</Text>
                       </View>
                     </ImageBackground>
                   ) : (
                     <>
                       <Ionicons name={iconNameForOption(item)} size={26} color={categoryColor ?? colors.textSecondary} style={styles.optionIcon} />
-                      <Text style={styles.optionLabel}>{item.label}</Text>
+                      <Text style={styles.optionLabel}>{quickOptionLabel(item, language)}</Text>
                     </>
                   )}
                 </TouchableOpacity>
               );
             })}
           </View>
-          <TouchableOpacity onPress={handleClose} style={{ marginTop: spacing.lg }} accessibilityLabel="Cancel" accessibilityRole="button">
-            <Text style={styles.cancelText}>Cancel</Text>
+          <TouchableOpacity onPress={handleClose} style={{ marginTop: spacing.lg }} accessibilityLabel={t('ui.startSomething.cancel')} accessibilityRole="button">
+            <Text style={styles.cancelText}>{t('ui.startSomething.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </View>

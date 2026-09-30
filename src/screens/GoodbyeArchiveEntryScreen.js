@@ -25,14 +25,14 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
   async function handleSubmit() {
     const fields = [whatWasBeautiful, whatWasDifficult, whatYouLearned, whatYouWantNextTime];
     if (fields.every((f) => !f.trim())) {
-      return Alert.alert('Add at least one reflection', 'Write whatever feels true — you don\u2019t need to answer all four.');
+      return Alert.alert(t('ui.goodbyeArchive.addAtLeastOneReflection'), t('ui.goodbyeArchive.writeWhateverFeelsTrueYou'));
     }
 
     for (const field of fields) {
       if (field.trim()) {
         const check = await checkTextModeration(field);
         if (!check.safe) {
-          return Alert.alert('Not allowed', 'Please revise your answer and try again.');
+          return Alert.alert(t('ui.goodbyeArchive.notAllowed'), t('ui.goodbyeArchive.pleaseReviseYourAnswerAnd'));
         }
       }
     }
@@ -47,7 +47,7 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('goodbye_archive_entry_saved');
-      showSuccessToast('Saved privately', 'Only you can see this. It\u2019s yours whenever you want to look back.');
+      showSuccessToast(t('ui.goodbyeArchive.savedPrivately'), t('ui.goodbyeArchive.onlyYouCanSeeThis'));
       navigation.goBack();
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSubmit() });
@@ -62,15 +62,15 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.headerTitle} accessibilityRole="header">A private reflection</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">{t('ui.goodbyeArchive.aPrivateReflection')}</Text>
           <Text style={styles.headerSubtitle}>
-            About {aboutDisplayName || 'this connection'} — completely private, just for you. Every relationship, however it went, has something worth carrying forward. Answer whatever feels true; skip the rest.
+            {aboutDisplayName ? t('ui.goodbyeArchive.introAbout', { name: aboutDisplayName }) : t('ui.goodbyeArchive.introNoName')}
           </Text>
 
           <Text style={styles.label}>{t('goodbyeArchive.whatWasBeautiful')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. How easy it was to talk to them"
+            placeholder={t('ui.goodbyeArchive.eGHowEasyIt')}
             placeholderTextColor={colors.textTertiary}
             value={whatWasBeautiful}
             onChangeText={setWhatWasBeautiful}
@@ -81,7 +81,7 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
           <Text style={styles.label}>{t('goodbyeArchive.whatWasDifficult')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. We wanted different things and couldn't bridge that"
+            placeholder={t('ui.goodbyeArchive.eGWeWantedDifferent')}
             placeholderTextColor={colors.textTertiary}
             value={whatWasDifficult}
             onChangeText={setWhatWasDifficult}
@@ -92,7 +92,7 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
           <Text style={styles.label}>{t('goodbyeArchive.whatYouLearned')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. I need to say what I actually want, earlier"
+            placeholder={t('ui.goodbyeArchive.eGINeedTo')}
             placeholderTextColor={colors.textTertiary}
             value={whatYouLearned}
             onChangeText={setWhatYouLearned}
@@ -103,7 +103,7 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
           <Text style={styles.label}>{t('goodbyeArchive.whatYouWant')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. Someone who shares how they're really feeling"
+            placeholder={t('ui.goodbyeArchive.eGSomeoneWhoShares')}
             placeholderTextColor={colors.textTertiary}
             value={whatYouWantNextTime}
             onChangeText={setWhatYouWantNextTime}
@@ -116,10 +116,10 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
             onPress={handleSubmit}
             disabled={submitting}
             activeOpacity={0.85}
-            accessibilityLabel={submitting ? 'Saving' : 'Save this reflection privately'}
+            accessibilityLabel={submitting ? t('ui.goodbyeArchive.savingA11y') : t('ui.goodbyeArchive.saveThisReflectionPrivatelyA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.buttonText}>{submitting ? 'Saving...' : 'Save Privately'}</Text>
+            <Text style={styles.buttonText}>{submitting ? t('ui.goodbyeArchive.saving') : t('ui.goodbyeArchive.savePrivately')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

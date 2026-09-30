@@ -3,6 +3,8 @@
 // outside a component). English is the app's own wording; the other ten are machine-authored and need native-speaker review.
 // Display text only: never a stored value, a canonical key, a name or anything a person typed.
 import common from './common';
+import goodbyeArchive from './goodbyeArchive';
+import startSomething from './startSomething';
 import media from './media';
 import selectLocation from './selectLocation';
 import emergencyContacts from './emergencyContacts';
@@ -60,7 +62,7 @@ import actions from './actions';
 import home from './home';
 import homeParts from './homeParts';
 
-export const UI_NAMESPACES = { common, plans, shared, empty, actions, home, homeParts, discover, gatherings, gatheringVocab, gatheringDetail, gatheringOptions, gatheringForm, activity, offerCopy, basicsVocab, profile, settings, optionVocab, askBusiness, requestDetail, groupPlan, planDetail, groupOccasionPlan, celebrate, chat, groupChat, onboarding, nav, community, viewProfile, matches, planCompletion, friends, crossedPaths, gatheringConfirmation, gatheringHub, hubContent, gatheringParts, occasions, dating, dateProposal, features, datingPrefs, createHub, billing, momentum, chemistryDiary, brandOffersUi, relationshipLegacy, dateCheckIn, paywallUi, compatibility, reportBlock, emergencyContacts, selectLocation, media };
+export const UI_NAMESPACES = { common, plans, shared, empty, actions, home, homeParts, discover, gatherings, gatheringVocab, gatheringDetail, gatheringOptions, gatheringForm, activity, offerCopy, basicsVocab, profile, settings, optionVocab, askBusiness, requestDetail, groupPlan, planDetail, groupOccasionPlan, celebrate, chat, groupChat, onboarding, nav, community, viewProfile, matches, planCompletion, friends, crossedPaths, gatheringConfirmation, gatheringHub, hubContent, gatheringParts, occasions, dating, dateProposal, features, datingPrefs, createHub, billing, momentum, chemistryDiary, brandOffersUi, relationshipLegacy, dateCheckIn, paywallUi, compatibility, reportBlock, emergencyContacts, selectLocation, media, startSomething, goodbyeArchive };
 
 export const UI_LANGUAGES = ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl', 'ru', 'ko'];
 

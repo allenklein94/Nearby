@@ -3,6 +3,7 @@ import { surpriseView, surpriseText } from '../i18n/surpriseView';
 import { translate, tr } from '../i18n/translate';
 import { displayHeroWhen } from '../i18n/display';
 import { categoryName } from '../i18n/categoryNames';
+import { quickOptionLabel } from '../i18n/optionLabels';
 import { resultRowView } from '../utils/recommendationContext';
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -186,13 +187,8 @@ function formatWeeklyRecap(recap) {
   return parts.join(' · ');
 }
 
-// A quick pick's label in the person's language: a pick whose label IS its category shows the category's translated name;
-// a time-flavored label (Morning Run, Beach Volleyball...) reads ui.homeParts.quickPick.<key>. The stored item is unchanged.
-const QUICK_PICK_KEYS = { 'Morning Run': 'morningRun', Breakfast: 'breakfast', Lunch: 'lunch', Dinner: 'dinner', Concert: 'concert', Walk: 'walk', 'Beach Volleyball': 'beachVolleyball', 'Beach Cleanup': 'beachCleanup', 'Wine Tasting': 'wineTasting' };
-function quickPickLabel(item, language) {
-  if (QUICK_PICK_KEYS[item.label]) return tr(`ui.homeParts.quickPick.${QUICK_PICK_KEYS[item.label]}`);
-  return categoryName(item.label, language);
-}
+// A quick pick's label in the person's language: i18n/optionLabels quickOptionLabel (shared with the Start Something sheet).
+const quickPickLabel = quickOptionLabel;
 
 export default function HomeScreen({ navigation }) {
   const { colors, shadow } = useTheme();

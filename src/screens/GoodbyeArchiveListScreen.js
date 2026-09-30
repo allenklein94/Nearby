@@ -56,12 +56,12 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
 
   function confirmDelete(entryId) {
     Alert.alert(
-      'Delete this reflection?',
-      'This is permanent and cannot be undone.',
+      t('ui.goodbyeArchive.deleteThisReflection'),
+      t('ui.goodbyeArchive.thisIsPermanentAndCannot'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('ui.goodbyeArchive.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('ui.goodbyeArchive.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -83,7 +83,7 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
 
   function proceedToEntry() {
     if (!nameInput.trim()) {
-      return Alert.alert('Add a name', "Who is this reflection about? First name or however you'd like to remember them.");
+      return Alert.alert(t('ui.goodbyeArchive.addAName'), t('ui.goodbyeArchive.whoIsThisReflectionAbout'));
     }
     setNameModalVisible(false);
     posthog.capture('goodbye_archive_entry_started');
@@ -94,7 +94,7 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your reflections...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.goodbyeArchive.loadingYourReflections')}</Text>
       </SafeAreaView>
     );
   }
@@ -102,7 +102,7 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load your reflections." onRetry={load} />
+        <LoadErrorState message={t('ui.goodbyeArchive.couldntLoadYourReflections')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -140,13 +140,13 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
           return (
             <View key={entry.id} style={styles.card}>
               <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>{entry.about_display_name || 'Someone'}</Text>
+                <Text style={styles.cardTitle}>{entry.about_display_name || t('ui.goodbyeArchive.someone')}</Text>
                 <TouchableOpacity
                   onPress={() => confirmDelete(entry.id)}
-                  accessibilityLabel={`Delete reflection about ${entry.about_display_name || 'this person'}`}
+                  accessibilityLabel={t('ui.goodbyeArchive.deleteReflectionAboutA11y', { aboutDisplayName: entry.about_display_name || t('ui.goodbyeArchive.thisPersonA11y') })}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.deleteText}>Delete</Text>
+                  <Text style={styles.deleteText}>{t('ui.goodbyeArchive.delete')}</Text>
                 </TouchableOpacity>
               </View>
               {filledFields.map((f) => (
@@ -166,29 +166,29 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
             <Text style={styles.sheetTitle}>{t('goodbyeArchive.whoIsThisAbout')}</Text>
             <TextInput
               style={styles.nameInput}
-              placeholder="First name or however you'd like to remember them"
+              placeholder={t('ui.goodbyeArchive.firstNameOrHoweverYoud')}
               placeholderTextColor={colors.textTertiary}
               value={nameInput}
               onChangeText={setNameInput}
               autoFocus
-              accessibilityLabel="Name"
+              accessibilityLabel={t('ui.goodbyeArchive.nameA11y')}
             />
             <TouchableOpacity
               style={styles.sheetButton}
               onPress={proceedToEntry}
               activeOpacity={0.85}
-              accessibilityLabel="Continue"
+              accessibilityLabel={t('ui.goodbyeArchive.continueA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.sheetButtonText}>Continue</Text>
+              <Text style={styles.sheetButtonText}>{t('ui.goodbyeArchive.continue')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setNameModalVisible(false)}
               style={{ marginTop: spacing.md }}
-              accessibilityLabel="Cancel"
+              accessibilityLabel={t('ui.goodbyeArchive.cancelA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{t('ui.goodbyeArchive.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>
