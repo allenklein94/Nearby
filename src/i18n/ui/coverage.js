@@ -45,6 +45,7 @@ export const LOCALIZED_FILES = [
   'src/utils/experienceStopEdit.js',
   'src/utils/planJourney.js',
   'src/screens/GroupOccasionPlanScreen.js',
+  'src/screens/CelebrateSomethingScreen.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
@@ -81,6 +82,12 @@ export const INTENTIONAL_ENGLISH = {
     'Review reports, admin': 'admin tooling', 'Business dashboard, admin': 'admin tooling', 'Review business partner requests, admin': 'admin tooling',
     'Sponsored refunds, admin': 'admin tooling', 'Review pending verifications, admin': 'admin tooling', 'Market validation dashboard, admin': 'admin tooling',
     'Business tier switch, admin, development tooling': 'admin tooling', 'Content review queue, admin': 'admin tooling',
+  },
+  'src/screens/CelebrateSomethingScreen.js': {
+    Me: 'English fallback of WHO_FOR_OPTIONS; shown through ui.celebrate.whoFor.*', 'A Friend': 'same', 'Family Member': 'same', 'Someone Else': 'same',
+    'Let the Group Vote': 'English fallback; shown through ui.celebrate.groupVote', 'Let Nearby Plan It': 'English fallback; shown through ui.celebrate.autoPlan',
+    Birthday: 'English fallback of QUICK_OCCASION_TILES; shown through ui.celebrate.tile.*', Anniversary: 'same', Celebration: 'same', Surprise: 'same', Custom: 'same',
+    Friends: 'English fallback of WHO_INVOLVED_OPTIONS; shown through ui.celebrate.whoInvolved.*', Family: 'same', 'Existing Group': 'same', 'Invite Specific People': 'same',
   },
   'src/utils/recoverableError.js': {
     "We couldn't {} right now.": 'fallback frame for an action phrase with no ui.shared.errors.what entry (the phrase itself is English)',

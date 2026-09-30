@@ -1,4 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { tr } from '../i18n/translate';
+import { localDate, localClockOfDate, localMoney } from '../i18n/format';
+import { occasionName } from '../i18n/categoryNames';
+import { budgetOptionLabel, experienceOptionLabel } from '../i18n/optionLabels';
+import { planPartLabel } from '../i18n/surpriseView';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import ExperiencePerkLine from '../components/ExperiencePerkLine';
 import ExperienceComponentList from '../components/ExperienceComponentList';
@@ -116,15 +122,15 @@ import { moneyLabel } from '../utils/outcomeDisplay';
 function buildStepDefs(occasion, activityType) {
   if (occasion === 'other') {
     return [
-      { key: 'occasion', label: 'Occasion' },
-      { key: 'custom_describe', label: 'Describe' },
+      { key: 'occasion', label: tr('ui.celebrate.occasion') },
+      { key: 'custom_describe', label: tr('ui.celebrate.describe') },
     ];
   }
   const base = [
-    { key: 'occasion', label: 'Occasion' },
-    { key: 'who_for', label: 'Who' },
-    { key: 'activity', label: 'What' },
-    { key: 'when', label: 'When' },
+    { key: 'occasion', label: tr('ui.celebrate.occasion') },
+    { key: 'who_for', label: tr('ui.celebrate.who') },
+    { key: 'activity', label: tr('ui.celebrate.what') },
+    { key: 'when', label: tr('ui.celebrate.when') },
   ];
   if (activityType === 'group_vote') {
     base.push({ key: 'group_invite', label: 'Invite' });
@@ -248,6 +254,7 @@ function initialStepFor(route) {
 }
 
 export default function CelebrateSomethingScreen({ navigation, route }) {
+  const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [step, setStep] = useState(() => initialStepFor(route));
@@ -530,7 +537,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   // (resolveDecidedGroupPlanParams), once the host picks it.
   async function createGroupVote() {
     if (selectedInviteeIds.size === 0) {
-      return Alert.alert('Invite someone', 'Pick at least one friend to invite to vote.');
+      return Alert.alert(t('ui.celebrate.inviteSomeone'), t('ui.celebrate.pickAtLeastOneFriend'));
     }
     Haptics.selectionAsync();
     setCreatingGroupPlan(true);
@@ -556,7 +563,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       navigation.replace('GroupOccasionPlan', { planId: result.planId });
     } catch (e) {
       console.error('createOccasionGroupPlan error', e);
-      Alert.alert('Something went wrong', "We couldn't create the group vote. Please try again.");
+      Alert.alert(t('ui.celebrate.somethingWentWrong'), t('ui.celebrate.weCouldntCreateTheGroup'));
       setCreatingGroupPlan(false);
     }
   }
@@ -676,7 +683,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   async function submitCustomDescription() {
     const typedText = customDescription.trim();
     if (!typedText) {
-      return Alert.alert('Tell us more', "What are you planning? A sentence or two is enough.");
+      return Alert.alert(t('ui.celebrate.tellUsMore'), t('ui.celebrate.whatAreYouPlanningA'));
     }
     Haptics.selectionAsync();
     Keyboard.dismiss();
@@ -819,7 +826,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     setSubmittingOptions(false);
     const succeeded = results.filter((r) => r.status === 'fulfilled').map((r) => r.value);
     if (succeeded.length === 0) {
-      Alert.alert('Something went wrong', "We couldn't send those requests. Please try again.");
+      Alert.alert(t('ui.celebrate.somethingWentWrong'), t('ui.celebrate.weCouldntSendThoseRequests'));
       return;
     }
     // Best-effort link-back to whichever real Occasion produced this --
@@ -876,7 +883,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       navigation.replace('BusinessRequestDetail', params);
       return;
     }
-    showSuccessToast('Requests sent', `🎉 Sent ${succeeded.length} requests — track them all from your Plans tab.`);
+    showSuccessToast(t('ui.celebrate.requestsSent'), t('ui.celebrate.sentRequestsTrackThemAll', { count: succeeded.length }));
     navigation.navigate('Plans');
   }
 
@@ -888,26 +895,26 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     // you planning?"/"Who is this for?" elsewhere in this file); these
     // two were the only stragglers.
     if (stepKey === 'occasion' && !occasion) {
-      return Alert.alert('Pick an occasion', "What's the occasion?");
+      return Alert.alert(t('ui.celebrate.pickAnOccasion'), t('ui.celebrate.whatsTheOccasion'));
     }
     if (stepKey === 'who_for' && !whoFor) {
-      return Alert.alert('Pick who it’s for', 'Who is this for?');
+      return Alert.alert(t('ui.celebrate.pickWhoItSFor'), t('ui.celebrate.whoIsThisFor'));
     }
     if (stepKey === 'activity' && !activityType) {
-      return Alert.alert('Pick something to do', "What would you like to do?");
+      return Alert.alert(t('ui.celebrate.pickSomethingToDo'), t('ui.celebrate.whatWouldYouLikeTo'));
     }
     if (stepKey === 'when' && (!whenPreset || scheduledAt.getTime() <= Date.now())) {
-      return Alert.alert('Pick a time', "When's this happening? Needs to be in the future.");
+      return Alert.alert(t('ui.celebrate.pickATime'), t('ui.celebrate.whensThisHappeningNeedsTo'));
     }
     if (stepKey === 'who_involved') {
       if (!whoInvolved) {
-        return Alert.alert('Pick who’s involved', 'Who should be involved?');
+        return Alert.alert(t('ui.celebrate.pickWhoSInvolved'), t('ui.celebrate.whoShouldBeInvolved'));
       }
       if (whoInvolved === 'existing_group' && !communityId) {
         if (!loadingCommunities && communities.length === 0) {
-          return Alert.alert('No groups yet', "You're not a member of any active community yet — pick a different option instead.");
+          return Alert.alert(t('ui.celebrate.noGroupsYet'), t('ui.celebrate.youreNotAMemberOf'));
         }
-        return Alert.alert('Pick a group', 'Choose which of your communities this is for.');
+        return Alert.alert(t('ui.celebrate.pickAGroup'), t('ui.celebrate.chooseWhichOfYourCommunities'));
       }
       // "ok do it" (CLAUDE.md): for a business destination, "Involve" is
       // no longer the wizard's final step -- "Options" still follows it,
@@ -1065,7 +1072,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
               {isTopPick && <NearbyPickBadge />}
               <Text style={styles.optionTitle}>🎊 {item.title}</Text>
               {item.subtitle ? <Text style={styles.optionSubtitle}>{item.subtitle}</Text> : null}
-              <Text style={styles.optionHint}>Already happening — tap to view</Text>
+              <Text style={styles.optionHint}>{t('ui.celebrate.alreadyHappeningTapToView')}</Text>
             </View>
           </TouchableOpacity>
         </StaggeredReveal>
@@ -1089,7 +1096,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
             {isTopPick && <NearbyPickBadge />}
             <Text style={styles.optionTitle}>{item.title}</Text>
             {item.subtitle ? <Text style={styles.optionSubtitle}>{item.subtitle}</Text> : null}
-            {isBundle && <Text style={styles.optionHint}>Covers: {item.componentLabels.join(', ')}</Text>}
+            {isBundle && <Text style={styles.optionHint}>{t('ui.celebrate.covers', { parts: item.componentLabels.map((l) => planPartLabel(l, language)).join(', ') })}</Text>}
           </View>
         </TouchableOpacity>
       </StaggeredReveal>
@@ -1129,10 +1136,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
-            <Text style={styles.header} accessibilityRole="header">🎉 Plan for Someone</Text>
-            <Text style={styles.subheader}>Let's turn this into a real plan.</Text>
+            <Text style={styles.header} accessibilityRole="header">{t('ui.celebrate.planForSomeone')}</Text>
+            <Text style={styles.subheader}>{t('ui.celebrate.letsTurnThisIntoA')}</Text>
 
-            <View style={styles.progressRow} accessibilityLabel={`Step ${step + 1} of ${stepDefs.length}: ${stepDefs[step].label}`}>
+            <View style={styles.progressRow} accessibilityLabel={t('ui.celebrate.stepOfA11y', { value: step + 1, length: stepDefs.length, label: stepDefs[step].label })}>
               {stepDefs.map((s, i) => (
                 <View key={s.key} style={styles.progressStep}>
                   <View style={[styles.progressDot, i <= step && styles.progressDotActive]} />
@@ -1173,7 +1180,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     already real at this very first step, so the header
                     speaks to it directly instead of the generic question. */}
                 <Text style={styles.label}>
-                  {whoForName.trim() ? `What are you planning for ${whoForName.trim()}?` : 'What are you planning?'}
+                  {whoForName.trim() ? t('ui.celebrate.whatAreYouPlanningFor', { trim: whoForName.trim() }) : t('ui.celebrate.whatAreYouPlanning')}
                 </Text>
                 {/* Item 83 ("Plan for Someone", CLAUDE.md): a real, fast
                     front door -- "the most understandable/high-frequency
@@ -1209,11 +1216,11 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                           if (OCCASION_SELECT_ANIMATIONS[tile.key]) setOccasionAnimTrigger(tile.key);
                         }}
                         activeOpacity={0.85}
-                        accessibilityLabel={tile.label}
+                        accessibilityLabel={t(`ui.celebrate.tile.${tile.key}`)}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
                       >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{tile.icon} {tile.label}</Text>
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{tile.icon} {t(`ui.celebrate.tile.${tile.key}`)}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -1239,10 +1246,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   <TouchableOpacity
                     onPress={() => setShowMoreOccasions(true)}
                     style={{ marginTop: spacing.xs, marginBottom: spacing.md }}
-                    accessibilityLabel="More occasions"
+                    accessibilityLabel={t('ui.celebrate.moreOccasionsA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.createOwnLinkText}>More occasions →</Text>
+                    <Text style={styles.createOwnLinkText}>{t('ui.celebrate.moreOccasions')}</Text>
                   </TouchableOpacity>
                 )}
 
@@ -1259,10 +1266,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     screen simpler" (the user's own words). */}
                 {showMoreOccasions && (
                   <>
-                    <Text style={[styles.sublabel, { marginTop: spacing.xs }]}>More Occasions</Text>
+                    <Text style={[styles.sublabel, { marginTop: spacing.xs }]}>{t('ui.celebrate.moreOccasions2')}</Text>
                     {occasionGroupOptions().map((group) => (
                       <View key={group.key} style={{ marginBottom: spacing.md }}>
-                        <Text style={styles.sublabel}>{group.label}</Text>
+                        <Text style={styles.sublabel}>{t(`ui.celebrate.occasionGroup.${group.key}`)}</Text>
                         <View style={styles.chipRow}>
                           {group.options.map((o) => {
                             const selected = occasion === o.key;
@@ -1280,11 +1287,11 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                                   if (OCCASION_SELECT_ANIMATIONS[o.key]) setOccasionAnimTrigger(o.key);
                                 }}
                                 activeOpacity={0.85}
-                                accessibilityLabel={o.label}
+                                accessibilityLabel={occasionName(o.key, language, o.label)}
                                 accessibilityRole="button"
                                 accessibilityState={{ selected }}
                               >
-                                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {occasionName(o.key, language, o.label)}</Text>
                               </TouchableOpacity>
                             );
                           })}
@@ -1309,13 +1316,13 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                 intent result in this app already offers. */}
             {stepKey === 'custom_describe' && (
               <>
-                <Text style={styles.label}>What are you planning?</Text>
+                <Text style={styles.label}>{t('ui.celebrate.whatAreYouPlanning')}</Text>
                 <Text style={styles.helperText}>
-                  Describe it in your own words — Nearby will figure out how to help.
+                  {t('ui.celebrate.describeItInYourOwn')}
                 </Text>
                 <TextInput
                   style={[styles.input, styles.textArea]}
-                  placeholder="e.g. Dad's visiting — want to take him somewhere special."
+                  placeholder={t('ui.celebrate.eGDadsVisitingWant')}
                   placeholderTextColor={colors.textTertiary}
                   value={customDescription}
                   onChangeText={(t) => {
@@ -1325,7 +1332,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   multiline
                   numberOfLines={3}
                   textAlignVertical="top"
-                  accessibilityLabel="What are you planning?"
+                  accessibilityLabel={t('ui.celebrate.whatAreYouPlanningA11y')}
                 />
 
                 {customSearching && (
@@ -1344,7 +1351,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         </Text>
                         {(customSearchResult.experience?.bundles ?? []).map((bundle) => (
                           <View key={bundle.id} style={{ marginBottom: spacing.sm }}>
-                            <Text style={styles.optionHint}>✨ One place has it all: {bundle.componentLabels.join(' + ')}</Text>
+                            <Text style={styles.optionHint}>{t('ui.celebrate.onePlaceHasItAll', { parts: bundle.componentLabels.map((l) => planPartLabel(l, language)).join(' + ') })}</Text>
                             {renderCustomResultRow(bundle)}
                           </View>
                         ))}
@@ -1361,32 +1368,32 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                           : customSearchResult.items.map(renderCustomResultRow)}
                       </>
                     ) : (
-                      <Text style={styles.helperText}>Nothing already out there matches yet — but Nearby can still help.</Text>
+                      <Text style={styles.helperText}>{t('ui.celebrate.nothingAlreadyOutThereMatches')}</Text>
                     )}
                     <TouchableOpacity
                       style={[styles.askBusinessButton, { marginTop: spacing.md }]}
                       onPress={goAskBusinessFromCustom}
                       activeOpacity={0.85}
-                      accessibilityLabel="Ask Nearby Businesses"
+                      accessibilityLabel={t('ui.celebrate.askNearbyBusinessesA11y')}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.askBusinessButtonText}>🏪 Ask Nearby Businesses</Text>
+                      <Text style={styles.askBusinessButtonText}>{t('ui.celebrate.askNearbyBusinesses')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={proceedToCustomCreation}
                       style={{ marginTop: spacing.sm }}
-                      accessibilityLabel="None of these? Create it yourself"
+                      accessibilityLabel={t('ui.celebrate.noneOfTheseCreateItA11y')}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.createOwnLinkText}>None of these? Create it yourself →</Text>
+                      <Text style={styles.createOwnLinkText}>{t('ui.celebrate.noneOfTheseCreateIt')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => setCustomSearchResult(null)}
                       style={{ marginTop: spacing.xs }}
-                      accessibilityLabel="Try a different description"
+                      accessibilityLabel={t('ui.celebrate.tryADifferentDescriptionA11y')}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.skipRowText}>← Try a different description</Text>
+                      <Text style={styles.skipRowText}>{t('ui.celebrate.tryADifferentDescription')}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -1395,7 +1402,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
             {stepKey === 'who_for' && (
               <>
-                <Text style={styles.label}>Who is this for?</Text>
+                <Text style={styles.label}>{t('ui.celebrate.whoIsThisFor')}</Text>
                 <View style={styles.chipRow}>
                   {WHO_FOR_OPTIONS.map((o) => {
                     const selected = whoFor === o.key;
@@ -1405,11 +1412,11 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => pickWhoFor(o.key)}
                         activeOpacity={0.85}
-                        accessibilityLabel={o.label}
+                        accessibilityLabel={t(`ui.celebrate.whoFor.${o.key}`)}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
                       >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {t(`ui.celebrate.whoFor.${o.key}`)}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -1417,10 +1424,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
                 {whoFor && whoFor !== 'me' && (
                   <>
-                    {loadingFriends && <NLoader fullScreen={false} size="inline" caption="Loading friends…" />}
+                    {loadingFriends && <NLoader fullScreen={false} size="inline" caption={t('ui.celebrate.loadingFriends')} />}
                     {!loadingFriends && friends.length > 0 && (
                       <>
-                        <Text style={styles.sublabel}>Pick a real friend (optional)</Text>
+                        <Text style={styles.sublabel}>{t('ui.celebrate.pickARealFriendOptional')}</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs }}>
                           {friends.map((f) => {
                             const selected = whoForName === f.display_name;
@@ -1447,10 +1454,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         </ScrollView>
                       </>
                     )}
-                    <Text style={styles.sublabel}>Or type a name (optional)</Text>
+                    <Text style={styles.sublabel}>{t('ui.celebrate.orTypeANameOptional')}</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. Sarah"
+                      placeholder={t('ui.celebrate.eGSarah')}
                       placeholderTextColor={colors.textTertiary}
                       value={whoForName}
                       onChangeText={(t) => {
@@ -1459,7 +1466,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         setSurpriseMode(false);
                         setShareOccasionWithFriend(false);
                       }}
-                      accessibilityLabel="Name (optional)"
+                      accessibilityLabel={t('ui.celebrate.nameOptionalA11y')}
                     />
 
                     {whoForFriendId && (
@@ -1469,14 +1476,12 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         activeOpacity={0.85}
                         accessibilityRole="checkbox"
                         accessibilityState={{ checked: surpriseMode }}
-                        accessibilityLabel={`Surprise mode — keep this hidden from ${whoForName}`}
+                        accessibilityLabel={t('ui.celebrate.surpriseModeKeepThisHiddenA11y', { whoForName: whoForName })}
                       >
                         <View style={[styles.checkbox, surpriseMode && styles.checkboxChecked]}>
                           {surpriseMode && <Text style={styles.checkboxMark}>✓</Text>}
                         </View>
-                        <Text style={styles.calendarToggleText}>
-                          🔒 Surprise mode — keep this hidden from {whoForName}. Invited friends can still help plan; {whoForName} won't be invited or notified.
-                        </Text>
+                        <Text style={styles.calendarToggleText}>{t('ui.celebrate.surpriseModeKeepThisHidden', { whoForName: whoForName, whoForName2: whoForName })}</Text>
                       </TouchableOpacity>
                     )}
 
@@ -1486,17 +1491,15 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                           onPress={() => setAskPollExpanded((v) => !v)}
                           activeOpacity={0.85}
                           accessibilityRole="button"
-                          accessibilityLabel={`Ask ${whoForName} a quick question`}
+                          accessibilityLabel={t('ui.celebrate.askAQuickQuestionA11y', { whoForName: whoForName })}
                         >
                           <Text style={styles.expandLinkText}>
-                            {askPollExpanded ? '▾' : '▸'} 💬 Ask {whoForName} a quick question
+                            {askPollExpanded ? '▾' : '▸'}{' '}{t('ui.celebrate.askAQuickQuestion', { name: whoForName })}
                           </Text>
                         </TouchableOpacity>
                         {askPollExpanded && (
                           <View style={styles.expandPanel}>
-                            <Text style={styles.helperText}>
-                              A plain question, never mentioning this occasion — {whoForName} never sees why you asked.
-                            </Text>
+                            <Text style={styles.helperText}>{t('ui.celebrate.aPlainQuestionNeverMentioning', { whoForName: whoForName })}</Text>
                             {PREFERENCE_POLL_QUESTIONS.map((q) => {
                               const alreadyAsked = askedPollKeys.has(q.key);
                               return (
@@ -1510,7 +1513,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                                   accessibilityRole="button"
                                 >
                                   <Text style={styles.chipText}>
-                                    {alreadyAsked ? `⏳ Asked: "${q.questionText}" — waiting for a reply` : `“${q.questionText}”`}
+                                    {alreadyAsked ? t('ui.celebrate.askedWaitingForAReply', { questionText: q.questionText }) : `“${q.questionText}”`}
                                   </Text>
                                 </TouchableOpacity>
                               );
@@ -1526,7 +1529,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
             {stepKey === 'activity' && (
               <>
-                <Text style={styles.label}>What would you like to do?</Text>
+                <Text style={styles.label}>{t('ui.celebrate.whatWouldYouLikeTo')}</Text>
                 <View style={styles.chipRow}>
                   {ACTIVITY_OPTIONS.map((o) => {
                     const selected = activityType === o.key;
@@ -1536,17 +1539,17 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => { Haptics.selectionAsync(); setActivityType(o.key); }}
                         activeOpacity={0.85}
-                        accessibilityLabel={o.label}
+                        accessibilityLabel={t(`ui.optionVocab.celebrateActivity.${o.key}`)}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
                       >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {t(`ui.optionVocab.celebrateActivity.${o.key}`)}</Text>
                       </TouchableOpacity>
                     );
                   })}
                 </View>
 
-                <Text style={styles.sublabel}>Not sure yet? Let the group decide together.</Text>
+                <Text style={styles.sublabel}>{t('ui.celebrate.notSureYetLetThe')}</Text>
                 <View style={styles.chipRow}>
                   {(() => {
                     const selected = activityType === GROUP_VOTE_OPTION.key;
@@ -1555,11 +1558,11 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => { Haptics.selectionAsync(); setActivityType(GROUP_VOTE_OPTION.key); setPartySize(null); }}
                         activeOpacity={0.85}
-                        accessibilityLabel={GROUP_VOTE_OPTION.label}
+                        accessibilityLabel={t('ui.celebrate.groupVote')}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
                       >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{GROUP_VOTE_OPTION.icon} {GROUP_VOTE_OPTION.label}</Text>
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{GROUP_VOTE_OPTION.icon} {t('ui.celebrate.groupVote')}</Text>
                       </TouchableOpacity>
                     );
                   })()}
@@ -1573,7 +1576,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     from. */}
                 {!!experienceTemplateForOccasion(occasion) && (
                   <>
-                    <Text style={styles.sublabel}>Don't know what to do? Let Nearby plan it.</Text>
+                    <Text style={styles.sublabel}>{t('ui.celebrate.dontKnowWhatToDo')}</Text>
                     <View style={styles.chipRow}>
                       {(() => {
                         const selected = activityType === AUTO_PLAN_OPTION.key;
@@ -1582,11 +1585,11 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                             style={[styles.chip, selected && styles.chipSelected]}
                             onPress={() => { Haptics.selectionAsync(); setActivityType(AUTO_PLAN_OPTION.key); }}
                             activeOpacity={0.85}
-                            accessibilityLabel={AUTO_PLAN_OPTION.label}
+                            accessibilityLabel={t('ui.celebrate.autoPlan')}
                             accessibilityRole="button"
                             accessibilityState={{ selected }}
                           >
-                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{AUTO_PLAN_OPTION.icon} {AUTO_PLAN_OPTION.label}</Text>
+                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{AUTO_PLAN_OPTION.icon} {t('ui.celebrate.autoPlan')}</Text>
                           </TouchableOpacity>
                         );
                       })()}
@@ -1596,7 +1599,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
                 {activityType !== GROUP_VOTE_OPTION.key && (
                   <>
-                    <Text style={styles.sublabel}>How many people? (optional)</Text>
+                    <Text style={styles.sublabel}>{t('ui.celebrate.howManyPeopleOptional')}</Text>
                     <View style={styles.chipRow}>
                       {PARTY_SIZE_OPTIONS.map((n, i) => {
                         const selected = partySize === n;
@@ -1623,7 +1626,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
             {stepKey === 'when' && (
               <>
-                <Text style={styles.label}>When?</Text>
+                <Text style={styles.label}>{t('ui.celebrate.when2')}</Text>
                 <View style={styles.chipRow}>
                   {WHEN_PRESETS.map((p) => {
                     const selected = whenPreset === p.key;
@@ -1633,19 +1636,19 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => pickWhenPreset(p.key)}
                         activeOpacity={0.85}
-                        accessibilityLabel={p.label}
+                        accessibilityLabel={t(`ui.gatheringOptions.when.${p.key}`)}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
                       >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{p.icon} {p.label}</Text>
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{p.icon} {t(`ui.gatheringOptions.when.${p.key}`)}</Text>
                       </TouchableOpacity>
                     );
                   })}
                 </View>
                 {whenPreset && (
-                  <TouchableOpacity style={styles.dateDisplay} onPress={() => setShowDatePicker(true)} accessibilityRole="button" accessibilityLabel="Change date and time">
+                  <TouchableOpacity style={styles.dateDisplay} onPress={() => setShowDatePicker(true)} accessibilityRole="button" accessibilityLabel={t('ui.celebrate.changeDateAndTimeA11y')}>
                     <Text style={styles.dateDisplayText}>
-                      {scheduledAt.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                      {`${localDate(scheduledAt, language)} · ${localClockOfDate(scheduledAt, language)}`}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -1679,8 +1682,8 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         extracted -- matches this step's own existing
                         precedent of duplicating EXPERIENCE_LEVEL_OPTIONS
                         between this step and 'group_invite' just below. */}
-                    <Text style={[styles.label, { marginTop: spacing.lg }]}>What's your budget?</Text>
-                    <Text style={styles.helperText}>A rough feel helps Nearby find realistic options.</Text>
+                    <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.celebrate.whatsYourBudget')}</Text>
+                    <Text style={styles.helperText}>{t('ui.celebrate.aRoughFeelHelpsNearby')}</Text>
                     <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
                       {BUDGET_LEVEL_OPTIONS.map((o) => {
                         const selected = budgetRangeKey === o.key;
@@ -1691,10 +1694,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                             onPress={() => { Haptics.selectionAsync(); setBudgetRangeKey(o.key); }}
                             activeOpacity={0.85}
                             accessibilityRole="button"
-                            accessibilityLabel={o.label}
+                            accessibilityLabel={budgetOptionLabel(o, language)}
                             accessibilityState={{ selected }}
                           >
-                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{budgetOptionLabel(o, language)}</Text>
                           </TouchableOpacity>
                         );
                       })}
@@ -1702,27 +1705,27 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     {showBudgetMaxOverride ? (
                       <TextInput
                         style={[styles.input, { marginTop: spacing.sm }]}
-                        placeholder="Maximum per person (optional)"
+                        placeholder={t('ui.celebrate.maximumPerPersonOptional')}
                         placeholderTextColor={colors.textTertiary}
                         value={budgetMaxOverride}
                         onChangeText={setBudgetMaxOverride}
                         keyboardType="number-pad"
-                        accessibilityLabel="Maximum budget per person, optional"
+                        accessibilityLabel={t('ui.celebrate.maximumBudgetPerPersonOptionalA11y')}
                       />
                     ) : (
                       <TouchableOpacity
                         onPress={() => setShowBudgetMaxOverride(true)}
                         activeOpacity={0.85}
                         accessibilityRole="button"
-                        accessibilityLabel="Set a maximum per person"
+                        accessibilityLabel={t('ui.celebrate.setAMaximumPerPersonA11y')}
                         style={{ marginTop: spacing.sm }}
                       >
-                        <Text style={styles.createOwnLinkText}>+ Set a maximum per person</Text>
+                        <Text style={styles.createOwnLinkText}>{t('ui.celebrate.setAMaximumPerPerson')}</Text>
                       </TouchableOpacity>
                     )}
 
-                    <Text style={[styles.label, { marginTop: spacing.lg }]}>What kind of experience are you looking for?</Text>
-                    <Text style={styles.helperText}>A birthday dinner doesn't need the same options as a 50th anniversary — this helps Nearby adjust what it finds.</Text>
+                    <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.celebrate.whatKindOfExperienceAre')}</Text>
+                    <Text style={styles.helperText}>{t('ui.celebrate.aBirthdayDinnerDoesntNeed')}</Text>
                     <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
                       {EXPERIENCE_LEVEL_OPTIONS.map((o) => {
                         const selected = experienceLevel === o.key;
@@ -1733,10 +1736,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                             onPress={() => { Haptics.selectionAsync(); setExperienceLevel(o.key); }}
                             activeOpacity={0.85}
                             accessibilityRole="button"
-                            accessibilityLabel={o.label}
+                            accessibilityLabel={experienceOptionLabel(o, language)}
                             accessibilityState={{ selected }}
                           >
-                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {experienceOptionLabel(o, language)}</Text>
                           </TouchableOpacity>
                         );
                       })}
@@ -1751,18 +1754,18 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     activeOpacity={0.85}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: saveToCalendar }}
-                    accessibilityLabel="Also save to your Occasions calendar"
+                    accessibilityLabel={t('ui.celebrate.alsoSaveToYourOccasionsA11y')}
                   >
                     <View style={[styles.checkbox, saveToCalendar && styles.checkboxChecked]}>
                       {saveToCalendar && <Text style={styles.checkboxMark}>✓</Text>}
                     </View>
-                    <Text style={styles.calendarToggleText}>🗓️ Also save this to your Occasions calendar</Text>
+                    <Text style={styles.calendarToggleText}>{t('ui.celebrate.alsoSaveThisToYour')}</Text>
                   </TouchableOpacity>
                 )}
 
                 {saveToCalendar && shouldOfferCalendarSave(occasion, !!whoForFriendId) && whoForFriendId && (
                   surpriseMode ? (
-                    <Text style={styles.helperText}>🔒 Surprise mode is on — this won't be shared with {whoForName}.</Text>
+                    <Text style={styles.helperText}>{t('ui.celebrate.surpriseModeIsOnThis', { whoForName: whoForName })}</Text>
                   ) : (
                     <TouchableOpacity
                       style={styles.calendarToggleRow}
@@ -1770,13 +1773,13 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                       activeOpacity={0.85}
                       accessibilityRole="checkbox"
                       accessibilityState={{ checked: shareOccasionWithFriend }}
-                      accessibilityLabel={`Also share this with ${whoForName || 'them'}`}
+                      accessibilityLabel={t('ui.celebrate.alsoShareThisWithA11y', { whoForName: whoForName || 'them' })}
                     >
                       <View style={[styles.checkbox, shareOccasionWithFriend && styles.checkboxChecked]}>
                         {shareOccasionWithFriend && <Text style={styles.checkboxMark}>✓</Text>}
                       </View>
                       <Text style={styles.calendarToggleText}>
-                        👀 Also share this with {whoForName || 'them'} — they'll see it on their own Occasions page too
+                        {whoForName ? t('ui.celebrate.alsoShareThisWithName', { name: whoForName }) : t('ui.celebrate.alsoShareThisWithThem')}
                       </Text>
                     </TouchableOpacity>
                   )
@@ -1786,21 +1789,21 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
             {stepKey === 'options' && activityType === AUTO_PLAN_OPTION.key && !autoPlanExpanded && (
               <>
-                <Text style={styles.label}>✨ Here's what we'd do</Text>
+                <Text style={styles.label}>{t('ui.celebrate.heresWhatWedDo')}</Text>
                 {optionsLoading && <FindingOptionsLoader />}
                 {!optionsLoading && optionsFetched && (
                   autoPlanSuggestion.items.length === 0 && autoPlanSuggestion.suggestions.length === 0 ? (
                     <Text style={styles.helperText}>
-                      Nothing live nearby right now — no worries, you can still post a request and businesses will respond.
+                      {t('ui.celebrate.nothingLiveNearbyRightNow')}
                     </Text>
                   ) : (
                     <>
                       {autoPlanSuggestion.items.map((item, i) => (
                         <StaggeredReveal key={item.key} index={i}>
                           <View style={styles.autoPlanRow}>
-                            <Text style={styles.autoPlanRowLabel}>{item.label}</Text>
+                            <Text style={styles.autoPlanRowLabel}>{planPartLabel(item.label, language)}</Text>
                             <Text style={styles.autoPlanRowDetail}>
-                              {item.businessName}{item.price != null ? ` · ${moneyLabel(item.price)}` : ' · price varies'}
+                              {item.businessName}{item.price != null ? ` · ${moneyLabel(item.price)}` : t('ui.celebrate.priceVaries')}
                             </Text>
                           </View>
                         </StaggeredReveal>
@@ -1815,19 +1818,19 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                               activeOpacity={0.85}
                               accessibilityRole="checkbox"
                               accessibilityState={{ checked: included }}
-                              accessibilityLabel={`${s.label}, ${included ? 'included' : 'not included'}`}
+                              accessibilityLabel={`${t(`ui.requestDetail.plan.addon.${s.type}`)}, ${included ? t('ui.celebrate.includedA11y') : t('ui.celebrate.notIncludedA11y')}`}
                             >
                               <Text style={[styles.autoPlanRowLabel, !included && styles.autoPlanRowLabelMuted]}>
-                                {included ? '✓ ' : ''}{s.icon} {s.label}
+                                {included ? '✓ ' : ''}{s.icon} {t(`ui.requestDetail.plan.addon.${s.type}`)}
                               </Text>
-                              <Text style={styles.autoPlanRowDetail}>{included ? 'Added to your plan' : 'Tap to add'}</Text>
+                              <Text style={styles.autoPlanRowDetail}>{included ? t('ui.celebrate.addedToYourPlan') : t('ui.celebrate.tapToAdd')}</Text>
                             </TouchableOpacity>
                           </StaggeredReveal>
                         );
                       })}
                       {autoPlanSuggestion.items.length > 0 && (
                         <Text style={styles.autoPlanTotal}>
-                          Estimated total: ${autoPlanSuggestion.estimatedTotal}{autoPlanSuggestion.hasUnknownPrice ? '+' : ''}
+                          {t('ui.celebrate.estimatedTotal', { total: `${localMoney(autoPlanSuggestion.estimatedTotal, language)}${autoPlanSuggestion.hasUnknownPrice ? '+' : ''}` })}
                         </Text>
                       )}
                     </>
@@ -1838,7 +1841,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
             {stepKey === 'options' && !(activityType === AUTO_PLAN_OPTION.key && !autoPlanExpanded) && (
               <>
-                <Text style={styles.label}>Nearby found these options</Text>
+                <Text style={styles.label}>{t('ui.celebrate.nearbyFoundTheseOptions')}</Text>
                 {optionsLoading && <FindingOptionsLoader />}
                 {!optionsLoading && optionsResult && (
                   <>
@@ -1846,20 +1849,20 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                       <>
                         {optionsResult.experience.bundles.length > 0 && (
                           <View style={{ marginBottom: spacing.md }}>
-                            <Text style={styles.sublabel}>✨ One place has it all</Text>
+                            <Text style={styles.sublabel}>{t('ui.celebrate.onePlaceHasItAll2')}</Text>
                             {optionsResult.experience.bundles.map((item, i) => renderOptionCard(item, i))}
                           </View>
                         )}
                         {optionsResult.experience.components.map((comp) => (
                           <View key={comp.key} style={{ marginBottom: spacing.md }}>
-                            <Text style={styles.sublabel}>{comp.label}</Text>
+                            <Text style={styles.sublabel}>{planPartLabel(comp.label, language)}</Text>
                             {comp.items.map((item, i) => (<React.Fragment key={`${item.type}-${item.id}`}>{renderOptionCard(item, i)}<ExperiencePerkLine item={item} /></React.Fragment>))}
                           </View>
                         ))}
                       </>
                     ) : optionsResult.items.some((i) => i.type === 'business_availability') ? (
                       <View style={{ marginBottom: spacing.md }}>
-                        <Text style={styles.sublabel}>🍽️ Nearby options</Text>
+                        <Text style={styles.sublabel}>{t('ui.celebrate.nearbyOptions')}</Text>
                         {optionsResult.items
                           .filter((i) => i.type === 'business_availability')
                           .slice(0, 5)
@@ -1872,7 +1875,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                       // regardless of whether an Experience also assembled,
                       // since packages are never fed into that bundling.
                       <View style={{ marginBottom: spacing.md }}>
-                        <Text style={styles.sublabel}>🎁 Occasion Packages</Text>
+                        <Text style={styles.sublabel}>{t('ui.celebrate.occasionPackages')}</Text>
                         {optionsResult.items
                           .filter((i) => i.type === 'business_occasion_package')
                           .slice(0, 5)
@@ -1883,7 +1886,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                       !optionsResult.items.some((i) => i.type === 'business_availability') &&
                       !optionsResult.items.some((i) => i.type === 'business_occasion_package') && (
                         <Text style={styles.helperText}>
-                          Nothing live nearby right now — no worries, you can still post a request and businesses will respond.
+                          {t('ui.celebrate.nothingLiveNearbyRightNow')}
                         </Text>
                       )}
                   </>
@@ -1895,7 +1898,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     specific business/price of their own yet. */}
                 {activityType === AUTO_PLAN_OPTION.key && autoPlanAddonTypes.size > 0 && (
                   <Text style={[styles.helperText, { marginTop: spacing.sm }]}>
-                    + We'll also request: {autoPlanSuggestion.suggestions.filter((s) => autoPlanAddonTypes.has(s.type)).map((s) => `${s.icon} ${s.label}`).join(', ')}
+                    {t('ui.celebrate.wellAlsoRequest')}{' '}{autoPlanSuggestion.suggestions.filter((s) => autoPlanAddonTypes.has(s.type)).map((s) => `${s.icon} ${t(`ui.requestDetail.plan.addon.${s.type}`)}`).join(', ')}
                   </Text>
                 )}
               </>
@@ -1903,7 +1906,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
             {stepKey === 'who_involved' && (
               <>
-                <Text style={styles.label}>Who should be involved?</Text>
+                <Text style={styles.label}>{t('ui.celebrate.whoShouldBeInvolved')}</Text>
                 <View style={styles.chipRow}>
                   {/* "ok do it" (CLAUDE.md): "Existing Group" maps to a real
                       community, which only makes sense for the gathering
@@ -1919,11 +1922,11 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => pickWhoInvolved(o.key)}
                         activeOpacity={0.85}
-                        accessibilityLabel={o.label}
+                        accessibilityLabel={t(`ui.celebrate.whoInvolved.${o.key}`)}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
                       >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {t(`ui.celebrate.whoInvolved.${o.key}`)}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -1931,9 +1934,9 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
                 {whoInvolved === 'existing_group' && (
                   <>
-                    {loadingCommunities && <NLoader fullScreen={false} size="inline" caption="Loading communities…" />}
+                    {loadingCommunities && <NLoader fullScreen={false} size="inline" caption={t('ui.celebrate.loadingCommunities')} />}
                     {!loadingCommunities && communities.length === 0 && communitiesLoaded && (
-                      <Text style={styles.helperText}>You're not a member of any active community yet — pick a different option above.</Text>
+                      <Text style={styles.helperText}>{t('ui.celebrate.youreNotAMemberOf2')}</Text>
                     )}
                     {!loadingCommunities && communities.length > 0 && (
                       <View style={styles.chipRow}>
@@ -1977,9 +1980,9 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         no-stranger-discovery rule. */}
                     {whoForFriendId && mutualFriendIds.size > 0 && (
                       <>
-                        <Text style={[styles.label, { marginTop: spacing.lg }]}>People you may want to invite</Text>
+                        <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.celebrate.peopleYouMayWantTo')}</Text>
                         <Text style={styles.helperText}>
-                          {possessiveFriendsLabel(whoForName) ?? 'Friends you both know'} — just suggestions, you decide who to invite.
+                          {t('ui.celebrate.suggestedFriendsHeading', { group: (whoForName ?? '').trim() ? (language === 'en' ? possessiveFriendsLabel(whoForName) : t('ui.celebrate.namesFriends', { name: whoForName.trim() })) : t('ui.celebrate.friendsYouBothKnow') })}
                         </Text>
                         <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
                           {friends.filter((f) => mutualFriendIds.has(f.id)).map((f) => {
@@ -2004,7 +2007,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                       </>
                     )}
                     <Text style={[styles.helperText, { marginTop: spacing.md }]}>
-                      We'll take you to your new plan — from there, "Invite Friends" lets you pick exactly who should know.
+                      {t('ui.celebrate.wellTakeYouToYour')}
                     </Text>
                   </>
                 )}
@@ -2013,21 +2016,21 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
             {stepKey === 'group_invite' && (
               <>
-                <Text style={styles.label}>Who should help decide?</Text>
+                <Text style={styles.label}>{t('ui.celebrate.whoShouldHelpDecide')}</Text>
                 <Text style={styles.helperText}>
-                  Invite real friends to propose ideas and vote — once you pick the winner, Nearby turns it into a real plan.
+                  {t('ui.celebrate.inviteRealFriendsToPropose')}
                 </Text>
                 {surpriseMode && (
-                  <Text style={styles.helperText}>🔒 Surprise mode is on — {whoForName} won't appear in this list or be notified.</Text>
+                  <Text style={styles.helperText}>{t('ui.celebrate.surpriseModeIsOnWont', { whoForName: whoForName })}</Text>
                 )}
-                {loadingFriends && <NLoader fullScreen={false} size="inline" caption="Loading friends…" />}
+                {loadingFriends && <NLoader fullScreen={false} size="inline" caption={t('ui.celebrate.loadingFriends')} />}
                 {!loadingFriends && friendsLoaded && friends.filter((f) => !(surpriseMode && f.id === whoForFriendId)).length === 0 && (
-                  <Text style={styles.helperText}>You don't have any friends connected yet to invite.</Text>
+                  <Text style={styles.helperText}>{t('ui.celebrate.youDontHaveAnyFriends')}</Text>
                 )}
                 {!loadingFriends && friends.filter((f) => !(surpriseMode && f.id === whoForFriendId)).length > 0 && (
                   <>
                     {mutualFriendIds.size > 0 && whoForName && (
-                      <Text style={styles.helperText}>🤝 marks a friend you both know — a good place to start.</Text>
+                      <Text style={styles.helperText}>{t('ui.celebrate.marksAFriendYouBoth')}</Text>
                     )}
                     <View style={[styles.chipRow, { marginTop: spacing.md }]}>
                       {friends
@@ -2042,7 +2045,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                               style={[styles.chip, selected && styles.chipSelected]}
                               onPress={() => toggleInvitee(f.id)}
                               activeOpacity={0.85}
-                              accessibilityLabel={isMutual ? `${f.display_name}, mutual friend` : f.display_name}
+                              accessibilityLabel={isMutual ? t('ui.celebrate.mutualFriendA11y', { name: f.display_name }) : f.display_name}
                               accessibilityRole="checkbox"
                               accessibilityState={{ checked: selected }}
                             >
@@ -2056,8 +2059,8 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   </>
                 )}
 
-                <Text style={[styles.label, { marginTop: spacing.lg }]}>What's your budget?</Text>
-                <Text style={styles.helperText}>A rough feel helps Nearby find realistic options once the group decides.</Text>
+                <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.celebrate.whatsYourBudget')}</Text>
+                <Text style={styles.helperText}>{t('ui.celebrate.aRoughFeelHelpsNearby2')}</Text>
                 <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
                   {BUDGET_LEVEL_OPTIONS.map((o) => {
                     const selected = budgetRangeKey === o.key;
@@ -2068,10 +2071,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         onPress={() => { Haptics.selectionAsync(); setBudgetRangeKey(o.key); }}
                         activeOpacity={0.85}
                         accessibilityRole="button"
-                        accessibilityLabel={o.label}
+                        accessibilityLabel={budgetOptionLabel(o, language)}
                         accessibilityState={{ selected }}
                       >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{budgetOptionLabel(o, language)}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -2081,27 +2084,27 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                 {showBudgetMaxOverride ? (
                   <TextInput
                     style={[styles.input, { marginTop: spacing.sm }]}
-                    placeholder="Maximum per person (optional)"
+                    placeholder={t('ui.celebrate.maximumPerPersonOptional')}
                     placeholderTextColor={colors.textTertiary}
                     value={budgetMaxOverride}
                     onChangeText={setBudgetMaxOverride}
                     keyboardType="number-pad"
-                    accessibilityLabel="Maximum budget per person, optional"
+                    accessibilityLabel={t('ui.celebrate.maximumBudgetPerPersonOptionalA11y')}
                   />
                 ) : (
                   <TouchableOpacity
                     onPress={() => setShowBudgetMaxOverride(true)}
                     activeOpacity={0.85}
                     accessibilityRole="button"
-                    accessibilityLabel="Set a maximum per person"
+                    accessibilityLabel={t('ui.celebrate.setAMaximumPerPersonA11y')}
                     style={{ marginTop: spacing.sm }}
                   >
-                    <Text style={styles.createOwnLinkText}>+ Set a maximum per person</Text>
+                    <Text style={styles.createOwnLinkText}>{t('ui.celebrate.setAMaximumPerPerson')}</Text>
                   </TouchableOpacity>
                 )}
 
-                <Text style={[styles.label, { marginTop: spacing.lg }]}>What kind of experience are you looking for?</Text>
-                <Text style={styles.helperText}>A birthday dinner doesn't need the same options as a 50th anniversary — this helps Nearby adjust what it finds.</Text>
+                <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.celebrate.whatKindOfExperienceAre')}</Text>
+                <Text style={styles.helperText}>{t('ui.celebrate.aBirthdayDinnerDoesntNeed')}</Text>
                 <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
                   {EXPERIENCE_LEVEL_OPTIONS.map((o) => {
                     const selected = experienceLevel === o.key;
@@ -2112,10 +2115,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                         onPress={() => { Haptics.selectionAsync(); setExperienceLevel(o.key); }}
                         activeOpacity={0.85}
                         accessibilityRole="button"
-                        accessibilityLabel={o.label}
+                        accessibilityLabel={experienceOptionLabel(o, language)}
                         accessibilityState={{ selected }}
                       >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {experienceOptionLabel(o, language)}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -2128,11 +2131,11 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                 style={styles.backButton}
                 onPress={goBack}
                 activeOpacity={0.85}
-                accessibilityLabel={step === 0 ? 'Cancel' : 'Back'}
+                accessibilityLabel={step === 0 ? t('ui.celebrate.cancelA11y') : t('ui.celebrate.backA11y')}
                 accessibilityRole="button"
                 disabled={submittingOptions || creatingGroupPlan}
               >
-                <Text style={styles.backButtonText}>{step === 0 ? 'Cancel' : 'Back'}</Text>
+                <Text style={styles.backButtonText}>{step === 0 ? t('ui.celebrate.cancel') : t('ui.celebrate.back')}</Text>
               </TouchableOpacity>
               {stepKey === 'options' && activityType === AUTO_PLAN_OPTION.key && !autoPlanExpanded ? (
                 <TouchableOpacity
@@ -2140,10 +2143,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   onPress={proceedFromAutoPlanSummary}
                   activeOpacity={0.85}
                   disabled={!optionsFetched || optionsLoading || (autoPlanSuggestion.items.length === 0 && autoPlanSuggestion.suggestions.length === 0)}
-                  accessibilityLabel="Find available options"
+                  accessibilityLabel={t('ui.celebrate.findAvailableOptionsA11y')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.nextButtonText}>Find available options →</Text>
+                  <Text style={styles.nextButtonText}>{t('ui.celebrate.findAvailableOptions')}</Text>
                 </TouchableOpacity>
               ) : stepKey === 'options' ? (
                 <TouchableOpacity
@@ -2151,11 +2154,11 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   onPress={submitSelectedBusinessRequests}
                   activeOpacity={0.85}
                   disabled={selectedIds.size === 0 || submittingOptions}
-                  accessibilityLabel={`Ask These Businesses (${selectedIds.size})`}
+                  accessibilityLabel={t('ui.celebrate.askTheseBusinessesA11y', { size: selectedIds.size })}
                   accessibilityRole="button"
                 >
                   <Text style={styles.nextButtonText}>
-                    {submittingOptions ? 'Sending…' : `Ask These Businesses (${selectedIds.size}) →`}
+                    {submittingOptions ? t('ui.celebrate.sending') : t('ui.celebrate.askTheseBusinesses', { size: selectedIds.size })}
                   </Text>
                 </TouchableOpacity>
               ) : stepKey === 'group_invite' ? (
@@ -2164,11 +2167,11 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   onPress={createGroupVote}
                   activeOpacity={0.85}
                   disabled={selectedInviteeIds.size === 0 || creatingGroupPlan}
-                  accessibilityLabel={`Create Group Vote (${selectedInviteeIds.size})`}
+                  accessibilityLabel={t('ui.celebrate.createGroupVoteA11y', { size: selectedInviteeIds.size })}
                   accessibilityRole="button"
                 >
                   <Text style={styles.nextButtonText}>
-                    {creatingGroupPlan ? 'Creating…' : `Create Group Vote (${selectedInviteeIds.size}) →`}
+                    {creatingGroupPlan ? t('ui.celebrate.creating') : t('ui.celebrate.createGroupVote', { size: selectedInviteeIds.size })}
                   </Text>
                 </TouchableOpacity>
               ) : stepKey === 'custom_describe' ? (
@@ -2181,10 +2184,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     onPress={submitCustomDescription}
                     activeOpacity={0.85}
                     disabled={!customDescription.trim() || customSearching}
-                    accessibilityLabel="Find Options"
+                    accessibilityLabel={t('ui.celebrate.findOptionsA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.nextButtonText}>{customSearching ? 'Finding…' : 'Find Options →'}</Text>
+                    <Text style={styles.nextButtonText}>{customSearching ? t('ui.celebrate.finding') : t('ui.celebrate.findOptions')}</Text>
                   </TouchableOpacity>
                 )
               ) : (
@@ -2192,10 +2195,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   style={styles.nextButton}
                   onPress={goNext}
                   activeOpacity={0.85}
-                  accessibilityLabel={finalStep ? "Let's Plan It" : 'Next'}
+                  accessibilityLabel={finalStep ? t('ui.celebrate.letsPlanItA11y') : t('ui.celebrate.nextA11y')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.nextButtonText}>{finalStep ? "Let's Plan It →" : 'Next'}</Text>
+                  <Text style={styles.nextButtonText}>{finalStep ? t('ui.celebrate.letsPlanIt') : t('ui.celebrate.next')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -2205,10 +2208,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                 onPress={proceedToDestination}
                 activeOpacity={0.85}
                 disabled={submittingOptions}
-                accessibilityLabel="Skip, I'll ask myself"
+                accessibilityLabel={t('ui.celebrate.skipIllAskMyselfA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.skipRowText}>Skip — I'll post a general request myself →</Text>
+                <Text style={styles.skipRowText}>{t('ui.celebrate.skipIllPostAGeneral')}</Text>
               </TouchableOpacity>
             )}
           </ScrollView>

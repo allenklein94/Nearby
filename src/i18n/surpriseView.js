@@ -23,6 +23,15 @@ function planPartText(label, language) {
   return text.startsWith('surprise.') ? label : text; // an unknown part keeps its English name, never a key path
 }
 
+// An experience part's label as shown ("🍽️ Dinner"): a leading emoji stays, the name is translated like a plan part.
+export function planPartLabel(label, language) {
+  const str = String(label ?? '');
+  const i = str.indexOf(' ');
+  const head = i > 0 ? str.slice(0, i) : '';
+  if (head && !/[A-Za-z0-9]/.test(head)) return `${head} ${planPartText(str.slice(i + 1), language)}`;
+  return planPartText(str, language);
+}
+
 function scopeText(scope, language) {
   if (!scope || scope.level === 'broad') return null;
   if (scope.level === 'cuisine') {
