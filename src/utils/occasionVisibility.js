@@ -1,3 +1,4 @@
+import { translate, DEFAULT_LANGUAGE } from '../i18n/translate';
 // Item 109 (CLAUDE.md, "Security/privacy should be designed in from day one
 // ... make the visibility model explicit ... default to the most private
 // reasonable setting"): a personal Occasion record is never anything other
@@ -15,11 +16,13 @@
 // surprise_mode is true, per the DB's own CHECK constraint); the existing
 // 🔒 surprise indicator already shown elsewhere communicates the surprise
 // *intent*, this function communicates who can actually see the record.
-export function describeOccasionPrivacy(occasion) {
+// `language`: the label reads ui.occasions.privacy.* (English output unchanged).
+export function describeOccasionPrivacy(occasion, language = DEFAULT_LANGUAGE) {
   if (!occasion) return null;
+  const say = (key, vars) => translate(language, `ui.occasions.privacy.${key}`, vars);
   if (occasion.connected_user_id) {
-    const name = occasion.who_for_name || 'them';
-    return { icon: '👤', label: `Shared with ${name}` };
+    const name = occasion.who_for_name;
+    return { icon: '👤', label: name ? say('sharedWith', { name }) : say('sharedWithThem') };
   }
-  return { icon: '🔒', label: 'Private' };
+  return { icon: '🔒', label: say('private') };
 }

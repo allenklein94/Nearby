@@ -31,3 +31,14 @@ describe('describeOccasionPrivacy', () => {
     expect(describeOccasionPrivacy(undefined)).toBeNull();
   });
 });
+
+describe('privacy line in another language (localization pass 5)', () => {
+  it('English unchanged, Spanish translated', () => {
+    const { describeOccasionPrivacy: d } = require('./occasionVisibility');
+    expect(d({ connected_user_id: 'u', who_for_name: 'Sam' }).label).toBe('Shared with Sam');
+    expect(d({ connected_user_id: 'u' }).label).toBe('Shared with them');
+    expect(d({}).label).toBe('Private');
+    expect(d({ connected_user_id: 'u', who_for_name: 'Sam' }, 'es').label).toBe('Compartido con Sam');
+    expect(d({}, 'es').label).toBe('Privado');
+  });
+});

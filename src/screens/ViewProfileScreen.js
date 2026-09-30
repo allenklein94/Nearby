@@ -636,7 +636,7 @@ export default function ViewProfileScreen({ route, navigation }) {
               <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.viewProfile.upcoming')}</Text>
               {upcomingOccasionsForPerson.map((o) => (
                 <Text key={o.occasion_id} style={styles.mutualFriendsText}>
-                  {occasionIcon(o.occasion_type) ?? '📅'} {occasionName(o.occasion_type, language, occasionLabel(o.occasion_type))} · {formatOccasionDateForPrecision(o.date_precision, o.occasion_date, { short: true })}
+                  {occasionIcon(o.occasion_type) ?? '📅'} {occasionName(o.occasion_type, language, occasionLabel(o.occasion_type))} · {formatOccasionDateForPrecision(o.date_precision, o.occasion_date, { short: true, language })}
                 </Text>
               ))}
             </View>

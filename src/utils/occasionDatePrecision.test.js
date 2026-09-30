@@ -109,3 +109,15 @@ describe('occasionDueLabel', () => {
     expect(occasionDueLabel('flexible', '2026-10-01', 20)).toBe('is coming up sometime in Oct');
   });
 });
+
+describe('occasion date wording in another language (localization pass 5)', () => {
+  it('English stays byte-identical and German reads German', () => {
+    expect(formatOccasionDateForPrecision('weekend', '2026-10-17', { language: 'en' })).toBe(formatOccasionDateForPrecision('weekend', '2026-10-17'));
+    expect(occasionDatePrecisionLabel('around', 'en')).toBe('Around this date');
+    expect(occasionDatePrecisionLabel('around', 'de')).toBe('Ungefähr an diesem Datum');
+    expect(formatOccasionDateForPrecision('weekend', '2026-10-17', { language: 'de' })).toMatch(/^Wochenende um den 17\. /);
+    expect(formatOccasionDateForPrecision('flexible', '2026-10-01', { language: 'de', short: true })).toMatch(/^Irgendwann im /);
+    expect(formatOccasionDateForPrecision('flexible', '2026-10-01', { language: 'de' })).toMatch(/2026$/);
+    expect(formatOccasionDateForPrecision('exact', 'nope', { language: 'de' })).toBe('');
+  });
+});

@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
@@ -18,7 +19,10 @@ import {
   OCCASION_DATE_PRECISION_OPTIONS,
   normalizeOccasionDateForPrecision,
   formatOccasionDateForPrecision,
+  occasionDatePrecisionLabel,
 } from '../utils/occasionDatePrecision';
+import { occasionName } from '../i18n/categoryNames';
+import { displayDay, displayWeekdayDate } from '../i18n/display';
 import {
   isCalendarIntegrationSupported,
   requestCalendarPermission,
@@ -62,9 +66,9 @@ const OCCASION_TYPES = personalOccasionTypeOptions();
 // friend vs. a free-typed name for anyone not on Nearby) so the two entry
 // points behave the same way.
 const WHO_FOR_OPTIONS = [
-  { key: 'me', label: 'Me', icon: '🙋' },
-  { key: 'friend', label: 'A Friend', icon: '🤝' },
-  { key: 'someone_else', label: 'Someone Else', icon: '✨' },
+  { key: 'me', icon: '🙋' },
+  { key: 'friend', icon: '🤝' },
+  { key: 'someone_else', icon: '✨' },
 ];
 
 function formatDate(d) {
@@ -72,17 +76,12 @@ function formatDate(d) {
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-// Status copy for the "Group Plans" section below -- occasion_group_plans'
-// own real status column (20261020_occasion_group_plans.sql), same
-// "voting/decided/cancelled" vocabulary the RPC layer already uses.
-const GROUP_PLAN_STATUS_COPY = {
-  voting: 'Voting open',
-  decided: 'Decided',
-  cancelled: 'Cancelled',
-  fulfilled: '✅ Turned into a plan',
-};
+// Status copy for the "Group Plans" section below: occasion_group_plans' own status column
+// (voting/decided/cancelled/fulfilled), worded by ui.occasions.groupPlanStatus.<status>.
+const GROUP_PLAN_STATUSES = ['voting', 'decided', 'cancelled', 'fulfilled'];
 
 export default function OccasionsScreen({ navigation, route }) {
+  const { t, language } = useLanguage();
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors);
   const [occasions, setOccasions] = useState([]);
@@ -109,7 +108,7 @@ export default function OccasionsScreen({ navigation, route }) {
       const planId = await getPlanIdForOccasion(ref);
       if (planId) navigation.navigate('PlanDetail', { planId });
     } catch (e) {
-      Alert.alert('Error', 'Could not open this plan.');
+      Alert.alert(t('ui.occasions.error'), t('ui.occasions.couldNotOpenThisPlan'));
     }
   }
   const [deletingId, setDeletingId] = useState(null);
@@ -182,11 +181,11 @@ export default function OccasionsScreen({ navigation, route }) {
 
   function handleConnectCalendarPress() {
     Alert.alert(
-      'Allow Nearby to use selected calendar events to help you plan?',
-      "Nearby will only see events from calendars you choose to share. It can never edit, add, or share anything on your calendar.",
+      t('ui.occasions.allowNearbyToUseSelected'),
+      t('ui.occasions.nearbyWillOnlySeeEvents'),
       [
-        { text: 'Not Now', style: 'cancel' },
-        { text: 'Continue', onPress: requestAndPickCalendars },
+        { text: t('ui.occasions.notNow'), style: 'cancel' },
+        { text: t('ui.occasions.continue'), onPress: requestAndPickCalendars },
       ]
     );
   }
@@ -196,7 +195,7 @@ export default function OccasionsScreen({ navigation, route }) {
     const status = await requestCalendarPermission();
     setConnectingCalendar(false);
     if (status !== 'granted') {
-      Alert.alert('Calendar access is off', 'You can turn it on any time from your device Settings.');
+      Alert.alert(t('ui.occasions.calendarAccessIsOff'), t('ui.occasions.youCanTurnItOn'));
       return;
     }
     await openCalendarPicker();
@@ -226,12 +225,12 @@ export default function OccasionsScreen({ navigation, route }) {
 
   function confirmDisconnectCalendar() {
     Alert.alert(
-      'Disconnect calendar?',
-      "Nearby will stop looking at your calendar events. This doesn't change your device's own calendar permission -- you can fully revoke that any time in your device Settings.",
+      t('ui.occasions.disconnectCalendar'),
+      t('ui.occasions.nearbyWillStopLookingAt'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('ui.occasions.cancel'), style: 'cancel' },
         {
-          text: 'Disconnect',
+          text: t('ui.occasions.disconnect'),
           style: 'destructive',
           onPress: async () => {
             await clearSelectedCalendarIds();
@@ -257,7 +256,7 @@ export default function OccasionsScreen({ navigation, route }) {
       importedFromCalendar: true,
     });
     if (result.error) {
-      Alert.alert('Error', result.error);
+      Alert.alert(t('ui.occasions.error'), result.error);
       setHandlingEventId(null);
       return;
     }
@@ -361,7 +360,7 @@ export default function OccasionsScreen({ navigation, route }) {
 
   async function handleAdd() {
     if (!title.trim()) {
-      Alert.alert('Missing info', 'Give this occasion a title.');
+      Alert.alert(t('ui.occasions.missingInfo'), t('ui.occasions.giveThisOccasionATitle'));
       return;
     }
     setSubmitting(true);
@@ -380,7 +379,7 @@ export default function OccasionsScreen({ navigation, route }) {
     });
     setSubmitting(false);
     if (result.error) {
-      Alert.alert('Error', result.error);
+      Alert.alert(t('ui.occasions.error'), result.error);
       return;
     }
     setTitle('');
@@ -425,14 +424,14 @@ export default function OccasionsScreen({ navigation, route }) {
   // (reveal_occasion), so confirm before firing.
   function confirmReveal(occasion) {
     Alert.alert(
-      'Reveal the surprise?',
+      t('ui.occasions.revealTheSurprise'),
       occasion.who_for_name
-        ? `${occasion.who_for_name} will be able to see this occasion — this can't be undone.`
-        : "This occasion will stop being marked as a surprise — this can't be undone.",
+        ? t('ui.occasions.willBeAbleToSee', { whoForName: occasion.who_for_name })
+        : t('ui.occasions.thisOccasionWillStopBeing'),
       [
-        { text: 'Not yet', style: 'cancel' },
+        { text: t('ui.occasions.notYet'), style: 'cancel' },
         {
-          text: 'Reveal',
+          text: t('ui.occasions.reveal'),
           onPress: async () => {
             setRevealingId(occasion.id);
             try {
@@ -459,12 +458,12 @@ export default function OccasionsScreen({ navigation, route }) {
 
   function confirmDelete(occasion) {
     Alert.alert(
-      `Remove "${occasion.title}"?`,
-      'This removes it for you. Nearby will no longer suggest planning something around it.',
+      t('ui.occasions.remove', { title: occasion.title }),
+      t('ui.occasions.thisRemovesItForYou'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('ui.occasions.cancel'), style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('ui.occasions.remove2'),
           style: 'destructive',
           onPress: async () => {
             setDeletingId(occasion.id);
@@ -481,7 +480,7 @@ export default function OccasionsScreen({ navigation, route }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your occasions...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.occasions.loadingYourOccasions')}</Text>
       </SafeAreaView>
     );
   }
@@ -489,7 +488,7 @@ export default function OccasionsScreen({ navigation, route }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load your occasions." onRetry={load} />
+        <LoadErrorState message={t('ui.occasions.couldntLoadYourOccasions')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -500,13 +499,9 @@ export default function OccasionsScreen({ navigation, route }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.headerTitle} accessibilityRole="header">Occasions & Reminders</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">{t('ui.occasions.occasionsReminders')}</Text>
           <Text style={styles.headerSubtitle}>
-            Birthdays, anniversaries, graduations, and other real dates worth planning around —
-            for anyone, even someone who isn't on Nearby. Only what you choose to save here —
-            Nearby never infers this automatically. A connected Nearby friend's birthday is
-            already handled automatically on Home, so you don't need to add it again here.
-            Reminders can be turned off per occasion, any time.
+            {t('ui.occasions.birthdaysAnniversariesGraduationsAndOther')}
           </Text>
 
           {isCalendarIntegrationSupported() && (
@@ -518,35 +513,34 @@ export default function OccasionsScreen({ navigation, route }) {
                   disabled={connectingCalendar}
                   activeOpacity={0.85}
                   accessibilityRole="button"
-                  accessibilityLabel="Connect your calendar"
+                  accessibilityLabel={t('ui.occasions.connectYourCalendarA11y')}
                 >
                   <Text style={{ fontSize: 22, marginRight: spacing.sm }}>📅</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.name}>{connectingCalendar ? 'Connecting…' : 'Connect Your Calendar'}</Text>
-                    <Text style={styles.detail}>Let Nearby quietly suggest occasions from events on calendars you choose to share.</Text>
+                    <Text style={styles.name}>{connectingCalendar ? t('ui.occasions.connecting') : t('ui.occasions.connectYourCalendar')}</Text>
+                    <Text style={styles.detail}>{t('ui.occasions.letNearbyQuietlySuggestOccasions')}</Text>
                   </View>
                 </TouchableOpacity>
               ) : (
                 <>
                   <View style={styles.calendarSectionHeaderRow}>
-                    <Text style={styles.sectionLabel}>From Your Calendar</Text>
+                    <Text style={styles.sectionLabel}>{t('ui.occasions.fromYourCalendar')}</Text>
                     <View style={{ flexDirection: 'row', gap: spacing.md }}>
-                      <TouchableOpacity onPress={openCalendarPicker} accessibilityRole="button" accessibilityLabel="Manage which calendars are shared">
-                        <Text style={styles.calendarManageLink}>Manage</Text>
+                      <TouchableOpacity onPress={openCalendarPicker} accessibilityRole="button" accessibilityLabel={t('ui.occasions.manageWhichCalendarsAreSharedA11y')}>
+                        <Text style={styles.calendarManageLink}>{t('ui.occasions.manage')}</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={confirmDisconnectCalendar} accessibilityRole="button" accessibilityLabel="Disconnect calendar">
-                        <Text style={[styles.calendarManageLink, { color: colors.danger }]}>Disconnect</Text>
+                      <TouchableOpacity onPress={confirmDisconnectCalendar} accessibilityRole="button" accessibilityLabel={t('ui.occasions.disconnectCalendarA11y')}>
+                        <Text style={[styles.calendarManageLink, { color: colors.danger }]}>{t('ui.occasions.disconnect')}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
                   <Text style={styles.helperText}>
-                    Only the calendars you picked are read. Nearby never edits your calendar -- event
-                    details stay on this device unless you choose to act on one below.
+                    {t('ui.occasions.onlyTheCalendarsYouPicked')}
                   </Text>
                   {loadingCalendarEvents ? (
-                    <NLoader fullScreen={false} size="inline" caption="Checking your calendars…" />
+                    <NLoader fullScreen={false} size="inline" caption={t('ui.occasions.checkingYourCalendars')} />
                   ) : calendarEvents.length === 0 ? (
-                    <Text style={styles.helperText}>Nothing new on your shared calendars right now.</Text>
+                    <Text style={styles.helperText}>{t('ui.occasions.nothingNewOnYourShared')}</Text>
                   ) : (
                     calendarEvents.map((event) => {
                       const guessedType = guessOccasionTypeFromEventTitle(event.title);
@@ -557,13 +551,13 @@ export default function OccasionsScreen({ navigation, route }) {
                           <Text style={{ fontSize: 22, marginRight: spacing.sm }}>{meta?.icon ?? '📅'}</Text>
                           <View style={{ flex: 1 }}>
                             <Text style={styles.name}>{event.title}</Text>
-                            <Text style={styles.detail}>{formatCalendarEventDateLabel(event.startDate)}</Text>
+                            <Text style={styles.detail}>{language === 'en' ? formatCalendarEventDateLabel(event.startDate) : displayWeekdayDate(event.startDate, language)}</Text>
                             <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs, flexWrap: 'wrap' }}>
-                              <TouchableOpacity disabled={busy} onPress={() => handlePlanFromEvent(event)} accessibilityRole="button" accessibilityLabel={`Plan something for ${event.title}`}>
-                                <Text style={styles.calendarActionPrimary}>Plan Something →</Text>
+                              <TouchableOpacity disabled={busy} onPress={() => handlePlanFromEvent(event)} accessibilityRole="button" accessibilityLabel={t('ui.occasions.planSomethingForA11y', { title: event.title })}>
+                                <Text style={styles.calendarActionPrimary}>{t('ui.occasions.planSomething')}</Text>
                               </TouchableOpacity>
-                              <TouchableOpacity disabled={busy} onPress={() => handleSaveEventAsOccasion(event)} accessibilityRole="button" accessibilityLabel={`Save ${event.title} as an occasion`}>
-                                <Text style={styles.calendarManageLink}>Save as Occasion</Text>
+                              <TouchableOpacity disabled={busy} onPress={() => handleSaveEventAsOccasion(event)} accessibilityRole="button" accessibilityLabel={t('ui.occasions.saveAsAnOccasionA11y', { title: event.title })}>
+                                <Text style={styles.calendarManageLink}>{t('ui.occasions.saveAsOccasion')}</Text>
                               </TouchableOpacity>
                             </View>
                           </View>
@@ -571,7 +565,7 @@ export default function OccasionsScreen({ navigation, route }) {
                             style={styles.iconButton}
                             disabled={busy}
                             onPress={() => handleDismissEvent(event)}
-                            accessibilityLabel={`Not relevant: ${event.title}`}
+                            accessibilityLabel={t('ui.occasions.notRelevantA11y', { title: event.title })}
                             accessibilityRole="button"
                           >
                             <Text style={{ fontSize: 16, color: colors.textTertiary }}>✕</Text>
@@ -587,7 +581,7 @@ export default function OccasionsScreen({ navigation, route }) {
 
           {groupPlans.length > 0 && (
             <>
-              <Text style={styles.sectionLabel}>Group Plans</Text>
+              <Text style={styles.sectionLabel}>{t('ui.occasions.groupPlans')}</Text>
               {groupPlans.map((plan) => {
                 const meta = OCCASION_OPTIONS.find((t) => t.key === plan.occasionType);
                 return (
@@ -603,15 +597,15 @@ export default function OccasionsScreen({ navigation, route }) {
                     <View style={{ flex: 1 }}>
                       <Text style={styles.name}>{plan.surpriseMode ? '🔒 ' : ''}{plan.title}</Text>
                       <Text style={styles.detail}>
-                        {GROUP_PLAN_STATUS_COPY[plan.status] ?? plan.status}{plan.isHost ? ' · Hosting' : ''}
+                        {GROUP_PLAN_STATUSES.includes(plan.status) ? t(`ui.occasions.groupPlanStatus.${plan.status}`) : plan.status}{plan.isHost ? t('ui.occasions.hosting') : ''}
                       </Text>
                       {/* Item 109 (CLAUDE.md, "make the visibility model
                           explicit"): a group plan is always invite-only by
                           construction (zero client RLS policies, RPC-gated
                           to the host and invited participants) -- say so. */}
-                      <Text style={styles.privacyLine}>🔒 Invite-only</Text>
-                      <TouchableOpacity onPress={() => openPlanDetail({ groupPlanId: plan.id })} accessibilityRole="button" accessibilityLabel="View the whole plan">
-                        <Text style={styles.revealLink}>View the whole plan →</Text>
+                      <Text style={styles.privacyLine}>{t('ui.occasions.inviteOnly')}</Text>
+                      <TouchableOpacity onPress={() => openPlanDetail({ groupPlanId: plan.id })} accessibilityRole="button" accessibilityLabel={t('ui.occasions.viewTheWholePlanA11y')}>
+                        <Text style={styles.revealLink}>{t('ui.occasions.viewTheWholePlan')}</Text>
                       </TouchableOpacity>
                     </View>
                   </TouchableOpacity>
@@ -629,16 +623,16 @@ export default function OccasionsScreen({ navigation, route }) {
                 style={styles.emptyPlanButton}
                 onPress={() => navigation.navigate('CelebrateSomething')}
                 accessibilityRole="button"
-                accessibilityLabel="Plan something for someone"
+                accessibilityLabel={t('ui.occasions.planSomethingForSomeoneA11y')}
               >
-                <Text style={styles.emptyPlanButtonText}>Want to plan something? →</Text>
+                <Text style={styles.emptyPlanButtonText}>{t('ui.occasions.wantToPlanSomething')}</Text>
               </TouchableOpacity>
             </FadeInState>
           )}
 
           {personGroups.map((group) => (
             <View key={group.key} style={{ marginBottom: spacing.md }}>
-              <Text style={styles.personHeader}>{group.label ? `👤 ${group.label}` : 'Other'}</Text>
+              <Text style={styles.personHeader}>{group.label ? `👤 ${group.label}` : t('ui.occasions.otherPeople')}</Text>
               {group.occasions.map((occasion) => {
                 const meta = OCCASION_TYPES.find((t) => t.key === occasion.occasion_type);
                 return (
@@ -651,7 +645,7 @@ export default function OccasionsScreen({ navigation, route }) {
                       // GroupOccasionPlanScreen's own version.
                       <View style={{ flex: 1 }}>
                         <SurpriseRevealAnimation haptic
-                          text={`🎉 ${occasion.who_for_name || 'They'} can see it now!`}
+                          text={occasion.who_for_name ? t('ui.occasions.canSeeItNow', { whoForName: occasion.who_for_name }) : t('ui.occasions.theyCanSeeItNow')}
                           onDone={() => handleRevealAnimationDone(occasion.id)}
                         />
                       </View>
@@ -660,23 +654,23 @@ export default function OccasionsScreen({ navigation, route }) {
                         <Text style={{ fontSize: 22, marginRight: spacing.sm }}>{meta?.icon ?? '📅'}</Text>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.name}>
-                            {occasion.surprise_mode ? '🔒 ' : ''}{group.label ? (meta?.label ?? occasion.title) : occasion.title}
+                            {occasion.surprise_mode ? '🔒 ' : ''}{group.label ? occasionName(occasion.occasion_type, language, meta?.label ?? occasion.title) : occasion.title}
                           </Text>
                           <Text style={styles.detail}>
-                            {formatOccasionDateForPrecision(occasion.date_precision, occasion.occasion_date)}
-                            {occasion.recurs_annually ? ' · Repeats every year' : ' · One time'}
-                            {occasion.resulting_plan_id && !occasion.plan_cancelled ? ' · ✅ Planned' : ''}
-                            {occasion.imported_from_calendar ? ' · 📅 From your calendar' : ''}
+                            {formatOccasionDateForPrecision(occasion.date_precision, occasion.occasion_date, { language })}
+                            {occasion.recurs_annually ? t('ui.occasions.repeatsEveryYear') : t('ui.occasions.oneTime')}
+                            {occasion.resulting_plan_id && !occasion.plan_cancelled ? t('ui.occasions.planned') : ''}
+                            {occasion.imported_from_calendar ? t('ui.occasions.fromYourCalendar2') : ''}
                           </Text>
                           {/* Item 109 (CLAUDE.md, "make the visibility model
                               explicit"): who can actually see this record --
                               always Private, or Shared with one explicitly
                               picked person, never anything broader. */}
                           <Text style={styles.privacyLine}>
-                            {describeOccasionPrivacy(occasion).icon} {describeOccasionPrivacy(occasion).label}
+                            {describeOccasionPrivacy(occasion, language).icon} {describeOccasionPrivacy(occasion, language).label}
                           </Text>
-                          <TouchableOpacity onPress={() => openPlanDetail({ occasionId: occasion.id })} accessibilityRole="button" accessibilityLabel="View the whole plan">
-                            <Text style={styles.revealLink}>View the whole plan →</Text>
+                          <TouchableOpacity onPress={() => openPlanDetail({ occasionId: occasion.id })} accessibilityRole="button" accessibilityLabel={t('ui.occasions.viewTheWholePlanA11y')}>
+                            <Text style={styles.revealLink}>{t('ui.occasions.viewTheWholePlan')}</Text>
                           </TouchableOpacity>
                           {/* Item 96 ("Add surprise mode"): "Eventually: Reveal
                               plan becomes an action" -- a real, one-way tap. */}
@@ -686,10 +680,10 @@ export default function OccasionsScreen({ navigation, route }) {
                               disabled={revealingId === occasion.id}
                               activeOpacity={0.85}
                               accessibilityRole="button"
-                              accessibilityLabel={`Reveal the surprise for ${occasion.title}`}
+                              accessibilityLabel={t('ui.occasions.revealTheSurpriseForA11y', { title: occasion.title })}
                             >
                               <Text style={styles.revealLink}>
-                                {revealingId === occasion.id ? 'Revealing…' : '🎁 Reveal Plan'}
+                                {revealingId === occasion.id ? t('ui.occasions.revealing') : t('ui.occasions.revealPlan')}
                               </Text>
                             </TouchableOpacity>
                           )}
@@ -698,7 +692,7 @@ export default function OccasionsScreen({ navigation, route }) {
                           style={styles.iconButton}
                           onPress={() => handleToggleReminder(occasion)}
                           disabled={togglingReminderId === occasion.id}
-                          accessibilityLabel={occasion.reminder_enabled ? `Turn off reminder for ${occasion.title}` : `Turn on reminder for ${occasion.title}`}
+                          accessibilityLabel={occasion.reminder_enabled ? t('ui.occasions.turnOffReminderForA11y', { title: occasion.title }) : t('ui.occasions.turnOnReminderForA11y', { title: occasion.title })}
                           accessibilityRole="button"
                         >
                           <Text style={{ fontSize: 18 }}>{occasion.reminder_enabled ? '🔔' : '🔕'}</Text>
@@ -713,7 +707,7 @@ export default function OccasionsScreen({ navigation, route }) {
                             style={styles.iconButton}
                             onPress={() => handleToggleRecallShare(occasion)}
                             disabled={togglingRecallShareId === occasion.id}
-                            accessibilityLabel={occasion.recall_shareable_with_business ? `Stop letting businesses recognize you for ${occasion.title}` : `Let a business recognize you for ${occasion.title}`}
+                            accessibilityLabel={occasion.recall_shareable_with_business ? t('ui.occasions.stopLettingBusinessesRecognizeYouA11y', { title: occasion.title }) : t('ui.occasions.letABusinessRecognizeYouA11y', { title: occasion.title })}
                             accessibilityRole="button"
                           >
                             <Text style={{ fontSize: 18 }}>{occasion.recall_shareable_with_business ? '🏪' : '🚫'}</Text>
@@ -723,10 +717,10 @@ export default function OccasionsScreen({ navigation, route }) {
                           style={styles.removeButton}
                           onPress={() => confirmDelete(occasion)}
                           disabled={deletingId === occasion.id}
-                          accessibilityLabel={`Remove ${occasion.title}`}
+                          accessibilityLabel={t('ui.occasions.removeA11y', { title: occasion.title })}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.removeButtonText}>{deletingId === occasion.id ? '...' : 'Remove'}</Text>
+                          <Text style={styles.removeButtonText}>{deletingId === occasion.id ? '...' : t('ui.occasions.remove2')}</Text>
                         </TouchableOpacity>
                       </>
                     )}
@@ -736,7 +730,7 @@ export default function OccasionsScreen({ navigation, route }) {
             </View>
           ))}
 
-          <Text style={styles.sectionLabel} accessibilityRole="header">Add an occasion</Text>
+          <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.occasions.addAnOccasion')}</Text>
           <View style={styles.form}>
             {/* Item 73 (CLAUDE.md): real grouped sections instead of one
                 long flat chip row -- same architecture the Occasion
@@ -745,24 +739,24 @@ export default function OccasionsScreen({ navigation, route }) {
                 behind as the vocabulary grows. */}
             {personalOccasionTypeGroupOptions().map((group) => (
               <View key={group.key} style={{ marginBottom: spacing.sm }}>
-                <Text style={styles.fieldLabel}>{group.label}</Text>
+                <Text style={styles.fieldLabel}>{t(`ui.celebrate.occasionGroup.${group.key}`)}</Text>
                 <View style={styles.chipRow}>
-                  {group.options.map((t) => (
+                  {group.options.map((opt) => (
                     <TouchableOpacity
-                      key={t.key}
-                      style={[styles.chip, occasionType === t.key && styles.chipSelected]}
-                      onPress={() => handleOccasionTypeChange(t.key)}
+                      key={opt.key}
+                      style={[styles.chip, occasionType === opt.key && styles.chipSelected]}
+                      onPress={() => handleOccasionTypeChange(opt.key)}
                       accessibilityRole="button"
-                      accessibilityLabel={t.label}
+                      accessibilityLabel={occasionName(opt.key, language, opt.label)}
                     >
-                      <Text style={[styles.chipText, occasionType === t.key && styles.chipTextSelected]}>{t.icon} {t.label}</Text>
+                      <Text style={[styles.chipText, occasionType === opt.key && styles.chipTextSelected]}>{opt.icon} {occasionName(opt.key, language, opt.label)}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               </View>
             ))}
 
-            <Text style={styles.fieldLabel}>Who is this for?</Text>
+            <Text style={styles.fieldLabel}>{t('ui.occasions.whoIsThisFor')}</Text>
             <View style={styles.chipRow}>
               {WHO_FOR_OPTIONS.map((o) => (
                 <TouchableOpacity
@@ -770,9 +764,9 @@ export default function OccasionsScreen({ navigation, route }) {
                   style={[styles.chip, whoFor === o.key && styles.chipSelected]}
                   onPress={() => pickWhoFor(o.key)}
                   accessibilityRole="button"
-                  accessibilityLabel={o.label}
+                  accessibilityLabel={t(`ui.celebrate.whoFor.${o.key}`)}
                 >
-                  <Text style={[styles.chipText, whoFor === o.key && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                  <Text style={[styles.chipText, whoFor === o.key && styles.chipTextSelected]}>{o.icon} {t(`ui.celebrate.whoFor.${o.key}`)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -780,7 +774,7 @@ export default function OccasionsScreen({ navigation, route }) {
             {whoFor === 'friend' && (
               <>
                 {friends.length === 0 ? (
-                  <Text style={styles.helperText}>You don't have any friends connected yet.</Text>
+                  <Text style={styles.helperText}>{t('ui.occasions.youDontHaveAnyFriends')}</Text>
                 ) : (
                   <View style={styles.chipRow}>
                     {friends.map((f) => (
@@ -803,28 +797,28 @@ export default function OccasionsScreen({ navigation, route }) {
                       onPress={toggleSurpriseMode}
                       accessibilityRole="checkbox"
                       accessibilityState={{ checked: surpriseMode }}
-                      accessibilityLabel={`Surprise mode — keep this hidden from ${whoForName}`}
+                      accessibilityLabel={t('ui.occasions.surpriseModeKeepThisHiddenA11y', { whoForName: whoForName })}
                     >
                       <View style={[styles.checkbox, surpriseMode && styles.checkboxChecked]}>
                         {surpriseMode && <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>✓</Text>}
                       </View>
-                      <Text style={{ color: colors.textPrimary, flex: 1 }}>🔒 Surprise mode — keep this hidden from {whoForName}</Text>
+                      <Text style={{ color: colors.textPrimary, flex: 1 }}>{t('ui.occasions.surpriseModeKeepThisHidden', { whoForName: whoForName })}</Text>
                     </TouchableOpacity>
 
                     {surpriseMode ? (
-                      <Text style={styles.helperText}>This won't be shared with {whoForName} or shown to them anywhere in Nearby.</Text>
+                      <Text style={styles.helperText}>{t('ui.occasions.thisWontBeSharedWith', { whoForName: whoForName })}</Text>
                     ) : (
                       <TouchableOpacity
                         style={styles.recurRow}
                         onPress={() => setShareWithFriend((v) => !v)}
                         accessibilityRole="checkbox"
                         accessibilityState={{ checked: shareWithFriend }}
-                        accessibilityLabel={`Also share this with ${whoForName}`}
+                        accessibilityLabel={t('ui.occasions.alsoShareThisWithA11y', { whoForName: whoForName })}
                       >
                         <View style={[styles.checkbox, shareWithFriend && styles.checkboxChecked]}>
                           {shareWithFriend && <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>✓</Text>}
                         </View>
-                        <Text style={{ color: colors.textPrimary, flex: 1 }}>👀 Also share this with {whoForName} — they'll see it on their own Occasions page too</Text>
+                        <Text style={{ color: colors.textPrimary, flex: 1 }}>{t('ui.occasions.alsoShareThisWithTheyll', { whoForName: whoForName })}</Text>
                       </TouchableOpacity>
                     )}
                   </>
@@ -835,21 +829,21 @@ export default function OccasionsScreen({ navigation, route }) {
             {whoFor === 'someone_else' && (
               <TextInput
                 style={styles.input}
-                placeholder="Their name (e.g. Mom)"
+                placeholder={t('ui.occasions.theirNameEGMom')}
                 placeholderTextColor={colors.textTertiary}
                 value={whoForName}
                 onChangeText={handleWhoForNameChange}
-                accessibilityLabel="Their name"
+                accessibilityLabel={t('ui.occasions.theirNameA11y')}
               />
             )}
 
             <TextInput
               style={styles.input}
-              placeholder="Title (e.g. Our Anniversary)"
+              placeholder={t('ui.occasions.titleEGOurAnniversary')}
               placeholderTextColor={colors.textTertiary}
               value={title}
               onChangeText={(text) => { setTitle(text); setTitleTouched(true); }}
-              accessibilityLabel="Occasion title"
+              accessibilityLabel={t('ui.occasions.occasionTitleA11y')}
             />
             {/* Item 98 (CLAUDE.md, "Don't require exact dates"): "Her
                 birthday is sometime next month" is a completely normal
@@ -857,7 +851,7 @@ export default function OccasionsScreen({ navigation, route }) {
                 day (it has no other mode), but this controls how that
                 pick gets INTERPRETED before it's saved (see
                 occasionDatePrecision.js). */}
-            <Text style={styles.fieldLabel}>How well do you know the date?</Text>
+            <Text style={styles.fieldLabel}>{t('ui.occasions.howWellDoYouKnow')}</Text>
             <View style={styles.chipRow}>
               {OCCASION_DATE_PRECISION_OPTIONS.map((p) => (
                 <TouchableOpacity
@@ -865,24 +859,24 @@ export default function OccasionsScreen({ navigation, route }) {
                   style={[styles.chip, datePrecision === p.key && styles.chipSelected]}
                   onPress={() => setDatePrecision(p.key)}
                   accessibilityRole="button"
-                  accessibilityLabel={p.label}
+                  accessibilityLabel={occasionDatePrecisionLabel(p.key, language)}
                   accessibilityState={{ selected: datePrecision === p.key }}
                 >
-                  <Text style={[styles.chipText, datePrecision === p.key && styles.chipTextSelected]}>{p.icon} {p.label}</Text>
+                  <Text style={[styles.chipText, datePrecision === p.key && styles.chipTextSelected]}>{p.icon} {occasionDatePrecisionLabel(p.key, language)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-            <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)} accessibilityRole="button" accessibilityLabel="Occasion date">
-              <Text style={{ color: colors.textPrimary }}>{formatDate(date)}</Text>
+            <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)} accessibilityRole="button" accessibilityLabel={t('ui.occasions.occasionDateA11y')}>
+              <Text style={{ color: colors.textPrimary }}>{language === 'en' ? formatDate(date) : displayDay(date, language, { withYear: true })}</Text>
             </TouchableOpacity>
             {datePrecision !== 'exact' && (
               <Text style={styles.helperText}>
                 {datePrecision === 'flexible'
-                  ? 'Only the month matters -- pick any day in it.'
+                  ? t('ui.occasions.onlyTheMonthMattersPick')
                   : datePrecision === 'weekend'
-                  ? "We'll round this to that week's Saturday."
-                  : "We'll save this as your best guess."}
-                {' '}Will show as "{formatOccasionDateForPrecision(datePrecision, normalizeOccasionDateForPrecision(datePrecision, date))}".
+                  ? t('ui.occasions.wellRoundThisToThat')
+                  : t('ui.occasions.wellSaveThisAsYour')}
+                {' '}{t('ui.occasions.willShowAs', { date: formatOccasionDateForPrecision(datePrecision, normalizeOccasionDateForPrecision(datePrecision, date), { language }) })}
               </Text>
             )}
             {showDatePicker && (
@@ -901,15 +895,15 @@ export default function OccasionsScreen({ navigation, route }) {
               style={styles.recurRow}
               onPress={() => setRecursAnnually((v) => !v)}
               accessibilityRole="button"
-              accessibilityLabel="Repeats every year"
+              accessibilityLabel={t('ui.occasions.repeatsEveryYearA11y')}
             >
               <View style={[styles.checkbox, recursAnnually && styles.checkboxChecked]}>
                 {recursAnnually && <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>✓</Text>}
               </View>
-              <Text style={{ color: colors.textPrimary }}>Repeats every year</Text>
+              <Text style={{ color: colors.textPrimary }}>{t('ui.occasions.repeatsEveryYear2')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.addButton} onPress={handleAdd} disabled={submitting} activeOpacity={0.85}>
-              <Text style={styles.addButtonText}>{submitting ? 'Adding...' : 'Add Occasion'}</Text>
+              <Text style={styles.addButtonText}>{submitting ? t('ui.occasions.adding') : t('ui.occasions.addOccasion')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -923,11 +917,11 @@ export default function OccasionsScreen({ navigation, route }) {
       >
         <View style={styles.modalOverlay}>
           <SafeAreaView style={styles.modalSheet}>
-            <Text style={styles.headerTitle}>Which calendars can Nearby use?</Text>
-            <Text style={styles.headerSubtitle}>Only checked calendars will ever be read. Nothing is shared or edited.</Text>
+            <Text style={styles.headerTitle}>{t('ui.occasions.whichCalendarsCanNearbyUse')}</Text>
+            <Text style={styles.headerSubtitle}>{t('ui.occasions.onlyCheckedCalendarsWillEver')}</Text>
             <ScrollView style={{ maxHeight: 320 }}>
               {availableCalendars.length === 0 ? (
-                <Text style={styles.helperText}>No calendars found on this device.</Text>
+                <Text style={styles.helperText}>{t('ui.occasions.noCalendarsFoundOnThis')}</Text>
               ) : (
                 availableCalendars.map((cal) => {
                   const checked = pickerSelectedIds.has(cal.id);
@@ -950,10 +944,10 @@ export default function OccasionsScreen({ navigation, route }) {
               )}
             </ScrollView>
             <TouchableOpacity style={styles.addButton} onPress={saveCalendarSelection} activeOpacity={0.85}>
-              <Text style={styles.addButtonText}>Save Selection</Text>
+              <Text style={styles.addButtonText}>{t('ui.occasions.saveSelection')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{ alignItems: 'center', marginTop: spacing.sm, paddingVertical: spacing.sm }} onPress={() => setShowCalendarPicker(false)} accessibilityRole="button" accessibilityLabel="Cancel">
-              <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
+            <TouchableOpacity style={{ alignItems: 'center', marginTop: spacing.sm, paddingVertical: spacing.sm }} onPress={() => setShowCalendarPicker(false)} accessibilityRole="button" accessibilityLabel={t('ui.occasions.cancelA11y')}>
+              <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{t('ui.occasions.cancel')}</Text>
             </TouchableOpacity>
           </SafeAreaView>
         </View>

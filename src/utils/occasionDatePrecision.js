@@ -1,4 +1,6 @@
-import { tr } from '../i18n/translate';
+import { tr, translate, getCurrentLanguage, DEFAULT_LANGUAGE } from '../i18n/translate';
+import { displayDay } from '../i18n/display';
+import { vocabValue } from '../i18n/format';
 // Item 98 (CLAUDE.md, "Don't require exact dates"): "Her birthday is
 // sometime next month" is a completely normal thing to know -- the app
 // used to force a single exact day through a native date picker with no
@@ -17,8 +19,10 @@ export const OCCASION_DATE_PRECISION_OPTIONS = [
   { key: 'flexible', label: 'Flexible', icon: '🌀' },
 ];
 
-export function occasionDatePrecisionLabel(key) {
-  return OCCASION_DATE_PRECISION_OPTIONS.find((o) => o.key === key)?.label ?? 'Exact date';
+// English = the option's own label; another language reads ui.occasions.precision.<key>.
+export function occasionDatePrecisionLabel(key, language = DEFAULT_LANGUAGE) {
+  const option = OCCASION_DATE_PRECISION_OPTIONS.find((o) => o.key === key) ?? OCCASION_DATE_PRECISION_OPTIONS[0];
+  return language === DEFAULT_LANGUAGE ? option.label : translate(language, `ui.occasions.precision.${option.key}`);
 }
 
 export function occasionDatePrecisionIcon(key) {
@@ -54,10 +58,22 @@ function monthDayText(d, { short = false } = {}) {
 // known. `short` matches the compact "month day" convention already used
 // for date chips elsewhere in this app (MomentumScreen.js/
 // MakeAPlanScreen.js/ViewProfileScreen.js's own formatOccasionShortDate).
-export function formatOccasionDateForPrecision(precision, occasionDateStr, { short = false } = {}) {
+// `language` other than English: the same decision, worded by ui.occasions.date.* with the language's month names.
+export function formatOccasionDateForPrecision(precision, occasionDateStr, { short = false, language = DEFAULT_LANGUAGE } = {}) {
   if (!occasionDateStr) return '';
   const d = new Date(`${occasionDateStr}T00:00:00`);
   if (Number.isNaN(d.getTime())) return '';
+  if (language !== DEFAULT_LANGUAGE) {
+    const o = (key, vars) => translate(language, `ui.occasions.date.${key}`, vars);
+    if (precision === 'flexible') {
+      const month = vocabValue(language, 'date.months')[d.getMonth()];
+      return short ? o('sometimeInShort', { month }) : o('sometimeIn', { month, year: d.getFullYear() });
+    }
+    const date = displayDay(d, language);
+    if (precision === 'weekend') return o('weekendOf', { date });
+    if (precision === 'around') return o(short ? 'aroundShort' : 'around', { date });
+    return date;
+  }
 
   if (precision === 'flexible') {
     return `Sometime in ${d.toLocaleDateString(undefined, { month: short ? 'short' : 'long', year: short ? undefined : 'numeric' })}`;
@@ -86,8 +102,9 @@ export function occasionDueLabel(precision, occasionDateStr, daysUntil) {
   // formatOccasionDateForPrecision's short form already reads naturally
   // lowercased mid-sentence ("weekend of Sept 20" / "around Sept 20" /
   // "sometime in Sept") -- just lowercase its own leading word.
-  const dateText = formatOccasionDateForPrecision(precision, occasionDateStr, { short: true });
-  // The fuzzy date text itself is still English (formatOccasionDateForPrecision, converted with the Occasions screens).
+  const language = getCurrentLanguage();
+  const dateText = formatOccasionDateForPrecision(precision, occasionDateStr, { short: true, language });
   if (!dateText) return tr('ui.homeParts.occasion.comingUp');
-  return tr('ui.homeParts.occasion.comingUpDate', { date: `${dateText.charAt(0).toLowerCase()}${dateText.slice(1)}` });
+  // Lowercasing the leading word only reads right in English (a German noun keeps its capital).
+  return tr('ui.homeParts.occasion.comingUpDate', { date: language === DEFAULT_LANGUAGE ? `${dateText.charAt(0).toLowerCase()}${dateText.slice(1)}` : dateText });
 }

@@ -82,6 +82,9 @@ export const LOCALIZED_FILES = [
   'src/components/HostAttendeeManager.js',
   'src/components/GatheringQnA.js',
   'src/components/GatheringFeedbackModal.js',
+  'src/screens/OccasionsScreen.js',
+  'src/utils/occasionDatePrecision.js',
+  'src/utils/occasionVisibility.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
@@ -113,6 +116,13 @@ export const INTENTIONAL_ENGLISH = {
     'Meet friends': 'stored connection-goal value (profiles.connection_goal); shown through ui.profile.goal.*',
     Date: 'stored connection-goal value', Network: 'stored connection-goal value', 'Explore my city': 'stored connection-goal value',
     'Find community': 'stored connection-goal value', 'Get out more': 'stored connection-goal value',
+  },
+  'src/utils/occasionDatePrecision.js': {
+    'Exact date': 'English label of OCCASION_DATE_PRECISION_OPTIONS; other languages read ui.occasions.precision.<key>',
+    Weekend: 'English label of OCCASION_DATE_PRECISION_OPTIONS', 'Around this date': 'English label of OCCASION_DATE_PRECISION_OPTIONS',
+    Flexible: 'English label of OCCASION_DATE_PRECISION_OPTIONS',
+    'Sometime in {}': 'English branch kept byte-identical (tested); other languages read ui.occasions.date.*',
+    'Weekend of {}': 'English branch kept byte-identical', 'Around {}': 'English branch kept byte-identical',
   },
   'src/screens/FriendDiscoveryScreen.js': {
     'A few miles away': 'stored distance bucket from get_friend_discovery_candidates; shown through ui.friends.bucket.*',
