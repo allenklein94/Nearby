@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from './EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
@@ -12,6 +13,7 @@ import { spacing, radius, typography } from '../theme';
 // (nearby card, attending card, hosting card) with the only difference
 // being whether the current viewer can answer.
 export default function GatheringQnA({ gatheringId, isHost }) {
+  const { t } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [questions, setQuestions] = useState([]);
@@ -37,7 +39,7 @@ export default function GatheringQnA({ gatheringId, isHost }) {
 
     const check = await checkTextModeration(questionDraft);
     if (!check.safe) {
-      Alert.alert('Question not allowed', 'Please rephrase your question and try again.');
+      Alert.alert(t('ui.gatheringParts.questionNotAllowed'), t('ui.gatheringParts.pleaseRephraseYourQuestionAnd'));
       return;
     }
 
@@ -58,7 +60,7 @@ export default function GatheringQnA({ gatheringId, isHost }) {
 
     const check = await checkTextModeration(answer);
     if (!check.safe) {
-      Alert.alert('Answer not allowed', 'Please rephrase your answer and try again.');
+      Alert.alert(t('ui.gatheringParts.answerNotAllowed'), t('ui.gatheringParts.pleaseRephraseYourAnswerAnd'));
       return;
     }
 
@@ -75,20 +77,20 @@ export default function GatheringQnA({ gatheringId, isHost }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Questions</Text>
+      <Text style={styles.label}>{t('ui.gatheringParts.questions')}</Text>
 
-      {loading && <Text style={styles.emptyText}>Loading...</Text>}
+      {loading && <Text style={styles.emptyText}>{t('ui.gatheringParts.loading')}</Text>}
       {!loading && questions.length === 0 && <EmptyCopy id="gathering_questions" />}
 
       {questions.map((q) => (
         <View key={q.id} style={styles.questionRow}>
           <Text style={styles.questionText}>
-            <Text style={styles.questionAsker}>{q.asker?.display_name ?? 'Someone'}: </Text>
+            <Text style={styles.questionAsker}>{q.asker?.display_name ?? t('ui.gatheringParts.someone')}: </Text>
             {q.question_body}
           </Text>
           {q.answer_body ? (
             <Text style={styles.answerText}>
-              <Text style={styles.answerLabel}>Host: </Text>
+              <Text style={styles.answerLabel}>{t('ui.gatheringParts.hostLabel')}{' '}</Text>
               {q.answer_body}
             </Text>
           ) : isHost ? (
@@ -97,21 +99,21 @@ export default function GatheringQnA({ gatheringId, isHost }) {
                 style={styles.answerInput}
                 value={answerDrafts[q.id] || ''}
                 onChangeText={(text) => setAnswerDrafts((prev) => ({ ...prev, [q.id]: text }))}
-                placeholder="Write an answer..."
+                placeholder={t('ui.gatheringParts.writeAnAnswer')}
                 placeholderTextColor={colors.textTertiary}
-                accessibilityLabel={`Answer ${q.asker?.display_name ?? 'this'}'s question`}
+                accessibilityLabel={t('ui.gatheringParts.answerSQuestionA11y', { name: q.asker?.display_name ?? 'this' })}
               />
               <TouchableOpacity
                 onPress={() => handleAnswer(q.id)}
                 disabled={answeringId === q.id}
-                accessibilityLabel="Submit answer"
+                accessibilityLabel={t('ui.gatheringParts.submitAnswerA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.answerSubmitText}>{answeringId === q.id ? '...' : 'Reply'}</Text>
+                <Text style={styles.answerSubmitText}>{answeringId === q.id ? '...' : t('ui.gatheringParts.reply')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
-            <Text style={styles.awaitingText}>Awaiting host reply</Text>
+            <Text style={styles.awaitingText}>{t('ui.gatheringParts.awaitingHostReply')}</Text>
           )}
         </View>
       ))}
@@ -122,17 +124,17 @@ export default function GatheringQnA({ gatheringId, isHost }) {
             style={styles.askInput}
             value={questionDraft}
             onChangeText={setQuestionDraft}
-            placeholder="Ask the host a question..."
+            placeholder={t('ui.gatheringParts.askTheHostAQuestion')}
             placeholderTextColor={colors.textTertiary}
-            accessibilityLabel="Ask a question about this gathering"
+            accessibilityLabel={t('ui.gatheringParts.askAQuestionAboutThisA11y')}
           />
           <TouchableOpacity
             onPress={handleAsk}
             disabled={asking || !questionDraft.trim()}
-            accessibilityLabel="Submit question"
+            accessibilityLabel={t('ui.gatheringParts.submitQuestionA11y')}
             accessibilityRole="button"
           >
-            <Text style={[styles.askSubmitText, !questionDraft.trim() && { opacity: 0.4 }]}>{asking ? '...' : 'Ask'}</Text>
+            <Text style={[styles.askSubmitText, !questionDraft.trim() && { opacity: 0.4 }]}>{asking ? '...' : t('ui.gatheringParts.ask')}</Text>
           </TouchableOpacity>
         </View>
       )}

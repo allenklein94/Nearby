@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { getGatheringRequestsForHost, approveInterest, hostRemoveAttendee } from '../services/gatherings';
@@ -9,6 +10,7 @@ import { spacing, radius } from '../theme';
 // GatheringDetail (the one place everything about a gathering is managed).
 // Same RPCs and copy the Gatherings hosting list uses.
 export default function HostAttendeeManager({ gatheringId, onChanged }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [rows, setRows] = useState(null);
@@ -30,9 +32,9 @@ export default function HostAttendeeManager({ gatheringId, onChanged }) {
     try {
       const result = await approveInterest(row.id);
       if (result?.status === 'waitlisted') {
-        Alert.alert('Gathering full', "This gathering is already at capacity — they've been added to the waitlist instead.");
+        Alert.alert(t('ui.gatheringParts.gatheringFull'), t('ui.gatheringParts.thisGatheringIsAlreadyAt'));
       } else {
-        Alert.alert('Approved!', 'A match was created — you can now chat with them.');
+        Alert.alert(t('ui.gatheringParts.approved'), t('ui.gatheringParts.aMatchWasCreatedYou'));
       }
       refresh();
     } catch (e) {
@@ -43,12 +45,12 @@ export default function HostAttendeeManager({ gatheringId, onChanged }) {
   function confirmRemove(row, isRequest) {
     const name = row.profiles?.display_name ?? 'this person';
     Alert.alert(
-      isRequest ? `Decline ${name}?` : `Remove ${name}?`,
-      isRequest ? "They'll be told you couldn't approve their request." : "They'll be taken off the list and a waitlisted person, if any, moves up.",
+      isRequest ? t('ui.gatheringParts.decline', { name: name }) : t('ui.gatheringParts.remove', { name: name }),
+      isRequest ? t('ui.gatheringParts.theyllBeToldYouCouldnt') : t('ui.gatheringParts.theyllBeTakenOffThe'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('ui.gatheringParts.cancel'), style: 'cancel' },
         {
-          text: isRequest ? 'Decline' : 'Remove',
+          text: isRequest ? t('ui.gatheringParts.decline2') : t('ui.gatheringParts.remove2'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -67,26 +69,26 @@ export default function HostAttendeeManager({ gatheringId, onChanged }) {
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.label}>Requests & attendees</Text>
+      <Text style={styles.label}>{t('ui.gatheringParts.requestsAttendees')}</Text>
       {rows.map((row) => {
-        const name = row.profiles?.display_name ?? 'Someone';
+        const name = row.profiles?.display_name ?? t('ui.gatheringParts.someone');
         return (
           <View key={row.id} style={styles.row}>
             <Text style={styles.name}>{name}</Text>
             {row.status === 'pending' ? (
               <View style={styles.actions}>
-                <TouchableOpacity onPress={() => confirmRemove(row, true)} accessibilityLabel={`Decline ${name}'s request`} accessibilityRole="button">
-                  <Text style={styles.decline}>Decline</Text>
+                <TouchableOpacity onPress={() => confirmRemove(row, true)} accessibilityLabel={t('ui.gatheringParts.declineSRequestA11y', { name: name })} accessibilityRole="button">
+                  <Text style={styles.decline}>{t('ui.gatheringParts.decline2')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.approve} onPress={() => handleApprove(row)} accessibilityLabel={`Approve ${name}'s request`} accessibilityRole="button">
-                  <Text style={styles.approveText}>Approve</Text>
+                <TouchableOpacity style={styles.approve} onPress={() => handleApprove(row)} accessibilityLabel={t('ui.gatheringParts.approveSRequestA11y', { name: name })} accessibilityRole="button">
+                  <Text style={styles.approveText}>{t('ui.gatheringParts.approve')}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={styles.actions}>
-                <Text style={styles.status}>{row.status === 'waitlisted' ? 'Waitlisted' : 'Approved'}</Text>
-                <TouchableOpacity onPress={() => confirmRemove(row, false)} accessibilityLabel={`Remove ${name}`} accessibilityRole="button">
-                  <Text style={styles.decline}>Remove</Text>
+                <Text style={styles.status}>{row.status === 'waitlisted' ? t('ui.gatheringParts.waitlisted') : t('ui.gatheringParts.approved2')}</Text>
+                <TouchableOpacity onPress={() => confirmRemove(row, false)} accessibilityLabel={t('ui.gatheringParts.removeA11y', { name: name })} accessibilityRole="button">
+                  <Text style={styles.decline}>{t('ui.gatheringParts.remove2')}</Text>
                 </TouchableOpacity>
               </View>
             )}

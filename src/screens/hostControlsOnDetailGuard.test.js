@@ -18,7 +18,9 @@ describe('host controls live on GatheringDetail', () => {
       expect(detail).toContain(s);
     }
     const mgr = read('../components/HostAttendeeManager.js');
-    for (const s of ['approveInterest', 'hostRemoveAttendee', 'Decline', 'Remove']) expect(mgr).toContain(s);
+    for (const s of ['approveInterest', 'hostRemoveAttendee', "t('ui.gatheringParts.decline2')", "t('ui.gatheringParts.remove2')"]) expect(mgr).toContain(s);
+    const en = require('../i18n/ui/gatheringParts').default.en;
+    expect([en.decline2, en.remove2]).toEqual(['Decline', 'Remove']);
   });
   test('the Gatherings screen has no hosting tab / hosted-gatherings collection', () => {
     const g = read('GatheringsScreen.js');

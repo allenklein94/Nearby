@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { submitGatheringFeedback } from '../services/gatherings';
 import { maybeRequestAppReview } from '../services/appReview';
@@ -7,18 +8,18 @@ import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation } from '../motion';
 const SATISFACTION_OPTIONS = [
-  { value: 'loved_it', emoji: '😊', label: 'Loved it' },
-  { value: 'good', emoji: '🙂', label: 'Good' },
-  { value: 'okay', emoji: '😐', label: 'Okay' },
-  { value: 'not_for_me', emoji: '🙁', label: 'Not for me' },
+  { value: 'loved_it', emoji: '😊', labelKey: 'lovedIt' },
+  { value: 'good', emoji: '🙂', labelKey: 'good' },
+  { value: 'okay', emoji: '😐', labelKey: 'okay' },
+  { value: 'not_for_me', emoji: '🙁', labelKey: 'notForMe' },
 ];
 
 const GREAT_BECAUSE_OPTIONS = [
-  { value: 'people', label: 'People' },
-  { value: 'location', label: 'Location' },
-  { value: 'activity', label: 'Activity' },
-  { value: 'conversation', label: 'Conversation' },
-  { value: 'host', label: 'Host' },
+  { value: 'people', labelKey: 'people' },
+  { value: 'location', labelKey: 'location' },
+  { value: 'activity', labelKey: 'activity' },
+  { value: 'conversation', labelKey: 'conversation' },
+  { value: 'host', labelKey: 'host' },
 ];
 
 // "What next" chips reuse the exact category tags getQuickPrompts()
@@ -26,9 +27,9 @@ const GREAT_BECAUSE_OPTIONS = [
 // one prefills CreateGathering the same way Home's quick-action chips
 // do — no new category vocabulary invented here.
 const NEXT_STEP_OPTIONS = [
-  { icon: '☕', label: 'Coffee', category: 'Coffee' },
-  { icon: '🍽️', label: 'Dinner', category: 'Foodie' },
-  { icon: '🚶', label: 'Another walk', category: 'Outdoors' },
+  { icon: '☕', labelKey: 'coffee', category: 'Coffee' },
+  { icon: '🍽️', labelKey: 'dinner', category: 'Foodie' },
+  { icon: '🚶', labelKey: 'anotherWalk', category: 'Outdoors' },
 ];
 
 // Behavior teaches the app more than a bio ever could — this is
@@ -36,6 +37,7 @@ const NEXT_STEP_OPTIONS = [
 // something, never before, and it's the only post-gathering prompt
 // they'll see for this specific event.
 export default function GatheringFeedbackModal({ visible, gatheringId, navigation, onClose }) {
+  const { t } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [satisfaction, setSatisfaction] = useState(null);
@@ -96,7 +98,7 @@ export default function GatheringFeedbackModal({ visible, gatheringId, navigatio
 
   function handleNextStep(option) {
     handleClose();
-    navigation.navigate('CreateGathering', { quickStartTitle: option.label, quickStartCategory: option.category });
+    navigation.navigate('CreateGathering', { quickStartTitle: t(`ui.gatheringParts.${option.labelKey}`), quickStartCategory: option.category });
   }
 
   function handleJoinNextWeek() {
@@ -109,30 +111,30 @@ export default function GatheringFeedbackModal({ visible, gatheringId, navigatio
       <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={handleClose}>
         <View style={styles.overlay}>
           <View style={styles.sheet}>
-            <Text style={styles.title}>Anything you'd like to do next?</Text>
+            <Text style={styles.title}>{t('ui.gatheringParts.anythingYoudLikeToDo')}</Text>
             <View style={styles.chipsWrap}>
               {NEXT_STEP_OPTIONS.map((o) => (
                 <TouchableOpacity
-                  key={o.label}
+                  key={o.category}
                   style={styles.chip}
                   onPress={() => handleNextStep(o)}
-                  accessibilityLabel={o.label}
+                  accessibilityLabel={t(`ui.gatheringParts.${o.labelKey}`)}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.chipText}>{o.icon} {o.label}</Text>
+                  <Text style={styles.chipText}>{o.icon} {t(`ui.gatheringParts.${o.labelKey}`)}</Text>
                 </TouchableOpacity>
               ))}
               <TouchableOpacity
                 style={styles.chip}
                 onPress={handleJoinNextWeek}
-                accessibilityLabel="Join a gathering next week"
+                accessibilityLabel={t('ui.gatheringParts.joinAGatheringNextWeekA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.chipText}>📅 Join next week</Text>
+                <Text style={styles.chipText}>{t('ui.gatheringParts.joinNextWeek')}</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={handleClose} style={{ marginTop: spacing.lg }} accessibilityLabel="Not now" accessibilityRole="button">
-              <Text style={styles.skipText}>Not now</Text>
+            <TouchableOpacity onPress={handleClose} style={{ marginTop: spacing.lg }} accessibilityLabel={t('ui.gatheringParts.notNowA11y')} accessibilityRole="button">
+              <Text style={styles.skipText}>{t('ui.gatheringParts.notNow')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -144,7 +146,7 @@ export default function GatheringFeedbackModal({ visible, gatheringId, navigatio
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={handleSkip}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
-          <Text style={styles.title}>How was it?</Text>
+          <Text style={styles.title}>{t('ui.gatheringParts.howWasIt')}</Text>
           <View style={styles.satisfactionRow}>
             {SATISFACTION_OPTIONS.map((o) => {
               const selected = satisfaction === o.value;
@@ -153,12 +155,12 @@ export default function GatheringFeedbackModal({ visible, gatheringId, navigatio
                   key={o.value}
                   style={[styles.satisfactionOption, selected && styles.satisfactionOptionSelected]}
                   onPress={() => setSatisfaction(o.value)}
-                  accessibilityLabel={o.label}
+                  accessibilityLabel={t(`ui.gatheringParts.${o.labelKey}`)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
                   <Text style={styles.satisfactionEmoji}>{o.emoji}</Text>
-                  <Text style={styles.satisfactionLabel}>{o.label}</Text>
+                  <Text style={styles.satisfactionLabel}>{t(`ui.gatheringParts.${o.labelKey}`)}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -166,7 +168,7 @@ export default function GatheringFeedbackModal({ visible, gatheringId, navigatio
 
           {satisfaction && (
             <>
-              <Text style={styles.subtitle}>What made it great?</Text>
+              <Text style={styles.subtitle}>{t('ui.gatheringParts.whatMadeItGreat')}</Text>
               <View style={styles.chipsWrap}>
                 {GREAT_BECAUSE_OPTIONS.map((o) => {
                   const selected = greatBecause.includes(o.value);
@@ -175,11 +177,11 @@ export default function GatheringFeedbackModal({ visible, gatheringId, navigatio
                       key={o.value}
                       style={[styles.chip, selected && styles.chipSelected]}
                       onPress={() => toggleGreatBecause(o.value)}
-                      accessibilityLabel={o.label}
+                      accessibilityLabel={t(`ui.gatheringParts.${o.labelKey}`)}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
                     >
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{t(`ui.gatheringParts.${o.labelKey}`)}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -192,13 +194,13 @@ export default function GatheringFeedbackModal({ visible, gatheringId, navigatio
             onPress={handleSubmit}
             disabled={!satisfaction || submitting}
             activeOpacity={0.85}
-            accessibilityLabel={submitting ? 'Submitting' : 'Submit'}
+            accessibilityLabel={submitting ? t('ui.gatheringParts.submittingA11y') : t('ui.gatheringParts.submitA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.submitButtonText}>{submitting ? 'Submitting...' : 'Submit'}</Text>
+            <Text style={styles.submitButtonText}>{submitting ? t('ui.gatheringParts.submitting') : t('ui.gatheringParts.submit')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleSkip} style={{ marginTop: spacing.sm }} accessibilityLabel="Skip" accessibilityRole="button">
-            <Text style={styles.skipText}>Skip</Text>
+          <TouchableOpacity onPress={handleSkip} style={{ marginTop: spacing.sm }} accessibilityLabel={t('ui.gatheringParts.skipA11y')} accessibilityRole="button">
+            <Text style={styles.skipText}>{t('ui.gatheringParts.skip')}</Text>
           </TouchableOpacity>
         </View>
       </View>

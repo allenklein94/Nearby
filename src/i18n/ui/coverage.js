@@ -79,6 +79,9 @@ export const LOCALIZED_FILES = [
   'src/screens/GatheringConfirmationScreen.js',
   'src/screens/GatheringHubScreen.js',
   'src/constants/gatheringHubContent.js',
+  'src/components/HostAttendeeManager.js',
+  'src/components/GatheringQnA.js',
+  'src/components/GatheringFeedbackModal.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).

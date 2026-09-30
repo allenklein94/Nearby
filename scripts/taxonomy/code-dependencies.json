@@ -1692,7 +1692,7 @@
    "tag": "Coffee",
    "file": "src/components/GatheringFeedbackModal.js",
    "consumer": "code",
-   "occurrences": 2,
+   "occurrences": 1,
    "group": null
   },
   {
@@ -9559,6 +9559,13 @@
   {
    "tag": "Dating",
    "file": "src/i18n/ui/friends.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
+   "file": "src/i18n/ui/gatheringParts.js",
    "consumer": "code",
    "occurrences": 1,
    "group": null
