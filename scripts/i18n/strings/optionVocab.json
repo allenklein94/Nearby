@@ -12,7 +12,17 @@
   "date.tomorrow": "Tomorrow",
   "date.weekend": "This weekend",
   "date.flexible": "I'm flexible",
-  "nearYourGathering": "Near your gathering"
+  "nearYourGathering": "Near your gathering",
+  "celebrateActivity.dinner": "Dinner",
+  "celebrateActivity.party": "Party",
+  "celebrateActivity.surprise": "Surprise",
+  "celebrateActivity.activity": "Activity",
+  "celebrateActivity.night_out": "Night Out",
+  "celebrateActivity.weekend_trip": "Weekend Trip",
+  "celebrateActivity.custom": "Something Custom",
+  "budgetRange.between": "{min}–{max}/person",
+  "budgetRange.from": "{min}+/person",
+  "budgetRange.upTo": "Up to {max}/person"
  },
  "es": {
   "budget.any": "Sin preferencia",
@@ -27,7 +37,17 @@
   "date.tomorrow": "Mañana",
   "date.weekend": "Este fin de semana",
   "date.flexible": "Me da igual",
-  "nearYourGathering": "Cerca de tu reunión"
+  "nearYourGathering": "Cerca de tu reunión",
+  "celebrateActivity.dinner": "Cena",
+  "celebrateActivity.party": "Fiesta",
+  "celebrateActivity.surprise": "Sorpresa",
+  "celebrateActivity.activity": "Actividad",
+  "celebrateActivity.night_out": "Salida nocturna",
+  "celebrateActivity.weekend_trip": "Escapada de fin de semana",
+  "celebrateActivity.custom": "Algo a medida",
+  "budgetRange.between": "{min}–{max}/persona",
+  "budgetRange.from": "{min}+/persona",
+  "budgetRange.upTo": "Hasta {max}/persona"
  },
  "de": {
   "budget.any": "Egal",
@@ -42,7 +62,17 @@
   "date.tomorrow": "Morgen",
   "date.weekend": "Dieses Wochenende",
   "date.flexible": "Ich bin flexibel",
-  "nearYourGathering": "In der Nähe deines Treffens"
+  "nearYourGathering": "In der Nähe deines Treffens",
+  "celebrateActivity.dinner": "Abendessen",
+  "celebrateActivity.party": "Party",
+  "celebrateActivity.surprise": "Überraschung",
+  "celebrateActivity.activity": "Aktivität",
+  "celebrateActivity.night_out": "Abend in der Stadt",
+  "celebrateActivity.weekend_trip": "Wochenendtrip",
+  "celebrateActivity.custom": "Etwas Eigenes",
+  "budgetRange.between": "{min}–{max}/Person",
+  "budgetRange.from": "{min}+/Person",
+  "budgetRange.upTo": "Bis {max}/Person"
  },
  "fr": {
   "budget.any": "Sans préférence",
@@ -57,7 +87,17 @@
   "date.tomorrow": "Demain",
   "date.weekend": "Ce week-end",
   "date.flexible": "Je suis flexible",
-  "nearYourGathering": "Près de votre rencontre"
+  "nearYourGathering": "Près de votre rencontre",
+  "celebrateActivity.dinner": "Dîner",
+  "celebrateActivity.party": "Fête",
+  "celebrateActivity.surprise": "Surprise",
+  "celebrateActivity.activity": "Activité",
+  "celebrateActivity.night_out": "Soirée",
+  "celebrateActivity.weekend_trip": "Week-end",
+  "celebrateActivity.custom": "Quelque chose de sur mesure",
+  "budgetRange.between": "{min}–{max}/personne",
+  "budgetRange.from": "{min}+/personne",
+  "budgetRange.upTo": "Jusqu'à {max}/personne"
  },
  "pt": {
   "budget.any": "Sem preferência",
@@ -72,7 +112,17 @@
   "date.tomorrow": "Amanhã",
   "date.weekend": "Neste fim de semana",
   "date.flexible": "Sou flexível",
-  "nearYourGathering": "Perto do seu encontro"
+  "nearYourGathering": "Perto do seu encontro",
+  "celebrateActivity.dinner": "Jantar",
+  "celebrateActivity.party": "Festa",
+  "celebrateActivity.surprise": "Surpresa",
+  "celebrateActivity.activity": "Atividade",
+  "celebrateActivity.night_out": "Noite fora",
+  "celebrateActivity.weekend_trip": "Viagem de fim de semana",
+  "celebrateActivity.custom": "Algo personalizado",
+  "budgetRange.between": "{min}–{max}/pessoa",
+  "budgetRange.from": "{min}+/pessoa",
+  "budgetRange.upTo": "Até {max}/pessoa"
  },
  "ht": {
   "budget.any": "Nenpòt",
@@ -87,7 +137,17 @@
   "date.tomorrow": "Demen",
   "date.weekend": "Wikenn sa a",
   "date.flexible": "M fleksib",
-  "nearYourGathering": "Toupre rasanbleman w"
+  "nearYourGathering": "Toupre rasanbleman w",
+  "celebrateActivity.dinner": "Dine",
+  "celebrateActivity.party": "Fèt",
+  "celebrateActivity.surprise": "Sipriz",
+  "celebrateActivity.activity": "Aktivite",
+  "celebrateActivity.night_out": "Sòti leswa",
+  "celebrateActivity.weekend_trip": "Vwayaj wikenn",
+  "celebrateActivity.custom": "Yon bagay pèsonalize",
+  "budgetRange.between": "{min}–{max}/moun",
+  "budgetRange.from": "{min}+/moun",
+  "budgetRange.upTo": "Jiska {max}/moun"
  },
  "zh": {
   "budget.any": "不限",
@@ -102,7 +162,17 @@
   "date.tomorrow": "明天",
   "date.weekend": "这个周末",
   "date.flexible": "时间灵活",
-  "nearYourGathering": "在你的聚会附近"
+  "nearYourGathering": "在你的聚会附近",
+  "celebrateActivity.dinner": "晚餐",
+  "celebrateActivity.party": "派对",
+  "celebrateActivity.surprise": "惊喜",
+  "celebrateActivity.activity": "活动",
+  "celebrateActivity.night_out": "夜间外出",
+  "celebrateActivity.weekend_trip": "周末旅行",
+  "celebrateActivity.custom": "自定义",
+  "budgetRange.between": "{min}–{max}/人",
+  "budgetRange.from": "{min}+/人",
+  "budgetRange.upTo": "最多 {max}/人"
  },
  "vi": {
   "budget.any": "Không ưu tiên",
@@ -117,7 +187,17 @@
   "date.tomorrow": "Ngày mai",
   "date.weekend": "Cuối tuần này",
   "date.flexible": "Linh hoạt",
-  "nearYourGathering": "Gần buổi gặp mặt của bạn"
+  "nearYourGathering": "Gần buổi gặp mặt của bạn",
+  "celebrateActivity.dinner": "Ăn tối",
+  "celebrateActivity.party": "Tiệc",
+  "celebrateActivity.surprise": "Bất ngờ",
+  "celebrateActivity.activity": "Hoạt động",
+  "celebrateActivity.night_out": "Đi chơi tối",
+  "celebrateActivity.weekend_trip": "Chuyến đi cuối tuần",
+  "celebrateActivity.custom": "Tự chọn",
+  "budgetRange.between": "{min}–{max}/người",
+  "budgetRange.from": "{min}+/người",
+  "budgetRange.upTo": "Tối đa {max}/người"
  },
  "tl": {
   "budget.any": "Kahit ano",
@@ -132,7 +212,17 @@
   "date.tomorrow": "Bukas",
   "date.weekend": "Ngayong weekend",
   "date.flexible": "Flexible ako",
-  "nearYourGathering": "Malapit sa pagtitipon mo"
+  "nearYourGathering": "Malapit sa pagtitipon mo",
+  "celebrateActivity.dinner": "Hapunan",
+  "celebrateActivity.party": "Party",
+  "celebrateActivity.surprise": "Sorpresa",
+  "celebrateActivity.activity": "Aktibidad",
+  "celebrateActivity.night_out": "Night Out",
+  "celebrateActivity.weekend_trip": "Weekend Trip",
+  "celebrateActivity.custom": "Iba pa",
+  "budgetRange.between": "{min}–{max}/tao",
+  "budgetRange.from": "{min}+/tao",
+  "budgetRange.upTo": "Hanggang {max}/tao"
  },
  "ru": {
   "budget.any": "Без разницы",
@@ -147,7 +237,17 @@
   "date.tomorrow": "Завтра",
   "date.weekend": "На этих выходных",
   "date.flexible": "Могу в любое время",
-  "nearYourGathering": "Рядом с местом встречи"
+  "nearYourGathering": "Рядом с местом встречи",
+  "celebrateActivity.dinner": "Ужин",
+  "celebrateActivity.party": "Вечеринка",
+  "celebrateActivity.surprise": "Сюрприз",
+  "celebrateActivity.activity": "Занятие",
+  "celebrateActivity.night_out": "Вечер в городе",
+  "celebrateActivity.weekend_trip": "Поездка на выходные",
+  "celebrateActivity.custom": "Что-то своё",
+  "budgetRange.between": "{min}–{max}/чел.",
+  "budgetRange.from": "{min}+/чел.",
+  "budgetRange.upTo": "До {max}/чел."
  },
  "ko": {
   "budget.any": "상관없음",
@@ -162,6 +262,16 @@
   "date.tomorrow": "내일",
   "date.weekend": "이번 주말",
   "date.flexible": "언제든 괜찮아요",
-  "nearYourGathering": "모임 장소 근처"
+  "nearYourGathering": "모임 장소 근처",
+  "celebrateActivity.dinner": "저녁 식사",
+  "celebrateActivity.party": "파티",
+  "celebrateActivity.surprise": "서프라이즈",
+  "celebrateActivity.activity": "활동",
+  "celebrateActivity.night_out": "밤 외출",
+  "celebrateActivity.weekend_trip": "주말 여행",
+  "celebrateActivity.custom": "직접 정하기",
+  "budgetRange.between": "1인 {min}–{max}",
+  "budgetRange.from": "1인 {min}+",
+  "budgetRange.upTo": "1인 최대 {max}"
  }
 }

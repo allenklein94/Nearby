@@ -7,6 +7,8 @@ import { occasionLabel, occasionIcon, CALENDAR_SAVEABLE_OCCASION_KEYS } from '..
 import { experienceTemplateForOccasion } from '../constants/experienceTemplates';
 import { relevantAddonTypesForOccasion } from '../constants/planAddons';
 import { moneyLabel, moneyNumber } from '../utils/outcomeDisplay';
+import { tr, getCurrentLanguage } from '../i18n/translate';
+import { localDate, localClockOfDate } from '../i18n/format';
 import { compareRanked } from '../constants/signalPriority';
 
 // The wizard's own 7 real activity types (CelebrateSomethingScreen.js's
@@ -78,9 +80,9 @@ export function initialBudgetSelectionFromMax(max) {
 // ever passes one bound directly rather than through the chip list above).
 export function formatBudgetRange(min, max) {
   if (min == null && max == null) return null;
-  if (min != null && max != null) return `${moneyLabel(min)}–${moneyNumber(max)}/person`;
-  if (min != null) return `${moneyLabel(min)}+/person`;
-  return `Up to ${moneyLabel(max)}/person`;
+  if (min != null && max != null) return tr('ui.optionVocab.budgetRange.between', { min: moneyLabel(min), max: moneyNumber(max) });
+  if (min != null) return tr('ui.optionVocab.budgetRange.from', { min: moneyLabel(min) });
+  return tr('ui.optionVocab.budgetRange.upTo', { max: moneyLabel(max) });
 }
 
 // Item 95 (CLAUDE.md, "Ask 'How important is the occasion?'") -- a real,
@@ -397,7 +399,7 @@ export function formatBusinessOptionDetail({ price, startsAt }) {
   if (startsAt) {
     const d = new Date(startsAt);
     if (!Number.isNaN(d.getTime())) {
-      parts.push(d.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
+      parts.push(`${localDate(d, getCurrentLanguage())} · ${localClockOfDate(d, getCurrentLanguage())}`);
     }
   }
   if (price != null) parts.push(`${moneyLabel(price)}`);

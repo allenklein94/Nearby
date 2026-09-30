@@ -21,6 +21,20 @@ export default {
       flexible: "I'm flexible",
     },
     nearYourGathering: "Near your gathering",
+    celebrateActivity: {
+      dinner: "Dinner",
+      party: "Party",
+      surprise: "Surprise",
+      activity: "Activity",
+      night_out: "Night Out",
+      weekend_trip: "Weekend Trip",
+      custom: "Something Custom",
+    },
+    budgetRange: {
+      between: "{min}–{max}/person",
+      from: "{min}+/person",
+      upTo: "Up to {max}/person",
+    },
   },
   es: {
     budget: {
@@ -42,6 +56,20 @@ export default {
       flexible: "Me da igual",
     },
     nearYourGathering: "Cerca de tu reunión",
+    celebrateActivity: {
+      dinner: "Cena",
+      party: "Fiesta",
+      surprise: "Sorpresa",
+      activity: "Actividad",
+      night_out: "Salida nocturna",
+      weekend_trip: "Escapada de fin de semana",
+      custom: "Algo a medida",
+    },
+    budgetRange: {
+      between: "{min}–{max}/persona",
+      from: "{min}+/persona",
+      upTo: "Hasta {max}/persona",
+    },
   },
   de: {
     budget: {
@@ -63,6 +91,20 @@ export default {
       flexible: "Ich bin flexibel",
     },
     nearYourGathering: "In der Nähe deines Treffens",
+    celebrateActivity: {
+      dinner: "Abendessen",
+      party: "Party",
+      surprise: "Überraschung",
+      activity: "Aktivität",
+      night_out: "Abend in der Stadt",
+      weekend_trip: "Wochenendtrip",
+      custom: "Etwas Eigenes",
+    },
+    budgetRange: {
+      between: "{min}–{max}/Person",
+      from: "{min}+/Person",
+      upTo: "Bis {max}/Person",
+    },
   },
   fr: {
     budget: {
@@ -84,6 +126,20 @@ export default {
       flexible: "Je suis flexible",
     },
     nearYourGathering: "Près de votre rencontre",
+    celebrateActivity: {
+      dinner: "Dîner",
+      party: "Fête",
+      surprise: "Surprise",
+      activity: "Activité",
+      night_out: "Soirée",
+      weekend_trip: "Week-end",
+      custom: "Quelque chose de sur mesure",
+    },
+    budgetRange: {
+      between: "{min}–{max}/personne",
+      from: "{min}+/personne",
+      upTo: "Jusqu'à {max}/personne",
+    },
   },
   pt: {
     budget: {
@@ -105,6 +161,20 @@ export default {
       flexible: "Sou flexível",
     },
     nearYourGathering: "Perto do seu encontro",
+    celebrateActivity: {
+      dinner: "Jantar",
+      party: "Festa",
+      surprise: "Surpresa",
+      activity: "Atividade",
+      night_out: "Noite fora",
+      weekend_trip: "Viagem de fim de semana",
+      custom: "Algo personalizado",
+    },
+    budgetRange: {
+      between: "{min}–{max}/pessoa",
+      from: "{min}+/pessoa",
+      upTo: "Até {max}/pessoa",
+    },
   },
   ht: {
     budget: {
@@ -126,6 +196,20 @@ export default {
       flexible: "M fleksib",
     },
     nearYourGathering: "Toupre rasanbleman w",
+    celebrateActivity: {
+      dinner: "Dine",
+      party: "Fèt",
+      surprise: "Sipriz",
+      activity: "Aktivite",
+      night_out: "Sòti leswa",
+      weekend_trip: "Vwayaj wikenn",
+      custom: "Yon bagay pèsonalize",
+    },
+    budgetRange: {
+      between: "{min}–{max}/moun",
+      from: "{min}+/moun",
+      upTo: "Jiska {max}/moun",
+    },
   },
   zh: {
     budget: {
@@ -147,6 +231,20 @@ export default {
       flexible: "时间灵活",
     },
     nearYourGathering: "在你的聚会附近",
+    celebrateActivity: {
+      dinner: "晚餐",
+      party: "派对",
+      surprise: "惊喜",
+      activity: "活动",
+      night_out: "夜间外出",
+      weekend_trip: "周末旅行",
+      custom: "自定义",
+    },
+    budgetRange: {
+      between: "{min}–{max}/人",
+      from: "{min}+/人",
+      upTo: "最多 {max}/人",
+    },
   },
   vi: {
     budget: {
@@ -168,6 +266,20 @@ export default {
       flexible: "Linh hoạt",
     },
     nearYourGathering: "Gần buổi gặp mặt của bạn",
+    celebrateActivity: {
+      dinner: "Ăn tối",
+      party: "Tiệc",
+      surprise: "Bất ngờ",
+      activity: "Hoạt động",
+      night_out: "Đi chơi tối",
+      weekend_trip: "Chuyến đi cuối tuần",
+      custom: "Tự chọn",
+    },
+    budgetRange: {
+      between: "{min}–{max}/người",
+      from: "{min}+/người",
+      upTo: "Tối đa {max}/người",
+    },
   },
   tl: {
     budget: {
@@ -189,6 +301,20 @@ export default {
       flexible: "Flexible ako",
     },
     nearYourGathering: "Malapit sa pagtitipon mo",
+    celebrateActivity: {
+      dinner: "Hapunan",
+      party: "Party",
+      surprise: "Sorpresa",
+      activity: "Aktibidad",
+      night_out: "Night Out",
+      weekend_trip: "Weekend Trip",
+      custom: "Iba pa",
+    },
+    budgetRange: {
+      between: "{min}–{max}/tao",
+      from: "{min}+/tao",
+      upTo: "Hanggang {max}/tao",
+    },
   },
   ru: {
     budget: {
@@ -210,6 +336,20 @@ export default {
       flexible: "Могу в любое время",
     },
     nearYourGathering: "Рядом с местом встречи",
+    celebrateActivity: {
+      dinner: "Ужин",
+      party: "Вечеринка",
+      surprise: "Сюрприз",
+      activity: "Занятие",
+      night_out: "Вечер в городе",
+      weekend_trip: "Поездка на выходные",
+      custom: "Что-то своё",
+    },
+    budgetRange: {
+      between: "{min}–{max}/чел.",
+      from: "{min}+/чел.",
+      upTo: "До {max}/чел.",
+    },
   },
   ko: {
     budget: {
@@ -231,5 +371,19 @@ export default {
       flexible: "언제든 괜찮아요",
     },
     nearYourGathering: "모임 장소 근처",
+    celebrateActivity: {
+      dinner: "저녁 식사",
+      party: "파티",
+      surprise: "서프라이즈",
+      activity: "활동",
+      night_out: "밤 외출",
+      weekend_trip: "주말 여행",
+      custom: "직접 정하기",
+    },
+    budgetRange: {
+      between: "1인 {min}–{max}",
+      from: "1인 {min}+",
+      upTo: "1인 최대 {max}",
+    },
   },
 };

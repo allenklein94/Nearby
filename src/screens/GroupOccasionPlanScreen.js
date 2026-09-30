@@ -1,4 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { tr, getCurrentLanguage } from '../i18n/translate';
+import { localDate } from '../i18n/format';
+import { occasionName } from '../i18n/categoryNames';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput, Platform, Share } from 'react-native';
@@ -82,32 +86,32 @@ import { typography, spacing, radius } from '../theme';
 // -> offer -> (accept ->) reservation, without ever routing back through
 // CelebrateSomethingScreen's own wizard steps a second time.
 function activityMeta(activityType) {
-  return ACTIVITY_OPTIONS.find((o) => o.key === activityType) ?? { icon: '💡', label: activityType };
+  const o = ACTIVITY_OPTIONS.find((x) => x.key === activityType);
+  return o ? { ...o, label: tr(`ui.optionVocab.celebrateActivity.${o.key}`) } : { icon: '💡', label: activityType };
 }
 
 function formatWhen(whenPreset, scheduledDate) {
   const preset = WHEN_PRESETS.find((p) => p.key === whenPreset);
   const dateLabel = scheduledDate
-    ? new Date(`${scheduledDate}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+    ? localDate(new Date(`${scheduledDate}T00:00:00`), getCurrentLanguage())
     : null;
-  if (preset && preset.key !== 'custom') return dateLabel ? `${preset.label} · ${dateLabel}` : preset.label;
-  return dateLabel ?? 'Date not set';
+  const presetLabel = preset ? tr(`ui.gatheringOptions.when.${preset.key}`) : null;
+  if (preset && preset.key !== 'custom') return dateLabel ? `${presetLabel} · ${dateLabel}` : presetLabel;
+  return dateLabel ?? tr('ui.groupOccasionPlan.dateNotSet');
 }
 
 // Item 99 (CLAUDE.md, "Let Nearby recommend when to celebrate") -- the
 // same weekday/month/day shape formatWhen already uses for its own
 // scheduledDate, just for one standalone candidate date at a time.
 function formatDateOptionLabel(dateStr) {
-  return new Date(`${dateStr}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  return localDate(new Date(`${dateStr}T00:00:00`), getCurrentLanguage());
 }
 
-const PARTICIPANT_STATUS_COPY = {
-  invited: 'Invited',
-  joined: 'In',
-  declined: "Can't make it",
-};
+// Display labels by stored participant status (values stay canonical).
+const PARTICIPANT_STATUS_KEYS = ['invited', 'joined', 'declined'];
 
 export default function GroupOccasionPlanScreen({ navigation, route }) {
+  const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const planId = route.params?.planId;
@@ -258,18 +262,18 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   function handleApplyDate(dateOption) {
     const label = formatDateOptionLabel(dateOption.optionDate);
     Alert.alert(
-      `Plan for ${label}?`,
-      'Everyone in this plan will be notified of the date.',
+      t('ui.groupOccasionPlan.planFor', { label: label }),
+      t('ui.groupOccasionPlan.everyoneInThisPlanWill'),
       [
-        { text: 'Not yet', style: 'cancel' },
-        { text: `Plan for ${label}`, onPress: () => runAction(() => setOccasionGroupPlanDate(planId, dateOption.optionDate)) },
+        { text: t('ui.groupOccasionPlan.notYet'), style: 'cancel' },
+        { text: t('ui.groupOccasionPlan.planFor2', { label: label }), onPress: () => runAction(() => setOccasionGroupPlanDate(planId, dateOption.optionDate)) },
       ]
     );
   }
 
   function handlePropose() {
     if (!proposeType) {
-      return Alert.alert('Pick something', 'What are you proposing?');
+      return Alert.alert(t('ui.groupOccasionPlan.pickSomething'), t('ui.groupOccasionPlan.whatAreYouProposing'));
     }
     Haptics.selectionAsync();
     runAction(() => proposeOccasionOption(planId, proposeType, proposeLabel.trim() || null)).then((result) => {
@@ -282,15 +286,15 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
 
   function handleDecide(option) {
     const destinationCopy = ['dinner', 'night_out', 'activity'].includes(option.activityType)
-      ? "This locks in the group's choice -- Nearby will find real businesses for everyone to vote on next."
-      : "This locks in the group's choice and takes you to find real options nearby.";
+      ? t('ui.groupOccasionPlan.thisLocksInTheGroups')
+      : t('ui.groupOccasionPlan.thisLocksInTheGroups2');
     Alert.alert(
-      `Go with "${option.label || activityMeta(option.activityType).label}"?`,
+      t('ui.groupOccasionPlan.goWith', { label: option.label || activityMeta(option.activityType).label }),
       destinationCopy,
       [
-        { text: 'Never mind', style: 'cancel' },
+        { text: t('ui.groupOccasionPlan.neverMind'), style: 'cancel' },
         {
-          text: 'Decide',
+          text: t('ui.groupOccasionPlan.decide'),
           onPress: async () => {
             const decided = await runAction(() => decideOccasionGroupPlan(planId, option.id));
             if (!decided) return;
@@ -354,11 +358,11 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
 
   function handleDecideBusiness(option) {
     Alert.alert(
-      `Go with ${option.partnerName || 'this business'}?`,
-      "This locks in the group's choice. You'll be able to book it right after.",
+      t('ui.groupOccasionPlan.goWith2', { partnerName: option.partnerName || t('ui.groupOccasionPlan.thisBusiness') }),
+      t('ui.groupOccasionPlan.thisLocksInTheGroups3'),
       [
-        { text: 'Never mind', style: 'cancel' },
-        { text: 'Decide', onPress: () => runAction(() => decideOccasionGroupPlanBusiness(planId, option.id)) },
+        { text: t('ui.groupOccasionPlan.neverMind'), style: 'cancel' },
+        { text: t('ui.groupOccasionPlan.decide'), onPress: () => runAction(() => decideOccasionGroupPlanBusiness(planId, option.id)) },
       ]
     );
   }
@@ -419,11 +423,11 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
 
   function handleCancel() {
     const booked = detail.status === 'fulfilled';
-    Alert.alert('Cancel this plan?', booked
-      ? 'Everyone will be told. Anything booked for it, like a reservation, is cancelled too.'
-      : 'Everyone will be told this plan is cancelled.', [
-      { text: 'Never mind', style: 'cancel' },
-      { text: 'Cancel Plan', style: 'destructive', onPress: () => runAction(async () => {
+    Alert.alert(t('ui.groupOccasionPlan.cancelThisPlan'), booked
+      ? t('ui.groupOccasionPlan.everyoneWillBeToldAnything')
+      : t('ui.groupOccasionPlan.everyoneWillBeToldThis'), [
+      { text: t('ui.groupOccasionPlan.neverMind'), style: 'cancel' },
+      { text: t('ui.groupOccasionPlan.cancelPlan'), style: 'destructive', onPress: () => runAction(async () => {
         await cancelOccasionGroupPlan(planId);
         setReasonAsk({ entityType: 'occasion_group_plan', entityId: planId, role: 'host' });
       }) },
@@ -437,11 +441,11 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   // flip.
   function handleReveal() {
     Alert.alert(
-      'Reveal the surprise?',
-      `${detail.whoForName || 'They'} will be invited to this plan and notified — this can't be undone.`,
+      t('ui.groupOccasionPlan.revealTheSurprise'),
+      t('ui.groupOccasionPlan.willBeInvitedToThis', { whoForName: detail.whoForName || t('ui.groupOccasionPlan.they') }),
       [
-        { text: 'Not yet', style: 'cancel' },
-        { text: 'Reveal', onPress: performReveal },
+        { text: t('ui.groupOccasionPlan.notYet'), style: 'cancel' },
+        { text: t('ui.groupOccasionPlan.reveal'), onPress: performReveal },
       ]
     );
   }
@@ -545,7 +549,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
       setGuestName('');
       await load();
       await Share.share({
-        message: `You're invited to ${detail?.title ?? 'a plan'} on Nearby — ${occasionGroupPlanGuestInviteShareUrl(result.guestToken)}`,
+        message: t('ui.groupOccasionPlan.youreInvitedToOnNearby', { title: detail?.title ?? 'a plan', occasionGroupPlanGuestInviteShareUrl: occasionGroupPlanGuestInviteShareUrl(result.guestToken) }),
       });
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleInviteGuest() });
@@ -556,7 +560,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   function handleShareGuestLink(participant) {
     if (!participant.guestToken) return;
     Share.share({
-      message: `You're invited to ${detail?.title ?? 'a plan'} on Nearby — ${occasionGroupPlanGuestInviteShareUrl(participant.guestToken)}`,
+      message: t('ui.groupOccasionPlan.youreInvitedToOnNearby', { title: detail?.title ?? 'a plan', occasionGroupPlanGuestInviteShareUrl: occasionGroupPlanGuestInviteShareUrl(participant.guestToken) }),
     });
   }
 
@@ -571,7 +575,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load this plan." onRetry={load} />
+        <LoadErrorState message={t('ui.groupOccasionPlan.couldntLoadThisPlan')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -605,8 +609,8 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         <Text style={styles.header} accessibilityRole="header">{occasionMeta?.icon ?? '🎉'} {detail.surpriseMode ? '🔒 ' : ''}{detail.title}</Text>
         <Text style={[styles.subheader, budgetLabel && { marginBottom: 0 }]}>
-          {occasionLabel(detail.occasionType)} · {formatWhen(detail.whenPreset, detail.scheduledDate)}
-          {detail.isHost ? ' · You\'re hosting' : ''}
+          {occasionName(detail.occasionType, language, occasionLabel(detail.occasionType))} · {formatWhen(detail.whenPreset, detail.scheduledDate)}
+          {detail.isHost ? t('ui.groupOccasionPlan.youreHosting') : ''}
         </Text>
         {/* Item 109 (CLAUDE.md, "make the visibility model explicit"): this
             plan is invite-only by construction whether or not surprise mode
@@ -615,7 +619,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
             joined-participant membership. Say so plainly instead of
             leaving it an invisible rule; the richer surprise-specific
             banner below still covers the surprise case on top of this. */}
-        <Text style={[styles.subheader, { marginTop: 2 }]}>🔒 Invite-only — visible to the host and invited guests only</Text>
+        <Text style={[styles.subheader, { marginTop: 2 }]}>{t('ui.groupOccasionPlan.inviteOnlyVisibleToThe')}</Text>
         {budgetLabel && <Text style={[styles.subheader, { marginTop: 2 }]}>💰 {budgetLabel}</Text>}
 
         {/* Item 65 (CLAUDE.md): the one collaborator-facing surface this
@@ -631,26 +635,26 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
               // it first) -- this is celebrating a fact that's already
               // true server-side, never a speculative animation.
               <SurpriseRevealAnimation haptic
-                text={`🎉 ${detail.whoForName || 'They'} can see it now!`}
+                text={t('ui.groupOccasionPlan.canSeeItNow', { whoForName: detail.whoForName || 'They' })}
                 onDone={handleRevealAnimationDone}
               />
             ) : (
               <>
                 <Text style={styles.surpriseBannerText}>
-                  🔒 Surprise mode — {detail.whoForName || 'the person this is for'} isn't part of this plan and won't be notified. Keep it quiet!
+                  {t('ui.groupOccasionPlan.surpriseBanner', { name: detail.whoForName || t('ui.groupOccasionPlan.thePersonThisIsFor') })}
                 </Text>
                 {detail.isHost && detail.status !== 'cancelled' && (
                   <View style={styles.surpriseRevealRow}>
-                    <Text style={styles.surpriseRevealLabel}>🎁 Ready to reveal?</Text>
+                    <Text style={styles.surpriseRevealLabel}>{t('ui.groupOccasionPlan.readyToReveal')}</Text>
                     <TouchableOpacity
                       onPress={handleReveal}
                       disabled={acting}
                       activeOpacity={0.85}
                       accessibilityRole="button"
-                      accessibilityLabel="Reveal the surprise"
+                      accessibilityLabel={t('ui.groupOccasionPlan.revealTheSurpriseA11y')}
                       style={styles.surpriseRevealButton}
                     >
-                      <Text style={styles.surpriseRevealButtonText}>Reveal Plan</Text>
+                      <Text style={styles.surpriseRevealButtonText}>{t('ui.groupOccasionPlan.revealPlan')}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -670,10 +674,10 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
             mark exists, so an unanswered poll never fabricates a pick. */}
         {detail.status !== 'cancelled' && detail.status !== 'fulfilled' && (
           <View style={{ marginBottom: spacing.md }}>
-            <Text style={styles.sectionLabel}>📅 When Works Best?</Text>
+            <Text style={styles.sectionLabel}>{t('ui.groupOccasionPlan.whenWorksBest')}</Text>
             {detail.dateOptions.length === 0 ? (
               <Text style={styles.helperText}>
-                {detail.isHost ? 'Propose a few candidate dates below and see which works for everyone.' : "The host hasn't proposed any dates to check yet."}
+                {detail.isHost ? t('ui.groupOccasionPlan.proposeAFewCandidateDates') : t('ui.groupOccasionPlan.theHostHasntProposedAny')}
               </Text>
             ) : (
               detail.dateOptions.map((opt) => (
@@ -681,8 +685,8 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.optionTitle}>{opt.isTopRecommendation ? '⭐ ' : ''}{formatDateOptionLabel(opt.optionDate)}</Text>
                     <Text style={styles.optionSubtitle}>
-                      {opt.availableCount} {opt.availableCount === 1 ? 'person is' : 'people are'} free
-                      {opt.isTopRecommendation ? ' · Most availability' : ''}
+                      {t('ui.groupOccasionPlan.peopleFree', { count: opt.availableCount })}
+                      {opt.isTopRecommendation ? t('ui.groupOccasionPlan.mostAvailability') : ''}
                     </Text>
                   </View>
                   {detail.myStatus === 'joined' && (
@@ -692,14 +696,14 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                       disabled={acting}
                       activeOpacity={0.85}
                       accessibilityRole="button"
-                      accessibilityLabel={opt.myAvailable ? "I'm no longer free this day" : "I'm free this day"}
+                      accessibilityLabel={opt.myAvailable ? t('ui.groupOccasionPlan.imNoLongerFreeThisA11y') : t('ui.groupOccasionPlan.imFreeThisDayA11y')}
                     >
-                      <Text style={[styles.voteButtonText, opt.myAvailable && styles.voteButtonTextActive]}>{opt.myAvailable ? "✓ I'm free" : "I'm free"}</Text>
+                      <Text style={[styles.voteButtonText, opt.myAvailable && styles.voteButtonTextActive]}>{opt.myAvailable ? t('ui.groupOccasionPlan.imFree') : t('ui.groupOccasionPlan.imFree2')}</Text>
                     </TouchableOpacity>
                   )}
                   {detail.isHost && (
-                    <TouchableOpacity style={styles.decideLink} onPress={() => handleApplyDate(opt)} disabled={acting} accessibilityRole="button" accessibilityLabel={`Plan for ${formatDateOptionLabel(opt.optionDate)}`}>
-                      <Text style={styles.decideLinkText}>Use →</Text>
+                    <TouchableOpacity style={styles.decideLink} onPress={() => handleApplyDate(opt)} disabled={acting} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.planForA11y', { optionDate: formatDateOptionLabel(opt.optionDate) })}>
+                      <Text style={styles.decideLinkText}>{t('ui.groupOccasionPlan.use')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -716,18 +720,16 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
               const label = formatDateOptionLabel(top.optionDate);
               return (
                 <View style={styles.recommendationBanner}>
-                  <Text style={styles.recommendationText}>
-                    {label} has the most availability among your guests ({top.availableCount}).
-                  </Text>
+                  <Text style={styles.recommendationText}>{t('ui.groupOccasionPlan.hasTheMostAvailabilityAmong', { label: label, availableCount: top.availableCount })}</Text>
                   <TouchableOpacity
                     style={[styles.decideButton, { marginTop: spacing.sm, alignSelf: 'flex-start' }]}
                     onPress={() => handleApplyDate(top)}
                     disabled={acting}
                     activeOpacity={0.85}
                     accessibilityRole="button"
-                    accessibilityLabel={`Plan for ${label}`}
+                    accessibilityLabel={t('ui.groupOccasionPlan.planForA11y2', { label: label })}
                   >
-                    <Text style={styles.decideButtonText}>Plan for {label}?</Text>
+                    <Text style={styles.decideButtonText}>{t('ui.groupOccasionPlan.planFor', { label: label })}</Text>
                   </TouchableOpacity>
                 </View>
               );
@@ -735,21 +737,21 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
 
             {detail.isHost && (
               <>
-                <TouchableOpacity onPress={() => setProposeDatesOpen((v) => !v)} accessibilityRole="button" accessibilityLabel="Propose candidate dates">
-                  <Text style={styles.inviteMoreLink}>{proposeDatesOpen ? 'Cancel' : '+ Propose Dates'}</Text>
+                <TouchableOpacity onPress={() => setProposeDatesOpen((v) => !v)} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.proposeCandidateDatesA11y')}>
+                  <Text style={styles.inviteMoreLink}>{proposeDatesOpen ? t('ui.groupOccasionPlan.cancel') : t('ui.groupOccasionPlan.proposeDates')}</Text>
                 </TouchableOpacity>
                 {proposeDatesOpen && (
                   <View style={styles.proposeCard}>
                     {pendingDateOptions.length > 0 && (
                       <View style={styles.chipRow}>
                         {pendingDateOptions.map((iso) => (
-                          <TouchableOpacity key={iso} style={[styles.chip, styles.chipSelected]} onPress={() => removePendingDateOption(iso)} accessibilityRole="button" accessibilityLabel={`Remove ${formatDateOptionLabel(iso)}`}>
+                          <TouchableOpacity key={iso} style={[styles.chip, styles.chipSelected]} onPress={() => removePendingDateOption(iso)} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.removeA11y', { iso: formatDateOptionLabel(iso) })}>
                             <Text style={[styles.chipText, styles.chipTextSelected]}>{formatDateOptionLabel(iso)} ✕</Text>
                           </TouchableOpacity>
                         ))}
                       </View>
                     )}
-                    <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)} accessibilityRole="button" accessibilityLabel="Pick a candidate date">
+                    <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.pickACandidateDateA11y')}>
                       <Text style={{ color: colors.textPrimary }}>{formatDateOptionLabel(pickerDate.toISOString().slice(0, 10))}</Text>
                     </TouchableOpacity>
                     {showDatePicker && (
@@ -763,8 +765,8 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                         }}
                       />
                     )}
-                    <TouchableOpacity style={[styles.addOptionButton, { marginBottom: spacing.sm }]} onPress={addPendingDateOption} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Add this date to the list">
-                      <Text style={styles.addOptionButtonText}>+ Add This Date</Text>
+                    <TouchableOpacity style={[styles.addOptionButton, { marginBottom: spacing.sm }]} onPress={addPendingDateOption} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.addThisDateToTheA11y')}>
+                      <Text style={styles.addOptionButtonText}>{t('ui.groupOccasionPlan.addThisDate')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.addOptionButton, pendingDateOptions.length === 0 && { opacity: 0.5 }]}
@@ -772,9 +774,9 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                       disabled={pendingDateOptions.length === 0 || proposingDates}
                       activeOpacity={0.85}
                       accessibilityRole="button"
-                      accessibilityLabel={`Propose ${pendingDateOptions.length} dates`}
+                      accessibilityLabel={t('ui.groupOccasionPlan.proposeDatesA11y', { count: pendingDateOptions.length })}
                     >
-                      <Text style={styles.addOptionButtonText}>{proposingDates ? 'Proposing…' : `Propose ${pendingDateOptions.length || ''} Date${pendingDateOptions.length === 1 ? '' : 's'}`}</Text>
+                      <Text style={styles.addOptionButtonText}>{proposingDates ? t('ui.groupOccasionPlan.proposing') : (pendingDateOptions.length ? t('ui.groupOccasionPlan.proposeDatesCount', { count: pendingDateOptions.length }) : t('ui.groupOccasionPlan.proposeDatesNone'))}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -785,29 +787,29 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
 
         {detail.status === 'cancelled' && (
           <FadeInState style={styles.emptyState}>
-            <Text style={styles.emptyText}>This plan was cancelled.</Text>
+            <Text style={styles.emptyText}>{t('ui.groupOccasionPlan.thisPlanWasCancelled')}</Text>
           </FadeInState>
         )}
 
         {detail.myStatus === 'invited' && detail.status === 'voting' && isOccasionInviteExpired(detail.scheduledDate) && (
           <View style={styles.inviteRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.declineButtonText}>Invitation expired</Text>
+              <Text style={styles.declineButtonText}>{t('ui.groupOccasionPlan.invitationExpired')}</Text>
               <Text style={styles.subheader}>{expiredDateLabel(detail.scheduledDate)}</Text>
             </View>
-            <TouchableOpacity style={styles.declineButton} onPress={() => handleRespond(false)} disabled={acting} accessibilityRole="button" accessibilityLabel="Dismiss expired invitation">
-              <Text style={styles.declineButtonText}>Dismiss</Text>
+            <TouchableOpacity style={styles.declineButton} onPress={() => handleRespond(false)} disabled={acting} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.dismissExpiredInvitationA11y')}>
+              <Text style={styles.declineButtonText}>{t('ui.groupOccasionPlan.dismiss')}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {detail.myStatus === 'invited' && detail.status === 'voting' && !isOccasionInviteExpired(detail.scheduledDate) && (
           <View style={styles.inviteRow}>
-            <TouchableOpacity style={styles.declineButton} onPress={() => handleRespond(false)} disabled={acting} accessibilityRole="button" accessibilityLabel="Decline invite">
-              <Text style={styles.declineButtonText}>Can't Make It</Text>
+            <TouchableOpacity style={styles.declineButton} onPress={() => handleRespond(false)} disabled={acting} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.declineInviteA11y')}>
+              <Text style={styles.declineButtonText}>{t('ui.groupOccasionPlan.cantMakeIt2')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.acceptButton} onPress={() => handleRespond(true)} disabled={acting} accessibilityRole="button" accessibilityLabel="Join and vote">
-              <Text style={styles.acceptButtonText}>Join & Vote</Text>
+            <TouchableOpacity style={styles.acceptButton} onPress={() => handleRespond(true)} disabled={acting} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.joinAndVoteA11y')}>
+              <Text style={styles.acceptButtonText}>{t('ui.groupOccasionPlan.joinVote')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -820,27 +822,27 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
             one real request tied to this specific plan, never several. */}
         {(detail.status === 'decided' || detail.status === 'fulfilled') && winningOption?.optionKind === 'business' && (
           <View style={styles.decidedCard}>
-            <Text style={styles.decidedLabel}>{detail.status === 'fulfilled' ? '✅ Booked!' : "🎉 It's decided!"}</Text>
+            <Text style={styles.decidedLabel}>{detail.status === 'fulfilled' ? t('ui.groupOccasionPlan.booked') : t('ui.groupOccasionPlan.itsDecided')}</Text>
             <Text style={styles.decidedChoice}>🍽️ {winningOption.partnerName}</Text>
             {!!winningOption.postingTitle && <Text style={styles.subheader}>{winningOption.postingTitle}</Text>}
             {!!formatBusinessOptionDetail(winningOption) && (
               <Text style={[styles.subheader, { marginBottom: spacing.md }]}>{formatBusinessOptionDetail(winningOption)}</Text>
             )}
             {detail.status === 'fulfilled' ? (
-              <Text style={styles.helperText}>Track it from your Plans tab.</Text>
+              <Text style={styles.helperText}>{t('ui.groupOccasionPlan.trackItFromYourPlans')}</Text>
             ) : detail.isHost ? (
-              <TouchableOpacity style={styles.decideButton} onPress={() => handleBookWinningBusiness(winningOption)} disabled={booking} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Book this business">
-                <Text style={styles.decideButtonText}>{booking ? 'Booking…' : 'Book It →'}</Text>
+              <TouchableOpacity style={styles.decideButton} onPress={() => handleBookWinningBusiness(winningOption)} disabled={booking} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.bookThisBusinessA11y')}>
+                <Text style={styles.decideButtonText}>{booking ? t('ui.groupOccasionPlan.booking') : t('ui.groupOccasionPlan.bookIt')}</Text>
               </TouchableOpacity>
             ) : (
-              <Text style={styles.helperText}>Waiting for the host to book it.</Text>
+              <Text style={styles.helperText}>{t('ui.groupOccasionPlan.waitingForTheHostTo')}</Text>
             )}
           </View>
         )}
 
         {(detail.status === 'decided' || detail.status === 'fulfilled') && winningOption && winningOption.optionKind !== 'business' && (
           <View style={styles.decidedCard}>
-            <Text style={styles.decidedLabel}>{detail.status === 'fulfilled' ? '✅ Turned into a real plan!' : "🎉 It's decided!"}</Text>
+            <Text style={styles.decidedLabel}>{detail.status === 'fulfilled' ? t('ui.groupOccasionPlan.turnedIntoARealPlan') : t('ui.groupOccasionPlan.itsDecided')}</Text>
             <Text style={styles.decidedChoice}>
               {activityMeta(winningOption.activityType).icon} {winningOption.label || activityMeta(winningOption.activityType).label}
             </Text>
@@ -848,8 +850,8 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                 request (linkOccasionGroupPlanToPlan) -- the button stays available so anyone
                 else who still wants their own separate options can keep going, per this
                 object's own multi-actor shape (any joined participant can submit their own). */}
-            <TouchableOpacity style={styles.decideButton} onPress={goFindBusinesses} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Find businesses for this">
-              <Text style={styles.decideButtonText}>{detail.status === 'fulfilled' ? 'Find More Options →' : 'Find Options Nearby →'}</Text>
+            <TouchableOpacity style={styles.decideButton} onPress={goFindBusinesses} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.findBusinessesForThisA11y')}>
+              <Text style={styles.decideButtonText}>{detail.status === 'fulfilled' ? t('ui.groupOccasionPlan.findMoreOptions') : t('ui.groupOccasionPlan.findOptionsNearby')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -861,11 +863,11 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
             next step (Try Again / host-only Skip), never a dead end. */}
         {detail.status === 'voting_business' && (
           <>
-            <Text style={styles.sectionLabel}>🍽️ Vote on Where</Text>
+            <Text style={styles.sectionLabel}>{t('ui.groupOccasionPlan.voteOnWhere')}</Text>
             {businessOptionsLoading && (
               <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
                 <NLoader fullScreen={false} size="compact" />
-                <Text style={[styles.helperText, { marginTop: spacing.sm }]}>✨ Nearby is finding real options for the group to vote on…</Text>
+                <Text style={[styles.helperText, { marginTop: spacing.sm }]}>{t('ui.groupOccasionPlan.nearbyIsFindingRealOptions')}</Text>
               </View>
             )}
             {!businessOptionsLoading && detail.options.filter((o) => o.optionKind === 'business').length === 0 && (
@@ -873,11 +875,11 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                 <EmptyCopy id={businessFetchError ? 'group_plan_options_error' : 'group_plan_options'} />
                 {detail.isHost && (
                   <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
-                    <TouchableOpacity style={styles.declineButton} onPress={fetchAndProposeBusinessOptions} accessibilityRole="button" accessibilityLabel="Try finding options again">
-                      <Text style={styles.declineButtonText}>Try Again</Text>
+                    <TouchableOpacity style={styles.declineButton} onPress={fetchAndProposeBusinessOptions} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.tryFindingOptionsAgainA11y')}>
+                      <Text style={styles.declineButtonText}>{t('ui.groupOccasionPlan.tryAgain')}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.acceptButton} onPress={handleSkipBusinessVote} disabled={acting} accessibilityRole="button" accessibilityLabel="Skip and pick manually">
-                      <Text style={styles.acceptButtonText}>Skip — I'll Pick →</Text>
+                    <TouchableOpacity style={styles.acceptButton} onPress={handleSkipBusinessVote} disabled={acting} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.skipAndPickManuallyA11y')}>
+                      <Text style={styles.acceptButtonText}>{t('ui.groupOccasionPlan.skipIllPick')}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -890,10 +892,10 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
               <StaggeredReveal key={option.id} index={optionIndex} style={styles.optionCard}>
               <View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.optionTitle}>{option.partnerName}{option.stillActive === false ? ' (no longer available)' : ''}</Text>
+                  <Text style={styles.optionTitle}>{option.partnerName}{option.stillActive === false ? t('ui.groupOccasionPlan.noLongerAvailable') : ''}</Text>
                   {!!option.postingTitle && <Text style={styles.optionSubtitle}>{option.postingTitle}</Text>}
                   <Text style={styles.optionSubtitle}>
-                    {[formatBusinessOptionDetail(option), `${option.voteCount} vote${option.voteCount === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
+                    {[formatBusinessOptionDetail(option), t('ui.groupOccasionPlan.votes', { count: option.voteCount })].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
                 {detail.myStatus === 'joined' && (
@@ -903,9 +905,9 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                     disabled={acting}
                     activeOpacity={0.85}
                     accessibilityRole="button"
-                    accessibilityLabel={option.myVote ? 'Remove vote' : 'Vote for this'}
+                    accessibilityLabel={option.myVote ? t('ui.groupOccasionPlan.removeVoteA11y') : t('ui.groupOccasionPlan.voteForThisA11y')}
                   >
-                    <Text style={[styles.voteButtonText, option.myVote && styles.voteButtonTextActive]}>{option.myVote ? '✓ Voted' : 'Vote'}</Text>
+                    <Text style={[styles.voteButtonText, option.myVote && styles.voteButtonTextActive]}>{option.myVote ? t('ui.groupOccasionPlan.voted') : t('ui.groupOccasionPlan.vote')}</Text>
                   </TouchableOpacity>
                 )}
                 {detail.isHost && (
@@ -914,17 +916,17 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                     onPress={() => handleDecideBusiness(option)}
                     disabled={acting || option.stillActive === false}
                     accessibilityRole="button"
-                    accessibilityLabel={`Decide on ${option.partnerName}`}
+                    accessibilityLabel={t('ui.groupOccasionPlan.decideOnA11y', { partnerName: option.partnerName })}
                   >
-                    <Text style={styles.decideLinkText}>Pick →</Text>
+                    <Text style={styles.decideLinkText}>{t('ui.groupOccasionPlan.pick')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
               </StaggeredReveal>
             ))}
             {!businessOptionsLoading && detail.isHost && detail.options.filter((o) => o.optionKind === 'business').length > 0 && (
-              <TouchableOpacity onPress={fetchAndProposeBusinessOptions} disabled={acting} accessibilityRole="button" accessibilityLabel="Find more options">
-                <Text style={[styles.inviteMoreLink, { marginTop: spacing.xs }]}>🔄 Find More Options</Text>
+              <TouchableOpacity onPress={fetchAndProposeBusinessOptions} disabled={acting} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.findMoreOptionsA11y')}>
+                <Text style={[styles.inviteMoreLink, { marginTop: spacing.xs }]}>{t('ui.groupOccasionPlan.findMoreOptions2')}</Text>
               </TouchableOpacity>
             )}
           </>
@@ -937,7 +939,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                 matching the user's own mock -- everyone else is a Guest,
                 a real honest count broken down by status rather than a
                 second wall of names. */}
-            <Text style={styles.sectionLabel}>Organizers</Text>
+            <Text style={styles.sectionLabel}>{t('ui.groupOccasionPlan.organizers')}</Text>
             <View style={styles.participantsWrap}>
               {organizers.map((p) => {
                 const isSelf = p.userId === myId;
@@ -949,15 +951,15 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                     disabled={!canDemote}
                     activeOpacity={canDemote ? 0.7 : 1}
                     onPress={() => canDemote && Alert.alert(
-                      `Remove ${p.displayName} as organizer?`,
-                      "They'll stay a regular guest -- still able to propose and vote.",
-                      [{ text: 'Never mind', style: 'cancel' }, { text: 'Remove', style: 'destructive', onPress: () => handleToggleOrganizer(p) }]
+                      t('ui.groupOccasionPlan.removeAsOrganizer', { name: p.displayName }),
+                      t('ui.groupOccasionPlan.theyllStayARegularGuest'),
+                      [{ text: t('ui.groupOccasionPlan.neverMind'), style: 'cancel' }, { text: t('ui.groupOccasionPlan.remove'), style: 'destructive', onPress: () => handleToggleOrganizer(p) }]
                     )}
                     accessibilityRole={canDemote ? 'button' : undefined}
-                    accessibilityLabel={canDemote ? `Remove ${p.displayName} as organizer` : undefined}
+                    accessibilityLabel={canDemote ? t('ui.groupOccasionPlan.removeAsOrganizerA11y', { name: p.displayName }) : undefined}
                   >
                     <Text style={styles.participantText}>
-                      {p.userId === detail.hostId ? '👑 ' : '🎗️ '}{p.displayName}{isSelf ? ' (You)' : ''}
+                      {p.userId === detail.hostId ? '👑 ' : '🎗️ '}{p.displayName}{isSelf ? t('ui.groupOccasionPlan.you') : ''}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -965,11 +967,11 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
             </View>
 
             <Text style={styles.sectionLabel}>
-              Guests · {[
-                guestCounts.invited ? `${guestCounts.invited} invited` : null,
-                guestCounts.joined ? `${guestCounts.joined} joined` : null,
-                guestCounts.declined ? `${guestCounts.declined} can't make it` : null,
-              ].filter(Boolean).join(' · ') || 'none yet'}
+              {t('ui.groupOccasionPlan.guests')}{' '}{[
+                guestCounts.invited ? t('ui.groupOccasionPlan.guestsInvited', { count: guestCounts.invited }) : null,
+                guestCounts.joined ? t('ui.groupOccasionPlan.guestsJoined', { count: guestCounts.joined }) : null,
+                guestCounts.declined ? t('ui.groupOccasionPlan.guestsDeclined', { count: guestCounts.declined }) : null,
+              ].filter(Boolean).join(' · ') || t('ui.groupOccasionPlan.noneYet')}
             </Text>
             <View style={styles.participantsWrap}>
               {guests.map((p) => {
@@ -989,36 +991,36 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                     onPress={() => {
                       if (canPromote) {
                         Alert.alert(
-                          `Make ${p.displayName} an organizer?`,
-                          'They\'ll be able to invite more guests to help plan.',
-                          [{ text: 'Never mind', style: 'cancel' }, { text: 'Make Organizer', onPress: () => handleToggleOrganizer(p) }]
+                          t('ui.groupOccasionPlan.makeAnOrganizer', { name: p.displayName }),
+                          t('ui.groupOccasionPlan.theyllBeAbleToInvite'),
+                          [{ text: t('ui.groupOccasionPlan.neverMind'), style: 'cancel' }, { text: t('ui.groupOccasionPlan.makeOrganizer'), onPress: () => handleToggleOrganizer(p) }]
                         );
                       } else if (canShareLink) {
                         handleShareGuestLink(p);
                       }
                     }}
                     accessibilityRole={(canPromote || canShareLink) ? 'button' : undefined}
-                    accessibilityLabel={canPromote ? `Make ${p.displayName} an organizer` : (canShareLink ? `Share invite link with ${p.displayName}` : undefined)}
+                    accessibilityLabel={canPromote ? t('ui.groupOccasionPlan.makeAnOrganizerA11y', { name: p.displayName }) : (canShareLink ? t('ui.groupOccasionPlan.shareInviteLinkWithA11y', { name: p.displayName }) : undefined)}
                   >
                     <Text style={styles.participantText}>
-                      {p.isGuest ? '🔗 ' : ''}{p.displayName}{isSelf ? ' (You)' : ''} · {PARTICIPANT_STATUS_COPY[p.status] ?? p.status}
+                      {p.isGuest ? '🔗 ' : ''}{p.displayName}{isSelf ? t('ui.groupOccasionPlan.you') : ''} · {PARTICIPANT_STATUS_KEYS.includes(p.status) ? t(`ui.groupOccasionPlan.participantStatus.${p.status}`) : p.status}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
-              {guests.length === 0 && <Text style={styles.helperText}>No other guests yet.</Text>}
+              {guests.length === 0 && <Text style={styles.helperText}>{t('ui.groupOccasionPlan.noOtherGuestsYet')}</Text>}
             </View>
 
             {canInviteMore && (
               <View style={{ marginBottom: spacing.md }}>
-                <TouchableOpacity onPress={openInviteMore} accessibilityRole="button" accessibilityLabel="Invite more guests">
-                  <Text style={styles.inviteMoreLink}>{inviteMoreOpen ? '− Invite More Guests' : '+ Invite More Guests'}</Text>
+                <TouchableOpacity onPress={openInviteMore} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.inviteMoreGuestsA11y')}>
+                  <Text style={styles.inviteMoreLink}>{inviteMoreOpen ? t('ui.groupOccasionPlan.inviteMoreGuests') : t('ui.groupOccasionPlan.inviteMoreGuests2')}</Text>
                 </TouchableOpacity>
                 {inviteMoreOpen && (
                   <View style={styles.inviteMorePanel}>
-                    {loadingFriends && <NLoader fullScreen={false} size="inline" caption="Loading friends…" />}
+                    {loadingFriends && <NLoader fullScreen={false} size="inline" caption={t('ui.groupOccasionPlan.loadingFriends')} />}
                     {!loadingFriends && friendsLoaded && inviteMoreCandidates.length === 0 && (
-                      <Text style={styles.helperText}>Everyone you're connected with is already part of this plan.</Text>
+                      <Text style={styles.helperText}>{t('ui.groupOccasionPlan.everyoneYoureConnectedWithIs')}</Text>
                     )}
                     {!loadingFriends && inviteMoreCandidates.length > 0 && (
                       <>
@@ -1048,9 +1050,9 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                           disabled={selectedNewInviteeIds.size === 0 || invitingMore}
                           activeOpacity={0.85}
                           accessibilityRole="button"
-                          accessibilityLabel={`Invite ${selectedNewInviteeIds.size} more`}
+                          accessibilityLabel={t('ui.groupOccasionPlan.inviteMoreA11y', { size: selectedNewInviteeIds.size })}
                         >
-                          <Text style={styles.addOptionButtonText}>{invitingMore ? 'Inviting…' : `Invite (${selectedNewInviteeIds.size})`}</Text>
+                          <Text style={styles.addOptionButtonText}>{invitingMore ? t('ui.groupOccasionPlan.inviting') : t('ui.groupOccasionPlan.invite', { size: selectedNewInviteeIds.size })}</Text>
                         </TouchableOpacity>
                       </>
                     )}
@@ -1059,15 +1061,15 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                         who isn't (yet) a Nearby user gets a real link they
                         can view and RSVP from with zero install. */}
                     <Text style={[styles.helperText, { marginTop: spacing.sm, marginBottom: spacing.xs }]}>
-                      Or invite someone who isn't on Nearby yet:
+                      {t('ui.groupOccasionPlan.orInviteSomeoneWhoIsnt')}
                     </Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="Their name (e.g. John)"
+                      placeholder={t('ui.groupOccasionPlan.theirNameEGJohn')}
                       placeholderTextColor={colors.textTertiary}
                       value={guestName}
                       onChangeText={setGuestName}
-                      accessibilityLabel="Guest's name"
+                      accessibilityLabel={t('ui.groupOccasionPlan.guestsNameA11y')}
                     />
                     <TouchableOpacity
                       style={[styles.addOptionButton, !guestName.trim() && { opacity: 0.5 }]}
@@ -1075,18 +1077,18 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                       disabled={!guestName.trim() || invitingGuest}
                       activeOpacity={0.85}
                       accessibilityRole="button"
-                      accessibilityLabel="Send a shareable invite link"
+                      accessibilityLabel={t('ui.groupOccasionPlan.sendAShareableInviteLinkA11y')}
                     >
-                      <Text style={styles.addOptionButtonText}>{invitingGuest ? 'Creating link…' : '🔗 Get Invite Link'}</Text>
+                      <Text style={styles.addOptionButtonText}>{invitingGuest ? t('ui.groupOccasionPlan.creatingLink') : t('ui.groupOccasionPlan.getInviteLink')}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
               </View>
             )}
 
-            <Text style={styles.sectionLabel}>What Should We Do?</Text>
+            <Text style={styles.sectionLabel}>{t('ui.groupOccasionPlan.whatShouldWeDo')}</Text>
             {detail.options.length === 0 && (
-              <Text style={styles.helperText}>No ideas yet — be the first to propose one below.</Text>
+              <Text style={styles.helperText}>{t('ui.groupOccasionPlan.noIdeasYetBeThe')}</Text>
             )}
             {detail.options.map((option) => {
               const meta = activityMeta(option.activityType);
@@ -1094,7 +1096,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                 <View key={option.id} style={styles.optionCard}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.optionTitle}>{meta.icon} {option.label || meta.label}</Text>
-                    <Text style={styles.optionSubtitle}>{option.voteCount} vote{option.voteCount === 1 ? '' : 's'}</Text>
+                    <Text style={styles.optionSubtitle}>{t('ui.groupOccasionPlan.votes', { count: option.voteCount })}</Text>
                   </View>
                   {canVote && (
                     <TouchableOpacity
@@ -1103,9 +1105,9 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                       disabled={acting}
                       activeOpacity={0.85}
                       accessibilityRole="button"
-                      accessibilityLabel={option.myVote ? 'Remove vote' : 'Vote for this'}
+                      accessibilityLabel={option.myVote ? t('ui.groupOccasionPlan.removeVoteA11y') : t('ui.groupOccasionPlan.voteForThisA11y')}
                     >
-                      <Text style={[styles.voteButtonText, option.myVote && styles.voteButtonTextActive]}>{option.myVote ? '✓ Voted' : 'Vote'}</Text>
+                      <Text style={[styles.voteButtonText, option.myVote && styles.voteButtonTextActive]}>{option.myVote ? t('ui.groupOccasionPlan.voted') : t('ui.groupOccasionPlan.vote')}</Text>
                     </TouchableOpacity>
                   )}
                   {detail.isHost && (
@@ -1114,9 +1116,9 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                       onPress={() => handleDecide(option)}
                       disabled={acting}
                       accessibilityRole="button"
-                      accessibilityLabel={`Decide on ${option.label || meta.label}`}
+                      accessibilityLabel={t('ui.groupOccasionPlan.decideOnA11y2', { label: option.label || meta.label })}
                     >
-                      <Text style={styles.decideLinkText}>Pick →</Text>
+                      <Text style={styles.decideLinkText}>{t('ui.groupOccasionPlan.pick')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -1125,7 +1127,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
 
             {canVote && detail.options.length < 8 && (
               <View style={styles.proposeCard}>
-                <Text style={styles.sublabel}>Propose an idea</Text>
+                <Text style={styles.sublabel}>{t('ui.groupOccasionPlan.proposeAnIdea')}</Text>
                 <View style={styles.chipRow}>
                   {ACTIVITY_OPTIONS.map((o) => {
                     const selected = proposeType === o.key;
@@ -1136,24 +1138,24 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                         onPress={() => { Haptics.selectionAsync(); setProposeType(o.key); }}
                         activeOpacity={0.85}
                         accessibilityRole="button"
-                        accessibilityLabel={o.label}
+                        accessibilityLabel={activityMeta(o.key).label}
                         accessibilityState={{ selected }}
                       >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {activityMeta(o.key).label}</Text>
                       </TouchableOpacity>
                     );
                   })}
                 </View>
                 <TextInput
                   style={styles.input}
-                  placeholder="Add a short note (optional, e.g. Italian dinner)"
+                  placeholder={t('ui.groupOccasionPlan.addAShortNoteOptional')}
                   placeholderTextColor={colors.textTertiary}
                   value={proposeLabel}
                   onChangeText={setProposeLabel}
-                  accessibilityLabel="Optional note for this idea"
+                  accessibilityLabel={t('ui.groupOccasionPlan.optionalNoteForThisIdeaA11y')}
                 />
-                <TouchableOpacity style={styles.addOptionButton} onPress={handlePropose} disabled={acting} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Add this idea">
-                  <Text style={styles.addOptionButtonText}>{acting ? 'Adding…' : 'Add Idea'}</Text>
+                <TouchableOpacity style={styles.addOptionButton} onPress={handlePropose} disabled={acting} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.addThisIdeaA11y')}>
+                  <Text style={styles.addOptionButtonText}>{acting ? t('ui.groupOccasionPlan.adding') : t('ui.groupOccasionPlan.addIdea')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -1161,8 +1163,8 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
           </>
         )}
         {detail.isHost && ['voting', 'voting_business', 'decided', 'fulfilled'].includes(detail.status) && (
-          <TouchableOpacity style={styles.cancelLink} onPress={handleCancel} disabled={acting} accessibilityRole="button" accessibilityLabel="Cancel this plan">
-            <Text style={styles.cancelLinkText}>Cancel This Plan</Text>
+          <TouchableOpacity style={styles.cancelLink} onPress={handleCancel} disabled={acting} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.cancelThisPlanA11y')}>
+            <Text style={styles.cancelLinkText}>{t('ui.groupOccasionPlan.cancelThisPlan2')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
