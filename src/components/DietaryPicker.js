@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -7,11 +8,12 @@ import { DIETARY_OPTIONS } from '../constants/businessAttributes';
 // Consumer-picked, closed-vocabulary dietary needs for a food request (never inferred, never free text).
 // Shared by every screen that creates a business request so the wording and the "who sees this" promise stay identical.
 export default function DietaryPicker({ selected, onChange, note }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   return (
     <View>
-      <Text style={styles.label}>Dietary needs (optional)</Text>
+      <Text style={styles.label}>{t('ui.groupPlan.dietaryNeedsOptional')}</Text>
       <View style={styles.chipRow}>
         {DIETARY_OPTIONS.map((d) => {
           const on = selected.includes(d.key);
@@ -29,7 +31,7 @@ export default function DietaryPicker({ selected, onChange, note }) {
           );
         })}
       </View>
-      <Text style={styles.note}>{note ?? 'Shared only with businesses that respond to this request, so they can plan your meal.'}</Text>
+      <Text style={styles.note}>{note ?? t('ui.groupPlan.sharedOnlyWithBusinessesThat')}</Text>
     </View>
   );
 }

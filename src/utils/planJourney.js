@@ -1,12 +1,20 @@
 // The Occasion -> People -> Activity -> Business -> Offer -> Reservation chain, derived only from a normalized
+import { tr } from '../i18n/translate';
 // get_plan_overview response (services/plans.js normalizePlanOverview). Every step is a real fact or an honest "not yet".
 // A budget line from real captured numbers only; the unit (total vs per person) isn't recorded, so none is claimed.
+// A stored request or reservation status as a word in the person's language (unknown values shown as stored). Separate
+// word lists per object so gendered languages can agree with the noun.
+const STATUS_WORDS = { request: ['open', 'fulfilled', 'expired', 'cancelled', 'merged'], reservation: ['requested', 'confirmed', 'failed', 'cancelled'] };
+export function statusWord(status, kind) {
+  return STATUS_WORDS[kind]?.includes(status) ? tr(`ui.planDetail.${kind}Word.${status}`) : status;
+}
+
 export function formatBudget(min, max) {
   const lo = min == null ? null : Number(min);
   const hi = max == null ? null : Number(max);
   if (lo != null && hi != null) return lo === hi ? `$${hi}` : `$${lo}–$${hi}`;
-  if (hi != null) return `Up to $${hi}`;
-  if (lo != null) return `From $${lo}`;
+  if (hi != null) return tr('ui.planDetail.upTo', { hi: hi });
+  if (lo != null) return tr('ui.planDetail.from', { lo: lo });
   return null;
 }
 
@@ -18,41 +26,41 @@ export function buildPlanJourney(overview) {
   return [
     {
       key: 'people',
-      label: 'People',
+      label: tr('ui.planDetail.people'),
       done: people > 0,
-      detail: people > 0 ? `${people} ${people === 1 ? 'person' : 'people'} involved` : 'Just you so far',
+      detail: people > 0 ? tr('ui.planDetail.peopleInvolved', { count: people }) : tr('ui.planDetail.justYouSoFar'),
     },
     {
       key: 'activity',
-      label: 'Activity',
+      label: tr('ui.planDetail.activity'),
       done: !!activity,
-      detail: activity ? activity.title : 'Not decided yet',
+      detail: activity ? activity.title : tr('ui.planDetail.notDecidedYet'),
     },
     {
       key: 'budget',
-      label: 'Budget',
+      label: tr('ui.planDetail.budget'),
       done: formatBudget(plan?.budget_min, plan?.budget_max) != null,
-      detail: formatBudget(plan?.budget_min, plan?.budget_max) || 'No budget set',
+      detail: formatBudget(plan?.budget_min, plan?.budget_max) || tr('ui.planDetail.noBudgetSet'),
     },
     {
       key: 'business',
-      label: 'Business',
+      label: tr('ui.planDetail.business'),
       done: !!businessRequest,
-      detail: businessRequest ? `Request ${businessRequest.status}` : 'No business involved yet',
+      detail: businessRequest ? tr('ui.planDetail.request', { status: statusWord(businessRequest.status, 'request') }) : tr('ui.planDetail.noBusinessInvolvedYet'),
     },
     {
       key: 'offer',
-      label: 'Offer',
+      label: tr('ui.planDetail.offer'),
       done: !!lifecycle.hasOffer,
       detail: acceptedOffer
-        ? `Accepted${acceptedOffer.business_name ? ` from ${acceptedOffer.business_name}` : ''}`
-        : lifecycle.hasOffer ? `${offers.length} received` : 'No offers yet',
+        ? (acceptedOffer.business_name ? tr('ui.planDetail.acceptedFrom', { name: acceptedOffer.business_name }) : tr('ui.planDetail.accepted'))
+        : lifecycle.hasOffer ? tr('ui.planDetail.offersReceived', { count: offers.length }) : tr('ui.planDetail.noOffersYet'),
     },
     {
       key: 'reservation',
-      label: 'Reservation',
+      label: tr('ui.planDetail.reservation2'),
       done: !!reservation && reservation.status === 'confirmed',
-      detail: reservation ? `Reservation ${reservation.status}` : 'Not booked yet',
+      detail: reservation ? tr('ui.planDetail.reservation3', { status: statusWord(reservation.status, 'reservation') }) : tr('ui.planDetail.notBookedYet'),
     },
   ];
 }

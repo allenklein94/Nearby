@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -12,7 +13,7 @@ import { supabase } from '../services/supabase';
 import ExperienceSharePanel from '../components/ExperienceSharePanel';
 import { canEditNight, canRemoveStop, moveStopIds, removeStopCopy } from '../utils/experienceStopEdit';
 import { localDateParam, nightDateFromScheduledAt, nightDateToLocal, nightDateLabel } from '../utils/nightDate';
-import { buildPlanJourney } from '../utils/planJourney';
+import { buildPlanJourney, statusWord } from '../utils/planJourney';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { moneyLabel } from '../utils/outcomeDisplay';
 
@@ -21,6 +22,7 @@ const STATUS_LABEL = { draft: 'Planning', confirmed: 'Confirmed', completed: 'Do
 // One Plan, read through get_plan_overview (20261203_plan_read_layer.sql): the whole Occasion -> People -> Activity ->
 // Business -> Offer -> Reservation picture in one place. Read-only; every action hands off to an existing screen.
 export default function PlanDetailScreen({ navigation, route }) {
+  const { t } = useLanguage();
   const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
   const planId = route.params?.planId;
@@ -49,13 +51,13 @@ export default function PlanDetailScreen({ navigation, route }) {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  if (loading) return <SafeAreaView style={styles.container}><NLoader fullScreen={false} size="compact" caption="Pulling this plan together…" /></SafeAreaView>;
-  if (error) return <SafeAreaView style={styles.container}><LoadErrorState message="Couldn't load this plan." onRetry={load} /></SafeAreaView>;
+  if (loading) return <SafeAreaView style={styles.container}><NLoader fullScreen={false} size="compact" caption={t('ui.planDetail.pullingThisPlanTogether')} /></SafeAreaView>;
+  if (error) return <SafeAreaView style={styles.container}><LoadErrorState message={t('ui.planDetail.couldntLoadThisPlan')} onRetry={load} /></SafeAreaView>;
   if (!overview) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centered}>
-          <Text style={styles.muted}>This plan isn't available to you.</Text>
+          <Text style={styles.muted}>{t('ui.planDetail.thisPlanIsntAvailableTo')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -70,7 +72,7 @@ export default function PlanDetailScreen({ navigation, route }) {
     : null;
 
   const isMatchPlan = !!match;
-  const matchTitle = match ? `${match.kind === 'friend' ? '🤝' : '❤️'} You & ${match.other_display_name || 'them'}` : null;
+  const matchTitle = match ? t('ui.planDetail.you', { value: match.kind === 'friend' ? '🤝' : '❤️', otherDisplayName: match.other_display_name || t('ui.planDetail.them') }) : null;
   const matchedLabel = match?.matched_at
     ? `${match.kind === 'friend' ? 'Friends' : 'Matched'} since ${new Date(match.matched_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}`
     : null;
@@ -111,7 +113,7 @@ export default function PlanDetailScreen({ navigation, route }) {
   function confirmRemove(stop) {
     const copy = removeStopCopy(stop);
     Alert.alert(copy.title, copy.message, [
-      { text: 'Keep it', style: 'cancel' },
+      { text: t('ui.planDetail.keepIt'), style: 'cancel' },
       {
         text: copy.action,
         style: 'destructive',
@@ -139,34 +141,34 @@ export default function PlanDetailScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.title}>{isMatchPlan ? matchTitle : `${meta?.icon ? `${meta.icon} ` : ''}${plan.title || 'Untitled plan'}`}</Text>
+        <Text style={styles.title}>{isMatchPlan ? matchTitle : `${meta?.icon ? `${meta.icon} ` : ''}${plan.title || t('ui.planDetail.untitledPlan')}`}</Text>
         <Text style={styles.muted}>
           {isMatchPlan
             ? matchedLabel
             : [STATUS_LABEL[plan.status] || plan.status, dateLabel, who.forName ? `For ${who.forName}` : null].filter(Boolean).join(' · ')}
         </Text>
-        {parent ? <Text style={styles.muted}>Part of: {parent.title}</Text> : null}
+        {parent ? <Text style={styles.muted}>{t('ui.planDetail.partOf', { title: parent.title })}</Text> : null}
 
         {isExperiencePlan && (
           <>
             <View style={styles.nightHeader}>
-              <Text style={[styles.sectionLabel, { marginTop: 0, marginBottom: 0 }]}>Your night</Text>
+              <Text style={[styles.sectionLabel, { marginTop: 0, marginBottom: 0 }]}>{t('ui.planDetail.yourNight')}</Text>
               {canEdit && (
-                <TouchableOpacity onPress={() => setEditing((v) => !v)} accessibilityRole="button" accessibilityLabel={editing ? 'Done editing your night' : 'Edit your night'}>
-                  <Text style={styles.stopLink}>{editing ? 'Done' : 'Edit'}</Text>
+                <TouchableOpacity onPress={() => setEditing((v) => !v)} accessibilityRole="button" accessibilityLabel={editing ? t('ui.planDetail.doneEditingYourNightA11y') : t('ui.planDetail.editYourNightA11y')}>
+                  <Text style={styles.stopLink}>{editing ? t('ui.planDetail.done') : t('ui.planDetail.edit')}</Text>
                 </TouchableOpacity>
               )}
             </View>
             <View style={styles.dateRow}>
-              <Text style={styles.muted}>{nightDate ? `📅 ${nightDateLabel(nightDate)}` : 'No date picked yet'}</Text>
+              <Text style={styles.muted}>{nightDate ? `📅 ${nightDateLabel(nightDate)}` : t('ui.planDetail.noDatePickedYet')}</Text>
               {canEdit && (
                 <View style={styles.editControls}>
-                  <TouchableOpacity disabled={busy} onPress={() => setShowDatePicker(true)} accessibilityRole="button" accessibilityLabel={nightDate ? 'Change the date of your night' : 'Pick a date for your night'}>
-                    <Text style={styles.stopLink}>{nightDate ? 'Change date' : 'Pick a date'}</Text>
+                  <TouchableOpacity disabled={busy} onPress={() => setShowDatePicker(true)} accessibilityRole="button" accessibilityLabel={nightDate ? t('ui.planDetail.changeTheDateOfYourA11y') : t('ui.planDetail.pickADateForYourA11y')}>
+                    <Text style={styles.stopLink}>{nightDate ? t('ui.planDetail.changeDate') : t('ui.planDetail.pickADate')}</Text>
                   </TouchableOpacity>
                   {nightDate ? (
-                    <TouchableOpacity disabled={busy} onPress={() => changeNightDate(null)} accessibilityRole="button" accessibilityLabel="Clear the date">
-                      <Text style={styles.muted}>Clear</Text>
+                    <TouchableOpacity disabled={busy} onPress={() => changeNightDate(null)} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.clearTheDateA11y')}>
+                      <Text style={styles.muted}>{t('ui.planDetail.clear')}</Text>
                     </TouchableOpacity>
                   ) : null}
                 </View>
@@ -196,14 +198,14 @@ export default function PlanDetailScreen({ navigation, route }) {
                   </View>
                   {canEdit && editing ? (
                     <View style={styles.editControls}>
-                      <TouchableOpacity disabled={busy || i === 0} onPress={() => moveStop(i, -1)} accessibilityRole="button" accessibilityLabel={`Move ${s.title} up`}>
+                      <TouchableOpacity disabled={busy || i === 0} onPress={() => moveStop(i, -1)} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.moveUpA11y', { title: s.title })}>
                         <Text style={[styles.editIcon, (busy || i === 0) && styles.editIconOff]}>↑</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity disabled={busy || i === stops.length - 1} onPress={() => moveStop(i, 1)} accessibilityRole="button" accessibilityLabel={`Move ${s.title} down`}>
+                      <TouchableOpacity disabled={busy || i === stops.length - 1} onPress={() => moveStop(i, 1)} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.moveDownA11y', { title: s.title })}>
                         <Text style={[styles.editIcon, (busy || i === stops.length - 1) && styles.editIconOff]}>↓</Text>
                       </TouchableOpacity>
                       {canRemoveStop(s, stops.length) && (
-                        <TouchableOpacity disabled={busy} onPress={() => confirmRemove(s)} accessibilityRole="button" accessibilityLabel={`Remove ${s.title}`}>
+                        <TouchableOpacity disabled={busy} onPress={() => confirmRemove(s)} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.removeA11y', { title: s.title })}>
                           <Text style={[styles.editIcon, { color: colors.danger }]}>✕</Text>
                         </TouchableOpacity>
                       )}
@@ -212,20 +214,20 @@ export default function PlanDetailScreen({ navigation, route }) {
                   <TouchableOpacity
                     onPress={() => navigateToExperienceStop(navigation, s, { partySize: plan.party_size, nightDate })}
                     accessibilityRole="button"
-                    accessibilityLabel={`Continue with ${s.title}`}
+                    accessibilityLabel={t('ui.planDetail.continueWithA11y', { title: s.title })}
                   >
-                    <Text style={styles.stopLink}>{s.requestId && s.state !== 'chosen' && s.state !== 'cancelled' ? 'View →' : 'Continue →'}</Text>
+                    <Text style={styles.stopLink}>{s.requestId && s.state !== 'chosen' && s.state !== 'cancelled' ? t('ui.planDetail.view') : t('ui.planDetail.continue')}</Text>
                   </TouchableOpacity>
                   )}
                 </View>
               ))}
             </View>
-            <Text style={styles.muted}>Each stop is confirmed by its business with you; this plan keeps them together and updates as they do.{nightDate ? ' Your date is filled in when you ask each stop; you can change it there.' : ''}</Text>
+            <Text style={styles.muted}>{t('ui.planDetail.eachStopIsConfirmedBy')}{nightDate ? t('ui.planDetail.yourDateIsFilledIn') : ''}</Text>
             {canEdit && <ExperienceSharePanel planId={planId} planTitle={plan.title} />}
           </>
         )}
 
-        {!isExperiencePlan && <Text style={styles.sectionLabel}>The plan so far</Text>}
+        {!isExperiencePlan && <Text style={styles.sectionLabel}>{t('ui.planDetail.thePlanSoFar')}</Text>}
         {!isExperiencePlan && <View style={styles.card}>
           {journey.map((s, i) => (
             <View key={s.key} style={[styles.stepRow, i > 0 && styles.stepDivider]}>
@@ -240,35 +242,35 @@ export default function PlanDetailScreen({ navigation, route }) {
 
         {!isMatchPlan && (who.participants.length > 0 || who.organizers.length > 0) && (
           <>
-            <Text style={styles.sectionLabel}>People</Text>
+            <Text style={styles.sectionLabel}>{t('ui.planDetail.people')}</Text>
             <View style={styles.card}>
-              {who.host && <Text style={styles.line}>{who.host.display_name} · Host</Text>}
-              {who.organizers.map((p) => <Text key={p.id} style={styles.line}>{p.display_name} · Organizer</Text>)}
+              {who.host && <Text style={styles.line}>{t('ui.planDetail.host', { name: who.host.display_name })}</Text>}
+              {who.organizers.map((p) => <Text key={p.id} style={styles.line}>{t('ui.planDetail.organizer', { name: p.display_name })}</Text>)}
               {who.participants.map((p) => (
                 <Text key={p.user_id} style={styles.line}>{p.display_name} · {p.status}</Text>
               ))}
-              {who.guestCount > 0 && <Text style={styles.line}>{who.guestCount} invited by link</Text>}
+              {who.guestCount > 0 && <Text style={styles.line}>{t('ui.planDetail.invitedByLink', { guestCount: who.guestCount })}</Text>}
             </View>
           </>
         )}
 
         {offers.length > 0 && (
           <>
-            <Text style={styles.sectionLabel}>Offers</Text>
+            <Text style={styles.sectionLabel}>{t('ui.planDetail.offers')}</Text>
             <View style={styles.card}>
               {offers.map((o) => (
                 <Text key={o.id} style={styles.line}>
-                  {o.business_name || 'A business'}{o.title ? ` · ${o.title}` : ''}{o.price != null ? ` · ${moneyLabel(o.price)}${o.price_is_per_person ? '/person' : ''}` : ''} · {o.status}
+                  {o.business_name || t('ui.planDetail.aBusiness')}{o.title ? ` · ${o.title}` : ''}{o.price != null ? ` · ${moneyLabel(o.price)}${o.price_is_per_person ? '/person' : ''}` : ''} · {o.status}
                 </Text>
               ))}
-              {reservation && <Text style={styles.line}>Reservation: {reservation.status}</Text>}
+              {reservation && <Text style={styles.line}>{t('ui.planDetail.reservation', { status: statusWord(reservation.status, 'reservation') })}</Text>}
             </View>
           </>
         )}
 
         {children.length > 0 && (
           <>
-            <Text style={styles.sectionLabel}>Made from this plan</Text>
+            <Text style={styles.sectionLabel}>{t('ui.planDetail.madeFromThisPlan')}</Text>
             <View style={styles.card}>
               {children.map((c) => <Text key={c.id} style={styles.line}>{c.title || c.plan_type} · {STATUS_LABEL[c.status] || c.status}</Text>)}
             </View>
@@ -276,18 +278,18 @@ export default function PlanDetailScreen({ navigation, route }) {
         )}
 
         {isGatheringPlan && (
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('GatheringDetail', { gatheringId: activity.id })} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Open the gathering">
-            <Text style={styles.buttonText}>Open the gathering →</Text>
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('GatheringDetail', { gatheringId: activity.id })} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.openTheGatheringA11y')}>
+            <Text style={styles.buttonText}>{t('ui.planDetail.openTheGathering')}</Text>
           </TouchableOpacity>
         )}
         {isRequestPlan && (
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Open the request">
-            <Text style={styles.buttonText}>Open the request →</Text>
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.openTheRequestA11y')}>
+            <Text style={styles.buttonText}>{t('ui.planDetail.openTheRequest')}</Text>
           </TouchableOpacity>
         )}
         {(isMatchPlan || (nothingYet && (plan.plan_type === 'occasion' || plan.plan_type === 'group_occasion') && plan.status !== 'cancelled')) && (
-          <TouchableOpacity style={styles.button} onPress={startPlanning} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={isMatchPlan ? 'Plan something together' : 'Plan something'}>
-            <Text style={styles.buttonText}>{isMatchPlan ? 'Plan something together →' : 'Plan something →'}</Text>
+          <TouchableOpacity style={styles.button} onPress={startPlanning} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={isMatchPlan ? t('ui.planDetail.planSomethingTogetherA11y') : t('ui.planDetail.planSomethingA11y')}>
+            <Text style={styles.buttonText}>{isMatchPlan ? t('ui.planDetail.planSomethingTogether') : t('ui.planDetail.planSomething')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>

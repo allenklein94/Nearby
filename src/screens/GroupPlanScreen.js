@@ -1,4 +1,6 @@
 import { recordAcceptBehavior } from '../services/behaviorSignals';
+import { useLanguage } from '../context/LanguageContext';
+import { categoryName } from '../i18n/categoryNames';
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { presentRecoverableError } from '../utils/recoverableError';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
@@ -29,47 +31,16 @@ import { typography, spacing, radius } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
 import { moneyLabel } from '../utils/outcomeDisplay';
 
-const PARTICIPANT_STATUS_COPY = {
-  invited: 'Invited — waiting for a response',
-  accepted: 'In',
-  declined: "Can't make it",
-  left: 'Left the group',
-};
+// Display labels by stored status, read through ui.groupPlan (status values stay canonical).
+const PARTICIPANT_STATUS_KEYS = ['invited', 'accepted', 'declined', 'left'];
 
-const OFFER_STATUS_COPY = {
-  pending: 'Waiting for a response',
-  offered: 'Made an offer',
-  // Matches BusinessRequestDetailScreen's own identical solo-flow copy
-  // verbatim (Aug 23 2026 P1 fix, CLAUDE.md) -- "reservation confirmed"
-  // overstated what's actually guaranteed the moment an offer is
-  // accepted (per the Offer System's own locked "Accepted != Confirmed"
-  // design: the real business_reservations row starts at "requested," it
-  // just happens to auto-confirm immediately today since Nearby itself
-  // is the only reservation provider so far). Neither screen should
-  // promise more than the data actually does.
-  accepted: "You're booked",
-  declined: "Can't help with this one",
-  // Item 50 (state consistency audit, Finding 4): withdraw_business_offer()
-  // is a real, live transition this map was missing -- fell through to the
-  // raw literal "withdrawn" instead of styled copy. Matches
-  // SOCIAL_OFFER_STATUS_COPY's own existing entry above, verbatim.
-  withdrawn: 'Withdrawn',
-  expired: 'No longer available',
-  cancelled: 'Cancelled',
-  completed: 'Completed',
-};
+const OFFER_STATUS_KEYS = ['pending', 'offered', 'accepted', 'declined', 'withdrawn', 'expired', 'cancelled', 'completed'];
 
 // "The Offer System" Phase 4 (see CLAUDE.md's own plan, Decision 3):
 // mirrors the commercial-offer lifecycle's own refined shape (Decision
 // 6), not a second invented one.
-const SOCIAL_OFFER_STATUS_COPY = {
-  offered: 'Offered',
-  accepted: 'Accepted',
-  declined: "Didn't work out",
-  withdrawn: 'Withdrawn',
-  expired: 'No longer available',
-  cancelled: 'Cancelled',
-};
+const SOCIAL_OFFER_STATUS_KEYS = ['offered', 'accepted', 'declined', 'withdrawn', 'expired', 'cancelled'];
+const statusCopy = (t, group, keys, status) => (keys.includes(status) ? t(`ui.groupPlan.${group}.${status}`) : status);
 
 // "Nearby V3/V4" plan, Phase D (see CLAUDE.md) -- a real "group plan" is
 // group-owned, not initiator-owned: every accepted participant sees this
@@ -78,6 +49,7 @@ const SOCIAL_OFFER_STATUS_COPY = {
 // own locked rule 12 ("group plan" / "do this together", never internal
 // terminology on screen).
 export default function GroupPlanScreen({ navigation, route }) {
+  const { t, language } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const proposalId = route.params?.proposalId;
@@ -177,9 +149,9 @@ export default function GroupPlanScreen({ navigation, route }) {
   }
 
   function handleDecline() {
-    Alert.alert('Say you can\'t make it?', 'The organizer will see you declined.', [
-      { text: 'Never mind', style: 'cancel' },
-      { text: "Can't Make It", style: 'destructive', onPress: () => runAction(() => respondToGroupPlan(proposalId, false)) },
+    Alert.alert(t('ui.groupPlan.sayYouCantMakeIt'), t('ui.groupPlan.theOrganizerWillSeeYou'), [
+      { text: t('ui.groupPlan.neverMind'), style: 'cancel' },
+      { text: t('ui.groupPlan.cantMakeIt2'), style: 'destructive', onPress: () => runAction(() => respondToGroupPlan(proposalId, false)) },
     ]);
   }
 
@@ -187,13 +159,13 @@ export default function GroupPlanScreen({ navigation, route }) {
     // A confirmed plan has offers this person may have confirmed; the server removes exactly those (nobody else's).
     const confirmed = proposal?.status === 'confirmed';
     Alert.alert(
-      'Leave this group plan?',
+      t('ui.groupPlan.leaveThisGroupPlan'),
       confirmed
-        ? "Leave this plan? The offers you've confirmed will be removed. Everyone else's confirmations stay."
-        : 'You can always start your own request again later.',
+        ? t('ui.groupPlan.leaveThisPlanTheOffers')
+        : t('ui.groupPlan.youCanAlwaysStartYour'),
       [
-        { text: 'Never mind', style: 'cancel' },
-        { text: 'Leave', style: 'destructive', onPress: () => runAction(() => leaveGroupPlan(proposalId)) },
+        { text: t('ui.groupPlan.neverMind'), style: 'cancel' },
+        { text: t('ui.groupPlan.leave'), style: 'destructive', onPress: () => runAction(() => leaveGroupPlan(proposalId)) },
       ],
     );
   }
@@ -202,7 +174,7 @@ export default function GroupPlanScreen({ navigation, route }) {
     const trimmed = budgetInput.trim();
     const value = trimmed.length === 0 ? null : Number(trimmed);
     if (trimmed.length > 0 && (Number.isNaN(value) || value < 0)) {
-      Alert.alert('Real number needed', 'Enter a whole dollar amount, or leave it blank.');
+      Alert.alert(t('ui.groupPlan.realNumberNeeded'), t('ui.groupPlan.enterAWholeDollarAmount'));
       return;
     }
     runAction(() => setGroupPlanBudget(proposalId, value));
@@ -218,12 +190,12 @@ export default function GroupPlanScreen({ navigation, route }) {
   // confirm before they're ready to.
   function handleRemove(userId, name) {
     Alert.alert(
-      `Remove ${name ?? 'this person'}?`,
-      "They'll be told they're no longer part of this group plan. You can keep waiting on everyone else.",
+      t('ui.groupPlan.remove', { name: name ?? 'this person' }),
+      t('ui.groupPlan.theyllBeToldTheyreNo'),
       [
-        { text: 'Never mind', style: 'cancel' },
+        { text: t('ui.groupPlan.neverMind'), style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('ui.groupPlan.remove2'),
           style: 'destructive',
           onPress: () => runAction(() => removeGroupPlanParticipant(proposalId, userId)),
         },
@@ -232,11 +204,11 @@ export default function GroupPlanScreen({ navigation, route }) {
   }
 
   function handleConfirm() {
-    const label = excludeIds.length > 0 ? `Confirm without ${excludeIds.length} of them?` : 'Everyone in gets a real request sent to nearby businesses.';
-    Alert.alert('Confirm this group plan?', label, [
-      { text: 'Never mind', style: 'cancel' },
+    const label = excludeIds.length > 0 ? t('ui.groupPlan.confirmWithoutOfThem', { length: excludeIds.length }) : t('ui.groupPlan.everyoneInGetsAReal');
+    Alert.alert(t('ui.groupPlan.confirmThisGroupPlan'), label, [
+      { text: t('ui.groupPlan.neverMind'), style: 'cancel' },
       {
-        text: 'Confirm',
+        text: t('ui.groupPlan.confirm'),
         onPress: () => runAction(
           () => confirmGroupPlan(proposalId, excludeIds),
           // Wave 2B of the full-system acceptance audit (see
@@ -259,7 +231,7 @@ export default function GroupPlanScreen({ navigation, route }) {
               dateWindow: proposal.date,
               resultType: 'created_new',
               resultId: result?.requestId ?? null,
-              resultTitle: `Group plan — ${proposal.category}`,
+              resultTitle: t('ui.groupPlan.groupPlan2', { category: categoryName(proposal.category, language) }),
             });
           }
         ),
@@ -268,9 +240,9 @@ export default function GroupPlanScreen({ navigation, route }) {
   }
 
   function handleCancel() {
-    Alert.alert('Cancel this group plan?', 'Everyone keeps their own individual request exactly as it was.', [
-      { text: 'Never mind', style: 'cancel' },
-      { text: 'Cancel Plan', style: 'destructive', onPress: () => runAction(async () => {
+    Alert.alert(t('ui.groupPlan.cancelThisGroupPlan'), t('ui.groupPlan.everyoneKeepsTheirOwnIndividual'), [
+      { text: t('ui.groupPlan.neverMind'), style: 'cancel' },
+      { text: t('ui.groupPlan.cancelPlan'), style: 'destructive', onPress: () => runAction(async () => {
         await cancelGroupPlan(proposalId);
         setReasonAsk({ entityType: 'group_plan', entityId: proposalId, role: 'host' });
       }) },
@@ -278,10 +250,10 @@ export default function GroupPlanScreen({ navigation, route }) {
   }
 
   function handleConfirmOffer(offerId) {
-    Alert.alert('Confirm this offer for the group?', 'Once everyone confirms, the reservation locks in.', [
-      { text: 'Never mind', style: 'cancel' },
+    Alert.alert(t('ui.groupPlan.confirmThisOfferForThe'), t('ui.groupPlan.onceEveryoneConfirmsTheReservation'), [
+      { text: t('ui.groupPlan.neverMind'), style: 'cancel' },
       {
-        text: 'Confirm',
+        text: t('ui.groupPlan.confirm'),
         onPress: () => runAction(
           () => confirmGroupPlanOffer(proposalId, offerId),
           // Same Wave 2B gap as handleConfirm above -- this is the actual
@@ -305,8 +277,8 @@ export default function GroupPlanScreen({ navigation, route }) {
               resultType: 'business_offer',
               resultId: offerId,
               resultTitle: offer?.brand_partners?.name
-                ? `${offer.brand_partners.name} — group plan`
-                : `Group plan — ${proposal.category}`,
+                ? t('ui.groupPlan.groupPlan3', { name: offer.brand_partners.name })
+                : t('ui.groupPlan.groupPlan2', { category: categoryName(proposal.category, language) }),
             });
           }
         ),
@@ -322,7 +294,7 @@ export default function GroupPlanScreen({ navigation, route }) {
   function handleSubmitSocialOffer() {
     const trimmed = socialOfferInput.trim();
     if (!trimmed) {
-      Alert.alert('Say what you can offer', 'e.g. "I can drive" or "I can host at my place."');
+      Alert.alert(t('ui.groupPlan.sayWhatYouCanOffer'), t('ui.groupPlan.eGICanDrive'));
       return;
     }
     runAction(
@@ -346,7 +318,7 @@ export default function GroupPlanScreen({ navigation, route }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load this group plan." onRetry={load} />
+        <LoadErrorState message={t('ui.groupPlan.couldntLoadThisGroupPlan')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -360,7 +332,7 @@ export default function GroupPlanScreen({ navigation, route }) {
     setMyDietary(next);
     setMyGroupPlanDietary(proposalId, next).catch(() => {
       setMyDietary(previous);
-      Alert.alert('Could not save', 'Your dietary needs were not saved. Please try again.');
+      Alert.alert(t('ui.groupPlan.couldNotSave'), t('ui.groupPlan.yourDietaryNeedsWereNot'));
     });
   }
   const isInitiator = proposal.initiator_id === myId;
@@ -381,11 +353,11 @@ export default function GroupPlanScreen({ navigation, route }) {
             TRANSACTION confirmations (a group's business offer/reservation locking in), not an
             occasion-creation moment -- tone="business" for a fast, professional settle rather
             than the full celebratory production. */}
-        {successBanner === 'plan' && <SuccessAnimation haptic text="Plan confirmed. ✓" tone="business" />}
-        {successBanner === 'reservation' && <SuccessAnimation haptic text="You're booked. ✓" tone="business" />}
-        <Text style={styles.title}>{proposal.category} — Group Plan</Text>
+        {successBanner === 'plan' && <SuccessAnimation haptic text={t('ui.groupPlan.planConfirmed')} tone="business" />}
+        {successBanner === 'reservation' && <SuccessAnimation haptic text={t('ui.groupPlan.youreBooked2')} tone="business" />}
+        <Text style={styles.title}>{t('ui.groupPlan.groupPlan', { category: categoryName(proposal.category, language) })}</Text>
         <Text style={styles.statusLine}>
-          {proposal.status === 'pending' && 'Deciding together'}
+          {proposal.status === 'pending' && t('ui.groupPlan.decidingTogether')}
           {/* "Locked In," not "Confirmed" -- the roster/budget is locked and
               a real request is genuinely out, but nothing about the actual
               business side (an offer, let alone a reservation) has happened
@@ -394,47 +366,47 @@ export default function GroupPlanScreen({ navigation, route }) {
               controlled vocabulary -- reusing it here read as the same
               fact at two very different stages (Aug 23 2026 P1 fix,
               CLAUDE.md). */}
-          {proposal.status === 'confirmed' && 'Locked In — a real request is out to nearby businesses'}
-          {proposal.status === 'cancelled' && 'Cancelled'}
-          {proposal.status === 'expired' && 'Expired — nobody confirmed in time'}
+          {proposal.status === 'confirmed' && t('ui.groupPlan.lockedInARealRequest')}
+          {proposal.status === 'cancelled' && t('ui.groupPlan.cancelled')}
+          {proposal.status === 'expired' && t('ui.groupPlan.expiredNobodyConfirmedInTime')}
         </Text>
 
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryLine}>👥 {totalPartySize} {totalPartySize === 1 ? 'person' : 'people'} in so far</Text>
-          {budgetRangeLine && <Text style={styles.summaryLine}>💰 Group's comfortable range: {budgetRangeLine}</Text>}
+          <Text style={styles.summaryLine}>👥 {t('ui.groupPlan.peopleInSoFar', { count: totalPartySize })}</Text>
+          {budgetRangeLine && <Text style={styles.summaryLine}>{t('ui.groupPlan.groupsComfortableRange', { budgetRangeLine: budgetRangeLine })}</Text>}
           <Text style={styles.summaryLine}>
-            {proposal.agreed_budget_max != null ? `Agreed budget: ${moneyLabel(proposal.agreed_budget_max)}/person` : 'No agreed budget yet'}
+            {proposal.agreed_budget_max != null ? t('ui.groupPlan.agreedBudgetPerson', { moneyLabel: moneyLabel(proposal.agreed_budget_max) }) : t('ui.groupPlan.noAgreedBudgetYet')}
           </Text>
           {proposal.date && <Text style={styles.summaryLine}>📅 {proposal.date}</Text>}
         </View>
 
-        <Text style={styles.sectionHeader}>Who's in</Text>
+        <Text style={styles.sectionHeader}>{t('ui.groupPlan.whosIn')}</Text>
         {participants.map((p) => (
           <View key={p.id} style={styles.participantRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.participantName}>
-                {p.profiles?.display_name ?? 'Someone'}{p.user_id === proposal.initiator_id ? ' (organizer)' : ''}
+                {p.profiles?.display_name ?? t('ui.groupPlan.someone')}{p.user_id === proposal.initiator_id ? t('ui.groupPlan.organizer') : ''}
               </Text>
-              <Text style={styles.participantStatus}>{PARTICIPANT_STATUS_COPY[p.status] ?? p.status}</Text>
+              <Text style={styles.participantStatus}>{statusCopy(t, 'participantStatus', PARTICIPANT_STATUS_KEYS, p.status)}</Text>
             </View>
             {isInitiator && canDo('group_plan', proposal.status, 'manage') && p.status === 'accepted' && p.user_id !== myId && (
               <TouchableOpacity
                 onPress={() => toggleExclude(p.user_id)}
-                accessibilityLabel={excludeIds.includes(p.user_id) ? `Include ${p.profiles?.display_name ?? 'this person'} again` : `Continue without ${p.profiles?.display_name ?? 'this person'}`}
+                accessibilityLabel={excludeIds.includes(p.user_id) ? t('ui.groupPlan.includeAgainA11y', { name: p.profiles?.display_name ?? 'this person' }) : t('ui.groupPlan.continueWithoutA11y', { name: p.profiles?.display_name ?? 'this person' })}
                 accessibilityRole="button"
               >
                 <Text style={excludeIds.includes(p.user_id) ? styles.excludedTag : styles.excludeLink}>
-                  {excludeIds.includes(p.user_id) ? 'Excluded — tap to undo' : 'Continue without'}
+                  {excludeIds.includes(p.user_id) ? t('ui.groupPlan.excludedTapToUndo') : t('ui.groupPlan.continueWithout')}
                 </Text>
               </TouchableOpacity>
             )}
             {isInitiator && canDo('group_plan', proposal.status, 'manage') && (p.status === 'accepted' || p.status === 'invited') && p.user_id !== myId && (
               <TouchableOpacity
                 onPress={() => handleRemove(p.user_id, p.profiles?.display_name)}
-                accessibilityLabel={`Remove ${p.profiles?.display_name ?? 'this person'} from the group plan now`}
+                accessibilityLabel={t('ui.groupPlan.removeFromTheGroupPlanA11y', { name: p.profiles?.display_name ?? 'this person' })}
                 accessibilityRole="button"
               >
-                <Text style={styles.removeLink}>Remove</Text>
+                <Text style={styles.removeLink}>{t('ui.groupPlan.remove2')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -444,25 +416,25 @@ export default function GroupPlanScreen({ navigation, route }) {
           <DietaryPicker
             selected={myDietary}
             onChange={handleDietaryChange}
-            note="Only you see your picks. Once the plan is confirmed, the group's needs go to responding businesses combined, without names."
+            note={t('ui.groupPlan.onlyYouSeeYourPicks')}
           />
         )}
 
         {canDo('group_plan', proposal.status, 'respond') && canDo('group_participant', myParticipant?.status, 'join') && (
           <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.primaryButton} onPress={handleAccept} disabled={acting} accessibilityLabel="Join this group plan" accessibilityRole="button">
-              {acting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.primaryButtonText}>Join Shared Request</Text>}
+            <TouchableOpacity style={styles.primaryButton} onPress={handleAccept} disabled={acting} accessibilityLabel={t('ui.groupPlan.joinThisGroupPlanA11y')} accessibilityRole="button">
+              {acting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.primaryButtonText}>{t('ui.groupPlan.joinSharedRequest')}</Text>}
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleDecline} disabled={acting} accessibilityLabel="Decline this group plan" accessibilityRole="button">
-              <Text style={styles.declineLink}>Can't make it</Text>
+            <TouchableOpacity onPress={handleDecline} disabled={acting} accessibilityLabel={t('ui.groupPlan.declineThisGroupPlanA11y')} accessibilityRole="button">
+              <Text style={styles.declineLink}>{t('ui.groupPlan.cantMakeIt')}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {isInitiator && canDo('group_plan', proposal.status, 'manage') && (
           <View style={styles.organizerSection}>
-            <Text style={styles.sectionHeader}>Set the budget</Text>
-            <Text style={styles.helperText}>Pick one real number the whole group can agree on{budgetRangeLine ? ` (within ${budgetRangeLine})` : ''}.</Text>
+            <Text style={styles.sectionHeader}>{t('ui.groupPlan.setTheBudget')}</Text>
+            <Text style={styles.helperText}>{t('ui.groupPlan.pickOneRealNumberThe')}{budgetRangeLine ? t('ui.groupPlan.within', { budgetRangeLine: budgetRangeLine }) : ''}.</Text>
             <View style={styles.budgetRow}>
               <Text style={styles.budgetDollar}>$</Text>
               <TextInput
@@ -473,8 +445,8 @@ export default function GroupPlanScreen({ navigation, route }) {
                 placeholderTextColor={colors.textTertiary}
                 keyboardType="number-pad"
               />
-              <TouchableOpacity style={styles.budgetSaveButton} onPress={handleSetBudget} disabled={acting} accessibilityLabel="Save agreed budget" accessibilityRole="button">
-                <Text style={styles.budgetSaveButtonText}>Save</Text>
+              <TouchableOpacity style={styles.budgetSaveButton} onPress={handleSetBudget} disabled={acting} accessibilityLabel={t('ui.groupPlan.saveAgreedBudgetA11y')} accessibilityRole="button">
+                <Text style={styles.budgetSaveButtonText}>{t('ui.groupPlan.save')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -482,22 +454,22 @@ export default function GroupPlanScreen({ navigation, route }) {
               style={[styles.primaryButton, { marginTop: spacing.lg }]}
               onPress={handleConfirm}
               disabled={acting}
-              accessibilityLabel="Confirm group plan and send to businesses"
+              accessibilityLabel={t('ui.groupPlan.confirmGroupPlanAndSendA11y')}
               accessibilityRole="button"
             >
-              {acting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.primaryButtonText}>Confirm & Ask Nearby Businesses</Text>}
+              {acting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.primaryButtonText}>{t('ui.groupPlan.confirmAskNearbyBusinesses')}</Text>}
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleCancel} disabled={acting} accessibilityLabel="Cancel this group plan" accessibilityRole="button">
-              <Text style={styles.declineLink}>Cancel Group Plan</Text>
+            <TouchableOpacity onPress={handleCancel} disabled={acting} accessibilityLabel={t('ui.groupPlan.cancelThisGroupPlanA11y')} accessibilityRole="button">
+              <Text style={styles.declineLink}>{t('ui.groupPlan.cancelGroupPlan')}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {canDo('group_plan', proposal.status, 'offers') && (
           <>
-            <Text style={styles.sectionHeader}>Offers</Text>
+            <Text style={styles.sectionHeader}>{t('ui.groupPlan.offers')}</Text>
             {offers.length === 0 ? (
-              <Text style={styles.helperText}>No businesses have responded yet.</Text>
+              <Text style={styles.helperText}>{t('ui.groupPlan.noBusinessesHaveRespondedYet')}</Text>
             ) : (
               offers.map((o, offerIndex) => {
                 const confirmedForThisOffer = confirmations.filter((c) => c.offer_id === o.id);
@@ -509,8 +481,8 @@ export default function GroupPlanScreen({ navigation, route }) {
                   // per-index cascade rather than appearing all at once.
                   <StaggeredReveal key={o.id} index={offerIndex} style={styles.offerCard}>
                   <View>
-                    <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? 'A business'}</Text>
-                    <Text style={styles.offerStatus}>{offerLifecycleState(o) === 'expired' ? 'This offer has expired' : (OFFER_STATUS_COPY[o.status] ?? o.status)}</Text>
+                    <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? t('ui.groupPlan.aBusiness')}</Text>
+                    <Text style={styles.offerStatus}>{offerLifecycleState(o) === 'expired' ? t('ui.groupPlan.thisOfferHasExpired') : statusCopy(t, 'offerStatus', OFFER_STATUS_KEYS, o.status)}</Text>
                     {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
                     {offerPriceLabel(o.offer_price, o.price_is_per_person) ? <Text style={styles.offerPrice}>{offerPriceLabel(o.offer_price, o.price_is_per_person)}</Text> : null}
                     {canDo('offer', offerLifecycleState(o), 'accept') && amActiveParticipant && (
@@ -520,10 +492,10 @@ export default function GroupPlanScreen({ navigation, route }) {
                           style={[styles.acceptButton, iConfirmed && styles.acceptButtonDisabled]}
                           onPress={() => handleConfirmOffer(o.id)}
                           disabled={acting || iConfirmed}
-                          accessibilityLabel="Confirm this offer for the group"
+                          accessibilityLabel={t('ui.groupPlan.confirmThisOfferForTheA11y')}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.acceptButtonText}>{iConfirmed ? "You've confirmed" : 'Confirm for the Group'}</Text>
+                          <Text style={styles.acceptButtonText}>{iConfirmed ? t('ui.groupPlan.youveConfirmed') : t('ui.groupPlan.confirmForTheGroup')}</Text>
                         </TouchableOpacity>
                       </>
                     )}
@@ -533,16 +505,16 @@ export default function GroupPlanScreen({ navigation, route }) {
               })
             )}
 
-            <Text style={styles.sectionHeader}>Social Offers</Text>
-            <Text style={styles.helperText}>Anyone in the group can offer to help make this happen — "I'll drive," "I'll host."</Text>
+            <Text style={styles.sectionHeader}>{t('ui.groupPlan.socialOffers')}</Text>
+            <Text style={styles.helperText}>{t('ui.groupPlan.anyoneInTheGroupCan')}</Text>
             {socialOffers.length === 0 ? (
-              <Text style={styles.helperText}>No one has offered to help yet.</Text>
+              <Text style={styles.helperText}>{t('ui.groupPlan.noOneHasOfferedTo')}</Text>
             ) : (
               socialOffers.map((o, socialOfferIndex) => (
                 <StaggeredReveal key={o.id} index={socialOfferIndex} style={styles.offerCard}>
                 <View>
-                  <Text style={styles.offerPartnerName}>{o.profiles?.display_name ?? 'Someone'}</Text>
-                  <Text style={styles.offerStatus}>{SOCIAL_OFFER_STATUS_COPY[o.status] ?? o.status}</Text>
+                  <Text style={styles.offerPartnerName}>{o.profiles?.display_name ?? t('ui.groupPlan.someone')}</Text>
+                  <Text style={styles.offerStatus}>{statusCopy(t, 'socialOfferStatus', SOCIAL_OFFER_STATUS_KEYS, o.status)}</Text>
                   <Text style={styles.offerDescription}>{o.offer_description}</Text>
                   {isInitiator && canDo('offer', offerLifecycleState(o), 'accept') && (
                     <View style={styles.socialOfferActionRow}>
@@ -550,19 +522,19 @@ export default function GroupPlanScreen({ navigation, route }) {
                         style={[styles.acceptButton, { flex: 1 }]}
                         onPress={() => handleRespondSocialOffer(o.id, true)}
                         disabled={acting}
-                        accessibilityLabel={`Accept ${o.profiles?.display_name ?? 'this'}'s offer`}
+                        accessibilityLabel={t('ui.groupPlan.acceptSOfferA11y', { name: o.profiles?.display_name ?? 'this' })}
                         accessibilityRole="button"
                       >
-                        <Text style={styles.acceptButtonText}>Accept</Text>
+                        <Text style={styles.acceptButtonText}>{t('ui.groupPlan.accept')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => handleRespondSocialOffer(o.id, false)}
                         disabled={acting}
-                        accessibilityLabel={`Decline ${o.profiles?.display_name ?? 'this'}'s offer`}
+                        accessibilityLabel={t('ui.groupPlan.declineSOfferA11y', { name: o.profiles?.display_name ?? 'this' })}
                         accessibilityRole="button"
                         style={styles.socialOfferDeclineButton}
                       >
-                        <Text style={styles.declineButtonText}>Decline</Text>
+                        <Text style={styles.declineButtonText}>{t('ui.groupPlan.decline')}</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -576,19 +548,19 @@ export default function GroupPlanScreen({ navigation, route }) {
                   style={styles.socialOfferInput}
                   value={socialOfferInput}
                   onChangeText={setSocialOfferInput}
-                  placeholder='e.g. "I can drive everyone there"'
+                  placeholder={t('ui.groupPlan.eGICanDrive2')}
                   placeholderTextColor={colors.textTertiary}
                   multiline
-                  accessibilityLabel="What can you offer?"
+                  accessibilityLabel={t('ui.groupPlan.whatCanYouOfferA11y')}
                 />
                 <TouchableOpacity
                   style={styles.socialOfferSubmitButton}
                   onPress={handleSubmitSocialOffer}
                   disabled={acting}
-                  accessibilityLabel="Submit social offer"
+                  accessibilityLabel={t('ui.groupPlan.submitSocialOfferA11y')}
                   accessibilityRole="button"
                 >
-                  {acting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>Offer to Help</Text>}
+                  {acting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>{t('ui.groupPlan.offerToHelp')}</Text>}
                 </TouchableOpacity>
               </View>
             )}
@@ -598,8 +570,8 @@ export default function GroupPlanScreen({ navigation, route }) {
 
         {/* One Leave control for every state that allows it (pending or confirmed); the server does the cleanup. */}
         {canDo('group_plan', proposal.status, 'leave') && canDo('group_participant', myParticipant?.status, 'leave') && !isInitiator && (
-          <TouchableOpacity onPress={handleLeave} disabled={acting} accessibilityLabel="Leave this group plan" accessibilityRole="button">
-            <Text style={styles.declineLink}>Leave Group Plan</Text>
+          <TouchableOpacity onPress={handleLeave} disabled={acting} accessibilityLabel={t('ui.groupPlan.leaveThisGroupPlanA11y')} accessibilityRole="button">
+            <Text style={styles.declineLink}>{t('ui.groupPlan.leaveGroupPlan')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>

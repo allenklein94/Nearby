@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Share } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
@@ -13,6 +14,7 @@ import { shareCandidates, shareRowLabel } from '../utils/nightSharing';
 // Owner-only "Share this night" panel. Everyone it adds is VIEW-ONLY (server-enforced): a friend/match you are already
 // connected to (the picker only lists those, and the server refuses anyone else), or a named, expiring, revocable guest link.
 export default function ExperienceSharePanel({ planId, planTitle }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [shares, setShares] = useState([]);
@@ -50,7 +52,7 @@ export default function ExperienceSharePanel({ planId, planTitle }) {
 
   async function sendLink(token) {
     try {
-      await Share.share({ message: `Here's our plan for the night${planTitle ? `: ${planTitle}` : ''}. ${sharedNightGuestUrl(token)}` });
+      await Share.share({ message: planTitle ? t('ui.planDetail.shareMessageTitled', { title: planTitle, url: sharedNightGuestUrl(token) }) : t('ui.planDetail.shareMessage', { url: sharedNightGuestUrl(token) }) });
     } catch { /* dismissed */ }
   }
 
@@ -71,20 +73,20 @@ export default function ExperienceSharePanel({ planId, planTitle }) {
 
   function confirmRemove(share) {
     Alert.alert(
-      share.kind === 'guest' ? `Turn off ${share.guestName}'s link?` : `Stop sharing with ${share.displayName}?`,
-      share.kind === 'guest' ? 'The link stops working right away.' : "They won't see this night anymore.",
+      share.kind === 'guest' ? t('ui.planDetail.turnOffSLink', { guestName: share.guestName }) : t('ui.planDetail.stopSharingWith', { name: share.displayName }),
+      share.kind === 'guest' ? t('ui.planDetail.theLinkStopsWorkingRight') : t('ui.planDetail.theyWontSeeThisNight'),
       [
-        { text: 'Keep', style: 'cancel' },
-        { text: 'Stop sharing', style: 'destructive', onPress: async () => { try { await revokeExperienceShare(share.id); await load(); } catch (e) { presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmRemove(share) }); } } },
+        { text: t('ui.planDetail.keep'), style: 'cancel' },
+        { text: t('ui.planDetail.stopSharing'), style: 'destructive', onPress: async () => { try { await revokeExperienceShare(share.id); await load(); } catch (e) { presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmRemove(share) }); } } },
       ]
     );
   }
 
   return (
     <View>
-      <Text style={styles.sectionLabel}>Share this night</Text>
+      <Text style={styles.sectionLabel}>{t('ui.planDetail.shareThisNight')}</Text>
       <View style={styles.card}>
-        <Text style={styles.muted}>People you share it with can see the plan and where each stop stands. Only you can change it.</Text>
+        <Text style={styles.muted}>{t('ui.planDetail.peopleYouShareItWith')}</Text>
 
         {shares.map((s) => (
           <View key={s.id} style={styles.row}>
@@ -93,37 +95,37 @@ export default function ExperienceSharePanel({ planId, planTitle }) {
               <Text style={styles.muted}>{shareRowLabel(s).subtitle}</Text>
             </View>
             {s.kind === 'guest' && (
-              <TouchableOpacity onPress={() => sendLink(s.guestToken)} accessibilityRole="button" accessibilityLabel={`Send ${s.guestName}'s link again`}>
-                <Text style={styles.link}>Send</Text>
+              <TouchableOpacity onPress={() => sendLink(s.guestToken)} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.sendSLinkAgainA11y', { guestName: s.guestName })}>
+                <Text style={styles.link}>{t('ui.planDetail.send')}</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity onPress={() => confirmRemove(s)} accessibilityRole="button" accessibilityLabel="Stop sharing">
-              <Text style={[styles.link, { color: colors.danger, marginLeft: spacing.md }]}>Remove</Text>
+            <TouchableOpacity onPress={() => confirmRemove(s)} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.stopSharingA11y')}>
+              <Text style={[styles.link, { color: colors.danger, marginLeft: spacing.md }]}>{t('ui.planDetail.remove')}</Text>
             </TouchableOpacity>
           </View>
         ))}
 
         {people === null ? (
           <TouchableOpacity style={styles.action} onPress={openPicker} accessibilityRole="button">
-            <Text style={styles.link}>+ Share with a friend</Text>
+            <Text style={styles.link}>{t('ui.planDetail.shareWithAFriend')}</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.picker}>
             {people.length === 0 ? (
-              <Text style={styles.muted}>No friends or matches to add yet.</Text>
+              <Text style={styles.muted}>{t('ui.planDetail.noFriendsOrMatchesTo')}</Text>
             ) : people.map((p) => (
-              <TouchableOpacity key={p.id} style={styles.row} onPress={() => shareWith(p)} disabled={busy} accessibilityRole="button" accessibilityLabel={`Share with ${p.display_name}`}>
+              <TouchableOpacity key={p.id} style={styles.row} onPress={() => shareWith(p)} disabled={busy} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.shareWithA11y', { name: p.display_name })}>
                 <Text style={styles.name}>{p.display_name}</Text>
-                <Text style={styles.link}>Share</Text>
+                <Text style={styles.link}>{t('ui.planDetail.share')}</Text>
               </TouchableOpacity>
             ))}
-            <TouchableOpacity onPress={() => setPeople(null)} accessibilityRole="button"><Text style={styles.muted}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setPeople(null)} accessibilityRole="button"><Text style={styles.muted}>{t('ui.planDetail.cancel')}</Text></TouchableOpacity>
           </View>
         )}
 
         {!guestOpen ? (
           <TouchableOpacity style={styles.action} onPress={() => setGuestOpen(true)} accessibilityRole="button">
-            <Text style={styles.link}>+ Link for someone not on Nearby</Text>
+            <Text style={styles.link}>{t('ui.planDetail.linkForSomeoneNotOn')}</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.picker}>
@@ -131,18 +133,18 @@ export default function ExperienceSharePanel({ planId, planTitle }) {
               style={styles.input}
               value={guestName}
               onChangeText={setGuestName}
-              placeholder="Their name"
+              placeholder={t('ui.planDetail.theirName')}
               placeholderTextColor={colors.textSecondary}
               maxLength={40}
               autoFocus
-              accessibilityLabel="Guest name"
+              accessibilityLabel={t('ui.planDetail.guestNameA11y')}
             />
-            <Text style={styles.muted}>View-only, works for 30 days, and you can turn it off any time.</Text>
+            <Text style={styles.muted}>{t('ui.planDetail.viewOnlyWorksFor30')}</Text>
             <View style={styles.row}>
               <TouchableOpacity onPress={makeLink} disabled={busy || !guestName.trim()} accessibilityRole="button">
-                <Text style={[styles.link, (busy || !guestName.trim()) && { opacity: 0.4 }]}>Create and send link</Text>
+                <Text style={[styles.link, (busy || !guestName.trim()) && { opacity: 0.4 }]}>{t('ui.planDetail.createAndSendLink')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => { setGuestOpen(false); setGuestName(''); }} accessibilityRole="button"><Text style={[styles.muted, { marginLeft: spacing.md }]}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => { setGuestOpen(false); setGuestName(''); }} accessibilityRole="button"><Text style={[styles.muted, { marginLeft: spacing.md }]}>{t('ui.planDetail.cancel')}</Text></TouchableOpacity>
             </View>
           </View>
         )}

@@ -38,6 +38,12 @@ export const LOCALIZED_FILES = [
   'src/components/OfferOutcomeModal.js',
   'src/utils/requestTimeline.js',
   'src/utils/planAddonReadiness.js',
+  'src/screens/GroupPlanScreen.js',
+  'src/components/DietaryPicker.js',
+  'src/screens/PlanDetailScreen.js',
+  'src/components/ExperienceSharePanel.js',
+  'src/utils/experienceStopEdit.js',
+  'src/utils/planJourney.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
