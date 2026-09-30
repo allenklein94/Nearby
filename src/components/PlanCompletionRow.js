@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -29,10 +30,12 @@ export default function PlanCompletionRow({
   people,
   time,
   place,
-  placeLabels = { done: 'Confirmed', pending: 'Waiting to hear back', todo: 'Find a place' },
+  placeLabels: placeLabelsProp,
   onPlacePress,
   style,
 }) {
+  const { t } = useLanguage();
+  const placeLabels = placeLabelsProp ?? { done: t('ui.planCompletion.confirmed'), pending: t('ui.planCompletion.waitingToHearBack'), todo: t('ui.planCompletion.findPlace') };
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
@@ -50,24 +53,24 @@ export default function PlanCompletionRow({
     <View style={[styles.row, style]} accessibilityRole="summary">
       <View style={styles.segment}>
         <Text style={[styles.icon, { color: segmentColor(people, false) }]}>{stageIcon(people)}</Text>
-        <Text style={[styles.label, { color: segmentColor(people, false) }]}>People</Text>
+        <Text style={[styles.label, { color: segmentColor(people, false) }]}>{t('ui.planCompletion.people')}</Text>
       </View>
       <View style={styles.dot} />
       <View style={styles.segment}>
         <Text style={[styles.icon, { color: segmentColor(time, false) }]}>{stageIcon(time)}</Text>
-        <Text style={[styles.label, { color: segmentColor(time, false) }]}>Time</Text>
+        <Text style={[styles.label, { color: segmentColor(time, false) }]}>{t('ui.planCompletion.time')}</Text>
       </View>
       <View style={styles.dot} />
       {placeTappable ? (
         <TouchableOpacity
           style={styles.segment}
           onPress={onPlacePress}
-          accessibilityLabel={`Place: ${placeLabel}`}
+          accessibilityLabel={t('ui.planCompletion.placeA11y', { placeLabel: placeLabel })}
           accessibilityRole="button"
         >
           <Text style={[styles.icon, { color: segmentColor(place, true) }]}>{stageIcon(place)}</Text>
           <Text style={[styles.label, styles.labelTappable, { color: segmentColor(place, true) }]}>
-            {place === PLAN_STAGE_DONE ? 'Place' : placeLabel}
+            {place === PLAN_STAGE_DONE ? t('ui.planCompletion.place') : placeLabel}
           </Text>
           {place !== PLAN_STAGE_DONE && <Text style={[styles.arrow, { color: segmentColor(place, true) }]}>→</Text>}
         </TouchableOpacity>
@@ -75,7 +78,7 @@ export default function PlanCompletionRow({
         <View style={styles.segment}>
           <Text style={[styles.icon, { color: segmentColor(place, false) }]}>{stageIcon(place)}</Text>
           <Text style={[styles.label, { color: segmentColor(place, false) }]}>
-            {place === PLAN_STAGE_DONE ? 'Place' : placeLabel}
+            {place === PLAN_STAGE_DONE ? t('ui.planCompletion.place') : placeLabel}
           </Text>
         </View>
       )}

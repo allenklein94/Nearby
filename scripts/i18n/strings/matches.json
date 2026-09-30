@@ -1,0 +1,619 @@
+{
+  "en": {
+    "howDidYourDateGo": "How did your date go?",
+    "checkingInOnYourPlans": "Checking in on your plans with {otherName}.",
+    "imSafe": "I'm safe 👍",
+    "somethingFeltWrong": "Something felt wrong",
+    "wereHereToHelp": "We're here to help",
+    "ifYoureInImmediateDanger": "If you're in immediate danger, please contact local emergency services right away.",
+    "messageMyCheckInContact": "Message my check-in contact",
+    "updateMyDateWithDidnt": "Update: my date with {otherName} didn't go well. Checking in — please reach out.",
+    "reportOrBlock": "Report or Block",
+    "dismiss": "Dismiss",
+    "couldntLoadYourMessages": "Couldn't load your messages.",
+    "exploreThingsToDoA11y": "Explore things to do",
+    "exploreThingsToDo": "Explore Things To Do →",
+    "inviteFriendsA11y": "Invite friends",
+    "inviteFriends": "Invite Friends →",
+    "viewSProfileA11y": "View {name}'s profile",
+    "opensChatA11y": "Opens chat",
+    "percentCompatibleViewWhyA11y": "{score} percent compatible, view why",
+    "planSomethingWithGetOffersA11y": "Plan something with {name}, get offers from nearby businesses",
+    "doSomethingWithA11y": "Do something with {name}",
+    "doSomething": "🤝 Do Something",
+    "continuePlanningWithA11y": "Continue planning with {name}",
+    "matchedJustNow": "Matched just now",
+    "matchedMinutesAgo": {
+      "one": "Matched {count} minute ago",
+      "other": "Matched {count} minutes ago"
+    },
+    "matchedHoursAgo": {
+      "one": "Matched {count} hour ago",
+      "other": "Matched {count} hours ago"
+    },
+    "matchedYesterday": "Matched yesterday",
+    "matchedDaysAgo": {
+      "one": "Matched {count} day ago",
+      "other": "Matched {count} days ago"
+    },
+    "relativeWithStamp": "{relative} ({stamp})",
+    "matchedOn": "Matched {stamp}",
+    "yourDate": "your date",
+    "newOffersA11y": {
+      "one": "{count} new offer available, tap to view",
+      "other": "{count} new offers available, tap to view"
+    },
+    "newOffers": {
+      "one": "🎁 {count} new offer available",
+      "other": "🎁 {count} new offers available"
+    },
+    "metThrough": "Met through {title}",
+    "scoreWhy": "{score}% · Why?",
+    "planRomantic": "💌 Plan",
+    "planFriend": "🤝 Plan",
+    "cardWithScoreA11y": "{name}, {sub}, {score} percent compatible",
+    "cardA11y": "{name}, {sub}",
+    "distanceWithin": "Within about 1 mi",
+    "distanceAbout": "About {miles} mi away"
+  },
+  "es": {
+    "matchedJustNow": "Match hace un momento",
+    "matchedMinutesAgo": {
+      "one": "Match hace {count} minuto",
+      "other": "Match hace {count} minutos"
+    },
+    "matchedHoursAgo": {
+      "one": "Match hace {count} hora",
+      "other": "Match hace {count} horas"
+    },
+    "matchedYesterday": "Match ayer",
+    "matchedDaysAgo": {
+      "one": "Match hace {count} día",
+      "other": "Match hace {count} días"
+    },
+    "relativeWithStamp": "{relative} ({stamp})",
+    "matchedOn": "Match el {stamp}",
+    "yourDate": "tu cita",
+    "newOffersA11y": {
+      "one": "{count} oferta nueva disponible, toca para ver",
+      "other": "{count} ofertas nuevas disponibles, toca para ver"
+    },
+    "newOffers": {
+      "one": "🎁 {count} oferta nueva disponible",
+      "other": "🎁 {count} ofertas nuevas disponibles"
+    },
+    "metThrough": "Se conocieron en {title}",
+    "scoreWhy": "{score}% · ¿Por qué?",
+    "planRomantic": "💌 Planear",
+    "planFriend": "🤝 Planear",
+    "cardWithScoreA11y": "{name}, {sub}, {score} por ciento de compatibilidad",
+    "cardA11y": "{name}, {sub}",
+    "distanceWithin": "A menos de 1 mi",
+    "distanceAbout": "A unas {miles} mi",
+    "howDidYourDateGo": "¿Cómo te fue en tu cita?",
+    "checkingInOnYourPlans": "Queremos saber cómo te fue con tus planes con {otherName}.",
+    "imSafe": "Estoy bien 👍",
+    "somethingFeltWrong": "Algo no se sintió bien",
+    "wereHereToHelp": "Estamos aquí para ayudarte",
+    "ifYoureInImmediateDanger": "Si estás en peligro inmediato, comunícate de inmediato con los servicios de emergencia locales.",
+    "messageMyCheckInContact": "Escribir a mi contacto de seguridad",
+    "updateMyDateWithDidnt": "Aviso: mi cita con {otherName} no salió bien. Te escribo para que sepas; por favor comunícate conmigo.",
+    "reportOrBlock": "Denunciar o bloquear",
+    "dismiss": "Descartar",
+    "couldntLoadYourMessages": "No pudimos cargar tus mensajes.",
+    "exploreThingsToDoA11y": "Explorar cosas que hacer",
+    "exploreThingsToDo": "Explorar cosas que hacer →",
+    "inviteFriendsA11y": "Invitar amigos",
+    "inviteFriends": "Invitar amigos →",
+    "viewSProfileA11y": "Ver el perfil de {name}",
+    "opensChatA11y": "Abre el chat",
+    "percentCompatibleViewWhyA11y": "{score} por ciento de compatibilidad, ver por qué",
+    "planSomethingWithGetOffersA11y": "Planear algo con {name} y recibir ofertas de negocios cercanos",
+    "doSomethingWithA11y": "Hacer algo con {name}",
+    "doSomething": "🤝 Hacer algo",
+    "continuePlanningWithA11y": "Seguir planeando con {name}"
+  },
+  "de": {
+    "matchedJustNow": "Gerade eben gematcht",
+    "matchedMinutesAgo": {
+      "one": "Vor {count} Minute gematcht",
+      "other": "Vor {count} Minuten gematcht"
+    },
+    "matchedHoursAgo": {
+      "one": "Vor {count} Stunde gematcht",
+      "other": "Vor {count} Stunden gematcht"
+    },
+    "matchedYesterday": "Gestern gematcht",
+    "matchedDaysAgo": {
+      "one": "Vor {count} Tag gematcht",
+      "other": "Vor {count} Tagen gematcht"
+    },
+    "relativeWithStamp": "{relative} ({stamp})",
+    "matchedOn": "Gematcht am {stamp}",
+    "yourDate": "deinem Date",
+    "newOffersA11y": {
+      "one": "{count} neues Angebot verfügbar, tippen zum Ansehen",
+      "other": "{count} neue Angebote verfügbar, tippen zum Ansehen"
+    },
+    "newOffers": {
+      "one": "🎁 {count} neues Angebot verfügbar",
+      "other": "🎁 {count} neue Angebote verfügbar"
+    },
+    "metThrough": "Kennengelernt bei {title}",
+    "scoreWhy": "{score}% · Warum?",
+    "planRomantic": "💌 Planen",
+    "planFriend": "🤝 Planen",
+    "cardWithScoreA11y": "{name}, {sub}, {score} Prozent kompatibel",
+    "cardA11y": "{name}, {sub}",
+    "distanceWithin": "Weniger als ca. 1 mi entfernt",
+    "distanceAbout": "Etwa {miles} mi entfernt",
+    "howDidYourDateGo": "Wie war dein Date?",
+    "checkingInOnYourPlans": "Wir fragen nach, wie deine Pläne mit {otherName} gelaufen sind.",
+    "imSafe": "Mir geht es gut 👍",
+    "somethingFeltWrong": "Etwas fühlte sich falsch an",
+    "wereHereToHelp": "Wir sind für dich da",
+    "ifYoureInImmediateDanger": "Wenn du in unmittelbarer Gefahr bist, wende dich bitte sofort an den örtlichen Notruf.",
+    "messageMyCheckInContact": "Meinem Sicherheitskontakt schreiben",
+    "updateMyDateWithDidnt": "Kurzes Update: Mein Date mit {otherName} lief nicht gut. Bitte melde dich bei mir.",
+    "reportOrBlock": "Melden oder blockieren",
+    "dismiss": "Schließen",
+    "couldntLoadYourMessages": "Deine Nachrichten konnten nicht geladen werden.",
+    "exploreThingsToDoA11y": "Unternehmungen entdecken",
+    "exploreThingsToDo": "Unternehmungen entdecken →",
+    "inviteFriendsA11y": "Freunde einladen",
+    "inviteFriends": "Freunde einladen →",
+    "viewSProfileA11y": "Profil von {name} ansehen",
+    "opensChatA11y": "Öffnet den Chat",
+    "percentCompatibleViewWhyA11y": "{score} Prozent kompatibel, Grund ansehen",
+    "planSomethingWithGetOffersA11y": "Etwas mit {name} planen und Angebote von Geschäften in der Nähe erhalten",
+    "doSomethingWithA11y": "Etwas mit {name} unternehmen",
+    "doSomething": "🤝 Etwas unternehmen",
+    "continuePlanningWithA11y": "Weiter mit {name} planen"
+  },
+  "fr": {
+    "matchedJustNow": "Match à l’instant",
+    "matchedMinutesAgo": {
+      "one": "Match il y a {count} minute",
+      "other": "Match il y a {count} minutes"
+    },
+    "matchedHoursAgo": {
+      "one": "Match il y a {count} heure",
+      "other": "Match il y a {count} heures"
+    },
+    "matchedYesterday": "Match hier",
+    "matchedDaysAgo": {
+      "one": "Match il y a {count} jour",
+      "other": "Match il y a {count} jours"
+    },
+    "relativeWithStamp": "{relative} ({stamp})",
+    "matchedOn": "Match le {stamp}",
+    "yourDate": "ton rendez-vous",
+    "newOffersA11y": {
+      "one": "{count} nouvelle offre disponible, touche pour voir",
+      "other": "{count} nouvelles offres disponibles, touche pour voir"
+    },
+    "newOffers": {
+      "one": "🎁 {count} nouvelle offre disponible",
+      "other": "🎁 {count} nouvelles offres disponibles"
+    },
+    "metThrough": "Rencontré(e) via {title}",
+    "scoreWhy": "{score} % · Pourquoi ?",
+    "planRomantic": "💌 Prévoir",
+    "planFriend": "🤝 Prévoir",
+    "cardWithScoreA11y": "{name}, {sub}, {score} pour cent de compatibilité",
+    "cardA11y": "{name}, {sub}",
+    "distanceWithin": "À moins d’environ 1 mi",
+    "distanceAbout": "À environ {miles} mi",
+    "howDidYourDateGo": "Comment s’est passé ton rendez-vous ?",
+    "checkingInOnYourPlans": "On prend des nouvelles de tes projets avec {otherName}.",
+    "imSafe": "Tout va bien 👍",
+    "somethingFeltWrong": "Quelque chose n’allait pas",
+    "wereHereToHelp": "Nous sommes là pour t’aider",
+    "ifYoureInImmediateDanger": "Si tu es en danger immédiat, contacte tout de suite les services d’urgence locaux.",
+    "messageMyCheckInContact": "Écrire à mon contact de sécurité",
+    "updateMyDateWithDidnt": "Petit point : mon rendez-vous avec {otherName} s’est mal passé. Merci de me recontacter.",
+    "reportOrBlock": "Signaler ou bloquer",
+    "dismiss": "Ignorer",
+    "couldntLoadYourMessages": "Impossible de charger tes messages.",
+    "exploreThingsToDoA11y": "Découvrir des choses à faire",
+    "exploreThingsToDo": "Découvrir des choses à faire →",
+    "inviteFriendsA11y": "Inviter des amis",
+    "inviteFriends": "Inviter des amis →",
+    "viewSProfileA11y": "Voir le profil de {name}",
+    "opensChatA11y": "Ouvre la discussion",
+    "percentCompatibleViewWhyA11y": "{score} pour cent de compatibilité, voir pourquoi",
+    "planSomethingWithGetOffersA11y": "Prévoir quelque chose avec {name} et recevoir des offres de commerces proches",
+    "doSomethingWithA11y": "Faire quelque chose avec {name}",
+    "doSomething": "🤝 Faire quelque chose",
+    "continuePlanningWithA11y": "Continuer à prévoir avec {name}"
+  },
+  "pt": {
+    "matchedJustNow": "Match agora mesmo",
+    "matchedMinutesAgo": {
+      "one": "Match há {count} minuto",
+      "other": "Match há {count} minutos"
+    },
+    "matchedHoursAgo": {
+      "one": "Match há {count} hora",
+      "other": "Match há {count} horas"
+    },
+    "matchedYesterday": "Match ontem",
+    "matchedDaysAgo": {
+      "one": "Match há {count} dia",
+      "other": "Match há {count} dias"
+    },
+    "relativeWithStamp": "{relative} ({stamp})",
+    "matchedOn": "Match em {stamp}",
+    "yourDate": "seu encontro",
+    "newOffersA11y": {
+      "one": "{count} nova oferta disponível, toque para ver",
+      "other": "{count} novas ofertas disponíveis, toque para ver"
+    },
+    "newOffers": {
+      "one": "🎁 {count} nova oferta disponível",
+      "other": "🎁 {count} novas ofertas disponíveis"
+    },
+    "metThrough": "Vocês se conheceram em {title}",
+    "scoreWhy": "{score}% · Por quê?",
+    "planRomantic": "💌 Planejar",
+    "planFriend": "🤝 Planejar",
+    "cardWithScoreA11y": "{name}, {sub}, {score} por cento de compatibilidade",
+    "cardA11y": "{name}, {sub}",
+    "distanceWithin": "A menos de 1 mi",
+    "distanceAbout": "A cerca de {miles} mi",
+    "howDidYourDateGo": "Como foi seu encontro?",
+    "checkingInOnYourPlans": "Queremos saber como foram seus planos com {otherName}.",
+    "imSafe": "Estou bem 👍",
+    "somethingFeltWrong": "Algo pareceu errado",
+    "wereHereToHelp": "Estamos aqui para ajudar",
+    "ifYoureInImmediateDanger": "Se você estiver em perigo imediato, entre em contato com os serviços de emergência locais agora mesmo.",
+    "messageMyCheckInContact": "Mandar mensagem ao meu contato de segurança",
+    "updateMyDateWithDidnt": "Atualização: meu encontro com {otherName} não foi bem. Por favor, entre em contato comigo.",
+    "reportOrBlock": "Denunciar ou bloquear",
+    "dismiss": "Dispensar",
+    "couldntLoadYourMessages": "Não foi possível carregar suas mensagens.",
+    "exploreThingsToDoA11y": "Explorar o que fazer",
+    "exploreThingsToDo": "Explorar o que fazer →",
+    "inviteFriendsA11y": "Convidar amigos",
+    "inviteFriends": "Convidar amigos →",
+    "viewSProfileA11y": "Ver o perfil de {name}",
+    "opensChatA11y": "Abre o chat",
+    "percentCompatibleViewWhyA11y": "{score} por cento de compatibilidade, ver por quê",
+    "planSomethingWithGetOffersA11y": "Planejar algo com {name} e receber ofertas de negócios próximos",
+    "doSomethingWithA11y": "Fazer algo com {name}",
+    "doSomething": "🤝 Fazer algo",
+    "continuePlanningWithA11y": "Continuar planejando com {name}"
+  },
+  "ht": {
+    "matchedJustNow": "Match kounye a la",
+    "matchedMinutesAgo": {
+      "other": "Match sa gen {count} minit"
+    },
+    "matchedHoursAgo": {
+      "other": "Match sa gen {count} èdtan"
+    },
+    "matchedYesterday": "Match yè",
+    "matchedDaysAgo": {
+      "other": "Match sa gen {count} jou"
+    },
+    "relativeWithStamp": "{relative} ({stamp})",
+    "matchedOn": "Match {stamp}",
+    "yourDate": "randevou ou",
+    "newOffersA11y": {
+      "other": "{count} nouvo òf disponib, peze pou wè"
+    },
+    "newOffers": {
+      "other": "🎁 {count} nouvo òf disponib"
+    },
+    "metThrough": "Nou te rankontre nan {title}",
+    "scoreWhy": "{score}% · Poukisa?",
+    "planRomantic": "💌 Planifye",
+    "planFriend": "🤝 Planifye",
+    "cardWithScoreA11y": "{name}, {sub}, {score} pousan konpatib",
+    "cardA11y": "{name}, {sub}",
+    "distanceWithin": "Mwens pase apeprè 1 mi",
+    "distanceAbout": "Apeprè {miles} mi",
+    "howDidYourDateGo": "Kijan randevou w la te pase?",
+    "checkingInOnYourPlans": "Nou vle konnen kijan plan w yo ak {otherName} te pase.",
+    "imSafe": "Mwen anfòm 👍",
+    "somethingFeltWrong": "Gen yon bagay ki pa t bon",
+    "wereHereToHelp": "Nou la pou ede w",
+    "ifYoureInImmediateDanger": "Si w an danje kounye a, rele sèvis ijans lokal yo touswit.",
+    "messageMyCheckInContact": "Voye mesaj bay kontak sekirite mwen",
+    "updateMyDateWithDidnt": "Nouvèl: randevou mwen ak {otherName} pa t pase byen. Tanpri kontakte m.",
+    "reportOrBlock": "Siyale oswa bloke",
+    "dismiss": "Fèmen",
+    "couldntLoadYourMessages": "Nou pa t ka chaje mesaj ou yo.",
+    "exploreThingsToDoA11y": "Eksplore bagay pou fè",
+    "exploreThingsToDo": "Eksplore bagay pou fè →",
+    "inviteFriendsA11y": "Envite zanmi",
+    "inviteFriends": "Envite zanmi →",
+    "viewSProfileA11y": "Wè pwofil {name}",
+    "opensChatA11y": "Louvri chat la",
+    "percentCompatibleViewWhyA11y": "{score} pousan konpatib, wè poukisa",
+    "planSomethingWithGetOffersA11y": "Planifye yon bagay ak {name}, resevwa òf nan biznis ki toupre",
+    "doSomethingWithA11y": "Fè yon bagay ak {name}",
+    "doSomething": "🤝 Fè yon bagay",
+    "continuePlanningWithA11y": "Kontinye planifye ak {name}"
+  },
+  "zh": {
+    "matchedJustNow": "刚刚配对",
+    "matchedMinutesAgo": {
+      "other": "{count} 分钟前配对"
+    },
+    "matchedHoursAgo": {
+      "other": "{count} 小时前配对"
+    },
+    "matchedYesterday": "昨天配对",
+    "matchedDaysAgo": {
+      "other": "{count} 天前配对"
+    },
+    "relativeWithStamp": "{relative}（{stamp}）",
+    "matchedOn": "配对于 {stamp}",
+    "yourDate": "你的约会对象",
+    "newOffersA11y": {
+      "other": "{count} 个新优惠可用，点按查看"
+    },
+    "newOffers": {
+      "other": "🎁 {count} 个新优惠可用"
+    },
+    "metThrough": "通过 {title} 认识",
+    "scoreWhy": "{score}% · 为什么？",
+    "planRomantic": "💌 计划",
+    "planFriend": "🤝 计划",
+    "cardWithScoreA11y": "{name}，{sub}，匹配度 {score}%",
+    "cardA11y": "{name}，{sub}",
+    "distanceWithin": "约 1 英里以内",
+    "distanceAbout": "约 {miles} 英里外",
+    "howDidYourDateGo": "你的约会怎么样？",
+    "checkingInOnYourPlans": "来问问你和 {otherName} 的计划进展如何。",
+    "imSafe": "我很安全 👍",
+    "somethingFeltWrong": "感觉有些不对",
+    "wereHereToHelp": "我们在这里帮助你",
+    "ifYoureInImmediateDanger": "如果你正处于紧急危险中，请立即联系当地紧急服务。",
+    "messageMyCheckInContact": "给我的安全联系人发消息",
+    "updateMyDateWithDidnt": "近况：我和 {otherName} 的约会不太顺利。请联系我。",
+    "reportOrBlock": "举报或屏蔽",
+    "dismiss": "关闭",
+    "couldntLoadYourMessages": "无法加载你的消息。",
+    "exploreThingsToDoA11y": "探索可做的事",
+    "exploreThingsToDo": "探索可做的事 →",
+    "inviteFriendsA11y": "邀请朋友",
+    "inviteFriends": "邀请朋友 →",
+    "viewSProfileA11y": "查看 {name} 的资料",
+    "opensChatA11y": "打开聊天",
+    "percentCompatibleViewWhyA11y": "匹配度 {score}%，查看原因",
+    "planSomethingWithGetOffersA11y": "和 {name} 一起计划，获取附近商家的优惠",
+    "doSomethingWithA11y": "和 {name} 一起做点什么",
+    "doSomething": "🤝 一起做点什么",
+    "continuePlanningWithA11y": "继续和 {name} 计划"
+  },
+  "vi": {
+    "matchedJustNow": "Vừa ghép đôi",
+    "matchedMinutesAgo": {
+      "other": "Ghép đôi {count} phút trước"
+    },
+    "matchedHoursAgo": {
+      "other": "Ghép đôi {count} giờ trước"
+    },
+    "matchedYesterday": "Ghép đôi hôm qua",
+    "matchedDaysAgo": {
+      "other": "Ghép đôi {count} ngày trước"
+    },
+    "relativeWithStamp": "{relative} ({stamp})",
+    "matchedOn": "Ghép đôi lúc {stamp}",
+    "yourDate": "người hẹn hò của bạn",
+    "newOffersA11y": {
+      "other": "{count} ưu đãi mới, chạm để xem"
+    },
+    "newOffers": {
+      "other": "🎁 {count} ưu đãi mới"
+    },
+    "metThrough": "Quen nhau qua {title}",
+    "scoreWhy": "{score}% · Vì sao?",
+    "planRomantic": "💌 Lên kế hoạch",
+    "planFriend": "🤝 Lên kế hoạch",
+    "cardWithScoreA11y": "{name}, {sub}, hợp nhau {score} phần trăm",
+    "cardA11y": "{name}, {sub}",
+    "distanceWithin": "Trong khoảng 1 mi",
+    "distanceAbout": "Cách khoảng {miles} mi",
+    "howDidYourDateGo": "Buổi hẹn của bạn thế nào?",
+    "checkingInOnYourPlans": "Chúng tôi hỏi thăm về kế hoạch của bạn với {otherName}.",
+    "imSafe": "Tôi an toàn 👍",
+    "somethingFeltWrong": "Có điều gì đó không ổn",
+    "wereHereToHelp": "Chúng tôi luôn sẵn sàng giúp bạn",
+    "ifYoureInImmediateDanger": "Nếu bạn đang gặp nguy hiểm, hãy liên hệ ngay với dịch vụ khẩn cấp tại địa phương.",
+    "messageMyCheckInContact": "Nhắn cho người liên hệ an toàn của tôi",
+    "updateMyDateWithDidnt": "Cập nhật: buổi hẹn của mình với {otherName} không ổn. Hãy liên lạc với mình nhé.",
+    "reportOrBlock": "Báo cáo hoặc chặn",
+    "dismiss": "Bỏ qua",
+    "couldntLoadYourMessages": "Không thể tải tin nhắn của bạn.",
+    "exploreThingsToDoA11y": "Khám phá việc để làm",
+    "exploreThingsToDo": "Khám phá việc để làm →",
+    "inviteFriendsA11y": "Mời bạn bè",
+    "inviteFriends": "Mời bạn bè →",
+    "viewSProfileA11y": "Xem hồ sơ của {name}",
+    "opensChatA11y": "Mở cuộc trò chuyện",
+    "percentCompatibleViewWhyA11y": "Hợp nhau {score} phần trăm, xem lý do",
+    "planSomethingWithGetOffersA11y": "Lên kế hoạch với {name}, nhận ưu đãi từ các cửa hàng gần đây",
+    "doSomethingWithA11y": "Làm gì đó cùng {name}",
+    "doSomething": "🤝 Làm gì đó cùng nhau",
+    "continuePlanningWithA11y": "Tiếp tục lên kế hoạch với {name}"
+  },
+  "tl": {
+    "matchedJustNow": "Nag-match ngayon lang",
+    "matchedMinutesAgo": {
+      "one": "Nag-match {count} minuto ang nakalipas",
+      "other": "Nag-match {count} minuto ang nakalipas"
+    },
+    "matchedHoursAgo": {
+      "one": "Nag-match {count} oras ang nakalipas",
+      "other": "Nag-match {count} oras ang nakalipas"
+    },
+    "matchedYesterday": "Nag-match kahapon",
+    "matchedDaysAgo": {
+      "one": "Nag-match {count} araw ang nakalipas",
+      "other": "Nag-match {count} araw ang nakalipas"
+    },
+    "relativeWithStamp": "{relative} ({stamp})",
+    "matchedOn": "Nag-match noong {stamp}",
+    "yourDate": "ka-date mo",
+    "newOffersA11y": {
+      "one": "{count} bagong alok, i-tap para makita",
+      "other": "{count} bagong alok, i-tap para makita"
+    },
+    "newOffers": {
+      "one": "🎁 {count} bagong alok",
+      "other": "🎁 {count} bagong alok"
+    },
+    "metThrough": "Nagkakilala sa {title}",
+    "scoreWhy": "{score}% · Bakit?",
+    "planRomantic": "💌 Magplano",
+    "planFriend": "🤝 Magplano",
+    "cardWithScoreA11y": "{name}, {sub}, {score} porsiyentong tugma",
+    "cardA11y": "{name}, {sub}",
+    "distanceWithin": "Mga 1 mi lang ang layo",
+    "distanceAbout": "Mga {miles} mi ang layo",
+    "howDidYourDateGo": "Kumusta ang date mo?",
+    "checkingInOnYourPlans": "Kinukumusta namin ang plano mo kasama si {otherName}.",
+    "imSafe": "Ligtas ako 👍",
+    "somethingFeltWrong": "May hindi tama",
+    "wereHereToHelp": "Nandito kami para tumulong",
+    "ifYoureInImmediateDanger": "Kung nasa agarang panganib ka, tumawag agad sa lokal na emergency services.",
+    "messageMyCheckInContact": "I-message ang aking check-in contact",
+    "updateMyDateWithDidnt": "Update: hindi naging maayos ang date ko kay {otherName}. Pakikontak ako.",
+    "reportOrBlock": "I-report o I-block",
+    "dismiss": "Isara",
+    "couldntLoadYourMessages": "Hindi ma-load ang mga mensahe mo.",
+    "exploreThingsToDoA11y": "Mag-explore ng mga puwedeng gawin",
+    "exploreThingsToDo": "Mag-explore ng Puwedeng Gawin →",
+    "inviteFriendsA11y": "Mag-imbita ng mga kaibigan",
+    "inviteFriends": "Mag-imbita ng Kaibigan →",
+    "viewSProfileA11y": "Tingnan ang profile ni {name}",
+    "opensChatA11y": "Binubuksan ang chat",
+    "percentCompatibleViewWhyA11y": "{score} porsiyentong tugma, tingnan kung bakit",
+    "planSomethingWithGetOffersA11y": "Magplano kasama si {name}, makakuha ng alok mula sa mga negosyo sa malapit",
+    "doSomethingWithA11y": "Gumawa ng isang bagay kasama si {name}",
+    "doSomething": "🤝 Gumawa ng Isang Bagay",
+    "continuePlanningWithA11y": "Ituloy ang pagpaplano kasama si {name}"
+  },
+  "ru": {
+    "matchedJustNow": "Пара только что",
+    "matchedMinutesAgo": {
+      "one": "Пара {count} минуту назад",
+      "few": "Пара {count} минуты назад",
+      "many": "Пара {count} минут назад",
+      "other": "Пара {count} минут назад"
+    },
+    "matchedHoursAgo": {
+      "one": "Пара {count} час назад",
+      "few": "Пара {count} часа назад",
+      "many": "Пара {count} часов назад",
+      "other": "Пара {count} часов назад"
+    },
+    "matchedYesterday": "Пара вчера",
+    "matchedDaysAgo": {
+      "one": "Пара {count} день назад",
+      "few": "Пара {count} дня назад",
+      "many": "Пара {count} дней назад",
+      "other": "Пара {count} дней назад"
+    },
+    "relativeWithStamp": "{relative} ({stamp})",
+    "matchedOn": "Пара с {stamp}",
+    "yourDate": "вашего свидания",
+    "newOffersA11y": {
+      "one": "{count} новое предложение, нажмите, чтобы посмотреть",
+      "few": "{count} новых предложения, нажмите, чтобы посмотреть",
+      "many": "{count} новых предложений, нажмите, чтобы посмотреть",
+      "other": "{count} новых предложений, нажмите, чтобы посмотреть"
+    },
+    "newOffers": {
+      "one": "🎁 {count} новое предложение",
+      "few": "🎁 {count} новых предложения",
+      "many": "🎁 {count} новых предложений",
+      "other": "🎁 {count} новых предложений"
+    },
+    "metThrough": "Познакомились на «{title}»",
+    "scoreWhy": "{score}% · Почему?",
+    "planRomantic": "💌 Спланировать",
+    "planFriend": "🤝 Спланировать",
+    "cardWithScoreA11y": "{name}, {sub}, совместимость {score} процентов",
+    "cardA11y": "{name}, {sub}",
+    "distanceWithin": "В пределах примерно 1 мили",
+    "distanceAbout": "Примерно в {miles} ми",
+    "howDidYourDateGo": "Как прошло свидание?",
+    "checkingInOnYourPlans": "Узнаём, как прошли ваши планы с {otherName}.",
+    "imSafe": "Со мной всё в порядке 👍",
+    "somethingFeltWrong": "Что-то было не так",
+    "wereHereToHelp": "Мы готовы помочь",
+    "ifYoureInImmediateDanger": "Если вам грозит непосредственная опасность, немедленно обратитесь в местные экстренные службы.",
+    "messageMyCheckInContact": "Написать моему контакту для связи",
+    "updateMyDateWithDidnt": "Сообщаю: свидание с {otherName} прошло плохо. Пожалуйста, свяжись со мной.",
+    "reportOrBlock": "Пожаловаться или заблокировать",
+    "dismiss": "Закрыть",
+    "couldntLoadYourMessages": "Не удалось загрузить ваши сообщения.",
+    "exploreThingsToDoA11y": "Найти чем заняться",
+    "exploreThingsToDo": "Найти чем заняться →",
+    "inviteFriendsA11y": "Пригласить друзей",
+    "inviteFriends": "Пригласить друзей →",
+    "viewSProfileA11y": "Открыть профиль: {name}",
+    "opensChatA11y": "Открывает чат",
+    "percentCompatibleViewWhyA11y": "Совместимость {score} процентов, посмотреть почему",
+    "planSomethingWithGetOffersA11y": "Спланировать что-нибудь с {name} и получить предложения от заведений поблизости",
+    "doSomethingWithA11y": "Заняться чем-нибудь с {name}",
+    "doSomething": "🤝 Заняться чем-нибудь",
+    "continuePlanningWithA11y": "Продолжить планировать с {name}"
+  },
+  "ko": {
+    "matchedJustNow": "방금 매칭됨",
+    "matchedMinutesAgo": {
+      "other": "{count}분 전 매칭됨"
+    },
+    "matchedHoursAgo": {
+      "other": "{count}시간 전 매칭됨"
+    },
+    "matchedYesterday": "어제 매칭됨",
+    "matchedDaysAgo": {
+      "other": "{count}일 전 매칭됨"
+    },
+    "relativeWithStamp": "{relative} ({stamp})",
+    "matchedOn": "{stamp}에 매칭됨",
+    "yourDate": "데이트 상대",
+    "newOffersA11y": {
+      "other": "새 혜택 {count}개, 탭하여 보기"
+    },
+    "newOffers": {
+      "other": "🎁 새 혜택 {count}개"
+    },
+    "metThrough": "{title}에서 만남",
+    "scoreWhy": "{score}% · 이유는?",
+    "planRomantic": "💌 계획하기",
+    "planFriend": "🤝 계획하기",
+    "cardWithScoreA11y": "{name}, {sub}, {score}퍼센트 잘 맞음",
+    "cardA11y": "{name}, {sub}",
+    "distanceWithin": "약 1마일 이내",
+    "distanceAbout": "약 {miles}마일 거리",
+    "howDidYourDateGo": "데이트는 어땠나요?",
+    "checkingInOnYourPlans": "{otherName}님과의 계획이 어땠는지 확인하고 있어요.",
+    "imSafe": "안전해요 👍",
+    "somethingFeltWrong": "뭔가 이상했어요",
+    "wereHereToHelp": "도와드릴게요",
+    "ifYoureInImmediateDanger": "지금 위험한 상황이라면 즉시 지역 긴급 서비스에 연락하세요.",
+    "messageMyCheckInContact": "안전 연락처에 메시지 보내기",
+    "updateMyDateWithDidnt": "알림: {otherName}님과의 데이트가 잘 되지 않았어요. 연락 부탁해요.",
+    "reportOrBlock": "신고 또는 차단",
+    "dismiss": "닫기",
+    "couldntLoadYourMessages": "메시지를 불러오지 못했어요.",
+    "exploreThingsToDoA11y": "할 거리 둘러보기",
+    "exploreThingsToDo": "할 거리 둘러보기 →",
+    "inviteFriendsA11y": "친구 초대하기",
+    "inviteFriends": "친구 초대하기 →",
+    "viewSProfileA11y": "{name}님의 프로필 보기",
+    "opensChatA11y": "채팅을 엽니다",
+    "percentCompatibleViewWhyA11y": "{score}퍼센트 잘 맞음, 이유 보기",
+    "planSomethingWithGetOffersA11y": "{name}님과 계획하고 근처 가게의 혜택 받기",
+    "doSomethingWithA11y": "{name}님과 함께 무언가 하기",
+    "doSomething": "🤝 함께 하기",
+    "continuePlanningWithA11y": "{name}님과 계속 계획하기"
+  }
+}

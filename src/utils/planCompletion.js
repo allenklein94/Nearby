@@ -1,3 +1,4 @@
+import { tr } from '../i18n/translate';
 // Real, derived "People / Time / Place" plan-completion state (CLAUDE.md,
 // Aug 29 2026 -- "A persistent unfinished plan state connecting Match ->
 // Plan -> Business"). This is deliberately a pure, computed read over data
@@ -90,15 +91,12 @@ export function formatPlaceStatusLabel({
   offeredCount = 0,
   venueName = null,
 } = {}) {
-  if (place === PLAN_STAGE_DONE) return venueName ? `Booked at ${venueName}` : 'Booked';
+  // Wording in ui.planCompletion (English unchanged).
+  if (place === PLAN_STAGE_DONE) return venueName ? tr('ui.planCompletion.bookedAt', { name: venueName }) : tr('ui.planCompletion.booked');
   if (place === PLAN_STAGE_PENDING) {
-    if (offeredCount > 0) {
-      return `${offeredCount} offer${offeredCount === 1 ? '' : 's'} — choose one`;
-    }
-    if (pendingCount > 0) {
-      return `Asked ${pendingCount} business${pendingCount === 1 ? '' : 'es'} — waiting to hear back`;
-    }
-    return 'Waiting for business offer';
+    if (offeredCount > 0) return tr('ui.planCompletion.offersChoose', { count: offeredCount });
+    if (pendingCount > 0) return tr('ui.planCompletion.askedWaiting', { count: pendingCount });
+    return tr('ui.planCompletion.waitingOffer');
   }
-  return 'Find a place';
+  return tr('ui.planCompletion.findPlace');
 }

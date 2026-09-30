@@ -22,8 +22,10 @@ import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { Share } from 'react-native';
 import { parseDate } from '../utils/timeLabels';
+import { tr, DEFAULT_LANGUAGE } from '../i18n/translate';
+import { displayDateTime } from '../i18n/display';
 
-function formatMatchedTime(iso) {
+function formatMatchedTime(iso, language) {
   const then = parseDate(iso);
   if (!then) return null;
   const diffMs = Date.now() - then.getTime();
@@ -31,23 +33,25 @@ function formatMatchedTime(iso) {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  const dateTimeStamp = then.toLocaleDateString([], { month: 'short', day: 'numeric' }) +
-    ', ' + then.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  // English keeps its short stamp ("Aug 14, 7:15 PM"); other languages use the shared localized date + time.
+  const dateTimeStamp = !language || language === DEFAULT_LANGUAGE
+    ? then.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' + then.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : displayDateTime(iso, language);
 
   let relative;
-  if (diffMins < 1) relative = 'Matched just now';
-  else if (diffMins < 60) relative = `Matched ${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
-  else if (diffHours < 24) relative = `Matched ${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
-  else if (diffDays === 1) relative = 'Matched yesterday';
-  else if (diffDays < 7) relative = `Matched ${diffDays} days ago`;
+  if (diffMins < 1) relative = tr('ui.matches.matchedJustNow');
+  else if (diffMins < 60) relative = tr('ui.matches.matchedMinutesAgo', { count: diffMins });
+  else if (diffHours < 24) relative = tr('ui.matches.matchedHoursAgo', { count: diffHours });
+  else if (diffDays === 1) relative = tr('ui.matches.matchedYesterday');
+  else if (diffDays < 7) relative = tr('ui.matches.matchedDaysAgo', { count: diffDays });
   else relative = null;
 
-  return relative ? `${relative} (${dateTimeStamp})` : `Matched ${dateTimeStamp}`;
+  return relative ? tr('ui.matches.relativeWithStamp', { relative, stamp: dateTimeStamp }) : tr('ui.matches.matchedOn', { stamp: dateTimeStamp });
 }
 
 export default function MatchesScreen({ navigation }) {
   const { colors } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const styles = getStyles(colors);
   const [matches, setMatches] = useState([]);
   const [myUserId, setMyUserId] = useState(null);
@@ -189,18 +193,18 @@ export default function MatchesScreen({ navigation }) {
 
     const checkin = pending[0];
     const match = checkin.matches;
-    const otherName = match ? (match.a?.display_name ?? match.b?.display_name) : 'your date';
+    const otherName = match ? (match.a?.display_name ?? match.b?.display_name) : t('ui.matches.yourDate');
 
     Alert.alert(
-      'How did your date go?',
-      `Checking in on your plans with ${otherName}.`,
+      t('ui.matches.howDidYourDateGo'),
+      t('ui.matches.checkingInOnYourPlans', { otherName: otherName }),
       [
         {
-          text: "I'm safe 👍",
+          text: t('ui.matches.imSafe'),
           onPress: () => respondToCheckIn(checkin.id, 'safe'),
         },
         {
-          text: 'Something felt wrong',
+          text: t('ui.matches.somethingFeltWrong'),
           style: 'destructive',
           onPress: () => handleSomethingWrong(checkin, otherName),
         },
@@ -210,24 +214,24 @@ export default function MatchesScreen({ navigation }) {
 
   function handleSomethingWrong(checkin, otherName) {
     Alert.alert(
-      "We're here to help",
-      "If you're in immediate danger, please contact local emergency services right away.",
+      t('ui.matches.wereHereToHelp'),
+      t('ui.matches.ifYoureInImmediateDanger'),
       [
         {
-          text: 'Message my check-in contact',
+          text: t('ui.matches.messageMyCheckInContact'),
           onPress: async () => {
-            await Share.share({ message: `Update: my date with ${otherName} didn't go well. Checking in — please reach out.` });
+            await Share.share({ message: t('ui.matches.updateMyDateWithDidnt', { otherName: otherName }) });
             respondToCheckIn(checkin.id, 'help_needed');
           },
         },
         {
-          text: 'Report or Block',
+          text: t('ui.matches.reportOrBlock'),
           onPress: () => {
             respondToCheckIn(checkin.id, 'help_needed');
             navigation.navigate('Chat', { matchId: checkin.match_id });
           },
         },
-        { text: 'Dismiss', style: 'cancel', onPress: () => respondToCheckIn(checkin.id, 'help_needed') },
+        { text: t('ui.matches.dismiss'), style: 'cancel', onPress: () => respondToCheckIn(checkin.id, 'help_needed') },
       ]
     );
   }
@@ -294,10 +298,10 @@ export default function MatchesScreen({ navigation }) {
           style={styles.offersBanner}
           onPress={() => navigation.navigate('BrandOffers')}
           activeOpacity={0.85}
-          accessibilityLabel={`${newOfferCount} new offer${newOfferCount === 1 ? '' : 's'} available, tap to view`}
+          accessibilityLabel={t('ui.matches.newOffersA11y', { count: newOfferCount })}
           accessibilityRole="button"
         >
-          <Text style={styles.offersBannerText}>🎁 {newOfferCount} new offer{newOfferCount === 1 ? '' : 's'} available</Text>
+          <Text style={styles.offersBannerText}>{t('ui.matches.newOffers', { count: newOfferCount })}</Text>
           <Text style={styles.offersBannerArrow}>›</Text>
         </TouchableOpacity>
       )}
@@ -305,7 +309,7 @@ export default function MatchesScreen({ navigation }) {
       {loading ? (
         <SkeletonFeed count={4} />
       ) : loadError ? (
-        <LoadErrorState message="Couldn't load your messages." onRetry={load} />
+        <LoadErrorState message={t('ui.matches.couldntLoadYourMessages')} onRetry={load} />
       ) : (
       <FlatList
         data={matches}
@@ -323,17 +327,17 @@ export default function MatchesScreen({ navigation }) {
             <View style={styles.emptyActionsRow}>
               <TouchableOpacity
                 onPress={() => navigation.navigate('Discover')}
-                accessibilityLabel="Explore things to do"
+                accessibilityLabel={t('ui.matches.exploreThingsToDoA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.emptyActionText}>Explore Things To Do →</Text>
+                <Text style={styles.emptyActionText}>{t('ui.matches.exploreThingsToDo')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => navigation.navigate('InviteFriends')}
-                accessibilityLabel="Invite friends"
+                accessibilityLabel={t('ui.matches.inviteFriendsA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.emptyActionText}>Invite Friends →</Text>
+                <Text style={styles.emptyActionText}>{t('ui.matches.inviteFriends')}</Text>
               </TouchableOpacity>
             </View>
           </FadeInState>
@@ -345,8 +349,8 @@ export default function MatchesScreen({ navigation }) {
           // show it for genuinely romantic matches.
           const isRomanticMatch = !item.source_gathering_id && !item.source_friendship_id;
           const report = isRomanticMatch ? generateCompatibilityReport(myProfile, other) : { score: null };
-          const gatheringLabel = item.gatherings?.title ? `Met through ${item.gatherings.title}` : null;
-          const matchedLabel = formatMatchedTime(item.matched_at);
+          const gatheringLabel = item.gatherings?.title ? t('ui.matches.metThrough', { title: item.gatherings.title }) : null;
+          const matchedLabel = formatMatchedTime(item.matched_at, language);
           const distanceLabel = isRomanticMatch ? matchDistanceLabel(distanceByMatch[item.id]) : null;
           const baseSubLabel = gatheringLabel ? `${gatheringLabel} · ${matchedLabel}` : matchedLabel || t('matches.tapToChat');
           const subLabel = distanceLabel ? `${baseSubLabel} · ${distanceLabel}` : baseSubLabel;
@@ -381,7 +385,7 @@ export default function MatchesScreen({ navigation }) {
                   pendingCount: activePlan?.pendingCount ?? 0,
                   offeredCount: activePlan?.offeredCount ?? 0,
                 }),
-                todo: 'Find a place',
+                todo: t('ui.planCompletion.findPlace'),
               }
             : undefined;
           return (
@@ -390,7 +394,7 @@ export default function MatchesScreen({ navigation }) {
               <TouchableOpacity
                 onPress={() => navigation.navigate('ViewProfile', { userId: other?.id, ...(isRomanticMatch ? { viewContext: 'dating' } : null) })}
                 activeOpacity={0.85}
-                accessibilityLabel={`View ${other?.display_name}'s profile`}
+                accessibilityLabel={t('ui.matches.viewSProfileA11y', { name: other?.display_name })}
                 accessibilityRole="button"
               >
                 {photoUrls[item.id] ? (
@@ -403,9 +407,9 @@ export default function MatchesScreen({ navigation }) {
                 style={styles.cardInfo}
                 onPress={() => navigation.navigate('Chat', { matchId: item.id })}
                 activeOpacity={0.85}
-                accessibilityLabel={`${other?.display_name}, ${subLabel}${report.score !== null ? `, ${report.score} percent compatible` : ''}`}
+                accessibilityLabel={report.score !== null ? t('ui.matches.cardWithScoreA11y', { name: other?.display_name, sub: subLabel, score: report.score }) : t('ui.matches.cardA11y', { name: other?.display_name, sub: subLabel })}
                 accessibilityRole="button"
-                accessibilityHint="Opens chat"
+                accessibilityHint={t('ui.matches.opensChatA11y')}
               >
                 <View style={styles.nameRow}>
                   <Text style={styles.name}>{other?.display_name}</Text>
@@ -413,11 +417,11 @@ export default function MatchesScreen({ navigation }) {
                     <TouchableOpacity
                       style={[styles.compatBadge, { borderColor: compatibilityColor(report.score) }]}
                       onPress={() => showCompatibilityReport(item)}
-                      accessibilityLabel={`${report.score} percent compatible, view why`}
+                      accessibilityLabel={t('ui.matches.percentCompatibleViewWhyA11y', { score: report.score })}
                       accessibilityRole="button"
                     >
                       <Text style={[styles.compatText, { color: compatibilityColor(report.score) }]}>
-                        {report.score}% · Why?
+                        {t('ui.matches.scoreWhy', { score: report.score })}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -429,10 +433,10 @@ export default function MatchesScreen({ navigation }) {
                   style={styles.planDateButton}
                   onPress={() => navigation.navigate('DateProposal', { matchId: item.id, matchName: other?.display_name })}
                   activeOpacity={0.85}
-                  accessibilityLabel={`Plan something with ${other?.display_name}, get offers from nearby businesses`}
+                  accessibilityLabel={t('ui.matches.planSomethingWithGetOffersA11y', { name: other?.display_name })}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.planDateButtonText}>{isRomanticMatch ? '💌 Plan' : '🤝 Plan'}</Text>
+                  <Text style={styles.planDateButtonText}>{isRomanticMatch ? t('ui.matches.planRomantic') : t('ui.matches.planFriend')}</Text>
                 </TouchableOpacity>
               ) : canStartPlan ? null : (
                 // A gathering-sourced match's own "plan" is the linked
@@ -449,10 +453,10 @@ export default function MatchesScreen({ navigation }) {
                   style={styles.planDateButton}
                   onPress={() => navigation.navigate('Chat', { matchId: item.id, openTogetherMenu: true })}
                   activeOpacity={0.85}
-                  accessibilityLabel={`Do something with ${other?.display_name}`}
+                  accessibilityLabel={t('ui.matches.doSomethingWithA11y', { name: other?.display_name })}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.planDateButtonText}>🤝 Do Something</Text>
+                  <Text style={styles.planDateButtonText}>{t('ui.matches.doSomething')}</Text>
                 </TouchableOpacity>
               )}
               <Text style={styles.chevron}>›</Text>
@@ -462,7 +466,7 @@ export default function MatchesScreen({ navigation }) {
                 style={styles.planStatusRow}
                 onPress={() => navigation.navigate('DateProposal', { matchId: item.id, matchName: other?.display_name })}
                 activeOpacity={0.85}
-                accessibilityLabel={`Continue planning with ${other?.display_name}`}
+                accessibilityLabel={t('ui.matches.continuePlanningWithA11y', { name: other?.display_name })}
                 accessibilityRole="button"
               >
                 <PlanCompletionRow
