@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image, ActivityIndicator } from 'react-native';
 import { NLoader } from '../motion';
@@ -10,6 +11,7 @@ import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 
 export default function MemoryVaultIndexScreen({ navigation }) {
+  const { t } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [matches, setMatches] = useState([]);
@@ -48,7 +50,7 @@ export default function MemoryVaultIndexScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your memories...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.matchNotes.loadingYourMemories')}</Text>
       </SafeAreaView>
     );
   }
@@ -56,7 +58,7 @@ export default function MemoryVaultIndexScreen({ navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load your memories." onRetry={load} />
+        <LoadErrorState message={t('ui.matchNotes.couldntLoadYourMemories')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -69,14 +71,14 @@ export default function MemoryVaultIndexScreen({ navigation }) {
         contentContainerStyle={{ padding: spacing.lg }}
         ListHeaderComponent={
           <Text style={styles.subtitle}>
-            Each match has its own shared memory vault — pick one to add or read what you've saved together.
+            {t('ui.matchNotes.eachMatchHasItsOwn')}
           </Text>
         }
         ListEmptyComponent={
           <View style={{ alignItems: 'center' }}>
             <EmptyCopy id="memory_vault_index" />
-            <TouchableOpacity onPress={() => navigation.navigate('Discover', { initialMode: 'people' })} accessibilityLabel="Meet people" accessibilityRole="button">
-              <Text style={styles.emptyActionText}>Meet People →</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Discover', { initialMode: 'people' })} accessibilityLabel={t('ui.matchNotes.meetPeopleA11y')} accessibilityRole="button">
+              <Text style={styles.emptyActionText}>{t('ui.matchNotes.meetPeople')}</Text>
             </TouchableOpacity>
           </View>
         }
@@ -85,7 +87,7 @@ export default function MemoryVaultIndexScreen({ navigation }) {
             style={styles.row}
             activeOpacity={0.85}
             onPress={() => navigation.navigate('MemoryVault', { matchId: item.matchId, matchName: item.other?.display_name })}
-            accessibilityLabel={`${item.other?.display_name}, ${item.memoryCount} memories`}
+            accessibilityLabel={t('ui.matchNotes.vaultRowA11y', { name: item.other?.display_name ?? t('ui.matchNotes.someone'), count: item.memoryCount })}
             accessibilityRole="button"
           >
             {photoUrls[item.matchId] ? (
@@ -96,9 +98,9 @@ export default function MemoryVaultIndexScreen({ navigation }) {
               </View>
             )}
             <View style={styles.rowText}>
-              <Text style={styles.rowName}>{item.other?.display_name ?? 'Someone'}</Text>
+              <Text style={styles.rowName}>{item.other?.display_name ?? t('ui.matchNotes.someone')}</Text>
               <Text style={styles.rowCount}>
-                {item.memoryCount === 0 ? 'No memories yet' : `${item.memoryCount} memor${item.memoryCount === 1 ? 'y' : 'ies'} saved`}
+                {item.memoryCount === 0 ? t('ui.matchNotes.noMemoriesYet') : t('ui.matchNotes.memoriesSaved', { count: item.memoryCount })}
               </Text>
             </View>
             <Text style={styles.chevron}>›</Text>

@@ -11,11 +11,16 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+// Placeholders: ui.matchNotes.memoryVault.placeholder.<key>.
+// A section label without its leading emoji, for screen readers; letters of every script are kept (the old /[^\w\s]/
+// strip removed every non-Latin letter, leaving the label empty in Russian, Chinese, Korean...).
+const stripIcon = (label) => label.replace(/^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2000-\u2BFF\uFE0F\u200D])+\s*/, '').trim();
+
 const CATEGORIES = [
-  { key: 'milestone', labelKey: 'milestones', placeholder: 'e.g. Our first conversation, first date' },
-  { key: 'funny', labelKey: 'funnyMoments', placeholder: 'e.g. That time we got completely lost' },
-  { key: 'inside_joke', labelKey: 'insideJokes', placeholder: 'e.g. Whatever only the two of you would get' },
-  { key: 'note', labelKey: 'littleThings', placeholder: 'e.g. Something small worth remembering' },
+  { key: 'milestone', labelKey: 'milestones' },
+  { key: 'funny', labelKey: 'funnyMoments' },
+  { key: 'inside_joke', labelKey: 'insideJokes' },
+  { key: 'note', labelKey: 'littleThings' },
 ];
 
 export default function MemoryVaultScreen({ route }) {
@@ -60,7 +65,7 @@ export default function MemoryVaultScreen({ route }) {
 
     const check = await checkTextModeration(text);
     if (!check.safe) {
-      return Alert.alert('Not allowed', 'Please revise this and try again.');
+      return Alert.alert(t('ui.matchNotes.notAllowed'), t('ui.matchNotes.pleaseRevise'));
     }
 
     setSubmittingCategory(categoryKey);
@@ -101,7 +106,7 @@ export default function MemoryVaultScreen({ route }) {
                 <Text style={styles.sectionLabel} accessibilityRole="header">{label}</Text>
 
                 {categoryMemories.map((memory) => (
-                  <View key={memory.id} style={styles.memoryCard} accessibilityLabel={`${memory.memory_text}, added by ${memory.profiles?.display_name}`}>
+                  <View key={memory.id} style={styles.memoryCard} accessibilityLabel={t('ui.matchNotes.addedByA11y', { text: memory.memory_text, name: memory.profiles?.display_name })}>
                     <Text style={styles.memoryText}>{memory.memory_text}</Text>
                     <Text style={styles.memoryAddedBy}>— {memory.profiles?.display_name}</Text>
                   </View>
@@ -113,17 +118,17 @@ export default function MemoryVaultScreen({ route }) {
                 <View style={styles.addRow}>
                   <TextInput
                     style={styles.input}
-                    placeholder={category.placeholder}
+                    placeholder={t(`ui.matchNotes.memoryVault.placeholder.${category.key}`)}
                     placeholderTextColor={colors.textTertiary}
                     value={drafts[category.key] || ''}
                     onChangeText={(v) => setDrafts((prev) => ({ ...prev, [category.key]: v }))}
-                    accessibilityLabel={`Add to ${label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityLabel={t('ui.matchNotes.memoryVault.addToA11y', { section: stripIcon(label) })}
                   />
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => handleAdd(category.key)}
                     disabled={submittingCategory === category.key}
-                    accessibilityLabel={`Add memory to ${label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityLabel={t('ui.matchNotes.memoryVault.addMemoryToA11y', { section: stripIcon(label) })}
                     accessibilityRole="button"
                   >
                     <Text style={styles.addButtonText}>+</Text>

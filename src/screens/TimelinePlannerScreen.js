@@ -10,11 +10,16 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+// Placeholders: ui.matchNotes.timelinePlanner.placeholder.<key>.
+// A section label without its leading emoji, for screen readers; letters of every script are kept (the old /[^\w\s]/
+// strip removed every non-Latin letter, leaving the label empty in Russian, Chinese, Korean...).
+const stripIcon = (label) => label.replace(/^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2000-\u2BFF\uFE0F\u200D])+\s*/, '').trim();
+
 const PERIODS = [
-  { key: 'month_1', labelKey: 'month1', placeholder: 'e.g. Getting to know each other, no pressure' },
-  { key: 'month_6', labelKey: 'month6', placeholder: 'e.g. When exclusivity feels right to discuss' },
-  { key: 'year_1', labelKey: 'year1', placeholder: 'e.g. Thoughts on living arrangements' },
-  { key: 'year_3', labelKey: 'year3', placeholder: 'e.g. Marriage, family, long-term plans' },
+  { key: 'month_1', labelKey: 'month1' },
+  { key: 'month_6', labelKey: 'month6' },
+  { key: 'year_1', labelKey: 'year1' },
+  { key: 'year_3', labelKey: 'year3' },
 ];
 
 export default function TimelinePlannerScreen({ route }) {
@@ -57,7 +62,7 @@ export default function TimelinePlannerScreen({ route }) {
 
     const check = await checkTextModeration(text);
     if (!check.safe) {
-      return Alert.alert('Not allowed', 'Please revise this and try again.');
+      return Alert.alert(t('ui.matchNotes.notAllowed'), t('ui.matchNotes.pleaseRevise'));
     }
 
     setSubmittingPeriod(periodKey);
@@ -90,7 +95,7 @@ export default function TimelinePlannerScreen({ route }) {
                 <Text style={styles.sectionLabel} accessibilityRole="header">{label}</Text>
 
                 {periodNotes.map((note) => (
-                  <View key={note.id} style={styles.noteCard} accessibilityLabel={`${note.note_text}, added by ${note.profiles?.display_name}`}>
+                  <View key={note.id} style={styles.noteCard} accessibilityLabel={t('ui.matchNotes.addedByA11y', { text: note.note_text, name: note.profiles?.display_name })}>
                     <Text style={styles.noteText}>{note.note_text}</Text>
                     <Text style={styles.noteAddedBy}>— {note.profiles?.display_name}</Text>
                   </View>
@@ -102,17 +107,17 @@ export default function TimelinePlannerScreen({ route }) {
                 <View style={styles.addRow}>
                   <TextInput
                     style={styles.input}
-                    placeholder={period.placeholder}
+                    placeholder={t(`ui.matchNotes.timelinePlanner.placeholder.${period.key}`)}
                     placeholderTextColor={colors.textTertiary}
                     value={drafts[period.key] || ''}
                     onChangeText={(v) => setDrafts((prev) => ({ ...prev, [period.key]: v }))}
-                    accessibilityLabel={`Add a thought for ${label}`}
+                    accessibilityLabel={t('ui.matchNotes.timelinePlanner.addThoughtForA11y', { section: stripIcon(label) })}
                   />
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => handleAdd(period.key)}
                     disabled={submittingPeriod === period.key}
-                    accessibilityLabel={`Add thought to ${label}`}
+                    accessibilityLabel={t('ui.matchNotes.timelinePlanner.addThoughtToA11y', { section: stripIcon(label) })}
                     accessibilityRole="button"
                   >
                     <Text style={styles.addButtonText}>+</Text>

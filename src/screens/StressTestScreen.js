@@ -10,11 +10,16 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+// Placeholders: ui.matchNotes.stressTest.placeholder.<key>.
+// A section label without its leading emoji, for screen readers; letters of every script are kept (the old /[^\w\s]/
+// strip removed every non-Latin letter, leaving the label empty in Russian, Chinese, Korean...).
+const stripIcon = (label) => label.replace(/^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2000-\u2BFF\uFE0F\u200D])+\s*/, '').trim();
+
 const SCENARIOS = [
-  { key: 'dream_opportunity', labelKey: 'dreamOpportunity', placeholder: 'e.g. What would we want to happen if one of us got a great opportunity in another city?' },
-  { key: 'financial_setback', labelKey: 'financialSetback', placeholder: 'e.g. How would we want to handle it if money got tight?' },
-  { key: 'family_conflict', labelKey: 'familyConflict', placeholder: "e.g. How do we want to navigate disagreements with each other's families?" },
-  { key: 'lifestyle_difference', labelKey: 'lifestyleDifference', placeholder: 'e.g. What would we do if our day-to-day rhythms started pulling apart?' },
+  { key: 'dream_opportunity', labelKey: 'dreamOpportunity' },
+  { key: 'financial_setback', labelKey: 'financialSetback' },
+  { key: 'family_conflict', labelKey: 'familyConflict' },
+  { key: 'lifestyle_difference', labelKey: 'lifestyleDifference' },
 ];
 
 export default function StressTestScreen({ route }) {
@@ -57,7 +62,7 @@ export default function StressTestScreen({ route }) {
 
     const check = await checkTextModeration(text);
     if (!check.safe) {
-      return Alert.alert('Not allowed', 'Please revise this and try again.');
+      return Alert.alert(t('ui.matchNotes.notAllowed'), t('ui.matchNotes.pleaseRevise'));
     }
 
     setSubmittingScenario(scenarioKey);
@@ -90,7 +95,7 @@ export default function StressTestScreen({ route }) {
                 <Text style={styles.sectionLabel} accessibilityRole="header">{label}</Text>
 
                 {scenarioNotes.map((note) => (
-                  <View key={note.id} style={styles.noteCard} accessibilityLabel={`${note.note_text}, added by ${note.profiles?.display_name}`}>
+                  <View key={note.id} style={styles.noteCard} accessibilityLabel={t('ui.matchNotes.addedByA11y', { text: note.note_text, name: note.profiles?.display_name })}>
                     <Text style={styles.noteText}>{note.note_text}</Text>
                     <Text style={styles.noteAddedBy}>— {note.profiles?.display_name}</Text>
                   </View>
@@ -102,18 +107,18 @@ export default function StressTestScreen({ route }) {
                 <View style={styles.addRow}>
                   <TextInput
                     style={styles.input}
-                    placeholder={scenario.placeholder}
+                    placeholder={t(`ui.matchNotes.stressTest.placeholder.${scenario.key}`)}
                     placeholderTextColor={colors.textTertiary}
                     value={drafts[scenario.key] || ''}
                     onChangeText={(v) => setDrafts((prev) => ({ ...prev, [scenario.key]: v }))}
                     multiline
-                    accessibilityLabel={`Add a thought for ${label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityLabel={t('ui.matchNotes.stressTest.addThoughtForA11y', { section: stripIcon(label) })}
                   />
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => handleAdd(scenario.key)}
                     disabled={submittingScenario === scenario.key}
-                    accessibilityLabel={`Add thought to ${label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityLabel={t('ui.matchNotes.stressTest.addThoughtToA11y', { section: stripIcon(label) })}
                     accessibilityRole="button"
                   >
                     <Text style={styles.addButtonText}>+</Text>

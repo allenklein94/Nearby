@@ -10,12 +10,17 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+// Placeholders: ui.matchNotes.constitution.placeholder.<key>.
+// A section label without its leading emoji, for screen readers; letters of every script are kept (the old /[^\w\s]/
+// strip removed every non-Latin letter, leaving the label empty in Russian, Chinese, Korean...).
+const stripIcon = (label) => label.replace(/^(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2000-\u2BFF\uFE0F\u200D])+\s*/, '').trim();
+
 const ARTICLES = [
-  { key: 'conflict', labelKey: 'conflict', placeholder: 'e.g. We take a break if things get heated, then come back to it' },
-  { key: 'decisions', labelKey: 'decisions', placeholder: 'e.g. We talk it through together before deciding, always' },
-  { key: 'support', labelKey: 'support', placeholder: 'e.g. We show up for the things that matter to the other person' },
-  { key: 'never_forget', labelKey: 'neverForget', placeholder: 'e.g. Saying thank you, even for small things' },
-  { key: 'feel_loved', labelKey: 'feelLoved', placeholder: 'e.g. Being listened to without being interrupted' },
+  { key: 'conflict', labelKey: 'conflict' },
+  { key: 'decisions', labelKey: 'decisions' },
+  { key: 'support', labelKey: 'support' },
+  { key: 'never_forget', labelKey: 'neverForget' },
+  { key: 'feel_loved', labelKey: 'feelLoved' },
 ];
 
 export default function RelationshipConstitutionScreen({ route }) {
@@ -58,7 +63,7 @@ export default function RelationshipConstitutionScreen({ route }) {
 
     const check = await checkTextModeration(text);
     if (!check.safe) {
-      return Alert.alert('Not allowed', 'Please revise this and try again.');
+      return Alert.alert(t('ui.matchNotes.notAllowed'), t('ui.matchNotes.pleaseRevise'));
     }
 
     setSubmittingArticle(articleKey);
@@ -91,7 +96,7 @@ export default function RelationshipConstitutionScreen({ route }) {
                 <Text style={styles.sectionLabel} accessibilityRole="header">{label}</Text>
 
                 {articleEntries.map((entry) => (
-                  <View key={entry.id} style={styles.entryCard} accessibilityLabel={`${entry.entry_text}, added by ${entry.profiles?.display_name}`}>
+                  <View key={entry.id} style={styles.entryCard} accessibilityLabel={t('ui.matchNotes.addedByA11y', { text: entry.entry_text, name: entry.profiles?.display_name })}>
                     <Text style={styles.entryText}>{entry.entry_text}</Text>
                     <Text style={styles.entryAddedBy}>— {entry.profiles?.display_name}</Text>
                   </View>
@@ -103,18 +108,18 @@ export default function RelationshipConstitutionScreen({ route }) {
                 <View style={styles.addRow}>
                   <TextInput
                     style={styles.input}
-                    placeholder={article.placeholder}
+                    placeholder={t(`ui.matchNotes.constitution.placeholder.${article.key}`)}
                     placeholderTextColor={colors.textTertiary}
                     value={drafts[article.key] || ''}
                     onChangeText={(v) => setDrafts((prev) => ({ ...prev, [article.key]: v }))}
                     multiline
-                    accessibilityLabel={`Add to ${label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityLabel={t('ui.matchNotes.constitution.addToA11y', { section: stripIcon(label) })}
                   />
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => handleAdd(article.key)}
                     disabled={submittingArticle === article.key}
-                    accessibilityLabel={`Add entry to ${label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityLabel={t('ui.matchNotes.constitution.addEntryToA11y', { section: stripIcon(label) })}
                     accessibilityRole="button"
                   >
                     <Text style={styles.addButtonText}>+</Text>
