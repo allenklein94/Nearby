@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { Modal, View, Image, TouchableOpacity, Text, StyleSheet, Dimensions, PanResponder, Animated, TextInput, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { getPhotoComments, addPhotoComment, deletePhotoComment } from '../services/photoComments';
@@ -20,6 +21,7 @@ const DOUBLE_TAP_DELAY = 280;
 // uses ('main' for the profile's main photo, the real profile_photos.id
 // otherwise) — not a new id scheme invented for this.
 export default function PhotoLightbox({ visible, photoUri, onClose, photoOwnerId, photoRef, myUserId }) {
+  const { t } = useLanguage();
   const translateY = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
   const [isZoomed, setIsZoomed] = useState(false);
@@ -86,7 +88,7 @@ export default function PhotoLightbox({ visible, photoUri, onClose, photoOwnerId
     if (!draft.trim()) return;
     const check = await checkTextModeration(draft);
     if (!check.safe) {
-      Alert.alert('Comment not allowed', 'Please rephrase your comment and try again.');
+      Alert.alert(t('ui.media.commentNotAllowed'), t('ui.media.pleaseRephraseYourCommentAnd'));
       return;
     }
     setSending(true);
@@ -101,10 +103,10 @@ export default function PhotoLightbox({ visible, photoUri, onClose, photoOwnerId
   }
 
   function handleDelete(commentId) {
-    Alert.alert('Delete comment?', 'This can\'t be undone.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('ui.media.deleteComment'), t('ui.media.thisCantBeUndone'), [
+      { text: t('ui.media.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('ui.media.delete'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -127,7 +129,7 @@ export default function PhotoLightbox({ visible, photoUri, onClose, photoOwnerId
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <Animated.View style={[styles.overlay, { opacity: backgroundOpacity }]}>
-        <TouchableOpacity style={styles.closeButton} onPress={handleClose} accessibilityLabel="Close photo" accessibilityRole="button">
+        <TouchableOpacity style={styles.closeButton} onPress={handleClose} accessibilityLabel={t('ui.media.closePhotoA11y')} accessibilityRole="button">
           <Text style={styles.closeButtonText}>✕</Text>
         </TouchableOpacity>
 
@@ -135,7 +137,7 @@ export default function PhotoLightbox({ visible, photoUri, onClose, photoOwnerId
           <TouchableOpacity
             style={styles.commentsToggle}
             onPress={() => setCommentsOpen((prev) => !prev)}
-            accessibilityLabel={commentsOpen ? 'Hide comments' : `Show comments${comments.length ? `, ${comments.length}` : ''}`}
+            accessibilityLabel={commentsOpen ? t('ui.media.hideCommentsA11y') : comments.length ? t('ui.media.showCommentsCountA11y', { count: comments.length }) : t('ui.media.showCommentsA11y')}
             accessibilityRole="button"
           >
             <Text style={styles.commentsToggleText}>💬 {comments.length > 0 ? comments.length : ''}</Text>
@@ -151,7 +153,7 @@ export default function PhotoLightbox({ visible, photoUri, onClose, photoOwnerId
               source={{ uri: photoUri }}
               style={[styles.image, { transform: [{ scale }] }]}
               resizeMode="contain"
-              accessibilityLabel="Photo, double tap to zoom, swipe down to close"
+              accessibilityLabel={t('ui.media.photoDoubleTapToZoomA11y')}
             />
           </TouchableOpacity>
         </Animated.View>
@@ -162,19 +164,19 @@ export default function PhotoLightbox({ visible, photoUri, onClose, photoOwnerId
             style={styles.commentsPanel}
           >
             <ScrollView style={styles.commentsList} keyboardShouldPersistTaps="handled">
-              {loadingComments && <Text style={styles.commentsEmpty}>Loading comments...</Text>}
+              {loadingComments && <Text style={styles.commentsEmpty}>{t('ui.media.loadingComments')}</Text>}
               {!loadingComments && comments.length === 0 && (
-                <Text style={styles.commentsEmpty}>No comments yet — say something nice.</Text>
+                <Text style={styles.commentsEmpty}>{t('ui.media.noCommentsYetSaySomething')}</Text>
               )}
               {comments.map((c) => (
                 <View key={c.id} style={styles.commentRow}>
                   <Text style={styles.commentText}>
-                    <Text style={styles.commentAuthor}>{c.commenter?.display_name ?? 'Someone'}: </Text>
+                    <Text style={styles.commentAuthor}>{c.commenter?.display_name ?? t('ui.media.someone')}: </Text>
                     {c.comment_text}
                   </Text>
                   {(c.commenter_id === myUserId || photoOwnerId === myUserId) && (
-                    <TouchableOpacity onPress={() => handleDelete(c.id)} accessibilityLabel="Delete this comment" accessibilityRole="button">
-                      <Text style={styles.deleteText}>Delete</Text>
+                    <TouchableOpacity onPress={() => handleDelete(c.id)} accessibilityLabel={t('ui.media.deleteThisCommentA11y')} accessibilityRole="button">
+                      <Text style={styles.deleteText}>{t('ui.media.delete')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -185,12 +187,12 @@ export default function PhotoLightbox({ visible, photoUri, onClose, photoOwnerId
                 style={styles.commentInput}
                 value={draft}
                 onChangeText={setDraft}
-                placeholder="Add a comment..."
+                placeholder={t('ui.media.addAComment')}
                 placeholderTextColor="rgba(255,255,255,0.5)"
-                accessibilityLabel="Add a comment on this photo"
+                accessibilityLabel={t('ui.media.addACommentOnThisA11y')}
               />
-              <TouchableOpacity onPress={handleSend} disabled={sending || !draft.trim()} accessibilityLabel="Post comment" accessibilityRole="button">
-                <Text style={[styles.sendText, !draft.trim() && { opacity: 0.4 }]}>{sending ? '...' : 'Post'}</Text>
+              <TouchableOpacity onPress={handleSend} disabled={sending || !draft.trim()} accessibilityLabel={t('ui.media.postCommentA11y')} accessibilityRole="button">
+                <Text style={[styles.sendText, !draft.trim() && { opacity: 0.4 }]}>{sending ? '...' : t('ui.media.post')}</Text>
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>

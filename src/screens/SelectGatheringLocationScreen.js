@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -13,6 +14,7 @@ const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.googleMapsApiKey;
 // the pin directly, rather than being locked to wherever their
 // phone's GPS happens to be at the moment of creating the gathering.
 export default function SelectGatheringLocationScreen({ navigation, route }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [searchText, setSearchText] = useState('');
@@ -32,7 +34,7 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
   async function useMyCurrentLocation() {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Location needed', 'Location permission is required to use your current spot.');
+      Alert.alert(t('ui.selectLocation.locationNeeded'), t('ui.selectLocation.locationPermissionIsRequiredTo'));
       return;
     }
     const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
@@ -53,13 +55,13 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
 
       if (result.status !== 'OK' || !result.results?.[0]) {
         if (result.status === 'ZERO_RESULTS') {
-          Alert.alert('Not found', "Couldn't find that address. Try being more specific.");
+          Alert.alert(t('ui.selectLocation.notFound'), t('ui.selectLocation.couldntFindThatAddressTry'));
         } else {
           // A non-ZERO_RESULTS status means Google rejected the request itself
           // (bad/restricted API key, Geocoding API not enabled, billing, quota) --
           // surface the real reason instead of the misleading "try being more
           // specific" copy, which only applies to a genuinely bad address.
-          Alert.alert('Address lookup failed', `${result.status}${result.error_message ? `: ${result.error_message}` : ''}`);
+          Alert.alert(t('ui.selectLocation.addressLookupFailed'), `${result.status}${result.error_message ? `: ${result.error_message}` : ''}`);
         }
         setSearching(false);
         return;
@@ -70,7 +72,7 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
       setPinCoords(coords);
       mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.02, longitudeDelta: 0.02 }, 500);
     } catch (e) {
-      Alert.alert('Error', 'Something went wrong searching for that address.');
+      Alert.alert(t('ui.selectLocation.error'), t('ui.selectLocation.somethingWentWrongSearchingFor'));
     }
     setSearching(false);
   }
@@ -88,16 +90,16 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
       <View style={styles.searchRow}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search for an address or venue..."
+          placeholder={t('ui.selectLocation.searchForAnAddressOr')}
           placeholderTextColor={colors.textTertiary}
           value={searchText}
           onChangeText={setSearchText}
           onSubmitEditing={handleSearch}
           returnKeyType="search"
-          accessibilityLabel="Search for a location"
+          accessibilityLabel={t('ui.selectLocation.searchForALocationA11y')}
         />
-        <TouchableOpacity style={styles.searchButton} onPress={handleSearch} disabled={searching} accessibilityLabel="Search" accessibilityRole="button">
-          {searching ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.searchButtonText}>Go</Text>}
+        <TouchableOpacity style={styles.searchButton} onPress={handleSearch} disabled={searching} accessibilityLabel={t('ui.selectLocation.searchA11y')} accessibilityRole="button">
+          {searching ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.searchButtonText}>{t('ui.selectLocation.go')}</Text>}
         </TouchableOpacity>
       </View>
 
@@ -110,16 +112,16 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
           coordinate={pinCoords}
           draggable
           onDragEnd={(e) => setPinCoords(e.nativeEvent.coordinate)}
-          accessibilityLabel="Gathering location pin, drag to fine-tune"
+          accessibilityLabel={t('ui.selectLocation.gatheringLocationPinDragToA11y')}
         />
       </MapView>
 
       <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.currentLocationButton} onPress={useMyCurrentLocation} accessibilityLabel="Use my current location" accessibilityRole="button">
-          <Text style={styles.currentLocationText}>📍 Use My Current Location</Text>
+        <TouchableOpacity style={styles.currentLocationButton} onPress={useMyCurrentLocation} accessibilityLabel={t('ui.selectLocation.useMyCurrentLocationA11y')} accessibilityRole="button">
+          <Text style={styles.currentLocationText}>{t('ui.selectLocation.useMyCurrentLocation')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm} accessibilityLabel="Confirm this location" accessibilityRole="button">
-          <Text style={styles.confirmButtonText}>Confirm Location</Text>
+        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm} accessibilityLabel={t('ui.selectLocation.confirmThisLocationA11y')} accessibilityRole="button">
+          <Text style={styles.confirmButtonText}>{t('ui.selectLocation.confirmLocation')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

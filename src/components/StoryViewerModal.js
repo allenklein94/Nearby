@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions, FlatList, Share, Alert } from 'react-native';
 import { Video } from 'expo-av';
@@ -12,6 +13,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_DURATION_MS = 5000;
 
 export default function StoryViewerModal({ visible, group, onClose }) {
+  const { t } = useLanguage();
   const [index, setIndex] = useState(0);
   const [mediaUrl, setMediaUrl] = useState(null);
   const [myUserId, setMyUserId] = useState(null);
@@ -105,12 +107,12 @@ export default function StoryViewerModal({ visible, group, onClose }) {
   async function handleDeleteStory() {
     const story = group.stories[index];
     Alert.alert(
-      'Delete this story?',
-      "This can't be undone.",
+      t('ui.media.deleteThisStory'),
+      t('ui.media.thisCantBeUndone'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('ui.media.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('ui.media.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -163,7 +165,7 @@ export default function StoryViewerModal({ visible, group, onClose }) {
 
         <View style={styles.header}>
           <Text style={styles.name}>{group.displayName}</Text>
-          <TouchableOpacity onPress={onClose} accessibilityLabel="Close story" accessibilityRole="button">
+          <TouchableOpacity onPress={onClose} accessibilityLabel={t('ui.media.closeStoryA11y')} accessibilityRole="button">
             <Text style={styles.closeText}>✕</Text>
           </TouchableOpacity>
         </View>
@@ -183,20 +185,20 @@ export default function StoryViewerModal({ visible, group, onClose }) {
         </View>
 
         <View style={styles.tapZones}>
-          <TouchableOpacity style={{ flex: 1 }} onPress={goBack} accessibilityLabel="Previous story" />
-          <TouchableOpacity style={{ flex: 1 }} onPress={advance} accessibilityLabel="Next story" />
+          <TouchableOpacity style={{ flex: 1 }} onPress={goBack} accessibilityLabel={t('ui.media.previousStoryA11y')} />
+          <TouchableOpacity style={{ flex: 1 }} onPress={advance} accessibilityLabel={t('ui.media.nextStoryA11y')} />
         </View>
 
-        <TouchableOpacity style={styles.shareButton} onPress={handleShareStory} accessibilityLabel="Share this story" accessibilityRole="button">
+        <TouchableOpacity style={styles.shareButton} onPress={handleShareStory} accessibilityLabel={t('ui.media.shareThisStoryA11y')} accessibilityRole="button">
           <Text style={styles.shareButtonText}>↗</Text>
         </TouchableOpacity>
 
         {isOwnStory && (
           <>
-            <TouchableOpacity style={styles.viewersButton} onPress={handleShowViewers} accessibilityLabel="See who viewed this story" accessibilityRole="button">
-              <Text style={styles.viewersButtonText}>👁 Viewers</Text>
+            <TouchableOpacity style={styles.viewersButton} onPress={handleShowViewers} accessibilityLabel={t('ui.media.seeWhoViewedThisStoryA11y')} accessibilityRole="button">
+              <Text style={styles.viewersButtonText}>{t('ui.media.viewers')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteStory} accessibilityLabel="Delete this story" accessibilityRole="button">
+            <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteStory} accessibilityLabel={t('ui.media.deleteThisStoryA11y')} accessibilityRole="button">
               <Text style={styles.deleteButtonText}>🗑</Text>
             </TouchableOpacity>
           </>
@@ -205,11 +207,11 @@ export default function StoryViewerModal({ visible, group, onClose }) {
         {showViewers && (
           <View style={styles.viewersSheet}>
             <View style={styles.viewersSheetHandle} />
-            <Text style={styles.viewersTitle}>Viewed by</Text>
+            <Text style={styles.viewersTitle}>{t('ui.media.viewedBy')}</Text>
             <FlatList
               data={viewers}
               keyExtractor={(item) => item.viewer_id}
-              ListEmptyComponent={<Text style={styles.emptyViewersText}>No one has viewed this yet.</Text>}
+              ListEmptyComponent={<Text style={styles.emptyViewersText}>{t('ui.media.noOneHasViewedThis')}</Text>}
               renderItem={({ item }) => (
                 <View style={styles.viewerRow}>
                   {viewerPhotoUrls[item.viewer_id] ? (
@@ -230,17 +232,17 @@ export default function StoryViewerModal({ visible, group, onClose }) {
                         }
                       }}
                       disabled={requestedViewerIds[item.viewer_id]}
-                      accessibilityLabel={requestedViewerIds[item.viewer_id] ? 'Friend request sent' : `Add ${item.profiles?.display_name} as a friend`}
+                      accessibilityLabel={requestedViewerIds[item.viewer_id] ? t('ui.media.friendRequestSentA11y') : t('ui.media.addAsAFriendA11y', { name: item.profiles?.display_name })}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.addFriendButtonText}>{requestedViewerIds[item.viewer_id] ? '✓' : '+ Add'}</Text>
+                      <Text style={styles.addFriendButtonText}>{requestedViewerIds[item.viewer_id] ? '✓' : t('ui.media.add')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
               )}
             />
-            <TouchableOpacity onPress={() => setShowViewers(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Close viewers list" accessibilityRole="button">
-              <Text style={styles.closeViewersText}>Close</Text>
+            <TouchableOpacity onPress={() => setShowViewers(false)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.media.closeViewersListA11y')} accessibilityRole="button">
+              <Text style={styles.closeViewersText}>{t('ui.media.close')}</Text>
             </TouchableOpacity>
           </View>
         )}
