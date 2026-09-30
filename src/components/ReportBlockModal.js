@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput, Alert } from 'react-native';
 import { supabase } from '../services/supabase';
@@ -6,16 +7,19 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation } from '../motion';
+// `value` is what is saved in reports.reason and read by the admin queue (English, unchanged); `key` names the chip label
+// in the person's language (ui.reportBlock.reason.<key>).
 const REPORT_REASONS = [
-  'Inappropriate photo',
-  'Harassment or abuse',
-  'Fake profile',
-  'Spam or scam',
-  'Underage user',
-  'Other',
+  { value: 'Inappropriate photo', key: 'inappropriatePhoto' },
+  { value: 'Harassment or abuse', key: 'harassment' },
+  { value: 'Fake profile', key: 'fakeProfile' },
+  { value: 'Spam or scam', key: 'spam' },
+  { value: 'Underage user', key: 'underage' },
+  { value: 'Other', key: 'other' },
 ];
 
 export default function ReportBlockModal({ visible, onClose, onBlocked, reportedUserId, reportedUserName }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [selectedReason, setSelectedReason] = useState(null);
@@ -24,7 +28,7 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
 
   async function submitReport() {
     if (!selectedReason) {
-      return Alert.alert('Select a reason', 'Please choose a reason for this report.');
+      return Alert.alert(t('ui.reportBlock.selectAReason'), t('ui.reportBlock.pleaseChooseAReasonFor'));
     }
     setSubmitting(true);
     const { data: sessionData } = await supabase.auth.getSession();
@@ -42,7 +46,7 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
       presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => submitReport() });
       return;
     }
-    Alert.alert('Report submitted', 'Thank you — our team will review this.');
+    Alert.alert(t('ui.reportBlock.reportSubmitted'), t('ui.reportBlock.thankYouOurTeamWill'));
     setSelectedReason(null);
     setDetails('');
     onClose();
@@ -50,12 +54,12 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
 
   async function blockUser() {
     Alert.alert(
-      `Block ${reportedUserName || 'this user'}?`,
-      "They won't be able to contact you again, and won't be notified. Any existing match between you will be removed.",
+      t('ui.reportBlock.block', { reportedUserName: reportedUserName || t('ui.reportBlock.thisUser') }),
+      t('ui.reportBlock.theyWontBeAbleTo'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('ui.reportBlock.cancel'), style: 'cancel' },
         {
-          text: 'Block',
+          text: t('ui.reportBlock.block2'),
           style: 'destructive',
           onPress: async () => {
             const { error } = await supabase.rpc('block_and_unmatch', { blocked_user_id: reportedUserId });
@@ -74,24 +78,26 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
-          <Text style={styles.title}>Report or Block</Text>
+          <Text style={styles.title}>{t('ui.reportBlock.reportOrBlock')}</Text>
 
-          <Text style={styles.label}>Reason for report</Text>
+          <Text style={styles.label}>{t('ui.reportBlock.reasonForReport')}</Text>
           <View style={styles.reasonsWrap}>
-            {REPORT_REASONS.map((reason) => (
+            {REPORT_REASONS.map(({ value, key }) => (
               <TouchableOpacity
-                key={reason}
-                style={[styles.reasonChip, selectedReason === reason && styles.reasonChipSelected]}
-                onPress={() => setSelectedReason(reason)}
+                key={value}
+                style={[styles.reasonChip, selectedReason === value && styles.reasonChipSelected]}
+                onPress={() => setSelectedReason(value)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: selectedReason === value }}
               >
-                <Text style={[styles.reasonText, selectedReason === reason && styles.reasonTextSelected]}>{reason}</Text>
+                <Text style={[styles.reasonText, selectedReason === value && styles.reasonTextSelected]}>{t(`ui.reportBlock.reason.${key}`)}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
           <TextInput
             style={styles.detailsInput}
-            placeholder="Additional details (optional)"
+            placeholder={t('ui.reportBlock.additionalDetailsOptional')}
             placeholderTextColor={colors.textTertiary}
             value={details}
             onChangeText={setDetails}
@@ -99,15 +105,15 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
           />
 
           <TouchableOpacity style={styles.reportButton} onPress={submitReport} disabled={submitting}>
-            <Text style={styles.reportButtonText}>{submitting ? 'Submitting...' : 'Submit Report'}</Text>
+            <Text style={styles.reportButtonText}>{submitting ? t('ui.reportBlock.submitting') : t('ui.reportBlock.submitReport')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.blockButton} onPress={blockUser}>
-            <Text style={styles.blockButtonText}>Block User</Text>
+            <Text style={styles.blockButtonText}>{t('ui.reportBlock.blockUser')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.md }}>
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={styles.cancelText}>{t('ui.reportBlock.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </View>

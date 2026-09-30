@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
@@ -11,6 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
 export default function EmergencyContactsScreen() {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [contacts, setContacts] = useState([]);
@@ -42,7 +44,7 @@ export default function EmergencyContactsScreen() {
 
   async function handleAdd() {
     if (!name.trim() || !phone.trim()) {
-      Alert.alert('Missing info', 'Please add both a name and a phone number.');
+      Alert.alert(t('ui.emergencyContacts.missingInfo'), t('ui.emergencyContacts.pleaseAddBothAName'));
       return;
     }
     setSubmitting(true);
@@ -60,12 +62,12 @@ export default function EmergencyContactsScreen() {
 
   function confirmDelete(contact) {
     Alert.alert(
-      `Remove ${contact.name}?`,
-      "They'll no longer be suggested when you set up a date safety check-in.",
+      t('ui.emergencyContacts.remove', { name: contact.name }),
+      t('ui.emergencyContacts.theyllNoLongerBeSuggested'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('ui.emergencyContacts.cancel'), style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('ui.emergencyContacts.remove2'),
           style: 'destructive',
           onPress: async () => {
             setDeletingId(contact.id);
@@ -86,7 +88,7 @@ export default function EmergencyContactsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your emergency contacts...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.emergencyContacts.loadingYourEmergencyContacts')}</Text>
       </SafeAreaView>
     );
   }
@@ -94,7 +96,7 @@ export default function EmergencyContactsScreen() {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load your emergency contacts." onRetry={load} />
+        <LoadErrorState message={t('ui.emergencyContacts.couldntLoadYourEmergencyContacts')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -103,11 +105,9 @@ export default function EmergencyContactsScreen() {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.headerTitle} accessibilityRole="header">Emergency Contacts</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">{t('ui.emergencyContacts.emergencyContacts')}</Text>
           <Text style={styles.headerSubtitle}>
-            Save someone you trust so they're ready to go the next time you set up a Date Safety
-            Check-In. Nearby never contacts them automatically — you're always the one who taps
-            share.
+            {t('ui.emergencyContacts.saveSomeoneYouTrustSo')}
           </Text>
 
           {contacts.length === 0 && (
@@ -128,43 +128,43 @@ export default function EmergencyContactsScreen() {
                 style={styles.removeButton}
                 onPress={() => confirmDelete(contact)}
                 disabled={deletingId === contact.id}
-                accessibilityLabel={`Remove ${contact.name}`}
+                accessibilityLabel={t('ui.emergencyContacts.removeA11y', { name: contact.name })}
                 accessibilityRole="button"
               >
-                <Text style={styles.removeButtonText}>{deletingId === contact.id ? '...' : 'Remove'}</Text>
+                <Text style={styles.removeButtonText}>{deletingId === contact.id ? '...' : t('ui.emergencyContacts.remove2')}</Text>
               </TouchableOpacity>
             </View>
           ))}
 
-          <Text style={styles.sectionLabel} accessibilityRole="header">Add a contact</Text>
+          <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.emergencyContacts.addAContact')}</Text>
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder="Name"
+              placeholder={t('ui.emergencyContacts.name')}
               placeholderTextColor={colors.textTertiary}
               value={name}
               onChangeText={setName}
-              accessibilityLabel="Contact name"
+              accessibilityLabel={t('ui.emergencyContacts.contactNameA11y')}
             />
             <TextInput
               style={styles.input}
-              placeholder="Phone number"
+              placeholder={t('ui.emergencyContacts.phoneNumber')}
               placeholderTextColor={colors.textTertiary}
               value={phone}
               onChangeText={setPhone}
               keyboardType="phone-pad"
-              accessibilityLabel="Contact phone number"
+              accessibilityLabel={t('ui.emergencyContacts.contactPhoneNumberA11y')}
             />
             <TextInput
               style={styles.input}
-              placeholder="Relationship (optional, e.g. Sister, Best friend)"
+              placeholder={t('ui.emergencyContacts.relationshipOptionalEGSister')}
               placeholderTextColor={colors.textTertiary}
               value={relationship}
               onChangeText={setRelationship}
-              accessibilityLabel="Relationship, optional"
+              accessibilityLabel={t('ui.emergencyContacts.relationshipOptionalA11y')}
             />
             <TouchableOpacity style={styles.addButton} onPress={handleAdd} disabled={submitting} activeOpacity={0.85}>
-              <Text style={styles.addButtonText}>{submitting ? 'Adding...' : 'Add Contact'}</Text>
+              <Text style={styles.addButtonText}>{submitting ? t('ui.emergencyContacts.adding') : t('ui.emergencyContacts.addContact')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
