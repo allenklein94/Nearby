@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput } from 'react-native';
 import { submitOfferOutcome } from '../services/businessFulfillment';
 import { useTheme } from '../context/ThemeContext';
@@ -9,23 +10,23 @@ import { modalAnimation } from '../motion';
 // deliberately not a new star-rating invented for this, per direct
 // instruction to mirror the existing shape rather than build a second one.
 const SATISFACTION_OPTIONS = [
-  { value: 'loved_it', emoji: '😊', label: 'Loved it' },
-  { value: 'good', emoji: '🙂', label: 'Good' },
-  { value: 'okay', emoji: '😐', label: 'Okay' },
-  { value: 'not_for_me', emoji: '🙁', label: 'Not for me' },
+  { value: 'loved_it', emoji: '😊' },
+  { value: 'good', emoji: '🙂' },
+  { value: 'okay', emoji: '😐' },
+  { value: 'not_for_me', emoji: '🙁' },
 ];
 
 // "Good match?": did what Nearby found actually fit what they asked for. Optional, so it never slows the two core answers.
 const MATCH_OPTIONS = [
-  { value: 'yes', label: 'Yes' },
-  { value: 'somewhat', label: 'Somewhat' },
-  { value: 'no', label: 'Not really' },
+  { value: 'yes' },
+  { value: 'somewhat' },
+  { value: 'no' },
 ];
 
 const REPEAT_OPTIONS = [
-  { value: 'yes', label: 'Yes' },
-  { value: 'maybe', label: 'Maybe' },
-  { value: 'no', label: 'No' },
+  { value: 'yes' },
+  { value: 'maybe' },
+  { value: 'no' },
 ];
 
 // The real, missing step at the end of the Request -> Offer -> Commitment
@@ -37,6 +38,7 @@ const REPEAT_OPTIONS = [
 // get_partner_offer_reputation() computes from rows across every
 // requester.
 export default function OfferOutcomeModal({ visible, offerId, onClose }) {
+  const { t } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [satisfaction, setSatisfaction] = useState(null);
@@ -72,7 +74,7 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={handleClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
-          <Text style={styles.title}>How did it go?</Text>
+          <Text style={styles.title}>{t('ui.requestDetail.howDidItGo')}</Text>
           <View style={styles.satisfactionRow}>
             {SATISFACTION_OPTIONS.map((o) => {
               const selected = satisfaction === o.value;
@@ -81,18 +83,18 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
                   key={o.value}
                   style={[styles.satisfactionOption, selected && styles.satisfactionOptionSelected]}
                   onPress={() => setSatisfaction(o.value)}
-                  accessibilityLabel={o.label}
+                  accessibilityLabel={t(`ui.requestDetail.outcome.satisfaction.${o.value}`)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
                   <Text style={styles.satisfactionEmoji}>{o.emoji}</Text>
-                  <Text style={styles.satisfactionLabel}>{o.label}</Text>
+                  <Text style={styles.satisfactionLabel}>{t(`ui.requestDetail.outcome.satisfaction.${o.value}`)}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          <Text style={styles.subtitle}>Would you do this again?</Text>
+          <Text style={styles.subtitle}>{t('ui.requestDetail.wouldYouDoThisAgain')}</Text>
           <View style={styles.chipsWrap}>
             {REPEAT_OPTIONS.map((o) => {
               const selected = wouldRepeat === o.value;
@@ -101,17 +103,17 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
                   key={o.value}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => setWouldRepeat(o.value)}
-                  accessibilityLabel={o.label}
+                  accessibilityLabel={t(`ui.requestDetail.outcome.repeat.${o.value}`)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{t(`ui.requestDetail.outcome.repeat.${o.value}`)}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          <Text style={styles.subtitle}>Was it a good match for what you wanted? (optional)</Text>
+          <Text style={styles.subtitle}>{t('ui.requestDetail.wasItAGoodMatch')}</Text>
           <View style={styles.chipsWrap}>
             {MATCH_OPTIONS.map((o) => {
               const selected = matchFit === o.value;
@@ -120,22 +122,22 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
                   key={o.value}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => setMatchFit(selected ? null : o.value)}
-                  accessibilityLabel={`Good match: ${o.label}`}
+                  accessibilityLabel={t('ui.requestDetail.goodMatchA11y', { label: t(`ui.requestDetail.outcome.match.${o.value}`) })}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{t(`ui.requestDetail.outcome.match.${o.value}`)}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          <Text style={styles.subtitle}>Anything that would help next time? (optional)</Text>
+          <Text style={styles.subtitle}>{t('ui.requestDetail.anythingThatWouldHelpNext')}</Text>
           <TextInput
             style={styles.input}
             value={feedbackText}
             onChangeText={setFeedbackText}
-            placeholder="Tell us anything that would help..."
+            placeholder={t('ui.requestDetail.tellUsAnythingThatWould')}
             placeholderTextColor={colors.textTertiary}
             multiline
             maxLength={500}
@@ -146,13 +148,13 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
             onPress={handleSubmit}
             disabled={!canSubmit || submitting}
             activeOpacity={0.85}
-            accessibilityLabel={submitting ? 'Submitting' : 'Submit'}
+            accessibilityLabel={submitting ? t('ui.requestDetail.submittingA11y') : t('ui.requestDetail.submitA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.submitButtonText}>{submitting ? 'Submitting...' : 'Submit'}</Text>
+            <Text style={styles.submitButtonText}>{submitting ? t('ui.requestDetail.submitting') : t('ui.requestDetail.submit')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleClose} style={{ marginTop: spacing.sm }} accessibilityLabel="Skip" accessibilityRole="button">
-            <Text style={styles.skipText}>Skip</Text>
+          <TouchableOpacity onPress={handleClose} style={{ marginTop: spacing.sm }} accessibilityLabel={t('ui.requestDetail.skipA11y')} accessibilityRole="button">
+            <Text style={styles.skipText}>{t('ui.requestDetail.skip')}</Text>
           </TouchableOpacity>
         </View>
       </View>

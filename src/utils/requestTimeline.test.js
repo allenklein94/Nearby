@@ -85,7 +85,8 @@ describe('request progress by reply kind + Next line', () => {
     expect(justSentLine(4)).toBe("We asked 4 nearby businesses. You'll be notified when they respond.");
     expect(justSentLine(1)).toBe("We asked 1 nearby business. You'll be notified when they respond.");
     expect(justSentLine(0)).toBeNull();
-    const screen = fs.readFileSync(path.join(__dirname, '../screens/BusinessRequestDetailScreen.js'), 'utf8');
+    // the screen's wording lives in the requestDetail ui namespace (localization pass 5); read both
+    const screen = fs.readFileSync(path.join(__dirname, '../screens/BusinessRequestDetailScreen.js'), 'utf8') + JSON.stringify(require('../i18n/ui/requestDetail').default.en);
     expect(screen).not.toMatch(/as offers come in/);
     expect(screen).toMatch(/justSentLine\(notifiedCount, targetPartnerName\)/);
     expect(screen).toMatch(/requestNextStep\(request, offers\)/);

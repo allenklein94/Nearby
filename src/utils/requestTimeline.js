@@ -1,4 +1,5 @@
-import { formatDateTime } from './timeLabels';
+import { tr, getCurrentLanguage } from '../i18n/translate';
+import { displayDateTime } from '../i18n/display';
 import { offerPriceLabel } from './outcomeDisplay';
 import { businessReplyTitle, businessReplyKind } from './offerCopy';
 import { requestLifecycleState, offerLifecycleState } from './objectLifecycle';
@@ -12,6 +13,9 @@ import { requestLifecycleState, offerLifecycleState } from './objectLifecycle';
 const OFFERED = ['offered', 'accepted', 'completed'];
 const WON = ['accepted', 'completed'];
 
+// Timestamps in the person's language (English = the shared formatDateTime, unchanged).
+const at = (iso) => displayDateTime(iso, getCurrentLanguage());
+
 function earliest(list, field) {
   const times = list.map((o) => o[field]).filter((t) => t && !Number.isNaN(new Date(t).getTime()));
   return times.length ? times.reduce((a, b) => (new Date(a) <= new Date(b) ? a : b)) : null;
@@ -19,29 +23,29 @@ function earliest(list, field) {
 
 function offerDetail(o) {
   if (!o || businessReplyKind(o) !== 'offer') return null;
-  if (o.discount_pct != null && Number(o.discount_pct) > 0) return `${Number(o.discount_pct)}% off`;
+  if (o.discount_pct != null && Number(o.discount_pct) > 0) return tr('ui.requestDetail.timeline.percentOff', { pct: Number(o.discount_pct) });
   return offerPriceLabel(o.offer_price, !!o.price_is_per_person) || (o.offer_title || null);
 }
 
 export function requestTimeline(request, offers) {
   if (!request) return [];
   const list = offers ?? [];
-  const steps = [{ key: 'sent', label: 'Request sent', detail: null, at: formatDateTime(request.created_at) }];
+  const steps = [{ key: 'sent', label: tr('ui.requestDetail.timeline.requestSent'), detail: null, at: at(request.created_at) }];
 
   const offered = list.filter((o) => OFFERED.includes(o.status));
   if (offered.length > 0) {
     const first = [...offered].sort((a, b) => new Date(a.responded_at ?? a.created_at) - new Date(b.responded_at ?? b.created_at))[0];
     steps.push({
       key: 'offer_received',
-      label: offered.length > 1 ? `${offered.length} businesses responded` : businessReplyTitle(first.brand_partners?.name, first),
+      label: offered.length > 1 ? tr('ui.requestDetail.timeline.businessesResponded', { count: offered.length }) : businessReplyTitle(first.brand_partners?.name, first),
       detail: offered.length === 1 ? offerDetail(first) : null,
-      at: formatDateTime(earliest(offered, 'responded_at')),
+      at: at(earliest(offered, 'responded_at')),
     });
   }
 
   const won = list.filter((o) => WON.includes(o.status));
   if (won.length > 0) {
-    steps.push({ key: 'accepted', label: "You're booked", detail: null, at: formatDateTime(earliest(won, 'accepted_at')) });
+    steps.push({ key: 'accepted', label: tr('ui.requestDetail.timeline.youreBooked'), detail: null, at: at(earliest(won, 'accepted_at')) });
   }
   return steps;
 }
@@ -56,14 +60,14 @@ export function timelineStepLine(step) {
 export function requestNextStep(request, offers, now = new Date()) {
   if (requestLifecycleState(request, now) !== 'open') return null;
   const live = (offers ?? []).filter((o) => offerLifecycleState(o, now) === 'offered');
-  if (live.length === 0) return "We'll let you know when a business responds.";
-  return request.group_plan_id ? 'Pick one to confirm with your group.' : 'Pick one to book it.';
+  if (live.length === 0) return tr('ui.requestDetail.nextStep.waiting');
+  return request.group_plan_id ? tr('ui.requestDetail.nextStep.pickWithGroup') : tr('ui.requestDetail.nextStep.pickOne');
 }
 
 // The line right after sending (AskBusiness and the other creators land here with justSubmitted). A request addressed to
 // ONE business names it (item 123: "Request sent to Coastal Coffee").
 export function justSentLine(notifiedCount, targetName = null) {
   if (!(notifiedCount > 0)) return null;
-  if (targetName) return `Request sent to ${targetName}. You'll be notified when they respond.`;
-  return `We asked ${notifiedCount} nearby business${notifiedCount === 1 ? '' : 'es'}. You'll be notified when they respond.`;
+  if (targetName) return tr('ui.requestDetail.justSent.target', { name: targetName });
+  return tr('ui.requestDetail.justSent.many', { count: notifiedCount });
 }

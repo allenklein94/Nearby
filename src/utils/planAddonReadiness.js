@@ -13,6 +13,26 @@
 // invalidate, only a client-side summary of what's already true.
 import { planAddonType } from '../constants/planAddons';
 import { formatTimeOfDay, formatDateLabel } from './businessRequestWhen';
+import { tr, getCurrentLanguage } from '../i18n/translate';
+import { localClock, localWeekday, localDate } from '../i18n/format';
+import { categoryName } from '../i18n/categoryNames';
+
+// Display words in the person's language (localization pass 5); English output is unchanged.
+const isEnglish = () => { const l = getCurrentLanguage(); return !l || l === 'en'; };
+const txt = (key, vars) => tr(`ui.requestDetail.plan.${key}`, vars);
+function timeText(timeStr) {
+  if (!timeStr) return null;
+  if (isEnglish()) return formatTimeOfDay(timeStr);
+  const m = parsePlanTimeMinutes(String(timeStr).slice(0, 5));
+  return m == null ? formatTimeOfDay(timeStr) : localClock(m, getCurrentLanguage());
+}
+function dateText(dateStr) {
+  if (isEnglish()) return formatDateLabel(dateStr);
+  if (!dateStr) return null;
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return localDate(d, getCurrentLanguage());
+}
 
 // Reduces one add-on's business_requests row + its offers down to one of
 // a small, honest set of states.
@@ -37,19 +57,12 @@ export function deriveAddonRequestState(addonRequest, offers = []) {
   return 'pending';
 }
 
-const STATE_COPY = {
-  none: { label: 'Not added', short: '—' },
-  pending: { label: 'Waiting for a business to respond', short: '○ Waiting' },
-  offered: { label: 'A business made an offer — review it', short: '○ Offer ready' },
-  confirmed: { label: 'Confirmed', short: '✓ Confirmed' },
-  declined: { label: "No business could help — try again or pick another", short: '⚠️ Declined' },
-  no_response: { label: 'No response in time', short: '⚠️ No response' },
-  expired_with_offer: { label: 'An offer expired before you responded', short: '⚠️ Offer expired' },
-  skipped: { label: 'Skipped', short: '— Skipped' },
-};
+// Wording per state lives in ui.requestDetail.plan.state.<state> (label + short).
+const ADDON_STATES = ['none', 'pending', 'offered', 'confirmed', 'declined', 'no_response', 'expired_with_offer', 'skipped'];
 
 export function addonStateCopy(state) {
-  return STATE_COPY[state] ?? STATE_COPY.none;
+  const key = ADDON_STATES.includes(state) ? state : 'none';
+  return { label: txt(`state.${key}.label`), short: txt(`state.${key}.short`) };
 }
 
 // Whether the user can start a fresh attempt at this add-on type right
@@ -77,7 +90,7 @@ export function parsePlanTimeMinutes(timeStr) {
 // day formatter -- one ontology for "HH:MM:SS" display, not a second
 // copy that could drift.
 export function formatPlanTimeLabel(timeStr) {
-  return timeStr ? formatTimeOfDay(timeStr) : null;
+  return timeStr ? timeText(timeStr) : null;
 }
 
 // A business's own real proposed_time (a timestamptz, set once an offer
@@ -133,7 +146,7 @@ export function buildPlanTimeline({ primary, primaryOffers = [], addons = [] }) 
       rawLabel,
       businessName: accepted?.brand_partners?.name ?? null,
       planTime: effectiveTime,
-      planTimeLabel: formatPlanTimeLabel(effectiveTime) ?? 'Anytime',
+      planTimeLabel: formatPlanTimeLabel(effectiveTime) ?? txt('anytime'),
       hasTime: minutes !== null,
       state,
       canRetry: canRetryAddon(state),
@@ -149,7 +162,7 @@ export function buildPlanTimeline({ primary, primaryOffers = [], addons = [] }) 
       kind: 'primary',
       addonType: null,
       icon: '📍',
-      label: primary.plan_label || primary.category || 'Your Reservation',
+      label: primary.plan_label || (primary.category ? categoryName(primary.category, getCurrentLanguage()) : null) || txt('yourReservation'),
       rawLabel: primary.plan_label ?? null,
       status: primary.status,
       offers: primaryOffers,
@@ -166,7 +179,7 @@ export function buildPlanTimeline({ primary, primaryOffers = [], addons = [] }) 
           kind: 'addon',
           addonType: a.addon_type,
           icon: type?.icon ?? '✨',
-          label: a.plan_label || type?.label || a.addon_type,
+          label: a.plan_label || (type ? txt(`addon.${type.key}`) : null) || a.addon_type,
           rawLabel: a.plan_label ?? null,
           status: a.status,
           offers: a.business_request_offers ?? [],
@@ -192,16 +205,16 @@ export function summarizePlanTimelineReadiness(timeline) {
   const primaryConfirmed = primaryEntry?.state === 'confirmed';
   const addonEntries = timeline.filter((e) => e.kind === 'addon');
   if (addonEntries.length === 0) {
-    return primaryConfirmed ? 'Ready' : 'Waiting on your reservation';
+    return primaryConfirmed ? txt('ready') : txt('waitingOnReservation');
   }
   if (!primaryConfirmed) {
-    return 'Waiting on your reservation';
+    return txt('waitingOnReservation');
   }
   const confirmedCount = addonEntries.filter((e) => e.state === 'confirmed').length;
   const needsAttention = addonEntries.some((e) => e.state === 'declined' || e.state === 'no_response' || e.state === 'expired_with_offer');
-  if (confirmedCount === addonEntries.length) return 'Ready — everything is confirmed';
-  if (needsAttention) return `${confirmedCount} of ${addonEntries.length} extras confirmed — one needs attention`;
-  return `${confirmedCount} of ${addonEntries.length} extras confirmed`;
+  if (confirmedCount === addonEntries.length) return txt('allConfirmed');
+  if (needsAttention) return txt('extrasConfirmedAttention', { done: confirmedCount, count: addonEntries.length });
+  return txt('extrasConfirmed', { done: confirmedCount, count: addonEntries.length });
 }
 
 // Item 91 ("Add a 'Plan Status'" -- CLAUDE.md): the real, granular
@@ -258,15 +271,8 @@ export const PLAN_LIFECYCLE_STATUS = {
   CANCELLED: 'cancelled',
 };
 
-const PLAN_LIFECYCLE_LABELS = {
-  [PLAN_LIFECYCLE_STATUS.PLANNING]: 'Planning',
-  [PLAN_LIFECYCLE_STATUS.AWAITING_RESPONSES]: 'Awaiting Responses',
-  [PLAN_LIFECYCLE_STATUS.OPTION_SELECTED]: 'Option Selected',
-  [PLAN_LIFECYCLE_STATUS.BOOKING_PENDING]: 'Booking Pending',
-  [PLAN_LIFECYCLE_STATUS.CONFIRMED]: 'Confirmed',
-  [PLAN_LIFECYCLE_STATUS.COMPLETED]: 'Completed',
-  [PLAN_LIFECYCLE_STATUS.CANCELLED]: 'Cancelled',
-};
+// Wording in ui.requestDetail.plan.lifecycle.<status>, read when the status is resolved (so it follows the language).
+const PLAN_LIFECYCLE_LABELS = new Proxy({}, { get: (_o, kind) => txt(`lifecycle.${String(kind)}`) });
 
 // dateStr is a plain 'YYYY-MM-DD' (business_requests.date). Local-date
 // comparison, same granularity every other business-request date label
@@ -353,23 +359,26 @@ export function resolveBusinessRequestPlanStatus({ primary, primaryOffers = [] }
 // linked plan) -- never a new query, never fabricated. A solo plan with no real group roster
 // beyond the host themselves honestly falls back to null (the caller renders nothing rather than
 // a manufactured "just you" line) rather than invent a signal that isn't there.
+const YOU = Symbol('you');
 export function buildPlanWhoSummary({ participants, myId, whoForName }) {
   const names = (participants || [])
-    .map((p) => (p.id === myId ? 'You' : p.displayName))
+    .map((p) => (p.id === myId ? YOU : p.displayName))
     .filter(Boolean);
+  const you = txt('you');
+  const more = (extra) => (extra > 0 ? ` ${txt('moreCount', { count: extra })}` : '');
 
   if (whoForName) {
-    const others = names.filter((n) => n !== 'You');
-    if (others.length === 0) return `For ${whoForName}`;
+    const others = names.filter((n) => n !== YOU);
+    if (others.length === 0) return txt('forName', { name: whoForName });
     const shown = others.slice(0, 2);
     const extra = others.length - shown.length;
-    return `For ${whoForName}, with ${shown.join(', ')}${extra > 0 ? ` +${extra} more` : ''}`;
+    return txt('forNameWith', { name: whoForName, names: shown.join(', ') }) + more(extra);
   }
 
   if (names.length <= 1) return null;
-  const shown = names.slice(0, 3);
+  const shown = names.slice(0, 3).map((n) => (n === YOU ? you : n));
   const extra = names.length - shown.length;
-  return shown.join(', ') + (extra > 0 ? ` +${extra} more` : '');
+  return shown.join(', ') + more(extra);
 }
 
 export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null, participants = null, myId = null, whoForName = null }) {
@@ -383,7 +392,7 @@ export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null
   const timeLabel = entry?.hasTime
     ? entry.planTimeLabel
     : primary.time_window_start
-    ? formatTimeOfDay(primary.time_window_start)
+    ? timeText(primary.time_window_start)
     : null;
 
   // Item 121 ("Business offer acceptance should feel equally tangible"): Add to
@@ -394,9 +403,9 @@ export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null
   const acceptedOffer = primaryOffers.find((o) => o.status === 'accepted' || o.status === 'completed') ?? null;
 
   return {
-    title: planTitle || primary.plan_label || primary.category || 'Your Plan',
+    title: planTitle || primary.plan_label || (primary.category ? categoryName(primary.category, getCurrentLanguage()) : null) || txt('yourPlan'),
     who: buildPlanWhoSummary({ participants, myId, whoForName }),
-    dateLabel: formatDateLabel(primary.date),
+    dateLabel: dateText(primary.date),
     timeLabel,
     rawDate: primary.date ?? null,
     rawTime: entry?.planTime ?? primary.time_window_start ?? null,

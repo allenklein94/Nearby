@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
@@ -10,6 +11,7 @@ import { typography, spacing, radius } from '../theme';
 // older, unscreened video stays an honest "Video attached" label. Never autoplays: it shows the poster, the person taps play,
 // and it starts MUTED (native controls let them unmute). Nothing plays inside a list.
 export default function OfferMedia({ path, type, posterPath, localUri = null }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const [url, setUrl] = useState(null);
   const [poster, setPoster] = useState(null);
@@ -33,7 +35,7 @@ export default function OfferMedia({ path, type, posterPath, localUri = null }) 
     if (type === 'video') {
       return (
         <View style={frame}>
-          <Video source={{ uri: localUri }} style={{ width: '100%', height: '100%' }} resizeMode={ResizeMode.CONTAIN} useNativeControls isMuted accessibilityLabel="Offer video preview, muted" />
+          <Video source={{ uri: localUri }} style={{ width: '100%', height: '100%' }} resizeMode={ResizeMode.CONTAIN} useNativeControls isMuted accessibilityLabel={t('ui.requestDetail.offerVideoPreviewMutedA11y')} />
         </View>
       );
     }
@@ -42,7 +44,7 @@ export default function OfferMedia({ path, type, posterPath, localUri = null }) 
 
   if (type === 'video') {
     if (!posterPath) {
-      return <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs }}>🎬 Video attached</Text>;
+      return <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs }}>{t('ui.requestDetail.videoAttached')}</Text>;
     }
     if (playing && url) {
       return (
@@ -54,7 +56,7 @@ export default function OfferMedia({ path, type, posterPath, localUri = null }) 
             useNativeControls
             shouldPlay
             isMuted
-            accessibilityLabel="Offer video, playing muted"
+            accessibilityLabel={t('ui.requestDetail.offerVideoPlayingMutedA11y')}
           />
         </View>
       );
@@ -65,7 +67,7 @@ export default function OfferMedia({ path, type, posterPath, localUri = null }) 
         onPress={() => setPlaying(true)}
         disabled={!url}
         accessibilityRole="button"
-        accessibilityLabel="Play the offer video"
+        accessibilityLabel={t('ui.requestDetail.playTheOfferVideoA11y')}
       >
         {poster ? <Image source={{ uri: poster }} style={{ ...StyleSheetAbsolute }} resizeMode="cover" /> : null}
         <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' }}>

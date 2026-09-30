@@ -1,4 +1,6 @@
 import { recordAcceptBehavior } from '../services/behaviorSignals';
+import { useLanguage } from '../context/LanguageContext';
+import { displayClock } from '../i18n/display';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
@@ -14,7 +16,8 @@ import { requestTimeline, timelineStepLine, requestNextStep, justSentLine } from
 import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, reopenBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon, setPlanItemTime, getPlanOrganizers, addPlanOrganizer, removePlanOrganizer } from '../services/businessFulfillment';
 import { getPlanChatInfo } from '../services/planChat';
 import { getPlanIdForResource } from '../services/plans';
-import { relevantAddonTypesForOccasion, planAddonIcon, planAddonLabel } from '../constants/planAddons';
+import { relevantAddonTypesForOccasion, planAddonIcon, planAddonType } from '../constants/planAddons';
+import useCategoryNames from '../hooks/useCategoryNames';
 import { occasionIcon, occasionLabel } from '../constants/businessAttributes';
 import { buildPlanTimeline, summarizePlanTimelineReadiness, buildPlanSummary, addonStateCopy } from '../utils/planAddonReadiness';
 import { buildPlanCalendarEvent, buildDirectionsUrl } from '../utils/planLogisticsActions';
@@ -46,42 +49,24 @@ import { typography, spacing, radius } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
 import { businessReplyStatus, acceptedReplyTitle, businessReplyKind } from '../utils/offerCopy';
 
-import { countLabel } from '../utils/plural';
+// Wording lives in ui.requestDetail.status.<status> / offerStatus.<status> / offerType.<type>; these list the known keys.
 const STATUS_COPY = {
-  open: { label: 'Open — waiting for responses', color: null },
-  fulfilled: { label: "You're booked", color: 'success' }, // label comes from acceptedReplyTitle (item 121)
-  expired: { label: 'This request expired', color: null },
-  cancelled: { label: 'You cancelled this request', color: null },
-  merged: { label: 'Combined into a group plan', color: 'info' },
+  open: { color: null },
+  fulfilled: { color: 'success' }, // label comes from acceptedReplyTitle (item 121)
+  expired: { color: null },
+  cancelled: { color: null },
+  merged: { color: 'info' },
 };
 
-const OFFER_STATUS_COPY = {
-  pending: 'Waiting for a response',
-  offered: 'Made you an offer', // display uses businessReplyStatus (item 121); kept for GroupPlanScreen parity
-  accepted: "You're booked",
-  declined: "Can't help with this one",
-  // Item 50 (state consistency audit, Finding 4): withdraw_business_offer()
-  // is a real, live transition this map was missing -- fell through to the
-  // raw literal "withdrawn" instead of styled copy. Matches
-  // GroupPlanScreen's identical business-offer copy map, kept in sync.
-  withdrawn: 'Withdrawn',
-  expired: 'No longer available',
-  cancelled: 'Cancelled',
-  completed: 'Completed',
-};
+// display of 'offered' uses businessReplyStatus (item 121); withdrawn is withdraw_business_offer() (item 50)
+const OFFER_STATUS_COPY = { pending: true, offered: true, accepted: true, declined: true, withdrawn: true, expired: true, cancelled: true, completed: true };
 
 // Offer System Phase 3 (see CLAUDE.md's own plan, Gap 3): offer_type was
 // already real and stored (never hard-coded to a discount, per the
 // original locked decisions) but had never actually been rendered
 // anywhere on this screen -- part of Phase 3's "clearer per-offer terms
 // summary."
-const OFFER_TYPE_LABELS = {
-  standard: 'Standard offer',
-  discount: 'Discount',
-  perk: 'Perk',
-  upgrade: 'Upgrade',
-  alt_time: 'Alternate time',
-};
+const OFFER_TYPE_LABELS = { standard: true, discount: true, perk: true, upgrade: true, alt_time: true };
 
 // business_request_offers.proposed_time was previously collected nowhere
 // (the "Alt. time" offer-type chip had no time input attached to it at
@@ -106,6 +91,9 @@ const OFFER_TYPE_LABELS = {
 // (singular) scope; revisiting a request relies on the push deep link,
 // same as this app's established gathering_invite precedent.
 export default function BusinessRequestDetailScreen({ navigation, route }) {
+  const { t, language } = useLanguage();
+  const names = useCategoryNames();
+  const addonName = (key) => (planAddonType(key) ? t(`ui.requestDetail.plan.addon.${key}`) : key);
   const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
   const requestId = route.params?.requestId;
@@ -455,7 +443,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       const planId = await getPlanIdForResource('business_request', request.id);
       if (planId) navigation.navigate('PlanDetail', { planId });
     } catch (e) {
-      Alert.alert('Error', 'Could not open this plan.');
+      Alert.alert(t('ui.requestDetail.error'), t('ui.requestDetail.couldNotOpenThisPlan'));
     }
   }
 
@@ -476,7 +464,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         dateWindow: request?.date ?? null,
         resultType: 'group_plan_proposed',
         resultId: proposalId,
-        resultTitle: `Group plan proposed — ${request?.category ?? 'shared request'}`,
+        resultTitle: t('ui.requestDetail.groupPlanProposed', { category: request?.category ?? 'shared request' }),
       });
       navigation.replace('GroupPlan', { proposalId });
     } catch (e) {
@@ -500,7 +488,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         dateWindow: request?.date ?? null,
         resultType: 'group_plan_proposed',
         resultId: proposalId,
-        resultTitle: `Invited someone — ${request?.category ?? 'shared request'}`,
+        resultTitle: t('ui.requestDetail.invitedSomeone', { category: request?.category ?? 'shared request' }),
       });
       navigation.navigate('GroupPlan', { proposalId });
     } catch (e) {
@@ -529,12 +517,12 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
 
   async function handleRemoveOrganizer(userId, displayName) {
     Alert.alert(
-      'Remove co-organizer?',
-      `${displayName ?? 'This person'} will no longer be able to help manage this plan.`,
+      t('ui.requestDetail.removeCoOrganizer'),
+      t('ui.requestDetail.willNoLongerBeAble', { name: displayName ?? 'This person' }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('ui.requestDetail.cancel'), style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('ui.requestDetail.remove'),
           style: 'destructive',
           onPress: async () => {
             setOrganizerActionBusy(true);
@@ -601,7 +589,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         const rows = await getPlanAddons(requestId);
         setAddons(rows);
         if (result.notifiedCount === 0) {
-          Alert.alert('Added', "We couldn't find a nearby business for this yet — we'll keep it open in case one joins.");
+          Alert.alert(t('ui.requestDetail.added'), t('ui.requestDetail.weCouldntFindANearby'));
         }
       } else {
         await setPlanItemTime(timelineForm.requestId, timeStr, label, label === null);
@@ -641,7 +629,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       const rows = await getPlanAddons(requestId);
       setAddons(rows);
       if (result.notifiedCount === 0) {
-        Alert.alert('Added', "We couldn't find a nearby business for this yet — we'll keep it open in case one joins.");
+        Alert.alert(t('ui.requestDetail.added'), t('ui.requestDetail.weCouldntFindANearby'));
       }
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRetryEntry(entry) });
@@ -683,8 +671,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   async function collectPayment(offerId) {
     if (!isStripeConfigured()) {
       Alert.alert(
-        'Payment not yet available',
-        "You're still booked. Paying through Nearby isn't available yet, so you'll settle up with the business directly."
+        t('ui.requestDetail.paymentNotYetAvailable'),
+        t('ui.requestDetail.youreStillBookedPayingThrough')
       );
       return;
     }
@@ -700,14 +688,14 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       const { error: presentError } = await presentPaymentSheet();
       if (presentError) {
         if (presentError.code !== 'Canceled') {
-          Alert.alert('Payment not completed', presentError.message);
+          Alert.alert(t('ui.requestDetail.paymentNotCompleted'), presentError.message);
         }
         return;
       }
-      Alert.alert('Payment sent', `Your $${Number(amount).toFixed(2)} payment is on its way to the business.`);
+      Alert.alert(t('ui.requestDetail.paymentSent'), t('ui.requestDetail.yourPaymentIsOnIts', { amount: Number(amount).toFixed(2) }));
       await load();
     } catch (e) {
-      Alert.alert('Payment error', e.message);
+      Alert.alert(t('ui.requestDetail.paymentError'), e.message);
     }
     setCollectingPayment(false);
   }
@@ -728,10 +716,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // cancel a confirmed reservation. The RPC's own "already paid, contact
   // the business" rejection surfaces here unchanged.
   function handleCancelReservation(offerId) {
-    Alert.alert('Cancel this reservation?', "The business will be notified and any held spot will be released.", [
-      { text: 'Never mind', style: 'cancel' },
+    Alert.alert(t('ui.requestDetail.cancelThisReservation'), t('ui.requestDetail.theBusinessWillBeNotified'), [
+      { text: t('ui.requestDetail.neverMind'), style: 'cancel' },
       {
-        text: 'Cancel Reservation', style: 'destructive', onPress: async () => {
+        text: t('ui.requestDetail.cancelReservation'), style: 'destructive', onPress: async () => {
           setActingOfferId(offerId);
           try {
             await cancelBusinessReservation(offerId);
@@ -758,10 +746,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   }
 
   async function handleCancel() {
-    Alert.alert('Cancel this request?', 'Businesses will no longer be able to respond.', [
-      { text: 'Never mind', style: 'cancel' },
+    Alert.alert(t('ui.requestDetail.cancelThisRequest'), t('ui.requestDetail.businessesWillNoLongerBe'), [
+      { text: t('ui.requestDetail.neverMind'), style: 'cancel' },
       {
-        text: 'Cancel Request', style: 'destructive', onPress: async () => {
+        text: t('ui.requestDetail.cancelRequest'), style: 'destructive', onPress: async () => {
           setCancelling(true);
           try {
             await cancelBusinessRequest(requestId);
@@ -787,7 +775,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load this request." onRetry={load} />
+        <LoadErrorState message={t('ui.requestDetail.couldntLoadThisRequest')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -798,8 +786,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const hasWinner = !!winningOffer;
   // Item 121: the booked header names what was chosen (availability / suggested time / offer), never "an offer" for a plain reply.
   const statusCopy = request.status === 'fulfilled'
-    ? { ...STATUS_COPY.fulfilled, label: winningOffer ? acceptedReplyTitle(winningOffer.brand_partners?.name, winningOffer) : "You're booked" }
-    : (STATUS_COPY[request.status] ?? { label: request.status, color: null });
+    ? { ...STATUS_COPY.fulfilled, label: winningOffer ? acceptedReplyTitle(winningOffer.brand_partners?.name, winningOffer) : t('ui.requestDetail.youreBooked') }
+    : (STATUS_COPY[request.status] ? { ...STATUS_COPY[request.status], label: t(`ui.requestDetail.status.${request.status}`) } : { label: request.status, color: null });
   const isGroupPlanRequest = !!request.group_plan_id;
   const isMergedIntoGroupPlan = request.status === 'merged' && !!request.superseded_by_group_plan_id;
   // Offer System Phase 3 (see CLAUDE.md's own plan): the real evidence
@@ -914,14 +902,14 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       location: planSummary?.location,
     });
     if (!event) {
-      Alert.alert("Couldn't add to calendar", "This plan doesn't have a confirmed date yet.");
+      Alert.alert(t('ui.requestDetail.couldntAddToCalendar'), t('ui.requestDetail.thisPlanDoesntHaveA'));
       return;
     }
     setAddingToCalendar(true);
     try {
       await Calendar.createEventInCalendarAsync(event);
     } catch (e) {
-      Alert.alert("Couldn't open your calendar", e.message ?? 'Please try again.');
+      Alert.alert(t('ui.requestDetail.couldntOpenYourCalendar'), e.message ?? t('ui.requestDetail.pleaseTryAgain'));
     }
     setAddingToCalendar(false);
   }
@@ -933,7 +921,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       address: planSummary?.businessAddress,
     });
     if (!url) return;
-    Linking.openURL(url).catch(() => Alert.alert('Error', "Couldn't open Maps."));
+    Linking.openURL(url).catch(() => Alert.alert(t('ui.requestDetail.error'), t('ui.requestDetail.couldntOpenMaps')));
   }
 
   function handleGetUberForPlan() {
@@ -943,7 +931,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       longitude: planSummary.businessLongitude,
       nickname: planSummary.location,
       address: planSummary.businessAddress,
-    }).catch(() => Alert.alert('Error', "Couldn't open Uber."));
+    }).catch(() => Alert.alert(t('ui.requestDetail.error'), t('ui.requestDetail.couldntOpenUber')));
   }
 
   async function handleSharePlanCard() {
@@ -953,7 +941,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       const uri = await captureRef(shareCardRef, { format: 'png', quality: 1 });
       const available = await Sharing.isAvailableAsync();
       if (!available) {
-        Alert.alert("Sharing isn't available on this device.");
+        Alert.alert(t('ui.requestDetail.sharingIsntAvailableOnThis'));
         return;
       }
       await Sharing.shareAsync(`file://${uri}`, {
@@ -961,7 +949,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         dialogTitle: planSummary.title,
       });
     } catch (e) {
-      Alert.alert('Error', "Couldn't create the shareable card. Try again.");
+      Alert.alert(t('ui.requestDetail.error'), t('ui.requestDetail.couldntCreateTheShareableCard'));
     }
     setSharingPlanCard(false);
   }
@@ -977,10 +965,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             confirmed. ✓" phrasing GroupPlanScreen already uses for this exact same real
             moment, with tone="business" (skips the ✨ discovery beat, settles fast, no
             springy bounce). */}
-        {justAccepted && <SuccessAnimation haptic text="You're booked. ✓" tone="business" />}
+        {justAccepted && <SuccessAnimation haptic text={t('ui.requestDetail.youreBooked2')} tone="business" />}
         {request && (
-          <TouchableOpacity onPress={openPlanDetail} accessibilityRole="button" accessibilityLabel="View the whole plan">
-            <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: spacing.sm }}>View the whole plan →</Text>
+          <TouchableOpacity onPress={openPlanDetail} accessibilityRole="button" accessibilityLabel={t('ui.requestDetail.viewTheWholePlanA11y')}>
+            <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: spacing.sm }}>{t('ui.requestDetail.viewTheWholePlan')}</Text>
           </TouchableOpacity>
         )}
         {planSummary && (
@@ -1026,11 +1014,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             {planSummary.who && <Text style={styles.planSummaryLine}>👤 {planSummary.who}</Text>}
             {(planSummary.dateLabel || planSummary.timeLabel) && (
               <Text style={styles.planSummaryLine}>
-                📅 {planSummary.dateLabel ?? 'Date not set'}{planSummary.timeLabel ? `  🕖 ${planSummary.timeLabel}` : ''}
+                📅 {planSummary.dateLabel ?? t('ui.requestDetail.dateNotSet')}{planSummary.timeLabel ? `  🕖 ${planSummary.timeLabel}` : ''}
               </Text>
             )}
             {planSummary.location && <Text style={styles.planSummaryLine}>📍 {planSummary.location}</Text>}
-            {planSummary.partySize != null && <Text style={styles.planSummaryLine}>👥 {countLabel(planSummary.partySize, 'person', 'people')}</Text>}
+            {planSummary.partySize != null && <Text style={styles.planSummaryLine}>👥 {t('ui.common.count.people', { count: planSummary.partySize })}</Text>}
             {planSummary.statusKind === 'confirmed' && (
               <View style={styles.planSummaryActionsRow}>
                 {planOrganizerInfo?.isHost && (
@@ -1039,9 +1027,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     onPress={goInviteFromAchievementCard}
                     activeOpacity={0.85}
                     accessibilityRole="button"
-                    accessibilityLabel="Invite someone to this plan"
+                    accessibilityLabel={t('ui.requestDetail.inviteSomeoneToThisPlanA11y')}
                   >
-                    <Text style={styles.sharePlanCardLinkText}>👥 Invite</Text>
+                    <Text style={styles.sharePlanCardLinkText}>{t('ui.requestDetail.invite')}</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
@@ -1050,9 +1038,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   disabled={sharingPlanCard}
                   activeOpacity={0.85}
                   accessibilityRole="button"
-                  accessibilityLabel={`Share this plan: ${buildOccasionPlanShareCaption(planSummary).replace(/\n/g, ', ')}`}
+                  accessibilityLabel={t('ui.requestDetail.shareThisPlanA11y', { caption: buildOccasionPlanShareCaption(planSummary).replace(/\n/g, ', ') })}
                 >
-                  <Text style={styles.sharePlanCardLinkText}>{sharingPlanCard ? 'Creating card…' : '🎉 Share This Plan'}</Text>
+                  <Text style={styles.sharePlanCardLinkText}>{sharingPlanCard ? t('ui.requestDetail.creatingCard') : t('ui.requestDetail.shareThisPlan')}</Text>
                 </TouchableOpacity>
                 {/* Item 121 ("Business offer acceptance should feel equally tangible"): "Add to
                     Calendar / Get Directions / Get an Uber... should appear immediately" once
@@ -1064,9 +1052,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   disabled={addingToCalendar}
                   activeOpacity={0.85}
                   accessibilityRole="button"
-                  accessibilityLabel="Add this plan to your calendar"
+                  accessibilityLabel={t('ui.requestDetail.addThisPlanToYourA11y')}
                 >
-                  <Text style={styles.sharePlanCardLinkText}>{addingToCalendar ? 'Opening…' : '📅 Add to Calendar'}</Text>
+                  <Text style={styles.sharePlanCardLinkText}>{addingToCalendar ? t('ui.requestDetail.opening') : t('ui.requestDetail.addToCalendar')}</Text>
                 </TouchableOpacity>
                 {(planSummary.businessLatitude != null || planSummary.businessAddress) && (
                   <TouchableOpacity
@@ -1074,9 +1062,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     onPress={handleGetDirections}
                     activeOpacity={0.85}
                     accessibilityRole="button"
-                    accessibilityLabel="Get directions"
+                    accessibilityLabel={t('ui.requestDetail.getDirectionsA11y')}
                   >
-                    <Text style={styles.sharePlanCardLinkText}>🧭 Get Directions</Text>
+                    <Text style={styles.sharePlanCardLinkText}>{t('ui.requestDetail.getDirections')}</Text>
                   </TouchableOpacity>
                 )}
                 {planSummary.businessLatitude != null && planSummary.businessLongitude != null && (
@@ -1085,9 +1073,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     onPress={handleGetUberForPlan}
                     activeOpacity={0.85}
                     accessibilityRole="button"
-                    accessibilityLabel="Get an Uber there"
+                    accessibilityLabel={t('ui.requestDetail.getAnUberThereA11y')}
                   >
-                    <Text style={styles.sharePlanCardLinkText}>🚗 Get an Uber</Text>
+                    <Text style={styles.sharePlanCardLinkText}>{t('ui.requestDetail.getAnUber')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -1111,22 +1099,21 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         )}
         {!!request.addon_type && (
           <View style={styles.groupPlanBanner}>
-            <Text style={styles.groupPlanBannerText}>{planAddonIcon(request.addon_type)} {planAddonLabel(request.addon_type)} — part of a bigger plan</Text>
+            <Text style={styles.groupPlanBannerText}>{planAddonIcon(request.addon_type)} {addonName(request.addon_type)}{' '}{t('ui.requestDetail.partOfABiggerPlan')}</Text>
             <TouchableOpacity
               style={styles.groupPlanBannerButton}
               onPress={() => navigation.push('BusinessRequestDetail', { requestId: request.parent_request_id })}
-              accessibilityLabel="View the full plan"
+              accessibilityLabel={t('ui.requestDetail.viewTheFullPlanA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.groupPlanBannerButtonText}>View the Full Plan →</Text>
+              <Text style={styles.groupPlanBannerButtonText}>{t('ui.requestDetail.viewTheFullPlan')}</Text>
             </TouchableOpacity>
           </View>
         )}
         {planChatInfo?.whoForName && myId && request.requester_id !== myId && (
           <View style={styles.occasionContextBanner}>
             <Text style={styles.occasionContextText}>
-              {occasionIcon(planChatInfo.occasionType) ?? '🎉'} You're helping plan {planChatInfo.whoForName}'s{' '}
-              {(occasionLabel(planChatInfo.occasionType) || 'plan').toLowerCase()}.
+              {occasionIcon(planChatInfo.occasionType) ?? '🎉'}{' '}{t('ui.requestDetail.youreHelpingPlanFor', { name: planChatInfo.whoForName, occasion: planChatInfo.occasionType ? (language === 'de' ? (x) => x : (x) => x.toLowerCase())(names.occasion(planChatInfo.occasionType, occasionLabel(planChatInfo.occasionType))) : t('ui.requestDetail.planWord') })}
             </Text>
           </View>
         )}
@@ -1135,7 +1122,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             <Text style={styles.notificationReasonText}>{notificationReason}</Text>
             <TouchableOpacity
               onPress={() => setShowReasonBanner(false)}
-              accessibilityLabel="Dismiss"
+              accessibilityLabel={t('ui.requestDetail.dismissA11y')}
               accessibilityRole="button"
               style={styles.notificationReasonDismiss}
             >
@@ -1160,19 +1147,19 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             {!isDuplicate && notifiedCount > 0 && <SuccessAnimation haptic />}
             <Text style={styles.bannerText}>
               {isDuplicate
-                ? "You already have an open request just like this — here it is, no need to ask twice."
+                ? t('ui.requestDetail.youAlreadyHaveAnOpen')
                 : notifiedCount > 0
                 ? justSentLine(notifiedCount, targetPartnerName)
-                : `We couldn't find a nearby business to ask within ${priorRadiusMiles} miles — try widening your search.`}
+                : t('ui.requestDetail.weCouldntFindANearby2', { priorRadiusMiles: priorRadiusMiles })}
             </Text>
             {!isDuplicate && notifiedCount === 0 && (
               <TouchableOpacity
                 style={styles.widerRadiusButton}
                 onPress={handleTryWiderRadius}
-                accessibilityLabel={`Try a wider radius, ${widerRadiusMiles} miles`}
+                accessibilityLabel={t('ui.requestDetail.tryAWiderRadiusMilesA11y', { widerRadiusMiles: widerRadiusMiles })}
                 accessibilityRole="button"
               >
-                <Text style={styles.widerRadiusButtonText}>Try a Wider Radius →</Text>
+                <Text style={styles.widerRadiusButtonText}>{t('ui.requestDetail.tryAWiderRadius')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -1182,7 +1169,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         <Text style={[styles.statusLine, statusCopy.color !== 'muted' && colors[statusCopy.color] && { color: colors[statusCopy.color] }]}>{statusCopy.label}</Text>
 
         {/* Request sent -> the reply (by kind) -> You're booked: only steps that really happened, no "viewed" step; then Next. */}
-        <View style={styles.timeline} accessibilityLabel="Request progress">
+        <View style={styles.timeline} accessibilityLabel={t('ui.requestDetail.requestProgressA11y')}>
           {requestTimeline(request, offers).map((step) => (
             <View key={step.key} style={styles.timelineStep}>
               <Text style={styles.timelineLabel}>✓ {step.label}</Text>
@@ -1190,48 +1177,48 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             </View>
           ))}
           {requestNextStep(request, offers) ? (
-            <Text style={styles.timelineDetail}>Next: {requestNextStep(request, offers)}</Text>
+            <Text style={styles.timelineDetail}>{t('ui.requestDetail.next')}{' '}{requestNextStep(request, offers)}</Text>
           ) : null}
         </View>
 
         {myPendingGroupPlanId && (
           <View style={styles.groupPlanBanner}>
-            <Text style={styles.groupPlanBannerText}>👥 Someone wants to make this a group plan with you.</Text>
+            <Text style={styles.groupPlanBannerText}>{t('ui.requestDetail.someoneWantsToMakeThis')}</Text>
             <TouchableOpacity
               style={styles.groupPlanBannerButton}
               onPress={() => navigation.navigate('GroupPlan', { proposalId: myPendingGroupPlanId })}
-              accessibilityLabel="View group plan invite"
+              accessibilityLabel={t('ui.requestDetail.viewGroupPlanInviteA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.groupPlanBannerButtonText}>View & Respond →</Text>
+              <Text style={styles.groupPlanBannerButtonText}>{t('ui.requestDetail.viewRespond')}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {isMergedIntoGroupPlan && (
           <View style={styles.groupPlanBanner}>
-            <Text style={styles.groupPlanBannerText}>This request became part of a shared group plan.</Text>
+            <Text style={styles.groupPlanBannerText}>{t('ui.requestDetail.thisRequestBecamePartOf')}</Text>
             <TouchableOpacity
               style={styles.groupPlanBannerButton}
               onPress={() => navigation.navigate('GroupPlan', { proposalId: request.superseded_by_group_plan_id })}
-              accessibilityLabel="View group plan"
+              accessibilityLabel={t('ui.requestDetail.viewGroupPlanA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.groupPlanBannerButtonText}>View Group Plan →</Text>
+              <Text style={styles.groupPlanBannerButtonText}>{t('ui.requestDetail.viewGroupPlan')}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {isGroupPlanRequest && (
           <View style={styles.groupPlanBanner}>
-            <Text style={styles.groupPlanBannerText}>👥 This is a shared group plan — everyone in the group confirms offers together.</Text>
+            <Text style={styles.groupPlanBannerText}>{t('ui.requestDetail.thisIsASharedGroup')}</Text>
             <TouchableOpacity
               style={styles.groupPlanBannerButton}
               onPress={() => navigation.navigate('GroupPlan', { proposalId: request.group_plan_id })}
-              accessibilityLabel="View group plan"
+              accessibilityLabel={t('ui.requestDetail.viewGroupPlanA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.groupPlanBannerButtonText}>View Group Plan →</Text>
+              <Text style={styles.groupPlanBannerButtonText}>{t('ui.requestDetail.viewGroupPlan')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -1256,10 +1243,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               <TouchableOpacity
                 style={styles.widerRadiusButton}
                 onPress={handleTryWiderRadius}
-                accessibilityLabel={`Try a wider radius, ${widerRadiusMiles} miles`}
+                accessibilityLabel={t('ui.requestDetail.tryAWiderRadiusMilesA11y', { widerRadiusMiles: widerRadiusMiles })}
                 accessibilityRole="button"
               >
-                <Text style={styles.widerRadiusButtonText}>Try a Wider Radius →</Text>
+                <Text style={styles.widerRadiusButtonText}>{t('ui.requestDetail.tryAWiderRadius')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -1267,22 +1254,22 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           <>
           {isAllDeclined(request, offers) && (
             <View style={styles.groupPlanBanner}>
-              <Text style={styles.groupPlanBannerText}>Nobody we asked is available for this one. Widening your search may find someone.</Text>
+              <Text style={styles.groupPlanBannerText}>{t('ui.requestDetail.nobodyWeAskedIsAvailable')}</Text>
               <TouchableOpacity
                 style={styles.groupPlanBannerButton}
                 onPress={handleTryWiderRadius}
-                accessibilityLabel={`Try a wider radius, ${widerRadiusMiles} miles`}
+                accessibilityLabel={t('ui.requestDetail.tryAWiderRadiusMilesA11y', { widerRadiusMiles: widerRadiusMiles })}
                 accessibilityRole="button"
               >
-                <Text style={styles.groupPlanBannerButtonText}>Try a Wider Radius →</Text>
+                <Text style={styles.groupPlanBannerButtonText}>{t('ui.requestDetail.tryAWiderRadius')}</Text>
               </TouchableOpacity>
             </View>
           )}
           {showComparison && (
             <View style={styles.comparisonHeaderRow}>
-              <Text style={styles.comparisonHeaderText}>✨ Nearby found {countLabel(offeredCount, 'option')} for you</Text>
+              <Text style={styles.comparisonHeaderText}>{t('ui.requestDetail.nearbyFoundOptions', { count: offeredCount })}</Text>
               <Text style={styles.comparisonHeaderSubtext}>
-                {pickOfferId ? "Here's what each can do. Our pick is first." : "Here's what each business can do."}
+                {pickOfferId ? t('ui.requestDetail.heresWhatEachCanDo') : t('ui.requestDetail.heresWhatEachBusinessCan')}
               </Text>
             </View>
           )}
@@ -1296,13 +1283,13 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             return (
             <StaggeredReveal key={o.id} index={offerIndex} style={styles.offerCard}>
             <View>
-              <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? 'A business'}</Text>
+              <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? t('ui.requestDetail.aBusiness')}</Text>
               {/* Item 92 ("Businesses should be able to respond specifically to
                   the occasion", CLAUDE.md): a real, named offer title -- "Special
                   Birthday Offer" -- rendered as its own headline, distinct from
                   the business's own name above it. Null for a plain generic
                   offer with no title, same as it always rendered before. */}
-              {pickOfferId === o.id && offerLifecycleState(o) === 'offered' ? <Text style={styles.offerReputationLine}>✨ Our pick</Text> : null}
+              {pickOfferId === o.id && offerLifecycleState(o) === 'offered' ? <Text style={styles.offerReputationLine}>{t('ui.requestDetail.ourPick')}</Text> : null}
               {o.offer_title ? <Text style={styles.offerTitleHeadline}>{o.offer_title}</Text> : null}
               {reputationLine && (offerLifecycleState(o) === 'offered' || o.status === 'accepted') ? (
                 <Text style={styles.offerReputationLine}>{reputationLine}</Text>
@@ -1314,12 +1301,12 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   switches (Items 114-117), applied here to a single offer card's own real state
                   transition. */}
               <ModeTransition activeKey={o.status}>
-              <Text style={styles.offerStatus}>{offerLifecycleState(o) === 'expired' ? 'This offer has expired' : (o.status === 'offered' ? businessReplyStatus(o) : (OFFER_STATUS_COPY[o.status] ?? o.status))}</Text>
+              <Text style={styles.offerStatus}>{offerLifecycleState(o) === 'expired' ? t('ui.requestDetail.thisOfferHasExpired') : (o.status === 'offered' ? businessReplyStatus(o) : (OFFER_STATUS_COPY[o.status] ? t(`ui.requestDetail.offerStatus.${o.status}`) : o.status))}</Text>
               {o.status === 'offered' && (
-                <OfferReveal offerId={o.id} partnerName={o.brand_partners?.name ?? 'A business'} enabled={!!(o.media_path || o.offer_title)}>
-                  <OfferCustomerBody offer={o} showTypeLabel={showComparison} typeLabel={OFFER_TYPE_LABELS[o.offer_type] ?? o.offer_type} />
+                <OfferReveal offerId={o.id} partnerName={o.brand_partners?.name ?? t('ui.requestDetail.aBusiness')} enabled={!!(o.media_path || o.offer_title)}>
+                  <OfferCustomerBody offer={o} showTypeLabel={showComparison} typeLabel={OFFER_TYPE_LABELS[o.offer_type] ? t(`ui.requestDetail.offerType.${o.offer_type}`) : o.offer_type} />
                   {showComparison && o.viewed_at ? (
-                    <Text style={styles.offerViewedIndicator}>👁 You've seen this</Text>
+                    <Text style={styles.offerViewedIndicator}>{t('ui.requestDetail.youveSeenThis')}</Text>
                   ) : null}
                   {/* Item 73: the button comes from the offer's and the request's state (utils/primaryAction.js
                       consumerOfferAction), including the request's own deadline -- never a raw status check here. */}
@@ -1330,7 +1317,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                         <TouchableOpacity
                           style={styles.acceptButton}
                           onPress={() => navigation.navigate('GroupPlan', { proposalId: request.group_plan_id })}
-                          accessibilityLabel="Confirm this offer with the group"
+                          accessibilityLabel={t('ui.requestDetail.confirmThisOfferWithTheA11y')}
                           accessibilityRole="button"
                         >
                           <Text style={styles.acceptButtonText}>{action.label}</Text>
@@ -1343,7 +1330,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                         style={styles.acceptButton}
                         onPress={() => handleAccept(o.id)}
                         disabled={actingOfferId === o.id}
-                        accessibilityLabel={businessReplyKind(o) === 'offer' ? `Accept offer from ${o.brand_partners?.name ?? 'this business'}` : `Choose ${o.brand_partners?.name ?? 'this business'}`}
+                        accessibilityLabel={businessReplyKind(o) === 'offer' ? t('ui.requestDetail.acceptOfferFromA11y', { name: o.brand_partners?.name ?? 'this business' }) : t('ui.requestDetail.chooseA11y', { name: o.brand_partners?.name ?? 'this business' })}
                         accessibilityRole="button"
                       >
                         {actingOfferId === o.id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>{action.label}</Text>}
@@ -1358,10 +1345,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   {(o.included_items ?? []).map((item, index) => (
                     <Text key={index} style={styles.offerIncludedItem}>✓ {item}</Text>
                   ))}
-                  {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
+                  {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time, language)}</Text> : null}
                   {offerPriceLabel(o.offer_price, o.price_is_per_person) ? <Text style={styles.offerPrice}>{offerPriceLabel(o.offer_price, o.price_is_per_person)}</Text> : null}
                   <OfferMedia path={o.media_path} type={o.media_type} posterPath={o.media_poster_path} />
-                  {visibleRedemption(o) ? <Text style={styles.offerDescription}>🎟️ How to redeem: {visibleRedemption(o)}</Text> : null}
+                  {visibleRedemption(o) ? <Text style={styles.offerDescription}>{t('ui.requestDetail.howToRedeem')}{' '}{visibleRedemption(o)}</Text> : null}
                   {o.brand_partners?.latitude != null && o.brand_partners?.longitude != null && (
                     <TouchableOpacity
                       onPress={() => openUberToDestination({
@@ -1370,51 +1357,51 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                         nickname: o.brand_partners.name,
                         address: o.brand_partners.address,
                       })}
-                      accessibilityLabel="Get an Uber there"
+                      accessibilityLabel={t('ui.requestDetail.getAnUberThereA11y')}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.uberLinkText}>🚗 Get an Uber there</Text>
+                      <Text style={styles.uberLinkText}>{t('ui.requestDetail.getAnUberThere')}</Text>
                     </TouchableOpacity>
                   )}
                   {(() => {
                     const payment = o.business_reservations?.[0]?.business_payments?.[0];
                     if (!payment || payment.status === 'not_required') return null;
                     if (payment.status === 'captured') {
-                      return <Text style={styles.helperText}>✅ Payment sent to the business.</Text>;
+                      return <Text style={styles.helperText}>{t('ui.requestDetail.paymentSentToTheBusiness')}</Text>;
                     }
                     if (payment.status === 'failed') {
                       return (
                         <>
-                          <Text style={styles.helperText}>⚠️ Payment didn't go through{payment.failure_reason ? `: ${payment.failure_reason}` : '.'}</Text>
+                          <Text style={styles.helperText}>{t('ui.requestDetail.paymentDidntGoThrough')}{payment.failure_reason ? `: ${payment.failure_reason}` : '.'}</Text>
                           <TouchableOpacity
                             style={styles.acceptButton}
                             onPress={() => collectPayment(o.id)}
                             disabled={collectingPayment}
-                            accessibilityLabel="Try payment again"
+                            accessibilityLabel={t('ui.requestDetail.tryPaymentAgainA11y')}
                             accessibilityRole="button"
                           >
-                            {collectingPayment ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>Try Payment Again</Text>}
+                            {collectingPayment ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>{t('ui.requestDetail.tryPaymentAgain')}</Text>}
                           </TouchableOpacity>
                         </>
                       );
                     }
                     if (payment.status === 'refunded') {
-                      return <Text style={styles.helperText}>↩️ This payment was refunded.</Text>;
+                      return <Text style={styles.helperText}>{t('ui.requestDetail.thisPaymentWasRefunded')}</Text>;
                     }
                     // 'pending' -- accept_business_offer() already created this row,
                     // but no PaymentIntent has actually been confirmed yet (the
                     // in-app payment sheet was skipped, cancelled, or failed to load).
                     return (
                       <>
-                        <Text style={styles.helperText}>💳 This offer needs a real payment before it's fully confirmed.</Text>
+                        <Text style={styles.helperText}>{t('ui.requestDetail.thisOfferNeedsAReal')}</Text>
                         <TouchableOpacity
                           style={styles.acceptButton}
                           onPress={() => collectPayment(o.id)}
                           disabled={collectingPayment}
-                          accessibilityLabel="Complete payment"
+                          accessibilityLabel={t('ui.requestDetail.completePaymentA11y')}
                           accessibilityRole="button"
                         >
-                          {collectingPayment ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>Complete Payment</Text>}
+                          {collectingPayment ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>{t('ui.requestDetail.completePayment')}</Text>}
                         </TouchableOpacity>
                       </>
                     );
@@ -1423,19 +1410,19 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     style={styles.completeButton}
                     onPress={() => handleComplete(o.id)}
                     disabled={actingOfferId === o.id}
-                    accessibilityLabel="Mark this reservation complete"
+                    accessibilityLabel={t('ui.requestDetail.markThisReservationCompleteA11y')}
                     accessibilityRole="button"
                   >
-                    {actingOfferId === o.id ? <ActivityIndicator color={colors.primary} size="small" /> : <Text style={styles.completeButtonText}>Mark as Completed</Text>}
+                    {actingOfferId === o.id ? <ActivityIndicator color={colors.primary} size="small" /> : <Text style={styles.completeButtonText}>{t('ui.requestDetail.markAsCompleted')}</Text>}
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.cancelReservationButton}
                     onPress={() => handleCancelReservation(o.id)}
                     disabled={actingOfferId === o.id}
-                    accessibilityLabel="Cancel this reservation"
+                    accessibilityLabel={t('ui.requestDetail.cancelThisReservationA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.cancelReservationButtonText}>Cancel Reservation</Text>
+                    <Text style={styles.cancelReservationButtonText}>{t('ui.requestDetail.cancelReservation')}</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -1458,10 +1445,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.groupChatLink}
             onPress={() => navigation.navigate('PlanChat', { businessRequestId: requestId, initialTitle: planChatInfo.title })}
-            accessibilityLabel={`Open group chat, ${countLabel(planChatInfo.participants?.length ?? 0, 'person', 'people')}`}
+            accessibilityLabel={t('ui.requestDetail.openGroupChatA11y', { countLabel: t('ui.common.count.people', { count: planChatInfo.participants?.length ?? 0 }) })}
             accessibilityRole="button"
           >
-            <Text style={styles.groupChatLinkText}>💬 Group Chat ({planChatInfo.participants?.length ?? 0})</Text>
+            <Text style={styles.groupChatLinkText}>{t('ui.requestDetail.groupChat', { n: planChatInfo.participants?.length ?? 0 })}</Text>
           </TouchableOpacity>
         )}
 
@@ -1476,19 +1463,19 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             style={styles.groupPlanSection}
             onLayout={(e) => { organizersSectionYRef.current = e.nativeEvent.layout.y; }}
           >
-            <Text style={styles.groupPlanSectionTitle}>👥 Organizers</Text>
-            <Text style={styles.candidateText}>👑 {planOrganizerInfo.hostName ?? 'Host'} (host)</Text>
+            <Text style={styles.groupPlanSectionTitle}>{t('ui.requestDetail.organizers')}</Text>
+            <Text style={styles.candidateText}>👑 {planOrganizerInfo.hostName ?? t('ui.requestDetail.host')}{' '}{t('ui.requestDetail.host2')}</Text>
             {planOrganizerInfo.organizers.map((o) => (
               <View key={o.id} style={styles.organizerRow}>
-                <Text style={styles.candidateText}>🎗️ {o.displayName ?? 'Co-organizer'}</Text>
+                <Text style={styles.candidateText}>🎗️ {o.displayName ?? t('ui.requestDetail.coOrganizer')}</Text>
                 {planOrganizerInfo.isHost && (
                   <TouchableOpacity
                     onPress={() => handleRemoveOrganizer(o.id, o.displayName)}
                     disabled={organizerActionBusy}
-                    accessibilityLabel={`Remove ${o.displayName ?? 'this person'} as a co-organizer`}
+                    accessibilityLabel={t('ui.requestDetail.removeAsACoOrganizerA11y', { name: o.displayName ?? t('ui.requestDetail.thisPersonA11y') })}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.addonRemoveText}>Remove</Text>
+                    <Text style={styles.addonRemoveText}>{t('ui.requestDetail.remove')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -1498,16 +1485,16 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               <TouchableOpacity
                 style={styles.inviteSomeoneLink}
                 onPress={() => setShowOrganizers(true)}
-                accessibilityLabel="Add a co-organizer"
+                accessibilityLabel={t('ui.requestDetail.addACoOrganizerA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.inviteSomeoneLinkText}>+ Add Co-Organizer →</Text>
+                <Text style={styles.inviteSomeoneLinkText}>{t('ui.requestDetail.addCoOrganizer')}</Text>
               </TouchableOpacity>
             )}
 
             {planOrganizerInfo.isHost && showOrganizers && (
               <>
-                <Text style={styles.helperText}>Co-organizers can help find a business, invite people, and manage add-ons like transportation or decorations -- but only you can accept an offer or cancel the plan.</Text>
+                <Text style={styles.helperText}>{t('ui.requestDetail.coOrganizersCanHelpFind')}</Text>
                 {connections
                   .filter((c) => !planOrganizerInfo.organizers.some((o) => o.id === c.id))
                   .map((c) => {
@@ -1517,10 +1504,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                         key={c.id}
                         style={[styles.candidateRow, selected && styles.candidateRowSelected]}
                         onPress={() => setSelectedNewOrganizerId(selected ? null : c.id)}
-                        accessibilityLabel={`Make ${c.name ?? 'this person'} a co-organizer`}
+                        accessibilityLabel={t('ui.requestDetail.makeACoOrganizerA11y', { name: c.name ?? t('ui.requestDetail.thisPersonA11y') })}
                         accessibilityRole="button"
                       >
-                        <Text style={styles.candidateName}>{selected ? '●' : '○'} {c.name ?? 'Someone you know'}</Text>
+                        <Text style={styles.candidateName}>{selected ? '●' : '○'} {c.name ?? t('ui.requestDetail.someoneYouKnow')}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -1528,10 +1515,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   style={[styles.groupPlanButton, !selectedNewOrganizerId && styles.groupPlanButtonDisabled]}
                   onPress={handleAddOrganizer}
                   disabled={!selectedNewOrganizerId || organizerActionBusy}
-                  accessibilityLabel="Confirm add co-organizer"
+                  accessibilityLabel={t('ui.requestDetail.confirmAddCoOrganizerA11y')}
                   accessibilityRole="button"
                 >
-                  {organizerActionBusy ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.groupPlanButtonText}>Add Co-Organizer →</Text>}
+                  {organizerActionBusy ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.groupPlanButtonText}>{t('ui.requestDetail.addCoOrganizer2')}</Text>}
                 </TouchableOpacity>
               </>
             )}
@@ -1547,7 +1534,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                 accepted offer's own proposed_time, else honestly
                 "Anytime"). Two entries of the same type (two rides, at
                 two different times) each get their own row. */}
-            <Text style={styles.groupPlanSectionTitle}>🗺️ Your Plan</Text>
+            <Text style={styles.groupPlanSectionTitle}>{t('ui.requestDetail.yourPlan')}</Text>
             <Text style={styles.helperText}>{planReadinessLabel}</Text>
             {planTimeline.map((entry) => {
               const busy = addonActionKey === entry.requestId;
@@ -1567,40 +1554,40 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                       {entry.kind === 'addon' && (
                         <TouchableOpacity
                           onPress={() => navigation.push('BusinessRequestDetail', { requestId: entry.requestId })}
-                          accessibilityLabel={`View ${entry.label}`}
+                          accessibilityLabel={t('ui.requestDetail.viewA11y', { label: entry.label })}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.addonActionText}>View →</Text>
+                          <Text style={styles.addonActionText}>{t('ui.requestDetail.view')}</Text>
                         </TouchableOpacity>
                       )}
                       {canAddAddons && entry.state !== 'confirmed' && (
                         <TouchableOpacity
                           onPress={() => openEditForm(entry)}
                           disabled={busy}
-                          accessibilityLabel={`Set a time for ${entry.label}`}
+                          accessibilityLabel={t('ui.requestDetail.setATimeForA11y', { label: entry.label })}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.addonActionText}>🕐 {entry.hasTime ? 'Edit Time' : 'Set a Time'}</Text>
+                          <Text style={styles.addonActionText}>🕐 {entry.hasTime ? t('ui.requestDetail.editTime') : t('ui.requestDetail.setATime')}</Text>
                         </TouchableOpacity>
                       )}
                       {entry.kind === 'addon' && entry.canRetry && canAddAddons && (
                         <TouchableOpacity
                           onPress={() => handleRetryEntry(entry)}
                           disabled={busy}
-                          accessibilityLabel={`Try again for ${entry.label}`}
+                          accessibilityLabel={t('ui.requestDetail.tryAgainForA11y', { label: entry.label })}
                           accessibilityRole="button"
                         >
-                          {busy ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.addonActionText}>🔁 Try Again</Text>}
+                          {busy ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.addonActionText}>{t('ui.requestDetail.tryAgain')}</Text>}
                         </TouchableOpacity>
                       )}
                       {entry.kind === 'addon' && (entry.state === 'pending' || entry.state === 'offered') && (
                         <TouchableOpacity
                           onPress={() => handleRemoveEntry(entry)}
                           disabled={busy}
-                          accessibilityLabel={`Remove ${entry.label}`}
+                          accessibilityLabel={t('ui.requestDetail.removeA11y', { label: entry.label })}
                           accessibilityRole="button"
                         >
-                          {busy ? <ActivityIndicator size="small" color={colors.textTertiary} /> : <Text style={styles.addonRemoveText}>Remove</Text>}
+                          {busy ? <ActivityIndicator size="small" color={colors.textTertiary} /> : <Text style={styles.addonRemoveText}>{t('ui.requestDetail.remove')}</Text>}
                         </TouchableOpacity>
                       )}
                     </View>
@@ -1611,18 +1598,18 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
 
             {canAddAddons && (
               <>
-                <Text style={[styles.groupPlanSectionTitle, { marginTop: spacing.md }]}>✨ Make it special</Text>
-                <Text style={styles.helperText}>Add another business to this plan — a ride, live music, flowers, and more.</Text>
+                <Text style={[styles.groupPlanSectionTitle, { marginTop: spacing.md }]}>{t('ui.requestDetail.makeItSpecial')}</Text>
+                <Text style={styles.helperText}>{t('ui.requestDetail.addAnotherBusinessToThis')}</Text>
                 <View style={styles.chipRow}>
                   {relevantAddonTypes.map((type) => (
                     <TouchableOpacity
                       key={type.key}
                       style={styles.chip}
                       onPress={() => openAddForm(type.key)}
-                      accessibilityLabel={`Add ${type.label}`}
+                      accessibilityLabel={t('ui.requestDetail.addA11y', { label: addonName(type.key) })}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.chipText}>{type.icon} {type.label}</Text>
+                      <Text style={styles.chipText}>{type.icon} {addonName(type.key)}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -1632,11 +1619,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             {!!timelineForm && (
               <View style={styles.timelineFormCard}>
                 <Text style={styles.candidateName}>
-                  {timelineForm.mode === 'add' ? `+ Add ${relevantAddonTypes.find((t) => t.key === timelineForm.type)?.label ?? ''}` : '🕐 Set a Time'}
+                  {timelineForm.mode === 'add' ? t('ui.requestDetail.add', { label: timelineForm.type ? addonName(timelineForm.type) : '' }) : t('ui.requestDetail.setATime2')}
                 </Text>
                 <TextInput
                   style={styles.timelineFormInput}
-                  placeholder="Label (optional) — e.g. Ride home"
+                  placeholder={t('ui.requestDetail.labelOptionalEGRide')}
                   placeholderTextColor={colors.textTertiary}
                   value={timelineFormLabel}
                   onChangeText={setTimelineFormLabel}
@@ -1644,11 +1631,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                 <TouchableOpacity
                   style={styles.timelineFormTimeButton}
                   onPress={() => setShowTimelineTimePicker(true)}
-                  accessibilityLabel="Pick a time"
+                  accessibilityLabel={t('ui.requestDetail.pickATimeA11y')}
                   accessibilityRole="button"
                 >
                   <Text style={styles.timelineFormTimeButtonText}>
-                    🕐 {timelineFormTime ? timelineFormTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'Pick a time (optional)'}
+                    🕐 {timelineFormTime ? displayClock(timelineFormTime.toISOString(), language) : t('ui.requestDetail.pickATimeOptional')}
                   </Text>
                 </TouchableOpacity>
                 {showTimelineTimePicker && (
@@ -1664,17 +1651,17 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   />
                 )}
                 <View style={styles.timelineFormActions}>
-                  <TouchableOpacity onPress={closeTimelineForm} accessibilityLabel="Cancel" accessibilityRole="button">
-                    <Text style={styles.addonRemoveText}>Cancel</Text>
+                  <TouchableOpacity onPress={closeTimelineForm} accessibilityLabel={t('ui.requestDetail.cancelA11y')} accessibilityRole="button">
+                    <Text style={styles.addonRemoveText}>{t('ui.requestDetail.cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.timelineFormSubmitButton}
                     onPress={submitTimelineForm}
                     disabled={!!addonActionKey}
-                    accessibilityLabel={timelineForm.mode === 'add' ? 'Add to plan' : 'Save'}
+                    accessibilityLabel={timelineForm.mode === 'add' ? t('ui.requestDetail.addToPlanA11y') : t('ui.requestDetail.saveA11y')}
                     accessibilityRole="button"
                   >
-                    {addonActionKey ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.timelineFormSubmitButtonText}>{timelineForm.mode === 'add' ? 'Add' : 'Save'}</Text>}
+                    {addonActionKey ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.timelineFormSubmitButtonText}>{timelineForm.mode === 'add' ? t('ui.requestDetail.add2') : t('ui.requestDetail.save')}</Text>}
                   </TouchableOpacity>
                 </View>
               </View>
@@ -1684,8 +1671,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
 
         {request.status === 'open' && groupPlanCandidates.length > 0 && (
           <View style={styles.groupPlanSection}>
-            <Text style={styles.groupPlanSectionTitle}>👥 People you know are also asking for this</Text>
-            <Text style={styles.helperText}>Do this together? Everyone you pick has to say yes first — nobody gets added without agreeing.</Text>
+            <Text style={styles.groupPlanSectionTitle}>{t('ui.requestDetail.peopleYouKnowAreAlso')}</Text>
+            <Text style={styles.helperText}>{t('ui.requestDetail.doThisTogetherEveryoneYou')}</Text>
             {groupPlanCandidates.map((c) => {
               const selected = selectedCandidateIds.includes(c.id);
               return (
@@ -1693,10 +1680,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   key={c.id}
                   style={[styles.candidateRow, selected && styles.candidateRowSelected]}
                   onPress={() => toggleGroupPlanCandidate(c.id)}
-                  accessibilityLabel={`${selected ? 'Remove' : 'Add'} ${c.requester_display_name ?? 'this person'} to the group plan`}
+                  accessibilityLabel={t(selected ? 'ui.requestDetail.removeFromGroupPlanA11y' : 'ui.requestDetail.addToGroupPlanA11y', { name: c.requester_display_name ?? t('ui.requestDetail.thisPersonA11y') })}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.candidateName}>{selected ? '☑' : '☐'} {c.requester_display_name ?? 'Someone you know'}</Text>
+                  <Text style={styles.candidateName}>{selected ? '☑' : '☐'} {c.requester_display_name ?? t('ui.requestDetail.someoneYouKnow')}</Text>
                   {c.raw_text ? <Text style={styles.candidateText} numberOfLines={1}>{c.raw_text}</Text> : null}
                 </TouchableOpacity>
               );
@@ -1705,10 +1692,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               style={[styles.groupPlanButton, selectedCandidateIds.length === 0 && styles.groupPlanButtonDisabled]}
               onPress={handleProposeGroupPlan}
               disabled={selectedCandidateIds.length === 0 || proposingGroupPlan}
-              accessibilityLabel="Make this a group plan"
+              accessibilityLabel={t('ui.requestDetail.makeThisAGroupPlanA11y')}
               accessibilityRole="button"
             >
-              {proposingGroupPlan ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.groupPlanButtonText}>Make It a Group Plan →</Text>}
+              {proposingGroupPlan ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.groupPlanButtonText}>{t('ui.requestDetail.makeItAGroupPlan')}</Text>}
             </TouchableOpacity>
           </View>
         )}
@@ -1717,25 +1704,25 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.inviteSomeoneLink}
             onPress={() => setShowInviteSomeone(true)}
-            accessibilityLabel="Invite someone to this request"
+            accessibilityLabel={t('ui.requestDetail.inviteSomeoneToThisRequestA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.inviteSomeoneLinkText}>👤 Invite Someone →</Text>
+            <Text style={styles.inviteSomeoneLinkText}>{t('ui.requestDetail.inviteSomeone')}</Text>
           </TouchableOpacity>
         )}
 
         {request.status === 'open' && !isGroupPlanRequest && showInviteSomeone && (
           <View style={styles.groupPlanSection}>
-            <Text style={styles.groupPlanSectionTitle}>👤 Invite Someone</Text>
+            <Text style={styles.groupPlanSectionTitle}>{t('ui.requestDetail.inviteSomeone2')}</Text>
             {/* "ok do it" (CLAUDE.md): same "✨ People you may want to
                 invite" framing GatheringConfirmationScreen already uses for
                 its own suggestedInviteeIds -- one convention, not two. */}
             {suggestedInviteeIds && suggestedInviteeIds.length > 0 && (
               <Text style={styles.suggestedInviteeHeader}>
-                ✨ People you may want to invite{suggestedInviteeLabel ? ` — ${suggestedInviteeLabel}` : ''}
+                {t('ui.requestDetail.peopleYouMayWantTo')}{suggestedInviteeLabel ? ` — ${suggestedInviteeLabel}` : ''}
               </Text>
             )}
-            <Text style={styles.helperText}>Bring a friend or match along. They'll have to say yes first — nobody gets added without agreeing.</Text>
+            <Text style={styles.helperText}>{t('ui.requestDetail.bringAFriendOrMatch')}</Text>
             {[...connections]
               .sort((a, b) => (suggestedInviteeIds?.includes(b.id) ? 1 : 0) - (suggestedInviteeIds?.includes(a.id) ? 1 : 0))
               .map((c) => {
@@ -1746,10 +1733,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   key={c.id}
                   style={[styles.candidateRow, selected && styles.candidateRowSelected]}
                   onPress={() => toggleInviteeSelection(c.id)}
-                  accessibilityLabel={`${selected ? 'Remove' : 'Add'} ${c.name ?? 'this person'} to the invite`}
+                  accessibilityLabel={t(selected ? 'ui.requestDetail.removeFromInviteA11y' : 'ui.requestDetail.addToInviteA11y', { name: c.name ?? t('ui.requestDetail.thisPersonA11y') })}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.candidateName}>{selected ? '☑' : '☐'} {isSuggested ? '🤝 ' : ''}{c.name ?? 'Someone you know'}</Text>
+                  <Text style={styles.candidateName}>{selected ? '☑' : '☐'} {isSuggested ? '🤝 ' : ''}{c.name ?? t('ui.requestDetail.someoneYouKnow')}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -1757,26 +1744,26 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               style={[styles.groupPlanButton, selectedInviteeIds.length === 0 && styles.groupPlanButtonDisabled]}
               onPress={handleInviteSomeone}
               disabled={selectedInviteeIds.length === 0 || invitingSomeone}
-              accessibilityLabel="Send invite"
+              accessibilityLabel={t('ui.requestDetail.sendInviteA11y')}
               accessibilityRole="button"
             >
-              {invitingSomeone ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.groupPlanButtonText}>Send Invite →</Text>}
+              {invitingSomeone ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.groupPlanButtonText}>{t('ui.requestDetail.sendInvite')}</Text>}
             </TouchableOpacity>
           </View>
         )}
 
         {canDo('request', request.status, 'reopen') && request.requester_id === myId && (
           <View style={{ alignItems: 'center', marginBottom: 12 }}>
-            <Text style={styles.cancelLink}>This request expired before a business answered.</Text>
-            <TouchableOpacity onPress={handleReopen} disabled={cancelling} accessibilityLabel="Reopen this request" accessibilityRole="button">
-              <Text style={[styles.cancelLink, { color: colors.primary, fontWeight: '700' }]}>{cancelling ? 'Reopening…' : 'Reopen Request'}</Text>
+            <Text style={styles.cancelLink}>{t('ui.requestDetail.thisRequestExpiredBeforeA')}</Text>
+            <TouchableOpacity onPress={handleReopen} disabled={cancelling} accessibilityLabel={t('ui.requestDetail.reopenThisRequestA11y')} accessibilityRole="button">
+              <Text style={[styles.cancelLink, { color: colors.primary, fontWeight: '700' }]}>{cancelling ? t('ui.requestDetail.reopening') : t('ui.requestDetail.reopenRequest')}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {request.status === 'open' && (
-          <TouchableOpacity onPress={handleCancel} disabled={cancelling} accessibilityLabel="Cancel this request" accessibilityRole="button">
-            <Text style={styles.cancelLink}>{cancelling ? 'Cancelling…' : 'Cancel Request'}</Text>
+          <TouchableOpacity onPress={handleCancel} disabled={cancelling} accessibilityLabel={t('ui.requestDetail.cancelThisRequestA11y')} accessibilityRole="button">
+            <Text style={styles.cancelLink}>{cancelling ? t('ui.requestDetail.cancelling') : t('ui.requestDetail.cancelRequest')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
