@@ -7,5 +7,8 @@ import path from 'path';
 test('Gathering Hub during-event buttons name their real destinations', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'screens', 'GatheringHubScreen.js'), 'utf8');
   expect(src).not.toMatch(/❓ Questions/);
-  expect(src).toMatch(/ℹ️ Details/);
+  expect(src).toContain("t('ui.gatheringHub.details')");
+  const en = require('../i18n/ui/gatheringHub').default.en;
+  expect(en.details).toBe('ℹ️ Details');
+  expect(Object.values(en).join(' ')).not.toMatch(/Questions/);
 });

@@ -76,6 +76,9 @@ export const LOCALIZED_FILES = [
   'src/services/crossedPathsSignals.js',
   'src/utils/datingCardReasons.js',
   'src/utils/freeTonight.js',
+  'src/screens/GatheringConfirmationScreen.js',
+  'src/screens/GatheringHubScreen.js',
+  'src/constants/gatheringHubContent.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).

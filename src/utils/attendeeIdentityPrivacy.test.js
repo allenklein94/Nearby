@@ -93,7 +93,8 @@ describe('attendee identities: friends see names, strangers see counts (item 75)
     });
     it('the Hub still lists approved attendees (Who You\'ll Meet unchanged)', () => {
       const hub = read('../screens/GatheringHubScreen.js');
-      expect(hub).toMatch(/Who You'll Meet/);
+      expect(hub).toContain("t('ui.gatheringHub.whoYoullMeet')");
+      expect(require('../i18n/ui/gatheringHub').default.en.whoYoullMeet).toBe("Who You'll Meet");
       expect(hub).toMatch(/gathering\.approvedAttendees\.filter/);
     });
     it('no other screen renders an attendee\'s name or photo from a gathering payload', () => {

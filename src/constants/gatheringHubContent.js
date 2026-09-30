@@ -6,60 +6,63 @@
 // advice/prompts, not a claim about this specific gathering, so they
 // don't run into the "no invented numbers" convention the way a
 // fabricated stat would.
+//
+// Localization pass 5: the arrays hold keys into ui.hubContent (English = the original wording), read in the current language.
+import { tr } from '../i18n/translate';
 
 const DEFAULT_ICE_BREAKERS = [
-  'What brought you here today?',
-  "What's kept you busy lately?",
-  'Any recommendations around here?',
+  'whatBroughtYouHereToday',
+  'whatsKeptYouBusyLately',
+  'anyRecommendationsAroundHere',
 ];
 
 const ICE_BREAKERS = {
-  Hiking: ['What trail do you recommend around here?', "What's the best hike you've done?", 'What brought you here?'],
-  Outdoors: ['What trail do you recommend around here?', 'Favorite spot to get outside nearby?', 'What brought you here?'],
-  Coffee: ["What's your usual order?", "What's your favorite local coffee shop?", 'What brought you here?'],
-  Foodie: ["What's your favorite local restaurant?", "What's a dish you could eat every day?", 'What brought you here?'],
-  Cooking: ["What's your go-to dish to cook?", 'Any restaurant recommendations nearby?', 'What brought you here?'],
-  Wine: ["What's your favorite wine region?", 'Red or white?', 'What brought you here?'],
-  Music: ["What have you been listening to lately?", 'Any concerts you have coming up?', 'What brought you here?'],
-  Concerts: ['Best show you have ever been to?', 'Who would you love to see live?', 'What brought you here?'],
-  Movies: ["What's the last movie you loved?", 'Any shows you are currently watching?', 'What brought you here?'],
-  Reading: ["What are you reading right now?", "What's a book you'd recommend?", 'What brought you here?'],
-  Art: ['Seen any good exhibits lately?', "What's a piece of art that stuck with you?", 'What brought you here?'],
-  Museums: ['Favorite museum you have visited?', 'What kind of exhibits do you like most?', 'What brought you here?'],
-  Photography: ['What do you like to photograph most?', 'Phone or camera?', 'What brought you here?'],
-  Gaming: ["What have you been playing lately?", "What's a game you could play forever?", 'What brought you here?'],
-  Fitness: ["What's your favorite way to work out?", 'Morning or evening workouts?', 'What brought you here?'],
-  Yoga: ['How long have you been practicing?', 'Favorite style of yoga?', 'What brought you here?'],
-  Running: ["What's your favorite route around here?", 'Training for anything?', 'What brought you here?'],
-  Dancing: ['How did you get into dancing?', "What's your favorite style?", 'What brought you here?'],
-  Sports: ["What's your team?", 'Do you play or just watch?', 'What brought you here?'],
-  Travel: ["What's the best place you have traveled to?", "Where's next on your list?", 'What brought you here?'],
-  Dogs: ["What's your dog's name?", "Best dog park around here?", 'What brought you here?'],
-  Cats: ["Tell us about your cat.", 'Rescue or breeder?', 'What brought you here?'],
-  Volunteering: ["What causes do you care about most?", 'How did you first get into volunteering?', 'What brought you here?'],
-  Meditation: ['How long have you been practicing?', 'What got you started?', 'What brought you here?'],
-  'Faith & Spirituality': ['What does this community mean to you?', 'How did you first get involved?', 'What brought you here?'],
+  Hiking: ['whatTrailDoYouRecommend', 'whatsTheBestHikeYouve', 'whatBroughtYouHere'],
+  Outdoors: ['whatTrailDoYouRecommend', 'favoriteSpotToGetOutside', 'whatBroughtYouHere'],
+  Coffee: ['whatsYourUsualOrder', 'whatsYourFavoriteLocalCoffee', 'whatBroughtYouHere'],
+  Foodie: ['whatsYourFavoriteLocalRestaurant', 'whatsADishYouCould', 'whatBroughtYouHere'],
+  Cooking: ['whatsYourGoToDish', 'anyRestaurantRecommendationsNearby', 'whatBroughtYouHere'],
+  Wine: ['whatsYourFavoriteWineRegion', 'redOrWhite', 'whatBroughtYouHere'],
+  Music: ['whatHaveYouBeenListening', 'anyConcertsYouHaveComing', 'whatBroughtYouHere'],
+  Concerts: ['bestShowYouHaveEver', 'whoWouldYouLoveTo', 'whatBroughtYouHere'],
+  Movies: ['whatsTheLastMovieYou', 'anyShowsYouAreCurrently', 'whatBroughtYouHere'],
+  Reading: ['whatAreYouReadingRight', 'whatsABookYoudRecommend', 'whatBroughtYouHere'],
+  Art: ['seenAnyGoodExhibitsLately', 'whatsAPieceOfArt', 'whatBroughtYouHere'],
+  Museums: ['favoriteMuseumYouHaveVisited', 'whatKindOfExhibitsDo', 'whatBroughtYouHere'],
+  Photography: ['whatDoYouLikeTo', 'phoneOrCamera', 'whatBroughtYouHere'],
+  Gaming: ['whatHaveYouBeenPlaying', 'whatsAGameYouCould', 'whatBroughtYouHere'],
+  Fitness: ['whatsYourFavoriteWayTo', 'morningOrEveningWorkouts', 'whatBroughtYouHere'],
+  Yoga: ['howLongHaveYouBeen', 'favoriteStyleOfYoga', 'whatBroughtYouHere'],
+  Running: ['whatsYourFavoriteRouteAround', 'trainingForAnything', 'whatBroughtYouHere'],
+  Dancing: ['howDidYouGetInto', 'whatsYourFavoriteStyle', 'whatBroughtYouHere'],
+  Sports: ['whatsYourTeam', 'doYouPlayOrJust', 'whatBroughtYouHere'],
+  Travel: ['whatsTheBestPlaceYou', 'wheresNextOnYourList', 'whatBroughtYouHere'],
+  Dogs: ['whatsYourDogsName', 'bestDogParkAroundHere', 'whatBroughtYouHere'],
+  Cats: ['tellUsAboutYourCat', 'rescueOrBreeder', 'whatBroughtYouHere'],
+  Volunteering: ['whatCausesDoYouCare', 'howDidYouFirstGet', 'whatBroughtYouHere'],
+  Meditation: ['howLongHaveYouBeen', 'whatGotYouStarted', 'whatBroughtYouHere'],
+  'Faith & Spirituality': ['whatDoesThisCommunityMean', 'howDidYouFirstGet2', 'whatBroughtYouHere'],
 };
 
-const DEFAULT_PREP_TIPS = ['Bring water', 'Wear something comfortable', 'Charge your phone before you head out'];
+const DEFAULT_PREP_TIPS = ['bringWater', 'wearSomethingComfortable', 'chargeYourPhoneBeforeYou'];
 
 const PREP_TIPS = {
-  Hiking: ['Comfortable shoes', 'Bring water', 'Sunscreen'],
-  Outdoors: ['Comfortable shoes', 'Bring water', 'Sunscreen'],
-  Fitness: ['Workout clothes', 'Bring water', 'A towel'],
-  Running: ['Running shoes', 'Bring water', 'Check the weather before you head out'],
-  Yoga: ['A mat, if you have one', 'Comfortable, stretchy clothes', 'Bring water'],
-  Dancing: ['Comfortable shoes you can move in', 'Come with an open mind'],
-  Cooking: ['Come hungry', 'An apron, if you have one'],
-  Wine: ['Eat something beforehand', 'Bring a valid ID'],
-  Sports: ['Comfortable shoes', 'Bring water'],
-  Volunteering: ['Comfortable clothes you don’t mind getting a little dirty', 'Bring water'],
+  Hiking: ['comfortableShoes', 'bringWater', 'sunscreen'],
+  Outdoors: ['comfortableShoes', 'bringWater', 'sunscreen'],
+  Fitness: ['workoutClothes', 'bringWater', 'aTowel'],
+  Running: ['runningShoes', 'bringWater', 'checkTheWeatherBeforeYou'],
+  Yoga: ['aMatIfYouHave', 'comfortableStretchyClothes', 'bringWater'],
+  Dancing: ['comfortableShoesYouCanMove', 'comeWithAnOpenMind'],
+  Cooking: ['comeHungry', 'anApronIfYouHave'],
+  Wine: ['eatSomethingBeforehand', 'bringAValidId'],
+  Sports: ['comfortableShoes', 'bringWater'],
+  Volunteering: ['comfortableClothesYouDontMind', 'bringWater'],
 };
 
 export function iceBreakersFor(interestTag) {
-  return ICE_BREAKERS[interestTag] ?? DEFAULT_ICE_BREAKERS;
+  return (ICE_BREAKERS[interestTag] ?? DEFAULT_ICE_BREAKERS).map((key) => tr(`ui.hubContent.${key}`));
 }
 
 export function prepTipsFor(interestTag) {
-  return PREP_TIPS[interestTag] ?? DEFAULT_PREP_TIPS;
+  return (PREP_TIPS[interestTag] ?? DEFAULT_PREP_TIPS).map((key) => tr(`ui.hubContent.${key}`));
 }

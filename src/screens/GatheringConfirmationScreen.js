@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share, Animated } from 'react-native';
@@ -24,6 +25,7 @@ import { inviteSentConfirmation } from '../utils/actionConfirmations';
 // decision #3 — never nearby strangers, even ones the recommendation
 // engine would score as a good match).
 export default function GatheringConfirmationScreen({ route, navigation }) {
+  const { t, language } = useLanguage();
   const { gatheringId, placeName, businessesAsked, preInviteResult } = route.params;
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -81,7 +83,9 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
       // deep link -- this one works for anyone, app installed or not.
       const shareUrl = gatheringInviteShareUrl(gatheringId);
       await Share.share({
-        message: `Join me: ${gathering?.title ?? 'my gathering'}${placeName ? ` at ${placeName}` : ''} — ${shareUrl}`,
+        message: placeName
+          ? t('ui.gatheringConfirmation.shareMessageAt', { title: gathering?.title ?? t('ui.gatheringConfirmation.myGathering'), place: placeName, url: shareUrl })
+          : t('ui.gatheringConfirmation.shareMessage', { title: gathering?.title ?? t('ui.gatheringConfirmation.myGathering'), url: shareUrl }),
         url: shareUrl,
       });
     } catch (e) {
@@ -163,8 +167,8 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
     const failedCount = results.length - Object.keys(newlyInvited).length;
     if (failedCount > 0) {
       Alert.alert(
-        'Some invites didn\'t go through',
-        `Invited ${Object.keys(newlyInvited).length} of ${targetIds.length} in "${circle.name}" — try the rest individually below.`
+        t('ui.gatheringConfirmation.someInvitesDidntGoThrough'),
+        t('ui.gatheringConfirmation.invitedOfInTryThe', { sent: Object.keys(newlyInvited).length, total: targetIds.length, name: circle.name })
       );
     }
     setInvitingCircleId(null);
@@ -178,7 +182,7 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
     return (
       <View style={styles.loadingContainer}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your gathering...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.gatheringConfirmation.loadingYourGathering')}</Text>
       </View>
     );
   }
@@ -193,9 +197,9 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
     // fine here too -- a real, working escape, not just a retry loop.
     return (
       <View style={styles.loadingContainer}>
-        <LoadErrorState message="Couldn't load your gathering." onRetry={load} />
-        <TouchableOpacity onPress={handleDone} style={{ marginTop: spacing.lg }} accessibilityLabel="Continue to your gathering" accessibilityRole="button">
-          <Text style={styles.doneLink}>Continue to your gathering →</Text>
+        <LoadErrorState message={t('ui.gatheringConfirmation.couldntLoadYourGathering')} onRetry={load} />
+        <TouchableOpacity onPress={handleDone} style={{ marginTop: spacing.lg }} accessibilityLabel={t('ui.gatheringConfirmation.continueToYourGatheringA11y')} accessibilityRole="button">
+          <Text style={styles.doneLink}>{t('ui.gatheringConfirmation.continueToYourGathering')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -210,9 +214,9 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
           <NearbyMark size={40} />
         </Animated.View>
         <Text style={styles.celebrateIcon}>{isFirstHosted ? '🎉🌟' : '🎉'}</Text>
-        <Text style={styles.title}>{isFirstHosted ? 'Your First Gathering Is Live!' : 'Your gathering is live!'}</Text>
+        <Text style={styles.title}>{isFirstHosted ? t('ui.gatheringConfirmation.yourFirstGatheringIsLive') : t('ui.gatheringConfirmation.yourGatheringIsLive')}</Text>
         <Text style={styles.subtitle}>
-          {isFirstHosted ? "You're officially a host — let's help people discover it." : "Now let's help people discover it."}
+          {isFirstHosted ? t('ui.gatheringConfirmation.youreOfficiallyAHostLets') : t('ui.gatheringConfirmation.nowLetsHelpPeopleDiscover')}
         </Text>
 
         <View style={[styles.summaryCard, { borderColor: categoryStyle.color }]}>
@@ -221,7 +225,7 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
         </View>
 
         {businessesAsked && (
-          <Text style={styles.businessAskedNote}>🍽️ We'll look for local business options once real people have joined — check back on your gathering to see.</Text>
+          <Text style={styles.businessAskedNote}>{t('ui.gatheringConfirmation.wellLookForLocalBusiness')}</Text>
         )}
 
         {/* Phase 4 (see CLAUDE.md's "build everything" plan): "Make a
@@ -232,26 +236,26 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
             phase deliberately isn't one atomic transaction). */}
         {preInviteResult && (
           <Text style={styles.businessAskedNote}>
-            🤝 We invited {preInviteResult.sent} of {preInviteResult.total} {preInviteResult.total === 1 ? 'person' : 'people'} you picked.
+            {t('ui.gatheringConfirmation.weInvited', { sent: preInviteResult.sent, count: preInviteResult.total })}
           </Text>
         )}
 
         {!showInvite ? (
           <View style={{ width: '100%' }}>
-            <TouchableOpacity style={styles.actionButton} onPress={handleShare} activeOpacity={0.85} accessibilityLabel="Share Gathering" accessibilityRole="button">
-              <Text style={styles.actionButtonText}>🔗 Share Gathering</Text>
+            <TouchableOpacity style={styles.actionButton} onPress={handleShare} activeOpacity={0.85} accessibilityLabel={t('ui.gatheringConfirmation.shareGatheringA11y')} accessibilityRole="button">
+              <Text style={styles.actionButtonText}>{t('ui.gatheringConfirmation.shareGathering')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, styles.actionButtonSecondary]} onPress={handleOpenInvite} activeOpacity={0.85} accessibilityLabel="Invite Connections" accessibilityRole="button">
-              <Text style={[styles.actionButtonText, styles.actionButtonTextSecondary]}>🤝 Invite Connections</Text>
+            <TouchableOpacity style={[styles.actionButton, styles.actionButtonSecondary]} onPress={handleOpenInvite} activeOpacity={0.85} accessibilityLabel={t('ui.gatheringConfirmation.inviteConnectionsA11y')} accessibilityRole="button">
+              <Text style={[styles.actionButtonText, styles.actionButtonTextSecondary]}>{t('ui.gatheringConfirmation.inviteConnections')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleDone} style={{ marginTop: spacing.lg }} accessibilityLabel="Done" accessibilityRole="button">
-              <Text style={styles.doneLink}>I'll do this later</Text>
+            <TouchableOpacity onPress={handleDone} style={{ marginTop: spacing.lg }} accessibilityLabel={t('ui.gatheringConfirmation.doneA11y')} accessibilityRole="button">
+              <Text style={styles.doneLink}>{t('ui.gatheringConfirmation.illDoThisLater')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={{ width: '100%' }}>
-            <Text style={styles.inviteHeader}>Invite Connections</Text>
-            <Text style={styles.inviteSubtext}>Only people you're already friends with — never nearby strangers.</Text>
+            <Text style={styles.inviteHeader}>{t('ui.gatheringConfirmation.inviteConnections2')}</Text>
+            <Text style={styles.inviteSubtext}>{t('ui.gatheringConfirmation.onlyPeopleYoureAlreadyFriends')}</Text>
             {!loadingFriends && circles.length > 0 && (
               <View style={styles.circleRow}>
                 {circles.map((circle) => {
@@ -261,15 +265,15 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
                   const label = allInvited
                     ? `✓ ${circle.name}`
                     : isEmpty
-                    ? `${circle.name} (empty)`
-                    : `🏷️ Invite ${circle.name} (${targetCount})`;
+                    ? t('ui.gatheringConfirmation.circleEmpty', { name: circle.name })
+                    : t('ui.gatheringConfirmation.inviteCircle', { name: circle.name, count: targetCount });
                   return (
                     <TouchableOpacity
                       key={circle.id}
                       style={[styles.circleChip, (allInvited || isEmpty) && styles.circleChipDone]}
                       onPress={() => handleInviteCircle(circle)}
                       disabled={invitingCircleId === circle.id || targetCount === 0}
-                      accessibilityLabel={allInvited ? `Everyone in ${circle.name} already invited` : isEmpty ? `${circle.name} has no members yet` : `Invite everyone in ${circle.name}`}
+                      accessibilityLabel={allInvited ? t('ui.gatheringConfirmation.everyoneInAlreadyInvitedA11y', { name: circle.name }) : isEmpty ? t('ui.gatheringConfirmation.hasNoMembersYetA11y', { name: circle.name }) : t('ui.gatheringConfirmation.inviteEveryoneInA11y', { name: circle.name })}
                       accessibilityRole="button"
                     >
                       {invitingCircleId === circle.id ? (
@@ -283,12 +287,12 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
               </View>
             )}
             {loadingFriends ? (
-              <NLoader fullScreen={false} size="inline" caption="Loading friends…" />
+              <NLoader fullScreen={false} size="inline" caption={t('ui.gatheringConfirmation.loadingFriends')} />
             ) : friends.length === 0 ? (
               <View style={{ alignItems: 'center' }}>
                 <EmptyCopy id="no_friends_to_invite" />
-                <TouchableOpacity onPress={() => navigation.navigate('FriendDiscovery')} accessibilityLabel="Discover people to add as friends" accessibilityRole="button">
-                  <Text style={styles.emptyActionText}>Discover People →</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('FriendDiscovery')} accessibilityLabel={t('ui.gatheringConfirmation.discoverPeopleToAddAsA11y')} accessibilityRole="button">
+                  <Text style={styles.emptyActionText}>{t('ui.gatheringConfirmation.discoverPeople')}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -309,21 +313,21 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
                         style={[styles.inviteButton, invitedIds[f.id] && styles.inviteButtonSent]}
                         onPress={() => handleInvite(f.id)}
                         disabled={invitingId === f.id || invitedIds[f.id]}
-                        accessibilityLabel={invitedIds[f.id] ? 'Invite sent' : `Invite ${f.display_name}`}
+                        accessibilityLabel={invitedIds[f.id] ? t('ui.gatheringConfirmation.inviteSentA11y') : t('ui.gatheringConfirmation.inviteA11y', { name: f.display_name })}
                         accessibilityRole="button"
                       >
                         {invitingId === f.id ? (
                           <ActivityIndicator size="small" color="#fff" />
                         ) : (
-                          <Text style={styles.inviteButtonText}>{invitedIds[f.id] ? '✓ Sent' : 'Invite'}</Text>
+                          <Text style={styles.inviteButtonText}>{invitedIds[f.id] ? t('ui.gatheringConfirmation.sent') : t('ui.gatheringConfirmation.invite')}</Text>
                         )}
                       </TouchableOpacity>
                     </View>
                   );
                 })
             )}
-            <TouchableOpacity onPress={handleDone} style={{ marginTop: spacing.lg }} accessibilityLabel="Done" accessibilityRole="button">
-              <Text style={styles.doneLink}>Done</Text>
+            <TouchableOpacity onPress={handleDone} style={{ marginTop: spacing.lg }} accessibilityLabel={t('ui.gatheringConfirmation.doneA11y')} accessibilityRole="button">
+              <Text style={styles.doneLink}>{t('ui.gatheringConfirmation.done')}</Text>
             </TouchableOpacity>
           </View>
         )}

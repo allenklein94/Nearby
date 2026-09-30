@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share } from 'react-native';
 import { NLoader } from '../motion';
@@ -30,7 +31,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import * as Haptics from 'expo-haptics';
 
-import { countLabel } from '../utils/plural';
+import { tr } from '../i18n/translate';
 import { attendeeTotal } from '../utils/gatheringFullness';
 // The live, day-of screen for people who already joined — distinct from
 // GatheringDetailScreen (which is the persuade-you-to-join page). Built
@@ -43,17 +44,18 @@ function getCountdownLabel(scheduledAt) {
   const diffMs = new Date(scheduledAt).getTime() - Date.now();
   if (diffMs > 0) {
     const mins = Math.round(diffMs / 60000);
-    if (mins < 60) return `Starts in ${mins} min`;
+    if (mins < 60) return tr('ui.gatheringHub.startsInMin', { count: mins });
     const hours = Math.floor(mins / 60);
     const remMins = mins % 60;
-    return remMins > 0 ? `Starts in ${hours}h ${remMins}m` : `Starts in ${hours}h`;
+    return remMins > 0 ? tr('ui.gatheringHub.startsInHoursMins', { hours, mins: remMins }) : tr('ui.gatheringHub.startsInHours', { hours });
   }
   const hoursPast = -diffMs / (1000 * 60 * 60);
-  if (hoursPast < HOURS_CONSIDERED_OVER) return 'Happening now';
+  if (hoursPast < HOURS_CONSIDERED_OVER) return tr('ui.gatheringHub.happeningNow');
   return null;
 }
 
 export default function GatheringHubScreen({ route, navigation }) {
+  const { t, language } = useLanguage();
   const { gatheringId, justJoined } = route.params;
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -160,7 +162,7 @@ export default function GatheringHubScreen({ route, navigation }) {
       // deep link -- this one works for anyone, app installed or not.
       const shareUrl = gatheringInviteShareUrl(gatheringId);
       await Share.share({
-        message: `Join me: ${gathering?.title ?? 'this gathering'} — ${shareUrl}`,
+        message: t('ui.gatheringHub.shareMessage', { title: gathering?.title ?? t('ui.gatheringHub.thisGathering'), url: shareUrl }),
         url: shareUrl,
       });
     } catch (e) {
@@ -202,7 +204,7 @@ export default function GatheringHubScreen({ route, navigation }) {
     return (
       <View style={styles.loadingContainer}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading the gathering hub...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.gatheringHub.loadingTheGatheringHub')}</Text>
       </View>
     );
   }
@@ -210,7 +212,7 @@ export default function GatheringHubScreen({ route, navigation }) {
   if (loadError) {
     return (
       <View style={styles.loadingContainer}>
-        <LoadErrorState message="Couldn't load the gathering hub." onRetry={load} />
+        <LoadErrorState message={t('ui.gatheringHub.couldntLoadTheGatheringHub')} onRetry={load} />
       </View>
     );
   }
@@ -221,7 +223,7 @@ export default function GatheringHubScreen({ route, navigation }) {
       setSentNoticeTo((prev) => ({ ...prev, [userId]: true }));
     } catch (e) {
       if (e.message === 'ALREADY_SENT') {
-        Alert.alert('Already sent', "You've already noticed this person.");
+        Alert.alert(t('ui.gatheringHub.alreadySent'), t('ui.gatheringHub.youveAlreadyNoticedThisPerson'));
       } else {
         presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSendNotice(userId) });
       }
@@ -232,16 +234,16 @@ export default function GatheringHubScreen({ route, navigation }) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.notFoundText}>
-          {gathering ? "You'll see the Gathering Hub once you've joined." : "This gathering isn't available anymore."}
+          {gathering ? t('ui.gatheringHub.youllSeeTheGatheringHub') : t('ui.gatheringHub.thisGatheringIsntAvailableAnymore')}
         </Text>
         {gathering && (
           <TouchableOpacity
             onPress={() => navigation.replace('GatheringDetail', { gatheringId })}
             style={{ marginTop: spacing.md }}
-            accessibilityLabel="View gathering"
+            accessibilityLabel={t('ui.gatheringHub.viewGatheringA11y')}
             accessibilityRole="button"
           >
-            <Text style={{ color: colors.primary, fontWeight: '700' }}>View gathering →</Text>
+            <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('ui.gatheringHub.viewGathering')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -283,38 +285,38 @@ export default function GatheringHubScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl * 2 }}>
         {showJoinedBanner && (
           <View style={[styles.joinedBanner, { borderColor: categoryStyle.color, backgroundColor: categoryStyle.color + '20' }]}>
-            <Text style={styles.joinedBannerTitle}>{isFirstJoin ? 'Your First Gathering! 🎉🌟' : "You're In! 🎉"}</Text>
+            <Text style={styles.joinedBannerTitle}>{isFirstJoin ? t('ui.gatheringHub.yourFirstGathering') : t('ui.gatheringHub.youreIn')}</Text>
             <Text style={styles.joinedBannerSub}>{gathering.title}</Text>
             {countdown && <Text style={styles.joinedBannerSub}>{countdown}</Text>}
             <Text style={styles.joinedBannerFoot}>
-              {isFirstJoin ? "This is the start of something great — welcome to Nearby gatherings." : "We'll help you have a great time."}
+              {isFirstJoin ? t('ui.gatheringHub.thisIsTheStartOf') : t('ui.gatheringHub.wellHelpYouHaveA')}
             </Text>
           </View>
         )}
 
         {showGrowthPrompt && (
           <View style={[styles.growthPrompt, { borderColor: categoryStyle.color }]}>
-            <Text style={styles.growthPromptTitle}>Want to bring someone?</Text>
+            <Text style={styles.growthPromptTitle}>{t('ui.gatheringHub.wantToBringSomeone')}</Text>
             <TouchableOpacity
               style={[styles.growthAction, { backgroundColor: categoryStyle.color }]}
               onPress={() => setGrowthInviteModalVisible(true)}
               activeOpacity={0.85}
-              accessibilityLabel="Invite a Friend"
+              accessibilityLabel={t('ui.gatheringHub.inviteAFriendA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.growthActionText}>🤝 Invite a Friend</Text>
+              <Text style={styles.growthActionText}>{t('ui.gatheringHub.inviteAFriend')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.growthAction, styles.growthActionSecondary]}
               onPress={handleGrowthShareLink}
               activeOpacity={0.85}
-              accessibilityLabel="Share Link"
+              accessibilityLabel={t('ui.gatheringHub.shareLinkA11y')}
               accessibilityRole="button"
             >
-              <Text style={[styles.growthActionText, styles.growthActionTextSecondary]}>🔗 Share Link</Text>
+              <Text style={[styles.growthActionText, styles.growthActionTextSecondary]}>{t('ui.gatheringHub.shareLink')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowGrowthPrompt(false)} style={{ marginTop: spacing.xs }} accessibilityLabel="Skip" accessibilityRole="button">
-              <Text style={styles.growthSkip}>Skip</Text>
+            <TouchableOpacity onPress={() => setShowGrowthPrompt(false)} style={{ marginTop: spacing.xs }} accessibilityLabel={t('ui.gatheringHub.skipA11y')} accessibilityRole="button">
+              <Text style={styles.growthSkip}>{t('ui.gatheringHub.skip')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -326,7 +328,7 @@ export default function GatheringHubScreen({ route, navigation }) {
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{gathering.title}</Text>
             <Text style={styles.metaLine}>
-              {countdown ?? 'This gathering has wrapped up'} · {attendeeTotal(gathering)} attending
+              {t('ui.gatheringHub.metaLine', { when: countdown ?? t('ui.gatheringHub.wrappedUp'), count: attendeeTotal(gathering) })}
             </Text>
             {!gathering.isHost && (
               // Aug 30 2026 -- a real, previously-missing link back to
@@ -345,10 +347,10 @@ export default function GatheringHubScreen({ route, navigation }) {
               <TouchableOpacity
                 onPress={() => navigation.navigate('GatheringDetail', { gatheringId })}
                 style={{ marginTop: 4 }}
-                accessibilityLabel="View full gathering details, including how to leave"
+                accessibilityLabel={t('ui.gatheringHub.viewFullGatheringDetailsIncludingA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.detailsLink}>View full details →</Text>
+                <Text style={styles.detailsLink}>{t('ui.gatheringHub.viewFullDetails')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -356,20 +358,20 @@ export default function GatheringHubScreen({ route, navigation }) {
 
         {gathering.isHost && (
           <View style={styles.hostBanner}>
-            <Text style={styles.hostBannerText}>You're hosting — attendees below can see this hub too.</Text>
+            <Text style={styles.hostBannerText}>{t('ui.gatheringHub.youreHostingAttendeesBelowCan')}</Text>
           </View>
         )}
 
         {iAmCheckedIn ? (
           <View style={styles.duringPanel}>
-            <Text style={styles.duringTitle}>Have fun! 🎉</Text>
-            <Text style={styles.duringSub}>We'll see you afterwards.</Text>
+            <Text style={styles.duringTitle}>{t('ui.gatheringHub.haveFun')}</Text>
+            <Text style={styles.duringSub}>{t('ui.gatheringHub.wellSeeYouAfterwards')}</Text>
 
             {checkedIn.length > 0 && (
               <View style={styles.whosHereRow}>
-                <Text style={styles.sectionLabel}>Who's Here</Text>
+                <Text style={styles.sectionLabel}>{t('ui.gatheringHub.whosHere')}</Text>
                 <Text style={styles.whosHereText}>
-                  {checkedIn.length} {checkedIn.length === 1 ? 'person has' : 'people have'} checked in
+                  {t('ui.gatheringHub.checkedIn', { count: checkedIn.length })}
                 </Text>
               </View>
             )}
@@ -378,26 +380,26 @@ export default function GatheringHubScreen({ route, navigation }) {
               <TouchableOpacity
                 style={styles.duringAction}
                 onPress={() => navigation.navigate('GatheringChat', { gatheringId, gatheringTitle: gathering.title })}
-                accessibilityLabel="Say hi in group chat"
+                accessibilityLabel={t('ui.gatheringHub.sayHiInGroupChatA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.duringActionText}>💬 Say Hi</Text>
+                <Text style={styles.duringActionText}>{t('ui.gatheringHub.sayHi')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.duringAction}
                 onPress={() => navigation.navigate('GatheringDetail', { gatheringId })}
-                accessibilityLabel="Gathering details"
+                accessibilityLabel={t('ui.gatheringHub.gatheringDetailsA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.duringActionText}>ℹ️ Details</Text>
+                <Text style={styles.duringActionText}>{t('ui.gatheringHub.details')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.duringAction}
                 onPress={() => navigation.navigate('GatheringChat', { gatheringId, gatheringTitle: gathering.title })}
-                accessibilityLabel="Share a photo"
+                accessibilityLabel={t('ui.gatheringHub.shareAPhotoA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.duringActionText}>📸 Photos</Text>
+                <Text style={styles.duringActionText}>{t('ui.gatheringHub.photos')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -405,13 +407,13 @@ export default function GatheringHubScreen({ route, navigation }) {
           <>
             {others.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionLabel}>Who You'll Meet</Text>
+                <Text style={styles.sectionLabel}>{t('ui.gatheringHub.whoYoullMeet')}</Text>
                 {(showAllAttendees ? others : others.slice(0, 5)).map((a) => (
                   <View key={a.user_id} style={styles.meetRowWrap}>
                     <TouchableOpacity
                       style={[styles.meetRow, { flex: 1, marginBottom: 0 }]}
                       onPress={() => navigation.navigate('ViewProfile', { userId: a.user_id })}
-                      accessibilityLabel={`View ${a.profiles?.display_name}'s profile`}
+                      accessibilityLabel={t('ui.gatheringHub.viewSProfileA11y', { name: a.profiles?.display_name })}
                       accessibilityRole="button"
                     >
                       {attendeePhotoUrls[a.user_id] ? (
@@ -428,37 +430,37 @@ export default function GatheringHubScreen({ route, navigation }) {
                     </TouchableOpacity>
                     {!gathering.isHost && (
                       sentNoticeTo[a.user_id] ? (
-                        <Text style={styles.noticeSentText}>Notice sent</Text>
+                        <Text style={styles.noticeSentText}>{t('ui.gatheringHub.noticeSent')}</Text>
                       ) : (
                         <TouchableOpacity
                           style={styles.noticeButton}
                           onPress={() => handleSendNotice(a.user_id)}
-                          accessibilityLabel={`Send a notice to ${a.profiles?.display_name}`}
+                          accessibilityLabel={t('ui.gatheringHub.sendANoticeToA11y', { name: a.profiles?.display_name })}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.noticeButtonText}>Send notice</Text>
+                          <Text style={styles.noticeButtonText}>{t('ui.gatheringHub.sendNotice')}</Text>
                         </TouchableOpacity>
                       )
                     )}
                   </View>
                 ))}
                 {others.length > 5 && (
-                  <TouchableOpacity onPress={() => setShowAllAttendees((v) => !v)} accessibilityRole="button" accessibilityLabel={showAllAttendees ? 'Show fewer people' : `Show all ${countLabel(others.length, 'person', 'people')}`}>
-                    <Text style={styles.showAllText}>{showAllAttendees ? 'Show fewer' : `Show all ${others.length}`}</Text>
+                  <TouchableOpacity onPress={() => setShowAllAttendees((v) => !v)} accessibilityRole="button" accessibilityLabel={showAllAttendees ? t('ui.gatheringHub.showFewerA11y') : t('ui.gatheringHub.showAllA11y', { count: others.length })}>
+                    <Text style={styles.showAllText}>{showAllAttendees ? t('ui.gatheringHub.showFewer') : t('ui.gatheringHub.showAll', { count: others.length })}</Text>
                   </TouchableOpacity>
                 )}
               </View>
             )}
 
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Ice Breakers</Text>
+              <Text style={styles.sectionLabel}>{t('ui.gatheringHub.iceBreakers')}</Text>
               <View style={styles.chipsWrap}>
                 {iceBreakersFor(gathering.interest_tag).map((starter) => (
                   <TouchableOpacity
                     key={starter}
                     style={styles.iceChip}
                     onPress={() => navigation.navigate('GatheringChat', { gatheringId, gatheringTitle: gathering.title, draftText: starter })}
-                    accessibilityLabel={`Send conversation starter: ${starter}`}
+                    accessibilityLabel={t('ui.gatheringHub.sendConversationStarterA11y', { starter: starter })}
                     accessibilityRole="button"
                   >
                     <Text style={styles.iceChipText}>{starter}</Text>
@@ -471,14 +473,14 @@ export default function GatheringHubScreen({ route, navigation }) {
               style={[styles.chatButton, { backgroundColor: categoryStyle.color }]}
               onPress={() => navigation.navigate('GatheringChat', { gatheringId, gatheringTitle: gathering.title })}
               activeOpacity={0.85}
-              accessibilityLabel="Open group chat"
+              accessibilityLabel={t('ui.gatheringHub.openGroupChatA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.chatButtonText}>💬 Group Chat</Text>
+              <Text style={styles.chatButtonText}>{t('ui.gatheringHub.groupChat')}</Text>
             </TouchableOpacity>
 
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Before You Go</Text>
+              <Text style={styles.sectionLabel}>{t('ui.gatheringHub.beforeYouGo')}</Text>
               {forecast && (
                 <Text style={styles.checklistItem}>☀️ {forecast.forecast_label}{forecast.forecast_detail ? ` — ${forecast.forecast_detail}` : ''}</Text>
               )}
@@ -489,7 +491,7 @@ export default function GatheringHubScreen({ route, navigation }) {
 
             {meetupPoint && (
               <View style={styles.section}>
-                <Text style={styles.sectionLabel}>Meet-Up Point</Text>
+                <Text style={styles.sectionLabel}>{t('ui.gatheringHub.meetUpPoint')}</Text>
                 <MapView
                   style={styles.map}
                   initialRegion={{ latitude: meetupPoint.latitude, longitude: meetupPoint.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
@@ -501,10 +503,10 @@ export default function GatheringHubScreen({ route, navigation }) {
                 <TouchableOpacity
                   style={styles.uberLink}
                   onPress={() => openUberToDestination({ ...meetupPoint, nickname: gathering.title })}
-                  accessibilityLabel="Get an Uber there"
+                  accessibilityLabel={t('ui.gatheringHub.getAnUberThereA11y')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.uberLinkText}>🚗 Get an Uber there</Text>
+                  <Text style={styles.uberLinkText}>{t('ui.gatheringHub.getAnUberThere')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -513,7 +515,7 @@ export default function GatheringHubScreen({ route, navigation }) {
               <View style={styles.section}>
                 {onTheWay.length > 0 && (
                   <Text style={styles.onTheWayText}>
-                    🚗 {onTheWay.length} {onTheWay.length === 1 ? 'person is' : 'people are'} on the way
+                    {t('ui.gatheringHub.onTheWay', { count: onTheWay.length })}
                   </Text>
                 )}
                 <TouchableOpacity
@@ -521,21 +523,21 @@ export default function GatheringHubScreen({ route, navigation }) {
                   onPress={handleOnMyWay}
                   disabled={onMyWayBusy}
                   activeOpacity={0.85}
-                  accessibilityLabel={iAmOnMyWay ? "You're on your way — tap to undo" : "I'm On My Way"}
+                  accessibilityLabel={iAmOnMyWay ? t('ui.gatheringHub.youreOnYourWayTapA11y') : t('ui.gatheringHub.imOnMyWayA11y')}
                   accessibilityRole="button"
                 >
                   <Text style={[styles.bigButtonText, iAmOnMyWay && { color: colors.textSecondary }]}>
-                    {iAmOnMyWay ? "✓ ON YOUR WAY — TAP TO UNDO" : "I'M ON MY WAY"}
+                    {iAmOnMyWay ? t('ui.gatheringHub.onYourWayTapTo') : t('ui.gatheringHub.imOnMyWay')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.checkInLink}
                   onPress={handleCheckIn}
                   disabled={checkInBusy}
-                  accessibilityLabel="I'm here, check in"
+                  accessibilityLabel={t('ui.gatheringHub.imHereCheckInA11y')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.checkInLinkText}>I'm here — check in</Text>
+                  <Text style={styles.checkInLinkText}>{t('ui.gatheringHub.imHereCheckIn')}</Text>
                 </TouchableOpacity>
               </View>
             )}

@@ -62,7 +62,8 @@ describe('meaningful confirmations', () => {
     expect(read('screens/AskBusinessScreen.js')).toMatch(/targetPartnerName: targetPartner\?\.name/);
     expect(read('screens/BusinessRequestDetailScreen.js')).toMatch(/justSentLine\(notifiedCount, targetPartnerName\)/);
     // the two moments that already said what happened stay
-    expect(read('screens/GatheringConfirmationScreen.js')).toMatch(/Your gathering is live!/);
+    expect(read('screens/GatheringConfirmationScreen.js')).toContain("t('ui.gatheringConfirmation.yourGatheringIsLive')");
+    expect(require('../i18n/ui/gatheringConfirmation').default.en.yourGatheringIsLive).toBe('Your gathering is live!');
     expect(read('screens/BusinessRequestDetailScreen.js')).toContain("t('ui.requestDetail.youreBooked2')");
     expect(require('../i18n/ui/requestDetail').default.en.youreBooked2).toBe("You're booked. ✓");
   });
