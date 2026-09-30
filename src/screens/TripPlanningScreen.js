@@ -10,10 +10,11 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+// Section names and placeholders: ui.tripPlanning.section.<key> / ui.tripPlanning.placeholder.<key>.
 const CATEGORIES = [
-  { key: 'destination', label: '📍 Destinations', placeholder: 'e.g. Somewhere with mountains' },
-  { key: 'activity', label: '🎒 Activities', placeholder: 'e.g. Try the local food scene' },
-  { key: 'budget', label: '💰 Budget Notes', placeholder: 'e.g. Keep it under $500 each' },
+  { key: 'destination', icon: '📍' },
+  { key: 'activity', icon: '🎒' },
+  { key: 'budget', icon: '💰' },
 ];
 
 export default function TripPlanningScreen({ route }) {
@@ -56,7 +57,7 @@ export default function TripPlanningScreen({ route }) {
 
     const check = await checkTextModeration(text);
     if (!check.safe) {
-      return Alert.alert('Not allowed', 'Please revise this and try again.');
+      return Alert.alert(t('ui.tripPlanning.notAllowed'), t('ui.tripPlanning.pleaseReviseThisAndTry'));
     }
 
     setSubmittingCategory(categoryKey);
@@ -76,16 +77,16 @@ export default function TripPlanningScreen({ route }) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           <Text style={styles.headerTitle} accessibilityRole="header">{t('together.planTrip')}</Text>
-          <Text style={styles.headerSubtitle}>Hypothetically, of course — brainstorm with {matchName}.</Text>
+          <Text style={styles.headerSubtitle}>{t('ui.tripPlanning.hypotheticallyOfCourseBrainstormWith', { matchName: matchName })}</Text>
 
           {CATEGORIES.map((category) => {
             const categoryIdeas = ideas.filter((i) => i.category === category.key);
             return (
               <View key={category.key} style={styles.section}>
-                <Text style={styles.sectionLabel} accessibilityRole="header">{category.label}</Text>
+                <Text style={styles.sectionLabel} accessibilityRole="header">{category.icon} {t(`ui.tripPlanning.section.${category.key}`)}</Text>
 
                 {categoryIdeas.map((idea) => (
-                  <View key={idea.id} style={styles.ideaCard} accessibilityLabel={`${idea.idea_text}, added by ${idea.profiles?.display_name}`}>
+                  <View key={idea.id} style={styles.ideaCard} accessibilityLabel={t('ui.tripPlanning.addedByA11y', { ideaText: idea.idea_text, name: idea.profiles?.display_name })}>
                     <Text style={styles.ideaText}>{idea.idea_text}</Text>
                     <Text style={styles.ideaAddedBy}>— {idea.profiles?.display_name}</Text>
                   </View>
@@ -97,17 +98,17 @@ export default function TripPlanningScreen({ route }) {
                 <View style={styles.addRow}>
                   <TextInput
                     style={styles.input}
-                    placeholder={category.placeholder}
+                    placeholder={t(`ui.tripPlanning.placeholder.${category.key}`)}
                     placeholderTextColor={colors.textTertiary}
                     value={drafts[category.key] || ''}
                     onChangeText={(v) => setDrafts((prev) => ({ ...prev, [category.key]: v }))}
-                    accessibilityLabel={`Add a ${category.label.replace(/[^\w\s]/g, '').trim()} idea`}
+                    accessibilityLabel={t('ui.tripPlanning.addIdeaA11y', { section: t(`ui.tripPlanning.section.${category.key}`) })}
                   />
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => handleAdd(category.key)}
                     disabled={submittingCategory === category.key}
-                    accessibilityLabel={`Add idea to ${category.label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityLabel={t('ui.tripPlanning.addIdeaToA11y', { section: t(`ui.tripPlanning.section.${category.key}`) })}
                     accessibilityRole="button"
                   >
                     <Text style={styles.addButtonText}>+</Text>

@@ -10,11 +10,12 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+// Section names and placeholders: ui.sharedDecisions.section.<key> / ui.sharedDecisions.placeholder.<key>.
 const CATEGORIES = [
-  { key: 'living', label: '🏡 Where to Live', placeholder: 'e.g. Open to relocating for the right reason' },
-  { key: 'finances', label: '💵 Finances', placeholder: 'e.g. Prefer to keep things separate at first' },
-  { key: 'family', label: '👶 Family & Parenting', placeholder: 'e.g. Want kids someday, not sure when' },
-  { key: 'future', label: '🌅 Long-Term Future', placeholder: 'e.g. Would love to slow down in my 50s' },
+  { key: 'living', icon: '🏡' },
+  { key: 'finances', icon: '💵' },
+  { key: 'family', icon: '👶' },
+  { key: 'future', icon: '🌅' },
 ];
 
 export default function SharedDecisionsScreen({ route }) {
@@ -57,7 +58,7 @@ export default function SharedDecisionsScreen({ route }) {
 
     const check = await checkTextModeration(text);
     if (!check.safe) {
-      return Alert.alert('Not allowed', 'Please revise this and try again.');
+      return Alert.alert(t('ui.sharedDecisions.notAllowed'), t('ui.sharedDecisions.pleaseReviseThisAndTry'));
     }
 
     setSubmittingCategory(categoryKey);
@@ -77,18 +78,16 @@ export default function SharedDecisionsScreen({ route }) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           <Text style={styles.headerTitle} accessibilityRole="header">{t('together.bigPicture')}</Text>
-          <Text style={styles.headerSubtitle}>
-            Not about finding "correct" answers — just surfacing conversations with {matchName} earlier rather than later.
-          </Text>
+          <Text style={styles.headerSubtitle}>{t('ui.sharedDecisions.notAboutFindingCorrectAnswers', { matchName: matchName })}</Text>
 
           {CATEGORIES.map((category) => {
             const categoryNotes = notes.filter((n) => n.category === category.key);
             return (
               <View key={category.key} style={styles.section}>
-                <Text style={styles.sectionLabel} accessibilityRole="header">{category.label}</Text>
+                <Text style={styles.sectionLabel} accessibilityRole="header">{category.icon} {t(`ui.sharedDecisions.section.${category.key}`)}</Text>
 
                 {categoryNotes.map((note) => (
-                  <View key={note.id} style={styles.noteCard} accessibilityLabel={`${note.note_text}, added by ${note.profiles?.display_name}`}>
+                  <View key={note.id} style={styles.noteCard} accessibilityLabel={t('ui.sharedDecisions.addedByA11y', { text: note.note_text, name: note.profiles?.display_name })}>
                     <Text style={styles.noteText}>{note.note_text}</Text>
                     <Text style={styles.noteAddedBy}>— {note.profiles?.display_name}</Text>
                   </View>
@@ -100,17 +99,17 @@ export default function SharedDecisionsScreen({ route }) {
                 <View style={styles.addRow}>
                   <TextInput
                     style={styles.input}
-                    placeholder={category.placeholder}
+                    placeholder={t(`ui.sharedDecisions.placeholder.${category.key}`)}
                     placeholderTextColor={colors.textTertiary}
                     value={drafts[category.key] || ''}
                     onChangeText={(v) => setDrafts((prev) => ({ ...prev, [category.key]: v }))}
-                    accessibilityLabel={`Share a thought on ${category.label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityLabel={t('ui.sharedDecisions.shareThoughtOnA11y', { section: t(`ui.sharedDecisions.section.${category.key}`) })}
                   />
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => handleAdd(category.key)}
                     disabled={submittingCategory === category.key}
-                    accessibilityLabel={`Add thought to ${category.label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityLabel={t('ui.sharedDecisions.addThoughtToA11y', { section: t(`ui.sharedDecisions.section.${category.key}`) })}
                     accessibilityRole="button"
                   >
                     <Text style={styles.addButtonText}>+</Text>

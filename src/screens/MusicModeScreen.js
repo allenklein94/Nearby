@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TouchableOpacity, Image, FlatList, StyleSheet, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -13,6 +14,7 @@ WebBrowser.maybeCompleteAuthSession();
 const MAX_FAVORITE_TRACKS = 5;
 
 export default function MusicModeScreen({ navigation }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [request, response, promptAsync] = useSpotifyAuthRequest();
@@ -53,7 +55,7 @@ export default function MusicModeScreen({ navigation }) {
     setSelectedIds((prev) => {
       if (prev.includes(trackId)) return prev.filter((id) => id !== trackId);
       if (prev.length >= MAX_FAVORITE_TRACKS) {
-        Alert.alert('Limit reached', `You can pick up to ${MAX_FAVORITE_TRACKS} favorite tracks.`);
+        Alert.alert(t('ui.musicMode.limitReached'), t('ui.musicMode.youCanPickUpTo', { max: MAX_FAVORITE_TRACKS }));
         return prev;
       }
       return [...prev, trackId];
@@ -62,7 +64,7 @@ export default function MusicModeScreen({ navigation }) {
 
   async function handleSave() {
     if (selectedIds.length === 0) {
-      Alert.alert('Pick at least one', 'Choose at least one favorite track to show on your profile.');
+      Alert.alert(t('ui.musicMode.pickAtLeastOne'), t('ui.musicMode.chooseAtLeastOneFavorite'));
       return;
     }
 
@@ -76,7 +78,7 @@ export default function MusicModeScreen({ navigation }) {
 
       if (error) throw error;
 
-      showSuccessToast('Saved', 'Your favorite tracks now show on your profile.');
+      showSuccessToast(t('ui.musicMode.saved'), t('ui.musicMode.yourFavoriteTracksNowShow'));
       navigation.goBack();
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSave() });
@@ -87,8 +89,8 @@ export default function MusicModeScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title} accessibilityRole="header">🎵 Music Mode</Text>
-        <Text style={styles.subtitle}>Show off your vibe — pick a few favorite songs to display on your profile.</Text>
+        <Text style={styles.title} accessibilityRole="header">{t('ui.musicMode.musicMode')}</Text>
+        <Text style={styles.subtitle}>{t('ui.musicMode.showOffYourVibePick')}</Text>
       </View>
 
       {!topTracks ? (
@@ -98,20 +100,20 @@ export default function MusicModeScreen({ navigation }) {
             onPress={() => promptAsync()}
             disabled={!request || connecting}
             activeOpacity={0.85}
-            accessibilityLabel="Connect your Spotify account"
+            accessibilityLabel={t('ui.musicMode.connectYourSpotifyAccountA11y')}
             accessibilityRole="button"
           >
             {connecting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.connectButtonText}>Connect Spotify</Text>
+              <Text style={styles.connectButtonText}>{t('ui.musicMode.connectSpotify')}</Text>
             )}
           </TouchableOpacity>
-          <Text style={styles.connectHint}>We'll pull your top tracks so you can pick your favorites.</Text>
+          <Text style={styles.connectHint}>{t('ui.musicMode.wellPullYourTopTracks')}</Text>
         </View>
       ) : (
         <>
-          <Text style={styles.pickHint}>Select up to {MAX_FAVORITE_TRACKS} ({selectedIds.length}/{MAX_FAVORITE_TRACKS})</Text>
+          <Text style={styles.pickHint}>{t('ui.musicMode.selectUpTo', { max: MAX_FAVORITE_TRACKS, count: selectedIds.length })}</Text>
           <FlatList
             data={topTracks}
             keyExtractor={(item) => item.id}
@@ -123,7 +125,7 @@ export default function MusicModeScreen({ navigation }) {
                   style={[styles.trackRow, selected && styles.trackRowSelected]}
                   onPress={() => toggleTrack(item.id)}
                   activeOpacity={0.85}
-                  accessibilityLabel={`${item.name} by ${item.artist}${selected ? ', selected' : ''}`}
+                  accessibilityLabel={t(selected ? 'ui.musicMode.trackSelectedA11y' : 'ui.musicMode.trackA11y', { name: item.name, artist: item.artist })}
                   accessibilityRole="button"
                 >
                   {item.albumArt ? (
@@ -145,10 +147,10 @@ export default function MusicModeScreen({ navigation }) {
             onPress={handleSave}
             disabled={saving}
             activeOpacity={0.85}
-            accessibilityLabel="Save selected tracks to your profile"
+            accessibilityLabel={t('ui.musicMode.saveSelectedTracksToYourA11y')}
             accessibilityRole="button"
           >
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Save to Profile</Text>}
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('ui.musicMode.saveToProfile')}</Text>}
           </TouchableOpacity>
         </>
       )}

@@ -95,12 +95,12 @@ export default function SharedPlaylistScreen({ route }) {
     // to a generic search link since there's no specific track ID.
     const query = encodeURIComponent(`${item.song_title} ${item.artist || ''}`.trim());
     Alert.alert(
-      'Open where?',
+      t('ui.sharedPlaylist.openWhere'),
       '',
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: '🎧 Spotify', onPress: () => { posthog.capture('shared_playlist_opened', { service: 'spotify' }); Linking.openURL(`https://open.spotify.com/search/${query}`); } },
-        { text: '▶️ YouTube', onPress: () => { posthog.capture('shared_playlist_opened', { service: 'youtube' }); Linking.openURL(`https://www.youtube.com/results?search_query=${query}`); } },
+        { text: t('ui.sharedPlaylist.cancel'), style: 'cancel' },
+        { text: t('ui.sharedPlaylist.spotify'), onPress: () => { posthog.capture('shared_playlist_opened', { service: 'spotify' }); Linking.openURL(`https://open.spotify.com/search/${query}`); } },
+        { text: t('ui.sharedPlaylist.youtube'), onPress: () => { posthog.capture('shared_playlist_opened', { service: 'youtube' }); Linking.openURL(`https://www.youtube.com/results?search_query=${query}`); } },
       ]
     );
   }
@@ -109,17 +109,17 @@ export default function SharedPlaylistScreen({ route }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle} accessibilityRole="header">{t('together.sharedPlaylist')}</Text>
-        <Text style={styles.headerSubtitle}>Build a playlist with {matchName} — add songs you think they'd like.</Text>
+        <Text style={styles.headerSubtitle}>{t('ui.sharedPlaylist.buildAPlaylistWithAdd', { matchName: matchName })}</Text>
       </View>
 
       <View style={styles.searchWrap}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search Spotify for a song..."
+          placeholder={t('ui.sharedPlaylist.searchSpotifyForASong')}
           placeholderTextColor={colors.textTertiary}
           value={query}
           onChangeText={handleSearch}
-          accessibilityLabel="Search Spotify for a song to add"
+          accessibilityLabel={t('ui.sharedPlaylist.searchSpotifyForASongA11y')}
         />
         {searching && <ActivityIndicator color={colors.primary} style={{ marginRight: spacing.sm }} />}
       </View>
@@ -136,7 +136,7 @@ export default function SharedPlaylistScreen({ route }) {
               onPress={() => handleAddTrack(item)}
               disabled={adding === item.id}
               activeOpacity={0.85}
-              accessibilityLabel={`Add ${item.name} by ${item.artist} to the shared playlist`}
+              accessibilityLabel={t('ui.sharedPlaylist.addByToTheSharedA11y', { name: item.name, artist: item.artist })}
               accessibilityRole="button"
             >
               {item.albumArt ? (
@@ -174,16 +174,16 @@ export default function SharedPlaylistScreen({ route }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.songTitle}>{item.song_title}</Text>
                 {item.artist ? <Text style={styles.artist}>{item.artist}</Text> : null}
-                <Text style={styles.addedBy}>Added by {item.profiles?.display_name}</Text>
+                <Text style={styles.addedBy}>{t('ui.sharedPlaylist.addedByName', { name: item.profiles?.display_name })}</Text>
               </View>
               <TouchableOpacity
                 style={styles.openButton}
                 onPress={() => handleOpenPress(item)}
                 activeOpacity={0.85}
-                accessibilityLabel={`Open ${item.song_title}`}
+                accessibilityLabel={t('ui.sharedPlaylist.openA11y', { songTitle: item.song_title })}
                 accessibilityRole="button"
               >
-                <Text style={styles.openButtonText}>🎧 Open</Text>
+                <Text style={styles.openButtonText}>{t('ui.sharedPlaylist.open')}</Text>
               </TouchableOpacity>
             </View>
           )}
