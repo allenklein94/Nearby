@@ -9550,6 +9550,34 @@
    "group": null
   },
   {
+   "tag": "Coffee",
+   "file": "src/i18n/ui/dateProposal.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Fitness",
+   "file": "src/i18n/ui/dateProposal.js",
+   "consumer": "code",
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Music",
+   "file": "src/i18n/ui/dateProposal.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Outdoors",
+   "file": "src/i18n/ui/dateProposal.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Dating",
    "file": "src/i18n/ui/discover.js",
    "consumer": "code",
@@ -9679,35 +9707,35 @@
    "tag": "Coffee",
    "file": "src/screens/DateProposalScreen.js",
    "consumer": "code",
-   "occurrences": 2,
+   "occurrences": 1,
    "group": null
   },
   {
    "tag": "Fitness",
    "file": "src/screens/DateProposalScreen.js",
    "consumer": "code",
-   "occurrences": 2,
+   "occurrences": 1,
    "group": null
   },
   {
    "tag": "Foodie",
    "file": "src/screens/DateProposalScreen.js",
    "consumer": "code",
-   "occurrences": 2,
+   "occurrences": 1,
    "group": null
   },
   {
    "tag": "Music",
    "file": "src/screens/DateProposalScreen.js",
    "consumer": "code",
-   "occurrences": 2,
+   "occurrences": 1,
    "group": null
   },
   {
    "tag": "Outdoors",
    "file": "src/screens/DateProposalScreen.js",
    "consumer": "code",
-   "occurrences": 2,
+   "occurrences": 1,
    "group": null
   },
   {
