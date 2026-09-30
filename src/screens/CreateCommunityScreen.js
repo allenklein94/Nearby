@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback, Image } from 'react-native';
 import { createCommunity, seedCommunityFromGathering } from '../services/communities';
@@ -13,6 +14,7 @@ import { spacing, radius, typography } from '../theme';
 import useCategoryNames from '../hooks/useCategoryNames';
 
 export default function CreateCommunityScreen({ navigation, route }) {
+  const { t } = useLanguage();
   const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -45,17 +47,17 @@ export default function CreateCommunityScreen({ navigation, route }) {
 
   async function submit() {
     if (!name.trim()) {
-      return Alert.alert('Name required', 'Give your community a name.');
+      return Alert.alert(t('ui.community.nameRequired'), t('ui.community.giveYourCommunityAName'));
     }
 
     const nameCheck = await checkTextModeration(name);
     if (!nameCheck.safe) {
-      return Alert.alert('Name not allowed', 'Please revise the name and try again.');
+      return Alert.alert(t('ui.community.nameNotAllowed'), t('ui.community.pleaseReviseTheNameAnd'));
     }
     if (description.trim()) {
       const descCheck = await checkTextModeration(description);
       if (!descCheck.safe) {
-        return Alert.alert('Description not allowed', 'Please revise your description and try again.');
+        return Alert.alert(t('ui.community.descriptionNotAllowed'), t('ui.community.pleaseReviseYourDescriptionAnd'));
       }
     }
 
@@ -75,10 +77,10 @@ export default function CreateCommunityScreen({ navigation, route }) {
         const { invitedCount, totalAttendeeCount } = await seedCommunityFromGathering(community.id, seedGatheringId);
         if (totalAttendeeCount > 0) {
           seedReason = invitedCount === totalAttendeeCount
-            ? `Invited all ${invitedCount} attendee${invitedCount === 1 ? '' : 's'} who are already your friends.`
+            ? t('ui.community.invitedAllAttendeeWhoAre', { count: invitedCount })
             : invitedCount > 0
-              ? `Invited ${invitedCount} of ${totalAttendeeCount} attendees who are already your friends. Add the rest as friends to invite them here too.`
-              : "None of this gathering's attendees are your friends yet — add them as friends to invite them here.";
+              ? t('ui.community.invitedOfAttendeesWhoAre', { invitedCount: invitedCount, totalAttendeeCount: totalAttendeeCount })
+              : t('ui.community.noneOfThisGatheringsAttendees');
         }
       }
 
@@ -108,39 +110,37 @@ export default function CreateCommunityScreen({ navigation, route }) {
     <SafeAreaView style={styles.container}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
-          <Text style={styles.header}>Create a Community</Text>
-          <Text style={styles.subheader}>An ongoing group that can host recurring gatherings over time.</Text>
+          <Text style={styles.header}>{t('ui.community.createACommunity2')}</Text>
+          <Text style={styles.subheader}>{t('ui.community.anOngoingGroupThatCan')}</Text>
 
           {managedPartner && (
             <View style={styles.businessNotice}>
-              <Text style={styles.businessNoticeText}>
-                🏪 Since you manage {managedPartner.name}, this community will be linked to your business page and appear on your Business Dashboard's Community tab.
-              </Text>
+              <Text style={styles.businessNoticeText}>{t('ui.community.sinceYouManageThisCommunity', { name: managedPartner.name })}</Text>
             </View>
           )}
 
-          <Text style={styles.label}>Name</Text>
+          <Text style={styles.label}>{t('ui.community.name')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Downtown Runners"
+            placeholder={t('ui.community.downtownRunners')}
             placeholderTextColor={colors.textTertiary}
             value={name}
             onChangeText={setName}
-            accessibilityLabel="Community name"
+            accessibilityLabel={t('ui.community.communityNameA11y')}
           />
 
-          <Text style={styles.label}>Description</Text>
+          <Text style={styles.label}>{t('ui.community.description')}</Text>
           <TextInput
             style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
-            placeholder="What's this community about?"
+            placeholder={t('ui.community.whatsThisCommunityAbout')}
             placeholderTextColor={colors.textTertiary}
             value={description}
             onChangeText={setDescription}
             multiline
-            accessibilityLabel="Community description, optional"
+            accessibilityLabel={t('ui.community.communityDescriptionOptionalA11y')}
           />
 
-          <Text style={styles.label}>Category</Text>
+          <Text style={styles.label}>{t('ui.community.category')}</Text>
           <View style={styles.chipsWrap}>
             {INTEREST_OPTIONS.map((option) => {
               const style = categoryStyleFor(option);
@@ -156,7 +156,7 @@ export default function CreateCommunityScreen({ navigation, route }) {
                   ]}
                   onPress={() => setInterestTag(interestTag === option ? null : option)}
                   activeOpacity={0.85}
-                  accessibilityLabel={`Category: ${names.tag(option)}`}
+                  accessibilityLabel={t('ui.community.categoryA11y', { tag: names.tag(option) })}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
                 >
@@ -167,25 +167,25 @@ export default function CreateCommunityScreen({ navigation, route }) {
             })}
           </View>
 
-          <Text style={styles.label}>Visibility</Text>
+          <Text style={styles.label}>{t('ui.community.visibility')}</Text>
           <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
             <TouchableOpacity
               style={[styles.visToggle, isPublic && styles.visToggleActive]}
               onPress={() => setIsPublic(true)}
-              accessibilityLabel="Public, anyone can find and join"
+              accessibilityLabel={t('ui.community.publicAnyoneCanFindAndA11y')}
               accessibilityRole="button"
               accessibilityState={{ selected: isPublic }}
             >
-              <Text style={[styles.visToggleText, isPublic && styles.visToggleTextActive]}>🌍 Public</Text>
+              <Text style={[styles.visToggleText, isPublic && styles.visToggleTextActive]}>{t('ui.community.public')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.visToggle, !isPublic && styles.visToggleActive]}
               onPress={() => setIsPublic(false)}
-              accessibilityLabel="Private, invite only"
+              accessibilityLabel={t('ui.community.privateInviteOnlyA11y')}
               accessibilityRole="button"
               accessibilityState={{ selected: !isPublic }}
             >
-              <Text style={[styles.visToggleText, !isPublic && styles.visToggleTextActive]}>🔒 Private</Text>
+              <Text style={[styles.visToggleText, !isPublic && styles.visToggleTextActive]}>{t('ui.community.private')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -194,10 +194,10 @@ export default function CreateCommunityScreen({ navigation, route }) {
             onPress={submit}
             disabled={submitting}
             activeOpacity={0.85}
-            accessibilityLabel={submitting ? 'Creating' : 'Create Community'}
+            accessibilityLabel={submitting ? t('ui.community.creatingA11y') : t('ui.community.createCommunityA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.buttonText}>{submitting ? 'Creating...' : 'Create Community'}</Text>
+            <Text style={styles.buttonText}>{submitting ? t('ui.community.creating') : t('ui.community.createCommunity')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </TouchableWithoutFeedback>

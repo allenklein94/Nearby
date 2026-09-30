@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
@@ -13,7 +14,6 @@ import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { placeDistanceLabel } from '../services/places';
 import { spacing, radius, typography } from '../theme';
-import { memberCountLabel } from '../utils/outcomeDisplay';
 
 // "Boca Raton, FL · 2.3 mi away" -- the distance part only when the row carries a real one (public communities
 // ordered by the shared position); a community you're a member of, or with no map point, just shows its area.
@@ -23,6 +23,8 @@ function areaLine(c) {
 }
 
 export default function CommunitiesScreen({ navigation }) {
+  const { t } = useLanguage();
+  const membersLabel = (n) => (Number.isFinite(n) ? t('ui.common.count.members', { count: n }) : null);
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [myCommunities, setMyCommunities] = useState([]);
@@ -79,7 +81,7 @@ export default function CommunitiesScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading communities...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.community.loadingCommunities')}</Text>
       </SafeAreaView>
     );
   }
@@ -87,7 +89,7 @@ export default function CommunitiesScreen({ navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load communities." onRetry={load} />
+        <LoadErrorState message={t('ui.community.couldntLoadCommunities')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -102,20 +104,20 @@ export default function CommunitiesScreen({ navigation }) {
         ListHeaderComponent={
           <>
             <View style={styles.headerRow}>
-              <Text style={styles.title}>Communities</Text>
+              <Text style={styles.title}>{t('ui.community.communities')}</Text>
               <TouchableOpacity
                 style={styles.createButton}
                 onPress={() => navigation.navigate('CreateCommunity')}
-                accessibilityLabel="Create a new community"
+                accessibilityLabel={t('ui.community.createANewCommunityA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.createButtonText}>+ Create</Text>
+                <Text style={styles.createButtonText}>{t('ui.community.create')}</Text>
               </TouchableOpacity>
             </View>
 
             {myCommunities.length > 0 && (
               <>
-                <Text style={styles.sectionHeader}>Your Communities</Text>
+                <Text style={styles.sectionHeader}>{t('ui.community.yourCommunities')}</Text>
                 {myCommunities.map((c) => {
                   const categoryStyle = categoryStyleFor(c.interest_tag);
                   return (
@@ -123,13 +125,13 @@ export default function CommunitiesScreen({ navigation }) {
                       key={c.id}
                       style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }]}
                       onPress={() => navigation.navigate('CommunityDetail', { communityId: c.id, communityName: c.name })}
-                      accessibilityLabel={`${c.name}, ${memberCountLabel(memberCounts[c.id]) ?? 'community'}`}
+                      accessibilityLabel={`${c.name}, ${membersLabel(memberCounts[c.id]) ?? t('ui.community.communityWord')}`}
                       accessibilityRole="button"
                     >
                       <Text style={styles.cardIcon}>{categoryStyle.icon}</Text>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.cardTitle}>{c.name}</Text>
-                        {memberCountLabel(memberCounts[c.id]) ? <Text style={styles.cardMeta}>{memberCountLabel(memberCounts[c.id])}</Text> : null}
+                        {membersLabel(memberCounts[c.id]) ? <Text style={styles.cardMeta}>{membersLabel(memberCounts[c.id])}</Text> : null}
                         {areaLine(c) ? <Text style={styles.cardArea}>📍 {areaLine(c)}</Text> : null}
                       </View>
                       <Text style={styles.cardChevron}>›</Text>
@@ -140,7 +142,7 @@ export default function CommunitiesScreen({ navigation }) {
               </>
             )}
 
-            <Text style={styles.sectionHeader}>Discover</Text>
+            <Text style={styles.sectionHeader}>{t('ui.community.discover')}</Text>
           </>
         }
         ListEmptyComponent={
@@ -150,11 +152,11 @@ export default function CommunitiesScreen({ navigation }) {
               <EmptyCopy id="communities_discover" />
               <TouchableOpacity
                 onPress={() => navigation.navigate('CreateCommunity')}
-                accessibilityLabel="Create a community"
+                accessibilityLabel={t('ui.community.createACommunityA11y')}
                 accessibilityRole="button"
                 style={{ marginTop: spacing.md }}
               >
-                <Text style={styles.emptyActionText}>+ Create a Community →</Text>
+                <Text style={styles.emptyActionText}>{t('ui.community.createACommunity')}</Text>
               </TouchableOpacity>
             </FadeInState>
           )
@@ -166,13 +168,13 @@ export default function CommunitiesScreen({ navigation }) {
               <TouchableOpacity
                 style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => navigation.navigate('CommunityDetail', { communityId: item.id, communityName: item.name })}
-                accessibilityLabel={`${item.name}, ${memberCountLabel(memberCounts[item.id]) ?? 'community'}`}
+                accessibilityLabel={`${item.name}, ${membersLabel(memberCounts[item.id]) ?? t('ui.community.communityWord')}`}
                 accessibilityRole="button"
               >
                 <Text style={styles.cardIcon}>{categoryStyle.icon}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cardTitle}>{item.name}</Text>
-                  {memberCountLabel(memberCounts[item.id]) ? <Text style={styles.cardMeta}>{memberCountLabel(memberCounts[item.id])}</Text> : null}
+                  {membersLabel(memberCounts[item.id]) ? <Text style={styles.cardMeta}>{membersLabel(memberCounts[item.id])}</Text> : null}
                   {areaLine(item) ? <Text style={styles.cardArea}>📍 {areaLine(item)}</Text> : null}
                   <BusinessHostBadge hostingPartnerId={item.hosting_partner_id} navigation={navigation} />
                 </View>
@@ -180,10 +182,10 @@ export default function CommunitiesScreen({ navigation }) {
               <TouchableOpacity
                 style={styles.joinButton}
                 onPress={() => handleJoin(item.id)}
-                accessibilityLabel={`Join ${item.name}`}
+                accessibilityLabel={t('ui.community.joinA11y', { name: item.name })}
                 accessibilityRole="button"
               >
-                <Text style={styles.joinButtonText}>Join</Text>
+                <Text style={styles.joinButtonText}>{t('ui.community.join')}</Text>
               </TouchableOpacity>
             </View>
           );

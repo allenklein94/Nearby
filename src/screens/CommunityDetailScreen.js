@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Image, Modal } from 'react-native';
@@ -25,10 +26,11 @@ import { getUserLocation } from '../services/userLocation';
 import { isGatheringUpcoming } from '../utils/objectState';
 
 import { unlockStatus } from '../utils/unlockProgress';
-import { memberCountLabel } from '../utils/outcomeDisplay';
 const ROLE_LABELS = { creator: 'Creator', leader: 'Leader', member: 'Member' };
 
 export default function CommunityDetailScreen({ route, navigation }) {
+  const { t } = useLanguage();
+  const membersLabel = (n) => (Number.isFinite(n) ? t('ui.common.count.members', { count: n }) : null);
   const { communityId, communityName } = route.params;
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -178,15 +180,15 @@ export default function CommunityDetailScreen({ route, navigation }) {
     setRedeemingOfferId(offer.id);
     try {
       const { confirmationCode } = await redeemOffer(offer.id);
-      Alert.alert('Redeemed!', `Show staff this code to confirm: ${confirmationCode}\n\n${offer.redemption_instructions || 'Check your account for details on how to use this.'}`);
+      Alert.alert(t('ui.community.redeemed'), t('ui.community.showStaffThisCodeTo', { confirmationCode: confirmationCode, redemptionInstructions: offer.redemption_instructions || 'Check your account for details on how to use this.' }));
       load();
     } catch (e) {
       if (e.message === 'ALREADY_REDEEMED') {
-        Alert.alert('Already redeemed', "You've already claimed this offer.");
+        Alert.alert(t('ui.community.alreadyRedeemed'), t('ui.community.youveAlreadyClaimedThisOffer'));
       } else if (e.message === 'REDEMPTION_LIMIT_REACHED') {
-        Alert.alert('Offer fully claimed', "This offer's limited spots have all been claimed.");
+        Alert.alert(t('ui.community.offerFullyClaimed'), t('ui.community.thisOffersLimitedSpotsHave'));
       } else if (e.message === 'OFFER_LOCKED') {
-        Alert.alert('Not unlocked yet', "This community needs more members to unlock this perk.");
+        Alert.alert(t('ui.community.notUnlockedYet'), t('ui.community.thisCommunityNeedsMoreMembers'));
       } else {
         presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRedeemOffer(offer) });
       }
@@ -215,13 +217,13 @@ export default function CommunityDetailScreen({ route, navigation }) {
     try {
       const location = await getUserLocation();
       if (!location) {
-        Alert.alert('Location permission needed', 'Enable location access to set a coarse map point for this Area.');
+        Alert.alert(t('ui.community.locationPermissionNeeded'), t('ui.community.enableLocationAccessToSet'));
         setLocatingArea(false);
         return;
       }
       setAreaPoint({ lat: location.coords.latitude, lng: location.coords.longitude });
     } catch (e) {
-      Alert.alert('Error', 'Could not get your current location.');
+      Alert.alert(t('ui.community.error'), t('ui.community.couldNotGetYourCurrent'));
     }
     setLocatingArea(false);
   }
@@ -285,12 +287,12 @@ export default function CommunityDetailScreen({ route, navigation }) {
 
   function confirmDeleteCommunity() {
     Alert.alert(
-      `Delete "${community.name}"?`,
-      `This permanently removes the community and its ${memberCountLabel(memberCount) ?? 'members'}. Gatherings already linked to it aren't deleted, just unlinked. This can't be undone.`,
+      t('ui.community.delete', { name: community.name }),
+      t('ui.community.thisPermanentlyRemovesTheCommunity', { memberCountLabel: membersLabel(memberCount) ?? t('ui.community.membersFallback') }),
       [
-        { text: 'Keep It', style: 'cancel' },
+        { text: t('ui.community.keepIt'), style: 'cancel' },
         {
-          text: 'Delete Community',
+          text: t('ui.community.deleteCommunity'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -307,12 +309,12 @@ export default function CommunityDetailScreen({ route, navigation }) {
 
   function confirmPauseCommunity() {
     Alert.alert(
-      `Pause "${community.name}"?`,
-      "New members can't join and it disappears from public discovery while paused. Existing members keep their access, and you can resume anytime.",
+      t('ui.community.pause', { name: community.name }),
+      t('ui.community.newMembersCantJoinAnd'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('ui.community.cancel'), style: 'cancel' },
         {
-          text: 'Pause Community',
+          text: t('ui.community.pauseCommunity'),
           onPress: async () => {
             try {
               await pauseCommunity(communityId);
@@ -337,12 +339,12 @@ export default function CommunityDetailScreen({ route, navigation }) {
 
   function confirmCancelCommunity() {
     Alert.alert(
-      `Cancel "${community.name}"?`,
-      `This notifies all ${memberCountLabel(memberCount) ?? 'members'} that the community is cancelled. Membership and message history are kept, and any business requests or confirmed reservations tied to this community are cancelled too (unless a payment's already gone through — that side will be told to sort it out directly with the business). This can't be undone (though you can still delete it permanently afterward).`,
+      t('ui.community.cancel2', { name: community.name }),
+      t('ui.community.thisNotifiesAllThatThe', { memberCountLabel: membersLabel(memberCount) ?? t('ui.community.membersFallback') }),
       [
-        { text: 'Keep It', style: 'cancel' },
+        { text: t('ui.community.keepIt'), style: 'cancel' },
         {
-          text: 'Cancel Community',
+          text: t('ui.community.cancelCommunity'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -366,7 +368,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm }}>Loading community…</Text>
+        <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm }}>{t('ui.community.loadingCommunity')}</Text>
       </SafeAreaView>
     );
   }
@@ -374,7 +376,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   if (loadError || !community) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load this community." onRetry={load} />
+        <LoadErrorState message={t('ui.community.couldntLoadThisCommunity')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -384,13 +386,13 @@ export default function CommunityDetailScreen({ route, navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        {showJustCreated && <SuccessAnimation haptic text="Your community is live. 🎉" />}
+        {showJustCreated && <SuccessAnimation haptic text={t('ui.community.yourCommunityIsLive')} />}
         {showReasonBanner && notificationReason && (
           <View style={styles.notificationReasonBanner}>
             <Text style={styles.notificationReasonText}>{notificationReason}</Text>
             <TouchableOpacity
               onPress={() => setShowReasonBanner(false)}
-              accessibilityLabel="Dismiss"
+              accessibilityLabel={t('ui.community.dismissA11y')}
               accessibilityRole="button"
               style={styles.notificationReasonDismiss}
             >
@@ -402,12 +404,12 @@ export default function CommunityDetailScreen({ route, navigation }) {
           <Text style={styles.iconText}>{categoryStyle.icon}</Text>
         </View>
         <Text style={styles.title}>{community.name}</Text>
-        <Text style={styles.meta}>{[memberCountLabel(memberCount), community.is_public ? 'Public' : 'Private'].filter(Boolean).join(' · ')}</Text>
+        <Text style={styles.meta}>{[membersLabel(memberCount), community.is_public ? t('ui.community.publicWord') : t('ui.community.privateWord')].filter(Boolean).join(' · ')}</Text>
         {community.status === 'paused' && (
-          <Text style={styles.statusNotice}>⏸️ This community is paused by its creator.</Text>
+          <Text style={styles.statusNotice}>{t('ui.community.thisCommunityIsPausedBy')}</Text>
         )}
         {community.status === 'cancelled' && (
-          <Text style={styles.statusNotice}>This community has been cancelled.</Text>
+          <Text style={styles.statusNotice}>{t('ui.community.thisCommunityHasBeenCancelled')}</Text>
         )}
         {(community.area_label || community.area_city) && (
           <Text style={styles.areaText}>
@@ -427,11 +429,11 @@ export default function CommunityDetailScreen({ route, navigation }) {
             style={[styles.joinButton, isMember && styles.leaveButton]}
             onPress={handleJoinLeave}
             activeOpacity={0.85}
-            accessibilityLabel={isMember ? `Leave ${community.name}` : `Join ${community.name}`}
+            accessibilityLabel={isMember ? t('ui.community.leaveA11y', { name: community.name }) : t('ui.community.joinA11y', { name: community.name })}
             accessibilityRole="button"
           >
             <Text style={[styles.joinButtonText, isMember && styles.leaveButtonText]}>
-              {isMember ? 'Leave Community' : 'Join Community'}
+              {isMember ? t('ui.community.leaveCommunity') : t('ui.community.joinCommunity')}
             </Text>
           </TouchableOpacity>
         )}
@@ -447,31 +449,31 @@ export default function CommunityDetailScreen({ route, navigation }) {
             state are ever shown. */}
         {isCreator && (
           <View style={styles.manageSection}>
-            <Text style={styles.manageSectionLabel}>Manage Community</Text>
+            <Text style={styles.manageSectionLabel}>{t('ui.community.manageCommunity')}</Text>
 
             <TouchableOpacity
               onPress={() => navigation.navigate('EditCommunity', { community })}
-              accessibilityLabel="Edit Community"
+              accessibilityLabel={t('ui.community.editCommunityA11y')}
               accessibilityRole="button"
               style={styles.manageLinkRow}
             >
-              <Text style={styles.manageLink}>✏️ Edit Community</Text>
+              <Text style={styles.manageLink}>{t('ui.community.editCommunity')}</Text>
             </TouchableOpacity>
 
             {canEditArea && (
-              <TouchableOpacity onPress={openAreaModal} accessibilityLabel="Edit Community Area" accessibilityRole="button" style={styles.manageLinkRow}>
-                <Text style={styles.manageLink}>{community.area_city || community.area_label ? 'Edit Community Area' : '+ Add a Community Area'}</Text>
+              <TouchableOpacity onPress={openAreaModal} accessibilityLabel={t('ui.community.editCommunityAreaA11y')} accessibilityRole="button" style={styles.manageLinkRow}>
+                <Text style={styles.manageLink}>{community.area_city || community.area_label ? t('ui.community.editCommunityArea') : t('ui.community.addACommunityArea')}</Text>
               </TouchableOpacity>
             )}
 
             {community.status === 'active' && (
-              <TouchableOpacity onPress={confirmPauseCommunity} accessibilityLabel="Pause Community" accessibilityRole="button" style={styles.manageLinkRow}>
-                <Text style={styles.manageLink}>⏸️ Pause Community</Text>
+              <TouchableOpacity onPress={confirmPauseCommunity} accessibilityLabel={t('ui.community.pauseCommunityA11y')} accessibilityRole="button" style={styles.manageLinkRow}>
+                <Text style={styles.manageLink}>{t('ui.community.pauseCommunity2')}</Text>
               </TouchableOpacity>
             )}
             {community.status === 'paused' && (
-              <TouchableOpacity onPress={handleResumeCommunity} accessibilityLabel="Resume Community" accessibilityRole="button" style={styles.manageLinkRow}>
-                <Text style={styles.manageLink}>▶️ Resume Community</Text>
+              <TouchableOpacity onPress={handleResumeCommunity} accessibilityLabel={t('ui.community.resumeCommunityA11y')} accessibilityRole="button" style={styles.manageLinkRow}>
+                <Text style={styles.manageLink}>{t('ui.community.resumeCommunity')}</Text>
               </TouchableOpacity>
             )}
 
@@ -480,10 +482,10 @@ export default function CommunityDetailScreen({ route, navigation }) {
                 style={styles.deleteButton}
                 onPress={confirmCancelCommunity}
                 activeOpacity={0.85}
-                accessibilityLabel={`Cancel ${community.name}`}
+                accessibilityLabel={t('ui.community.cancelA11y', { name: community.name })}
                 accessibilityRole="button"
               >
-                <Text style={styles.deleteButtonText}>Cancel Community</Text>
+                <Text style={styles.deleteButtonText}>{t('ui.community.cancelCommunity')}</Text>
               </TouchableOpacity>
             )}
 
@@ -492,10 +494,10 @@ export default function CommunityDetailScreen({ route, navigation }) {
                 style={styles.deleteButton}
                 onPress={confirmDeleteCommunity}
                 activeOpacity={0.85}
-                accessibilityLabel={`Delete ${community.name} permanently`}
+                accessibilityLabel={t('ui.community.deletePermanentlyA11y', { name: community.name })}
                 accessibilityRole="button"
               >
-                <Text style={styles.deleteButtonText}>Delete Community Permanently</Text>
+                <Text style={styles.deleteButtonText}>{t('ui.community.deleteCommunityPermanently')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -507,15 +509,13 @@ export default function CommunityDetailScreen({ route, navigation }) {
           // no sense, so this is an honest explanation instead of a Follow
           // button pointed at yourself.
           <View style={styles.ownBusinessNotice}>
-            <Text style={styles.ownBusinessNoticeText}>
-              🏪 This community is linked to your business, {myManagedPartner.name} — that's why it appears on your Business Dashboard's Community tab.
-            </Text>
+            <Text style={styles.ownBusinessNoticeText}>{t('ui.community.thisCommunityIsLinkedTo', { name: myManagedPartner.name })}</Text>
             <TouchableOpacity
               onPress={() => navigation.navigate('BusinessProfile', { partnerId: community.hosting_partner_id })}
-              accessibilityLabel="View business profile"
+              accessibilityLabel={t('ui.community.viewBusinessProfileA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.businessProfileLink}>View Business Profile →</Text>
+              <Text style={styles.businessProfileLink}>{t('ui.community.viewBusinessProfile')}</Text>
             </TouchableOpacity>
           </View>
         ) : community.hosting_partner_id && (
@@ -524,27 +524,27 @@ export default function CommunityDetailScreen({ route, navigation }) {
               style={[styles.chatButton, followingBusiness && styles.leaveButton]}
               onPress={handleToggleFollowBusiness}
               activeOpacity={0.85}
-              accessibilityLabel={followingBusiness ? 'Unfollow this business' : 'Follow this business'}
+              accessibilityLabel={followingBusiness ? t('ui.community.unfollowThisBusinessA11y') : t('ui.community.followThisBusinessA11y')}
               accessibilityRole="button"
             >
               <Text style={[styles.chatButtonText, followingBusiness && styles.leaveButtonText]}>
-                {followingBusiness ? '✓ Following' : '🏪 Follow This Business'}
+                {followingBusiness ? t('ui.community.following') : t('ui.community.followThisBusiness')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => navigation.navigate('BusinessProfile', { partnerId: community.hosting_partner_id })}
-              accessibilityLabel="View business profile"
+              accessibilityLabel={t('ui.community.viewBusinessProfileA11y')}
               accessibilityRole="button"
               style={{ marginBottom: spacing.lg }}
             >
-              <Text style={styles.businessProfileLink}>View Business Profile →</Text>
+              <Text style={styles.businessProfileLink}>{t('ui.community.viewBusinessProfile')}</Text>
             </TouchableOpacity>
           </>
         )}
 
         {offers.length > 0 && (
           <>
-            <Text style={styles.sectionHeader}>🎁 Community Perks</Text>
+            <Text style={styles.sectionHeader}>{t('ui.community.communityPerks')}</Text>
             {offers.map((offer) => {
               const unlock = unlockStatus({ ...offer, unlock_scope: 'community' }, memberCount);
               const isLocked = unlock.isLocked;
@@ -553,7 +553,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
                 <View key={offer.id} style={styles.perkCard}>
                   <TouchableOpacity
                     onPress={() => navigation.navigate('BusinessProfile', { partnerId: offer.partner_id })}
-                    accessibilityLabel={`View ${offer.brand_partners?.name}'s business profile`}
+                    accessibilityLabel={t('ui.community.viewSBusinessProfileA11y', { name: offer.brand_partners?.name })}
                     accessibilityRole="button"
                   >
                     <Text style={styles.perkSubLink}>{offer.brand_partners?.name}</Text>
@@ -563,15 +563,15 @@ export default function CommunityDetailScreen({ route, navigation }) {
                   <Text style={styles.perkUnlockText}>
                     {isLocked
                       ? unlock.label
-                      : '🔓 Unlocked — community goal reached'}
+                      : t('ui.community.unlockedCommunityGoalReached')}
                   </Text>
                   {alreadyRedeemed ? (
                     <View style={styles.perkRedeemedBadge}>
-                      <Text style={styles.perkRedeemedBadgeText}>Redeemed</Text>
+                      <Text style={styles.perkRedeemedBadgeText}>{t('ui.community.redeemed2')}</Text>
                     </View>
                   ) : isLocked ? (
                     <View style={[styles.perkRedeemButton, styles.perkLockedButton]}>
-                      <Text style={styles.perkLockedButtonText}>Locked</Text>
+                      <Text style={styles.perkLockedButtonText}>{t('ui.community.locked')}</Text>
                     </View>
                   ) : (
                     <TouchableOpacity
@@ -579,10 +579,10 @@ export default function CommunityDetailScreen({ route, navigation }) {
                       onPress={() => handleRedeemOffer(offer)}
                       disabled={redeemingOfferId === offer.id}
                       activeOpacity={0.85}
-                      accessibilityLabel={`Redeem ${offer.title}, from ${offer.brand_partners?.name}`}
+                      accessibilityLabel={t('ui.community.redeemFromA11y', { title: offer.title, name: offer.brand_partners?.name })}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.perkRedeemButtonText}>{redeemingOfferId === offer.id ? 'Redeeming...' : 'Redeem'}</Text>
+                      <Text style={styles.perkRedeemButtonText}>{redeemingOfferId === offer.id ? t('ui.community.redeeming') : t('ui.community.redeem')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -596,10 +596,10 @@ export default function CommunityDetailScreen({ route, navigation }) {
             style={styles.chatButton}
             onPress={() => navigation.navigate('CommunityChat', { communityId, communityName: community.name })}
             activeOpacity={0.85}
-            accessibilityLabel="Open community group chat"
+            accessibilityLabel={t('ui.community.openCommunityGroupChatA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.chatButtonText}>💬 Community Chat</Text>
+            <Text style={styles.chatButtonText}>{t('ui.community.communityChat')}</Text>
           </TouchableOpacity>
         )}
 
@@ -613,10 +613,10 @@ export default function CommunityDetailScreen({ route, navigation }) {
             style={styles.chatButton}
             onPress={() => setInviteModalVisible(true)}
             activeOpacity={0.85}
-            accessibilityLabel="Invite friends to this community"
+            accessibilityLabel={t('ui.community.inviteFriendsToThisCommunityA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.chatButtonText}>🤝 Invite Friends</Text>
+            <Text style={styles.chatButtonText}>{t('ui.community.inviteFriends')}</Text>
           </TouchableOpacity>
         )}
 
@@ -628,10 +628,10 @@ export default function CommunityDetailScreen({ route, navigation }) {
               initialCommunityId: communityId,
             })}
             activeOpacity={0.85}
-            accessibilityLabel={`Host a gathering for ${community?.name}`}
+            accessibilityLabel={t('ui.community.hostAGatheringForA11y', { name: community?.name })}
             accessibilityRole="button"
           >
-            <Text style={styles.chatButtonText}>🎉 Host a Gathering for This Community</Text>
+            <Text style={styles.chatButtonText}>{t('ui.community.hostAGatheringForThis')}</Text>
           </TouchableOpacity>
         )}
 
@@ -645,24 +645,24 @@ export default function CommunityDetailScreen({ route, navigation }) {
             />
           ) : businessRequest ? (
             <View style={{ marginBottom: spacing.lg }}>
-              <Text style={styles.businessHelpLink}>🍽️ Waiting to hear back from local businesses.</Text>
+              <Text style={styles.businessHelpLink}>{t('ui.community.waitingToHearBackFrom2')}</Text>
               <TouchableOpacity
                 onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
-                accessibilityLabel="View your business request"
+                accessibilityLabel={t('ui.community.viewYourBusinessRequestA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.businessHelpLink}>View request →</Text>
+                <Text style={styles.businessHelpLink}>{t('ui.community.viewRequest')}</Text>
               </TouchableOpacity>
             </View>
           ) : myPartnershipRequest?.status === 'approved' ? (
             <View style={styles.businessOfferCard}>
-              <Text style={styles.businessOfferKicker}>🎯 Business Partner Confirmed</Text>
+              <Text style={styles.businessOfferKicker}>{t('ui.community.businessPartnerConfirmed')}</Text>
               <Text style={styles.businessOfferTitle}>{myPartnershipRequest.partnerName}</Text>
-              <Text style={styles.businessOfferSub}>Confirmed as your business partner for this community</Text>
+              <Text style={styles.businessOfferSub}>{t('ui.community.confirmedAsYourBusinessPartner')}</Text>
             </View>
           ) : myPartnershipRequest?.status === 'pending' ? (
             <View style={{ marginBottom: spacing.lg }}>
-              <Text style={styles.businessHelpLink}>🎯 Waiting to hear back from {myPartnershipRequest.partnerName}.</Text>
+              <Text style={styles.businessHelpLink}>{t('ui.community.waitingToHearBackFrom', { partnerName: myPartnershipRequest.partnerName })}</Text>
             </View>
           ) : (
             // The merged front door: neither mechanism has any real
@@ -675,11 +675,11 @@ export default function CommunityDetailScreen({ route, navigation }) {
                 style={styles.chatButton}
                 onPress={() => setBusinessHelpChooserOpen((v) => !v)}
                 activeOpacity={0.85}
-                accessibilityLabel="Find a business for this community"
+                accessibilityLabel={t('ui.community.findABusinessForThisA11y')}
                 accessibilityRole="button"
                 accessibilityState={{ expanded: businessHelpChooserOpen }}
               >
-                <Text style={styles.chatButtonText}>🏪 Find a Business for This Community</Text>
+                <Text style={styles.chatButtonText}>{t('ui.community.findABusinessForThis')}</Text>
               </TouchableOpacity>
               {businessHelpChooserOpen && (
                 <View style={styles.businessHelpChooser}>
@@ -689,11 +689,11 @@ export default function CommunityDetailScreen({ route, navigation }) {
                       setBusinessHelpChooserOpen(false);
                       navigation.navigate('RequestBusinessPartner', { targetType: 'community', targetId: communityId, targetTitle: community?.name });
                     }}
-                    accessibilityLabel="Request a specific business"
+                    accessibilityLabel={t('ui.community.requestASpecificBusinessA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.businessHelpChooserOptionTitle}>🎯 Request a specific business</Text>
-                    <Text style={styles.businessHelpChooserOptionSub}>You already have a place in mind.</Text>
+                    <Text style={styles.businessHelpChooserOptionTitle}>{t('ui.community.requestASpecificBusiness')}</Text>
+                    <Text style={styles.businessHelpChooserOptionSub}>{t('ui.community.youAlreadyHaveAPlace')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.businessHelpChooserOption, { marginTop: spacing.xs }]}
@@ -712,11 +712,11 @@ export default function CommunityDetailScreen({ route, navigation }) {
                         prefillCategory: BUSINESS_REQUEST_CATEGORY_OPTIONS.includes(community?.interest_tag) ? community.interest_tag : null,
                       });
                     }}
-                    accessibilityLabel="Ask nearby businesses by category"
+                    accessibilityLabel={t('ui.community.askNearbyBusinessesByCategoryA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.businessHelpChooserOptionTitle}>📍 Ask nearby businesses</Text>
-                    <Text style={styles.businessHelpChooserOptionSub}>Describe what you need, real party size and budget — every eligible business nearby can respond with a custom offer.</Text>
+                    <Text style={styles.businessHelpChooserOptionTitle}>{t('ui.community.askNearbyBusinesses')}</Text>
+                    <Text style={styles.businessHelpChooserOptionSub}>{t('ui.community.describeWhatYouNeedReal')}</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -726,13 +726,13 @@ export default function CommunityDetailScreen({ route, navigation }) {
 
         {members.length === 0 && (
           <>
-            <Text style={styles.sectionHeader}>Leaders & Members</Text>
+            <Text style={styles.sectionHeader}>{t('ui.community.leadersMembers')}</Text>
             <EmptyCopy id="community_members" />
           </>
         )}
         {members.length > 0 && (
           <>
-            <Text style={styles.sectionHeader}>Leaders & Members{memberCount != null ? ` (${memberCount})` : ''}</Text>
+            <Text style={styles.sectionHeader}>{t('ui.community.leadersMembers')}{memberCount != null ? ` (${memberCount})` : ''}</Text>
             {members.map((m) => {
               const photoUrl = memberPhotoUrls[m.user_id];
               return (
@@ -743,7 +743,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
                     <View style={[styles.memberAvatar, styles.memberAvatarPlaceholder]} />
                   )}
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.memberName}>{m.profiles?.display_name ?? 'Member'}</Text>
+                    <Text style={styles.memberName}>{m.profiles?.display_name ?? t('ui.community.member')}</Text>
                     <Text style={[styles.memberRoleBadge, m.role === 'creator' && styles.memberRoleCreator, m.role === 'leader' && styles.memberRoleLeader]}>
                       {ROLE_LABELS[m.role] ?? m.role}
                     </Text>
@@ -752,11 +752,11 @@ export default function CommunityDetailScreen({ route, navigation }) {
                     <TouchableOpacity
                       onPress={() => handleToggleLeader(m)}
                       disabled={changingRoleFor === m.user_id}
-                      accessibilityLabel={m.role === 'leader' ? `Remove ${m.profiles?.display_name} as leader` : `Make ${m.profiles?.display_name} a leader`}
+                      accessibilityLabel={m.role === 'leader' ? t('ui.community.removeAsLeaderA11y', { name: m.profiles?.display_name }) : t('ui.community.makeALeaderA11y', { name: m.profiles?.display_name })}
                       accessibilityRole="button"
                     >
                       <Text style={styles.memberActionLink}>
-                        {changingRoleFor === m.user_id ? '...' : m.role === 'leader' ? 'Remove Leader' : 'Make Leader'}
+                        {changingRoleFor === m.user_id ? '...' : m.role === 'leader' ? t('ui.community.removeLeader') : t('ui.community.makeLeader')}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -768,32 +768,32 @@ export default function CommunityDetailScreen({ route, navigation }) {
 
         {gatherings.length === 0 && (
           <>
-            <Text style={styles.sectionHeader}>Upcoming Gatherings</Text>
+            <Text style={styles.sectionHeader}>{t('ui.community.upcomingGatherings')}</Text>
             <EmptyCopy id="community_calendar" />
           </>
         )}
         {gatherings.length > 0 && (
           <>
             <View style={styles.gatheringsHeaderRow}>
-              <Text style={styles.sectionHeader}>Upcoming Gatherings</Text>
+              <Text style={styles.sectionHeader}>{t('ui.community.upcomingGatherings')}</Text>
               <View style={styles.viewToggle}>
                 <TouchableOpacity
                   style={[styles.viewToggleButton, viewMode === 'list' && styles.viewToggleButtonActive]}
                   onPress={() => setViewMode('list')}
-                  accessibilityLabel="List view"
+                  accessibilityLabel={t('ui.community.listViewA11y')}
                   accessibilityRole="button"
                   accessibilityState={{ selected: viewMode === 'list' }}
                 >
-                  <Text style={[styles.viewToggleText, viewMode === 'list' && styles.viewToggleTextActive]}>List</Text>
+                  <Text style={[styles.viewToggleText, viewMode === 'list' && styles.viewToggleTextActive]}>{t('ui.community.list')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.viewToggleButton, viewMode === 'calendar' && styles.viewToggleButtonActive]}
                   onPress={() => setViewMode('calendar')}
-                  accessibilityLabel="Calendar view"
+                  accessibilityLabel={t('ui.community.calendarViewA11y')}
                   accessibilityRole="button"
                   accessibilityState={{ selected: viewMode === 'calendar' }}
                 >
-                  <Text style={[styles.viewToggleText, viewMode === 'calendar' && styles.viewToggleTextActive]}>Calendar</Text>
+                  <Text style={[styles.viewToggleText, viewMode === 'calendar' && styles.viewToggleTextActive]}>{t('ui.community.calendar')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -826,27 +826,27 @@ export default function CommunityDetailScreen({ route, navigation }) {
       <Modal visible={areaModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setAreaModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Community Area</Text>
+            <Text style={styles.modalTitle}>{t('ui.community.communityArea')}</Text>
             <Text style={styles.modalSubtitle}>
-              Optional and coarse — a city and general area, never a precise address. Helps people nearby find this community.
+              {t('ui.community.optionalAndCoarseACity')}
             </Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="City (e.g. Princeton)"
+              placeholder={t('ui.community.cityEGPrinceton')}
               placeholderTextColor={colors.textTertiary}
               value={areaCity}
               onChangeText={setAreaCity}
             />
             <TextInput
               style={styles.modalInput}
-              placeholder="State / Region (e.g. NJ)"
+              placeholder={t('ui.community.stateRegionEGNj')}
               placeholderTextColor={colors.textTertiary}
               value={areaRegion}
               onChangeText={setAreaRegion}
             />
             <TextInput
               style={styles.modalInput}
-              placeholder="Label, optional (e.g. Downtown)"
+              placeholder={t('ui.community.labelOptionalEGDowntown')}
               placeholderTextColor={colors.textTertiary}
               value={areaLabel}
               onChangeText={setAreaLabel}
@@ -854,20 +854,20 @@ export default function CommunityDetailScreen({ route, navigation }) {
             <TouchableOpacity
               onPress={handleUseCurrentLocationForArea}
               disabled={locatingArea}
-              accessibilityLabel="Use my current location as this Area's coarse map point"
+              accessibilityLabel={t('ui.community.useMyCurrentLocationAsA11y')}
               accessibilityRole="button"
               style={styles.useLocationButton}
             >
               <Text style={styles.useLocationButtonText}>
-                {locatingArea ? 'Getting location...' : areaPoint ? '📍 Map point set — tap to update' : '📍 Use My Current Location (optional)'}
+                {locatingArea ? t('ui.community.gettingLocation') : areaPoint ? t('ui.community.mapPointSetTapTo') : t('ui.community.useMyCurrentLocationOptional')}
               </Text>
             </TouchableOpacity>
             <View style={styles.modalActions}>
-              <TouchableOpacity onPress={() => setAreaModalVisible(false)} style={styles.modalCancelButton} accessibilityLabel="Cancel" accessibilityRole="button">
-                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+              <TouchableOpacity onPress={() => setAreaModalVisible(false)} style={styles.modalCancelButton} accessibilityLabel={t('ui.community.cancelA11y2')} accessibilityRole="button">
+                <Text style={styles.modalCancelButtonText}>{t('ui.community.cancel')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleSaveArea} disabled={savingArea} style={styles.modalSaveButton} accessibilityLabel="Save Community Area" accessibilityRole="button">
-                <Text style={styles.modalSaveButtonText}>{savingArea ? 'Saving...' : 'Save'}</Text>
+              <TouchableOpacity onPress={handleSaveArea} disabled={savingArea} style={styles.modalSaveButton} accessibilityLabel={t('ui.community.saveCommunityAreaA11y')} accessibilityRole="button">
+                <Text style={styles.modalSaveButtonText}>{savingArea ? t('ui.community.saving') : t('ui.community.save')}</Text>
               </TouchableOpacity>
             </View>
           </View>

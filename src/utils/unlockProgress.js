@@ -1,4 +1,4 @@
-import { countLabel } from './plural';
+import { tr } from '../i18n/translate';
 
 // A locked perk's progress line. The count behind it can be unknown (the
 // lookup failed or has not returned), and unknown is not zero: with an unknown
@@ -11,13 +11,11 @@ export function unlockStatus(offer, progress) {
   const min = Number(offer.unlock_min_members);
   const known = typeof progress === 'number' && Number.isFinite(progress);
   const isLocked = !known || !(Number.isFinite(min) ? progress >= min : false);
-  const noun = offer.unlock_scope === 'community'
-    ? ['community member', 'community members']
-    : ['attendee', 'attendees'];
-  const need = countLabel(min, noun[0], noun[1]);
+  // Wording lives in ui.community.unlock (English unchanged); the count noun is a plural chosen by the language.
+  const scope = offer.unlock_scope === 'community' ? 'community' : 'attendees';
   let label;
-  if (!isLocked) label = '🔓 Unlocked';
-  else if (known) label = `🔒 Unlocks at ${need} (${progress}/${min} so far)`;
-  else label = `🔒 Unlocks at ${need}`;
+  if (!isLocked) label = tr('ui.community.unlock.unlocked');
+  else if (known) label = tr(`ui.community.unlock.${scope}Progress`, { count: min, progress });
+  else label = tr(`ui.community.unlock.${scope}`, { count: min });
   return { known, isLocked, label };
 }
