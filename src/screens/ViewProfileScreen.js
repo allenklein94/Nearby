@@ -8,7 +8,8 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { getExtraPhotos } from '../services/extraPhotos';
 import { generateCompatibilityReport } from '../services/compatibility';
 import { getRecentIntentionChangeCount } from '../services/intentionHistory';
-import { intentionLabel } from '../constants/intentionOptions';
+import { INTENTION_OPTIONS } from '../constants/intentionOptions';
+import { occasionName } from '../i18n/categoryNames';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import ReportBlockModal from '../components/ReportBlockModal';
@@ -30,6 +31,8 @@ import { typography, spacing, radius } from '../theme';
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 import useCategoryNames from '../hooks/useCategoryNames';
 const { width } = Dimensions.get('window');
+// Stored connection-goal value -> its label key (same map as ProfileScreen).
+const GOAL_KEYS = { 'Meet friends': 'meetFriends', Date: 'date', Network: 'network', 'Explore my city': 'exploreCity', 'Find community': 'findCommunity', 'Get out more': 'getOutMore' };
 const NEW_HERE_DAYS = 7;
 const FREQUENT_CHANGE_THRESHOLD = 3;
 
@@ -64,7 +67,7 @@ export default function ViewProfileScreen({ route, navigation }) {
   // belongs: relevant to a dating context, invisible everywhere else.
   const { userId, viewContext } = route.params;
   const { colors } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const styles = getStyles(colors);
   const [profile, setProfile] = useState(null);
   const [photos, setPhotos] = useState([]);
@@ -242,7 +245,7 @@ export default function ViewProfileScreen({ route, navigation }) {
             <TouchableOpacity
               onPress={() => setReportModalVisible(true)}
               style={{ paddingHorizontal: spacing.sm }}
-              accessibilityLabel={`Report or block ${data?.display_name || 'this person'}`}
+              accessibilityLabel={t('ui.viewProfile.reportOrBlockA11y', { name: data?.display_name || t('ui.viewProfile.thisPersonA11y') })}
               accessibilityRole="button"
             >
               <Text style={{ color: colors.primary, fontSize: 20 }}>⋯</Text>
@@ -266,7 +269,7 @@ export default function ViewProfileScreen({ route, navigation }) {
       // other person accepts would find prevFriendshipStatusRef still at its original null and
       // silently miss the "+ -> ✓" moment entirely.
       prevFriendshipStatusRef.current = 'pending_sent';
-      showSuccessToast('Friend request sent', `${profile.display_name} will see your request.`);
+      showSuccessToast(t('ui.viewProfile.friendRequestSent'), t('ui.viewProfile.willSeeYourRequest', { name: profile.display_name }));
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAddFriend() });
     }
@@ -339,7 +342,7 @@ export default function ViewProfileScreen({ route, navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading profile...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.viewProfile.loadingProfile')}</Text>
       </SafeAreaView>
     );
   }
@@ -347,7 +350,7 @@ export default function ViewProfileScreen({ route, navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load this profile." onRetry={load} />
+        <LoadErrorState message={t('ui.viewProfile.couldntLoadThisProfile')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -355,7 +358,7 @@ export default function ViewProfileScreen({ route, navigation }) {
   if (!profile) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.emptyText}>Profile not available.</Text>
+        <Text style={styles.emptyText}>{t('ui.viewProfile.profileNotAvailable')}</Text>
       </SafeAreaView>
     );
   }
@@ -363,9 +366,9 @@ export default function ViewProfileScreen({ route, navigation }) {
   const age = calculateAge(profile.birthdate);
 
   const badges = [
-    profile.photo_verified && { icon: '✓', label: 'Verified', color: colors.success },
-    profile.is_premium && { icon: '✨', label: 'Premium', color: colors.primary },
-    isNewHere(profile.created_at) && { icon: '🌱', label: 'New Here', color: colors.textSecondary },
+    profile.photo_verified && { icon: '✓', label: t('ui.viewProfile.badge.verified'), color: colors.success },
+    profile.is_premium && { icon: '✨', label: t('ui.viewProfile.badge.premium'), color: colors.primary },
+    isNewHere(profile.created_at) && { icon: '🌱', label: t('ui.viewProfile.badge.newHere'), color: colors.textSecondary },
   ].filter(Boolean);
 
   // Finding 9's own real fields -- the canonical, multi-select pair the
@@ -387,7 +390,7 @@ export default function ViewProfileScreen({ route, navigation }) {
     isDatingContext && !profile.gender_hidden && genderIdentity.length > 0 &&
       { label: 'Gender Identity', value: genderIdentity.join(', ') },
     isDatingContext && !profile.gender_hidden && interestedInGenders.length > 0 &&
-      { label: 'Interested In', value: `Interested in ${interestedInGenders.join(', ')}` },
+      { label: 'Interested In', value: t('ui.viewProfile.interestedIn', { genders: interestedInGenders.join(', ') }) },
   ].filter(Boolean);
 
   const filledDetails = BASICS_FIELDS
@@ -408,7 +411,15 @@ export default function ViewProfileScreen({ route, navigation }) {
     return colors.textTertiary;
   }
 
-  const intentionText = intentionLabel(profile.relationship_intention);
+  // Intention labels shown in the viewer's language (intentionLabel keeps the English for other callers).
+  const intentionText = (() => {
+    const list = [].concat(profile.relationship_intention || []);
+    const parts = list.map((v) => {
+      const o = INTENTION_OPTIONS.find((x) => x.value === v);
+      return o ? `${o.icon} ${t(`ui.viewProfile.intention.${o.value}`)}` : null;
+    }).filter(Boolean);
+    return parts.length ? parts.join(', ') : null;
+  })();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -428,7 +439,7 @@ export default function ViewProfileScreen({ route, navigation }) {
               <TouchableOpacity
                 activeOpacity={0.85}
                 onPress={() => openLightbox(item.signedUrl, item.id)}
-                accessibilityLabel={`${profile.display_name}'s photo ${index + 1} of ${photos.length}, tap to view full screen`}
+                accessibilityLabel={t('ui.viewProfile.sPhotoOfTapToA11y', { name: profile.display_name, value: index + 1, length: photos.length })}
                 accessibilityRole="button"
               >
                 <Image
@@ -462,11 +473,11 @@ export default function ViewProfileScreen({ route, navigation }) {
                 style={[styles.compatBadge, { borderColor: compatibilityColor(compatibilityReport.score) }]}
                 onPress={() => setCompatModalVisible(true)}
                 activeOpacity={0.85}
-                accessibilityLabel={`${compatibilityReport.score} percent match, view why`}
+                accessibilityLabel={t('ui.viewProfile.percentMatchViewWhyA11y', { score: compatibilityReport.score })}
                 accessibilityRole="button"
               >
                 <Text style={[styles.compatText, { color: compatibilityColor(compatibilityReport.score) }]}>
-                  {compatibilityReport.score}% Match · Why?
+                  {t('ui.viewProfile.matchWhy', { score: compatibilityReport.score })}
                 </Text>
               </TouchableOpacity>
             )}
@@ -480,7 +491,7 @@ export default function ViewProfileScreen({ route, navigation }) {
                   zero animation, never a fabricated transition. */}
               {justBecameFriends && (
                 <Animated.Text style={[styles.justConnectedToast, { opacity: justConnectedToastOpacity }]}>
-                  🤝 You're friends now
+                  {t('ui.viewProfile.youreFriendsNow')}
                 </Animated.Text>
               )}
               {/* Item 130: ConnectionGlyphSwap gets no `haptic` -- discovered on refocus, not something
@@ -489,11 +500,11 @@ export default function ViewProfileScreen({ route, navigation }) {
                 <ConnectionGlyphSwap
                   style={[styles.addFriendButton, styles.addFriendButtonSent]}
                   textStyle={styles.addFriendButtonText}
-                  label="✓ Friends"
+                  label={t('ui.viewProfile.friends')}
                 />
               ) : (
                 <View style={[styles.addFriendButton, styles.addFriendButtonSent]}>
-                  <Text style={styles.addFriendButtonText}>✓ Friends</Text>
+                  <Text style={styles.addFriendButtonText}>{t('ui.viewProfile.friends')}</Text>
                 </View>
               )}
             </>
@@ -501,7 +512,7 @@ export default function ViewProfileScreen({ route, navigation }) {
 
           {!isOwnProfile && friendshipStatus === 'pending_sent' && (
             <View style={[styles.addFriendButton, styles.addFriendButtonSent]}>
-              <Text style={styles.addFriendButtonText}>✓ Request Sent</Text>
+              <Text style={styles.addFriendButtonText}>{t('ui.viewProfile.requestSent')}</Text>
             </View>
           )}
 
@@ -512,20 +523,20 @@ export default function ViewProfileScreen({ route, navigation }) {
                 onPress={() => handleRespondToFriendRequest(true)}
                 disabled={respondingToFriendRequest}
                 activeOpacity={0.85}
-                accessibilityLabel={`Accept ${profile.display_name}'s friend request`}
+                accessibilityLabel={t('ui.viewProfile.acceptSFriendRequestA11y', { name: profile.display_name })}
                 accessibilityRole="button"
               >
-                <Text style={styles.messageButtonText}>Accept Friend Request</Text>
+                <Text style={styles.messageButtonText}>{t('ui.viewProfile.acceptFriendRequest')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.addFriendButton}
                 onPress={() => handleRespondToFriendRequest(false)}
                 disabled={respondingToFriendRequest}
                 activeOpacity={0.85}
-                accessibilityLabel={`Decline ${profile.display_name}'s friend request`}
+                accessibilityLabel={t('ui.viewProfile.declineSFriendRequestA11y', { name: profile.display_name })}
                 accessibilityRole="button"
               >
-                <Text style={styles.addFriendButtonText}>Decline</Text>
+                <Text style={styles.addFriendButtonText}>{t('ui.viewProfile.decline')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -536,10 +547,10 @@ export default function ViewProfileScreen({ route, navigation }) {
               onPress={handleAddFriend}
               disabled={sendingFriendRequest}
               activeOpacity={0.85}
-              accessibilityLabel={`Add ${profile.display_name} as a friend`}
+              accessibilityLabel={t('ui.viewProfile.addAsAFriendA11y', { name: profile.display_name })}
               accessibilityRole="button"
             >
-              <Text style={styles.addFriendButtonText}>🤝 Add Friend</Text>
+              <Text style={styles.addFriendButtonText}>{t('ui.viewProfile.addFriend')}</Text>
             </TouchableOpacity>
           )}
 
@@ -558,20 +569,20 @@ export default function ViewProfileScreen({ route, navigation }) {
                   style={styles.messageButton}
                   onPress={() => navigation.navigate('DateProposal', { matchId, matchName: profile.display_name })}
                   activeOpacity={0.85}
-                  accessibilityLabel={`Plan something with ${profile.display_name}`}
+                  accessibilityLabel={t('ui.viewProfile.planSomethingWithA11y', { name: profile.display_name })}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.messageButtonText}>🤝 Plan Together</Text>
+                  <Text style={styles.messageButtonText}>{t('ui.viewProfile.planTogether')}</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity
                 style={friendshipStatus === 'accepted' ? styles.addFriendButton : styles.messageButton}
                 onPress={() => navigation.navigate('Chat', { matchId })}
                 activeOpacity={0.85}
-                accessibilityLabel={`Message ${profile.display_name}`}
+                accessibilityLabel={t('ui.viewProfile.messageA11y', { name: profile.display_name })}
                 accessibilityRole="button"
               >
-                <Text style={friendshipStatus === 'accepted' ? styles.addFriendButtonText : styles.messageButtonText}>💬 Message</Text>
+                <Text style={friendshipStatus === 'accepted' ? styles.addFriendButtonText : styles.messageButtonText}>{t('ui.viewProfile.message')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -602,30 +613,30 @@ export default function ViewProfileScreen({ route, navigation }) {
                 whoFor: 'friend', whoForName: profile.display_name, whoForFriendId: userId,
               }))}
               activeOpacity={0.85}
-              accessibilityLabel={`Plan something for ${profile.display_name}`}
+              accessibilityLabel={t('ui.viewProfile.planSomethingForA11y', { name: profile.display_name })}
               accessibilityRole="button"
             >
-              <Text style={styles.addFriendButtonText}>✨ Plan for {profile.display_name}</Text>
+              <Text style={styles.addFriendButtonText}>{t('ui.viewProfile.planFor', { name: profile.display_name })}</Text>
             </TouchableOpacity>
           )}
 
           {!isOwnProfile && (
             <TouchableOpacity
               onPress={() => navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: profile.display_name })}
-              accessibilityLabel={`Log a chemistry check-in about ${profile.display_name}`}
+              accessibilityLabel={t('ui.viewProfile.logAChemistryCheckInA11y', { name: profile.display_name })}
               accessibilityRole="button"
               style={styles.chemistryDiaryLink}
             >
-              <Text style={styles.chemistryDiaryLinkText}>📔 Log a Chemistry Check-In</Text>
+              <Text style={styles.chemistryDiaryLinkText}>{t('ui.viewProfile.logAChemistryCheckIn')}</Text>
             </TouchableOpacity>
           )}
 
           {upcomingOccasionsForPerson.length > 0 && (
             <View style={styles.upcomingOccasionsBlock}>
-              <Text style={styles.sectionLabel} accessibilityRole="header">Upcoming</Text>
+              <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.viewProfile.upcoming')}</Text>
               {upcomingOccasionsForPerson.map((o) => (
                 <Text key={o.occasion_id} style={styles.mutualFriendsText}>
-                  {occasionIcon(o.occasion_type) ?? '📅'} {occasionLabel(o.occasion_type)} · {formatOccasionDateForPrecision(o.date_precision, o.occasion_date, { short: true })}
+                  {occasionIcon(o.occasion_type) ?? '📅'} {occasionName(o.occasion_type, language, occasionLabel(o.occasion_type))} · {formatOccasionDateForPrecision(o.date_precision, o.occasion_date, { short: true })}
                 </Text>
               ))}
             </View>
@@ -633,38 +644,38 @@ export default function ViewProfileScreen({ route, navigation }) {
 
           {mutualFriends.length > 0 && (
             <Text style={styles.mutualFriendsText}>
-              🤝 {mutualFriends.length === 1
-                ? `You both know ${mutualFriends[0].display_name}`
+              {mutualFriends.length === 1
+                ? t('ui.viewProfile.mutualOne', { name: mutualFriends[0].display_name })
                 : mutualFriends.length === 2
-                  ? `You both know ${mutualFriends[0].display_name} and ${mutualFriends[1].display_name}`
-                  : `You both know ${mutualFriends[0].display_name} and ${mutualFriends.length - 1} others`}
+                  ? t('ui.viewProfile.mutualTwo', { name: mutualFriends[0].display_name, name2: mutualFriends[1].display_name })
+                  : t('ui.viewProfile.mutualMany', { name: mutualFriends[0].display_name, count: mutualFriends.length - 1 })}
             </Text>
           )}
 
           {hostStats && hostStats.gatherings_hosted > 0 && (
             <Text style={styles.mutualFriendsText}>
-              🎉 Hosted {hostStats.gatherings_hosted} gathering{hostStats.gatherings_hosted === 1 ? '' : 's'}, averaging {Math.round(hostStats.avg_attendance)} attendee{Math.round(hostStats.avg_attendance) === 1 ? '' : 's'}
+              {t(hostStats.gatherings_hosted === 1 ? 'ui.viewProfile.hostedOne' : 'ui.viewProfile.hostedMany', { hosted: hostStats.gatherings_hosted, count: Math.round(hostStats.avg_attendance) })}
             </Text>
           )}
 
           {hostReputation && hostReputation.feedback_count > 0 && (
             <Text style={styles.mutualFriendsText}>
-              ⭐ {hostReputation.welcoming_pct}% said welcoming · {hostReputation.would_return_pct}% would attend again ({hostReputation.feedback_count} review{hostReputation.feedback_count === 1 ? '' : 's'})
+              {t('ui.viewProfile.reputation', { welcoming: hostReputation.welcoming_pct, again: hostReputation.would_return_pct, count: hostReputation.feedback_count })}
             </Text>
           )}
 
           {!intentionText && profile.connection_goal ? (
             <View style={styles.intentionCard}>
-              <Text style={styles.intentionText}>Hoping to find: {profile.connection_goal}</Text>
+              <Text style={styles.intentionText}>{t('ui.viewProfile.hopingToFind', { goal: GOAL_KEYS[profile.connection_goal] ? t(`ui.profile.goal.${GOAL_KEYS[profile.connection_goal]}`) : profile.connection_goal })}</Text>
             </View>
           ) : null}
 
           {intentionText && (
             <View style={styles.intentionCard}>
-              <Text style={styles.intentionText}>Looking for: {intentionText}</Text>
+              <Text style={styles.intentionText}>{t('ui.viewProfile.lookingFor', { value: intentionText })}</Text>
               {intentionChangeCount >= FREQUENT_CHANGE_THRESHOLD && (
                 <Text style={styles.intentionChangeText}>
-                  Changed {intentionChangeCount}x in the last 30 days
+                  {t('ui.viewProfile.changedTimes', { count: intentionChangeCount })}
                 </Text>
               )}
             </View>
@@ -703,16 +714,16 @@ export default function ViewProfileScreen({ route, navigation }) {
             <View style={styles.voiceIntroCard}>
               <VoicePlayButton
                 getUrl={() => getSignedVoiceIntroUrl(profile.voice_intro_path)}
-                label={`${profile.display_name}'s voice intro`}
+                label={t('ui.viewProfile.sVoiceIntro', { name: profile.display_name })}
                 style={styles.voicePlayButton}
               />
-              <Text style={styles.voiceIntroLabel}>🎙️ Voice intro</Text>
+              <Text style={styles.voiceIntroLabel}>{t('ui.viewProfile.voiceIntro')}</Text>
             </View>
           )}
 
           {profile.favorite_tracks?.length > 0 && (
             <>
-              <Text style={styles.sectionLabel} accessibilityRole="header">🎵 Music</Text>
+              <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.viewProfile.music')}</Text>
               {profile.favorite_tracks.map((track) => (
                 <View key={track.id} style={styles.trackRowDisplay}>
                   {track.albumArt ? (

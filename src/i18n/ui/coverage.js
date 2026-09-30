@@ -65,6 +65,7 @@ export const LOCALIZED_FILES = [
   'src/screens/CreateCommunityScreen.js',
   'src/screens/EditCommunityScreen.js',
   'src/utils/unlockProgress.js',
+  'src/screens/ViewProfileScreen.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
@@ -88,6 +89,11 @@ export const INTENTIONAL_ENGLISH = {
     "We're checking it now. It goes to the customer as soon as it clears.": 'business-side confirmation',
   },
   'src/screens/ProfileScreen.js': {
+    'Meet friends': 'stored connection-goal value (profiles.connection_goal); shown through ui.profile.goal.*',
+    Date: 'stored connection-goal value', Network: 'stored connection-goal value', 'Explore my city': 'stored connection-goal value',
+    'Find community': 'stored connection-goal value', 'Get out more': 'stored connection-goal value',
+  },
+  'src/screens/ViewProfileScreen.js': {
     'Meet friends': 'stored connection-goal value (profiles.connection_goal); shown through ui.profile.goal.*',
     Date: 'stored connection-goal value', Network: 'stored connection-goal value', 'Explore my city': 'stored connection-goal value',
     'Find community': 'stored connection-goal value', 'Get out more': 'stored connection-goal value',
