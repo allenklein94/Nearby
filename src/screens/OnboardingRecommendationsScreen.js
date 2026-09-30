@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
@@ -8,10 +9,13 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { wantsCelebrationsStep } from '../constants/onboardingGoals';
 import { recommendationFacts } from '../utils/recommendationFacts';
+import { localizeReason } from '../utils/reasonLocalization';
+import { displayDistance, displayWhen } from '../i18n/display';
 import LoadErrorState from '../components/LoadErrorState';
 
 import { NLoader } from '../motion';
 export default function OnboardingRecommendationsScreen({ navigation }) {
+  const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [recommendations, setRecommendations] = useState([]);
@@ -46,20 +50,22 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ flex: 1, padding: spacing.lg }}>
-        <Text style={styles.greeting}>You're ready{myName ? `, ${myName}` : ''}.</Text>
-        <Text style={styles.subtitle}>Based on what you told us, here's what's happening nearby.</Text>
+        <Text style={styles.greeting}>{t('ui.onboarding.youreReady')}{myName ? `, ${myName}` : ''}.</Text>
+        <Text style={styles.subtitle}>{t('ui.onboarding.basedOnWhatYouTold')}</Text>
 
         {loading ? (
           <>
-            <NLoader fullScreen={false} size="compact" caption="Finding things nearby for you…" />
+            <NLoader fullScreen={false} size="compact" caption={t('ui.onboarding.findingThingsNearbyForYou')} />
           </>
         ) : loadError ? (
-          <LoadErrorState message="Couldn't load recommendations." onRetry={load} />
+          <LoadErrorState message={t('ui.onboarding.couldntLoadRecommendations')} onRetry={load} />
         ) : recommendations.length > 0 ? (
           <>
-            <Text style={styles.foundText}>I found {recommendations.length} great opportunit{recommendations.length === 1 ? 'y' : 'ies'}.</Text>
+            <Text style={styles.foundText}>{t('ui.onboarding.foundCount', { count: recommendations.length })}</Text>
             {recommendations.map((r) => {
-              const facts = recommendationFacts(r);
+              const baseFacts = recommendationFacts(r);
+              const meta = [displayDistance(r.distanceMiles, language), r.scheduled_at ? displayWhen(r.scheduled_at, language) : null].filter(Boolean).join(' · ') || null;
+              const facts = { why: baseFacts.why ? localizeReason(baseFacts.why, language) : null, meta };
               return (
               <TouchableOpacity
                 key={r.id}
@@ -89,17 +95,17 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
 
       <View style={styles.footer}>
         <View style={styles.missionCard}>
-          <Text style={styles.missionLabel}>Your first mission</Text>
-          <Text style={styles.missionText}>Say yes to one thing this week.</Text>
+          <Text style={styles.missionLabel}>{t('ui.onboarding.yourFirstMission')}</Text>
+          <Text style={styles.missionText}>{t('ui.onboarding.sayYesToOneThing')}</Text>
         </View>
         <TouchableOpacity
           style={styles.button}
           onPress={() => navigation.navigate(wantsCelebrations ? 'OnboardingOccasions' : 'MainTabs')}
           activeOpacity={0.85}
-          accessibilityLabel="Let's see what's happening nearby"
+          accessibilityLabel={t('ui.onboarding.letsSeeWhatsHappeningNearbyA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.buttonText}>Let's see what's happening nearby →</Text>
+          <Text style={styles.buttonText}>{t('ui.onboarding.letsSeeWhatsHappeningNearby')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

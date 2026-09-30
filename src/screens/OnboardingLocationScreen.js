@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import * as Location from 'expo-location';
 import OnboardingTopBar from '../components/OnboardingTopBar';
@@ -6,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
 export default function OnboardingLocationScreen({ navigation }) {
+  const { t } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [requesting, setRequesting] = useState(false);
@@ -24,27 +26,27 @@ export default function OnboardingLocationScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <OnboardingTopBar navigation={navigation} />
       <View style={styles.content}>
-        <Text style={styles.title}>Find what's happening near you</Text>
-        <Text style={styles.subtitle}>Nearby uses your location to show gatherings, places and people close by. Your exact position is never shown to anyone.</Text>
+        <Text style={styles.title}>{t('ui.onboarding.findWhatsHappeningNearYou')}</Text>
+        <Text style={styles.subtitle}>{t('ui.onboarding.nearbyUsesYourLocationTo')}</Text>
         <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
           <TouchableOpacity
             style={styles.primary}
             onPress={handleAllow}
             disabled={requesting}
             activeOpacity={0.85}
-            accessibilityLabel="Use my location"
+            accessibilityLabel={t('ui.onboarding.useMyLocationA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.primaryText}>📍 Use my location</Text>
+            <Text style={styles.primaryText}>{t('ui.onboarding.useMyLocation')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate('OnboardingNotifications')}
             disabled={requesting}
             style={styles.skip}
-            accessibilityLabel="Not now"
+            accessibilityLabel={t('ui.onboarding.notNowA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.skipText}>Not now</Text>
+            <Text style={styles.skipText}>{t('ui.onboarding.notNow')}</Text>
           </TouchableOpacity>
         </View>
       </View>

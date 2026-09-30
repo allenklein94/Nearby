@@ -71,14 +71,14 @@ export default function LoginScreen({ navigation }) {
         setLoading(false);
 
         if (!response.ok || result.error) {
-          return Alert.alert('Error', result.error || 'Invalid code');
+          return Alert.alert(t('ui.onboarding.error'), result.error || t('ui.onboarding.invalidCode'));
         }
 
         const { error: verifyError } = await supabase.auth.verifyOtp({
           token_hash: result.tokenHash,
           type: 'magiclink',
         });
-        if (verifyError) return Alert.alert('Error', verifyError.message);
+        if (verifyError) return Alert.alert(t('ui.onboarding.error'), verifyError.message);
       } catch (e) {
         setLoading(false);
         presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => verifyOtp() });
@@ -106,10 +106,10 @@ export default function LoginScreen({ navigation }) {
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.topBack}
-          accessibilityLabel="Back"
+          accessibilityLabel={t('ui.onboarding.backA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.topBackText}>← Back</Text>
+          <Text style={styles.topBackText}>{t('ui.onboarding.back')}</Text>
         </TouchableOpacity>
       )}
       <NearbyMark size={48} style={styles.mark} />
@@ -126,7 +126,7 @@ export default function LoginScreen({ navigation }) {
             keyboardType="phone-pad"
             value={phoneInput}
             onChangeText={setPhoneInput}
-            accessibilityLabel="Phone number"
+            accessibilityLabel={t('ui.onboarding.phoneNumberA11y')}
             textContentType="telephoneNumber"
           />
           <TouchableOpacity
@@ -150,7 +150,7 @@ export default function LoginScreen({ navigation }) {
             keyboardType="number-pad"
             value={otp}
             onChangeText={setOtp}
-            accessibilityLabel="Verification code"
+            accessibilityLabel={t('ui.onboarding.verificationCodeA11y')}
             textContentType="oneTimeCode"
           />
           <TouchableOpacity

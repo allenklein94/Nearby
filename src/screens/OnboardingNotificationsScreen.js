@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Switch, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingTopBar from '../components/OnboardingTopBar';
@@ -8,6 +9,7 @@ import { NOTIFICATION_CATEGORIES } from '../constants/notificationCategories';
 import { ONBOARDING_ANSWERS_KEY } from './OnboardingQuestionsScreen';
 
 export default function OnboardingNotificationsScreen({ navigation }) {
+  const { t } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [choices, setChoices] = useState(() => Object.fromEntries(NOTIFICATION_CATEGORIES.map((c) => [c.column, true])));
@@ -37,26 +39,26 @@ export default function OnboardingNotificationsScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <OnboardingTopBar navigation={navigation} />
       <ScrollView contentContainerStyle={{ padding: spacing.lg, flexGrow: 1, justifyContent: 'center' }}>
-        <Text style={styles.title}>What would you like Nearby to keep you posted about?</Text>
-        <Text style={styles.subtitle}>You can fine-tune all of this later in Settings.</Text>
+        <Text style={styles.title}>{t('ui.onboarding.whatWouldYouLikeNearby')}</Text>
+        <Text style={styles.subtitle}>{t('ui.onboarding.youCanFineTuneAll')}</Text>
         <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
           {NOTIFICATION_CATEGORIES.map((c) => (
             <View key={c.column} style={styles.row}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.label}>{c.icon} {c.label}</Text>
-                <Text style={styles.hint}>{c.hint}</Text>
+                <Text style={styles.label}>{c.icon} {t(`ui.onboarding.notify.${c.column}.label`)}</Text>
+                <Text style={styles.hint}>{t(`ui.onboarding.notify.${c.column}.hint`)}</Text>
               </View>
               <Switch
                 value={choices[c.column]}
                 onValueChange={(v) => setChoices((prev) => ({ ...prev, [c.column]: v }))}
                 trackColor={{ true: colors.primary, false: colors.border }}
-                accessibilityLabel={`Notify me about ${c.label}`}
+                accessibilityLabel={t('ui.onboarding.notifyMeAboutA11y', { label: t(`ui.onboarding.notify.${c.column}.label`) })}
               />
             </View>
           ))}
         </View>
-        <TouchableOpacity style={styles.button} onPress={handleContinue} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Continue">
-          <Text style={styles.buttonText}>Continue</Text>
+        <TouchableOpacity style={styles.button} onPress={handleContinue} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.onboarding.continueA11y')}>
+          <Text style={styles.buttonText}>{t('ui.onboarding.continue')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

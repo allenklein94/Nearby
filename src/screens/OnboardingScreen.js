@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -11,6 +12,7 @@ import NearbyMark from '../components/brand/NearbyMark';
 // app; the first thing they should feel is anticipation, not
 // paperwork.
 export default function OnboardingScreen({ navigation }) {
+  const { t } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
 
@@ -18,8 +20,8 @@ export default function OnboardingScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <NearbyMark size={88} style={styles.mark} />
-        <Text style={styles.headline}>Welcome to Nearby</Text>
-        <Text style={styles.subtext}>Tell us what you want to make happen. We'll help you find the people, places and plans.</Text>
+        <Text style={styles.headline}>{t('ui.onboarding.welcomeToNearby')}</Text>
+        <Text style={styles.subtext}>{t('ui.onboarding.tellUsWhatYouWant')}</Text>
       </View>
 
       <View style={styles.footer}>
@@ -27,18 +29,18 @@ export default function OnboardingScreen({ navigation }) {
           style={styles.primaryButton}
           onPress={() => navigation.navigate('OnboardingQuestions')}
           activeOpacity={0.85}
-          accessibilityLabel="Get Started"
+          accessibilityLabel={t('ui.onboarding.getStartedA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.primaryButtonText}>Get Started</Text>
+          <Text style={styles.primaryButtonText}>{t('ui.onboarding.getStarted')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.secondaryButton}
           onPress={() => navigation.navigate('Login')}
-          accessibilityLabel="I already have an account"
+          accessibilityLabel={t('ui.onboarding.iAlreadyHaveAnAccountA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.secondaryButtonText}>I already have an account</Text>
+          <Text style={styles.secondaryButtonText}>{t('ui.onboarding.iAlreadyHaveAnAccount')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

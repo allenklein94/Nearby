@@ -1,6 +1,7 @@
 import { migrateOnboardingDraft, savedOnboardingInterests, ONBOARDING_DRAFT_VERSION } from './onboardingInterests';
 import { canonicalizeInterests, sanitizeInterestGroups } from './interestGraph';
 
+const onboardingEn = require('../i18n/ui/onboarding').default.en; // the screen's wording lives in ui.onboarding
 const read = (f) => require('fs').readFileSync(require('path').join(__dirname, '..', f), 'utf8');
 const savedFrom = (draft) => savedOnboardingInterests(migrateOnboardingDraft(draft));
 
@@ -72,7 +73,8 @@ describe('people partway through the OLD onboarding when this ships', () => {
     const q = read('screens/OnboardingQuestionsScreen.js');
     expect(q).toMatch(/migrateOnboardingDraft\(JSON\.parse\(raw\)\)/);
     expect(q).toMatch(/savedOnboardingInterests\(\{ quickKeys, anythingElse, excluded, earlierTags, earlierGroups, earlierOff \}\)/);
-    expect(q).toContain('You picked these earlier');
+    expect(q).toContain("t('ui.onboarding.youPickedTheseEarlierTap')");
+    expect(onboardingEn.youPickedTheseEarlierTap).toContain('You picked these earlier');
     expect(q).toMatch(/v: ONBOARDING_DRAFT_VERSION/);
   });
 });
@@ -87,8 +89,10 @@ describe('confirmation chips before saving', () => {
   });
   it('the screen explains what will be added and lists unmatched terms separately', () => {
     const q = read('screens/OnboardingQuestionsScreen.js');
-    expect(q).toContain('These interests will be added. Tap one to leave it out.');
-    expect(q).toMatch(/Not matched yet: \{extraOnly\.unmatched\.join\(', '\)\}\. You can add more interests any time from your profile\./);
+    expect(q).toContain("t('ui.onboarding.theseInterestsWillBeAdded')");
+    expect(onboardingEn.theseInterestsWillBeAdded).toBe('These interests will be added. Tap one to leave it out.');
+    expect(q).toContain("t('ui.onboarding.notMatchedYetLine', { words: extraOnly.unmatched.join(', ') })");
+    expect(onboardingEn.notMatchedYetLine).toBe('Not matched yet: {words}. You can add more interests any time from your profile.');
   });
 });
 

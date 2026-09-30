@@ -1,12 +1,15 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { OCCASION_OPTIONS, ONBOARDING_OCCASION_KEYS } from '../constants/businessAttributes';
+import { occasionName } from '../i18n/categoryNames';
 
 // Nothing is created here: a tile just opens the existing add-occasion form with that type preselected.
 
 export default function OnboardingOccasionsScreen({ navigation }) {
+  const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const tiles = ONBOARDING_OCCASION_KEYS.map((k) => OCCASION_OPTIONS.find((o) => o.key === k)).filter(Boolean);
@@ -14,8 +17,8 @@ export default function OnboardingOccasionsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, flexGrow: 1, justifyContent: 'center' }}>
-        <Text style={styles.title}>Any dates worth remembering?</Text>
-        <Text style={styles.subtitle}>Nearby can remind you ahead of time and help you plan something. Totally optional.</Text>
+        <Text style={styles.title}>{t('ui.onboarding.anyDatesWorthRemembering')}</Text>
+        <Text style={styles.subtitle}>{t('ui.onboarding.nearbyCanRemindYouAhead')}</Text>
         <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
           {tiles.map((o) => (
             <TouchableOpacity
@@ -24,10 +27,10 @@ export default function OnboardingOccasionsScreen({ navigation }) {
               onPress={() => navigation.navigate('Occasions', { presetType: o.key })}
               activeOpacity={0.85}
               accessibilityRole="button"
-              accessibilityLabel={`Add a ${o.label}`}
+              accessibilityLabel={t('ui.onboarding.addAA11y', { label: occasionName(o.key, language) })}
             >
               <Text style={styles.optionIcon}>{o.icon}</Text>
-              <Text style={styles.optionText}>{o.label}</Text>
+              <Text style={styles.optionText}>{occasionName(o.key, language)}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -35,9 +38,9 @@ export default function OnboardingOccasionsScreen({ navigation }) {
           style={styles.skip}
           onPress={() => navigation.navigate('MainTabs')}
           accessibilityRole="button"
-          accessibilityLabel="Skip for now"
+          accessibilityLabel={t('ui.onboarding.skipForNowA11y')}
         >
-          <Text style={styles.skipText}>Skip for now</Text>
+          <Text style={styles.skipText}>{t('ui.onboarding.skipForNow')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

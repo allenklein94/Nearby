@@ -14,6 +14,7 @@ import { learnedAffinities } from '../utils/learnedAffinity';
 import RecommendationCustomizePanel from '../components/RecommendationCustomizePanel';
 import { ONBOARDING_INTEREST_GROUPS, sanitizeInterestGroups } from '../constants/interestGraph';
 import { ONBOARDING_GOALS, goalLabelsFrom, motivationsWithGoals } from '../constants/onboardingGoals';
+import { groupName } from '../i18n/categoryNames';
 import { typography, spacing, radius } from '../theme';
 
 import { showSuccessToast } from '../motion';
@@ -833,11 +834,11 @@ export default function SettingsScreen({ navigation, route }) {
                 key={g.key}
                 style={styles.settingRow}
                 onPress={() => toggleGoal(g.label)}
-                accessibilityLabel={g.label}
+                accessibilityLabel={t(`ui.onboarding.goal.${g.key}`)}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: selected }}
               >
-                <Text style={styles.settingLabel}>{g.icon}  {g.label}</Text>
+                <Text style={styles.settingLabel}>{g.icon}  {t(`ui.onboarding.goal.${g.key}`)}</Text>
                 <Text style={styles.settingLabel}>{selected ? '☑' : '☐'}</Text>
               </TouchableOpacity>
             );
@@ -854,11 +855,11 @@ export default function SettingsScreen({ navigation, route }) {
                 key={g.key}
                 style={styles.settingRow}
                 onPress={() => toggleInterestGroup(g.key)}
-                accessibilityLabel={g.label}
+                accessibilityLabel={groupName(g.key, language)}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: selected }}
               >
-                <Text style={styles.settingLabel}>{g.icon ? `${g.icon}  ` : ''}{g.label}</Text>
+                <Text style={styles.settingLabel}>{g.icon ? `${g.icon}  ` : ''}{groupName(g.key, language)}</Text>
                 <Text style={styles.settingLabel}>{selected ? '☑' : '☐'}</Text>
               </TouchableOpacity>
             );

@@ -13,6 +13,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { QUICK_INTEREST_TAGS } from '../constants/onboardingInterests';
+import { categoryName } from '../i18n/categoryNames';
 import { typography, spacing, radius } from '../theme';
 
 const MIN_AGE = 18;
@@ -43,9 +44,9 @@ function wizardDraftKey(userId) {
 // instruction -- it's a short checkbox, not a decision that needs its
 // own screen. See CLAUDE.md's Aug 22 2026 entry for the full reasoning.
 const STEP_DEFS = [
-  { key: 'about', label: 'About You' },
-  { key: 'photo', label: 'Photo' },
-  { key: 'interests', label: 'Interests' },
+  { key: 'about' },
+  { key: 'photo' },
+  { key: 'interests' },
 ];
 
 function calculateAge(birthdate) {
@@ -61,7 +62,7 @@ function calculateAge(birthdate) {
 export default function CompleteProfileScreen() {
   const { refreshProfile } = useAuth();
   const { colors, isDark } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const styles = getStyles(colors);
   const [step, setStep] = useState(0);
   const [displayName, setDisplayName] = useState('');
@@ -142,7 +143,7 @@ export default function CompleteProfileScreen() {
       const asset = await pickProfilePhoto();
       if (asset) setPhotoAsset(asset);
     } catch (e) {
-      Alert.alert('Couldn’t access photos', e.message);
+      Alert.alert(t('ui.onboarding.couldnTAccessPhotos'), e.message);
     }
   }
 
@@ -154,11 +155,11 @@ export default function CompleteProfileScreen() {
   // account's next real sign-in. Always reachable, regardless of step.
   function handleSignOut() {
     Alert.alert(
-      'Sign Out?',
-      'You can come back and finish setting up your profile anytime.',
+      t('ui.onboarding.signOut'),
+      t('ui.onboarding.youCanComeBackAnd'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: () => { supabase.auth.signOut(); } },
+        { text: t('ui.onboarding.cancel'), style: 'cancel' },
+        { text: t('ui.onboarding.signOut2'), style: 'destructive', onPress: () => { supabase.auth.signOut(); } },
       ]
     );
   }
@@ -166,18 +167,18 @@ export default function CompleteProfileScreen() {
   function goNext() {
     if (stepKey === 'about') {
       if (!displayName.trim()) {
-        return Alert.alert('Name required', 'Enter a display name.');
+        return Alert.alert(t('ui.onboarding.nameRequired'), t('ui.onboarding.enterADisplayName'));
       }
       if (!birthdate) {
-        return Alert.alert('Birthdate required', 'This app is 18+ only — enter your date of birth.');
+        return Alert.alert(t('ui.onboarding.birthdateRequired'), t('ui.onboarding.thisAppIs18Only'));
       }
       const age = calculateAge(birthdate);
       if (age < MIN_AGE) {
-        return Alert.alert('Age requirement not met', 'You must be 18 or older to use this app.');
+        return Alert.alert(t('ui.onboarding.ageRequirementNotMet'), t('ui.onboarding.youMustBe18Or'));
       }
     }
     if (stepKey === 'photo' && !photoAsset) {
-      return Alert.alert('Photo required', 'Add a profile photo to continue. It’ll be reviewed before it’s visible to others.');
+      return Alert.alert(t('ui.onboarding.photoRequired'), t('ui.onboarding.addAProfilePhotoTo'));
     }
     setStep((s) => Math.min(s + 1, STEP_DEFS.length - 1));
   }
@@ -188,12 +189,12 @@ export default function CompleteProfileScreen() {
 
   async function submit() {
     if (!agreedToTerms) {
-      return Alert.alert('Agreement required', 'You must agree to the Terms of Service and Privacy Policy to use Nearby.');
+      return Alert.alert(t('ui.onboarding.agreementRequired'), t('ui.onboarding.youMustAgreeToThe'));
     }
 
     const nameCheck = await checkTextModeration(displayName);
     if (!nameCheck.safe) {
-      return Alert.alert('Display name not allowed', 'Please choose a different display name.');
+      return Alert.alert(t('ui.onboarding.displayNameNotAllowed'), t('ui.onboarding.pleaseChooseADifferentDisplay'));
     }
 
     setSubmitting(true);
@@ -260,7 +261,7 @@ export default function CompleteProfileScreen() {
 
       if (profileError) {
         setSubmitting(false);
-        return Alert.alert('Error', profileError.message);
+        return Alert.alert(t('ui.onboarding.error'), profileError.message);
       }
 
       try {
@@ -272,8 +273,8 @@ export default function CompleteProfileScreen() {
 
       setSubmitting(false);
       Alert.alert(
-        'Almost there',
-        'Your profile is saved. Your photo is being reviewed and will appear to others shortly — usually within a few minutes.'
+        t('ui.onboarding.almostThere'),
+        t('ui.onboarding.yourProfileIsSavedYour')
       );
       refreshProfile();
     } catch (e) {
@@ -288,11 +289,11 @@ export default function CompleteProfileScreen() {
         <Text style={styles.header} accessibilityRole="header">{t('completeProfile.header')}</Text>
         <Text style={styles.subheader}>{t('completeProfile.subheader')}</Text>
 
-        <View style={styles.progressRow} accessibilityLabel={`Step ${step + 1} of ${STEP_DEFS.length}: ${STEP_DEFS[step].label}`}>
+        <View style={styles.progressRow} accessibilityLabel={t('ui.onboarding.stepOfA11y', { value: step + 1, length: STEP_DEFS.length, label: t(`ui.onboarding.step.${STEP_DEFS[step].key}`) })}>
           {STEP_DEFS.map((s, i) => (
             <View key={s.key} style={styles.progressStep}>
               <View style={[styles.progressDot, i <= step && styles.progressDotActive]} />
-              <Text style={[styles.progressLabel, i === step && styles.progressLabelActive]}>{s.label}</Text>
+              <Text style={[styles.progressLabel, i === step && styles.progressLabelActive]}>{t(`ui.onboarding.step.${s.key}`)}</Text>
             </View>
           ))}
         </View>
@@ -300,7 +301,7 @@ export default function CompleteProfileScreen() {
         {stepKey === 'about' && (
           <>
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>18+ ONLY</Text>
+              <Text style={styles.badgeText}>{t('ui.onboarding.n18Only')}</Text>
             </View>
 
             <Text style={styles.label}>{t('completeProfile.displayName')}</Text>
@@ -310,14 +311,14 @@ export default function CompleteProfileScreen() {
               onChangeText={setDisplayName}
               placeholder={t('completeProfile.displayNamePlaceholder')}
               placeholderTextColor={colors.textTertiary}
-              accessibilityLabel="Display name"
+              accessibilityLabel={t('ui.onboarding.displayNameA11y')}
             />
 
             <Text style={styles.label}>{t('completeProfile.dateOfBirth')}</Text>
             <TouchableOpacity
               style={styles.input}
               onPress={() => setShowPicker(true)}
-              accessibilityLabel={birthdate ? `Date of birth, ${birthdate.toLocaleDateString()}` : 'Date of birth, not set'}
+              accessibilityLabel={birthdate ? t('ui.onboarding.dateOfBirthA11y', { date: birthdate.toLocaleDateString() }) : t('ui.onboarding.dateOfBirthNotSetA11y')}
               accessibilityRole="button"
             >
               <Text style={{ color: birthdate ? colors.textPrimary : colors.textTertiary }}>
@@ -347,13 +348,13 @@ export default function CompleteProfileScreen() {
               style={styles.photoPicker}
               onPress={choosePhoto}
               activeOpacity={0.85}
-              accessibilityLabel={photoAsset ? 'Change your profile photo' : 'Choose a profile photo, required'}
+              accessibilityLabel={photoAsset ? t('ui.onboarding.changeYourProfilePhotoA11y') : t('ui.onboarding.chooseAProfilePhotoRequiredA11y')}
               accessibilityRole="button"
             >
               {photoAsset ? (
                 <Image source={{ uri: photoAsset.uri }} style={styles.photoPreview} />
               ) : (
-                <Text style={styles.photoPickerText}>📷{'\n'}Tap to choose a photo</Text>
+                <Text style={styles.photoPickerText}>📷{'\n'}{t('ui.onboarding.tapToChooseAPhoto')}</Text>
               )}
             </TouchableOpacity>
             <Text style={styles.helperText}>{t('completeProfile.photoHelper')}</Text>
@@ -362,8 +363,8 @@ export default function CompleteProfileScreen() {
 
         {stepKey === 'interests' && (
           <>
-            <Text style={styles.label}>Your interests (Optional)</Text>
-            <Text style={styles.interestsHelper}>Helps us show you gatherings and people you'll actually click with. Tap to change; add more any time from your profile.</Text>
+            <Text style={styles.label}>{t('ui.onboarding.yourInterestsOptional')}</Text>
+            <Text style={styles.interestsHelper}>{t('ui.onboarding.helpsUsShowYouGatherings')}</Text>
             <View style={styles.chipsWrap}>
               {interestChoices.map((interest) => {
                 const selected = interests.includes(interest);
@@ -373,11 +374,11 @@ export default function CompleteProfileScreen() {
                     style={[styles.chip, selected && styles.chipSelected]}
                     onPress={() => toggleInterest(interest)}
                     activeOpacity={0.85}
-                    accessibilityLabel={interest}
+                    accessibilityLabel={categoryName(interest, language)}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
                   >
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{interest}</Text>
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{categoryName(interest, language)}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -387,7 +388,7 @@ export default function CompleteProfileScreen() {
               style={styles.consentRow}
               onPress={() => setAgreedToTerms(!agreedToTerms)}
               activeOpacity={0.85}
-              accessibilityLabel="Agree to Terms of Service and Privacy Policy"
+              accessibilityLabel={t('ui.onboarding.agreeToTermsOfServiceA11y')}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: agreedToTerms }}
             >
@@ -410,10 +411,10 @@ export default function CompleteProfileScreen() {
               style={styles.backButton}
               onPress={goBack}
               activeOpacity={0.85}
-              accessibilityLabel="Back"
+              accessibilityLabel={t('ui.onboarding.backA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.backButtonText}>Back</Text>
+              <Text style={styles.backButtonText}>{t('ui.onboarding.back2')}</Text>
             </TouchableOpacity>
           )}
           {step < STEP_DEFS.length - 1 ? (
@@ -421,10 +422,10 @@ export default function CompleteProfileScreen() {
               style={styles.nextButton}
               onPress={goNext}
               activeOpacity={0.85}
-              accessibilityLabel="Next"
+              accessibilityLabel={t('ui.onboarding.nextA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.nextButtonText}>Next</Text>
+              <Text style={styles.nextButtonText}>{t('ui.onboarding.next')}</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -443,10 +444,10 @@ export default function CompleteProfileScreen() {
         <TouchableOpacity
           style={styles.signOutLink}
           onPress={handleSignOut}
-          accessibilityLabel="Sign out"
+          accessibilityLabel={t('ui.onboarding.signOutA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.signOutLinkText}>Sign Out</Text>
+          <Text style={styles.signOutLinkText}>{t('ui.onboarding.signOut2')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

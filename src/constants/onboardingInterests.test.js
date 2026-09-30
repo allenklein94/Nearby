@@ -2,6 +2,7 @@ import { QUICK_INTERESTS, QUICK_INTEREST_TAGS, quickPicksToTaxonomy, mapAnything
 import { INTEREST_OPTIONS } from './gatheringCategories';
 import { ONBOARDING_INTEREST_GROUPS } from './interestGraph';
 
+const onboardingEn = require('../i18n/ui/onboarding').default.en; // the screen's wording lives in ui.onboarding
 const read = (f) => require('fs').readFileSync(require('path').join(__dirname, '..', f), 'utf8');
 
 describe('onboarding interests: a few picks, mapped into the taxonomy (item 94)', () => {
@@ -39,9 +40,11 @@ describe('onboarding interests: a few picks, mapped into the taxonomy (item 94)'
   });
   it('onboarding shows the short list and the optional words step, never every tag', () => {
     const q = read('screens/OnboardingQuestionsScreen.js');
-    expect(q).toContain('What are you into?');
-    expect(q).toContain('Choose a few');
-    expect(q).toContain('Anything else?');
+    expect(q).toContain("t('ui.onboarding.whatAreYouInto')");
+    expect(onboardingEn.whatAreYouInto).toBe('What are you into?');
+    expect(onboardingEn.chooseAFewYouCan).toContain('Choose a few');
+    expect(q).toContain("t('ui.onboarding.anythingElse')");
+    expect(onboardingEn.anythingElse).toBe('Anything else?');
     expect(q).toMatch(/QUICK_INTERESTS\.map/);
     expect(q).not.toMatch(/tagsForGroups\(|INTEREST_OPTIONS\.map|ONBOARDING_INTEREST_GROUPS\.map/);
     expect(q).toMatch(/monthly_interests: savedTags/);

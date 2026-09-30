@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingTopBar from '../components/OnboardingTopBar';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { sanitizeInterestGroups } from '../constants/interestGraph';
-import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
+import { categoryName, groupName } from '../i18n/categoryNames';
 import { QUICK_INTERESTS, onboardingInterestSelection, migrateOnboardingDraft, savedOnboardingInterests, ONBOARDING_DRAFT_VERSION } from '../constants/onboardingInterests';
 import { ONBOARDING_GOALS, LOOKING_FOR_OPTIONS, motivationsFromAnswers } from '../constants/onboardingGoals';
 
@@ -20,13 +21,14 @@ export const ONBOARDING_ANSWERS_KEY = 'pending_onboarding_answers';
 export const ONBOARDING_DRAFT_KEY = 'pending_onboarding_questions_draft';
 
 const COMFORT_LEVELS = [
-  { value: 'one_on_one', label: 'I like one-on-one conversations' },
-  { value: 'small_groups', label: 'Small groups' },
-  { value: 'large_gatherings', label: 'Large gatherings' },
-  { value: 'open', label: "I'm open to anything" },
+  { value: 'one_on_one' },
+  { value: 'small_groups' },
+  { value: 'large_gatherings' },
+  { value: 'open' },
 ];
 
 export default function OnboardingQuestionsScreen({ navigation }) {
+  const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [stepIndex, setStepIndex] = useState(0);
@@ -84,8 +86,8 @@ export default function OnboardingQuestionsScreen({ navigation }) {
   // One function decides what is saved (quick picks + kept earlier selections + kept words).
   const extraOnly = onboardingInterestSelection([], anythingElse);
   const { tags: savedTags, groups: savedGroups } = savedOnboardingInterests({ quickKeys, anythingElse, excluded, earlierTags, earlierGroups, earlierOff });
-  const earlierItems = [...earlierTags.map((t) => ({ key: t, label: t })), ...earlierGroups.map((g) => ({ key: g, label: CATEGORY_GROUPS.find((x) => x.key === g)?.label ?? g }))];
-  const groupLabel = (key) => CATEGORY_GROUPS.find((g) => g.key === key)?.label ?? key;
+  const earlierItems = [...earlierTags.map((tag) => ({ key: tag, label: categoryName(tag, language) })), ...earlierGroups.map((g) => ({ key: g, label: groupName(g, language) }))];
+  const groupLabel = (key) => groupName(key, language);
 
   // Flow: what Nearby should help with -> what you're into (a few quick picks) -> anything else (optional words) -> what
   // you're looking for -> relevant preferences. Every step is skippable; nothing here gates signup.
@@ -130,8 +132,8 @@ export default function OnboardingQuestionsScreen({ navigation }) {
       <ScrollView contentContainerStyle={{ padding: spacing.lg, flexGrow: 1 }}>
         {step === 'goals' && (
           <>
-            <Text style={styles.title}>What do you want Nearby to help you do?</Text>
-            <Text style={styles.subtitle}>Pick any that fit.</Text>
+            <Text style={styles.title}>{t('ui.onboarding.whatDoYouWantNearby')}</Text>
+            <Text style={styles.subtitle}>{t('ui.onboarding.pickAnyThatFit')}</Text>
             <View style={{ gap: spacing.sm }}>
               {ONBOARDING_GOALS.map((g) => {
                 const selected = goals.includes(g.label);
@@ -140,13 +142,13 @@ export default function OnboardingQuestionsScreen({ navigation }) {
                     key={g.key}
                     style={[styles.option, styles.optionRow, selected && styles.optionSelected]}
                     onPress={() => toggleGoal(g.label)}
-                    accessibilityLabel={g.label}
+                    accessibilityLabel={t(`ui.onboarding.goal.${g.key}`)}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: selected }}
                   >
                     <Text style={styles.optionIcon}>{selected ? '☑' : '☐'}</Text>
                     <Text style={styles.chipIcon}>{g.icon}</Text>
-                    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{g.label}</Text>
+                    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{t(`ui.onboarding.goal.${g.key}`)}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -156,8 +158,8 @@ export default function OnboardingQuestionsScreen({ navigation }) {
 
         {step === 'interests' && (
           <>
-            <Text style={styles.title}>What are you into?</Text>
-            <Text style={styles.subtitle}>Choose a few. You can skip this.</Text>
+            <Text style={styles.title}>{t('ui.onboarding.whatAreYouInto')}</Text>
+            <Text style={styles.subtitle}>{t('ui.onboarding.chooseAFewYouCan')}</Text>
             <View style={styles.grid}>
               {QUICK_INTERESTS.map((q) => {
                 const selected = quickKeys.includes(q.key);
@@ -166,19 +168,19 @@ export default function OnboardingQuestionsScreen({ navigation }) {
                     key={q.key}
                     style={[styles.chip, selected && styles.chipSelected]}
                     onPress={() => toggleQuick(q.key)}
-                    accessibilityLabel={q.label}
+                    accessibilityLabel={t(`ui.onboarding.quick.${q.key}`)}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
                   >
                     <Text style={styles.chipIcon}>{q.icon}</Text>
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{q.label}</Text>
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{t(`ui.onboarding.quick.${q.key}`)}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
             {earlierItems.length > 0 && (
               <>
-                <Text style={styles.understoodLabel}>You picked these earlier. Tap one to leave it out.</Text>
+                <Text style={styles.understoodLabel}>{t('ui.onboarding.youPickedTheseEarlierTap')}</Text>
                 <View style={styles.grid}>
                   {earlierItems.map((item) => {
                     const kept = !earlierOff.includes(item.key);
@@ -187,7 +189,7 @@ export default function OnboardingQuestionsScreen({ navigation }) {
                         key={`earlier-${item.key}`}
                         style={[styles.chip, kept && styles.chipSelected]}
                         onPress={() => setEarlierOff((prev) => (kept ? [...prev, item.key] : prev.filter((k) => k !== item.key)))}
-                        accessibilityLabel={kept ? `${item.label}, kept. Tap to leave it out` : `${item.label}, left out`}
+                        accessibilityLabel={kept ? t('ui.onboarding.keptTapToLeaveItA11y', { label: item.label }) : t('ui.onboarding.leftOutA11y', { label: item.label })}
                         accessibilityRole="button"
                         accessibilityState={{ selected: kept }}
                       >
@@ -203,30 +205,30 @@ export default function OnboardingQuestionsScreen({ navigation }) {
 
         {step === 'anythingElse' && (
           <>
-            <Text style={styles.title}>Anything else?</Text>
-            <Text style={styles.subtitle}>Optional. Type a few things you like, like "pickleball, board games, hiking".</Text>
+            <Text style={styles.title}>{t('ui.onboarding.anythingElse')}</Text>
+            <Text style={styles.subtitle}>{t('ui.onboarding.optionalTypeAFewThings')}</Text>
             <TextInput
               style={styles.input}
               value={anythingElse}
-              onChangeText={(t) => { setAnythingElse(t); setExcluded([]); }}
-              placeholder="Anything else you're into"
+              onChangeText={(text) => { setAnythingElse(text); setExcluded([]); }}
+              placeholder={t('ui.onboarding.anythingElseYoureInto')}
               placeholderTextColor={colors.textTertiary}
               multiline
               maxLength={200}
-              accessibilityLabel="Anything else you're into"
+              accessibilityLabel={t('ui.onboarding.anythingElseYoureIntoA11y')}
             />
             {(extraOnly.tags.length > 0 || extraOnly.groups.length > 0) && (
               <>
-                <Text style={styles.understoodLabel}>These interests will be added. Tap one to leave it out.</Text>
+                <Text style={styles.understoodLabel}>{t('ui.onboarding.theseInterestsWillBeAdded')}</Text>
                 <View style={styles.grid}>
-                  {[...extraOnly.tags.map((t) => ({ key: t, label: t })), ...extraOnly.groups.map((g) => ({ key: g, label: groupLabel(g) }))].map((item) => {
+                  {[...extraOnly.tags.map((tag) => ({ key: tag, label: categoryName(tag, language) })), ...extraOnly.groups.map((g) => ({ key: g, label: groupLabel(g) }))].map((item) => {
                     const kept = !excluded.includes(item.key);
                     return (
                       <TouchableOpacity
                         key={item.key}
                         style={[styles.chip, kept && styles.chipSelected]}
                         onPress={() => setExcluded((prev) => (kept ? [...prev, item.key] : prev.filter((k) => k !== item.key)))}
-                        accessibilityLabel={kept ? `${item.label}, added. Tap to leave it out` : `${item.label}, left out`}
+                        accessibilityLabel={kept ? t('ui.onboarding.addedTapToLeaveItA11y', { label: item.label }) : t('ui.onboarding.leftOutA11y', { label: item.label })}
                         accessibilityRole="button"
                         accessibilityState={{ selected: kept }}
                       >
@@ -239,7 +241,7 @@ export default function OnboardingQuestionsScreen({ navigation }) {
             )}
             {extraOnly.unmatched.length > 0 && (
               <Text style={styles.unmatchedNote}>
-                Not matched yet: {extraOnly.unmatched.join(', ')}. You can add more interests any time from your profile.
+                {t('ui.onboarding.notMatchedYetLine', { words: extraOnly.unmatched.join(', ') })}
               </Text>
             )}
           </>
@@ -247,8 +249,8 @@ export default function OnboardingQuestionsScreen({ navigation }) {
 
         {step === 'lookingFor' && (
           <>
-            <Text style={styles.title}>What are you looking for?</Text>
-            <Text style={styles.subtitle}>This just decides what we show you first. You can change it any time.</Text>
+            <Text style={styles.title}>{t('ui.onboarding.whatAreYouLookingFor')}</Text>
+            <Text style={styles.subtitle}>{t('ui.onboarding.thisJustDecidesWhatWe')}</Text>
             <View style={{ gap: spacing.sm }}>
               {LOOKING_FOR_OPTIONS.map((o) => {
                 const selected = lookingFor === o.key;
@@ -257,12 +259,12 @@ export default function OnboardingQuestionsScreen({ navigation }) {
                     key={o.key}
                     style={[styles.option, styles.optionRow, selected && styles.optionSelected]}
                     onPress={() => setLookingFor(o.key)}
-                    accessibilityLabel={o.label}
+                    accessibilityLabel={t(`ui.onboarding.lookingFor.${o.key}`)}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
                   >
                     <Text style={styles.chipIcon}>{o.icon}</Text>
-                    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{o.label}</Text>
+                    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{t(`ui.onboarding.lookingFor.${o.key}`)}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -272,11 +274,11 @@ export default function OnboardingQuestionsScreen({ navigation }) {
 
         {step === 'comfort' && (
           <>
-            <Text style={styles.title}>What sounds most like you?</Text>
+            <Text style={styles.title}>{t('ui.onboarding.whatSoundsMostLikeYou')}</Text>
             <Text style={styles.subtitle}>
               {lookingFor === 'dating' || lookingFor === 'both'
-                ? "It helps us suggest the right kind of plans. You can fine-tune dating preferences later, when you first open Dating."
-                : 'It helps us suggest the right kind of plans. Optional.'}
+                ? t('ui.onboarding.itHelpsUsSuggestThe')
+                : t('ui.onboarding.itHelpsUsSuggestThe2')}
             </Text>
             <View style={{ gap: spacing.sm }}>
               {COMFORT_LEVELS.map((c) => {
@@ -286,11 +288,11 @@ export default function OnboardingQuestionsScreen({ navigation }) {
                     key={c.value}
                     style={[styles.option, selected && styles.optionSelected]}
                     onPress={() => setComfortLevel(c.value)}
-                    accessibilityLabel={c.label}
+                    accessibilityLabel={t(`ui.onboarding.comfort.${c.value}`)}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
                   >
-                    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{c.label}</Text>
+                    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{t(`ui.onboarding.comfort.${c.value}`)}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -310,10 +312,10 @@ export default function OnboardingQuestionsScreen({ navigation }) {
           onPress={handleContinue}
           disabled={!canContinue || saving}
           activeOpacity={0.85}
-          accessibilityLabel={saving ? 'Saving' : 'Continue'}
+          accessibilityLabel={saving ? t('ui.onboarding.savingA11y') : t('ui.onboarding.continueA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.buttonText}>{saving ? 'Saving...' : 'Continue'}</Text>
+          <Text style={styles.buttonText}>{saving ? t('ui.onboarding.saving') : t('ui.onboarding.continue')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
