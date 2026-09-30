@@ -25,6 +25,8 @@ export default {
     hostedHereA11y: { one: "{count} gathering hosted here", other: "{count} gatherings hosted here" },
     free: "Free",
     gatheringsHere: { one: "🎉 {count} gathering here", other: "🎉 {count} gatherings here" },
+    openNowPlain: "Open now",
+    closedPlain: "Closed",
   },
   es: {
     goBackA11y: "Volver",
@@ -50,6 +52,8 @@ export default {
     hostedHereA11y: { one: "{count} reunión organizada aquí", other: "{count} reuniones organizadas aquí" },
     free: "Gratis",
     gatheringsHere: { one: "🎉 {count} reunión aquí", other: "🎉 {count} reuniones aquí" },
+    openNowPlain: "Abierto ahora",
+    closedPlain: "Cerrado",
   },
   de: {
     goBackA11y: "Zurück",
@@ -75,6 +79,8 @@ export default {
     hostedHereA11y: { one: "{count} Treffen hier veranstaltet", other: "{count} Treffen hier veranstaltet" },
     free: "Kostenlos",
     gatheringsHere: { one: "🎉 {count} Treffen hier", other: "🎉 {count} Treffen hier" },
+    openNowPlain: "Jetzt geöffnet",
+    closedPlain: "Geschlossen",
   },
   fr: {
     goBackA11y: "Retour",
@@ -100,6 +106,8 @@ export default {
     hostedHereA11y: { one: "{count} rassemblement organisé ici", other: "{count} rassemblements organisés ici" },
     free: "Gratuit",
     gatheringsHere: { one: "🎉 {count} rassemblement ici", other: "🎉 {count} rassemblements ici" },
+    openNowPlain: "Ouvert maintenant",
+    closedPlain: "Fermé",
   },
   pt: {
     goBackA11y: "Voltar",
@@ -125,6 +133,8 @@ export default {
     hostedHereA11y: { one: "{count} encontro realizado aqui", other: "{count} encontros realizados aqui" },
     free: "Grátis",
     gatheringsHere: { one: "🎉 {count} encontro aqui", other: "🎉 {count} encontros aqui" },
+    openNowPlain: "Aberto agora",
+    closedPlain: "Fechado",
   },
   ht: {
     goBackA11y: "Retounen",
@@ -150,6 +160,8 @@ export default {
     hostedHereA11y: { one: "{count} rasanbleman òganize isit la", other: "{count} rasanbleman òganize isit la" },
     free: "Gratis",
     gatheringsHere: { one: "🎉 {count} rasanbleman isit la", other: "🎉 {count} rasanbleman isit la" },
+    openNowPlain: "Louvri kounye a",
+    closedPlain: "Fèmen",
   },
   zh: {
     goBackA11y: "返回",
@@ -175,6 +187,8 @@ export default {
     hostedHereA11y: { other: "这里举办过 {count} 场聚会" },
     free: "免费",
     gatheringsHere: { other: "🎉 这里有 {count} 场聚会" },
+    openNowPlain: "营业中",
+    closedPlain: "已打烊",
   },
   vi: {
     goBackA11y: "Quay lại",
@@ -200,6 +214,8 @@ export default {
     hostedHereA11y: { other: "{count} buổi gặp được tổ chức ở đây" },
     free: "Miễn phí",
     gatheringsHere: { other: "🎉 {count} buổi gặp ở đây" },
+    openNowPlain: "Đang mở cửa",
+    closedPlain: "Đã đóng cửa",
   },
   tl: {
     goBackA11y: "Bumalik",
@@ -225,6 +241,8 @@ export default {
     hostedHereA11y: { one: "{count} pagtitipong ginanap dito", other: "{count} pagtitipong ginanap dito" },
     free: "Libre",
     gatheringsHere: { one: "🎉 {count} pagtitipon dito", other: "🎉 {count} pagtitipon dito" },
+    openNowPlain: "Bukas ngayon",
+    closedPlain: "Sarado",
   },
   ru: {
     goBackA11y: "Назад",
@@ -250,6 +268,8 @@ export default {
     hostedHereA11y: { one: "здесь прошла {count} встреча", few: "здесь прошли {count} встречи", many: "здесь прошло {count} встреч", other: "здесь прошло {count} встречи" },
     free: "Бесплатно",
     gatheringsHere: { one: "🎉 {count} встреча здесь", few: "🎉 {count} встречи здесь", many: "🎉 {count} встреч здесь", other: "🎉 {count} встречи здесь" },
+    openNowPlain: "Сейчас открыто",
+    closedPlain: "Закрыто",
   },
   ko: {
     goBackA11y: "뒤로",
@@ -275,5 +295,7 @@ export default {
     hostedHereA11y: { other: "이곳에서 열린 모임 {count}개" },
     free: "무료",
     gatheringsHere: { other: "🎉 이곳의 모임 {count}개" },
+    openNowPlain: "영업 중",
+    closedPlain: "영업 종료",
   },
 };

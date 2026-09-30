@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 // Consolidates what used to be ~7 flat rows spread across SettingsScreen's
@@ -10,52 +11,46 @@ import { typography, spacing, radius } from '../theme';
 // CLAUDE.md's "Relationship hub consolidation" section for why: the tools
 // were all individually reachable already, they just read as a pile of
 // destinations rather than a coherent suite.
+// Labels live in ui.relationship.hub.<section>.* and ui.relationship.hub.row.<key>.label / .a11y.
 const SECTIONS = [
-  {
-    title: 'With Someone',
-    subtitle: 'Shared tools, used together with a specific match.',
-    rows: [
-      { key: 'tools', icon: '🧩', label: 'Relationship Tools', route: 'RelationshipTools', a11y: 'Relationship tools shared with a specific match' },
-      { key: 'vault', icon: '💫', label: 'Memory Vault', route: 'MemoryVaultIndex', a11y: 'Memory vault, memories saved with your matches' },
-    ],
-  },
-  {
-    title: 'On Your Own',
-    subtitle: 'Private reflection — nothing here is shared with a match.',
-    rows: [
-      { key: 'rehearsal', icon: '🎭', label: 'Rehearsal Room', route: 'RehearsalRoom', a11y: 'Rehearsal Room, practice hard conversations' },
-      { key: 'chemistry', icon: '📔', label: 'Chemistry Diary', route: 'ChemistryDiaryList', a11y: 'Your chemistry diary' },
-      { key: 'goodbye', icon: '🌙', label: 'Private Reflections', route: 'GoodbyeArchiveList', a11y: 'Your private reflections' },
-      { key: 'legacy', icon: '💌', label: 'Relationship Wisdom', route: 'LegacyLibrary', a11y: 'Relationship wisdom library' },
-      { key: 'kit', icon: '🧰', label: 'Toolkit', route: 'RelationshipEmergencyKit', a11y: 'Relationship toolkit' },
-    ],
-  },
+  { key: 'together', rows: [
+    { key: 'tools', icon: '🧩', route: 'RelationshipTools' },
+    { key: 'vault', icon: '💫', route: 'MemoryVaultIndex' },
+  ] },
+  { key: 'onYourOwn', rows: [
+    { key: 'rehearsal', icon: '🎭', route: 'RehearsalRoom' },
+    { key: 'chemistry', icon: '📔', route: 'ChemistryDiaryList' },
+    { key: 'goodbye', icon: '🌙', route: 'GoodbyeArchiveList' },
+    { key: 'legacy', icon: '💌', route: 'LegacyLibrary' },
+    { key: 'kit', icon: '🧰', route: 'RelationshipEmergencyKit' },
+  ] },
 ];
 
 export default function RelationshipHubScreen({ navigation }) {
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.intro}>
-          Everything for building and reflecting on a relationship, in one place.
+          {t('ui.relationship.hub.intro')}
         </Text>
         {SECTIONS.map((section) => (
-          <View key={section.title}>
-            <Text style={styles.sectionLabel} accessibilityRole="header">{section.title}</Text>
-            <Text style={styles.sectionSubtitle}>{section.subtitle}</Text>
+          <View key={section.key}>
+            <Text style={styles.sectionLabel} accessibilityRole="header">{t(`ui.relationship.hub.${section.key}.title`)}</Text>
+            <Text style={styles.sectionSubtitle}>{t(`ui.relationship.hub.${section.key}.subtitle`)}</Text>
             {section.rows.map((row) => (
               <TouchableOpacity
                 key={row.key}
                 style={styles.rowButtonCard}
                 onPress={() => navigation.navigate(row.route)}
                 activeOpacity={0.85}
-                accessibilityLabel={row.a11y}
+                accessibilityLabel={t(`ui.relationship.hub.row.${row.key}.a11y`)}
                 accessibilityRole="button"
               >
-                <Text style={styles.rowButtonText}>{row.icon} {row.label}</Text>
+                <Text style={styles.rowButtonText}>{row.icon} {t(`ui.relationship.hub.row.${row.key}.label`)}</Text>
                 <Text style={styles.chevron}>›</Text>
               </TouchableOpacity>
             ))}

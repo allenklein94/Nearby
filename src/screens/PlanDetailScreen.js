@@ -17,7 +17,7 @@ import { buildPlanJourney, statusWord } from '../utils/planJourney';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { moneyLabel } from '../utils/outcomeDisplay';
 
-const STATUS_LABEL = { draft: 'Planning', confirmed: 'Confirmed', completed: 'Done', cancelled: 'Cancelled' };
+const PLAN_STATUSES = ['draft', 'confirmed', 'completed', 'cancelled']; // shown through ui.planDetail.status.<status>
 
 // One Plan, read through get_plan_overview (20261203_plan_read_layer.sql): the whole Occasion -> People -> Activity ->
 // Business -> Offer -> Reservation picture in one place. Read-only; every action hands off to an existing screen.
@@ -145,7 +145,7 @@ export default function PlanDetailScreen({ navigation, route }) {
         <Text style={styles.muted}>
           {isMatchPlan
             ? matchedLabel
-            : [STATUS_LABEL[plan.status] || plan.status, dateLabel, who.forName ? `For ${who.forName}` : null].filter(Boolean).join(' · ')}
+            : [PLAN_STATUSES.includes(plan.status) ? t(`ui.planDetail.status.${plan.status}`) : plan.status, dateLabel, who.forName ? t('ui.planDetail.forName', { name: who.forName }) : null].filter(Boolean).join(' · ')}
         </Text>
         {parent ? <Text style={styles.muted}>{t('ui.planDetail.partOf', { title: parent.title })}</Text> : null}
 
@@ -272,7 +272,7 @@ export default function PlanDetailScreen({ navigation, route }) {
           <>
             <Text style={styles.sectionLabel}>{t('ui.planDetail.madeFromThisPlan')}</Text>
             <View style={styles.card}>
-              {children.map((c) => <Text key={c.id} style={styles.line}>{c.title || c.plan_type} · {STATUS_LABEL[c.status] || c.status}</Text>)}
+              {children.map((c) => <Text key={c.id} style={styles.line}>{c.title || c.plan_type} · {PLAN_STATUSES.includes(c.status) ? t(`ui.planDetail.status.${c.status}`) : c.status}</Text>)}
             </View>
           </>
         )}

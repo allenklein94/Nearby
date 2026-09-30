@@ -5,56 +5,37 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+// Tip text: ui.relationship.kit.<key>.<1..tipCount>.
 const KIT_SECTIONS = [
   {
     icon: '💬',
     key: 'hard_conversation',
     titleKey: 'hardConversation',
-    tips: [
-      'Pick a real moment, not mid-argument — ask "can we talk about something later tonight?" rather than diving in when either of you is already upset.',
-      'Start with what you need, not what they did wrong: "I need to feel included in weekend plans" lands differently than "you never include me."',
-      "Expect it to feel awkward at first. That's normal, not a sign it's going badly.",
-    ],
+    tipCount: 3,
   },
   {
     icon: '🙏',
     key: 'apologize',
     titleKey: 'apologize',
-    tips: [
-      'Name the specific thing, not a vague feeling: "I dismissed how you felt earlier" beats "sorry you\'re upset."',
-      'Skip the "but" — an apology followed by an explanation often lands as an excuse, even when that\'s not the intent.',
-      'Ask what would actually help, rather than assuming you already know.',
-    ],
+    tipCount: 3,
   },
   {
     icon: '🔧',
     key: 'rebuild_trust',
     titleKey: 'rebuildTrust',
-    tips: [
-      'Trust rebuilds through small, consistent follow-through over time — not one grand gesture.',
-      "Be patient with their caution. It's not punishment, it's a nervous system that got hurt and is being careful.",
-      'Consider naming it directly: "What would help you feel more sure of me right now?"',
-    ],
+    tipCount: 3,
   },
   {
     icon: '🌊',
     key: 'resentment',
     titleKey: 'resentment',
-    tips: [
-      "Resentment usually means an unspoken need. Try to name the need underneath it, not just the frustration.",
-      "Small things add up. If something feels 'too small to mention,' that's often exactly the thing worth mentioning early.",
-      'Consider writing it out privately first — sometimes what comes out is different from what you thought you felt.',
-    ],
+    tipCount: 3,
   },
   {
     icon: '🌉',
     key: 'reconnecting',
     titleKey: 'reconnecting',
-    tips: [
-      'Start smaller than feels necessary — a short, low-stakes check-in often works better than a big "we need to talk."',
-      'Curiosity helps more than assumptions: ask what\'s been going on for them, rather than guessing.',
-      "Physical presence matters too — sometimes reconnecting starts with just being in the same room, no agenda.",
-    ],
+    tipCount: 3,
   },
 ];
 
@@ -90,7 +71,7 @@ export default function RelationshipEmergencyKitScreen() {
                 style={styles.cardHeader}
                 onPress={() => toggleExpand(index, section.key)}
                 activeOpacity={0.85}
-                accessibilityLabel={`${title}, ${expanded ? 'double tap to collapse' : 'double tap to expand'}`}
+                accessibilityLabel={t(expanded ? 'ui.relationship.kit.collapseA11y' : 'ui.relationship.kit.expandA11y', { title })}
                 accessibilityRole="button"
                 accessibilityState={{ expanded }}
               >
@@ -99,8 +80,8 @@ export default function RelationshipEmergencyKitScreen() {
               </TouchableOpacity>
               {expanded && (
                 <View style={styles.tipsContainer}>
-                  {section.tips.map((tip, i) => (
-                    <Text key={i} style={styles.tipText}>• {tip}</Text>
+                  {Array.from({ length: section.tipCount }, (_, i) => (
+                    <Text key={i} style={styles.tipText}>• {t(`ui.relationship.kit.${section.key}.${i + 1}`)}</Text>
                   ))}
                 </View>
               )}

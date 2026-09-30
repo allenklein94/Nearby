@@ -49,10 +49,11 @@ function scan(file) {
     hits.push({ line: node.loc.start.line, kind, text: text.replace(/\s+/g, ' ').trim() });
   };
   const insideSkippedCall = (path) => {
-    for (let p = path.parentPath; p; p = p.parentPath) {
+    for (let p = path.parentPath, prev = path.node; p; prev = p.node, p = p.parentPath) {
       if (p.isCallExpression() || p.isNewExpression()) {
         const n = calleeName(p.node);
-        const isArg = p.node.arguments.includes(path.node) || true;
+        // only text passed INTO a skipped call is skipped; a literal in its callee (`[...].filter(...)`) is still UI text
+        const isArg = p.node.arguments.includes(prev);
         if (isArg && skipCall(n) && !/^(Alert\.alert|showSuccessToast|presentRecoverableError)$/.test(n)) return true;
       }
       if (p.isJSXAttribute() && !TEXT_PROPS.has(p.node.name.name)) return true;

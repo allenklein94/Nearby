@@ -1659,16 +1659,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Shared context layer: a Google place gets its distance and directions destination from the one context object; it has no
   // recommendation reason and no booking mode (neither is invented). Rating / price / open now are the provider's own facts.
   function placeContext(p) {
-    return recommendationContext(contextItem('place', p));
+    return recommendationContext(contextItem('place', p), { language });
   }
 
   function placeReasonLine(p) {
     return [
       p.rating !== null ? `⭐ ${p.rating}${p.reviewCount !== null ? ` (${p.reviewCount})` : ''}` : null,
-      priceLevelLabel(p.priceLevel),
-      p.openNow !== null ? (p.openNow ? 'Open now' : 'Closed') : null,
+      p.priceLevel === 0 ? t('ui.places.free') : priceLevelLabel(p.priceLevel),
+      p.openNow !== null ? t(p.openNow ? 'ui.places.openNowPlain' : 'ui.places.closedPlain') : null,
       placeContext(p).context,
-      p.gatheringCount > 0 ? `🎉 ${p.gatheringCount} gathering${p.gatheringCount === 1 ? '' : 's'} here` : null,
+      p.gatheringCount > 0 ? t('ui.places.gatheringsHere', { count: p.gatheringCount }) : null,
     ].filter(Boolean).join('  ·  ') || p.address;
   }
 
@@ -2374,8 +2374,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
                     <Text style={styles.cardTitle}>{person.display_name}</Text>
                     <Text style={styles.cardSubtitle} numberOfLines={1}>
                       {[
-                        person.connection === 'friend' ? 'Friend' : 'Match',
-                        person.gatheringTitle ? `Going to ${person.gatheringTitle}` : null,
+                        t(person.connection === 'friend' ? 'ui.discover.connection.friend' : 'ui.discover.connection.match'),
+                        person.gatheringTitle ? t('ui.discover.goingTo', { title: person.gatheringTitle }) : null,
                       ].filter(Boolean).join(' · ')}
                     </Text>
                   </View>

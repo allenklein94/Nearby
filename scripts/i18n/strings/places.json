@@ -28,7 +28,9 @@
   "gatheringsHere": {
    "one": "🎉 {count} gathering here",
    "other": "🎉 {count} gatherings here"
-  }
+  },
+  "openNowPlain": "Open now",
+  "closedPlain": "Closed"
  },
  "es": {
   "goBackA11y": "Volver",
@@ -59,7 +61,9 @@
   "gatheringsHere": {
    "one": "🎉 {count} reunión aquí",
    "other": "🎉 {count} reuniones aquí"
-  }
+  },
+  "openNowPlain": "Abierto ahora",
+  "closedPlain": "Cerrado"
  },
  "de": {
   "goBackA11y": "Zurück",
@@ -90,7 +94,9 @@
   "gatheringsHere": {
    "one": "🎉 {count} Treffen hier",
    "other": "🎉 {count} Treffen hier"
-  }
+  },
+  "openNowPlain": "Jetzt geöffnet",
+  "closedPlain": "Geschlossen"
  },
  "fr": {
   "goBackA11y": "Retour",
@@ -121,7 +127,9 @@
   "gatheringsHere": {
    "one": "🎉 {count} rassemblement ici",
    "other": "🎉 {count} rassemblements ici"
-  }
+  },
+  "openNowPlain": "Ouvert maintenant",
+  "closedPlain": "Fermé"
  },
  "pt": {
   "goBackA11y": "Voltar",
@@ -152,7 +160,9 @@
   "gatheringsHere": {
    "one": "🎉 {count} encontro aqui",
    "other": "🎉 {count} encontros aqui"
-  }
+  },
+  "openNowPlain": "Aberto agora",
+  "closedPlain": "Fechado"
  },
  "ht": {
   "goBackA11y": "Retounen",
@@ -183,7 +193,9 @@
   "gatheringsHere": {
    "one": "🎉 {count} rasanbleman isit la",
    "other": "🎉 {count} rasanbleman isit la"
-  }
+  },
+  "openNowPlain": "Louvri kounye a",
+  "closedPlain": "Fèmen"
  },
  "zh": {
   "goBackA11y": "返回",
@@ -212,7 +224,9 @@
   "free": "免费",
   "gatheringsHere": {
    "other": "🎉 这里有 {count} 场聚会"
-  }
+  },
+  "openNowPlain": "营业中",
+  "closedPlain": "已打烊"
  },
  "vi": {
   "goBackA11y": "Quay lại",
@@ -241,7 +255,9 @@
   "free": "Miễn phí",
   "gatheringsHere": {
    "other": "🎉 {count} buổi gặp ở đây"
-  }
+  },
+  "openNowPlain": "Đang mở cửa",
+  "closedPlain": "Đã đóng cửa"
  },
  "tl": {
   "goBackA11y": "Bumalik",
@@ -272,7 +288,9 @@
   "gatheringsHere": {
    "one": "🎉 {count} pagtitipon dito",
    "other": "🎉 {count} pagtitipon dito"
-  }
+  },
+  "openNowPlain": "Bukas ngayon",
+  "closedPlain": "Sarado"
  },
  "ru": {
   "goBackA11y": "Назад",
@@ -307,7 +325,9 @@
    "few": "🎉 {count} встречи здесь",
    "many": "🎉 {count} встреч здесь",
    "other": "🎉 {count} встречи здесь"
-  }
+  },
+  "openNowPlain": "Сейчас открыто",
+  "closedPlain": "Закрыто"
  },
  "ko": {
   "goBackA11y": "뒤로",
@@ -336,6 +356,8 @@
   "free": "무료",
   "gatheringsHere": {
    "other": "🎉 이곳의 모임 {count}개"
-  }
+  },
+  "openNowPlain": "영업 중",
+  "closedPlain": "영업 종료"
  }
 }

@@ -2,6 +2,8 @@
 // titles and people's names are inserted as stored (or through i18n/categoryNames.js), never translated here.
 export default {
   en: {
+    connection: { friend: "Friend", match: "Match" },
+    goingTo: "Going to {title}",
     title: 'Discover',
     mode: { things: 'Things to Do', thingsSubtitle: 'What are you looking for?', people: 'People', peopleSubtitle: "Who's around you." },
     submode: { dating: 'Dating', friends: 'Friends' },
@@ -61,6 +63,8 @@ export default {
     happeningNearby: '🔴 Happening Nearby',
   },
   es: {
+    connection: { friend: "Amigo", match: "Match" },
+    goingTo: "Va a {title}",
     title: 'Descubrir',
     mode: { things: 'Qué hacer', thingsSubtitle: '¿Qué estás buscando?', people: 'Personas', peopleSubtitle: 'Quién está cerca de ti.' },
     submode: { dating: 'Citas', friends: 'Amigos' },
@@ -120,6 +124,8 @@ export default {
     happeningNearby: '🔴 Pasando cerca',
   },
   de: {
+    connection: { friend: "Freund", match: "Match" },
+    goingTo: "Geht zu {title}",
     title: 'Entdecken',
     mode: { things: 'Unternehmungen', thingsSubtitle: 'Wonach suchst du?', people: 'Leute', peopleSubtitle: 'Wer in deiner Nähe ist.' },
     submode: { dating: 'Dating', friends: 'Freunde' },
@@ -179,6 +185,8 @@ export default {
     happeningNearby: '🔴 In der Nähe los',
   },
   fr: {
+    connection: { friend: "Ami", match: "Match" },
+    goingTo: "Va à {title}",
     title: 'Découvrir',
     mode: { things: 'Quoi faire', thingsSubtitle: 'Que cherchez-vous ?', people: 'Personnes', peopleSubtitle: 'Qui est autour de vous.' },
     submode: { dating: 'Rencontres', friends: 'Amis' },
@@ -238,6 +246,8 @@ export default {
     happeningNearby: '🔴 En ce moment à proximité',
   },
   pt: {
+    connection: { friend: "Amigo", match: "Match" },
+    goingTo: "Vai a {title}",
     title: 'Descobrir',
     mode: { things: 'O que fazer', thingsSubtitle: 'O que você está procurando?', people: 'Pessoas', peopleSubtitle: 'Quem está perto de você.' },
     submode: { dating: 'Namoro', friends: 'Amigos' },
@@ -297,6 +307,8 @@ export default {
     happeningNearby: '🔴 Acontecendo por perto',
   },
   ht: {
+    connection: { friend: "Zanmi", match: "Match" },
+    goingTo: "Ap ale nan {title}",
     title: 'Dekouvri',
     mode: { things: 'Sa pou fè', thingsSubtitle: 'Kisa w ap chèche?', people: 'Moun', peopleSubtitle: 'Ki moun ki toupre w.' },
     submode: { dating: 'Randevou', friends: 'Zanmi' },
@@ -356,6 +368,8 @@ export default {
     happeningNearby: '🔴 K ap pase toupre',
   },
   zh: {
+    connection: { friend: "好友", match: "配对" },
+    goingTo: "要去 {title}",
     title: '发现',
     mode: { things: '去做什么', thingsSubtitle: '你在找什么？', people: '人', peopleSubtitle: '你身边有谁。' },
     submode: { dating: '约会', friends: '朋友' },
@@ -415,6 +429,8 @@ export default {
     happeningNearby: '🔴 附近正在发生',
   },
   vi: {
+    connection: { friend: "Bạn bè", match: "Kết đôi" },
+    goingTo: "Sẽ đến {title}",
     title: 'Khám phá',
     mode: { things: 'Việc để làm', thingsSubtitle: 'Bạn đang tìm gì?', people: 'Mọi người', peopleSubtitle: 'Những ai ở quanh bạn.' },
     submode: { dating: 'Hẹn hò', friends: 'Bạn bè' },
@@ -474,6 +490,8 @@ export default {
     happeningNearby: '🔴 Đang diễn ra gần đây',
   },
   tl: {
+    connection: { friend: "Kaibigan", match: "Match" },
+    goingTo: "Pupunta sa {title}",
     title: 'Tuklasin',
     mode: { things: 'Mga Gagawin', thingsSubtitle: 'Ano ang hinahanap mo?', people: 'Mga Tao', peopleSubtitle: 'Sino ang nasa paligid mo.' },
     submode: { dating: 'Dating', friends: 'Mga Kaibigan' },
@@ -533,6 +551,8 @@ export default {
     happeningNearby: '🔴 Nangyayari sa Malapit',
   },
   ru: {
+    connection: { friend: "Друг", match: "Мэтч" },
+    goingTo: "Идёт на {title}",
     title: 'Обзор',
     mode: { things: 'Чем заняться', thingsSubtitle: 'Что вы ищете?', people: 'Люди', peopleSubtitle: 'Кто рядом с вами.' },
     submode: { dating: 'Знакомства', friends: 'Друзья' },
@@ -592,6 +612,8 @@ export default {
     happeningNearby: '🔴 Происходит рядом',
   },
   ko: {
+    connection: { friend: "친구", match: "매치" },
+    goingTo: "{title}에 참석",
     title: '둘러보기',
     mode: { things: '할 일', thingsSubtitle: '무엇을 찾고 있나요?', people: '사람', peopleSubtitle: '내 주변에 있는 사람들.' },
     submode: { dating: '데이트', friends: '친구' },

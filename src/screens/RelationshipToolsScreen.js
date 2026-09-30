@@ -7,6 +7,7 @@ import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import ActionSheetModal from '../components/ActionSheetModal';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 
@@ -17,19 +18,21 @@ import LoadErrorState from '../components/LoadErrorState';
 // "Do Something Together" menu exactly, so this screen is a real second
 // entry point, not a partial one. Pick a match, then pick a tool for that
 // match.
+// Names are the chat "Do Something Together" menu's own (ui.chat.together.*), so the two entry points read the same.
 const MATCH_TOOLS = [
-  { key: 'constitution', text: '📜 Our Constitution', route: 'RelationshipConstitution' },
-  { key: 'stresstest', text: '🧪 What If... Scenarios', route: 'StressTest' },
-  { key: 'bigpicture', text: '🧭 Big Picture Chat', route: 'SharedDecisions' },
-  { key: 'playlist', text: '🎵 Shared Playlist', route: 'SharedPlaylist' },
-  { key: 'trip', text: '🧳 Plan a Trip', route: 'TripPlanning' },
-  { key: 'timeline', text: '🗓️ Timeline Thoughts', route: 'TimelinePlanner' },
-  { key: 'legacy', text: '💌 Leave Relationship Wisdom', route: 'RelationshipLegacy' },
-  { key: 'memoryvault', text: '💫 Memory Vault', route: 'MemoryVault' },
+  { key: 'constitution', textKey: 'ui.chat.together.constitution', route: 'RelationshipConstitution' },
+  { key: 'stresstest', textKey: 'ui.chat.together.stresstest', route: 'StressTest' },
+  { key: 'bigpicture', textKey: 'ui.chat.together.bigpicture', route: 'SharedDecisions' },
+  { key: 'playlist', textKey: 'ui.chat.together.playlist', route: 'SharedPlaylist' },
+  { key: 'trip', textKey: 'ui.chat.together.trip', route: 'TripPlanning' },
+  { key: 'timeline', textKey: 'ui.chat.together.timeline', route: 'TimelinePlanner' },
+  { key: 'legacy', textKey: 'ui.chat.together.legacy', route: 'RelationshipLegacy' },
+  { key: 'memoryvault', textKey: 'ui.chat.together.memoryvault', route: 'MemoryVault' },
 ];
 
 export default function RelationshipToolsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [matches, setMatches] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
@@ -95,7 +98,7 @@ export default function RelationshipToolsScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading relationship tools...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.relationship.tools.loading')}</Text>
       </SafeAreaView>
     );
   }
@@ -103,7 +106,7 @@ export default function RelationshipToolsScreen({ navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load your relationship tools." onRetry={load} />
+        <LoadErrorState message={t('ui.relationship.tools.loadError')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -116,14 +119,14 @@ export default function RelationshipToolsScreen({ navigation }) {
         contentContainerStyle={{ padding: spacing.lg }}
         ListHeaderComponent={
           <Text style={styles.subtitle}>
-            These tools are shared with a specific match — pick who you want to use one with.
+            {t('ui.relationship.tools.intro')}
           </Text>
         }
         ListEmptyComponent={
           <View style={{ alignItems: 'center' }}>
             <EmptyCopy id="relationship_tools" />
-            <TouchableOpacity onPress={() => navigation.navigate('Discover', { initialMode: 'people' })} accessibilityLabel="Meet people" accessibilityRole="button">
-              <Text style={styles.emptyActionText}>Meet People →</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Discover', { initialMode: 'people' })} accessibilityLabel={t('ui.relationship.tools.meetPeopleA11y')} accessibilityRole="button">
+              <Text style={styles.emptyActionText}>{t('ui.relationship.tools.meetPeople')}</Text>
             </TouchableOpacity>
           </View>
         }
@@ -132,7 +135,7 @@ export default function RelationshipToolsScreen({ navigation }) {
             style={styles.row}
             activeOpacity={0.85}
             onPress={() => setActiveMatch(item)}
-            accessibilityLabel={`Relationship tools with ${item.other?.display_name}`}
+            accessibilityLabel={t('ui.relationship.tools.withA11y', { name: item.other?.display_name ?? t('ui.relationship.tools.someone') })}
             accessibilityRole="button"
           >
             {photoUrls[item.matchId] ? (
@@ -142,7 +145,7 @@ export default function RelationshipToolsScreen({ navigation }) {
                 <Text style={styles.avatarFallbackText}>{item.other?.display_name?.[0] ?? '?'}</Text>
               </View>
             )}
-            <Text style={styles.rowName}>{item.other?.display_name ?? 'Someone'}</Text>
+            <Text style={styles.rowName}>{item.other?.display_name ?? t('ui.relationship.tools.someone')}</Text>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         )}
@@ -151,8 +154,8 @@ export default function RelationshipToolsScreen({ navigation }) {
       <ActionSheetModal
         visible={!!activeMatch}
         onClose={() => setActiveMatch(null)}
-        title={activeMatch ? `Tools with ${activeMatch.other?.display_name}` : ''}
-        options={MATCH_TOOLS.map((tool) => ({ ...tool, onPress: () => handlePickTool(tool) }))}
+        title={activeMatch ? t('ui.relationship.tools.toolsWith', { name: activeMatch.other?.display_name ?? t('ui.relationship.tools.someone') }) : ''}
+        options={MATCH_TOOLS.map((tool) => ({ ...tool, text: t(tool.textKey), onPress: () => handlePickTool(tool) }))}
       />
     </SafeAreaView>
   );

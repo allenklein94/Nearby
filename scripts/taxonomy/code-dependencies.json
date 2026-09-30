@@ -7863,6 +7863,13 @@
    "group": null
   },
   {
+   "tag": "Breakfast",
+   "file": "src/i18n/optionLabels.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Adult Education",
    "file": "src/i18n/translations.js",
    "consumer": "code",
@@ -9551,6 +9558,27 @@
   },
   {
    "tag": "Coffee",
+   "file": "src/i18n/ui/coverage.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Music",
+   "file": "src/i18n/ui/coverage.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sports",
+   "file": "src/i18n/ui/coverage.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
    "file": "src/i18n/ui/dateProposal.js",
    "consumer": "code",
    "occurrences": 1,
@@ -9748,13 +9776,6 @@
   {
    "tag": "Foodie",
    "file": "src/screens/GroupPlanScreen.js",
-   "consumer": "code",
-   "occurrences": 1,
-   "group": null
-  },
-  {
-   "tag": "Breakfast",
-   "file": "src/screens/HomeScreen.js",
    "consumer": "code",
    "occurrences": 1,
    "group": null

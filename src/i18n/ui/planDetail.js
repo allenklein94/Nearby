@@ -109,6 +109,13 @@ export default {
       failed: "failed",
       cancelled: "cancelled",
     },
+    status: {
+      draft: "Planning",
+      confirmed: "Confirmed",
+      completed: "Done",
+      cancelled: "Cancelled",
+    },
+    forName: "For {name}",
   },
   es: {
     partOf: "Parte de: {title}",
@@ -218,6 +225,13 @@ export default {
       failed: "fallida",
       cancelled: "cancelada",
     },
+    status: {
+      draft: "En planificación",
+      confirmed: "Confirmado",
+      completed: "Hecho",
+      cancelled: "Cancelado",
+    },
+    forName: "Para {name}",
   },
   de: {
     partOf: "Teil von: {title}",
@@ -327,6 +341,13 @@ export default {
       failed: "fehlgeschlagen",
       cancelled: "storniert",
     },
+    status: {
+      draft: "In Planung",
+      confirmed: "Bestätigt",
+      completed: "Erledigt",
+      cancelled: "Abgesagt",
+    },
+    forName: "Für {name}",
   },
   fr: {
     partOf: "Fait partie de : {title}",
@@ -436,6 +457,13 @@ export default {
       failed: "échouée",
       cancelled: "annulée",
     },
+    status: {
+      draft: "En préparation",
+      confirmed: "Confirmé",
+      completed: "Terminé",
+      cancelled: "Annulé",
+    },
+    forName: "Pour {name}",
   },
   pt: {
     partOf: "Parte de: {title}",
@@ -545,6 +573,13 @@ export default {
       failed: "falhou",
       cancelled: "cancelada",
     },
+    status: {
+      draft: "Em planejamento",
+      confirmed: "Confirmado",
+      completed: "Concluído",
+      cancelled: "Cancelado",
+    },
+    forName: "Para {name}",
   },
   ht: {
     partOf: "Fè pati: {title}",
@@ -654,6 +689,13 @@ export default {
       failed: "echwe",
       cancelled: "anile",
     },
+    status: {
+      draft: "Ap planifye",
+      confirmed: "Konfime",
+      completed: "Fini",
+      cancelled: "Anile",
+    },
+    forName: "Pou {name}",
   },
   zh: {
     partOf: "属于：{title}",
@@ -763,6 +805,13 @@ export default {
       failed: "失败",
       cancelled: "已取消",
     },
+    status: {
+      draft: "计划中",
+      confirmed: "已确认",
+      completed: "已完成",
+      cancelled: "已取消",
+    },
+    forName: "为 {name}",
   },
   vi: {
     partOf: "Thuộc: {title}",
@@ -872,6 +921,13 @@ export default {
       failed: "thất bại",
       cancelled: "đã hủy",
     },
+    status: {
+      draft: "Đang lên kế hoạch",
+      confirmed: "Đã xác nhận",
+      completed: "Đã xong",
+      cancelled: "Đã hủy",
+    },
+    forName: "Cho {name}",
   },
   tl: {
     partOf: "Bahagi ng: {title}",
@@ -981,6 +1037,13 @@ export default {
       failed: "pumalya",
       cancelled: "kinansela",
     },
+    status: {
+      draft: "Pinaplano",
+      confirmed: "Kumpirmado",
+      completed: "Tapos na",
+      cancelled: "Kinansela",
+    },
+    forName: "Para kay {name}",
   },
   ru: {
     partOf: "Часть плана: {title}",
@@ -1090,6 +1153,13 @@ export default {
       failed: "не удалась",
       cancelled: "отменена",
     },
+    status: {
+      draft: "Планируется",
+      confirmed: "Подтверждено",
+      completed: "Завершено",
+      cancelled: "Отменено",
+    },
+    forName: "Для {name}",
   },
   ko: {
     partOf: "포함된 계획: {title}",
@@ -1199,5 +1269,12 @@ export default {
       failed: "실패",
       cancelled: "취소됨",
     },
+    status: {
+      draft: "계획 중",
+      confirmed: "확정됨",
+      completed: "완료",
+      cancelled: "취소됨",
+    },
+    forName: "{name}님을 위해",
   },
 };

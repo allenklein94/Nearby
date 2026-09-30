@@ -544,18 +544,18 @@ export default function ChatScreen({ route, navigation }) {
   // Trip/Suggest an Activity/Help Me Say It (self-filtering)/Plan
   // Something Together are all genuinely neutral and stay for everyone.
   const togetherMenuOptions = [
-    { key: 'playlist', text: '🎵 Shared Playlist', onPress: () => navigation.navigate('SharedPlaylist', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'trip', text: '🧳 Plan a Trip', onPress: () => navigation.navigate('TripPlanning', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'bigpicture', romanticOnly: true, text: '🧭 Big Picture Chat', onPress: () => navigation.navigate('SharedDecisions', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'experiment', text: '💡 Suggest an Activity', onPress: showRandomExperiment },
-    { key: 'legacy', romanticOnly: true, text: '💌 Leave Relationship Wisdom', onPress: () => navigation.navigate('RelationshipLegacy', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'timeline', romanticOnly: true, text: '🗓️ Timeline Thoughts', onPress: () => navigation.navigate('TimelinePlanner', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'memoryvault', romanticOnly: true, text: '💫 Memory Vault', onPress: () => navigation.navigate('MemoryVault', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'chemistry', romanticOnly: true, text: '📔 Log a Chemistry Check-In', onPress: () => navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: otherUser?.display_name }) },
-    { key: 'stresstest', romanticOnly: true, text: '🧪 What If... Scenarios', onPress: () => navigation.navigate('StressTest', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'constitution', romanticOnly: true, text: '📜 Our Constitution', onPress: () => navigation.navigate('RelationshipConstitution', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'courage', text: '🦁 Help Me Say It', onPress: showCourageMenu },
-    { key: 'datenight', text: isRomanticMatch ? '🌆 Suggest a Date Night' : '🌆 Suggest Something To Do', onPress: suggestDateNight },
+    { key: 'playlist', text: t('ui.chat.together.playlist'), onPress: () => navigation.navigate('SharedPlaylist', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'trip', text: t('ui.chat.together.trip'), onPress: () => navigation.navigate('TripPlanning', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'bigpicture', romanticOnly: true, text: t('ui.chat.together.bigpicture'), onPress: () => navigation.navigate('SharedDecisions', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'experiment', text: t('ui.chat.together.experiment'), onPress: showRandomExperiment },
+    { key: 'legacy', romanticOnly: true, text: t('ui.chat.together.legacy'), onPress: () => navigation.navigate('RelationshipLegacy', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'timeline', romanticOnly: true, text: t('ui.chat.together.timeline'), onPress: () => navigation.navigate('TimelinePlanner', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'memoryvault', romanticOnly: true, text: t('ui.chat.together.memoryvault'), onPress: () => navigation.navigate('MemoryVault', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'chemistry', romanticOnly: true, text: t('ui.chat.together.chemistry'), onPress: () => navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: otherUser?.display_name }) },
+    { key: 'stresstest', romanticOnly: true, text: t('ui.chat.together.stresstest'), onPress: () => navigation.navigate('StressTest', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'constitution', romanticOnly: true, text: t('ui.chat.together.constitution'), onPress: () => navigation.navigate('RelationshipConstitution', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'courage', text: t('ui.chat.together.courage'), onPress: showCourageMenu },
+    { key: 'datenight', text: t(isRomanticMatch ? 'ui.chat.together.dateNight' : 'ui.chat.together.somethingToDo'), onPress: suggestDateNight },
     // "The Offer System" Phase 5 (see CLAUDE.md's own plan, Decision 4):
     // the real Match -> Proposal -> Dating/Friend Experience -> Business
     // Request bridge. Discover/People-Friends parity plan, item 4: this
@@ -564,8 +564,8 @@ export default function ChatScreen({ route, navigation }) {
     // match participancy alone, never romantic-vs-friend -- so it's
     // offered here regardless, with the label swapping to match context
     // the same way "Ask them out" etc. stay romantic-only just above.
-    { key: 'ourplan', text: '🗂️ Our Plans', onPress: openOurPlan },
-    { key: 'plantogether', text: isRomanticMatch ? '💌 Plan Something Together' : '🎯 Plan Something Together', onPress: () => navigation.navigate('DateProposal', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'ourplan', text: t('ui.chat.together.ourplan'), onPress: openOurPlan },
+    { key: 'plantogether', text: t(isRomanticMatch ? 'ui.chat.together.planTogetherRomantic' : 'ui.chat.together.planTogether'), onPress: () => navigation.navigate('DateProposal', { matchId, matchName: otherUser?.display_name }) },
   ].filter((opt) => !opt.romanticOnly || isRomanticMatch);
 
   async function openOurPlan() {
