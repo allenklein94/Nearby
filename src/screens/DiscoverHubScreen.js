@@ -3058,6 +3058,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
 }
 
 function GatheringStoryItem({ story, colors, posterLabelFallback }) {
+  const { t } = useLanguage();
   const [url, setUrl] = useState(null);
   React.useEffect(() => {
     getSignedStoryUrl(story.media_path).then(setUrl);

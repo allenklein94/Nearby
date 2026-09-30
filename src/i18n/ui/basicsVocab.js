@@ -38,6 +38,7 @@ export default {
       morning_person: "A Typical Morning",
       cooking_habits: "Weeknight Dinner",
       life_chapter: "My Life Chapter Right Now",
+      ethnicity: "Ethnicity",
     },
     placeholder: {
       height: "e.g. 5'10\"",
@@ -185,6 +186,8 @@ export default {
         focused_on_personal_growth: "Focused on personal growth",
         steady_and_settled: "Steady and settled",
       },
+      ethnicity: { black_african_descent: "Black/African Descent", east_asian: "East Asian", hispanic_latino: "Hispanic/Latino", middle_eastern: "Middle Eastern", native_american: "Native American", pacific_islander: "Pacific Islander", south_asian: "South Asian", southeast_asian: "Southeast Asian", white_caucasian: "White/Caucasian", other: "Other" },
+      gender: { man: "Man", woman: "Woman", non_binary: "Non-binary", trans_man: "Trans man", trans_woman: "Trans woman", genderfluid: "Genderfluid", agender: "Agender", other: "Other", prefer_not_to_say: "Prefer not to say" },
     },
   },
   es: {
@@ -224,6 +227,7 @@ export default {
       morning_person: "Una mañana típica",
       cooking_habits: "Cena entre semana",
       life_chapter: "Mi etapa de vida ahora",
+      ethnicity: "Etnia",
     },
     placeholder: {
       height: "p. ej. 5'10\"",
@@ -371,6 +375,8 @@ export default {
         focused_on_personal_growth: "Enfocado en crecer como persona",
         steady_and_settled: "Estable y asentado",
       },
+      ethnicity: { black_african_descent: "Negro/ascendencia africana", east_asian: "Asiático oriental", hispanic_latino: "Hispano/latino", middle_eastern: "De Oriente Medio", native_american: "Nativo americano", pacific_islander: "Isleño del Pacífico", south_asian: "Asiático del sur", southeast_asian: "Asiático del sudeste", white_caucasian: "Blanco/caucásico", other: "Otro" },
+      gender: { man: "Hombre", woman: "Mujer", non_binary: "No binario", trans_man: "Hombre trans", trans_woman: "Mujer trans", genderfluid: "Género fluido", agender: "Agénero", other: "Otro", prefer_not_to_say: "Prefiero no decirlo" },
     },
   },
   de: {
@@ -410,6 +416,7 @@ export default {
       morning_person: "Ein typischer Morgen",
       cooking_habits: "Abendessen unter der Woche",
       life_chapter: "Meine Lebensphase gerade",
+      ethnicity: "Ethnische Herkunft",
     },
     placeholder: {
       height: "z. B. 5'10\"",
@@ -557,6 +564,8 @@ export default {
         focused_on_personal_growth: "Fokus auf persönliches Wachstum",
         steady_and_settled: "Beständig und angekommen",
       },
+      ethnicity: { black_african_descent: "Schwarz/afrikanischer Herkunft", east_asian: "Ostasiatisch", hispanic_latino: "Hispanisch/Latino", middle_eastern: "Nahöstlich", native_american: "Indigen (Amerika)", pacific_islander: "Pazifische Inseln", south_asian: "Südasiatisch", southeast_asian: "Südostasiatisch", white_caucasian: "Weiß/europäischer Herkunft", other: "Andere" },
+      gender: { man: "Mann", woman: "Frau", non_binary: "Nichtbinär", trans_man: "Trans Mann", trans_woman: "Trans Frau", genderfluid: "Genderfluid", agender: "Agender", other: "Andere", prefer_not_to_say: "Möchte ich nicht sagen" },
     },
   },
   fr: {
@@ -596,6 +605,7 @@ export default {
       morning_person: "Un matin typique",
       cooking_habits: "Dîner en semaine",
       life_chapter: "Mon chapitre de vie actuel",
+      ethnicity: "Origine ethnique",
     },
     placeholder: {
       height: "ex. 5'10\"",
@@ -743,6 +753,8 @@ export default {
         focused_on_personal_growth: "Concentré sur mon développement personnel",
         steady_and_settled: "Stable et posé",
       },
+      ethnicity: { black_african_descent: "Noir/d'origine africaine", east_asian: "Asiatique de l'Est", hispanic_latino: "Hispanique/Latino", middle_eastern: "Moyen-oriental", native_american: "Amérindien", pacific_islander: "Insulaire du Pacifique", south_asian: "Asiatique du Sud", southeast_asian: "Asiatique du Sud-Est", white_caucasian: "Blanc/caucasien", other: "Autre" },
+      gender: { man: "Homme", woman: "Femme", non_binary: "Non binaire", trans_man: "Homme trans", trans_woman: "Femme trans", genderfluid: "Genre fluide", agender: "Agenre", other: "Autre", prefer_not_to_say: "Je préfère ne pas le dire" },
     },
   },
   pt: {
@@ -782,6 +794,7 @@ export default {
       morning_person: "Uma manhã típica",
       cooking_habits: "Jantar durante a semana",
       life_chapter: "Meu momento de vida agora",
+      ethnicity: "Etnia",
     },
     placeholder: {
       height: "ex.: 5'10\"",
@@ -929,6 +942,8 @@ export default {
         focused_on_personal_growth: "Focado no crescimento pessoal",
         steady_and_settled: "Estável e tranquilo",
       },
+      ethnicity: { black_african_descent: "Negro/ascendência africana", east_asian: "Leste asiático", hispanic_latino: "Hispânico/latino", middle_eastern: "Do Oriente Médio", native_american: "Indígena americano", pacific_islander: "Das ilhas do Pacífico", south_asian: "Sul-asiático", southeast_asian: "Sudeste asiático", white_caucasian: "Branco/caucasiano", other: "Outro" },
+      gender: { man: "Homem", woman: "Mulher", non_binary: "Não binário", trans_man: "Homem trans", trans_woman: "Mulher trans", genderfluid: "Gênero fluido", agender: "Agênero", other: "Outro", prefer_not_to_say: "Prefiro não dizer" },
     },
   },
   ht: {
@@ -968,6 +983,7 @@ export default {
       morning_person: "Yon maten nòmal",
       cooking_habits: "Dine nan semèn",
       life_chapter: "Etap lavi m kounye a",
+      ethnicity: "Etnisite",
     },
     placeholder: {
       height: "egz. 5'10\"",
@@ -1115,6 +1131,8 @@ export default {
         focused_on_personal_growth: "M konsantre sou kwasans pèsonèl",
         steady_and_settled: "Estab epi etabli",
       },
+      ethnicity: { black_african_descent: "Nwa/desandan Afriken", east_asian: "Azyatik Lès", hispanic_latino: "Ispanik/Latino", middle_eastern: "Mwayen Oryan", native_american: "Endijèn Ameriken", pacific_islander: "Zile Pasifik", south_asian: "Azyatik Sid", southeast_asian: "Azyatik Sidès", white_caucasian: "Blan/Kokazyen", other: "Lòt" },
+      gender: { man: "Gason", woman: "Fanm", non_binary: "Non-binè", trans_man: "Gason trans", trans_woman: "Fanm trans", genderfluid: "Jan likid", agender: "San jan", other: "Lòt", prefer_not_to_say: "Mwen pito pa di" },
     },
   },
   zh: {
@@ -1154,6 +1172,7 @@ export default {
       morning_person: "典型的早晨",
       cooking_habits: "工作日晚餐",
       life_chapter: "我现在的人生阶段",
+      ethnicity: "族裔",
     },
     placeholder: {
       height: "例如 5'10\"",
@@ -1301,6 +1320,8 @@ export default {
         focused_on_personal_growth: "专注个人成长",
         steady_and_settled: "稳定安定",
       },
+      ethnicity: { black_african_descent: "黑人/非洲裔", east_asian: "东亚裔", hispanic_latino: "西班牙裔/拉丁裔", middle_eastern: "中东裔", native_american: "美洲原住民", pacific_islander: "太平洋岛民", south_asian: "南亚裔", southeast_asian: "东南亚裔", white_caucasian: "白人", other: "其他" },
+      gender: { man: "男性", woman: "女性", non_binary: "非二元", trans_man: "跨性别男性", trans_woman: "跨性别女性", genderfluid: "性别流动", agender: "无性别", other: "其他", prefer_not_to_say: "不愿透露" },
     },
   },
   vi: {
@@ -1340,6 +1361,7 @@ export default {
       morning_person: "Một buổi sáng điển hình",
       cooking_habits: "Bữa tối ngày thường",
       life_chapter: "Giai đoạn đời tôi lúc này",
+      ethnicity: "Dân tộc",
     },
     placeholder: {
       height: "vd: 5'10\"",
@@ -1487,6 +1509,8 @@ export default {
         focused_on_personal_growth: "Tập trung phát triển bản thân",
         steady_and_settled: "Ổn định",
       },
+      ethnicity: { black_african_descent: "Da đen/gốc Phi", east_asian: "Đông Á", hispanic_latino: "Gốc Tây Ban Nha/Latinh", middle_eastern: "Trung Đông", native_american: "Người Mỹ bản địa", pacific_islander: "Người đảo Thái Bình Dương", south_asian: "Nam Á", southeast_asian: "Đông Nam Á", white_caucasian: "Da trắng", other: "Khác" },
+      gender: { man: "Nam", woman: "Nữ", non_binary: "Phi nhị nguyên", trans_man: "Nam chuyển giới", trans_woman: "Nữ chuyển giới", genderfluid: "Giới tính linh hoạt", agender: "Vô giới", other: "Khác", prefer_not_to_say: "Không muốn nói" },
     },
   },
   tl: {
@@ -1526,6 +1550,7 @@ export default {
       morning_person: "Karaniwang umaga",
       cooking_habits: "Hapunan tuwing weekday",
       life_chapter: "Yugto ng buhay ko ngayon",
+      ethnicity: "Etnisidad",
     },
     placeholder: {
       height: "hal. 5'10\"",
@@ -1673,6 +1698,8 @@ export default {
         focused_on_personal_growth: "Nakatuon sa personal na pag-unlad",
         steady_and_settled: "Matatag at panatag",
       },
+      ethnicity: { black_african_descent: "Itim/may lahing Aprikano", east_asian: "East Asian", hispanic_latino: "Hispanic/Latino", middle_eastern: "Middle Eastern", native_american: "Native American", pacific_islander: "Pacific Islander", south_asian: "South Asian", southeast_asian: "Southeast Asian", white_caucasian: "Puti/Caucasian", other: "Iba pa" },
+      gender: { man: "Lalaki", woman: "Babae", non_binary: "Non-binary", trans_man: "Trans na lalaki", trans_woman: "Trans na babae", genderfluid: "Genderfluid", agender: "Agender", other: "Iba pa", prefer_not_to_say: "Ayokong sabihin" },
     },
   },
   ru: {
@@ -1712,6 +1739,7 @@ export default {
       morning_person: "Типичное утро",
       cooking_habits: "Ужин в будни",
       life_chapter: "Мой этап жизни сейчас",
+      ethnicity: "Этническая принадлежность",
     },
     placeholder: {
       height: "напр. 5'10\"",
@@ -1859,6 +1887,8 @@ export default {
         focused_on_personal_growth: "Сосредоточен на саморазвитии",
         steady_and_settled: "Стабильно и спокойно",
       },
+      ethnicity: { black_african_descent: "Чернокожий/африканского происхождения", east_asian: "Восточноазиатский", hispanic_latino: "Латиноамериканский", middle_eastern: "Ближневосточный", native_american: "Коренной американец", pacific_islander: "Выходец с островов Тихого океана", south_asian: "Южноазиатский", southeast_asian: "Юго-восточноазиатский", white_caucasian: "Белый/европеоидный", other: "Другое" },
+      gender: { man: "Мужчина", woman: "Женщина", non_binary: "Небинарный человек", trans_man: "Трансгендерный мужчина", trans_woman: "Трансгендерная женщина", genderfluid: "Гендерфлюид", agender: "Агендер", other: "Другое", prefer_not_to_say: "Предпочитаю не указывать" },
     },
   },
   ko: {
@@ -1898,6 +1928,7 @@ export default {
       morning_person: "평소 아침",
       cooking_habits: "평일 저녁",
       life_chapter: "지금 나의 인생 챕터",
+      ethnicity: "민족",
     },
     placeholder: {
       height: "예: 5'10\"",
@@ -2045,6 +2076,8 @@ export default {
         focused_on_personal_growth: "자기 성장에 집중 중",
         steady_and_settled: "안정적인 시기",
       },
+      ethnicity: { black_african_descent: "흑인/아프리카계", east_asian: "동아시아계", hispanic_latino: "히스패닉/라틴계", middle_eastern: "중동계", native_american: "아메리카 원주민", pacific_islander: "태평양 섬 주민", south_asian: "남아시아계", southeast_asian: "동남아시아계", white_caucasian: "백인", other: "기타" },
+      gender: { man: "남성", woman: "여성", non_binary: "논바이너리", trans_man: "트랜스 남성", trans_woman: "트랜스 여성", genderfluid: "젠더플루이드", agender: "무성별", other: "기타", prefer_not_to_say: "밝히지 않음" },
     },
   },
 };

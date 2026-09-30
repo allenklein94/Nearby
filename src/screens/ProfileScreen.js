@@ -1128,11 +1128,11 @@ export default function ProfileScreen({ navigation, route }) {
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleGenderIdentity(option)}
                   activeOpacity={0.85}
-                  accessibilityLabel={option}
+                  accessibilityLabel={basicsOption('gender', option, language)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{basicsOption(field.key, option, language)}</Text>
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{basicsOption('gender', option, language)}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -1149,11 +1149,11 @@ export default function ProfileScreen({ navigation, route }) {
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleInterestedInGender(option)}
                   activeOpacity={0.85}
-                  accessibilityLabel={option}
+                  accessibilityLabel={basicsOption('gender', option, language)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{basicsOption(field.key, option, language)}</Text>
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{basicsOption('gender', option, language)}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -1181,11 +1181,11 @@ export default function ProfileScreen({ navigation, route }) {
                 style={[styles.chip, myEthnicity === option && styles.chipSelected]}
                 onPress={() => setMyEthnicity(myEthnicity === option ? null : option)}
                 activeOpacity={0.85}
-                accessibilityLabel={option}
+                accessibilityLabel={basicsOption('ethnicity', option, language)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: myEthnicity === option }}
               >
-                <Text style={[styles.chipText, myEthnicity === option && styles.chipTextSelected]}>{option}</Text>
+                <Text style={[styles.chipText, myEthnicity === option && styles.chipTextSelected]}>{basicsOption('ethnicity', option, language)}</Text>
               </TouchableOpacity>
             ))}
           </View>

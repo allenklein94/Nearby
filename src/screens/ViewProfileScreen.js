@@ -24,6 +24,7 @@ import { formatOccasionDateForPrecision } from '../utils/occasionDatePrecision';
 import { getSignedVoiceIntroUrl } from '../services/voiceNotes';
 import VoicePlayButton from '../components/VoicePlayButton';
 import { useTheme } from '../context/ThemeContext';
+import { basicsOption } from '../i18n/basicsVocab';
 import { useLanguage } from '../context/LanguageContext';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { typography, spacing, radius } from '../theme';
@@ -386,11 +387,11 @@ export default function ViewProfileScreen({ route, navigation }) {
     profile.pronouns && { label: 'Pronouns', value: profile.pronouns },
     profile.gender && !profile.gender_hidden && { label: 'Gender', value: profile.gender },
     profile.sexual_orientation && { label: 'Orientation', value: profile.sexual_orientation },
-    profile.ethnicity && !profile.ethnicity_hidden && { label: 'Ethnicity', value: profile.ethnicity },
+    profile.ethnicity && !profile.ethnicity_hidden && { label: 'Ethnicity', value: basicsOption('ethnicity', profile.ethnicity, language) },
     isDatingContext && !profile.gender_hidden && genderIdentity.length > 0 &&
-      { label: 'Gender Identity', value: genderIdentity.join(', ') },
+      { label: 'Gender Identity', value: genderIdentity.map((g) => basicsOption('gender', g, language)).join(', ') },
     isDatingContext && !profile.gender_hidden && interestedInGenders.length > 0 &&
-      { label: 'Interested In', value: t('ui.viewProfile.interestedIn', { genders: interestedInGenders.join(', ') }) },
+      { label: 'Interested In', value: t('ui.viewProfile.interestedIn', { genders: interestedInGenders.map((g) => basicsOption('gender', g, language)).join(', ') }) },
   ].filter(Boolean);
 
   const filledDetails = BASICS_FIELDS

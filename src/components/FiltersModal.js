@@ -4,6 +4,8 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { DATING_QUICK_FILTER_CATALOG } from '../constants/quickFilterCatalog';
 import { TapActiveChip, modalAnimation } from '../motion';
+import { useLanguage } from '../context/LanguageContext';
+import { basicsLabel, basicsOption } from '../i18n/basicsVocab';
 
 // Aug 30 2026 (CLAUDE.md, external UX critique response): this used to be
 // the Advanced Filters (Premium-only) modal alone -- a caller would only
@@ -26,18 +28,17 @@ import { TapActiveChip, modalAnimation } from '../motion';
 // configurable value (Match %'s threshold) -- the chip label reflects
 // whatever the user actually set in Customize, defaulting to the catalog's
 // default when unset.
-function quickFilterChipLabel(info, quickFilterConfig) {
+// Labels read ui.dating.quick.<key> (the catalog's English label is the English entry).
+function quickFilterChipLabel(info, quickFilterConfig, t) {
   if (info.kind === 'threshold') {
     const value = quickFilterConfig?.[info.key]?.value ?? info.defaultValue;
-    return `${info.icon} ${value}${info.unit ?? ''}+ Match`;
+    return `${info.icon} ${t('ui.dating.quick.matchThreshold', { value, unit: info.unit ?? '' })}`;
   }
-  return `${info.icon} ${info.label}`;
+  return `${info.icon} ${t(`ui.dating.quick.${info.key}`)}`;
 }
 
-const DISCOVERY_MODE_HELP = {
-  crossedPaths: "People you've actually been near recently (about 35 feet, with the app open).",
-  browse: 'A wider pool of people matching your filters — not limited to physical proximity.',
-};
+// Help line under the Discovery mode switch: ui.dating.modeHelp.<mode>.
+const DISCOVERY_MODES = ['crossedPaths', 'browse'];
 
 export default function FiltersModal({
   visible,
@@ -64,6 +65,7 @@ export default function FiltersModal({
   onClearFreeFilters,
 }) {
   const { colors, shadow } = useTheme();
+  const { t, language } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [draft, setDraft] = useState(activeFilters);
   const [draftMinAge, setDraftMinAge] = useState(String(ageRange?.min ?? 18));
@@ -118,50 +120,50 @@ export default function FiltersModal({
     <Modal visible={visible} animationType={modalAnimation('slide')} onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} accessibilityLabel="Cancel" accessibilityRole="button">
-            <Text style={styles.headerButton}>Cancel</Text>
+          <TouchableOpacity onPress={onClose} accessibilityLabel={t('ui.dating.cancelA11y')} accessibilityRole="button">
+            <Text style={styles.headerButton}>{t('ui.dating.cancel')}</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Filters</Text>
-          <TouchableOpacity onPress={clearAll} accessibilityLabel="Clear all filters" accessibilityRole="button">
-            <Text style={styles.headerButton}>Clear</Text>
+          <Text style={styles.headerTitle}>{t('ui.dating.filters')}</Text>
+          <TouchableOpacity onPress={clearAll} accessibilityLabel={t('ui.dating.clearAllFiltersA11y')} accessibilityRole="button">
+            <Text style={styles.headerButton}>{t('ui.dating.clear')}</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           {onChangeDiscoveryMode && (
             <View style={styles.fieldSection}>
-              <Text style={styles.fieldLabel}>🔀 Discovery</Text>
+              <Text style={styles.fieldLabel}>{t('ui.dating.discovery')}</Text>
               <View style={styles.chipsWrap}>
                 <TapActiveChip
                   active={discoveryMode !== 'browse'}
                   style={[styles.chip, discoveryMode !== 'browse' && styles.chipActive]}
                   onPress={() => onChangeDiscoveryMode('crossedPaths')}
-                  accessibilityLabel="Crossed Paths, people you've actually been near"
+                  accessibilityLabel={t('ui.dating.crossedPathsPeopleYouveActuallyA11y')}
                   accessibilityRole="button"
                   accessibilityState={{ selected: discoveryMode !== 'browse' }}
                 >
-                  <Text style={[styles.chipText, discoveryMode !== 'browse' && styles.chipTextActive]}>📍 Crossed Paths</Text>
+                  <Text style={[styles.chipText, discoveryMode !== 'browse' && styles.chipTextActive]}>{t('ui.dating.crossedPaths2')}</Text>
                 </TapActiveChip>
                 <TapActiveChip
                   active={discoveryMode === 'browse'}
                   style={[styles.chip, discoveryMode === 'browse' && styles.chipActive]}
                   onPress={() => onChangeDiscoveryMode('browse')}
-                  accessibilityLabel="Browse, a wider pool of people matching your filters"
+                  accessibilityLabel={t('ui.dating.browseAWiderPoolOfA11y')}
                   accessibilityRole="button"
                   accessibilityState={{ selected: discoveryMode === 'browse' }}
                 >
-                  <Text style={[styles.chipText, discoveryMode === 'browse' && styles.chipTextActive]}>🔎 Browse</Text>
+                  <Text style={[styles.chipText, discoveryMode === 'browse' && styles.chipTextActive]}>{t('ui.dating.browse2')}</Text>
                 </TapActiveChip>
               </View>
               <Text style={styles.sectionHelp}>
-                {DISCOVERY_MODE_HELP[discoveryMode] ?? DISCOVERY_MODE_HELP.crossedPaths}
+                {t(`ui.dating.modeHelp.${DISCOVERY_MODES.includes(discoveryMode) ? discoveryMode : 'crossedPaths'}`)}
               </Text>
             </View>
           )}
 
           {intentionOptions && (
             <View style={styles.fieldSection}>
-              <Text style={styles.fieldLabel}>💘 Looking For</Text>
+              <Text style={styles.fieldLabel}>{t('ui.dating.lookingFor')}</Text>
               <View style={styles.chipsWrap}>
                 {intentionOptions.map((option) => {
                   const active = intentionFilter.includes(option.value);
@@ -171,11 +173,11 @@ export default function FiltersModal({
                       active={active}
                       style={[styles.chip, active && styles.chipActive]}
                       onPress={() => onToggleIntention(option.value)}
-                      accessibilityLabel={`Filter by ${option.label}`}
+                      accessibilityLabel={t('ui.dating.filterByA11y', { label: t(`ui.viewProfile.intention.${option.value}`) })}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
                     >
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{option.icon} {option.label}</Text>
+                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{option.icon} {t(`ui.viewProfile.intention.${option.value}`)}</Text>
                     </TapActiveChip>
                   );
                 })}
@@ -186,14 +188,14 @@ export default function FiltersModal({
           {quickFilterOrder && (
             <View style={styles.fieldSection}>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.fieldLabel}>⚡ Quick Filters</Text>
+                <Text style={styles.fieldLabel}>{t('ui.dating.quickFilters')}</Text>
                 {onCustomizeQuickFilters && (
                   <TouchableOpacity
                     onPress={onCustomizeQuickFilters}
-                    accessibilityLabel="Customize which Quick Filters show and their order"
+                    accessibilityLabel={t('ui.dating.customizeWhichQuickFiltersShowA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.customizeLink}>⚙️ Customize</Text>
+                    <Text style={styles.customizeLink}>{t('ui.dating.customize')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -202,14 +204,14 @@ export default function FiltersModal({
                   const info = DATING_QUICK_FILTER_CATALOG.find((f) => f.key === key);
                   if (!info) return null;
                   const active = !!quickFilters?.[key];
-                  const label = quickFilterChipLabel(info, quickFilterConfig);
+                  const label = quickFilterChipLabel(info, quickFilterConfig, t);
                   return (
                     <TapActiveChip
                       key={key}
                       active={active}
                       style={[styles.chip, active && styles.chipActive]}
                       onPress={() => onToggleQuickFilter(key)}
-                      accessibilityLabel={info.a11y ?? label}
+                      accessibilityLabel={info.a11y ? t(`ui.dating.quick.${info.key}A11y`) : label}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
                     >
@@ -223,14 +225,14 @@ export default function FiltersModal({
 
           <View style={styles.fieldSection}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.fieldLabel}>🔧 Advanced Filters</Text>
-              {!isPremium && <Text style={styles.lockBadge}>🔒 Premium</Text>}
+              <Text style={styles.fieldLabel}>{t('ui.dating.advancedFilters')}</Text>
+              {!isPremium && <Text style={styles.lockBadge}>{t('ui.dating.premium')}</Text>}
             </View>
             {isPremium ? (
               <>
                 {showAgeRange && (
                   <View style={styles.ageBlock}>
-                    <Text style={styles.ageBlockLabel}>🎂 Age Range</Text>
+                    <Text style={styles.ageBlockLabel}>{t('ui.dating.ageRange')}</Text>
                     <View style={styles.ageRow}>
                       <TextInput
                         style={styles.ageInput}
@@ -238,7 +240,7 @@ export default function FiltersModal({
                         onChangeText={setDraftMinAge}
                         keyboardType="number-pad"
                         placeholderTextColor={colors.textTertiary}
-                        accessibilityLabel="Minimum age"
+                        accessibilityLabel={t('ui.dating.minimumAgeA11y')}
                       />
                       <Text style={styles.ageDash}>to</Text>
                       <TextInput
@@ -247,7 +249,7 @@ export default function FiltersModal({
                         onChangeText={setDraftMaxAge}
                         keyboardType="number-pad"
                         placeholderTextColor={colors.textTertiary}
-                        accessibilityLabel="Maximum age"
+                        accessibilityLabel={t('ui.dating.maximumAgeA11y')}
                       />
                     </View>
                   </View>
@@ -255,7 +257,7 @@ export default function FiltersModal({
 
                 {fields.map((field) => (
                   <View key={field.key} style={styles.ageBlock}>
-                    <Text style={styles.ageBlockLabel}>{field.icon} {field.label}</Text>
+                    <Text style={styles.ageBlockLabel}>{field.icon} {basicsLabel(field, language)}</Text>
                     <View style={styles.chipsWrap}>
                       {field.options.map((option) => {
                         const active = (draft[field.key] ?? []).includes(option);
@@ -264,11 +266,11 @@ export default function FiltersModal({
                             key={option}
                             style={[styles.chip, active && styles.chipActive]}
                             onPress={() => toggleOption(field.key, option)}
-                            accessibilityLabel={`${field.label}: ${option}`}
+                            accessibilityLabel={`${basicsLabel(field, language)}: ${basicsOption(field.key, option, language)}`}
                             accessibilityRole="button"
                             accessibilityState={{ selected: active }}
                           >
-                            <Text style={[styles.chipText, active && styles.chipTextActive]}>{option}</Text>
+                            <Text style={[styles.chipText, active && styles.chipTextActive]}>{basicsOption(field.key, option, language)}</Text>
                           </TouchableOpacity>
                         );
                       })}
@@ -279,12 +281,11 @@ export default function FiltersModal({
             ) : (
               <View style={styles.upsellBox}>
                 <Text style={styles.upsellText}>
-                  Filtering by education, drinking, religion, love language, and more is a
-                  Premium feature. Looking For, Quick Filters, and Discovery mode stay free.
+                  {t('ui.dating.filteringByEducationDrinkingReligion')}
                 </Text>
                 {onUpgrade && (
-                  <TouchableOpacity style={styles.upsellButton} onPress={onUpgrade} accessibilityLabel="Upgrade to Premium" accessibilityRole="button">
-                    <Text style={styles.upsellButtonText}>Upgrade to Premium</Text>
+                  <TouchableOpacity style={styles.upsellButton} onPress={onUpgrade} accessibilityLabel={t('ui.dating.upgradeToPremiumA11y')} accessibilityRole="button">
+                    <Text style={styles.upsellButtonText}>{t('ui.dating.upgradeToPremium')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -293,8 +294,8 @@ export default function FiltersModal({
         </ScrollView>
 
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.applyButton} onPress={apply} activeOpacity={0.85} accessibilityLabel={`Apply filters${activeCount > 0 ? `, ${activeCount} active` : ''}`} accessibilityRole="button">
-            <Text style={styles.applyButtonText}>Show Results{activeCount > 0 ? ` (${activeCount} filter${activeCount === 1 ? '' : 's'})` : ''}</Text>
+          <TouchableOpacity style={styles.applyButton} onPress={apply} activeOpacity={0.85} accessibilityLabel={activeCount > 0 ? t('ui.dating.applyFiltersActiveA11y', { count: activeCount }) : t('ui.dating.applyFiltersA11y')} accessibilityRole="button">
+            <Text style={styles.applyButtonText}>{activeCount > 0 ? t('ui.dating.showResultsCount', { count: activeCount }) : t('ui.dating.showResults')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

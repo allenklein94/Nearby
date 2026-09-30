@@ -193,7 +193,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
       setMyFreeTonight(await setFreeTonight(on ? endOfTonight().toISOString() : null));
     } catch {
       setMyFreeTonight(previous);
-      Alert.alert('Could not update', 'Please try again.');
+      Alert.alert(t('ui.dating.couldNotUpdate'), t('ui.dating.pleaseTryAgain'));
     }
   }
 
@@ -205,11 +205,11 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
       if (!limitCheck.allowed) {
         setBrowseHasMore(false);
         Alert.alert(
-          'Daily limit reached',
+          t('ui.dating.dailyLimitReached'),
           limitCheck.reason,
           [
-            { text: 'Not now', style: 'cancel' },
-            { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
+            { text: t('ui.dating.notNow'), style: 'cancel' },
+            { text: t('ui.dating.upgradeToPremium'), onPress: () => navigation.navigate('Paywall') },
           ]
         );
         return;
@@ -277,16 +277,16 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
   function showRadiusInfo() {
     if (discoveryMode === 'browse') {
       Alert.alert(
-        'How Browse Works',
-        "Browse shows a wider pool of people matching your filters — not limited to actual proximity like Crossed Paths. Great for exploring beyond who you've recently been near.\n\n👋 Notice vs Wave:\nA Notice is silent — they only find out if they notice you back too. A Wave tells them right away that you noticed them, before it\u2019s mutual.",
-        [{ text: 'OK' }]
+        t('ui.dating.howBrowseWorks'),
+        `${t('ui.dating.browseExplainer')}\n\n${t('ui.dating.noticeVsWave')}`,
+        [{ text: t('ui.dating.ok') }]
       );
       return;
     }
     Alert.alert(
       t('discovery.radiusInfoTitle'),
-      t('discovery.radiusInfoText') + '\n\n👋 Notice vs Wave:\nA Notice is silent — they only find out if they notice you back too. A Wave tells them right away that you noticed them, before it\u2019s mutual.',
-      [{ text: 'OK' }]
+      `${t('discovery.radiusInfoText')}\n\n${t('ui.dating.noticeVsWave')}`,
+      [{ text: t('ui.dating.ok') }]
     );
   }
 
@@ -323,14 +323,14 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
       return (
         <FadeInState opportunity style={styles.emptyState}>
           <Text style={styles.emptyEmoji}>📍</Text>
-          <Text style={styles.emptyTitle}>Turn on location to see who's around</Text>
-          <Text style={styles.emptyText}>Nearby uses your location to find people near you. It's never shown to anyone as an exact spot.</Text>
+          <Text style={styles.emptyTitle}>{t('ui.dating.turnOnLocationToSee')}</Text>
+          <Text style={styles.emptyText}>{t('ui.dating.nearbyUsesYourLocationTo')}</Text>
           <TouchableOpacity
             onPress={async () => { if (await getUserLocation({ fresh: true, force: true })) load(); }}
-            accessibilityLabel="Turn on location"
+            accessibilityLabel={t('ui.dating.turnOnLocationA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.emptyActionText}>Turn on location →</Text>
+            <Text style={styles.emptyActionText}>{t('ui.dating.turnOnLocation')}</Text>
           </TouchableOpacity>
         </FadeInState>
       );
@@ -341,33 +341,33 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
         <Text style={styles.emptyEmoji}>{discoveryMode === 'browse' ? '🔎' : '📍'}</Text>
         <Text style={styles.emptyTitle}>
           {discoveryMode === 'browse'
-            ? 'No one matches your filters in this area yet'
-            : (anyFilterActive ? 'No one matches these filters right now' : t('discovery.emptyTitle'))}
+            ? t('ui.dating.noOneMatchesYourFilters')
+            : (anyFilterActive ? t('ui.dating.noOneMatchesTheseFilters') : t('discovery.emptyTitle'))}
         </Text>
         <Text style={styles.emptyText}>
           {discoveryMode === 'browse'
-            ? 'Try adjusting your filters, or check back as more people join.'
-            : (anyFilterActive ? 'Try adjusting or clearing your filters below.' : t('discovery.emptyText'))}
+            ? t('ui.dating.tryAdjustingYourFiltersOr')
+            : (anyFilterActive ? t('ui.dating.tryAdjustingOrClearingYour') : t('discovery.emptyText'))}
         </Text>
         {filtered ? (
-          <TouchableOpacity onPress={openFilters} accessibilityLabel="Adjust filters" accessibilityRole="button">
-            <Text style={styles.emptyActionText}>Adjust Filters →</Text>
+          <TouchableOpacity onPress={openFilters} accessibilityLabel={t('ui.dating.adjustFiltersA11y')} accessibilityRole="button">
+            <Text style={styles.emptyActionText}>{t('ui.dating.adjustFilters')}</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.emptyActionsRow}>
             <TouchableOpacity
               onPress={() => navigation.navigate('InviteFriends')}
-              accessibilityLabel="Invite friends"
+              accessibilityLabel={t('ui.dating.inviteFriendsA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.emptyActionText}>Invite Friends →</Text>
+              <Text style={styles.emptyActionText}>{t('ui.dating.inviteFriends')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => navigation.navigate('Settings', { scrollToPreferences: true })}
-              accessibilityLabel="Adjust preferences"
+              accessibilityLabel={t('ui.dating.adjustPreferencesA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.emptyActionText}>Adjust Preferences →</Text>
+              <Text style={styles.emptyActionText}>{t('ui.dating.adjustPreferences')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -420,11 +420,11 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
     const limitCheck = isWave ? await checkWaveLimit() : await checkNoticeLimit();
     if (!limitCheck.allowed) {
       Alert.alert(
-        isWave ? 'Weekly Wave used' : 'Daily limit reached',
+        isWave ? t('ui.dating.weeklyWaveUsed') : t('ui.dating.dailyLimitReached'),
         limitCheck.reason,
         [
-          { text: 'Not now', style: 'cancel' },
-          { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
+          { text: t('ui.dating.notNow'), style: 'cancel' },
+          { text: t('ui.dating.upgradeToPremium'), onPress: () => navigation.navigate('Paywall') },
         ]
       );
       return;
@@ -456,7 +456,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
             .eq('id', existing.id);
 
           if (updateError) {
-            Alert.alert('Wave not sent', updateError.message);
+            Alert.alert(t('ui.dating.waveNotSent'), updateError.message);
             return;
           }
           posthog.capture('wave_sent');
@@ -464,11 +464,11 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
           return;
         }
 
-        Alert.alert('Already sent', "You've already noticed this person.");
+        Alert.alert(t('ui.dating.alreadySent'), t('ui.dating.youveAlreadyNoticedThisPerson'));
         return;
       }
 
-      Alert.alert(isWave ? 'Wave not sent' : 'Notice not sent', insertError.message);
+      Alert.alert(isWave ? t('ui.dating.waveNotSent') : t('ui.dating.noticeNotSent'), insertError.message);
       return;
     }
 
@@ -478,11 +478,11 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
 
   function confirmWave(toUserId) {
     Alert.alert(
-      'Send a Wave? 👋',
-      "Unlike a regular Notice, they'll be told right away that you noticed them — before it's mutual. Free users get 1 per week.",
+      t('ui.dating.sendAWave'),
+      t('ui.dating.unlikeARegularNoticeTheyll'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Send Wave', onPress: () => sendNotice(toUserId, true) },
+        { text: t('ui.dating.cancel'), style: 'cancel' },
+        { text: t('ui.dating.sendWave'), onPress: () => sendNotice(toUserId, true) },
       ]
     );
   }
@@ -552,9 +552,9 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
   });
 
   const filtersSummaryCount = intentionFilter.length + activeQuickCount + totalActiveCount;
-  const filtersSummaryModeLabel = discoveryMode === 'browse' ? 'Browse' : 'Crossed Paths';
+  const filtersSummaryModeLabel = discoveryMode === 'browse' ? t('ui.dating.browse') : t('ui.dating.crossedPaths');
   const filtersSummaryText = filtersSummaryCount > 0
-    ? `${filtersSummaryModeLabel} · ${filtersSummaryCount} filter${filtersSummaryCount === 1 ? '' : 's'}`
+    ? `${filtersSummaryModeLabel} · ${t('ui.dating.filterCount', { count: filtersSummaryCount })}`
     : filtersSummaryModeLabel;
 
   return (
@@ -564,7 +564,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
           <View style={{ flex: 1 }}>
             {!embedded && (
               <Text style={styles.headerTitle} accessibilityRole="header">
-                {discoveryMode === 'browse' ? 'Browse' : t('discovery.title')}
+                {discoveryMode === 'browse' ? t('ui.dating.browse') : t('discovery.title')}
               </Text>
             )}
           </View>
@@ -572,7 +572,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
             <TouchableOpacity
               onPress={showRadiusInfo}
               style={styles.headerIconButton}
-              accessibilityLabel={discoveryMode === 'browse' ? 'Learn how Browse works' : 'Learn how Crossed Paths works'}
+              accessibilityLabel={discoveryMode === 'browse' ? t('ui.dating.learnHowBrowseWorksA11y') : t('ui.dating.learnHowCrossedPathsWorksA11y')}
               accessibilityRole="button"
             >
               <Text style={styles.headerIconText}>ⓘ</Text>
@@ -580,7 +580,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
             <TouchableOpacity
               onPress={toggleViewStyle}
               style={styles.headerIconButton}
-              accessibilityLabel={viewStyle === 'cards' ? 'Currently on card view, switch to list view' : 'Currently on list view, switch to card view'}
+              accessibilityLabel={viewStyle === 'cards' ? t('ui.dating.currentlyOnCardViewSwitchA11y') : t('ui.dating.currentlyOnListViewSwitchA11y')}
               accessibilityRole="button"
             >
               <Text style={styles.headerIconText}>{viewStyle === 'cards' ? '🃏' : '📋'}</Text>
@@ -589,7 +589,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
               <TouchableOpacity
                 onPress={() => setShowSightingsOverview(true)}
                 style={styles.headerIconButton}
-                accessibilityLabel="See all your crossed paths on a map"
+                accessibilityLabel={t('ui.dating.seeAllYourCrossedPathsA11y')}
                 accessibilityRole="button"
               >
                 <Text style={styles.headerIconText}>🗺️</Text>
@@ -603,7 +603,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
             <TouchableOpacity
               onPress={() => navigation.navigate('DatingPreferences')}
               style={styles.headerIconButton}
-              accessibilityLabel="Your Dating Profile — what you're looking for and dating preferences"
+              accessibilityLabel={t('ui.dating.yourDatingProfileWhatYoureA11y')}
               accessibilityRole="button"
             >
               <Text style={styles.headerIconText}>👤</Text>
@@ -618,7 +618,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
             CLAUDE.md), this subtitle is now the *only* on-screen indicator
             of which discovery mode is active. */}
         <Text style={styles.headerSubtitle}>
-          {discoveryMode === 'browse' ? 'A wider pool of people matching your filters' : t('discovery.subtitle')}
+          {discoveryMode === 'browse' ? t('ui.dating.aWiderPoolOfPeople') : t('discovery.subtitle')}
         </Text>
       </View>
 
@@ -639,24 +639,24 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
           real state, never a fabricated count. */}
       <View style={styles.freeTonightRow}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.freeTonightTitle}>🌙 Free tonight</Text>
+          <Text style={styles.freeTonightTitle}>{t('ui.dating.freeTonight')}</Text>
           <Text style={styles.freeTonightHint}>
             {myFreeTonight
-              ? 'On until late tonight. Only people who are also free tonight can see this, and only on their suggestions to you.'
-              : 'Optional. Turn on to see who else is free tonight. It is never shown to anyone who has not turned it on too.'}
+              ? t('ui.dating.onUntilLateTonightOnly')
+              : t('ui.dating.optionalTurnOnToSee')}
           </Text>
         </View>
-        <Switch value={!!myFreeTonight} onValueChange={toggleFreeTonight} accessibilityLabel="Free tonight" />
+        <Switch value={!!myFreeTonight} onValueChange={toggleFreeTonight} accessibilityLabel={t('ui.dating.freeTonightA11y')} />
       </View>
 
       <TouchableOpacity
         style={[styles.filtersButton, filtersSummaryCount > 0 && styles.filtersButtonActive]}
         onPress={openFilters}
-        accessibilityLabel={`Filters, ${filtersSummaryText}`}
+        accessibilityLabel={t('ui.dating.filtersA11y', { filtersSummaryText: filtersSummaryText })}
         accessibilityRole="button"
       >
         <Feather name="sliders" size={14} color={filtersSummaryCount > 0 ? colors.primary : colors.textSecondary} />
-        <Text style={[styles.filtersButtonLabel, filtersSummaryCount > 0 && styles.filtersButtonLabelActive]}>Filters</Text>
+        <Text style={[styles.filtersButtonLabel, filtersSummaryCount > 0 && styles.filtersButtonLabelActive]}>{t('ui.dating.filters')}</Text>
         <Text style={styles.filtersButtonSummary} numberOfLines={1}>{filtersSummaryText}</Text>
       </TouchableOpacity>
 
@@ -730,8 +730,8 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
               activeOpacity={0.85}
               accessibilityLabel={
                 storyGroup
-                  ? `View ${item.profiles?.display_name}'s story`
-                  : `View ${item.profiles?.display_name}'s profile${onlineStatuses[item.otherUserId] ? ', online now' : ''}`
+                  ? t('ui.dating.viewStoryA11y', { name: item.profiles?.display_name })
+                  : t(onlineStatuses[item.otherUserId] ? 'ui.dating.viewProfileOnlineA11y' : 'ui.dating.viewProfileA11y', { name: item.profiles?.display_name })
               }
               accessibilityRole="button"
             >
@@ -750,7 +750,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
               style={styles.cardBody}
               onPress={() => navigation.navigate('ViewProfile', { userId: item.otherUserId, viewContext: 'dating' })}
               activeOpacity={0.85}
-              accessibilityLabel={`View ${item.profiles?.display_name}'s profile`}
+              accessibilityLabel={t('ui.dating.viewProfileA11y', { name: item.profiles?.display_name })}
               accessibilityRole="button"
             >
               <View style={styles.nameRow}>
@@ -762,11 +762,11 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
                   <TouchableOpacity
                     style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatibilityScore) }]}
                     onPress={() => showCompatibilityReport(item)}
-                    accessibilityLabel={`${item.compatibilityScore} percent compatible, view details`}
+                    accessibilityLabel={t('ui.dating.percentCompatibleViewDetailsA11y', { compatibilityScore: item.compatibilityScore })}
                     accessibilityRole="button"
                   >
                     <Text style={[styles.compatText, { color: compatibilityColor(item.compatibilityScore) }]}>
-                      {item.compatibilityScore}% · Why?
+                      {t('ui.dating.compatWhy', { score: item.compatibilityScore })}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -784,10 +784,10 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
                 {discoveryMode !== 'browse' && !gatheringText && item.sightingLat != null && (
                   <TouchableOpacity
                     onPress={() => setSightingMapTarget(item)}
-                    accessibilityLabel="View roughly where you crossed paths, on a map"
+                    accessibilityLabel={t('ui.dating.viewRoughlyWhereYouCrossedA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.viewOnMapText}>View on map</Text>
+                    <Text style={styles.viewOnMapText}>{t('ui.dating.viewOnMap')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -796,7 +796,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
                 <ScaleButton
                   style={styles.noticeButton}
                   onPress={() => sendNotice(item.otherUserId)}
-                  accessibilityLabel={`Send a Notice to ${item.profiles?.display_name}`}
+                  accessibilityLabel={t('ui.dating.sendANoticeToA11y', { name: item.profiles?.display_name })}
                   accessibilityRole="button"
                 >
                   <Text style={styles.noticeButtonText}>{t('discovery.notice')}</Text>
@@ -804,7 +804,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
                 <ScaleButton
                   style={styles.waveButton}
                   onPress={() => confirmWave(item.otherUserId)}
-                  accessibilityLabel={`Send a Wave to ${item.profiles?.display_name}`}
+                  accessibilityLabel={t('ui.dating.sendAWaveToA11y', { name: item.profiles?.display_name })}
                   accessibilityRole="button"
                 >
                   <Text style={styles.waveButtonText}>👋 {t('discovery.wave')}</Text>
@@ -812,7 +812,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
                 <TouchableOpacity
                   style={styles.moreButton}
                   onPress={() => setReportTarget({ id: item.otherUserId, name: item.profiles?.display_name })}
-                  accessibilityLabel={`Report or block ${item.profiles?.display_name}`}
+                  accessibilityLabel={t('ui.dating.reportOrBlockA11y', { name: item.profiles?.display_name })}
                   accessibilityRole="button"
                 >
                   <Text style={styles.moreButtonText}>⋯</Text>
@@ -833,13 +833,13 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
           accessible={true}
           accessibilityLiveRegion="polite"
         >
-          <Text style={styles.undoText}>{undoState.isWave ? 'Wave' : 'Notice'} sent</Text>
+          <Text style={styles.undoText}>{t(undoState.isWave ? 'ui.dating.waveSent' : 'ui.dating.noticeSent')}</Text>
           <TouchableOpacity
             onPress={handleUndo}
-            accessibilityLabel={`Undo sending ${undoState.isWave ? 'Wave' : 'Notice'}`}
+            accessibilityLabel={t(undoState.isWave ? 'ui.dating.undoWaveA11y' : 'ui.dating.undoNoticeA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.undoButton}>Undo</Text>
+            <Text style={styles.undoButton}>{t('ui.dating.undo')}</Text>
           </TouchableOpacity>
         </Animated.View>
       )}
@@ -928,8 +928,8 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
         <View style={StyleSheet.absoluteFill}>
           <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             <View style={styles.overviewHeader}>
-              <Text style={styles.overviewTitle}>All Your Crossed Paths</Text>
-              <TouchableOpacity onPress={() => setShowSightingsOverview(false)} accessibilityLabel="Close map" accessibilityRole="button">
+              <Text style={styles.overviewTitle}>{t('ui.dating.allYourCrossedPaths')}</Text>
+              <TouchableOpacity onPress={() => setShowSightingsOverview(false)} accessibilityLabel={t('ui.dating.closeMapA11y')} accessibilityRole="button">
                 <Text style={styles.overviewClose}>✕</Text>
               </TouchableOpacity>
             </View>

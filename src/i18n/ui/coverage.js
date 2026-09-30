@@ -85,6 +85,8 @@ export const LOCALIZED_FILES = [
   'src/screens/OccasionsScreen.js',
   'src/utils/occasionDatePrecision.js',
   'src/utils/occasionVisibility.js',
+  'src/screens/DiscoveryScreen.js',
+  'src/components/FiltersModal.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
@@ -116,6 +118,9 @@ export const INTENTIONAL_ENGLISH = {
     'Meet friends': 'stored connection-goal value (profiles.connection_goal); shown through ui.profile.goal.*',
     Date: 'stored connection-goal value', Network: 'stored connection-goal value', 'Explore my city': 'stored connection-goal value',
     'Find community': 'stored connection-goal value', 'Get out more': 'stored connection-goal value',
+  },
+  'src/screens/DiscoveryScreen.js': {
+    Ethnicity: 'English label of the ethnicity filter field (DISCOVERY_FILTER_FIELDS); shown through basicsLabel = ui.basicsVocab.label.ethnicity',
   },
   'src/utils/occasionDatePrecision.js': {
     'Exact date': 'English label of OCCASION_DATE_PRECISION_OPTIONS; other languages read ui.occasions.precision.<key>',
