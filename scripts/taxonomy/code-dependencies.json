@@ -9557,6 +9557,13 @@
    "group": null
   },
   {
+   "tag": "Dating",
+   "file": "src/i18n/ui/friends.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Breakfast",
    "file": "src/i18n/ui/homeParts.js",
    "consumer": "code",
