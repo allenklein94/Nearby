@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
@@ -15,8 +16,8 @@ import { MatchAnimation, SkeletonFeed, modalAnimation } from '../motion';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
-import { countLabel } from '../utils/plural';
 export default function FriendsScreen({ navigation }) {
+  const { t, language } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [friends, setFriends] = useState([]);
@@ -105,7 +106,7 @@ export default function FriendsScreen({ navigation }) {
       setPhotoUrls((prev) => ({ ...prev, ...Object.fromEntries(urlEntries) }));
 
       if (newMatches.length === 0 && notOnApp.length === 0) {
-        Alert.alert('No new matches', "We didn't find any new people from your contacts.");
+        Alert.alert(t('ui.friends.noNewMatches'), t('ui.friends.weDidntFindAnyNew'));
       }
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleFindFromContacts() });
@@ -116,7 +117,7 @@ export default function FriendsScreen({ navigation }) {
   async function handleInviteContact(contact) {
     try {
       await Share.share({
-        message: `Hey ${contact.name}, come join me on Nearby! Download it here: https://apps.apple.com/app/id6792143175`,
+        message: t('ui.friends.heyComeJoinMeOn', { name: contact.name }),
       });
     } catch (e) {
       // user cancelled the share sheet, nothing to do
@@ -146,10 +147,10 @@ export default function FriendsScreen({ navigation }) {
   }
 
   function confirmDeleteCircle(circle) {
-    Alert.alert(`Delete "${circle.name}"?`, 'This only removes the circle, not the friends in it.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('ui.friends.delete', { name: circle.name }), t('ui.friends.thisOnlyRemovesTheCircle'), [
+      { text: t('ui.friends.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('ui.friends.delete2'),
         style: 'destructive',
         onPress: async () => {
           if (selectedCircleId === circle.id) setSelectedCircleId(null);
@@ -181,7 +182,7 @@ export default function FriendsScreen({ navigation }) {
           <SkeletonFeed count={4} />
         </View>
       ) : loadError ? (
-        <LoadErrorState message="Couldn't load your friends." onRetry={load} />
+        <LoadErrorState message={t('ui.friends.couldntLoadYourFriends')} onRetry={load} />
       ) : (
       <FlatList
         data={friends
@@ -195,11 +196,11 @@ export default function FriendsScreen({ navigation }) {
               <Text style={styles.searchIcon}>🔍</Text>
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search your friends..."
+                placeholder={t('ui.friends.searchYourFriends')}
                 placeholderTextColor={colors.textTertiary}
                 value={friendSearch}
                 onChangeText={setFriendSearch}
-                accessibilityLabel="Search friends by name"
+                accessibilityLabel={t('ui.friends.searchFriendsByNameA11y')}
               />
             </View>
 
@@ -207,36 +208,36 @@ export default function FriendsScreen({ navigation }) {
               style={styles.findContactsButton}
               onPress={handleFindFromContacts}
               disabled={searchingContacts}
-              accessibilityLabel="Find friends from your contacts who are already on Nearby"
+              accessibilityLabel={t('ui.friends.findFriendsFromYourContactsA11y')}
               accessibilityRole="button"
             >
               {searchingContacts ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.findContactsButtonText}>📱 Find Friends From Contacts</Text>
+                <Text style={styles.findContactsButtonText}>{t('ui.friends.findFriendsFromContacts')}</Text>
               )}
             </TouchableOpacity>
 
             {suggestedFriends.length > 0 && (
               <>
-                <Text style={styles.sectionHeader}>People You May Know</Text>
+                <Text style={styles.sectionHeader}>{t('ui.friends.peopleYouMayKnow')}</Text>
                 {suggestedFriends.map((person) => (
                   <PersonCard
                     key={person.suggested_id}
                     style={styles.requestRow}
                     photoUrl={photoUrls[person.suggested_id]}
                     name={person.display_name}
-                    subtitle={`${person.mutual_count} mutual friend${person.mutual_count === 1 ? '' : 's'}`}
+                    subtitle={t('ui.friends.mutualFriends', { count: person.mutual_count })}
                     onPress={() => navigation.navigate('ViewProfile', { userId: person.suggested_id })}
                     action={
                       <TouchableOpacity
                         style={[styles.acceptButton, requestedIds[person.suggested_id] && styles.acceptButtonSent]}
                         onPress={() => handleSendRequest(person.suggested_id)}
                         disabled={requestedIds[person.suggested_id]}
-                        accessibilityLabel={requestedIds[person.suggested_id] ? 'Friend request sent' : `Send friend request to ${person.display_name}`}
+                        accessibilityLabel={requestedIds[person.suggested_id] ? t('ui.friends.friendRequestSentA11y') : t('ui.friends.sendFriendRequestToA11y', { name: person.display_name })}
                         accessibilityRole="button"
                       >
-                        <Text style={styles.acceptButtonText}>{requestedIds[person.suggested_id] ? '✓ Sent' : 'Add'}</Text>
+                        <Text style={styles.acceptButtonText}>{requestedIds[person.suggested_id] ? t('ui.friends.sent') : t('ui.friends.add')}</Text>
                       </TouchableOpacity>
                     }
                   />
@@ -247,7 +248,7 @@ export default function FriendsScreen({ navigation }) {
 
             {contactMatches !== null && contactMatches.length > 0 && (
               <>
-                <Text style={styles.sectionHeader}>From Your Contacts</Text>
+                <Text style={styles.sectionHeader}>{t('ui.friends.fromYourContacts')}</Text>
                 {contactMatches.map((person) => (
                   <PersonCard
                     key={person.id}
@@ -260,10 +261,10 @@ export default function FriendsScreen({ navigation }) {
                         style={[styles.acceptButton, requestedIds[person.id] && styles.acceptButtonSent]}
                         onPress={() => handleSendRequest(person.id)}
                         disabled={requestedIds[person.id]}
-                        accessibilityLabel={requestedIds[person.id] ? 'Friend request sent' : `Send friend request to ${person.display_name}`}
+                        accessibilityLabel={requestedIds[person.id] ? t('ui.friends.friendRequestSentA11y') : t('ui.friends.sendFriendRequestToA11y', { name: person.display_name })}
                         accessibilityRole="button"
                       >
-                        <Text style={styles.acceptButtonText}>{requestedIds[person.id] ? '✓ Sent' : 'Add'}</Text>
+                        <Text style={styles.acceptButtonText}>{requestedIds[person.id] ? t('ui.friends.sent') : t('ui.friends.add')}</Text>
                       </TouchableOpacity>
                     }
                   />
@@ -274,7 +275,7 @@ export default function FriendsScreen({ navigation }) {
 
             {notOnAppContacts.length > 0 && (
               <>
-                <Text style={styles.sectionHeader}>Not On Nearby Yet</Text>
+                <Text style={styles.sectionHeader}>{t('ui.friends.notOnNearbyYet')}</Text>
                 {notOnAppContacts.map((contact) => (
                   <PersonCard
                     key={contact.phone}
@@ -285,10 +286,10 @@ export default function FriendsScreen({ navigation }) {
                       <TouchableOpacity
                         style={styles.acceptButton}
                         onPress={() => handleInviteContact(contact)}
-                        accessibilityLabel={`Invite ${contact.name} to Nearby`}
+                        accessibilityLabel={t('ui.friends.inviteToNearbyA11y', { name: contact.name })}
                         accessibilityRole="button"
                       >
-                        <Text style={styles.acceptButtonText}>Invite</Text>
+                        <Text style={styles.acceptButtonText}>{t('ui.friends.invite')}</Text>
                       </TouchableOpacity>
                     }
                   />
@@ -299,7 +300,7 @@ export default function FriendsScreen({ navigation }) {
 
             {pending.length > 0 && (
               <>
-                <Text style={styles.sectionHeader}>Friend Requests</Text>
+                <Text style={styles.sectionHeader}>{t('ui.friends.friendRequests')}</Text>
                 {pending.map((person) => (
                   <PersonCard
                     key={person.friendshipId}
@@ -312,15 +313,15 @@ export default function FriendsScreen({ navigation }) {
                         <TouchableOpacity
                           style={styles.acceptButton}
                           onPress={() => handleRespond(person.friendshipId, true, person)}
-                          accessibilityLabel={`Accept friend request from ${person.display_name}`}
+                          accessibilityLabel={t('ui.friends.acceptFriendRequestFromA11y', { name: person.display_name })}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.acceptButtonText}>Accept</Text>
+                          <Text style={styles.acceptButtonText}>{t('ui.friends.accept')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={styles.declineButton}
                           onPress={() => handleRespond(person.friendshipId, false, person)}
-                          accessibilityLabel={`Decline friend request from ${person.display_name}`}
+                          accessibilityLabel={t('ui.friends.declineFriendRequestFromA11y', { name: person.display_name })}
                           accessibilityRole="button"
                         >
                           <Text style={styles.declineButtonText}>✕</Text>
@@ -334,7 +335,7 @@ export default function FriendsScreen({ navigation }) {
             )}
             {circles.length > 0 && (
               <>
-                <Text style={styles.sectionHeader}>Circles</Text>
+                <Text style={styles.sectionHeader}>{t('ui.friends.circles')}</Text>
                 <View style={styles.circlesRow}>
                   {circles.map((circle) => {
                     const active = selectedCircleId === circle.id;
@@ -344,7 +345,7 @@ export default function FriendsScreen({ navigation }) {
                         style={[styles.circleChip, active && styles.circleChipActive]}
                         onPress={() => setSelectedCircleId(active ? null : circle.id)}
                         onLongPress={() => confirmDeleteCircle(circle)}
-                        accessibilityLabel={`${circle.name}, ${countLabel(circle.memberIds.length, 'friend')}. Long press to delete.`}
+                        accessibilityLabel={t('ui.friends.circleA11y', { name: circle.name, count: circle.memberIds.length })}
                         accessibilityRole="button"
                         accessibilityState={{ selected: active }}
                       >
@@ -357,17 +358,17 @@ export default function FriendsScreen({ navigation }) {
                   <TouchableOpacity
                     style={styles.newCircleChip}
                     onPress={() => setNewCircleModalVisible(true)}
-                    accessibilityLabel="Create a new circle"
+                    accessibilityLabel={t('ui.friends.createANewCircleA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.newCircleChipText}>+ New Circle</Text>
+                    <Text style={styles.newCircleChipText}>{t('ui.friends.newCircle')}</Text>
                   </TouchableOpacity>
                 </View>
               </>
             )}
             <View style={styles.friendsHeaderRow}>
               <Text style={[styles.sectionHeader, { marginBottom: 0, marginTop: 0 }]}>
-                {selectedCircleId ? circles.find((c) => c.id === selectedCircleId)?.name : `Your Friends (${friends.length})`}
+                {selectedCircleId ? circles.find((c) => c.id === selectedCircleId)?.name : t('ui.friends.yourFriends', { count: friends.length })}
               </Text>
               {/* Circles used to appear as a whole always-visible chip row the
                   moment anyone had a single friend -- a new UI concept
@@ -378,10 +379,10 @@ export default function FriendsScreen({ navigation }) {
               {circles.length === 0 && friends.length > 0 && (
                 <TouchableOpacity
                   onPress={() => setNewCircleModalVisible(true)}
-                  accessibilityLabel="Organize your friends into circles"
+                  accessibilityLabel={t('ui.friends.organizeYourFriendsIntoCirclesA11y')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.organizeCirclesLink}>+ Organize into Circles</Text>
+                  <Text style={styles.organizeCirclesLink}>{t('ui.friends.organizeIntoCircles')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -392,7 +393,7 @@ export default function FriendsScreen({ navigation }) {
             <FadeInState opportunity style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🤝</Text>
               <Text style={styles.emptyText}>
-                Add friends from anyone's profile, or find friends from your contacts above, to see who's interested in the same gatherings as you.
+                {t('ui.friends.addFriendsFromAnyonesProfile')}
               </Text>
               {/* Thursday plan item 25: the header's "Find Friends From
                   Contacts" button already covers one real path, but a
@@ -402,11 +403,11 @@ export default function FriendsScreen({ navigation }) {
                   button doesn't cover. */}
               <TouchableOpacity
                 onPress={() => navigation.navigate('FriendDiscovery')}
-                accessibilityLabel="Meet new people nearby"
+                accessibilityLabel={t('ui.friends.meetNewPeopleNearbyA11y')}
                 accessibilityRole="button"
                 style={{ marginTop: spacing.md }}
               >
-                <Text style={styles.emptyActionText}>Meet New People →</Text>
+                <Text style={styles.emptyActionText}>{t('ui.friends.meetNewPeople')}</Text>
               </TouchableOpacity>
             </FadeInState>
           )
@@ -421,7 +422,7 @@ export default function FriendsScreen({ navigation }) {
               circles.length > 0 ? (
                 <TouchableOpacity
                   onPress={() => setManageCirclesFor(item)}
-                  accessibilityLabel={`Manage circles for ${item.display_name}`}
+                  accessibilityLabel={t('ui.friends.manageCirclesForA11y', { name: item.display_name })}
                   accessibilityRole="button"
                 >
                   <Text style={styles.circleTagIcon}>🏷️</Text>
@@ -439,21 +440,21 @@ export default function FriendsScreen({ navigation }) {
             <View style={styles.modalOverlay}>
               <TouchableWithoutFeedback>
                 <View style={styles.modalSheet}>
-                  <Text style={styles.modalTitle}>New Circle</Text>
+                  <Text style={styles.modalTitle}>{t('ui.friends.newCircle2')}</Text>
                   <TextInput
                     style={styles.modalInput}
-                    placeholder="e.g. Work, Fitness, Family, Travel"
+                    placeholder={t('ui.friends.eGWorkFitnessFamily')}
                     placeholderTextColor={colors.textTertiary}
                     value={newCircleName}
                     onChangeText={setNewCircleName}
                     autoFocus
-                    accessibilityLabel="Circle name"
+                    accessibilityLabel={t('ui.friends.circleNameA11y')}
                   />
-                  <TouchableOpacity style={styles.modalButton} onPress={handleCreateCircle} activeOpacity={0.85} accessibilityLabel="Create circle" accessibilityRole="button">
-                    <Text style={styles.modalButtonText}>Create Circle</Text>
+                  <TouchableOpacity style={styles.modalButton} onPress={handleCreateCircle} activeOpacity={0.85} accessibilityLabel={t('ui.friends.createCircleA11y')} accessibilityRole="button">
+                    <Text style={styles.modalButtonText}>{t('ui.friends.createCircle')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => { setNewCircleModalVisible(false); setNewCircleName(''); }} style={{ marginTop: spacing.md }}>
-                    <Text style={styles.modalCancelText}>Cancel</Text>
+                    <Text style={styles.modalCancelText}>{t('ui.friends.cancel')}</Text>
                   </TouchableOpacity>
                 </View>
               </TouchableWithoutFeedback>
@@ -468,7 +469,7 @@ export default function FriendsScreen({ navigation }) {
             <View style={styles.modalOverlay}>
               <TouchableWithoutFeedback>
                 <View style={styles.modalSheet}>
-                  <Text style={styles.modalTitle}>Circles for {manageCirclesFor?.display_name}</Text>
+                  <Text style={styles.modalTitle}>{t('ui.friends.circlesFor', { name: manageCirclesFor?.display_name })}</Text>
                   {circles.length === 0 && (
                     <View>
                       <EmptyCopy id="friend_circles" />
@@ -480,11 +481,11 @@ export default function FriendsScreen({ navigation }) {
                           from here. */}
                       <TouchableOpacity
                         onPress={() => { setManageCirclesFor(null); setNewCircleModalVisible(true); }}
-                        accessibilityLabel="Create a circle"
+                        accessibilityLabel={t('ui.friends.createACircleA11y')}
                         accessibilityRole="button"
                         style={{ marginTop: spacing.sm }}
                       >
-                        <Text style={styles.emptyActionText}>+ Create a Circle →</Text>
+                        <Text style={styles.emptyActionText}>{t('ui.friends.createACircle')}</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -495,7 +496,7 @@ export default function FriendsScreen({ navigation }) {
                         key={circle.id}
                         style={styles.circleToggleRow}
                         onPress={() => handleToggleCircleMembership(circle, manageCirclesFor.id)}
-                        accessibilityLabel={`${circle.name}, ${isMember ? 'in this circle' : 'not in this circle'}`}
+                        accessibilityLabel={isMember ? t('ui.friends.inCircleA11y', { name: circle.name }) : t('ui.friends.notInCircleA11y', { name: circle.name })}
                         accessibilityRole="checkbox"
                         accessibilityState={{ checked: isMember }}
                       >
@@ -505,7 +506,7 @@ export default function FriendsScreen({ navigation }) {
                     );
                   })}
                   <TouchableOpacity onPress={() => setManageCirclesFor(null)} style={{ marginTop: spacing.md }}>
-                    <Text style={styles.modalCancelText}>Done</Text>
+                    <Text style={styles.modalCancelText}>{t('ui.friends.done')}</Text>
                   </TouchableOpacity>
                 </View>
               </TouchableWithoutFeedback>

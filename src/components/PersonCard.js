@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme';
@@ -25,6 +26,7 @@ export default function PersonCard({
   accessibilityLabel,
   style,
 }) {
+  const { t, language } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
@@ -39,7 +41,7 @@ export default function PersonCard({
         style={styles.info}
         onPress={onPress}
         disabled={!onPress}
-        accessibilityLabel={accessibilityLabel ?? `View ${name}'s profile${subtitleLine ? `, ${subtitleLine}` : ''}`}
+        accessibilityLabel={accessibilityLabel ?? (subtitleLine ? t('ui.friends.viewProfileWithA11y', { name, detail: subtitleLine }) : t('ui.friends.viewProfileA11y', { name }))}
         accessibilityRole="button"
       >
         {photoUrl ? (

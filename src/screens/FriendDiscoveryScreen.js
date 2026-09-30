@@ -1,4 +1,6 @@
 import React, { useState, useCallback } from 'react';
+import { tr } from '../i18n/translate';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Switch, Alert } from 'react-native';
 import { NLoader, MatchAnimation, FilterTransition, TapActiveChip } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
@@ -15,9 +17,10 @@ import { getStoryPresenceForUsers } from '../services/stories';
 import StoryViewerModal from '../components/StoryViewerModal';
 import { calculateFriendCompatibility } from '../services/compatibility';
 import { supabase } from '../services/supabase';
-import FriendDiscoverySwipeCards from '../components/FriendDiscoverySwipeCards';
+import FriendDiscoverySwipeCards, { DISTANCE_BUCKET_KEYS } from '../components/FriendDiscoverySwipeCards';
 import LoadErrorState from '../components/LoadErrorState';
 import { PERSONAL_INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import useCategoryNames from '../hooks/useCategoryNames';
 import { FRIEND_DEFAULT_ORDER, FRIEND_DEFAULT_VISIBLE } from '../constants/quickFilterCatalog';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -55,6 +58,8 @@ const DISTANCE_BUCKETS = ['Nearby', 'A few miles away', 'In the wider area'];
 // from dating" boundary is actually stated, and the switch is a real,
 // necessary control, not decoration.
 export default function FriendDiscoveryScreen({ navigation, embedded = false }) {
+  const { t, language } = useLanguage();
+  const names = useCategoryNames();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const Container = embedded ? View : SafeAreaView;
@@ -220,11 +225,11 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
     } catch (e) {
       console.error('recordFriendDiscoverySwipe failed', e);
       Alert.alert(
-        "Couldn't save that",
-        `Your ${direction === 'like' ? 'like' : 'pass'} on ${item.display_name ?? 'this person'} didn't go through. Check your connection.`,
+        t('ui.friends.couldntSaveThat'),
+        t(direction === 'like' ? 'ui.friends.likeFailed' : 'ui.friends.passFailed', { name: item.display_name ?? t('ui.friends.thisPerson') }),
         [
-          { text: 'Dismiss', style: 'cancel' },
-          { text: 'Retry', onPress: () => handleSwipe(item, direction) },
+          { text: t('ui.friends.dismiss'), style: 'cancel' },
+          { text: t('ui.friends.retry'), onPress: () => handleSwipe(item, direction) },
         ]
       );
     }
@@ -286,20 +291,20 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
       <View style={styles.headerRow}>
         {!embedded ? (
           <Text style={styles.headerTitle} accessibilityRole="header">
-            🤝 Friends
+            {tr('ui.friends.friends')}
           </Text>
         ) : (
           <View style={{ flex: 1 }} />
         )}
         {enabled && (
           <View style={styles.headerToggle}>
-            <Text style={styles.headerToggleLabel}>On</Text>
+            <Text style={styles.headerToggleLabel}>{tr('ui.friends.on')}</Text>
             <Switch value={enabled} onValueChange={handleDisable} trackColor={{ true: colors.primary }} />
           </View>
         )}
       </View>
       <Text style={styles.headerSubtitle}>
-        People nearby who are also here to make friends — separate from dating.
+        {tr('ui.friends.peopleNearbyWhoAreAlso')}
       </Text>
     </View>
   );
@@ -311,7 +316,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
         <View style={styles.centered}>
           <NLoader fullScreen={false} />
           <Text style={styles.loadingCaption}>
-            {discoveryMode === 'crossedPaths' ? 'Finding people you’ve crossed paths with…' : 'Finding people who match…'}
+            {discoveryMode === 'crossedPaths' ? t('ui.friends.findingPeopleYouVeCrossed') : t('ui.friends.findingPeopleWhoMatch')}
           </Text>
         </View>
       </Container>
@@ -323,7 +328,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
       <Container style={styles.container}>
         <Header />
         <View style={styles.centered}>
-          <LoadErrorState message="Couldn't load Meet New Friends." onRetry={load} />
+          <LoadErrorState message={t('ui.friends.couldntLoadMeetNewFriends')} onRetry={load} />
         </View>
       </Container>
     );
@@ -335,22 +340,19 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
         <Header />
         <View style={styles.explainer}>
           <Text style={styles.explainerEmoji}>🤝</Text>
-          <Text style={styles.explainerTitle}>Meet New Friends</Text>
+          <Text style={styles.explainerTitle}>{t('ui.friends.meetNewFriends')}</Text>
           <Text style={styles.explainerBody}>
-            Swipe to meet new people nearby who are also open to making friends. This is
-            completely separate from dating — turning it on here never affects your dating
-            profile or preferences, and only people who've also explicitly turned this on can
-            ever show up in your deck.
+            {t('ui.friends.swipeToMeetNewPeople')}
           </Text>
           <TouchableOpacity
             style={styles.enableButton}
             onPress={handleEnable}
             disabled={togglingOn}
             activeOpacity={0.85}
-            accessibilityLabel="Turn on Meet New Friends"
+            accessibilityLabel={t('ui.friends.turnOnMeetNewFriendsA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.enableButtonText}>{togglingOn ? 'Turning on…' : 'Turn On'}</Text>
+            <Text style={styles.enableButtonText}>{togglingOn ? t('ui.friends.turningOn') : t('ui.friends.turnOn')}</Text>
           </TouchableOpacity>
         </View>
       </Container>
@@ -369,20 +371,20 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
         <TouchableOpacity
           style={[styles.modeSwitchButton, discoveryMode === 'browse' && styles.modeSwitchButtonActive]}
           onPress={() => switchDiscoveryMode('browse')}
-          accessibilityLabel="Browse — a wider pool matching your filters"
+          accessibilityLabel={t('ui.friends.browseAWiderPoolMatchingA11y')}
           accessibilityRole="button"
           accessibilityState={{ selected: discoveryMode === 'browse' }}
         >
-          <Text style={[styles.modeSwitchText, discoveryMode === 'browse' && styles.modeSwitchTextActive]}>🔎 Browse</Text>
+          <Text style={[styles.modeSwitchText, discoveryMode === 'browse' && styles.modeSwitchTextActive]}>{t('ui.friends.browse')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.modeSwitchButton, discoveryMode === 'crossedPaths' && styles.modeSwitchButtonActive]}
           onPress={() => switchDiscoveryMode('crossedPaths')}
-          accessibilityLabel="Crossed Paths — people you've actually crossed paths with or shared a gathering with"
+          accessibilityLabel={t('ui.friends.crossedPathsPeopleYouveActuallyA11y')}
           accessibilityRole="button"
           accessibilityState={{ selected: discoveryMode === 'crossedPaths' }}
         >
-          <Text style={[styles.modeSwitchText, discoveryMode === 'crossedPaths' && styles.modeSwitchTextActive]}>📍 Crossed Paths</Text>
+          <Text style={[styles.modeSwitchText, discoveryMode === 'crossedPaths' && styles.modeSwitchTextActive]}>{t('ui.friends.crossedPaths')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -391,11 +393,11 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
           <TouchableOpacity
             style={styles.accordionHeader}
             onPress={() => setFiltersExpanded((prev) => !prev)}
-            accessibilityLabel="Filters"
+            accessibilityLabel={t('ui.friends.filtersA11y')}
             accessibilityRole="button"
             accessibilityState={{ expanded: filtersExpanded }}
           >
-            <Text style={styles.accordionHeaderLabel}>Filters</Text>
+            <Text style={styles.accordionHeaderLabel}>{t('ui.friends.filters')}</Text>
             <View style={styles.accordionHeaderRight}>
               <Text style={styles.accordionHeaderValue}>{filterSummary}</Text>
               <Text style={styles.accordionChevron}>{filtersExpanded ? '⌃' : '⌄'}</Text>
@@ -407,7 +409,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                 if (key === 'interests') {
                   return (
                     <View key={key}>
-                      <Text style={styles.accordionSubLabel}>Interests</Text>
+                      <Text style={styles.accordionSubLabel}>{t('ui.friends.interests')}</Text>
                       <View style={styles.filterChipRow}>
                         {PERSONAL_INTEREST_OPTIONS.map((tag) => {
                           const selected = interestFilters.includes(tag);
@@ -417,11 +419,11 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                               active={selected}
                               style={[styles.filterChip, selected && styles.filterChipActive]}
                               onPress={() => toggleInterestFilter(tag)}
-                              accessibilityLabel={tag}
+                              accessibilityLabel={names.tag(tag)}
                               accessibilityRole="button"
                               accessibilityState={{ selected }}
                             >
-                              <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{tag}</Text>
+                              <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{names.tag(tag)}</Text>
                             </TapActiveChip>
                           );
                         })}
@@ -438,7 +440,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                   if (discoveryMode === 'crossedPaths') return null;
                   return (
                     <View key={key} style={{ marginTop: spacing.sm }}>
-                      <Text style={styles.accordionSubLabel}>Distance</Text>
+                      <Text style={styles.accordionSubLabel}>{t('ui.friends.distance')}</Text>
                       <View style={styles.filterChipRow}>
                         {DISTANCE_BUCKETS.map((bucket) => {
                           const selected = distanceFilter === bucket;
@@ -448,11 +450,11 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                               active={selected}
                               style={[styles.filterChip, selected && styles.filterChipActive]}
                               onPress={() => setDistanceFilter(selected ? null : bucket)}
-                              accessibilityLabel={bucket}
+                              accessibilityLabel={t(`ui.friends.bucket.${DISTANCE_BUCKET_KEYS[bucket]}`)}
                               accessibilityRole="button"
                               accessibilityState={{ selected }}
                             >
-                              <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{bucket}</Text>
+                              <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{t(`ui.friends.bucket.${DISTANCE_BUCKET_KEYS[bucket]}`)}</Text>
                             </TapActiveChip>
                           );
                         })}
@@ -463,17 +465,17 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                 if (key === 'verified') {
                   return (
                     <View key={key} style={{ marginTop: spacing.sm }}>
-                      <Text style={styles.accordionSubLabel}>Verified</Text>
+                      <Text style={styles.accordionSubLabel}>{t('ui.friends.verified')}</Text>
                       <View style={styles.filterChipRow}>
                         <TapActiveChip
                           active={verifiedOnlyFilter}
                           style={[styles.filterChip, verifiedOnlyFilter && styles.filterChipActive]}
                           onPress={() => setVerifiedOnlyFilter((prev) => !prev)}
-                          accessibilityLabel="Verified Only"
+                          accessibilityLabel={t('ui.friends.verifiedOnlyA11y')}
                           accessibilityRole="button"
                           accessibilityState={{ selected: verifiedOnlyFilter }}
                         >
-                          <Text style={[styles.filterChipText, verifiedOnlyFilter && styles.filterChipTextActive]}>Verified Only</Text>
+                          <Text style={[styles.filterChipText, verifiedOnlyFilter && styles.filterChipTextActive]}>{t('ui.friends.verifiedOnly')}</Text>
                         </TapActiveChip>
                       </View>
                     </View>
@@ -482,17 +484,17 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                 if (key === 'online') {
                   return (
                     <View key={key} style={{ marginTop: spacing.sm }}>
-                      <Text style={styles.accordionSubLabel}>Online</Text>
+                      <Text style={styles.accordionSubLabel}>{t('ui.friends.online')}</Text>
                       <View style={styles.filterChipRow}>
                         <TapActiveChip
                           active={onlineOnlyFilter}
                           style={[styles.filterChip, onlineOnlyFilter && styles.filterChipActive]}
                           onPress={() => setOnlineOnlyFilter((prev) => !prev)}
-                          accessibilityLabel="Online Now"
+                          accessibilityLabel={t('ui.friends.onlineNowA11y')}
                           accessibilityRole="button"
                           accessibilityState={{ selected: onlineOnlyFilter }}
                         >
-                          <Text style={[styles.filterChipText, onlineOnlyFilter && styles.filterChipTextActive]}>Online Now</Text>
+                          <Text style={[styles.filterChipText, onlineOnlyFilter && styles.filterChipTextActive]}>{t('ui.friends.onlineNow')}</Text>
                         </TapActiveChip>
                       </View>
                     </View>
@@ -502,11 +504,11 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
               })}
               <TouchableOpacity
                 onPress={() => navigation.navigate('QuickFilterCustomize', { mode: 'friends' })}
-                accessibilityLabel="Customize which filters show and their order"
+                accessibilityLabel={t('ui.friends.customizeWhichFiltersShowAndA11y')}
                 accessibilityRole="button"
                 style={{ marginTop: spacing.md }}
               >
-                <Text style={styles.customizeLink}>⚙️ Customize</Text>
+                <Text style={styles.customizeLink}>{t('ui.friends.customize')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -517,7 +519,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
       {filtersActive && filteredCandidates.length === 0 ? (
         <View style={styles.centered}>
           <Text style={styles.explainerBody}>
-            No one nearby matches these filters right now — try widening them.
+            {t('ui.friends.noOneNearbyMatchesThese')}
           </Text>
           {/* Thursday plan item 25: a real action, not just the word
               "widening" with nothing to tap -- resets the same four filter
@@ -529,11 +531,11 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
               setVerifiedOnlyFilter(false);
               setOnlineOnlyFilter(false);
             }}
-            accessibilityLabel="Clear filters"
+            accessibilityLabel={t('ui.friends.clearFiltersA11y')}
             accessibilityRole="button"
             style={{ marginTop: spacing.md }}
           >
-            <Text style={styles.customizeLink}>Clear Filters →</Text>
+            <Text style={styles.customizeLink}>{t('ui.friends.clearFilters')}</Text>
           </TouchableOpacity>
         </View>
       ) : (

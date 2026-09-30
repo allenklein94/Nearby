@@ -1,4 +1,6 @@
 import { parseDate } from '../utils/timeLabels';
+import { tr, getCurrentLanguage, DEFAULT_LANGUAGE } from '../i18n/translate';
+import { displayDateTime } from '../i18n/display';
 /**
  * CROSSED PATHS SIGNALS -- shared, PURE logic for the unified Crossed
  * Paths mechanism used by both Dating (services/proximity.js) and
@@ -87,18 +89,21 @@ export function formatCrossedPathsTime(iso) {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  const dateTimeStamp = then.toLocaleDateString([], { month: 'short', day: 'numeric' }) +
-    ', ' + then.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  // Wording in ui.crossedPaths (English unchanged); English keeps its short stamp, other languages the shared date + time.
+  const language = getCurrentLanguage();
+  const dateTimeStamp = language === DEFAULT_LANGUAGE
+    ? then.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' + then.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : displayDateTime(iso, language);
 
   let relative;
-  if (diffMins < 1) relative = 'Just now';
-  else if (diffMins < 60) relative = `${diffMins} min${diffMins === 1 ? '' : 's'} ago`;
-  else if (diffHours < 24) relative = `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
-  else if (diffDays === 1) relative = 'Yesterday';
-  else if (diffDays < 7) relative = `${diffDays} days ago`;
+  if (diffMins < 1) relative = tr('ui.crossedPaths.justNow');
+  else if (diffMins < 60) relative = tr('ui.crossedPaths.minutesAgo', { count: diffMins });
+  else if (diffHours < 24) relative = tr('ui.crossedPaths.hoursAgo', { count: diffHours });
+  else if (diffDays === 1) relative = tr('ui.crossedPaths.yesterday');
+  else if (diffDays < 7) relative = tr('ui.crossedPaths.daysAgo', { count: diffDays });
   else relative = null;
 
-  return relative ? `${relative} (${dateTimeStamp})` : dateTimeStamp;
+  return relative ? tr('ui.crossedPaths.relativeWithStamp', { relative, stamp: dateTimeStamp }) : dateTimeStamp;
 }
 
 // The shorter, swipe-card relative-time formatter (was duplicated in
@@ -109,10 +114,10 @@ export function formatCrossedPathsTimeShort(iso) {
   const then = parseDate(iso);
   if (!then) return null;
   const diffMins = Math.floor((Date.now() - then.getTime()) / (1000 * 60));
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffMins < 1) return tr('ui.crossedPaths.justNow');
+  if (diffMins < 60) return tr('ui.crossedPaths.minAgoShort', { count: diffMins });
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffHours < 24) return tr('ui.crossedPaths.hoursAgoShort', { count: diffHours });
   return null;
 }
 
@@ -124,7 +129,7 @@ export function formatCrossedPathsTimeShort(iso) {
 export function gatheringReasonText(reason, formatTime = formatCrossedPathsTimeShort) {
   if (!reason || reason.type !== 'gathering') return null;
   const time = formatTime(reason.scheduledAt);
-  return `You were both at ${reason.gatheringTitle}${time ? ` · ${time}` : ''}`;
+  return time ? tr('ui.crossedPaths.bothAtWhen', { title: reason.gatheringTitle, time }) : tr('ui.crossedPaths.bothAt', { title: reason.gatheringTitle });
 }
 
 // Friend Discovery's own eligibility filter over a merged Crossed Paths

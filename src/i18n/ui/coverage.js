@@ -69,6 +69,13 @@ export const LOCALIZED_FILES = [
   'src/screens/MatchesScreen.js',
   'src/components/PlanCompletionRow.js',
   'src/utils/planCompletion.js',
+  'src/screens/FriendsScreen.js',
+  'src/screens/FriendDiscoveryScreen.js',
+  'src/components/FriendDiscoverySwipeCards.js',
+  'src/components/PersonCard.js',
+  'src/services/crossedPathsSignals.js',
+  'src/utils/datingCardReasons.js',
+  'src/utils/freeTonight.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
@@ -100,6 +107,13 @@ export const INTENTIONAL_ENGLISH = {
     'Meet friends': 'stored connection-goal value (profiles.connection_goal); shown through ui.profile.goal.*',
     Date: 'stored connection-goal value', Network: 'stored connection-goal value', 'Explore my city': 'stored connection-goal value',
     'Find community': 'stored connection-goal value', 'Get out more': 'stored connection-goal value',
+  },
+  'src/screens/FriendDiscoveryScreen.js': {
+    'A few miles away': 'stored distance bucket from get_friend_discovery_candidates; shown through ui.friends.bucket.*',
+    'In the wider area': 'stored distance bucket; shown through ui.friends.bucket.*',
+  },
+  'src/utils/freeTonight.js': {
+    '🌙 Both free tonight': 'English canonical constant kept for the people-match journey; shown through ui.crossedPaths.bothFreeTonight',
   },
   'src/navigation/RootNavigator.js': {
     'gathering/:gatheringId': 'deep-link route pattern, never shown',

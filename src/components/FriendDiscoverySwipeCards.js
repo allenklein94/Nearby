@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import EmptyCopy from './EmptyCopy';
 import { View, Text, Image, TouchableOpacity, StyleSheet, PanResponder, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +18,8 @@ import { gatheringReasonText, formatCrossedPathsTimeShort } from '../services/cr
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
+// Display keys for the RPC's stored distance buckets (ui.friends.bucket.*); the stored value itself is never translated.
+export const DISTANCE_BUCKET_KEYS = { Nearby: 'nearby', 'A few miles away': 'fewMiles', 'In the wider area': 'wider' };
 
 // Friend Discovery's own card -- shares SwipeableDiscoveryCards' swipe
 // mechanics (PanResponder threshold, animated stamps, a two-deep stack)
@@ -26,6 +29,7 @@ const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
 // readout. Distance is a coarse bucket from the RPC (never exact miles),
 // matching the locked "no location-discovery tool" decision.
 export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatuses = {}, storyByUserId = {}, onViewStory, compatibilityColor, onSwipe, navigation }) {
+  const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -73,10 +77,10 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
         {navigation && (
           <TouchableOpacity
             onPress={() => navigation.navigate('InviteFriends')}
-            accessibilityLabel="Invite friends"
+            accessibilityLabel={t('ui.friends.inviteFriendsA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.emptyActionText}>Invite Friends →</Text>
+            <Text style={styles.emptyActionText}>{t('ui.friends.inviteFriends')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -98,13 +102,13 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
   // priority order these three checks already ran in.
   const sharedBits = [];
   if (item.shared_interest_count > 0) {
-    sharedBits.push({ text: `${item.shared_interest_count} interest${item.shared_interest_count === 1 ? '' : 's'} in common`, category: REASON_CATEGORIES.INTEREST });
+    sharedBits.push({ text: t('ui.friends.interestsInCommon', { count: item.shared_interest_count }), category: REASON_CATEGORIES.INTEREST });
   }
   if (item.shared_community_count > 0) {
-    sharedBits.push({ text: `in ${item.shared_community_count} of your communities`, category: REASON_CATEGORIES.CONTEXT });
+    sharedBits.push({ text: t('ui.friends.inYourCommunities', { count: item.shared_community_count }), category: REASON_CATEGORIES.CONTEXT });
   }
   if (item.mutual_friend_count > 0) {
-    sharedBits.push({ text: `${item.mutual_friend_count} mutual friend${item.mutual_friend_count === 1 ? '' : 's'}`, category: REASON_CATEGORIES.CONTEXT });
+    sharedBits.push({ text: t('ui.friends.mutualFriends', { count: item.mutual_friend_count }), category: REASON_CATEGORIES.CONTEXT });
   }
 
   // Unified Crossed Paths, step 6 (CLAUDE.md, 2026-09-10): only present
@@ -117,7 +121,7 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
     : item.crossedPathsReason?.type === 'proximity'
       ? (() => {
           const time = formatCrossedPathsTimeShort(item.crossedPathsReason.lastSeenAt);
-          return `Crossed paths${time ? ` ${time}` : ''}`;
+          return time ? t('ui.friends.crossedPathsCardWhen', { time }) : t('ui.friends.crossedPathsCard');
         })()
       : null;
 
@@ -140,7 +144,7 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={() => onViewStory(storyGroup)}
-            accessibilityLabel={`View ${item.display_name}'s story`}
+            accessibilityLabel={t('ui.friends.viewSStoryA11y', { name: item.display_name })}
             accessibilityRole="button"
           >
             <Image
@@ -153,10 +157,10 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
         )}
         {onlineStatuses[item.id] && <View style={styles.onlineDot} />}
         <Animated.View style={[styles.stampLike, { opacity: likeOpacity }]}>
-          <Text style={styles.stampLikeText}>LIKE</Text>
+          <Text style={styles.stampLikeText}>{t('ui.friends.like')}</Text>
         </Animated.View>
         <Animated.View style={[styles.stampSkip, { opacity: skipOpacity }]}>
-          <Text style={styles.stampSkipText}>PASS</Text>
+          <Text style={styles.stampSkipText}>{t('ui.friends.pass')}</Text>
         </Animated.View>
 
         <View style={styles.cardBody}>
@@ -165,10 +169,10 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
             {item.photo_verified && <Text style={styles.verifiedBadge}>✓</Text>}
             {typeof item.compatScore === 'number' && compatibilityColor && (
               <View style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatScore) }]}>
-                <Text style={[styles.compatText, { color: compatibilityColor(item.compatScore) }]}>🤝 {item.compatScore}% Match</Text>
+                <Text style={[styles.compatText, { color: compatibilityColor(item.compatScore) }]}>{t('ui.friends.compatMatch', { score: item.compatScore })}</Text>
               </View>
             )}
-            {item.distance_bucket && <Text style={styles.distance}>{item.distance_bucket}</Text>}
+            {item.distance_bucket && <Text style={styles.distance}>{DISTANCE_BUCKET_KEYS[item.distance_bucket] ? t(`ui.friends.bucket.${DISTANCE_BUCKET_KEYS[item.distance_bucket]}`) : item.distance_bucket}</Text>}
           </View>
           {crossedPathsText && (
             <Text style={styles.crossedPathsText}>
@@ -203,7 +207,7 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
         <TouchableOpacity
           style={styles.skipButton}
           onPress={() => forceSwipe('left')}
-          accessibilityLabel={`Pass on ${item.display_name}`}
+          accessibilityLabel={t('ui.friends.passOnA11y', { name: item.display_name })}
           accessibilityRole="button"
         >
           <Text style={styles.skipButtonText}>✕</Text>
@@ -211,7 +215,7 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
         <TouchableOpacity
           style={styles.likeButton}
           onPress={() => forceSwipe('right')}
-          accessibilityLabel={`Like ${item.display_name} as a potential friend`}
+          accessibilityLabel={t('ui.friends.likeAsAPotentialFriendA11y', { name: item.display_name })}
           accessibilityRole="button"
         >
           <Text style={styles.likeButtonText}>🤝</Text>
