@@ -58,8 +58,8 @@ export default function MessagesScreen({ navigation, route }) {
   const [groupChats, setGroupChats] = useState([]);
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: mode === 'friends' ? 'Friends' : 'Messages' });
-  }, [navigation, mode]);
+    navigation.setOptions({ title: mode === 'friends' ? t('ui.nav.title.messagesFriends') : t('ui.nav.title.messages') });
+  }, [navigation, mode, t]);
 
   const loadGroupChats = useCallback(async () => {
     try {

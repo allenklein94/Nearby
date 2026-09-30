@@ -59,6 +59,7 @@ export const LOCALIZED_FILES = [
   'src/screens/LoginScreen.js',
   'src/screens/CompleteProfileScreen.js',
   'src/screens/OnboardingRecommendationsScreen.js',
+  'src/navigation/RootNavigator.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
@@ -85,6 +86,9 @@ export const INTENTIONAL_ENGLISH = {
     'Meet friends': 'stored connection-goal value (profiles.connection_goal); shown through ui.profile.goal.*',
     Date: 'stored connection-goal value', Network: 'stored connection-goal value', 'Explore my city': 'stored connection-goal value',
     'Find community': 'stored connection-goal value', 'Get out more': 'stored connection-goal value',
+  },
+  'src/navigation/RootNavigator.js': {
+    'gathering/:gatheringId': 'deep-link route pattern, never shown',
   },
   'src/screens/SettingsScreen.js': {
     English: 'language name in its own language (endonym)', 'Español': 'endonym', Deutsch: 'endonym', 'Français': 'endonym', 'Português': 'endonym',

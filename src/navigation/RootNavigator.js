@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { Animated, TouchableOpacity, Text, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
@@ -205,11 +206,12 @@ async function resolveAndNavigateToBusiness(partnerId) {
 // bar, reached via the persistent header-icon avatar (TabHeaderActions);
 // `navigate('Profile')` still resolves via the normal parent-navigator
 // bubbling React Navigation does for an unmatched route name.
+const lcFirst = (n) => n.charAt(0).toLowerCase() + n.slice(1);
 const TAB_ICONS = {
-  Home: { active: 'home', inactive: 'home-outline', label: 'Home' },
-  Discover: { active: 'compass', inactive: 'compass-outline', label: 'Discover' },
-  Create: { active: 'add-circle', inactive: 'add-circle-outline', label: 'Create' },
-  Activity: { active: 'notifications', inactive: 'notifications-outline', label: 'Activity' },
+  Home: { active: 'home', inactive: 'home-outline' },
+  Discover: { active: 'compass', inactive: 'compass-outline' },
+  Create: { active: 'add-circle', inactive: 'add-circle-outline' },
+  Activity: { active: 'notifications', inactive: 'notifications-outline' },
 };
 
 function BouncyTabButton({ children, onPress, accessibilityLabel, accessibilityState }) {
@@ -243,6 +245,7 @@ function BouncyTabButton({ children, onPress, accessibilityLabel, accessibilityS
 
 function MainTabs() {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const [activityBadgeCount, setActivityBadgeCount] = useState(0);
 
   useEffect(() => {
@@ -260,13 +263,14 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        tabBarLabel: t(`ui.nav.tab.${lcFirst(route.name)}`),
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textTertiary,
         tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
         tabBarButton: (props) => (
           <BouncyTabButton
             {...props}
-            accessibilityLabel={TAB_ICONS[route.name]?.label}
+            accessibilityLabel={t(`ui.nav.tab.${lcFirst(route.name)}`)}
           />
         ),
         tabBarIcon: ({ focused, size }) => {
@@ -285,6 +289,7 @@ function MainTabs() {
 }
 
 export default function RootNavigator() {
+  const { t } = useLanguage();
   const { session, loading, profileComplete, profileLoading } = useAuth();
   // Item 127: Reduce Motion swaps every stack push/modal slide for a plain crossfade.
   const reduceMotion = useReduceMotion();
@@ -438,7 +443,7 @@ export default function RootNavigator() {
                 screen anymore; `navigate('Discover')` from a sibling tab
                 resolves to the tab directly. */}
             <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="Messages" component={MessagesScreen} options={{ headerShown: true, title: 'Messages', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="Messages" component={MessagesScreen} options={{ headerShown: true, title: t('ui.nav.title.messages'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="OnboardingRecommendations" component={OnboardingRecommendationsScreen} />
             <Stack.Screen name="OnboardingOccasions" component={OnboardingOccasionsScreen} />
             {/* headerShown starts true (blank title, real back chevron) so
@@ -449,13 +454,13 @@ export default function RootNavigator() {
                 the header off. */}
             <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
-            <Stack.Screen name="Billing" component={BillingScreen} options={{ headerShown: true, title: 'Billing', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="DatingPreferences" component={DatingPreferencesScreen} options={{ headerShown: true, title: 'Dating Profile', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="Billing" component={BillingScreen} options={{ headerShown: true, title: t('ui.nav.title.billing'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="DatingPreferences" component={DatingPreferencesScreen} options={{ headerShown: true, title: t('ui.nav.title.datingPreferences'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
-            <Stack.Screen name="ViewProfile" component={ViewProfileScreen} options={{ headerShown: true, title: 'Profile', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: true, title: 'Legal', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="CreateGathering" component={CreateGatheringScreen} options={{ headerShown: true, title: 'Host a Gathering', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
+            <Stack.Screen name="ViewProfile" component={ViewProfileScreen} options={{ headerShown: true, title: t('ui.nav.title.viewProfile'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: t('ui.nav.title.settings'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: true, title: t('ui.nav.title.legal'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="CreateGathering" component={CreateGatheringScreen} options={{ headerShown: true, title: t('ui.nav.title.createGathering'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             {/* User-facing name is "Plan for Someone" (Item 83, CLAUDE.md,
                 direct user request -- "'Occasion' sounds like internal
                 product terminology; 'Plan for Someone' immediately
@@ -466,52 +471,52 @@ export default function RootNavigator() {
                 user-visible), matching this repo's own precedent of not
                 renaming plumbing purely for a copy change. See
                 CelebrateSomethingScreen.js's own header. */}
-            <Stack.Screen name="CelebrateSomething" component={CelebrateSomethingScreen} options={{ headerShown: true, title: 'Plan for Someone', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
-            <Stack.Screen name="MakeAPlan" component={MakeAPlanScreen} options={{ headerShown: true, title: 'Make a Plan', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
+            <Stack.Screen name="CelebrateSomething" component={CelebrateSomethingScreen} options={{ headerShown: true, title: t('ui.nav.title.celebrateSomething'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
+            <Stack.Screen name="MakeAPlan" component={MakeAPlanScreen} options={{ headerShown: true, title: t('ui.nav.title.makeAPlan'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="GatheringConfirmation" component={GatheringConfirmationScreen} options={{ headerShown: false, presentation: 'modal', gestureEnabled: false }} />
-            <Stack.Screen name="SharedPlaylist" component={SharedPlaylistScreen} options={{ headerShown: true, title: 'Shared Playlist', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="TripPlanning" component={TripPlanningScreen} options={{ headerShown: true, title: 'Plan a Trip', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="SharedDecisions" component={SharedDecisionsScreen} options={{ headerShown: true, title: 'Big Picture', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="RelationshipLegacy" component={RelationshipLegacyScreen} options={{ headerShown: true, title: 'Leave Wisdom', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="LegacyLibrary" component={LegacyLibraryScreen} options={{ headerShown: true, title: 'Relationship Wisdom', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="GoodbyeArchiveEntry" component={GoodbyeArchiveEntryScreen} options={{ headerShown: true, title: 'Private Reflection', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
-            <Stack.Screen name="GoodbyeArchiveList" component={GoodbyeArchiveListScreen} options={{ headerShown: true, title: 'Private Reflections', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="RelationshipEmergencyKit" component={RelationshipEmergencyKitScreen} options={{ headerShown: true, title: 'Toolkit', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="RelationshipTools" component={RelationshipToolsScreen} options={{ headerShown: true, title: 'Relationship Tools', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="RelationshipHub" component={RelationshipHubScreen} options={{ headerShown: true, title: 'Relationship', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="TimelinePlanner" component={TimelinePlannerScreen} options={{ headerShown: true, title: 'Timeline Thoughts', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="MemoryVault" component={MemoryVaultScreen} options={{ headerShown: true, title: 'Memory Vault', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="MemoryVaultIndex" component={MemoryVaultIndexScreen} options={{ headerShown: true, title: 'Memory Vaults', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="SharedPlaylist" component={SharedPlaylistScreen} options={{ headerShown: true, title: t('ui.nav.title.sharedPlaylist'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="TripPlanning" component={TripPlanningScreen} options={{ headerShown: true, title: t('ui.nav.title.tripPlanning'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="SharedDecisions" component={SharedDecisionsScreen} options={{ headerShown: true, title: t('ui.nav.title.sharedDecisions'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="RelationshipLegacy" component={RelationshipLegacyScreen} options={{ headerShown: true, title: t('ui.nav.title.relationshipLegacy'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="LegacyLibrary" component={LegacyLibraryScreen} options={{ headerShown: true, title: t('ui.nav.title.legacyLibrary'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="GoodbyeArchiveEntry" component={GoodbyeArchiveEntryScreen} options={{ headerShown: true, title: t('ui.nav.title.goodbyeArchiveEntry'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
+            <Stack.Screen name="GoodbyeArchiveList" component={GoodbyeArchiveListScreen} options={{ headerShown: true, title: t('ui.nav.title.goodbyeArchiveList'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="RelationshipEmergencyKit" component={RelationshipEmergencyKitScreen} options={{ headerShown: true, title: t('ui.nav.title.relationshipEmergencyKit'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="RelationshipTools" component={RelationshipToolsScreen} options={{ headerShown: true, title: t('ui.nav.title.relationshipTools'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="RelationshipHub" component={RelationshipHubScreen} options={{ headerShown: true, title: t('ui.nav.title.relationshipHub'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="TimelinePlanner" component={TimelinePlannerScreen} options={{ headerShown: true, title: t('ui.nav.title.timelinePlanner'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="MemoryVault" component={MemoryVaultScreen} options={{ headerShown: true, title: t('ui.nav.title.memoryVault'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="MemoryVaultIndex" component={MemoryVaultIndexScreen} options={{ headerShown: true, title: t('ui.nav.title.memoryVaultIndex'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             {/* Convergence pass P2 (CLAUDE.md): the old separate "Insights"
                 route is retired -- MomentumScreen now covers both, one
                 real "how am I doing" destination instead of two. */}
-            <Stack.Screen name="Momentum" component={MomentumScreen} options={{ headerShown: true, title: 'Your Activity', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="Plans" component={PlansScreen} options={{ headerShown: true, title: 'Your Plans', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="Rewards" component={RewardsScreen} options={{ headerShown: true, title: 'Your Rewards', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="Momentum" component={MomentumScreen} options={{ headerShown: true, title: t('ui.nav.title.momentum'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="Plans" component={PlansScreen} options={{ headerShown: true, title: t('ui.nav.title.plans'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="Rewards" component={RewardsScreen} options={{ headerShown: true, title: t('ui.nav.title.rewards'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MarketValidation" component={MarketValidationScreen} options={{ headerShown: true, title: 'Market Validation', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BusinessAIAssistant" component={BusinessAIAssistantScreen} options={{ headerShown: true, title: 'AI Assistant', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BusinessAIAutomation" component={BusinessAIAutomationScreen} options={{ headerShown: true, title: 'AI Automation', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} options={{ headerShown: true, title: 'Emergency Contacts', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="Occasions" component={OccasionsScreen} options={{ headerShown: true, title: 'Occasions & Reminders', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="MusicMode" component={MusicModeScreen} options={{ headerShown: true, title: 'Music Mode', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="ChemistryDiaryEntry" component={ChemistryDiaryEntryScreen} options={{ headerShown: true, title: 'Chemistry Check-In', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
-            <Stack.Screen name="ChemistryDiaryList" component={ChemistryDiaryListScreen} options={{ headerShown: true, title: 'Chemistry Diary', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="StressTest" component={StressTestScreen} options={{ headerShown: true, title: 'What If...', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="RelationshipConstitution" component={RelationshipConstitutionScreen} options={{ headerShown: true, title: 'Our Constitution', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="BrandOffers" component={BrandOffersScreen} options={{ headerShown: true, title: 'Offers & Perks', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="RehearsalRoom" component={RehearsalRoomScreen} options={{ headerShown: true, title: 'Rehearsal Room', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="IdVerification" component={IdVerificationScreen} options={{ headerShown: true, title: 'Verify Identity', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} options={{ headerShown: true, title: t('ui.nav.title.emergencyContacts'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="Occasions" component={OccasionsScreen} options={{ headerShown: true, title: t('ui.nav.title.occasions'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="MusicMode" component={MusicModeScreen} options={{ headerShown: true, title: t('ui.nav.title.musicMode'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="ChemistryDiaryEntry" component={ChemistryDiaryEntryScreen} options={{ headerShown: true, title: t('ui.nav.title.chemistryDiaryEntry'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
+            <Stack.Screen name="ChemistryDiaryList" component={ChemistryDiaryListScreen} options={{ headerShown: true, title: t('ui.nav.title.chemistryDiaryList'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="StressTest" component={StressTestScreen} options={{ headerShown: true, title: t('ui.nav.title.stressTest'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="RelationshipConstitution" component={RelationshipConstitutionScreen} options={{ headerShown: true, title: t('ui.nav.title.relationshipConstitution'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="BrandOffers" component={BrandOffersScreen} options={{ headerShown: true, title: t('ui.nav.title.brandOffers'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="RehearsalRoom" component={RehearsalRoomScreen} options={{ headerShown: true, title: t('ui.nav.title.rehearsalRoom'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="IdVerification" component={IdVerificationScreen} options={{ headerShown: true, title: t('ui.nav.title.idVerification'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminVerification" component={AdminVerificationScreen} options={{ headerShown: true, title: 'Verifications (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="InviteFriends" component={InviteFriendsScreen} options={{ headerShown: true, title: 'Invite Friends', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} options={{ headerShown: true, title: 'Blocked Users', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="FeaturesOverview" component={FeaturesOverviewScreen} options={{ headerShown: true, title: 'Everything In Nearby', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="SelectGatheringLocation" component={SelectGatheringLocationScreen} options={{ headerShown: true, title: 'Set Location', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="InviteFriends" component={InviteFriendsScreen} options={{ headerShown: true, title: t('ui.nav.title.inviteFriends'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} options={{ headerShown: true, title: t('ui.nav.title.blockedUsers'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="FeaturesOverview" component={FeaturesOverviewScreen} options={{ headerShown: true, title: t('ui.nav.title.featuresOverview'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="SelectGatheringLocation" component={SelectGatheringLocationScreen} options={{ headerShown: true, title: t('ui.nav.title.selectGatheringLocation'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Nearby" component={DiscoveryScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Gatherings" component={GatheringsScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="GatheringDetail" component={GatheringDetailScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="GatheringHub" component={GatheringHubScreen} options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="Notices" component={ActivityScreen} options={{ headerShown: true, title: 'Activity', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: true, title: 'Friends', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="Notices" component={ActivityScreen} options={{ headerShown: true, title: t('ui.nav.title.notices'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: true, title: t('ui.nav.title.friends'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen
               name="GatheringChat"
               component={GatheringChatScreen}
@@ -530,11 +535,11 @@ export default function RootNavigator() {
                 headerTitle: () => (
                   <TouchableOpacity
                     onPress={() => route.params?.gatheringId && navigation.navigate('GatheringDetail', { gatheringId: route.params.gatheringId })}
-                    accessibilityLabel={route.params?.gatheringTitle ? `View ${route.params.gatheringTitle}` : 'View gathering'}
+                    accessibilityLabel={route.params?.gatheringTitle ? t('ui.nav.viewA11y', { title: route.params.gatheringTitle }) : t('ui.nav.viewGatheringA11y')}
                     accessibilityRole="button"
                   >
                     <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '600' }}>
-                      {route.params?.gatheringTitle ? `${route.params.gatheringTitle} Chat` : 'Group Chat'}
+                      {route.params?.gatheringTitle ? t('ui.groupChat.chat', { title: route.params.gatheringTitle }) : t('ui.nav.groupChat')}
                     </Text>
                   </TouchableOpacity>
                 ),
@@ -550,18 +555,18 @@ export default function RootNavigator() {
                 same content, no rewrite, just corrects the one concrete gap
                 the audit found (FiltersModal itself was already a real
                 in-place modal; only this deeper "Customize" screen wasn't). */}
-            <Stack.Screen name="QuickFilterCustomize" component={QuickFilterCustomizeScreen} options={({ route }) => ({ headerShown: true, title: route?.params?.mode === 'friends' ? 'Customize Friends Filters' : 'Customize Quick Filters', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' })} />
-            <Stack.Screen name="PreferencePolls" component={PreferencePollScreen} options={{ headerShown: true, title: 'Quick Questions', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
+            <Stack.Screen name="QuickFilterCustomize" component={QuickFilterCustomizeScreen} options={({ route }) => ({ headerShown: true, title: route?.params?.mode === 'friends' ? t('ui.nav.customizeFriendsFilters') : t('ui.nav.customizeQuickFilters'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' })} />
+            <Stack.Screen name="PreferencePolls" component={PreferencePollScreen} options={{ headerShown: true, title: t('ui.nav.title.preferencePolls'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="Communities" component={CommunitiesScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="CreateCommunity" component={CreateCommunityScreen} options={{ headerShown: true, title: 'Create Community', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
-            <Stack.Screen name="EditCommunity" component={EditCommunityScreen} options={{ headerShown: true, title: 'Edit Community', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
+            <Stack.Screen name="CreateCommunity" component={CreateCommunityScreen} options={{ headerShown: true, title: t('ui.nav.title.createCommunity'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
+            <Stack.Screen name="EditCommunity" component={EditCommunityScreen} options={{ headerShown: true, title: t('ui.nav.title.editCommunity'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="CommunityDetail" component={CommunityDetailScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen
               name="CommunityChat"
               component={CommunityChatScreen}
               options={({ route }) => ({
                 headerShown: true,
-                title: route.params?.communityName ? `${route.params.communityName} Chat` : 'Community Chat',
+                title: route.params?.communityName ? t('ui.groupChat.chat', { title: route.params.communityName }) : t('ui.nav.communityChat'),
                 headerStyle: { backgroundColor: colors.background },
                 headerTintColor: colors.textPrimary,
                 headerShadowVisible: false,
@@ -577,25 +582,25 @@ export default function RootNavigator() {
             <Stack.Screen name="BusinessDashboard" component={BusinessDashboardScreen} options={{ headerShown: true, title: 'Business Dashboard', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BusinessPartnerApply" component={BusinessPartnerApplyScreen} options={{ headerShown: true, title: 'Get Your Business on Nearby', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MyBusinessApplication" component={MyBusinessApplicationScreen} options={{ headerShown: true, title: 'My Application', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="RequestBusinessPartner" component={RequestBusinessPartnerScreen} options={{ headerShown: true, title: 'Request a Business Partner', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="AskBusiness" component={AskBusinessScreen} options={{ headerShown: true, title: 'Ask a Business', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
-            <Stack.Screen name="BusinessRequestDetail" component={BusinessRequestDetailScreen} options={{ headerShown: true, title: 'Your Request', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="RequestBusinessPartner" component={RequestBusinessPartnerScreen} options={{ headerShown: true, title: t('ui.nav.title.requestBusinessPartner'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="AskBusiness" component={AskBusinessScreen} options={{ headerShown: true, title: t('ui.nav.title.askBusiness'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
+            <Stack.Screen name="BusinessRequestDetail" component={BusinessRequestDetailScreen} options={{ headerShown: true, title: t('ui.nav.title.businessRequestDetail'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen
               name="PlanChat"
               component={PlanChatScreen}
               options={{
                 headerShown: true,
-                title: 'Plan Chat',
+                title: t('ui.nav.title.planChat'),
                 headerStyle: { backgroundColor: colors.background },
                 headerTintColor: colors.textPrimary,
                 headerShadowVisible: false,
               }}
             />
-            <Stack.Screen name="GroupPlan" component={GroupPlanScreen} options={{ headerShown: true, title: 'Group Plan', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="PlanDetail" component={PlanDetailScreen} options={{ headerShown: true, title: 'Plan', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="SharedNight" component={SharedNightScreen} options={{ headerShown: true, title: 'Shared night', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="GroupOccasionPlan" component={GroupOccasionPlanScreen} options={{ headerShown: true, title: 'Group Plan', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="DateProposal" component={DateProposalScreen} options={{ headerShown: true, title: 'Plan Something Together', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="GroupPlan" component={GroupPlanScreen} options={{ headerShown: true, title: t('ui.nav.title.groupPlan'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="PlanDetail" component={PlanDetailScreen} options={{ headerShown: true, title: t('ui.nav.title.planDetail'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="SharedNight" component={SharedNightScreen} options={{ headerShown: true, title: t('ui.nav.title.sharedNight'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="GroupOccasionPlan" component={GroupOccasionPlanScreen} options={{ headerShown: true, title: t('ui.nav.title.groupOccasionPlan'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="DateProposal" component={DateProposalScreen} options={{ headerShown: true, title: t('ui.nav.title.dateProposal'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminBusinessRequests" component={AdminBusinessRequestsScreen} options={{ headerShown: true, title: 'Business Requests (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminSponsoredRefunds" component={AdminSponsoredRefundsScreen} options={{ headerShown: true, title: 'Sponsored Refunds (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminBusinessTier" component={AdminBusinessTierScreen} options={{ headerShown: true, title: 'Business Tier Switch (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
@@ -613,11 +618,11 @@ export default function RootNavigator() {
                 headerTitle: () => (
                   <TouchableOpacity
                     onPress={() => route.params?.partnerId && navigation.navigate('BusinessProfile', { partnerId: route.params.partnerId })}
-                    accessibilityLabel={route.params?.partnerName ? `View ${route.params.partnerName}'s profile` : 'View business profile'}
+                    accessibilityLabel={route.params?.partnerName ? t('ui.nav.viewProfileA11y', { name: route.params.partnerName }) : t('ui.nav.viewBusinessProfileA11y')}
                     accessibilityRole="button"
                   >
                     <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '600' }}>
-                      {route.params?.partnerName ?? 'Message'}
+                      {route.params?.partnerName ?? t('ui.nav.message')}
                     </Text>
                   </TouchableOpacity>
                 ),
@@ -627,7 +632,7 @@ export default function RootNavigator() {
               })}
             />
             <Stack.Screen name="BusinessProfile" component={BusinessProfileScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="EditGathering" component={EditGatheringScreen} options={{ headerShown: true, title: 'Edit Gathering', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
+            <Stack.Screen name="EditGathering" component={EditGatheringScreen} options={{ headerShown: true, title: t('ui.nav.title.editGathering'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="Places" component={PlacesScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Timeline" component={TimelineScreen} options={{ headerShown: false }} />
             <Stack.Screen name="FriendDiscovery" component={FriendDiscoveryScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
