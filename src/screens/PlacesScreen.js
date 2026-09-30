@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
@@ -12,13 +13,15 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { getUserLocation } from '../services/userLocation';
 
-import { countLabel } from '../utils/plural';
+import useCategoryNames from '../hooks/useCategoryNames';
 // This screen is reached as a top-level stack push (not a bottom tab),
 // headerShown: false in RootNavigator -- the same "reachable, but no
 // visible way back" shape found and fixed on FriendDiscoveryScreen for a
 // real user-reported dead end. Closed here for the identical reason,
 // not something a screen with no navigation prop can leave otherwise.
 export default function PlacesScreen({ navigation }) {
+  const { t, language } = useLanguage();
+  const names = useCategoryNames(); // category chip names in the person's language (the stored key is unchanged)
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [category, setCategory] = useState('food_drink');
@@ -96,26 +99,26 @@ export default function PlacesScreen({ navigation }) {
         onPress={() => navigation.goBack()}
         style={styles.backButton}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        accessibilityLabel="Go back"
+        accessibilityLabel={t('ui.places.goBackA11y')}
         accessibilityRole="button"
       >
         <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
       </TouchableOpacity>
-      <Text style={styles.title} accessibilityRole="header">Places</Text>
-      <Text style={styles.subtitle}>Real spots nearby, worth checking out</Text>
+      <Text style={styles.title} accessibilityRole="header">{t('ui.places.places')}</Text>
+      <Text style={styles.subtitle}>{t('ui.places.realSpotsNearbyWorthChecking')}</Text>
 
       <View style={styles.searchBarWrap}>
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
           style={styles.searchInput}
-          placeholder='Try "coffee shop" or "something fun"'
+          placeholder={t('ui.places.tryCoffeeShopOrSomething')}
           placeholderTextColor={colors.textTertiary}
           value={searchQuery}
           onChangeText={setSearchQuery}
-          accessibilityLabel="Search places"
+          accessibilityLabel={t('ui.places.searchPlacesA11y')}
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
+          <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel={t('ui.places.clearSearchA11y')} accessibilityRole="button">
             <Text style={styles.searchClear}>✕</Text>
           </TouchableOpacity>
         )}
@@ -130,7 +133,7 @@ export default function PlacesScreen({ navigation }) {
           chip stops acting as a hard type filter once that happens).
           Categories still work exactly as they always did once you're in
           that mode. */}
-      <Text style={styles.orBrowseLabel}>Or browse by category</Text>
+      <Text style={styles.orBrowseLabel}>{t('ui.places.orBrowseByCategory')}</Text>
       <FlatList
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -148,12 +151,12 @@ export default function PlacesScreen({ navigation }) {
                 setCategory(item.key);
                 if (isSearching) setSearchQuery('');
               }}
-              accessibilityLabel={item.label}
+              accessibilityLabel={names.group(item.key, item.label)}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
             >
               <Text style={styles.categoryChipIcon}>{item.icon}</Text>
-              <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>{item.label}</Text>
+              <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>{names.group(item.key, item.label)}</Text>
             </TapActiveChip>
           );
         }}
@@ -161,20 +164,20 @@ export default function PlacesScreen({ navigation }) {
 
       {loading ? (
         <View style={{ marginTop: spacing.xl }}>
-          <NLoader fullScreen={false} size="compact" caption={isSearching ? `Searching for "${searchQuery.trim()}"…` : undefined} kind="places" />
+          <NLoader fullScreen={false} size="compact" caption={isSearching ? t('ui.places.searchingFor', { query: searchQuery.trim() }) : undefined} kind="places" />
         </View>
       ) : locationDenied ? (
         <FadeInState opportunity style={styles.emptyState}>
           <Text style={styles.emptyEmoji}>📍</Text>
-          <Text style={styles.emptyText}>Enable location to discover places nearby.</Text>
-          <TouchableOpacity onPress={load} accessibilityLabel="Enable location" accessibilityRole="button">
-            <Text style={styles.emptyActionText}>Enable Location →</Text>
+          <Text style={styles.emptyText}>{t('ui.places.enableLocationToDiscoverPlaces')}</Text>
+          <TouchableOpacity onPress={load} accessibilityLabel={t('ui.places.enableLocationA11y')} accessibilityRole="button">
+            <Text style={styles.emptyActionText}>{t('ui.places.enableLocation')}</Text>
           </TouchableOpacity>
         </FadeInState>
       ) : loadError ? (
         <FadeInState style={styles.emptyState}>
           <Text style={styles.emptyEmoji}>⚠️</Text>
-          <Text style={styles.emptyText}>Couldn't load places right now. Pull down to try again.</Text>
+          <Text style={styles.emptyText}>{t('ui.places.couldntLoadPlacesRightNow')}</Text>
         </FadeInState>
       ) : (
         // FilterTransition (the Nearby Motion System, CLAUDE.md Item 113): a brief
@@ -206,12 +209,12 @@ export default function PlacesScreen({ navigation }) {
                 onPress={() => navigation.navigate('AskBusiness', {
                   prefillText: isSearching
                     ? searchQuery.trim()
-                    : `Looking for ${CATEGORIES.find((c) => c.key === category)?.label || 'something'} nearby`,
+                    : t('ui.places.lookingForNearby', { what: CATEGORIES.some((c) => c.key === category) ? names.group(category) : t('ui.places.something') }),
                 })}
-                accessibilityLabel="Ask nearby businesses"
+                accessibilityLabel={t('ui.places.askNearbyBusinessesA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.emptyActionText}>Ask Nearby Businesses →</Text>
+                <Text style={styles.emptyActionText}>{t('ui.places.askNearbyBusinesses')}</Text>
               </TouchableOpacity>
             </FadeInState>
           }
@@ -220,7 +223,7 @@ export default function PlacesScreen({ navigation }) {
               style={styles.placeCard}
               onPress={() => openDestination(navigation, recommendationContext(contextItem('place', item)).destination)}
               activeOpacity={0.85}
-              accessibilityLabel={`${item.name}${item.openNow !== null ? (item.openNow ? ', open now' : ', closed now') : ''}${item.gatheringCount > 0 ? `, ${countLabel(item.gatheringCount, 'gathering')} hosted here` : ''}`}
+              accessibilityLabel={[item.name, item.openNow === null ? null : t(item.openNow ? 'ui.places.openNowA11y' : 'ui.places.closedNowA11y'), item.gatheringCount > 0 ? t('ui.places.hostedHereA11y', { count: item.gatheringCount }) : null].filter(Boolean).join(', ')}
               accessibilityRole="button"
             >
               {item.photoRef ? (
@@ -230,7 +233,7 @@ export default function PlacesScreen({ navigation }) {
               )}
               <View style={{ flex: 1 }}>
                 <Text style={styles.placeName}>{item.name}</Text>
-                {item.address || item.distanceMiles != null ? <Text style={styles.placeAddress}>{[item.address, recommendationContext(contextItem('place', item)).context].filter(Boolean).join(' · ')}</Text> : null}
+                {item.address || item.distanceMiles != null ? <Text style={styles.placeAddress}>{[item.address, recommendationContext(contextItem('place', item), { language }).context].filter(Boolean).join(' · ')}</Text> : null}
                 <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, marginTop: 4 }}>
                   {item.rating !== null && (
                     <Text style={styles.placeRating}>
@@ -238,15 +241,15 @@ export default function PlacesScreen({ navigation }) {
                     </Text>
                   )}
                   {priceLevelLabel(item.priceLevel) !== null && (
-                    <Text style={styles.placePriceLevel}>{priceLevelLabel(item.priceLevel)}</Text>
+                    <Text style={styles.placePriceLevel}>{item.priceLevel === 0 ? t('ui.places.free') : priceLevelLabel(item.priceLevel)}</Text>
                   )}
                   {item.openNow !== null && (
                     <Text style={item.openNow ? styles.placeOpenNow : styles.placeClosedNow}>
-                      {item.openNow ? '● Open now' : '● Closed'}
+                      {item.openNow ? t('ui.places.openNow') : t('ui.places.closed')}
                     </Text>
                   )}
                   {item.gatheringCount > 0 && (
-                    <Text style={styles.placeGatherings}>🎉 {item.gatheringCount} gathering{item.gatheringCount === 1 ? '' : 's'} here</Text>
+                    <Text style={styles.placeGatherings}>{t('ui.places.gatheringsHere', { count: item.gatheringCount })}</Text>
                   )}
                 </View>
               </View>

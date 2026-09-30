@@ -2057,12 +2057,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
                       active={active}
                       style={[styles.filterChip, active && styles.filterChipActive]}
                       onPress={() => setPlacesCategory(c.key)}
-                      accessibilityLabel={c.label}
+                      accessibilityLabel={names.group(c.key, c.label)}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
                     >
                       <Text style={styles.filterChipIcon}>{c.icon}</Text>
-                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{c.label}</Text>
+                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{names.group(c.key, c.label)}</Text>
                     </TapActiveChip>
                   );
                 })}
@@ -2886,8 +2886,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   <TouchableOpacity
                     onPress={() => navigation.navigate('AskBusiness', {
                       prefillText: isSearching
-                        ? `Looking for "${searchQuery.trim()}" nearby`
-                        : `Looking for ${PLACE_CATEGORIES.find((c) => c.key === placesCategory)?.label || 'something'} nearby`,
+                        ? t('ui.places.lookingForNearby', { what: `"${searchQuery.trim()}"` })
+                        : t('ui.places.lookingForNearby', { what: PLACE_CATEGORIES.some((c) => c.key === placesCategory) ? names.group(placesCategory) : t('ui.places.something') }),
                     })}
                     accessibilityLabel={t('ui.discover.askBusinessesA11y')}
                     accessibilityRole="button"

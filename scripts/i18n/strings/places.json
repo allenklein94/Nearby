@@ -1,0 +1,341 @@
+{
+ "en": {
+  "goBackA11y": "Go back",
+  "places": "Places",
+  "realSpotsNearbyWorthChecking": "Real spots nearby, worth checking out",
+  "tryCoffeeShopOrSomething": "Try \"coffee shop\" or \"something fun\"",
+  "searchPlacesA11y": "Search places",
+  "clearSearchA11y": "Clear search",
+  "orBrowseByCategory": "Or browse by category",
+  "enableLocationToDiscoverPlaces": "Enable location to discover places nearby.",
+  "enableLocationA11y": "Enable location",
+  "enableLocation": "Enable Location →",
+  "couldntLoadPlacesRightNow": "Couldn't load places right now. Pull down to try again.",
+  "askNearbyBusinessesA11y": "Ask nearby businesses",
+  "askNearbyBusinesses": "Ask Nearby Businesses →",
+  "openNow": "● Open now",
+  "closed": "● Closed",
+  "searchingFor": "Searching for “{query}”…",
+  "lookingForNearby": "Looking for {what} nearby",
+  "something": "something",
+  "openNowA11y": "open now",
+  "closedNowA11y": "closed now",
+  "hostedHereA11y": {
+   "one": "{count} gathering hosted here",
+   "other": "{count} gatherings hosted here"
+  },
+  "free": "Free",
+  "gatheringsHere": {
+   "one": "🎉 {count} gathering here",
+   "other": "🎉 {count} gatherings here"
+  }
+ },
+ "es": {
+  "goBackA11y": "Volver",
+  "places": "Lugares",
+  "realSpotsNearbyWorthChecking": "Lugares reales cerca, que vale la pena visitar",
+  "tryCoffeeShopOrSomething": "Prueba «cafetería» o «algo divertido»",
+  "searchPlacesA11y": "Buscar lugares",
+  "clearSearchA11y": "Borrar búsqueda",
+  "orBrowseByCategory": "O explora por categoría",
+  "enableLocationToDiscoverPlaces": "Activa la ubicación para descubrir lugares cercanos.",
+  "enableLocationA11y": "Activar ubicación",
+  "enableLocation": "Activar ubicación →",
+  "couldntLoadPlacesRightNow": "No pudimos cargar lugares ahora. Desliza hacia abajo para reintentar.",
+  "askNearbyBusinessesA11y": "Preguntar a negocios cercanos",
+  "askNearbyBusinesses": "Preguntar a negocios cercanos →",
+  "openNow": "● Abierto ahora",
+  "closed": "● Cerrado",
+  "searchingFor": "Buscando «{query}»…",
+  "lookingForNearby": "Busco {what} cerca",
+  "something": "algo",
+  "openNowA11y": "abierto ahora",
+  "closedNowA11y": "cerrado ahora",
+  "hostedHereA11y": {
+   "one": "{count} reunión organizada aquí",
+   "other": "{count} reuniones organizadas aquí"
+  },
+  "free": "Gratis",
+  "gatheringsHere": {
+   "one": "🎉 {count} reunión aquí",
+   "other": "🎉 {count} reuniones aquí"
+  }
+ },
+ "de": {
+  "goBackA11y": "Zurück",
+  "places": "Orte",
+  "realSpotsNearbyWorthChecking": "Echte Orte in der Nähe, die sich lohnen",
+  "tryCoffeeShopOrSomething": "Versuch „Café“ oder „etwas Lustiges“",
+  "searchPlacesA11y": "Orte suchen",
+  "clearSearchA11y": "Suche löschen",
+  "orBrowseByCategory": "Oder nach Kategorie stöbern",
+  "enableLocationToDiscoverPlaces": "Aktiviere den Standort, um Orte in der Nähe zu entdecken.",
+  "enableLocationA11y": "Standort aktivieren",
+  "enableLocation": "Standort aktivieren →",
+  "couldntLoadPlacesRightNow": "Orte konnten gerade nicht geladen werden. Zum Aktualisieren nach unten ziehen.",
+  "askNearbyBusinessesA11y": "Unternehmen in der Nähe fragen",
+  "askNearbyBusinesses": "Unternehmen in der Nähe fragen →",
+  "openNow": "● Jetzt geöffnet",
+  "closed": "● Geschlossen",
+  "searchingFor": "Suche nach „{query}“…",
+  "lookingForNearby": "Suche {what} in der Nähe",
+  "something": "etwas",
+  "openNowA11y": "jetzt geöffnet",
+  "closedNowA11y": "jetzt geschlossen",
+  "hostedHereA11y": {
+   "one": "{count} Treffen hier veranstaltet",
+   "other": "{count} Treffen hier veranstaltet"
+  },
+  "free": "Kostenlos",
+  "gatheringsHere": {
+   "one": "🎉 {count} Treffen hier",
+   "other": "🎉 {count} Treffen hier"
+  }
+ },
+ "fr": {
+  "goBackA11y": "Retour",
+  "places": "Lieux",
+  "realSpotsNearbyWorthChecking": "De vrais lieux à proximité, qui valent le détour",
+  "tryCoffeeShopOrSomething": "Essaie « café » ou « quelque chose de sympa »",
+  "searchPlacesA11y": "Rechercher des lieux",
+  "clearSearchA11y": "Effacer la recherche",
+  "orBrowseByCategory": "Ou parcourir par catégorie",
+  "enableLocationToDiscoverPlaces": "Active la localisation pour découvrir les lieux à proximité.",
+  "enableLocationA11y": "Activer la localisation",
+  "enableLocation": "Activer la localisation →",
+  "couldntLoadPlacesRightNow": "Impossible de charger les lieux pour le moment. Tire vers le bas pour réessayer.",
+  "askNearbyBusinessesA11y": "Demander aux établissements proches",
+  "askNearbyBusinesses": "Demander aux établissements proches →",
+  "openNow": "● Ouvert maintenant",
+  "closed": "● Fermé",
+  "searchingFor": "Recherche de « {query} »…",
+  "lookingForNearby": "Je cherche {what} à proximité",
+  "something": "quelque chose",
+  "openNowA11y": "ouvert maintenant",
+  "closedNowA11y": "fermé maintenant",
+  "hostedHereA11y": {
+   "one": "{count} rassemblement organisé ici",
+   "other": "{count} rassemblements organisés ici"
+  },
+  "free": "Gratuit",
+  "gatheringsHere": {
+   "one": "🎉 {count} rassemblement ici",
+   "other": "🎉 {count} rassemblements ici"
+  }
+ },
+ "pt": {
+  "goBackA11y": "Voltar",
+  "places": "Lugares",
+  "realSpotsNearbyWorthChecking": "Lugares reais por perto, que valem a visita",
+  "tryCoffeeShopOrSomething": "Experimente “cafeteria” ou “algo divertido”",
+  "searchPlacesA11y": "Buscar lugares",
+  "clearSearchA11y": "Limpar busca",
+  "orBrowseByCategory": "Ou navegue por categoria",
+  "enableLocationToDiscoverPlaces": "Ative a localização para descobrir lugares por perto.",
+  "enableLocationA11y": "Ativar localização",
+  "enableLocation": "Ativar localização →",
+  "couldntLoadPlacesRightNow": "Não foi possível carregar lugares agora. Puxe para baixo para tentar de novo.",
+  "askNearbyBusinessesA11y": "Perguntar a estabelecimentos próximos",
+  "askNearbyBusinesses": "Perguntar a estabelecimentos próximos →",
+  "openNow": "● Aberto agora",
+  "closed": "● Fechado",
+  "searchingFor": "Buscando “{query}”…",
+  "lookingForNearby": "Procurando {what} por perto",
+  "something": "algo",
+  "openNowA11y": "aberto agora",
+  "closedNowA11y": "fechado agora",
+  "hostedHereA11y": {
+   "one": "{count} encontro realizado aqui",
+   "other": "{count} encontros realizados aqui"
+  },
+  "free": "Grátis",
+  "gatheringsHere": {
+   "one": "🎉 {count} encontro aqui",
+   "other": "🎉 {count} encontros aqui"
+  }
+ },
+ "ht": {
+  "goBackA11y": "Retounen",
+  "places": "Kote",
+  "realSpotsNearbyWorthChecking": "Vrè kote toupre, ki vo pou w ale wè",
+  "tryCoffeeShopOrSomething": "Eseye \"kafe\" oswa \"yon bagay amizan\"",
+  "searchPlacesA11y": "Chèche kote",
+  "clearSearchA11y": "Efase rechèch la",
+  "orBrowseByCategory": "Oswa gade pa kategori",
+  "enableLocationToDiscoverPlaces": "Aktive lokalizasyon pou dekouvri kote ki toupre.",
+  "enableLocationA11y": "Aktive lokalizasyon",
+  "enableLocation": "Aktive lokalizasyon →",
+  "couldntLoadPlacesRightNow": "Nou pa t ka chaje kote yo kounye a. Rale desann pou eseye ankò.",
+  "askNearbyBusinessesA11y": "Mande biznis ki toupre yo",
+  "askNearbyBusinesses": "Mande biznis ki toupre yo →",
+  "openNow": "● Louvri kounye a",
+  "closed": "● Fèmen",
+  "searchingFor": "N ap chèche “{query}”…",
+  "lookingForNearby": "M ap chèche {what} toupre",
+  "something": "yon bagay",
+  "openNowA11y": "louvri kounye a",
+  "closedNowA11y": "fèmen kounye a",
+  "hostedHereA11y": {
+   "one": "{count} rasanbleman òganize isit la",
+   "other": "{count} rasanbleman òganize isit la"
+  },
+  "free": "Gratis",
+  "gatheringsHere": {
+   "one": "🎉 {count} rasanbleman isit la",
+   "other": "🎉 {count} rasanbleman isit la"
+  }
+ },
+ "zh": {
+  "goBackA11y": "返回",
+  "places": "地点",
+  "realSpotsNearbyWorthChecking": "附近真实、值得一去的地方",
+  "tryCoffeeShopOrSomething": "试试“咖啡店”或“好玩的事”",
+  "searchPlacesA11y": "搜索地点",
+  "clearSearchA11y": "清除搜索",
+  "orBrowseByCategory": "或按类别浏览",
+  "enableLocationToDiscoverPlaces": "开启定位以发现附近的地点。",
+  "enableLocationA11y": "开启定位",
+  "enableLocation": "开启定位 →",
+  "couldntLoadPlacesRightNow": "暂时无法加载地点。下拉重试。",
+  "askNearbyBusinessesA11y": "询问附近商家",
+  "askNearbyBusinesses": "询问附近商家 →",
+  "openNow": "● 营业中",
+  "closed": "● 已打烊",
+  "searchingFor": "正在搜索“{query}”…",
+  "lookingForNearby": "寻找附近的{what}",
+  "something": "好玩的事",
+  "openNowA11y": "营业中",
+  "closedNowA11y": "已打烊",
+  "hostedHereA11y": {
+   "other": "这里举办过 {count} 场聚会"
+  },
+  "free": "免费",
+  "gatheringsHere": {
+   "other": "🎉 这里有 {count} 场聚会"
+  }
+ },
+ "vi": {
+  "goBackA11y": "Quay lại",
+  "places": "Địa điểm",
+  "realSpotsNearbyWorthChecking": "Những địa điểm thật gần bạn, đáng để ghé",
+  "tryCoffeeShopOrSomething": "Thử “quán cà phê” hoặc “điều gì đó vui”",
+  "searchPlacesA11y": "Tìm địa điểm",
+  "clearSearchA11y": "Xóa tìm kiếm",
+  "orBrowseByCategory": "Hoặc duyệt theo danh mục",
+  "enableLocationToDiscoverPlaces": "Bật vị trí để khám phá địa điểm gần bạn.",
+  "enableLocationA11y": "Bật vị trí",
+  "enableLocation": "Bật vị trí →",
+  "couldntLoadPlacesRightNow": "Hiện không tải được địa điểm. Kéo xuống để thử lại.",
+  "askNearbyBusinessesA11y": "Hỏi các doanh nghiệp gần đây",
+  "askNearbyBusinesses": "Hỏi các doanh nghiệp gần đây →",
+  "openNow": "● Đang mở cửa",
+  "closed": "● Đã đóng cửa",
+  "searchingFor": "Đang tìm “{query}”…",
+  "lookingForNearby": "Tìm {what} gần đây",
+  "something": "điều gì đó",
+  "openNowA11y": "đang mở cửa",
+  "closedNowA11y": "đã đóng cửa",
+  "hostedHereA11y": {
+   "other": "{count} buổi gặp được tổ chức ở đây"
+  },
+  "free": "Miễn phí",
+  "gatheringsHere": {
+   "other": "🎉 {count} buổi gặp ở đây"
+  }
+ },
+ "tl": {
+  "goBackA11y": "Bumalik",
+  "places": "Mga lugar",
+  "realSpotsNearbyWorthChecking": "Mga totoong lugar sa malapit na sulit puntahan",
+  "tryCoffeeShopOrSomething": "Subukan ang \"coffee shop\" o \"something fun\"",
+  "searchPlacesA11y": "Maghanap ng lugar",
+  "clearSearchA11y": "I-clear ang paghahanap",
+  "orBrowseByCategory": "O mag-browse ayon sa kategorya",
+  "enableLocationToDiscoverPlaces": "I-on ang lokasyon para makahanap ng mga lugar sa malapit.",
+  "enableLocationA11y": "I-on ang lokasyon",
+  "enableLocation": "I-on ang lokasyon →",
+  "couldntLoadPlacesRightNow": "Hindi ma-load ang mga lugar ngayon. Hilahin pababa para subukang muli.",
+  "askNearbyBusinessesA11y": "Magtanong sa mga negosyo sa malapit",
+  "askNearbyBusinesses": "Magtanong sa mga negosyo sa malapit →",
+  "openNow": "● Bukas ngayon",
+  "closed": "● Sarado",
+  "searchingFor": "Hinahanap ang “{query}”…",
+  "lookingForNearby": "Naghahanap ng {what} sa malapit",
+  "something": "kahit ano",
+  "openNowA11y": "bukas ngayon",
+  "closedNowA11y": "sarado ngayon",
+  "hostedHereA11y": {
+   "one": "{count} pagtitipong ginanap dito",
+   "other": "{count} pagtitipong ginanap dito"
+  },
+  "free": "Libre",
+  "gatheringsHere": {
+   "one": "🎉 {count} pagtitipon dito",
+   "other": "🎉 {count} pagtitipon dito"
+  }
+ },
+ "ru": {
+  "goBackA11y": "Назад",
+  "places": "Места",
+  "realSpotsNearbyWorthChecking": "Реальные места рядом, которые стоит посетить",
+  "tryCoffeeShopOrSomething": "Попробуйте «кофейня» или «что-нибудь весёлое»",
+  "searchPlacesA11y": "Искать места",
+  "clearSearchA11y": "Очистить поиск",
+  "orBrowseByCategory": "Или выберите категорию",
+  "enableLocationToDiscoverPlaces": "Включите геолокацию, чтобы находить места рядом.",
+  "enableLocationA11y": "Включить геолокацию",
+  "enableLocation": "Включить геолокацию →",
+  "couldntLoadPlacesRightNow": "Сейчас не удалось загрузить места. Потяните вниз, чтобы повторить.",
+  "askNearbyBusinessesA11y": "Спросить заведения рядом",
+  "askNearbyBusinesses": "Спросить заведения рядом →",
+  "openNow": "● Сейчас открыто",
+  "closed": "● Закрыто",
+  "searchingFor": "Ищем «{query}»…",
+  "lookingForNearby": "Ищу {what} поблизости",
+  "something": "что-нибудь",
+  "openNowA11y": "сейчас открыто",
+  "closedNowA11y": "сейчас закрыто",
+  "hostedHereA11y": {
+   "one": "здесь прошла {count} встреча",
+   "few": "здесь прошли {count} встречи",
+   "many": "здесь прошло {count} встреч",
+   "other": "здесь прошло {count} встречи"
+  },
+  "free": "Бесплатно",
+  "gatheringsHere": {
+   "one": "🎉 {count} встреча здесь",
+   "few": "🎉 {count} встречи здесь",
+   "many": "🎉 {count} встреч здесь",
+   "other": "🎉 {count} встречи здесь"
+  }
+ },
+ "ko": {
+  "goBackA11y": "뒤로",
+  "places": "장소",
+  "realSpotsNearbyWorthChecking": "가 볼 만한 주변의 진짜 장소",
+  "tryCoffeeShopOrSomething": "\"카페\" 또는 \"재미있는 것\"을 검색해 보세요",
+  "searchPlacesA11y": "장소 검색",
+  "clearSearchA11y": "검색어 지우기",
+  "orBrowseByCategory": "또는 카테고리별로 둘러보기",
+  "enableLocationToDiscoverPlaces": "위치를 켜면 주변 장소를 찾을 수 있어요.",
+  "enableLocationA11y": "위치 켜기",
+  "enableLocation": "위치 켜기 →",
+  "couldntLoadPlacesRightNow": "지금은 장소를 불러오지 못했어요. 아래로 당겨 다시 시도하세요.",
+  "askNearbyBusinessesA11y": "주변 업체에 문의하기",
+  "askNearbyBusinesses": "주변 업체에 문의하기 →",
+  "openNow": "● 영업 중",
+  "closed": "● 영업 종료",
+  "searchingFor": "“{query}” 검색 중…",
+  "lookingForNearby": "근처 {what} 찾는 중",
+  "something": "재미있는 것",
+  "openNowA11y": "영업 중",
+  "closedNowA11y": "영업 종료",
+  "hostedHereA11y": {
+   "other": "이곳에서 열린 모임 {count}개"
+  },
+  "free": "무료",
+  "gatheringsHere": {
+   "other": "🎉 이곳의 모임 {count}개"
+  }
+ }
+}

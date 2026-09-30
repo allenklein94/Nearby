@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Platform } from 'react-native';
 import { NLoader } from '../motion';
@@ -40,6 +41,7 @@ import { typography, spacing, radius } from '../theme';
 // mechanism for the identical "business TBD" case, exactly what this
 // whole convergence pass exists to avoid.
 export default function MakeAPlanScreen({ route, navigation }) {
+  const { t } = useLanguage();
   const { offerId = null, partnerId = null, initialTitle = null } = route.params ?? {};
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -124,15 +126,15 @@ export default function MakeAPlanScreen({ route, navigation }) {
 
   async function handleConfirm() {
     if (!title.trim()) {
-      return Alert.alert('Add a title', 'Give your plan a title before confirming.');
+      return Alert.alert(t('ui.makeAPlan.addATitle'), t('ui.makeAPlan.giveYourPlanATitle'));
     }
     if (!scheduledAt) {
-      return Alert.alert('Pick a time', 'Choose when this is happening.');
+      return Alert.alert(t('ui.makeAPlan.pickATime'), t('ui.makeAPlan.chooseWhenThisIsHappening'));
     }
 
     const titleCheck = await checkTextModeration(title);
     if (!titleCheck.safe) {
-      return Alert.alert('Title not allowed', 'Please revise your title and try again.');
+      return Alert.alert(t('ui.makeAPlan.titleNotAllowed'), t('ui.makeAPlan.pleaseReviseYourTitleAnd'));
     }
 
     setConfirming(true);
@@ -188,7 +190,7 @@ export default function MakeAPlanScreen({ route, navigation }) {
   if (loadError) {
     return (
       <View style={styles.centered}>
-        <LoadErrorState message={offerId ? "Couldn't load this perk." : "Couldn't load this business."} onRetry={load} />
+        <LoadErrorState message={offerId ? t('ui.makeAPlan.couldntLoadThisPerk') : t('ui.makeAPlan.couldntLoadThisBusiness')} onRetry={load} />
       </View>
     );
   }
@@ -197,23 +199,23 @@ export default function MakeAPlanScreen({ route, navigation }) {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         <Text style={styles.subtitle}>
-          Turn this into a real plan — pick a time and who to invite. You're the host.
+          {t('ui.makeAPlan.turnThisIntoAReal')}
         </Text>
         {(offer?.brand_partners?.name ?? directPartner?.name) && (
-          <Text style={styles.businessContextLine}>📍 With {offer?.brand_partners?.name ?? directPartner?.name}</Text>
+          <Text style={styles.businessContextLine}>{t('ui.makeAPlan.withBusiness', { name: offer?.brand_partners?.name ?? directPartner?.name })}</Text>
         )}
 
-        <Text style={styles.label}>Title</Text>
+        <Text style={styles.label}>{t('ui.makeAPlan.title')}</Text>
         <TextInput
           style={styles.input}
           value={title}
           onChangeText={setTitle}
-          placeholder="What are you planning?"
+          placeholder={t('ui.makeAPlan.whatAreYouPlanning')}
           placeholderTextColor={colors.textTertiary}
-          accessibilityLabel="Plan title"
+          accessibilityLabel={t('ui.makeAPlan.planTitleA11y')}
         />
 
-        <Text style={styles.label}>When?</Text>
+        <Text style={styles.label}>{t('ui.makeAPlan.when')}</Text>
         <View style={styles.chipsWrap}>
           {WHEN_PRESETS.map((preset) => (
             <TouchableOpacity
@@ -249,8 +251,8 @@ export default function MakeAPlanScreen({ route, navigation }) {
           />
         )}
 
-        <Text style={styles.label}>Invite Friends</Text>
-        <Text style={styles.helperText}>Only people you're already friends with — never nearby strangers.</Text>
+        <Text style={styles.label}>{t('ui.makeAPlan.inviteFriends')}</Text>
+        <Text style={styles.helperText}>{t('ui.makeAPlan.onlyPeopleYoureAlreadyFriends')}</Text>
         <FriendInviteSelector selectedIds={selectedFriendIds} onChange={setSelectedFriendIds} navigation={navigation} />
       </ScrollView>
 
@@ -260,13 +262,13 @@ export default function MakeAPlanScreen({ route, navigation }) {
           onPress={handleConfirm}
           disabled={confirming}
           activeOpacity={0.85}
-          accessibilityLabel="Confirm plan"
+          accessibilityLabel={t('ui.makeAPlan.confirmPlanA11y')}
           accessibilityRole="button"
         >
           {confirming ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.confirmButtonText}>Confirm</Text>
+            <Text style={styles.confirmButtonText}>{t('ui.makeAPlan.confirm')}</Text>
           )}
         </TouchableOpacity>
       </View>
