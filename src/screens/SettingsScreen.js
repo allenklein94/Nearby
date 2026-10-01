@@ -11,10 +11,13 @@ import { requestDataExport } from '../services/dataExport';
 import { clearNotificationArea } from '../services/notificationArea';
 import { clearMyBehaviorHistory, getMyBehaviorCategories, forgetBehaviorCategory, addLearnedInterestToProfile, removeAddedInterestFromProfile } from '../services/behaviorSignals';
 import { learnedAffinities } from '../utils/learnedAffinity';
+import { usualTripRows } from '../utils/learnedProximity';
+import { getMyLearnedProximity, resetLearnedProximityCache } from '../services/learnedProximity';
 import RecommendationCustomizePanel from '../components/RecommendationCustomizePanel';
 import { ONBOARDING_INTEREST_GROUPS, sanitizeInterestGroups } from '../constants/interestGraph';
 import { ONBOARDING_GOALS, goalLabelsFrom, motivationsWithGoals } from '../constants/onboardingGoals';
-import { groupName } from '../i18n/categoryNames';
+import { groupName, categoryName } from '../i18n/categoryNames';
+import { localDistance } from '../i18n/format';
 import { typography, spacing, radius } from '../theme';
 
 import { showSuccessToast } from '../motion';
@@ -111,7 +114,9 @@ export default function SettingsScreen({ navigation, route }) {
   // Item 95: what Nearby has learned from activity (ranking only), shown back with Forget / Add to my interests.
   const [behaviorRows, setBehaviorRows] = useState([]);
   const learned = learnedAffinities(behaviorRows, myInterests);
-  const loadLearned = () => getMyBehaviorCategories().then(setBehaviorRows).catch(() => setBehaviorRows([]));
+  const [usualTrips, setUsualTrips] = useState([]);
+  const loadUsualTrips = () => { resetLearnedProximityCache(); return getMyLearnedProximity().then((m) => setUsualTrips(usualTripRows(m))).catch(() => setUsualTrips([])); };
+  const loadLearned = () => { loadUsualTrips(); return getMyBehaviorCategories().then(setBehaviorRows).catch(() => setBehaviorRows([])); };
   const [ttdFrequency, setTtdFrequency] = useState('few_per_day');
   const [ttdDistance, setTtdDistance] = useState(15);
   const [ttdTimePref, setTtdTimePref] = useState('anytime');
@@ -913,10 +918,32 @@ export default function SettingsScreen({ navigation, route }) {
                   ))}
                 </View>
               )}
+              {/* Item 137: how far this person usually goes per category, learned from their own joins / accepted offers.
+                  Visible so it is never a hidden rule; Forget removes the category's activity (trips included). */}
+              {usualTrips.length > 0 && (
+                <View style={{ marginTop: spacing.sm }}>
+                  <Text style={styles.settingLabel}>{t('ui.settings.usualTripTitle')}</Text>
+                  <Text style={styles.helperText}>{t('ui.settings.usualTripHelper')}</Text>
+                  {usualTrips.map((u) => (
+                    <View key={u.category} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, gap: spacing.sm }}>
+                      <Text style={[styles.helperText, { flex: 1 }]}>{t('ui.settings.usualTripLine', { category: categoryName(u.category, language), distance: localDistance(u.typicalMiles, language), count: u.count })}</Text>
+                      <TouchableOpacity
+                        onPress={() => forgetBehaviorCategory(u.category)
+                          .then(() => { loadLearned(); showSuccessToast(t('ui.settings.forgotten'), t('ui.settings.nearbyWillStopUsingYour', { category: u.category })); })
+                          .catch((e) => presentRecoverableError(Alert, { what: 'forget that', error: e }))}
+                        accessibilityLabel={t('ui.settings.forgetMyActivityA11y', { category: u.category })}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.customizeLinkText}>{t('ui.settings.forget')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
               <TouchableOpacity
                 style={styles.customizeLink}
                 onPress={() => clearMyBehaviorHistory()
-                  .then(() => { setBehaviorRows([]); return showSuccessToast(t('ui.settings.activityCleared'), t('ui.settings.yourPicksWillRelyOn')); })
+                  .then(() => { setBehaviorRows([]); setUsualTrips([]); resetLearnedProximityCache(); return showSuccessToast(t('ui.settings.activityCleared'), t('ui.settings.yourPicksWillRelyOn')); })
                   .catch((e) => presentRecoverableError(Alert, { what: 'complete that', error: e }))}
                 accessibilityLabel={t('ui.settings.clearMyActivityHistoryA11y')}
                 accessibilityRole="button"

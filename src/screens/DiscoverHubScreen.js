@@ -13,6 +13,7 @@ import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 import ExperienceComponentList from '../components/ExperienceComponentList';
 import SponsoredSpotlightSlot from '../components/SponsoredSpotlightSlot';
 import usePersonalization from '../hooks/usePersonalization';
+import { learnedProximityFor } from '../utils/learnedProximity';
 import { behaviorNudge, broadGroupNudge, relatedHobbyNudge } from '../constants/blendedRanking';
 import { relatedHobbyFor, relatedInterestReason } from '../constants/hobbyRelations';
 import { getFriendsInterestedIn } from '../services/friendInterests';
@@ -933,6 +934,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
       { tier: SIGNAL_TIERS.weather, delta: weatherFit ? WEATHER_BONUS : 0 },
       { tier: SIGNAL_TIERS.interest, delta: nudge },
       { tier: SIGNAL_TIERS.business, delta: related + broad },
+      // item 137: this person's usual trip for the gathering's category (rank-only, weakest tier; no reason line)
+      { tier: SIGNAL_TIERS.discovery, delta: learnedProximityFor(personalization.learnedProximity, g.interest_tag, g.distanceMiles) },
     ]);
     return { ...g, fit };
   }

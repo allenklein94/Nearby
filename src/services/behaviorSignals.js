@@ -3,12 +3,27 @@ import { searchTopic } from '../utils/unifiedSearch';
 
 // Behavioral signal capture (private, owner-only -- see 20261215_behavior_events.sql). Fire-and-forget: a failure here
 // must never affect the screen, and the server dedupes repeat events within an hour.
+function sendBehaviorEvent(params) {
+  Promise.resolve(supabase.rpc('record_behavior_event', params))
+    .then((res) => { if (res?.error) console.error('recordBehaviorEvent error', res.error.message); })
+    .catch(() => {});
+}
+
 export function recordBehaviorEvent(eventType, entityType, entityId, category) {
   if (!category || (entityType !== 'search' && !entityId)) return;
   try {
-    Promise.resolve(supabase.rpc('record_behavior_event', { event_type_param: eventType, entity_type_param: entityType, entity_id_param: entityId ?? null, category_param: category }))
-      .then((res) => { if (res?.error) console.error('recordBehaviorEvent error', res.error.message); })
-      .catch(() => {});
+    const params = { event_type_param: eventType, entity_type_param: entityType, entity_id_param: entityId ?? null, category_param: category };
+    if (eventType !== 'join' || entityType !== 'gathering') { sendBehaviorEvent(params); return; }
+    // Item 137: a gathering JOIN also sends where the person is right now, so the server can store how far the trip is
+    // (miles only; the position is used once and discarded). Never asks for location permission; no fix = no trip.
+    Promise.resolve()
+      .then(() => require('./userLocation').getUserLocation({ ask: false })) // lazy: keeps expo-location off the other paths
+      .catch(() => null)
+      .then((l) => {
+        const c = l?.coords;
+        sendBehaviorEvent(c && Number.isFinite(c.latitude) && Number.isFinite(c.longitude)
+          ? { ...params, origin_lat_param: c.latitude, origin_lng_param: c.longitude } : params);
+      });
   } catch {
     // never affects the screen
   }

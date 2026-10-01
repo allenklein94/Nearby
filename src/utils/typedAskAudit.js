@@ -48,6 +48,7 @@ export const SIGNAL_CODES = {
   social_context: 'explicit_preference',
   distance_willingness: 'explicit_requirement',
   transport_mode: 'explicit_preference',
+  learned_proximity: 'proximity',
   time_budget: 'explicit_requirement',
   clock_window: 'explicit_requirement',
   energy: 'explicit_preference',

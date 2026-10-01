@@ -40,7 +40,7 @@ describe('the Gatherings feed follows the one ladder', () => {
     expect(FEED_SIGNAL_TIER).toEqual({
       friends_going: SIGNAL_TIERS.planFriend, has_room: SIGNAL_TIERS.availability, today: SIGNAL_TIERS.time,
       declared_interest: SIGNAL_TIERS.interest, own_activity: SIGNAL_TIERS.interest, comfort: SIGNAL_TIERS.interest,
-      broad_or_related: SIGNAL_TIERS.business, weather: SIGNAL_TIERS.weather,
+      broad_or_related: SIGNAL_TIERS.business, weather: SIGNAL_TIERS.weather, learned_proximity: SIGNAL_TIERS.discovery,
     });
   });
 });

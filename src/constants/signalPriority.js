@@ -167,7 +167,7 @@ export const TYPED_ASK_SIGNAL_TIER = {
   // 8 weather
   weather: SIGNAL_TIERS.weather,
   // 10 general discovery
-  base_close_distance: SIGNAL_TIERS.discovery, base_area: SIGNAL_TIERS.discovery, base: SIGNAL_TIERS.discovery,
+  learned_proximity: SIGNAL_TIERS.discovery, base_close_distance: SIGNAL_TIERS.discovery, base_area: SIGNAL_TIERS.discovery, base: SIGNAL_TIERS.discovery,
   // removals only (never a score)
   dedupe: SIGNAL_TIERS.discovery,
 };

@@ -86,6 +86,8 @@ import { intensityFromText, effortFromText, applyIntensityToCandidates, applyEff
 import { socialSignalsFromText, applySocialToCandidates } from '../constants/socialContext';
 import { distanceWillingnessFromText, applyDistanceWillingness, distanceWillingnessCaption, travelSearchMiles } from '../constants/distanceWillingness';
 import { transportModeFromText, applyTransportMode, transportModeCaption, candidateKey } from '../constants/transportMode';
+import { applyLearnedProximity, learnedProximityApplies } from '../utils/learnedProximity';
+import { getMyLearnedProximity } from './learnedProximity';
 import { getTravelTimes } from './travelTime';
 import { spontaneityOf, isImmediate, applySpontaneityToCandidates, spontaneityCaption } from '../constants/spontaneity';
 import { getUserLocation } from './userLocation';
@@ -707,6 +709,9 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     ? getWhoForPreferenceSignals(whoForFriendId).catch(() => ({ cuisineKeys: [], venueKeys: [] }))
     : Promise.resolve({ cuisineKeys: [], venueKeys: [] });
 
+  // Item 137: how far this person usually goes per category (their own past choices). Started now, awaited by its pass.
+  const learnedProximityPromise = getMyLearnedProximity().catch(() => ({}));
+
   // Item 69: "willing to travel" widens every search one step on the shared radius list (15 -> 30 mi), bounded by its maximum.
   const distanceWillingness = distanceWillingnessFromText(rawText);
   const travelMiles = travelSearchMiles(distanceWillingness);
@@ -852,6 +857,12 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const travelTimes = transportMode ? await getTravelTimes(deduped, transportMode, location, { keyOf: candidateKey }) : null;
   deduped = applyTransportMode(deduped, transportMode, travelTimes, { statedDistance: distanceWillingness });
   step('transport_mode');
+  // Item 137, adaptive personal proximity: within the person's usual trip for THIS result's category +1, well beyond it -1
+  // (utils/learnedProximity.js). Learned from their own joins / accepted offers only; off whenever the words state a distance
+  // or a way of travelling (those stay in control); never widens the search or removes anything; nothing learned = no change.
+  const learnedProximity = learnedProximityApplies({ distanceWillingness, transportMode }) ? await learnedProximityPromise : null;
+  deduped = applyLearnedProximity(deduped, learnedProximity);
+  step('learned_proximity');
   // Item 68: "I only have an hour" lifts what fits (declared length, else the category's typical one) and sinks what clearly
   // does not; unknown lengths are untouched, nothing is removed.
   const timeBudget = timeBudgetFromText(rawText);

@@ -7,6 +7,7 @@ import { EXPLICIT_POINTS, behaviorNudge, broadGroupNudge, relatedHobbyNudge, COM
 import { comfortFits } from '../constants/socialComfort';
 import { SIGNAL_TIERS, tierVector, compareTierVectors } from '../constants/signalPriority';
 import { attendeeTotal, isGatheringFull } from './gatheringFullness';
+import { learnedProximityFor } from './learnedProximity';
 
 export const FEED_SIGNAL_TIER = {
   friends_going: SIGNAL_TIERS.planFriend,
@@ -17,6 +18,8 @@ export const FEED_SIGNAL_TIER = {
   comfort: SIGNAL_TIERS.interest,
   broad_or_related: SIGNAL_TIERS.business,
   weather: SIGNAL_TIERS.weather,
+  // item 137: within / well beyond this person's usual trip for the gathering's category (weakest tier, never filters)
+  learned_proximity: SIGNAL_TIERS.discovery,
 };
 const FRIENDS_POINTS = 4;
 const ROOM_POINTS = 4;
@@ -44,6 +47,7 @@ export function feedRankParts(g, { personalization = {}, friendIds = null, myUse
   // broad group and related hobby never stack (the larger applies), exactly as blendedCategoryScore
   add('broad_or_related', broadGroupNudge(tag, ctx) + relatedHobbyNudge(tag, ctx));
   if (typeof weatherFits === 'function' && weatherFits(g)) add('weather', WEATHER_POINTS);
+  add('learned_proximity', learnedProximityFor(personalization.learnedProximity, tag, g?.distanceMiles));
   return parts;
 }
 
