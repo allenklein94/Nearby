@@ -13,7 +13,7 @@ Stays English, by rule:
 
 ## Phases (commit after each)
 - [x] 1+2. Screen lines 1-~4000 (namespace `bizDash1`, 225 keys, 11 languages; module-level tab/offer-type labels still English, phase 4)
-- [ ] 3. Screen lines ~4000-~6000
+- [x] 3. Screen lines ~4000-~6000 (namespace `bizDash2`, 278 keys; plural fragments rewritten as whole sentences; occasion/category names via categoryName)
 - [ ] 4. Screen lines ~6000-end + module-level labels
 - [ ] 5. Components
 - [ ] 6. Helper files that compose dashboard sentences

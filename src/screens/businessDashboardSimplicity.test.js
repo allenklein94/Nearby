@@ -15,17 +15,17 @@ describe('business dashboard simplicity', () => {
     expect(src.match(/<DemandNearYouCard/g)).toHaveLength(1);
     const card = idx('<DemandNearYouCard');
     const gateStart = src.lastIndexOf("{on('opportunities') && (", card);
-    expect(gateStart).toBeGreaterThan(idx('new opportunit'));
+    expect(gateStart).toBeGreaterThan(idx('ui.bizDash2.newOpportunitiesFit'));
     expect(src.slice(gateStart, card)).not.toMatch(/\{on\('(home|bookings|offers|profile)'\)/);
   });
   it('keeps packages, rewards and signature experiences behind "More ways to offer"', () => {
     expect(src).toContain("on('offers') && moreOffersOpen");
-    expect(idx('More ways to offer')).toBeLessThan(idx('Occasion Packages</Text>'));
-    expect(idx('{moreOffersOpen && (')).toBeLessThan(idx('Occasion Packages</Text>'));
+    expect(idx("t('ui.bizDash2.moreWaysToOffer')")).toBeLessThan(idx("t('ui.bizDash2.occasionPackages')}</Text>"));
+    expect(idx('{moreOffersOpen && (')).toBeLessThan(idx("t('ui.bizDash2.occasionPackages')}</Text>"));
   });
   it('leads Profile with Tell Nearby and keeps policy/notifications/payments/AI behind Settings', () => {
     const settings = idx('{profileSettingsOpen && (');
-    for (const needle of ['Fulfillment Policy</Text>', '<BusinessNotificationPreferences />', 'Get Paid via Stripe', 'AI Automation Settings']) {
+    for (const needle of ["t('ui.bizDash2.fulfillmentPolicy')}</Text>", '<BusinessNotificationPreferences />', 'Get Paid via Stripe', 'AI Automation Settings']) {
       expect(idx(needle)).toBeGreaterThan(settings);
     }
     expect(idx('<TellNearbyBusinessCard')).toBeLessThan(settings);

@@ -4028,10 +4028,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                               onPress={() => handleSaveNote(m)}
                               disabled={savingNote}
                               style={{ marginTop: spacing.xs }}
-                              accessibilityLabel="Save note"
+                              accessibilityLabel={t('ui.bizDash2.saveNoteA11y')}
                               accessibilityRole="button"
                             >
-                              <Text style={styles.messageMemberLink}>{savingNote ? 'Saving...' : '💾 Save Note'}</Text>
+                              <Text style={styles.messageMemberLink}>{savingNote ? t('ui.bizDash2.saving') : t('ui.bizDash2.saveNote')}</Text>
                             </TouchableOpacity>
                           </View>
                         )}
@@ -4048,10 +4048,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 <>
                 {opportunities.filter((o) => o.status === 'accepted' && !noShowIds.has(o.id)).length > 0 && (
                   <View style={{ marginBottom: spacing.lg }}>
-                    <Text style={styles.sectionHeader}>📅 Upcoming Nearby Visits</Text>
+                    <Text style={styles.sectionHeader}>{t('ui.bizDash2.upcomingNearbyVisits')}</Text>
                     <Text style={styles.helperText}>
-                      Real, confirmed visits headed your way -- accepted, not yet marked
-                      complete.
+                      {t('ui.bizDash2.realConfirmedVisitsHeadedYour')}
                     </Text>
                     {opportunities.filter((o) => o.status === 'accepted' && !noShowIds.has(o.id)).map((o) => {
                       const visit = describeVisit(o);
@@ -4083,13 +4082,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.danger, backgroundColor: 'transparent', marginTop: spacing.sm, alignSelf: 'flex-start' }]}
                             onPress={() => handleCancelReservation(o.id)}
                             disabled={cancellingReservationOfferId === o.id}
-                            accessibilityLabel="Cancel this reservation"
+                            accessibilityLabel={t('ui.bizDash2.cancelThisReservationA11y')}
                             accessibilityRole="button"
                           >
                             {cancellingReservationOfferId === o.id ? (
                               <ActivityIndicator color={colors.danger} size="small" />
                             ) : (
-                              <Text style={[styles.smallActionButtonText, { color: colors.danger }]}>Cancel Reservation</Text>
+                              <Text style={[styles.smallActionButtonText, { color: colors.danger }]}>{t('ui.bizDash2.cancelReservation')}</Text>
                             )}
                           </TouchableOpacity>
                           {visitHasPassed(o) && (
@@ -4097,13 +4096,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                               style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.border, backgroundColor: 'transparent', marginTop: spacing.sm, alignSelf: 'flex-start' }]}
                               onPress={() => handleMarkNoShow(o.id)}
                               disabled={markingNoShowId === o.id}
-                              accessibilityLabel="Mark that the customer didn't show up"
+                              accessibilityLabel={t('ui.bizDash2.markThatTheCustomerDidntA11y')}
                               accessibilityRole="button"
                             >
                               {markingNoShowId === o.id ? (
                                 <ActivityIndicator color={colors.textSecondary} size="small" />
                               ) : (
-                                <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Didn't show up</Text>
+                                <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.didntShowUp')}</Text>
                               )}
                             </TouchableOpacity>
                           )}
@@ -4134,18 +4133,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     demand_for_partner() already IS Match Radar (locked
                     plan's own audit finding) -- this is a real naming
                     alignment only, no new data, no new query. */}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>📊 Match Radar</Text>
+                <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>{t('ui.bizDash2.matchRadar')}</Text>
                 <Text style={styles.helperText}>
-                  Real open requests within reach of your business right now, grouped by
-                  category -- a quantified early signal, not a review score. Categories marked
-                  🟡 are a softer signal: real recent searches nearby that found nothing, not a
-                  confirmed request. A 🆕 marker means real demand exists in a category you've
-                  never actually offered (no availability posted, no offer ever accepted there).
-                  A category appears only once at least 5 people are behind it, so this stays empty
-                  until there's real volume nearby, which is expected this early on.
+                  {t('ui.bizDash2.realOpenRequestsWithinReach')}
                 </Text>
                 {entitlements && !hasEntitlement(entitlements, 'advanced_match_radar') && (
-                  renderLockedFeature('advanced_match_radar', "Unlock the 🟡 unmet-intent signal and 🆕 demand-gap detection above -- see real searches nearby that found nothing, and categories you don't currently offer but people are asking for.")
+                  renderLockedFeature('advanced_match_radar', t('ui.bizDash2.unlockTheUnmetIntentSignal'))
                 )}
                 {aggregatedDemand.length === 0 ? (
                   <EmptyCopy id="business_demand" />
@@ -4154,7 +4147,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <View key={d.category} style={styles.gatheringRow}>
                       {d.request_count > 0 ? (
                         <Text style={styles.offerTitle}>
-                          {d.request_count} {d.request_count === 1 ? 'person is' : 'people are'} looking for {d.category}
+                          {t('ui.bizDash2.peopleLookingForCategory', { count: d.request_count, category: categoryName(d.category, language) })}
                         </Text>
                       ) : (
                         // Gap 1 (see CLAUDE.md's "Aug 18 2026" connectivity-audit
@@ -4163,7 +4156,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         // intent nearby -- was previously invisible here entirely.
                         // Deliberately never phrased like a confirmed count.
                         <Text style={styles.offerTitle}>
-                          🟡 {d.unmet_intent_count} recent {d.unmet_intent_count === 1 ? 'search' : 'searches'} near you for {d.category} found nothing
+                          {t('ui.bizDash2.recentSearchesFoundNothing', { count: d.unmet_intent_count, category: categoryName(d.category, language) })}
                         </Text>
                       )}
                       {d.is_demand_gap && (
@@ -4174,18 +4167,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         // partner has ever actually served this category
                         // at all. Kept as its own line so the two never
                         // conflate.
-                        <Text style={styles.helperText}>🆕 You don't currently offer this</Text>
+                        <Text style={styles.helperText}>{t('ui.bizDash2.youDontCurrentlyOfferThis')}</Text>
                       )}
                       {d.request_count > 0 && (
                         <Text style={styles.breakdownText}>
                           {[
-                            d.total_party_size ? `${d.total_party_size} total ${Number(d.total_party_size) === 1 ? 'guest' : 'guests'}` : null,
-                            d.soonest_date ? `soonest ${new Date(d.soonest_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : null,
+                            d.total_party_size ? t('ui.bizDash2.totalGuests', { count: Number(d.total_party_size) }) : null,
+                            d.soonest_date ? t('ui.bizDash2.soonest', { date: displayDay(`${d.soonest_date}T00:00:00`, language) }) : null,
                             // "Nearby V3/V4" plan, Phase A: a real time-window
                             // breakdown of already-collected data (business_requests.
                             // time_window_start), not a new signal -- only shown when
                             // at least one real open request actually specified a time.
-                            d.dominant_period ? `mostly ${d.dominant_period} (${d.dominant_period_count} of ${d.request_count})` : null,
+                            d.dominant_period ? t(`ui.bizDash2.mostlyPeriod.${d.dominant_period}`, { n: d.dominant_period_count, total: d.request_count }) : null,
                           ].filter(Boolean).join(' · ')}
                         </Text>
                       )}
@@ -4197,7 +4190,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         // above, just rolled up by occasion instead.
                         <Text style={styles.breakdownText}>
                           {OCCASION_OPTIONS.find((o) => o.key === d.dominant_occasion)?.icon ?? ''}{' '}
-                          mostly {occasionLabel(d.dominant_occasion).toLowerCase()} ({d.dominant_occasion_count} of {d.request_count})
+                          {t('ui.bizDash2.mostlyOccasion', { occasion: language === 'en' ? occasionLabel(d.dominant_occasion).toLowerCase() : categoryName(occasionLabel(d.dominant_occasion), language), n: d.dominant_occasion_count, total: d.request_count })}
                         </Text>
                       )}
                       {d.request_count > 0 && d.unmet_intent_count > 0 && (
@@ -4205,7 +4198,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         // separate softer signal on top of the real request
                         // count above, never summed into it.
                         <Text style={styles.helperText}>
-                          🟡 Also: {d.unmet_intent_count} more recent {d.unmet_intent_count === 1 ? 'search' : 'searches'} nearby found nothing -- a softer, unconfirmed signal, never counted toward the number above.
+                          {t('ui.bizDash2.alsoMoreSearchesFoundNothing', { count: d.unmet_intent_count })}
                         </Text>
                       )}
                       {/* "Nearby V3/V4" plan, Phase B: no new backend mechanism --
@@ -4215,10 +4208,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       <TouchableOpacity
                         style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm, alignSelf: 'flex-start' }]}
                         onPress={() => openPostAvailabilityModal({ category: d.category, dominantPeriod: d.dominant_period })}
-                        accessibilityLabel={`Turn ${d.category} demand into an offer`}
+                        accessibilityLabel={t('ui.bizDash2.turnDemandIntoAnOfferA11y', { category: d.category })}
                         accessibilityRole="button"
                       >
-                        <Text style={styles.smallActionButtonText}>→ Turn into an offer</Text>
+                        <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.turnIntoAnOffer')}</Text>
                       </TouchableOpacity>
                     </View>
                   ))
@@ -4230,7 +4223,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 <>
                 {offerSubmissions.length > 0 && (
                   <View style={{ marginTop: spacing.lg }}>
-                    <Text style={styles.sectionHeader}>Your offers</Text>
+                    <Text style={styles.sectionHeader}>{t('ui.bizDash2.yourOffers')}</Text>
                     {offerSubmissions.map((sub) => {
                       const v = submissionView(sub);
                       if (!v) return null;
@@ -4247,9 +4240,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             <View style={{ flexDirection: 'row', gap: spacing.lg, marginTop: spacing.xs }}>
                               {v.actions.map((a) => (
                                 <TouchableOpacity key={a} disabled={busySubmissionId === sub.id} onPress={() => handleSubmissionAction(sub, a)} accessibilityRole="button"
-                                  accessibilityLabel={a === 'retry' ? 'Try again' : a === 'edit' ? 'Edit and resend' : 'Dismiss'}>
+                                  accessibilityLabel={a === 'retry' ? t('ui.bizDash2.tryAgainA11y') : a === 'edit' ? t('ui.bizDash2.editAndResendA11y') : t('ui.bizDash2.dismissA11y')}>
                                   <Text style={{ color: a === 'dismiss' ? colors.textSecondary : colors.primary, fontWeight: '700' }}>
-                                    {a === 'retry' ? 'Try again' : a === 'edit' ? 'Edit and resend' : 'Dismiss'}
+                                    {a === 'retry' ? t('ui.bizDash2.tryAgain') : a === 'edit' ? t('ui.bizDash2.editAndResend') : t('ui.bizDash2.dismiss')}
                                   </Text>
                                 </TouchableOpacity>
                               ))}
@@ -4265,19 +4258,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   const newCount = scoredOpportunities.filter((o) => canRespondToOpportunity(o)).length;
                   return (
                     <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>
-                      {newCount > 0 ? `${newCount} new opportunit${newCount === 1 ? 'y' : 'ies'} that fit your business` : 'Opportunities'}
+                      {newCount > 0 ? t('ui.bizDash2.newOpportunitiesFit', { count: newCount }) : t('ui.bizDash2.opportunities')}
                     </Text>
                   );
                 })()}
                 <Text style={styles.helperText}>
-                  Nearby matched these to your business. Open one to see the request, then send an offer or
-                  let it pass.
+                  {t('ui.bizDash2.nearbyMatchedTheseToYour')}
                 </Text>
                 {scoredOpportunities.length === 0 ? (
                   <View style={{ alignItems: 'center', paddingVertical: spacing.md }}>
                     <EmptyCopy id="business_opportunities" />
-                    <TouchableOpacity onPress={() => openPostAvailabilityModal()} accessibilityRole="button" accessibilityLabel="Post availability so Nearby can match you" style={{ marginTop: spacing.sm }}>
-                      <Text style={{ color: colors.primary, fontWeight: '700' }}>Post availability →</Text>
+                    <TouchableOpacity onPress={() => openPostAvailabilityModal()} accessibilityRole="button" accessibilityLabel={t('ui.bizDash2.postAvailabilitySoNearbyCanA11y')} style={{ marginTop: spacing.sm }}>
+                      <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('ui.bizDash2.postAvailability')}</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
@@ -4339,7 +4331,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     // (e.g. keep any confirmation calls discreet). Never
                     // reveals who the surprise is for -- Item 69's privacy
                     // boundary stays intact.
-                    const surpriseTag = o.business_requests?.surprise_mode ? '🎁 Surprise!' : null;
+                    const surpriseTag = o.business_requests?.surprise_mode ? t('ui.bizDash2.surprise') : null;
                     const card = buildOpportunityCard(o.business_requests, {
                       occasionLabel: reqOccasion?.label,
                       experienceLabel: expLevelOpt?.label,
@@ -4362,7 +4354,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       {/* Item 73: the card's action comes from the opportunity's state (utils/primaryAction.js). */}
                       {oppAction.kind === 'send_offer' ? (
                         <Text style={[styles.breakdownText, { color: colors.info, fontWeight: '700' }]}>
-                          {matchReasons.length > 0 ? '✨ Good match for your business' : '✨ New opportunity'}
+                          {matchReasons.length > 0 ? t('ui.bizDash2.goodMatchForYourBusiness') : t('ui.bizDash2.newOpportunity')}
                         </Text>
                       ) : oppAction.kind === 'status' ? (
                         <Text style={[styles.breakdownText, { fontWeight: '700' }]}>{oppAction.status}</Text>
@@ -4372,15 +4364,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         <Text style={styles.breakdownText}>“{o.business_requests.gatherings.title}”</Text>
                       )}
                       {!!o.business_requests?.note && o.is_directed === true && (
-                        <Text style={styles.breakdownText}>Their note: “{o.business_requests.note}”</Text>
+                        <Text style={styles.breakdownText}>{t('ui.bizDash2.theirNote', { note: o.business_requests.note })}</Text>
                       )}
                       {card.whenLine !== '' && <Text style={styles.opportunityWhen}>{card.whenLine}</Text>}
                       {card.feelLine !== '' && <Text style={styles.breakdownText}>{card.feelLine}</Text>}
-                      {card.requestedLine !== '' && <Text style={styles.opportunityWhen}>Requested: {card.requestedLine}</Text>}
+                      {card.requestedLine !== '' && <Text style={styles.opportunityWhen}>{t('ui.bizDash2.requested', { requestedLine: card.requestedLine })}</Text>}
                       {contextLine !== '' && <Text style={styles.breakdownText}>{contextLine}</Text>}
                       {(card.lookingFor.length > 0 || (o.business_requests?.dietary ?? []).length > 0) && (
                         <View style={{ marginTop: spacing.xs }}>
-                          <Text style={styles.notesLabel}>Looking for</Text>
+                          <Text style={styles.notesLabel}>{t('ui.bizDash2.lookingFor')}</Text>
                           <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                             {[...card.lookingFor, ...(o.business_requests?.dietary ?? []).map((k) => dietaryLabel(k))].map((tag) => (
                               <View key={tag} style={styles.chip}>
@@ -4392,7 +4384,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       )}
                       {o.status === 'pending' && matchReasons.length > 0 && (
                         <View style={{ marginTop: spacing.xs }}>
-                          <Text style={styles.notesLabel}>Why this fits</Text>
+                          <Text style={styles.notesLabel}>{t('ui.bizDash2.whyThisFits')}</Text>
                           {matchReasons.map((line) => (
                             <Text key={line} style={styles.breakdownText}>• {line}</Text>
                           ))}
@@ -4400,13 +4392,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       )}
                       {oppAction.kind === 'send_offer' && (
                         <>
-                          <Text style={[styles.offerTitle, { marginTop: spacing.sm }]}>Can you accommodate this?</Text>
+                          <Text style={[styles.offerTitle, { marginTop: spacing.sm }]}>{t('ui.bizDash2.canYouAccommodateThis')}</Text>
                           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.xs }}>
                             <TouchableOpacity
                               style={[styles.smallActionButton, { backgroundColor: colors.primary, marginRight: spacing.sm, marginBottom: spacing.xs }]}
                               onPress={() => setAcceptSheetRequestId(o.request_id)}
                               disabled={respondingOpportunityId === o.request_id}
-                              accessibilityLabel="Accept this request"
+                              accessibilityLabel={t('ui.bizDash2.acceptThisRequestA11y')}
                               accessibilityRole="button"
                             >
                               <Text style={styles.smallActionButtonText}>{oppAction.label}</Text>
@@ -4415,7 +4407,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                               style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated, marginRight: spacing.sm, marginBottom: spacing.xs }]}
                               onPress={() => openAlternativeSheet(o.request_id)}
                               disabled={respondingOpportunityId === o.request_id}
-                              accessibilityLabel="Offer an alternative time"
+                              accessibilityLabel={t('ui.bizDash2.offerAnAlternativeTimeA11y')}
                               accessibilityRole="button"
                             >
                               <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{oppAction.alternatives[0].label}</Text>
@@ -4424,7 +4416,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                               style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated, marginBottom: spacing.xs }]}
                               onPress={() => openDeclineModal(o.request_id)}
                               disabled={respondingOpportunityId === o.request_id}
-                              accessibilityLabel="Decline this request"
+                              accessibilityLabel={t('ui.bizDash2.declineThisRequestA11y')}
                               accessibilityRole="button"
                             >
                               {/* Opens a real reason picker (Phase 1), never a silent one-tap decline. */}
@@ -4436,7 +4428,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       {o.status !== 'pending' && (
                         <>
                           <Text style={styles.breakdownText}>
-                            {{ offered: 'You made an offer', accepted: 'They accepted your offer!', declined: 'You declined', expired: 'No longer open', cancelled: 'They cancelled', completed: 'Completed' }[o.status] ?? o.status}
+                            {{ offered: t('ui.bizDash2.youMadeAnOffer'), accepted: t('ui.bizDash2.theyAcceptedYourOffer'), declined: t('ui.bizDash2.youDeclined'), expired: t('ui.bizDash2.noLongerOpen'), cancelled: t('ui.bizDash2.theyCancelled'), completed: t('ui.bizDash2.completed') }[o.status] ?? o.status}
                           </Text>
                           <BusinessOfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
                         </>
@@ -4471,39 +4463,37 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 )}
 {on('opportunities') && (
 <>
-                <Text style={styles.sectionHeader}>🎉 What They're Planning</Text>
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatTheyrePlanning')}</Text>
                 <Text style={styles.helperText}>
-                  Real open requests nearby, grouped by occasion instead of category -- a
-                  different cut of the same real signal below, made to answer "what should
-                  I offer" rather than "who wants what." A group is shown only when at least 5 people are behind it.
+                  {t('ui.bizDash2.realOpenRequestsNearbyGrouped')}
                 </Text>
                 {occasionDemand.length === 0 ? (
                   <EmptyCopy id="business_occasion_demand" />
                 ) : (
                   occasionDemand.map((d) => {
                     const emoji = OCCASION_OPTIONS.find((o) => o.key === d.occasion_type)?.icon ?? '🎉';
-                    const noun = occasionLabel(d.occasion_type);
+                    const noun = language === 'en' ? occasionLabel(d.occasion_type) : categoryName(occasionLabel(d.occasion_type), language);
                     return (
                       <View key={d.occasion_type} style={styles.gatheringRow}>
                         <Text style={styles.offerTitle}>
-                          {emoji} {d.request_count} nearby {Number(d.request_count) === 1 ? 'customer is' : 'customers are'} planning {occasionPhrase(d.occasion_type)}
+                          {emoji} {t('ui.bizDash2.customersPlanning', { count: Number(d.request_count), occasion: language === 'en' ? occasionPhrase(d.occasion_type) : categoryName(occasionLabel(d.occasion_type), language) })}
                         </Text>
                         <Text style={styles.breakdownText}>
                           {[
-                            Number(d.weekend_request_count) > 0 ? `${d.weekend_request_count} of them this weekend` : null,
-                            (selectedPartner?.offered_occasions ?? []).includes(d.occasion_type) ? 'You offer this' : null,
-                            d.dominant_category ? `mostly looking for ${d.dominant_category} (${d.dominant_category_count} of ${d.request_count})` : null,
-                            d.total_party_size ? `${d.total_party_size} total ${Number(d.total_party_size) === 1 ? 'guest' : 'guests'}` : null,
-                            d.soonest_date ? `soonest ${new Date(d.soonest_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : null,
+                            Number(d.weekend_request_count) > 0 ? t('ui.bizDash2.ofThemThisWeekend', { n: d.weekend_request_count }) : null,
+                            (selectedPartner?.offered_occasions ?? []).includes(d.occasion_type) ? t('ui.bizDash2.youOfferThis') : null,
+                            d.dominant_category ? t('ui.bizDash2.mostlyLookingFor', { category: categoryName(d.dominant_category, language), n: d.dominant_category_count, total: d.request_count }) : null,
+                            d.total_party_size ? t('ui.bizDash2.totalGuests', { count: Number(d.total_party_size) }) : null,
+                            d.soonest_date ? t('ui.bizDash2.soonest', { date: displayDay(`${d.soonest_date}T00:00:00`, language) }) : null,
                           ].filter(Boolean).join(' · ')}
                         </Text>
                         <TouchableOpacity
                           style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm, alignSelf: 'flex-start' }]}
                           onPress={() => openPackageModal({ occasion_type: d.occasion_type })}
-                          accessibilityLabel={`Create a ${noun} package`}
+                          accessibilityLabel={t('ui.bizDash2.createAPackageA11y', { noun: noun })}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.smallActionButtonText}>→ Create a {noun} Package</Text>
+                          <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.createAPackage', { noun: noun })}</Text>
                         </TouchableOpacity>
                       </View>
                     );
@@ -4522,43 +4512,42 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   // already-real matchedCount, no new backend logic.
                   <View style={[styles.pendingReviewCard, { marginTop: spacing.lg }]}>
                     <View style={styles.welcomeCardHeaderRow}>
-                      <Text style={styles.pendingReviewTitle}>✅ Posted: {lastPostedAvailability.title}</Text>
-                      <TouchableOpacity onPress={() => setLastPostedAvailability(null)} accessibilityLabel="Dismiss" accessibilityRole="button">
+                      <Text style={styles.pendingReviewTitle}>{t('ui.bizDash2.posted', { title: lastPostedAvailability.title })}</Text>
+                      <TouchableOpacity onPress={() => setLastPostedAvailability(null)} accessibilityLabel={t('ui.bizDash2.dismissA11y')} accessibilityRole="button">
                         <Text style={{ color: colors.textTertiary, fontSize: 18 }}>×</Text>
                       </TouchableOpacity>
                     </View>
                     <Text style={styles.pendingReviewRow}>
                       {lastPostedAvailability.matchedCount != null
-                        ? `Nearby found ${lastPostedAvailability.matchedCount} matching request${lastPostedAvailability.matchedCount === 1 ? '' : 's'} nearby -- they'll see your offer right away.`
-                        : "It's live. Nearby sends it to matching requests nearby, now and while it's active."}
+                        ? t('ui.bizDash2.nearbyFoundMatchingRequests', { count: lastPostedAvailability.matchedCount })
+                        : t('ui.bizDash2.itsLiveNearbySendsIt')}
                     </Text>
                     {lastPostedAvailability.matchedCount != null && (
                       <TouchableOpacity
                         onPress={() => { setLastPostedAvailability(null); setSection('opportunities'); }}
                         style={{ alignSelf: 'flex-start', marginTop: spacing.sm }}
-                        accessibilityLabel="View opportunities"
+                        accessibilityLabel={t('ui.bizDash2.viewOpportunitiesA11y')}
                         accessibilityRole="button"
                       >
-                        <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>View opportunities →</Text>
+                        <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>{t('ui.bizDash2.viewOpportunities')}</Text>
                       </TouchableOpacity>
                     )}
                   </View>
                 )}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
-                  <Text style={styles.sectionHeader}>Your Availability</Text>
+                  <Text style={styles.sectionHeader}>{t('ui.bizDash2.yourAvailability')}</Text>
                   <TouchableOpacity
                     style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
                     onPress={() => openPostAvailabilityModal()}
-                    accessibilityLabel="Post availability"
+                    accessibilityLabel={t('ui.bizDash2.postAvailabilityA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.smallActionButtonText}>+ Post Availability</Text>
+                    <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.postAvailability2')}</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.helperText}>Tell us when you have room. Nearby sends it to the requests that fit.</Text>
+                <Text style={styles.helperText}>{t('ui.bizDash2.tellUsWhenYouHave')}</Text>
                 <Text style={styles.helperText}>
-                  Have open seats or a quiet night? Post it and we'll match it against open
-                  requests nearby automatically -- no need to wait for someone to ask.
+                  {t('ui.bizDash2.haveOpenSeatsOrA')}
                 </Text>
                 {myAvailability.length === 0 ? (
                   <EmptyCopy id="business_postings" />
@@ -4571,7 +4560,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           a.category,
                           a.capacity ? `${a.remaining_capacity ?? 0}/${a.capacity} left` : null,
                           a.price != null ? `$${Number(a.price).toFixed(2)}` : null,
-                        ].filter(Boolean).join(' · ') || 'No further details given'}
+                        ].filter(Boolean).join(' · ') || t('ui.bizDash2.noFurtherDetailsGiven')}
                       </Text>
                       <Text style={styles.breakdownText}>{AVAILABILITY_STATUS_COPY[a.status] ?? a.status}</Text>
                       {a.status === 'active' && windowPhrase(a.starts_at, a.ends_at, 'availability') ? (
@@ -4582,38 +4571,36 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated, marginTop: spacing.sm, alignSelf: 'flex-start' }]}
                           onPress={() => handleCancelAvailability(a.id)}
                           disabled={cancelingAvailabilityId === a.id}
-                          accessibilityLabel="Cancel this availability"
+                          accessibilityLabel={t('ui.bizDash2.cancelThisAvailabilityA11y')}
                           accessibilityRole="button"
                         >
-                          {cancelingAvailabilityId === a.id ? <ActivityIndicator color={colors.textPrimary} size="small" /> : <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Cancel</Text>}
+                          {cancelingAvailabilityId === a.id ? <ActivityIndicator color={colors.textPrimary} size="small" /> : <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.cancel')}</Text>}
                         </TouchableOpacity>
                       )}
                     </View>
                   ))
                 )}
 
-                <TouchableOpacity onPress={() => setMoreOffersOpen((v) => !v)} style={[styles.gatheringRow, { marginTop: spacing.lg }]} accessibilityRole="button" accessibilityLabel="More ways to offer" accessibilityState={{ expanded: moreOffersOpen }}>
-                  <Text style={styles.offerTitle}>More ways to offer {moreOffersOpen ? '⌄' : '›'}</Text>
-                  {!moreOffersOpen && <Text style={styles.breakdownText}>Packages · Rewards · Signature experiences</Text>}
+                <TouchableOpacity onPress={() => setMoreOffersOpen((v) => !v)} style={[styles.gatheringRow, { marginTop: spacing.lg }]} accessibilityRole="button" accessibilityLabel={t('ui.bizDash2.moreWaysToOfferA11y')} accessibilityState={{ expanded: moreOffersOpen }}>
+                  <Text style={styles.offerTitle}>{t('ui.bizDash2.moreWaysToOffer')}{' '}{moreOffersOpen ? '⌄' : '›'}</Text>
+                  {!moreOffersOpen && <Text style={styles.breakdownText}>{t('ui.bizDash2.packagesRewardsSignatureExperiences')}</Text>}
                 </TouchableOpacity>
                 {moreOffersOpen && (
                 <>
                 <SponsoredPromotionsPanel offers={offers} />
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
-                  <Text style={styles.sectionHeader}>Occasion Packages</Text>
+                  <Text style={styles.sectionHeader}>{t('ui.bizDash2.occasionPackages')}</Text>
                   <TouchableOpacity
                     style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
                     onPress={() => openPackageModal()}
-                    accessibilityLabel="Add an occasion package"
+                    accessibilityLabel={t('ui.bizDash2.addAnOccasionPackageA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.smallActionButtonText}>+ Add Package</Text>
+                    <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.addPackage')}</Text>
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.helperText}>
-                  A standing offer for a specific occasion -- e.g. a "Birthday Package" with real
-                  inclusions, a minimum group size, and a per-person price. Nearby matches these
-                  directly against real requests for that occasion, no waiting on you.
+                  {t('ui.bizDash2.aStandingOfferForA')}
                 </Text>
                 {myOccasionPackages.length === 0 ? (
                   <EmptyCopy id="business_packages" />
@@ -4623,7 +4610,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       key={pkg.id}
                       style={styles.gatheringRow}
                       onPress={() => openPackageModal(pkg)}
-                      accessibilityLabel={`Edit ${pkg.name}`}
+                      accessibilityLabel={t('ui.bizDash2.editA11y', { name: pkg.name })}
                       accessibilityRole="button"
                     >
                       <Text style={styles.offerTitle}>
@@ -4632,27 +4619,27 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       <Text style={styles.breakdownText}>
                         {formatOccasionPackageDetail({
                           pricePerPerson: pkg.price_per_person, minGuests: pkg.min_guests, availableDays: pkg.available_days,
-                        }) || 'No further details given'}
+                        }) || t('ui.bizDash2.noFurtherDetailsGiven')}
                       </Text>
                       {formatIncludedItemsLabel(pkg.included_items) && (
-                        <Text style={styles.breakdownText}>Includes: {formatIncludedItemsLabel(pkg.included_items)}</Text>
+                        <Text style={styles.breakdownText}>{t('ui.bizDash2.includes')}{' '}{formatIncludedItemsLabel(pkg.included_items)}</Text>
                       )}
                       <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
                         <TouchableOpacity
                           style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated, marginRight: spacing.sm }]}
                           onPress={() => handleTogglePackageActive(pkg)}
-                          accessibilityLabel={pkg.active ? 'Pause this package' : 'Resume this package'}
+                          accessibilityLabel={pkg.active ? t('ui.bizDash2.pauseThisPackageA11y') : t('ui.bizDash2.resumeThisPackageA11y')}
                           accessibilityRole="button"
                         >
-                          <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{pkg.active ? 'Pause' : 'Resume'}</Text>
+                          <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{pkg.active ? t('ui.bizDash2.pause') : t('ui.bizDash2.resume')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
                           onPress={() => handleDeletePackage(pkg)}
-                          accessibilityLabel="Delete this package"
+                          accessibilityLabel={t('ui.bizDash2.deleteThisPackageA11y')}
                           accessibilityRole="button"
                         >
-                          <Text style={[styles.smallActionButtonText, { color: colors.danger }]}>Delete</Text>
+                          <Text style={[styles.smallActionButtonText, { color: colors.danger }]}>{t('ui.bizDash2.delete')}</Text>
                         </TouchableOpacity>
                       </View>
                     </TouchableOpacity>
@@ -4673,11 +4660,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     boundary. Empty whenever no real customer has both
                     opted in and has real history with this business --
                     never padded or guessed. */}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>🎉 Returning Customers</Text>
+                <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>{t('ui.bizDash2.returningCustomers')}</Text>
                 <Text style={styles.helperText}>
-                  Customers who celebrated a recurring occasion here before, and explicitly
-                  chose to let you recognize them next time. A real "Welcome back" nudge, sent
-                  at most once per occurrence -- never automatic.
+                  {t('ui.bizDash2.customersWhoCelebratedARecurring')}
                 </Text>
                 {returningCustomers.length === 0 ? (
                   <EmptyCopy id="business_returning" />
@@ -4688,31 +4673,37 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     return (
                       <View key={c.occasion_id} style={styles.gatheringRow}>
                         <Text style={styles.offerTitle}>
-                          {occasionLabel(c.occasion_type)} · {c.requester_display_name}
+                          {categoryName(occasionLabel(c.occasion_type), language)} · {c.requester_display_name}
                         </Text>
                         <Text style={styles.breakdownText}>
-                          This customer celebrated here last year
-                          {c.last_offer_price != null ? ` · $${Number(c.last_offer_price).toFixed(2)}${c.last_offer_price_is_per_person ? '/person' : ''}` : ''}
+                          {c.last_offer_price == null
+                            ? t('ui.bizDash2.celebratedHereLastYear')
+                            : c.last_offer_price_is_per_person
+                              ? t('ui.bizDash2.celebratedHereLastYearPricePerPerson', { price: Number(c.last_offer_price).toFixed(2) })
+                              : t('ui.bizDash2.celebratedHereLastYearPrice', { price: Number(c.last_offer_price).toFixed(2) })}
                         </Text>
                         <Text style={styles.breakdownText}>
-                          Next {occasionLabel(c.occasion_type).toLowerCase()}: {new Date(c.next_occasion_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                          {daysUntil >= 0 ? ` (${daysUntil === 0 ? 'today' : `in ${daysUntil}d`})` : ''}
+                          {(() => {
+                            const vars = { occasion: language === 'en' ? occasionLabel(c.occasion_type).toLowerCase() : categoryName(occasionLabel(c.occasion_type), language), date: displayDay(`${c.next_occasion_date}T00:00:00`, language), count: daysUntil };
+                            if (daysUntil < 0) return t('ui.bizDash2.nextOccasion', vars);
+                            return daysUntil === 0 ? t('ui.bizDash2.nextOccasionToday', vars) : t('ui.bizDash2.nextOccasionInDays', vars);
+                          })()}
                         </Text>
                         {c.already_outreached_this_year ? (
-                          <Text style={[styles.breakdownText, { color: colors.textTertiary, marginTop: spacing.sm }]}>✓ Already reached out</Text>
+                          <Text style={[styles.breakdownText, { color: colors.textTertiary, marginTop: spacing.sm }]}>{t('ui.bizDash2.alreadyReachedOut')}</Text>
                         ) : outreachExpandedOccasionId === c.occasion_id ? (
                           <View style={{ marginTop: spacing.sm }}>
                             {matchingPackages.length > 0 && (
                               <>
-                                <Text style={styles.breakdownText}>Mention a package? (optional)</Text>
+                                <Text style={styles.breakdownText}>{t('ui.bizDash2.mentionAPackageOptional')}</Text>
                                 <View style={styles.chipRow}>
                                   <TouchableOpacity
                                     style={[styles.chip, outreachPackageChoice === null && styles.chipSelected]}
                                     onPress={() => setOutreachPackageChoice(null)}
-                                    accessibilityLabel="No package"
+                                    accessibilityLabel={t('ui.bizDash2.noPackageA11y')}
                                     accessibilityRole="button"
                                   >
-                                    <Text style={[styles.chipText, outreachPackageChoice === null && styles.chipTextSelected]}>None</Text>
+                                    <Text style={[styles.chipText, outreachPackageChoice === null && styles.chipTextSelected]}>{t('ui.bizDash2.none')}</Text>
                                   </TouchableOpacity>
                                   {matchingPackages.map((pkg) => (
                                     <TouchableOpacity
@@ -4733,18 +4724,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                                 style={[styles.smallActionButton, { backgroundColor: colors.primary, marginRight: spacing.sm }]}
                                 onPress={() => handleSendOutreach(c.occasion_id, selectedPartner.id)}
                                 disabled={sendingOutreachOccasionId === c.occasion_id}
-                                accessibilityLabel={`Send welcome back to ${c.requester_display_name}`}
+                                accessibilityLabel={t('ui.bizDash2.sendWelcomeBackToA11y', { requesterDisplayName: c.requester_display_name })}
                                 accessibilityRole="button"
                               >
-                                {sendingOutreachOccasionId === c.occasion_id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.smallActionButtonText}>Send</Text>}
+                                {sendingOutreachOccasionId === c.occasion_id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.send')}</Text>}
                               </TouchableOpacity>
                               <TouchableOpacity
                                 style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
                                 onPress={() => toggleOutreachExpanded(c.occasion_id)}
-                                accessibilityLabel="Cancel"
+                                accessibilityLabel={t('ui.bizDash2.cancelA11y')}
                                 accessibilityRole="button"
                               >
-                                <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Cancel</Text>
+                                <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.cancel')}</Text>
                               </TouchableOpacity>
                             </View>
                           </View>
@@ -4752,10 +4743,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           <TouchableOpacity
                             style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm, alignSelf: 'flex-start' }]}
                             onPress={() => toggleOutreachExpanded(c.occasion_id)}
-                            accessibilityLabel={`Welcome back ${c.requester_display_name}`}
+                            accessibilityLabel={t('ui.bizDash2.welcomeBackA11y', { requesterDisplayName: c.requester_display_name })}
                             accessibilityRole="button"
                           >
-                            <Text style={styles.smallActionButtonText}>👋 Welcome Them Back</Text>
+                            <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.welcomeThemBack')}</Text>
                           </TouchableOpacity>
                         )}
                       </View>
@@ -4772,15 +4763,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <>
 {tool('analytics') && (
 <>
-              <Text style={styles.sectionHeader}>How People Find You</Text>
+              <Text style={styles.sectionHeader}>{t('ui.bizDash2.howPeopleFindYou')}</Text>
               {discoveryStats && discoveryStats.total_views > 0 ? (
                 <View style={[styles.insightsCard, { marginBottom: spacing.lg }]}>
                   <Text style={styles.insightLine}>
-                    {discoveryStats.total_views} profile view{discoveryStats.total_views === 1 ? '' : 's'} total
-                    {discoveryStats.views_last_30_days > 0 ? ` (${discoveryStats.views_last_30_days} in the last 30 days)` : ''}
+                    {discoveryStats.views_last_30_days > 0
+                      ? t('ui.bizDash2.profileViewsTotalRecent', { count: discoveryStats.total_views, recent: discoveryStats.views_last_30_days })
+                      : t('ui.bizDash2.profileViewsTotal', { count: discoveryStats.total_views })}
                   </Text>
                   <Text style={styles.insightLine}>
-                    🔗 {discoveryStats.deep_link_views} via your shared link or QR code ({discoveryStats.pct_via_deep_link ?? 0}%)
+                    {t('ui.bizDash2.viaSharedLink', { n: discoveryStats.deep_link_views, pct: discoveryStats.pct_via_deep_link ?? 0 })}
                   </Text>
                   <Text style={styles.insightLine}>{t('ui.bizDash1.browsingOrSearchingInsideNearby', { inAppViews: discoveryStats.in_app_views })}</Text>
                   {discoveryStats.intent_match_views > 0 && (
@@ -4789,21 +4781,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 </View>
               ) : (
                 <Text style={[styles.emptyText, { marginBottom: spacing.lg }]}>
-                  No profile views yet — share your QR code or link (Dashboard tab) to start seeing how people find you.
+                  {t('ui.bizDash2.noProfileViewsYetShare')}
                 </Text>
               )}
               {(insights && (insights.top_interests?.length > 0 || bestTimeLine(insights))) || visitFrequency !== null ? (
                 <View style={styles.insightsCard}>
                   {estimatedOwed.billingModel && estimatedOwed.billingModel !== 'custom' && (
                     <View style={styles.estimatedOwedBanner}>
-                      <Text style={styles.estimatedOwedLabel}>Estimated this month</Text>
+                      <Text style={styles.estimatedOwedLabel}>{t('ui.bizDash2.estimatedThisMonth')}</Text>
                       <Text style={styles.estimatedOwedValue}>{offerPriceLabel(estimatedOwed.estimatedAmount) ?? '—'}</Text>
                       {billingBreakdownLines(estimatedOwed).map((line) => (
                         <Text key={line} style={styles.estimatedOwedDetail}>{line}</Text>
                       ))}
                       {pastInvoices.length > 0 && (
                         <View style={{ marginTop: spacing.sm }}>
-                          <Text style={styles.estimatedOwedLabel}>Past invoices</Text>
+                          <Text style={styles.estimatedOwedLabel}>{t('ui.bizDash2.pastInvoices')}</Text>
                           {pastInvoices.map((inv) => {
                             const row = invoiceRow(inv);
                             return (
@@ -4815,13 +4807,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </View>
                   )}
                   {insights?.top_interests?.length > 0 && (
-                    <Text style={styles.insightLine}>Your community's top interests: {insights.top_interests.join(', ')}</Text>
+                    <Text style={styles.insightLine}>{t('ui.bizDash2.yourCommunitysTopInterests')}{' '}{insights.top_interests.join(', ')}</Text>
                   )}
                   {bestTimeLine(insights) && (
                     <Text style={styles.insightLine}>{bestTimeLine(insights)}</Text>
                   )}
                   {visitFrequency !== null && (
-                    <Text style={styles.insightLine}>Attendees average {visitFrequency} gathering{visitFrequency === 1 ? '' : 's'} with you</Text>
+                    <Text style={styles.insightLine}>{t('ui.bizDash2.attendeesAverage', { count: visitFrequency })}</Text>
                   )}
                 </View>
               ) : (
@@ -4841,18 +4833,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   today's conditions aren't genuinely biased either way. */}
               {businessWeather && (isWeatherIndoorBiased(businessWeather) || isWeatherOutdoorBiased(businessWeather)) && (
                 <>
-                  <Text style={styles.sectionHeader}>🌦️ Today's Conditions</Text>
+                  <Text style={styles.sectionHeader}>{t('ui.bizDash2.todaysConditions')}</Text>
                   <View style={[styles.insightsCard, { marginBottom: spacing.lg }]}>
                     <Text style={styles.insightLine}>
                       {isWeatherIndoorBiased(businessWeather)
-                        ? 'Weather favors indoor plans right now — your indoor-friendly opportunities are getting a small ranking boost.'
-                        : 'Great weather for outdoor plans right now — your outdoor-friendly opportunities are getting a small ranking boost.'}
+                        ? t('ui.bizDash2.weatherFavorsIndoorPlansRight')
+                        : t('ui.bizDash2.greatWeatherForOutdoorPlans')}
                     </Text>
                     {weatherBoostedOpenCount !== null && (
                       <Text style={styles.insightLine}>
                         {weatherBoostedOpenCount > 0
-                          ? `🎯 ${weatherBoostedOpenCount} open opportunit${weatherBoostedOpenCount === 1 ? 'y is' : 'ies are'} getting this boost right now.`
-                          : 'No open opportunities are getting this boost right now.'}
+                          ? t('ui.bizDash2.openOpportunitiesBoosted', { count: weatherBoostedOpenCount })
+                          : t('ui.bizDash2.noOpenOpportunitiesBoosted')}
                       </Text>
                     )}
                   </View>
@@ -4869,9 +4861,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   of why a real active fulfillment policy/availability
                   posting didn't auto-match a nearby request. Honestly
                   absent when there's genuinely nothing to report. */}
-              <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Why You Might Be Missing Requests</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>{t('ui.bizDash2.whyYouMightBeMissing')}</Text>
               {missedMatchLocked ? (
-                renderLockedFeature('missed_match_reporting', "See exactly why nearby requests slipped past your fulfillment policy or availability postings -- party size out of range, hours mismatch, category mismatch, and more.")
+                renderLockedFeature('missed_match_reporting', t('ui.bizDash2.seeExactlyWhyNearbyRequests'))
               ) : missedMatchSummary.length === 0 ? (
                 <EmptyCopy id="business_missed" />
               ) : (
@@ -4897,13 +4889,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   minimum sample per category. */}
               {categoryOutcomesLocked && (
                 <>
-                  <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Performance by Category</Text>
-                  {renderLockedFeature('category_outcomes', 'A real breakdown of your own acceptance/completion rate and satisfaction, per category, once you have enough history in each.')}
+                  <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>{t('ui.bizDash2.performanceByCategory')}</Text>
+                  {renderLockedFeature('category_outcomes', t('ui.bizDash2.aRealBreakdownOfYour'))}
                 </>
               )}
               {categoryOutcomes.length > 0 && (
                 <>
-                  <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Performance by Category</Text>
+                  <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>{t('ui.bizDash2.performanceByCategory')}</Text>
                   {categoryOutcomes.map((c) => (
                     <View key={c.category} style={styles.offerCard}>
                       <View style={{ flex: 1 }}>
@@ -4930,7 +4922,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   down. Deliberately aggregated only, no per-request dump, and
                   never used to silently re-weight matching -- the owner decides
                   what to do with their own pattern (see CLAUDE.md's Decision 2). */}
-              <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>What You've Declined</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>{t('ui.bizDash2.whatYouveDeclined')}</Text>
               {declinePatterns.length === 0 ? (
                 <EmptyCopy id="business_declined" />
               ) : (
@@ -4951,7 +4943,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
               {/* Cancellation reason analytics: the owner's own view of reservation cancellations (theirs and their customers'),
                   aggregated only, reasons are optional so "no reason given" is shown honestly. Never auto-reweights matching. */}
-              <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Cancelled Reservations</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>{t('ui.bizDash2.cancelledReservations')}</Text>
               {cancellationPatterns.length === 0 ? (
                 <EmptyCopy id="business_cancelled" />
               ) : (
@@ -4959,7 +4951,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <View key={`${c.actor_role}-${c.reason_code}`} style={styles.offerCard}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.offerTitle}>
-                        {CANCELLATION_ACTOR_LABELS[c.actor_role] ?? c.actor_role} · {CANCELLATION_REASONS[c.reason_code] ?? 'No reason given'} · {c.cancel_count}x
+                        {CANCELLATION_ACTOR_LABELS[c.actor_role] ?? c.actor_role} · {CANCELLATION_REASONS[c.reason_code] ?? t('ui.bizDash2.noReasonGiven')} · {c.cancel_count}x
                       </Text>
                     </View>
                   </View>
@@ -4973,12 +4965,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   type, for an offer with no linked template) -- built
                   entirely over already-tracked data, no new signal
                   invented. */}
-              <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Offer Performance</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>{t('ui.bizDash2.offerPerformance')}</Text>
               {(() => {
                 const v = offerValueLines(offerValue, 'month');
                 return v ? (
                   <View style={{ marginBottom: spacing.sm }}>
-                    <Text style={styles.offerTitle}>This month: {v.headline}</Text>
+                    <Text style={styles.offerTitle}>{t('ui.bizDash2.thisMonth', { headline: v.headline })}</Text>
                     <Text style={styles.breakdownText}>{v.note}</Text>
                   </View>
                 ) : null;
@@ -5007,14 +4999,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <>
 {on('offers') && moreOffersOpen && (
 <>
-                <Text style={styles.sectionHeader}>Rewards & Offers</Text>
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.rewardsOffers')}</Text>
                 <TouchableOpacity
                   style={styles.createOfferButton}
                   onPress={() => setCreateModalVisible(true)}
-                  accessibilityLabel="Create a new offer"
+                  accessibilityLabel={t('ui.bizDash2.createANewOfferA11y')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.createOfferButtonText}>+ Create Offer</Text>
+                  <Text style={styles.createOfferButtonText}>{t('ui.bizDash2.createOffer')}</Text>
                 </TouchableOpacity>
                 {offers.length === 0 ? (
                   <EmptyCopy id="business_offers" />
@@ -5025,18 +5017,22 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         <Text style={styles.offerTitle}>{offer.title}</Text>
                         {offer.description ? <Text style={styles.offerDescription}>{offer.description}</Text> : null}
                         <Text style={styles.offerRedemptionCount}>
-                          {offerRedemptionCounts[offer.id] ?? 0} redeemed{offer.redemption_limit != null ? ` of ${offer.redemption_limit}` : ''}
+                          {offer.redemption_limit != null
+                            ? t('ui.bizDash2.redeemedOfLimit', { n: offerRedemptionCounts[offer.id] ?? 0, limit: offer.redemption_limit })
+                            : t('ui.bizDash2.redeemed', { n: offerRedemptionCounts[offer.id] ?? 0 })}
                         </Text>
                         {offer.unlock_scope != null && (
                           <Text style={styles.breakdownText}>
-                            🔒 Unlocks at {offer.unlock_min_members} {offer.unlock_scope === 'community' ? 'community members' : 'approved attendees'}
+                            {offer.unlock_scope === 'community'
+                              ? t('ui.bizDash2.unlocksAtCommunityMembers', { n: offer.unlock_min_members })
+                              : t('ui.bizDash2.unlocksAtApprovedAttendees', { n: offer.unlock_min_members })}
                           </Text>
                         )}
                       </View>
                       <Switch
                         value={offer.active}
                         onValueChange={() => handleToggleActive(offer)}
-                        accessibilityLabel={`${offer.title}, ${offer.active ? 'active' : 'inactive'}, tap to toggle`}
+                        accessibilityLabel={offer.active ? t('ui.bizDash2.offerActiveToggleA11y', { title: offer.title }) : t('ui.bizDash2.offerInactiveToggleA11y', { title: offer.title })}
                       />
                     </View>
                   ))
@@ -5046,32 +5042,32 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 )}
 {on('bookings') && (
 <>
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Confirm a Redemption</Text>
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.confirmARedemption')}</Text>
                 <Text style={styles.offerDescription}>
-                  Ask the customer for the 6-digit code they were shown when they redeemed, and enter it here to confirm the visit really happened. Only confirmed redemptions count toward billing.
+                  {t('ui.bizDash2.askTheCustomerForThe')}
                 </Text>
                 <View style={[styles.gatheringRow, { marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center' }]}>
                   <TextInput
                     style={[styles.input, { flex: 1 }]}
-                    placeholder="6-digit code"
+                    placeholder={t('ui.bizDash2.n6DigitCode')}
                     placeholderTextColor={colors.textTertiary}
                     value={redemptionCodeInput}
                     onChangeText={(t) => setRedemptionCodeInput(t.replace(/[^0-9]/g, ''))}
                     keyboardType="number-pad"
                     maxLength={6}
-                    accessibilityLabel="Redemption confirmation code"
+                    accessibilityLabel={t('ui.bizDash2.redemptionConfirmationCodeA11y')}
                   />
                   <TouchableOpacity
                     style={[styles.createOfferButton, { marginBottom: 0, marginLeft: spacing.sm, opacity: confirmingCode || !redemptionCodeInput.trim() ? 0.6 : 1 }]}
                     onPress={handleConfirmRedemption}
                     disabled={confirmingCode || !redemptionCodeInput.trim()}
-                    accessibilityLabel="Confirm redemption code"
+                    accessibilityLabel={t('ui.bizDash2.confirmRedemptionCodeA11y')}
                     accessibilityRole="button"
                   >
                     {confirmingCode ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
-                      <Text style={styles.createOfferButtonText}>Confirm</Text>
+                      <Text style={styles.createOfferButtonText}>{t('ui.bizDash2.confirm')}</Text>
                     )}
                   </TouchableOpacity>
                 </View>
@@ -5080,7 +5076,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 )}
 {on('profile') && (
 <>
-                <Text style={[styles.helperText, { marginTop: spacing.md }]}>Tell us what you offer. Nearby handles the rest.</Text>
+                <Text style={[styles.helperText, { marginTop: spacing.md }]}>{t('ui.bizDash2.tellUsWhatYouOffer')}</Text>
                 {selectedPartner && (
                   <View style={{ marginTop: spacing.md }}>
                     <TellNearbyBusinessCard
@@ -5090,24 +5086,24 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     />
                   </View>
                 )}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Business Profile</Text>
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.businessProfile')}</Text>
                 <View style={styles.gatheringRow}>
                   <Text style={styles.offerTitle}>{selectedPartner?.name}</Text>
                   <Text style={styles.breakdownText}>
                     {selectedPartner?.category
                       ? (BUSINESS_CATEGORIES.find((c) => c.key === selectedPartner.category)?.label ?? selectedPartner.category) +
                         (selectedPartner?.subcategory ? ` · ${selectedPartner.subcategory}` : '')
-                      : 'No category set — pick one so customers can find you by category.'}
+                      : t('ui.bizDash2.noCategorySetPickOne')}
                   </Text>
                   {(selectedPartner?.categories ?? []).length > 0 && (
                     <Text style={[styles.breakdownText, { marginTop: spacing.xs }]}>
-                      Also: {selectedPartner.categories.join(', ')}
+                      {t('ui.bizDash2.also')}{' '}{selectedPartner.categories.join(', ')}
                     </Text>
                   )}
                   {selectedPartner?.description ? (
                     <Text style={styles.offerDescription}>{selectedPartner.description}</Text>
                   ) : (
-                    <Text style={styles.offerDescription}>No description yet.</Text>
+                    <Text style={styles.offerDescription}>{t('ui.bizDash2.noDescriptionYet')}</Text>
                   )}
                   {selectedPartner?.differentiator ? (
                     <Text style={[styles.offerDescription, { fontStyle: 'italic', marginTop: spacing.xs }]}>
@@ -5131,17 +5127,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <TouchableOpacity
                     onPress={openEditProfileModal}
                     style={{ marginTop: spacing.sm }}
-                    accessibilityLabel="Edit business profile"
+                    accessibilityLabel={t('ui.bizDash2.editBusinessProfileA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.messageMemberLink}>✏️ Edit Profile</Text>
+                    <Text style={styles.messageMemberLink}>{t('ui.bizDash2.editProfile')}</Text>
                   </TouchableOpacity>
                   {(() => {
                     const hint = selectedPartner ? activityHints(selectedPartner)[0] : null;
                     if (!hint) return null;
                     return (
-                      <TouchableOpacity onPress={openEditProfileModal} style={{ marginTop: spacing.sm }} accessibilityRole="button" accessibilityLabel={`Add ${hint.add.label} to your profile`}>
-                        <Text style={styles.breakdownText}>{hint.icon} {hint.display}: add {hint.add.label} to your profile to appear for this activity.</Text>
+                      <TouchableOpacity onPress={openEditProfileModal} style={{ marginTop: spacing.sm }} accessibilityRole="button" accessibilityLabel={t('ui.bizDash2.addToYourProfileA11y', { label: hint.add.label })}>
+                        <Text style={styles.breakdownText}>{t('ui.bizDash2.addToYourProfileTo', { icon: hint.icon, display: hint.display, label: hint.add.label })}</Text>
                       </TouchableOpacity>
                     );
                   })()}
@@ -5156,7 +5152,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 {categorySuggestion && (
                   <View style={[styles.gatheringRow, { marginTop: spacing.md }]}>
                     <Text style={styles.breakdownText}>
-                      We think {selectedPartner?.name} might be:
+                      {t('ui.bizDash2.weThinkMightBe', { name: selectedPartner?.name })}
                     </Text>
                     <Text style={styles.offerTitle}>
                       {BUSINESS_CATEGORIES.find((c) => c.key === categorySuggestion.category)?.label ?? categorySuggestion.category}
@@ -5166,19 +5162,19 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
                         onPress={handleConfirmCategorySuggestion}
                         disabled={savingCategorySuggestion}
-                        accessibilityLabel="Looks right, update my category"
+                        accessibilityLabel={t('ui.bizDash2.looksRightUpdateMyCategoryA11y')}
                         accessibilityRole="button"
                       >
-                        <Text style={styles.smallActionButtonText}>{savingCategorySuggestion ? 'Saving...' : 'Looks right'}</Text>
+                        <Text style={styles.smallActionButtonText}>{savingCategorySuggestion ? t('ui.bizDash2.saving') : t('ui.bizDash2.looksRight')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
                         onPress={handleDismissCategorySuggestion}
-                        accessibilityLabel={`Keep as ${selectedPartner?.category ? BUSINESS_CATEGORIES.find((c) => c.key === selectedPartner.category)?.label : 'current'}`}
+                        accessibilityLabel={selectedPartner?.category ? t('ui.bizDash2.keepAs', { label: BUSINESS_CATEGORIES.find((c) => c.key === selectedPartner.category)?.label ?? selectedPartner.category }) : t('ui.bizDash2.keepAsCurrent')}
                         accessibilityRole="button"
                       >
                         <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>
-                          Keep as {selectedPartner?.category ? BUSINESS_CATEGORIES.find((c) => c.key === selectedPartner.category)?.label ?? selectedPartner.category : 'unset'}
+                          {selectedPartner?.category ? t('ui.bizDash2.keepAs', { label: BUSINESS_CATEGORIES.find((c) => c.key === selectedPartner.category)?.label ?? selectedPartner.category }) : t('ui.bizDash2.keepAsUnset')}
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -5196,23 +5192,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     Wi-Fi/pet-friendly/private-room have no real taxonomy
                     anywhere in this app and are deliberately not fabricated
                     here. */}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>👥 What You Can Accommodate</Text>
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.whatYouCanAccommodate')}</Text>
                 <Text style={styles.helperText}>
-                  Help Nearby send you requests that actually fit your business.
+                  {t('ui.bizDash2.helpNearbySendYouRequests')}
                 </Text>
                 <View style={styles.gatheringRow}>
-                  <Text style={[styles.breakdownText, { fontWeight: '700' }]}>Group size</Text>
+                  <Text style={[styles.breakdownText, { fontWeight: '700' }]}>{t('ui.bizDash2.groupSize')}</Text>
                   <Text style={styles.breakdownText}>
                     {fulfillmentPolicy?.party_size_min != null || fulfillmentPolicy?.party_size_max != null
-                      ? `Groups of ${fulfillmentPolicy.party_size_min ?? '1'}-${fulfillmentPolicy.party_size_max ?? '∞'}`
-                      : 'Not set yet.'}
+                      ? t('ui.bizDash2.groupsOf', { partySizeMin: fulfillmentPolicy.party_size_min ?? '1', partySizeMax: fulfillmentPolicy.party_size_max ?? '∞' })
+                      : t('ui.bizDash2.notSetYet')}
                   </Text>
-                  <TouchableOpacity onPress={openPolicyModal} accessibilityLabel="Edit group size" accessibilityRole="button">
-                    <Text style={styles.messageMemberLink}>✏️ {fulfillmentPolicy ? 'Edit' : 'Set your group size'}</Text>
+                  <TouchableOpacity onPress={openPolicyModal} accessibilityLabel={t('ui.bizDash2.editGroupSizeA11y')} accessibilityRole="button">
+                    <Text style={styles.messageMemberLink}>✏️ {fulfillmentPolicy ? t('ui.bizDash2.edit') : t('ui.bizDash2.setYourGroupSize')}</Text>
                   </TouchableOpacity>
                 </View>
                 <View style={[styles.gatheringRow, { marginTop: spacing.sm }]}>
-                  <Text style={[styles.breakdownText, { fontWeight: '700', marginBottom: spacing.xs }]}>Experiences & uses</Text>
+                  <Text style={[styles.breakdownText, { fontWeight: '700', marginBottom: spacing.xs }]}>{t('ui.bizDash2.experiencesUses')}</Text>
                   <View style={styles.chipRow}>
                     {ACCOMMODATE_PARTY_TYPE_OPTIONS.map((p) => {
                       const selected = accommodatePartyTypesInput.includes(p.key);
@@ -5234,36 +5230,35 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     style={[styles.postUpdateButton, { marginTop: spacing.sm }]}
                     onPress={handleSaveAccommodations}
                     disabled={savingAccommodations}
-                    accessibilityLabel="Save what you can accommodate"
+                    accessibilityLabel={t('ui.bizDash2.saveWhatYouCanAccommodateA11y')}
                     accessibilityRole="button"
                   >
-                    {savingAccommodations ? <ActivityIndicator color="#fff" /> : <Text style={styles.postUpdateButtonText}>Save</Text>}
+                    {savingAccommodations ? <ActivityIndicator color="#fff" /> : <Text style={styles.postUpdateButtonText}>{t('ui.bizDash2.save')}</Text>}
                   </TouchableOpacity>
                   <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, 'accommodations')} />
                 </View>
                 <View style={[styles.gatheringRow, { marginTop: spacing.sm }]}>
-                  <Text style={[styles.breakdownText, { fontWeight: '700' }]}>Space</Text>
+                  <Text style={[styles.breakdownText, { fontWeight: '700' }]}>{t('ui.bizDash2.space')}</Text>
                   <Text style={styles.breakdownText}>
                     {(selectedPartner?.attributes ?? []).includes('outdoor_seating')
-                      ? '🌤️ Outdoor seating'
-                      : 'Not currently listed.'}
+                      ? t('ui.bizDash2.outdoorSeating')
+                      : t('ui.bizDash2.notCurrentlyListed')}
                   </Text>
                   <TouchableOpacity
                     onPress={openEditProfileModal}
-                    accessibilityLabel="Edit space and amenities"
+                    accessibilityLabel={t('ui.bizDash2.editSpaceAndAmenitiesA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.messageMemberLink}>✏️ Edit under "Why People Choose Us"</Text>
+                    <Text style={styles.messageMemberLink}>{t('ui.bizDash2.editUnderWhyPeopleChoose')}</Text>
                   </TouchableOpacity>
                 </View>
 
                 {/* "Business Story" plan, Phase 2 -- Business Goals. A real,
                     small, dedicated save distinct from the full profile
                     edit above -- meant to be revisited often. */}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>What do you want more of?</Text>
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.whatDoYouWantMore')}</Text>
                 <Text style={styles.helperText}>
-                  Tell Nearby once and it does the matching: opportunities like these are ranked first and
-                  flagged in your inbox. Quiet times? Pick the hours you'd like to fill.
+                  {t('ui.bizDash2.tellNearbyOnceAndIt')}
                 </Text>
                 <View style={styles.chipRow}>
                   {BUSINESS_ATTRIBUTE_OPTIONS.filter((a) => a.key !== LEGACY_RESERVATION_ATTRIBUTE).map((a) => {
@@ -5286,7 +5281,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     of Want More Of. Real, separate vocabulary from the
                     customer/intent chips above (see CLAUDE.md), saved
                     together via the same Save button below. */}
-                <Text style={[styles.breakdownText, { fontWeight: '700', marginTop: spacing.md, marginBottom: spacing.xs }]}>When</Text>
+                <Text style={[styles.breakdownText, { fontWeight: '700', marginTop: spacing.md, marginBottom: spacing.xs }]}>{t('ui.bizDash2.when')}</Text>
                 <View style={styles.chipRow}>
                   {PRIORITY_TIME_WINDOW_OPTIONS.map((w) => {
                     const selected = priorityTimeWindowsInput.includes(w.key);
@@ -5311,7 +5306,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   {(() => {
                     const win = priorityTimeRangeFromChoice(priorityTimeStartInput, priorityTimeEndInput);
                     const label = win.error ? null : priorityTimeRangeLabel(win.start, win.end);
-                    return label ? `Or set an exact window (optional) -- opportunities between ${label} are flagged higher` : 'Or set an exact window (optional)';
+                    return label ? t('ui.bizDash2.orSetAnExactWindow', { label: label }) : t('ui.bizDash2.orSetAnExactWindow2');
                   })()}
                 </Text>
                 {renderAvailabilityWindow({
@@ -5326,9 +5321,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     (AskBusinessScreen.js) already established -- one real
                     taxonomy on both sides. Saved via the same Save button
                     below, alongside the customer/time chips above. */}
-                <Text style={[styles.breakdownText, { fontWeight: '700', marginTop: spacing.md, marginBottom: spacing.xs }]}>Why</Text>
+                <Text style={[styles.breakdownText, { fontWeight: '700', marginTop: spacing.md, marginBottom: spacing.xs }]}>{t('ui.bizDash2.why')}</Text>
                 <Text style={styles.helperText}>
-                  What occasions would you like more of? We'll flag matching requests higher.
+                  {t('ui.bizDash2.whatOccasionsWouldYouLike')}
                 </Text>
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                   {OCCASION_OPTIONS.map((o) => {
@@ -5351,13 +5346,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   style={[styles.postUpdateButton, { marginTop: spacing.sm }]}
                   onPress={handleSavePriorityAttributes}
                   disabled={savingPriorityAttributes}
-                  accessibilityLabel="Save what you're looking for"
+                  accessibilityLabel={t('ui.bizDash2.saveWhatYoureLookingForA11y')}
                   accessibilityRole="button"
                 >
                   {savingPriorityAttributes ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.postUpdateButtonText}>Save</Text>
+                    <Text style={styles.postUpdateButtonText}>{t('ui.bizDash2.save')}</Text>
                   )}
                 </TouchableOpacity>
                 <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, 'priority')} />
@@ -5370,25 +5365,24 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     job that already expires business_requests/
                     business_availability). */}
                 <Text style={[styles.breakdownText, { fontWeight: '700', marginTop: spacing.md, marginBottom: spacing.xs }]}>
-                  ⏳ Temporary boost (optional)
+                  {t('ui.bizDash2.temporaryBoostOptional')}
                 </Text>
                 <Text style={styles.helperText}>
-                  Want more of one specific category this week, without changing what you're
-                  generally looking for above? Set a real deadline and it clears itself.
+                  {t('ui.bizDash2.wantMoreOfOneSpecific')}
                 </Text>
                 {activePrioritySignals.length > 0 && (
                   <View style={{ marginTop: spacing.xs, marginBottom: spacing.xs }}>
                     {activePrioritySignals.map((s) => (
                       <View key={s.id} style={[styles.gatheringRow, { marginTop: spacing.xs }]}>
                         <Text style={styles.breakdownText}>
-                          🎯 {s.category} — {windowPhrase(null, s.expires_at, 'availability')?.replace('Available until', 'until') ?? 'ended'}
+                          🎯 {s.category} — {windowPhrase(null, s.expires_at, 'availability')?.replace(t('ui.bizDash2.availableUntil'), 'until') ?? 'ended'}
                         </Text>
                         <TouchableOpacity
                           onPress={() => handleClearBoost(s.id)}
-                          accessibilityLabel={`Clear boost for ${s.category}`}
+                          accessibilityLabel={t('ui.bizDash2.clearBoostForA11y', { category: s.category })}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.messageMemberLink}>Clear</Text>
+                          <Text style={styles.messageMemberLink}>{t('ui.bizDash2.clear')}</Text>
                         </TouchableOpacity>
                       </View>
                     ))}
@@ -5415,9 +5409,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <>
                     <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
                       {[
-                        { key: 'today', label: 'Today' },
-                        { key: 'weekend', label: 'This Weekend' },
-                        { key: '1week', label: '1 Week' },
+                        { key: 'today', label: t('ui.bizDash2.today') },
+                        { key: 'weekend', label: t('ui.bizDash2.thisWeekend') },
+                        { key: '1week', label: t('ui.bizDash2.n1Week') },
                       ].map((d) => {
                         const selected = boostDurationInput === d.key;
                         return (
@@ -5438,16 +5432,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       style={[styles.postUpdateButton, { marginTop: spacing.sm }]}
                       onPress={handleSetBoost}
                       disabled={savingBoost}
-                      accessibilityLabel="Save temporary boost"
+                      accessibilityLabel={t('ui.bizDash2.saveTemporaryBoostA11y')}
                       accessibilityRole="button"
                     >
-                      {savingBoost ? <ActivityIndicator color="#fff" /> : <Text style={styles.postUpdateButtonText}>Boost This Category</Text>}
+                      {savingBoost ? <ActivityIndicator color="#fff" /> : <Text style={styles.postUpdateButtonText}>{t('ui.bizDash2.boostThisCategory')}</Text>}
                     </TouchableOpacity>
                   </>
                 )}
 
                 {/* Phase 3 -- Availability Pulse: one tap sets and saves. */}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>How's Business Right Now?</Text>
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.howsBusinessRightNow')}</Text>
                 <View style={styles.chipRow}>
                   {AVAILABILITY_PULSE_OPTIONS.map((p) => {
                     const selected = selectedPartner?.availability_pulse === p.key;
@@ -5468,18 +5462,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 </View>
                 <TextInput
                   style={[styles.input, { marginTop: spacing.sm }]}
-                  placeholder={'Optional note — e.g. "Patio’s full, indoor seats open"'}
+                  placeholder={t('ui.bizDash2.optionalNoteEGPatio')}
                   placeholderTextColor={colors.textTertiary}
                   value={pulseNoteInput}
                   onChangeText={setPulseNoteInput}
                   maxLength={140}
-                  accessibilityLabel="Availability note"
+                  accessibilityLabel={t('ui.bizDash2.availabilityNoteA11y')}
                 />
                 {selectedPartner?.availability_pulse && (
                   <Text style={styles.helperText}>
                     {isAvailabilityPulseFresh(selectedPartner.availability_pulse_updated_at)
-                      ? `Set to "${availabilityPulseLabel(selectedPartner.availability_pulse)}" -- customers see this on your public profile.`
-                      : 'This is more than a day old -- customers no longer see it. Tap a status above to refresh it.'}
+                      ? t('ui.bizDash2.setToCustomersSeeThis', { availabilityPulseLabel: availabilityPulseLabel(selectedPartner.availability_pulse) })
+                      : t('ui.bizDash2.thisIsMoreThanA')}
                   </Text>
                 )}
 
@@ -5505,42 +5499,41 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   if (pending.length === 0) return null;
                   return (
                     <>
-                      <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>We Created {pending.length} Experience{pending.length === 1 ? '' : 's'} For You</Text>
+                      <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.weCreatedExperiences', { count: pending.length })}</Text>
                       <Text style={styles.helperText}>
-                        Based on what you told us makes people choose you. Keep the ones you like,
-                        edit any of them, or remove what doesn't fit.
+                        {t('ui.bizDash2.basedOnWhatYouTold')}
                       </Text>
                       {pending.map((s) => (
                         <View key={s.attribute} style={styles.gatheringRow}>
                           <Text style={styles.offerTitle}>{s.icon} {s.title}</Text>
                           <Text style={styles.breakdownText}>{s.description}</Text>
                           <Text style={[styles.breakdownText, { color: colors.textTertiary, fontStyle: 'italic' }]}>
-                            Based on: {businessAttributeLabel(s.attribute)}
+                            {t('ui.bizDash2.basedOn')}{' '}{businessAttributeLabel(s.attribute)}
                           </Text>
                           <View style={{ flexDirection: 'row', marginTop: spacing.sm, flexWrap: 'wrap', gap: spacing.sm }}>
                             <TouchableOpacity
                               style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
                               onPress={() => handleKeepSuggestion(s)}
-                              accessibilityLabel={`Keep ${s.title}`}
+                              accessibilityLabel={t('ui.bizDash2.keepA11y', { title: s.title })}
                               accessibilityRole="button"
                             >
-                              <Text style={styles.smallActionButtonText}>Keep</Text>
+                              <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.keep')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
                               onPress={() => openExperienceModal(s, { fromSuggestionId: s.attribute })}
-                              accessibilityLabel={`Edit ${s.title}`}
+                              accessibilityLabel={t('ui.bizDash2.editA11y2', { title: s.title })}
                               accessibilityRole="button"
                             >
-                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Edit</Text>
+                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.edit')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
                               onPress={() => handleRemoveSuggestion(s)}
-                              accessibilityLabel={`Remove ${s.title}`}
+                              accessibilityLabel={t('ui.bizDash2.removeA11y', { title: s.title })}
                               accessibilityRole="button"
                             >
-                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Remove</Text>
+                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.remove')}</Text>
                             </TouchableOpacity>
                           </View>
                           <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, `experience_suggestion:${s.attribute}`)} />
@@ -5557,7 +5550,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 {/* "Occasions we offer": an explicit capability, separate from "want more" above. Saves on
                     tap (no Save button); Nearby then routes matching occasion requests here first, and a
                     package (if any) is still what gets offered -- nothing is invented for this list alone. */}
-                <Text style={styles.sectionHeader}>Occasions we offer</Text>
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.occasionsWeOffer')}</Text>
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                   {OFFERED_OCCASION_OPTIONS.map((o) => {
                     const selected = shownValue(settingConflicts.entries, 'offered_occasions', selectedPartner?.offered_occasions ?? []).includes(o.key);
@@ -5567,7 +5560,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => handleToggleOfferedOccasion(o.key)}
                         accessibilityRole="button"
-                        accessibilityLabel={`${o.label}${selected ? ', offered' : ''}`}
+                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.offeredA11y') : ''}`}
                         accessibilityState={{ selected }}
                       >
                         <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
@@ -5581,7 +5574,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   saving={savingPendingSetting === 'offered_occasions'}
                 />
                 <Text style={styles.helperText}>
-                  Requests for these occasions reach you first. Add a package under Occasion Packages to offer one automatically.
+                  {t('ui.bizDash2.requestsForTheseOccasionsReach')}
                 </Text>
                 {/* Hours (item 71): one optional row, expands in place. Feeds the consumer "Open now" filter; never inferred. */}
                 {selectedPartner ? (
@@ -5591,7 +5584,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   />
                 ) : null}
                 {/* Weather sensitivity (item 63): say it once; Nearby ranks your offers with the weather (never hides them). */}
-                <Text style={styles.sectionHeader}>Is your experience affected by weather?</Text>
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.isYourExperienceAffectedBy')}</Text>
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                   {WEATHER_SETTING_OPTIONS.map((o) => {
                     const selected = shownValue(settingConflicts.entries, 'weather_setting', selectedPartner?.weather_setting ?? null) === o.key;
@@ -5601,7 +5594,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => handlePickWeatherSetting(o.key)}
                         accessibilityRole="button"
-                        accessibilityLabel={`${o.label}${selected ? ', selected' : ''}`}
+                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
                         accessibilityState={{ selected }}
                       >
                         <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
@@ -5615,10 +5608,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   saving={savingPendingSetting === 'weather_setting'}
                 />
                 <Text style={styles.helperText}>
-                  Outdoor only: shown less when rain is coming, more in good weather, and never to someone asking for indoors. Weather dependent: shown less in bad weather. Indoor only: shown more in bad weather, and never to someone asking for outside or a patio. Tap again to clear.
+                  {t('ui.bizDash2.outdoorOnlyShownLessWhen')}
                 </Text>
                 {/* Booking mode (item 72): one owner-declared answer that sets the customer's button. */}
-                <Text style={styles.sectionHeader}>How do customers come in?</Text>
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.howDoCustomersComeIn')}</Text>
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                   {BOOKING_MODE_OPTIONS.map((o) => {
                     const selected = bookingModeOf(selectedPartner) === o.key;
@@ -5628,7 +5621,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => handlePickBookingMode(o.key)}
                         accessibilityRole="button"
-                        accessibilityLabel={`${o.label}${selected ? ', selected' : ''}`}
+                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
                         accessibilityState={{ selected }}
                       >
                         <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
@@ -5637,10 +5630,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   })}
                 </View>
                 <Text style={styles.helperText}>
-                  Sets the button customers see: Walk-in shows "Go now" while you're open, Reservation recommended "Reserve", Reservation required "Book", Request required "Request". Reserve, Book and Request send you a request to answer. Tap again to clear.
+                  {t('ui.bizDash2.setsTheButtonCustomersSee')}
                 </Text>
                 {/* Price (items 40 + 82): one coarse tier, $ to $$$$, plus an optional typical spend per person. Owner-declared, never inferred. */}
-                <Text style={styles.sectionHeader}>What does it usually cost?</Text>
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatDoesItUsuallyCost')}</Text>
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                   {BUSINESS_PRICE_LEVELS.map((key) => {
                     const selected = (selectedPartner?.price_level ?? null) === key;
@@ -5650,7 +5643,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => handlePickPriceLevel(key)}
                         accessibilityRole="button"
-                        accessibilityLabel={`${key}${selected ? ', selected' : ''}`}
+                        accessibilityLabel={`${key}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
                         accessibilityState={{ selected }}
                       >
                         <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{key}</Text>
@@ -5661,13 +5654,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
                   <TextInput
                     style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
-                    placeholder="Typical spend per person (optional), e.g. 25"
+                    placeholder={t('ui.bizDash2.typicalSpendPerPersonOptional')}
                     placeholderTextColor={colors.textTertiary}
                     value={spendDraft ?? (selectedPartner?.typical_spend_per_person != null ? String(selectedPartner.typical_spend_per_person) : '')}
                     onChangeText={(t) => setSpendDraft(t.replace(/[^0-9]/g, ''))}
                     keyboardType="number-pad"
                     maxLength={4}
-                    accessibilityLabel="Typical spend per person in dollars, optional"
+                    accessibilityLabel={t('ui.bizDash2.typicalSpendPerPersonInA11y')}
                   />
                   {spendDraft !== null && (
                     <TouchableOpacity
@@ -5675,27 +5668,27 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       onPress={handleSaveTypicalSpend}
                       disabled={savingSpend}
                       accessibilityRole="button"
-                      accessibilityLabel="Save typical spend"
+                      accessibilityLabel={t('ui.bizDash2.saveTypicalSpendA11y')}
                     >
-                      <Text style={[styles.chipText, styles.chipTextSelected]}>{savingSpend ? 'Saving…' : 'Save'}</Text>
+                      <Text style={[styles.chipText, styles.chipTextSelected]}>{savingSpend ? t('ui.bizDash2.saving2') : t('ui.bizDash2.save')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
                 <Text style={styles.helperText}>
-                  A rough idea is enough. Helps you appear when someone asks for something cheap, moderate or for a special occasion. Tap a tier again to clear; leave the amount blank if it varies.
+                  {t('ui.bizDash2.aRoughIdeaIsEnough')}
                 </Text>
                 {/* Item 80: largest group (total people), owner-declared; used only to decide which requests reach you. */}
-                <Text style={styles.sectionHeader}>Largest group you can host</Text>
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.largestGroupYouCanHost')}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs }}>
                   <TextInput
                     style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
-                    placeholder="Not set"
+                    placeholder={t('ui.bizDash2.notSet')}
                     placeholderTextColor={colors.textTertiary}
                     value={maxGroupDraft ?? (selectedPartner?.max_group_size != null ? String(selectedPartner.max_group_size) : '')}
                     onChangeText={(t) => setMaxGroupDraft(t.replace(/[^0-9]/g, ''))}
                     keyboardType="number-pad"
                     maxLength={4}
-                    accessibilityLabel="Largest group you can host, total people"
+                    accessibilityLabel={t('ui.bizDash2.largestGroupYouCanHostA11y')}
                   />
                   {maxGroupDraft !== null && (
                     <TouchableOpacity
@@ -5703,27 +5696,27 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       onPress={handleSaveMaxGroupSize}
                       disabled={savingMaxGroup}
                       accessibilityRole="button"
-                      accessibilityLabel="Save group size"
+                      accessibilityLabel={t('ui.bizDash2.saveGroupSizeA11y')}
                     >
-                      <Text style={[styles.chipText, styles.chipTextSelected]}>{savingMaxGroup ? 'Saving…' : 'Save'}</Text>
+                      <Text style={[styles.chipText, styles.chipTextSelected]}>{savingMaxGroup ? t('ui.bizDash2.saving2') : t('ui.bizDash2.save')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
                 <Text style={styles.helperText}>
-                  Total people, counting everyone. Requests for bigger groups aren't sent to you. Leave blank if it varies.
+                  {t('ui.bizDash2.totalPeopleCountingEveryoneRequests')}
                 </Text>
                 {SPACES.filter((sp) => (selectedPartner?.attributes ?? []).includes(sp.attribute)).map((sp) => (
                   <View key={sp.key} style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
                     <Text style={[styles.helperText, { width: 110, marginTop: 0 }]}>{sp.label}</Text>
                     <TextInput
                       style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
-                      placeholder="Not set"
+                      placeholder={t('ui.bizDash2.notSet')}
                       placeholderTextColor={colors.textTertiary}
                       value={spaceDrafts[sp.key] ?? (selectedPartner?.[sp.column] != null ? String(selectedPartner[sp.column]) : '')}
                       onChangeText={(t) => setSpaceDrafts((prev) => ({ ...prev, [sp.key]: t.replace(/[^0-9]/g, '') }))}
                       keyboardType="number-pad"
                       maxLength={4}
-                      accessibilityLabel={`${sp.label}, largest group, total people`}
+                      accessibilityLabel={t('ui.bizDash2.largestGroupTotalPeopleA11y', { label: sp.label })}
                     />
                     {spaceDrafts[sp.key] !== undefined && (
                       <TouchableOpacity
@@ -5731,22 +5724,22 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         onPress={() => handleSaveSpaceCapacity(sp)}
                         disabled={savingSpace === sp.key}
                         accessibilityRole="button"
-                        accessibilityLabel={`Save ${sp.label} size`}
+                        accessibilityLabel={t('ui.bizDash2.saveSizeA11y', { label: sp.label })}
                       >
-                        <Text style={[styles.chipText, styles.chipTextSelected]}>{savingSpace === sp.key ? 'Saving…' : 'Save'}</Text>
+                        <Text style={[styles.chipText, styles.chipTextSelected]}>{savingSpace === sp.key ? t('ui.bizDash2.saving2') : t('ui.bizDash2.save')}</Text>
                       </TouchableOpacity>
                     )}
                   </View>
                 ))}
                 {SPACES.some((sp) => (selectedPartner?.attributes ?? []).includes(sp.attribute)) && (
                   <Text style={styles.helperText}>
-                    The most people each space holds. A group that asks for that space is matched against it. No bigger than your largest group.
+                    {t('ui.bizDash2.theMostPeopleEachSpace')}
                   </Text>
                 )}
                 {/* Suited ages (item 50): descriptive only, never a restriction; owner-declared. */}
-                <Text style={styles.sectionHeader}>What ages is it suited to?</Text>
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatAgesIsItSuited')}</Text>
                 <AgeRangePicker
-                  label="Ages"
+                  label={t('ui.bizDash2.ages')}
                   min={shownValue(settingConflicts.entries, 'suited_ages', { min: selectedPartner?.suited_age_min ?? null }).min ?? null}
                   max={shownValue(settingConflicts.entries, 'suited_ages', { max: selectedPartner?.suited_age_max ?? null }).max ?? null}
                   onChange={handlePickSuitedAges}
@@ -5757,10 +5750,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   saving={savingPendingSetting === 'suited_ages'}
                 />
                 {/* Item 86: what you don't accommodate. Requests that conflict are never sent to you or shown with your business. */}
-                <Text style={styles.sectionHeader}>What don't you accommodate?</Text>
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatDontYouAccommodate')}</Text>
                 {[NOT_ACCOMMODATED_OPTIONS.filter((o) => !ADULT_AGE_RULES.includes(o.key)), NOT_ACCOMMODATED_OPTIONS.filter((o) => ADULT_AGE_RULES.includes(o.key))].map((group, gi) => (
                 <View key={gi}>
-                {gi === 1 && <Text style={[styles.helperText, { marginTop: spacing.sm }]}>Age restriction (pick one)</Text>}
+                {gi === 1 && <Text style={[styles.helperText, { marginTop: spacing.sm }]}>{t('ui.bizDash2.ageRestrictionPickOne')}</Text>}
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                   {group.map((o) => {
                     const selected = shownValue(settingConflicts.entries, 'not_accommodated', notAccommodatedOf(selectedPartner)).includes(o.key);
@@ -5770,7 +5763,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => handleToggleNotAccommodated(o.key)}
                         accessibilityRole="button"
-                        accessibilityLabel={`${o.label}${selected ? ', selected' : ''}`}
+                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
                         accessibilityState={{ selected }}
                       >
                         <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
@@ -5786,12 +5779,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   saving={savingPendingSetting === 'not_accommodated'}
                 />
                 <Text style={styles.helperText}>
-                  Requests that conflict aren't sent to you, and customers asking for them won't see you. Group size, reservations and indoor or outdoor only are set above.
+                  {t('ui.bizDash2.requestsThatConflictArentSent')}
                 </Text>
                 {/* Item 88: dietary options, asked only of a food business (or one that already declared some). */}
                 {dietaryRelevantFor(selectedPartner) && (
                   <>
-                    <Text style={styles.sectionHeader}>What dietary options do you offer?</Text>
+                    <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatDietaryOptionsDoYou')}</Text>
                     <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                       {BUSINESS_DIETARY_OPTIONS.map((o) => {
                         const selected = shownValue(settingConflicts.entries, 'dietary_options', dietaryOptionsOf(selectedPartner)).includes(o.key);
@@ -5801,7 +5794,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             style={[styles.chip, selected && styles.chipSelected]}
                             onPress={() => handleToggleDietaryOption(o.key)}
                             accessibilityRole="button"
-                            accessibilityLabel={`${o.label}${selected ? ', selected' : ''}`}
+                            accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
                             accessibilityState={{ selected }}
                           >
                             <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
@@ -5810,7 +5803,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       })}
                     </View>
                     <Text style={styles.helperText}>
-                      Customers who ask for these are matched with you first. Only pick an allergy or gluten-free option if you can really accommodate it: customers rely on it, and we show it as declared by you. Wheelchair access, accessible parking and restrooms are under Edit Profile.
+                      {t('ui.bizDash2.customersWhoAskForThese')}
                     </Text>
                   </>
                 )}
@@ -5819,27 +5812,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 {on('offers') && moreOffersOpen && (
 <>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xl }}>
-                  <Text style={styles.sectionHeader}>Your Signature Experiences</Text>
+                  <Text style={styles.sectionHeader}>{t('ui.bizDash2.yourSignatureExperiences')}</Text>
                   <TouchableOpacity
                     style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
                     onPress={() => openExperienceModal(null)}
-                    accessibilityLabel="Add a signature experience"
+                    accessibilityLabel={t('ui.bizDash2.addASignatureExperienceA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.smallActionButtonText}>+ Add</Text>
+                    <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.add')}</Text>
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.helperText}>
-                  Real, curated things people can come to you for -- shown on your public profile.
+                  {t('ui.bizDash2.realCuratedThingsPeopleCan')}
                 </Text>
                 {entitlements && entitlementLimit(entitlements, 'signature_experiences') !== null && (
                   <Text style={[styles.helperText, checkLimit(entitlements, 'signature_experiences', experiences.length).atLimit && { color: colors.warning, fontWeight: '700' }]}>
-                    {experiences.length} of {entitlementLimit(entitlements, 'signature_experiences')} used
-                    {checkLimit(entitlements, 'signature_experiences', experiences.length).atLimit ? ' -- upgrade for unlimited' : ''}
+                    {checkLimit(entitlements, 'signature_experiences', experiences.length).atLimit
+                      ? t('ui.bizDash2.usedUpgrade', { n: experiences.length, limit: entitlementLimit(entitlements, 'signature_experiences') })
+                      : t('ui.bizDash2.used', { n: experiences.length, limit: entitlementLimit(entitlements, 'signature_experiences') })}
                   </Text>
                 )}
                 {loadingExperiences ? (
-                  <NLoader fullScreen={false} size="inline" caption="Loading experiences…" />
+                  <NLoader fullScreen={false} size="inline" caption={t('ui.bizDash2.loadingExperiences')} />
                 ) : experiences.length === 0 ? (
                   <EmptyCopy id="business_signature" />
                 ) : (
@@ -5853,19 +5847,19 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         {[
                           exp.price_level ? experiencePriceLabel(exp.price_level) : null,
                           exp.party_type ? experiencePartyTypeLabel(exp.party_type) : null,
-                          !exp.active ? 'Hidden from your public profile' : null,
-                        ].filter(Boolean).join(' · ') || 'No price or party details set'}
+                          !exp.active ? t('ui.bizDash2.hiddenFromYourPublicProfile') : null,
+                        ].filter(Boolean).join(' · ') || t('ui.bizDash2.noPriceOrPartyDetails')}
                       </Text>
                       <BusinessOfferMediaPreview path={exp.media_path} type={exp.media_type} colors={colors} />
                       <View style={{ flexDirection: 'row', marginTop: spacing.sm, flexWrap: 'wrap', gap: spacing.sm }}>
-                        <TouchableOpacity onPress={() => openExperienceModal(exp)} accessibilityLabel={`Edit ${exp.title}`} accessibilityRole="button">
-                          <Text style={styles.messageMemberLink}>✏️ Edit</Text>
+                        <TouchableOpacity onPress={() => openExperienceModal(exp)} accessibilityLabel={t('ui.bizDash2.editA11y2', { title: exp.title })} accessibilityRole="button">
+                          <Text style={styles.messageMemberLink}>{t('ui.bizDash2.edit2')}</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleToggleExperienceActive(exp)} accessibilityLabel={exp.active ? `Hide ${exp.title}` : `Show ${exp.title}`} accessibilityRole="button">
-                          <Text style={styles.messageMemberLink}>{exp.active ? '🙈 Hide' : '👀 Show'}</Text>
+                        <TouchableOpacity onPress={() => handleToggleExperienceActive(exp)} accessibilityLabel={exp.active ? t('ui.bizDash2.hideA11y', { title: exp.title }) : t('ui.bizDash2.showA11y', { title: exp.title })} accessibilityRole="button">
+                          <Text style={styles.messageMemberLink}>{exp.active ? t('ui.bizDash2.hide') : t('ui.bizDash2.show')}</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleDeleteExperience(exp)} accessibilityLabel={`Remove ${exp.title}`} accessibilityRole="button">
-                          <Text style={[styles.messageMemberLink, { color: colors.danger }]}>🗑️ Remove</Text>
+                        <TouchableOpacity onPress={() => handleDeleteExperience(exp)} accessibilityLabel={t('ui.bizDash2.removeA11y', { title: exp.title })} accessibilityRole="button">
+                          <Text style={[styles.messageMemberLink, { color: colors.danger }]}>{t('ui.bizDash2.remove2')}</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -5881,47 +5875,46 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     existing attributes vocabulary, never an LLM call and
                     never auto-applied -- the extracted chips are always
                     shown for an explicit confirm/edit/discard first. */}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>✨ Teach Nearby</Text>
-                <Text style={styles.helperText}>Anything else we should know about your business?</Text>
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.teachNearby')}</Text>
+                <Text style={styles.helperText}>{t('ui.bizDash2.anythingElseWeShouldKnow')}</Text>
                 {!teachNearbyExtracted ? (
                   <>
                     <TextInput
                       style={[styles.input, { marginTop: spacing.sm, minHeight: 60 }]}
-                      placeholder={'"Our rooftop patio is our most popular feature and we\'re especially good for first dates."'}
+                      placeholder={t('ui.bizDash2.ourRooftopPatioIsOur')}
                       placeholderTextColor={colors.textTertiary}
                       value={teachNearbyInput}
                       onChangeText={setTeachNearbyInput}
                       multiline
                       maxLength={300}
-                      accessibilityLabel="Tell Nearby about your business"
+                      accessibilityLabel={t('ui.bizDash2.tellNearbyAboutYourBusinessA11y')}
                     />
                     <TouchableOpacity
                       style={[styles.postUpdateButton, { marginTop: spacing.sm }]}
                       onPress={handleInterpretTeachNearby}
                       disabled={!teachNearbyInput.trim()}
-                      accessibilityLabel="Submit"
+                      accessibilityLabel={t('ui.bizDash2.submitA11y')}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.postUpdateButtonText}>Submit</Text>
+                      <Text style={styles.postUpdateButtonText}>{t('ui.bizDash2.submit')}</Text>
                     </TouchableOpacity>
                   </>
                 ) : (
                   <View style={styles.gatheringRow}>
                     {teachNearbyExtracted.length === 0 ? (
                       <Text style={styles.emptyText}>
-                        Nearby didn't recognize anything specific in that -- try mentioning something
-                        concrete, like your patio, your atmosphere, or who you're great for.
+                        {t('ui.bizDash2.nearbyDidntRecognizeAnythingSpecific')}
                       </Text>
                     ) : (
                       <>
-                        <Text style={[styles.breakdownText, { fontWeight: '700', marginBottom: spacing.xs }]}>Nearby understood:</Text>
+                        <Text style={[styles.breakdownText, { fontWeight: '700', marginBottom: spacing.xs }]}>{t('ui.bizDash2.nearbyUnderstood')}</Text>
                         <View style={styles.chipRow}>
                           {teachNearbyExtracted.map((attribute) => (
                             <TouchableOpacity
                               key={attribute}
                               style={styles.chip}
                               onPress={() => handleRemoveTeachNearbyChip(attribute)}
-                              accessibilityLabel={`Remove ${businessAttributeLabel(attribute)}`}
+                              accessibilityLabel={t('ui.bizDash2.removeA11y2', { businessAttributeLabel: businessAttributeLabel(attribute) })}
                               accessibilityRole="button"
                             >
                               <Text style={styles.chipText}>{businessAttributeLabel(attribute)} ✕</Text>
@@ -5936,19 +5929,19 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
                           onPress={handleConfirmTeachNearby}
                           disabled={savingTeachNearby}
-                          accessibilityLabel="Add to profile"
+                          accessibilityLabel={t('ui.bizDash2.addToProfileA11y')}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.smallActionButtonText}>{savingTeachNearby ? 'Adding...' : 'Add to Profile'}</Text>
+                          <Text style={styles.smallActionButtonText}>{savingTeachNearby ? t('ui.bizDash2.adding') : t('ui.bizDash2.addToProfile')}</Text>
                         </TouchableOpacity>
                       )}
                       <TouchableOpacity
                         style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
                         onPress={handleDiscardTeachNearby}
-                        accessibilityLabel="Discard"
+                        accessibilityLabel={t('ui.bizDash2.discardA11y')}
                         accessibilityRole="button"
                       >
-                        <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Discard</Text>
+                        <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.discard')}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -5962,20 +5955,19 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     banner or Teach Nearby above, not from here. */}
                 {recentSuggestions.length > 0 && (
                   <>
-                    <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>🕓 Recent AI Suggestions</Text>
+                    <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.recentAiSuggestions')}</Text>
                     <Text style={styles.helperText}>
-                      Every real, deterministic suggestion Nearby has made for this business, and
-                      what happened to it.
+                      {t('ui.bizDash2.everyRealDeterministicSuggestionNearby')}
                     </Text>
                     {recentSuggestions.map((s) => (
                       <View key={s.id} style={[styles.gatheringRow, { marginTop: spacing.xs }]}>
                         <Text style={styles.breakdownText}>
                           {s.attribute_key === 'category'
-                            ? `Category: ${BUSINESS_CATEGORIES.find((c) => c.key === s.attribute_value)?.label ?? s.attribute_value}`
-                            : `Attribute: ${businessAttributeLabel(s.attribute_value) ?? s.attribute_value}`}
+                            ? t('ui.bizDash2.category', { label: BUSINESS_CATEGORIES.find((c) => c.key === s.attribute_value)?.label ?? s.attribute_value })
+                            : t('ui.bizDash2.attribute', { businessAttributeLabel: businessAttributeLabel(s.attribute_value) ?? s.attribute_value })}
                         </Text>
                         <Text style={[styles.helperText, { marginTop: 2 }]}>
-                          {s.status === 'confirmed' ? '✅ Added' : s.status === 'rejected' ? '✕ Kept as-is' : '⏳ Awaiting your review'}
+                          {s.status === 'confirmed' ? t('ui.bizDash2.added') : s.status === 'rejected' ? t('ui.bizDash2.keptAsIs') : t('ui.bizDash2.awaitingYourReview')}
                           {s.reason ? ` — ${s.reason}` : ''}
                         </Text>
                       </View>
@@ -5983,21 +5975,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </>
                 )}
 
-                <TouchableOpacity onPress={() => setProfileSettingsOpen((v) => !v)} style={[styles.gatheringRow, { marginTop: spacing.xl }]} accessibilityRole="button" accessibilityLabel="Settings" accessibilityState={{ expanded: profileSettingsOpen }}>
-                  <Text style={styles.offerTitle}>Settings {profileSettingsOpen ? '⌄' : '›'}</Text>
-                  {!profileSettingsOpen && <Text style={styles.breakdownText}>Terms · Notifications · Payments · AI automation</Text>}
+                <TouchableOpacity onPress={() => setProfileSettingsOpen((v) => !v)} style={[styles.gatheringRow, { marginTop: spacing.xl }]} accessibilityRole="button" accessibilityLabel={t('ui.bizDash2.settingsA11y')} accessibilityState={{ expanded: profileSettingsOpen }}>
+                  <Text style={styles.offerTitle}>{t('ui.bizDash2.settings')}{' '}{profileSettingsOpen ? '⌄' : '›'}</Text>
+                  {!profileSettingsOpen && <Text style={styles.breakdownText}>{t('ui.bizDash2.termsNotificationsPaymentsAiAutomation')}</Text>}
                 </TouchableOpacity>
                 {profileSettingsOpen && (
                 <>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
-                  <Text style={styles.sectionHeader}>Fulfillment Policy</Text>
+                  <Text style={styles.sectionHeader}>{t('ui.bizDash2.fulfillmentPolicy')}</Text>
                   <TouchableOpacity
                     style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
                     onPress={openPolicyModal}
-                    accessibilityLabel={fulfillmentPolicy ? 'Edit fulfillment policy' : 'Set a fulfillment policy'}
+                    accessibilityLabel={fulfillmentPolicy ? t('ui.bizDash2.editFulfillmentPolicyA11y') : t('ui.bizDash2.setAFulfillmentPolicyA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.smallActionButtonText}>{fulfillmentPolicy ? 'Edit' : '+ Set a Policy'}</Text>
+                    <Text style={styles.smallActionButtonText}>{fulfillmentPolicy ? t('ui.bizDash2.edit') : t('ui.bizDash2.setAPolicy')}</Text>
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.helperText}>

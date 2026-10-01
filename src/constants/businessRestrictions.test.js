@@ -216,7 +216,7 @@ describe('18+ only (owner item 87, migration 20270228)', () => {
       'src/screens/CreateGatheringScreen.js', 'src/screens/EditGatheringScreen.js', 'src/screens/HomeScreen.js', 'src/screens/DiscoverHubScreen.js'])
       expect([f, /adults_(18|21)_plus|18\+ only|21\+ only/.test(src(f))]).toEqual([f, false]);
     // the dashboard shows 18+ / 21+ as one "Age restriction (pick one)" row in the same control
-    expect(src('src/screens/BusinessDashboardScreen.js')).toMatch(/Age restriction \(pick one\)/);
+    expect(src('src/screens/BusinessDashboardScreen.js')).toMatch(/ui\.bizDash2\.ageRestrictionPickOne/);
   });
   it('structured only: nothing derives an adult rule from text, a category or marketing copy; gatherings untouched', () => {
     const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
