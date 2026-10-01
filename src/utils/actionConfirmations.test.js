@@ -50,7 +50,7 @@ describe('meaningful confirmations', () => {
     const handler = dash.slice(dash.indexOf('async function handleOfferResult'), dash.indexOf('function openAlternativeSheet'));
     expect(handler.indexOf('replySentConfirmation')).toBeGreaterThan(handler.indexOf('if (result.published)'));
     expect(handler.indexOf('replySentConfirmation')).toBeLessThan(handler.indexOf('else if (result.blocked)'));
-    expect(handler).toMatch(/being reviewed before it’s sent/);
+    expect(handler).toMatch(/ui\.bizDash1\.yourResponseIsBeingReviewed/);
     // the queued (screening) confirmation never claims delivery
     expect(OFFER_QUEUED_CONFIRMATION.join(' ')).not.toMatch(/\bsent\b|delivered/i);
     // one classifier: confirmations go through offerCopy's businessReplyKind, not their own offer_type checks

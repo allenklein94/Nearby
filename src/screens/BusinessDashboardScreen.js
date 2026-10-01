@@ -1,8 +1,11 @@
 import { windowPhrase } from '../utils/timeWindow';
+import { useLanguage } from '../context/LanguageContext';
 import { activityHints } from '../constants/activityLayer';
 import { canRespondToOpportunity } from '../utils/objectLifecycle';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
+import { displayDateTime, displayDay } from '../i18n/display';
+import { categoryName } from '../i18n/categoryNames';
 import DraftBanner from '../components/DraftBanner';
 import AgeRangePicker from '../components/AgeRangePicker';
 import SettingConflictNotice from '../components/SettingConflictNotice';
@@ -163,6 +166,7 @@ const AVAILABILITY_STATUS_COPY = {
 // not-yet-uploaded local asset, or an already-saved existingPath resolved
 // to a real signed URL), otherwise a single "Add a photo or video" button.
 function BusinessMediaPicker({ pickedAsset, existingPath, existingType, onPick, onRemove, colors }) {
+  const { t } = useLanguage();
   const [existingSignedUrl, setExistingSignedUrl] = useState(null);
 
   useEffect(() => {
@@ -188,10 +192,10 @@ function BusinessMediaPicker({ pickedAsset, existingPath, existingType, onPick, 
       <TouchableOpacity
         onPress={onPick}
         style={{ paddingVertical: 10, paddingHorizontal: 14, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, alignSelf: 'flex-start', marginTop: spacing.sm }}
-        accessibilityLabel="Add a photo or video"
+        accessibilityLabel={t('ui.bizDash1.addAPhotoOrVideoA11y')}
         accessibilityRole="button"
       >
-        <Text style={{ color: colors.textPrimary, fontWeight: '600' }}>📷 Add a photo or video</Text>
+        <Text style={{ color: colors.textPrimary, fontWeight: '600' }}>{t('ui.bizDash1.addAPhotoOrVideo')}</Text>
       </TouchableOpacity>
     );
   }
@@ -205,8 +209,8 @@ function BusinessMediaPicker({ pickedAsset, existingPath, existingType, onPick, 
           <Text>🎬</Text>
         </View>
       )}
-      <TouchableOpacity onPress={onRemove} accessibilityLabel="Remove media" accessibilityRole="button">
-        <Text style={{ color: colors.danger, fontWeight: '600' }}>Remove</Text>
+      <TouchableOpacity onPress={onRemove} accessibilityLabel={t('ui.bizDash1.removeMediaA11y')} accessibilityRole="button">
+        <Text style={{ color: colors.danger, fontWeight: '600' }}>{t('ui.bizDash1.remove')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -220,6 +224,7 @@ function BusinessMediaPicker({ pickedAsset, existingPath, existingType, onPick, 
 // small honest "🎬 Video attached" label instead of a fabricated player.
 // A saved creative in the offer form: a small thumbnail (a video shows its screened poster) the owner taps to reuse.
 function CreativeThumb({ creative, selected, colors, onPress }) {
+  const { t } = useLanguage();
   const [uri, setUri] = useState(null);
   useEffect(() => {
     let cancelled = false;
@@ -232,7 +237,7 @@ function CreativeThumb({ creative, selected, colors, onPress }) {
       style={{ marginRight: spacing.sm, borderRadius: radius.md, borderWidth: 2, borderColor: selected ? colors.primary : colors.border, overflow: 'hidden', width: 72, height: 72, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }}
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      accessibilityLabel={creative.media_type === 'video' ? 'Saved video creative' : 'Saved photo creative'}
+      accessibilityLabel={creative.media_type === 'video' ? t('ui.bizDash1.savedVideoCreativeA11y') : t('ui.bizDash1.savedPhotoCreativeA11y')}
     >
       {uri ? <Image source={{ uri }} style={{ width: 72, height: 72 }} /> : <Text>{creative.media_type === 'video' ? '🎬' : '🖼️'}</Text>}
     </TouchableOpacity>
@@ -240,6 +245,7 @@ function CreativeThumb({ creative, selected, colors, onPress }) {
 }
 
 function BusinessOfferMediaPreview({ path, type, colors }) {
+  const { t } = useLanguage();
   const [signedUrl, setSignedUrl] = useState(null);
 
   useEffect(() => {
@@ -257,7 +263,7 @@ function BusinessOfferMediaPreview({ path, type, colors }) {
   if (!path) return null;
 
   if (type === 'video') {
-    return <Text style={[{ color: colors.textSecondary, marginTop: spacing.xs }]}>🎬 Video attached</Text>;
+    return <Text style={[{ color: colors.textSecondary, marginTop: spacing.xs }]}>{t('ui.bizDash1.videoAttached')}</Text>;
   }
 
   if (!signedUrl) return null;
@@ -272,6 +278,7 @@ function BusinessOfferMediaPreview({ path, type, colors }) {
 }
 
 export default function BusinessDashboardScreen({ navigation, route }) {
+  const { t, language } = useLanguage();
   const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
   const [section, setSectionRaw] = useState(() => {
@@ -956,10 +963,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
   function handleDisconnectReservationProvider() {
     if (!selectedPartner) return;
-    Alert.alert('Remove reservation provider?', 'This just clears what you told us -- nothing about your real bookings changes.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('ui.bizDash1.removeReservationProvider'), t('ui.bizDash1.thisJustClearsWhatYou'), [
+      { text: t('ui.bizDash1.cancel'), style: 'cancel' },
       {
-        text: 'Remove',
+        text: t('ui.bizDash1.remove'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -980,7 +987,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       const coords = await updateBusinessAddress(selectedPartner.id, addressInput.trim());
       setSelectedPartner((prev) => ({ ...prev, address: addressInput.trim(), latitude: coords?.latitude ?? prev.latitude, longitude: coords?.longitude ?? prev.longitude }));
       setAddressModalVisible(false);
-      showSuccessToast('Saved', 'Your business address is now set — offers will show to people nearby, and your business will now appear on the map.');
+      showSuccessToast(t('ui.bizDash1.saved'), t('ui.bizDash1.yourBusinessAddressIsNow'));
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleUpdateAddress() });
     }
@@ -1078,18 +1085,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         }));
         settingConflicts.clear('profile_edit');
         setEditProfileModalVisible(false);
-        showSuccessToast('Saved', 'Your business profile has been updated.');
+        showSuccessToast(t('ui.bizDash1.saved'), t('ui.bizDash1.yourBusinessProfileHasBeen'));
         logBusinessAcquisitionEvent(sessionId, 'profile_completed', { partnerId: selectedPartner.id });
       } else if (result.blocked) {
         Alert.alert(
-          "Couldn't Publish",
-          "This content couldn't be published — it was flagged during a routine content check. If you think this is a mistake, please reach out to support."
+          t('ui.bizDash1.couldntPublish'),
+          t('ui.bizDash1.thisContentCouldntBePublished')
         );
       } else {
         setEditProfileModalVisible(false);
         Alert.alert(
-          'Submitted for Review',
-          "Your changes are being reviewed before they go live — this is usually quick. Your current profile stays visible in the meantime."
+          t('ui.bizDash1.submittedForReview'),
+          t('ui.bizDash1.yourChangesAreBeingReviewed')
         );
       }
     } catch (e) {
@@ -1238,7 +1245,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   async function handleSaveTypicalSpend() {
     if (!selectedPartner || spendDraft === null) return;
     const problem = typicalSpendProblem(spendDraft);
-    if (problem) { Alert.alert('Check the amount', problem); return; }
+    if (problem) { Alert.alert(t('ui.bizDash1.checkTheAmount'), problem); return; }
     const next = spendDraft.trim() ? Number(spendDraft.trim()) : null;
     setSavingSpend(true);
     try {
@@ -1255,7 +1262,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   async function handleSaveMaxGroupSize() {
     if (!selectedPartner || maxGroupDraft === null) return;
     const problem = maxGroupSizeProblem(maxGroupDraft);
-    if (problem) { Alert.alert('Check the group size', problem); return; }
+    if (problem) { Alert.alert(t('ui.bizDash1.checkTheGroupSize'), problem); return; }
     const next = cleanMaxGroupSize(maxGroupDraft);
     setSavingMaxGroup(true);
     try {
@@ -1272,7 +1279,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   async function handleSaveSpaceCapacity(space) {
     if (!selectedPartner || spaceDrafts[space.key] === undefined) return;
     const problem = spaceCapacityProblem(spaceDrafts[space.key], selectedPartner.max_group_size);
-    if (problem) { Alert.alert('Check the group size', problem); return; }
+    if (problem) { Alert.alert(t('ui.bizDash1.checkTheGroupSize'), problem); return; }
     const next = cleanMaxGroupSize(spaceDrafts[space.key]);
     setSavingSpace(space.key);
     try {
@@ -1307,7 +1314,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     // on a bad input" pattern; see utils/recoverableError.js).
     const timeRange = priorityTimeRangeFromChoice(priorityTimeStartInput, priorityTimeEndInput);
     if (timeRange.error) {
-      Alert.alert('Fix the exact time window', timeRange.error);
+      Alert.alert(t('ui.bizDash1.fixTheExactTimeWindow'), timeRange.error);
       return;
     }
     setSavingPriorityAttributes(true);
@@ -1330,7 +1337,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         priority_occasions: priorityOccasionsInput,
       }));
       settingConflicts.clear('priority');
-      showSuccessToast('Saved', "We'll flag opportunities that match what you're looking for.");
+      showSuccessToast(t('ui.bizDash1.saved'), t('ui.bizDash1.wellFlagOpportunitiesThatMatch'));
     } catch (e) {
       if (!settingConflicts.report('priority', e, { check: priorityCheck })) {
         presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSavePriorityAttributes() });
@@ -1478,7 +1485,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
           'attribute',
           attribute,
           'ai_inferred',
-          'Extracted from what you typed via Teach Nearby.'
+          t('ui.bizDash1.extractedFromWhatYouTyped')
         ).then((id) => {
           if (id) setTeachNearbySuggestionIds((prev) => ({ ...prev, [attribute]: id }));
         });
@@ -1559,7 +1566,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setTeachNearbyInput('');
       setTeachNearbyExtracted(null);
       getBusinessAttributeSuggestions(selectedPartner.id).then(setRecentSuggestions).catch(() => {});
-      Alert.alert('Added to your profile', 'These now show up under "Why People Choose Us."');
+      Alert.alert(t('ui.bizDash1.addedToYourProfile'), t('ui.bizDash1.theseNowShowUpUnder'));
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleConfirmTeachNearby() });
     }
@@ -1602,8 +1609,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       const { atLimit, limit } = checkLimit(entitlements, 'signature_experiences', experiences.length);
       if (atLimit) {
         Alert.alert(
-          `Upgrade for More Signature Experiences`,
-          `Your current plan is capped at ${limit} Signature Experience${limit === 1 ? '' : 's'}. Real plan upgrades aren’t available yet -- we’ll let you know the moment pricing is live.`
+          t('ui.bizDash1.upgradeForMoreSignatureExperiences'),
+          t('ui.bizDash1.yourCurrentPlanIsCapped', { count: limit })
         );
         return;
       }
@@ -1667,16 +1674,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         setExperienceModalVisible(false);
       } else if (result.blocked) {
         Alert.alert(
-          "Couldn't Publish",
-          "This content couldn't be published — it was flagged during a routine content check. If you think this is a mistake, please reach out to support."
+          t('ui.bizDash1.couldntPublish'),
+          t('ui.bizDash1.thisContentCouldntBePublished')
         );
       } else {
         setExperienceModalVisible(false);
         Alert.alert(
-          'Submitted for Review',
+          t('ui.bizDash1.submittedForReview'),
           editingExperienceId
-            ? "Your changes are being reviewed before they go live — this is usually quick. The current version stays visible in the meantime."
-            : "This experience is being reviewed before it goes live — this is usually quick."
+            ? t('ui.bizDash1.yourChangesAreBeingReviewed2')
+            : t('ui.bizDash1.thisExperienceIsBeingReviewed')
         );
       }
     } catch (e) {
@@ -1749,10 +1756,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }
 
   function handleDeleteExperience(experience) {
-    Alert.alert('Remove this experience?', `"${experience.title}" will be permanently removed.`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('ui.bizDash1.removeThisExperience'), t('ui.bizDash1.willBePermanentlyRemoved', { title: experience.title }), [
+      { text: t('ui.bizDash1.cancel'), style: 'cancel' },
       {
-        text: 'Remove',
+        text: t('ui.bizDash1.remove'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -1772,14 +1779,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // convention — this business's own real id, not a fabricated code.
   async function handleShareBusinessLink() {
     if (!selectedPartner) return;
-    const message = `Check out ${selectedPartner.name} on Nearby — nearby://business/${selectedPartner.id}`;
+    const message = t('ui.bizDash1.checkOutOnNearbyNearby', { name: selectedPartner.name, id: selectedPartner.id });
     // Phase 7 (Business Web, CLAUDE.md) -- Share.share has no real native
     // share-sheet equivalent on the web; a clipboard copy is the honest
     // browser-specific adapter for the same underlying action.
     if (Platform.OS === 'web') {
       try {
         await navigator.clipboard.writeText(message);
-        window.alert('Link copied to clipboard!');
+        window.alert(t('ui.bizDash1.linkCopiedToClipboard'));
       } catch (e) {
         // Clipboard permission denial isn't an error worth surfacing.
       }
@@ -1847,10 +1854,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }
 
   function showUpgradePlaceholder(feature) {
-    const label = ENTITLEMENT_FEATURE_LABELS[feature] ?? feature;
+    const label = ENTITLEMENT_FEATURE_LABELS[feature] ? t(`ui.bizDash1.feature.${feature}`) : feature;
     Alert.alert(
-      `Upgrade for ${label}`,
-      'Real plan upgrades aren’t available yet -- we’ll let you know the moment pricing is live.'
+      t('ui.bizDash1.upgradeFor', { label: label }),
+      t('ui.bizDash1.realPlanUpgradesArenT')
     );
   }
 
@@ -1862,12 +1869,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // is the currently-loaded entitlements.tier when known, so the copy
   // can honestly name what the caller would need to move to next.
   function renderLockedFeature(feature, description) {
-    const label = ENTITLEMENT_FEATURE_LABELS[feature] ?? feature;
+    const label = ENTITLEMENT_FEATURE_LABELS[feature] ? t(`ui.bizDash1.feature.${feature}`) : feature;
     return (
       <TouchableOpacity style={styles.lockedFeatureCard} onPress={() => showUpgradePlaceholder(feature)} activeOpacity={0.85}>
         <Text style={styles.lockedFeatureTitle}>🔒 {label}</Text>
         {description ? <Text style={styles.lockedFeatureDescription}>{description}</Text> : null}
-        <Text style={styles.lockedFeatureCta}>See what you get →</Text>
+        <Text style={styles.lockedFeatureCta}>{t('ui.bizDash1.seeWhatYouGet')}</Text>
       </TouchableOpacity>
     );
   }
@@ -1968,7 +1975,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferProposedTime(proposed && proposed.getTime() > Date.now() ? proposed : null);
     setSelectedExperienceIdInput(d.experienceId ?? null); setOfferCreativeId(d.creativeId ?? null);
     if (d.media && (await assetStillExists(d.media))) setOfferPickedMediaAsset(d.media);
-    else if (d.media) Alert.alert('Photo or video not restored', 'The file you picked is no longer on this device. Your text was restored; please pick the media again.');
+    else if (d.media) Alert.alert(t('ui.bizDash1.photoOrVideoNotRestored'), t('ui.bizDash1.theFileYouPickedIs'));
   }
 
   // Item 83: background screening progress. Polls only while something is actually being reviewed, and reloads the
@@ -2157,12 +2164,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       await loadOpportunities(selectedPartner.id);
     } else if (result.blocked) {
       Alert.alert(
-        "Couldn't Send",
-        "This content couldn't be sent — it was flagged during a routine content check. If you think this is a mistake, please reach out to support."
+        t('ui.bizDash1.couldntSend'),
+        t('ui.bizDash1.thisContentCouldntBeSent')
       );
     } else {
       close();
-      Alert.alert('Submitted for Review', 'Your response is being reviewed before it’s sent — this is usually quick.');
+      Alert.alert(t('ui.bizDash1.submittedForReview'), t('ui.bizDash1.yourResponseIsBeingReviewed'));
     }
   }
 
@@ -2180,7 +2187,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     return (
       <>
         <View style={styles.chipRow}>
-          {[['from', from, 'From', setFrom], ['until', until, 'To', setUntil]].map(([key, val, label, setter]) => (
+          {[['from', from, t('ui.bizDash1.from'), setFrom], ['until', until, t('ui.bizDash1.to'), setUntil]].map(([key, val, label, setter]) => (
             <TouchableOpacity
               key={key}
               style={[styles.chip, val && styles.chipSelected]}
@@ -2189,7 +2196,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 setPicker(key);
               }}
               accessibilityRole="button"
-              accessibilityLabel={`Available ${label.toLowerCase()}`}
+              accessibilityLabel={t(key === 'from' ? 'ui.bizDash1.availableFromA11y' : 'ui.bizDash1.availableUntilA11y')}
             >
               <Text style={[styles.chipText, val && styles.chipTextSelected]}>
                 {label}{val ? ` ${val.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}
@@ -2197,8 +2204,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
             </TouchableOpacity>
           ))}
           {(from || until) ? (
-            <TouchableOpacity style={styles.chip} onPress={() => { setFrom(null); setUntil(null); setPicker(null); }} accessibilityRole="button" accessibilityLabel="Clear the available window">
-              <Text style={styles.chipText}>Clear</Text>
+            <TouchableOpacity style={styles.chip} onPress={() => { setFrom(null); setUntil(null); setPicker(null); }} accessibilityRole="button" accessibilityLabel={t('ui.bizDash1.clearTheAvailableWindowA11y')}>
+              <Text style={styles.chipText}>{t('ui.bizDash1.clear')}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -2294,9 +2301,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         }),
       });
       if (!suggestion || claimProblem(suggestion, original)) {
-        setPlainLanguageSuggestion({ none: true, message: message || "We couldn't suggest wording that keeps your offer exactly as it is. Your own wording is unchanged." });
+        setPlainLanguageSuggestion({ none: true, message: message || t('ui.bizDash1.weCouldntSuggestWordingThat') });
       } else if (!plainLanguageDiffers(suggestion, original)) {
-        setPlainLanguageSuggestion({ none: true, message: 'Your wording is already plain and clear.' });
+        setPlainLanguageSuggestion({ none: true, message: t('ui.bizDash1.yourWordingIsAlreadyPlain') });
       } else {
         setPlainLanguageSuggestion({ ...sanitizePlainLanguageSuggestion(suggestion), basedOn: original });
       }
@@ -2322,26 +2329,26 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // One validation for both Preview and Send, so a preview can never show something Send would refuse. null = invalid (already alerted).
   function validateOfferForm() {
     if (!offerDescriptionInput.trim()) {
-      Alert.alert('Add a description', 'Say what you can offer.');
+      Alert.alert(t('ui.bizDash1.addADescription'), t('ui.bizDash1.sayWhatYouCanOffer'));
       return null;
     }
     if (offerTypeInput === 'alt_time' && !offerProposedTime) {
-      Alert.alert('Pick a time', 'Choose the time you’re proposing instead.');
+      Alert.alert(t('ui.bizDash1.pickATime'), t('ui.bizDash1.chooseTheTimeYouRe'));
       return null;
     }
     const capProblem = discountCapProblem({ offerType: offerTypeInput, pctInput: offerDiscountInput, cap: discountCap });
     if (capProblem) {
-      Alert.alert('Discount above your limit', capProblem);
+      Alert.alert(t('ui.bizDash1.discountAboveYourLimit'), capProblem);
       return null;
     }
     const validity = validUntilFromChoice(offerValidDay, offerValidTime);
     if (validity.error) {
-      Alert.alert('End time', validity.error);
+      Alert.alert(t('ui.bizDash1.endTime'), validity.error);
       return null;
     }
     const availWindow = availableWindowFromChoice(offerAvailFrom, offerAvailUntil);
     if (availWindow.error) {
-      Alert.alert('Available window', availWindow.error);
+      Alert.alert(t('ui.bizDash1.availableWindow'), availWindow.error);
       return null;
     }
     return { validity, availWindow };
@@ -2449,10 +2456,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // over the same RPC. The RPC's own "already paid" rejection surfaces
   // here unchanged.
   function handleMarkNoShow(offerId) {
-    Alert.alert("Mark as didn't show up?", "This is only for your records. The customer isn't notified and nothing changes for them.", [
-      { text: 'Never mind', style: 'cancel' },
+    Alert.alert(t('ui.bizDash1.markAsDidntShowUp'), t('ui.bizDash1.thisIsOnlyForYour'), [
+      { text: t('ui.bizDash1.neverMind'), style: 'cancel' },
       {
-        text: "Didn't show up", onPress: async () => {
+        text: t('ui.bizDash1.didntShowUp'), onPress: async () => {
           setMarkingNoShowId(offerId);
           try {
             await markBusinessNoShow(offerId);
@@ -2467,10 +2474,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }
 
   function handleCancelReservation(offerId) {
-    Alert.alert('Cancel this reservation?', 'The customer will be notified and any held spot will be released.', [
-      { text: 'Never mind', style: 'cancel' },
+    Alert.alert(t('ui.bizDash1.cancelThisReservation'), t('ui.bizDash1.theCustomerWillBeNotified'), [
+      { text: t('ui.bizDash1.neverMind'), style: 'cancel' },
       {
-        text: 'Cancel Reservation', style: 'destructive', onPress: async () => {
+        text: t('ui.bizDash1.cancelReservation'), style: 'destructive', onPress: async () => {
           setCancellingReservationOfferId(offerId);
           try {
             await cancelBusinessReservation(offerId);
@@ -2578,11 +2585,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
   async function handleSavePackage() {
     if (!packageOccasionInput) {
-      Alert.alert('Pick an occasion', 'Say which occasion this package is for.');
+      Alert.alert(t('ui.bizDash1.pickAnOccasion'), t('ui.bizDash1.sayWhichOccasionThisPackage'));
       return;
     }
     if (!packageNameInput.trim()) {
-      Alert.alert('Add a name', 'Give this package a real name, e.g. "Birthday Package".');
+      Alert.alert(t('ui.bizDash1.addAName'), t('ui.bizDash1.giveThisPackageAReal'));
       return;
     }
     setSavingPackage(true);
@@ -2616,14 +2623,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
   function handleTogglePackageActive(pkg) {
     Alert.alert(
-      pkg.active ? 'Pause this package?' : 'Resume this package?',
+      pkg.active ? t('ui.bizDash1.pauseThisPackage') : t('ui.bizDash1.resumeThisPackage'),
       pkg.active
-        ? 'It will stop showing up as a match until you resume it.'
-        : 'It will start showing up as a match again.',
+        ? t('ui.bizDash1.itWillStopShowingUp')
+        : t('ui.bizDash1.itWillStartShowingUp'),
       [
-        { text: 'Never mind', style: 'cancel' },
+        { text: t('ui.bizDash1.neverMind'), style: 'cancel' },
         {
-          text: pkg.active ? 'Pause' : 'Resume',
+          text: pkg.active ? t('ui.bizDash1.pause') : t('ui.bizDash1.resume'),
           onPress: async () => {
             try {
               await setOccasionPackageActive(pkg.id, !pkg.active);
@@ -2638,10 +2645,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }
 
   function handleDeletePackage(pkg) {
-    Alert.alert('Delete this package?', `"${pkg.name}" will be permanently removed.`, [
-      { text: 'Never mind', style: 'cancel' },
+    Alert.alert(t('ui.bizDash1.deleteThisPackage'), t('ui.bizDash1.willBePermanentlyRemoved2', { name: pkg.name }), [
+      { text: t('ui.bizDash1.neverMind'), style: 'cancel' },
       {
-        text: 'Delete', style: 'destructive', onPress: async () => {
+        text: t('ui.bizDash1.delete'), style: 'destructive', onPress: async () => {
           try {
             await deleteOccasionPackage(pkg.id);
             await loadMyOccasionPackages();
@@ -2738,7 +2745,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     const category = prefill?.category ?? selectedPartner?.subcategory ?? null;
     const period = prefill?.dominantPeriod ?? null;
     setAvailabilityTitleInput(
-      category ? (period ? `${category} available this ${period}` : `${category} available`) : ''
+      category ? (period && ['morning', 'afternoon', 'evening'].includes(period) ? t(`ui.bizDash1.availableThis.${period}`, { category: categoryName(category, language) }) : t('ui.bizDash1.categoryAvailable', { category: categoryName(category, language) })) : ''
     );
     setAvailabilityDescriptionInput('');
     setAvailabilityCategoryInput(category);
@@ -2818,18 +2825,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // publishes with a stale, submission-time window.
   async function handlePostAvailability() {
     if (!availabilityTitleInput.trim()) {
-      Alert.alert('Add a title', 'Say what you have available, e.g. "4 empty tables tonight".');
+      Alert.alert(t('ui.bizDash1.addATitle'), t('ui.bizDash1.sayWhatYouHaveAvailable'));
       return;
     }
     const availCapProblem = discountCapProblem({ offerType: availabilityOfferTypeInput, pctInput: availabilityDiscountInput, cap: discountCap });
     if (availCapProblem) {
-      Alert.alert('Discount above your limit', availCapProblem);
+      Alert.alert(t('ui.bizDash1.discountAboveYourLimit'), availCapProblem);
       return;
     }
     if (availabilityWhenMode === 'scheduled') {
       const windowProblem = scheduledWindowProblem({ start: availabilityStart, end: availabilityEnd });
       if (windowProblem) {
-        Alert.alert('Pick a time', windowProblem);
+        Alert.alert(t('ui.bizDash1.pickATime'), windowProblem);
         return;
       }
     }
@@ -2867,14 +2874,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         });
       } else if (result.blocked) {
         Alert.alert(
-          "Couldn't Post",
-          "This content couldn't be published — it was flagged during a routine content check. If you think this is a mistake, please reach out to support."
+          t('ui.bizDash1.couldntPost'),
+          t('ui.bizDash1.thisContentCouldntBePublished')
         );
       } else {
         setPostAvailabilityModalVisible(false);
         Alert.alert(
-          'Submitted for Review',
-          'This availability posting is being reviewed before it goes live — this is usually quick.'
+          t('ui.bizDash1.submittedForReview'),
+          t('ui.bizDash1.thisAvailabilityPostingIsBeing')
         );
       }
     } catch (e) {
@@ -3083,7 +3090,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setConversationMessages([...page].reverse());
     } catch (e) {
       // A failed load must not read as an empty conversation.
-      Alert.alert("Couldn't load this conversation", 'Please try again.');
+      Alert.alert(t('ui.bizDash1.couldntLoadThisConversation'), t('ui.bizDash1.pleaseTryAgain'));
     }
   }
 
@@ -3219,7 +3226,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }
 
   function formatDate(iso) {
-    return formatDateTime(iso);
+    return displayDateTime(iso, language);
   }
 
   // Gap 3 of the merged gathering/date <-> business UX (see CLAUDE.md's
@@ -3236,20 +3243,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     const soloWhen = o.proposed_time
       ? formatDate(o.proposed_time)
       : br?.date
-      ? new Date(`${br.date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+      ? displayDay(`${br.date}T00:00:00`, language)
       : null;
     if (br?.gatherings) {
       // Item 69 (CLAUDE.md): a gathering's own host-chosen title could
       // just as easily carry a real name as any occasion-composed one --
       // get_business_opportunities() no longer returns it at all, only
       // the gathering's real (non-identity) interest_tag.
-      const tagLabel = br.gatherings.interest_tag ? `${br.gatherings.interest_tag} Gathering` : 'A Gathering';
-      return { kicker: '🎉 A Gathering', title: tagLabel, when: br.gatherings.scheduled_at ? formatDate(br.gatherings.scheduled_at) : soloWhen };
+      const tagLabel = br.gatherings.interest_tag ? t('ui.bizDash1.gathering', { interestTag: categoryName(br.gatherings.interest_tag, language) }) : t('ui.bizDash1.aGathering');
+      return { kicker: t('ui.bizDash1.aGathering2'), title: tagLabel, when: br.gatherings.scheduled_at ? formatDate(br.gatherings.scheduled_at) : soloWhen };
     }
     if (br?.is_match_request) {
-      return { kicker: '❤️ A Date', title: 'Two people planning to visit', when: soloWhen };
+      return { kicker: t('ui.bizDash1.aDate'), title: t('ui.bizDash1.twoPeoplePlanningToVisit'), when: soloWhen };
     }
-    return { kicker: '🙋 A Request', title: br?.summary ?? 'A visit', when: soloWhen };
+    return { kicker: t('ui.bizDash1.aRequest'), title: br?.summary ?? t('ui.bizDash1.aVisit'), when: soloWhen };
   }
 
   // Business moment — CLAUDE.md items 11/13: the real, honest version of
@@ -3277,7 +3284,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       if (!myUserId) return;
       setPostingMoment(true);
       await uploadBusinessMoment(myUserId, selectedPartner.id, media.uri, media.type);
-      showSuccessToast('Posted', 'Your moment is live for the next 24 hours — people nearby will see it under "Happening Nearby" on Discover.');
+      showSuccessToast(t('ui.bizDash1.posted'), t('ui.bizDash1.yourMomentIsLiveFor'));
     } catch (e) {
       const entitlementError = parseEntitlementError(e);
       if (entitlementError) {
@@ -3295,7 +3302,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // handler in this file.
   async function handlePostUpdate() {
     if (!updateTitle.trim()) {
-      return Alert.alert('Title required', 'Give your update a short title.');
+      return Alert.alert(t('ui.bizDash1.titleRequired'), t('ui.bizDash1.giveYourUpdateAShort'));
     }
     setPostingUpdate(true);
     try {
@@ -3305,17 +3312,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         setUpdateModalVisible(false);
         setUpdateTitle('');
         setUpdateBody('');
-        showSuccessToast('Sent', 'Your followers have been notified.');
+        showSuccessToast(t('ui.bizDash1.sent'), t('ui.bizDash1.yourFollowersHaveBeenNotified'));
       } else if (result.blocked) {
         Alert.alert(
-          "Couldn't Send",
-          "This content couldn't be sent — it was flagged during a routine content check. If you think this is a mistake, please reach out to support."
+          t('ui.bizDash1.couldntSend'),
+          t('ui.bizDash1.thisContentCouldntBeSent')
         );
       } else {
         setUpdateModalVisible(false);
         Alert.alert(
-          'Submitted for Review',
-          'This update is being reviewed before it’s sent to your followers — this is usually quick.'
+          t('ui.bizDash1.submittedForReview'),
+          t('ui.bizDash1.thisUpdateIsBeingReviewed')
         );
       }
     } catch (e) {
@@ -3326,15 +3333,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
   async function handleCreateOffer() {
     if (!newTitle.trim()) {
-      return Alert.alert('Title required', 'Give your offer a title.');
+      return Alert.alert(t('ui.bizDash1.titleRequired'), t('ui.bizDash1.giveYourOfferATitle'));
     }
     if (unlockEnabled) {
       const minMembers = parseInt(newUnlockMinMembers.trim(), 10);
       if (!minMembers || minMembers < 1) {
-        return Alert.alert('Minimum required', 'Enter how many members are needed to unlock this offer.');
+        return Alert.alert(t('ui.bizDash1.minimumRequired'), t('ui.bizDash1.enterHowManyMembersAre'));
       }
       if (!offerGatheringId && !unlockCommunityId) {
-        return Alert.alert('Pick a community', 'Choose which of your communities this offer unlocks with.');
+        return Alert.alert(t('ui.bizDash1.pickACommunity'), t('ui.bizDash1.chooseWhichOfYourCommunities'));
       }
     }
     setSubmitting(true);
@@ -3375,14 +3382,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadOffers(selectedPartner.id);
       } else if (result.blocked) {
         Alert.alert(
-          "Couldn't Publish",
-          "This content couldn't be published — it was flagged during a routine content check. If you think this is a mistake, please reach out to support."
+          t('ui.bizDash1.couldntPublish'),
+          t('ui.bizDash1.thisContentCouldntBePublished')
         );
       } else {
         setCreateModalVisible(false);
         Alert.alert(
-          'Submitted for Review',
-          'This offer is being reviewed before it goes live — this is usually quick.'
+          t('ui.bizDash1.submittedForReview'),
+          t('ui.bizDash1.thisOfferIsBeingReviewed')
         );
       }
     } catch (e) {
@@ -3406,11 +3413,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     try {
       const result = await confirmOfferRedemption(redemptionCodeInput);
       if (result.success) {
-        showSuccessToast('Confirmed', `${result.redeemedByName ?? 'This customer'}'s redemption of "${result.offerTitle}" is confirmed.`);
+        showSuccessToast(t('ui.bizDash1.confirmed'), (result.redeemedByName ? t('ui.bizDash1.sRedemptionOfIsConfirmed', { name: result.redeemedByName, offerTitle: result.offerTitle }) : t('ui.bizDash1.redemptionOfIsConfirmed', { offerTitle: result.offerTitle })));
         setRedemptionCodeInput('');
         loadOffers(selectedPartner.id);
       } else {
-        Alert.alert('Not confirmed', result.error || "That code doesn't match a pending redemption.");
+        Alert.alert(t('ui.bizDash1.notConfirmed'), result.error || t('ui.bizDash1.thatCodeDoesntMatchA'));
       }
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleConfirmRedemption() });
@@ -3423,17 +3430,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>Business Mode</Text>
+          <Text style={styles.title}>{t('ui.bizDash1.businessMode')}</Text>
           <TouchableOpacity
             onPress={() => setSection('inbox_modal')}
-            accessibilityLabel="Messages"
+            accessibilityLabel={t('ui.bizDash1.messagesA11y')}
             accessibilityRole="button"
           >
             <Text style={{ fontSize: 22 }}>💬</Text>
           </TouchableOpacity>
         </View>
-        <View style={styles.partnerSelector} accessibilityLabel={selectedPartner?.name ?? 'No business found for this account'}>
-          <Text style={styles.partnerSelectorText}>{selectedPartner?.name ?? 'No business found for this account'}</Text>
+        <View style={styles.partnerSelector} accessibilityLabel={selectedPartner?.name ?? t('ui.bizDash1.noBusinessFoundForThisA11y')}>
+          <Text style={styles.partnerSelectorText}>{selectedPartner?.name ?? t('ui.bizDash1.noBusinessFoundForThis')}</Text>
         </View>
       </View>
       {selectedPartner && (
@@ -3444,7 +3451,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
             setAddressModalVisible(true);
           }}
           activeOpacity={0.85}
-          accessibilityLabel={businessLocationNotice(selectedPartner)?.text ?? `Address: ${selectedPartner.address}, tap to edit`}
+          accessibilityLabel={businessLocationNotice(selectedPartner)?.text ?? t('ui.bizDash1.addressTapToEditA11y', { address: selectedPartner.address })}
           accessibilityRole="button"
         >
           <Text style={[styles.addressBannerText, businessLocationNotice(selectedPartner) && { color: colors.textPrimary }]}>
@@ -3472,7 +3479,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         {loading ? (
           <NLoader fullScreen={false} size="compact" kind="content" />
         ) : loadError ? (
-          <LoadErrorState message="Couldn't load your business dashboard." onRetry={loadMyPartner} />
+          <LoadErrorState message={t('ui.bizDash1.couldntLoadYourBusinessDashboard')} onRetry={loadMyPartner} />
         ) : (
           <>
             {section === 'home' && (
@@ -3490,13 +3497,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     nothing pending. */}
                 {pendingScreenings.length > 0 && (
                   <View style={styles.pendingReviewCard}>
-                    <Text style={styles.pendingReviewTitle}>⏳ Under Review</Text>
+                    <Text style={styles.pendingReviewTitle}>{t('ui.bizDash1.underReview')}</Text>
                     {pendingScreenings.map((s) => (
                       <Text key={s.id} style={styles.pendingReviewRow}>
-                        {TARGET_TYPE_LABELS[s.target_type] ?? s.target_type}:{' '}
-                        {s.source === 'resweep'
-                          ? 'flagged for a routine re-check — an admin is reviewing it.'
-                          : 'awaiting review, not live yet.'}
+                        {t(s.source === 'resweep' ? 'ui.bizDash1.flaggedForARoutineRe' : 'ui.bizDash1.awaitingReviewNotLiveYet', {
+                          type: TARGET_TYPE_LABELS[s.target_type] ? t(`ui.bizDash1.target.${s.target_type}`) : s.target_type,
+                        })}
                       </Text>
                     ))}
                   </View>
@@ -3504,37 +3510,37 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 {showWelcomeCard && (
                   <View style={styles.welcomeCard}>
                     <View style={styles.welcomeCardHeaderRow}>
-                      <Text style={styles.welcomeCardTitle}>👋 Welcome to your dashboard</Text>
-                      <TouchableOpacity onPress={dismissWelcomeCard} accessibilityLabel="Dismiss welcome card" accessibilityRole="button">
+                      <Text style={styles.welcomeCardTitle}>{t('ui.bizDash1.welcomeToYourDashboard')}</Text>
+                      <TouchableOpacity onPress={dismissWelcomeCard} accessibilityLabel={t('ui.bizDash1.dismissWelcomeCardA11y')} accessibilityRole="button">
                         <Text style={styles.welcomeCardClose}>✕</Text>
                       </TouchableOpacity>
                     </View>
                     <Text style={styles.welcomeCardBody}>
-                      Here's how to get the most out of Nearby, in order:
+                      {t('ui.bizDash1.heresHowToGetThe')}
                     </Text>
                     <TouchableOpacity
                       style={styles.welcomeCardStep}
                       onPress={() => setSection('requests')}
-                      accessibilityLabel="See real demand near you"
+                      accessibilityLabel={t('ui.bizDash1.seeRealDemandNearYouA11y')}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.welcomeCardStepText}>📊 See real demand near you →</Text>
+                      <Text style={styles.welcomeCardStepText}>{t('ui.bizDash1.seeRealDemandNearYou')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.welcomeCardStep}
                       onPress={() => setCreateModalVisible(true)}
-                      accessibilityLabel={offers.length > 0 ? 'Post an offer' : 'Post your first offer'}
+                      accessibilityLabel={offers.length > 0 ? t('ui.bizDash1.postAnOfferA11y') : t('ui.bizDash1.postYourFirstOfferA11y')}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.welcomeCardStepText}>🎁 {offers.length > 0 ? 'Post an offer' : 'Post your first offer'} →</Text>
+                      <Text style={styles.welcomeCardStepText}>🎁 {offers.length > 0 ? t('ui.bizDash1.postAnOffer') : t('ui.bizDash1.postYourFirstOffer')} →</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.welcomeCardStep}
                       onPress={openEditProfileModal}
-                      accessibilityLabel="Complete your business profile"
+                      accessibilityLabel={t('ui.bizDash1.completeYourBusinessProfileA11y')}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.welcomeCardStepText}>✏️ Complete your profile →</Text>
+                      <Text style={styles.welcomeCardStepText}>{t('ui.bizDash1.completeYourProfile')}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -3547,12 +3553,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <TouchableOpacity
                     style={styles.discoveryTeaser}
                     onPress={() => setSection('insights')}
-                    accessibilityLabel={`${countLabel(discoveryStats.views_last_30_days, 'person', 'people')} found you in the last 30 days — tap for the full breakdown`}
+                    accessibilityLabel={t('ui.bizDash1.foundYouInTheLastA11y', { count: discoveryStats.views_last_30_days })}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.discoveryTeaserText}>
-                      👀 {discoveryStats.views_last_30_days} people found you in the last 30 days
-                    </Text>
+                    <Text style={styles.discoveryTeaserText}>{t('ui.bizDash1.peopleFoundYouInThe', { count: discoveryStats.views_last_30_days })}</Text>
                     <Text style={styles.discoveryTeaserChevron}>›</Text>
                   </TouchableOpacity>
                 )}
@@ -3583,33 +3587,33 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   )[0];
                   let suggestion = null;
                   if (!selectedPartner.differentiator) {
-                    suggestion = { text: "Add what makes you different — it's one of the strongest signals people use to pick you.", onPress: () => setEditProfileModalVisible(true) };
+                    suggestion = { text: t('ui.bizDash1.addWhatMakesYouDifferent'), onPress: () => setEditProfileModalVisible(true) };
                   } else if ((selectedPartner.attributes ?? []).length === 0) {
                     // "Business Profile Phase 1" addendum -- a real, empty
                     // "Why People Choose Us" is genuinely worth flagging
                     // before the softer signals below it.
-                    suggestion = { text: "Tell us why people choose you — it shows up on your public profile.", onPress: () => setEditProfileModalVisible(true) };
+                    suggestion = { text: t('ui.bizDash1.tellUsWhyPeopleChoose'), onPress: () => setEditProfileModalVisible(true) };
                   } else if ((selectedPartner.accommodates_party_types ?? []).length === 0 && !fulfillmentPolicy) {
-                    suggestion = { text: "Tell Nearby what you can accommodate so we send you requests that actually fit.", onPress: () => setSection('business') };
+                    suggestion = { text: t('ui.bizDash1.tellNearbyWhatYouCan'), onPress: () => setSection('business') };
                   } else if (!isAvailabilityPulseFresh(selectedPartner.availability_pulse_updated_at)) {
-                    suggestion = { text: "Set your availability so people know you're open right now.", onPress: () => setSection('business') };
+                    suggestion = { text: t('ui.bizDash1.setYourAvailabilitySoPeople'), onPress: () => setSection('business') };
                   } else if (pendingCount > 0) {
-                    suggestion = { text: `${pendingCount} new opportunit${pendingCount === 1 ? 'y fits' : 'ies fit'} your business — view ${pendingCount === 1 ? 'it' : 'them'}.`, onPress: () => setSection('requests') };
+                    suggestion = { text: t('ui.bizDash1.newOpportunitYourBusinessView', { count: pendingCount }), onPress: () => setSection('requests') };
                   } else if (bestGap) {
                     const realCount = Number(bestGap.request_count);
                     const gapText = realCount > 0
-                      ? `${realCount} ${realCount === 1 ? 'person' : 'people'} nearby wanted ${bestGap.category} — something you don't currently offer.`
-                      : `${bestGap.unmet_intent_count} recent ${Number(bestGap.unmet_intent_count) === 1 ? 'search' : 'searches'} nearby for ${bestGap.category} — something you don't currently offer.`;
+                      ? t('ui.bizDash1.nearbyWantedSomethingYouDont', { count: realCount, category: categoryName(bestGap.category, language) })
+                      : t('ui.bizDash1.recentNearbyForSomethingYou', { count: Number(bestGap.unmet_intent_count), category: categoryName(bestGap.category, language) });
                     suggestion = { text: gapText, onPress: () => openPostAvailabilityModal({ category: bestGap.category, dominantPeriod: bestGap.dominant_period }) };
                   }
                   return (
                     <View style={styles.briefCard}>
-                      <Text style={styles.sectionHeader}>Today at {selectedPartner.name}</Text>
+                      <Text style={styles.sectionHeader}>{t('ui.bizDash1.todayAt', { name: selectedPartner.name })}</Text>
                       {(() => {
                         const glance = dashboardGlance(opportunities, estimatedOwed);
                         return (
                           <View style={{ marginBottom: spacing.sm }}>
-                            <Text style={styles.notesLabel}>Today</Text>
+                            <Text style={styles.notesLabel}>{t('ui.bizDash1.today')}</Text>
                             <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                               {glance.today.map((item) => (
                                 <TouchableOpacity
@@ -3625,7 +3629,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             </View>
                             {glance.upcoming.length > 0 && (
                               <>
-                                <Text style={styles.notesLabel}>Upcoming</Text>
+                                <Text style={styles.notesLabel}>{t('ui.bizDash1.upcoming')}</Text>
                                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                                   {glance.upcoming.map((item) => (
                                     <TouchableOpacity key={item.key} style={styles.chip} onPress={() => setSection(item.section)} accessibilityLabel={item.text} accessibilityRole="button">
@@ -3637,7 +3641,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             )}
                             {glance.month.length > 0 && (
                               <>
-                                <Text style={styles.notesLabel}>This month</Text>
+                                <Text style={styles.notesLabel}>{t('ui.bizDash1.thisMonth')}</Text>
                                 <Text style={styles.offerDescription}>{glance.month.map((m) => m.text).join(' · ')}</Text>
                               </>
                             )}
@@ -3648,19 +3652,19 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         <>
                           {totalDemand > 0 && (
                             <Text style={styles.offerDescription}>
-                              {totalDemand} {totalDemand === 1 ? 'person is' : 'people are'} looking for something nearby that you offer.
+                              {t('ui.bizDash1.peopleLookingForWhatYouOffer', { count: totalDemand })}
                             </Text>
                           )}
                           {bestDemand && bestDemand.request_count > 0 && (
-                            <TouchableOpacity onPress={() => setSection('requests')} accessibilityLabel="View your best opportunity" accessibilityRole="button">
+                            <TouchableOpacity onPress={() => setSection('requests')} accessibilityLabel={t('ui.bizDash1.viewYourBestOpportunityA11y')} accessibilityRole="button">
                               <Text style={styles.briefBestOpportunity}>
-                                🎯 Your best opportunity: {bestDemand.category} ({bestDemand.request_count} {Number(bestDemand.request_count) === 1 ? 'request' : 'requests'})
+                                {t('ui.bizDash1.yourBestOpportunity')}{' '}{bestDemand.category} ({bestDemand.request_count} {Number(bestDemand.request_count) === 1 ? 'request' : 'requests'})
                               </Text>
                             </TouchableOpacity>
                           )}
                         </>
                       ) : (
-                        <Text style={styles.offerDescription}>No real demand nearby yet — this fills in as people ask for things you offer.</Text>
+                        <Text style={styles.offerDescription}>{t('ui.bizDash1.noRealDemandNearbyYet')}</Text>
                       )}
                       {suggestion && (
                         <TouchableOpacity onPress={suggestion.onPress} style={{ marginTop: spacing.sm }} accessibilityLabel={suggestion.text} accessibilityRole="button">
@@ -3672,42 +3676,42 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 })()}
                 {stats ? (
                 <>
-                  <Text style={styles.sectionHeader}>Community Health</Text>
+                  <Text style={styles.sectionHeader}>{t('ui.bizDash1.communityHealth')}</Text>
                   <View style={styles.statsGrid}>
                     <View style={styles.statCard}>
                       <Text style={styles.statNumber}>{stats.total_followers}</Text>
-                      <Text style={styles.statLabel}>Followers</Text>
+                      <Text style={styles.statLabel}>{t('ui.bizDash1.followers')}</Text>
                     </View>
                     <View style={styles.statCard}>
                       <Text style={styles.statNumber}>{stats.followers_this_month}</Text>
-                      <Text style={styles.statLabel}>New This Month</Text>
+                      <Text style={styles.statLabel}>{t('ui.bizDash1.newThisMonth')}</Text>
                     </View>
                     <View style={styles.statCard}>
                       <Text style={styles.statNumber}>{stats.total_redemptions}</Text>
-                      <Text style={styles.statLabel}>Total Redemptions</Text>
+                      <Text style={styles.statLabel}>{t('ui.bizDash1.totalRedemptions')}</Text>
                     </View>
                     <View style={styles.statCard}>
                       <Text style={styles.statNumber}>{stats.redemptions_this_month}</Text>
-                      <Text style={styles.statLabel}>This Month</Text>
+                      <Text style={styles.statLabel}>{t('ui.bizDash1.thisMonth2')}</Text>
                     </View>
                     <View style={styles.statCard}>
                       <Text style={styles.statNumber}>{stats.repeat_redeemers}</Text>
-                      <Text style={styles.statLabel}>Repeat Customers</Text>
+                      <Text style={styles.statLabel}>{t('ui.bizDash1.repeatCustomers')}</Text>
                     </View>
                   </View>
                   <Text style={styles.helperText}>
-                    These reflect people who opted in and genuinely engaged with your offers — not raw traffic or impressions.
+                    {t('ui.bizDash1.theseReflectPeopleWhoOpted')}
                   </Text>
                   {growth && (growth.redemptions_growth_pct !== null || growth.followers_growth_pct !== null) && (
                     <View style={styles.growthCard}>
                       {growth.redemptions_growth_pct !== null && (
                         <Text style={styles.growthLine}>
-                          Redemptions {growth.redemptions_growth_pct >= 0 ? '+' : ''}{growth.redemptions_growth_pct}% vs. last month
+                          {t('ui.bizDash1.redemptionsVsLastMonth', { pct: `${growth.redemptions_growth_pct >= 0 ? '+' : ''}${growth.redemptions_growth_pct}` })}
                         </Text>
                       )}
                       {growth.followers_growth_pct !== null && (
                         <Text style={styles.growthLine}>
-                          Followers {growth.followers_growth_pct >= 0 ? '+' : ''}{growth.followers_growth_pct}% vs. last month
+                          {t('ui.bizDash1.followersVsLastMonth', { pct: `${growth.followers_growth_pct >= 0 ? '+' : ''}${growth.followers_growth_pct}` })}
                         </Text>
                       )}
                     </View>
@@ -3715,7 +3719,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
                   {needsAttention.length > 0 && (
                     <>
-                      <Text style={styles.sectionHeader}>Needs Attention</Text>
+                      <Text style={styles.sectionHeader}>{t('ui.bizDash1.needsAttention')}</Text>
                       {needsAttention.map((task, i) => (
                         <TouchableOpacity
                           key={i}
@@ -3733,10 +3737,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <TouchableOpacity
                     style={styles.postUpdateButton}
                     onPress={() => setUpdateModalVisible(true)}
-                    accessibilityLabel="Post an update to your followers"
+                    accessibilityLabel={t('ui.bizDash1.postAnUpdateToYourA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.postUpdateButtonText}>📣 Post Update to Followers</Text>
+                    <Text style={styles.postUpdateButtonText}>{t('ui.bizDash1.postUpdateToFollowers')}</Text>
                   </TouchableOpacity>
 
                   {/* Phase 7 (Business Web, CLAUDE.md) -- real device camera
@@ -3747,15 +3751,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       style={[styles.postUpdateButton, { marginTop: spacing.sm, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.primary }]}
                       onPress={handlePostMoment}
                       disabled={postingMoment}
-                      accessibilityLabel="Post a real-time photo or video moment, visible to people nearby for 24 hours"
+                      accessibilityLabel={t('ui.bizDash1.postARealTimePhotoA11y')}
                       accessibilityRole="button"
                     >
                       {postingMoment ? (
                         <ActivityIndicator color={colors.primary} />
                       ) : entitlements && !hasEntitlement(entitlements, 'business_moments') ? (
-                        <Text style={[styles.postUpdateButtonText, { color: colors.primary }]}>🔒 Post a Moment — Growth feature</Text>
+                        <Text style={[styles.postUpdateButtonText, { color: colors.primary }]}>{t('ui.bizDash1.postAMomentGrowthFeature')}</Text>
                       ) : (
-                        <Text style={[styles.postUpdateButtonText, { color: colors.primary }]}>🔴 Post a Moment (visible 24h)</Text>
+                        <Text style={[styles.postUpdateButtonText, { color: colors.primary }]}>{t('ui.bizDash1.postAMomentVisible24h')}</Text>
                       )}
                     </TouchableOpacity>
                   )}
@@ -3763,20 +3767,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   {selectedPartner && (
                     <TouchableOpacity
                       onPress={() => navigation.navigate('BusinessProfile', { partnerId: selectedPartner.id })}
-                      accessibilityLabel="View your public business profile"
+                      accessibilityLabel={t('ui.bizDash1.viewYourPublicBusinessProfileA11y')}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.viewProfileLink}>👀 View Public Profile →</Text>
+                      <Text style={styles.viewProfileLink}>{t('ui.bizDash1.viewPublicProfile')}</Text>
                     </TouchableOpacity>
                   )}
                   {selectedPartner && (
                     <TouchableOpacity
                       onPress={() => setQrModalVisible(true)}
-                      accessibilityLabel="Share your QR code"
+                      accessibilityLabel={t('ui.bizDash1.shareYourQrCodeA11y')}
                       accessibilityRole="button"
                       style={{ marginTop: spacing.sm }}
                     >
-                      <Text style={styles.viewProfileLink}>📱 Share Your QR Code →</Text>
+                      <Text style={styles.viewProfileLink}>{t('ui.bizDash1.shareYourQrCode')}</Text>
                     </TouchableOpacity>
                   )}
                 </>
@@ -3787,12 +3791,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <View style={[styles.gatheringRow, { marginTop: spacing.lg }]}>
                   <TouchableOpacity
                     onPress={() => setOpenTool(openTool ? null : 'menu')}
-                    accessibilityLabel="More tools"
+                    accessibilityLabel={t('ui.bizDash1.moreToolsA11y')}
                     accessibilityRole="button"
                     accessibilityState={{ expanded: !!openTool }}
                   >
-                    <Text style={styles.offerTitle}>More tools {openTool ? '⌄' : '›'}</Text>
-                    {!openTool && <Text style={styles.breakdownText}>AI Assistant · Analytics · Weather · Demand Signals</Text>}
+                    <Text style={styles.offerTitle}>{t('ui.bizDash1.moreTools')}{' '}{openTool ? '⌄' : '›'}</Text>
+                    {!openTool && <Text style={styles.breakdownText}>{t('ui.bizDash1.aiAssistantAnalyticsWeatherDemand')}</Text>}
                   </TouchableOpacity>
                   {!!openTool && MORE_TOOLS.map((t) => (
                     <TouchableOpacity
@@ -3817,7 +3821,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 </View>
               )}
               {tool('weather') && !(businessWeather && (isWeatherIndoorBiased(businessWeather) || isWeatherOutdoorBiased(businessWeather))) && (
-                <Text style={styles.emptyText}>Nothing about today's weather changes what you should do right now.</Text>
+                <Text style={styles.emptyText}>{t('ui.bizDash1.nothingAboutTodaysWeatherChanges')}</Text>
               )}
               </>
             )}
@@ -3846,10 +3850,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     onPress={() => {
                       navigation.navigate('CreateGathering');
                     }}
-                    accessibilityLabel="Host a gathering"
+                    accessibilityLabel={t('ui.bizDash1.hostAGatheringA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.smallActionButtonText}>+ Host a Gathering</Text>
+                    <Text style={styles.smallActionButtonText}>{t('ui.bizDash1.hostAGathering')}</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -3865,11 +3869,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         navigation.navigate('GatheringDetail', { gatheringId: g.id });
                       }}
                       activeOpacity={0.85}
-                      accessibilityLabel={`View and manage ${g.title}`}
+                      accessibilityLabel={t('ui.bizDash1.viewAndManageA11y', { title: g.title })}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.offerTitle}>{g.title}{g.recurrence_rule ? ` (${g.recurrence_rule})` : ''}</Text>
-                      <Text style={styles.offerDescription}>{isUpcoming ? 'Next: ' : 'Last: '}{formatDate(g.scheduled_at)}</Text>
+                      <Text style={styles.offerTitle}>{g.title}{g.recurrence_rule ? ` (${t(`ui.gatheringOptions.repeat.${g.recurrence_rule}`)})` : ''}</Text>
+                      <Text style={styles.offerDescription}>{t(isUpcoming ? 'ui.bizDash1.nextDate' : 'ui.bizDash1.lastDate', { date: formatDate(g.scheduled_at) })}</Text>
                       {attachedOffer ? (
                         <Text style={styles.breakdownText}>🎁 {attachedOffer.title}</Text>
                       ) : isUpcoming && (
@@ -3878,16 +3882,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             setOfferGatheringId(g.id);
                             setCreateModalVisible(true);
                           }}
-                          accessibilityLabel={`Attach a reward to ${g.title}`}
+                          accessibilityLabel={t('ui.bizDash1.attachARewardToA11y', { title: g.title })}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.attachRewardText}>+ Attach Reward</Text>
+                          <Text style={styles.attachRewardText}>{t('ui.bizDash1.attachReward')}</Text>
                         </TouchableOpacity>
                       )}
                       {breakdown && breakdown.total_attending > 0 && (
-                        <Text style={styles.breakdownText}>
-                          {breakdown.total_attending} attending · {breakdown.new_attendees} new to you · {breakdown.returning_attendees} returning
-                        </Text>
+                        <Text style={styles.breakdownText}>{t('ui.bizDash1.attendingNewToYouReturning', { totalAttending: breakdown.total_attending, newAttendees: breakdown.new_attendees, returningAttendees: breakdown.returning_attendees })}</Text>
                       )}
                     </TouchableOpacity>
                   );
@@ -3899,32 +3901,32 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <>
                 {partnershipRequests.length > 0 && (
                   <>
-                    <Text style={styles.sectionHeader}>Partnership Requests</Text>
+                    <Text style={styles.sectionHeader}>{t('ui.bizDash1.partnershipRequests')}</Text>
                     {partnershipRequests.map((r) => (
                       <View key={r.id} style={styles.gatheringRow}>
                         <Text style={styles.offerTitle}>
-                          {r.requesterName ?? 'Someone'} wants to partner {r.targetType === 'gathering' ? 'for' : 'with'} {r.targetTitle ?? `their ${r.targetType}`}
+                          {t(r.targetType === 'gathering' ? 'ui.bizDash1.wantsToPartnerForGathering' : 'ui.bizDash1.wantsToPartnerWithCommunity', { name: r.requesterName ?? t('ui.bizDash1.someone'), title: r.targetTitle ?? t(r.targetType === 'gathering' ? 'ui.bizDash1.theirGathering' : 'ui.bizDash1.theirCommunity') })}
                         </Text>
-                        <Text style={styles.breakdownText}>{r.targetType === 'gathering' ? '🎉 Gathering' : '👥 Community'}</Text>
+                        <Text style={styles.breakdownText}>{r.targetType === 'gathering' ? t('ui.bizDash1.gathering2') : t('ui.bizDash1.community')}</Text>
                         {r.message ? <Text style={styles.offerDescription}>"{r.message}"</Text> : null}
                         <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
                           <TouchableOpacity
                             style={[styles.smallActionButton, { backgroundColor: colors.primary, marginRight: spacing.sm }]}
                             onPress={() => handleRespondToPartnershipRequest(r.id, true)}
                             disabled={respondingToRequestId === r.id}
-                            accessibilityLabel={`Approve partnership request from ${r.requesterName ?? 'requester'}`}
+                            accessibilityLabel={t('ui.bizDash1.approvePartnershipRequestFromA11y', { requesterName: r.requesterName ?? 'requester' })}
                             accessibilityRole="button"
                           >
-                            {respondingToRequestId === r.id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.smallActionButtonText}>Approve</Text>}
+                            {respondingToRequestId === r.id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.smallActionButtonText}>{t('ui.bizDash1.approve')}</Text>}
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
                             onPress={() => handleRespondToPartnershipRequest(r.id, false)}
                             disabled={respondingToRequestId === r.id}
-                            accessibilityLabel={`Decline partnership request from ${r.requesterName ?? 'requester'}`}
+                            accessibilityLabel={t('ui.bizDash1.declinePartnershipRequestFromA11y', { requesterName: r.requesterName ?? 'requester' })}
                             accessibilityRole="button"
                           >
-                            <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Decline</Text>
+                            <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash1.decline')}</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -3947,10 +3949,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       onPress={() => {
                         navigation.navigate('CreateCommunity');
                       }}
-                      accessibilityLabel="Create a community"
+                      accessibilityLabel={t('ui.bizDash1.createACommunityA11y')}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.smallActionButtonText}>+ Create a Community</Text>
+                      <Text style={styles.smallActionButtonText}>{t('ui.bizDash1.createACommunity')}</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
@@ -3962,11 +3964,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         navigation.navigate('CommunityDetail', { communityId: c.id, communityName: c.name });
                       }}
                       activeOpacity={0.85}
-                      accessibilityLabel={`View and manage ${c.name}`}
+                      accessibilityLabel={t('ui.bizDash1.viewAndManageA11y2', { name: c.name })}
                       accessibilityRole="button"
                     >
                       <Text style={styles.offerTitle}>{c.name}</Text>
-                      <Text style={styles.breakdownText}>{countLabel(c.memberCount, 'member') ?? 'Members not loaded'}</Text>
+                      <Text style={styles.breakdownText}>{c.memberCount != null ? t('ui.bizDash1.memberCount', { count: c.memberCount }) : t('ui.bizDash1.membersNotLoaded')}</Text>
                       {c.description ? <Text style={styles.offerDescription}>{c.description}</Text> : null}
                     </TouchableOpacity>
                   ))
@@ -3974,13 +3976,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
                 {topMembers.length > 0 && (
                   <>
-                    <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Most Engaged</Text>
+                    <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash1.mostEngaged')}</Text>
                     {topMembers.map((m, i) => (
                       <TouchableOpacity
                         key={m.user_id}
                         style={styles.gatheringRow}
                         onPress={() => handleToggleMemberHistory(m)}
-                        accessibilityLabel={`${m.display_name}, ${countLabel(m.gatherings_attended, 'gathering')} attended, tap to see visit history`}
+                        accessibilityLabel={t('ui.bizDash1.attendedTapToSeeVisitA11y', { name: m.display_name, count: m.gatherings_attended })}
                         accessibilityRole="button"
                       >
                         <Text style={styles.offerTitle}>{i + 1}. {m.display_name}</Text>
@@ -3998,29 +4000,29 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             )}
                             <TouchableOpacity
                               onPress={() => handleMessageMember(m)}
-                              accessibilityLabel={`Message ${m.display_name}`}
+                              accessibilityLabel={t('ui.bizDash1.messageA11y', { name: m.display_name })}
                               accessibilityRole="button"
                             >
-                              <Text style={styles.messageMemberLink}>💬 Message {m.display_name}</Text>
+                              <Text style={styles.messageMemberLink}>{t('ui.bizDash1.message', { name: m.display_name })}</Text>
                             </TouchableOpacity>
-                            <Text style={styles.notesLabel}>Notes (only you can see this)</Text>
+                            <Text style={styles.notesLabel}>{t('ui.bizDash1.notesOnlyYouCanSee')}</Text>
                             <TextInput
                               style={styles.notesInput}
-                              placeholder="e.g. Regular, prefers the window table..."
+                              placeholder={t('ui.bizDash1.eGRegularPrefersThe')}
                               placeholderTextColor={colors.textTertiary}
                               value={noteDraft}
                               onChangeText={setNoteDraft}
                               multiline
-                              accessibilityLabel={`Notes about ${m.display_name}`}
+                              accessibilityLabel={t('ui.bizDash1.notesAboutA11y', { name: m.display_name })}
                             />
                             <TextInput
                               style={[styles.notesInput, { marginTop: spacing.xs }]}
-                              placeholder="Tags, comma separated (e.g. vip, regular)"
+                              placeholder={t('ui.bizDash1.tagsCommaSeparatedEG')}
                               placeholderTextColor={colors.textTertiary}
                               value={tagsDraft}
                               onChangeText={setTagsDraft}
                               autoCapitalize="none"
-                              accessibilityLabel={`Tags for ${m.display_name}`}
+                              accessibilityLabel={t('ui.bizDash1.tagsForA11y', { name: m.display_name })}
                             />
                             <TouchableOpacity
                               onPress={() => handleSaveNote(m)}
@@ -4780,13 +4782,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <Text style={styles.insightLine}>
                     🔗 {discoveryStats.deep_link_views} via your shared link or QR code ({discoveryStats.pct_via_deep_link ?? 0}%)
                   </Text>
-                  <Text style={styles.insightLine}>
-                    🔎 {discoveryStats.in_app_views} browsing or searching inside Nearby
-                  </Text>
+                  <Text style={styles.insightLine}>{t('ui.bizDash1.browsingOrSearchingInsideNearby', { inAppViews: discoveryStats.in_app_views })}</Text>
                   {discoveryStats.intent_match_views > 0 && (
-                    <Text style={styles.insightLine}>
-                      💡 {discoveryStats.intent_match_views} found you because of what they asked Nearby for
-                    </Text>
+                    <Text style={styles.insightLine}>{t('ui.bizDash1.foundYouBecauseOfWhat', { intentMatchViews: discoveryStats.intent_match_views })}</Text>
                   )}
                 </View>
               ) : (
@@ -4993,9 +4991,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <View key={row.group_key} style={styles.offerCard}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.offerTitle}>{row.group_label}</Text>
-                      <Text style={styles.offerDescription}>
-                        {row.offer_count} offered · {row.viewed_count} viewed · {row.accepted_count} accepted · {row.completed_count} redeemed
-                      </Text>
+                      <Text style={styles.offerDescription}>{t('ui.bizDash1.offeredViewedAcceptedRedeemed', { offerCount: row.offer_count, viewedCount: row.viewed_count, acceptedCount: row.accepted_count, completedCount: row.completed_count })}</Text>
                     </View>
                   </View>
                 ))
@@ -6855,9 +6851,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 );
               })()}
               {offerPrefilledFrom && (
-                <Text style={[styles.breakdownText, { color: colors.info, fontWeight: '600', marginBottom: spacing.md }]}>
-                  ✨ Started from your "{offerPrefilledFrom}" package -- edit anything, then send.
-                </Text>
+                <Text style={[styles.breakdownText, { color: colors.info, fontWeight: '600', marginBottom: spacing.md }]}>{t('ui.bizDash1.startedFromYourPackageEdit', { offerPrefilledFrom: offerPrefilledFrom })}</Text>
               )}
               <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
                 Never just a discount -- offer whatever fits: your normal price, a discount, a
@@ -6875,9 +6869,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   accessibilityRole="button"
                   accessibilityLabel={`Use your own package: ${matchingOccasionPackage.name}`}
                 >
-                  <Text style={styles.offerDescription}>
-                    🎁 Use your own "{matchingOccasionPackage.name}" package -- title, price and included items filled in for you
-                  </Text>
+                  <Text style={styles.offerDescription}>{t('ui.bizDash1.useYourOwnPackageTitle', { name: matchingOccasionPackage.name })}</Text>
                 </TouchableOpacity>
               )}
               {/* Business Intelligence Phase 8: unlike missed-match/category-outcomes,
@@ -7076,9 +7068,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     accessibilityLabel="Discount percent"
                   />
                   {discountCap != null && (
-                    <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>
-                      Your policy caps discounts at {discountCap}% -- Nearby won't send anything higher.
-                    </Text>
+                    <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>{t('ui.bizDash1.yourPolicyCapsDiscountsAt', { discountCap: discountCap })}</Text>
                   )}
                 </>
               )}
@@ -7541,9 +7531,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     accessibilityLabel="Discount percent"
                   />
                   {discountCap != null && (
-                    <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>
-                      Your policy caps discounts at {discountCap}% -- Nearby won't send anything higher.
-                    </Text>
+                    <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>{t('ui.bizDash1.yourPolicyCapsDiscountsAt', { discountCap: discountCap })}</Text>
                   )}
                 </>
               )}

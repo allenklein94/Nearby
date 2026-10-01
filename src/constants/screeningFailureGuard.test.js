@@ -15,5 +15,5 @@ test('the classifier times out and logs the real technical cause (status + body)
   expect(cls).toMatch(/SERVICE_FAILURE unexpected Anthropic response', anthropicResponse\.status/);
 });
 test('the dashboard offer prompt reads "Post an offer" once an offer exists', () => {
-  expect(dash).toMatch(/offers\.length > 0 \? 'Post an offer' : 'Post your first offer'/);
+  expect(dash).toMatch(/offers\.length > 0 \? t\('ui\.bizDash1\.postAnOffer'\) : t\('ui\.bizDash1\.postYourFirstOffer'\)/);
 });
