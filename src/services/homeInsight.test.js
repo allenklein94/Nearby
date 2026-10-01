@@ -26,9 +26,11 @@ describe('getHomeInsight', () => {
   test('every insight line carries a CTA with a destination', () => {
     const f = getHomeInsight({ friendsActivity: [1, 2] }, evening);
     expect(f.text).toBe('2 of your friends are already making plans.');
-    expect(f.cta.params.initialTypeTab).toBe('gatherings');
-    expect(getHomeInsight({ happeningNow: [1] }, evening).cta.screen).toBe('Discover');
-    expect(getHomeInsight({ happeningNow: [1] }, evening).text).toBe('1 thing starts near you in the next 30 minutes.');
+    // a set of specific gatherings: one opens it, several are listed (destination contract, item 136)
+    const two = getHomeInsight({ friendsActivity: [{ id: 'a' }, { id: 'b' }] }, evening);
+    expect(two.cta.destination.kind).toBe('inline');
+    expect(getHomeInsight({ happeningNow: [{ id: 'g' }] }, evening).cta.destination.screen).toBe('GatheringDetail');
+    expect(getHomeInsight({ happeningNow: [{ id: 'g' }] }, evening).text).toBe('1 thing starts near you in the next 30 minutes.');
   });
 
   test('nothing substantiated -> nothing shown', () => {

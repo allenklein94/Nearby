@@ -71,7 +71,8 @@ export function intentResultDestination(item, { typedText, classifyResult, submi
     case 'community': return item.id ? { kind: 'navigate', screen: 'CommunityDetail', params: { communityId: item.id, ...(item.title ? { communityName: item.title } : {}) } } : null;
     case 'business': return item.id ? { kind: 'navigate', screen: 'BusinessProfile', params: { partnerId: item.id } } : null;
     case 'business_request': return item.id ? { kind: 'navigate', screen: 'BusinessRequestDetail', params: { requestId: item.id } } : null;
-    case 'business_offer': return item.requestId ? { kind: 'navigate', screen: 'BusinessRequestDetail', params: { requestId: item.requestId } } : null;
+    // an offer opens its request's detail ON that offer (destination contract, item 136)
+    case 'business_offer': return item.requestId ? { kind: 'navigate', screen: 'BusinessRequestDetail', params: { requestId: item.requestId, ...(item.id ? { focusOfferId: item.id } : {}) } } : null;
     // A Google place: directions only (from its own coordinates, else its address); nothing known = no destination.
     case 'place': {
       const url = buildDirectionsUrl({ latitude: item.latitude, longitude: item.longitude, address: item.address, placeId: item.placeId });

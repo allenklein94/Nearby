@@ -160,7 +160,7 @@ describe('perks, communities, requests and offers', () => {
       .toEqual({ kind: 'navigate', screen: 'BusinessRequestDetail', params: { requestId: 'r1' } });
     const offer = (over) => recommendationContext(contextItem('business_offer', { id: 'o1', request_id: 'r1', status: 'offered', offer_title: 'Latte + pastry', price: 8, ...over }));
     expect(offer({}).action).toEqual({ kind: 'view_offer', label: 'View Offer' });
-    expect(offer({}).destination.params).toEqual({ requestId: 'r1' });
+    expect(offer({}).destination.params).toEqual({ requestId: 'r1', focusOfferId: 'o1' });
     expect(offer({ valid_until: at(9, 0, -1) }).action).toBeNull(); // expired
     expect(offer({ status: 'declined' }).action).toBeNull();
     expect(offer({ request_id: null }).destination).toBeNull();
@@ -271,7 +271,7 @@ describe('Activity rows (transactional: destination + action, never a reason)', 
   it('an open offer reply shows View Offer and opens its request', () => {
     const c = row(offered);
     expect(c.action).toEqual({ kind: 'view_offer', label: 'View Offer' });
-    expect(c.destination).toEqual({ kind: 'navigate', screen: 'BusinessRequestDetail', params: { requestId: 'r1' } });
+    expect(c.destination).toEqual({ kind: 'navigate', screen: 'BusinessRequestDetail', params: { requestId: 'r1', focusOfferId: 'o1' } });
     expect(c.reason).toBeNull(); // a reason passed to a transactional row is dropped
   });
   it('plain availability is not called an offer', () => {

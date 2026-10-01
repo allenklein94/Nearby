@@ -878,6 +878,16 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // rather than inventing a second invite mechanism.
   const scrollViewRef = useRef(null);
   const organizersSectionYRef = useRef(0);
+  // Destination contract (item 136): an offer row or offer push opens this screen ON that offer -- scrolled to it once and
+  // outlined, so "Coastal Coffee made you an offer" lands on Coastal Coffee's offer, not the top of the request.
+  const focusOfferId = route.params?.focusOfferId ?? null;
+  const focusScrolledRef = useRef(false);
+  function onOfferLayout(offerId, e) {
+    if (!focusOfferId || offerId !== focusOfferId || focusScrolledRef.current) return;
+    focusScrolledRef.current = true;
+    const y = e.nativeEvent.layout.y;
+    requestAnimationFrame(() => scrollViewRef.current?.scrollTo?.({ y: Math.max(y - spacing.lg, 0), animated: true }));
+  }
   function goInviteFromAchievementCard() {
     setShowOrganizers(true);
     requestAnimationFrame(() => {
@@ -1281,7 +1291,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             const stats = partnerStats[o.partner_id];
             const reputationLine = formatPartnerReliabilityLine(stats?.reputation, stats?.responseTime);
             return (
-            <StaggeredReveal key={o.id} index={offerIndex} style={styles.offerCard}>
+            <StaggeredReveal key={o.id} index={offerIndex} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
             <View>
               <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? t('ui.requestDetail.aBusiness')}</Text>
               {/* Item 92 ("Businesses should be able to respond specifically to
@@ -1841,6 +1851,8 @@ const getStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.md,
   },
+  // the offer this screen was opened on (destination contract): selected state, so coral per the colour rule
+  offerCardFocused: { borderColor: colors.primary, borderWidth: 2 },
   offerPartnerName: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
   // Item 92 ("Businesses should be able to respond specifically to the
   // occasion", CLAUDE.md): a real, named offer reads as its own headline

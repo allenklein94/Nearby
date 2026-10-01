@@ -4,7 +4,7 @@ import { translate, tr } from '../i18n/translate';
 import { displayHeroWhen } from '../i18n/display';
 import { categoryName } from '../i18n/categoryNames';
 import { quickOptionLabel } from '../i18n/optionLabels';
-import { resultRowView } from '../utils/recommendationContext';
+import { resultRowView, contextItem } from '../utils/recommendationContext';
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
@@ -223,6 +223,7 @@ export default function HomeScreen({ navigation }) {
   const [bestPickCoverUrl, setBestPickCoverUrl] = useState(null);
   const [myName, setMyName] = useState('');
   const [myUserId, setMyUserId] = useState(null);
+  const [insightExpanded, setInsightExpanded] = useState(null); // which insight line's gatherings are listed inline (item 136)
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [offersLoadFailed, setOffersLoadFailed] = useState(false);
@@ -1874,16 +1875,43 @@ export default function HomeScreen({ navigation }) {
             <View style={{ marginBottom: spacing.lg }}>
               <Text style={[styles.insightLine, { marginBottom: insight.basis ? 2 : 0 }]}>{insight.text}</Text>
               {insight.basis ? <Text style={styles.trendingMeta}>{insight.basis}</Text> : null}
-              {insight.cta ? (
-                <TouchableOpacity
-                  style={[styles.rowCta, { alignSelf: 'flex-start', marginTop: spacing.xs }]}
-                  onPress={() => navigation.navigate(insight.cta.screen, insight.cta.params)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${insight.cta.label}. ${insight.basis ?? ''}`}
-                >
-                  <Text style={styles.rowCtaText}>{insight.cta.label} →</Text>
-                </TouchableOpacity>
-              ) : null}
+              {insight.cta ? (() => {
+                // Destination contract (item 136): one gathering opens it; several are listed here, exactly those (rule 5).
+                const inline = insight.cta.destination?.kind === 'inline';
+                const open = inline && insightExpanded === insight.kind;
+                return (
+                  <>
+                    <TouchableOpacity
+                      style={[styles.rowCta, { alignSelf: 'flex-start', marginTop: spacing.xs }]}
+                      onPress={() => (inline ? setInsightExpanded(open ? null : insight.kind) : openDestination(navigation, insight.cta.destination))}
+                      accessibilityRole="button"
+                      accessibilityState={inline ? { expanded: open } : undefined}
+                      accessibilityLabel={`${open ? t('ui.common.showLess') : insight.cta.label}. ${insight.basis ?? ''}`}
+                    >
+                      <Text style={styles.rowCtaText}>{open ? `${t('ui.common.showLess')} ⌃` : `${insight.cta.label} ${inline ? '⌄' : '→'}`}</Text>
+                    </TouchableOpacity>
+                    {open ? insight.cta.destination.items.map((it) => {
+                      const row = resultRowView(contextItem('gathering', it.gathering, { reasons: it.reasons }), { language });
+                      return (
+                        <TouchableOpacity
+                          key={it.gathering.id}
+                          style={styles.intentResultRow}
+                          onPress={() => openDestination(navigation, it.destination)}
+                          accessibilityRole="button"
+                          accessibilityLabel={[row.title, row.reason, row.meta].filter(Boolean).join(', ')}
+                        >
+                          <View style={styles.intentResultTextCol}>
+                            <Text style={styles.intentResultTitle} numberOfLines={1}>{row.title}</Text>
+                            {row.reason ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{row.reason}</Text> : null}
+                            {row.meta ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{row.meta}</Text> : null}
+                          </View>
+                          <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                        </TouchableOpacity>
+                      );
+                    }) : null}
+                  </>
+                );
+              })() : null}
             </View>
           );
         })()}

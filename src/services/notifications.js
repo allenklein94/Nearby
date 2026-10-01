@@ -442,7 +442,8 @@ export async function routeNotificationTap(data) {
     case 'plan_addon_removed':
     case 'plan_item_time_changed':
       if (data.request_id) {
-        navigationRef.navigate('BusinessRequestDetail', { requestId: data.request_id, notificationReason: data.body ?? null });
+        // An offer push opens the request ON that offer (destination contract, item 136); the others carry no offer_id.
+        navigationRef.navigate('BusinessRequestDetail', { requestId: data.request_id, notificationReason: data.body ?? null, ...(data.type === 'business_offer_received' && data.offer_id ? { focusOfferId: data.offer_id } : {}) });
       }
       break;
     case 'business_opportunity_received':

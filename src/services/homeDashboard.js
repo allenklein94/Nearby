@@ -15,6 +15,8 @@ import { relatedHobbyFor } from '../constants/hobbyRelations';
 import { getFriendsInterestedIn } from './friendInterests';
 import { isGatheringPast } from '../utils/objectState';
 import { attendeeTotal } from '../utils/gatheringFullness';
+import { SIGNAL_TEXT } from '../utils/homeSignalMerge';
+import { intentResultDestination } from '../utils/recommendationContext';
 
 function isToday(iso) {
   const d = new Date(iso);
@@ -773,11 +775,24 @@ export async function getHomeDashboard() {
 // AI-flavored sentence up here saying the same thing in fuzzier words
 // would just be a synthetic-feeling line for a card that already
 // explains itself. Don't generate one just because the card exists.
+// Destination contract (item 136, constants/destinationContract.js): a statement about specific gatherings goes to THOSE
+// gatherings -- one = its detail, several = the exact ones listed inline (global rule 5), never the whole Discover list.
+function gatheringDestination(g) {
+  return intentResultDestination({ type: 'gathering', id: g?.id ?? null });
+}
+function gatheringSetDestination(gatherings, reasonFor) {
+  const list = (gatherings ?? []).filter((g) => g?.id);
+  if (list.length === 0) return null;
+  if (list.length === 1) return gatheringDestination(list[0]);
+  return { kind: 'inline', items: list.map((g) => ({ gathering: g, reasons: reasonFor ? [reasonFor(g)].filter(Boolean) : [], destination: gatheringDestination(g) })) };
+}
+
 export function getHomeInsight(dashboard, now = new Date()) {
   if (!dashboard) return null;
 
   if (dashboard.friendsActivity?.length >= 2) {
-    return { kind: 'friends_planning', text: tr('ui.homeParts.insight.friendsPlanning', { count: dashboard.friendsActivity.length }), cta: { label: tr('ui.homeParts.insight.seeGatherings'), screen: 'Discover', params: { initialMode: 'things', initialTypeTab: 'gatherings' } } };
+    const destination = gatheringSetDestination(dashboard.friendsActivity, (g) => SIGNAL_TEXT.friend(g, isGatheringPast(g, now)));
+    return { kind: 'friends_planning', text: tr('ui.homeParts.insight.friendsPlanning', { count: dashboard.friendsActivity.length }), cta: destination ? { label: tr('ui.homeParts.insight.seeGatherings'), destination } : null };
   }
   // Previously ANY Best Pick produced "a great night to meet someone new" -- a People claim with a gathering as its
   // only evidence. It now needs the substantiated People trigger (utils/meetTonight.js), else nothing is said.
@@ -785,9 +800,10 @@ export function getHomeInsight(dashboard, now = new Date()) {
   // friends-only intent); an unknown count (null) means no claim.
   const meetCount = 'meetPeopleCount' in dashboard ? dashboard.meetPeopleCount : dashboard.nearbyPeopleCount;
   const meet = meetSomeoneTonight({ now, nearbyPeopleCount: meetCount, motivations: dashboard.motivations });
-  if (meet) return meet;
+  if (meet) return meet.cta ? { ...meet, cta: { ...meet.cta, destination: { kind: 'navigate', screen: meet.cta.screen, params: meet.cta.params } } } : meet;
   if (dashboard.happeningNow?.length > 0) {
-    return { kind: 'starting_soon', text: tr('ui.homeParts.insight.startingSoon', { count: dashboard.happeningNow.length }), cta: { label: tr('ui.homeParts.insight.seeStarting'), screen: 'Discover', params: { initialMode: 'things', initialTypeTab: 'gatherings' } } };
+    const destination = gatheringSetDestination(dashboard.happeningNow, () => null);
+    return { kind: 'starting_soon', text: tr('ui.homeParts.insight.startingSoon', { count: dashboard.happeningNow.length }), cta: destination ? { label: tr('ui.homeParts.insight.seeStarting'), destination } : null };
   }
   return null;
 }
