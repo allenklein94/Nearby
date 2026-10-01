@@ -4,7 +4,7 @@ import { activityHints } from '../constants/activityLayer';
 import { canRespondToOpportunity } from '../utils/objectLifecycle';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
-import { displayDateTime, displayDay } from '../i18n/display';
+import { displayClock, displayDateTime, displayDay } from '../i18n/display';
 import { categoryName } from '../i18n/categoryNames';
 import DraftBanner from '../components/DraftBanner';
 import AgeRangePicker from '../components/AgeRangePicker';
@@ -106,30 +106,31 @@ import { isGatheringUpcoming } from '../utils/objectState';
 import { categoryOutcomeLine, categoryRatingLine, offerPriceLabel } from '../utils/outcomeDisplay';
 import { countLabel } from '../utils/plural';
 import { bestTimeLine } from '../utils/bestTime';
+// Tab, tool, offer-type and duration labels live in ui.bizDash3 (11 languages), keyed by `key`.
 const SECTIONS = [
-  { key: 'home', icon: '🏠', label: 'Home' },
-  { key: 'opportunities', icon: '🎯', label: 'Opportunities' },
-  { key: 'bookings', icon: '📅', label: 'Bookings' },
-  { key: 'offers', icon: '🗓️', label: 'Availability' },
-  { key: 'profile', icon: '🏪', label: 'Profile', accessibilityLabel: 'Business Profile' },
+  { key: 'home', icon: '🏠' },
+  { key: 'opportunities', icon: '🎯' },
+  { key: 'bookings', icon: '📅' },
+  { key: 'offers', icon: '🗓️' },
+  { key: 'profile', icon: '🏪' },
 ];
 
 // Older names for these places (push routing's initialSection, "view it" links) still resolve, to the tab that now
 // holds that content. 'inbox_modal' is not a tab; it stays a full-screen conversation view.
 const LEGACY_SECTION_TAB = { requests: 'opportunities', gatherings: 'bookings', community: 'bookings', insights: 'home', business: 'profile' };
 const MORE_TOOLS = [
-  { key: 'ai', icon: '🤖', label: 'AI Assistant' },
-  { key: 'analytics', icon: '📊', label: 'Analytics' },
-  { key: 'weather', icon: '🌦️', label: 'Weather' },
-  { key: 'demand', icon: '📈', label: 'Demand Signals' },
+  { key: 'ai', icon: '🤖' },
+  { key: 'analytics', icon: '📊' },
+  { key: 'weather', icon: '🌦️' },
+  { key: 'demand', icon: '📈' },
 ];
 
 const OFFER_TYPE_OPTIONS = [
-  { key: 'standard', label: 'Standard' },
-  { key: 'discount', label: 'Discount' },
-  { key: 'perk', label: 'Perk' },
-  { key: 'upgrade', label: 'Upgrade' },
-  { key: 'alt_time', label: 'Alt. time' },
+  { key: 'standard' },
+  { key: 'discount' },
+  { key: 'perk' },
+  { key: 'upgrade' },
+  { key: 'alt_time' },
 ];
 
 const RESERVATION_PROVIDER_OPTIONS = [
@@ -147,18 +148,13 @@ const AVAILABILITY_CATEGORY_OPTIONS = INTEREST_OPTIONS;
 // stays valid. Keeps this a quick posting action, not a full date/time
 // picker for something meant to be posted in the moment.
 const AVAILABILITY_DURATION_OPTIONS = [
-  { key: '1h', label: '1 hour', hours: 1 },
-  { key: '2h', label: '2 hours', hours: 2 },
-  { key: '4h', label: '4 hours', hours: 4 },
-  { key: 'restOfDay', label: 'Rest of today', hours: null },
+  { key: '1h', hours: 1 },
+  { key: '2h', hours: 2 },
+  { key: '4h', hours: 4 },
+  { key: 'restOfDay', hours: null },
 ];
 
-const AVAILABILITY_STATUS_COPY = {
-  active: 'Live — matching open requests',
-  filled: 'Filled up',
-  expired: 'Expired',
-  cancelled: 'Cancelled',
-};
+const AVAILABILITY_STATUSES = new Set(['active', 'filled', 'expired', 'cancelled']);
 
 // Phase 4 (media upload, CLAUDE.md) -- shared optional photo/video picker
 // used by both the Make-an-Offer modal and the Signature Experience modal.
@@ -279,6 +275,7 @@ function BusinessOfferMediaPreview({ path, type, colors }) {
 
 export default function BusinessDashboardScreen({ navigation, route }) {
   const { t, language } = useLanguage();
+  const offerTypeLabel = (key) => (OFFER_TYPE_OPTIONS.some((o) => o.key === key) ? t(`ui.bizDash3.offerType.${key}`) : key);
   const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
   const [section, setSectionRaw] = useState(() => {
@@ -3465,12 +3462,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
             key={s.key}
             style={[styles.sectionTab, section === s.key && styles.sectionTabActive]}
             onPress={() => setSection(s.key)}
-            accessibilityLabel={s.accessibilityLabel ?? s.label}
+            accessibilityLabel={t(`ui.bizDash3.sectionA11y.${s.key}`)}
             accessibilityRole="button"
             accessibilityState={{ selected: section === s.key }}
           >
             <Text style={styles.sectionTabIcon}>{s.icon}</Text>
-            <Text style={[styles.sectionTabLabel, section === s.key && styles.sectionTabLabelActive]}>{s.label}</Text>
+            <Text style={[styles.sectionTabLabel, section === s.key && styles.sectionTabLabelActive]}>{t(`ui.bizDash3.section.${s.key}`)}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -3798,23 +3795,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <Text style={styles.offerTitle}>{t('ui.bizDash1.moreTools')}{' '}{openTool ? '⌄' : '›'}</Text>
                     {!openTool && <Text style={styles.breakdownText}>{t('ui.bizDash1.aiAssistantAnalyticsWeatherDemand')}</Text>}
                   </TouchableOpacity>
-                  {!!openTool && MORE_TOOLS.map((t) => (
+                  {!!openTool && MORE_TOOLS.map((tool) => (
                     <TouchableOpacity
-                      key={t.key}
+                      key={tool.key}
                       style={{ paddingVertical: spacing.sm }}
                       onPress={() => {
-                        if (t.key === 'ai') {
+                        if (tool.key === 'ai') {
                           navigation.navigate('BusinessAIAssistant', { partnerId: selectedPartner.id, partnerName: selectedPartner.name });
                         } else {
-                          setOpenTool(openTool === t.key ? 'menu' : t.key);
+                          setOpenTool(openTool === tool.key ? 'menu' : tool.key);
                         }
                       }}
-                      accessibilityLabel={t.label}
+                      accessibilityLabel={t(`ui.bizDash3.tool.${tool.key}`)}
                       accessibilityRole="button"
-                      accessibilityState={t.key === 'ai' ? undefined : { expanded: openTool === t.key }}
+                      accessibilityState={tool.key === 'ai' ? undefined : { expanded: openTool === tool.key }}
                     >
-                      <Text style={[styles.breakdownText, { color: colors.textPrimary, fontWeight: openTool === t.key ? '700' : '400' }]}>
-                        {t.icon} {t.label}
+                      <Text style={[styles.breakdownText, { color: colors.textPrimary, fontWeight: openTool === tool.key ? '700' : '400' }]}>
+                        {tool.icon} {t(`ui.bizDash3.tool.${tool.key}`)}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -4562,7 +4559,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           a.price != null ? `$${Number(a.price).toFixed(2)}` : null,
                         ].filter(Boolean).join(' · ') || t('ui.bizDash2.noFurtherDetailsGiven')}
                       </Text>
-                      <Text style={styles.breakdownText}>{AVAILABILITY_STATUS_COPY[a.status] ?? a.status}</Text>
+                      <Text style={styles.breakdownText}>{AVAILABILITY_STATUSES.has(a.status) ? t(`ui.bizDash3.availabilityStatus.${a.status}`) : a.status}</Text>
                       {a.status === 'active' && windowPhrase(a.starts_at, a.ends_at, 'availability') ? (
                         <Text style={styles.breakdownText}>🕒 {windowPhrase(a.starts_at, a.ends_at, 'availability')}</Text>
                       ) : null}
@@ -5993,17 +5990,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.helperText}>
-                  A standing rule that governs EVERY future request, not just one posting -- set
-                  it once and requests within your own bounds get auto-accepted automatically.
+                  {t('ui.bizDash3.aStandingRuleThatGoverns')}
                 </Text>
                 {!fulfillmentPolicy ? (
                   <EmptyCopy id="business_policy" />
                 ) : (
                   <View style={styles.gatheringRow}>
                     <Text style={styles.breakdownText}>
-                      {fulfillmentPolicy.active ? '🟢 Active' : '⚪️ Paused'}
+                      {fulfillmentPolicy.active ? t('ui.bizDash3.policyActive') : t('ui.bizDash3.policyPaused')}
                       {fulfillmentPolicy.party_size_min != null || fulfillmentPolicy.party_size_max != null
-                        ? ` · Party size ${fulfillmentPolicy.party_size_min ?? '1'}-${fulfillmentPolicy.party_size_max ?? '∞'}`
+                        ? ` · ${t('ui.bizDash3.partySizeRangeShort', { min: fulfillmentPolicy.party_size_min ?? '1', max: fulfillmentPolicy.party_size_max ?? '∞' })}`
                         : ''}
                       {fulfillmentPolicy.active_hours_start && fulfillmentPolicy.active_hours_end
                         ? ` · ${fulfillmentPolicy.active_hours_start.slice(0, 5)}-${fulfillmentPolicy.active_hours_end.slice(0, 5)}`
@@ -6011,23 +6007,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </Text>
                     <Text style={styles.breakdownText}>
                       {fulfillmentPolicy.auto_accept_party_size_max != null
-                        ? `Auto-accepts parties of ${fulfillmentPolicy.auto_accept_party_size_max} or fewer`
-                        : 'Auto-accept off -- every request needs your own manual review'}
+                        ? t('ui.bizDash3.autoAcceptsPartiesOf', { n: fulfillmentPolicy.auto_accept_party_size_max })
+                        : t('ui.bizDash3.autoAcceptOff')}
                     </Text>
                     {fulfillmentPolicy.weather_dependent && (
                       <Text style={styles.breakdownText}>
                         {fulfillmentPolicy.last_rain_risk === 'high'
-                          ? `🌧️ Weather-dependent -- paused right now for real rain/storms (${formatWeatherCheckAge(fulfillmentPolicy.last_weather_checked_at)})`
-                          : `☀️ Weather-dependent -- conditions look fine (${formatWeatherCheckAge(fulfillmentPolicy.last_weather_checked_at)})`}
+                          ? t('ui.bizDash3.weatherPausedForRain', { checked: formatWeatherCheckAge(fulfillmentPolicy.last_weather_checked_at) })
+                          : t('ui.bizDash3.weatherLooksFine', { checked: formatWeatherCheckAge(fulfillmentPolicy.last_weather_checked_at) })}
                       </Text>
                     )}
                     {(fulfillmentPolicy.min_spend_per_person != null || fulfillmentPolicy.max_discount_pct != null || fulfillmentPolicy.deposit_amount != null || fulfillmentPolicy.cancellation_window_hours != null) && (
                       <Text style={styles.breakdownText}>
                         {[
-                          fulfillmentPolicy.min_spend_per_person != null ? `$${Number(fulfillmentPolicy.min_spend_per_person).toFixed(2)}/person min` : null,
-                          fulfillmentPolicy.max_discount_pct != null ? `up to ${Number(fulfillmentPolicy.max_discount_pct)}% off` : null,
-                          fulfillmentPolicy.deposit_amount != null ? `$${Number(fulfillmentPolicy.deposit_amount).toFixed(2)} deposit` : null,
-                          fulfillmentPolicy.cancellation_window_hours != null ? `${fulfillmentPolicy.cancellation_window_hours}h cancellation window` : null,
+                          fulfillmentPolicy.min_spend_per_person != null ? t('ui.bizDash3.minSpendPerPerson', { amount: Number(fulfillmentPolicy.min_spend_per_person).toFixed(2) }) : null,
+                          fulfillmentPolicy.max_discount_pct != null ? t('ui.bizDash3.upToPctOff', { pct: Number(fulfillmentPolicy.max_discount_pct) }) : null,
+                          fulfillmentPolicy.deposit_amount != null ? t('ui.bizDash3.depositAmount', { amount: Number(fulfillmentPolicy.deposit_amount).toFixed(2) }) : null,
+                          fulfillmentPolicy.cancellation_window_hours != null ? t('ui.bizDash3.cancellationWindowHours', { hours: fulfillmentPolicy.cancellation_window_hours }) : null,
                         ].filter(Boolean).join(' · ')}
                       </Text>
                     )}
@@ -6041,10 +6037,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <TouchableOpacity
                 style={[styles.createOfferButton, { marginTop: spacing.md, backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.border }]}
                 onPress={() => navigation.navigate('BusinessAIAutomation', { partnerId: selectedPartner.id, partnerName: selectedPartner.name })}
-                accessibilityLabel="Manage AI automation for your business"
+                accessibilityLabel={t('ui.bizDash3.manageAiAutomationForYourA11y')}
                 accessibilityRole="button"
               >
-                <Text style={[styles.createOfferButtonText, { color: colors.textPrimary }]}>🤖 AI Automation Settings</Text>
+                <Text style={[styles.createOfferButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash3.aiAutomationSettings')}</Text>
               </TouchableOpacity>
                 <BusinessNotificationPreferences />
                 {Platform.OS === 'web' && <BusinessEmailNotifications />}
@@ -6059,53 +6055,52 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     only this action UI is hidden. */}
                 {(
                 <>
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Get Paid via Stripe{stripeMode() === 'test' ? ' (test mode)' : ''}</Text>
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{stripeMode() === 'test' ? t('ui.bizDash3.getPaidViaStripeTest') : t('ui.bizDash3.getPaidViaStripe')}</Text>
                 <View style={styles.gatheringRow}>
                   {!isStripeConfigured() ? (
                     <Text style={styles.offerDescription}>
-                      Payment collection isn't set up yet — check back soon.
+                      {t('ui.bizDash3.paymentCollectionIsntSetUp')}
                     </Text>
                   ) : stripeStatus?.chargesEnabled ? (
                     <>
-                      <Text style={styles.offerTitle}>✅ Ready to accept payments</Text>
+                      <Text style={styles.offerTitle}>{t('ui.bizDash3.readyToAcceptPayments')}</Text>
                       <Text style={styles.offerDescription}>
-                        Offers with a real price now collect payment directly through your own
-                        Stripe account when a customer accepts them.
+                        {t('ui.bizDash3.offersWithARealPrice')}
                       </Text>
                     </>
                   ) : (
                     <>
                       <Text style={styles.offerTitle}>
-                        {stripeStatus?.hasAccount ? 'Finish setting up payments' : 'Connect Stripe to get paid'}
+                        {stripeStatus?.hasAccount ? t('ui.bizDash3.finishSettingUpPayments') : t('ui.bizDash3.connectStripeToGetPaid')}
                       </Text>
                       {stripeMode() === 'test' && (
-                        <Text style={styles.breakdownText}>Test mode: no real money moves and nothing you enter here is a real account.</Text>
+                        <Text style={styles.breakdownText}>{t('ui.bizDash3.testModeNoRealMoney')}</Text>
                       )}
                       <Text style={styles.breakdownText}>
-                        You'll finish on Stripe's own secure page: identity, terms and bank details are entered there by you, never through Nearby.
+                        {t('ui.bizDash3.youllFinishOnStripesOwn')}
                       </Text>
                       <Text style={styles.offerDescription}>
                         {stripeStatus?.hasAccount
-                          ? "You started Stripe onboarding but haven't finished it yet — until you do, offers you accept won't collect a real payment."
-                          : 'Connect a real Stripe account so accepted offers with a price can actually collect payment, directly to you.'}
+                          ? t('ui.bizDash3.youStartedStripeOnboardingBut')
+                          : t('ui.bizDash3.connectARealStripeAccount')}
                       </Text>
                       {stripeStatus?.requirementsDue?.length > 0 && (
                         <Text style={styles.breakdownText}>
-                          Stripe still needs: {stripeStatus.requirementsDue.join(', ')}
+                          {t('ui.bizDash3.stripeStillNeeds')}{' '}{stripeStatus.requirementsDue.join(', ')}
                         </Text>
                       )}
                       <TouchableOpacity
                         style={[styles.createOfferButton, { marginTop: spacing.sm }]}
                         onPress={handleConnectStripe}
                         disabled={connectingStripe}
-                        accessibilityLabel={stripeStatus?.hasAccount ? 'Continue Stripe setup' : 'Connect Stripe'}
+                        accessibilityLabel={stripeStatus?.hasAccount ? t('ui.bizDash3.continueStripeSetupA11y') : t('ui.bizDash3.connectStripeA11y')}
                         accessibilityRole="button"
                       >
                         {connectingStripe ? (
                           <ActivityIndicator size="small" color="#fff" />
                         ) : (
                           <Text style={styles.createOfferButtonText}>
-                            {stripeStatus?.hasAccount ? 'Continue Setup' : 'Connect Stripe'}
+                            {stripeStatus?.hasAccount ? t('ui.bizDash3.continueSetup') : t('ui.bizDash3.connectStripe')}
                           </Text>
                         )}
                       </TouchableOpacity>
@@ -6115,15 +6110,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 </>
                 )}
 
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Reservation Provider</Text>
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash3.reservationProvider')}</Text>
                 <View style={styles.gatheringRow}>
                   {editingReservationProvider ? (
                     <>
                       <Text style={styles.offerDescription}>
-                        Which system do you take reservations through? This doesn't connect real
-                        bookings yet -- Resy and OpenTable both require applying for real partner
-                        API access before Nearby can actually create a reservation there. Telling
-                        us now means it's ready the moment that's built.
+                        {t('ui.bizDash3.whichSystemDoYouTake')}
                       </Text>
                       <View style={styles.chipRow}>
                         {RESERVATION_PROVIDER_OPTIONS.map((p) => (
@@ -6143,66 +6135,64 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       </View>
                       <TextInput
                         style={[styles.input, { marginTop: spacing.sm }]}
-                        placeholder="Your venue ID on that system (optional)"
+                        placeholder={t('ui.bizDash3.yourVenueIdOnThat')}
                         placeholderTextColor={colors.textTertiary}
                         value={reservationVenueIdInput}
                         onChangeText={setReservationVenueIdInput}
                         autoCapitalize="none"
-                        accessibilityLabel="Reservation provider venue ID"
+                        accessibilityLabel={t('ui.bizDash3.reservationProviderVenueIdA11y')}
                       />
                       <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
                         <TouchableOpacity
                           style={[styles.createOfferButton, { opacity: savingReservationProvider || !reservationProviderInput ? 0.6 : 1 }]}
                           onPress={handleSaveReservationProvider}
                           disabled={savingReservationProvider || !reservationProviderInput}
-                          accessibilityLabel="Save reservation provider"
+                          accessibilityLabel={t('ui.bizDash3.saveReservationProviderA11y')}
                           accessibilityRole="button"
                         >
                           {savingReservationProvider ? (
                             <ActivityIndicator size="small" color="#fff" />
                           ) : (
-                            <Text style={styles.createOfferButtonText}>Save</Text>
+                            <Text style={styles.createOfferButtonText}>{t('ui.bizDash3.save')}</Text>
                           )}
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={{ marginLeft: spacing.md, justifyContent: 'center' }}
                           onPress={() => setEditingReservationProvider(false)}
-                          accessibilityLabel="Cancel"
+                          accessibilityLabel={t('ui.bizDash3.cancelA11y')}
                           accessibilityRole="button"
                         >
-                          <Text style={styles.messageMemberLink}>Cancel</Text>
+                          <Text style={styles.messageMemberLink}>{t('ui.bizDash3.cancel')}</Text>
                         </TouchableOpacity>
                       </View>
                     </>
                   ) : reservationProviderStatus?.provider ? (
                     <>
                       <Text style={styles.offerTitle}>
-                        ✅ Connected to {RESERVATION_PROVIDER_OPTIONS.find((p) => p.key === reservationProviderStatus.provider)?.label ?? reservationProviderStatus.provider}
+                        {t('ui.bizDash3.connectedTo', { provider: RESERVATION_PROVIDER_OPTIONS.find((p) => p.key === reservationProviderStatus.provider)?.label ?? reservationProviderStatus.provider })}
                       </Text>
                       <Text style={styles.offerDescription}>
                         {reservationProviderStatus.venueId
-                          ? `Venue ID: ${reservationProviderStatus.venueId}`
-                          : 'No venue ID on file yet.'}{' '}
-                        Real bookings aren't wired up yet -- this is just recorded so it's ready
-                        once Nearby has real Resy/OpenTable API access.
+                          ? t('ui.bizDash3.venueId', { id: reservationProviderStatus.venueId })
+                          : t('ui.bizDash3.noVenueIdOnFile')}{' '}
+                        {t('ui.bizDash3.realBookingsArentWiredUp')}
                       </Text>
                       <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
-                        <TouchableOpacity onPress={openEditReservationProvider} accessibilityLabel="Edit reservation provider" accessibilityRole="button">
-                          <Text style={styles.messageMemberLink}>✏️ Edit</Text>
+                        <TouchableOpacity onPress={openEditReservationProvider} accessibilityLabel={t('ui.bizDash3.editReservationProviderA11y')} accessibilityRole="button">
+                          <Text style={styles.messageMemberLink}>{t('ui.bizDash3.edit')}</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={handleDisconnectReservationProvider} style={{ marginLeft: spacing.lg }} accessibilityLabel="Remove reservation provider" accessibilityRole="button">
-                          <Text style={[styles.messageMemberLink, { color: colors.danger }]}>Remove</Text>
+                        <TouchableOpacity onPress={handleDisconnectReservationProvider} style={{ marginLeft: spacing.lg }} accessibilityLabel={t('ui.bizDash3.removeReservationProviderA11y')} accessibilityRole="button">
+                          <Text style={[styles.messageMemberLink, { color: colors.danger }]}>{t('ui.bizDash3.remove')}</Text>
                         </TouchableOpacity>
                       </View>
                     </>
                   ) : (
                     <>
                       <Text style={styles.offerDescription}>
-                        If you already take reservations through Resy or OpenTable, tell us which
-                        one. This is groundwork only -- it doesn't connect real bookings yet.
+                        {t('ui.bizDash3.ifYouAlreadyTakeReservations')}
                       </Text>
-                      <TouchableOpacity onPress={openEditReservationProvider} style={{ marginTop: spacing.sm }} accessibilityLabel="Add reservation provider" accessibilityRole="button">
-                        <Text style={styles.messageMemberLink}>+ Add Reservation Provider</Text>
+                      <TouchableOpacity onPress={openEditReservationProvider} style={{ marginTop: spacing.sm }} accessibilityLabel={t('ui.bizDash3.addReservationProviderA11y')} accessibilityRole="button">
+                        <Text style={styles.messageMemberLink}>{t('ui.bizDash3.addReservationProvider')}</Text>
                       </TouchableOpacity>
                     </>
                   )}
@@ -6217,8 +6207,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
             {section === 'inbox_modal' && (
               activeConversation ? (
                 <View>
-                  <TouchableOpacity onPress={() => setActiveConversation(null)} accessibilityLabel="Back to conversations" accessibilityRole="button">
-                    <Text style={styles.backLink}>← Back to conversations</Text>
+                  <TouchableOpacity onPress={() => setActiveConversation(null)} accessibilityLabel={t('ui.bizDash3.backToConversationsA11y')} accessibilityRole="button">
+                    <Text style={styles.backLink}>{t('ui.bizDash3.backToConversations')}</Text>
                   </TouchableOpacity>
                   <Text style={styles.sectionHeader}>{activeConversation.displayName}</Text>
                   {conversationMessages.map((m) => (
@@ -6229,14 +6219,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <View style={styles.replyRow}>
                     <TextInput
                       style={[styles.input, { flex: 1 }]}
-                      placeholder="Reply..."
+                      placeholder={t('ui.bizDash3.reply')}
                       placeholderTextColor={colors.textTertiary}
                       value={replyText}
                       onChangeText={setReplyText}
-                      accessibilityLabel="Reply message"
+                      accessibilityLabel={t('ui.bizDash3.replyMessageA11y')}
                     />
-                    <TouchableOpacity style={styles.sendReplyButton} onPress={sendReply} accessibilityLabel="Send reply" accessibilityRole="button">
-                      <Text style={styles.sendReplyButtonText}>Send</Text>
+                    <TouchableOpacity style={styles.sendReplyButton} onPress={sendReply} accessibilityLabel={t('ui.bizDash3.sendReplyA11y')} accessibilityRole="button">
+                      <Text style={styles.sendReplyButtonText}>{t('ui.bizDash3.send')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -6244,7 +6234,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <EmptyCopy id="business_messages" />
               ) : (
                 conversations.map((c) => (
-                  <TouchableOpacity key={c.userId} style={styles.gatheringRow} onPress={() => openConversation(c)} accessibilityLabel={`Conversation with ${c.displayName}`} accessibilityRole="button">
+                  <TouchableOpacity key={c.userId} style={styles.gatheringRow} onPress={() => openConversation(c)} accessibilityLabel={t('ui.bizDash3.conversationWithA11y', { name: c.displayName })} accessibilityRole="button">
                     <Text style={styles.offerTitle}>{c.displayName}</Text>
                     <Text style={styles.offerDescription} numberOfLines={1}>{c.lastMessage}</Text>
                   </TouchableOpacity>
@@ -6260,58 +6250,58 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
             <View style={styles.sheet}>
-              <Text style={styles.sheetTitle}>New Offer</Text>
+              <Text style={styles.sheetTitle}>{t('ui.bizDash3.newOffer')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Free pastry with any coffee"
+                placeholder={t('ui.bizDash3.freePastryWithAnyCoffee')}
                 placeholderTextColor={colors.textTertiary}
                 value={newTitle}
                 onChangeText={setNewTitle}
-                accessibilityLabel="Offer title"
+                accessibilityLabel={t('ui.bizDash3.offerTitleA11y')}
               />
               <TextInput
                 style={[styles.input, { height: 70, textAlignVertical: 'top', marginTop: spacing.sm }]}
-                placeholder="Description (optional)"
+                placeholder={t('ui.bizDash3.descriptionOptional')}
                 placeholderTextColor={colors.textTertiary}
                 value={newDescription}
                 onChangeText={setNewDescription}
                 multiline
-                accessibilityLabel="Offer description, optional"
+                accessibilityLabel={t('ui.bizDash3.offerDescriptionOptionalA11y')}
               />
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm }]}
-                placeholder="Redemption instructions (optional)"
+                placeholder={t('ui.bizDash3.redemptionInstructionsOptional')}
                 placeholderTextColor={colors.textTertiary}
                 value={newInstructions}
                 onChangeText={setNewInstructions}
-                accessibilityLabel="Redemption instructions, optional"
+                accessibilityLabel={t('ui.bizDash3.redemptionInstructionsOptionalA11y')}
               />
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm }]}
-                placeholder="Limit to first N people (optional, e.g. 20)"
+                placeholder={t('ui.bizDash3.limitToFirstNPeople')}
                 placeholderTextColor={colors.textTertiary}
                 value={newRedemptionLimit}
                 onChangeText={(t) => setNewRedemptionLimit(t.replace(/[^0-9]/g, ''))}
                 keyboardType="number-pad"
-                accessibilityLabel="Redemption limit, optional"
+                accessibilityLabel={t('ui.bizDash3.redemptionLimitOptionalA11y')}
               />
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm }]}
-                placeholder="Target interest, e.g. Coffee (optional)"
+                placeholder={t('ui.bizDash3.targetInterestEGCoffee')}
                 placeholderTextColor={colors.textTertiary}
                 value={newTargetInterestTag}
                 onChangeText={setNewTargetInterestTag}
-                accessibilityLabel="Target interest tag, optional"
+                accessibilityLabel={t('ui.bizDash3.targetInterestTagOptionalA11y')}
               />
 
               <View style={[styles.toggleRow, { marginTop: spacing.md }]}>
                 <Text style={styles.toggleRowLabel}>
-                  {offerGatheringId ? 'Require a minimum number of attendees' : 'Require a community to hit a member goal'}
+                  {offerGatheringId ? t('ui.bizDash3.requireAMinimumNumberOf') : t('ui.bizDash3.requireACommunityToHit')}
                 </Text>
                 <Switch
                   value={unlockEnabled}
                   onValueChange={setUnlockEnabled}
-                  accessibilityLabel={`Group unlock, ${unlockEnabled ? 'on' : 'off'}, tap to toggle`}
+                  accessibilityLabel={unlockEnabled ? t('ui.bizDash3.groupUnlockOnA11y') : t('ui.bizDash3.groupUnlockOffA11y')}
                 />
               </View>
 
@@ -6319,7 +6309,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <>
                   {!offerGatheringId && (
                     communities.length === 0 ? (
-                      <Text style={styles.offerDescription}>You need a community to gate this offer on — create one from the Create tab first.</Text>
+                      <Text style={styles.offerDescription}>{t('ui.bizDash3.youNeedACommunityTo')}</Text>
                     ) : (
                       <View style={styles.chipRow}>
                         {communities.map((c) => (
@@ -6327,7 +6317,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             key={c.id}
                             style={[styles.chip, unlockCommunityId === c.id && styles.chipSelected]}
                             onPress={() => setUnlockCommunityId(c.id)}
-                            accessibilityLabel={`${[c.name, countLabel(c.memberCount, 'member')].filter(Boolean).join(', ')}${unlockCommunityId === c.id ? ', selected' : ''}`}
+                            accessibilityLabel={`${[c.name, countLabel(c.memberCount, 'member')].filter(Boolean).join(', ')}${unlockCommunityId === c.id ? t('ui.bizDash3.selectedA11y') : ''}`}
                             accessibilityRole="button"
                           >
                             <Text style={[styles.chipText, unlockCommunityId === c.id && styles.chipTextSelected]}>{c.name}{c.memberCount != null ? ` (${c.memberCount})` : ''}</Text>
@@ -6338,12 +6328,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   )}
                   <TextInput
                     style={[styles.input, { marginTop: spacing.sm }]}
-                    placeholder={offerGatheringId ? 'Attendees needed to unlock, e.g. 10' : 'Members needed to unlock, e.g. 10'}
+                    placeholder={offerGatheringId ? t('ui.bizDash3.attendeesNeededToUnlockE') : t('ui.bizDash3.membersNeededToUnlockE')}
                     placeholderTextColor={colors.textTertiary}
                     value={newUnlockMinMembers}
                     onChangeText={(t) => setNewUnlockMinMembers(t.replace(/[^0-9]/g, ''))}
                     keyboardType="number-pad"
-                    accessibilityLabel="Minimum members or attendees to unlock this offer"
+                    accessibilityLabel={t('ui.bizDash3.minimumMembersOrAttendeesToA11y')}
                   />
                 </>
               )}
@@ -6352,13 +6342,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 style={styles.submitButton}
                 onPress={handleCreateOffer}
                 disabled={submitting}
-                accessibilityLabel={submitting ? 'Creating' : 'Create offer'}
+                accessibilityLabel={submitting ? t('ui.bizDash3.creatingA11y') : t('ui.bizDash3.createOfferA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.submitButtonText}>{submitting ? 'Creating...' : 'Create Offer'}</Text>
+                <Text style={styles.submitButtonText}>{submitting ? t('ui.bizDash3.creating') : t('ui.bizDash3.createOffer')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setCreateModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
-                <Text style={styles.modalCloseText}>Cancel</Text>
+              <TouchableOpacity onPress={() => setCreateModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
+                <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -6370,29 +6360,29 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
             <View style={styles.sheet}>
-              <Text style={styles.sheetTitle}>Business Address</Text>
+              <Text style={styles.sheetTitle}>{t('ui.bizDash3.businessAddress')}</Text>
               <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
-                This determines who sees your offers nearby.
+                {t('ui.bizDash3.thisDeterminesWhoSeesYour')}
               </Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. 123 Main St, Boca Raton, FL"
+                placeholder={t('ui.bizDash3.eG123MainSt')}
                 placeholderTextColor={colors.textTertiary}
                 value={addressInput}
                 onChangeText={setAddressInput}
-                accessibilityLabel="Business address"
+                accessibilityLabel={t('ui.bizDash3.businessAddressA11y')}
               />
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleUpdateAddress}
                 disabled={savingAddress || !addressInput.trim()}
-                accessibilityLabel={savingAddress ? 'Saving' : 'Save address'}
+                accessibilityLabel={savingAddress ? t('ui.bizDash3.savingA11y') : t('ui.bizDash3.saveAddressA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.submitButtonText}>{savingAddress ? 'Saving...' : 'Save Address'}</Text>
+                <Text style={styles.submitButtonText}>{savingAddress ? t('ui.bizDash3.saving') : t('ui.bizDash3.saveAddress')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setAddressModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
-                <Text style={styles.modalCloseText}>Cancel</Text>
+              <TouchableOpacity onPress={() => setAddressModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
+                <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -6404,34 +6394,34 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
             <View style={styles.sheet}>
-              <Text style={styles.sheetTitle}>Edit Business Profile</Text>
+              <Text style={styles.sheetTitle}>{t('ui.bizDash3.editBusinessProfile')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Business name"
+                placeholder={t('ui.bizDash3.businessName')}
                 placeholderTextColor={colors.textTertiary}
                 value={editNameInput}
                 onChangeText={setEditNameInput}
-                accessibilityLabel="Business name"
+                accessibilityLabel={t('ui.bizDash3.businessNameA11y')}
               />
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm, minHeight: 80 }]}
-                placeholder="Description"
+                placeholder={t('ui.bizDash3.description')}
                 placeholderTextColor={colors.textTertiary}
                 value={editDescriptionInput}
                 onChangeText={setEditDescriptionInput}
                 multiline
-                accessibilityLabel="Business description"
+                accessibilityLabel={t('ui.bizDash3.businessDescriptionA11y')}
               />
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm }]}
-                placeholder="Logo image URL (optional)"
+                placeholder={t('ui.bizDash3.logoImageUrlOptional')}
                 placeholderTextColor={colors.textTertiary}
                 value={editLogoUrlInput}
                 onChangeText={setEditLogoUrlInput}
                 autoCapitalize="none"
-                accessibilityLabel="Logo URL"
+                accessibilityLabel={t('ui.bizDash3.logoUrlA11y')}
               />
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Category</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.category')}</Text>
               <View style={styles.chipRow}>
                 {BUSINESS_CATEGORIES.map((c) => (
                   <TouchableOpacity
@@ -6451,7 +6441,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               </View>
               {subcategoryOptionsFor(editCategoryInput).length > 0 && (
                 <>
-                  <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>More Specifically</Text>
+                  <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.moreSpecifically')}</Text>
                   <View style={styles.chipRow}>
                     {subcategoryOptionsFor(editCategoryInput).map((s) => (
                       <TouchableOpacity
@@ -6476,9 +6466,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   same flat 75-tag vocabulary as INTEREST_OPTIONS-as-flat-
                   chip-list pattern the Temporary Boost picker above
                   already uses, but as a real multi-select toggle. */}
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Also Classify As (optional)</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.alsoClassifyAsOptional')}</Text>
               <Text style={styles.helperText}>
-                Also show up under any of these, in addition to your main category above.
+                {t('ui.bizDash3.alsoShowUpUnderAny')}
               </Text>
               <View style={styles.chipRow}>
                 {businessTagOptions().map((c) => {
@@ -6504,7 +6494,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               {/* "Business Story" plan: reframed from a plain "Attributes"
                   checkbox list to "Why People Choose Us" -- same real
                   vocabulary/RPC, just named for what it actually is. */}
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Why People Choose Us</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.whyPeopleChooseUs')}</Text>
               <View style={styles.chipRow}>
                 {BUSINESS_ATTRIBUTE_OPTIONS.filter((a) => a.key !== LEGACY_RESERVATION_ATTRIBUTE).map((a) => {
                   const selected = editAttributesInput.includes(a.key);
@@ -6522,24 +6512,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   );
                 })}
               </View>
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>What Makes You Different?</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.whatMakesYouDifferent')}</Text>
               <Text style={styles.helperText}>
-                One real sentence, in your own words -- e.g. "We're the only coffee shop in the
-                area with a rooftop patio."
+                {t('ui.bizDash3.oneRealSentenceInYour')}
               </Text>
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm, minHeight: 60 }]}
-                placeholder="What makes you different? (optional)"
+                placeholder={t('ui.bizDash3.whatMakesYouDifferentOptional')}
                 placeholderTextColor={colors.textTertiary}
                 value={editDifferentiatorInput}
                 onChangeText={setEditDifferentiatorInput}
                 multiline
                 maxLength={280}
-                accessibilityLabel="What makes you different"
+                accessibilityLabel={t('ui.bizDash3.whatMakesYouDifferentA11y')}
               />
               {editCategoryInput === 'food_drink' && (
                 <>
-                  <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Cuisine</Text>
+                  <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.cuisine')}</Text>
                   <View style={styles.chipRow}>
                     {CUISINE_OPTIONS.map((c) => (
                       <TouchableOpacity
@@ -6560,14 +6549,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 style={styles.submitButton}
                 onPress={handleSaveProfile}
                 disabled={savingProfile || !editNameInput.trim()}
-                accessibilityLabel={savingProfile ? 'Saving' : 'Save profile'}
+                accessibilityLabel={savingProfile ? t('ui.bizDash3.savingA11y') : t('ui.bizDash3.saveProfileA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.submitButtonText}>{savingProfile ? 'Saving...' : 'Save Profile'}</Text>
+                <Text style={styles.submitButtonText}>{savingProfile ? t('ui.bizDash3.saving') : t('ui.bizDash3.saveProfile')}</Text>
               </TouchableOpacity>
               <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, 'profile_edit')} />
-              <TouchableOpacity onPress={() => setEditProfileModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
-                <Text style={styles.modalCloseText}>Cancel</Text>
+              <TouchableOpacity onPress={() => setEditProfileModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
+                <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -6583,36 +6572,36 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
             <View style={styles.sheet}>
-              <Text style={styles.sheetTitle}>{editingExperienceId ? 'Edit Experience' : 'New Signature Experience'}</Text>
+              <Text style={styles.sheetTitle}>{editingExperienceId ? t('ui.bizDash3.editExperience') : t('ui.bizDash3.newSignatureExperience')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Title (e.g. Sunset Coffee Date)"
+                placeholder={t('ui.bizDash3.titleEGSunsetCoffee')}
                 placeholderTextColor={colors.textTertiary}
                 value={expTitleInput}
                 onChangeText={setExpTitleInput}
                 maxLength={80}
-                accessibilityLabel="Experience title"
+                accessibilityLabel={t('ui.bizDash3.experienceTitleA11y')}
               />
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm, minHeight: 60 }]}
-                placeholder="Description (optional)"
+                placeholder={t('ui.bizDash3.descriptionOptional')}
                 placeholderTextColor={colors.textTertiary}
                 value={expDescriptionInput}
                 onChangeText={setExpDescriptionInput}
                 multiline
                 maxLength={200}
-                accessibilityLabel="Experience description"
+                accessibilityLabel={t('ui.bizDash3.experienceDescriptionA11y')}
               />
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm }]}
-                placeholder="Emoji icon (optional, e.g. ❤️)"
+                placeholder={t('ui.bizDash3.emojiIconOptionalEG')}
                 placeholderTextColor={colors.textTertiary}
                 value={expIconInput}
                 onChangeText={setExpIconInput}
                 maxLength={4}
-                accessibilityLabel="Experience icon"
+                accessibilityLabel={t('ui.bizDash3.experienceIconA11y')}
               />
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Tags</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.tags')}</Text>
               <View style={styles.chipRow}>
                 {BUSINESS_ATTRIBUTE_OPTIONS.filter((a) => a.key !== LEGACY_RESERVATION_ATTRIBUTE).map((a) => {
                   const selected = expAttributesInput.includes(a.key);
@@ -6630,7 +6619,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   );
                 })}
               </View>
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Price</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.price')}</Text>
               <View style={styles.chipRow}>
                 {EXPERIENCE_PRICE_OPTIONS.map((p) => (
                   <TouchableOpacity
@@ -6645,7 +6634,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Who's this for?</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.whosThisFor')}</Text>
               <View style={styles.chipRow}>
                 {EXPERIENCE_PARTY_TYPE_OPTIONS.map((p) => (
                   <TouchableOpacity
@@ -6660,7 +6649,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Photo or Video (optional)</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.photoOrVideoOptional')}</Text>
               <BusinessMediaPicker
                 colors={colors}
                 pickedAsset={expPickedMediaAsset}
@@ -6684,14 +6673,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 style={styles.submitButton}
                 onPress={handleSaveExperience}
                 disabled={savingExperience || !expTitleInput.trim()}
-                accessibilityLabel={savingExperience ? 'Saving' : 'Save experience'}
+                accessibilityLabel={savingExperience ? t('ui.bizDash3.savingA11y') : t('ui.bizDash3.saveExperienceA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.submitButtonText}>{savingExperience ? 'Saving...' : 'Save'}</Text>
+                <Text style={styles.submitButtonText}>{savingExperience ? t('ui.bizDash3.saving') : t('ui.bizDash3.save')}</Text>
               </TouchableOpacity>
               <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, 'experience')} />
-              <TouchableOpacity onPress={() => setExperienceModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
-                <Text style={styles.modalCloseText}>Cancel</Text>
+              <TouchableOpacity onPress={() => setExperienceModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
+                <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -6702,10 +6691,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       <Modal visible={qrModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setQrModalVisible(false)}>
         <View style={styles.overlay}>
           <View style={[styles.sheet, { alignItems: 'center' }]}>
-            <Text style={styles.sheetTitle}>Share Your QR Code</Text>
+            <Text style={styles.sheetTitle}>{t('ui.bizDash3.shareYourQrCode')}</Text>
             <Text style={[styles.emptyText, { marginBottom: spacing.md }]}>
-              Print it, post it at your counter, or share the link directly — either one opens
-              {selectedPartner ? ` ${selectedPartner.name}'s` : ' your'} page on Nearby.
+              {selectedPartner
+                ? t('ui.bizDash3.qrExplainNamed', { name: selectedPartner.name })
+                : t('ui.bizDash3.qrExplain')}
             </Text>
             {selectedPartner && (
               <View style={{ backgroundColor: '#fff', padding: spacing.md, borderRadius: radius.md }}>
@@ -6715,13 +6705,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
             <TouchableOpacity
               style={[styles.submitButton, { marginTop: spacing.lg, width: '100%' }]}
               onPress={handleShareBusinessLink}
-              accessibilityLabel="Share business link"
+              accessibilityLabel={t('ui.bizDash3.shareBusinessLinkA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.submitButtonText}>Share Link</Text>
+              <Text style={styles.submitButtonText}>{t('ui.bizDash3.shareLink')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setQrModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Close" accessibilityRole="button">
-              <Text style={styles.modalCloseText}>Close</Text>
+            <TouchableOpacity onPress={() => setQrModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.closeA11y')} accessibilityRole="button">
+              <Text style={styles.modalCloseText}>{t('ui.bizDash3.close')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -6731,35 +6721,35 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
             <View style={styles.sheet}>
-              <Text style={styles.sheetTitle}>Post Update</Text>
+              <Text style={styles.sheetTitle}>{t('ui.bizDash3.postUpdate')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="What's new?"
+                placeholder={t('ui.bizDash3.whatsNew')}
                 placeholderTextColor={colors.textTertiary}
                 value={updateTitle}
                 onChangeText={setUpdateTitle}
-                accessibilityLabel="Update title"
+                accessibilityLabel={t('ui.bizDash3.updateTitleA11y')}
               />
               <TextInput
                 style={[styles.input, { height: 90, textAlignVertical: 'top', marginTop: spacing.sm }]}
-                placeholder="Details (optional)"
+                placeholder={t('ui.bizDash3.detailsOptional')}
                 placeholderTextColor={colors.textTertiary}
                 value={updateBody}
                 onChangeText={setUpdateBody}
                 multiline
-                accessibilityLabel="Update details, optional"
+                accessibilityLabel={t('ui.bizDash3.updateDetailsOptionalA11y')}
               />
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handlePostUpdate}
                 disabled={postingUpdate}
-                accessibilityLabel={postingUpdate ? 'Sending' : 'Send update'}
+                accessibilityLabel={postingUpdate ? t('ui.bizDash3.sendingA11y') : t('ui.bizDash3.sendUpdateA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.submitButtonText}>{postingUpdate ? 'Sending...' : 'Send to Followers'}</Text>
+                <Text style={styles.submitButtonText}>{postingUpdate ? t('ui.bizDash3.sending') : t('ui.bizDash3.sendToFollowers')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setUpdateModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
-                <Text style={styles.modalCloseText}>Cancel</Text>
+              <TouchableOpacity onPress={() => setUpdateModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
+                <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -6771,7 +6761,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
             <ScrollView style={styles.sheet} keyboardShouldPersistTaps="handled">
-              <Text style={styles.sheetTitle}>Make an Offer</Text>
+              <Text style={styles.sheetTitle}>{t('ui.bizDash3.makeAnOffer')}</Text>
               {offerDraft.draft && (
                 <DraftBanner
                   what="offer"
@@ -6800,30 +6790,30 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 const localMedia = !creative && offerPickedMediaAsset?.uri ? { uri: offerPickedMediaAsset.uri, type: offerPickedMediaAsset.type === 'video' ? 'video' : 'image' } : null;
                 return (
                   <View>
-                    <Text style={styles.notesLabel}>Customer preview</Text>
-                    <Text style={styles.helperText}>This is what the customer will see. Nothing is sent until you tap Send Offer.</Text>
+                    <Text style={styles.notesLabel}>{t('ui.bizDash3.customerPreview')}</Text>
+                    <Text style={styles.helperText}>{t('ui.bizDash3.thisIsWhatTheCustomer')}</Text>
                     <View style={styles.gatheringRow}>
                       <Text style={styles.offerTitle}>{selectedPartner?.name}</Text>
-                      <Text style={styles.breakdownText}>{offerRevealHeader(selectedPartner?.name ?? 'A business')}</Text>
+                      <Text style={styles.breakdownText}>{offerRevealHeader(selectedPartner?.name ?? t('ui.bizDash3.aBusiness'))}</Text>
                       {!!offerTitleInput.trim() && <Text style={[styles.offerTitle, { marginTop: spacing.xs }]}>{offerTitleInput.trim()}</Text>}
                       <OfferCustomerBody offer={previewOffer} localMedia={localMedia} />
-                      <View style={[styles.submitButton, { opacity: 0.45, marginTop: spacing.sm }]} accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel="Preview of the customer's accept button">
+                      <View style={[styles.submitButton, { opacity: 0.45, marginTop: spacing.sm }]} accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>
                         <Text style={styles.submitButtonText}>{consumerOfferAction({ status: 'offered' }, { request: { status: 'open' } }).label}</Text>
                       </View>
                     </View>
-                    {!!offerRedemptionInput.trim() && <Text style={styles.helperText}>"How to redeem" is shown to the customer once they accept.</Text>}
-                    <Text style={styles.helperText}>Text, photos and videos are checked before an offer is sent. You'll see the result under Your offers.</Text>
+                    {!!offerRedemptionInput.trim() && <Text style={styles.helperText}>{t('ui.bizDash3.howToRedeemIsShown')}</Text>}
+                    <Text style={styles.helperText}>{t('ui.bizDash3.textPhotosAndVideosAre')}</Text>
                     <TouchableOpacity
                       style={styles.submitButton}
                       onPress={handleSubmitOffer}
                       disabled={respondingOpportunityId === offerModalRequestId}
                       accessibilityRole="button"
-                      accessibilityLabel={respondingOpportunityId === offerModalRequestId ? 'Sending' : 'Send offer'}
+                      accessibilityLabel={respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sendingA11y') : t('ui.bizDash3.sendOfferA11y')}
                     >
-                      <Text style={styles.submitButtonText}>{respondingOpportunityId === offerModalRequestId ? 'Sending...' : 'Send Offer'}</Text>
+                      <Text style={styles.submitButtonText}>{respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sending') : t('ui.bizDash3.sendOffer')}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setOfferPreviewing(false)} style={{ marginTop: spacing.md }} accessibilityRole="button" accessibilityLabel="Back to edit">
-                      <Text style={styles.modalCloseText}>Back to edit</Text>
+                    <TouchableOpacity onPress={() => setOfferPreviewing(false)} style={{ marginTop: spacing.md }} accessibilityRole="button" accessibilityLabel={t('ui.bizDash3.backToEditA11y')}>
+                      <Text style={styles.modalCloseText}>{t('ui.bizDash3.backToEdit')}</Text>
                     </TouchableOpacity>
                   </View>
                 );
@@ -6835,7 +6825,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 });
                 return (
                   <View style={{ marginBottom: spacing.md }}>
-                    <Text style={styles.notesLabel}>For this request</Text>
+                    <Text style={styles.notesLabel}>{t('ui.bizDash3.forThisRequest')}</Text>
                     <Text style={styles.offerTitle}>{ctx.title}</Text>
                     {ctx.whenLine !== '' && <Text style={styles.breakdownText}>{ctx.whenLine}</Text>}
                     {ctx.feelLine !== '' && <Text style={styles.breakdownText}>{ctx.feelLine}</Text>}
@@ -6846,8 +6836,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={[styles.breakdownText, { color: colors.info, fontWeight: '600', marginBottom: spacing.md }]}>{t('ui.bizDash1.startedFromYourPackageEdit', { offerPrefilledFrom: offerPrefilledFrom })}</Text>
               )}
               <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
-                Never just a discount -- offer whatever fits: your normal price, a discount, a
-                perk, an upgrade, or a different time that works better.
+                {t('ui.bizDash3.neverJustADiscountOffer')}
               </Text>
               {/* Item 92: this is the business's own already-built, already-active
                   Occasion Package -- real owned data, not an AI recommendation, so it's
@@ -6859,7 +6848,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   style={[styles.offerCard, { marginBottom: spacing.md }]}
                   onPress={() => applyOccasionPackageToOffer(matchingOccasionPackage)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Use your own package: ${matchingOccasionPackage.name}`}
+                  accessibilityLabel={t('ui.bizDash3.useYourOwnPackageA11y', { name: matchingOccasionPackage.name })}
                 >
                   <Text style={styles.offerDescription}>{t('ui.bizDash1.useYourOwnPackageTitle', { name: matchingOccasionPackage.name })}</Text>
                 </TouchableOpacity>
@@ -6872,20 +6861,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   someone else's data" shape. */}
               {entitlements && !hasEntitlement(entitlements, 'ai_offer_recommendations') ? (
                 <View style={{ marginBottom: spacing.md }}>
-                  {renderLockedFeature('ai_offer_recommendations', 'Get a suggested offer straight from your own Signature Experiences and your own past acceptance history -- never a guessed price.')}
+                  {renderLockedFeature('ai_offer_recommendations', t('ui.bizDash3.getASuggestedOfferStraight'))}
                 </View>
               ) : (
               <>
               {offerSuggestions.length > 0 && (
                 <View style={{ marginBottom: spacing.md }}>
-                  <Text style={styles.notesLabel}>💡 Suggested from your Signature Experiences</Text>
+                  <Text style={styles.notesLabel}>{t('ui.bizDash3.suggestedFromYourSignatureExperiences')}</Text>
                   {offerSuggestions.map((s) => (
                     <TouchableOpacity
                       key={s.experienceId}
                       style={styles.offerCard}
                       onPress={() => applyExperienceSuggestion(s)}
                       accessibilityRole="button"
-                      accessibilityLabel={`Use suggestion: ${s.title}`}
+                      accessibilityLabel={t('ui.bizDash3.useSuggestionA11y', { title: s.title })}
                     >
                       <View style={{ flex: 1 }}>
                         <Text style={styles.offerTitle}>{s.title}</Text>
@@ -6907,11 +6896,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   style={[styles.offerCard, { marginBottom: spacing.md }]}
                   onPress={() => applyOfferTitleScaffold(offerTitleScaffold)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Start from a scaffold titled ${offerTitleScaffold}`}
+                  accessibilityLabel={t('ui.bizDash3.startFromAScaffoldTitledA11y', { offerTitleScaffold: offerTitleScaffold })}
                 >
-                  <Text style={styles.offerDescription}>
-                    ✨ No Signature Experience matches this yet -- start from "{offerTitleScaffold}"
-                  </Text>
+                  <Text style={styles.offerDescription}>{t('ui.bizDash3.noSignatureExperienceMatchesThis', { offerTitleScaffold: offerTitleScaffold })}</Text>
                 </TouchableOpacity>
               )}
               {offerSuggestions.length === 0 && suggestedOfferType && (
@@ -6919,11 +6906,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   style={[styles.offerCard, { marginBottom: spacing.md }]}
                   onPress={applySuggestedOfferType}
                   accessibilityRole="button"
-                  accessibilityLabel={`Use your best-performing offer type: ${suggestedOfferType.offerType}`}
+                  accessibilityLabel={t('ui.bizDash3.useBestOfferTypeA11y', { type: offerTypeLabel(suggestedOfferType.offerType) })}
                 >
                   <Text style={styles.offerDescription}>
-                    🏆 Based on your own history, {OFFER_TYPE_OPTIONS.find((o) => o.key === suggestedOfferType.offerType)?.label ?? suggestedOfferType.offerType} offers
-                    get accepted {suggestedOfferType.rate}% of the time -- tap to use it
+                    {t('ui.bizDash3.bestOfferTypeHistory', { type: offerTypeLabel(suggestedOfferType.offerType), rate: suggestedOfferType.rate })}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -6945,10 +6931,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       setOfferTypeInput(o.key);
                     }}
                     accessibilityRole="button"
-                    accessibilityLabel={o.label}
+                    accessibilityLabel={offerTypeLabel(o.key)}
                     accessibilityState={{ selected: offerTypeInput === o.key }}
                   >
-                    <Text style={[styles.chipText, offerTypeInput === o.key && styles.chipTextSelected]}>{o.label}</Text>
+                    <Text style={[styles.chipText, offerTypeInput === o.key && styles.chipTextSelected]}>{offerTypeLabel(o.key)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -6957,13 +6943,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <TouchableOpacity
                     style={[styles.input, { marginTop: spacing.sm, justifyContent: 'center' }]}
                     onPress={() => setShowOfferTimePicker(true)}
-                    accessibilityLabel="Pick the time you're proposing"
+                    accessibilityLabel={t('ui.bizDash3.pickTheTimeYoureProposingA11y')}
                     accessibilityRole="button"
                   >
                     <Text style={{ color: offerProposedTime ? colors.textPrimary : colors.textTertiary }}>
                       {offerProposedTime
                         ? offerProposedTime.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-                        : 'Pick a time…'}
+                        : t('ui.bizDash3.pickATime')}
                     </Text>
                   </TouchableOpacity>
                   {showOfferTimePicker && (
@@ -6988,32 +6974,30 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   exactly as it always has. */}
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm }]}
-                placeholder="Offer title (optional) -- e.g. Special Birthday Offer"
+                placeholder={t('ui.bizDash3.offerTitleOptionalEG')}
                 placeholderTextColor={colors.textTertiary}
                 value={offerTitleInput}
                 onChangeText={setOfferTitleInput}
-                accessibilityLabel="Offer title, optional"
+                accessibilityLabel={t('ui.bizDash3.offerTitleOptionalA11y')}
               />
               {!offerTitleInput && occasionOfferTitleSuggestion && (
                 <TouchableOpacity
                   onPress={() => setOfferTitleInput(occasionOfferTitleSuggestion)}
                   style={{ marginTop: spacing.xs }}
                   accessibilityRole="button"
-                  accessibilityLabel={`Use suggested title: ${occasionOfferTitleSuggestion}`}
+                  accessibilityLabel={t('ui.bizDash3.useSuggestedTitleA11y', { occasionOfferTitleSuggestion: occasionOfferTitleSuggestion })}
                 >
-                  <Text style={[styles.offerDescription, { color: colors.primary, marginBottom: 0 }]}>
-                    ✨ Use "{occasionOfferTitleSuggestion}"
-                  </Text>
+                  <Text style={[styles.offerDescription, { color: colors.primary, marginBottom: 0 }]}>{t('ui.bizDash3.use', { occasionOfferTitleSuggestion: occasionOfferTitleSuggestion })}</Text>
                 </TouchableOpacity>
               )}
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm, minHeight: 80 }]}
-                placeholder="What are you offering? e.g. Table for 4 at 7:30, 15% off the check"
+                placeholder={t('ui.bizDash3.whatAreYouOfferingE')}
                 placeholderTextColor={colors.textTertiary}
                 value={offerDescriptionInput}
                 onChangeText={setOfferDescriptionInput}
                 multiline
-                accessibilityLabel="Offer description"
+                accessibilityLabel={t('ui.bizDash3.offerDescriptionA11y')}
               />
               {offerDescriptionInput.trim() ? (
                 <TouchableOpacity
@@ -7021,28 +7005,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   disabled={requestingPlainLanguage}
                   style={{ marginTop: spacing.xs, alignSelf: 'flex-start', opacity: requestingPlainLanguage ? 0.6 : 1 }}
                   accessibilityRole="button"
-                  accessibilityLabel="See it in plain language. Suggests easier wording for you to review. Nothing changes unless you choose it."
+                  accessibilityLabel={t('ui.bizDash3.seeItInPlainLanguageA11y')}
                 >
-                  <Text style={{ color: colors.primary, fontWeight: '600' }}>{requestingPlainLanguage ? 'Rewording…' : '✨ See it in plain language'}</Text>
+                  <Text style={{ color: colors.primary, fontWeight: '600' }}>{requestingPlainLanguage ? t('ui.bizDash3.rewording') : t('ui.bizDash3.seeItInPlainLanguage')}</Text>
                 </TouchableOpacity>
               ) : null}
               {plainLanguageSuggestion?.none ? (
                 <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>{plainLanguageSuggestion.message}</Text>
               ) : plainLanguageSuggestion ? (
                 (plainLanguageSuggestion.basedOn.description !== offerDescriptionInput || plainLanguageSuggestion.basedOn.title !== offerTitleInput) ? (
-                  <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>You've edited your wording since. Tap "See it in plain language" again for a new suggestion.</Text>
+                  <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>{t('ui.bizDash3.youveEditedYourWordingSince')}</Text>
                 ) : (
                   <View style={{ marginTop: spacing.xs, padding: spacing.sm, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
-                    <Text style={[styles.offerDescription, { marginBottom: 0, fontWeight: '600' }]}>Suggested wording</Text>
+                    <Text style={[styles.offerDescription, { marginBottom: 0, fontWeight: '600' }]}>{t('ui.bizDash3.suggestedWording')}</Text>
                     {plainLanguageSuggestion.title ? <Text style={[styles.offerDescription, { marginBottom: 0 }]}>{plainLanguageSuggestion.title}</Text> : null}
                     <Text style={[styles.offerDescription, { marginBottom: 0 }]}>{plainLanguageSuggestion.description}</Text>
-                    <Text style={[styles.offerDescription, { marginBottom: 0, color: colors.textSecondary }]}>Your price, discount, times and redemption details stay exactly as you set them.</Text>
+                    <Text style={[styles.offerDescription, { marginBottom: 0, color: colors.textSecondary }]}>{t('ui.bizDash3.yourPriceDiscountTimesAnd')}</Text>
                     <View style={{ flexDirection: 'row', marginTop: spacing.xs }}>
-                      <TouchableOpacity onPress={applyPlainLanguageSuggestion} style={{ marginRight: spacing.md }} accessibilityRole="button" accessibilityLabel="Use this wording">
-                        <Text style={{ color: colors.primary, fontWeight: '600' }}>Use this wording</Text>
+                      <TouchableOpacity onPress={applyPlainLanguageSuggestion} style={{ marginRight: spacing.md }} accessibilityRole="button" accessibilityLabel={t('ui.bizDash3.useThisWordingA11y')}>
+                        <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('ui.bizDash3.useThisWording')}</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => setPlainLanguageSuggestion(null)} accessibilityRole="button" accessibilityLabel="Keep my wording">
-                        <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Keep mine</Text>
+                      <TouchableOpacity onPress={() => setPlainLanguageSuggestion(null)} accessibilityRole="button" accessibilityLabel={t('ui.bizDash3.keepMyWordingA11y')}>
+                        <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{t('ui.bizDash3.keepMine')}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -7052,12 +7036,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <>
                   <TextInput
                     style={[styles.input, { marginTop: spacing.sm }]}
-                    placeholder={discountCap != null ? `Discount % (max ${discountCap}%)` : 'Discount % (optional)'}
+                    placeholder={discountCap != null ? t('ui.bizDash3.discountMax', { discountCap: discountCap }) : t('ui.bizDash3.discountOptional')}
                     placeholderTextColor={colors.textTertiary}
                     value={offerDiscountInput}
                     onChangeText={(t) => setOfferDiscountInput(t.replace(/[^0-9.]/g, ''))}
                     keyboardType="decimal-pad"
-                    accessibilityLabel="Discount percent"
+                    accessibilityLabel={t('ui.bizDash3.discountPercentA11y')}
                   />
                   {discountCap != null && (
                     <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>{t('ui.bizDash1.yourPolicyCapsDiscountsAt', { discountCap: discountCap })}</Text>
@@ -7068,24 +7052,24 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   ✓ Birthday dessert, ✓ Complimentary champagne alternative" --
                   same add-one-at-a-time editor shape the Occasion Package
                   section's own included_items editor already established. */}
-              <Text style={[styles.sectionHeader, { marginTop: spacing.sm }]}>What's included? (optional)</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.sm }]}>{t('ui.bizDash3.whatsIncludedOptional')}</Text>
               <View style={{ flexDirection: 'row' }}>
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
-                  placeholder="e.g. Private table"
+                  placeholder={t('ui.bizDash3.eGPrivateTable')}
                   placeholderTextColor={colors.textTertiary}
                   value={offerIncludedItemDraft}
                   onChangeText={setOfferIncludedItemDraft}
                   onSubmitEditing={addOfferIncludedItem}
-                  accessibilityLabel="Add an included item"
+                  accessibilityLabel={t('ui.bizDash3.addAnIncludedItemA11y')}
                 />
                 <TouchableOpacity
                   style={[styles.smallActionButton, { backgroundColor: colors.primary, marginLeft: spacing.sm, alignSelf: 'center' }]}
                   onPress={addOfferIncludedItem}
-                  accessibilityLabel="Add item"
+                  accessibilityLabel={t('ui.bizDash3.addItemA11y')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.smallActionButtonText}>Add</Text>
+                  <Text style={styles.smallActionButtonText}>{t('ui.bizDash3.add')}</Text>
                 </TouchableOpacity>
               </View>
               {offerIncludedItemsInput.length > 0 && (
@@ -7096,7 +7080,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       style={[styles.chip, styles.chipSelected]}
                       onPress={() => removeOfferIncludedItem(index)}
                       accessibilityRole="button"
-                      accessibilityLabel={`Remove ${item}`}
+                      accessibilityLabel={t('ui.bizDash3.removeA11y', { item: item })}
                     >
                       <Text style={[styles.chipText, styles.chipTextSelected]}>✓ {item} ×</Text>
                     </TouchableOpacity>
@@ -7105,12 +7089,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               )}
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm }]}
-                placeholder="Price (optional)"
+                placeholder={t('ui.bizDash3.priceOptional')}
                 placeholderTextColor={colors.textTertiary}
                 value={offerPriceInput}
                 onChangeText={setOfferPriceInput}
                 keyboardType="decimal-pad"
-                accessibilityLabel="Offer price, optional"
+                accessibilityLabel={t('ui.bizDash3.offerPriceOptionalA11y')}
               />
               {/* Item 93 follow-up (CLAUDE.md): an explicit per-person vs.
                   flat/total choice -- never guessed -- so the consumer's
@@ -7123,23 +7107,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     style={[styles.chip, !offerPriceIsPerPerson && styles.chipSelected]}
                     onPress={() => setOfferPriceIsPerPerson(false)}
                     accessibilityRole="button"
-                    accessibilityLabel="Flat or total price"
+                    accessibilityLabel={t('ui.bizDash3.flatOrTotalPriceA11y')}
                   >
-                    <Text style={[styles.chipText, !offerPriceIsPerPerson && styles.chipTextSelected]}>Total</Text>
+                    <Text style={[styles.chipText, !offerPriceIsPerPerson && styles.chipTextSelected]}>{t('ui.bizDash3.total')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.chip, offerPriceIsPerPerson && styles.chipSelected]}
                     onPress={() => setOfferPriceIsPerPerson(true)}
                     accessibilityRole="button"
-                    accessibilityLabel="Price is per person"
+                    accessibilityLabel={t('ui.bizDash3.priceIsPerPersonA11y')}
                   >
-                    <Text style={[styles.chipText, offerPriceIsPerPerson && styles.chipTextSelected]}>Per Person</Text>
+                    <Text style={[styles.chipText, offerPriceIsPerPerson && styles.chipTextSelected]}>{t('ui.bizDash3.perPerson')}</Text>
                   </TouchableOpacity>
                 </View>
               ) : null}
               {creatives.length > 0 && !offerPickedMediaAsset ? (
                 <View style={{ marginTop: spacing.sm }}>
-                  <Text style={styles.notesLabel}>Use your saved creative</Text>
+                  <Text style={styles.notesLabel}>{t('ui.bizDash3.useYourSavedCreative')}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     {creatives.map((c) => (
                       <CreativeThumb
@@ -7158,9 +7142,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         catch (e) { presentRecoverableError(Alert, { what: 'complete that', error: e }); }
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel="Remove this creative from your saved list"
+                      accessibilityLabel={t('ui.bizDash3.removeThisCreativeFromYourA11y')}
                     >
-                      <Text style={{ color: colors.danger, fontWeight: '600', marginTop: spacing.xs }}>Remove from saved creative</Text>
+                      <Text style={{ color: colors.danger, fontWeight: '600', marginTop: spacing.xs }}>{t('ui.bizDash3.removeFromSavedCreative')}</Text>
                     </TouchableOpacity>
                   ) : null}
                 </View>
@@ -7175,7 +7159,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     // The website sends photos only (video frames are sampled on the device); videos are capped at 30s / 25MB.
                     const asset = await pickBusinessOfferMedia({ imagesOnly: Platform.OS === 'web' });
                     const problem = videoLimitProblem(asset);
-                    if (problem) { Alert.alert('Video too big', problem); return; }
+                    if (problem) { Alert.alert(t('ui.bizDash3.videoTooBig'), problem); return; }
                     if (asset) { setOfferPickedMediaAsset(asset); setCreativeDetected(null); }
                   } catch (e) {
                     presentRecoverableError(Alert, { what: 'complete that', error: e });
@@ -7189,34 +7173,34 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   disabled={readingCreative}
                   style={{ marginTop: spacing.sm, alignSelf: 'flex-start', opacity: readingCreative ? 0.6 : 1 }}
                   accessibilityRole="button"
-                  accessibilityLabel="Read this for me. Fills in the offer details from your photo or video for you to review."
+                  accessibilityLabel={t('ui.bizDash3.readThisForMeFillsA11y')}
                 >
-                  <Text style={{ color: colors.primary, fontWeight: '600' }}>{readingCreative ? 'Reading…' : '✨ Read this for me'}</Text>
+                  <Text style={{ color: colors.primary, fontWeight: '600' }}>{readingCreative ? t('ui.bizDash3.reading') : t('ui.bizDash3.readThisForMe')}</Text>
                 </TouchableOpacity>
               ) : null}
               {creativeDetected?.none ? (
-                <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>We couldn't find offer details in that. You can fill them in below.</Text>
+                <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>{t('ui.bizDash3.weCouldntFindOfferDetails')}</Text>
               ) : creativeDetected?.summary ? (
                 <View style={{ marginTop: spacing.xs }}>
                   <Text style={[styles.offerDescription, { marginBottom: 0 }]}>{creativeDetected.summary}</Text>
-                  <Text style={[styles.offerDescription, { marginBottom: 0 }]}>Check and edit anything below, then tap Send Offer. Nothing is sent until you do.</Text>
+                  <Text style={[styles.offerDescription, { marginBottom: 0 }]}>{t('ui.bizDash3.checkAndEditAnythingBelow')}</Text>
                   {creativeDetected.warning ? <Text style={{ color: colors.danger, marginTop: spacing.xs }}>{creativeDetected.warning}</Text> : null}
                 </View>
               ) : null}
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm }]}
-                placeholder="How to redeem (optional), e.g. show this at the counter"
+                placeholder={t('ui.bizDash3.howToRedeemOptionalE')}
                 placeholderTextColor={colors.textTertiary}
                 value={offerRedemptionInput}
                 onChangeText={(t) => setOfferRedemptionInput(t.slice(0, MAX_REDEMPTION_LENGTH))}
                 multiline
-                accessibilityLabel="How to redeem, optional. Shown to the customer once they accept."
+                accessibilityLabel={t('ui.bizDash3.howToRedeemOptionalShownA11y')}
               />
-              <Text style={[styles.notesLabel, { marginTop: spacing.sm }]}>Available (optional)</Text>
+              <Text style={[styles.notesLabel, { marginTop: spacing.sm }]}>{t('ui.bizDash3.availableOptional')}</Text>
               {renderAvailabilityWindow({ from: offerAvailFrom, until: offerAvailUntil, setFrom: setOfferAvailFrom, setUntil: setOfferAvailUntil, picker: availPicker, setPicker: setAvailPicker })}
-              <Text style={[styles.notesLabel, { marginTop: spacing.sm }]}>Valid until (optional)</Text>
+              <Text style={[styles.notesLabel, { marginTop: spacing.sm }]}>{t('ui.bizDash3.validUntilOptional')}</Text>
               <View style={styles.chipRow}>
-                {[['none', 'No end time'], ['today', 'Today'], ['tomorrow', 'Tomorrow']].map(([key, label]) => {
+                {[['none', t('ui.bizDash3.noEndTime')], ['today', t('ui.bizDash3.today')], ['tomorrow', t('ui.bizDash3.tomorrow')]].map(([key, label]) => {
                   const selected = (offerValidDay ?? 'none') === key;
                   return (
                     <TouchableOpacity
@@ -7229,7 +7213,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         setShowValidTimePicker(true);
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel={`Valid until: ${label}`}
+                      accessibilityLabel={t('ui.bizDash3.validUntilA11y', { label: label })}
                     >
                       <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
                     </TouchableOpacity>
@@ -7237,15 +7221,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 })}
               </View>
               {offerValidDay && offerValidTime ? (
-                <TouchableOpacity onPress={() => setShowValidTimePicker(true)} accessibilityRole="button" accessibilityLabel="Change the end time">
+                <TouchableOpacity onPress={() => setShowValidTimePicker(true)} accessibilityRole="button" accessibilityLabel={t('ui.bizDash3.changeTheEndTimeA11y')}>
                   <Text style={{ color: colors.textPrimary, marginTop: spacing.xs }}>
-                    Until {offerValidTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} {offerValidDay} · tap to change
+                    {offerValidDay === 'tomorrow'
+                      ? t('ui.bizDash3.untilTomorrowTapToChange', { time: displayClock(offerValidTime, language) })
+                      : t('ui.bizDash3.untilTodayTapToChange', { time: displayClock(offerValidTime, language) })}
                   </Text>
                 </TouchableOpacity>
               ) : null}
               {offerValidDay && !offerValidTime ? (
-                <TouchableOpacity onPress={() => setShowValidTimePicker(true)} accessibilityRole="button" accessibilityLabel="Pick the end time">
-                  <Text style={{ color: colors.warning, marginTop: spacing.xs }}>Pick an end time for {offerValidDay} (or choose No end time)</Text>
+                <TouchableOpacity onPress={() => setShowValidTimePicker(true)} accessibilityRole="button" accessibilityLabel={t('ui.bizDash3.pickTheEndTimeA11y')}>
+                  <Text style={{ color: colors.warning, marginTop: spacing.xs }}>{offerValidDay === 'tomorrow' ? t('ui.bizDash3.pickEndTimeTomorrow') : t('ui.bizDash3.pickEndTimeToday')}</Text>
                 </TouchableOpacity>
               ) : null}
               {showValidTimePicker && offerValidDay ? (
@@ -7264,13 +7250,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 style={styles.submitButton}
                 onPress={handlePreviewOffer}
                 disabled={respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime)}
-                accessibilityLabel="Preview what the customer will see"
+                accessibilityLabel={t('ui.bizDash3.previewWhatTheCustomerWillA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.submitButtonText}>Preview offer</Text>
+                <Text style={styles.submitButtonText}>{t('ui.bizDash3.previewOffer')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setOfferModalRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
-                <Text style={styles.modalCloseText}>Cancel</Text>
+              <TouchableOpacity onPress={() => setOfferModalRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
+                <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
               </View>
             </ScrollView>
@@ -7281,22 +7267,22 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       <Modal visible={!!acceptSheetRequestId} animationType={modalAnimation('slide')} transparent onRequestClose={() => setAcceptSheetRequestId(null)}>
         <View style={styles.overlay}>
           <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>What's your offer?</Text>
+            <Text style={styles.sheetTitle}>{t('ui.bizDash3.whatsYourOffer')}</Text>
             <View style={styles.offerCard}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.offerTitle}>Standard availability</Text>
-                <Text style={styles.breakdownText}>Yes, you can host them as requested.</Text>
-                <Text style={[styles.notesLabel, { marginTop: spacing.xs }]}>Available (optional)</Text>
+                <Text style={styles.offerTitle}>{t('ui.bizDash3.standardAvailability')}</Text>
+                <Text style={styles.breakdownText}>{t('ui.bizDash3.yesYouCanHostThem')}</Text>
+                <Text style={[styles.notesLabel, { marginTop: spacing.xs }]}>{t('ui.bizDash3.availableOptional')}</Text>
                 {renderAvailabilityWindow({ from: quickFrom, until: quickUntil, setFrom: setQuickFrom, setUntil: setQuickUntil, picker: quickPicker, setPicker: setQuickPicker })}
                 {usualTermsLine(fulfillmentPolicy) ? (
                   <Text style={[styles.breakdownText, { marginTop: spacing.xs }]}>{usualTermsLine(fulfillmentPolicy)}</Text>
                 ) : (
                   <TouchableOpacity
                     onPress={() => { setAcceptSheetRequestId(null); openPolicyModal(); }}
-                    accessibilityLabel="Set your usual terms"
+                    accessibilityLabel={t('ui.bizDash3.setYourUsualTermsA11y')}
                     accessibilityRole="button"
                   >
-                    <Text style={[styles.messageMemberLink, { marginTop: spacing.xs }]}>Set your usual terms so they're included</Text>
+                    <Text style={[styles.messageMemberLink, { marginTop: spacing.xs }]}>{t('ui.bizDash3.setYourUsualTermsSo')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -7304,32 +7290,32 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
                 onPress={() => {
                   const win = availableWindowFromChoice(quickFrom, quickUntil);
-                  if (win.error) { Alert.alert('Available window', win.error); return; }
+                  if (win.error) { Alert.alert(t('ui.bizDash3.availableWindow'), win.error); return; }
                   submitQuickResponse(acceptSheetRequestId, { offerType: 'standard', offerDescription: standardAvailabilityText(fulfillmentPolicy), availableFrom: win.from, availableUntil: win.until });
                 }}
                 disabled={respondingOpportunityId === acceptSheetRequestId}
-                accessibilityLabel="Send standard availability"
+                accessibilityLabel={t('ui.bizDash3.sendStandardAvailabilityA11y')}
                 accessibilityRole="button"
               >
-                {respondingOpportunityId === acceptSheetRequestId ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.smallActionButtonText}>Send</Text>}
+                {respondingOpportunityId === acceptSheetRequestId ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.smallActionButtonText}>{t('ui.bizDash3.send')}</Text>}
               </TouchableOpacity>
             </View>
             <View style={[styles.offerCard, { marginTop: spacing.sm }]}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.offerTitle}>Special offer</Text>
-                <Text style={styles.breakdownText}>Add a price, perk, discount or what's included.</Text>
+                <Text style={styles.offerTitle}>{t('ui.bizDash3.specialOffer')}</Text>
+                <Text style={styles.breakdownText}>{t('ui.bizDash3.addAPricePerkDiscount')}</Text>
               </View>
               <TouchableOpacity
                 style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
                 onPress={() => { const id = acceptSheetRequestId; setAcceptSheetRequestId(null); openOfferModal(id); }}
-                accessibilityLabel="Create a special offer"
+                accessibilityLabel={t('ui.bizDash3.createASpecialOfferA11y')}
                 accessibilityRole="button"
               >
-                <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Customize</Text>
+                <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash3.customize')}</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={() => setAcceptSheetRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
-              <Text style={styles.modalCloseText}>Cancel</Text>
+            <TouchableOpacity onPress={() => setAcceptSheetRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
+              <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -7339,20 +7325,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
             <View style={styles.sheet}>
-              <Text style={styles.sheetTitle}>Offer another time</Text>
+              <Text style={styles.sheetTitle}>{t('ui.bizDash3.offerAnotherTime')}</Text>
               <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
-                Pick the time that works for you. They'll see it and can accept.
+                {t('ui.bizDash3.pickTheTimeThatWorks')}
               </Text>
               <TouchableOpacity
                 style={[styles.input, { justifyContent: 'center' }]}
                 onPress={() => setShowAltPicker(true)}
-                accessibilityLabel="Pick the time you're proposing"
+                accessibilityLabel={t('ui.bizDash3.pickTheTimeYoureProposingA11y')}
                 accessibilityRole="button"
               >
                 <Text style={{ color: altTime ? colors.textPrimary : colors.textTertiary }}>
                   {altTime
                     ? altTime.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-                    : 'Pick a time…'}
+                    : t('ui.bizDash3.pickATime')}
                 </Text>
               </TouchableOpacity>
               {showAltPicker && (
@@ -7370,23 +7356,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               )}
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm }]}
-                placeholder="Add a note (optional)"
+                placeholder={t('ui.bizDash3.addANoteOptional')}
                 placeholderTextColor={colors.textTertiary}
                 value={altNote}
                 onChangeText={setAltNote}
-                accessibilityLabel="Note about the alternative time, optional"
+                accessibilityLabel={t('ui.bizDash3.noteAboutTheAlternativeTimeA11y')}
               />
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={() => submitQuickResponse(altSheetRequestId, { offerType: 'alt_time', offerDescription: buildAlternativeText(altNote), proposedTime: altTime.toISOString() })}
                 disabled={!altTime || respondingOpportunityId === altSheetRequestId}
-                accessibilityLabel="Send alternative time"
+                accessibilityLabel={t('ui.bizDash3.sendAlternativeTimeA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.submitButtonText}>{respondingOpportunityId === altSheetRequestId ? 'Sending...' : 'Send'}</Text>
+                <Text style={styles.submitButtonText}>{respondingOpportunityId === altSheetRequestId ? t('ui.bizDash3.sending') : t('ui.bizDash3.send')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setAltSheetRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
-                <Text style={styles.modalCloseText}>Cancel</Text>
+              <TouchableOpacity onPress={() => setAltSheetRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
+                <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -7398,10 +7384,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
             <View style={styles.sheet}>
-              <Text style={styles.sheetTitle}>Can't Accommodate This One</Text>
+              <Text style={styles.sheetTitle}>{t('ui.bizDash3.cantAccommodateThisOne')}</Text>
               <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
-                No penalty -- this just helps you see your own real pattern later, on the
-                "What You've Declined" card below.
+                {t('ui.bizDash3.noPenaltyThisJustHelps')}
               </Text>
               <View style={styles.chipRow}>
                 {DECLINE_REASON_OPTIONS.map((o) => (
@@ -7420,25 +7405,25 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               {declineReasonInput === 'other' && (
                 <TextInput
                   style={[styles.input, { marginTop: spacing.sm, minHeight: 60 }]}
-                  placeholder="What's the real reason? (optional)"
+                  placeholder={t('ui.bizDash3.whatsTheRealReasonOptional')}
                   placeholderTextColor={colors.textTertiary}
                   value={declineNoteInput}
                   onChangeText={setDeclineNoteInput}
                   multiline
-                  accessibilityLabel="Optional note for why you're declining"
+                  accessibilityLabel={t('ui.bizDash3.optionalNoteForWhyYoureA11y')}
                 />
               )}
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleSubmitDecline}
                 disabled={!declineReasonInput || respondingOpportunityId === declineModalRequestId}
-                accessibilityLabel={respondingOpportunityId === declineModalRequestId ? 'Declining' : 'Confirm decline'}
+                accessibilityLabel={respondingOpportunityId === declineModalRequestId ? t('ui.bizDash3.decliningA11y') : t('ui.bizDash3.confirmDeclineA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.submitButtonText}>{respondingOpportunityId === declineModalRequestId ? 'Declining...' : 'Confirm'}</Text>
+                <Text style={styles.submitButtonText}>{respondingOpportunityId === declineModalRequestId ? t('ui.bizDash3.declining') : t('ui.bizDash3.confirm')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setDeclineModalRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
-                <Text style={styles.modalCloseText}>Cancel</Text>
+              <TouchableOpacity onPress={() => setDeclineModalRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
+                <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -7450,29 +7435,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
             <View style={styles.sheet}>
-              <Text style={styles.sheetTitle}>Post Availability</Text>
+              <Text style={styles.sheetTitle}>{t('ui.bizDash3.postAvailability')}</Text>
               <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
-                We'll match this against open requests near you right now, and keep matching
-                new ones for as long as it stays live.
+                {t('ui.bizDash3.wellMatchThisAgainstOpen')}
               </Text>
               <TextInput
                 style={styles.input}
-                placeholder="4 empty tables tonight"
+                placeholder={t('ui.bizDash3.n4EmptyTablesTonight')}
                 placeholderTextColor={colors.textTertiary}
                 value={availabilityTitleInput}
                 onChangeText={setAvailabilityTitleInput}
-                accessibilityLabel="Availability title"
+                accessibilityLabel={t('ui.bizDash3.availabilityTitleA11y')}
               />
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm, minHeight: 70 }]}
-                placeholder="Description (optional)"
+                placeholder={t('ui.bizDash3.descriptionOptional')}
                 placeholderTextColor={colors.textTertiary}
                 value={availabilityDescriptionInput}
                 onChangeText={setAvailabilityDescriptionInput}
                 multiline
-                accessibilityLabel="Availability description, optional"
+                accessibilityLabel={t('ui.bizDash3.availabilityDescriptionOptionalA11y')}
               />
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Category (optional)</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.categoryOptional')}</Text>
               <View style={styles.chipRow}>
                 {AVAILABILITY_CATEGORY_OPTIONS.map((c) => (
                   <TouchableOpacity
@@ -7487,7 +7471,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>What are you offering?</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.whatAreYouOffering')}</Text>
               <View style={styles.chipRow}>
                 {OFFER_TYPE_OPTIONS.map((o) => (
                   <TouchableOpacity
@@ -7495,32 +7479,32 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     style={[styles.chip, availabilityOfferTypeInput === o.key && styles.chipSelected]}
                     onPress={() => setAvailabilityOfferTypeInput(o.key)}
                     accessibilityRole="button"
-                    accessibilityLabel={o.label}
+                    accessibilityLabel={offerTypeLabel(o.key)}
                     accessibilityState={{ selected: availabilityOfferTypeInput === o.key }}
                   >
-                    <Text style={[styles.chipText, availabilityOfferTypeInput === o.key && styles.chipTextSelected]}>{o.label}</Text>
+                    <Text style={[styles.chipText, availabilityOfferTypeInput === o.key && styles.chipTextSelected]}>{offerTypeLabel(o.key)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm }]}
-                placeholder="Price (optional)"
+                placeholder={t('ui.bizDash3.priceOptional')}
                 placeholderTextColor={colors.textTertiary}
                 value={availabilityPriceInput}
                 onChangeText={setAvailabilityPriceInput}
                 keyboardType="decimal-pad"
-                accessibilityLabel="Price, optional"
+                accessibilityLabel={t('ui.bizDash3.priceOptionalA11y')}
               />
               {availabilityOfferTypeInput === 'discount' && (
                 <>
                   <TextInput
                     style={[styles.input, { marginTop: spacing.sm }]}
-                    placeholder={discountCap != null ? `Discount % (max ${discountCap}%)` : 'Discount % (optional)'}
+                    placeholder={discountCap != null ? t('ui.bizDash3.discountMax', { discountCap: discountCap }) : t('ui.bizDash3.discountOptional')}
                     placeholderTextColor={colors.textTertiary}
                     value={availabilityDiscountInput}
                     onChangeText={(t) => setAvailabilityDiscountInput(t.replace(/[^0-9.]/g, ''))}
                     keyboardType="decimal-pad"
-                    accessibilityLabel="Discount percent"
+                    accessibilityLabel={t('ui.bizDash3.discountPercentA11y')}
                   />
                   {discountCap != null && (
                     <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>{t('ui.bizDash1.yourPolicyCapsDiscountsAt', { discountCap: discountCap })}</Text>
@@ -7529,23 +7513,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               )}
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm }]}
-                placeholder="How many spots? (optional, e.g. 4)"
+                placeholder={t('ui.bizDash3.howManySpotsOptionalE')}
                 placeholderTextColor={colors.textTertiary}
                 value={availabilityCapacityInput}
                 onChangeText={(t) => setAvailabilityCapacityInput(t.replace(/[^0-9]/g, ''))}
                 keyboardType="number-pad"
-                accessibilityLabel="Capacity, optional"
+                accessibilityLabel={t('ui.bizDash3.capacityOptionalA11y')}
               />
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>When do you have space?</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.whenDoYouHaveSpace')}</Text>
               <View style={styles.chipRow}>
                 <TouchableOpacity
                   style={[styles.chip, availabilityWhenMode === 'now' && styles.chipSelected]}
                   onPress={() => setAvailabilityWhenMode('now')}
                   accessibilityRole="button"
-                  accessibilityLabel="Available now"
+                  accessibilityLabel={t('ui.bizDash3.availableNowA11y')}
                   accessibilityState={{ selected: availabilityWhenMode === 'now' }}
                 >
-                  <Text style={[styles.chipText, availabilityWhenMode === 'now' && styles.chipTextSelected]}>Now</Text>
+                  <Text style={[styles.chipText, availabilityWhenMode === 'now' && styles.chipTextSelected]}>{t('ui.bizDash3.now')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.chip, availabilityWhenMode === 'scheduled' && styles.chipSelected]}
@@ -7558,24 +7542,24 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     }
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel="Pick a day and time"
+                  accessibilityLabel={t('ui.bizDash3.pickADayAndTimeA11y')}
                   accessibilityState={{ selected: availabilityWhenMode === 'scheduled' }}
                 >
-                  <Text style={[styles.chipText, availabilityWhenMode === 'scheduled' && styles.chipTextSelected]}>Pick a day & time</Text>
+                  <Text style={[styles.chipText, availabilityWhenMode === 'scheduled' && styles.chipTextSelected]}>{t('ui.bizDash3.pickADayTime')}</Text>
                 </TouchableOpacity>
               </View>
               {availabilityWhenMode === 'scheduled' && (
                 <>
-                  {[['start', 'Starts', availabilityStart], ['end', 'Ends', availabilityEnd]].map(([which, label, value]) => (
+                  {[['start', t('ui.bizDash3.starts'), availabilityStart], ['end', t('ui.bizDash3.ends'), availabilityEnd]].map(([which, label, value]) => (
                     <TouchableOpacity
                       key={which}
                       style={[styles.input, { marginTop: spacing.sm, justifyContent: 'center' }]}
                       onPress={() => setShowAvailabilityPicker(showAvailabilityPicker === which ? null : which)}
                       accessibilityRole="button"
-                      accessibilityLabel={`${label}: pick a day and time`}
+                      accessibilityLabel={t('ui.bizDash3.pickADayAndTimeA11y2', { label: label })}
                     >
                       <Text style={{ color: value ? colors.textPrimary : colors.textTertiary }}>
-                        {label}: {value ? value.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Pick a time…'}
+                        {label}: {value ? value.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : t('ui.bizDash3.pickATime')}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -7603,18 +7587,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               )}
               {availabilityWhenMode === 'now' && (
                 <>
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>How long should this stay live?</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.howLongShouldThisStay')}</Text>
               <View style={styles.chipRow}>
-                {AVAILABILITY_DURATION_OPTIONS.map((
+                {AVAILABILITY_DURATION_OPTIONS.map((d) => (
                   <TouchableOpacity
                     key={d.key}
                     style={[styles.chip, availabilityDurationKey === d.key && styles.chipSelected]}
                     onPress={() => setAvailabilityDurationKey(d.key)}
                     accessibilityRole="button"
-                    accessibilityLabel={d.label}
+                    accessibilityLabel={t(`ui.bizDash3.duration.${d.key}`)}
                     accessibilityState={{ selected: availabilityDurationKey === d.key }}
                   >
-                    <Text style={[styles.chipText, availabilityDurationKey === d.key && styles.chipTextSelected]}>{d.label}</Text>
+                    <Text style={[styles.chipText, availabilityDurationKey === d.key && styles.chipTextSelected]}>{t(`ui.bizDash3.duration.${d.key}`)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -7640,13 +7624,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   template for (bundleableOccasions() -- casual_hangout/
                   business_meal/other have no components to bundle). */}
               <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>
-                Package this as an Experience Bundle? (optional)
+                {t('ui.bizDash3.packageThisAsAnExperience')}
               </Text>
               <Text style={[styles.modalCloseText, { marginBottom: spacing.sm }]}>
-                If this one posting covers multiple parts of a night out by itself
-                (e.g. dinner + live music + dessert), tell us which occasion and
-                parts it covers -- we'll show it as a complete package instead of
-                just one piece.
+                {t('ui.bizDash3.ifThisOnePostingCovers')}
               </Text>
               <View style={styles.chipRow}>
                 {bundleableOccasions().map((occasion) => (
@@ -7667,7 +7648,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               {availabilityBundleOccasionInput && (
                 <>
                   <Text style={[styles.sectionHeader, { marginTop: spacing.sm }]}>
-                    Which parts does this one posting cover? (pick at least 2)
+                    {t('ui.bizDash3.whichPartsDoesThisOne')}
                   </Text>
                   <View style={styles.chipRow}>
                     {experienceComponentOptionsForOccasion(availabilityBundleOccasionInput).map((component) => (
@@ -7691,14 +7672,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 style={[styles.submitButton, { marginTop: spacing.md }]}
                 onPress={handlePostAvailability}
                 disabled={postingAvailability || !availabilityTitleInput.trim()}
-                accessibilityLabel={postingAvailability ? 'Posting' : 'Post availability'}
+                accessibilityLabel={postingAvailability ? t('ui.bizDash3.postingA11y') : t('ui.bizDash3.postAvailabilityA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.submitButtonText}>{postingAvailability ? 'Posting...' : availabilityDemandPeople != null ? 'Send Offer' : 'Post Availability'}</Text>
+                <Text style={styles.submitButtonText}>{postingAvailability ? t('ui.bizDash3.posting') : availabilityDemandPeople != null ? t('ui.bizDash3.sendOffer') : t('ui.bizDash3.postAvailability')}</Text>
               </TouchableOpacity>
               <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, 'availability')} />
-              <TouchableOpacity onPress={() => setPostAvailabilityModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
-                <Text style={styles.modalCloseText}>Cancel</Text>
+              <TouchableOpacity onPress={() => setPostAvailabilityModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
+                <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -7714,12 +7695,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
             <ScrollView style={styles.sheet} keyboardShouldPersistTaps="handled">
-              <Text style={styles.sheetTitle}>{editingPackageId ? 'Edit Package' : 'Add an Occasion Package'}</Text>
+              <Text style={styles.sheetTitle}>{editingPackageId ? t('ui.bizDash3.editPackage') : t('ui.bizDash3.addAnOccasionPackage')}</Text>
               <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
-                A standing offer for one specific occasion -- Nearby matches it directly against
-                real requests for that occasion, no waiting on you to respond.
+                {t('ui.bizDash3.aStandingOfferForOne')}
               </Text>
-              <Text style={styles.sectionHeader}>Which occasion?</Text>
+              <Text style={styles.sectionHeader}>{t('ui.bizDash3.whichOccasion')}</Text>
               <View style={styles.chipRow}>
                 {OCCASION_OPTIONS.map((o) => {
                   const selected = packageOccasionInput === o.key;
@@ -7737,43 +7717,43 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   );
                 })}
               </View>
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Package name</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.packageName')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Birthday Package"
+                placeholder={t('ui.bizDash3.birthdayPackage')}
                 placeholderTextColor={colors.textTertiary}
                 value={packageNameInput}
                 onChangeText={setPackageNameInput}
-                accessibilityLabel="Package name"
+                accessibilityLabel={t('ui.bizDash3.packageNameA11y')}
               />
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Description (optional)</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.descriptionOptional')}</Text>
               <TextInput
                 style={[styles.input, { minHeight: 60 }]}
-                placeholder="What makes this package special?"
+                placeholder={t('ui.bizDash3.whatMakesThisPackageSpecial')}
                 placeholderTextColor={colors.textTertiary}
                 value={packageDescriptionInput}
                 onChangeText={setPackageDescriptionInput}
                 multiline
-                accessibilityLabel="Package description, optional"
+                accessibilityLabel={t('ui.bizDash3.packageDescriptionOptionalA11y')}
               />
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>What's included?</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.whatsIncluded')}</Text>
               <View style={{ flexDirection: 'row' }}>
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
-                  placeholder="e.g. Birthday dessert"
+                  placeholder={t('ui.bizDash3.eGBirthdayDessert')}
                   placeholderTextColor={colors.textTertiary}
                   value={packageIncludedItemDraft}
                   onChangeText={setPackageIncludedItemDraft}
                   onSubmitEditing={addPackageIncludedItem}
-                  accessibilityLabel="Add an included item"
+                  accessibilityLabel={t('ui.bizDash3.addAnIncludedItemA11y')}
                 />
                 <TouchableOpacity
                   style={[styles.smallActionButton, { backgroundColor: colors.primary, marginLeft: spacing.sm, alignSelf: 'center' }]}
                   onPress={addPackageIncludedItem}
-                  accessibilityLabel="Add item"
+                  accessibilityLabel={t('ui.bizDash3.addItemA11y')}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.smallActionButtonText}>Add</Text>
+                  <Text style={styles.smallActionButtonText}>{t('ui.bizDash3.add')}</Text>
                 </TouchableOpacity>
               </View>
               {packageIncludedItemsInput.length > 0 && (
@@ -7784,14 +7764,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       style={[styles.chip, styles.chipSelected]}
                       onPress={() => removePackageIncludedItem(index)}
                       accessibilityRole="button"
-                      accessibilityLabel={`Remove ${item}`}
+                      accessibilityLabel={t('ui.bizDash3.removeA11y', { item: item })}
                     >
                       <Text style={[styles.chipText, styles.chipTextSelected]}>{item} ×</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               )}
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Minimum guests (optional)</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.minimumGuestsOptional')}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="e.g. 6"
@@ -7799,9 +7779,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 value={packageMinGuestsInput}
                 onChangeText={(t) => setPackageMinGuestsInput(t.replace(/[^0-9]/g, ''))}
                 keyboardType="number-pad"
-                accessibilityLabel="Minimum guests"
+                accessibilityLabel={t('ui.bizDash3.minimumGuestsA11y')}
               />
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Price per person (optional)</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.pricePerPersonOptional')}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="e.g. 45"
@@ -7809,10 +7789,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 value={packagePriceInput}
                 onChangeText={(t) => setPackagePriceInput(t.replace(/[^0-9.]/g, ''))}
                 keyboardType="decimal-pad"
-                accessibilityLabel="Price per person"
+                accessibilityLabel={t('ui.bizDash3.pricePerPersonA11y')}
               />
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Available days (optional)</Text>
-              <Text style={styles.helperText}>Leave every day unselected to offer it every day of the week.</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.availableDaysOptional')}</Text>
+              <Text style={styles.helperText}>{t('ui.bizDash3.leaveEveryDayUnselectedTo')}</Text>
               <View style={styles.chipRow}>
                 {DAY_OF_WEEK_OPTIONS.map((day) => {
                   const selected = packageAvailableDaysInput.includes(day.key);
@@ -7834,14 +7814,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 style={[styles.submitButton, { marginTop: spacing.md }]}
                 onPress={handleSavePackage}
                 disabled={savingPackage || !packageNameInput.trim() || !packageOccasionInput}
-                accessibilityLabel={savingPackage ? 'Saving' : 'Save package'}
+                accessibilityLabel={savingPackage ? t('ui.bizDash3.savingA11y') : t('ui.bizDash3.savePackageA11y')}
                 accessibilityRole="button"
               >
-                {savingPackage ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>{editingPackageId ? 'Save Changes' : 'Add Package'}</Text>}
+                {savingPackage ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>{editingPackageId ? t('ui.bizDash3.saveChanges') : t('ui.bizDash3.addPackage')}</Text>}
               </TouchableOpacity>
               <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, 'package')} />
-              <TouchableOpacity onPress={() => setPackageModalVisible(false)} style={{ marginTop: spacing.md, marginBottom: spacing.lg }} accessibilityLabel="Cancel" accessibilityRole="button">
-                <Text style={styles.modalCloseText}>Cancel</Text>
+              <TouchableOpacity onPress={() => setPackageModalVisible(false)} style={{ marginTop: spacing.md, marginBottom: spacing.lg }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
+                <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -7854,33 +7834,32 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
             <ScrollView style={styles.sheet} keyboardShouldPersistTaps="handled">
-              <Text style={styles.sheetTitle}>Fulfillment Policy</Text>
+              <Text style={styles.sheetTitle}>{t('ui.bizDash3.fulfillmentPolicy')}</Text>
               <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
-                A standing rule for every future request -- set it once, we'll match new
-                requests against it automatically without you having to review each one.
+                {t('ui.bizDash3.aStandingRuleForEvery')}
               </Text>
-              <Text style={styles.sectionHeader}>Party size range</Text>
+              <Text style={styles.sectionHeader}>{t('ui.bizDash3.partySizeRange')}</Text>
               <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
-                  placeholder="Min (optional)"
+                  placeholder={t('ui.bizDash3.minOptional')}
                   placeholderTextColor={colors.textTertiary}
                   value={policyPartySizeMinInput}
                   onChangeText={(t) => setPolicyPartySizeMinInput(t.replace(/[^0-9]/g, ''))}
                   keyboardType="number-pad"
-                  accessibilityLabel="Minimum party size"
+                  accessibilityLabel={t('ui.bizDash3.minimumPartySizeA11y')}
                 />
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
-                  placeholder="Max (optional)"
+                  placeholder={t('ui.bizDash3.maxOptional')}
                   placeholderTextColor={colors.textTertiary}
                   value={policyPartySizeMaxInput}
                   onChangeText={(t) => setPolicyPartySizeMaxInput(t.replace(/[^0-9]/g, ''))}
                   keyboardType="number-pad"
-                  accessibilityLabel="Maximum party size"
+                  accessibilityLabel={t('ui.bizDash3.maximumPartySizeA11y')}
                 />
               </View>
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Active hours (24h, optional)</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.activeHours24hOptional')}</Text>
               <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
@@ -7888,7 +7867,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   placeholderTextColor={colors.textTertiary}
                   value={policyActiveHoursStartInput}
                   onChangeText={setPolicyActiveHoursStartInput}
-                  accessibilityLabel="Active hours start, 24-hour HH:MM"
+                  accessibilityLabel={t('ui.bizDash3.activeHoursStart24HourA11y')}
                 />
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
@@ -7896,13 +7875,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   placeholderTextColor={colors.textTertiary}
                   value={policyActiveHoursEndInput}
                   onChangeText={setPolicyActiveHoursEndInput}
-                  accessibilityLabel="Active hours end, 24-hour HH:MM"
+                  accessibilityLabel={t('ui.bizDash3.activeHoursEnd24HourA11y')}
                 />
               </View>
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Active days (optional)</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.activeDaysOptional')}</Text>
               <Text style={styles.helperText}>
-                Leave every day unselected (or select them all) to auto-accept every day of the
-                week. Select just the days you're actually open to auto-accept.
+                {t('ui.bizDash3.leaveEveryDayUnselectedOr')}
               </Text>
               <View style={styles.chipRow}>
                 {DAY_OF_WEEK_OPTIONS.map((day) => {
@@ -7921,17 +7899,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   );
                 })}
               </View>
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Auto-accept party size up to</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.autoAcceptPartySizeUp')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g. 4 -- leave blank to review every request yourself"
+                placeholder={t('ui.bizDash3.eG4LeaveBlank')}
                 placeholderTextColor={colors.textTertiary}
                 value={policyAutoAcceptMaxInput}
                 onChangeText={(t) => setPolicyAutoAcceptMaxInput(t.replace(/[^0-9]/g, ''))}
                 keyboardType="number-pad"
-                accessibilityLabel="Auto-accept party size maximum"
+                accessibilityLabel={t('ui.bizDash3.autoAcceptPartySizeMaximumA11y')}
               />
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Minimum spend per person (optional)</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.minimumSpendPerPersonOptional')}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="$"
@@ -7939,9 +7917,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 value={policyMinSpendInput}
                 onChangeText={setPolicyMinSpendInput}
                 keyboardType="decimal-pad"
-                accessibilityLabel="Minimum spend per person"
+                accessibilityLabel={t('ui.bizDash3.minimumSpendPerPersonA11y')}
               />
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Max discount % (optional)</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.maxDiscountOptional')}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="0-100"
@@ -7949,9 +7927,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 value={policyMaxDiscountInput}
                 onChangeText={setPolicyMaxDiscountInput}
                 keyboardType="decimal-pad"
-                accessibilityLabel="Maximum discount percent"
+                accessibilityLabel={t('ui.bizDash3.maximumDiscountPercentA11y')}
               />
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Deposit (optional; included in your standard offer, not collected by Nearby)</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.depositOptionalIncludedInYour')}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="$"
@@ -7959,9 +7937,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 value={policyDepositInput}
                 onChangeText={setPolicyDepositInput}
                 keyboardType="decimal-pad"
-                accessibilityLabel="Deposit amount, stored only, not charged"
+                accessibilityLabel={t('ui.bizDash3.depositAmountStoredOnlyNotA11y')}
               />
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Cancellation window, hours (optional)</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.cancellationWindowHoursOptional')}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="e.g. 2"
@@ -7969,66 +7947,64 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 value={policyCancellationWindowInput}
                 onChangeText={(t) => setPolicyCancellationWindowInput(t.replace(/[^0-9]/g, ''))}
                 keyboardType="number-pad"
-                accessibilityLabel="Cancellation window in hours"
+                accessibilityLabel={t('ui.bizDash3.cancellationWindowInHoursA11y')}
               />
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Weather-Dependent</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.weatherDependent')}</Text>
               <Text style={styles.helperText}>
-                For outdoor/patio-only capacity. When on, auto-accept pauses itself during real
-                rain or storms at your location (checked hourly) and picks back up once
-                conditions clear -- no separate posting needed.
+                {t('ui.bizDash3.forOutdoorPatioOnlyCapacity')}
               </Text>
               <View style={styles.chipRow}>
                 <TouchableOpacity
                   style={[styles.chip, policyWeatherDependentInput && styles.chipSelected]}
                   onPress={() => setPolicyWeatherDependentInput(true)}
                   accessibilityRole="button"
-                  accessibilityLabel="Weather-dependent on"
+                  accessibilityLabel={t('ui.bizDash3.weatherDependentOnA11y')}
                   accessibilityState={{ selected: policyWeatherDependentInput }}
                 >
-                  <Text style={[styles.chipText, policyWeatherDependentInput && styles.chipTextSelected]}>On</Text>
+                  <Text style={[styles.chipText, policyWeatherDependentInput && styles.chipTextSelected]}>{t('ui.bizDash3.on')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.chip, !policyWeatherDependentInput && styles.chipSelected]}
                   onPress={() => setPolicyWeatherDependentInput(false)}
                   accessibilityRole="button"
-                  accessibilityLabel="Weather-dependent off"
+                  accessibilityLabel={t('ui.bizDash3.weatherDependentOffA11y')}
                   accessibilityState={{ selected: !policyWeatherDependentInput }}
                 >
-                  <Text style={[styles.chipText, !policyWeatherDependentInput && styles.chipTextSelected]}>Off</Text>
+                  <Text style={[styles.chipText, !policyWeatherDependentInput && styles.chipTextSelected]}>{t('ui.bizDash3.off')}</Text>
                 </TouchableOpacity>
               </View>
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Status</Text>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.status')}</Text>
               <View style={styles.chipRow}>
                 <TouchableOpacity
                   style={[styles.chip, policyActiveInput && styles.chipSelected]}
                   onPress={() => setPolicyActiveInput(true)}
                   accessibilityRole="button"
-                  accessibilityLabel="Active"
+                  accessibilityLabel={t('ui.bizDash3.activeA11y')}
                   accessibilityState={{ selected: policyActiveInput }}
                 >
-                  <Text style={[styles.chipText, policyActiveInput && styles.chipTextSelected]}>Active</Text>
+                  <Text style={[styles.chipText, policyActiveInput && styles.chipTextSelected]}>{t('ui.bizDash3.active')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.chip, !policyActiveInput && styles.chipSelected]}
                   onPress={() => setPolicyActiveInput(false)}
                   accessibilityRole="button"
-                  accessibilityLabel="Paused"
+                  accessibilityLabel={t('ui.bizDash3.pausedA11y')}
                   accessibilityState={{ selected: !policyActiveInput }}
                 >
-                  <Text style={[styles.chipText, !policyActiveInput && styles.chipTextSelected]}>Paused</Text>
+                  <Text style={[styles.chipText, !policyActiveInput && styles.chipTextSelected]}>{t('ui.bizDash3.paused')}</Text>
                 </TouchableOpacity>
               </View>
               <TouchableOpacity
                 style={[styles.submitButton, { marginTop: spacing.md }]}
                 onPress={handleSavePolicy}
                 disabled={savingPolicy}
-                accessibilityLabel={savingPolicy ? 'Saving' : 'Save policy'}
+                accessibilityLabel={savingPolicy ? t('ui.bizDash3.savingA11y') : t('ui.bizDash3.savePolicyA11y')}
                 accessibilityRole="button"
               >
-                <Text style={styles.submitButtonText}>{savingPolicy ? 'Saving...' : 'Save Policy'}</Text>
+                <Text style={styles.submitButtonText}>{savingPolicy ? t('ui.bizDash3.saving') : t('ui.bizDash3.savePolicy')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setPolicyModalVisible(false)} style={{ marginTop: spacing.md, marginBottom: spacing.lg }} accessibilityLabel="Cancel" accessibilityRole="button">
-                <Text style={styles.modalCloseText}>Cancel</Text>
+              <TouchableOpacity onPress={() => setPolicyModalVisible(false)} style={{ marginTop: spacing.md, marginBottom: spacing.lg }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
+                <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>

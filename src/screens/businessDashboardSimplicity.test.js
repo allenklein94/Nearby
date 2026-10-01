@@ -8,8 +8,10 @@ const idx = (needle) => src.indexOf(needle);
 
 describe('business dashboard simplicity', () => {
   it('names the tabs in the owner\'s words and keeps five tabs', () => {
-    const tabs = src.match(/\{ key: '(home|opportunities|bookings|offers|profile)', icon: '[^']+', label: '([^']+)'/g) ?? [];
-    expect(tabs.map((t) => t.match(/label: '([^']+)'/)[1])).toEqual(['Home', 'Opportunities', 'Bookings', 'Availability', 'Profile']);
+    const keys = (src.match(/\{ key: '(home|opportunities|bookings|offers|profile)', icon: '[^']+' \}/g) ?? []).map((m) => m.match(/key: '(\w+)'/)[1]);
+    expect(keys).toEqual(['home', 'opportunities', 'bookings', 'offers', 'profile']);
+    const en = require('../i18n/ui/bizDash3').default.en.section;
+    expect(keys.map((k) => en[k])).toEqual(['Home', 'Opportunities', 'Bookings', 'Availability', 'Profile']);
   });
   it('renders "Demand near you" once, inside the Opportunities gate, after the opportunity list', () => {
     expect(src.match(/<DemandNearYouCard/g)).toHaveLength(1);
@@ -25,7 +27,7 @@ describe('business dashboard simplicity', () => {
   });
   it('leads Profile with Tell Nearby and keeps policy/notifications/payments/AI behind Settings', () => {
     const settings = idx('{profileSettingsOpen && (');
-    for (const needle of ["t('ui.bizDash2.fulfillmentPolicy')}</Text>", '<BusinessNotificationPreferences />', 'Get Paid via Stripe', 'AI Automation Settings']) {
+    for (const needle of ["t('ui.bizDash2.fulfillmentPolicy')}</Text>", '<BusinessNotificationPreferences />', "t('ui.bizDash3.getPaidViaStripe')", "t('ui.bizDash3.aiAutomationSettings')"]) {
       expect(idx(needle)).toBeGreaterThan(settings);
     }
     expect(idx('<TellNearbyBusinessCard')).toBeLessThan(settings);

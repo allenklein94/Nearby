@@ -3,6 +3,8 @@ import path from 'path';
 
 const read = (f) => fs.readFileSync(path.join(__dirname, f), 'utf8');
 
+const bizDash3 = require('../i18n/ui/bizDash3').default.en;
+
 describe('customer preview before publishing (item 84)', () => {
   const dash = read('../screens/BusinessDashboardScreen.js');
   const detail = read('../screens/BusinessRequestDetailScreen.js');
@@ -22,13 +24,16 @@ describe('customer preview before publishing (item 84)', () => {
   });
   test('the offer form leads to Preview, and only the preview step sends', () => {
     expect(dash).toContain('onPress={handlePreviewOffer}');
-    expect(dash).toContain('Back to edit');
+    expect(dash).toContain("t('ui.bizDash3.backToEdit')");
     // Preview and Send share one validation
     expect(dash.match(/validateOfferForm\(\)/g).length).toBeGreaterThanOrEqual(3);
-    expect(dash).toContain('Nothing is sent until you tap Send Offer');
+    expect(dash).toContain("t('ui.bizDash3.thisIsWhatTheCustomer')");
+    expect(bizDash3.thisIsWhatTheCustomer).toContain('Nothing is sent until you tap Send Offer');
   });
   test('the preview says what is not shown before accept, and that content is checked', () => {
-    expect(dash).toContain('is shown to the customer once they accept');
-    expect(dash).toContain('are checked before an offer is sent');
+    expect(dash).toContain("t('ui.bizDash3.howToRedeemIsShown')");
+    expect(bizDash3.howToRedeemIsShown).toContain('is shown to the customer once they accept');
+    expect(dash).toContain("t('ui.bizDash3.textPhotosAndVideosAre')");
+    expect(bizDash3.textPhotosAndVideosAre).toContain('are checked before an offer is sent');
   });
 });

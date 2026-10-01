@@ -162,6 +162,7 @@ export const LOCALIZED_FILES = [
   'src/components/NewcomerBadge.js',
   'src/components/ExperiencePerkLine.js',
   'src/components/ActionSheetModal.js',
+  'src/screens/BusinessDashboardScreen.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
@@ -176,6 +177,10 @@ export const INTENTIONAL_ENGLISH = {
     'Go on dates': 'stored onboarding token (profiles.onboarding_motivations), matched, never shown',
     'Make new friends': 'stored onboarding token, matched, never shown',
     'Meet new people': 'stored onboarding token, matched, never shown',
+  },
+  'src/screens/BusinessDashboardScreen.js': {
+    Resy: 'reservation system brand name',
+    OpenTable: 'reservation system brand name',
   },
   'src/screens/AskBusinessScreen.js': {
     Today: 'English fallback of DATE_OPTIONS; shown through i18n/optionLabels dateOptionLabel',
