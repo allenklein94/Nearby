@@ -158,7 +158,8 @@ describe('scope', () => {
       .filter((f) => /\.js$/.test(f) && !/test\.js$/.test(f) && /from '[^']*businessRestrictions'/.test(read(`src/${f}`)))
       .map((f) => f.split(path.sep).join('/')).sort();
     // utils/askEligibility.js = the typed-ask eligibility stage the resolver runs (item 118)
-    expect(users).toEqual(['screens/BusinessDashboardScreen.js', 'screens/BusinessProfileScreen.js', 'services/intentResolver.js', 'utils/askEligibility.js']);
+    // i18n/businessProfileDisplay.js = the public profile's line in the person's language (English = notAccommodatedLine itself)
+    expect(users).toEqual(['i18n/businessProfileDisplay.js', 'screens/BusinessDashboardScreen.js', 'services/intentResolver.js', 'utils/askEligibility.js']);
     expect(read('src/constants/businessRestrictions.js').replace(/^\s*\/\/.*$/gm, '')).not.toMatch(/fetch\(|supabase|functions\.invoke|anthropic/i);
   });
   it('never in a business-facing payload', () => {
@@ -220,7 +221,8 @@ describe('18+ only (owner item 87, migration 20270228)', () => {
   it('structured only: nothing derives an adult rule from text, a category or marketing copy; gatherings untouched', () => {
     const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
     const users = walk(path.join(ROOT, 'src')).filter((f) => /\.js$/.test(f) && !/\.test\.js$/.test(f) && /adults_(18|21)_plus/.test(fs.readFileSync(f, 'utf8')));
-    expect(users.map((f) => path.relative(ROOT, f))).toEqual(['src/constants/businessRestrictions.js', 'src/services/brandOffers.js']); // the list + the setter's comment
+    // the list + the setter's comment + the profile line's translated labels (keyed by the stored value)
+    expect(users.map((f) => path.relative(ROOT, f)).sort()).toEqual(['src/constants/businessRestrictions.js', 'src/i18n/ui/businessProfile.js', 'src/services/brandOffers.js']);
     expect(m18).not.toMatch(/alter table public\.gatherings|function public\.(join_gathering|approve_gathering_interest|invite_friend_to_gathering|send_social_invite)\b/);
     for (const fn of ['create-assistant', 'business-onboarding-assistant', 'screen-business-content'])
       expect(fs.readFileSync(path.join(ROOT, `supabase/functions/${fn}/index.ts`), 'utf8')).not.toMatch(/adults_(18|21)_plus/);

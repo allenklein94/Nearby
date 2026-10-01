@@ -1,47 +1,26 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Linking } from 'react-native';
 import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
-import {
-  getBusinessProfile,
-  getBusinessFollowerCount,
-  getBusinessPublicGatherings,
-  getBusinessActiveOffers,
-  isFollowingBusiness,
-  followBusiness,
-  unfollowBusiness,
-  getRedemptionCounts,
-  redeemOffer,
-  getMyManagedPartner,
-  logBusinessProfileView,
-  getBusinessExperiences,
-  getBusinessMessagesPage,
-} from '../services/brandOffers';
+import { getBusinessProfile, getBusinessFollowerCount, getBusinessPublicGatherings, getBusinessActiveOffers, isFollowingBusiness, followBusiness, unfollowBusiness, getRedemptionCounts, redeemOffer, getMyManagedPartner, logBusinessProfileView, getBusinessExperiences, getBusinessMessagesPage } from '../services/brandOffers';
 import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
 import { getCommunityMemberCount } from '../services/communities';
-import { businessHoursLabel, weekHoursLines } from '../utils/operatingStatus';
 import { businessPrimaryAction } from '../utils/primaryAction';
-import { bookingModeOf, bookingModeOption, LEGACY_RESERVATION_ATTRIBUTE } from '../constants/bookingMode';
-import { maxGroupLine, spaceCapacityLines } from '../constants/businessCapabilities';
-import { notAccommodatedLine } from '../constants/businessRestrictions';
-import { dietaryOptionsLine, dietaryOptionsOf, dietarySafetyNote } from '../constants/dietaryOptions';
-import { businessPriceLine } from '../constants/businessPrice';
+import { LEGACY_RESERVATION_ATTRIBUTE } from '../constants/bookingMode';
 import { businessActionRoute } from '../utils/businessAction';
-import { getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
+import { getPartnerAvgResponseTime, getPartnerOfferReputation, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
-import { businessAttributeLabel, cuisineLabel, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, experiencePriceLabel, experiencePartyTypeLabel } from '../constants/businessAttributes';
+import { availabilityPulseIcon, isAvailabilityPulseFresh, experiencePriceLabel } from '../constants/businessAttributes';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
-import { formatDateTime } from '../utils/timeLabels';
+import { displayDateTime } from '../i18n/display';
 import { spacing, radius, typography } from '../theme';
 
 import { unlockStatus } from '../utils/unlockProgress';
-import { thingsToDoHere } from '../constants/activityLayer';
-import { ageRangeLabel } from '../utils/suitedAges';
-function formatDate(iso) {
-  return formatDateTime(iso);
-}
+import { categoryName } from '../i18n/categoryNames';
+import { followerCountLine, reliabilityLine, hoursLine, weekHoursRows, bookingModeLine, priceLine, largestGroupLine, spaceLines, restrictionsLine, dietaryLine, dietaryNote, pulseLabel, cuisineName, businessAttributeName, partyTypeName, thingsToDoLabels, suitedAgesLabel } from '../i18n/businessProfileDisplay';
 
 // Phase 4 (media upload, CLAUDE.md) -- a Signature Experience's own real
 // uploaded creative, rendered INSIDE its existing experience card, never
@@ -49,6 +28,7 @@ function formatDate(iso) {
 // inline player -- no video player component exists elsewhere in this
 // codebase to mirror.
 function ExperienceMediaPreview({ path, type, colors }) {
+  const { t } = useLanguage();
   const [signedUrl, setSignedUrl] = useState(null);
 
   useEffect(() => {
@@ -65,7 +45,7 @@ function ExperienceMediaPreview({ path, type, colors }) {
 
   if (!path) return null;
   if (type === 'video') {
-    return <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs }}>🎬 Video attached</Text>;
+    return <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs }}>{t('ui.businessProfile.videoAttached')}</Text>;
   }
   if (!signedUrl) return null;
   return (
@@ -78,12 +58,13 @@ function ExperienceMediaPreview({ path, type, colors }) {
 }
 
 export default function BusinessProfileScreen({ route, navigation }) {
+  const { t, language } = useLanguage();
   const { partnerId } = route.params;
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
 
   const [partner, setPartner] = useState(null);
-  const thingsToDo = partner ? thingsToDoHere(partner) : [];
+  const thingsToDo = partner ? thingsToDoLabels(partner, language) : [];
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
@@ -207,14 +188,14 @@ export default function BusinessProfileScreen({ route, navigation }) {
     try {
       const { confirmationCode } = await redeemOffer(offer.id);
       setRedemptionCounts((prev) => ({ ...prev, [offer.id]: (prev[offer.id] ?? 0) + 1 }));
-      Alert.alert('Redeemed!', `Show staff at ${partner?.name} this code to confirm: ${confirmationCode}`);
+      Alert.alert(t('ui.businessProfile.redeemed'), t('ui.businessProfile.showStaffAtThisCode', { name: partner?.name, confirmationCode: confirmationCode }));
     } catch (e) {
       if (e.message === 'ALREADY_REDEEMED') {
-        Alert.alert("You've already redeemed this");
+        Alert.alert(t('ui.businessProfile.youveAlreadyRedeemedThis'));
       } else if (e.message === 'REDEMPTION_LIMIT_REACHED') {
-        Alert.alert('Sorry, this offer is fully claimed');
+        Alert.alert(t('ui.businessProfile.sorryThisOfferIsFully'));
       } else if (e.message === 'OFFER_LOCKED') {
-        Alert.alert('Not unlocked yet', 'This offer needs more people to join first — check back soon.');
+        Alert.alert(t('ui.businessProfile.notUnlockedYet'), t('ui.businessProfile.thisOfferNeedsMorePeople'));
       } else {
         presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRedeem(offer) });
       }
@@ -245,7 +226,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
   if (loadError || !partner) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load this business." onRetry={load} />
+        <LoadErrorState message={t('ui.businessProfile.couldntLoadThisBusiness')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -266,62 +247,60 @@ export default function BusinessProfileScreen({ route, navigation }) {
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{partner.name}</Text>
             <Text style={styles.meta}>
-              {followerCount} follower{followerCount === 1 ? '' : 's'}
+              {followerCountLine(followerCount, language)}
               {partner.address ? ` · ${partner.address}` : ''}
             </Text>
           </View>
         </View>
 
-        {formatPartnerReliabilityLine(fulfillmentReputation, fulfillmentResponseTime) && (
-          <Text style={styles.reliabilityLine}>{formatPartnerReliabilityLine(fulfillmentReputation, fulfillmentResponseTime)}</Text>
+        {reliabilityLine(fulfillmentReputation, fulfillmentResponseTime, language) && (
+          <Text style={styles.reliabilityLine}>{reliabilityLine(fulfillmentReputation, fulfillmentResponseTime, language)}</Text>
         )}
 
         {/* Hours (item 71): only what the owner declared, read by the one open-now resolver; nothing when not declared. */}
-        {weekHoursLines(partner.operating_hours) && (
+        {weekHoursRows(partner.operating_hours, language) && (
           <View style={{ marginBottom: 6 }}>
-            {businessHoursLabel(partner) ? (
-              <Text style={styles.reliabilityLine}>🕒 {businessHoursLabel(partner)}</Text>
+            {hoursLine(partner, language) ? (
+              <Text style={styles.reliabilityLine}>🕒 {hoursLine(partner, language)}</Text>
             ) : null}
-            {weekHoursLines(partner.operating_hours).map((l) => (
-              <Text key={l.day} style={styles.reliabilityLine}>{l.day}  {l.text}</Text>
+            {weekHoursRows(partner.operating_hours, language).map((l) => (
+              <Text key={l.key} style={styles.reliabilityLine}>{l.day}  {l.text}</Text>
             ))}
           </View>
         )}
         {/* Booking mode (item 72): how you come in, as the owner declared it; nothing when not declared. */}
-        {bookingModeOption(bookingModeOf(partner)) && (
-          <Text style={styles.reliabilityLine}>
-            {bookingModeOption(bookingModeOf(partner)).icon} {bookingModeOption(bookingModeOf(partner)).customerLine}
-          </Text>
+        {bookingModeLine(partner, language) && (
+          <Text style={styles.reliabilityLine}>{bookingModeLine(partner, language)}</Text>
         )}
         {/* Item 82: the owner's price tier and optional typical spend; hidden when neither was said. */}
-        {businessPriceLine(partner.price_level, partner.typical_spend_per_person) && (
+        {priceLine(partner.price_level, partner.typical_spend_per_person, language) && (
           <Text style={styles.reliabilityLine}>
-            💲 {businessPriceLine(partner.price_level, partner.typical_spend_per_person)}
+            💲 {priceLine(partner.price_level, partner.typical_spend_per_person, language)}
           </Text>
         )}
         {/* Item 80: the largest group the owner said they can host (total people); hidden when not set, never guessed. */}
-        {maxGroupLine(partner.max_group_size) && (
-          <Text style={styles.reliabilityLine} accessibilityLabel={`Largest group, ${maxGroupLine(partner.max_group_size)}`}>
-            👥 Largest group · {maxGroupLine(partner.max_group_size)}
+        {largestGroupLine(partner.max_group_size, language) && (
+          <Text style={styles.reliabilityLine} accessibilityLabel={t('ui.businessProfile.largestGroupA11y', { size: largestGroupLine(partner.max_group_size, language) })}>
+            👥 {t('ui.businessProfile.largestGroup', { size: largestGroupLine(partner.max_group_size, language) })}
           </Text>
         )}
         {/* Item 86: what the owner said they don't accommodate; hidden when nothing is declared. */}
-        {notAccommodatedLine(partner) && (
-          <Text style={styles.reliabilityLine} accessibilityLabel={`Not accommodated, ${notAccommodatedLine(partner)}`}>
-            🚫 {notAccommodatedLine(partner)}
+        {restrictionsLine(partner, language) && (
+          <Text style={styles.reliabilityLine} accessibilityLabel={t('ui.businessProfile.notAccommodatedA11y', { list: restrictionsLine(partner, language) })}>
+            🚫 {restrictionsLine(partner, language)}
           </Text>
         )}
         {/* Item 88: dietary options the owner declared; hidden when nothing is declared (never "none"). */}
-        {dietaryOptionsLine(partner) && (
-          <Text style={styles.reliabilityLine} accessibilityLabel={`Dietary options, ${dietaryOptionsLine(partner)}`}>
-            🥗 {dietaryOptionsLine(partner)}
+        {dietaryLine(partner, language) && (
+          <Text style={styles.reliabilityLine} accessibilityLabel={t('ui.businessProfile.dietaryOptionsA11y', { list: dietaryLine(partner, language) })}>
+            🥗 {dietaryLine(partner, language)}
           </Text>
         )}
-        {dietarySafetyNote(dietaryOptionsOf(partner)) && (
-          <Text style={styles.reliabilityLine}>{dietarySafetyNote(dietaryOptionsOf(partner))}</Text>
+        {dietaryNote(partner, language) && (
+          <Text style={styles.reliabilityLine}>{dietaryNote(partner, language)}</Text>
         )}
         {/* Item 81: per-space sizes, only for a declared capability with a size set. */}
-        {spaceCapacityLines(partner).map((sp) => (
+        {spaceLines(partner, language).map((sp) => (
           <Text key={sp.key} style={styles.reliabilityLine} accessibilityLabel={`${sp.label}, ${sp.line}`}>
             {sp.key === 'private_room' ? '🥂' : '🌤️'} {sp.label} · {sp.line}
           </Text>
@@ -331,7 +310,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
             never reads as real-time when it isn't (see CLAUDE.md). */}
         {partner.availability_pulse && isAvailabilityPulseFresh(partner.availability_pulse_updated_at) && (
           <Text style={styles.reliabilityLine}>
-            {availabilityPulseIcon(partner.availability_pulse)} {availabilityPulseLabel(partner.availability_pulse)}
+            {availabilityPulseIcon(partner.availability_pulse)} {pulseLabel(partner.availability_pulse, language)}
             {partner.availability_pulse_note ? ` — ${partner.availability_pulse_note}` : ''}
           </Text>
         )}
@@ -342,7 +321,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
             consumer sees the same "also" identity the resolver itself now
             scores (secondaryCategoryBonus, intentResolverScoring.js). */}
         {(partner.categories ?? []).length > 0 && (
-          <Text style={styles.meta}>Also: {partner.categories.join(', ')}</Text>
+          <Text style={styles.meta}>{t('ui.businessProfile.alsoList', { list: partner.categories.map((c) => categoryName(c, language)).join(', ') })}</Text>
         )}
 
         {partner.description ? <Text style={styles.description}>{partner.description}</Text> : null}
@@ -357,7 +336,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
             never claims something the owner did not say; hidden when nothing is supported. */}
         {thingsToDo.length > 0 && (
           <>
-            <Text style={styles.attributeSectionHeader}>What You Can Do Here</Text>
+            <Text style={styles.attributeSectionHeader}>{t('ui.businessProfile.whatYouCanDoHere')}</Text>
             <View style={styles.attributeChipRow}>
               {thingsToDo.map((a) => (
                 <View key={a.key} style={styles.attributeChip}>
@@ -368,22 +347,22 @@ export default function BusinessProfileScreen({ route, navigation }) {
           </>
         )}
 
-        {!!ageRangeLabel(partner.suited_age_min, partner.suited_age_max) && (
-          <Text style={styles.attributeSectionHeader}>🧒 {ageRangeLabel(partner.suited_age_min, partner.suited_age_max)}</Text>
+        {!!suitedAgesLabel(partner.suited_age_min, partner.suited_age_max, language) && (
+          <Text style={styles.attributeSectionHeader}>🧒 {suitedAgesLabel(partner.suited_age_min, partner.suited_age_max, language)}</Text>
         )}
 
         {((partner.attributes ?? []).some((key) => key !== LEGACY_RESERVATION_ATTRIBUTE) || partner.cuisine) && (
           <>
-            <Text style={styles.attributeSectionHeader}>Why People Choose Us</Text>
+            <Text style={styles.attributeSectionHeader}>{t('ui.businessProfile.whyPeopleChooseUs')}</Text>
             <View style={styles.attributeChipRow}>
               {partner.cuisine && (
                 <View style={styles.attributeChip}>
-                  <Text style={styles.attributeChipText}>{cuisineLabel(partner.cuisine)}</Text>
+                  <Text style={styles.attributeChipText}>{cuisineName(partner.cuisine, language)}</Text>
                 </View>
               )}
               {(partner.attributes ?? []).filter((key) => key !== LEGACY_RESERVATION_ATTRIBUTE).map((key) => (
                 <View key={key} style={styles.attributeChip}>
-                  <Text style={styles.attributeChipText}>{businessAttributeLabel(key)}</Text>
+                  <Text style={styles.attributeChipText}>{businessAttributeName(key, language)}</Text>
                 </View>
               ))}
             </View>
@@ -401,11 +380,11 @@ export default function BusinessProfileScreen({ route, navigation }) {
             widens). */}
         {(partner.accommodates_party_types ?? []).length > 0 && (
           <>
-            <Text style={styles.attributeSectionHeader}>What This Business Can Accommodate</Text>
+            <Text style={styles.attributeSectionHeader}>{t('ui.businessProfile.whatThisBusinessCanAccommodate')}</Text>
             <View style={styles.attributeChipRow}>
               {partner.accommodates_party_types.map((key) => (
                 <View key={key} style={styles.attributeChip}>
-                  <Text style={styles.attributeChipText}>{experiencePartyTypeLabel(key)}</Text>
+                  <Text style={styles.attributeChipText}>{partyTypeName(key, language)}</Text>
                 </View>
               ))}
             </View>
@@ -453,10 +432,10 @@ export default function BusinessProfileScreen({ route, navigation }) {
             style={styles.planHereButton}
             onPress={() => navigation.navigate('MakeAPlan', { partnerId })}
             activeOpacity={0.85}
-            accessibilityLabel={`Plan something at ${partner.name}`}
+            accessibilityLabel={t('ui.businessProfile.planSomethingAtA11y', { name: partner.name })}
             accessibilityRole="button"
           >
-            <Text style={styles.planHereButtonText}>📅 Plan Here</Text>
+            <Text style={styles.planHereButtonText}>{t('ui.businessProfile.planHere')}</Text>
           </TouchableOpacity>
         )}
 
@@ -465,11 +444,11 @@ export default function BusinessProfileScreen({ route, navigation }) {
             style={[styles.followButton, following && styles.followingButton]}
             onPress={handleToggleFollow}
             activeOpacity={0.85}
-            accessibilityLabel={following ? `Unfollow ${partner.name}` : `Follow ${partner.name}`}
+            accessibilityLabel={following ? t('ui.businessProfile.unfollowA11y', { name: partner.name }) : t('ui.businessProfile.followA11y', { name: partner.name })}
             accessibilityRole="button"
           >
             <Text style={[styles.followButtonText, following && styles.followingButtonText]}>
-              {following ? '✓ Following' : '+ Follow'}
+              {following ? t('ui.businessProfile.following') : t('ui.businessProfile.follow')}
             </Text>
           </TouchableOpacity>
           {/* Nearby does the arranging: the person says what they want and Nearby finds businesses (this one included)
@@ -478,10 +457,10 @@ export default function BusinessProfileScreen({ route, navigation }) {
             style={styles.messageButton}
             onPress={() => navigation.navigate('AskBusiness', { prefillCategory: partner.subcategory ?? null })}
             activeOpacity={0.85}
-            accessibilityLabel="Ask Nearby to set something up like this"
+            accessibilityLabel={t('ui.businessProfile.askNearbyToSetSomethingA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.messageButtonText}>✨ Plan something</Text>
+            <Text style={styles.messageButtonText}>{t('ui.businessProfile.planSomething')}</Text>
           </TouchableOpacity>
           {/* With a booking CTA as the primary, "Plan Here" moves into this row so it stays one tap away. */}
           {bookingAction ? (
@@ -489,10 +468,10 @@ export default function BusinessProfileScreen({ route, navigation }) {
               style={styles.messageButton}
               onPress={() => navigation.navigate('MakeAPlan', { partnerId })}
               activeOpacity={0.85}
-              accessibilityLabel={`Plan something at ${partner.name}`}
+              accessibilityLabel={t('ui.businessProfile.planSomethingAtA11y', { name: partner.name })}
               accessibilityRole="button"
             >
-              <Text style={styles.messageButtonText}>📅 Plan Here</Text>
+              <Text style={styles.messageButtonText}>{t('ui.businessProfile.planHere')}</Text>
             </TouchableOpacity>
           ) : null}
           {/* Same request form as asking Nearby, addressed to just this business (hidden when Reserve/Book/Request already opens it). */}
@@ -501,10 +480,10 @@ export default function BusinessProfileScreen({ route, navigation }) {
             style={styles.messageButton}
             onPress={() => navigation.navigate('AskBusiness', { targetPartner: { id: partnerId, name: partner.name }, prefillCategory: partner.subcategory ?? null })}
             activeOpacity={0.85}
-            accessibilityLabel={`Get an offer from ${partner.name}`}
+            accessibilityLabel={t('ui.businessProfile.getAnOfferFromA11y', { name: partner.name })}
             accessibilityRole="button"
           >
-            <Text style={styles.messageButtonText}>Get an offer</Text>
+            <Text style={styles.messageButtonText}>{t('ui.businessProfile.getAnOffer')}</Text>
           </TouchableOpacity>
           )}
           {hasThread && (
@@ -512,10 +491,10 @@ export default function BusinessProfileScreen({ route, navigation }) {
               style={styles.messageButton}
               onPress={() => navigation.navigate('BusinessConversation', { partnerId, partnerName: partner.name })}
               activeOpacity={0.85}
-              accessibilityLabel={`Your conversation with ${partner.name}`}
+              accessibilityLabel={t('ui.businessProfile.yourConversationWithA11y', { name: partner.name })}
               accessibilityRole="button"
             >
-              <Text style={styles.messageButtonText}>💬 Your conversation</Text>
+              <Text style={styles.messageButtonText}>{t('ui.businessProfile.yourConversation')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -525,7 +504,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
             not a generic offer or a plain description. */}
         {experiences.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeader}>Signature Experiences</Text>
+            <Text style={styles.sectionHeader}>{t('ui.businessProfile.signatureExperiences')}</Text>
             {experiences.map((exp) => (
               <View key={exp.id} style={styles.experienceCard}>
                 <Text style={styles.experienceTitle}>
@@ -535,8 +514,8 @@ export default function BusinessProfileScreen({ route, navigation }) {
                 {(exp.price_level || exp.party_type) && (
                   <Text style={styles.experienceMeta}>
                     {[
-                      exp.price_level ? experiencePriceLabel(exp.price_level) : null,
-                      exp.party_type ? experiencePartyTypeLabel(exp.party_type) : null,
+                      exp.price_level ? (exp.price_level === 'free' ? t('ui.gatheringOptions.free') : experiencePriceLabel(exp.price_level)) : null,
+                      exp.party_type ? partyTypeName(exp.party_type, language) : null,
                     ].filter(Boolean).join(' · ')}
                   </Text>
                 )}
@@ -548,19 +527,19 @@ export default function BusinessProfileScreen({ route, navigation }) {
 
         {reputation && reputation.feedbackCount > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeader}>What People Say</Text>
+            <Text style={styles.sectionHeader}>{t('ui.businessProfile.whatPeopleSay')}</Text>
             {reputation.welcomingPct != null && reputation.wouldReturnPct != null && (
               <Text style={styles.repLine}>
-                ⭐ {reputation.welcomingPct}% said welcoming · {reputation.wouldReturnPct}% would attend again ({reputation.feedbackCount} review{reputation.feedbackCount === 1 ? '' : 's'})
+                ⭐ {t('ui.businessProfile.reputationLine', { welcoming: reputation.welcomingPct, again: reputation.wouldReturnPct, count: reputation.feedbackCount })}
               </Text>
             )}
-            {lovedTags.length > 0 && <Text style={styles.repLine}>💛 What people loved: {lovedTags.join(' · ')}</Text>}
+            {lovedTags.length > 0 && <Text style={styles.repLine}>{t('ui.businessProfile.whatPeopleLoved')}{' '}{lovedTags.join(' · ')}</Text>}
           </View>
         )}
 
         {photoUrls.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeader}>Photos</Text>
+            <Text style={styles.sectionHeader}>{t('ui.businessProfile.photos')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {photoUrls.map((url, i) => (
                 <Image key={i} source={{ uri: url }} style={styles.photo} />
@@ -571,7 +550,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
 
         {offers.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeader}>Perks</Text>
+            <Text style={styles.sectionHeader}>{t('ui.businessProfile.perks')}</Text>
             {offers.map((offer) => {
               const unlock = unlockStatus(offer, unlockProgress[offer.id]);
               const isLocked = unlock?.isLocked ?? false;
@@ -581,7 +560,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
                   {offer.description ? <Text style={styles.offerDesc}>{offer.description}</Text> : null}
                   {offer.redemption_limit != null && (
                     <Text style={styles.scarcityText}>
-                      {Math.max(0, offer.redemption_limit - (redemptionCounts[offer.id] ?? 0))} of {offer.redemption_limit} {offer.redemption_limit === 1 ? 'spot' : 'spots'} left
+                      {t('ui.brandOffersUi.spotsLeftOf', { left: Math.max(0, offer.redemption_limit - (redemptionCounts[offer.id] ?? 0)), count: offer.redemption_limit })}
                     </Text>
                   )}
                   {offer.unlock_scope != null && (
@@ -591,7 +570,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
                   )}
                   {isLocked ? (
                     <View style={[styles.redeemButton, styles.lockedButton]}>
-                      <Text style={styles.lockedButtonText}>Locked</Text>
+                      <Text style={styles.lockedButtonText}>{t('ui.businessProfile.locked')}</Text>
                     </View>
                   ) : (
                     <TouchableOpacity
@@ -599,10 +578,10 @@ export default function BusinessProfileScreen({ route, navigation }) {
                       onPress={() => handleRedeem(offer)}
                       disabled={redeemingId === offer.id}
                       activeOpacity={0.85}
-                      accessibilityLabel={`Redeem ${offer.title}`}
+                      accessibilityLabel={t('ui.businessProfile.redeemA11y', { title: offer.title })}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.redeemButtonText}>{redeemingId === offer.id ? 'Redeeming...' : 'Redeem'}</Text>
+                      <Text style={styles.redeemButtonText}>{redeemingId === offer.id ? t('ui.businessProfile.redeeming') : t('ui.businessProfile.redeem')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -613,7 +592,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
 
         {gatherings.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeader}>Upcoming Gatherings</Text>
+            <Text style={styles.sectionHeader}>{t('ui.businessProfile.upcomingGatherings')}</Text>
             {gatherings.map((g) => {
               const categoryStyle = categoryStyleFor(g.interest_tag);
               return (
@@ -622,13 +601,13 @@ export default function BusinessProfileScreen({ route, navigation }) {
                   style={styles.gatheringCard}
                   onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
                   activeOpacity={0.85}
-                  accessibilityLabel={`View ${g.title}`}
+                  accessibilityLabel={t('ui.businessProfile.viewA11y', { title: g.title })}
                   accessibilityRole="button"
                 >
                   <Text style={styles.gatheringIcon}>{categoryStyle.icon}</Text>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.gatheringTitle}>{g.title}</Text>
-                    <Text style={styles.gatheringMeta}>{formatDate(g.scheduled_at)}</Text>
+                    <Text style={styles.gatheringMeta}>{displayDateTime(g.scheduled_at, language)}</Text>
                   </View>
                 </TouchableOpacity>
               );

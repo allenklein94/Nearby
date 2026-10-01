@@ -4,6 +4,7 @@ import { searchScope } from '../constants/categoryTree';
 import { groupForTag } from '../constants/gatheringCategories';
 import { formatDistanceAway } from '../utils/formatDistance';
 import { supabase } from './supabase';
+import { tr } from '../i18n/translate';
 import { randomUUID } from 'expo-crypto';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
@@ -1264,7 +1265,7 @@ export async function getHostLovedTags(hostId) {
   return Object.entries(counts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
-    .map(([tag]) => GREAT_BECAUSE_LABELS[tag] ?? tag);
+    .map(([tag]) => (GREAT_BECAUSE_LABELS[tag] ? tr(`ui.businessProfile.v.loved.${tag}`) : tag));
 }
 
 // Business-hosted equivalent of getHostLovedTags/getHostReputation — same
@@ -1293,7 +1294,7 @@ export async function getBusinessLovedTags(partnerId) {
   return Object.entries(counts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
-    .map(([tag]) => GREAT_BECAUSE_LABELS[tag] ?? tag);
+    .map(([tag]) => (GREAT_BECAUSE_LABELS[tag] ? tr(`ui.businessProfile.v.loved.${tag}`) : tag));
 }
 
 export async function getBusinessReputation(partnerId) {

@@ -1,5 +1,5 @@
 import { EXPERIENCE_PARTY_TYPE_OPTIONS } from '../constants/businessAttributes';
-import { practicalFacts } from '../utils/gatheringPractical';
+import { practicalFactsIn } from '../i18n/gatheringFactsDisplay';
 import { attendeeSummary } from '../utils/gatheringAttendeeDisplay';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
@@ -352,7 +352,7 @@ export default function GatheringsScreen({ navigation, route }) {
 
   function renderVibeDetails(item) {
     const hasVibe = item.energy_level != null || item.conversation_level != null || item.group_size_feel != null
-      || practicalFacts(item).length > 0 || (item.timeline_steps?.length > 0);
+      || practicalFactsIn(item, language).length > 0 || (item.timeline_steps?.length > 0);
     if (!hasVibe) return null;
 
     return (
@@ -364,7 +364,7 @@ export default function GatheringsScreen({ navigation, route }) {
             {item.group_size_feel != null && <Text style={styles.vibeBadgeText}>{t('ui.gatherings.group', { n: item.group_size_feel })}</Text>}
           </View>
         )}
-        {practicalFacts(item).map((f) => <Text key={f} style={styles.beginnerText}>{f}</Text>)}
+        {practicalFactsIn(item, language).map((f) => <Text key={f} style={styles.beginnerText}>{f}</Text>)}
         {item.timeline_steps?.length > 0 && (
           <View style={{ marginTop: spacing.xs }}>
             {item.timeline_steps.map((step, i) => (

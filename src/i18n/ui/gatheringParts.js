@@ -62,6 +62,11 @@ export default {
     dinner: "Dinner",
     anotherWalk: "Another walk",
     hostLabel: "Host:",
+    fact: {
+      byoEquipment: "Bring your own equipment",
+      about: "About {duration}",
+      effort: "{level} effort",
+    },
   },
   es: {
     gatheringFull: "Reunión llena",
@@ -124,6 +129,11 @@ export default {
     dinner: "Cena",
     anotherWalk: "Otra caminata",
     hostLabel: "Anfitrión:",
+    fact: {
+      byoEquipment: "Trae tu propio equipo",
+      about: "Aprox. {duration}",
+      effort: "Esfuerzo: {level}",
+    },
   },
   de: {
     gatheringFull: "Treffen voll",
@@ -186,6 +196,11 @@ export default {
     dinner: "Abendessen",
     anotherWalk: "Noch ein Spaziergang",
     hostLabel: "Gastgeber:",
+    fact: {
+      byoEquipment: "Eigene Ausrüstung mitbringen",
+      about: "Etwa {duration}",
+      effort: "Anstrengung: {level}",
+    },
   },
   fr: {
     gatheringFull: "Rencontre complète",
@@ -248,6 +263,11 @@ export default {
     dinner: "Dîner",
     anotherWalk: "Une autre balade",
     hostLabel: "Hôte :",
+    fact: {
+      byoEquipment: "Apporte ton propre matériel",
+      about: "Environ {duration}",
+      effort: "Effort : {level}",
+    },
   },
   pt: {
     gatheringFull: "Encontro lotado",
@@ -310,6 +330,11 @@ export default {
     dinner: "Jantar",
     anotherWalk: "Outra caminhada",
     hostLabel: "Anfitrião:",
+    fact: {
+      byoEquipment: "Traga seu próprio equipamento",
+      about: "Cerca de {duration}",
+      effort: "Esforço: {level}",
+    },
   },
   ht: {
     gatheringFull: "Rasanbleman an plen",
@@ -372,6 +397,11 @@ export default {
     dinner: "Dine",
     anotherWalk: "Yon lòt pwomnad",
     hostLabel: "Òganizatè:",
+    fact: {
+      byoEquipment: "Pote pwòp ekipman ou",
+      about: "Anviwon {duration}",
+      effort: "Efò: {level}",
+    },
   },
   zh: {
     gatheringFull: "聚会已满",
@@ -434,6 +464,11 @@ export default {
     dinner: "晚餐",
     anotherWalk: "再去散步",
     hostLabel: "主办人：",
+    fact: {
+      byoEquipment: "自带装备",
+      about: "约 {duration}",
+      effort: "强度：{level}",
+    },
   },
   vi: {
     gatheringFull: "Buổi gặp mặt đã đủ người",
@@ -496,6 +531,11 @@ export default {
     dinner: "Bữa tối",
     anotherWalk: "Một buổi đi dạo nữa",
     hostLabel: "Người tổ chức:",
+    fact: {
+      byoEquipment: "Tự mang dụng cụ",
+      about: "Khoảng {duration}",
+      effort: "Mức sức: {level}",
+    },
   },
   tl: {
     gatheringFull: "Puno na ang gathering",
@@ -558,6 +598,11 @@ export default {
     dinner: "Hapunan",
     anotherWalk: "Isa pang lakad",
     hostLabel: "Host:",
+    fact: {
+      byoEquipment: "Magdala ng sariling gamit",
+      about: "Mga {duration}",
+      effort: "Hirap: {level}",
+    },
   },
   ru: {
     gatheringFull: "Встреча заполнена",
@@ -620,6 +665,11 @@ export default {
     dinner: "Ужин",
     anotherWalk: "Ещё одна прогулка",
     hostLabel: "Организатор:",
+    fact: {
+      byoEquipment: "Свой инвентарь",
+      about: "Около {duration}",
+      effort: "Нагрузка: {level}",
+    },
   },
   ko: {
     gatheringFull: "모임 정원 마감",
@@ -682,5 +732,10 @@ export default {
     dinner: "저녁 식사",
     anotherWalk: "또 산책하기",
     hostLabel: "호스트:",
+    fact: {
+      byoEquipment: "장비 개별 지참",
+      about: "약 {duration}",
+      effort: "강도: {level}",
+    },
   },
 };

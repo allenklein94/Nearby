@@ -78,8 +78,9 @@ describe('things you can do here (owner item 38)', () => {
   });
   it('the public profile renders the section from the derived list', () => {
     const src = require('fs').readFileSync(require('path').join(__dirname, '../screens/BusinessProfileScreen.js'), 'utf8');
-    expect(src).toMatch(/thingsToDoHere\(partner\)/);
-    expect(src).toMatch(/What You Can Do Here/);
+    expect(src).toMatch(/thingsToDoLabels\(partner, language\)/);
+    expect(src).toMatch(/ui\.businessProfile\.whatYouCanDoHere/);
+    expect(require('fs').readFileSync(require('path').join(__dirname, '../i18n/businessProfileDisplay.js'), 'utf8')).toMatch(/const list = thingsToDoHere\(row\)/);
   });
 });
 

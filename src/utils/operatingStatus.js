@@ -145,27 +145,36 @@ function clockLabel(minutes) {
   return `${h12}${mm ? `:${String(mm).padStart(2, '0')}` : ''} ${h < 12 ? 'AM' : 'PM'}`;
 }
 
-// { status: open|closed|unknown, label } from owner-declared hours at `at`, in the hours' own timezone.
-export function hoursStatus(hours, at = new Date()) {
-  if (!hours || operatingHoursProblem(hours)) return { status: 'unknown', label: null };
-  if (hours.temporarily_closed === true) return { status: 'closed', label: 'Temporarily closed' };
+// The open/closed decision as parts (no wording): { status, kind: temporarily_closed|all_day|until|closed|null, until? (minutes) }.
+// hoursStatus words it in English; i18n/businessProfileDisplay.js words the same parts in the person's language.
+export function hoursStatusParts(hours, at = new Date()) {
+  if (!hours || operatingHoursProblem(hours)) return { status: 'unknown', kind: null };
+  if (hours.temporarily_closed === true) return { status: 'closed', kind: 'temporarily_closed' };
   const clock = localClock(at, hours.timezone);
-  if (!clock) return { status: 'unknown', label: null };
+  if (!clock) return { status: 'unknown', kind: null };
   const today = hoursFor(hours, clock.dateKey, clock.day);
-  if (today === 'all_day') return { status: 'open', label: 'Open 24 hours' };
+  if (today === 'all_day') return { status: 'open', kind: 'all_day' };
   if (Array.isArray(today)) {
     for (const s of today.map(span).filter(Boolean)) {
-      if (clock.minutes >= s.o && clock.minutes < s.c) return { status: 'open', label: `Open now · until ${clockLabel(s.c)}` };
+      if (clock.minutes >= s.o && clock.minutes < s.c) return { status: 'open', kind: 'until', until: s.c };
     }
   }
   // Last night's hours that run past midnight.
   const yesterday = hoursFor(hours, previousDate(clock.dateKey), previousDay(clock.day));
   if (Array.isArray(yesterday)) {
     for (const s of yesterday.map(span).filter(Boolean)) {
-      if (s.c > 1440 && clock.minutes < s.c - 1440) return { status: 'open', label: `Open now · until ${clockLabel(s.c)}` };
+      if (s.c > 1440 && clock.minutes < s.c - 1440) return { status: 'open', kind: 'until', until: s.c };
     }
   }
-  return { status: 'closed', label: 'Closed now' };
+  return { status: 'closed', kind: 'closed' };
+}
+
+// { status: open|closed|unknown, label } from owner-declared hours at `at`, in the hours' own timezone.
+export function hoursStatus(hours, at = new Date()) {
+  const p = hoursStatusParts(hours, at);
+  const label = { temporarily_closed: 'Temporarily closed', all_day: 'Open 24 hours', closed: 'Closed now' }[p.kind]
+    ?? (p.kind === 'until' ? `Open now · until ${clockLabel(p.until)}` : null);
+  return { status: p.status, label };
 }
 
 // The public hours line for a business (item 72): a Book / Request business inside its hours is never called "Open now".

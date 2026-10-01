@@ -152,7 +152,9 @@ describe('public profile line', () => {
   });
   it('the profile renders it only through maxGroupLine, never "Unknown", never a filter or a new screen', () => {
     const src = read('src/screens/BusinessProfileScreen.js');
-    expect(src).toMatch(/maxGroupLine\(partner\.max_group_size\) &&/);
+    // through the localized display layer, which is maxGroupLine itself in English
+    expect(src).toMatch(/largestGroupLine\(partner\.max_group_size, language\) &&/);
+    expect(read('src/i18n/businessProfileDisplay.js')).toMatch(/isEnglish\(language\) \? maxGroupLine\(value\)/);
     expect(src).not.toMatch(/max_group_size\s*\?\?\s*['"]Unknown|Capacity:/);
     for (const f of ['src/screens/DiscoverHubScreen.js', 'src/screens/GatheringsScreen.js', 'src/screens/HomeScreen.js']) expect(read(f)).not.toMatch(/max_group_size|maxGroupLine/);
   });
@@ -172,7 +174,7 @@ describe('privacy and scope', () => {
     const users = fs.readdirSync(path.join(ROOT, 'src'), { recursive: true })
       .filter((f) => /\.js$/.test(f) && !/test\.js$/.test(f) && /from '[^']*businessCapabilities'/.test(read(`src/${f}`)))
       .map((f) => f.split(path.sep).join('/')).sort();
-    expect(users).toEqual(['screens/BusinessDashboardScreen.js', 'screens/BusinessProfileScreen.js', 'services/intentResolver.js', 'utils/askResolver.js']);
+    expect(users).toEqual(['i18n/businessProfileDisplay.js', 'screens/BusinessDashboardScreen.js', 'services/intentResolver.js', 'utils/askResolver.js']);
   });
 });
 

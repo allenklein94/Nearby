@@ -223,7 +223,9 @@ describe('6. business profile capacity', () => {
   it('"Up to 40 people" when the owner set 40; hidden when unset', () => {
     expect(maxGroupLine(40)).toBe('Up to 40 people');
     for (const v of [null, undefined, '']) expect(maxGroupLine(v)).toBeNull();
-    expect(read('src/screens/BusinessProfileScreen.js')).toMatch(/maxGroupLine\(partner\.max_group_size\) &&/);
+    // The screen reads it through the localized display layer, which returns maxGroupLine itself in English.
+    expect(read('src/screens/BusinessProfileScreen.js')).toMatch(/largestGroupLine\(partner\.max_group_size, language\) &&/);
+    expect(read('src/i18n/businessProfileDisplay.js')).toMatch(/isEnglish\(language\) \? maxGroupLine\(value\)/);
   });
   it('capacity is TOTAL people: a party of 40 fits a max of 40, never host + 1', () => {
     const src = read('src/constants/businessCapabilities.js');

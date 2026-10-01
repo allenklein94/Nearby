@@ -106,7 +106,8 @@ describe('structured and declared only; wired where it matters', () => {
     expect(dash).toMatch(/dietaryRelevantFor\(selectedPartner\)/);
     expect(dash).toMatch(/setBusinessDietaryOptions\(selectedPartner\.id, v\)/);
     expect(dash).toMatch(/requestDietary: req\.dietary/);
-    expect(r('src/screens/BusinessProfileScreen.js')).toMatch(/dietaryOptionsLine\(partner\)/);
+    expect(r('src/screens/BusinessProfileScreen.js')).toMatch(/dietaryLine\(partner, language\)/);
+    expect(r('src/i18n/businessProfileDisplay.js')).toMatch(/isEnglish\(language\)\) return dietaryOptionsLine\(partner\)/);
     expect(r('src/services/intentResolver.js')).toMatch(/applyDietaryToCandidates\(deduped, dietaryFromAsk\(rawText\)\)/);
     expect(r('src/services/brandOffers.js')).toMatch(/outdoor_capacity, dietary_options[,']/);
     expect(r('src/utils/businessOpportunityCard.js')).toMatch(/'cuisine', 'dietary', 'party_size'/);
@@ -157,7 +158,8 @@ describe('item 88 scope lock (owner, 2026-09-26)', () => {
     expect(out[0].dietaryReason).toBe('Business-declared: Gluten-free options');
     expect(applyDietaryToCandidates([{ score: 0, businessPartner: { dietary_options: ['halal'] } }], ['halal'])[0].dietaryReason).toBe('Halal');
     for (const o of BUSINESS_DIETARY_OPTIONS) expect(o.label).not.toMatch(/safe|guarantee|certified|free kitchen/i);
-    expect(r('src/screens/BusinessProfileScreen.js')).toMatch(/dietarySafetyNote\(dietaryOptionsOf\(partner\)\)/);
+    expect(r('src/screens/BusinessProfileScreen.js')).toMatch(/dietaryNote\(partner, language\)/);
+    expect(r('src/i18n/businessProfileDisplay.js')).toMatch(/dietarySafetyNote\(dietaryOptionsOf\(partner\)\)/);
   });
   it('not built: gathering dietary fields, AI / free-text extraction, a profile preference, a Discover filter', () => {
     const dir = path.join(ROOT, 'supabase/migrations');

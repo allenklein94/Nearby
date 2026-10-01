@@ -1,4 +1,4 @@
-import { practicalFacts } from '../utils/gatheringPractical';
+import { practicalFactsIn } from '../i18n/gatheringFactsDisplay';
 import { attendeeSummary } from '../utils/gatheringAttendeeDisplay';
 import { presentRecoverableError } from '../utils/recoverableError';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
@@ -678,7 +678,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
           )}
 
           {gathering.description ? <Text style={styles.description}>{gathering.description}</Text> : null}
-          {practicalFacts(gathering).map((f) => <Text key={f} style={styles.description}>{f}</Text>)}
+          {practicalFactsIn(gathering, language).map((f) => <Text key={f} style={styles.description}>{f}</Text>)}
 
           {viewer.relation === 'attending' && viewer.time === 'past' && (
             <GatheringFeedbackPrompt gatheringId={gatheringId} />
