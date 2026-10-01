@@ -46,6 +46,18 @@ describe('disclosure cannot be omitted', () => {
   it('the disclosure sentence says it is paid and not activity-based', () => {
     expect(sponsoredWhyText('Cafe', 'Food & Drink')).toMatch(/paid to be shown/);
     expect(sponsoredWhyText('Cafe', 'Food & Drink')).toMatch(/isn't based on your activity/);
+    // English is unchanged; every app language has both versions and fills the name and category in.
+    expect(sponsoredWhyText('Cafe', 'Food & Drink')).toBe("Cafe paid to be shown to people browsing Food & Drink near them. It isn't based on your activity.");
+    expect(sponsoredWhyText(null, null)).toBe("This business paid to be shown to people browsing nearby. It isn't based on your activity.");
+    for (const lang of UI_LANGUAGES) {
+      const withCat = sponsoredWhyText('Cafe', 'CATX', lang);
+      expect(withCat).toContain('Cafe');
+      expect(withCat).toContain('CATX');
+      expect(sponsoredWhyText('Cafe', null, lang)).toContain('Cafe');
+      expect(sponsoredWhyText('Cafe', null, lang)).not.toContain('{');
+      expect(sponsoredWhyText(null, null, lang)).not.toContain('{');
+    }
+    expect(sponsoredWhyText('Cafe', null, 'xx')).toBe(sponsoredWhyText('Cafe', null, 'en'));
   });
 });
 

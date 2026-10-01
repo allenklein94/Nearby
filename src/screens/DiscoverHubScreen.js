@@ -2833,7 +2833,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <SponsoredSpotlightSlot
               userLocation={userLocation}
               categoryGroup={placesCategory}
-              categoryLabel={PLACE_CATEGORIES.find((c) => c.key === placesCategory)?.label}
+              categoryLabel={PLACE_CATEGORIES.some((c) => c.key === placesCategory) ? names.group(placesCategory) : undefined}
               navigation={navigation}
             />
           )}

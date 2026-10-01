@@ -39,7 +39,7 @@ export default function SponsoredCard({ card, categoryLabel, onView, onHide, onR
           <Text style={styles.link}>{t('ui.sponsored.reportThisAd')}</Text>
         </TouchableOpacity>
       </View>
-      {why ? <Text style={styles.whyText}>{sponsoredWhyText(card.partner_name, categoryLabel)}</Text> : null}
+      {why ? <Text style={styles.whyText}>{sponsoredWhyText(card.partner_name, categoryLabel, language)}</Text> : null}
     </View>
   );
 }
