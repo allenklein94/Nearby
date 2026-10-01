@@ -9,7 +9,7 @@ describe('buildMatchReasons', () => {
       requestCuisine: 'italian',
       businessCuisine: 'italian',
     });
-    const lines = buildMatchReasons(reasons, { occasionPhrase: 'anniversary experiences' });
+    const lines = buildMatchReasons(reasons, { occasion: 'anniversary' });
     expect(lines).toEqual([
       'You offer anniversary experiences',
       'It matches your cuisine',

@@ -170,6 +170,24 @@ export const LOCALIZED_FILES = [
   'src/components/SponsoredPromotionsPanel.js',
   'src/components/BusinessNotificationPreferences.js',
   'src/components/BusinessEmailNotifications.js',
+  'src/i18n/bizFormat.js',
+  'src/utils/bestTime.js',
+  'src/utils/billingBreakdown.js',
+  'src/utils/matchFitLine.js',
+  'src/utils/offerValue.js',
+  'src/utils/invoiceDisplay.js',
+  'src/utils/businessLocationNotice.js',
+  'src/utils/discountCap.js',
+  'src/utils/outcomeDisplay.js',
+  'src/utils/sponsoredPromotions.js',
+  'src/utils/offerMedia.js',
+  'src/utils/priorityTimeRange.js',
+  'src/utils/availabilityWindow.js',
+  'src/utils/offerSubmission.js',
+  'src/utils/creativeExtraction.js',
+  'src/utils/businessOpportunityCard.js',
+  'src/utils/budgetTier.js',
+  'src/utils/demandSignals.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
@@ -185,11 +203,15 @@ export const INTENTIONAL_ENGLISH = {
     'Make new friends': 'stored onboarding token, matched, never shown',
     'Meet new people': 'stored onboarding token, matched, never shown',
   },
+  'src/utils/offerMedia.js': {
+    'Available {}–{}': "availableWindowLabel's English output; other languages read OfferCustomerBody.offerWindowText (ui.requestDetail.availableWindow)",
+  },
   'src/components/BusinessHoursEditor.js': {
     'America/Los_Angeles': 'example IANA time zone id (placeholder), a technical value',
   },
   'src/screens/BusinessDashboardScreen.js': {
     Resy: 'reservation system brand name',
+    'Available until': "matched against the English time-window label only to shorten it to 'until' (English path); never shown on its own",
     OpenTable: 'reservation system brand name',
   },
   'src/screens/AskBusinessScreen.js': {

@@ -18,6 +18,7 @@
 //
 // usableNowTier(): 'available' > 'open' > 'unknown' | 'closed' (the last two get no lift). The explicit Open-now filter keeps
 // only 'available' and 'open'; without it, unknown stays eligible and nothing is hidden.
+import { tr } from '../i18n/translate';
 import { bookingModeOf, NEEDS_BOOKING_FIRST } from '../constants/bookingMode';
 import { timeWindowState, windowEnd } from './timeWindow';
 import { isGatheringFull } from './gatheringFullness';
@@ -84,29 +85,31 @@ function previousDay(day) {
 
 function dayProblem(value, label) {
   if (value === 'closed' || value === 'all_day') return null;
-  if (!Array.isArray(value) || value.length === 0) return `${label}: choose Closed, 24 hours, or add hours.`;
-  if (value.length > MAX_INTERVALS_PER_DAY) return `${label}: at most ${MAX_INTERVALS_PER_DAY} time ranges.`;
+  if (!Array.isArray(value) || value.length === 0) return HP('chooseClosed', { label });
+  if (value.length > MAX_INTERVALS_PER_DAY) return HP('maxRanges', { label, n: MAX_INTERVALS_PER_DAY });
   const spans = [];
   for (const iv of value) {
-    if (!Array.isArray(iv) || iv.length !== 2 || toMinutes(iv[0]) == null || toMinutes(iv[1]) == null) return `${label}: pick an opening and a closing time.`;
+    if (!Array.isArray(iv) || iv.length !== 2 || toMinutes(iv[0]) == null || toMinutes(iv[1]) == null) return HP('pickOpenClose', { label });
     const s = span(iv);
-    if (!s) return `${label}: opening and closing can't be the same time (use 24 hours instead).`;
+    if (!s) return HP('sameTime', { label });
     spans.push(s);
   }
   spans.sort((a, b) => a.o - b.o);
-  for (let i = 1; i < spans.length; i += 1) if (spans[i].o < spans[i - 1].c) return `${label}: time ranges overlap.`;
+  for (let i = 1; i < spans.length; i += 1) if (spans[i].o < spans[i - 1].c) return HP('overlap', { label });
   return null;
 }
-const DAY_LABEL = { sun: 'Sunday', mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday' };
+// Owner-editor messages (English = the server's own wording, set_business_operating_hours); other languages read ui.bizHelp.hours.
+const HP = (key, vars) => tr(`ui.bizHelp.hours.${key}`, vars);
+const dayName = (d) => HP(`day.${d}`);
 
 // The first reason the hours cannot be saved, or null. Never "fixes" them silently.
 export function operatingHoursProblem(hours) {
   if (hours == null) return null;
-  if (typeof hours !== 'object') return 'Hours are not readable.';
-  if (!hours.timezone || typeof hours.timezone !== 'string' || !localClock(new Date(), hours.timezone)) return 'Pick a valid time zone.';
+  if (typeof hours !== 'object') return HP('notReadable');
+  if (!hours.timezone || typeof hours.timezone !== 'string' || !localClock(new Date(), hours.timezone)) return HP('pickTimeZone');
   const week = hours.week ?? {};
   for (const d of DAY_KEYS) {
-    const p = dayProblem(week[d], DAY_LABEL[d]);
+    const p = dayProblem(week[d], dayName(d));
     if (p) return p;
   }
   // An overnight range may not run into the next day's first range.
@@ -115,19 +118,19 @@ export function operatingHoursProblem(hours) {
     const next = week[DAY_KEYS[(DAY_KEYS.indexOf(d) + 1) % 7]];
     if (!Array.isArray(today) || !Array.isArray(next)) continue;
     const tail = Math.max(0, ...today.map(span).filter(Boolean).map((s) => s.c - 1440));
-    if (tail > 0 && next.map(span).filter(Boolean).some((s) => s.o < tail)) return `${DAY_LABEL[d]}'s late hours run into the next day's hours.`;
+    if (tail > 0 && next.map(span).filter(Boolean).some((s) => s.o < tail)) return HP('lateRunsIntoNext', { day: dayName(d) });
   }
   const special = hours.special ?? [];
-  if (!Array.isArray(special) || special.length > MAX_SPECIAL_DAYS) return `At most ${MAX_SPECIAL_DAYS} special days.`;
+  if (!Array.isArray(special) || special.length > MAX_SPECIAL_DAYS) return HP('maxSpecial', { n: MAX_SPECIAL_DAYS });
   const seen = new Set();
   for (const s of special) {
-    if (!s || !DATE_RE.test(s.date ?? '')) return 'A special day needs a date.';
-    if (seen.has(s.date)) return `${s.date} is listed twice.`;
+    if (!s || !DATE_RE.test(s.date ?? '')) return HP('specialNeedsDate');
+    if (seen.has(s.date)) return HP('listedTwice', { date: s.date });
     seen.add(s.date);
     const p = dayProblem(s.hours, s.date);
     if (p) return p;
   }
-  if (hours.temporarily_closed != null && typeof hours.temporarily_closed !== 'boolean') return 'Temporary closure must be on or off.';
+  if (hours.temporarily_closed != null && typeof hours.temporarily_closed !== 'boolean') return HP('closureOnOff');
   return null;
 }
 

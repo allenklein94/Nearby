@@ -27,6 +27,8 @@ Conventions" as one bullet, not a narrative.
 
 ## Active / unfinished work
 
+**Business dashboard localization (owner, 2026-10-01): COMPLETE.** Dashboard screen (`bizDash1-3`), its components (`bizComp`) and the helper files that compose its sentences (`bizHelp`, via `i18n/bizFormat.js`) follow the device language in 11 languages; English byte-identical. Tracker + what stays English: `PRODUCT_AUDIT/BUSINESS_DASHBOARD_LOCALIZATION_PROGRESS.md`. Supersedes the 2026-09-29 "business stays English" rule for the dashboard. Not device/browser-tested; translations machine-authored.
+
 Nothing in progress (items 126 intent funnel + 127 category trends complete 2026-09-28, see below). Everything through **Item 148** (business notification mute groups in `send-push`, web dead-button fix; 147 business email-notification fallback in `send-push`, inert until Resend secrets are set; 146 budget in the Plan read layer, `plans.budget_min`; 145 standalone gatherings + business requests in the Plan read layer, `get_plan_id_for_resource`; 144 dating match + friend connection get a Plan, `get_plan_id_for_match`; 143 participants can open group Plan detail via `get_plan_id_for_group_plan`; 142 plan detail screen on the read layer; 141 universal Plan read layer, `get_plan_overview`; 140 skippable onboarding occasions step; 139 Friends/Dating notification split; 138 onboarding notification prefs; 137 animation audit) (2026-09-18) is done and archived in
 `CLAUDE_HISTORY.md` (top section, "Full Active / unfinished work archive" — grep by "Item NNN").
 Recent arc for orientation: Items 61-111 Occasions/"Plan for Someone" (wizard, group voting,

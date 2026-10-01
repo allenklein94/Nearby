@@ -65,7 +65,7 @@ export default function SponsoredPromotionsPanel({ offers = [] }) {
   const cancelPaid = (p) => {
     Alert.alert(
       t('ui.bizComp.cancelThisSpotlight'),
-      t('ui.bizComp.itHasntStartedSoYoull', { priceLabel: priceLabel(p.amount_cents, p.currency) || 'the full amount' }),
+      t('ui.bizComp.itHasntStartedSoYoull', { priceLabel: priceLabel(p.amount_cents, p.currency) || t('ui.bizHelp.sponsored.theFullAmount') }),
       [
         { text: t('ui.bizComp.keepIt'), style: 'cancel' },
         { text: t('ui.bizComp.cancelAndRefund'), style: 'destructive', onPress: async () => {

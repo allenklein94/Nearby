@@ -48,7 +48,7 @@ describe('one temporal engine (item 41)', () => {
     expect(windowPhrase(iso(at(20)), iso(at(22)), 'availability', at(12))).toMatch(/Tonight|Today/);
     expect(windowPhrase(null, null)).toBeNull();
     const src = require('fs').readFileSync(require('path').join(__dirname, '../screens/BusinessDashboardScreen.js'), 'utf8');
-    expect(src).toMatch(/windowPhrase\(a\.starts_at, a\.ends_at/);
+    expect(src).toMatch(/[wW]indowPhrase\(a\.starts_at, a\.ends_at/);
     expect(src).not.toMatch(/new Date\(s\.expires_at\)\.toLocaleDateString/);
   });
   it('no surface builds its own "Valid until" / "Ends in" wording', () => {

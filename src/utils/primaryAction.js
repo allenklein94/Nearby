@@ -40,6 +40,8 @@ import { tr } from '../i18n/translate';
 
 // Consumer labels are read in the person's language at call time (ui.actions); business-side labels stay English.
 const A = (key) => tr(`ui.actions.${key}`);
+// Business dashboard labels (business dashboard localization, phase 6): ui.bizHelp.cta, English = the locked copy.
+const H = (key) => tr(`ui.bizHelp.cta.${key}`);
 
 // Returns { kind, label, showView }.
 //   kind: 'interested' (private maybe, toggles) | 'join' (opens the normal join confirmation on the detail screen) | 'view_plan' | 'requested' | 'view'
@@ -163,13 +165,13 @@ export function businessPrimaryAction(partner, { posting = null, at = new Date()
 export function opportunityPrimaryAction(opportunity, { inFlight = false, now } = {}) {
   if (!opportunity) return { kind: 'view', state: 'unknown' };
   if (opportunity.status !== 'pending') return { kind: 'view', state: opportunity.status ?? 'unknown' };
-  if (inFlight) return { kind: 'status', status: 'Reviewing your offer…', state: 'reviewing' };
-  if (!canRespondToOpportunity(opportunity, now)) return { kind: 'status', status: 'No longer open', state: 'closed' };
+  if (inFlight) return { kind: 'status', status: H('reviewingOffer'), state: 'reviewing' };
+  if (!canRespondToOpportunity(opportunity, now)) return { kind: 'status', status: H('noLongerOpen'), state: 'closed' };
   return {
     kind: 'send_offer',
-    label: 'Accept & Offer',
+    label: H('acceptAndOffer'),
     state: 'respondable',
-    alternatives: [{ kind: 'offer_alternative', label: 'Offer Alternative' }, { kind: 'decline', label: 'Decline' }],
+    alternatives: [{ kind: 'offer_alternative', label: H('offerAlternative') }, { kind: 'decline', label: H('decline') }],
   };
 }
 

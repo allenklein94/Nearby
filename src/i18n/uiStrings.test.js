@@ -137,14 +137,16 @@ describe('action labels', () => {
     expect(gatheringPrimaryAction(g, 'me', Date.now()).label).toBe('Join');
     expect(consumerOfferAction({ status: 'accepted' }, { request: { status: 'fulfilled' } }).status).toBe("You're booked");
     expect(interestedConfirmation(true)[0]).toBe('Saved to Interested');
+    expect(opportunityPrimaryAction({ status: 'pending', business_requests: { status: 'open' } }).label).toBe('Accept & Offer');
+    expect(replySentConfirmation({ offer_type: 'alt_time' })[0]).toBe('New time suggested');
   });
-  test('consumer labels follow the language, business labels stay English', () => {
+  test('consumer and business labels follow the language (business dashboard localized 2026-10-01)', () => {
     setCurrentLanguage('de');
     expect(gatheringPrimaryAction(g, 'me', Date.now()).label).toBe('Mitmachen');
     expect(consumerOfferAction({ status: 'accepted' }, { request: { status: 'fulfilled' } }).status).toBe('Du hast gebucht');
     expect(interestedConfirmation(false)[0]).toBe('Aus „Interessiert“ entfernt');
-    expect(opportunityPrimaryAction({ status: 'pending', business_requests: { status: 'open' } }).label).toBe('Accept & Offer');
-    expect(replySentConfirmation({ offer_type: 'alt_time' })[0]).toBe('New time suggested');
+    expect(opportunityPrimaryAction({ status: 'pending', business_requests: { status: 'open' } }).label).toBe('Annehmen & anbieten');
+    expect(replySentConfirmation({ offer_type: 'alt_time' })[0]).toBe('Neue Zeit vorgeschlagen');
   });
 });
 

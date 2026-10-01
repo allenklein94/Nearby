@@ -3,6 +3,8 @@
 // say the same thing before a round trip. Cap = the business's ACTIVE fulfillment policy's
 // max_discount_pct; no policy / paused / null cap = no limit and no required percentage.
 
+import { tr } from '../i18n/translate';
+
 export function activeDiscountCap(policy) {
   if (!policy || policy.active === false) return null;
   const cap = Number(policy.max_discount_pct);
@@ -19,10 +21,10 @@ export function parseDiscountPct(input) {
 // Returns a message when the offer/posting would be refused, else null.
 export function discountCapProblem({ offerType, pctInput, cap }) {
   const pct = parseDiscountPct(pctInput);
-  if (pct != null && (pct < 0 || pct > 100)) return 'Discount percent must be between 0 and 100.';
+  if (pct != null && (pct < 0 || pct > 100)) return tr('ui.bizHelp.discount.range');
   if (cap == null) return null;
   if (pct == null) {
-    return offerType === 'discount' ? `Enter the discount percentage -- your policy caps discounts at ${cap}%.` : null;
+    return offerType === 'discount' ? tr('ui.bizHelp.discount.enterPct', { cap }) : null;
   }
-  return pct > cap ? `This discount (${pct}%) is above your maximum discount of ${cap}%.` : null;
+  return pct > cap ? tr('ui.bizHelp.discount.overCap', { pct, cap }) : null;
 }

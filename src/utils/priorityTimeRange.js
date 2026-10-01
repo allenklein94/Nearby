@@ -11,26 +11,24 @@
 // discoverable at a given time uses Post Availability / Occasion Packages / Signature Experiences instead. Guarded
 // by priorityTimeBoundaryGuard.test.js; do not import this module from src/services/intentResolver*.js or any
 // other consumer candidate-discovery file.
-import { formatTimeOfDay } from './businessRequestWhen';
+import { tr } from '../i18n/translate';
+import { bizTimeRange } from '../i18n/bizFormat';
 
 // Picker Dates -> 'HH:MM' strings, or a validation error. Both-or-neither; end must be strictly after start.
 export function priorityTimeRangeFromChoice(from, to) {
   if (!from && !to) return { start: null, end: null };
-  if (!from || !to) return { error: 'Set both a start and an end time, or clear both.' };
+  if (!from || !to) return { error: tr('ui.bizHelp.priorityTime.bothEnds') };
   const hhmm = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   const start = hhmm(from);
   const end = hhmm(to);
-  if (end <= start) return { error: 'The end time must be after the start time.' };
+  if (end <= start) return { error: tr('ui.bizHelp.priorityTime.endAfterStart') };
   return { start, end };
 }
 
 // "4-7 PM" (or "4:30-7 PM" when either side isn't on the hour); null when there's no complete window.
 export function priorityTimeRangeLabel(start, end) {
   if (!start || !end) return null;
-  const a = formatTimeOfDay(start);
-  const b = formatTimeOfDay(end);
-  if (!a || !b) return null;
-  return a.slice(-2) === b.slice(-2) ? `${a.slice(0, -3)}–${b}` : `${a}–${b}`;
+  return bizTimeRange(start, end);
 }
 
 // Stored 'HH:MM[:SS]' -> a today-dated Date for the time picker; null for anything unparseable/absent.

@@ -2,7 +2,12 @@
 // before it commits. Pure so it is testable; the count itself always comes from the server
 // (get_availability_demand_preview, which withholds anything under the 5-person privacy floor).
 
+import { tr } from '../i18n/translate';
+import { bizIsEnglish, bizLanguage } from '../i18n/bizFormat';
+import { categoryName } from '../i18n/categoryNames';
+
 const HOUR = 60 * 60 * 1000;
+const W = (key, vars) => tr(`ui.bizHelp.availability.${key}`, vars);
 
 // Next full hour, two hours long: a sensible starting point for the pickers (never submitted unseen).
 export function defaultScheduledWindow(now = new Date()) {
@@ -27,9 +32,9 @@ export function resolveAvailabilityWindow({ mode, start, end, durationHours, now
 }
 
 export function scheduledWindowProblem({ start, end, now = new Date() }) {
-  if (!start || !end) return 'Pick when you have space.';
-  if (end <= start) return 'End time must be after the start time.';
-  if (end <= now) return 'That time window has already passed.';
+  if (!start || !end) return W('pickWhen');
+  if (end <= start) return W('endAfterStart');
+  if (end <= now) return W('passed');
   return null;
 }
 
@@ -39,19 +44,22 @@ export function shiftEndAfterStart(newStart, end) {
   return new Date(newStart.getTime() + 2 * HOUR);
 }
 
-function dayLabel(startsAt, now) {
+// 'today' | 'tomorrow' | the weekday (English: the device's own weekday name, as before).
+function dayPart(startsAt, now) {
   const d = new Date(startsAt);
   const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-  if (sameDay(d, now)) return 'today';
+  if (sameDay(d, now)) return { day: 'today' };
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  if (sameDay(d, tomorrow)) return 'tomorrow';
-  return d.toLocaleDateString([], { weekday: 'long' });
+  if (sameDay(d, tomorrow)) return { day: 'tomorrow' };
+  return { day: 'weekday', weekday: bizIsEnglish() ? d.toLocaleDateString([], { weekday: 'long' }) : tr(`ui.bizHelp.hours.day.${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][d.getDay()]}`) };
 }
 
 // null when there is no honest count to show (below the floor, or not fetched).
 export function demandPreviewLine({ people, category, startsAt, now = new Date() }) {
   if (!Number.isInteger(people) || people <= 0) return null;
-  const what = category ? category.toLowerCase() : 'something like this';
-  return `✨ ${people} ${people === 1 ? 'person' : 'people'} nearby ${people === 1 ? 'is' : 'are'} looking for ${what} ${dayLabel(startsAt, now)}.`;
+  const p = dayPart(startsAt, now);
+  const what = category ? (bizIsEnglish() ? category.toLowerCase() : categoryName(category, bizLanguage())) : W('somethingLikeThis');
+  const vars = { count: people, what, weekday: p.weekday };
+  return W(`preview.${p.day}`, vars);
 }

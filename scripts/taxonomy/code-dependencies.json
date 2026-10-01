@@ -9558,6 +9558,20 @@
   },
   {
    "tag": "Coffee",
+   "file": "src/i18n/ui/bizHelp.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pastries",
+   "file": "src/i18n/ui/bizHelp.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coffee",
    "file": "src/i18n/ui/coverage.js",
    "consumer": "code",
    "occurrences": 1,

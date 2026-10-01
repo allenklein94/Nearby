@@ -1,25 +1,25 @@
 // Past-invoice rows for the dashboard billing card. The amounts are the
 // server's (generate_monthly_invoices); only wording lives here. A 'draft'
 // invoice is computed but not yet sent, so it is never called final or paid.
-const STATUS_LABEL = {
-  draft: 'Draft, not yet sent',
-  sent: 'Sent',
-  paid: 'Paid',
-  failed: 'Payment failed',
-  void: 'Void',
-};
+import { tr } from '../i18n/translate';
+import { bizIsEnglish, bizLanguage, bizMoney2 } from '../i18n/bizFormat';
+import { vocabValue } from '../i18n/format';
+
+const STATUSES = ['draft', 'sent', 'paid', 'failed', 'void'];
 
 export function invoiceStatusLabel(status) {
-  return STATUS_LABEL[status] ?? 'Pending';
+  return tr(`ui.bizHelp.invoice.${STATUSES.includes(status) ? status : 'pending'}`);
 }
 
 export function invoiceRow(invoice) {
   const d = new Date(invoice.period_start);
-  const month = d.toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const month = bizIsEnglish()
+    ? d.toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })
+    : `${(vocabValue(bizLanguage(), 'date.months') ?? [])[d.getUTCMonth()] ?? ''} ${d.getUTCFullYear()}`;
   const n = Number(invoice.redemption_count ?? 0);
   return {
     id: invoice.id,
-    text: `${month} \u00b7 ${n} redemption${n === 1 ? '' : 's'} \u00b7 ${invoice.amount_due == null || !Number.isFinite(Number(invoice.amount_due)) ? '—' : `$${Number(invoice.amount_due).toFixed(2)}`}`,
+    text: `${month} \u00b7 ${tr('ui.bizHelp.value.redemptions', { count: n })} \u00b7 ${bizMoney2(invoice.amount_due)}`,
     status: invoiceStatusLabel(invoice.status),
   };
 }

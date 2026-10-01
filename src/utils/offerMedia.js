@@ -4,6 +4,9 @@ import { timeWindowState } from './timeWindow';
 // enforces the same size cap and refuses a video with no frames.
 
 import { formatTimeOfDay } from './businessRequestWhen';
+import { tr } from '../i18n/translate';
+
+const M = (key) => tr(`ui.bizHelp.offerForm.${key}`);
 
 export const MAX_OFFER_VIDEO_MS = 30 * 1000;
 export const MAX_OFFER_VIDEO_BYTES = 25 * 1024 * 1024;
@@ -20,8 +23,8 @@ export function videoFrameTimes(durationMs) {
 // A plain-words problem with a picked video, or null when it is fine. Images are never limited here.
 export function videoLimitProblem(asset) {
   if (!asset || asset.type !== 'video') return null;
-  if (Number.isFinite(asset.duration) && asset.duration > MAX_OFFER_VIDEO_MS) return 'That video is longer than 30 seconds. Trim it or pick a shorter clip.';
-  if (Number.isFinite(asset.fileSize) && asset.fileSize > MAX_OFFER_VIDEO_BYTES) return 'That video is larger than 25MB. Pick a shorter clip.';
+  if (Number.isFinite(asset.duration) && asset.duration > MAX_OFFER_VIDEO_MS) return M('videoTooLong');
+  if (Number.isFinite(asset.fileSize) && asset.fileSize > MAX_OFFER_VIDEO_BYTES) return M('videoTooBig');
   return null;
 }
 
@@ -38,11 +41,11 @@ export function visibleRedemption(offer) {
 export function validUntilFromChoice(day, time, now = new Date()) {
   if (!day) return { iso: null };
   // A day with no time (e.g. "Today" preselected from a creative's wording) is never sent as "no end time": the owner picks the time.
-  if (!time) return { error: 'Pick the time your offer ends, or choose No end time.' };
+  if (!time) return { error: M('pickEndTime') };
   const end = new Date(now);
   end.setHours(time.getHours(), time.getMinutes(), 0, 0);
   if (day === 'tomorrow') end.setDate(end.getDate() + 1);
-  if (end.getTime() <= now.getTime()) return { error: 'Pick an end time that is later than now.' };
+  if (end.getTime() <= now.getTime()) return { error: M('endLaterThanNow') };
   return { iso: end.toISOString() };
 }
 
@@ -60,11 +63,11 @@ export function validityLabel(validUntil, now = new Date()) {
 // or { error }. The server (submit_business_offer, edge function) enforces the same rule.
 export function availableWindowFromChoice(from, to) {
   if (!from && !to) return { from: null, until: null };
-  if (!from || !to) return { error: 'Set both a start and an end for the available window, or clear it.' };
+  if (!from || !to) return { error: M('windowBothEnds') };
   const hhmm = (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   const f = hhmm(from);
   const u = hhmm(to);
-  if (u <= f) return { error: 'The available window must end after it starts.' };
+  if (u <= f) return { error: M('windowEndAfterStart') };
   return { from: f, until: u };
 }
 

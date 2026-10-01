@@ -6,13 +6,14 @@
 //   <= 0            -> invalid (rejected at input; $0 is not a spending ceiling)
 //   0 < x <= 25     -> $      25 < x <= 75 -> $$      x > 75 -> $$$
 // Decimals are compared as-is (25.00 is $, 25.01 is $$, 75.00 is $$, 75.01 is $$$).
+import { tr } from '../i18n/translate';
+import { bizMoney } from '../i18n/bizFormat';
+
 export const BUDGET_TIER_CUTOFFS = { low: 25, mid: 75 };
 
 export function isValidBudget(max) {
   return max == null || (typeof max === 'number' && Number.isFinite(max) && max > 0);
 }
-
-export const INVALID_BUDGET_MESSAGE = 'Budget must be more than $0.';
 
 export function budgetTier(max) {
   if (max == null || !isValidBudget(Number(max)) || Number(max) <= 0) return null;
@@ -35,7 +36,7 @@ export function formatBudgetLine(max, partySize) {
   const tier = budgetTier(max);
   if (!tier) return null;
   const total = partyBudgetTotal(max, partySize);
-  return [`Up to $${Number(max)}/person`, total != null ? `$${total} for the party` : null, tier].filter(Boolean).join(' · ');
+  return [tr('ui.bizHelp.budget.upTo', { amount: bizMoney(Number(max)) }), total != null ? tr('ui.bizHelp.budget.forParty', { amount: bizMoney(total) }) : null, tier].filter(Boolean).join(' · ');
 }
 
 // Both figures are per person, so the comparison never involves party size.

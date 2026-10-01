@@ -1,26 +1,25 @@
-import { formatDateLabel, formatTimeOfDay } from './businessRequestWhen';
 import { formatBudgetLine } from './budgetTier';
+import { tr } from '../i18n/translate';
+import { bizDate, bizTimeRange } from '../i18n/bizFormat';
+
+const P = (key, vars) => tr(`ui.bizHelp.opportunity.${key}`, vars);
 
 // The business-facing "opportunity card": what a business needs to decide in two seconds whether it can do this.
 // Built ONLY from the structured fields get_business_opportunities already returns (never raw text, never invented
 // tiers): a title, one "who / when" line, one "how special / how much" line, and what the customer is looking for.
 // Labels are injected so this stays dependency-free and unit-testable.
-export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addonLabel, attributeLabels = [], cuisineLabel = null, itemLabels = [] }) {
+export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addonLabel, attributeLabels = [], cuisineLabel = null, itemLabels = [], categoryLabel = null }) {
   const r = req ?? {};
-  const kind = addonLabel ? `${addonLabel} add-on` : (r.gatherings && r.category ? `${r.category} gathering` : r.gatherings ? 'Gathering' : r.category);
-  const title = [occasionLabel, kind].filter(Boolean).join(' · ') || r.summary || 'New request';
+  // `categoryLabel` = the category's name in the viewer's language (the caller translates it); r.category is the stored value.
+  const cat = categoryLabel ?? r.category;
+  const kind = addonLabel ? P('addon', { addon: addonLabel }) : (r.gatherings && r.category ? P('categoryGathering', { category: cat }) : r.gatherings ? P('gathering') : cat);
+  const title = [occasionLabel, kind].filter(Boolean).join(' · ') || r.summary || P('newRequest');
 
-  const start = r.time_window_start ? formatTimeOfDay(r.time_window_start) : null;
-  const end = r.time_window_end ? formatTimeOfDay(r.time_window_end) : null;
   // "7–8 PM" when both ends share AM/PM, else "11 AM–1 PM".
-  const timeLabel = start
-    ? end
-      ? (start.slice(-2) === end.slice(-2) ? `${start.slice(0, -3)}–${end}` : `${start}–${end}`)
-      : start
-    : null;
+  const timeLabel = r.time_window_start ? bizTimeRange(r.time_window_start, r.time_window_end) : null;
   const whenLine = [
-    r.party_size ? `${r.party_size} ${r.party_size === 1 ? 'person' : 'people'}` : null,
-    formatDateLabel(r.date),
+    r.party_size ? P('people', { count: r.party_size }) : null,
+    bizDate(r.date),
     timeLabel,
   ].filter(Boolean).join(' · ');
 
@@ -38,19 +37,20 @@ export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addo
 // Price fit is real now that budget_max is locked as per person (see budgetTier.js): it fires only when the request's
 // per-person budget >= the business's own active per-person minimum spend. The availability line is real but narrow: it only appears when the business has an
 // ACTIVE posted slot (business_availability) covering the request's date/time -- there are no standing opening hours.
+// ctx.occasion = the occasion's name in the viewer's language (English lowercased, as before), or null.
 const REASON_LINES = {
-  offered_occasion: (ctx) => `You offer ${ctx.occasionPhrase ?? 'this occasion'}`,
-  want_occasion: (ctx) => `You've said you want more ${ctx.occasionPhrase ?? 'requests like this'}`,
-  priority_attribute: () => 'It matches what you said you want more of',
-  offers_attribute: () => 'You offer what they are looking for',
-  cuisine: () => 'It matches your cuisine',
-  dietary: () => 'You offer the dietary options they need',
-  party_size: () => 'The party fits your usual group size',
-  time_window: () => 'It fits the hours you want to fill',
-  weekday: () => 'A weekday request, which you want more of',
-  last_minute: () => 'A last-minute booking, which you want more of',
-  large_group: () => 'A large group, which you want more of',
-  boost: () => "You're actively boosting this category",
+  offered_occasion: (ctx) => (ctx.occasion ? P('reason.offeredOccasion', { occasion: ctx.occasion }) : P('reason.offeredThisOccasion')),
+  want_occasion: (ctx) => (ctx.occasion ? P('reason.wantOccasion', { occasion: ctx.occasion }) : P('reason.wantRequestsLikeThis')),
+  priority_attribute: () => P('reason.priorityAttribute'),
+  offers_attribute: () => P('reason.offersAttribute'),
+  cuisine: () => P('reason.cuisine'),
+  dietary: () => P('reason.dietary'),
+  party_size: () => P('reason.partySize'),
+  time_window: () => P('reason.timeWindow'),
+  weekday: () => P('reason.weekday'),
+  last_minute: () => P('reason.lastMinute'),
+  large_group: () => P('reason.largeGroup'),
+  boost: () => P('reason.boost'),
 };
 const REASON_ORDER = ['offered_occasion', 'want_occasion', 'priority_attribute', 'offers_attribute', 'cuisine', 'dietary', 'party_size', 'time_window', 'weekday', 'last_minute', 'large_group', 'boost'];
 
@@ -76,14 +76,15 @@ export function availabilityCoversRequest(req, postings = [], now = new Date()) 
   });
 }
 
-export function buildMatchReasons(reasons = [], { occasionPhrase = null, hasAvailability = false, priceFits = false, directed = false } = {}) {
+// occasion: the occasion's name as it reads inside a sentence ("birthday"); the wording around it comes from the key.
+export function buildMatchReasons(reasons = [], { occasion = null, hasAvailability = false, priceFits = false, directed = false } = {}) {
   const keys = new Set((reasons ?? []).map((r) => r.key));
   // A host who picked THIS business (business_request_offers.is_directed) is the strongest, real reason there is.
-  const lines = (directed ? ['They asked for your business specifically'] : []).concat(REASON_ORDER.filter((k) => keys.has(k)).map((k) => REASON_LINES[k]({ occasionPhrase })));
-  if (priceFits) lines.push('Their budget fits your price range');
-  if (hasAvailability) lines.push('You have space posted for that time');
+  const lines = (directed ? [P('reason.directed')] : []).concat(REASON_ORDER.filter((k) => keys.has(k)).map((k) => REASON_LINES[k]({ occasion })));
+  if (priceFits) lines.push(P('reason.priceFits'));
+  if (hasAvailability) lines.push(P('reason.hasAvailability'));
   // Fan-out only creates an opportunity for a business inside the request's radius, so this is true by construction.
   // (A directed ask named this business, not an area, so the line does not apply.)
-  if (!directed) lines.push('You are within the area they asked for');
+  if (!directed) lines.push(P('reason.inArea'));
   return directed || lines.length > 1 ? lines : [];
 }

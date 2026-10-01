@@ -4,7 +4,10 @@ import { activityHints } from '../constants/activityLayer';
 import { canRespondToOpportunity } from '../utils/objectLifecycle';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
-import { displayClock, displayDateTime, displayDay } from '../i18n/display';
+import { displayAgo, displayClock, displayDateTime, displayDay } from '../i18n/display';
+import { bizWindowPhrase } from '../i18n/bizFormat';
+import { attributeLabel, experienceOptionLabel } from '../i18n/optionLabels';
+import { cuisineName } from '../i18n/businessProfileDisplay';
 import { categoryName } from '../i18n/categoryNames';
 import DraftBanner from '../components/DraftBanner';
 import AgeRangePicker from '../components/AgeRangePicker';
@@ -14,7 +17,7 @@ import { conflictMessages, hasPending, shownValue } from '../utils/settingConfli
 import OfferCustomerBody from '../components/OfferCustomerBody';
 import { offerValueLines } from '../utils/offerValue';
 import { offerRevealHeader } from '../utils/offerCopy';
-import { replySentConfirmation, OFFER_QUEUED_CONFIRMATION } from '../utils/actionConfirmations';
+import { replySentConfirmation, offerQueuedConfirmation } from '../utils/actionConfirmations';
 import useFormDraft from '../hooks/useFormDraft';
 import { serializableAsset, assetStillExists } from '../services/formDrafts';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -2406,7 +2409,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         setOfferModalRequestId(null);
         if (resendingSubmissionId) { try { await dismissOfferSubmission(resendingSubmissionId); } catch (_e) { /* the old note just stays listed */ } setResendingSubmissionId(null); }
         await loadOfferSubmissions(selectedPartner.id);
-        showSuccessToast(...OFFER_QUEUED_CONFIRMATION);
+        showSuccessToast(...offerQueuedConfirmation());
       } else {
         await handleOfferResult(result, () => { offerDraft.clear(); setOfferModalRequestId(null); }, {
           // the reply's real fields, so the same classification as Activity/Request Detail names it (item 121/123)
@@ -2688,8 +2691,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     return Number.isFinite(n) ? n : null;
   }
   function formatWeatherCheckAge(checkedAtIso) {
-    const ago = formatAgo(checkedAtIso);
-    return ago ? `checked ${ago}` : 'not checked yet';
+    const ago = language === 'en' ? formatAgo(checkedAtIso) : displayAgo(checkedAtIso, language);
+    return ago ? t('ui.bizHelp.weatherChecked', { ago }) : t('ui.bizHelp.weatherNotChecked');
   }
   function normalizeTimeInput(text) {
     // Accepts "HH:MM" (24h) only -- kept deliberately simple, matching
@@ -4330,16 +4333,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     // boundary stays intact.
                     const surpriseTag = o.business_requests?.surprise_mode ? t('ui.bizDash2.surprise') : null;
                     const card = buildOpportunityCard(o.business_requests, {
-                      occasionLabel: reqOccasion?.label,
-                      experienceLabel: expLevelOpt?.label,
+                      occasionLabel: reqOccasion?.label ? (language === 'en' ? reqOccasion.label : categoryName(reqOccasion.label, language)) : null,
+                      experienceLabel: expLevelOpt ? experienceOptionLabel(expLevelOpt, language) : null,
                       addonLabel: o.business_requests?.addon_type ? planAddonLabel(o.business_requests.addon_type) : null,
-                      attributeLabels: reqAttrs.map((key) => businessAttributeLabel(key)),
-                      cuisineLabel: o.business_requests?.cuisine ? cuisineLabel(o.business_requests.cuisine) : null,
-                      itemLabels: (o.business_requests?.requested_items ?? []).map((k) => requestedItemLabel(k)),
+                      attributeLabels: reqAttrs.map((key) => attributeLabel(key, businessAttributeLabel(key), language)),
+                      cuisineLabel: o.business_requests?.cuisine ? (language === 'en' ? cuisineLabel(o.business_requests.cuisine) : cuisineName(o.business_requests.cuisine, language)) : null,
+                      itemLabels: (o.business_requests?.requested_items ?? []).map((k) => (language === 'en' ? requestedItemLabel(k) : t(`ui.bizHelp.item.${k}`))),
+                      categoryLabel: o.business_requests?.category ? categoryName(o.business_requests.category, language) : null,
                     });
                     // Context that changes how the request should be read stays, but as one quiet line, not chips.
                     const matchReasons = buildMatchReasons(o.opportunityReasons, {
-                      occasionPhrase: reqOccasion?.label ? `${reqOccasion.label.toLowerCase()} experiences` : null,
+                      occasion: reqOccasion?.label ? (language === 'en' ? reqOccasion.label.toLowerCase() : categoryName(reqOccasion.label, language)) : null,
                       directed: o.is_directed === true,
                       hasAvailability: availabilityCoversRequest(o.business_requests, myAvailability),
                       priceFits: fulfillmentPolicy?.active === true && budgetMeetsMinSpend(o.business_requests?.budget_max, fulfillmentPolicy?.min_spend_per_person),
@@ -4560,8 +4564,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         ].filter(Boolean).join(' · ') || t('ui.bizDash2.noFurtherDetailsGiven')}
                       </Text>
                       <Text style={styles.breakdownText}>{AVAILABILITY_STATUSES.has(a.status) ? t(`ui.bizDash3.availabilityStatus.${a.status}`) : a.status}</Text>
-                      {a.status === 'active' && windowPhrase(a.starts_at, a.ends_at, 'availability') ? (
-                        <Text style={styles.breakdownText}>🕒 {windowPhrase(a.starts_at, a.ends_at, 'availability')}</Text>
+                      {a.status === 'active' && bizWindowPhrase(a.starts_at, a.ends_at, 'availability') ? (
+                        <Text style={styles.breakdownText}>🕒 {bizWindowPhrase(a.starts_at, a.ends_at, 'availability')}</Text>
                       ) : null}
                       {a.status === 'active' && (
                         <TouchableOpacity
@@ -5372,7 +5376,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     {activePrioritySignals.map((s) => (
                       <View key={s.id} style={[styles.gatheringRow, { marginTop: spacing.xs }]}>
                         <Text style={styles.breakdownText}>
-                          🎯 {s.category} — {windowPhrase(null, s.expires_at, 'availability')?.replace(t('ui.bizDash2.availableUntil'), 'until') ?? 'ended'}
+                          🎯 {categoryName(s.category, language)} — {(language === 'en' ? windowPhrase(null, s.expires_at, 'availability')?.replace('Available until', 'until') : bizWindowPhrase(null, s.expires_at, 'event')) ?? t('ui.bizHelp.boostEnded')}
                         </Text>
                         <TouchableOpacity
                           onPress={() => handleClearBoost(s.id)}
@@ -6821,7 +6825,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <View style={offerPreviewing ? { display: 'none' } : undefined}>
               {offerModalRequest && (() => {
                 const ctx = buildOpportunityCard(offerModalRequest, {
-                  occasionLabel: offerModalRequest.occasion ? occasionLabel(offerModalRequest.occasion) : null,
+                  occasionLabel: offerModalRequest.occasion ? (language === 'en' ? occasionLabel(offerModalRequest.occasion) : categoryName(occasionLabel(offerModalRequest.occasion), language)) : null,
+                  categoryLabel: offerModalRequest.category ? categoryName(offerModalRequest.category, language) : null,
                 });
                 return (
                   <View style={{ marginBottom: spacing.md }}>

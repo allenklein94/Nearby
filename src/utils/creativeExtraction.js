@@ -4,6 +4,10 @@
 // redemption field, everything stays editable, and the discount cap + screening stay the final authority at send time.
 
 import { discountCapProblem } from './discountCap';
+import { tr } from '../i18n/translate';
+import { bizMoney } from '../i18n/bizFormat';
+
+const C = (key, vars) => tr(`ui.bizHelp.creative.${key}`, vars);
 
 // Mirrors supabase/functions/read-offer-creative `sanitize` (the server validates first; the client re-checks anyway).
 function text(v, max) {
@@ -56,14 +60,14 @@ export function detectedSummary(suggestions, businessName) {
   const s = sanitizeCreativeSuggestions(suggestions);
   const parts = [];
   if (s.product) parts.push(s.product);
-  if (s.discountPct != null) parts.push(`${s.discountPct}% off`);
-  if (s.price != null) parts.push(`$${Number.isInteger(s.price) ? s.price : s.price.toFixed(2)}`);
-  if (s.validity) parts.push(s.validity === 'today' ? 'Valid today' : 'Valid tomorrow');
-  if (s.redemptionInstruction) parts.push('How to redeem');
+  if (s.discountPct != null) parts.push(C('pctOff', { pct: s.discountPct }));
+  if (s.price != null) parts.push(bizMoney(s.price));
+  if (s.validity) parts.push(s.validity === 'today' ? C('validToday') : C('validTomorrow'));
+  if (s.redemptionInstruction) parts.push(C('howToRedeem'));
   if (parts.length === 0) return null;
   const name = typeof businessName === 'string' && businessName.trim() ? businessName.trim() : null;
   if (name) parts.push(name);
-  return `We detected: ${parts.join(', ')}`;
+  return C('detected', { parts: parts.join(', ') });
 }
 
 // A warning shown right away when the extracted discount is over the owner's cap (same rule as a typed one; the server

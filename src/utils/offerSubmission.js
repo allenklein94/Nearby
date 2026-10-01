@@ -1,10 +1,15 @@
 // Item 83: how a business offer's background screening reads to its owner. Pure: state in, wording out.
 import { replySentConfirmation } from './actionConfirmations';
+import { tr } from '../i18n/translate';
+import { joinAnd } from '../i18n/list';
+
+const U = (key, vars) => tr(`ui.bizHelp.submission.${key}`, vars);
 // States are the real stored ones (`business_offer_submissions.status`, with a held row's human decision already
 // folded in by get_my_offer_submissions): reviewing / in_review / published / needs_changes / unavailable / not_sent.
 
 // Fixed policy-category vocabulary (same 13 as the screening table's CHECK) -> a plain phrase. The classifier's own
 // free-text reasoning is never shown: only the category, so an explanation is always accurate and never invented.
+// English source of the phrases (kept for tests and the stored-key list); shown through ui.bizHelp.submission.category.<key>.
 export const CATEGORY_PHRASES = {
   illegal_drugs: 'illegal drugs',
   weapons: 'weapons',
@@ -22,34 +27,32 @@ export const CATEGORY_PHRASES = {
 };
 
 export function needsChangesExplanation(sub) {
-  if (sub?.reason) return `${sub.reason} Edit your offer and send it again.`;
-  const phrases = (sub?.matched_categories ?? []).map((c) => CATEGORY_PHRASES[c]).filter(Boolean);
-  if (phrases.length > 0) {
-    const list = phrases.length === 1 ? phrases[0] : `${phrases.slice(0, -1).join(', ')} and ${phrases[phrases.length - 1]}`;
-    return `Your offer or its photo or video appears to involve ${list}, which Nearby doesn't allow. Edit your offer and send it again.`;
-  }
-  return "It didn't pass our content check. Edit your offer and send it again.";
+  // sub.reason is the server's own validation message, shown as written.
+  if (sub?.reason) return U('reasonThenEdit', { reason: sub.reason });
+  const phrases = (sub?.matched_categories ?? []).filter((c) => CATEGORY_PHRASES[c]).map((c) => U(`category.${c}`));
+  if (phrases.length > 0) return U('involves', { list: joinAnd(phrases) });
+  return U('didntPass');
 }
 
 // -> { headline, detail, tone: 'progress'|'success'|'warning'|'danger', actions: ('retry'|'edit'|'dismiss')[] }
 export function submissionView(sub) {
   switch (sub?.status) {
     case 'reviewing':
-      return { headline: 'Reviewing your offer…', detail: "It will be sent to the customer as soon as it clears. You don't need to wait here.", tone: 'progress', actions: [] };
+      return { headline: U('reviewingTitle'), detail: U('reviewingBody'), tone: 'progress', actions: [] };
     case 'in_review':
-      return { headline: 'In review by our team', detail: "We'll send it once it's approved. This is usually quick.", tone: 'progress', actions: [] };
+      return { headline: U('inReviewTitle'), detail: U('inReviewBody'), tone: 'progress', actions: [] };
     case 'published': {
       // Named by the reply's real kind from its saved payload (item 121/123): a plain reply is "Reply sent", never "Offer sent".
       const p = sub.payload ?? {};
       const [headline] = replySentConfirmation({ offer_type: p.offerType, offer_title: p.offerTitle, offer_price: p.offerPrice, discount_pct: p.discountPct, included_items: p.includedItems });
-      return { headline, detail: 'The customer can see it now.', tone: 'success', actions: ['dismiss'] };
+      return { headline, detail: U('publishedBody'), tone: 'success', actions: ['dismiss'] };
     }
     case 'needs_changes':
-      return { headline: 'Needs changes', detail: needsChangesExplanation(sub), tone: 'danger', actions: ['edit', 'dismiss'] };
+      return { headline: U('needsChangesTitle'), detail: needsChangesExplanation(sub), tone: 'danger', actions: ['edit', 'dismiss'] };
     case 'not_sent':
-      return { headline: "Couldn't be sent", detail: sub.reason || 'The request may no longer be open.', tone: 'warning', actions: ['dismiss'] };
+      return { headline: U('notSentTitle'), detail: sub.reason || U('notSentBody'), tone: 'warning', actions: ['dismiss'] };
     case 'unavailable':
-      return { headline: "We couldn't finish reviewing this", detail: 'Nothing was sent. Your offer is saved.', tone: 'warning', actions: ['retry', 'dismiss'] };
+      return { headline: U('unavailableTitle'), detail: U('unavailableBody'), tone: 'warning', actions: ['retry', 'dismiss'] };
     default:
       return null;
   }

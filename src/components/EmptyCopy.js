@@ -13,10 +13,12 @@ export default function EmptyCopy({ id, vars, style }) {
   const english = emptyCopy(id, vars);
   if (!english) return null;
   // Consumer empty states have ui.empty.<id> in every language (same {placeholders}, filled the registry's way: a missing
-  // value is left blank). Business/admin ids have none and stay as the English registry wrote them.
+  // value is left blank). Admin/AI ids have none and stay as the English registry wrote them.
   const fill = (s) => s.replace(/\{(\w+)\}/g, (_, k) => (vars?.[k] != null ? String(vars[k]) : ''));
-  const copy = language !== 'en' && hasOwnTranslation('en', `ui.empty.${id}.title`)
-    ? { title: fill(t(`ui.empty.${id}.title`)), body: fill(t(`ui.empty.${id}.body`)) }
+  // Business dashboard empty states (business_*) read ui.bizHelp.empty.<id> (business dashboard localization, phase 6).
+  const ns = /^business_/.test(id) ? 'bizHelp.empty' : 'empty';
+  const copy = language !== 'en' && hasOwnTranslation('en', `ui.${ns}.${id}.title`)
+    ? { title: fill(t(`ui.${ns}.${id}.title`)), body: fill(t(`ui.${ns}.${id}.body`)) }
     : english;
   return (
     <View style={[styles.wrap, style]} accessible accessibilityLabel={`${copy.title}. ${copy.body}`}>

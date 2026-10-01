@@ -5,7 +5,12 @@ import PlatformDateTimeInput from './PlatformDateTimeInput';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { setBusinessOperatingHours } from '../services/brandOffers';
-import { operatingHoursProblem, weekHoursLines, formatClock, blankWeek, hoursStatus, DAY_ORDER, DAY_SHORT, MAX_INTERVALS_PER_DAY } from '../utils/operatingStatus';
+import { operatingHoursProblem, formatClock, blankWeek, DAY_ORDER, DAY_SHORT, MAX_INTERVALS_PER_DAY } from '../utils/operatingStatus';
+import { weekHoursRows, hoursLine } from '../i18n/businessProfileDisplay';
+import { bizClock } from '../i18n/bizFormat';
+import { vocabValue } from '../i18n/format';
+
+const WEEKDAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 import { presentRecoverableError } from '../utils/recoverableError';
 
 // Owner item 71: ONE optional "Hours" row on the business Profile tab (expands in place; no new screen or settings area).
@@ -29,7 +34,9 @@ function todayKey() {
 }
 
 export default function BusinessHoursEditor({ partner, onSaved }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  // The editor's day chips: English keeps "Mon"; other languages use their own weekday names.
+  const dayChip = (d) => (language === 'en' ? DAY_SHORT[d] : (vocabValue(language, 'date.weekdays') ?? [])[WEEKDAY_INDEX[d]] ?? DAY_SHORT[d]);
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const saved = partner?.operating_hours ?? null;
@@ -108,7 +115,7 @@ export default function BusinessHoursEditor({ partner, onSaved }) {
           <View key={i} style={styles.intervalRow}>
             {[[0, o, t('ui.bizComp.opens')], [1, c, t('ui.bizComp.closes')]].map(([end, v, word]) => (
               <TouchableOpacity key={end} style={styles.chip} onPress={() => setPicker({ target, key, index: i, end })} accessibilityRole="button" accessibilityLabel={`${label} ${word} ${v}`}>
-                <Text style={styles.chipText}>{word} {formatClock(v)}</Text>
+                <Text style={styles.chipText}>{word} {language === 'en' ? formatClock(v) : bizClock(v)}</Text>
               </TouchableOpacity>
             ))}
             {value.length > 1 ? (
@@ -146,8 +153,9 @@ export default function BusinessHoursEditor({ partner, onSaved }) {
     );
   }
 
-  const lines = weekHoursLines(saved);
-  const now = saved ? hoursStatus(saved) : null;
+  // The same rows and status line the public profile shows, in the owner's language (English unchanged).
+  const lines = weekHoursRows(saved, language);
+  const nowLabel = saved ? hoursLine({ operating_hours: saved }, language) : null;
 
   return (
     <View style={styles.wrap}>
@@ -157,8 +165,8 @@ export default function BusinessHoursEditor({ partner, onSaved }) {
       </TouchableOpacity>
       {!open && (lines ? (
         <View>
-          {now?.label ? <Text style={styles.status}>{now.label}{saved.temporarily_closed ? '' : ` (${saved.timezone})`}</Text> : null}
-          {lines.map((l) => <Text key={l.day} style={styles.summary}>{l.day}  {l.text}</Text>)}
+          {nowLabel ? <Text style={styles.status}>{nowLabel}{saved.temporarily_closed ? '' : ` (${saved.timezone})`}</Text> : null}
+          {lines.map((l) => <Text key={l.key} style={styles.summary}>{l.day}  {l.text}</Text>)}
           {(saved.special ?? []).length ? <Text style={styles.helper}>{t('ui.bizComp.specialDaysSet', { count: saved.special.length })}</Text> : null}
         </View>
       ) : (
@@ -186,7 +194,7 @@ export default function BusinessHoursEditor({ partner, onSaved }) {
             <Text style={styles.label}>{t('ui.bizComp.temporarilyClosed')}</Text>
             <Switch value={draft.temporarily_closed === true} onValueChange={(v) => update((d) => { d.temporarily_closed = v; return d; })} accessibilityLabel={t('ui.bizComp.temporarilyClosedA11y')} />
           </View>
-          {DAY_ORDER.map((d) => renderDayEditor('week', d, DAY_SHORT[d]))}
+          {DAY_ORDER.map((d) => renderDayEditor('week', d, dayChip(d)))}
           {Array.isArray(draft.week.mon) || draft.week.mon === 'closed' || draft.week.mon === 'all_day' ? (
             <TouchableOpacity onPress={() => update((d) => { DAY_ORDER.forEach((k) => { d.week[k] = JSON.parse(JSON.stringify(d.week.mon)); }); return d; })} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.copyMondayToEveryDayA11y')}>
               <Text style={styles.link}>{t('ui.bizComp.copyMondayToEveryDay')}</Text>

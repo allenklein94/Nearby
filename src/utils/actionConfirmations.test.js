@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { replySentConfirmation, OFFER_QUEUED_CONFIRMATION, inviteSentConfirmation, interestedConfirmation } = require('./actionConfirmations');
+const { replySentConfirmation, offerQueuedConfirmation, inviteSentConfirmation, interestedConfirmation } = require('./actionConfirmations');
 const { justSentLine } = require('./requestTimeline');
 const { submissionView } = require('./offerSubmission');
 
@@ -13,7 +13,7 @@ describe('meaningful confirmations', () => {
     expect(replySentConfirmation({ offer_type: 'standard' }).join(' ')).not.toMatch(/offer/i);
     expect(replySentConfirmation({ offer_type: 'alt_time' })[0]).toBe('New time suggested');
     expect(replySentConfirmation({ offer_type: 'standard', offer_title: '2 coffees + 2 pastries' })[0]).toBe('Offer sent');
-    expect(OFFER_QUEUED_CONFIRMATION[0]).toBe('Offer saved');
+    expect(offerQueuedConfirmation()[0]).toBe('Offer saved');
   });
   it('the screened-send list names the reply by kind once it clears; before that it never says sent', () => {
     const pub = (payload) => submissionView({ status: 'published', payload }).headline;
@@ -42,7 +42,7 @@ describe('meaningful confirmations', () => {
     const dash = read('screens/BusinessDashboardScreen.js');
     expect(dash).toMatch(/showSuccessToast\(\.\.\.replySentConfirmation\(sent\)\)/);
     expect(dash).toMatch(/\{ offer_type: offerType \}\)/);
-    expect(dash).toMatch(/showSuccessToast\(\.\.\.OFFER_QUEUED_CONFIRMATION\)/);
+    expect(dash).toMatch(/showSuccessToast\(\.\.\.offerQueuedConfirmation\(\)\)/);
     // the full editor's direct send passes the reply's REAL fields (no placeholder that forces "Offer sent")
     expect(dash).not.toMatch(/offer_title: 'offer'/);
     expect(dash).toMatch(/offer_type: offerTypeInput, offer_title: offerTitleInput/);
@@ -52,7 +52,7 @@ describe('meaningful confirmations', () => {
     expect(handler.indexOf('replySentConfirmation')).toBeLessThan(handler.indexOf('else if (result.blocked)'));
     expect(handler).toMatch(/ui\.bizDash1\.yourResponseIsBeingReviewed/);
     // the queued (screening) confirmation never claims delivery
-    expect(OFFER_QUEUED_CONFIRMATION.join(' ')).not.toMatch(/\bsent\b|delivered/i);
+    expect(offerQueuedConfirmation().join(' ')).not.toMatch(/\bsent\b|delivered/i);
     // one classifier: confirmations go through offerCopy's businessReplyKind, not their own offer_type checks
     const src = read('utils/actionConfirmations.js');
     expect(src).toMatch(/from '.\/offerCopy'/);
