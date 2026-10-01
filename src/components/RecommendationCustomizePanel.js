@@ -1,6 +1,8 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { spacing, radius, typography } from '../theme';
+import { categoryName } from '../i18n/categoryNames';
 
 // Refactored out of the now-removed standalone RecommendationPreferencesScreen
 // (external UX critique item 17 follow-up, 2026-09-11): direct feedback that a
@@ -19,22 +21,23 @@ import { spacing, radius, typography } from '../theme';
 // 20261004_recommended_for_you_push.sql's own p.interests @> array[...]
 // check), so offering the full catalog here would let someone "select" a
 // category that could never actually fire a push.
+// Labels come from ui.recCustomize.{frequency,distance,time}Option.<key or slug>.
 export const FREQUENCY_OPTIONS = [
-  { key: 'few_per_day', label: 'A few per day' },
-  { key: 'more_often', label: 'More often' },
-  { key: 'as_they_happen', label: 'As they happen' },
+  { key: 'few_per_day' },
+  { key: 'more_often' },
+  { key: 'as_they_happen' },
 ];
 // Reuses this app's own real distance tiers (gatherings.js's
 // LOCAL_TIER_MAX_MILES / WIDE_TIER_MAX_MILES) rather than inventing a new
 // distance concept or a slider.
 export const DISTANCE_OPTIONS = [
-  { key: 1, label: 'Nearby (1 mi)' },
-  { key: 15, label: 'Wider area (15 mi)' },
-  { key: null, label: 'Any distance' },
+  { key: 1, slug: 'near' },
+  { key: 15, slug: 'wide' },
+  { key: null, slug: 'any' },
 ];
 export const TIME_OPTIONS = [
-  { key: 'anytime', label: 'Anytime' },
-  { key: 'evenings_weekends', label: 'Evenings & Weekends' },
+  { key: 'anytime' },
+  { key: 'evenings_weekends' },
 ];
 
 export default function RecommendationCustomizePanel({
@@ -50,63 +53,64 @@ export default function RecommendationCustomizePanel({
   onToggleCategory,
   onPressAddInterests,
 }) {
+  const { t, language } = useLanguage();
   const styles = getStyles(colors);
   const effectiveSelectedCategories = selectedCategories ?? myInterests;
 
   return (
     <View style={styles.panel}>
-      <Text style={styles.sectionHeader}>Frequency</Text>
+      <Text style={styles.sectionHeader}>{t('ui.recCustomize.frequency')}</Text>
       <View style={styles.chipsWrap}>
         {FREQUENCY_OPTIONS.map((opt) => (
           <TouchableOpacity
             key={opt.key}
             style={[styles.chip, frequency === opt.key && styles.chipSelected]}
             onPress={() => onChangeFrequency(opt.key)}
-            accessibilityLabel={opt.label}
+            accessibilityLabel={t(`ui.recCustomize.frequencyOption.${opt.key}`)}
             accessibilityRole="button"
             accessibilityState={{ selected: frequency === opt.key }}
           >
-            <Text style={[styles.chipText, frequency === opt.key && styles.chipTextSelected]}>{opt.label}</Text>
+            <Text style={[styles.chipText, frequency === opt.key && styles.chipTextSelected]}>{t(`ui.recCustomize.frequencyOption.${opt.key}`)}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <Text style={styles.sectionHeader}>Distance</Text>
+      <Text style={styles.sectionHeader}>{t('ui.recCustomize.distance')}</Text>
       <View style={styles.chipsWrap}>
         {DISTANCE_OPTIONS.map((opt) => (
           <TouchableOpacity
-            key={opt.label}
+            key={opt.slug}
             style={[styles.chip, distance === opt.key && styles.chipSelected]}
             onPress={() => onChangeDistance(opt.key)}
-            accessibilityLabel={opt.label}
+            accessibilityLabel={t(`ui.recCustomize.distanceOption.${opt.slug}`)}
             accessibilityRole="button"
             accessibilityState={{ selected: distance === opt.key }}
           >
-            <Text style={[styles.chipText, distance === opt.key && styles.chipTextSelected]}>{opt.label}</Text>
+            <Text style={[styles.chipText, distance === opt.key && styles.chipTextSelected]}>{t(`ui.recCustomize.distanceOption.${opt.slug}`)}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <Text style={styles.sectionHeader}>Time</Text>
+      <Text style={styles.sectionHeader}>{t('ui.recCustomize.time')}</Text>
       <View style={styles.chipsWrap}>
         {TIME_OPTIONS.map((opt) => (
           <TouchableOpacity
             key={opt.key}
             style={[styles.chip, timePref === opt.key && styles.chipSelected]}
             onPress={() => onChangeTimePref(opt.key)}
-            accessibilityLabel={opt.label}
+            accessibilityLabel={t(`ui.recCustomize.timeOption.${opt.key}`)}
             accessibilityRole="button"
             accessibilityState={{ selected: timePref === opt.key }}
           >
-            <Text style={[styles.chipText, timePref === opt.key && styles.chipTextSelected]}>{opt.label}</Text>
+            <Text style={[styles.chipText, timePref === opt.key && styles.chipTextSelected]}>{t(`ui.recCustomize.timeOption.${opt.key}`)}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <Text style={styles.sectionHeader}>Categories</Text>
+      <Text style={styles.sectionHeader}>{t('ui.recCustomize.categories')}</Text>
       {myInterests.length === 0 ? (
         <View>
-          <Text style={styles.emptyText}>Add interests to your profile to fine-tune which categories notify you.</Text>
+          <Text style={styles.emptyText}>{t('ui.recCustomize.addInterestsToYourProfile')}</Text>
           {/* Item 56 fast-follow ("no dead ends" -- CLAUDE.md): a real way
               to actually go add interests, not just copy naming the fix.
               Lands on Profile's own interest picker (an inline section, not
@@ -117,11 +121,11 @@ export default function RecommendationCustomizePanel({
           {onPressAddInterests && (
             <TouchableOpacity
               onPress={onPressAddInterests}
-              accessibilityLabel="Add interests to your profile"
+              accessibilityLabel={t('ui.recCustomize.addInterestsToYourProfileA11y')}
               accessibilityRole="button"
               style={{ marginTop: spacing.sm }}
             >
-              <Text style={styles.emptyActionText}>Add Interests →</Text>
+              <Text style={styles.emptyActionText}>{t('ui.recCustomize.addInterests')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -134,11 +138,11 @@ export default function RecommendationCustomizePanel({
                 key={tag}
                 style={[styles.chip, isSelected && styles.chipSelected]}
                 onPress={() => onToggleCategory(tag)}
-                accessibilityLabel={tag}
+                accessibilityLabel={categoryName(tag, language)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: isSelected }}
               >
-                <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{tag}</Text>
+                <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{categoryName(tag, language)}</Text>
               </TouchableOpacity>
             );
           })}

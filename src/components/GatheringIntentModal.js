@@ -1,23 +1,27 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { setGatheringIntent, getMyGatheringIntent } from '../services/gatherings';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation } from '../motion';
+// Labels come from ui.gatheringIntent.option.<value>.
 const INTENT_OPTIONS = [
-  { value: 'meet_someone_new', emoji: '👋', label: 'Meet someone new' },
-  { value: 'get_out_of_house', emoji: '🚪', label: 'Get out of the house' },
-  { value: 'good_conversations', emoji: '💬', label: 'Good conversations' },
-  { value: 'be_active', emoji: '🏃', label: 'Be active' },
-  { value: 'relax_unwind', emoji: '🌿', label: 'Relax & unwind' },
+  { value: 'meet_someone_new', emoji: '👋' },
+  { value: 'get_out_of_house', emoji: '🚪' },
+  { value: 'good_conversations', emoji: '💬' },
+  { value: 'be_active', emoji: '🏃' },
+  { value: 'relax_unwind', emoji: '🌿' },
 ];
 
 // Private, own-eyes-only signal — never shown to the host, not even in
 // aggregate (see gathering_intents' RLS: no update-by-host or aggregate
 // RPC exists on purpose). Asked right before joining so it captures what
 // someone's actually hoping for, not what they'd say for an audience.
-export default function GatheringIntentModal({ visible, gathering, onClose, onConfirm, confirmLabel = "I'm Interested" }) {
+export default function GatheringIntentModal({ visible, gathering, onClose, onConfirm, confirmLabel: confirmLabelProp }) {
+  const { t } = useLanguage();
+  const confirmLabel = confirmLabelProp ?? t('ui.gatheringIntent.imInterested');
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [selected, setSelected] = useState(null);
@@ -52,8 +56,8 @@ export default function GatheringIntentModal({ visible, gathering, onClose, onCo
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
-          <Text style={styles.title}>What are you hoping for tonight?</Text>
-          <Text style={styles.subtitle}>Just for you — the host never sees this.</Text>
+          <Text style={styles.title}>{t('ui.gatheringIntent.whatAreYouHopingFor')}</Text>
+          <Text style={styles.subtitle}>{t('ui.gatheringIntent.justForYouTheHost')}</Text>
           {INTENT_OPTIONS.map((o) => {
             const isSelected = selected === o.value;
             return (
@@ -61,12 +65,12 @@ export default function GatheringIntentModal({ visible, gathering, onClose, onCo
                 key={o.value}
                 style={[styles.option, isSelected && styles.optionSelected]}
                 onPress={() => setSelected(o.value)}
-                accessibilityLabel={o.label}
+                accessibilityLabel={t(`ui.gatheringIntent.option.${o.value}`)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: isSelected }}
               >
                 <Text style={styles.optionEmoji}>{o.emoji}</Text>
-                <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>{o.label}</Text>
+                <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>{t(`ui.gatheringIntent.option.${o.value}`)}</Text>
               </TouchableOpacity>
             );
           })}
@@ -76,13 +80,13 @@ export default function GatheringIntentModal({ visible, gathering, onClose, onCo
             onPress={handleConfirm}
             disabled={submitting}
             activeOpacity={0.85}
-            accessibilityLabel={submitting ? 'Joining' : confirmLabel}
+            accessibilityLabel={submitting ? t('ui.gatheringIntent.joiningA11y') : confirmLabel}
             accessibilityRole="button"
           >
-            <Text style={styles.submitButtonText}>{submitting ? 'Joining...' : confirmLabel}</Text>
+            <Text style={styles.submitButtonText}>{submitting ? t('ui.gatheringIntent.joining') : confirmLabel}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.sm }} accessibilityLabel="Cancel" accessibilityRole="button">
-            <Text style={styles.skipText}>Cancel</Text>
+          <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.sm }} accessibilityLabel={t('ui.gatheringIntent.cancelA11y')} accessibilityRole="button">
+            <Text style={styles.skipText}>{t('ui.gatheringIntent.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </View>

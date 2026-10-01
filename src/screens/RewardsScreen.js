@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
@@ -7,8 +8,9 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 
-import { countLabel } from '../utils/plural';
 export default function RewardsScreen({ navigation }) {
+  const { t } = useLanguage();
+  const tierName = (tier) => t(`ui.rewards.tier.${tier.name.toLowerCase()}`);
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [status, setStatus] = useState(null);
@@ -41,7 +43,7 @@ export default function RewardsScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your rewards...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.rewards.loadingYourRewards')}</Text>
       </SafeAreaView>
     );
   }
@@ -49,7 +51,7 @@ export default function RewardsScreen({ navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load your rewards." onRetry={load} />
+        <LoadErrorState message={t('ui.rewards.couldntLoadYourRewards')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -57,7 +59,7 @@ export default function RewardsScreen({ navigation }) {
   if (!status) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.emptyText}>Sign in to see your rewards.</Text>
+        <Text style={styles.emptyText}>{t('ui.rewards.signInToSeeYour')}</Text>
       </SafeAreaView>
     );
   }
@@ -78,12 +80,12 @@ export default function RewardsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.subtitle}>Your perk tier — based on how many perks you've redeemed.</Text>
+        <Text style={styles.subtitle}>{t('ui.rewards.yourPerkTierBasedOn')}</Text>
         <View style={styles.tierCard}>
           <Text style={styles.tierEmoji}>{status.tier?.emoji ?? '🎁'}</Text>
-          <Text style={styles.tierName}>{status.tier ? `${status.tier.name} Member` : 'Not a member yet'}</Text>
+          <Text style={styles.tierName}>{status.tier ? t('ui.rewards.member', { name: tierName(status.tier) }) : t('ui.rewards.notAMemberYet')}</Text>
           <Text style={styles.pointsText}>
-            {status.points} offer{status.points === 1 ? '' : 's'} redeemed
+            {t('ui.rewards.pointsRedeemed', { count: status.points })}
           </Text>
           {status.nextTier ? (
             <>
@@ -91,24 +93,24 @@ export default function RewardsScreen({ navigation }) {
                 <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
               </View>
               <Text style={styles.progressLabel}>
-                {status.pointsToNextTier} more redemption{status.pointsToNextTier === 1 ? '' : 's'} to {status.nextTier.emoji} {status.nextTier.name}
+                {t('ui.rewards.moreToNext', { count: status.pointsToNextTier, tier: `${status.nextTier.emoji} ${tierName(status.nextTier)}` })}
               </Text>
             </>
           ) : (
-            <Text style={styles.progressLabel}>You've reached the top tier</Text>
+            <Text style={styles.progressLabel}>{t('ui.rewards.youveReachedTheTopTier')}</Text>
           )}
         </View>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Tiers</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.rewards.tiers')}</Text>
         <View style={styles.tierListCard}>
-          {status.allTiers.map((t) => {
-            const reached = status.points >= t.min;
+          {status.allTiers.map((tier) => {
+            const reached = status.points >= tier.min;
             return (
-              <View key={t.name} style={styles.tierRow} accessibilityLabel={`${t.name}, ${countLabel(t.min, 'redemption')}, ${reached ? 'reached' : 'not reached yet'}`}>
-                <Text style={[styles.tierRowEmoji, !reached && styles.tierRowDim]}>{t.emoji}</Text>
+              <View key={tier.name} style={styles.tierRow} accessibilityLabel={t(reached ? 'ui.rewards.tierReachedA11y' : 'ui.rewards.tierNotReachedA11y', { name: tierName(tier), count: tier.min })}>
+                <Text style={[styles.tierRowEmoji, !reached && styles.tierRowDim]}>{tier.emoji}</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.tierRowName, !reached && styles.tierRowDim]}>{t.name}</Text>
-                  <Text style={styles.tierRowThreshold}>{t.min}+ offers redeemed</Text>
+                  <Text style={[styles.tierRowName, !reached && styles.tierRowDim]}>{tierName(tier)}</Text>
+                  <Text style={styles.tierRowThreshold}>{t('ui.rewards.offersRedeemed', { min: tier.min })}</Text>
                 </View>
                 {reached && <Text style={styles.tierRowCheck}>✓</Text>}
               </View>
@@ -117,17 +119,17 @@ export default function RewardsScreen({ navigation }) {
         </View>
 
         <Text style={styles.footnote}>
-          Points come from offers you've actually redeemed — no separate points to track or spend, just a badge for how much you've used what's nearby.
+          {t('ui.rewards.pointsComeFromOffersYouve')}
         </Text>
 
         <TouchableOpacity
           style={styles.ctaButton}
           onPress={() => navigation.navigate('BrandOffers')}
           activeOpacity={0.85}
-          accessibilityLabel="Browse perks near you"
+          accessibilityLabel={t('ui.rewards.browsePerksNearYouA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.ctaButtonText}>🎁 Browse perks near you</Text>
+          <Text style={styles.ctaButtonText}>{t('ui.rewards.browsePerksNearYou')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

@@ -1,0 +1,361 @@
+{
+ "en": {
+  "offersRedeemed": "{min}+ offers redeemed",
+  "loadingYourRewards": "Loading your rewards...",
+  "couldntLoadYourRewards": "Couldn't load your rewards.",
+  "signInToSeeYour": "Sign in to see your rewards.",
+  "yourPerkTierBasedOn": "Your perk tier — based on how many perks you've redeemed.",
+  "member": "{name} Member",
+  "notAMemberYet": "Not a member yet",
+  "youveReachedTheTopTier": "You've reached the top tier",
+  "tiers": "Tiers",
+  "pointsComeFromOffersYouve": "Points come from offers you've actually redeemed — no separate points to track or spend, just a badge for how much you've used what's nearby.",
+  "browsePerksNearYouA11y": "Browse perks near you",
+  "browsePerksNearYou": "🎁 Browse perks near you",
+  "pointsRedeemed": {
+   "one": "{count} offer redeemed",
+   "other": "{count} offers redeemed"
+  },
+  "moreToNext": {
+   "one": "{count} more redemption to {tier}",
+   "other": "{count} more redemptions to {tier}"
+  },
+  "tierReachedA11y": {
+   "one": "{name}, {count} redemption, reached",
+   "other": "{name}, {count} redemptions, reached"
+  },
+  "tierNotReachedA11y": {
+   "one": "{name}, {count} redemption, not reached yet",
+   "other": "{name}, {count} redemptions, not reached yet"
+  },
+  "tier.bronze": "Bronze",
+  "tier.silver": "Silver",
+  "tier.gold": "Gold"
+ },
+ "es": {
+  "offersRedeemed": "{min}+ ofertas canjeadas",
+  "loadingYourRewards": "Cargando tus recompensas...",
+  "couldntLoadYourRewards": "No pudimos cargar tus recompensas.",
+  "signInToSeeYour": "Inicia sesión para ver tus recompensas.",
+  "yourPerkTierBasedOn": "Tu nivel de beneficios, según cuántos has canjeado.",
+  "member": "Miembro {name}",
+  "notAMemberYet": "Aún no eres miembro",
+  "youveReachedTheTopTier": "Llegaste al nivel más alto",
+  "tiers": "Niveles",
+  "pointsComeFromOffersYouve": "Los puntos vienen de las ofertas que de verdad canjeaste: no hay puntos que controlar ni gastar, solo una insignia según cuánto aprovechaste lo que hay cerca.",
+  "browsePerksNearYouA11y": "Ver beneficios cerca de ti",
+  "browsePerksNearYou": "🎁 Ver beneficios cerca de ti",
+  "pointsRedeemed": {
+   "one": "{count} oferta canjeada",
+   "other": "{count} ofertas canjeadas"
+  },
+  "moreToNext": {
+   "one": "Falta {count} canje para {tier}",
+   "other": "Faltan {count} canjes para {tier}"
+  },
+  "tierReachedA11y": {
+   "one": "{name}, {count} canje, alcanzado",
+   "other": "{name}, {count} canjes, alcanzado"
+  },
+  "tierNotReachedA11y": {
+   "one": "{name}, {count} canje, aún no alcanzado",
+   "other": "{name}, {count} canjes, aún no alcanzado"
+  },
+  "tier.bronze": "Bronce",
+  "tier.silver": "Plata",
+  "tier.gold": "Oro"
+ },
+ "de": {
+  "offersRedeemed": "{min}+ eingelöste Angebote",
+  "loadingYourRewards": "Deine Prämien werden geladen...",
+  "couldntLoadYourRewards": "Deine Prämien konnten nicht geladen werden.",
+  "signInToSeeYour": "Melde dich an, um deine Prämien zu sehen.",
+  "yourPerkTierBasedOn": "Deine Vorteilsstufe, je nachdem, wie viele Vorteile du eingelöst hast.",
+  "member": "{name}-Mitglied",
+  "notAMemberYet": "Noch kein Mitglied",
+  "youveReachedTheTopTier": "Du hast die höchste Stufe erreicht",
+  "tiers": "Stufen",
+  "pointsComeFromOffersYouve": "Punkte kommen von Angeboten, die du wirklich eingelöst hast. Es gibt keine extra Punkte zu verfolgen oder auszugeben, nur ein Abzeichen dafür, wie viel du von dem genutzt hast, was in der Nähe ist.",
+  "browsePerksNearYouA11y": "Vorteile in deiner Nähe ansehen",
+  "browsePerksNearYou": "🎁 Vorteile in deiner Nähe",
+  "pointsRedeemed": {
+   "one": "{count} Angebot eingelöst",
+   "other": "{count} Angebote eingelöst"
+  },
+  "moreToNext": {
+   "one": "Noch {count} Einlösung bis {tier}",
+   "other": "Noch {count} Einlösungen bis {tier}"
+  },
+  "tierReachedA11y": {
+   "one": "{name}, {count} Einlösung, erreicht",
+   "other": "{name}, {count} Einlösungen, erreicht"
+  },
+  "tierNotReachedA11y": {
+   "one": "{name}, {count} Einlösung, noch nicht erreicht",
+   "other": "{name}, {count} Einlösungen, noch nicht erreicht"
+  },
+  "tier.bronze": "Bronze",
+  "tier.silver": "Silber",
+  "tier.gold": "Gold"
+ },
+ "fr": {
+  "offersRedeemed": "{min}+ offres utilisées",
+  "loadingYourRewards": "Chargement de tes récompenses...",
+  "couldntLoadYourRewards": "Impossible de charger tes récompenses.",
+  "signInToSeeYour": "Connecte-toi pour voir tes récompenses.",
+  "yourPerkTierBasedOn": "Ton niveau d'avantages, selon le nombre d'avantages utilisés.",
+  "member": "Membre {name}",
+  "notAMemberYet": "Pas encore membre",
+  "youveReachedTheTopTier": "Tu as atteint le niveau le plus haut",
+  "tiers": "Niveaux",
+  "pointsComeFromOffersYouve": "Les points viennent des offres que tu as vraiment utilisées : pas de points à suivre ni à dépenser, juste un badge selon ce que tu as profité de ce qui est près de toi.",
+  "browsePerksNearYouA11y": "Voir les avantages près de toi",
+  "browsePerksNearYou": "🎁 Voir les avantages près de toi",
+  "pointsRedeemed": {
+   "one": "{count} offre utilisée",
+   "other": "{count} offres utilisées"
+  },
+  "moreToNext": {
+   "one": "Encore {count} utilisation avant {tier}",
+   "other": "Encore {count} utilisations avant {tier}"
+  },
+  "tierReachedA11y": {
+   "one": "{name}, {count} utilisation, atteint",
+   "other": "{name}, {count} utilisations, atteint"
+  },
+  "tierNotReachedA11y": {
+   "one": "{name}, {count} utilisation, pas encore atteint",
+   "other": "{name}, {count} utilisations, pas encore atteint"
+  },
+  "tier.bronze": "Bronze",
+  "tier.silver": "Argent",
+  "tier.gold": "Or"
+ },
+ "pt": {
+  "offersRedeemed": "{min}+ ofertas resgatadas",
+  "loadingYourRewards": "Carregando suas recompensas...",
+  "couldntLoadYourRewards": "Não foi possível carregar suas recompensas.",
+  "signInToSeeYour": "Entre para ver suas recompensas.",
+  "yourPerkTierBasedOn": "Seu nível de vantagens, com base em quantas você resgatou.",
+  "member": "Membro {name}",
+  "notAMemberYet": "Ainda não é membro",
+  "youveReachedTheTopTier": "Você chegou ao nível mais alto",
+  "tiers": "Níveis",
+  "pointsComeFromOffersYouve": "Os pontos vêm das ofertas que você realmente resgatou: não há pontos para acompanhar ou gastar, só um selo de quanto você aproveitou o que está por perto.",
+  "browsePerksNearYouA11y": "Ver vantagens perto de você",
+  "browsePerksNearYou": "🎁 Ver vantagens perto de você",
+  "pointsRedeemed": {
+   "one": "{count} oferta resgatada",
+   "other": "{count} ofertas resgatadas"
+  },
+  "moreToNext": {
+   "one": "Falta {count} resgate para {tier}",
+   "other": "Faltam {count} resgates para {tier}"
+  },
+  "tierReachedA11y": {
+   "one": "{name}, {count} resgate, alcançado",
+   "other": "{name}, {count} resgates, alcançado"
+  },
+  "tierNotReachedA11y": {
+   "one": "{name}, {count} resgate, ainda não alcançado",
+   "other": "{name}, {count} resgates, ainda não alcançado"
+  },
+  "tier.bronze": "Bronze",
+  "tier.silver": "Prata",
+  "tier.gold": "Ouro"
+ },
+ "ht": {
+  "offersRedeemed": "{min}+ òf itilize",
+  "loadingYourRewards": "Ap chaje rekonpans ou yo...",
+  "couldntLoadYourRewards": "Nou pa t ka chaje rekonpans ou yo.",
+  "signInToSeeYour": "Konekte pou w wè rekonpans ou yo.",
+  "yourPerkTierBasedOn": "Nivo avantaj ou, dapre konbyen avantaj ou itilize.",
+  "member": "Manm {name}",
+  "notAMemberYet": "Poko manm",
+  "youveReachedTheTopTier": "Ou rive nan pi wo nivo a",
+  "tiers": "Nivo",
+  "pointsComeFromOffersYouve": "Pwen yo soti nan òf ou vrèman itilize: pa gen pwen pou swiv ni depanse, se jis yon badj pou montre konbyen ou itilize sa ki toupre.",
+  "browsePerksNearYouA11y": "Gade avantaj toupre w",
+  "browsePerksNearYou": "🎁 Gade avantaj toupre w",
+  "pointsRedeemed": {
+   "one": "{count} òf itilize",
+   "other": "{count} òf itilize"
+  },
+  "moreToNext": {
+   "one": "Ankò {count} pou rive {tier}",
+   "other": "Ankò {count} pou rive {tier}"
+  },
+  "tierReachedA11y": {
+   "one": "{name}, {count}, rive",
+   "other": "{name}, {count}, rive"
+  },
+  "tierNotReachedA11y": {
+   "one": "{name}, {count}, poko rive",
+   "other": "{name}, {count}, poko rive"
+  },
+  "tier.bronze": "Bwonz",
+  "tier.silver": "Ajan",
+  "tier.gold": "Lò"
+ },
+ "zh": {
+  "offersRedeemed": "已兑换 {min}+ 个优惠",
+  "loadingYourRewards": "正在加载你的奖励……",
+  "couldntLoadYourRewards": "无法加载你的奖励。",
+  "signInToSeeYour": "登录后查看你的奖励。",
+  "yourPerkTierBasedOn": "你的福利等级，取决于你兑换了多少福利。",
+  "member": "{name}会员",
+  "notAMemberYet": "还不是会员",
+  "youveReachedTheTopTier": "你已达到最高等级",
+  "tiers": "等级",
+  "pointsComeFromOffersYouve": "积分来自你实际兑换过的优惠：无需追踪或消费积分，只是一枚徽章，体现你用了多少附近的好东西。",
+  "browsePerksNearYouA11y": "浏览你附近的福利",
+  "browsePerksNearYou": "🎁 浏览附近的福利",
+  "pointsRedeemed": {
+   "other": "已兑换 {count} 个优惠"
+  },
+  "moreToNext": {
+   "other": "再兑换 {count} 次即可达到 {tier}"
+  },
+  "tierReachedA11y": {
+   "other": "{name}，{count} 次兑换，已达到"
+  },
+  "tierNotReachedA11y": {
+   "other": "{name}，{count} 次兑换，尚未达到"
+  },
+  "tier.bronze": "青铜",
+  "tier.silver": "白银",
+  "tier.gold": "黄金"
+ },
+ "vi": {
+  "offersRedeemed": "Đã đổi {min}+ ưu đãi",
+  "loadingYourRewards": "Đang tải phần thưởng của bạn...",
+  "couldntLoadYourRewards": "Không tải được phần thưởng của bạn.",
+  "signInToSeeYour": "Đăng nhập để xem phần thưởng của bạn.",
+  "yourPerkTierBasedOn": "Hạng ưu đãi của bạn, dựa trên số ưu đãi bạn đã đổi.",
+  "member": "Thành viên {name}",
+  "notAMemberYet": "Chưa là thành viên",
+  "youveReachedTheTopTier": "Bạn đã đạt hạng cao nhất",
+  "tiers": "Các hạng",
+  "pointsComeFromOffersYouve": "Điểm đến từ những ưu đãi bạn đã thật sự đổi: không có điểm riêng để theo dõi hay tiêu, chỉ là huy hiệu cho thấy bạn đã tận dụng những gì quanh mình bao nhiêu.",
+  "browsePerksNearYouA11y": "Xem ưu đãi gần bạn",
+  "browsePerksNearYou": "🎁 Xem ưu đãi gần bạn",
+  "pointsRedeemed": {
+   "other": "Đã đổi {count} ưu đãi"
+  },
+  "moreToNext": {
+   "other": "Thêm {count} lần đổi để lên {tier}"
+  },
+  "tierReachedA11y": {
+   "other": "{name}, {count} lần đổi, đã đạt"
+  },
+  "tierNotReachedA11y": {
+   "other": "{name}, {count} lần đổi, chưa đạt"
+  },
+  "tier.bronze": "Đồng",
+  "tier.silver": "Bạc",
+  "tier.gold": "Vàng"
+ },
+ "tl": {
+  "offersRedeemed": "{min}+ alok na na-redeem",
+  "loadingYourRewards": "Nilo-load ang iyong rewards...",
+  "couldntLoadYourRewards": "Hindi ma-load ang iyong rewards.",
+  "signInToSeeYour": "Mag-sign in para makita ang iyong rewards.",
+  "yourPerkTierBasedOn": "Ang iyong perk tier, batay sa dami ng perk na na-redeem mo.",
+  "member": "{name} Member",
+  "notAMemberYet": "Hindi pa member",
+  "youveReachedTheTopTier": "Naabot mo na ang pinakamataas na tier",
+  "tiers": "Mga tier",
+  "pointsComeFromOffersYouve": "Galing ang mga puntos sa mga alok na talagang na-redeem mo: walang hiwalay na puntos na babantayan o gagastusin, isang badge lang kung gaano mo nagamit ang nasa malapit.",
+  "browsePerksNearYouA11y": "Tingnan ang mga perk malapit sa iyo",
+  "browsePerksNearYou": "🎁 Tingnan ang mga perk malapit sa iyo",
+  "pointsRedeemed": {
+   "one": "{count} alok na na-redeem",
+   "other": "{count} alok na na-redeem"
+  },
+  "moreToNext": {
+   "one": "{count} pang redemption bago ang {tier}",
+   "other": "{count} pang redemption bago ang {tier}"
+  },
+  "tierReachedA11y": {
+   "one": "{name}, {count} redemption, naabot na",
+   "other": "{name}, {count} redemption, naabot na"
+  },
+  "tierNotReachedA11y": {
+   "one": "{name}, {count} redemption, hindi pa naaabot",
+   "other": "{name}, {count} redemption, hindi pa naaabot"
+  },
+  "tier.bronze": "Bronze",
+  "tier.silver": "Silver",
+  "tier.gold": "Gold"
+ },
+ "ru": {
+  "offersRedeemed": "{min}+ использованных предложений",
+  "loadingYourRewards": "Загружаем ваши награды...",
+  "couldntLoadYourRewards": "Не удалось загрузить ваши награды.",
+  "signInToSeeYour": "Войдите, чтобы увидеть свои награды.",
+  "yourPerkTierBasedOn": "Ваш уровень бонусов зависит от того, сколько бонусов вы использовали.",
+  "member": "Участник уровня {name}",
+  "notAMemberYet": "Пока без уровня",
+  "youveReachedTheTopTier": "Вы достигли высшего уровня",
+  "tiers": "Уровни",
+  "pointsComeFromOffersYouve": "Баллы начисляются за реально использованные предложения: никаких отдельных баллов, которые нужно отслеживать или тратить, только значок, показывающий, как часто вы пользуетесь тем, что рядом.",
+  "browsePerksNearYouA11y": "Бонусы рядом с вами",
+  "browsePerksNearYou": "🎁 Бонусы рядом",
+  "pointsRedeemed": {
+   "one": "Использовано {count} предложение",
+   "few": "Использовано {count} предложения",
+   "many": "Использовано {count} предложений",
+   "other": "Использовано {count} предложения"
+  },
+  "moreToNext": {
+   "one": "Ещё {count} использование до уровня {tier}",
+   "few": "Ещё {count} использования до уровня {tier}",
+   "many": "Ещё {count} использований до уровня {tier}",
+   "other": "Ещё {count} использования до уровня {tier}"
+  },
+  "tierReachedA11y": {
+   "one": "{name}, {count} использование, достигнут",
+   "few": "{name}, {count} использования, достигнут",
+   "many": "{name}, {count} использований, достигнут",
+   "other": "{name}, {count} использования, достигнут"
+  },
+  "tierNotReachedA11y": {
+   "one": "{name}, {count} использование, ещё не достигнут",
+   "few": "{name}, {count} использования, ещё не достигнут",
+   "many": "{name}, {count} использований, ещё не достигнут",
+   "other": "{name}, {count} использования, ещё не достигнут"
+  },
+  "tier.bronze": "Бронза",
+  "tier.silver": "Серебро",
+  "tier.gold": "Золото"
+ },
+ "ko": {
+  "offersRedeemed": "혜택 {min}개 이상 사용",
+  "loadingYourRewards": "리워드를 불러오는 중...",
+  "couldntLoadYourRewards": "리워드를 불러오지 못했어요.",
+  "signInToSeeYour": "로그인하면 리워드를 볼 수 있어요.",
+  "yourPerkTierBasedOn": "사용한 혜택 수에 따른 나의 혜택 등급이에요.",
+  "member": "{name} 회원",
+  "notAMemberYet": "아직 회원이 아니에요",
+  "youveReachedTheTopTier": "최고 등급에 도달했어요",
+  "tiers": "등급",
+  "pointsComeFromOffersYouve": "포인트는 실제로 사용한 혜택에서 쌓여요. 따로 관리하거나 쓸 포인트는 없고, 주변을 얼마나 즐겼는지 보여 주는 배지일 뿐이에요.",
+  "browsePerksNearYouA11y": "내 주변 혜택 보기",
+  "browsePerksNearYou": "🎁 내 주변 혜택 보기",
+  "pointsRedeemed": {
+   "other": "혜택 {count}개 사용"
+  },
+  "moreToNext": {
+   "other": "{tier}까지 {count}회 남았어요"
+  },
+  "tierReachedA11y": {
+   "other": "{name}, {count}회, 달성"
+  },
+  "tierNotReachedA11y": {
+   "other": "{name}, {count}회, 아직 미달성"
+  },
+  "tier.bronze": "브론즈",
+  "tier.silver": "실버",
+  "tier.gold": "골드"
+ }
+}

@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, SafeAreaView } from 'react-native';
 import { supabase } from '../services/supabase';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
 import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
+import { basicsOption } from '../i18n/basicsVocab';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -31,6 +33,7 @@ import { modalAnimation } from '../motion';
 // "I'm interested in dating" pickers already use -- one canonical system,
 // not two, from a user's very first open of Dating.
 export default function DatingPreferencesPromptModal({ visible, userId, initialValues, onDone, onFineTune }) {
+  const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
 
@@ -112,13 +115,12 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
     <Modal visible={visible} animationType={modalAnimation('slide')} onRequestClose={handleSkip}>
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.title}>What are you looking for?</Text>
+          <Text style={styles.title}>{t('ui.datingPrompt.whatAreYouLookingFor')}</Text>
           <Text style={styles.subtitle}>
-            A couple of quick preferences so we can show you the right people. You can change
-            these anytime in Settings.
+            {t('ui.datingPrompt.aCoupleOfQuickPreferences')}
           </Text>
 
-          <Text style={styles.label}>Looking For</Text>
+          <Text style={styles.label}>{t('ui.datingPrompt.lookingFor')}</Text>
           <View style={styles.chipsWrap}>
             {INTENTION_OPTIONS.map((option) => {
               const selected = relationshipIntention.includes(option.value);
@@ -128,19 +130,19 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleIntention(option.value)}
                   activeOpacity={0.85}
-                  accessibilityLabel={option.label}
+                  accessibilityLabel={t(`ui.viewProfile.intention.${option.value}`)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                    {option.icon} {option.label}
+                    {option.icon} {t(`ui.viewProfile.intention.${option.value}`)}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          <Text style={styles.label}>Age Range</Text>
+          <Text style={styles.label}>{t('ui.datingPrompt.ageRange')}</Text>
           <View style={styles.ageRow}>
             <TextInput
               style={styles.ageInput}
@@ -148,7 +150,7 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
               onChangeText={setMinAge}
               keyboardType="number-pad"
               placeholderTextColor={colors.textTertiary}
-              accessibilityLabel="Minimum age"
+              accessibilityLabel={t('ui.datingPrompt.minimumAgeA11y')}
             />
             <Text style={styles.ageDash}>to</Text>
             <TextInput
@@ -157,11 +159,11 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
               onChangeText={setMaxAge}
               keyboardType="number-pad"
               placeholderTextColor={colors.textTertiary}
-              accessibilityLabel="Maximum age"
+              accessibilityLabel={t('ui.datingPrompt.maximumAgeA11y')}
             />
           </View>
 
-          <Text style={styles.label}>I identify as</Text>
+          <Text style={styles.label}>{t('ui.datingPrompt.iIdentifyAs')}</Text>
           <View style={styles.chipsWrap}>
             {GENDER_IDENTITY_OPTIONS.map((option) => {
               const selected = genderIdentity.includes(option);
@@ -171,18 +173,18 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleGenderIdentity(option)}
                   activeOpacity={0.85}
-                  accessibilityLabel={option}
+                  accessibilityLabel={basicsOption('gender', option, language)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{basicsOption('gender', option, language)}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-          <Text style={styles.helperText}>Select all that apply — this affects who you're matched with.</Text>
+          <Text style={styles.helperText}>{t('ui.datingPrompt.selectAllThatApplyThis')}</Text>
 
-          <Text style={[styles.label, { marginTop: spacing.lg }]}>I'm interested in dating</Text>
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.datingPrompt.imInterestedInDating')}</Text>
           <View style={styles.chipsWrap}>
             {GENDER_IDENTITY_OPTIONS.map((option) => {
               const selected = interestedInGenders.includes(option);
@@ -192,27 +194,26 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleInterestedInGender(option)}
                   activeOpacity={0.85}
-                  accessibilityLabel={option}
+                  accessibilityLabel={basicsOption('gender', option, language)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{basicsOption('gender', option, language)}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
           <Text style={styles.helperText}>
-            Select all that apply. Matching is mutual — you'll only see people whose preferences
-            also include you.
+            {t('ui.datingPrompt.selectAllThatApplyMatching')}
           </Text>
           {onFineTune && (
             <TouchableOpacity
               onPress={() => handleSave(true)}
               disabled={saving}
-              accessibilityLabel="Save, then add hair, height and eye color preferences"
+              accessibilityLabel={t('ui.datingPrompt.saveThenAddHairHeightA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.fineTuneText}>Save and fine-tune (hair, height, eyes) →</Text>
+              <Text style={styles.fineTuneText}>{t('ui.datingPrompt.saveAndFineTuneHair')}</Text>
             </TouchableOpacity>
           )}
         </ScrollView>
@@ -221,20 +222,20 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
           <TouchableOpacity
             onPress={handleSkip}
             disabled={saving}
-            accessibilityLabel="Skip for now"
+            accessibilityLabel={t('ui.datingPrompt.skipForNowA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.skipText}>Skip for now</Text>
+            <Text style={styles.skipText}>{t('ui.datingPrompt.skipForNow')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.saveButton, shadow.button]}
             onPress={() => handleSave()}
             disabled={saving}
             activeOpacity={0.85}
-            accessibilityLabel="Save preferences"
+            accessibilityLabel={t('ui.datingPrompt.savePreferencesA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.saveButtonText}>{saving ? 'Saving…' : 'Save'}</Text>
+            <Text style={styles.saveButtonText}>{saving ? t('ui.datingPrompt.saving') : t('ui.datingPrompt.save')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

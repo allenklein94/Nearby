@@ -57,7 +57,7 @@ export default function IdVerificationScreen() {
 
   async function handleSubmit() {
     if (!selfieAsset || !idAsset) {
-      return Alert.alert('Both photos needed', 'Take both a selfie and a photo of your ID before submitting.');
+      return Alert.alert(t('ui.idVerification.bothPhotosNeeded'), t('ui.idVerification.takeBothASelfieAnd'));
     }
 
     setSubmitting(true);
@@ -65,7 +65,7 @@ export default function IdVerificationScreen() {
       await submitVerification(userId, selfieAsset, idAsset);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('id_verification_submitted');
-      Alert.alert('Submitted', "We'll review your submission — this usually takes a day or two.");
+      Alert.alert(t('ui.idVerification.submitted'), t('ui.idVerification.wellReviewYourSubmissionThis'));
       setSelfieAsset(null);
       setIdAsset(null);
       load();
@@ -89,7 +89,7 @@ export default function IdVerificationScreen() {
         <View style={styles.statusState}>
           <Text style={styles.statusEmoji}>⏳</Text>
           <Text style={styles.statusTitle}>{t('idVerification.underReview')}</Text>
-          <Text style={styles.statusText}>We're reviewing your submission — this usually takes a day or two. We'll let you know once it's done.</Text>
+          <Text style={styles.statusText}>{t('ui.idVerification.wereReviewingYourSubmissionThis')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -101,7 +101,7 @@ export default function IdVerificationScreen() {
         <View style={styles.statusState}>
           <Text style={styles.statusEmoji}>✓</Text>
           <Text style={styles.statusTitle}>{t('idVerification.verified')}</Text>
-          <Text style={styles.statusText}>Your profile now shows a verified badge, and you'll appear when others filter for verified profiles.</Text>
+          <Text style={styles.statusText}>{t('ui.idVerification.yourProfileNowShowsA')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -117,7 +117,7 @@ export default function IdVerificationScreen() {
 
         {status?.status === 'rejected' && (
           <View style={styles.rejectedBanner}>
-            <Text style={styles.rejectedText}>Your last submission wasn't approved. You can try again below.</Text>
+            <Text style={styles.rejectedText}>{t('ui.idVerification.yourLastSubmissionWasntApproved')}</Text>
           </View>
         )}
 
@@ -144,10 +144,10 @@ export default function IdVerificationScreen() {
           onPress={handleSubmit}
           disabled={submitting || !selfieAsset || !idAsset}
           activeOpacity={0.85}
-          accessibilityLabel={submitting ? 'Submitting' : t('idVerification.submitButton')}
+          accessibilityLabel={submitting ? t('ui.idVerification.submittingA11y') : t('idVerification.submitButton')}
           accessibilityRole="button"
         >
-          <Text style={styles.submitButtonText}>{submitting ? 'Submitting...' : t('idVerification.submitButton')}</Text>
+          <Text style={styles.submitButtonText}>{submitting ? t('ui.idVerification.submitting') : t('idVerification.submitButton')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
