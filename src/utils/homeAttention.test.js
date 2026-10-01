@@ -142,7 +142,7 @@ describe('Best Pick can never cause a duplicate on Home', () => {
     expect(placements({ heroIn: 'X', weatherIds: ['X'] })).toContain('X');
   });
   it('priority order is explicit and Best Pick sits below plans and weather', () => {
-    expect(HOME_SECTION_PRIORITY).toEqual(['firstRun', 'yourPlans', 'weather', 'bestPick', 'pickedForYou']);
+    expect(HOME_SECTION_PRIORITY).toEqual(['firstRun', 'yourPlans', 'expandedList', 'weather', 'bestPick', 'pickedForYou']);
   });
   it('Home source has no lead exemption and renders the hero from the deduped selection', () => {
     const home = fs.readFileSync(path.join(__dirname, '..', 'screens', 'HomeScreen.js'), 'utf8');

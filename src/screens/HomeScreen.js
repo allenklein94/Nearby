@@ -57,7 +57,7 @@ import { spacing, radius, typography } from '../theme';
 import { isGatheringPast } from '../utils/objectState';
 import { recommendationRow } from '../utils/recommendationFacts';
 import { openDestination } from '../services/openDestination';
-import { selectHomeAttention, cardWithoutIds } from '../utils/homeAttention';
+import { selectHomeAttention, cardWithoutIds, expandedListIds } from '../utils/homeAttention';
 import { gatheringCardModel } from '../utils/recommendationCard';
 import { confidenceHeadline } from '../utils/recommendationConfidence';
 import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
@@ -420,7 +420,11 @@ export default function HomeScreen({ navigation }) {
   const yourPlansIds = [
     ...(dashboard?.plansGoing ?? []), ...(dashboard?.plansHosting ?? []), ...(dashboard?.plansInterested ?? []),
   ].map((g) => g?.id).filter(Boolean);
-  const aboveWeather = new Set([...firstRunIds, ...yourPlansIds]);
+  // An insight list the person opened (item 136) sits above the recommendation placements: shown in full, and its
+  // gatherings leave weather / Best Pick / Picked For You while it is open.
+  const homeInsight = getHomeInsight(dashboard);
+  const expandedIds = expandedListIds(homeInsight, insightExpanded);
+  const aboveWeather = new Set([...firstRunIds, ...yourPlansIds, ...expandedIds]);
   const weatherCardRaw = socialForecast ? (() => {
     const nowMs = Date.now();
     const upcomingOnly = (list) => (list ?? []).filter((g) => new Date(g.scheduled_at).getTime() > nowMs);
@@ -1869,7 +1873,7 @@ export default function HomeScreen({ navigation }) {
         )}
 
         {(() => {
-          const insight = getHomeInsight(dashboard);
+          const insight = homeInsight;
           if (!insight) return null;
           return (
             <View style={{ marginBottom: spacing.lg }}>

@@ -102,4 +102,18 @@ export function cardWithoutIds(card, ids) {
 // Deliberately outside the rule (not "a listing of a gathering"): intent-search results (the person's own query),
 // action nudges about a plan they already own (venue needed, RSVPs outstanding, poll), group plans (different object),
 // and the non-gathering sections (invites, occasions, communities, Quick Picks, goal shortcuts, Quick Stats).
-export const HOME_SECTION_PRIORITY = ['firstRun', 'yourPlans', 'weather', 'bestPick', 'pickedForYou'];
+//
+// `expandedList` (item 136 follow-up, owner 2026-10-01): a list the person OPENED by tapping a Home statement ("2 of your
+// friends are making plans", "N things start soon"). What they asked to see is never trimmed: it shows every gathering
+// the statement counted, and while it is open those gatherings leave the recommendation placements below it (weather
+// rows, Best Pick, Picked For You), which refill as usual. Collapsing it gives them back. It does not reach above itself:
+// the first-run card and the person's own plans are not recommendations and stay as they are. Discover and every other
+// screen are unaffected (this is Home presentation only).
+export const HOME_SECTION_PRIORITY = ['firstRun', 'yourPlans', 'expandedList', 'weather', 'bestPick', 'pickedForYou'];
+
+// Ids shown by the open expanded list, or an empty set when nothing is expanded. Dedupe is by gathering id only.
+export function expandedListIds(insight, expandedKind) {
+  const dest = insight?.cta?.destination;
+  if (!insight || !expandedKind || insight.kind !== expandedKind || dest?.kind !== 'inline') return new Set();
+  return new Set((dest.items ?? []).map((it) => it?.gathering?.id).filter(Boolean));
+}
