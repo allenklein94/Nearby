@@ -133,6 +133,11 @@ export const LOCALIZED_FILES = [
   'src/screens/RewardsScreen.js',
   'src/screens/IdVerificationScreen.js',
   'src/components/GatheringIntentModal.js',
+  'src/components/InviteFriendsModal.js',
+  'src/components/GatheringsMapView.js',
+  'src/components/SwipeableDiscoveryCards.js',
+  'src/components/AcceptedBusinessOfferCard.js',
+  'src/components/ExperienceComponentList.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).

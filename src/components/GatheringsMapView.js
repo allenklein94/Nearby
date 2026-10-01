@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
@@ -27,6 +28,7 @@ function isHappeningNow(scheduledAt) {
 }
 
 export default function GatheringsMapView({ gatherings, deals = [], businesses = [], stories = [], storyPhotoUrls = {}, userLocation, onSelectGathering, onSelectDeal, onSelectBusiness, onSelectStory }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const mapRef = useRef(null);
@@ -76,15 +78,15 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
             key={`gathering-${g.id}`}
             coordinate={{ latitude: g.latitude, longitude: g.longitude }}
             pinColor={live ? '#e63946' : categoryStyle.color}
-            accessibilityLabel={`${g.title}, hosted by ${g.host?.display_name}, approximate location${live ? ', happening now' : ''}`}
+            accessibilityLabel={t(live ? 'ui.mapView.gatheringLiveA11y' : 'ui.mapView.gatheringA11y', { title: g.title, name: g.host?.display_name ?? '' })}
           >
             <Callout onPress={() => onSelectGathering(g)} tooltip={false}>
               <View style={styles.calloutCard}>
-                {live && <Text style={styles.liveBadge}>🔴 LIVE NOW</Text>}
+                {live && <Text style={styles.liveBadge}>{t('ui.mapView.liveNow')}</Text>}
                 <Text style={styles.calloutTitle} numberOfLines={1}>{categoryStyle.icon} {g.title}</Text>
-                <Text style={styles.calloutHost} numberOfLines={1}>by {g.host?.display_name}</Text>
+                <Text style={styles.calloutHost} numberOfLines={1}>{g.host?.display_name ? t('ui.activity.hostedBy', { name: g.host.display_name }) : t('ui.activity.hostedByUnknown')}</Text>
                 <Text style={styles.calloutDistance}>{g.distanceLabel}</Text>
-                <Text style={styles.calloutAction}>Tap to view details</Text>
+                <Text style={styles.calloutAction}>{t('ui.mapView.tapToViewDetails')}</Text>
               </View>
             </Callout>
           </Marker>
@@ -95,7 +97,7 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
           key={`deal-${d.id}`}
           coordinate={{ latitude: d.latitude, longitude: d.longitude }}
           pinColor="#f59e0b"
-          accessibilityLabel={`Deal at ${d.brand_partners?.name}: ${d.title}`}
+          accessibilityLabel={t('ui.mapView.dealAtA11y', { name: d.brand_partners?.name, title: d.title })}
         >
           <Callout onPress={() => onSelectDeal(d)} tooltip={false}>
             <View style={styles.calloutCard}>
@@ -104,7 +106,7 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
               {d.valid_from_time && d.valid_to_time && (
                 <Text style={styles.calloutDistance}>{d.valid_from_time.slice(0, 5)} - {d.valid_to_time.slice(0, 5)}</Text>
               )}
-              <Text style={styles.calloutAction}>Tap to view details</Text>
+              <Text style={styles.calloutAction}>{t('ui.mapView.tapToViewDetails')}</Text>
             </View>
           </Callout>
         </Marker>
@@ -114,12 +116,12 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
           key={`business-${b.id}`}
           coordinate={{ latitude: b.latitude, longitude: b.longitude }}
           pinColor="#5B9AA0"
-          accessibilityLabel={`${b.name}, business`}
+          accessibilityLabel={t('ui.mapView.businessA11y', { name: b.name })}
         >
           <Callout onPress={() => onSelectBusiness(b)} tooltip={false}>
             <View style={styles.calloutCard}>
               <Text style={styles.calloutTitle} numberOfLines={1}>🏪 {b.name}</Text>
-              <Text style={styles.calloutAction}>Tap to view profile</Text>
+              <Text style={styles.calloutAction}>{t('ui.mapView.tapToViewProfile')}</Text>
             </View>
           </Callout>
         </Marker>
@@ -128,7 +130,7 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
         <Marker
           key={`story-${s.id}`}
           coordinate={{ latitude: s.fuzzed_lat, longitude: s.fuzzed_lng }}
-          accessibilityLabel="Public story, approximate location"
+          accessibilityLabel={t('ui.mapView.publicStoryApproximateLocationA11y')}
         >
           <View style={styles.storyPin}>
             {storyPhotoUrls[s.user_id] ? (
@@ -139,8 +141,8 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
           </View>
           <Callout onPress={() => onSelectStory(s)} tooltip={false}>
             <View style={styles.calloutCard}>
-              <Text style={styles.calloutTitle}>📸 Public Story</Text>
-              <Text style={styles.calloutAction}>Tap to view</Text>
+              <Text style={styles.calloutTitle}>{t('ui.mapView.publicStory')}</Text>
+              <Text style={styles.calloutAction}>{t('ui.mapView.tapToView')}</Text>
             </View>
           </Callout>
         </Marker>

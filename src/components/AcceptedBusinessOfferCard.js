@@ -1,16 +1,14 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import OfferMedia from './OfferMedia';
 import { visibleRedemption } from '../utils/offerMedia';
 import { formatOfferSummary } from '../services/businessFulfillment';
 import { openUberToDestination } from '../utils/uberDeepLink';
 import { useTheme } from '../context/ThemeContext';
-import { formatDateTime } from '../utils/timeLabels';
+import { displayDateTime } from '../i18n/display';
 import { typography, spacing, radius } from '../theme';
 
-function formatOfferTime(iso) {
-  return formatDateTime(iso);
-}
 
 // Convergence pass P1 follow-up (CLAUDE.md): the same "here's the real
 // accepted business offer" block was independently written, byte-for-byte
@@ -31,33 +29,36 @@ function formatOfferTime(iso) {
 // own bordered card.
 export default function AcceptedBusinessOfferCard({
   offer,
-  kicker = '🍽️ Local Business Confirmed',
+  kicker: kickerProp,
   partySize = null,
   onViewRequest,
   groupCare = false,
   bordered = true,
   style,
 }) {
+  const { t, language } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors, bordered);
 
   if (!offer) return null;
+  const kicker = kickerProp ?? t('ui.acceptedOffer.localBusinessConfirmed');
+  const venue = offer.brand_partners?.name ?? t('ui.acceptedOffer.aLocalBusiness');
 
   return (
     <View style={[styles.container, style]}>
       <Text style={styles.kicker}>{kicker}</Text>
-      <Text style={styles.venue}>{offer.brand_partners?.name ?? 'A local business'}</Text>
-      {groupCare ? <Text style={styles.sub}>{offer.brand_partners?.name ?? 'A local business'} is taking care of your group</Text> : null}
-      {offer.proposed_time && <Text style={styles.sub}>{formatOfferTime(offer.proposed_time)}</Text>}
+      <Text style={styles.venue}>{venue}</Text>
+      {groupCare ? <Text style={styles.sub}>{t('ui.acceptedOffer.takingCareOfGroup', { name: venue })}</Text> : null}
+      {offer.proposed_time && <Text style={styles.sub}>{displayDateTime(offer.proposed_time, language)}</Text>}
       {partySize != null && (
         <Text style={styles.sub}>
-          Confirmed for {partySize} {partySize === 1 ? 'person' : 'people'}
+          {t('ui.acceptedOffer.confirmedFor', { count: partySize })}
         </Text>
       )}
-      {formatOfferSummary(offer) && <Text style={styles.sub}>{formatOfferSummary(offer)}</Text>}
+      {formatOfferSummary(offer, language) && <Text style={styles.sub}>{formatOfferSummary(offer, language)}</Text>}
       {offer.offer_description ? <Text style={styles.desc}>{offer.offer_description}</Text> : null}
       <OfferMedia path={offer.media_path} type={offer.media_type} posterPath={offer.media_poster_path} />
-      {visibleRedemption(offer) ? <Text style={styles.sub}>🎟️ How to redeem: {visibleRedemption(offer)}</Text> : null}
+      {visibleRedemption(offer) ? <Text style={styles.sub}>{t('ui.acceptedOffer.howToRedeem')}{' '}{visibleRedemption(offer)}</Text> : null}
       {offer.brand_partners?.latitude != null && offer.brand_partners?.longitude != null && (
         <TouchableOpacity
           onPress={() => openUberToDestination({
@@ -67,20 +68,20 @@ export default function AcceptedBusinessOfferCard({
             address: offer.brand_partners.address,
           })}
           style={styles.linkRow}
-          accessibilityLabel="Get an Uber there"
+          accessibilityLabel={t('ui.acceptedOffer.getAnUberThereA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.link}>🚗 Get an Uber there</Text>
+          <Text style={styles.link}>{t('ui.acceptedOffer.getAnUberThere')}</Text>
         </TouchableOpacity>
       )}
       {onViewRequest && (
         <TouchableOpacity
           onPress={onViewRequest}
           style={styles.linkRow}
-          accessibilityLabel="View your business request"
+          accessibilityLabel={t('ui.acceptedOffer.viewYourBusinessRequestA11y')}
           accessibilityRole="button"
         >
-          <Text style={styles.link}>View request →</Text>
+          <Text style={styles.link}>{t('ui.acceptedOffer.viewRequest')}</Text>
         </TouchableOpacity>
       )}
     </View>

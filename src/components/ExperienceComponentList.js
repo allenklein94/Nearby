@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -13,6 +14,7 @@ import { createExperiencePlan, experienceStopFromItem } from '../services/plans'
 // add-on line and the plan bar. Nothing is booked here and no date is invented -- the Plan holds the chosen stops and
 // each continues through its existing flow.
 export default function ExperienceComponentList({ experience, renderItem, navigation, partySize = null, labelStyle, componentStyle }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const [picked, setPicked] = useState({}); // componentKey -> stop
   const [creating, setCreating] = useState(false);
@@ -40,13 +42,13 @@ export default function ExperienceComponentList({ experience, renderItem, naviga
     setCreating(true);
     try {
       const planId = await createExperiencePlan({
-        title: (experience.title || 'Your night').replace(/^✨\s*/, ''),
+        title: (experience.title || t('ui.experienceList.yourNight')).replace(/^✨\s*/, ''),
         stops,
         partySize,
       });
       navigation.navigate('PlanDetail', { planId });
     } catch (e) {
-      Alert.alert("Couldn't plan this night", "One of those options may no longer be available. Pull to refresh and try again.");
+      Alert.alert(t('ui.experienceList.couldntPlanThisNight'), t('ui.experienceList.oneOfThoseOptionsMay'));
     }
     setCreating(false);
   }
@@ -74,14 +76,14 @@ export default function ExperienceComponentList({ experience, renderItem, naviga
                     onPress={() => toggle(component, item)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: isPicked }}
-                    accessibilityLabel={isPicked ? `Remove from your night: ${item.title}` : `Add to your night: ${item.title}`}
+                    accessibilityLabel={isPicked ? t('ui.experienceList.removeFromYourNightA11y', { title: item.title }) : t('ui.experienceList.addToYourNightA11y', { title: item.title })}
                     style={{
                       alignSelf: 'flex-start', marginLeft: spacing.lg, marginBottom: spacing.sm, paddingVertical: 4, paddingHorizontal: spacing.md,
                       borderRadius: radius.lg, borderWidth: 1, borderColor: isPicked ? colors.primary : colors.border,
                     }}
                   >
                     <Text style={{ ...typography.caption, color: isPicked ? colors.primary : colors.textSecondary, fontWeight: '600' }}>
-                      {isPicked ? '✓ In your night' : '+ Add to your night'}
+                      {isPicked ? t('ui.experienceList.inYourNight') : t('ui.experienceList.addToYourNight')}
                     </Text>
                   </TouchableOpacity>
                 ) : null}
@@ -98,12 +100,12 @@ export default function ExperienceComponentList({ experience, renderItem, naviga
           onPress={planIt}
           disabled={creating}
           accessibilityRole="button"
-          accessibilityLabel={`Plan this night with ${stops.length} stops`}
+          accessibilityLabel={t('ui.experienceList.planThisNightA11y', { count: stops.length })}
           style={{ backgroundColor: colors.primary, borderRadius: radius.lg, padding: spacing.md, alignItems: 'center', marginBottom: spacing.md }}
         >
           {creating
             ? <ActivityIndicator color="#fff" />
-            : <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Plan this night · {stops.length} stops →</Text>}
+            : <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>{t('ui.experienceList.planThisNight', { count: stops.length })}</Text>}
         </TouchableOpacity>
       )}
     </>

@@ -33,7 +33,8 @@ describe('the closed loop, end to end (item 85)', () => {
     expect(none.headline).toBe('2 redemptions');
   });
   test('the gathering tells the group who is taking care of them, and the dashboard shows the value', () => {
-    expect(read('../components/AcceptedBusinessOfferCard.js')).toContain('is taking care of your group');
+    expect(read('../components/AcceptedBusinessOfferCard.js')).toContain("t('ui.acceptedOffer.takingCareOfGroup'");
+    expect(read('../i18n/ui/acceptedOffer.js')).toContain('{name} is taking care of your group');
     expect((read('../screens/GatheringDetailScreen.js').match(/groupCare/g) || []).length).toBe(2);
     expect(read('../screens/BusinessDashboardScreen.js')).toContain("offerValueLines(offerValue, 'month')");
   });

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
+import { tr } from '../i18n/translate';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from './EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Modal, Alert, ActivityIndicator, Share } from 'react-native';
@@ -26,6 +28,7 @@ export default function InviteFriendsModal({
   gatheringId, gatheringTitle,
   inviteType = 'gathering', targetId, targetTitle,
 }) {
+  const { t } = useLanguage();
   const resolvedType = gatheringId ? 'gathering' : inviteType;
   const resolvedTargetId = gatheringId ?? targetId;
   const resolvedTargetTitle = gatheringTitle ?? targetTitle;
@@ -92,7 +95,7 @@ export default function InviteFriendsModal({
       // Nearby" or "Get Nearby" for the full experience.
       const shareUrl = gatheringInviteShareUrl(resolvedTargetId);
       await Share.share({
-        message: `Join me: ${resolvedTargetTitle ?? 'my gathering'} — ${shareUrl}`,
+        message: tr('ui.inviteModal.joinMe', { title: resolvedTargetTitle ?? tr('ui.inviteModal.myGathering'), url: shareUrl }),
         url: shareUrl,
       });
     } catch (e) {
@@ -104,11 +107,11 @@ export default function InviteFriendsModal({
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
-          <Text style={styles.title}>Invite Friends</Text>
-          <Text style={styles.subtitle}>to "{resolvedTargetTitle}"</Text>
+          <Text style={styles.title}>{t('ui.inviteModal.inviteFriends')}</Text>
+          <Text style={styles.subtitle}>{t('ui.inviteModal.to', { resolvedTargetTitle: resolvedTargetTitle })}</Text>
 
           {loading ? (
-            <NLoader fullScreen={false} size="compact" caption="Loading friends…" />
+            <NLoader fullScreen={false} size="compact" caption={t('ui.inviteModal.loadingFriends')} />
           ) : (
             // Item 126 ("Don't animate every card"): the whole list settles into place once,
             // instead of each friend row independently staggering in -- a real friends list can
@@ -133,13 +136,13 @@ export default function InviteFriendsModal({
                     style={[styles.inviteButton, invitedIds[item.id] && styles.inviteButtonSent]}
                     onPress={() => handleInvite(item.id)}
                     disabled={invitingId === item.id || invitedIds[item.id]}
-                    accessibilityLabel={invitedIds[item.id] ? 'Invite sent' : `Invite ${item.display_name}`}
+                    accessibilityLabel={invitedIds[item.id] ? t('ui.inviteModal.inviteSentA11y') : t('ui.inviteModal.inviteA11y', { name: item.display_name })}
                     accessibilityRole="button"
                   >
                     {invitingId === item.id ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
-                      <Text style={styles.inviteButtonText}>{invitedIds[item.id] ? '✓ Sent' : 'Invite'}</Text>
+                      <Text style={styles.inviteButtonText}>{invitedIds[item.id] ? t('ui.inviteModal.sent') : t('ui.inviteModal.invite')}</Text>
                     )}
                   </TouchableOpacity>
                 </View>
@@ -152,15 +155,15 @@ export default function InviteFriendsModal({
             <TouchableOpacity
               onPress={handleShareWithNonUser}
               style={{ marginTop: spacing.md }}
-              accessibilityLabel="Invite someone not on Nearby yet"
+              accessibilityLabel={t('ui.inviteModal.inviteSomeoneNotOnNearbyA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.shareLink}>📤 Invite someone not on Nearby yet</Text>
+              <Text style={styles.shareLink}>{t('ui.inviteModal.inviteSomeoneNotOnNearby')}</Text>
             </TouchableOpacity>
           )}
 
           <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.lg }}>
-            <Text style={styles.closeText}>Done</Text>
+            <Text style={styles.closeText}>{t('ui.inviteModal.done')}</Text>
           </TouchableOpacity>
         </View>
       </View>

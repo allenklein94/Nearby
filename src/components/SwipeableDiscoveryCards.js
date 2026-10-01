@@ -142,7 +142,7 @@ export default function SwipeableDiscoveryCards({
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => (storyGroup ? onViewStory(storyGroup) : onViewProfile(item.otherUserId))}
-          accessibilityLabel={storyGroup ? `View ${item.profiles?.display_name}'s story` : `View ${item.profiles?.display_name}'s profile`}
+          accessibilityLabel={storyGroup ? t('ui.swipeCards.viewSStoryA11y', { name: item.profiles?.display_name }) : t('ui.swipeCards.viewSProfileA11y', { name: item.profiles?.display_name })}
           accessibilityRole="button"
         >
           <Image
@@ -152,10 +152,10 @@ export default function SwipeableDiscoveryCards({
           {onlineStatuses[item.otherUserId] && <View style={styles.onlineDot} />}
 
           <Animated.View style={[styles.stampLike, { opacity: likeOpacity }]}>
-            <Text style={styles.stampLikeText}>NOTICE</Text>
+            <Text style={styles.stampLikeText}>{t('ui.swipeCards.notice')}</Text>
           </Animated.View>
           <Animated.View style={[styles.stampSkip, { opacity: skipOpacity }]}>
-            <Text style={styles.stampSkipText}>SKIP</Text>
+            <Text style={styles.stampSkipText}>{t('ui.swipeCards.skip')}</Text>
           </Animated.View>
         </TouchableOpacity>
 
@@ -163,7 +163,7 @@ export default function SwipeableDiscoveryCards({
           style={styles.cardBody}
           activeOpacity={0.85}
           onPress={() => onViewProfile(item.otherUserId)}
-          accessibilityLabel={`View ${item.profiles?.display_name}'s profile`}
+          accessibilityLabel={t('ui.swipeCards.viewSProfileA11y', { name: item.profiles?.display_name })}
           accessibilityRole="button"
         >
           <View style={styles.nameRow}>
@@ -174,10 +174,10 @@ export default function SwipeableDiscoveryCards({
                 <TouchableOpacity
                   style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatibilityScore) }]}
                   onPress={() => onShowCompatibility(item)}
-                  accessibilityLabel={`${item.compatibilityScore} percent compatible, view details`}
+                  accessibilityLabel={t('ui.swipeCards.percentCompatibleViewDetailsA11y', { compatibilityScore: item.compatibilityScore })}
                   accessibilityRole="button"
                 >
-                  <Text style={[styles.compatText, { color: compatibilityColor(item.compatibilityScore) }]}>{item.compatibilityScore}% · Why?</Text>
+                  <Text style={[styles.compatText, { color: compatibilityColor(item.compatibilityScore) }]}>{t('ui.swipeCards.why', { compatibilityScore: item.compatibilityScore })}</Text>
                 </TouchableOpacity>
               ) : (
                 <View style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatibilityScore) }]}>
@@ -204,7 +204,7 @@ export default function SwipeableDiscoveryCards({
           <TouchableOpacity
             style={styles.rewindButton}
             onPress={handleRewind}
-            accessibilityLabel="Rewind to the person you just skipped"
+            accessibilityLabel={t('ui.swipeCards.rewindToThePersonYouA11y')}
             accessibilityRole="button"
           >
             <Text style={styles.rewindButtonText}>↺</Text>
@@ -213,7 +213,7 @@ export default function SwipeableDiscoveryCards({
         <TouchableOpacity
           style={styles.skipButton}
           onPress={handleButtonSkip}
-          accessibilityLabel={`Skip ${item.profiles?.display_name}`}
+          accessibilityLabel={t('ui.swipeCards.skipA11y', { name: item.profiles?.display_name })}
           accessibilityRole="button"
         >
           <Text style={styles.skipButtonText}>✕</Text>
@@ -221,7 +221,7 @@ export default function SwipeableDiscoveryCards({
         <TouchableOpacity
           style={styles.waveButton}
           onPress={() => onWave(item.otherUserId)}
-          accessibilityLabel={`Send a Wave to ${item.profiles?.display_name}`}
+          accessibilityLabel={t('ui.swipeCards.sendAWaveToA11y', { name: item.profiles?.display_name })}
           accessibilityRole="button"
         >
           <Text style={styles.waveButtonText}>👋</Text>
@@ -229,7 +229,7 @@ export default function SwipeableDiscoveryCards({
         <TouchableOpacity
           style={styles.noticeButton}
           onPress={handleButtonNotice}
-          accessibilityLabel={`Send a Notice to ${item.profiles?.display_name}`}
+          accessibilityLabel={t('ui.swipeCards.sendANoticeToA11y', { name: item.profiles?.display_name })}
           accessibilityRole="button"
         >
           <Text style={styles.noticeButtonText}>♡</Text>
