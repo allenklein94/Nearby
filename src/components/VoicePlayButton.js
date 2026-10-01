@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { TouchableOpacity, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { Audio } from 'expo-av';
 import { useTheme } from '../context/ThemeContext';
@@ -7,7 +8,9 @@ import { useTheme } from '../context/ThemeContext';
 // pulled out here so it can be reused on Profile (preview your own
 // voice intro) and ViewProfile (play someone else's) without a third
 // copy of the same Audio.Sound lifecycle handling.
-export default function VoicePlayButton({ getUrl, label = 'Voice message', style, iconSize = 18 }) {
+export default function VoicePlayButton({ getUrl, label: labelProp, style, iconSize = 18 }) {
+  const { t } = useLanguage();
+  const label = labelProp ?? t('ui.smallParts.voiceMessage');
   const { colors } = useTheme();
   const [sound, setSound] = useState(null);
   const [playing, setPlaying] = useState(false);
@@ -63,7 +66,7 @@ export default function VoicePlayButton({ getUrl, label = 'Voice message', style
       style={[styles.button, style]}
       onPress={togglePlay}
       activeOpacity={0.85}
-      accessibilityLabel={`${label}, ${playing ? 'playing, tap to pause' : 'tap to play'}`}
+      accessibilityLabel={t(playing ? 'ui.smallParts.playingTapToPauseA11y' : 'ui.smallParts.tapToPlayA11y', { label })}
       accessibilityRole="button"
     >
       {loading ? (

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing, typography } from '../theme';
@@ -8,6 +9,7 @@ import { SPONSORED_LABEL, sponsoredWhyText } from '../constants/sponsored';
 // served card cannot lack it. Deliberately its own card, not the organic one: no organic reason line, no friend or
 // popularity claim, and no offer wording. The pill is a neutral outline (coral is reserved for actions).
 export default function SponsoredCard({ card, categoryLabel, onView, onHide, onReport }) {
+  const { t } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [why, setWhy] = useState(false);
@@ -20,20 +22,20 @@ export default function SponsoredCard({ card, categoryLabel, onView, onHide, onR
         </View>
         <Text style={styles.by} numberOfLines={1}>{SPONSORED_LABEL} · {card.partner_name}</Text>
       </View>
-      <TouchableOpacity onPress={onView} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={`View ${card.title}`}>
+      <TouchableOpacity onPress={onView} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.sponsored.viewA11y', { title: card.title })}>
         <Text style={styles.title} numberOfLines={2}>{card.title}</Text>
         {card.description ? <Text style={styles.description} numberOfLines={3}>{card.description}</Text> : null}
-        <Text style={styles.view}>View</Text>
+        <Text style={styles.view}>{t('ui.sponsored.view')}</Text>
       </TouchableOpacity>
       <View style={styles.controls}>
-        <TouchableOpacity onPress={() => setWhy((v) => !v)} accessibilityRole="button" accessibilityLabel="Why am I seeing this?">
-          <Text style={styles.link}>Why am I seeing this?</Text>
+        <TouchableOpacity onPress={() => setWhy((v) => !v)} accessibilityRole="button" accessibilityLabel={t('ui.sponsored.whyAmISeeingThisA11y')}>
+          <Text style={styles.link}>{t('ui.sponsored.whyAmISeeingThis')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={onHide} accessibilityRole="button" accessibilityLabel="Hide this sponsor">
-          <Text style={styles.link}>Hide this sponsor</Text>
+        <TouchableOpacity onPress={onHide} accessibilityRole="button" accessibilityLabel={t('ui.sponsored.hideThisSponsorA11y')}>
+          <Text style={styles.link}>{t('ui.sponsored.hideThisSponsor')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={onReport} accessibilityRole="button" accessibilityLabel="Report this ad">
-          <Text style={styles.link}>Report this ad</Text>
+        <TouchableOpacity onPress={onReport} accessibilityRole="button" accessibilityLabel={t('ui.sponsored.reportThisAdA11y')}>
+          <Text style={styles.link}>{t('ui.sponsored.reportThisAd')}</Text>
         </TouchableOpacity>
       </View>
       {why ? <Text style={styles.whyText}>{sponsoredWhyText(card.partner_name, categoryLabel)}</Text> : null}

@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import { useTheme } from '../context/ThemeContext';
@@ -11,6 +12,7 @@ import { typography, spacing, radius } from '../theme';
 // this is purely a different visual arrangement of data that was
 // already safe to show, not a new category of exposure.
 export default function SightingsOverviewMap({ sightings, photoUrls, userLocation, onSelectSighting }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const mapRef = useRef(null);
@@ -29,7 +31,7 @@ export default function SightingsOverviewMap({ sightings, photoUrls, userLocatio
         <Marker
           key={s.id}
           coordinate={{ latitude: s.sightingLat, longitude: s.sightingLng }}
-          accessibilityLabel={`Crossed paths with ${s.profiles?.display_name}, approximate location`}
+          accessibilityLabel={t('ui.smallParts.crossedPathsWithApproximateLocationA11y', { name: s.profiles?.display_name })}
         >
           <View style={styles.avatarPin}>
             {photoUrls[s.id] ? (
@@ -41,7 +43,7 @@ export default function SightingsOverviewMap({ sightings, photoUrls, userLocatio
           <Callout onPress={() => onSelectSighting(s)} tooltip={false}>
             <View style={styles.calloutCard}>
               <Text style={styles.calloutTitle}>{s.profiles?.display_name}</Text>
-              <Text style={styles.calloutAction}>Tap to view profile</Text>
+              <Text style={styles.calloutAction}>{t('ui.smallParts.tapToViewProfile')}</Text>
             </View>
           </Callout>
         </Marker>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
@@ -10,7 +11,9 @@ import { AGE_MIN_OPTIONS, AGE_MAX_OPTIONS, AGE_BANDS, ageBandOf, ageRangeLabel }
 // pair is always valid. Says plainly that it does not restrict who can join. A quick row (All ages / Kids / Teens) sets the SAME
 // min/max pair; tapping the selected band clears it back to not said. The exact From / To chips stay one tap away ("Exact ages"),
 // open by default when the saved range is an exact one that is not a band.
-export default function AgeRangePicker({ min, max, onChange, label = 'Suited ages' }) {
+export default function AgeRangePicker({ min, max, onChange, label: labelProp }) {
+  const { t } = useLanguage();
+  const label = labelProp ?? t('ui.ageRange.suitedAges');
   const { colors } = useTheme();
   const band = ageBandOf(min, max);
   const exactSaved = (min != null || max != null) && !band;
@@ -26,7 +29,7 @@ export default function AgeRangePicker({ min, max, onChange, label = 'Suited age
       onPress={onPress}
       activeOpacity={0.85}
       accessibilityRole="button"
-      accessibilityLabel={`${text}${selected ? ', selected' : ''}`}
+      accessibilityLabel={selected ? t('ui.ageRange.selectedA11y', { label: text }) : text}
       accessibilityState={{ selected }}
       style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.surface }, selected && { backgroundColor: colors.primary, borderColor: colors.primary }]}
     >
@@ -42,24 +45,24 @@ export default function AgeRangePicker({ min, max, onChange, label = 'Suited age
       </View>
       {!(showExact || exactSaved) ? (
         <TouchableOpacity onPress={() => setShowExact(true)} accessibilityRole="button" style={{ marginTop: spacing.sm }}>
-          <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '600' }}>Exact ages</Text>
+          <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '600' }}>{t('ui.ageRange.exactAges')}</Text>
         </TouchableOpacity>
       ) : (
       <>
-      <Text style={[styles.sub, { color: colors.textSecondary }]}>From age</Text>
+      <Text style={[styles.sub, { color: colors.textSecondary }]}>{t('ui.ageRange.fromAge')}</Text>
       <View style={styles.row}>
-        {chip('Any', min == null, () => set(null, max), 'min-any')}
+        {chip(t('ui.ageRange.any'), min == null, () => set(null, max), 'min-any')}
         {AGE_MIN_OPTIONS.map((n) => chip(String(n), min === n, () => set(min === n ? null : n, max), `min-${n}`))}
       </View>
-      <Text style={[styles.sub, { color: colors.textSecondary }]}>Up to age</Text>
+      <Text style={[styles.sub, { color: colors.textSecondary }]}>{t('ui.ageRange.upToAge')}</Text>
       <View style={styles.row}>
-        {chip('Any', max == null, () => set(min, null), 'max-any')}
+        {chip(t('ui.ageRange.any'), max == null, () => set(min, null), 'max-any')}
         {AGE_MAX_OPTIONS.map((n) => chip(String(n), max === n, () => set(min, max === n ? null : n), `max-${n}`))}
       </View>
       </>
       )}
       <Text style={[styles.sub, { color: colors.textSecondary }]}>
-        {summary ? `${summary}. ` : ''}A guide for families, not a rule: it doesn't stop anyone from joining.
+        {summary ? `${summary}. ` : ''}{t('ui.ageRange.aGuideForFamiliesNot')}
       </Text>
     </View>
   );

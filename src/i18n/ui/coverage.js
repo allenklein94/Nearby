@@ -138,12 +138,39 @@ export const LOCALIZED_FILES = [
   'src/components/SwipeableDiscoveryCards.js',
   'src/components/AcceptedBusinessOfferCard.js',
   'src/components/ExperienceComponentList.js',
+  'src/screens/BlockedUsersScreen.js',
+  'src/components/QuickPicksEditModal.js',
+  'src/screens/QuickFilterCustomizeScreen.js',
+  'src/components/SponsoredCard.js',
+  'src/components/SponsoredSpotlightSlot.js',
+  'src/components/AgeRangePicker.js',
+  'src/screens/InviteFriendsScreen.js',
+  'src/components/ConfidenceModeBanner.js',
+  'src/components/RecurringBadge.js',
+  'src/components/DiningPreferencesPromptModal.js',
+  'src/screens/TimelineScreen.js',
+  'src/components/SightingMapModal.js',
+  'src/components/GatheringFeedbackPrompt.js',
+  'src/components/FriendInviteSelector.js',
+  'src/screens/PreferencePollScreen.js',
+  'src/components/GifPickerModal.js',
+  'src/components/VoicePlayButton.js',
+  'src/components/CommunityCalendar.js',
+  'src/components/SightingsOverviewMap.js',
+  'src/components/RequestedItemsPicker.js',
+  'src/components/OccasionPlanShareCard.js',
+  'src/components/NewcomerBadge.js',
+  'src/components/ExperiencePerkLine.js',
+  'src/components/ActionSheetModal.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
 export const INTENTIONAL_ENGLISH = {
   '*': {
     Nearby: 'the app name',
+  },
+  'src/components/GifPickerModal.js': {
+    'Powered by GIPHY': 'GIPHY attribution, kept as GIPHY words it',
   },
   'src/utils/meetTonight.js': {
     'Go on dates': 'stored onboarding token (profiles.onboarding_motivations), matched, never shown',

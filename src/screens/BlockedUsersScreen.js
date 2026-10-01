@@ -60,10 +60,10 @@ export default function BlockedUsersScreen() {
 
   function confirmUnblock(block) {
     Alert.alert(
-      `Unblock ${block.profiles?.display_name || 'this person'}?`,
-      "They'll be able to see your profile and interact with you again if you cross paths.",
+      block.profiles?.display_name ? t('ui.blockedUsers.unblock', { name: block.profiles.display_name }) : t('ui.blockedUsers.unblockThisPerson'),
+      t('ui.blockedUsers.theyllBeAbleToSee'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('ui.blockedUsers.cancel'), style: 'cancel' },
         {
           text: t('blockedUsers.unblock'),
           onPress: async () => {
@@ -86,7 +86,7 @@ export default function BlockedUsersScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading blocked users...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.blockedUsers.loadingBlockedUsers')}</Text>
       </SafeAreaView>
     );
   }
@@ -94,7 +94,7 @@ export default function BlockedUsersScreen() {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load your blocked users." onRetry={load} />
+        <LoadErrorState message={t('ui.blockedUsers.couldntLoadYourBlockedUsers')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -124,12 +124,12 @@ export default function BlockedUsersScreen() {
             ) : (
               <View style={[styles.avatar, styles.avatarPlaceholder]} />
             )}
-            <Text style={styles.name}>{block.profiles?.display_name || 'Someone'}</Text>
+            <Text style={styles.name}>{block.profiles?.display_name || t('ui.blockedUsers.someone')}</Text>
             <TouchableOpacity
               style={styles.unblockButton}
               onPress={() => confirmUnblock(block)}
               disabled={unblockingId === block.id}
-              accessibilityLabel={`${t('blockedUsers.unblock')} ${block.profiles?.display_name || 'this person'}`}
+              accessibilityLabel={t('ui.blockedUsers.unblockA11y', { name: block.profiles?.display_name || t('ui.blockedUsers.thisPerson') })}
               accessibilityRole="button"
             >
               <Text style={styles.unblockButtonText}>{unblockingId === block.id ? '...' : t('blockedUsers.unblock')}</Text>

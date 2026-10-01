@@ -3,6 +3,7 @@
 // SELECTS: the caller sends with sendGatheringInvites (services/invites.js) after the gathering is created. The post-publish
 // panel on GatheringConfirmation sends one invite per tap and stays separate.
 import React, { useEffect, useRef, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { NLoader } from '../motion';
@@ -18,6 +19,7 @@ import { selectedFriendIdList, keepEligible, selectionFromSuggested } from '../u
 // `suggestedIds`: friends an earlier step explicitly suggested (Celebrate Something's own picks); shown first with 🤝. Whether
 // they start checked is the caller's initial selectedIds; anyone can be unchecked. Typed names never become suggestions.
 export default function FriendInviteSelector({ selectedIds, onChange, navigation, suggestedIds = null }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const selectedRef = useRef(selectedIds);
@@ -54,7 +56,7 @@ export default function FriendInviteSelector({ selectedIds, onChange, navigation
     onChange({ ...selectedIds, [id]: !selectedIds[id] });
   }
 
-  if (loading) return <NLoader fullScreen={false} size="inline" caption="Loading friends…" />;
+  if (loading) return <NLoader fullScreen={false} size="inline" caption={t('ui.smallParts.loadingFriends')} />;
   if (friends.length === 0) {
     return (
       <View>
@@ -62,11 +64,11 @@ export default function FriendInviteSelector({ selectedIds, onChange, navigation
         <EmptyCopy id="no_friends_to_invite" />
         <TouchableOpacity
           onPress={() => navigation.navigate('FriendDiscovery')}
-          accessibilityLabel="Discover people to add as friends"
+          accessibilityLabel={t('ui.smallParts.discoverPeopleToAddAsA11y')}
           accessibilityRole="button"
           style={{ alignItems: 'center' }}
         >
-          <Text style={styles.emptyActionText}>Discover People →</Text>
+          <Text style={styles.emptyActionText}>{t('ui.smallParts.discoverPeople')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -79,7 +81,7 @@ export default function FriendInviteSelector({ selectedIds, onChange, navigation
         style={styles.friendRow}
         onPress={() => toggle(f.id)}
         activeOpacity={0.85}
-        accessibilityLabel={`${selected ? 'Deselect' : 'Select'} ${f.display_name}`}
+        accessibilityLabel={t(selected ? 'ui.smallParts.deselectA11y' : 'ui.smallParts.selectA11y', { name: f.display_name })}
         accessibilityRole="checkbox"
         accessibilityState={{ checked: selected }}
       >

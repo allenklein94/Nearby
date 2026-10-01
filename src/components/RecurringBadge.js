@@ -1,27 +1,26 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { spacing, radius } from '../theme';
 
-const LABELS = {
-  weekly: '🔁 Weekly',
-  biweekly: '🔁 Every 2 weeks',
-  monthly: '🔁 Monthly',
-};
+// Labels come from the gathering form's own repeat options (ui.gatheringOptions.repeat.*).
+const RULES = ['weekly', 'biweekly', 'monthly'];
 
 // Purely presentational — no data fetching needed since
 // recurrence_rule already comes through on the gathering object
 // itself, unlike NewcomerBadge/BusinessHostBadge which need their
 // own lookups.
 export default function RecurringBadge({ recurrenceRule }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
-  if (!recurrenceRule || !LABELS[recurrenceRule]) return null;
+  if (!recurrenceRule || !RULES.includes(recurrenceRule)) return null;
 
   return (
     <View style={styles.badge}>
-      <Text style={styles.text}>{LABELS[recurrenceRule]}</Text>
+      <Text style={styles.text}>🔁 {t(`ui.gatheringOptions.repeat.${recurrenceRule}`)}</Text>
     </View>
   );
 }

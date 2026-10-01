@@ -30,7 +30,12 @@ describe('disclosure cannot be omitted', () => {
     expect(card).toMatch(/accessibilityLabel=\{`\$\{SPONSORED_LABEL\}:/);
   });
   it('offers "Why am I seeing this?", Hide and Report, and a plain View CTA', () => {
-    for (const t of ['Why am I seeing this?', 'Hide this sponsor', 'Report this ad', '>View<']) expect(card).toContain(t);
+    // The wording is localized (ui.sponsored.*); the card must still render each control, and the English must still say it.
+    const en = read('src/i18n/ui/sponsored.js');
+    for (const [key, english] of [['whyAmISeeingThis', 'Why am I seeing this?'], ['hideThisSponsor', 'Hide this sponsor'], ['reportThisAd', 'Report this ad'], ['view', 'View']]) {
+      expect(card).toContain(`t('ui.sponsored.${key}')`);
+      expect(en).toContain(`${key}: ${JSON.stringify(english)}`);
+    }
   });
   it('the disclosure sentence says it is paid and not activity-based', () => {
     expect(sponsoredWhyText('Cafe', 'Food & Drink')).toMatch(/paid to be shown/);
@@ -53,6 +58,7 @@ describe('organic code never touches the sponsored system', () => {
   const allowed = [
     'src/components/SponsoredCard.js', 'src/components/SponsoredSpotlightSlot.js', 'src/services/sponsored.js',
     'src/constants/sponsored.js', 'src/components/SponsoredPromotionsPanel.js', 'src/utils/sponsoredPromotions.js', 'src/utils/sponsoredTerms.test.js', 'src/constants/sponsoredTerms.js', 'src/screens/AdminSponsoredRefundsScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/screens/SettingsScreen.js',
+    'src/i18n/ui/coverage.js', // the localization registry lists the two sponsored components by path; it renders nothing
   ].map((p) => path.join(root, p));
   const pattern = /sponsored_|get_sponsored|record_sponsored|SponsoredCard|SponsoredSpotlight|services\/sponsored|constants\/sponsored|show_sponsored_places/;
   it('no other source file references it', () => {

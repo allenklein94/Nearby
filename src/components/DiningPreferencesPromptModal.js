@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -11,6 +12,7 @@ import { modalAnimation } from '../motion';
 // "Dining & Venue Preferences" (profiles.cuisine_preferences / venue_preferences) -- one store, two
 // entry points. Optional; "Not now" is a permanent dismiss handled by the caller.
 export default function DiningPreferencesPromptModal({ visible, onClose, onSaved }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [cuisines, setCuisines] = useState([]);
@@ -44,8 +46,8 @@ export default function DiningPreferencesPromptModal({ visible, onClose, onSaved
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
-          <Text style={styles.title}>What do you like to eat?</Text>
-          <Text style={styles.subtitle}>Optional. We'll use it to pick better places, and a friend planning something for you can quietly use it too.</Text>
+          <Text style={styles.title}>{t('ui.smallParts.whatDoYouLikeTo')}</Text>
+          <Text style={styles.subtitle}>{t('ui.smallParts.optionalWellUseItTo')}</Text>
           <ScrollView style={{ maxHeight: 360 }}>
             <View style={styles.chipWrap}>{CUISINE_OPTIONS.map((o) => chip(o, cuisines.includes(o.key), toggle(setCuisines)))}</View>
             <View style={[styles.chipWrap, { marginTop: spacing.sm }]}>
@@ -57,13 +59,13 @@ export default function DiningPreferencesPromptModal({ visible, onClose, onSaved
             onPress={handleSave}
             disabled={saving || cuisines.length + venues.length === 0}
             activeOpacity={0.85}
-            accessibilityLabel="Save my tastes"
+            accessibilityLabel={t('ui.smallParts.saveMyTastesA11y')}
             accessibilityRole="button"
           >
-            <Text style={styles.saveButtonText}>{saving ? 'Saving…' : 'Save'}</Text>
+            <Text style={styles.saveButtonText}>{saving ? t('ui.smallParts.saving') : t('ui.smallParts.save')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.cancelButton} onPress={onClose} accessibilityLabel="Not now" accessibilityRole="button">
-            <Text style={styles.cancelButtonText}>Not now</Text>
+          <TouchableOpacity style={styles.cancelButton} onPress={onClose} accessibilityLabel={t('ui.smallParts.notNowA11y')} accessibilityRole="button">
+            <Text style={styles.cancelButtonText}>{t('ui.smallParts.notNow')}</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -54,7 +54,7 @@ export default function InviteFriendsScreen() {
   async function handleShare() {
     try {
       const result = await Share.share({
-        message: `Join me on Nearby! Use my code ${code} when you sign up and we'll both get bonus Notices. https://apps.apple.com/app/nearby-crossed-paths/id6792143175`,
+        message: t('ui.inviteFriends.joinMeOnNearbyUse', { code, url: 'https://apps.apple.com/app/nearby-crossed-paths/id6792143175' }),
       });
       if (result.action === Share.sharedAction) {
         posthog.capture('referral_code_shared');
@@ -70,7 +70,7 @@ export default function InviteFriendsScreen() {
     try {
       await redeemReferralCode(redeemInput);
       posthog.capture('referral_code_redeemed');
-      showSuccessToast('Bonus Notices added', "You've both received 3 bonus Notices.");
+      showSuccessToast(t('ui.inviteFriends.bonusNoticesAdded'), t('ui.inviteFriends.youveBothReceived3Bonus'));
       setRedeemInput('');
       load();
     } catch (e) {
@@ -83,7 +83,7 @@ export default function InviteFriendsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your friends...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.inviteFriends.loadingYourFriends')}</Text>
       </SafeAreaView>
     );
   }
@@ -91,7 +91,7 @@ export default function InviteFriendsScreen() {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load your invite info." onRetry={load} />
+        <LoadErrorState message={t('ui.inviteFriends.couldntLoadYourInviteInfo')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -128,7 +128,7 @@ export default function InviteFriendsScreen() {
                 value={redeemInput}
                 onChangeText={setRedeemInput}
                 autoCapitalize="characters"
-                accessibilityLabel="Referral code"
+                accessibilityLabel={t('ui.inviteFriends.referralCodeA11y')}
               />
               <TouchableOpacity
                 style={styles.redeemButton}

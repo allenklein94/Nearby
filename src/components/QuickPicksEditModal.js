@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, Image } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -10,6 +11,7 @@ import { modalAnimation } from '../motion';
 const MAX_PICKS = 5;
 
 export default function QuickPicksEditModal({ visible, onClose, initialPicks, onSave, onResetToAuto }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [selected, setSelected] = useState(initialPicks ?? []);
@@ -35,8 +37,8 @@ export default function QuickPicksEditModal({ visible, onClose, initialPicks, on
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
-          <Text style={styles.title}>Edit Quick Picks</Text>
-          <Text style={styles.subtitle}>Choose up to {MAX_PICKS} categories to always show on Home.</Text>
+          <Text style={styles.title}>{t('ui.quickPicks.editQuickPicks')}</Text>
+          <Text style={styles.subtitle}>{t('ui.quickPicks.chooseUpToCategoriesTo', { maxPicks: MAX_PICKS })}</Text>
 
           <ScrollView style={{ maxHeight: 340 }}>
             <View style={styles.chipWrap}>
@@ -65,14 +67,14 @@ export default function QuickPicksEditModal({ visible, onClose, initialPicks, on
             </View>
           </ScrollView>
 
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave} accessibilityRole="button" accessibilityLabel="Save quick picks">
-            <Text style={styles.saveButtonText}>Save</Text>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave} accessibilityRole="button" accessibilityLabel={t('ui.quickPicks.saveQuickPicksA11y')}>
+            <Text style={styles.saveButtonText}>{t('ui.quickPicks.save')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.resetButton} onPress={handleReset} accessibilityRole="button" accessibilityLabel="Use my activity instead">
-            <Text style={styles.resetButtonText}>Use My Activity Instead</Text>
+          <TouchableOpacity style={styles.resetButton} onPress={handleReset} accessibilityRole="button" accessibilityLabel={t('ui.quickPicks.useMyActivityInsteadA11y')}>
+            <Text style={styles.resetButtonText}>{t('ui.quickPicks.useMyActivityInstead')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.cancelButton} onPress={onClose} accessibilityRole="button" accessibilityLabel="Cancel">
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+          <TouchableOpacity style={styles.cancelButton} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('ui.quickPicks.cancelA11y')}>
+            <Text style={styles.cancelButtonText}>{t('ui.quickPicks.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </View>

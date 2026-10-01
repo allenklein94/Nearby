@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import EmptyCopy from './EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, FlatList, Image, ActivityIndicator } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
@@ -9,6 +10,7 @@ const GIPHY_API_KEY = 'o5pKU4HMe3qE4mQhC5rxZvSFHRZfombw';
 const RATING = 'pg-13';
 
 export default function GifPickerModal({ visible, onClose, onSelect }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [query, setQuery] = useState('');
@@ -49,7 +51,7 @@ export default function GifPickerModal({ visible, onClose, onSelect }) {
         <View style={styles.header}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search GIFs..."
+            placeholder={t('ui.smallParts.searchGifs')}
             placeholderTextColor={colors.textTertiary}
             value={query}
             onChangeText={(text) => {
@@ -59,12 +61,12 @@ export default function GifPickerModal({ visible, onClose, onSelect }) {
             autoFocus
           />
           <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={styles.cancelText}>{t('ui.smallParts.cancel')}</Text>
           </TouchableOpacity>
         </View>
 
         {loading ? (
-          <NLoader fullScreen={false} size="compact" caption="Finding GIFs…" />
+          <NLoader fullScreen={false} size="compact" caption={t('ui.smallParts.findingGifs')} />
         ) : (
           <FlatList
             data={gifs}

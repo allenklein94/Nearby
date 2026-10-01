@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, Switch, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
 import { NLoader } from '../motion';
 import { supabase } from '../services/supabase';
@@ -24,7 +25,6 @@ const MODE_SETUP = {
     defaultVisible: DATING_DEFAULT_VISIBLE,
     defaultConfig: DATING_DEFAULT_CONFIG,
     columns: { order: 'quick_filter_order', visible: 'quick_filter_visible', config: 'quick_filter_config' },
-    description: 'Choose which Quick Filters show up on Dating, set your Match % threshold, and reorder them.',
   },
   friends: {
     catalog: FRIEND_QUICK_FILTER_CATALOG,
@@ -32,11 +32,11 @@ const MODE_SETUP = {
     defaultVisible: FRIEND_DEFAULT_VISIBLE,
     defaultConfig: FRIEND_DEFAULT_CONFIG,
     columns: { order: 'friend_quick_filter_order', visible: 'friend_quick_filter_visible', config: 'friend_quick_filter_config' },
-    description: "Choose which filters show up on Friends, and reorder them. Interests and Distance are still picked live in the filter panel — this just controls which sections appear there.",
   },
 };
 
 export default function QuickFilterCustomizeScreen({ route }) {
+  const { t } = useLanguage();
   const mode = route?.params?.mode === 'friends' ? 'friends' : 'dating';
   const setup = MODE_SETUP[mode];
   const { colors } = useTheme();
@@ -117,7 +117,7 @@ export default function QuickFilterCustomizeScreen({ route }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your filters...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.quickPicks.loadingYourFilters')}</Text>
       </SafeAreaView>
     );
   }
@@ -125,7 +125,7 @@ export default function QuickFilterCustomizeScreen({ route }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load your quick filters." onRetry={load} />
+        <LoadErrorState message={t('ui.quickPicks.couldntLoadYourQuickFilters')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -133,7 +133,7 @@ export default function QuickFilterCustomizeScreen({ route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.description}>{setup.description}</Text>
+        <Text style={styles.description}>{t(mode === 'friends' ? 'ui.quickPicks.descriptionFriends' : 'ui.quickPicks.descriptionDating')}</Text>
         {order.map((key, index) => {
           const info = setup.catalog.find((f) => f.key === key);
           if (!info) return null;
@@ -148,7 +148,7 @@ export default function QuickFilterCustomizeScreen({ route }) {
                       onPress={() => moveUp(index)}
                       disabled={index === 0}
                       style={[styles.arrowButton, index === 0 && styles.arrowButtonDisabled]}
-                      accessibilityLabel={`Move ${info.label} up`}
+                      accessibilityLabel={t('ui.quickPicks.moveUpA11y', { label: info.label })}
                       accessibilityRole="button"
                     >
                       <Text style={styles.arrowText}>↑</Text>
@@ -157,7 +157,7 @@ export default function QuickFilterCustomizeScreen({ route }) {
                       onPress={() => moveDown(index)}
                       disabled={index === order.length - 1}
                       style={[styles.arrowButton, index === order.length - 1 && styles.arrowButtonDisabled]}
-                      accessibilityLabel={`Move ${info.label} down`}
+                      accessibilityLabel={t('ui.quickPicks.moveDownA11y', { label: info.label })}
                       accessibilityRole="button"
                     >
                       <Text style={styles.arrowText}>↓</Text>
@@ -166,13 +166,13 @@ export default function QuickFilterCustomizeScreen({ route }) {
                   <Switch
                     value={isVisible}
                     onValueChange={() => toggleVisible(key)}
-                    accessibilityLabel={`Show ${info.label} in Quick Filters`}
+                    accessibilityLabel={t('ui.quickPicks.showInQuickFiltersA11y', { label: info.label })}
                   />
                 </View>
               </View>
               {isVisible && info.kind === 'threshold' && (
                 <View style={styles.valueRow}>
-                  <Text style={styles.valueLabel}>At least:</Text>
+                  <Text style={styles.valueLabel}>{t('ui.quickPicks.atLeast')}</Text>
                   <View style={styles.valueChips}>
                     {info.valueOptions.map((opt) => {
                       const active = (config[key]?.value ?? info.defaultValue) === opt;

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -10,6 +11,7 @@ import { modalAnimation } from '../motion';
 // with more than a couple of real options should render its own list,
 // not stack onto Alert's fixed-size button row.
 export default function ActionSheetModal({ visible, onClose, title, message, options, dismissLabel = 'Cancel' }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
@@ -23,7 +25,7 @@ export default function ActionSheetModal({ visible, onClose, title, message, opt
   return (
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} accessibilityLabel="Close menu" />
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} accessibilityLabel={t('ui.smallParts.closeMenuA11y')} />
         <View style={styles.sheet}>
           {!!title && <Text style={styles.title}>{title}</Text>}
           {!!message && <Text style={styles.message}>{message}</Text>}

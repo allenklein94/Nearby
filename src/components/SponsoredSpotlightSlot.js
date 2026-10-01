@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { Alert } from 'react-native';
 import SponsoredCard from './SponsoredCard';
 import { recommendationContext, contextItem } from '../utils/recommendationContext';
@@ -9,6 +10,7 @@ import { getSponsoredSpotlight, recordSponsoredTap, hideSponsoredPartner, report
 // reorders, replaces or counts as an organic row. Renders nothing unless the server returns a servable placement
 // (fail closed: an error, no location, the switch off, hidden, capped or out of range all render nothing).
 export default function SponsoredSpotlightSlot({ userLocation, categoryGroup, categoryLabel, navigation }) {
+  const { t } = useLanguage();
   const [card, setCard] = useState(null);
   const lat = userLocation?.latitude;
   const lng = userLocation?.longitude;
@@ -35,11 +37,11 @@ export default function SponsoredSpotlightSlot({ userLocation, categoryGroup, ca
       }}
       onHide={async () => {
         if (await hideSponsoredPartner(card.partner_id)) setCard(null);
-        else Alert.alert('Could not hide this sponsor', 'Please try again.');
+        else Alert.alert(t('ui.sponsored.couldNotHideThisSponsor'), t('ui.sponsored.pleaseTryAgain'));
       }}
       onReport={async () => {
         const ok = await reportSponsoredPlacement(card);
-        Alert.alert(ok ? 'Thanks for reporting' : 'Could not send the report', ok ? 'We will review this ad.' : 'Please try again.');
+        Alert.alert(ok ? t('ui.sponsored.thanksForReporting') : t('ui.sponsored.couldNotSendTheReport'), ok ? t('ui.sponsored.weWillReviewThisAd') : t('ui.sponsored.pleaseTryAgain'));
       }}
     />
   );

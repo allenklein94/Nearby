@@ -1,4 +1,5 @@
 import React, { forwardRef } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import NearbyMark from './brand/NearbyMark';
@@ -21,6 +22,7 @@ const OccasionPlanShareCard = forwardRef(function OccasionPlanShareCard(
   { title, dateLabel, timeLabel, location, partySize },
   ref
 ) {
+  const { t } = useLanguage();
   const whenLine = [dateLabel, timeLabel].filter(Boolean).join(' · ');
   return (
     <View ref={ref} collapsable={false} style={styles.container}>
@@ -34,11 +36,11 @@ const OccasionPlanShareCard = forwardRef(function OccasionPlanShareCard(
           <Text style={styles.title} numberOfLines={3}>{title}</Text>
           {!!whenLine && <Text style={styles.line}>{whenLine}</Text>}
           {!!location && <Text style={styles.line}>📍 {location}</Text>}
-          {partySize != null && <Text style={styles.line}>👥 {partySize} going</Text>}
+          {partySize != null && <Text style={styles.line}>{t('ui.smallParts.partyGoing', { count: partySize })}</Text>}
         </View>
 
         <View style={styles.viewPlanPill}>
-          <Text style={styles.viewPlanText}>View Plan</Text>
+          <Text style={styles.viewPlanText}>{t('ui.smallParts.viewPlan')}</Text>
         </View>
       </LinearGradient>
     </View>

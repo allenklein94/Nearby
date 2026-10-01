@@ -136,7 +136,8 @@ describe('quick age bands over the same range (owner decision 2026-09-26)', () =
     for (const f of ['CreateGatheringScreen', 'EditGatheringScreen']) {
       expect(r(`src/screens/${f}.js`)).toMatch(/AgeRangePicker/);
     }
-    expect(r('src/components/AgeRangePicker.js')).toMatch(/doesn't stop anyone from joining/);
+    expect(r('src/components/AgeRangePicker.js')).toContain("t('ui.ageRange.aGuideForFamiliesNot')");
+    expect(r('src/i18n/ui/ageRange.js')).toMatch(/doesn't stop anyone from joining/);
   });
   it('No children / 21+ compatibility is unchanged: any declared range (bands included) conflicts, decided server-side', () => {
     const mig = r('supabase/migrations/20270226_setting_conflicts_structured.sql');

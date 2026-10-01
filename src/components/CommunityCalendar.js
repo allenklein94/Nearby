@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -13,6 +14,7 @@ function sameDay(a, b) {
 // gathering get a dot; tapping a day filters the caller's list to just
 // that date. `gatherings` only needs a `scheduled_at` field per item.
 export default function CommunityCalendar({ gatherings, selectedDate, onSelectDate }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [visibleMonth, setVisibleMonth] = useState(() => {
@@ -41,7 +43,7 @@ export default function CommunityCalendar({ gatherings, selectedDate, onSelectDa
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => setVisibleMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
-          accessibilityLabel="Previous month"
+          accessibilityLabel={t('ui.smallParts.previousMonthA11y')}
           accessibilityRole="button"
         >
           <Text style={styles.navArrow}>‹</Text>
@@ -49,7 +51,7 @@ export default function CommunityCalendar({ gatherings, selectedDate, onSelectDa
         <Text style={styles.monthLabel}>{monthLabel}</Text>
         <TouchableOpacity
           onPress={() => setVisibleMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
-          accessibilityLabel="Next month"
+          accessibilityLabel={t('ui.smallParts.nextMonthA11y')}
           accessibilityRole="button"
         >
           <Text style={styles.navArrow}>›</Text>
@@ -72,7 +74,7 @@ export default function CommunityCalendar({ gatherings, selectedDate, onSelectDa
               style={[styles.cell, isSelected && styles.cellSelected]}
               onPress={() => onSelectDate(isSelected ? null : date)}
               disabled={!hasGathering}
-              accessibilityLabel={`${date.toLocaleDateString([], { month: 'long', day: 'numeric' })}${hasGathering ? ', has a gathering' : ''}`}
+              accessibilityLabel={hasGathering ? t('ui.smallParts.hasAGatheringA11y', { date: date.toLocaleDateString([], { month: 'long', day: 'numeric' }) }) : date.toLocaleDateString([], { month: 'long', day: 'numeric' })}
               accessibilityRole="button"
             >
               <Text style={[styles.dayText, isToday && styles.dayTextToday, isSelected && styles.dayTextSelected, !hasGathering && styles.dayTextMuted]}>

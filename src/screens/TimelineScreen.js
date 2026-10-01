@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +16,7 @@ import { SkeletonFeed } from '../motion';
 // real user-reported dead end. Closed here for the identical reason,
 // not something a screen with no navigation prop can leave otherwise.
 export default function TimelineScreen({ navigation }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [items, setItems] = useState([]);
@@ -49,20 +51,20 @@ export default function TimelineScreen({ navigation }) {
         onPress={() => navigation.goBack()}
         style={styles.backButton}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        accessibilityLabel="Go back"
+        accessibilityLabel={t('ui.smallParts.goBackA11y')}
         accessibilityRole="button"
       >
         <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
       </TouchableOpacity>
-      <Text style={styles.title} accessibilityRole="header">Your Timeline</Text>
-      <Text style={styles.subtitle}>How your social life has grown</Text>
+      <Text style={styles.title} accessibilityRole="header">{t('ui.smallParts.yourTimeline')}</Text>
+      <Text style={styles.subtitle}>{t('ui.smallParts.howYourSocialLifeHas')}</Text>
 
       {loading ? (
         <>
           <SkeletonFeed count={3} />
         </>
       ) : loadError ? (
-        <LoadErrorState message="Couldn't load your timeline." onRetry={load} />
+        <LoadErrorState message={t('ui.smallParts.couldntLoadYourTimeline')} onRetry={load} />
       ) : (
         <FlatList
           data={items}
@@ -71,7 +73,7 @@ export default function TimelineScreen({ navigation }) {
           ListEmptyComponent={
             <FadeInState style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📖</Text>
-              <Text style={styles.emptyText}>Your story is just getting started.</Text>
+              <Text style={styles.emptyText}>{t('ui.smallParts.yourStoryIsJustGetting')}</Text>
             </FadeInState>
           }
           renderItem={({ item }) => (

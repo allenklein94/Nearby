@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useTheme } from '../context/ThemeContext';
@@ -10,6 +11,7 @@ import { modalAnimation } from '../motion';
 // gatherings) — never the actual precise location either person was
 // really standing at.
 export default function SightingMapModal({ visible, onClose, latitude, longitude, personName }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
@@ -21,8 +23,8 @@ export default function SightingMapModal({ visible, onClose, latitude, longitude
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
-          <Text style={styles.title}>Roughly where you crossed paths</Text>
-          <Text style={styles.subtitle}>An approximate area, not an exact location</Text>
+          <Text style={styles.title}>{t('ui.smallParts.roughlyWhereYouCrossedPaths')}</Text>
+          <Text style={styles.subtitle}>{t('ui.smallParts.anApproximateAreaNotAn')}</Text>
 
           {hasCoords ? (
             <MapView
@@ -33,12 +35,12 @@ export default function SightingMapModal({ visible, onClose, latitude, longitude
             </MapView>
           ) : (
             <View style={[styles.map, styles.mapPlaceholder]}>
-              <Text style={styles.placeholderText}>Location not available for this crossing</Text>
+              <Text style={styles.placeholderText}>{t('ui.smallParts.locationNotAvailableForThis')}</Text>
             </View>
           )}
 
-          <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.lg }} accessibilityLabel="Close map" accessibilityRole="button">
-            <Text style={styles.closeText}>Close</Text>
+          <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.lg }} accessibilityLabel={t('ui.smallParts.closeMapA11y')} accessibilityRole="button">
+            <Text style={styles.closeText}>{t('ui.smallParts.close')}</Text>
           </TouchableOpacity>
         </View>
       </View>

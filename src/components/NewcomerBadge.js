@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, StyleSheet } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
@@ -9,6 +10,7 @@ import { spacing, radius } from '../theme';
 // so it can be dropped into a card without touching that file's
 // existing, already-verified state and data flow.
 export default function NewcomerBadge({ gatheringId }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [count, setCount] = useState(null);
@@ -25,7 +27,7 @@ export default function NewcomerBadge({ gatheringId }) {
 
   return (
     <View style={styles.badge}>
-      <Text style={styles.text}>🌱 {count} first-timer{count === 1 ? '' : 's'} to gatherings, attending</Text>
+      <Text style={styles.text}>{t('ui.smallParts.firstTimersAttending', { count })}</Text>
     </View>
   );
 }

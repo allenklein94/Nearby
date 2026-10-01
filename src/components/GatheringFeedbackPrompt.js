@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { submitGatheringFeedback, hasSubmittedFeedback } from '../services/gatherings';
 import { useTheme } from '../context/ThemeContext';
@@ -9,6 +10,7 @@ import { spacing, radius } from '../theme';
 // already left feedback. Two honest yes/no questions, not a public
 // star rating or comment that could feel exposing to leave.
 export default function GatheringFeedbackPrompt({ gatheringId }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [alreadySubmitted, setAlreadySubmitted] = useState(null);
@@ -35,13 +37,13 @@ export default function GatheringFeedbackPrompt({ gatheringId }) {
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.question}>Did this feel welcoming?</Text>
+      <Text style={styles.question}>{t('ui.smallParts.didThisFeelWelcoming')}</Text>
       <View style={styles.row}>
-        <TouchableOpacity style={styles.button} onPress={() => handleAnswer(true, true)} accessibilityLabel="Yes, welcoming, would attend again" accessibilityRole="button">
-          <Text style={styles.buttonText}>👍 Yes</Text>
+        <TouchableOpacity style={styles.button} onPress={() => handleAnswer(true, true)} accessibilityLabel={t('ui.smallParts.yesWelcomingWouldAttendAgainA11y')} accessibilityRole="button">
+          <Text style={styles.buttonText}>{t('ui.smallParts.yes')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => handleAnswer(false, false)} accessibilityLabel="No, not welcoming" accessibilityRole="button">
-          <Text style={styles.buttonText}>👎 Not really</Text>
+        <TouchableOpacity style={styles.button} onPress={() => handleAnswer(false, false)} accessibilityLabel={t('ui.smallParts.noNotWelcomingA11y')} accessibilityRole="button">
+          <Text style={styles.buttonText}>{t('ui.smallParts.notReally')}</Text>
         </TouchableOpacity>
       </View>
     </View>

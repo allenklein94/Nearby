@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
@@ -20,6 +21,7 @@ import { spacing, radius, typography } from '../theme';
 // reachable so a real pending question is never a dead end if the push was
 // missed/dismissed -- see the small entry point on HomeScreen.
 export default function PreferencePollScreen() {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
@@ -86,7 +88,7 @@ export default function PreferencePollScreen() {
           const selected = new Set(selections[poll.id] ?? []);
           return (
             <View key={poll.id} style={styles.card}>
-              <Text style={styles.askerText}>{poll.askerDisplayName ?? 'Someone you know'} asked:</Text>
+              <Text style={styles.askerText}>{poll.askerDisplayName ? t('ui.smallParts.nameAsked', { name: poll.askerDisplayName }) : t('ui.smallParts.someoneYouKnowAsked')}</Text>
               <Text style={styles.questionText}>{question.questionText}</Text>
               <View style={styles.chipRow}>
                 {question.options.map((o) => {
@@ -111,13 +113,13 @@ export default function PreferencePollScreen() {
                 onPress={() => submit(poll.id)}
                 disabled={selected.size === 0 || answeringId === poll.id}
                 activeOpacity={0.85}
-                accessibilityLabel="Send answer"
+                accessibilityLabel={t('ui.smallParts.sendAnswerA11y')}
                 accessibilityRole="button"
               >
                 {answeringId === poll.id ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.submitButtonText}>Send Answer</Text>
+                  <Text style={styles.submitButtonText}>{t('ui.smallParts.sendAnswer')}</Text>
                 )}
               </TouchableOpacity>
             </View>
