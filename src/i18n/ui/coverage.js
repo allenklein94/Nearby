@@ -163,6 +163,13 @@ export const LOCALIZED_FILES = [
   'src/components/ExperiencePerkLine.js',
   'src/components/ActionSheetModal.js',
   'src/screens/BusinessDashboardScreen.js',
+  'src/components/DemandNearYouCard.js',
+  'src/components/SettingConflictNotice.js',
+  'src/components/BusinessHoursEditor.js',
+  'src/components/TellNearbyBusinessCard.js',
+  'src/components/SponsoredPromotionsPanel.js',
+  'src/components/BusinessNotificationPreferences.js',
+  'src/components/BusinessEmailNotifications.js',
 ];
 
 // Exact strings that stay English in a localized file, with why (brand names, data, internal ids...).
@@ -177,6 +184,9 @@ export const INTENTIONAL_ENGLISH = {
     'Go on dates': 'stored onboarding token (profiles.onboarding_motivations), matched, never shown',
     'Make new friends': 'stored onboarding token, matched, never shown',
     'Meet new people': 'stored onboarding token, matched, never shown',
+  },
+  'src/components/BusinessHoursEditor.js': {
+    'America/Los_Angeles': 'example IANA time zone id (placeholder), a technical value',
   },
   'src/screens/BusinessDashboardScreen.js': {
     Resy: 'reservation system brand name',

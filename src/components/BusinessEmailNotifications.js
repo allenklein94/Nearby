@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TextInput, TouchableOpacity, Switch, ActivityIndicator, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -10,6 +11,7 @@ import {
 // Email alerts for an owner who uses Nearby on the website and has no phone to push to (the same Important alerts the
 // app would push: new requests, offer responses, reservations). Verified with a 6-digit code before anything is sent.
 export default function BusinessEmailNotifications() {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [settings, setSettings] = useState(undefined); // undefined = loading, null = none saved
@@ -27,17 +29,17 @@ export default function BusinessEmailNotifications() {
   async function run(fn) {
     setBusy(true);
     setMessage(null);
-    try { await fn(); } catch (e) { setMessage(e.message || businessEmailReasonCopy()); }
+    try { await fn(); } catch (e) { setMessage({ text: e.message || businessEmailReasonCopy() }); }
     setBusy(false);
   }
 
   const sendCode = () => run(async () => {
     const r = await startBusinessEmailVerification(email);
-    if (r.ok) { setCodeSent(true); setMessage(`We sent a 6-digit code to ${email.trim()}.`); } else setMessage(businessEmailReasonCopy(r.reason));
+    if (r.ok) { setCodeSent(true); setMessage({ key: 'ui.bizComp.weSentA6Digit', vars: { trim: email.trim() } }); } else setMessage({ text: businessEmailReasonCopy(r.reason) });
   });
   const confirm = () => run(async () => {
     const r = await confirmBusinessEmail(code);
-    if (r.ok) { setCode(''); setCodeSent(false); setEmail(''); await load(); } else setMessage(businessEmailReasonCopy(r.reason));
+    if (r.ok) { setCode(''); setCodeSent(false); setEmail(''); await load(); } else setMessage({ text: businessEmailReasonCopy(r.reason) });
   });
   const remove = () => run(async () => { await removeBusinessEmail(); setCodeSent(false); await load(); });
   const toggle = (value) => run(async () => { await setBusinessEmailEnabled(value); await load(); });
@@ -47,42 +49,42 @@ export default function BusinessEmailNotifications() {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.header}>Email me when I'm not on my phone</Text>
+      <Text style={styles.header}>{t('ui.bizComp.emailMeWhenImNot')}</Text>
       <Text style={styles.body}>
-        Using Nearby on the website? Get important alerts (new requests, offer responses, reservations) by email too.
+        {t('ui.bizComp.usingNearbyOnTheWebsite')}
       </Text>
 
       {verified ? (
         <>
           <View style={styles.row}>
             <Text style={styles.email}>{settings.email}</Text>
-            <Switch value={!!settings.enabled} onValueChange={toggle} disabled={busy} accessibilityLabel="Email alerts" />
+            <Switch value={!!settings.enabled} onValueChange={toggle} disabled={busy} accessibilityLabel={t('ui.bizComp.emailAlertsA11y')} />
           </View>
-          <TouchableOpacity onPress={remove} disabled={busy} accessibilityRole="button" accessibilityLabel="Remove email address">
-            <Text style={styles.link}>Remove this address</Text>
+          <TouchableOpacity onPress={remove} disabled={busy} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.removeEmailAddressA11y')}>
+            <Text style={styles.link}>{t('ui.bizComp.removeThisAddress')}</Text>
           </TouchableOpacity>
         </>
       ) : codeSent ? (
         <>
-          <TextInput style={styles.input} value={code} onChangeText={setCode} placeholder="6-digit code" placeholderTextColor={colors.textSecondary}
-            keyboardType="number-pad" maxLength={6} accessibilityLabel="Verification code" />
+          <TextInput style={styles.input} value={code} onChangeText={setCode} placeholder={t('ui.bizComp.n6DigitCode')} placeholderTextColor={colors.textSecondary}
+            keyboardType="number-pad" maxLength={6} accessibilityLabel={t('ui.bizComp.verificationCodeA11y')} />
           <TouchableOpacity style={[styles.button, (busy || code.length !== 6) && styles.disabled]} onPress={confirm} disabled={busy || code.length !== 6} accessibilityRole="button">
-            {busy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.buttonText}>Confirm</Text>}
+            {busy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.buttonText}>{t('ui.bizComp.confirm')}</Text>}
           </TouchableOpacity>
           <TouchableOpacity onPress={() => { setCodeSent(false); setCode(''); setMessage(null); }} accessibilityRole="button">
-            <Text style={styles.link}>Use a different address</Text>
+            <Text style={styles.link}>{t('ui.bizComp.useADifferentAddress')}</Text>
           </TouchableOpacity>
         </>
       ) : (
         <>
-          <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="you@yourbusiness.com" placeholderTextColor={colors.textSecondary}
-            keyboardType="email-address" autoCapitalize="none" autoCorrect={false} accessibilityLabel="Email address" />
+          <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder={t('ui.bizComp.youYourbusinessCom')} placeholderTextColor={colors.textSecondary}
+            keyboardType="email-address" autoCapitalize="none" autoCorrect={false} accessibilityLabel={t('ui.bizComp.emailAddressA11y')} />
           <TouchableOpacity style={[styles.button, (busy || !email.includes('@')) && styles.disabled]} onPress={sendCode} disabled={busy || !email.includes('@')} accessibilityRole="button">
-            {busy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.buttonText}>Send a code</Text>}
+            {busy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.buttonText}>{t('ui.bizComp.sendACode')}</Text>}
           </TouchableOpacity>
         </>
       )}
-      {message ? <Text style={styles.message}>{message}</Text> : null}
+      {message ? <Text style={styles.message}>{message.key ? t(message.key, message.vars) : message.text}</Text> : null}
     </View>
   );
 }

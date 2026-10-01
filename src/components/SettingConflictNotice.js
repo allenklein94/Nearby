@@ -1,10 +1,12 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
 // Item 86: a refused contradictory setting, shown right under the control where the owner made the change. The lines are the
 // server's exact words (never rewritten here). `onSave` appears only for a save-per-tap row holding an unsaved choice.
 export default function SettingConflictNotice({ messages = [], onSave = null, saving = false }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   if (messages.length === 0 && !onSave) return null;
   return (
@@ -16,9 +18,9 @@ export default function SettingConflictNotice({ messages = [], onSave = null, sa
       ))}
       {onSave ? (
         <View style={styles.row}>
-          {messages.length === 0 ? <Text style={[styles.note, { color: colors.textSecondary }]}>Not saved yet.</Text> : null}
-          <TouchableOpacity onPress={onSave} disabled={saving} accessibilityRole="button" accessibilityLabel="Save this change">
-            <Text style={[styles.save, { color: colors.primary, opacity: saving ? 0.5 : 1 }]}>{saving ? 'Saving…' : 'Save'}</Text>
+          {messages.length === 0 ? <Text style={[styles.note, { color: colors.textSecondary }]}>{t('ui.bizComp.notSavedYet')}</Text> : null}
+          <TouchableOpacity onPress={onSave} disabled={saving} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.saveThisChangeA11y')}>
+            <Text style={[styles.save, { color: colors.primary, opacity: saving ? 0.5 : 1 }]}>{saving ? t('ui.bizComp.saving') : t('ui.bizComp.save')}</Text>
           </TouchableOpacity>
         </View>
       ) : null}

@@ -15,6 +15,6 @@ Stays English, by rule:
 - [x] 1+2. Screen lines 1-~4000 (namespace `bizDash1`, 225 keys, 11 languages; module-level tab/offer-type labels still English, phase 4)
 - [x] 3. Screen lines ~4000-~6000 (namespace `bizDash2`, 278 keys; plural fragments rewritten as whole sentences; occasion/category names via categoryName)
 - [x] 4. Screen lines ~6000-end + module-level labels (namespace `bizDash3`, 346 keys; tab/tool/offer-type/duration/status constants now key-only; Resy/OpenTable stay English as brand names; screen added to LOCALIZED_FILES so the leftover-English scan now covers it)
-- [ ] 5. Components
+- [x] 5. Components (namespace `bizComp`, 134 keys, 11 languages: DemandNearYouCard, SettingConflictNotice, BusinessHoursEditor, TellNearbyBusinessCard, SponsoredPromotionsPanel, BusinessNotificationPreferences, BusinessEmailNotifications; all added to LOCALIZED_FILES; status messages keep the KEY in state and translate at render, server text shown verbatim)
 - [ ] 6. Helper files that compose dashboard sentences
 - [ ] 7. Regenerate business web export, full Jest, guards

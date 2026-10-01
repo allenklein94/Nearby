@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Linking, Alert } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing, typography } from '../theme';
@@ -10,14 +11,11 @@ import { placementStatusLine, statsLine, priceLabel, startDateOptions, dayLabel 
 // Owner-side "Promotions" (design section 7). A paid, clearly labeled spotlight; never an Opportunity, never in Demand.
 // Shown only when the database says this business can buy one (empty allow-list = the section says nothing is available
 // yet). Payment happens in Stripe Checkout; the row below only reflects what the database recorded.
-const ELIGIBILITY_TEXT = {
-  category_not_sponsorable: "Spotlights aren't available for your category yet.",
-  needs_address: 'Add your business address first so Nearby knows who to show it to.',
-  business_inactive: 'Your business needs to be active to run a spotlight.',
-  already_holding: 'You already have a spotlight scheduled or waiting for payment.',
-};
+// Each problem's wording is ui.bizComp.eligibility.<problem> (11 languages).
+const ELIGIBILITY_PROBLEMS = new Set(['category_not_sponsorable', 'needs_address', 'business_inactive', 'already_holding']);
 
 export default function SponsoredPromotionsPanel({ offers = [] }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [eligibility, setEligibility] = useState(undefined); // undefined = loading, null = failed
@@ -44,7 +42,7 @@ export default function SponsoredPromotionsPanel({ offers = [] }) {
     setStartDate(d);
     setSlotProblem(null);
     const r = await checkMySponsoredSlot(`${d}T00:00:00Z`);
-    if (r && !r.ok) setSlotProblem(r.problem === 'slot_taken' ? 'That week is already taken in your area for this category. Try another start date.' : 'That start date is not available.');
+    if (r && !r.ok) setSlotProblem(r.problem === 'slot_taken' ? t('ui.bizComp.thatWeekIsAlreadyTaken') : t('ui.bizComp.thatStartDateIsNot'));
   };
 
   const buy = async () => {
@@ -52,29 +50,29 @@ export default function SponsoredPromotionsPanel({ offers = [] }) {
     setMessage(null);
     const res = await startSponsoredCheckout({ itemKind: kind, itemId: kind === 'offer' ? offerId : null, startDate, title, description, termsVersion: SPONSORED_TERMS_VERSION, acceptedTerms: accepted });
     setBusy(false);
-    if (res.error) { setMessage(res.error); return; }
-    Linking.openURL(res.url).catch(() => setMessage("Couldn't open checkout. You have not been charged."));
+    if (res.error) { setMessage({ text: res.error }); return; }
+    Linking.openURL(res.url).catch(() => setMessage({ key: 'ui.bizComp.couldntOpenCheckoutYouHave' }));
     load();
   };
 
   const cancelHold = (p) => {
-    Alert.alert('Release this slot?', 'You have not paid, so nothing is charged.', [
-      { text: 'Keep it', style: 'cancel' },
-      { text: 'Release', style: 'destructive', onPress: async () => { await cancelMySponsoredHold(p.placement_id); load(); } },
+    Alert.alert(t('ui.bizComp.releaseThisSlot'), t('ui.bizComp.youHaveNotPaidSo'), [
+      { text: t('ui.bizComp.keepIt'), style: 'cancel' },
+      { text: t('ui.bizComp.release'), style: 'destructive', onPress: async () => { await cancelMySponsoredHold(p.placement_id); load(); } },
     ]);
   };
 
   const cancelPaid = (p) => {
     Alert.alert(
-      'Cancel this spotlight?',
-      `It hasn't started, so you'll be refunded in full (${priceLabel(p.amount_cents, p.currency) || 'the full amount'}) to your original payment method.`,
+      t('ui.bizComp.cancelThisSpotlight'),
+      t('ui.bizComp.itHasntStartedSoYoull', { priceLabel: priceLabel(p.amount_cents, p.currency) || 'the full amount' }),
       [
-        { text: 'Keep it', style: 'cancel' },
-        { text: 'Cancel and refund', style: 'destructive', onPress: async () => {
+        { text: t('ui.bizComp.keepIt'), style: 'cancel' },
+        { text: t('ui.bizComp.cancelAndRefund'), style: 'destructive', onPress: async () => {
           setBusy(true); setMessage(null);
           const res = await cancelPaidSponsoredPlacement(p.placement_id);
           setBusy(false);
-          setMessage(res.error || 'Cancelled. Your refund is on its way.');
+          setMessage(res.error ? { text: res.error } : { key: 'ui.bizComp.cancelledYourRefundIsOn' });
           load();
         } },
       ]
@@ -87,30 +85,27 @@ export default function SponsoredPromotionsPanel({ offers = [] }) {
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.header}>Promotions</Text>
-      <Text style={styles.helper}>
-        A paid spotlight shown to people browsing Places and Perks near you. It is always labeled "{SPONSORED_LABEL}" and is
-        separate from your opportunities.
-      </Text>
+      <Text style={styles.header}>{t('ui.bizComp.promotions')}</Text>
+      <Text style={styles.helper}>{t('ui.bizComp.aPaidSpotlightShownTo', { sponsoredLabel: SPONSORED_LABEL })}</Text>
 
-      {eligibility === undefined ? <Text style={styles.helper}>Checking…</Text> : null}
-      {eligibility === null ? <Text style={styles.helper}>Couldn't load promotions right now.</Text> : null}
+      {eligibility === undefined ? <Text style={styles.helper}>{t('ui.bizComp.checking')}</Text> : null}
+      {eligibility === null ? <Text style={styles.helper}>{t('ui.bizComp.couldntLoadPromotionsRightNow')}</Text> : null}
       {eligibility && !eligibility.ok ? (
         <Text style={styles.helper}>
-          {ELIGIBILITY_TEXT[eligibility.problem] || "Spotlights aren't available for your business right now."}
+          {ELIGIBILITY_PROBLEMS.has(eligibility.problem) ? t(`ui.bizComp.eligibility.${eligibility.problem}`) : t('ui.bizComp.spotlightsArentAvailableForYour2')}
         </Text>
       ) : null}
 
       {eligibility?.ok && !hasHeld ? (
         <View>
-          <Text style={styles.label}>What to promote</Text>
+          <Text style={styles.label}>{t('ui.bizComp.whatToPromote')}</Text>
           <View style={styles.row}>
             <TouchableOpacity style={[styles.chip, kind === 'business' && styles.chipOn]} onPress={() => setKind('business')} accessibilityRole="button">
-              <Text style={[styles.chipText, kind === 'business' && styles.chipTextOn]}>Your business</Text>
+              <Text style={[styles.chipText, kind === 'business' && styles.chipTextOn]}>{t('ui.bizComp.yourBusiness')}</Text>
             </TouchableOpacity>
             {offers.length > 0 ? (
               <TouchableOpacity style={[styles.chip, kind === 'offer' && styles.chipOn]} onPress={() => setKind('offer')} accessibilityRole="button">
-                <Text style={[styles.chipText, kind === 'offer' && styles.chipTextOn]}>One of your offers</Text>
+                <Text style={[styles.chipText, kind === 'offer' && styles.chipTextOn]}>{t('ui.bizComp.oneOfYourOffers')}</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -124,12 +119,12 @@ export default function SponsoredPromotionsPanel({ offers = [] }) {
             </View>
           ) : null}
 
-          <Text style={styles.label}>Headline</Text>
-          <TextInput style={styles.input} value={title} onChangeText={setTitle} maxLength={80} placeholder="What people will see" placeholderTextColor={colors.textSecondary} />
-          <Text style={styles.label}>Description (optional)</Text>
-          <TextInput style={[styles.input, { minHeight: 60 }]} value={description} onChangeText={setDescription} maxLength={200} multiline placeholder="One or two lines" placeholderTextColor={colors.textSecondary} />
+          <Text style={styles.label}>{t('ui.bizComp.headline')}</Text>
+          <TextInput style={styles.input} value={title} onChangeText={setTitle} maxLength={80} placeholder={t('ui.bizComp.whatPeopleWillSee')} placeholderTextColor={colors.textSecondary} />
+          <Text style={styles.label}>{t('ui.bizComp.descriptionOptional')}</Text>
+          <TextInput style={[styles.input, { minHeight: 60 }]} value={description} onChangeText={setDescription} maxLength={200} multiline placeholder={t('ui.bizComp.oneOrTwoLines')} placeholderTextColor={colors.textSecondary} />
 
-          <Text style={styles.label}>Start date (runs 7 days)</Text>
+          <Text style={styles.label}>{t('ui.bizComp.startDateRuns7Days')}</Text>
           <View style={styles.row}>
             {startDateOptions().map((d) => (
               <TouchableOpacity key={d} style={[styles.chip, startDate === d && styles.chipOn]} onPress={() => pickDate(d)} accessibilityRole="button">
@@ -138,30 +133,30 @@ export default function SponsoredPromotionsPanel({ offers = [] }) {
             ))}
           </View>
           {slotProblem ? <Text style={styles.error}>{slotProblem}</Text> : null}
-          {message ? <Text style={styles.error}>{message}</Text> : null}
+          {message ? <Text style={styles.error}>{message.key ? t(message.key) : message.text}</Text> : null}
 
-          <TouchableOpacity style={[styles.cta, !canSubmit && { opacity: 0.5 }]} disabled={!canSubmit} onPress={buy} accessibilityRole="button" accessibilityLabel="Continue to payment">
-            <Text style={styles.ctaText}>{price ? `Continue to payment · ${price}` : 'Continue to payment'}</Text>
+          <TouchableOpacity style={[styles.cta, !canSubmit && { opacity: 0.5 }]} disabled={!canSubmit} onPress={buy} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.continueToPaymentA11y')}>
+            <Text style={styles.ctaText}>{price ? t('ui.bizComp.continueToPayment', { price: price }) : t('ui.bizComp.continueToPayment2')}</Text>
           </TouchableOpacity>
           <View style={[styles.row, { alignItems: 'center', marginTop: spacing.md }]}>
-            <TouchableOpacity onPress={() => setAccepted((v) => !v)} accessibilityRole="checkbox" accessibilityState={{ checked: accepted }} accessibilityLabel="I accept the spotlight terms on behalf of my business">
+            <TouchableOpacity onPress={() => setAccepted((v) => !v)} accessibilityRole="checkbox" accessibilityState={{ checked: accepted }} accessibilityLabel={t('ui.bizComp.iAcceptTheSpotlightTermsA11y')}>
               <Text style={styles.ctaCheck}>{accepted ? '☑' : '☐'}</Text>
             </TouchableOpacity>
-            <Text style={[styles.helper, { flex: 1, marginTop: 0 }]}>I accept the spotlight terms on behalf of my business.</Text>
+            <Text style={[styles.helper, { flex: 1, marginTop: 0 }]}>{t('ui.bizComp.iAcceptTheSpotlightTerms')}</Text>
           </View>
-          <TouchableOpacity onPress={() => setTermsOpen((v) => !v)} accessibilityRole="button" accessibilityLabel="Read the spotlight terms">
-            <Text style={styles.link}>{termsOpen ? 'Hide the terms' : 'Read the terms'}</Text>
+          <TouchableOpacity onPress={() => setTermsOpen((v) => !v)} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.readTheSpotlightTermsA11y')}>
+            <Text style={styles.link}>{termsOpen ? t('ui.bizComp.hideTheTerms') : t('ui.bizComp.readTheTerms')}</Text>
           </TouchableOpacity>
           {termsOpen ? SPONSORED_TERMS_SECTIONS.map(([h, b]) => (
             <View key={h}><Text style={styles.label}>{h}</Text><Text style={styles.helper}>{b}</Text></View>
           )) : null}
         </View>
       ) : null}
-      {hasHeld && eligibility?.ok ? <Text style={styles.helper}>You have a spotlight waiting for payment. Finish or release it below to start another.</Text> : null}
+      {hasHeld && eligibility?.ok ? <Text style={styles.helper}>{t('ui.bizComp.youHaveASpotlightWaiting')}</Text> : null}
 
       {placements && placements.length > 0 ? (
         <View style={{ marginTop: spacing.md }}>
-          <Text style={styles.label}>Your spotlights</Text>
+          <Text style={styles.label}>{t('ui.bizComp.yourSpotlights')}</Text>
           {placements.map((p) => {
             const status = placementStatusLine(p);
             const stats = statsLine(p);
@@ -172,13 +167,13 @@ export default function SponsoredPromotionsPanel({ offers = [] }) {
                 {status ? <Text style={styles.helper}>{status}</Text> : null}
                 {stats ? <Text style={styles.helper}>{stats}</Text> : null}
                 {p.status === 'scheduled' && p.payment_status === 'paid' && new Date(p.starts_at) > new Date() ? (
-                  <TouchableOpacity onPress={() => cancelPaid(p)} disabled={busy} accessibilityRole="button" accessibilityLabel="Cancel this spotlight for a full refund">
-                    <Text style={styles.link}>Cancel for a full refund</Text>
+                  <TouchableOpacity onPress={() => cancelPaid(p)} disabled={busy} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.cancelThisSpotlightForAA11y')}>
+                    <Text style={styles.link}>{t('ui.bizComp.cancelForAFullRefund')}</Text>
                   </TouchableOpacity>
                 ) : null}
                 {p.status === 'awaiting_payment' ? (
-                  <TouchableOpacity onPress={() => cancelHold(p)} accessibilityRole="button" accessibilityLabel="Release this slot">
-                    <Text style={styles.link}>Release this slot</Text>
+                  <TouchableOpacity onPress={() => cancelHold(p)} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.releaseThisSlotA11y')}>
+                    <Text style={styles.link}>{t('ui.bizComp.releaseThisSlot2')}</Text>
                   </TouchableOpacity>
                 ) : null}
               </View>

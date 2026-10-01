@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
@@ -16,6 +17,7 @@ import { conflictMessages } from '../utils/settingConflicts';
 // before that tap, and the save only ADDS (see utils/businessSetupPlan.js). Availability and price are deliberately never
 // read from text -- there is no per-business hours data, and a price would be a guess.
 export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfileEditor }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [text, setText] = useState('');
@@ -114,18 +116,18 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
   }
 
   return (
-    <View style={styles.card} accessibilityLabel="Tell Nearby about your business">
-      <Text style={styles.title}>✨ Tell Nearby about your business</Text>
-      <Text style={styles.helper}>A sentence or two is plenty. Nearby works out the rest, and you confirm it.</Text>
+    <View style={styles.card} accessibilityLabel={t('ui.bizComp.tellNearbyAboutYourBusinessA11y')}>
+      <Text style={styles.title}>{t('ui.bizComp.tellNearbyAboutYourBusiness')}</Text>
+      <Text style={styles.helper}>{t('ui.bizComp.aSentenceOrTwoIs')}</Text>
       <TextInput
         style={styles.input}
         value={text}
         onChangeText={setText}
-        placeholder="We're an Italian restaurant with a patio, good for date nights and groups. We do birthday dinners."
+        placeholder={t('ui.bizComp.wereAnItalianRestaurantWith')}
         placeholderTextColor={colors.textSecondary}
         multiline
         maxLength={800}
-        accessibilityLabel="Describe your business"
+        accessibilityLabel={t('ui.bizComp.describeYourBusinessA11y')}
       />
       {!plan ? (
         <TouchableOpacity
@@ -133,13 +135,13 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
           onPress={understand}
           disabled={busy || !text.trim()}
           accessibilityRole="button"
-          accessibilityLabel="Let Nearby understand my business"
+          accessibilityLabel={t('ui.bizComp.letNearbyUnderstandMyBusinessA11y')}
         >
-          {busy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.primaryText}>Let Nearby understand</Text>}
+          {busy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.primaryText}>{t('ui.bizComp.letNearbyUnderstand')}</Text>}
         </TouchableOpacity>
       ) : plan.understood ? (
         <View style={styles.result}>
-          <Text style={styles.resultTitle}>We understood your business</Text>
+          <Text style={styles.resultTitle}>{t('ui.bizComp.weUnderstoodYourBusiness')}</Text>
           <View style={styles.chips}>
             {plan.chips.map((c) => (
               <TouchableOpacity
@@ -157,40 +159,40 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
           </View>
           <Text style={styles.helper}>
             {editing
-              ? 'Tap a highlighted item to leave it out. Nothing you already set is removed.'
-              : plan.hasChanges ? 'Looks right? Highlighted items will be added. Nothing you already set is removed.' : 'All of this is already in your profile.'}
+              ? t('ui.bizComp.tapAHighlightedItemTo')
+              : plan.hasChanges ? t('ui.bizComp.looksRightHighlightedItemsWill') : t('ui.bizComp.allOfThisIsAlready')}
           </Text>
           <SettingConflictNotice messages={conflictMessages(conflicts.entries, 'tell')} />
           <View style={styles.row}>
             {plan.hasChanges ? (
-              <TouchableOpacity style={[styles.primary, { flex: 1, opacity: busy ? 0.6 : 1 }]} onPress={confirm} disabled={busy} accessibilityRole="button" accessibilityLabel="Yes, continue">
-                {busy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.primaryText}>Yes, continue</Text>}
+              <TouchableOpacity style={[styles.primary, { flex: 1, opacity: busy ? 0.6 : 1 }]} onPress={confirm} disabled={busy} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.yesContinueA11y')}>
+                {busy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.primaryText}>{t('ui.bizComp.yesContinue')}</Text>}
               </TouchableOpacity>
             ) : null}
             <TouchableOpacity
               style={styles.secondary}
               onPress={() => (plan.hasChanges && !editing ? setEditing(true) : reset())}
               accessibilityRole="button"
-              accessibilityLabel={plan.hasChanges && !editing ? 'Edit' : 'Done'}
+              accessibilityLabel={plan.hasChanges && !editing ? t('ui.bizComp.editA11y') : t('ui.bizComp.doneA11y')}
             >
-              <Text style={styles.secondaryText}>{plan.hasChanges && !editing ? 'Edit' : 'Done'}</Text>
+              <Text style={styles.secondaryText}>{plan.hasChanges && !editing ? t('ui.bizComp.edit') : t('ui.bizComp.done')}</Text>
             </TouchableOpacity>
           </View>
           {editing && onOpenProfileEditor ? (
-            <TouchableOpacity onPress={onOpenProfileEditor} accessibilityRole="button" accessibilityLabel="Open the full profile editor">
-              <Text style={styles.link}>Change category, cuisine or attributes in the full profile editor →</Text>
+            <TouchableOpacity onPress={onOpenProfileEditor} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.openTheFullProfileEditorA11y')}>
+              <Text style={styles.link}>{t('ui.bizComp.changeCategoryCuisineOrAttributes')}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
       ) : (
         <View style={styles.result}>
-          <Text style={styles.helper}>We couldn't pick out specifics from that. Try naming what you serve, what the space is good for, or the occasions you host.</Text>
-          <TouchableOpacity style={styles.secondary} onPress={reset} accessibilityRole="button" accessibilityLabel="Try again">
-            <Text style={styles.secondaryText}>Try again</Text>
+          <Text style={styles.helper}>{t('ui.bizComp.weCouldntPickOutSpecifics')}</Text>
+          <TouchableOpacity style={styles.secondary} onPress={reset} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.tryAgainA11y')}>
+            <Text style={styles.secondaryText}>{t('ui.bizComp.tryAgain')}</Text>
           </TouchableOpacity>
         </View>
       )}
-      {saved ? <Text style={styles.savedText}>✓ Saved. Nearby will use this to match you with opportunities.</Text> : null}
+      {saved ? <Text style={styles.savedText}>{t('ui.bizComp.savedNearbyWillUseThis')}</Text> : null}
     </View>
   );
 }

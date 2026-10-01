@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -7,14 +8,15 @@ import { spacing, radius, typography } from '../theme';
 // describeDemandSignals() (privacy floor enforced server-side and re-checked there). `loaded`
 // distinguishes "still fetching" (render nothing) from "not enough activity" (honest empty copy).
 export default function DemandNearYouCard({ signals, loaded, onAction, windowDays = 14, matchSummary = null }) {
+  const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   if (!loaded) return null;
 
   return (
-    <View style={styles.card} accessibilityLabel="Demand near you">
-      <Text style={styles.title}>Demand near you</Text>
-      <Text style={styles.window}>Last {windowDays} days</Text>
+    <View style={styles.card} accessibilityLabel={t('ui.bizComp.demandNearYouA11y')}>
+      <Text style={styles.title}>{t('ui.bizComp.demandNearYou')}</Text>
+      <Text style={styles.window}>{t('ui.bizComp.lastDays', { windowDays: windowDays })}</Text>
       {matchSummary ? (
         <View style={styles.summary}>
           <Text style={styles.summaryText}>{matchSummary.line}</Text>
@@ -24,7 +26,7 @@ export default function DemandNearYouCard({ signals, loaded, onAction, windowDay
         </View>
       ) : null}
       {signals.length === 0 ? (
-        <Text style={styles.empty}>We're still gathering enough local activity to show useful demand.</Text>
+        <Text style={styles.empty}>{t('ui.bizComp.wereStillGatheringEnoughLocal')}</Text>
       ) : (
         signals.map((s, i) => (
           <View key={s.key} style={[styles.row, i > 0 && styles.rowDivider]}>

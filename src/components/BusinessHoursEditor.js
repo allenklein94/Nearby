@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, TextInput, Switch, StyleSheet, Platform, Alert } from 'react-native';
 import PlatformDateTimeInput from './PlatformDateTimeInput';
 import { useTheme } from '../context/ThemeContext';
@@ -28,6 +29,7 @@ function todayKey() {
 }
 
 export default function BusinessHoursEditor({ partner, onSaved }) {
+  const { t } = useLanguage();
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
   const saved = partner?.operating_hours ?? null;
@@ -71,9 +73,9 @@ export default function BusinessHoursEditor({ partner, onSaved }) {
   }
 
   function confirmClear() {
-    Alert.alert('Remove your hours?', 'People filtering by "Open now" won\'t see your business until you add them again.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => save(null) },
+    Alert.alert(t('ui.bizComp.removeYourHours'), t('ui.bizComp.peopleFilteringByOpenNow'), [
+      { text: t('ui.bizComp.cancel'), style: 'cancel' },
+      { text: t('ui.bizComp.remove'), style: 'destructive', onPress: () => save(null) },
     ]);
   }
 
@@ -84,7 +86,7 @@ export default function BusinessHoursEditor({ partner, onSaved }) {
       <View key={`${target}-${key}`} style={styles.dayBlock}>
         <View style={styles.dayRow}>
           <Text style={styles.dayLabel}>{label}</Text>
-          {[['closed', 'Closed'], ['hours', 'Hours'], ['all_day', '24 hours']].map(([m, text]) => (
+          {[['closed', t('ui.bizComp.closed')], ['hours', t('ui.bizComp.hours')], ['all_day', t('ui.bizComp.n24Hours')]].map(([m, text]) => (
             <TouchableOpacity
               key={m}
               style={[styles.chip, mode === m && styles.chipSelected]}
@@ -97,28 +99,28 @@ export default function BusinessHoursEditor({ partner, onSaved }) {
             </TouchableOpacity>
           ))}
           {target === 'special' ? (
-            <TouchableOpacity onPress={() => update((d) => { d.special = d.special.filter((s) => s.date !== key); return d; })} accessibilityRole="button" accessibilityLabel={`Remove ${label}`}>
+            <TouchableOpacity onPress={() => update((d) => { d.special = d.special.filter((s) => s.date !== key); return d; })} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.removeA11y', { label: label })}>
               <Text style={styles.remove}>✕</Text>
             </TouchableOpacity>
           ) : null}
         </View>
         {mode === 'hours' && value.map(([o, c], i) => (
           <View key={i} style={styles.intervalRow}>
-            {[[0, o, 'Opens'], [1, c, 'Closes']].map(([end, v, word]) => (
+            {[[0, o, t('ui.bizComp.opens')], [1, c, t('ui.bizComp.closes')]].map(([end, v, word]) => (
               <TouchableOpacity key={end} style={styles.chip} onPress={() => setPicker({ target, key, index: i, end })} accessibilityRole="button" accessibilityLabel={`${label} ${word} ${v}`}>
                 <Text style={styles.chipText}>{word} {formatClock(v)}</Text>
               </TouchableOpacity>
             ))}
             {value.length > 1 ? (
-              <TouchableOpacity onPress={() => update((d) => setDay(d, target, key, value.filter((_, j) => j !== i)))} accessibilityRole="button" accessibilityLabel={`Remove this time range on ${label}`}>
+              <TouchableOpacity onPress={() => update((d) => setDay(d, target, key, value.filter((_, j) => j !== i)))} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.removeThisTimeRangeOnA11y', { label: label })}>
                 <Text style={styles.remove}>✕</Text>
               </TouchableOpacity>
             ) : null}
           </View>
         ))}
         {mode === 'hours' && value.length < MAX_INTERVALS_PER_DAY ? (
-          <TouchableOpacity onPress={() => update((d) => setDay(d, target, key, [...value, ['17:00', '22:00']]))} accessibilityRole="button" accessibilityLabel={`Add another time range on ${label}`}>
-            <Text style={styles.link}>+ Add another time range</Text>
+          <TouchableOpacity onPress={() => update((d) => setDay(d, target, key, [...value, ['17:00', '22:00']]))} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.addAnotherTimeRangeOnA11y', { label: label })}>
+            <Text style={styles.link}>{t('ui.bizComp.addAnotherTimeRange')}</Text>
           </TouchableOpacity>
         ) : null}
         {picker && picker.target === target && picker.key === key && Array.isArray(value) && value[picker.index] ? (
@@ -149,51 +151,51 @@ export default function BusinessHoursEditor({ partner, onSaved }) {
 
   return (
     <View style={styles.wrap}>
-      <TouchableOpacity style={styles.row} onPress={open ? () => setOpen(false) : startEditing} accessibilityRole="button" accessibilityLabel={saved ? 'Edit your hours' : 'Add your hours'}>
-        <Text style={styles.rowTitle}>🕒 Hours</Text>
-        <Text style={styles.rowAction}>{open ? 'Close' : saved ? 'Edit' : 'Add hours'}</Text>
+      <TouchableOpacity style={styles.row} onPress={open ? () => setOpen(false) : startEditing} accessibilityRole="button" accessibilityLabel={saved ? t('ui.bizComp.editYourHoursA11y') : t('ui.bizComp.addYourHoursA11y')}>
+        <Text style={styles.rowTitle}>{t('ui.bizComp.hours2')}</Text>
+        <Text style={styles.rowAction}>{open ? t('ui.bizComp.close') : saved ? t('ui.bizComp.edit') : t('ui.bizComp.addHours')}</Text>
       </TouchableOpacity>
       {!open && (lines ? (
         <View>
           {now?.label ? <Text style={styles.status}>{now.label}{saved.temporarily_closed ? '' : ` (${saved.timezone})`}</Text> : null}
           {lines.map((l) => <Text key={l.day} style={styles.summary}>{l.day}  {l.text}</Text>)}
-          {(saved.special ?? []).length ? <Text style={styles.helper}>{saved.special.length} special day{saved.special.length === 1 ? '' : 's'} set</Text> : null}
+          {(saved.special ?? []).length ? <Text style={styles.helper}>{t('ui.bizComp.specialDaysSet', { count: saved.special.length })}</Text> : null}
         </View>
       ) : (
-        <Text style={styles.helper}>Not set. People who filter Discover by "Open now" only see businesses with hours or a live availability posting.</Text>
+        <Text style={styles.helper}>{t('ui.bizComp.notSetPeopleWhoFilter')}</Text>
       ))}
       {open && draft && (
         <View>
-          <Text style={styles.label}>Time zone</Text>
+          <Text style={styles.label}>{t('ui.bizComp.timeZone')}</Text>
           <TextInput
             style={styles.input}
             value={draft.timezone}
             onChangeText={(t) => update((d) => { d.timezone = t.trim(); return d; })}
             autoCapitalize="none"
             autoCorrect={false}
-            accessibilityLabel="Time zone"
+            accessibilityLabel={t('ui.bizComp.timeZoneA11y')}
             placeholder="America/Los_Angeles"
             placeholderTextColor={colors.textTertiary}
           />
           {deviceTimeZone() && deviceTimeZone() !== draft.timezone ? (
-            <TouchableOpacity onPress={() => update((d) => { d.timezone = deviceTimeZone(); return d; })} accessibilityRole="button" accessibilityLabel={`Use ${deviceTimeZone()}`}>
-              <Text style={styles.link}>Use this device's time zone ({deviceTimeZone()})</Text>
+            <TouchableOpacity onPress={() => update((d) => { d.timezone = deviceTimeZone(); return d; })} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.useA11y', { deviceTimeZone: deviceTimeZone() })}>
+              <Text style={styles.link}>{t('ui.bizComp.useThisDevicesTimeZone', { zone: deviceTimeZone() })}</Text>
             </TouchableOpacity>
           ) : null}
           <View style={styles.switchRow}>
-            <Text style={styles.label}>Temporarily closed</Text>
-            <Switch value={draft.temporarily_closed === true} onValueChange={(v) => update((d) => { d.temporarily_closed = v; return d; })} accessibilityLabel="Temporarily closed" />
+            <Text style={styles.label}>{t('ui.bizComp.temporarilyClosed')}</Text>
+            <Switch value={draft.temporarily_closed === true} onValueChange={(v) => update((d) => { d.temporarily_closed = v; return d; })} accessibilityLabel={t('ui.bizComp.temporarilyClosedA11y')} />
           </View>
           {DAY_ORDER.map((d) => renderDayEditor('week', d, DAY_SHORT[d]))}
           {Array.isArray(draft.week.mon) || draft.week.mon === 'closed' || draft.week.mon === 'all_day' ? (
-            <TouchableOpacity onPress={() => update((d) => { DAY_ORDER.forEach((k) => { d.week[k] = JSON.parse(JSON.stringify(d.week.mon)); }); return d; })} accessibilityRole="button" accessibilityLabel="Copy Monday to every day">
-              <Text style={styles.link}>Copy Monday to every day</Text>
+            <TouchableOpacity onPress={() => update((d) => { DAY_ORDER.forEach((k) => { d.week[k] = JSON.parse(JSON.stringify(d.week.mon)); }); return d; })} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.copyMondayToEveryDayA11y')}>
+              <Text style={styles.link}>{t('ui.bizComp.copyMondayToEveryDay')}</Text>
             </TouchableOpacity>
           ) : null}
-          <Text style={[styles.label, { marginTop: spacing.md }]}>Special days (holidays, events)</Text>
+          <Text style={[styles.label, { marginTop: spacing.md }]}>{t('ui.bizComp.specialDaysHolidaysEvents')}</Text>
           {(draft.special ?? []).map((s) => renderDayEditor('special', s.date, s.date))}
-          <TouchableOpacity onPress={() => setPicker({ target: 'newSpecial' })} accessibilityRole="button" accessibilityLabel="Add a special day">
-            <Text style={styles.link}>+ Add a special day</Text>
+          <TouchableOpacity onPress={() => setPicker({ target: 'newSpecial' })} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.addASpecialDayA11y')}>
+            <Text style={styles.link}>{t('ui.bizComp.addASpecialDay')}</Text>
           </TouchableOpacity>
           {picker?.target === 'newSpecial' ? (
             <PlatformDateTimeInput
@@ -213,16 +215,16 @@ export default function BusinessHoursEditor({ partner, onSaved }) {
           ) : null}
           {problem ? <Text style={styles.problem}>{problem}</Text> : null}
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.primary} onPress={() => save(draft)} disabled={saving} accessibilityRole="button" accessibilityLabel="Save hours">
-              <Text style={styles.primaryText}>{saving ? 'Saving…' : 'Save hours'}</Text>
+            <TouchableOpacity style={styles.primary} onPress={() => save(draft)} disabled={saving} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.saveHoursA11y')}>
+              <Text style={styles.primaryText}>{saving ? t('ui.bizComp.saving') : t('ui.bizComp.saveHours')}</Text>
             </TouchableOpacity>
             {saved ? (
-              <TouchableOpacity onPress={confirmClear} disabled={saving} accessibilityRole="button" accessibilityLabel="Remove hours">
-                <Text style={styles.danger}>Remove hours</Text>
+              <TouchableOpacity onPress={confirmClear} disabled={saving} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.removeHoursA11y')}>
+                <Text style={styles.danger}>{t('ui.bizComp.removeHours')}</Text>
               </TouchableOpacity>
             ) : null}
           </View>
-          <Text style={styles.helper}>Hours say when you're open. They don't say you have room: post availability for that.</Text>
+          <Text style={styles.helper}>{t('ui.bizComp.hoursSayWhenYoureOpen')}</Text>
         </View>
       )}
     </View>
