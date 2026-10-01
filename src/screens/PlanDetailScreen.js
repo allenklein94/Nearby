@@ -8,7 +8,7 @@ import { NLoader } from '../motion';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
-import { getPlanOverview, getPlanStops, navigateToExperienceStop, reorderExperienceStops, removeExperienceStop, setExperienceNightDate, EXPERIENCE_STOP_STATE_LABEL } from '../services/plans';
+import { getPlanOverview, getPlanStops, navigateToExperienceStop, reorderExperienceStops, removeExperienceStop, setExperienceNightDate, experienceStopStateLabel } from '../services/plans';
 import { supabase } from '../services/supabase';
 import ExperienceSharePanel from '../components/ExperienceSharePanel';
 import { canEditNight, canRemoveStop, moveStopIds, removeStopCopy } from '../utils/experienceStopEdit';
@@ -194,7 +194,7 @@ export default function PlanDetailScreen({ navigation, route }) {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.stepLabel}>{s.componentLabel}</Text>
                     <Text style={styles.muted}>{[s.title, s.subtitle && s.subtitle !== s.title ? s.subtitle : null].filter(Boolean).join(' · ')}</Text>
-                    {s.stopType === 'business_availability' && <Text style={styles.muted}>{EXPERIENCE_STOP_STATE_LABEL[s.state] ?? ''}</Text>}
+                    {s.stopType === 'business_availability' && <Text style={styles.muted}>{experienceStopStateLabel(s.state)}</Text>}
                   </View>
                   {canEdit && editing ? (
                     <View style={styles.editControls}>

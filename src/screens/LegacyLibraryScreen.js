@@ -10,11 +10,12 @@ import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 
+// Field labels: ui.legacyLibrary.field.<key>.
 const FIELDS = [
-  { key: 'what_surprised_us', label: '✨ What surprised them' },
-  { key: 'what_almost_ended_us', label: '💔 What almost ended it' },
-  { key: 'what_made_us_stronger', label: '💪 What made them stronger' },
-  { key: 'what_we_wish_we_discussed_earlier', label: '💬 What they wish they\u2019d discussed earlier' },
+  { key: 'what_surprised_us' },
+  { key: 'what_almost_ended_us' },
+  { key: 'what_made_us_stronger' },
+  { key: 'what_we_wish_we_discussed_earlier' },
 ];
 
 export default function LegacyLibraryScreen({ navigation }) {
@@ -54,7 +55,7 @@ export default function LegacyLibraryScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your legacy library...</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.legacyLibrary.loadingYourLegacyLibrary')}</Text>
       </SafeAreaView>
     );
   }
@@ -62,7 +63,7 @@ export default function LegacyLibraryScreen({ navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message="Couldn't load your legacy library." onRetry={load} />
+        <LoadErrorState message={t('ui.legacyLibrary.couldntLoadYourLegacyLibrary')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -75,7 +76,7 @@ export default function LegacyLibraryScreen({ navigation }) {
       >
         <Text style={styles.headerTitle} accessibilityRole="header">{t('legacyLibrary.title')}</Text>
         <Text style={styles.headerSubtitle}>
-          Real, anonymous reflections from couples who found each other here — shared to help you navigate your own relationships.
+          {t('ui.legacyLibrary.realAnonymousReflectionsFromCouples')}
         </Text>
 
         {navigation && (
@@ -84,9 +85,9 @@ export default function LegacyLibraryScreen({ navigation }) {
             activeOpacity={0.85}
             onPress={() => navigation.navigate('RelationshipTools')}
             accessibilityRole="button"
-            accessibilityLabel="Leave your own relationship wisdom for a match"
+            accessibilityLabel={t('ui.legacyLibrary.leaveYourOwnRelationshipWisdomA11y')}
           >
-            <Text style={styles.contributeLinkText}>💌 Want to add your own? Leave wisdom with a match →</Text>
+            <Text style={styles.contributeLinkText}>{t('ui.legacyLibrary.wantToAddYourOwn')}</Text>
           </TouchableOpacity>
         )}
 
@@ -104,7 +105,7 @@ export default function LegacyLibraryScreen({ navigation }) {
             <View key={entry.id} style={styles.card}>
               {filledFields.map((f) => (
                 <View key={f.key} style={styles.fieldBlock}>
-                  <Text style={styles.fieldLabel}>{f.label}</Text>
+                  <Text style={styles.fieldLabel}>{t(`ui.legacyLibrary.field.${f.key}`)}</Text>
                   <Text style={styles.fieldText}>{entry[f.key]}</Text>
                 </View>
               ))}

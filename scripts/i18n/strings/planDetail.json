@@ -112,7 +112,13 @@
   "status.confirmed": "Confirmed",
   "status.completed": "Done",
   "status.cancelled": "Cancelled",
-  "forName": "For {name}"
+  "forName": "For {name}",
+  "stopState.chosen": "Not requested yet",
+  "stopState.requested": "Waiting for the business",
+  "stopState.offer_received": "A business responded",
+  "stopState.booked": "You're booked",
+  "stopState.done": "Done",
+  "stopState.cancelled": "Cancelled"
  },
  "es": {
   "partOf": "Parte de: {title}",
@@ -228,7 +234,13 @@
   "status.confirmed": "Confirmado",
   "status.completed": "Hecho",
   "status.cancelled": "Cancelado",
-  "forName": "Para {name}"
+  "forName": "Para {name}",
+  "stopState.chosen": "Aún no solicitado",
+  "stopState.requested": "Esperando al negocio",
+  "stopState.offer_received": "Un negocio respondió",
+  "stopState.booked": "Tienes la reserva",
+  "stopState.done": "Hecho",
+  "stopState.cancelled": "Cancelado"
  },
  "de": {
   "partOf": "Teil von: {title}",
@@ -343,7 +355,13 @@
   "status.confirmed": "Bestätigt",
   "status.completed": "Erledigt",
   "status.cancelled": "Abgesagt",
-  "forName": "Für {name}"
+  "forName": "Für {name}",
+  "stopState.chosen": "Noch nicht angefragt",
+  "stopState.requested": "Wartet auf das Geschäft",
+  "stopState.offer_received": "Ein Geschäft hat geantwortet",
+  "stopState.booked": "Du bist gebucht",
+  "stopState.done": "Erledigt",
+  "stopState.cancelled": "Abgesagt"
  },
  "fr": {
   "partOf": "Fait partie de : {title}",
@@ -459,7 +477,13 @@
   "status.confirmed": "Confirmé",
   "status.completed": "Terminé",
   "status.cancelled": "Annulé",
-  "forName": "Pour {name}"
+  "forName": "Pour {name}",
+  "stopState.chosen": "Pas encore demandé",
+  "stopState.requested": "En attente de l'établissement",
+  "stopState.offer_received": "Un établissement a répondu",
+  "stopState.booked": "C'est réservé",
+  "stopState.done": "Terminé",
+  "stopState.cancelled": "Annulé"
  },
  "pt": {
   "partOf": "Parte de: {title}",
@@ -575,7 +599,13 @@
   "status.confirmed": "Confirmado",
   "status.completed": "Concluído",
   "status.cancelled": "Cancelado",
-  "forName": "Para {name}"
+  "forName": "Para {name}",
+  "stopState.chosen": "Ainda não solicitado",
+  "stopState.requested": "Aguardando o estabelecimento",
+  "stopState.offer_received": "Um estabelecimento respondeu",
+  "stopState.booked": "Você está reservado",
+  "stopState.done": "Concluído",
+  "stopState.cancelled": "Cancelado"
  },
  "ht": {
   "partOf": "Fè pati: {title}",
@@ -689,7 +719,13 @@
   "status.confirmed": "Konfime",
   "status.completed": "Fini",
   "status.cancelled": "Anile",
-  "forName": "Pou {name}"
+  "forName": "Pou {name}",
+  "stopState.chosen": "Poko mande",
+  "stopState.requested": "Ap tann biznis la",
+  "stopState.offer_received": "Yon biznis reponn",
+  "stopState.booked": "Ou gen rezèvasyon",
+  "stopState.done": "Fini",
+  "stopState.cancelled": "Anile"
  },
  "zh": {
   "partOf": "属于：{title}",
@@ -803,7 +839,13 @@
   "status.confirmed": "已确认",
   "status.completed": "已完成",
   "status.cancelled": "已取消",
-  "forName": "为 {name}"
+  "forName": "为 {name}",
+  "stopState.chosen": "尚未发出请求",
+  "stopState.requested": "等待商家回复",
+  "stopState.offer_received": "有商家回复了",
+  "stopState.booked": "已预订",
+  "stopState.done": "已完成",
+  "stopState.cancelled": "已取消"
  },
  "vi": {
   "partOf": "Thuộc: {title}",
@@ -917,7 +959,13 @@
   "status.confirmed": "Đã xác nhận",
   "status.completed": "Đã xong",
   "status.cancelled": "Đã hủy",
-  "forName": "Cho {name}"
+  "forName": "Cho {name}",
+  "stopState.chosen": "Chưa gửi yêu cầu",
+  "stopState.requested": "Đang chờ doanh nghiệp",
+  "stopState.offer_received": "Một doanh nghiệp đã phản hồi",
+  "stopState.booked": "Bạn đã đặt chỗ",
+  "stopState.done": "Xong",
+  "stopState.cancelled": "Đã hủy"
  },
  "tl": {
   "partOf": "Bahagi ng: {title}",
@@ -1032,7 +1080,13 @@
   "status.confirmed": "Kumpirmado",
   "status.completed": "Tapos na",
   "status.cancelled": "Kinansela",
-  "forName": "Para kay {name}"
+  "forName": "Para kay {name}",
+  "stopState.chosen": "Hindi pa hinihiling",
+  "stopState.requested": "Naghihintay sa negosyo",
+  "stopState.offer_received": "May negosyong tumugon",
+  "stopState.booked": "Naka-book ka na",
+  "stopState.done": "Tapos na",
+  "stopState.cancelled": "Kinansela"
  },
  "ru": {
   "partOf": "Часть плана: {title}",
@@ -1149,7 +1203,13 @@
   "status.confirmed": "Подтверждено",
   "status.completed": "Завершено",
   "status.cancelled": "Отменено",
-  "forName": "Для {name}"
+  "forName": "Для {name}",
+  "stopState.chosen": "Ещё не запрошено",
+  "stopState.requested": "Ждём ответа заведения",
+  "stopState.offer_received": "Заведение ответило",
+  "stopState.booked": "Вы забронировали",
+  "stopState.done": "Готово",
+  "stopState.cancelled": "Отменено"
  },
  "ko": {
   "partOf": "포함된 계획: {title}",
@@ -1263,6 +1323,12 @@
   "status.confirmed": "확정됨",
   "status.completed": "완료",
   "status.cancelled": "취소됨",
-  "forName": "{name}님을 위해"
+  "forName": "{name}님을 위해",
+  "stopState.chosen": "아직 요청하지 않음",
+  "stopState.requested": "업체 응답 대기 중",
+  "stopState.offer_received": "업체가 응답했어요",
+  "stopState.booked": "예약되었어요",
+  "stopState.done": "완료",
+  "stopState.cancelled": "취소됨"
  }
 }

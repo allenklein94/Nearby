@@ -37,7 +37,7 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
     if (noteText.trim()) {
       const check = await checkTextModeration(noteText);
       if (!check.safe) {
-        return Alert.alert('Not allowed', 'Please revise your note and try again.');
+        return Alert.alert(t('ui.chemistryEntry.notAllowed'), t('ui.chemistryEntry.pleaseReviseYourNoteAnd'));
       }
     }
 
@@ -46,7 +46,7 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
      await submitChemistryEntry(aboutDisplayName, signals, noteText);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('chemistry_diary_entry_saved');
-      showSuccessToast('Saved privately', 'Only you can see this — it helps build a picture of what actually feels good to you over time.');
+      showSuccessToast(t('ui.chemistryEntry.savedPrivately'), t('ui.chemistryEntry.onlyYouCanSeeThis'));
       navigation.goBack();
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSubmit() });
@@ -60,7 +60,7 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
         <ScrollView ref={scrollRef} contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
           <Text style={styles.headerTitle} accessibilityRole="header">{t('chemistryDiary.howDidItFeel')}</Text>
           <Text style={styles.headerSubtitle}>
-            About time with {aboutDisplayName || 'them'} — completely private. Just your own honest answers, nothing analyzed or shown to anyone.
+            {aboutDisplayName ? t('ui.chemistryEntry.introAbout', { name: aboutDisplayName }) : t('ui.chemistryEntry.introNoName')}
           </Text>
 
           {SIGNALS.map((signal) => {
@@ -85,10 +85,10 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
             );
           })}
 
-          <Text style={styles.label}>Anything else worth noting (optional)</Text>
+          <Text style={styles.label}>{t('ui.chemistryEntry.anythingElseWorthNotingOptional')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Whatever comes to mind..."
+            placeholder={t('ui.chemistryEntry.whateverComesToMind')}
             placeholderTextColor={colors.textTertiary}
             value={noteText}
             onChangeText={setNoteText}
@@ -102,7 +102,7 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
             // the last two things on the screen, scrolling to the very
             // end on focus is exactly the fix.
             onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80)}
-            accessibilityLabel="Additional note"
+            accessibilityLabel={t('ui.chemistryEntry.additionalNoteA11y')}
           />
 
           <TouchableOpacity
@@ -110,10 +110,10 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
             onPress={handleSubmit}
             disabled={submitting}
             activeOpacity={0.85}
-            accessibilityLabel={submitting ? 'Saving' : t('chemistryDiary.savePrivately')}
+            accessibilityLabel={submitting ? t('ui.chemistryEntry.savingA11y') : t('chemistryDiary.savePrivately')}
             accessibilityRole="button"
           >
-            <Text style={styles.buttonText}>{submitting ? 'Saving...' : t('chemistryDiary.savePrivately')}</Text>
+            <Text style={styles.buttonText}>{submitting ? t('ui.chemistryEntry.saving') : t('chemistryDiary.savePrivately')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -6,14 +7,15 @@ import { NLoader } from '../motion';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
-import { getSharedNight, leaveSharedExperience, EXPERIENCE_STOP_STATE_LABEL } from '../services/plans';
+import { getSharedNight, leaveSharedExperience, experienceStopStateLabel } from '../services/plans';
 import { nightDateLabel } from '../utils/nightDate';
 
-const STATUS_LABEL = { draft: 'Planning', confirmed: 'Confirmed', completed: 'Done', cancelled: 'Cancelled' };
+const PLAN_STATUSES = ['draft', 'confirmed', 'completed', 'cancelled']; // shown through ui.planDetail.status.<status>
 
 // A night a friend shared with me: strictly read-only. It shows the stops and where each one stands and offers exactly one
 // action -- leave. Nothing here can request, cancel, reorder or change anything (the server allows none of it for a viewer).
 export default function SharedNightScreen({ navigation, route }) {
+  const { t } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const planId = route.params?.planId;
@@ -31,10 +33,10 @@ export default function SharedNightScreen({ navigation, route }) {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   function confirmLeave() {
-    Alert.alert('Leave this night?', "It will disappear from your plans. Your friend can share it with you again.", [
-      { text: 'Stay', style: 'cancel' },
+    Alert.alert(t('ui.sharedNight.leaveThisNight'), t('ui.sharedNight.itWillDisappearFromYour'), [
+      { text: t('ui.sharedNight.stay'), style: 'cancel' },
       {
-        text: 'Leave',
+        text: t('ui.sharedNight.leave'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -48,15 +50,15 @@ export default function SharedNightScreen({ navigation, route }) {
     ]);
   }
 
-  if (error) return <SafeAreaView style={styles.container}><LoadErrorState message="Couldn't load this night." onRetry={load} /></SafeAreaView>;
-  if (night === undefined) return <SafeAreaView style={styles.container}><NLoader fullScreen={false} size="compact" caption="Pulling this night together…" /></SafeAreaView>;
+  if (error) return <SafeAreaView style={styles.container}><LoadErrorState message={t('ui.sharedNight.couldntLoadThisNight')} onRetry={load} /></SafeAreaView>;
+  if (night === undefined) return <SafeAreaView style={styles.container}><NLoader fullScreen={false} size="compact" caption={t('ui.sharedNight.pullingThisNightTogether')} /></SafeAreaView>;
   if (!night) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centered}>
-          <Text style={styles.muted}>This night isn't shared with you anymore.</Text>
+          <Text style={styles.muted}>{t('ui.sharedNight.thisNightIsntSharedWith')}</Text>
           <TouchableOpacity style={styles.linkButton} onPress={() => navigation.navigate('Plans')} accessibilityRole="button">
-            <Text style={styles.link}>See your plans →</Text>
+            <Text style={styles.link}>{t('ui.sharedNight.seeYourPlans')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -66,12 +68,12 @@ export default function SharedNightScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.title}>✨ {night.title || 'A night out'}</Text>
+        <Text style={styles.title}>✨ {night.title || t('ui.sharedNight.aNightOut')}</Text>
         <Text style={styles.muted}>
-          {[STATUS_LABEL[night.status] || night.status, nightDateLabel(night.nightDate), night.hostDisplayName ? `Shared by ${night.hostDisplayName}` : null].filter(Boolean).join(' · ')}
+          {[PLAN_STATUSES.includes(night.status) ? t(`ui.planDetail.status.${night.status}`) : night.status, nightDateLabel(night.nightDate), night.hostDisplayName ? t('ui.sharedNight.sharedBy', { name: night.hostDisplayName }) : null].filter(Boolean).join(' · ')}
         </Text>
 
-        <Text style={styles.sectionLabel}>The night</Text>
+        <Text style={styles.sectionLabel}>{t('ui.sharedNight.theNight')}</Text>
         <View style={styles.card}>
           {night.stops.map((s, i) => (
             <View key={`${s.order}-${i}`} style={[styles.stepRow, i > 0 && styles.stepDivider]}>
@@ -79,15 +81,15 @@ export default function SharedNightScreen({ navigation, route }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.stepLabel}>{s.componentLabel}</Text>
                 <Text style={styles.muted}>{[s.title, s.subtitle && s.subtitle !== s.title ? s.subtitle : null].filter(Boolean).join(' · ')}</Text>
-                {s.stopType === 'business_availability' && <Text style={styles.muted}>{EXPERIENCE_STOP_STATE_LABEL[s.state] ?? ''}</Text>}
+                {s.stopType === 'business_availability' && <Text style={styles.muted}>{experienceStopStateLabel(s.state)}</Text>}
               </View>
             </View>
           ))}
         </View>
-        <Text style={styles.muted}>You're viewing this night. {night.hostDisplayName || 'Your friend'} makes the plans and keeps it up to date.</Text>
+        <Text style={styles.muted}>{night.hostDisplayName ? t('ui.sharedNight.viewingBy', { name: night.hostDisplayName }) : t('ui.sharedNight.viewingByFriend')}</Text>
 
-        <TouchableOpacity style={styles.linkButton} onPress={confirmLeave} accessibilityRole="button" accessibilityLabel="Leave this shared night">
-          <Text style={[styles.link, { color: colors.danger }]}>Leave this night</Text>
+        <TouchableOpacity style={styles.linkButton} onPress={confirmLeave} accessibilityRole="button" accessibilityLabel={t('ui.sharedNight.leaveThisSharedNightA11y')}>
+          <Text style={[styles.link, { color: colors.danger }]}>{t('ui.sharedNight.leaveThisNight2')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

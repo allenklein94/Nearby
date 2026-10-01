@@ -7,11 +7,12 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+// The practice partner's first line: ui.rehearsal.opener.<key>, in the person's language.
 const SCENARIOS = [
-  { key: 'ask_out', labelKey: 'askingSomeoneOut', opener: "Let's practice. I'll play the other person — go ahead and ask me out however you'd actually say it." },
-  { key: 'boundary', labelKey: 'settingBoundary', opener: "Let's practice. I'll play the other person — tell me the boundary you want to set." },
-  { key: 'hard_conversation', labelKey: 'hardConversation', opener: "Let's practice a difficult conversation. I'll play the other person — start however you'd actually begin." },
-  { key: 'not_interested', labelKey: 'sayingNotInterested', opener: "Let's practice. I'll play the other person — tell me kindly that you're not interested." },
+  { key: 'ask_out', labelKey: 'askingSomeoneOut' },
+  { key: 'boundary', labelKey: 'settingBoundary' },
+  { key: 'hard_conversation', labelKey: 'hardConversation' },
+  { key: 'not_interested', labelKey: 'sayingNotInterested' },
 ];
 
 export default function RehearsalRoomScreen({ navigation }) {
@@ -27,7 +28,7 @@ export default function RehearsalRoomScreen({ navigation }) {
 
   function startScenario(s) {
     setScenario(s);
-    setMessages([{ role: 'ai', text: s.opener }]);
+    setMessages([{ role: 'ai', text: t(`ui.rehearsal.opener.${s.key}`) }]);
     posthog.capture('rehearsal_room_started', { scenario: s.key });
   }
 
@@ -63,15 +64,15 @@ export default function RehearsalRoomScreen({ navigation }) {
       if (!response.ok) {
         if (response.status === 403) {
           Alert.alert(
-            'Rehearsal Room is Premium',
-            'Practicing hard conversations with an AI partner is a Premium feature. Upgrade to keep going.'
+            t('ui.rehearsal.rehearsalRoomIsPremium'),
+            t('ui.rehearsal.practicingHardConversationsWithAn')
           );
           setScenario(null);
           setMessages([]);
           setSending(false);
           return;
         }
-        Alert.alert('Error', result.error || 'Could not continue the practice conversation.');
+        Alert.alert(t('ui.rehearsal.error'), result.error || t('ui.rehearsal.couldNotContinueThePractice'));
         setMessages(messages);
         setText(messageText);
         setSending(false);
@@ -103,7 +104,7 @@ export default function RehearsalRoomScreen({ navigation }) {
               style={styles.scenarioCard}
               onPress={() => startScenario(s)}
               activeOpacity={0.85}
-              accessibilityLabel={`Practice: ${t(`rehearsalRoom.${s.labelKey}`)}`}
+              accessibilityLabel={t('ui.rehearsal.practiceA11y', { scenario: t(`rehearsalRoom.${s.labelKey}`) })}
               accessibilityRole="button"
             >
               <Text style={styles.scenarioLabel}>{t(`rehearsalRoom.${s.labelKey}`)}</Text>
@@ -119,7 +120,7 @@ export default function RehearsalRoomScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.practiceBanner} accessibilityLiveRegion="polite">
         <Text style={styles.practiceBannerText}>{t('rehearsalRoom.practiceReminder')}</Text>
-        <TouchableOpacity onPress={resetRoom} accessibilityLabel="End practice session" accessibilityRole="button">
+        <TouchableOpacity onPress={resetRoom} accessibilityLabel={t('ui.rehearsal.endPracticeSessionA11y')} accessibilityRole="button">
           <Text style={styles.endText}>{t('rehearsalRoom.end')}</Text>
         </TouchableOpacity>
       </View>
@@ -143,21 +144,21 @@ export default function RehearsalRoomScreen({ navigation }) {
         <View style={styles.inputRow}>
           <TextInput
             style={styles.input}
-            placeholder="Type what you'd actually say..."
+            placeholder={t('ui.rehearsal.typeWhatYoudActuallySay')}
             placeholderTextColor={colors.textTertiary}
             value={text}
             onChangeText={setText}
             multiline
-            accessibilityLabel="Practice message input"
+            accessibilityLabel={t('ui.rehearsal.practiceMessageInputA11y')}
           />
           <TouchableOpacity
             style={styles.sendButton}
             onPress={sendMessage}
             disabled={sending || !text.trim()}
-            accessibilityLabel="Send practice message"
+            accessibilityLabel={t('ui.rehearsal.sendPracticeMessageA11y')}
             accessibilityRole="button"
           >
-            {sending ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.sendText}>Send</Text>}
+            {sending ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.sendText}>{t('ui.rehearsal.send')}</Text>}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

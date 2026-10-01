@@ -116,6 +116,14 @@ export default {
       cancelled: "Cancelled",
     },
     forName: "For {name}",
+    stopState: {
+      chosen: "Not requested yet",
+      requested: "Waiting for the business",
+      offer_received: "A business responded",
+      booked: "You're booked",
+      done: "Done",
+      cancelled: "Cancelled",
+    },
   },
   es: {
     partOf: "Parte de: {title}",
@@ -232,6 +240,14 @@ export default {
       cancelled: "Cancelado",
     },
     forName: "Para {name}",
+    stopState: {
+      chosen: "Aún no solicitado",
+      requested: "Esperando al negocio",
+      offer_received: "Un negocio respondió",
+      booked: "Tienes la reserva",
+      done: "Hecho",
+      cancelled: "Cancelado",
+    },
   },
   de: {
     partOf: "Teil von: {title}",
@@ -348,6 +364,14 @@ export default {
       cancelled: "Abgesagt",
     },
     forName: "Für {name}",
+    stopState: {
+      chosen: "Noch nicht angefragt",
+      requested: "Wartet auf das Geschäft",
+      offer_received: "Ein Geschäft hat geantwortet",
+      booked: "Du bist gebucht",
+      done: "Erledigt",
+      cancelled: "Abgesagt",
+    },
   },
   fr: {
     partOf: "Fait partie de : {title}",
@@ -464,6 +488,14 @@ export default {
       cancelled: "Annulé",
     },
     forName: "Pour {name}",
+    stopState: {
+      chosen: "Pas encore demandé",
+      requested: "En attente de l'établissement",
+      offer_received: "Un établissement a répondu",
+      booked: "C'est réservé",
+      done: "Terminé",
+      cancelled: "Annulé",
+    },
   },
   pt: {
     partOf: "Parte de: {title}",
@@ -580,6 +612,14 @@ export default {
       cancelled: "Cancelado",
     },
     forName: "Para {name}",
+    stopState: {
+      chosen: "Ainda não solicitado",
+      requested: "Aguardando o estabelecimento",
+      offer_received: "Um estabelecimento respondeu",
+      booked: "Você está reservado",
+      done: "Concluído",
+      cancelled: "Cancelado",
+    },
   },
   ht: {
     partOf: "Fè pati: {title}",
@@ -696,6 +736,14 @@ export default {
       cancelled: "Anile",
     },
     forName: "Pou {name}",
+    stopState: {
+      chosen: "Poko mande",
+      requested: "Ap tann biznis la",
+      offer_received: "Yon biznis reponn",
+      booked: "Ou gen rezèvasyon",
+      done: "Fini",
+      cancelled: "Anile",
+    },
   },
   zh: {
     partOf: "属于：{title}",
@@ -812,6 +860,14 @@ export default {
       cancelled: "已取消",
     },
     forName: "为 {name}",
+    stopState: {
+      chosen: "尚未发出请求",
+      requested: "等待商家回复",
+      offer_received: "有商家回复了",
+      booked: "已预订",
+      done: "已完成",
+      cancelled: "已取消",
+    },
   },
   vi: {
     partOf: "Thuộc: {title}",
@@ -928,6 +984,14 @@ export default {
       cancelled: "Đã hủy",
     },
     forName: "Cho {name}",
+    stopState: {
+      chosen: "Chưa gửi yêu cầu",
+      requested: "Đang chờ doanh nghiệp",
+      offer_received: "Một doanh nghiệp đã phản hồi",
+      booked: "Bạn đã đặt chỗ",
+      done: "Xong",
+      cancelled: "Đã hủy",
+    },
   },
   tl: {
     partOf: "Bahagi ng: {title}",
@@ -1044,6 +1108,14 @@ export default {
       cancelled: "Kinansela",
     },
     forName: "Para kay {name}",
+    stopState: {
+      chosen: "Hindi pa hinihiling",
+      requested: "Naghihintay sa negosyo",
+      offer_received: "May negosyong tumugon",
+      booked: "Naka-book ka na",
+      done: "Tapos na",
+      cancelled: "Kinansela",
+    },
   },
   ru: {
     partOf: "Часть плана: {title}",
@@ -1160,6 +1232,14 @@ export default {
       cancelled: "Отменено",
     },
     forName: "Для {name}",
+    stopState: {
+      chosen: "Ещё не запрошено",
+      requested: "Ждём ответа заведения",
+      offer_received: "Заведение ответило",
+      booked: "Вы забронировали",
+      done: "Готово",
+      cancelled: "Отменено",
+    },
   },
   ko: {
     partOf: "포함된 계획: {title}",
@@ -1276,5 +1356,13 @@ export default {
       cancelled: "취소됨",
     },
     forName: "{name}님을 위해",
+    stopState: {
+      chosen: "아직 요청하지 않음",
+      requested: "업체 응답 대기 중",
+      offer_received: "업체가 응답했어요",
+      booked: "예약되었어요",
+      done: "완료",
+      cancelled: "취소됨",
+    },
   },
 };

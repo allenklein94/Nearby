@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { stopDatePrefill } from '../utils/nightDate';
+import { tr } from '../i18n/translate';
 
 // Item 52 ("Build a universal Plan object", CLAUDE.md) -- the first real
 // client consumer of the `plans` table (Phase G,
@@ -210,6 +211,10 @@ export const EXPERIENCE_STOP_STATE_LABEL = {
   done: 'Done',
   cancelled: 'Cancelled',
 };
+// The label in the person's language (ui.planDetail.stopState.<state>); English = the table above. Unknown state = ''.
+export function experienceStopStateLabel(state) {
+  return EXPERIENCE_STOP_STATE_LABEL[state] ? tr(`ui.planDetail.stopState.${state}`) : '';
+}
 
 export async function getMyExperiencePlans() {
   const { data, error } = await supabase
