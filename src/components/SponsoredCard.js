@@ -3,13 +3,14 @@ import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing, typography } from '../theme';
-import { SPONSORED_LABEL, sponsoredWhyText } from '../constants/sponsored';
+import { sponsoredLabel, sponsoredWhyText } from '../constants/sponsored';
 
 // THE only way a sponsored item renders (item 44). The label is a constant in this component, not a data field, so a
 // served card cannot lack it. Deliberately its own card, not the organic one: no organic reason line, no friend or
 // popularity claim, and no offer wording. The pill is a neutral outline (coral is reserved for actions).
 export default function SponsoredCard({ card, categoryLabel, onView, onHide, onReport }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const SPONSORED_LABEL = sponsoredLabel(language);
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [why, setWhy] = useState(false);

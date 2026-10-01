@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-import { SPONSORED_LABEL, ORGANIC_ONLY_PHRASES, sponsoredWhyText } from '../constants/sponsored';
+import { SPONSORED_LABEL, ORGANIC_ONLY_PHRASES, sponsoredWhyText, sponsoredLabel } from '../constants/sponsored';
+import { UI_LANGUAGES } from '../i18n/ui';
 
 // Item 44 (sponsored placement, phase 1). These guards keep paid placements separate from organic content:
 // the label cannot be omitted, organic code never touches the sponsored tables, the serving function accepts no
@@ -22,8 +23,13 @@ describe('disclosure cannot be omitted', () => {
   const card = read('src/components/SponsoredCard.js');
   it('the label is a constant rendered by the component, never a data field', () => {
     expect(SPONSORED_LABEL).toBe('Sponsored');
-    expect(card).toMatch(/SPONSORED_LABEL/);
+    expect(card).toMatch(/SPONSORED_LABEL = sponsoredLabel\(language\)/);
     expect(card).not.toMatch(/card\.(label|is_sponsored|sponsored)/);
+  });
+  it('every app language has a non-empty label, and an unknown language still gets the English one', () => {
+    for (const lang of UI_LANGUAGES) expect(sponsoredLabel(lang)).toMatch(/\S/);
+    expect(sponsoredLabel('en')).toBe('Sponsored');
+    for (const missing of [undefined, null, '', 'xx']) expect(sponsoredLabel(missing)).toBe('Sponsored');
   });
   it('the card renders the label twice (pill + byline) and an accessibility label that starts with it', () => {
     expect((card.match(/\{SPONSORED_LABEL\}/g) || []).length).toBeGreaterThanOrEqual(2);
