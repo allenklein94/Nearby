@@ -1,7 +1,8 @@
-// Gathering group chat: a message is visible only when neither the viewer nor the sender blocked the other
-// (migration 20270263). The rule lives in the database; these guards keep every read path on it. The behavior itself
-// (both directions, multiple attendees, other members unaffected, count, by-id read, unblock, DM policy untouched) is
-// proven against production by scripts/live-verify/gathering-chat-blocks-either-way.sql.
+// Group chats (gathering 20270263, community 20270264): a message is visible only when neither the viewer nor the
+// sender blocked the other. The rule lives in the database; these guards keep every read path on it, and keep any NEW
+// read rule from reading `blocks` inline (blocks RLS shows a viewer only the blocks they made, so an inline read leaks
+// the reverse direction). Behavior is proven against production by scripts/live-verify/gathering-chat-blocks-either-way.sql
+// and community-chat-blocks-either-way.sql.
 const fs = require('fs');
 const path = require('path');
 
@@ -70,5 +71,58 @@ describe('every chat read goes through that policy', () => {
   test('the Message count is a count-only read of the same rows', () => {
     const svc = fs.readFileSync(path.join(root, 'src/services/gatherings.js'), 'utf8');
     expect(svc).toMatch(/from\('gathering_messages'\)\s*\.select\('id', \{ count: 'exact', head: true \}\)/);
+  });
+});
+
+describe('community chat uses the same rule', () => {
+  const CPOLICY = /create policy "Members can view community chat[^"]*"\s+on public\.community_messages[\s\S]*?;\s*$/m;
+  const defining = migrations.filter((f) => CPOLICY.test(readMig(f)));
+  const body = readMig(defining[defining.length - 1]).match(CPOLICY)[0];
+
+  test('the latest definition is 20270264, uses the shared helper and reads no blocks inline', () => {
+    expect(defining[defining.length - 1]).toBe('20270264_community_chat_block_either_way.sql');
+    expect(body).toMatch(/not public\.viewer_blocked_either_way\(community_messages\.sender_id\)/);
+    expect(body).not.toMatch(/from\s+blocks/i);
+  });
+
+  test('no server function reads community_messages', () => {
+    const offenders = migrations.filter((f) => /\$\$[\s\S]*?from\s+(public\.)?community_messages[\s\S]*?\$\$/i.test(readMig(f)));
+    expect(offenders).toEqual([]);
+  });
+
+  test('the client reads it only with plain table reads; a realtime arrival is re-read by id', () => {
+    const readers = srcFiles.filter((f) => /\.from\('community_messages'\)/.test(fs.readFileSync(f, 'utf8')))
+      .map((f) => path.relative(root, f)).sort();
+    expect(readers).toEqual(['src/services/communities.js', 'src/services/homeDashboard.js']);
+    const chat = fs.readFileSync(path.join(root, 'src/screens/CommunityChatScreen.js'), 'utf8');
+    expect(chat).toMatch(/getCommunityMessageById\(payload\.new\.id\)/);
+    expect(chat).not.toMatch(/prependMessage\(payload\.new\)/);
+  });
+});
+
+describe('no NEW read rule reads blocks inline', () => {
+  // Latest definition of every RLS policy across all migrations; flag those whose body queries `blocks` directly.
+  // These three still do (same one-way defect, reported 2026-10-02, not changed yet); remove each as it is fixed.
+  const KNOWN_INLINE = [
+    'public.business_messages :: Only the follower and business owner can see this conversation,',
+    'public.stories :: Visible to poster, matches, friends, fellow attendees, host, or',
+    'storage.objects :: Story media visible to poster, matches, friends, fellow attende',
+  ];
+  test('only the known, reported policies remain', () => {
+    const latest = new Map();
+    const RE = /create policy\s+"([^"]+)"\s+on\s+([\w.]+)([\s\S]*?);\s*$/gim;
+    for (const f of migrations) {
+      const sql = readMig(f);
+      for (const m of sql.matchAll(/drop policy if exists\s+"([^"]+)"\s+on\s+([\w.]+)/gi)) {
+        const t = m[2].includes('.') ? m[2] : `public.${m[2]}`;
+        latest.delete(`${t} :: ${m[1]}`);
+      }
+      for (const m of sql.matchAll(RE)) {
+        const t = m[2].includes('.') ? m[2] : `public.${m[2]}`;
+        latest.set(`${t} :: ${m[1]}`, m[3]);
+      }
+    }
+    const inline = [...latest].filter(([, body]) => /from\s+(public\.)?blocks\b/i.test(body)).map(([k]) => k).sort();
+    expect(inline).toEqual(KNOWN_INLINE.sort());
   });
 });
