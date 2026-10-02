@@ -36,7 +36,9 @@
   "group.messages.label": "Messages",
   "group.messages.hint": "New messages in your one-on-one chats, with friends and matches.",
   "group.video_calls.label": "Video calls",
-  "group.video_calls.hint": "Someone starts a video or voice call with you, friends and matches alike."
+  "group.video_calls.hint": "Someone starts a video or voice call with you, friends and matches alike.",
+  "group.shared_playlists_trips.label": "Shared playlists and trips",
+  "group.shared_playlists_trips.hint": "Someone adds a song to your shared playlist or an idea to your trip plan, friends and matches alike."
  },
  "es": {
   "section.plans.label": "Planes",
@@ -75,7 +77,9 @@
   "group.messages.label": "Mensajes",
   "group.messages.hint": "Mensajes nuevos en tus chats individuales, con amigos y matches.",
   "group.video_calls.label": "Videollamadas",
-  "group.video_calls.hint": "Alguien inicia una videollamada o llamada de voz contigo, sean amigos o matches."
+  "group.video_calls.hint": "Alguien inicia una videollamada o llamada de voz contigo, sean amigos o matches.",
+  "group.shared_playlists_trips.label": "Playlists y viajes compartidos",
+  "group.shared_playlists_trips.hint": "Alguien agrega una canción a tu playlist compartida o una idea a su plan de viaje, sean amigos o matches."
  },
  "de": {
   "section.plans.label": "Pläne",
@@ -114,7 +118,9 @@
   "group.messages.label": "Nachrichten",
   "group.messages.hint": "Neue Nachrichten in deinen Einzelchats, mit Freunden und Matches.",
   "group.video_calls.label": "Videoanrufe",
-  "group.video_calls.hint": "Jemand startet einen Video- oder Sprachanruf mit dir, Freunde wie Matches."
+  "group.video_calls.hint": "Jemand startet einen Video- oder Sprachanruf mit dir, Freunde wie Matches.",
+  "group.shared_playlists_trips.label": "Geteilte Playlists und Reisen",
+  "group.shared_playlists_trips.hint": "Jemand fügt eurer geteilten Playlist einen Song oder eurem Reiseplan eine Idee hinzu, Freunde wie Matches."
  },
  "fr": {
   "section.plans.label": "Plans",
@@ -153,7 +159,9 @@
   "group.messages.label": "Messages",
   "group.messages.hint": "Nouveaux messages dans vos discussions privées, avec vos amis et vos matchs.",
   "group.video_calls.label": "Appels vidéo",
-  "group.video_calls.hint": "Quelqu’un lance un appel vidéo ou vocal avec vous, ami ou match."
+  "group.video_calls.hint": "Quelqu’un lance un appel vidéo ou vocal avec vous, ami ou match.",
+  "group.shared_playlists_trips.label": "Playlists et voyages partagés",
+  "group.shared_playlists_trips.hint": "Quelqu’un ajoute une chanson à votre playlist partagée ou une idée à votre projet de voyage, ami ou match."
  },
  "pt": {
   "section.plans.label": "Planos",
@@ -192,7 +200,9 @@
   "group.messages.label": "Mensagens",
   "group.messages.hint": "Novas mensagens nas suas conversas individuais, com amigos e matches.",
   "group.video_calls.label": "Chamadas de vídeo",
-  "group.video_calls.hint": "Alguém inicia uma chamada de vídeo ou de voz com você, amigos ou matches."
+  "group.video_calls.hint": "Alguém inicia uma chamada de vídeo ou de voz com você, amigos ou matches.",
+  "group.shared_playlists_trips.label": "Playlists e viagens compartilhadas",
+  "group.shared_playlists_trips.hint": "Alguém adiciona uma música à playlist compartilhada ou uma ideia ao plano de viagem, amigos e matches."
  },
  "ht": {
   "section.plans.label": "Plan",
@@ -231,7 +241,9 @@
   "group.messages.label": "Mesaj",
   "group.messages.hint": "Nouvo mesaj nan chat youn-a-youn ou, ak zanmi ak match.",
   "group.video_calls.label": "Apèl videyo",
-  "group.video_calls.hint": "Yon moun kòmanse yon apèl videyo oswa vwa avè w, zanmi kou match."
+  "group.video_calls.hint": "Yon moun kòmanse yon apèl videyo oswa vwa avè w, zanmi kou match.",
+  "group.shared_playlists_trips.label": "Playlist ak vwayaj ou pataje",
+  "group.shared_playlists_trips.hint": "Yon moun ajoute yon chante nan playlist nou pataje oswa yon ide nan plan vwayaj nou, zanmi kou match."
  },
  "zh": {
   "section.plans.label": "计划",
@@ -270,7 +282,9 @@
   "group.messages.label": "消息",
   "group.messages.hint": "你一对一聊天中的新消息，包括好友和配对。",
   "group.video_calls.label": "视频通话",
-  "group.video_calls.hint": "有人向你发起视频或语音通话，好友和配对都包括。"
+  "group.video_calls.hint": "有人向你发起视频或语音通话，好友和配对都包括。",
+  "group.shared_playlists_trips.label": "共享歌单和旅行",
+  "group.shared_playlists_trips.hint": "有人在你们的共享歌单里添加歌曲，或在旅行计划里添加想法，朋友和配对都适用。"
  },
  "vi": {
   "section.plans.label": "Kế hoạch",
@@ -309,7 +323,9 @@
   "group.messages.label": "Tin nhắn",
   "group.messages.hint": "Tin nhắn mới trong các cuộc trò chuyện riêng, với bạn bè và người ghép đôi.",
   "group.video_calls.label": "Cuộc gọi video",
-  "group.video_calls.hint": "Ai đó bắt đầu cuộc gọi video hoặc thoại với bạn, cả bạn bè lẫn người ghép đôi."
+  "group.video_calls.hint": "Ai đó bắt đầu cuộc gọi video hoặc thoại với bạn, cả bạn bè lẫn người ghép đôi.",
+  "group.shared_playlists_trips.label": "Danh sách nhạc và chuyến đi chung",
+  "group.shared_playlists_trips.hint": "Ai đó thêm bài hát vào danh sách nhạc chung hoặc ý tưởng vào kế hoạch chuyến đi, cả bạn bè lẫn người ghép đôi."
  },
  "tl": {
   "section.plans.label": "Mga Plano",
@@ -348,7 +364,9 @@
   "group.messages.label": "Mga mensahe",
   "group.messages.hint": "Mga bagong mensahe sa one-on-one chats mo, kasama ang mga kaibigan at match.",
   "group.video_calls.label": "Mga video call",
-  "group.video_calls.hint": "May nagsimula ng video o voice call sa iyo, kaibigan man o match."
+  "group.video_calls.hint": "May nagsimula ng video o voice call sa iyo, kaibigan man o match.",
+  "group.shared_playlists_trips.label": "Mga shared playlist at biyahe",
+  "group.shared_playlists_trips.hint": "May nagdagdag ng kanta sa shared playlist ninyo o ng ideya sa plano ng biyahe, kaibigan man o match."
  },
  "ru": {
   "section.plans.label": "Планы",
@@ -387,7 +405,9 @@
   "group.messages.label": "Сообщения",
   "group.messages.hint": "Новые сообщения в личных чатах с друзьями и совпадениями.",
   "group.video_calls.label": "Видеозвонки",
-  "group.video_calls.hint": "Кто-то начинает с вами видео- или голосовой звонок, друзья и совпадения."
+  "group.video_calls.hint": "Кто-то начинает с вами видео- или голосовой звонок, друзья и совпадения.",
+  "group.shared_playlists_trips.label": "Общие плейлисты и поездки",
+  "group.shared_playlists_trips.hint": "Кто-то добавляет песню в ваш общий плейлист или идею в план поездки, и друзья, и совпадения."
  },
  "ko": {
   "section.plans.label": "계획",
@@ -426,6 +446,8 @@
   "group.messages.label": "메시지",
   "group.messages.hint": "친구와 매치와의 1:1 채팅 새 메시지.",
   "group.video_calls.label": "영상 통화",
-  "group.video_calls.hint": "친구나 매치가 영상 또는 음성 통화를 시작할 때."
+  "group.video_calls.hint": "친구나 매치가 영상 또는 음성 통화를 시작할 때.",
+  "group.shared_playlists_trips.label": "공유 플레이리스트와 여행",
+  "group.shared_playlists_trips.hint": "누군가 공유 플레이리스트에 노래를 추가하거나 여행 계획에 아이디어를 추가할 때, 친구와 매치 모두."
  }
 }

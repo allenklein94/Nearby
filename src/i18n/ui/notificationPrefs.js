@@ -77,6 +77,10 @@ export default {
         label: "Video calls",
         hint: "Someone starts a video or voice call with you, friends and matches alike.",
       },
+      shared_playlists_trips: {
+        label: "Shared playlists and trips",
+        hint: "Someone adds a song to your shared playlist or an idea to your trip plan, friends and matches alike.",
+      },
     },
     toggleA11y: "Notify me about {label}",
   },
@@ -155,6 +159,10 @@ export default {
       video_calls: {
         label: "Videollamadas",
         hint: "Alguien inicia una videollamada o llamada de voz contigo, sean amigos o matches.",
+      },
+      shared_playlists_trips: {
+        label: "Playlists y viajes compartidos",
+        hint: "Alguien agrega una canción a tu playlist compartida o una idea a su plan de viaje, sean amigos o matches.",
       },
     },
     toggleA11y: "Notificarme sobre {label}",
@@ -235,6 +243,10 @@ export default {
         label: "Videoanrufe",
         hint: "Jemand startet einen Video- oder Sprachanruf mit dir, Freunde wie Matches.",
       },
+      shared_playlists_trips: {
+        label: "Geteilte Playlists und Reisen",
+        hint: "Jemand fügt eurer geteilten Playlist einen Song oder eurem Reiseplan eine Idee hinzu, Freunde wie Matches.",
+      },
     },
     toggleA11y: "Benachrichtige mich über {label}",
   },
@@ -313,6 +325,10 @@ export default {
       video_calls: {
         label: "Appels vidéo",
         hint: "Quelqu’un lance un appel vidéo ou vocal avec vous, ami ou match.",
+      },
+      shared_playlists_trips: {
+        label: "Playlists et voyages partagés",
+        hint: "Quelqu’un ajoute une chanson à votre playlist partagée ou une idée à votre projet de voyage, ami ou match.",
       },
     },
     toggleA11y: "Me prévenir pour {label}",
@@ -393,6 +409,10 @@ export default {
         label: "Chamadas de vídeo",
         hint: "Alguém inicia uma chamada de vídeo ou de voz com você, amigos ou matches.",
       },
+      shared_playlists_trips: {
+        label: "Playlists e viagens compartilhadas",
+        hint: "Alguém adiciona uma música à playlist compartilhada ou uma ideia ao plano de viagem, amigos e matches.",
+      },
     },
     toggleA11y: "Notificar sobre {label}",
   },
@@ -471,6 +491,10 @@ export default {
       video_calls: {
         label: "Apèl videyo",
         hint: "Yon moun kòmanse yon apèl videyo oswa vwa avè w, zanmi kou match.",
+      },
+      shared_playlists_trips: {
+        label: "Playlist ak vwayaj ou pataje",
+        hint: "Yon moun ajoute yon chante nan playlist nou pataje oswa yon ide nan plan vwayaj nou, zanmi kou match.",
       },
     },
     toggleA11y: "Fè m konnen sou {label}",
@@ -551,6 +575,10 @@ export default {
         label: "视频通话",
         hint: "有人向你发起视频或语音通话，好友和配对都包括。",
       },
+      shared_playlists_trips: {
+        label: "共享歌单和旅行",
+        hint: "有人在你们的共享歌单里添加歌曲，或在旅行计划里添加想法，朋友和配对都适用。",
+      },
     },
     toggleA11y: "通知我：{label}",
   },
@@ -629,6 +657,10 @@ export default {
       video_calls: {
         label: "Cuộc gọi video",
         hint: "Ai đó bắt đầu cuộc gọi video hoặc thoại với bạn, cả bạn bè lẫn người ghép đôi.",
+      },
+      shared_playlists_trips: {
+        label: "Danh sách nhạc và chuyến đi chung",
+        hint: "Ai đó thêm bài hát vào danh sách nhạc chung hoặc ý tưởng vào kế hoạch chuyến đi, cả bạn bè lẫn người ghép đôi.",
       },
     },
     toggleA11y: "Thông báo cho tôi về {label}",
@@ -709,6 +741,10 @@ export default {
         label: "Mga video call",
         hint: "May nagsimula ng video o voice call sa iyo, kaibigan man o match.",
       },
+      shared_playlists_trips: {
+        label: "Mga shared playlist at biyahe",
+        hint: "May nagdagdag ng kanta sa shared playlist ninyo o ng ideya sa plano ng biyahe, kaibigan man o match.",
+      },
     },
     toggleA11y: "Abisuhan ako tungkol sa {label}",
   },
@@ -788,6 +824,10 @@ export default {
         label: "Видеозвонки",
         hint: "Кто-то начинает с вами видео- или голосовой звонок, друзья и совпадения.",
       },
+      shared_playlists_trips: {
+        label: "Общие плейлисты и поездки",
+        hint: "Кто-то добавляет песню в ваш общий плейлист или идею в план поездки, и друзья, и совпадения.",
+      },
     },
     toggleA11y: "Уведомлять о: {label}",
   },
@@ -866,6 +906,10 @@ export default {
       video_calls: {
         label: "영상 통화",
         hint: "친구나 매치가 영상 또는 음성 통화를 시작할 때.",
+      },
+      shared_playlists_trips: {
+        label: "공유 플레이리스트와 여행",
+        hint: "누군가 공유 플레이리스트에 노래를 추가하거나 여행 계획에 아이디어를 추가할 때, 친구와 매치 모두.",
       },
     },
     toggleA11y: "{label} 알림 받기",

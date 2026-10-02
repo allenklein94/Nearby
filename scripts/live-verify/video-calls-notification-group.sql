@@ -52,9 +52,10 @@ begin
   if (select count(*) from push_outbox where recipient_id = a and data->>'type' = 'video_call') <> n then
     raise exception '3/4/5 a call was queued with Video calls off'; end if;
 
-  -- legacy flag off only when all three are off; then the unchanged sender still sends nothing
-  update profiles set notification_mutes = '{dating,messages,video_calls}' where id = a;
-  if (select notify_dating from profiles where id = a) then raise exception 'legacy flag on with all three off'; end if;
+  -- legacy flag off only when the whole Dating storage area is off (four groups since 20270262); then the unchanged
+  -- sender still sends nothing
+  update profiles set notification_mutes = '{dating,messages,video_calls,shared_playlists_trips}' where id = a;
+  if (select notify_dating from profiles where id = a) then raise exception 'legacy flag on with the whole area off'; end if;
   update profiles set notification_mutes = '{dating,messages}' where id = a;
   if not (select notify_dating from profiles where id = a) then raise exception 'legacy flag off with Video calls on'; end if;
 

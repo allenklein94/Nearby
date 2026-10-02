@@ -11,9 +11,11 @@ const root = path.join(__dirname, '..', '..');
 const mig = (f) => fs.readFileSync(path.join(root, 'supabase', 'migrations', f), 'utf8');
 const base = mig('20270258_notification_preferences_central.sql'); // derivation trigger, _send_push check
 const sql = mig('20270259_business_owner_notification_preferences.sql'); // seed, owner senders (item 143)
-const msg = mig('20270261_video_calls_notification_group.sql'); // current CHECK, setter, derivation
-// Type moves after the item-143 seed, in order: message -> messages (20270260), video_call -> video_calls (20270261).
-const moves = ['20270260_messages_notification_group.sql', '20270261_video_calls_notification_group.sql'].map(mig).join('\n');
+const msg = mig('20270262_shared_playlists_trips_notification_group.sql'); // current CHECK, setter, derivation
+// Type moves after the item-143 seed, in order: message -> messages (20270260), video_call -> video_calls (20270261),
+// playlist_addition + trip_idea_addition -> shared_playlists_trips (20270262).
+const moves = ['20270260_messages_notification_group.sql', '20270261_video_calls_notification_group.sql',
+  '20270262_shared_playlists_trips_notification_group.sql'].map(mig).join('\n');
 
 describe('every push type is placed exactly once', () => {
   test('8. person-mutable groups + account notices = every push type, exactly once', () => {

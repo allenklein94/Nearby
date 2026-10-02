@@ -1,4 +1,4 @@
-// Notification settings UX (owner, 2026-10-02): the same switches (17: Messages and Video calls split out of Dating), drawn in a few plain sections. Display only: the
+// Notification settings UX (owner, 2026-10-02): the same switches (18: Messages, Video calls and Shared playlists & trips split out of Dating), drawn in a few plain sections. Display only: the
 // storage, the type table and the one sender (_send_push) are unchanged. These tests check that the screen reflects the
 // central mapping and that one switch changes only its own notification types.
 const fs = require('fs');
@@ -78,8 +78,8 @@ describe('one switch changes only its own types', () => {
     expect(isMuted('message', toggleGroup([], 'messages', false))).toBe(true);
   });
   test('earlier Dating opt-outs keep chat messages off (onboarding answer, older column key)', () => {
-    expect(mutesFromOnboardingChoices({ dating: false })).toEqual(['dating', 'messages', 'video_calls']);
-    expect(mutesFromOnboardingChoices({ notify_dating: false })).toEqual(['dating', 'messages', 'video_calls']);
+    expect(mutesFromOnboardingChoices({ dating: false })).toEqual(['dating', 'messages', 'video_calls', 'shared_playlists_trips']);
+    expect(mutesFromOnboardingChoices({ notify_dating: false })).toEqual(['dating', 'messages', 'video_calls', 'shared_playlists_trips']);
   });
   test('toggling one switch never changes another switch', () => {
     const everyOtherOff = NOTIFICATION_GROUPS.filter((x) => x !== 'dating');
@@ -186,7 +186,7 @@ describe('Video calls split from Dating (owner, 20270261)', () => {
   test('7. onboarding and Settings write the same groups through the one mapping', () => {
     expect(toggleGroup([], 'video_calls', false)).toEqual(['video_calls']);
     expect(toggleGroup(['dating', 'messages'], 'video_calls', false)).toEqual(['dating', 'messages', 'video_calls']);
-    expect(mutesFromOnboardingChoices({ dating: false })).toEqual(['dating', 'messages', 'video_calls']);
+    expect(mutesFromOnboardingChoices({ dating: false })).toEqual(['dating', 'messages', 'video_calls', 'shared_playlists_trips']);
     expect(mutesFromOnboardingChoices({ dating: true })).toEqual([]);
   });
   test('9. the older Dating flag cannot override an enabled Video calls switch (derivation needs all three off)', () => {
@@ -196,5 +196,68 @@ describe('Video calls split from Dating (owner, 20270261)', () => {
     const fns = [...mig.matchAll(/create or replace function public\.(\w+)/gi)].map((m) => m[1]).sort();
     expect(fns).toEqual(['_canonical_notification_mutes', '_derive_legacy_notify_columns', 'set_my_notification_group']);
     expect(mig).not.toMatch(/notify_video_call_started\s*\(/);
+  });
+});
+
+describe('Shared playlists & trips split from Dating (owner, 20270262)', () => {
+  const mig = fs.readFileSync(path.join(__dirname, '..', '..', 'supabase', 'migrations', '20270262_shared_playlists_trips_notification_group.sql'), 'utf8');
+  const allowed = (mutes, type) => !isMuted(type, mutes);
+  const BOTH = ['playlist_addition', 'trip_idea_addition'];
+  test('the two types are assigned exactly once, to the new group, which holds nothing else', () => {
+    expect(typesForGroup('shared_playlists_trips').sort()).toEqual(BOTH);
+    for (const t of BOTH) expect(Object.keys(NOTIFICATION_GROUP_BY_TYPE).filter((k) => k === t)).toHaveLength(1);
+    expect(typesForGroup('dating')).not.toEqual(expect.arrayContaining(['playlist_addition']));
+    expect(typesForGroup('dating')).not.toEqual(expect.arrayContaining(['trip_idea_addition']));
+    // the romantic-only "add together" types stay in Dating
+    expect(typesForGroup('dating')).toEqual(expect.arrayContaining(
+      ['shared_decision_addition', 'constitution_addition', 'memory_addition', 'stress_test_addition', 'timeline_addition']));
+  });
+  test('it sits in the People section beside Messages and Video calls, with its own label', () => {
+    expect(SETTINGS_SECTIONS.find((s) => s.groups.includes('shared_playlists_trips')).key).toBe('people');
+    expect(translate('en', groupTextKeys('shared_playlists_trips').label)).toBe('Shared playlists and trips');
+    for (const l of LANGS) expect(translate(l, groupTextKeys('shared_playlists_trips').hint)).not.toMatch(/^ui\./);
+  });
+  test('Dating off with Shared playlists & trips on: both allowed', () => {
+    for (const t of BOTH) expect(allowed(['dating'], t)).toBe(true);
+    for (const t of BOTH) expect(allowed(['dating', 'messages', 'video_calls'], t)).toBe(true);
+    expect(allowed(['dating'], 'new_match')).toBe(false);
+  });
+  test('Shared playlists & trips off: both suppressed, nothing else', () => {
+    for (const t of BOTH) expect(allowed(['shared_playlists_trips'], t)).toBe(false);
+    for (const t of ['message', 'video_call', 'new_match', 'memory_addition']) expect(allowed(['shared_playlists_trips'], t)).toBe(true);
+  });
+  test('Messages and Video calls stay independently configurable', () => {
+    expect(allowed(['messages'], 'message')).toBe(false);
+    expect(allowed(['messages'], 'video_call')).toBe(true);
+    expect(allowed(['video_calls'], 'video_call')).toBe(false);
+    expect(allowed(['video_calls'], 'message')).toBe(true);
+    for (const t of BOTH) { expect(allowed(['messages'], t)).toBe(true); expect(allowed(['video_calls'], t)).toBe(true); }
+  });
+  test('friend and dating matches: the switch is decided by type, never by the kind of match', () => {
+    // one push type each, the same for friend and dating matches (the live script fires both senders from both kinds)
+    expect(Object.keys(NOTIFICATION_GROUP_BY_TYPE).filter((t) => /playlist|trip/.test(t)).sort()).toEqual(BOTH);
+  });
+  test('existing Dating opt-outs are preserved: Dating off gains this switch off; nothing removed, nothing else added', () => {
+    expect(mig).toMatch(/notification_mutes \|\| array\['shared_playlists_trips'\]\)\s+where 'dating' = any \(notification_mutes\)/);
+    const updates = [...mig.matchAll(/update public\.profiles set notification_mutes = ([^\n]*)/g)].map((m) => m[1]);
+    expect(updates).toHaveLength(1);
+    expect(updates[0]).not.toMatch(/array_remove|messages|video_calls/);
+  });
+  test('onboarding and Settings write the same groups through the one mapping', () => {
+    expect(toggleGroup([], 'shared_playlists_trips', false)).toEqual(['shared_playlists_trips']);
+    expect(toggleGroup(['dating', 'video_calls'], 'shared_playlists_trips', false)).toEqual(['dating', 'video_calls', 'shared_playlists_trips']);
+    expect(toggleGroup(['dating', 'shared_playlists_trips'], 'shared_playlists_trips', true)).toEqual(['dating']);
+    expect(mutesFromOnboardingChoices({ dating: false })).toContain('shared_playlists_trips');
+    expect(mutesFromOnboardingChoices({ dating: true })).toEqual([]);
+  });
+  test('the older Dating flag cannot override an enabled switch (derivation needs all four off)', () => {
+    expect(mig).toMatch(/new\.notify_dating := not \(m @> array\['dating', 'messages', 'video_calls', 'shared_playlists_trips'\]\)/);
+  });
+  test('no sender, playlist or trip function is changed', () => {
+    const fns = [...mig.matchAll(/create or replace function public\.(\w+)/gi)].map((m) => m[1]).sort();
+    expect(fns).toEqual(['_canonical_notification_mutes', '_derive_legacy_notify_columns', 'set_my_notification_group']);
+    expect(mig).not.toMatch(/notify_(playlist|trip_idea)_addition\s*\(/);
+    const code = mig.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
+    expect(code).not.toMatch(/(shared_playlist_items|trip_ideas)/);
   });
 });
