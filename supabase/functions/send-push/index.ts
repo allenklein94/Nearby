@@ -193,23 +193,8 @@ const NOTIFICATION_ACTION_BY_TYPE = {
   business_offer_accepted: 'view_booking',
   reservation_cancelled_by_customer: 'view_booking'
 };
-// Business-owner mute groups (business_notification_prefs). MUST match
-// src/constants/businessNotificationGroups.js BUSINESS_NOTIFICATION_GROUP_BY_TYPE (Jest asserts equality).
-const BUSINESS_NOTIFICATION_GROUP_BY_TYPE = {
-  business_opportunity_received: 'requests',
-  business_opportunities_digest: 'requests',
-  business_request_cancelled: 'requests',
-  business_request_expiring: 'requests',
-  business_offer_accepted: 'offers',
-  business_offer_declined: 'offers',
-  business_offer_review_result: 'offers',
-  business_offer_withdrawn: 'offers',
-  business_reservation_confirmed: 'reservations',
-  business_reservation_cancelled: 'reservations',
-  reservation_cancelled_by_customer: 'reservations',
-  aggregated_demand_growing: 'demand',
-  occasion_demand_growing: 'demand'
-};
+// Item 143: a person's notification choices (customer and business-owner alike) are applied once, in the database's
+// _send_push, before anything reaches this function; nothing here mutes.
 // The opportunity digest is low priority (quiet push) but it is THE summary a web-only owner needs, so it is also emailed.
 const EMAIL_EXTRA_TYPES = new Set(['business_opportunity_received', 'business_opportunities_digest']);
 function notificationPriority(type) {
@@ -243,19 +228,6 @@ serve(async (req)=>{
     }
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
     const { data: profile } = await admin.from('profiles').select('expo_push_token').eq('id', recipient_id).maybeSingle();
-    // Owner mute preferences apply to push AND email. Only owners have a row; account events map to no group.
-    const muteGroup = BUSINESS_NOTIFICATION_GROUP_BY_TYPE[data?.type];
-    if (muteGroup) {
-      const { data: prefs } = await admin.from('business_notification_prefs').select('muted_groups').eq('user_id', recipient_id).maybeSingle();
-      if (prefs?.muted_groups?.includes(muteGroup)) {
-        return new Response(JSON.stringify({
-          ok: true,
-          skipped: 'muted'
-        }), {
-          status: 200
-        });
-      }
-    }
     const notifPriority = notificationPriority(data?.type);
     if (!profile?.expo_push_token) {
       // Business Web parity: an owner who only uses the website has no push token. If they have a verified, enabled

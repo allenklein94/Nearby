@@ -24,7 +24,7 @@ const opp = (over = {}, req = {}) => ({
 describe('the push opens the exact request', () => {
   test('type, action and mute group', () => {
     expect(NOTIFICATION_ACTION_BY_TYPE.business_request_expiring).toBe('review_request');
-    expect(BUSINESS_NOTIFICATION_GROUP_BY_TYPE.business_request_expiring).toBe('requests'); // the owner's "New requests" mute applies
+    expect(BUSINESS_NOTIFICATION_GROUP_BY_TYPE.business_request_expiring).toBe('requests'); // the owner's "New requests" (owner_requests) mute applies
   });
   test('destination = the business dashboard focused on that request, never a generic screen', async () => {
     expect(await notificationDestination({ type: 'business_request_expiring', request_id: 'r1', offer_id: 'o1', partner_id: 'b' }))

@@ -133,15 +133,15 @@ export default {
     notifGroup: {
       requests: {
         label: "New requests",
-        detail: "A customer asks for something you could offer, or cancels a request.",
+        detail: "A customer asks for something you could offer, a request is about to expire, or a customer cancels one.",
       },
       offers: {
-        label: "Offer responses",
-        detail: "A customer accepts, declines or withdraws one of your offers.",
+        label: "Your offers",
+        detail: "A customer accepts one of your offers, or our review of it finishes.",
       },
       reservations: {
         label: "Reservations",
-        detail: "A reservation is confirmed or cancelled.",
+        detail: "A customer cancels a reservation with you.",
       },
       demand: {
         label: "Demand signals",
@@ -281,15 +281,15 @@ export default {
     notifGroup: {
       requests: {
         label: "Nuevas solicitudes",
-        detail: "Un cliente pide algo que podrías ofrecer, o cancela una solicitud.",
+        detail: "Un cliente pide algo que podrías ofrecer, una solicitud está por vencer o un cliente cancela una.",
       },
       offers: {
-        label: "Respuestas a ofertas",
-        detail: "Un cliente acepta, rechaza o retira una de tus ofertas.",
+        label: "Tus ofertas",
+        detail: "Un cliente acepta una de tus ofertas o termina nuestra revisión de ella.",
       },
       reservations: {
         label: "Reservas",
-        detail: "Se confirma o se cancela una reserva.",
+        detail: "Un cliente cancela una reserva contigo.",
       },
       demand: {
         label: "Señales de demanda",
@@ -429,15 +429,15 @@ export default {
     notifGroup: {
       requests: {
         label: "Neue Anfragen",
-        detail: "Ein Kunde fragt nach etwas, das du anbieten könntest, oder storniert eine Anfrage.",
+        detail: "Ein Kunde fragt nach etwas, das du anbieten könntest, eine Anfrage läuft bald ab oder ein Kunde storniert eine.",
       },
       offers: {
-        label: "Antworten auf Angebote",
-        detail: "Ein Kunde nimmt eines deiner Angebote an, lehnt es ab oder zieht es zurück.",
+        label: "Deine Angebote",
+        detail: "Ein Kunde nimmt eines deiner Angebote an oder unsere Prüfung ist abgeschlossen.",
       },
       reservations: {
         label: "Reservierungen",
-        detail: "Eine Reservierung wird bestätigt oder storniert.",
+        detail: "Ein Kunde storniert eine Reservierung bei dir.",
       },
       demand: {
         label: "Nachfragesignale",
@@ -577,15 +577,15 @@ export default {
     notifGroup: {
       requests: {
         label: "Nouvelles demandes",
-        detail: "Un client demande quelque chose que vous pourriez proposer, ou annule une demande.",
+        detail: "Un client demande quelque chose que vous pourriez proposer, une demande va bientôt expirer ou un client en annule une.",
       },
       offers: {
-        label: "Réponses aux offres",
-        detail: "Un client accepte, refuse ou retire l'une de vos offres.",
+        label: "Vos offres",
+        detail: "Un client accepte l'une de vos offres, ou notre vérification est terminée.",
       },
       reservations: {
         label: "Réservations",
-        detail: "Une réservation est confirmée ou annulée.",
+        detail: "Un client annule une réservation chez vous.",
       },
       demand: {
         label: "Signaux de demande",
@@ -725,15 +725,15 @@ export default {
     notifGroup: {
       requests: {
         label: "Novos pedidos",
-        detail: "Um cliente pede algo que você poderia oferecer, ou cancela um pedido.",
+        detail: "Um cliente pede algo que você poderia oferecer, um pedido está prestes a expirar ou um cliente cancela um.",
       },
       offers: {
-        label: "Respostas a ofertas",
-        detail: "Um cliente aceita, recusa ou retira uma das suas ofertas.",
+        label: "Suas ofertas",
+        detail: "Um cliente aceita uma das suas ofertas ou nossa análise dela termina.",
       },
       reservations: {
         label: "Reservas",
-        detail: "Uma reserva é confirmada ou cancelada.",
+        detail: "Um cliente cancela uma reserva com você.",
       },
       demand: {
         label: "Sinais de demanda",
@@ -873,15 +873,15 @@ export default {
     notifGroup: {
       requests: {
         label: "Nouvo demann",
-        detail: "Yon kliyan mande yon bagay ou ta ka ofri, oswa li anile yon demann.",
+        detail: "Yon kliyan mande yon bagay ou ta ka ofri, yon demann pral ekspire, oswa yon kliyan anile youn.",
       },
       offers: {
-        label: "Repons sou òf",
-        detail: "Yon kliyan aksepte, refize oswa retire youn nan òf ou yo.",
+        label: "Òf ou yo",
+        detail: "Yon kliyan aksepte youn nan òf ou yo, oswa revizyon nou fè sou li fini.",
       },
       reservations: {
         label: "Rezèvasyon",
-        detail: "Yon rezèvasyon konfime oswa anile.",
+        detail: "Yon kliyan anile yon rezèvasyon avè w.",
       },
       demand: {
         label: "Siyal demann",
@@ -1021,15 +1021,15 @@ export default {
     notifGroup: {
       requests: {
         label: "新请求",
-        detail: "顾客请求了你可以提供的东西，或取消了请求。",
+        detail: "顾客请求了你可以提供的东西、某个请求即将过期，或顾客取消了请求。",
       },
       offers: {
-        label: "优惠回复",
-        detail: "顾客接受、拒绝或撤回了你的某个优惠。",
+        label: "你的优惠",
+        detail: "顾客接受了你的某个优惠，或我们对它的审核已完成。",
       },
       reservations: {
         label: "预订",
-        detail: "预订被确认或取消。",
+        detail: "顾客取消了在你这里的预订。",
       },
       demand: {
         label: "需求信号",
@@ -1169,15 +1169,15 @@ export default {
     notifGroup: {
       requests: {
         label: "Yêu cầu mới",
-        detail: "Khách hỏi điều bạn có thể đáp ứng, hoặc hủy một yêu cầu.",
+        detail: "Khách hỏi điều bạn có thể đáp ứng, một yêu cầu sắp hết hạn, hoặc khách hủy một yêu cầu.",
       },
       offers: {
-        label: "Phản hồi ưu đãi",
-        detail: "Khách chấp nhận, từ chối hoặc rút lại một ưu đãi của bạn.",
+        label: "Ưu đãi của bạn",
+        detail: "Khách chấp nhận một ưu đãi của bạn, hoặc việc xem xét ưu đãi đã xong.",
       },
       reservations: {
         label: "Đặt chỗ",
-        detail: "Một đặt chỗ được xác nhận hoặc bị hủy.",
+        detail: "Khách hủy một đặt chỗ với bạn.",
       },
       demand: {
         label: "Tín hiệu nhu cầu",
@@ -1317,15 +1317,15 @@ export default {
     notifGroup: {
       requests: {
         label: "Mga bagong request",
-        detail: "May customer na humihingi ng puwede mong ialok, o nagkansela ng request.",
+        detail: "May customer na humihingi ng puwede mong ialok, may request na malapit nang mag-expire, o may customer na nagkansela.",
       },
       offers: {
-        label: "Mga sagot sa alok",
-        detail: "May customer na tumanggap, tumanggi o bumawi sa isa sa mga alok mo.",
+        label: "Mga alok mo",
+        detail: "May customer na tumanggap sa isa sa mga alok mo, o tapos na ang pagsusuri namin dito.",
       },
       reservations: {
         label: "Mga reservation",
-        detail: "May reservation na nakumpirma o nakansela.",
+        detail: "May customer na nagkansela ng reservation sa iyo.",
       },
       demand: {
         label: "Mga senyales ng demand",
@@ -1465,15 +1465,15 @@ export default {
     notifGroup: {
       requests: {
         label: "Новые заявки",
-        detail: "Клиент просит то, что вы могли бы предложить, или отменяет заявку.",
+        detail: "Клиент просит то, что вы могли бы предложить, срок заявки скоро истекает, или клиент отменяет заявку.",
       },
       offers: {
-        label: "Ответы на предложения",
-        detail: "Клиент принимает, отклоняет или отзывает одно из ваших предложений.",
+        label: "Ваши предложения",
+        detail: "Клиент принимает одно из ваших предложений, или наша проверка завершена.",
       },
       reservations: {
         label: "Бронирования",
-        detail: "Бронирование подтверждено или отменено.",
+        detail: "Клиент отменяет бронирование у вас.",
       },
       demand: {
         label: "Сигналы спроса",
@@ -1613,15 +1613,15 @@ export default {
     notifGroup: {
       requests: {
         label: "새 요청",
-        detail: "고객이 내가 제공할 수 있는 것을 요청하거나 요청을 취소할 때.",
+        detail: "고객이 내가 제공할 수 있는 것을 요청하거나, 요청이 곧 만료되거나, 고객이 요청을 취소할 때.",
       },
       offers: {
-        label: "혜택 응답",
-        detail: "고객이 내 혜택을 수락, 거절 또는 철회할 때.",
+        label: "내 혜택",
+        detail: "고객이 내 혜택을 수락하거나 혜택 검토가 끝났을 때.",
       },
       reservations: {
         label: "예약",
-        detail: "예약이 확정되거나 취소될 때.",
+        detail: "고객이 나와의 예약을 취소할 때.",
       },
       demand: {
         label: "수요 신호",

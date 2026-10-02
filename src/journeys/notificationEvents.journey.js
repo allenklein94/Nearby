@@ -169,8 +169,8 @@ d('journey: domain events -> one notification layer (item 125)', () => {
       'type', (select b->'data'->>'type' from jq where b->'data'->>'request_id' = v_req::text limit 1),
       'leaks_raw_text', position('Coffee for the group' in coalesce(v_body, '')) > 0)));
 
-  -- 4b. muted business: recorded, outcome muted, no push
-  update profiles set notification_mutes = '{business_offers,business_responses}' where id = v_owner;
+  -- 4b. the owner muted "New requests" (item 143: the owner group, not the customer Businesses switches): recorded, muted, no push
+  update profiles set notification_mutes = '{owner_requests}' where id = v_owner;
   v_res := create_business_request_for_gathering(v_g2, 'Another ask', 'Coffee', 20, 15, null, null, v_partner, null);
   v_req2 := (v_res->>'requestId')::uuid;
   update profiles set notification_mutes = '{}' where id = v_owner;

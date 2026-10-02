@@ -9,13 +9,12 @@ const SRC = fs.readFileSync(path.join(__dirname, '../../supabase/functions/send-
 
 const KEY = 'service-key';
 
-function load({ token = null, muted = [], emailSettings = null, webUrl = null } = {}) {
+function load({ token = null, emailSettings = null, webUrl = null } = {}) {
   const emails = [];
   const pushes = [];
   let handler;
   const tables = {
     profiles: { expo_push_token: token },
-    business_notification_prefs: { muted_groups: muted },
     business_email_settings: emailSettings,
   };
   const chain = (table) => {
@@ -78,12 +77,10 @@ describe('business opportunity digest: email fallback (send-push)', () => {
     expect(t.emails).toHaveLength(0);
   });
 
-  it('respects the owner\'s "New requests" mute for push AND email', async () => {
-    const t = load({ emailSettings: VERIFIED, muted: ['requests'] });
-    const { json } = await t.call(DIGEST);
-    expect(json).toMatchObject({ ok: true, skipped: 'muted' });
-    expect(t.emails).toHaveLength(0);
-    expect(t.pushes).toHaveLength(0);
+  it('mutes are decided upstream (item 143): send-push reads no preference, so a muted alert never reaches push OR email', () => {
+    // _send_push drops a muted type before it is queued (scripts/live-verify/business-owner-notification-preferences.sql);
+    // send-push itself must not hold a second copy of anyone's choices.
+    expect(SRC).not.toMatch(/business_notification_prefs|notification_mutes|muted_groups|skipped: 'muted'/);
   });
 
   it('an owner who has a push token gets the quiet push, and no email', async () => {

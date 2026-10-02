@@ -67,6 +67,7 @@ begin
   if (select count(*) from pg_proc where pronamespace = 'public'::regnamespace and proname in ('_send_push', '_notify_event_recipient', 'set_my_notification_group', '_push_muted', 'notify_interested_friend_joined')) <> 5 then
     raise exception '6 overloads';
   end if;
-  if (select count(*) from notification_type_groups) <> 75 then raise exception '6 seed count %', (select count(*) from notification_type_groups); end if;
+  -- 85 since item 143 (75 + business_partnership_response + 9 owner types)
+  if (select count(*) from notification_type_groups) <> 85 then raise exception '6 seed count %', (select count(*) from notification_type_groups); end if;
 end $$;
 select 'ALL OK' as result;

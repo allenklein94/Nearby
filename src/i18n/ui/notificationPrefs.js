@@ -16,8 +16,8 @@ export default {
         hint: "Matches, messages, waves and calls.",
       },
       businesses: {
-        label: "Businesses",
-        hint: "Offers and replies from businesses you asked.",
+        label: "Businesses you use",
+        hint: "Offers and replies to requests you made as a customer.",
       },
       discover: {
         label: "Discover",
@@ -26,6 +26,10 @@ export default {
       communities: {
         label: "Communities",
         hint: "Activity in communities you lead.",
+      },
+      business_owner: {
+        label: "Your business",
+        hint: "Alerts for running your business. Separate from Businesses you use.",
       },
     },
     group: {
@@ -91,8 +95,8 @@ export default {
         hint: "Matches, mensajes, saludos y llamadas.",
       },
       businesses: {
-        label: "Negocios",
-        hint: "Ofertas y respuestas de los negocios a los que preguntaste.",
+        label: "Negocios que usas",
+        hint: "Ofertas y respuestas a las solicitudes que hiciste como cliente.",
       },
       discover: {
         label: "Descubrir",
@@ -101,6 +105,10 @@ export default {
       communities: {
         label: "Comunidades",
         hint: "Actividad en las comunidades que diriges.",
+      },
+      business_owner: {
+        label: "Tu negocio",
+        hint: "Avisos para gestionar tu negocio. Aparte de Negocios que usas.",
       },
     },
     group: {
@@ -166,8 +174,8 @@ export default {
         hint: "Matches, Nachrichten, Winken und Anrufe.",
       },
       businesses: {
-        label: "Geschäfte",
-        hint: "Angebote und Antworten von Geschäften, die du angefragt hast.",
+        label: "Geschäfte, die du nutzt",
+        hint: "Angebote und Antworten auf Anfragen, die du als Kunde gestellt hast.",
       },
       discover: {
         label: "Entdecken",
@@ -176,6 +184,10 @@ export default {
       communities: {
         label: "Communities",
         hint: "Aktivität in Communities, die du leitest.",
+      },
+      business_owner: {
+        label: "Dein Geschäft",
+        hint: "Hinweise zur Führung deines Geschäfts. Getrennt von „Geschäfte, die du nutzt“.",
       },
     },
     group: {
@@ -241,8 +253,8 @@ export default {
         hint: "Matchs, messages, saluts et appels.",
       },
       businesses: {
-        label: "Commerces",
-        hint: "Offres et réponses des commerces que vous avez sollicités.",
+        label: "Commerces que vous utilisez",
+        hint: "Offres et réponses aux demandes que vous avez faites en tant que client.",
       },
       discover: {
         label: "Découvrir",
@@ -251,6 +263,10 @@ export default {
       communities: {
         label: "Communautés",
         hint: "L'activité des communautés que vous animez.",
+      },
+      business_owner: {
+        label: "Votre commerce",
+        hint: "Alertes pour gérer votre commerce. Distinctes de « Commerces que vous utilisez ».",
       },
     },
     group: {
@@ -316,8 +332,8 @@ export default {
         hint: "Matches, mensagens, acenos e chamadas.",
       },
       businesses: {
-        label: "Negócios",
-        hint: "Ofertas e respostas dos negócios que você consultou.",
+        label: "Negócios que você usa",
+        hint: "Ofertas e respostas aos pedidos que você fez como cliente.",
       },
       discover: {
         label: "Descobrir",
@@ -326,6 +342,10 @@ export default {
       communities: {
         label: "Comunidades",
         hint: "Atividade nas comunidades que você lidera.",
+      },
+      business_owner: {
+        label: "Seu negócio",
+        hint: "Alertas para administrar seu negócio. Separados de Negócios que você usa.",
       },
     },
     group: {
@@ -391,8 +411,8 @@ export default {
         hint: "Match, mesaj, salitasyon ak apèl.",
       },
       businesses: {
-        label: "Biznis",
-        hint: "Òf ak repons biznis ou te mande yo.",
+        label: "Biznis ou itilize",
+        hint: "Òf ak repons sou demann ou te fè kòm kliyan.",
       },
       discover: {
         label: "Dekouvri",
@@ -401,6 +421,10 @@ export default {
       communities: {
         label: "Kominote",
         hint: "Aktivite nan kominote ou dirije.",
+      },
+      business_owner: {
+        label: "Biznis ou",
+        hint: "Alèt pou jere biznis ou. Separe ak Biznis ou itilize.",
       },
     },
     group: {
@@ -466,8 +490,8 @@ export default {
         hint: "配对、消息、招呼和通话。",
       },
       businesses: {
-        label: "商家",
-        hint: "你询问过的商家的报价和回复。",
+        label: "你光顾的商家",
+        hint: "你作为顾客发出的请求收到的优惠和回复。",
       },
       discover: {
         label: "发现",
@@ -476,6 +500,10 @@ export default {
       communities: {
         label: "社区",
         hint: "你管理的社区中的动态。",
+      },
+      business_owner: {
+        label: "你的商家",
+        hint: "经营你的商家时的提醒。与“你光顾的商家”分开。",
       },
     },
     group: {
@@ -541,8 +569,8 @@ export default {
         hint: "Ghép đôi, tin nhắn, vẫy tay và cuộc gọi.",
       },
       businesses: {
-        label: "Doanh nghiệp",
-        hint: "Ưu đãi và phản hồi từ các doanh nghiệp bạn đã hỏi.",
+        label: "Doanh nghiệp bạn dùng",
+        hint: "Ưu đãi và phản hồi cho các yêu cầu bạn gửi với tư cách khách hàng.",
       },
       discover: {
         label: "Khám phá",
@@ -551,6 +579,10 @@ export default {
       communities: {
         label: "Cộng đồng",
         hint: "Hoạt động trong các cộng đồng bạn quản lý.",
+      },
+      business_owner: {
+        label: "Doanh nghiệp của bạn",
+        hint: "Thông báo để vận hành doanh nghiệp của bạn. Tách riêng với Doanh nghiệp bạn dùng.",
       },
     },
     group: {
@@ -616,8 +648,8 @@ export default {
         hint: "Mga match, mensahe, kaway at tawag.",
       },
       businesses: {
-        label: "Mga Negosyo",
-        hint: "Mga alok at sagot mula sa mga negosyong tinanong mo.",
+        label: "Mga negosyong ginagamit mo",
+        hint: "Mga alok at sagot sa mga request mo bilang customer.",
       },
       discover: {
         label: "Tuklasin",
@@ -626,6 +658,10 @@ export default {
       communities: {
         label: "Mga Komunidad",
         hint: "Aktibidad sa mga komunidad na pinamumunuan mo.",
+      },
+      business_owner: {
+        label: "Ang negosyo mo",
+        hint: "Mga alerto sa pagpapatakbo ng negosyo mo. Hiwalay sa Mga negosyong ginagamit mo.",
       },
     },
     group: {
@@ -691,8 +727,8 @@ export default {
         hint: "Совпадения, сообщения, приветы и звонки.",
       },
       businesses: {
-        label: "Бизнесы",
-        hint: "Предложения и ответы от бизнесов, к которым вы обращались.",
+        label: "Заведения, которыми вы пользуетесь",
+        hint: "Предложения и ответы на заявки, которые вы отправили как клиент.",
       },
       discover: {
         label: "Открыть",
@@ -701,6 +737,10 @@ export default {
       communities: {
         label: "Сообщества",
         hint: "Активность в сообществах, которые вы ведёте.",
+      },
+      business_owner: {
+        label: "Ваш бизнес",
+        hint: "Уведомления для ведения вашего бизнеса. Отдельно от «Заведения, которыми вы пользуетесь».",
       },
     },
     group: {
@@ -766,8 +806,8 @@ export default {
         hint: "매치, 메시지, 인사, 통화.",
       },
       businesses: {
-        label: "업체",
-        hint: "문의한 업체의 제안과 답변.",
+        label: "이용하는 업체",
+        hint: "고객으로서 보낸 요청에 대한 혜택과 답변.",
       },
       discover: {
         label: "탐색",
@@ -776,6 +816,10 @@ export default {
       communities: {
         label: "커뮤니티",
         hint: "운영 중인 커뮤니티의 활동.",
+      },
+      business_owner: {
+        label: "내 업체",
+        hint: "업체 운영 알림. ‘이용하는 업체’와 별개입니다.",
       },
     },
     group: {

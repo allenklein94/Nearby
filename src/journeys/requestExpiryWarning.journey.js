@@ -11,8 +11,8 @@ const { focusedOpportunityView } = require('../utils/focusedOpportunity');
 const d = hasToken ? describe : describe.skip;
 
 // One gathering + one request addressed to the business (a pending, unanswered offer row), then times set as given.
-const DAYS = { a: 3, b: 4, c: 5, dd: 6, e: 7, f: 8, g: 9, h: 10, i: 11 }; // distinct dates: never the duplicate guard's same ask
-const HOST = { a: 'v_host', b: 'v_host', c: 'v_host', dd: 'v_host', e: 'v_host', f: 'v_host2', g: 'v_host2', h: 'v_host2', i: 'v_host2' }; // the 5-open-requests cap
+const DAYS = { a: 3, b: 4, c: 5, dd: 6, e: 7, f: 8, g: 9, h: 10, i: 11, j: 12 }; // distinct dates: never the duplicate guard's same ask
+const HOST = { a: 'v_host', b: 'v_host', c: 'v_host', dd: 'v_host', e: 'v_host', f: 'v_host2', g: 'v_host2', h: 'v_host2', i: 'v_host2', j: 'v_host2' }; // the 5-open-requests cap
 const mk = (v, created, expires) => `
   perform set_config('request.jwt.claims', json_build_object('sub', ${HOST[v]}, 'role', 'authenticated')::text, true);
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
@@ -30,7 +30,7 @@ d('journey: a request about to expire warns its business once, and the tap shows
     const [host, host2] = await runSql(`select id from profiles where id <> '${owner.id}' and managed_partner_id is null order by created_at limit 2;`);
     const log = await runJourney(`
       v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_host uuid := '${host.id}'; v_host2 uuid := '${host2.id}'; v_other uuid;
-      v_g uuid; a uuid; b uuid; c uuid; dd uuid; e uuid; f uuid; g uuid; h uuid; i uuid; v_n int; v_o record; v_err text; v_list jsonb;`, `
+      v_g uuid; a uuid; b uuid; c uuid; dd uuid; e uuid; f uuid; g uuid; h uuid; i uuid; j uuid; v_n int; v_o record; v_err text; v_list jsonb;`, `
   update brand_partners set active = true, latitude = 40.0, longitude = -75.0 where id = v_partner;
   update profiles set notification_mutes = '{}' where id = v_owner;
   ${mk('a', '1 day', '110 minutes')}
@@ -86,9 +86,15 @@ d('journey: a request about to expire warns its business once, and the tap shows
   perform send_business_request_expiry_warnings();
   log := log || jsonb_build_array(jsonb_build_object('step','warned_when_due','ok', ${warned('b')} = 1));
 
-  -- the owner's business notifications off: nothing
-  ${mk('i', '1 day', '100 minutes')}
+  -- item 143: the owner turned off their CUSTOMER Businesses alerts only: the owner warning still comes
+  ${mk('j', '1 day', '100 minutes')}
   update profiles set notification_mutes = '{business_offers,business_responses}' where id = v_owner;
+  perform send_business_request_expiry_warnings();
+  log := log || jsonb_build_array(jsonb_build_object('step','customer_business_mute_keeps_owner_warning','ok', ${warned('j')} = 1));
+
+  -- the owner's "New requests" (owner_requests) alerts off: nothing, whatever the customer switches say
+  ${mk('i', '1 day', '100 minutes')}
+  update profiles set notification_mutes = '{owner_requests}' where id = v_owner;
   perform send_business_request_expiry_warnings();
   log := log || jsonb_build_array(jsonb_build_object('step','owner_turned_business_notifications_off','ok', ${warned('i')} = 0));
   update profiles set notification_mutes = '{}' where id = v_owner;
@@ -116,7 +122,7 @@ d('journey: a request about to expire warns its business once, and the tap shows
   test.each([
     'open_request_warned', 'not_due_yet', 'arrived_with_under_two_hours', 'already_answered', 'accepted_before',
     'another_business_accepted', 'cancelled_before', 'already_expired', 'only_the_owner', 'duplicate_runs', 'warned_when_due',
-    'owner_turned_business_notifications_off', 'non_owner_refused', 'job_not_client_callable',
+    'customer_business_mute_keeps_owner_warning', 'owner_turned_business_notifications_off', 'non_owner_refused', 'job_not_client_callable',
   ])('%s', (step) => {
     expect(s[step]).toBeDefined();
     expect({ step, ok: s[step].ok, data: s[step].data }).toEqual(expect.objectContaining({ ok: true }));

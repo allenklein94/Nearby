@@ -6,8 +6,8 @@
   "area.friends.hint": "Friend requests, what friends are up to, birthdays.",
   "area.dating.label": "Dating",
   "area.dating.hint": "Matches, messages, waves and calls.",
-  "area.businesses.label": "Businesses",
-  "area.businesses.hint": "Offers and replies from businesses you asked.",
+  "area.businesses.label": "Businesses you use",
+  "area.businesses.hint": "Offers and replies to requests you made as a customer.",
   "area.discover.label": "Discover",
   "area.discover.hint": "Things to do that fit your interests, and people you cross paths with.",
   "area.communities.label": "Communities",
@@ -34,7 +34,9 @@
   "group.discover_nearby_people.hint": "When you cross paths with someone nearby.",
   "group.communities.label": "Community activity",
   "group.communities.hint": "Demand growing in, or a change to, a community you lead.",
-  "toggleA11y": "Notify me about {label}"
+  "toggleA11y": "Notify me about {label}",
+  "area.business_owner.label": "Your business",
+  "area.business_owner.hint": "Alerts for running your business. Separate from Businesses you use."
  },
  "es": {
   "area.plans.label": "Planes",
@@ -43,8 +45,8 @@
   "area.friends.hint": "Solicitudes de amistad, lo que hacen tus amigos, cumpleaños.",
   "area.dating.label": "Citas",
   "area.dating.hint": "Matches, mensajes, saludos y llamadas.",
-  "area.businesses.label": "Negocios",
-  "area.businesses.hint": "Ofertas y respuestas de los negocios a los que preguntaste.",
+  "area.businesses.label": "Negocios que usas",
+  "area.businesses.hint": "Ofertas y respuestas a las solicitudes que hiciste como cliente.",
   "area.discover.label": "Descubrir",
   "area.discover.hint": "Cosas que hacer según tus intereses y personas con las que te cruzas.",
   "area.communities.label": "Comunidades",
@@ -71,7 +73,9 @@
   "group.discover_nearby_people.hint": "Cuando te cruzas con alguien cerca.",
   "group.communities.label": "Actividad de la comunidad",
   "group.communities.hint": "Crece la demanda en una comunidad que diriges o hay un cambio en ella.",
-  "toggleA11y": "Notificarme sobre {label}"
+  "toggleA11y": "Notificarme sobre {label}",
+  "area.business_owner.label": "Tu negocio",
+  "area.business_owner.hint": "Avisos para gestionar tu negocio. Aparte de Negocios que usas."
  },
  "de": {
   "area.plans.label": "Pläne",
@@ -80,8 +84,8 @@
   "area.friends.hint": "Freundschaftsanfragen, was Freunde vorhaben, Geburtstage.",
   "area.dating.label": "Dating",
   "area.dating.hint": "Matches, Nachrichten, Winken und Anrufe.",
-  "area.businesses.label": "Geschäfte",
-  "area.businesses.hint": "Angebote und Antworten von Geschäften, die du angefragt hast.",
+  "area.businesses.label": "Geschäfte, die du nutzt",
+  "area.businesses.hint": "Angebote und Antworten auf Anfragen, die du als Kunde gestellt hast.",
   "area.discover.label": "Entdecken",
   "area.discover.hint": "Unternehmungen passend zu deinen Interessen und Menschen, denen du begegnest.",
   "area.communities.label": "Communities",
@@ -108,7 +112,9 @@
   "group.discover_nearby_people.hint": "Wenn du jemandem in der Nähe begegnest.",
   "group.communities.label": "Community-Aktivität",
   "group.communities.hint": "Wachsende Nachfrage in oder eine Änderung an einer Community, die du leitest.",
-  "toggleA11y": "Benachrichtige mich über {label}"
+  "toggleA11y": "Benachrichtige mich über {label}",
+  "area.business_owner.label": "Dein Geschäft",
+  "area.business_owner.hint": "Hinweise zur Führung deines Geschäfts. Getrennt von „Geschäfte, die du nutzt“."
  },
  "fr": {
   "area.plans.label": "Plans",
@@ -117,8 +123,8 @@
   "area.friends.hint": "Demandes d'amis, ce que font vos amis, anniversaires.",
   "area.dating.label": "Rencontres",
   "area.dating.hint": "Matchs, messages, saluts et appels.",
-  "area.businesses.label": "Commerces",
-  "area.businesses.hint": "Offres et réponses des commerces que vous avez sollicités.",
+  "area.businesses.label": "Commerces que vous utilisez",
+  "area.businesses.hint": "Offres et réponses aux demandes que vous avez faites en tant que client.",
   "area.discover.label": "Découvrir",
   "area.discover.hint": "Des sorties selon vos centres d'intérêt et les personnes que vous croisez.",
   "area.communities.label": "Communautés",
@@ -145,7 +151,9 @@
   "group.discover_nearby_people.hint": "Quand vous croisez quelqu'un à proximité.",
   "group.communities.label": "Activité de la communauté",
   "group.communities.hint": "La demande grandit dans une communauté que vous animez, ou elle change.",
-  "toggleA11y": "Me prévenir pour {label}"
+  "toggleA11y": "Me prévenir pour {label}",
+  "area.business_owner.label": "Votre commerce",
+  "area.business_owner.hint": "Alertes pour gérer votre commerce. Distinctes de « Commerces que vous utilisez »."
  },
  "pt": {
   "area.plans.label": "Planos",
@@ -154,8 +162,8 @@
   "area.friends.hint": "Pedidos de amizade, o que seus amigos estão fazendo, aniversários.",
   "area.dating.label": "Encontros",
   "area.dating.hint": "Matches, mensagens, acenos e chamadas.",
-  "area.businesses.label": "Negócios",
-  "area.businesses.hint": "Ofertas e respostas dos negócios que você consultou.",
+  "area.businesses.label": "Negócios que você usa",
+  "area.businesses.hint": "Ofertas e respostas aos pedidos que você fez como cliente.",
   "area.discover.label": "Descobrir",
   "area.discover.hint": "Coisas para fazer de acordo com seus interesses e pessoas que cruzam seu caminho.",
   "area.communities.label": "Comunidades",
@@ -182,7 +190,9 @@
   "group.discover_nearby_people.hint": "Quando você cruza com alguém por perto.",
   "group.communities.label": "Atividade da comunidade",
   "group.communities.hint": "A demanda cresce em uma comunidade que você lidera, ou ela muda.",
-  "toggleA11y": "Notificar sobre {label}"
+  "toggleA11y": "Notificar sobre {label}",
+  "area.business_owner.label": "Seu negócio",
+  "area.business_owner.hint": "Alertas para administrar seu negócio. Separados de Negócios que você usa."
  },
  "ht": {
   "area.plans.label": "Plan",
@@ -191,8 +201,8 @@
   "area.friends.hint": "Demann zanmi, sa zanmi ou ap fè, anivèsè.",
   "area.dating.label": "Rankont",
   "area.dating.hint": "Match, mesaj, salitasyon ak apèl.",
-  "area.businesses.label": "Biznis",
-  "area.businesses.hint": "Òf ak repons biznis ou te mande yo.",
+  "area.businesses.label": "Biznis ou itilize",
+  "area.businesses.hint": "Òf ak repons sou demann ou te fè kòm kliyan.",
   "area.discover.label": "Dekouvri",
   "area.discover.hint": "Bagay pou fè ki matche ak enterè ou, ak moun ou kwaze.",
   "area.communities.label": "Kominote",
@@ -219,7 +229,9 @@
   "group.discover_nearby_people.hint": "Lè ou kwaze yon moun toupre.",
   "group.communities.label": "Aktivite kominote",
   "group.communities.hint": "Demann ap grandi nan yon kominote ou dirije, oswa li chanje.",
-  "toggleA11y": "Fè m konnen sou {label}"
+  "toggleA11y": "Fè m konnen sou {label}",
+  "area.business_owner.label": "Biznis ou",
+  "area.business_owner.hint": "Alèt pou jere biznis ou. Separe ak Biznis ou itilize."
  },
  "zh": {
   "area.plans.label": "计划",
@@ -228,8 +240,8 @@
   "area.friends.hint": "好友请求、好友动态、生日。",
   "area.dating.label": "约会",
   "area.dating.hint": "配对、消息、招呼和通话。",
-  "area.businesses.label": "商家",
-  "area.businesses.hint": "你询问过的商家的报价和回复。",
+  "area.businesses.label": "你光顾的商家",
+  "area.businesses.hint": "你作为顾客发出的请求收到的优惠和回复。",
   "area.discover.label": "发现",
   "area.discover.hint": "符合你兴趣的活动，以及与你擦肩而过的人。",
   "area.communities.label": "社区",
@@ -256,7 +268,9 @@
   "group.discover_nearby_people.hint": "当你与附近的人擦肩而过时。",
   "group.communities.label": "社区动态",
   "group.communities.hint": "你管理的社区需求增长或发生变化。",
-  "toggleA11y": "通知我：{label}"
+  "toggleA11y": "通知我：{label}",
+  "area.business_owner.label": "你的商家",
+  "area.business_owner.hint": "经营你的商家时的提醒。与“你光顾的商家”分开。"
  },
  "vi": {
   "area.plans.label": "Kế hoạch",
@@ -265,8 +279,8 @@
   "area.friends.hint": "Lời mời kết bạn, bạn bè đang làm gì, sinh nhật.",
   "area.dating.label": "Hẹn hò",
   "area.dating.hint": "Ghép đôi, tin nhắn, vẫy tay và cuộc gọi.",
-  "area.businesses.label": "Doanh nghiệp",
-  "area.businesses.hint": "Ưu đãi và phản hồi từ các doanh nghiệp bạn đã hỏi.",
+  "area.businesses.label": "Doanh nghiệp bạn dùng",
+  "area.businesses.hint": "Ưu đãi và phản hồi cho các yêu cầu bạn gửi với tư cách khách hàng.",
   "area.discover.label": "Khám phá",
   "area.discover.hint": "Hoạt động hợp với sở thích của bạn và những người bạn tình cờ gặp.",
   "area.communities.label": "Cộng đồng",
@@ -293,7 +307,9 @@
   "group.discover_nearby_people.hint": "Khi bạn tình cờ gặp ai đó gần đây.",
   "group.communities.label": "Hoạt động cộng đồng",
   "group.communities.hint": "Nhu cầu tăng hoặc có thay đổi trong cộng đồng bạn quản lý.",
-  "toggleA11y": "Thông báo cho tôi về {label}"
+  "toggleA11y": "Thông báo cho tôi về {label}",
+  "area.business_owner.label": "Doanh nghiệp của bạn",
+  "area.business_owner.hint": "Thông báo để vận hành doanh nghiệp của bạn. Tách riêng với Doanh nghiệp bạn dùng."
  },
  "tl": {
   "area.plans.label": "Mga Plano",
@@ -302,8 +318,8 @@
   "area.friends.hint": "Mga friend request, ginagawa ng mga kaibigan, kaarawan.",
   "area.dating.label": "Dating",
   "area.dating.hint": "Mga match, mensahe, kaway at tawag.",
-  "area.businesses.label": "Mga Negosyo",
-  "area.businesses.hint": "Mga alok at sagot mula sa mga negosyong tinanong mo.",
+  "area.businesses.label": "Mga negosyong ginagamit mo",
+  "area.businesses.hint": "Mga alok at sagot sa mga request mo bilang customer.",
   "area.discover.label": "Tuklasin",
   "area.discover.hint": "Mga gawaing tugma sa interes mo, at mga taong nakakasalubong mo.",
   "area.communities.label": "Mga Komunidad",
@@ -330,7 +346,9 @@
   "group.discover_nearby_people.hint": "Kapag may nakasalubong kang tao sa malapit.",
   "group.communities.label": "Aktibidad ng komunidad",
   "group.communities.hint": "Lumalaki ang demand o may pagbabago sa komunidad na pinamumunuan mo.",
-  "toggleA11y": "Abisuhan ako tungkol sa {label}"
+  "toggleA11y": "Abisuhan ako tungkol sa {label}",
+  "area.business_owner.label": "Ang negosyo mo",
+  "area.business_owner.hint": "Mga alerto sa pagpapatakbo ng negosyo mo. Hiwalay sa Mga negosyong ginagamit mo."
  },
  "ru": {
   "area.plans.label": "Планы",
@@ -339,8 +357,8 @@
   "area.friends.hint": "Заявки в друзья, чем заняты друзья, дни рождения.",
   "area.dating.label": "Знакомства",
   "area.dating.hint": "Совпадения, сообщения, приветы и звонки.",
-  "area.businesses.label": "Бизнесы",
-  "area.businesses.hint": "Предложения и ответы от бизнесов, к которым вы обращались.",
+  "area.businesses.label": "Заведения, которыми вы пользуетесь",
+  "area.businesses.hint": "Предложения и ответы на заявки, которые вы отправили как клиент.",
   "area.discover.label": "Открыть",
   "area.discover.hint": "Занятия по вашим интересам и люди, с которыми вы пересекаетесь.",
   "area.communities.label": "Сообщества",
@@ -367,7 +385,9 @@
   "group.discover_nearby_people.hint": "Когда вы пересекаетесь с кем-то рядом.",
   "group.communities.label": "Активность сообщества",
   "group.communities.hint": "Растёт спрос в сообществе, которое вы ведёте, или оно меняется.",
-  "toggleA11y": "Уведомлять о: {label}"
+  "toggleA11y": "Уведомлять о: {label}",
+  "area.business_owner.label": "Ваш бизнес",
+  "area.business_owner.hint": "Уведомления для ведения вашего бизнеса. Отдельно от «Заведения, которыми вы пользуетесь»."
  },
  "ko": {
   "area.plans.label": "계획",
@@ -376,8 +396,8 @@
   "area.friends.hint": "친구 요청, 친구 소식, 생일.",
   "area.dating.label": "데이트",
   "area.dating.hint": "매치, 메시지, 인사, 통화.",
-  "area.businesses.label": "업체",
-  "area.businesses.hint": "문의한 업체의 제안과 답변.",
+  "area.businesses.label": "이용하는 업체",
+  "area.businesses.hint": "고객으로서 보낸 요청에 대한 혜택과 답변.",
   "area.discover.label": "탐색",
   "area.discover.hint": "관심사에 맞는 할 일과 마주친 사람들.",
   "area.communities.label": "커뮤니티",
@@ -404,6 +424,8 @@
   "group.discover_nearby_people.hint": "주변에서 누군가와 마주쳤을 때.",
   "group.communities.label": "커뮤니티 활동",
   "group.communities.hint": "운영 중인 커뮤니티의 수요 증가나 변경.",
-  "toggleA11y": "{label} 알림 받기"
+  "toggleA11y": "{label} 알림 받기",
+  "area.business_owner.label": "내 업체",
+  "area.business_owner.hint": "업체 운영 알림. ‘이용하는 업체’와 별개입니다."
  }
 }

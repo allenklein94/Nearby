@@ -3,7 +3,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch, Linking, Platform, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../services/supabase';
-import { NOTIFICATION_AREAS, toggleGroup } from '../constants/notificationPreferences';
+import { visibleNotificationAreas, groupTextKeys, toggleGroup } from '../constants/notificationPreferences';
 import { setMyNotificationGroup } from '../services/notificationPrefs';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -82,6 +82,8 @@ export default function SettingsScreen({ navigation, route }) {
   // Item 142: notification choices are groups the person turned off (profiles.notification_mutes), one switch per group,
   // grouped by area (constants/notificationPreferences.js). Applied centrally by the server's push sender.
   const [notificationMutes, setNotificationMutes] = useState([]);
+  // Item 143: a business owner also sees 'Your business' (operational alerts), separate from 'Businesses you use'.
+  const [isBusinessOwner, setIsBusinessOwner] = useState(false);
   const [osNotifPermission, setOsNotifPermission] = useState('granted');
 
   // External UX critique item 17 follow-up (2026-09-11): the "this matches
@@ -188,6 +190,7 @@ export default function SettingsScreen({ navigation, route }) {
     const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
     if (data) {
       setNotificationMutes(data.notification_mutes ?? []);
+      setIsBusinessOwner(!!data.managed_partner_id);
       setMyInterests(data.interests ?? []);
       loadLearned();
       setMotivations(data.onboarding_motivations ?? []);
@@ -652,18 +655,20 @@ export default function SettingsScreen({ navigation, route }) {
 
         <Text style={styles.groupHeader} accessibilityRole="header">{t('settings.notifications')}</Text>
         <View style={styles.card}>
-          {NOTIFICATION_AREAS.map((area, ai) => (
+          {visibleNotificationAreas({ isBusinessOwner }).map((area, ai) => (
             <View key={area.key}>
               {ai > 0 && <View style={styles.divider} />}
               <Text style={styles.settingLabel} accessibilityRole="header">{area.icon} {t(`ui.notificationPrefs.area.${area.key}.label`)}</Text>
+              <Text style={styles.helperText}>{t(`ui.notificationPrefs.area.${area.key}.hint`)}</Text>
               {area.groups.map((g) => {
                 const on = !notificationMutes.includes(g);
-                const label = t(`ui.notificationPrefs.group.${g}.label`);
+                const keys = groupTextKeys(g);
+                const label = t(keys.label);
                 return (
                   <View key={g}>
                     <View style={styles.settingRow}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.helperText}><Text style={{ fontWeight: '600' }}>{label}</Text>{'\n'}{t(`ui.notificationPrefs.group.${g}.hint`)}</Text>
+                        <Text style={styles.helperText}><Text style={{ fontWeight: '600' }}>{label}</Text>{'\n'}{t(keys.hint)}</Text>
                       </View>
                       <Switch
                         value={on}

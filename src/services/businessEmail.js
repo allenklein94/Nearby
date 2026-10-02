@@ -1,4 +1,6 @@
 import { supabase, functionUrl } from './supabase';
+import { setMyNotificationGroup } from './notificationPrefs';
+import { isOwnerGroup } from '../constants/notificationPreferences';
 
 // Business owner email notifications (20261208_business_email_notifications.sql + business-email Edge Function). Lets a
 // website-only owner (no phone push token) still get Important-tier alerts by email. Address is verified with a 6-digit code.
@@ -35,16 +37,21 @@ export async function setBusinessEmailEnabled(enabled) {
   if (error) throw new Error(error.message);
 }
 
-// Muted business notification groups (business_notification_prefs); [] when nothing is muted, null for a non-owner.
+// Item 143: a business owner's muted alert groups, read from and written to the ONE store (profiles.notification_mutes,
+// owner_* groups) through the same setter as every other notification choice. Short keys ('requests'...) for the dashboard
+// card; null for someone who does not manage a business.
 export async function getMyBusinessNotificationPrefs() {
-  const { data, error } = await supabase.rpc('get_my_business_notification_prefs');
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth?.user?.id;
+  if (!uid) return null;
+  const { data, error } = await supabase.from('profiles').select('notification_mutes, managed_partner_id').eq('id', uid).single();
   if (error) throw new Error(error.message);
-  return data ?? null;
+  if (!data?.managed_partner_id) return null;
+  return (data.notification_mutes ?? []).filter((g) => isOwnerGroup(g)).map((g) => g.slice('owner_'.length));
 }
 
 export async function setBusinessNotificationGroupMuted(group, muted) {
-  const { error } = await supabase.rpc('set_my_business_notification_group', { group_param: group, muted_param: muted });
-  if (error) throw new Error(error.message);
+  await setMyNotificationGroup(`owner_${group}`, !muted);
 }
 
 const REASON_COPY = {
