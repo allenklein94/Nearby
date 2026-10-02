@@ -7,6 +7,7 @@ import { quickOptionLabel } from '../i18n/optionLabels';
 import { resultRowView, contextItem } from '../utils/recommendationContext';
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
+import ReturnTrailChip from '../components/ReturnTrailChip';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
 import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge, FoundLine, showSuccessToast } from '../motion';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -1517,6 +1518,7 @@ export default function HomeScreen({ navigation }) {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <ReturnTrailChip tab="Home" />
         <NLoader fullScreen={false} />
         <Text style={styles.loadingText}>{t('ui.home.loading')}</Text>
       </SafeAreaView>
@@ -1526,6 +1528,7 @@ export default function HomeScreen({ navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
+        <ReturnTrailChip tab="Home" />
         <LoadErrorState message={t('ui.home.loadError')} onRetry={load} />
       </SafeAreaView>
     );
@@ -1533,6 +1536,7 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <ReturnTrailChip tab="Home" />
       <ScrollView
         // paddingBottom must clear the fixed "+ Start Something" FAB below
         // (position: absolute, pinned bottom-right) -- at xxl*2 the FAB

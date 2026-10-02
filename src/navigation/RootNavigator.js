@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { openOnTop, linkActionFromState } from './openOnTop';
+import { noteNavigationState, clearTrail } from './returnTrail';
 import { registerForPushNotifications, updateBadgeCount, consumePendingNotificationTap } from '../services/notifications';
 import { startBackgroundPresenceReporting } from '../services/proximity';
 import { initPurchases } from '../services/purchases';
@@ -298,6 +299,11 @@ export default function RootNavigator() {
   const reduceMotion = useReduceMotion();
   const { colors } = useTheme();
 
+  // Item 139: a return trail never outlives the session that made it.
+  useEffect(() => {
+    if (!session) clearTrail();
+  }, [session]);
+
   // Runs once, independent of auth state, so a nearby://gathering/:id link
   // tapped before signing in (or mid-onboarding) isn't lost — see the
   // PENDING_GATHERING_LINK_KEY comment above the linking config.
@@ -420,7 +426,7 @@ export default function RootNavigator() {
   if (loading || (session && profileLoading) || brandTransitioning) return <NLoader />;
 
   return (
-    <NavigationContainer ref={navigationRef} linking={linking}>
+    <NavigationContainer ref={navigationRef} linking={linking} onStateChange={noteNavigationState}>
       <Stack.Navigator screenOptions={{ headerShown: false, ...(reduceMotion ? { animation: 'fade' } : null) }}>
         {!session ? (
           <>

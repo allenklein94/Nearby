@@ -18,6 +18,7 @@ import { behaviorNudge, broadGroupNudge, relatedHobbyNudge } from '../constants/
 import { relatedHobbyFor, relatedInterestReason } from '../constants/hobbyRelations';
 import { getFriendsInterestedIn } from '../services/friendInterests';
 import { friendsInterestReason } from '../utils/friendInterests';
+import ReturnTrailChip from '../components/ReturnTrailChip';
 import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Alert, BackHandler } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Video } from 'expo-av';
@@ -1950,6 +1951,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <ReturnTrailChip tab="Discover" />
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>

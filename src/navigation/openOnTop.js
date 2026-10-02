@@ -1,5 +1,6 @@
 import { StackActions, CommonActions, getActionFromState as defaultGetActionFromState } from '@react-navigation/native';
 import { notificationNavAction } from './notificationNav';
+import { beginTrail, TAB_HOST } from './returnTrail';
 
 // Item 139: the one way an outside entry (push tap, nearby:// link) opens an
 // object: on top of the current history, refreshed in place when it is already
@@ -13,6 +14,8 @@ export function openOnTop(ref, name, params) {
   } else if (action === 'push') {
     ref.dispatch(StackActions.push(name, params));
   } else {
+    // A tab destination closes the screens above the tabs; remember them (returnTrail.js).
+    if (name === TAB_HOST) beginTrail(ref.getRootState(), params?.screen ?? null);
     ref.navigate(name, params);
   }
 }
