@@ -55,31 +55,28 @@ export async function registerForPushNotifications(userId) {
   await supabase.from('profiles').update({ expo_push_token: token }).eq('id', userId);
 
   if (Platform.OS === 'android') {
-    // Item 110 (CLAUDE.md, "distinguish Important (relationship/
-    // contextual) from Recommendation (discovery)... much less spammy"):
-    // two real Android channels, matching notificationTier()'s own two
-    // tiers -- send-push (the one Edge Function every push actually goes
-    // through) sets `channelId` on the outbound Expo push request using
-    // that same classifier, so a "Sarah's birthday is in 7 days" push
-    // lands on the HIGH-importance channel (heads-up + sound, today's
-    // existing behavior, unchanged) while a "New live music nearby" push
-    // lands quietly on the LOW-importance one (tray only, no heads-up, no
-    // sound) instead of interrupting the same way. 'default' is kept
-    // registered too as a harmless fallback for any push that somehow
-    // arrives with no channelId (an already-installed client that hasn't
-    // picked up this update yet, or a future bug) -- Android silently
-    // falls back to it rather than dropping the notification.
+    // Item 141: one Android channel per notification priority (constants/notificationTier.js); send-push sets `channelId`
+    // from the same table. A channel's importance cannot change once created, so each priority has its own id. 'default'
+    // stays registered as a fallback for a push that arrives with no channelId. Registered on every sign-in (JavaScript, so
+    // any install running this code has all three; a push to a channel a device never created is not shown).
     await Notifications.setNotificationChannelAsync('default', {
       name: 'default',
       importance: Notifications.AndroidImportance.DEFAULT,
       lightColor: '#e94560',
     });
-    await Notifications.setNotificationChannelAsync(ANDROID_NOTIFICATION_CHANNELS.important, {
-      name: 'Important',
+    await Notifications.setNotificationChannelAsync(ANDROID_NOTIFICATION_CHANNELS.high, {
+      name: 'Time-sensitive',
       importance: Notifications.AndroidImportance.HIGH,
       lightColor: '#e94560',
     });
-    await Notifications.setNotificationChannelAsync(ANDROID_NOTIFICATION_CHANNELS.recommendation, {
+    await Notifications.setNotificationChannelAsync(ANDROID_NOTIFICATION_CHANNELS.medium, {
+      name: 'Updates',
+      importance: Notifications.AndroidImportance.DEFAULT,
+      sound: null,
+      enableVibrate: false,
+      lightColor: '#e94560',
+    });
+    await Notifications.setNotificationChannelAsync(ANDROID_NOTIFICATION_CHANNELS.low, {
       name: 'Recommendations',
       importance: Notifications.AndroidImportance.LOW,
       lightColor: '#e94560',

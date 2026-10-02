@@ -4,30 +4,103 @@ import { sendEmail } from '../_shared/email.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-// Item 110 (CLAUDE.md, "distinguish Important (relationship/contextual)
-// from Recommendation (discovery)... much less spammy"): every caller of
-// this function already passes `data.type` (used client-side for tap
-// routing by notifications.js's own routeNotificationTap() switch), so the
-// tier can be derived here with zero changes needed to any of the ~60
-// Postgres notify_* functions that call this. This list MUST be kept in
-// sync with src/constants/notificationTier.js's own RECOMMENDATION_TYPES
-// set (that file's own Jest test guards it against drift on the client
-// side; there is no equivalent automated guard for this Deno copy, since
-// this function can't import from src/ -- re-check both together by hand
-// whenever a push type is added, renamed, or reclassified).
-const RECOMMENDATION_TYPES = new Set([
-  'recommended_gathering',
-  'recommended_business_availability',
-  'first_mission_reminder',
-  'momentum_streak_nudge',
-  'reward_tier_nudge',
-  'business_opportunity_received',
-  'business_opportunities_digest',
-  'aggregated_demand_growing',
-  'occasion_demand_growing',
-  'community_area_demand_growing',
-  'group_intent_signal'
-]);
+// Item 141: notification priority (high / medium / low) per push type, and how each is delivered. MUST equal
+// src/constants/notificationTier.js NOTIFICATION_PRIORITY_BY_TYPE and PRIORITY_DELIVERY (Jest asserts equality). Unknown = medium.
+const NOTIFICATION_PRIORITY_BY_TYPE = {
+  business_offer_received: 'high',
+  social_offer_received: 'high',
+  group_plan_offer_pending: 'high',
+  business_request_expiring: 'high',
+  gathering_reminder: 'high',
+  gathering_updated: 'high',
+  gathering_cancelled: 'high',
+  community_cancelled: 'high',
+  plan_item_time_changed: 'high',
+  plan_reservation_cancelled: 'high',
+  plan_cancelled: 'high',
+  occasion_group_plan_cancelled: 'high',
+  business_reservation_cancelled: 'high',
+  message: 'high',
+  video_call: 'high',
+  business_opportunity_received: 'high',
+  business_offer_accepted: 'high',
+  reservation_cancelled_by_customer: 'high',
+  match: 'medium',
+  new_match: 'medium',
+  friend_discovery_match: 'medium',
+  wave: 'medium',
+  screenshot: 'medium',
+  friend_request: 'medium',
+  friend_accepted: 'medium',
+  birthday: 'medium',
+  friend_joined_gathering: 'medium',
+  occasion_surprise_revealed: 'medium',
+  gathering_approved: 'medium',
+  gathering_waitlisted: 'medium',
+  gathering_interest: 'medium',
+  gathering_invite: 'medium',
+  gathering_business_reminder: 'medium',
+  birthday_upcoming: 'medium',
+  anniversary_upcoming: 'medium',
+  occasion_upcoming: 'medium',
+  business_reservation_confirmed: 'medium',
+  plan_organizer_added: 'medium',
+  plan_confirmed: 'medium',
+  plan_addon_removed: 'medium',
+  business_offer_withdrawn: 'medium',
+  business_offer_declined: 'medium',
+  business_request_all_declined: 'medium',
+  group_plan_invite: 'medium',
+  group_plan_response: 'medium',
+  group_plan_confirmed: 'medium',
+  group_plan_reservation_confirmed: 'medium',
+  group_plan_removed: 'medium',
+  social_offer_responded: 'medium',
+  date_proposal: 'medium',
+  date_proposal_response: 'medium',
+  experience_shared: 'medium',
+  preference_poll_received: 'medium',
+  occasion_group_plan_invite: 'medium',
+  occasion_group_plan_decided: 'medium',
+  occasion_group_plan_voting_business: 'medium',
+  occasion_group_plan_stalled: 'medium',
+  occasion_group_plan_date_set: 'medium',
+  occasion_group_plan_guest_rsvp: 'medium',
+  business_partner_approved: 'medium',
+  business_partner_denied: 'medium',
+  business_partner_needs_info: 'medium',
+  business_partnership_response: 'medium',
+  business_request_cancelled: 'medium',
+  business_offer_review_result: 'medium',
+  recommended_gathering: 'low',
+  recurring_gathering: 'low',
+  recommended_business_availability: 'low',
+  group_intent_signal: 'low',
+  crossed_paths_sighting: 'low',
+  new_story: 'low',
+  business_update: 'low',
+  business_recall_outreach: 'low',
+  first_mission_reminder: 'low',
+  momentum_streak_nudge: 'low',
+  reward_tier_nudge: 'low',
+  match_reminder: 'low',
+  playlist_addition: 'low',
+  trip_idea_addition: 'low',
+  shared_decision_addition: 'low',
+  constitution_addition: 'low',
+  memory_addition: 'low',
+  stress_test_addition: 'low',
+  timeline_addition: 'low',
+  aggregated_demand_growing: 'low',
+  occasion_demand_growing: 'low',
+  community_area_demand_growing: 'low',
+  business_opportunities_digest: 'low'
+};
+const PRIORITY_DELIVERY = {
+  high: { sound: 'default', priority: 'high', channelId: 'important-alerts', interruptionLevel: 'active' },
+  medium: { sound: null, priority: 'default', channelId: 'updates', interruptionLevel: 'active' },
+  low: { sound: null, priority: 'normal', channelId: 'recommendations', interruptionLevel: 'passive' }
+};
 // Item 140: each push type's next-action button (the push's categoryId; the app registers the categories with labels in the
 // person's language). MUST equal src/constants/notificationActions.js NOTIFICATION_ACTION_BY_TYPE (Jest asserts equality).
 const NOTIFICATION_ACTION_BY_TYPE = {
@@ -137,10 +210,10 @@ const BUSINESS_NOTIFICATION_GROUP_BY_TYPE = {
   aggregated_demand_growing: 'demand',
   occasion_demand_growing: 'demand'
 };
-// A new request is recommendation-tier (quiet push) but it is THE alert a web-only owner needs, so it is also emailed.
+// The opportunity digest is low priority (quiet push) but it is THE summary a web-only owner needs, so it is also emailed.
 const EMAIL_EXTRA_TYPES = new Set(['business_opportunity_received', 'business_opportunities_digest']);
-function notificationTier(type) {
-  return RECOMMENDATION_TYPES.has(type) ? 'recommendation' : 'important';
+function notificationPriority(type) {
+  return NOTIFICATION_PRIORITY_BY_TYPE[type] ?? 'medium';
 }
 serve(async (req)=>{
   try {
@@ -183,14 +256,14 @@ serve(async (req)=>{
         });
       }
     }
-    const tier = notificationTier(data?.type);
+    const notifPriority = notificationPriority(data?.type);
     if (!profile?.expo_push_token) {
       // Business Web parity: an owner who only uses the website has no push token. If they have a verified, enabled
-      // email address (business_email_settings) send the same alert there -- Important-tier plus new requests, so a
-      // web-only owner isn't flooded with recommendations. No-op (and never an error) until the email provider is configured.
+      // email address (business_email_settings) send the same alert there -- high and medium priority plus new requests, so a
+      // web-only owner isn't flooded with low-priority discovery. No-op (and never an error) until the email provider is configured.
       let emailed = false;
       let emailReason;
-      if (tier === 'important' || EMAIL_EXTRA_TYPES.has(data?.type)) {
+      if (notifPriority !== 'low' || EMAIL_EXTRA_TYPES.has(data?.type)) {
         const { data: es } = await admin.from('business_email_settings').select('email, verified_at, enabled').eq('user_id', recipient_id).maybeSingle();
         if (es?.email && es.verified_at && es.enabled) {
           const webUrl = Deno.env.get('BUSINESS_WEB_URL');
@@ -210,7 +283,7 @@ serve(async (req)=>{
         status: 200
       });
     }
-    const isImportant = tier === 'important';
+    const delivery = PRIORITY_DELIVERY[notifPriority];
     const pushResponse = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
       headers: {
@@ -222,9 +295,7 @@ serve(async (req)=>{
         title,
         body,
         data: data ?? {},
-        sound: isImportant ? 'default' : null,
-        priority: isImportant ? 'high' : 'default',
-        channelId: isImportant ? 'important-alerts' : 'recommendations',
+        ...delivery,
         ...(NOTIFICATION_ACTION_BY_TYPE[data?.type] ? { categoryId: `nearby_${NOTIFICATION_ACTION_BY_TYPE[data?.type]}` } : {})
       })
     });
