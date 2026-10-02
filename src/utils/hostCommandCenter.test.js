@@ -142,9 +142,68 @@ describe('actions', () => {
     expect(detail).toMatch(/canEdit=\{can\('edit'\)\}/);
     expect(detail).toMatch(/canInvite=\{canInvite && viewer\.time !== 'past'\}/);
   });
-  test('pending join requests always show (they need a decision); everyone else folds behind Manage attendees', () => {
+  test('pending join requests always surface (a Review row, item 144); everyone else folds behind Manage attendees', () => {
     const mgr = read('components/HostAttendeeManager.js');
-    expect(mgr).toMatch(/expanded \? rows : \(rows \?\? \[\]\)\.filter\(\(r\) => r\.status === 'pending'\)/);
+    expect(mgr).toMatch(/if \(!expanded\) \{\s*if \(!review\.show\) return null;/);
     expect(detail).toMatch(/<HostAttendeeManager gatheringId=\{gatheringId\} onChanged=\{load\} expanded=\{attendeesExpanded\}/);
+  });
+});
+
+// Owner item 144: host approval is visible. "3 requests to join · Review" -> each request "Name / Requested to join"
+// with Approve | Decline, in place on GatheringDetail.
+describe('item 144: join requests have their own Review row', () => {
+  const { hostSummaryStats, pendingReview } = require('./hostCommandCenter');
+  const fs = require('fs');
+  const path = require('path');
+  const manager = fs.readFileSync(path.join(__dirname, '..', 'components/HostAttendeeManager.js'), 'utf8');
+  const center = fs.readFileSync(path.join(__dirname, '..', 'components/HostCommandCenter.js'), 'utf8');
+
+  test('the count comes from the very pending rows the Review opens; nothing pending = no row', () => {
+    const rows = [
+      { id: 1, status: 'pending' }, { id: 2, status: 'approved' }, { id: 3, status: 'pending' },
+      { id: 4, status: 'waitlisted' }, { id: 5, status: 'pending' },
+    ];
+    const r = pendingReview(rows);
+    expect(r.count).toBe(3);
+    expect(r.show).toBe(true);
+    expect(r.rows.map((x) => x.id)).toEqual([1, 3, 5]);
+    expect(pendingReview([{ id: 2, status: 'approved' }]).show).toBe(false);
+    expect(pendingReview(null)).toEqual({ count: 0, rows: [], show: false });
+  });
+
+  test('the stats line no longer repeats the request count (the Review row carries it)', () => {
+    expect(hostSummaryStats({ going: 4, requests: 3, waitlisted: 1, interested: 2 }).map((s) => s.key))
+      .toEqual(['going', 'waitlisted', 'interested']);
+    expect(center).toMatch(/hostSummaryStats\(stats\)/);
+    expect(center).not.toMatch(/hostStats\(stats\)/);
+  });
+
+  test('collapsed: one Review row that opens the requests in place (no navigation)', () => {
+    expect(manager).toMatch(/t\('ui\.hostCenter\.stat\.requests', \{ count: review\.count \}\)/);
+    expect(manager).toMatch(/reviewOpen \? t\('ui\.hostCenter\.review\.hide'\) : t\('ui\.hostCenter\.review\.open'\)/);
+    expect(manager).toMatch(/\{reviewOpen && review\.rows\.map\(renderRow\)\}/);
+    expect(manager).not.toMatch(/navigation\./);
+  });
+
+  test('each request reads "Name / Requested to join" with Approve then Decline', () => {
+    expect(manager).toMatch(/t\('ui\.hostCenter\.review\.requested'\)/);
+    const row = manager.slice(manager.indexOf('const renderRow'));
+    expect(row.indexOf('styles.approveText')).toBeGreaterThan(-1);
+    expect(row.indexOf('styles.approveText')).toBeLessThan(row.indexOf("<Text style={styles.decline}>{t('ui.gatheringParts.decline2')}"));
+    // same server actions as before: approve_gathering_interest, host_remove_gathering_attendee
+    expect(manager).toMatch(/approveInterest\(row\.id\)/);
+    expect(manager).toMatch(/hostRemoveAttendee\(row\.id\)/);
+  });
+
+  test('wording, in all 11 languages', () => {
+    expect(translate('en', 'ui.hostCenter.review.open')).toBe('Review');
+    expect(translate('en', 'ui.hostCenter.review.requested')).toBe('Requested to join');
+    for (const lang of ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl', 'ru', 'ko']) {
+      for (const k of ['open', 'hide', 'requested', 'a11y']) {
+        const v = translate(lang, `ui.hostCenter.review.${k}`);
+        expect(v).not.toMatch(/^ui\./);
+        expect(v.length).toBeGreaterThan(0);
+      }
+    }
   });
 });

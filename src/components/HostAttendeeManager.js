@@ -5,17 +5,20 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { getGatheringRequestsForHost, approveInterest, hostRemoveAttendee } from '../services/gatherings';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
+import { pendingReview } from '../utils/hostCommandCenter';
 
 // Host-only: approve/decline join requests and remove attendees, inline on
 // GatheringDetail (the one place everything about a gathering is managed).
 // Same RPCs and copy the Gatherings hosting list uses.
-// expanded=false (the host command center's default): only pending requests show, because they need a decision; going and
+// expanded=false (the host command center's default): pending requests sit behind one "N requests to join · Review" row
+// (owner item 144); Review opens them in place, each "Name / Requested to join" with Approve | Decline. Going and
 // waitlisted people appear when the host taps "Manage attendees". refreshKey reloads the list when the parent reloads.
 export default function HostAttendeeManager({ gatheringId, onChanged, expanded = true, refreshKey }) {
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [rows, setRows] = useState(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   const load = useCallback(async () => {
     setRows(await getGatheringRequestsForHost(gatheringId));
@@ -67,37 +70,66 @@ export default function HostAttendeeManager({ gatheringId, onChanged, expanded =
     );
   }
 
-  const shown = expanded ? rows : (rows ?? []).filter((r) => r.status === 'pending');
-  if (shown == null || shown.length === 0) return null;
+  const review = pendingReview(rows);
 
+  const renderRow = (row) => {
+    const name = row.profiles?.display_name ?? t('ui.gatheringParts.someone');
+    return (
+      <View key={row.id} style={styles.row}>
+        {row.status === 'pending' ? (
+          <View style={styles.who}>
+            <Text style={styles.name}>{name}</Text>
+            <Text style={styles.sub}>{t('ui.hostCenter.review.requested')}</Text>
+          </View>
+        ) : (
+          <Text style={styles.name}>{name}</Text>
+        )}
+        {row.status === 'pending' ? (
+          <View style={styles.actions}>
+            <TouchableOpacity style={styles.approve} onPress={() => handleApprove(row)} accessibilityLabel={t('ui.gatheringParts.approveSRequestA11y', { name: name })} accessibilityRole="button">
+              <Text style={styles.approveText}>{t('ui.gatheringParts.approve')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => confirmRemove(row, true)} accessibilityLabel={t('ui.gatheringParts.declineSRequestA11y', { name: name })} accessibilityRole="button">
+              <Text style={styles.decline}>{t('ui.gatheringParts.decline2')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.actions}>
+            <Text style={styles.status}>{row.status === 'waitlisted' ? t('ui.gatheringParts.waitlisted') : t('ui.gatheringParts.approved2')}</Text>
+            <TouchableOpacity onPress={() => confirmRemove(row, false)} accessibilityLabel={t('ui.gatheringParts.removeA11y', { name: name })} accessibilityRole="button">
+              <Text style={styles.decline}>{t('ui.gatheringParts.remove2')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  // Collapsed (default): the one Review row; tapping it opens the requests in place. No pending request = nothing.
+  if (!expanded) {
+    if (!review.show) return null;
+    return (
+      <View style={styles.wrap}>
+        <TouchableOpacity
+          style={styles.reviewRow}
+          onPress={() => setReviewOpen((v) => !v)}
+          accessibilityRole="button"
+          accessibilityLabel={t('ui.hostCenter.review.a11y')}
+          accessibilityState={{ expanded: reviewOpen }}
+        >
+          <Text style={styles.reviewCount}>{t('ui.hostCenter.stat.requests', { count: review.count })}</Text>
+          <Text style={styles.reviewLink}>{reviewOpen ? t('ui.hostCenter.review.hide') : t('ui.hostCenter.review.open')}</Text>
+        </TouchableOpacity>
+        {reviewOpen && review.rows.map(renderRow)}
+      </View>
+    );
+  }
+
+  if (rows == null || rows.length === 0) return null;
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{t('ui.gatheringParts.requestsAttendees')}</Text>
-      {shown.map((row) => {
-        const name = row.profiles?.display_name ?? t('ui.gatheringParts.someone');
-        return (
-          <View key={row.id} style={styles.row}>
-            <Text style={styles.name}>{name}</Text>
-            {row.status === 'pending' ? (
-              <View style={styles.actions}>
-                <TouchableOpacity onPress={() => confirmRemove(row, true)} accessibilityLabel={t('ui.gatheringParts.declineSRequestA11y', { name: name })} accessibilityRole="button">
-                  <Text style={styles.decline}>{t('ui.gatheringParts.decline2')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.approve} onPress={() => handleApprove(row)} accessibilityLabel={t('ui.gatheringParts.approveSRequestA11y', { name: name })} accessibilityRole="button">
-                  <Text style={styles.approveText}>{t('ui.gatheringParts.approve')}</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.actions}>
-                <Text style={styles.status}>{row.status === 'waitlisted' ? t('ui.gatheringParts.waitlisted') : t('ui.gatheringParts.approved2')}</Text>
-                <TouchableOpacity onPress={() => confirmRemove(row, false)} accessibilityLabel={t('ui.gatheringParts.removeA11y', { name: name })} accessibilityRole="button">
-                  <Text style={styles.decline}>{t('ui.gatheringParts.remove2')}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        );
-      })}
+      {rows.map(renderRow)}
     </View>
   );
 }
@@ -107,6 +139,14 @@ const getStyles = (colors) => StyleSheet.create({
   label: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', marginBottom: spacing.xs },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs },
   name: { color: colors.textPrimary, fontSize: 14, flexShrink: 1 },
+  who: { flexShrink: 1 },
+  sub: { color: colors.textSecondary, fontSize: 12, marginTop: 1 },
+  reviewRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  reviewCount: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
+  reviewLink: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   approve: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6 },
   approveText: { color: '#fff', fontSize: 12, fontWeight: '700' },

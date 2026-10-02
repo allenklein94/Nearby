@@ -44,6 +44,12 @@ export default {
       cancel: "Cancel",
     },
     messageCountA11y: { one: "Message, {count} message in the group chat", other: "Message, {count} messages in the group chat" },
+    review: {
+      open: "Review",
+      hide: "Hide",
+      requested: "Requested to join",
+      a11y: "Review join requests",
+    },
   },
   es: {
     stat: {
@@ -88,6 +94,12 @@ export default {
       cancel: "Cancelar",
     },
     messageCountA11y: { one: "Mensaje, {count} mensaje en el chat del grupo", other: "Mensaje, {count} mensajes en el chat del grupo" },
+    review: {
+      open: "Revisar",
+      hide: "Ocultar",
+      requested: "Pidió unirse",
+      a11y: "Revisar solicitudes para unirse",
+    },
   },
   de: {
     stat: {
@@ -132,6 +144,12 @@ export default {
       cancel: "Absagen",
     },
     messageCountA11y: { one: "Nachricht, {count} Nachricht im Gruppenchat", other: "Nachricht, {count} Nachrichten im Gruppenchat" },
+    review: {
+      open: "Prüfen",
+      hide: "Ausblenden",
+      requested: "Möchte teilnehmen",
+      a11y: "Teilnahmeanfragen prüfen",
+    },
   },
   fr: {
     stat: {
@@ -176,6 +194,12 @@ export default {
       cancel: "Annuler",
     },
     messageCountA11y: { one: "Message, {count} message dans la discussion de groupe", other: "Message, {count} messages dans la discussion de groupe" },
+    review: {
+      open: "Examiner",
+      hide: "Masquer",
+      requested: "A demandé à participer",
+      a11y: "Examiner les demandes de participation",
+    },
   },
   pt: {
     stat: {
@@ -220,6 +244,12 @@ export default {
       cancel: "Cancelar",
     },
     messageCountA11y: { one: "Mensagem, {count} mensagem no chat do grupo", other: "Mensagem, {count} mensagens no chat do grupo" },
+    review: {
+      open: "Revisar",
+      hide: "Ocultar",
+      requested: "Pediu para participar",
+      a11y: "Revisar pedidos de participação",
+    },
   },
   ht: {
     stat: {
@@ -264,6 +294,12 @@ export default {
       cancel: "Anile",
     },
     messageCountA11y: { one: "Mesaj, {count} mesaj nan chat gwoup la", other: "Mesaj, {count} mesaj nan chat gwoup la" },
+    review: {
+      open: "Revize",
+      hide: "Kache",
+      requested: "Mande pou vini",
+      a11y: "Revize demann pou vini",
+    },
   },
   zh: {
     stat: {
@@ -308,6 +344,12 @@ export default {
       cancel: "取消",
     },
     messageCountA11y: { one: "发消息，群聊中有 {count} 条消息", other: "发消息，群聊中有 {count} 条消息" },
+    review: {
+      open: "查看",
+      hide: "收起",
+      requested: "申请加入",
+      a11y: "查看加入申请",
+    },
   },
   vi: {
     stat: {
@@ -352,6 +394,12 @@ export default {
       cancel: "Hủy",
     },
     messageCountA11y: { one: "Nhắn tin, {count} tin nhắn trong nhóm chat", other: "Nhắn tin, {count} tin nhắn trong nhóm chat" },
+    review: {
+      open: "Xem xét",
+      hide: "Ẩn",
+      requested: "Đã xin tham gia",
+      a11y: "Xem xét yêu cầu tham gia",
+    },
   },
   tl: {
     stat: {
@@ -396,6 +444,12 @@ export default {
       cancel: "Kanselahin",
     },
     messageCountA11y: { one: "Mag-message, {count} mensahe sa group chat", other: "Mag-message, {count} mensahe sa group chat" },
+    review: {
+      open: "Suriin",
+      hide: "Itago",
+      requested: "Humiling na sumali",
+      a11y: "Suriin ang mga hiling na sumali",
+    },
   },
   ru: {
     stat: {
@@ -440,6 +494,12 @@ export default {
       cancel: "Отменить",
     },
     messageCountA11y: { one: "Написать, {count} сообщение в групповом чате", few: "Написать, {count} сообщения в групповом чате", many: "Написать, {count} сообщений в групповом чате", other: "Написать, {count} сообщения в групповом чате" },
+    review: {
+      open: "Просмотреть",
+      hide: "Скрыть",
+      requested: "Хочет присоединиться",
+      a11y: "Просмотреть заявки на участие",
+    },
   },
   ko: {
     stat: {
@@ -484,5 +544,11 @@ export default {
       cancel: "취소",
     },
     messageCountA11y: { one: "메시지, 그룹 채팅에 메시지 {count}개", other: "메시지, 그룹 채팅에 메시지 {count}개" },
+    review: {
+      open: "검토",
+      hide: "숨기기",
+      requested: "참여 요청함",
+      a11y: "참여 요청 검토",
+    },
   },
 };

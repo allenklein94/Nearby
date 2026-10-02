@@ -17,6 +17,18 @@ export function hostStats({ going, requests, waitlisted, interested } = {}) {
   return out;
 }
 
+// The stats line under the host's header. Join requests are NOT on it: they have their own "N requests to join · Review"
+// row (owner item 144) counted from the very requests it opens, so the number is never shown twice or disagrees.
+export function hostSummaryStats(stats) {
+  return hostStats(stats).filter((s) => s.key !== 'requests');
+}
+
+// The Review row: present only while there is at least one pending request to decide.
+export function pendingReview(rows) {
+  const pending = (rows ?? []).filter((r) => r.status === 'pending');
+  return { count: pending.length, rows: pending, show: pending.length > 0 };
+}
+
 // One status per invited friend. What they actually did with the gathering beats what they did with the invitation:
 // someone who joined is Going even if they never tapped Accept. Accepting an invitation does NOT join the gathering
 // (respond_to_social_invite only records the answer), so "Accepted" means "said yes, hasn't joined yet".

@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
-import { hostStats, hostActions, messageBadge } from '../utils/hostCommandCenter';
+import { hostSummaryStats, hostActions, messageBadge } from '../utils/hostCommandCenter';
 
 const INVITE_PREVIEW = 5;
 
@@ -31,7 +31,7 @@ export default function HostCommandCenter({
   const styles = getStyles(colors);
   const [showAllInvites, setShowAllInvites] = useState(false);
 
-  const statRows = hostStats(stats);
+  const statRows = hostSummaryStats(stats);
   const invites = invitations ?? [];
   const visibleInvites = showAllInvites ? invites : invites.slice(0, INVITE_PREVIEW);
   const actions = hostActions({ canEdit, canInvite });
