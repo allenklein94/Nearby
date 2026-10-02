@@ -581,7 +581,7 @@ export default function GatheringsScreen({ navigation, route }) {
           {expandedFilterSection === 'when' && (
             <View style={styles.accordionBody}>
               <View style={styles.chipsWrapInline}>
-                {DATE_OPTIONS.map((option) => {
+                {DATE_OPTIONS.filter((o) => !o.contextOnly || o.key === dateFilter).map((option) => {
                   const active = dateFilter === option.key;
                   return (
                     <TapActiveChip

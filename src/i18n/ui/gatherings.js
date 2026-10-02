@@ -36,7 +36,7 @@ export default {
     showDetailsA11y: 'Show details and questions for {title}', hideDetailsA11y: 'Hide details and questions for {title}',
     showDetails: 'Details & questions ⌄', hideDetails: 'Hide details ⌃',
     inviteA11y: 'Invite friends to {title}',
-    dateFilter: { anytime: 'Anytime', now: 'Right Now', soon: 'Starting Soon', today: 'Today', tonight: 'Tonight', tomorrow: 'Tomorrow', weekend: 'This Weekend', week: 'This Week' },
+    dateFilter: { anytime: 'Anytime', now: 'Right Now', soon: 'Starting Soon', today: 'Today', tonight: 'Tonight', morning: 'This Morning', afternoon: 'This Afternoon', tomorrow: 'Tomorrow', weekend: 'This Weekend', week: 'This Week' },
     partyType: { solo: '🧍 Solo-Friendly', friends: '👥 Bring Friends', groups: '👨‍👩‍👧‍👦 Big Group', date: '💕 A Date Idea', family: '👨‍👩‍👧 Family', coworkers: '💼 Coworkers', new_people: '🤝 Meet New People' },
   },
   es: {
@@ -72,7 +72,7 @@ export default {
     showDetailsA11y: 'Mostrar detalles y preguntas de {title}', hideDetailsA11y: 'Ocultar detalles y preguntas de {title}',
     showDetails: 'Detalles y preguntas ⌄', hideDetails: 'Ocultar detalles ⌃',
     inviteA11y: 'Invitar amigos a {title}',
-    dateFilter: { anytime: 'Cuando sea', now: 'Ahora mismo', soon: 'Empieza pronto', today: 'Hoy', tonight: 'Esta noche', tomorrow: 'Mañana', weekend: 'Este fin de semana', week: 'Esta semana' },
+    dateFilter: { anytime: 'Cuando sea', now: 'Ahora mismo', soon: 'Empieza pronto', today: 'Hoy', tonight: 'Esta noche', morning: 'Esta mañana', afternoon: 'Esta tarde', tomorrow: 'Mañana', weekend: 'Este fin de semana', week: 'Esta semana' },
     partyType: { solo: '🧍 Para ir solo', friends: '👥 Con amigos', groups: '👨‍👩‍👧‍👦 Grupo grande', date: '💕 Idea para una cita', family: '👨‍👩‍👧 En familia', coworkers: '💼 Compañeros de trabajo', new_people: '🤝 Conocer gente nueva' },
   },
   de: {
@@ -108,7 +108,7 @@ export default {
     showDetailsA11y: 'Details und Fragen anzeigen: {title}', hideDetailsA11y: 'Details und Fragen ausblenden: {title}',
     showDetails: 'Details & Fragen ⌄', hideDetails: 'Details ausblenden ⌃',
     inviteA11y: 'Freunde einladen zu {title}',
-    dateFilter: { anytime: 'Jederzeit', now: 'Gerade jetzt', soon: 'Beginnt bald', today: 'Heute', tonight: 'Heute Abend', tomorrow: 'Morgen', weekend: 'Dieses Wochenende', week: 'Diese Woche' },
+    dateFilter: { anytime: 'Jederzeit', now: 'Gerade jetzt', soon: 'Beginnt bald', today: 'Heute', tonight: 'Heute Abend', morning: 'Heute Morgen', afternoon: 'Heute Nachmittag', tomorrow: 'Morgen', weekend: 'Dieses Wochenende', week: 'Diese Woche' },
     partyType: { solo: '🧍 Auch allein', friends: '👥 Mit Freunden', groups: '👨‍👩‍👧‍👦 Große Gruppe', date: '💕 Eine Date-Idee', family: '👨‍👩‍👧 Familie', coworkers: '💼 Kollegen', new_people: '🤝 Neue Leute kennenlernen' },
   },
   fr: {
@@ -144,7 +144,7 @@ export default {
     showDetailsA11y: 'Afficher les détails et questions : {title}', hideDetailsA11y: 'Masquer les détails et questions : {title}',
     showDetails: 'Détails et questions ⌄', hideDetails: 'Masquer les détails ⌃',
     inviteA11y: 'Inviter des amis à {title}',
-    dateFilter: { anytime: "N'importe quand", now: 'En ce moment', soon: 'Commence bientôt', today: "Aujourd'hui", tonight: 'Ce soir', tomorrow: 'Demain', weekend: 'Ce week-end', week: 'Cette semaine' },
+    dateFilter: { anytime: "N'importe quand", now: 'En ce moment', soon: 'Commence bientôt', today: "Aujourd'hui", tonight: 'Ce soir', morning: 'Ce matin', afternoon: 'Cet après-midi', tomorrow: 'Demain', weekend: 'Ce week-end', week: 'Cette semaine' },
     partyType: { solo: '🧍 Seul, c\'est bien aussi', friends: '👥 Avec des amis', groups: '👨‍👩‍👧‍👦 Grand groupe', date: '💕 Idée de rendez-vous', family: '👨‍👩‍👧 En famille', coworkers: '💼 Collègues', new_people: '🤝 Rencontrer du monde' },
   },
   pt: {
@@ -180,7 +180,7 @@ export default {
     showDetailsA11y: 'Mostrar detalhes e perguntas de {title}', hideDetailsA11y: 'Ocultar detalhes e perguntas de {title}',
     showDetails: 'Detalhes e perguntas ⌄', hideDetails: 'Ocultar detalhes ⌃',
     inviteA11y: 'Convidar amigos para {title}',
-    dateFilter: { anytime: 'Qualquer hora', now: 'Agora mesmo', soon: 'Começa em breve', today: 'Hoje', tonight: 'Hoje à noite', tomorrow: 'Amanhã', weekend: 'Este fim de semana', week: 'Esta semana' },
+    dateFilter: { anytime: 'Qualquer hora', now: 'Agora mesmo', soon: 'Começa em breve', today: 'Hoje', tonight: 'Hoje à noite', morning: 'Esta manhã', afternoon: 'Esta tarde', tomorrow: 'Amanhã', weekend: 'Este fim de semana', week: 'Esta semana' },
     partyType: { solo: '🧍 Dá para ir sozinho', friends: '👥 Com amigos', groups: '👨‍👩‍👧‍👦 Grupo grande', date: '💕 Ideia de encontro romântico', family: '👨‍👩‍👧 Em família', coworkers: '💼 Colegas de trabalho', new_people: '🤝 Conhecer gente nova' },
   },
   ht: {
@@ -216,7 +216,7 @@ export default {
     showDetailsA11y: 'Montre detay ak kesyon pou {title}', hideDetailsA11y: 'Kache detay ak kesyon pou {title}',
     showDetails: 'Detay ak kesyon ⌄', hideDetails: 'Kache detay ⌃',
     inviteA11y: 'Envite zanmi nan {title}',
-    dateFilter: { anytime: 'Nenpòt lè', now: 'Kounye a menm', soon: 'Ap kòmanse byento', today: 'Jodi a', tonight: 'Aswè a', tomorrow: 'Demen', weekend: 'Wikenn sa a', week: 'Semèn sa a' },
+    dateFilter: { anytime: 'Nenpòt lè', now: 'Kounye a menm', soon: 'Ap kòmanse byento', today: 'Jodi a', tonight: 'Aswè a', morning: 'Maten an', afternoon: 'Apremidi a', tomorrow: 'Demen', weekend: 'Wikenn sa a', week: 'Semèn sa a' },
     partyType: { solo: '🧍 Bon pou ale pou kont ou', friends: '👥 Ak zanmi', groups: '👨‍👩‍👧‍👦 Gwo gwoup', date: '💕 Yon lide randevou', family: '👨‍👩‍👧 Fanmi', coworkers: '💼 Kòlèg travay', new_people: '🤝 Rankontre nouvo moun' },
   },
   zh: {
@@ -252,7 +252,7 @@ export default {
     showDetailsA11y: '显示{title}的详情和问题', hideDetailsA11y: '隐藏{title}的详情和问题',
     showDetails: '详情与问题 ⌄', hideDetails: '隐藏详情 ⌃',
     inviteA11y: '邀请朋友参加{title}',
-    dateFilter: { anytime: '任何时间', now: '正在进行', soon: '即将开始', today: '今天', tonight: '今晚', tomorrow: '明天', weekend: '本周末', week: '本周' },
+    dateFilter: { anytime: '任何时间', now: '正在进行', soon: '即将开始', today: '今天', tonight: '今晚', morning: '今天上午', afternoon: '今天下午', tomorrow: '明天', weekend: '本周末', week: '本周' },
     partyType: { solo: '🧍 适合独自参加', friends: '👥 带上朋友', groups: '👨‍👩‍👧‍👦 大团体', date: '💕 约会点子', family: '👨‍👩‍👧 家庭', coworkers: '💼 同事', new_people: '🤝 认识新朋友' },
   },
   vi: {
@@ -288,7 +288,7 @@ export default {
     showDetailsA11y: 'Hiện chi tiết và câu hỏi của {title}', hideDetailsA11y: 'Ẩn chi tiết và câu hỏi của {title}',
     showDetails: 'Chi tiết & câu hỏi ⌄', hideDetails: 'Ẩn chi tiết ⌃',
     inviteA11y: 'Mời bạn bè đến {title}',
-    dateFilter: { anytime: 'Bất cứ lúc nào', now: 'Ngay bây giờ', soon: 'Sắp bắt đầu', today: 'Hôm nay', tonight: 'Tối nay', tomorrow: 'Ngày mai', weekend: 'Cuối tuần này', week: 'Tuần này' },
+    dateFilter: { anytime: 'Bất cứ lúc nào', now: 'Ngay bây giờ', soon: 'Sắp bắt đầu', today: 'Hôm nay', tonight: 'Tối nay', morning: 'Sáng nay', afternoon: 'Chiều nay', tomorrow: 'Ngày mai', weekend: 'Cuối tuần này', week: 'Tuần này' },
     partyType: { solo: '🧍 Đi một mình cũng được', friends: '👥 Rủ bạn bè', groups: '👨‍👩‍👧‍👦 Nhóm đông', date: '💕 Ý tưởng hẹn hò', family: '👨‍👩‍👧 Gia đình', coworkers: '💼 Đồng nghiệp', new_people: '🤝 Làm quen người mới' },
   },
   tl: {
@@ -324,7 +324,7 @@ export default {
     showDetailsA11y: 'Ipakita ang detalye at tanong para sa {title}', hideDetailsA11y: 'Itago ang detalye at tanong para sa {title}',
     showDetails: 'Detalye at mga tanong ⌄', hideDetails: 'Itago ang detalye ⌃',
     inviteA11y: 'Mag-imbita ng mga kaibigan sa {title}',
-    dateFilter: { anytime: 'Kahit kailan', now: 'Ngayon Mismo', soon: 'Malapit Nang Magsimula', today: 'Ngayong Araw', tonight: 'Ngayong Gabi', tomorrow: 'Bukas', weekend: 'Ngayong Weekend', week: 'Ngayong Linggo' },
+    dateFilter: { anytime: 'Kahit kailan', now: 'Ngayon Mismo', soon: 'Malapit Nang Magsimula', today: 'Ngayong Araw', tonight: 'Ngayong Gabi', morning: 'Ngayong umaga', afternoon: 'Ngayong hapon', tomorrow: 'Bukas', weekend: 'Ngayong Weekend', week: 'Ngayong Linggo' },
     partyType: { solo: '🧍 Puwedeng Mag-isa', friends: '👥 Kasama ang Kaibigan', groups: '👨‍👩‍👧‍👦 Malaking Grupo', date: '💕 Ideya para sa Date', family: '👨‍👩‍👧 Pamilya', coworkers: '💼 Mga Katrabaho', new_people: '🤝 Makakilala ng Bagong Tao' },
   },
   ru: {
@@ -360,7 +360,7 @@ export default {
     showDetailsA11y: 'Показать подробности и вопросы: {title}', hideDetailsA11y: 'Скрыть подробности и вопросы: {title}',
     showDetails: 'Подробности и вопросы ⌄', hideDetails: 'Скрыть подробности ⌃',
     inviteA11y: 'Пригласить друзей: {title}',
-    dateFilter: { anytime: 'Когда угодно', now: 'Прямо сейчас', soon: 'Скоро начнётся', today: 'Сегодня', tonight: 'Сегодня вечером', tomorrow: 'Завтра', weekend: 'В эти выходные', week: 'На этой неделе' },
+    dateFilter: { anytime: 'Когда угодно', now: 'Прямо сейчас', soon: 'Скоро начнётся', today: 'Сегодня', tonight: 'Сегодня вечером', morning: 'Сегодня утром', afternoon: 'Сегодня днём', tomorrow: 'Завтра', weekend: 'В эти выходные', week: 'На этой неделе' },
     partyType: { solo: '🧍 Можно одному', friends: '👥 С друзьями', groups: '👨‍👩‍👧‍👦 Большая компания', date: '💕 Идея для свидания', family: '👨‍👩‍👧 С семьёй', coworkers: '💼 С коллегами', new_people: '🤝 Новые знакомства' },
   },
   ko: {
@@ -396,7 +396,7 @@ export default {
     showDetailsA11y: '{title}의 상세 정보와 질문 보기', hideDetailsA11y: '{title}의 상세 정보와 질문 숨기기',
     showDetails: '상세 정보 및 질문 ⌄', hideDetails: '상세 정보 숨기기 ⌃',
     inviteA11y: '{title}에 친구 초대',
-    dateFilter: { anytime: '언제든', now: '지금 바로', soon: '곧 시작', today: '오늘', tonight: '오늘 밤', tomorrow: '내일', weekend: '이번 주말', week: '이번 주' },
+    dateFilter: { anytime: '언제든', now: '지금 바로', soon: '곧 시작', today: '오늘', tonight: '오늘 밤', morning: '오늘 오전', afternoon: '오늘 오후', tomorrow: '내일', weekend: '이번 주말', week: '이번 주' },
     partyType: { solo: '🧍 혼자도 좋아요', friends: '👥 친구와 함께', groups: '👨‍👩‍👧‍👦 큰 그룹', date: '💕 데이트 아이디어', family: '👨‍👩‍👧 가족', coworkers: '💼 동료', new_people: '🤝 새로운 사람 만나기' },
   },
 };

@@ -28,6 +28,37 @@ describe('Coffee tonight keeps tonight', () => {
   });
 });
 
+describe('Morning and afternoon Quick Picks keep their time', () => {
+  test('morning = today before noon, afternoon = today 12-6 PM (Home\'s own period boundaries)', () => {
+    jest.useFakeTimers({ now: new Date(2026, 9, 2, 8, 0), doNotFake: ['setTimeout', 'setInterval', 'setImmediate', 'clearTimeout', 'clearInterval', 'nextTick'] });
+    try {
+      const at = (d, h, m = 0) => new Date(2026, 9, d, h, m).toISOString();
+      expect(matchesDateFilter(at(2, 9), 'morning')).toBe(true);
+      expect(matchesDateFilter(at(2, 11, 59), 'morning')).toBe(true);
+      expect(matchesDateFilter(at(2, 12), 'morning')).toBe(false);
+      expect(matchesDateFilter(at(3, 9), 'morning')).toBe(false);
+      expect(matchesDateFilter(at(2, 12), 'afternoon')).toBe(true);
+      expect(matchesDateFilter(at(2, 17, 59), 'afternoon')).toBe(true);
+      expect(matchesDateFilter(at(2, 18), 'afternoon')).toBe(false);
+      expect(matchesDateFilter(at(2, 11), 'afternoon')).toBe(false);
+      expect(matchesDateFilter(at(3, 14), 'afternoon')).toBe(false);
+    } finally { jest.useRealTimers(); }
+  });
+  test('Home sends each period its own filter; the chips appear only while selected; labelled in all 11 languages', () => {
+    const home = src('screens/HomeScreen.js');
+    expect(home).toMatch(/PERIOD_DATE_FILTER = \{ morning: 'morning', afternoon: 'afternoon', evening: 'tonight', weekend: 'weekend' \}/);
+    const opts = Object.fromEntries(DATE_OPTIONS.map((o) => [o.key, o]));
+    expect(opts.morning.contextOnly).toBe(true);
+    expect(opts.afternoon.contextOnly).toBe(true);
+    expect(src('screens/GatheringsScreen.js')).toMatch(/DATE_OPTIONS\.filter\(\(o\) => !o\.contextOnly \|\| o\.key === dateFilter\)/);
+    const ns = require('../i18n/ui/gatherings').default;
+    for (const lang of Object.keys(ns)) {
+      expect(ns[lang].dateFilter.morning).toBeTruthy();
+      expect(ns[lang].dateFilter.afternoon).toBeTruthy();
+    }
+  });
+});
+
 describe('Meet people tonight keeps tonight', () => {
   const now = new Date('2026-10-02T21:00:00Z');
   const dating = [

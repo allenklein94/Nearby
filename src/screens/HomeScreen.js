@@ -76,7 +76,7 @@ import { homeQuickStatRows } from '../utils/homeQuiet';
 import { interestedConfirmation } from '../utils/actionConfirmations';
 
 // Item 137: a destination keeps the time it was offered under (the evening header reads "Tonight", so its chips open Tonight).
-const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'tonight', weekend: 'weekend' };
+const PERIOD_DATE_FILTER = { morning: 'morning', afternoon: 'afternoon', evening: 'tonight', weekend: 'weekend' };
 
 // Labels are ui.home.period.<period> / ui.home.periodSubtitle.<period> (read in the person's language at render).
 const PERIOD_SECTION_LABEL_KEYS = { morning: 'goodMorning', afternoon: 'thisAfternoon', evening: 'tonight', weekend: 'thisWeekend' };

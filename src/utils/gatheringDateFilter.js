@@ -13,6 +13,9 @@ export const DATE_OPTIONS = [
   { key: 'soon', label: 'Starting Soon' },
   { key: 'today', label: 'Today' },
   { key: 'tonight', label: 'Tonight' },
+  // Only offered as a chip while selected: they exist so Home's morning/afternoon Quick Picks keep their time (item 137).
+  { key: 'morning', label: 'This Morning', contextOnly: true },
+  { key: 'afternoon', label: 'This Afternoon', contextOnly: true },
   { key: 'tomorrow', label: 'Tomorrow' },
   { key: 'weekend', label: 'This Weekend' },
   { key: 'week', label: 'This Week' },
@@ -52,6 +55,16 @@ export function matchesDateFilter(scheduledAt, filterKey) {
     const tomorrowStart = new Date(todayStart);
     tomorrowStart.setDate(tomorrowStart.getDate() + 1);
     return date >= todayStart && date < tomorrowStart && date.getHours() >= TONIGHT_START_HOUR;
+  }
+
+  // Item 137: Home's "Good morning" / "This afternoon" Quick Picks keep their time. Same hour boundaries as Home's
+  // own period (timeContext.js getTimePeriod: morning before 12, afternoon 12-6 PM), on today's date.
+  if (filterKey === 'morning' || filterKey === 'afternoon') {
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+    if (!(date >= todayStart && date < tomorrowStart)) return false;
+    const h = date.getHours();
+    return filterKey === 'morning' ? h < 12 : h >= 12 && h < TONIGHT_START_HOUR;
   }
 
   if (filterKey === 'tomorrow') {
