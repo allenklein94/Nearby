@@ -63,33 +63,3 @@ describe('ordinary asks in every language stay broad', () => {
   });
 });
 
-describe('the "left out" caption is shown in the person\'s language', () => {
-  const { localizeNote } = require('../utils/reasonLocalization');
-  const { askFacetsCaption } = require('./askFacets');
-  const fs = require('fs');
-  const path = require('path');
-  test('English is byte-identical; every language has its own wording for each of the five captions', () => {
-    const f = parseAskFacets('something outside');
-    const caption = askFacetsCaption(f, true, true);
-    expect(caption).toBe("Leaving out indoor options and places that haven't said");
-    const seen = new Set();
-    for (const lang of ENVIRONMENT_WORD_LANGUAGES.filter((l) => l !== 'en')) {
-      for (const c of [caption, askFacetsCaption(parseAskFacets('something indoors'), true, true), askFacetsCaption(f, true, false),
-        askFacetsCaption(parseAskFacets('something indoors'), true, false), askFacetsCaption(f, false, true)]) {
-        const out = localizeNote(c, lang);
-        expect(out).not.toBe(c);
-        seen.add(out);
-      }
-    }
-    expect(seen.size).toBe(50);
-  });
-  test('inside a note line only the caption part is translated; the rest stays as it was', () => {
-    const line = "Looking across Outdoors & Nature · Leaving out indoor options and places that haven't said";
-    expect(localizeNote(line, 'es')).toBe('Looking across Outdoors & Nature · Dejamos fuera opciones bajo techo y lugares que no lo indican');
-  });
-  test('Home and Discover render the note line through localizeNote', () => {
-    for (const f of ['HomeScreen.js', 'DiscoverHubScreen.js']) {
-      expect(fs.readFileSync(path.join(__dirname, '..', 'screens', f), 'utf8')).toMatch(/localizeNote\(intent\w+\.openEndedNote, language\)/);
-    }
-  });
-});

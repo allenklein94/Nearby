@@ -1,5 +1,5 @@
 import { useLanguage } from '../context/LanguageContext';
-import { localizeNote } from '../utils/reasonLocalization';
+import { localizeAskNote } from '../i18n/askNoteView';
 import { surpriseView, surpriseText } from '../i18n/surpriseView';
 import { translate, tr } from '../i18n/translate';
 import { displayHeroWhen } from '../i18n/display';
@@ -1703,7 +1703,7 @@ export default function HomeScreen({ navigation }) {
                 empty={!(intentResults.items?.length > 0)}
               />
               {intentResults.items?.length > 0 && !!intentResults.openEndedNote && (
-                <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{localizeNote(intentResults.openEndedNote, language)}</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{localizeAskNote(intentResults.openEndedNote, language)}</Text>
               )}
               {intentResults.classifyResult?.intent === 'unclear' && (
                 <Text style={styles.intentUnclearNote}>

@@ -68,7 +68,8 @@ import { railGroups } from '../constants/discoverCategoryRail';
 import { friendGoingReason, communityReason } from '../utils/recommendationFacts';
 import { getMyFriends } from '../services/friends';
 import { becauseYouLikeReason, reasonText } from '../constants/recommendationReasonVocabulary';
-import { localizeReason, localizeNote } from '../utils/reasonLocalization';
+import { localizeReason } from '../utils/reasonLocalization';
+import { localizeAskNote } from '../i18n/askNoteView';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { splitTonight } from '../utils/categoryTonight';
 import { buildDiscoverSections, compareDiscover } from '../utils/discoverSections';
@@ -2641,7 +2642,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 </>
               )}
               {!!intentSearch.openEndedNote && (
-                <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{localizeNote(intentSearch.openEndedNote, language)}</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 6 }}>{localizeAskNote(intentSearch.openEndedNote, language)}</Text>
               )}
               <Text style={styles.intentSearchTitle}>
                 {intentSearch.experience?.title ?? intentSearchFallbackTitle(intentSearch.classifyResult)}

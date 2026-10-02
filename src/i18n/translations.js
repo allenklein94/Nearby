@@ -126,12 +126,7 @@ export const translations = {
       "pricePerPerson": "{price}/person",
       "minGuests": "min {count} guests",
       "minGuest": "min 1 guest",
-      "days": "{days}",
-      "leavingOutIndoorAndUnsaid": "Leaving out indoor options and places that haven't said",
-      "leavingOutOutdoorAndUnsaid": "Leaving out outdoor options and places that haven't said",
-      "leavingOutIndoor": "Leaving out indoor options",
-      "leavingOutOutdoor": "Leaving out outdoor options",
-      "leavingOutUnsaid": "Leaving out places that haven't said"
+      "days": "{days}"
     },
     vocab: {
       // Category, group and occasion names by their permanent key (category_tag_groups.key, item 97), for the text
@@ -1212,12 +1207,7 @@ export const translations = {
       "pricePerPerson": "{price}/persona",
       "minGuests": "mín. {count} invitados",
       "minGuest": "mín. 1 invitado",
-      "days": "{days}",
-      "leavingOutIndoorAndUnsaid": "Dejamos fuera opciones bajo techo y lugares que no lo indican",
-      "leavingOutOutdoorAndUnsaid": "Dejamos fuera opciones al aire libre y lugares que no lo indican",
-      "leavingOutIndoor": "Dejamos fuera opciones bajo techo",
-      "leavingOutOutdoor": "Dejamos fuera opciones al aire libre",
-      "leavingOutUnsaid": "Dejamos fuera lugares que no lo indican"
+      "days": "{days}"
     },
     vocab: {
       "labels": {
@@ -2320,12 +2310,7 @@ export const translations = {
       "pricePerPerson": "{price}/Person",
       "minGuests": "mind. {count} Gäste",
       "minGuest": "mind. 1 Gast",
-      "days": "{days}",
-      "leavingOutIndoorAndUnsaid": "Ohne Indoor-Optionen und Orte ohne Angabe",
-      "leavingOutOutdoorAndUnsaid": "Ohne Outdoor-Optionen und Orte ohne Angabe",
-      "leavingOutIndoor": "Ohne Indoor-Optionen",
-      "leavingOutOutdoor": "Ohne Outdoor-Optionen",
-      "leavingOutUnsaid": "Ohne Orte ohne Angabe"
+      "days": "{days}"
     },
     vocab: {
       "labels": {
@@ -3399,12 +3384,7 @@ export const translations = {
       "pricePerPerson": "{price}/personne",
       "minGuests": "min. {count} invités",
       "minGuest": "min. 1 invité",
-      "days": "{days}",
-      "leavingOutIndoorAndUnsaid": "Sans les options en intérieur ni les lieux sans indication",
-      "leavingOutOutdoorAndUnsaid": "Sans les options en plein air ni les lieux sans indication",
-      "leavingOutIndoor": "Sans les options en intérieur",
-      "leavingOutOutdoor": "Sans les options en plein air",
-      "leavingOutUnsaid": "Sans les lieux sans indication"
+      "days": "{days}"
     },
     vocab: {
       "labels": {
@@ -4487,12 +4467,7 @@ export const translations = {
       "pricePerPerson": "{price}/pessoa",
       "minGuests": "mín. {count} convidados",
       "minGuest": "mín. 1 convidado",
-      "days": "{days}",
-      "leavingOutIndoorAndUnsaid": "Deixamos de fora opções em local fechado e lugares que não informaram",
-      "leavingOutOutdoorAndUnsaid": "Deixamos de fora opções ao ar livre e lugares que não informaram",
-      "leavingOutIndoor": "Deixamos de fora opções em local fechado",
-      "leavingOutOutdoor": "Deixamos de fora opções ao ar livre",
-      "leavingOutUnsaid": "Deixamos de fora lugares que não informaram"
+      "days": "{days}"
     },
     vocab: {
       "labels": {
@@ -5581,12 +5556,7 @@ export const translations = {
       "pricePerPerson": "{price}/moun",
       "minGuests": "omwen {count} envite",
       "minGuest": "omwen 1 envite",
-      "days": "{days}",
-      "leavingOutIndoorAndUnsaid": "Nou kite deyò opsyon anndan ak kote ki pa di anyen",
-      "leavingOutOutdoorAndUnsaid": "Nou kite deyò opsyon deyò ak kote ki pa di anyen",
-      "leavingOutIndoor": "Nou kite deyò opsyon anndan",
-      "leavingOutOutdoor": "Nou kite deyò opsyon deyò",
-      "leavingOutUnsaid": "Nou kite deyò kote ki pa di anyen"
+      "days": "{days}"
     },
     vocab: {
       "labels": {
@@ -6662,12 +6632,7 @@ export const translations = {
       "pricePerPerson": "{price}/人",
       "minGuests": "至少{count}位客人",
       "minGuest": "至少1位客人",
-      "days": "{days}",
-      "leavingOutIndoorAndUnsaid": "已排除室内选项和未说明的地点",
-      "leavingOutOutdoorAndUnsaid": "已排除户外选项和未说明的地点",
-      "leavingOutIndoor": "已排除室内选项",
-      "leavingOutOutdoor": "已排除户外选项",
-      "leavingOutUnsaid": "已排除未说明的地点"
+      "days": "{days}"
     },
     vocab: {
       "labels": {
@@ -7743,12 +7708,7 @@ export const translations = {
       "pricePerPerson": "{price}/người",
       "minGuests": "tối thiểu {count} khách",
       "minGuest": "tối thiểu 1 khách",
-      "days": "{days}",
-      "leavingOutIndoorAndUnsaid": "Đã bỏ qua lựa chọn trong nhà và những nơi chưa cho biết",
-      "leavingOutOutdoorAndUnsaid": "Đã bỏ qua lựa chọn ngoài trời và những nơi chưa cho biết",
-      "leavingOutIndoor": "Đã bỏ qua lựa chọn trong nhà",
-      "leavingOutOutdoor": "Đã bỏ qua lựa chọn ngoài trời",
-      "leavingOutUnsaid": "Đã bỏ qua những nơi chưa cho biết"
+      "days": "{days}"
     },
     vocab: {
       "labels": {
@@ -8822,12 +8782,7 @@ export const translations = {
       "pricePerPerson": "{price}/tao",
       "minGuests": "hindi bababa sa {count} bisita",
       "minGuest": "hindi bababa sa 1 bisita",
-      "days": "{days}",
-      "leavingOutIndoorAndUnsaid": "Hindi isinama ang mga opsyon sa loob at mga lugar na walang sinabi",
-      "leavingOutOutdoorAndUnsaid": "Hindi isinama ang mga opsyon sa labas at mga lugar na walang sinabi",
-      "leavingOutIndoor": "Hindi isinama ang mga opsyon sa loob",
-      "leavingOutOutdoor": "Hindi isinama ang mga opsyon sa labas",
-      "leavingOutUnsaid": "Hindi isinama ang mga lugar na walang sinabi"
+      "days": "{days}"
     },
     vocab: {
       "labels": {
@@ -9906,12 +9861,7 @@ export const translations = {
         "other": "от {count} гостей"
       },
       "minGuest": "от 1 гостя",
-      "days": "{days}",
-      "leavingOutIndoorAndUnsaid": "Без вариантов в помещении и мест без указания",
-      "leavingOutOutdoorAndUnsaid": "Без вариантов на улице и мест без указания",
-      "leavingOutIndoor": "Без вариантов в помещении",
-      "leavingOutOutdoor": "Без вариантов на улице",
-      "leavingOutUnsaid": "Без мест без указания"
+      "days": "{days}"
     },
     vocab: {
       "labels": {
@@ -11014,12 +10964,7 @@ export const translations = {
       "pricePerPerson": "1인 {price}",
       "minGuests": "최소 {count}명",
       "minGuest": "최소 1명",
-      "days": "{days}",
-      "leavingOutIndoorAndUnsaid": "실내 옵션과 정보가 없는 곳은 제외했어요",
-      "leavingOutOutdoorAndUnsaid": "야외 옵션과 정보가 없는 곳은 제외했어요",
-      "leavingOutIndoor": "실내 옵션은 제외했어요",
-      "leavingOutOutdoor": "야외 옵션은 제외했어요",
-      "leavingOutUnsaid": "정보가 없는 곳은 제외했어요"
+      "days": "{days}"
     },
     vocab: {
       "labels": {

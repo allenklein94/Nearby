@@ -52,7 +52,6 @@ export const REASON_PARSE_ORDER = [
   'reasons.effortLevel.light', 'reasons.effortLevel.moderate', 'reasons.effortLevel.challenging',
   'reasons.socialFit.solo', 'reasons.socialFit.one_on_one', 'reasons.socialFit.small_group', 'reasons.socialFit.group',
   'resultNotes.fullWaitlistCount', 'resultNotes.fullWaitlist', 'resultNotes.mayBeAvailable', 'resultNotes.askWhatTheyCan', 'resultNotes.friendDiscovery',
-  'resultNotes.leavingOutIndoorAndUnsaid', 'resultNotes.leavingOutOutdoorAndUnsaid', 'resultNotes.leavingOutIndoor', 'resultNotes.leavingOutOutdoor', 'resultNotes.leavingOutUnsaid',
   'resultNotes.pricePerPerson', 'resultNotes.price', 'resultNotes.minGuest', 'resultNotes.minGuests', 'resultNotes.days',
   'reasons.atBusiness',
   'resultTitles.offersOccasion', 'resultTitles.hasAvailability', 'resultTitles.mayHelp', 'resultTitles.aFriendAlsoLooking', 'resultTitles.friendAlsoLooking',
