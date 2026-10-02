@@ -23,7 +23,8 @@ import {
   getHostLovedTags,
   getApprovedAttendeeCount,
   getPendingInterestCount,
-  getGatheringMessageCount,
+  getHostSentInvitations,
+  getGatheringRequestsForHost,
   cancelGathering,
   stopRecurringSeries,
 } from '../services/gatherings';
@@ -44,6 +45,8 @@ import {
 import { getMyPartnershipRequestForTarget } from '../services/businessPartnerships';
 import GatheringQnA from '../components/GatheringQnA';
 import HostAttendeeManager from '../components/HostAttendeeManager';
+import HostCommandCenter from '../components/HostCommandCenter';
+import { invitationRows, hostBusinessLine } from '../utils/hostCommandCenter';
 import GatheringFeedbackPrompt from '../components/GatheringFeedbackPrompt';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import GatheringIntentModal from '../components/GatheringIntentModal';
@@ -102,6 +105,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
   // The host can turn invitations off for everyone but themselves (allow_attendee_invites; also enforced server-side).
   const canInvite = !!gathering && (gathering.isHost || gathering.allow_attendee_invites !== false);
   const [countdownStats, setCountdownStats] = useState(null);
+  // Host command center (item 143): the invitations the host sent, with each friend's real status; the attendee list
+  // folds behind "Manage attendees" (pending requests always show); refreshKey reloads it when the screen reloads.
+  const [hostInvitations, setHostInvitations] = useState(null);
+  const [attendeesExpanded, setAttendeesExpanded] = useState(false);
+  const [hostRefreshKey, setHostRefreshKey] = useState(0);
   const [businessRequest, setBusinessRequest] = useState(null);
   const [acceptedBusinessOffer, setAcceptedBusinessOffer] = useState(null);
   const [placeOfferCounts, setPlaceOfferCounts] = useState({ pendingCount: 0, offeredCount: 0 });
@@ -178,12 +186,23 @@ export default function GatheringDetailScreen({ route, navigation }) {
       }
 
       if (g.isHost) {
-        const [going, interested, messages] = await Promise.all([
+        // requests = pending JOIN requests (they need the host's decision); Interested is the separate private count
+        // (g.interestedCount, count only). A failed lookup is null and is left out, never shown as 0.
+        const [going, requests, invites, joinRows] = await Promise.all([
           getApprovedAttendeeCount(gatheringId),
           getPendingInterestCount(gatheringId),
-          getGatheringMessageCount(gatheringId),
+          getHostSentInvitations(gatheringId).catch(() => null),
+          getGatheringRequestsForHost(gatheringId),
         ]);
-        setCountdownStats({ going: going ?? attendeeTotal(g), interested, messages, waitlisted: g.waitlistCount });
+        setCountdownStats({
+          going: going ?? attendeeTotal(g),
+          requests,
+          waitlisted: g.waitlistCount ?? null,
+          interested: g.interestedCount ?? null,
+        });
+        const attendance = new Map((joinRows ?? []).map((r) => [r.user_id, r.status]));
+        setHostInvitations(invites == null ? null : invitationRows(invites, attendance, { past: gatheringViewerState(g).time === 'past' }));
+        setHostRefreshKey((k) => k + 1);
 
         // Gap #1 (CLAUDE.md, "vision doc describes a fully merged
         // gathering/date <-> business UX"): the gathering's own linked
@@ -534,6 +553,14 @@ export default function GatheringDetailScreen({ route, navigation }) {
   // state the merged offer card below already fetches, so this never
   // needs a second query and can never say something different from the
   // detailed banner right underneath it.
+  // Host command center (item 143): the business side in one line while nothing is booked (a booked offer keeps its card).
+  const hostBizLine = hostBusinessLine({ request: businessRequest, offers: placeOfferCounts });
+  const hostBusinessText = !hostBizLine ? null
+    : hostBizLine.state === 'offer_received'
+      ? (hostBizLine.name ? t('ui.hostCenter.biz.offerReceived', { name: hostBizLine.name }) : t('ui.hostCenter.biz.offerReceivedNoName'))
+      : hostBizLine.state === 'offers_received' ? t('ui.hostCenter.biz.offersReceived', { count: hostBizLine.count })
+        : hostBizLine.state === 'waiting' ? t('ui.hostCenter.biz.waiting', { count: hostBizLine.count })
+          : t('ui.hostCenter.biz.asked');
   const planCompletion = getGatheringPlanCompletion({
     approvedAttendeeCount: attendeeTotal(gathering),
     businessRequest,
@@ -881,11 +908,6 @@ export default function GatheringDetailScreen({ route, navigation }) {
           {gathering.isHost ? (
             <View style={styles.hostBanner}>
               <Text style={styles.hostBannerText}>{t('ui.gatheringDetail.youreHosting')}</Text>
-              {gathering.interestedCount > 0 && (
-                <Text style={styles.hostBannerText}>
-                  {t('ui.gatheringDetail.interestedCount', { count: gathering.interestedCount })}
-                </Text>
-              )}
               <PlanCompletionRow
                 people={planCompletion.people}
                 time={planCompletion.time}
@@ -894,33 +916,6 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 onPlacePress={canActOnPlace ? handlePlaceRowPress : undefined}
                 style={{ marginTop: spacing.xs, marginBottom: spacing.sm }}
               />
-              {countdownStats && (
-                <View style={styles.countdownRow}>
-                  <View style={styles.countdownStat}>
-                    <Text style={styles.countdownNumber}>{countdownStats.going}</Text>
-                    <Text style={styles.countdownLabel}>{t('ui.gatheringDetail.statGoing')}</Text>
-                  </View>
-                  <View style={styles.countdownDivider} />
-                  <View style={styles.countdownStat}>
-                    <Text style={styles.countdownNumber}>{countdownStats.interested}</Text>
-                    <Text style={styles.countdownLabel}>{t('ui.gatheringDetail.statInterested')}</Text>
-                  </View>
-                  <View style={styles.countdownDivider} />
-                  <View style={styles.countdownStat}>
-                    <Text style={styles.countdownNumber}>{countdownStats.messages}</Text>
-                    <Text style={styles.countdownLabel}>{t('ui.gatheringDetail.statMessages')}</Text>
-                  </View>
-                  {gathering.capacity != null && countdownStats.waitlisted > 0 && (
-                    <>
-                      <View style={styles.countdownDivider} />
-                      <View style={styles.countdownStat}>
-                        <Text style={styles.countdownNumber}>{countdownStats.waitlisted}</Text>
-                        <Text style={styles.countdownLabel}>{t('ui.gatheringDetail.statWaitlisted')}</Text>
-                      </View>
-                    </>
-                  )}
-                </View>
-              )}
               {gathering.capacity != null && !gathering.isFull && (
                 (() => {
                   const { spotsLeft, almostFull } = getGatheringFullness(gathering);
@@ -931,58 +926,22 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   ) : null;
                 })()
               )}
-              <HostAttendeeManager gatheringId={gatheringId} onChanged={load} />
-              <TouchableOpacity
-                onPress={() => navigation.navigate('GatheringChat', { gatheringId, gatheringTitle: gathering.title })}
-                style={{ marginTop: spacing.sm }}
-                accessibilityLabel={t('ui.gatheringDetail.groupChatA11y')}
-                accessibilityRole="button"
-              >
-                <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.groupChat')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('GatheringHub', { gatheringId })}
-                style={{ marginTop: spacing.xs }}
-                accessibilityLabel={t('ui.gatheringDetail.hubA11y')}
-                accessibilityRole="button"
-              >
-                <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.hubRocket')}</Text>
-              </TouchableOpacity>
-              {/* Host cancellation lifecycle parity (2026-09-10 follow-up):
-                  Communities already group Edit/Pause/Cancel under a
-                  "Manage Community" label -- this label makes Gatherings'
-                  own equivalent (Edit/Cancel) visually match, same links,
-                  same behavior, just now grouped and named to match. */}
-              {can('edit') && (
-                <>
-                  <Text style={styles.manageSectionLabel}>{t('ui.gatheringDetail.manage')}</Text>
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate('EditGathering', { gathering })}
-                    style={{ marginTop: spacing.xs }}
-                    accessibilityLabel={t('ui.gatheringDetail.editA11y')}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.edit')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={confirmCancelGatheringInDetail}
-                    style={{ marginTop: spacing.xs }}
-                    accessibilityLabel={t('ui.gatheringDetail.cancelA11y')}
-                    accessibilityRole="button"
-                  >
-                    <Text style={[styles.hostBannerLink, { color: colors.danger }]}>{t('ui.gatheringDetail.cancelGathering')}</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-              <TouchableOpacity
-                onPress={() => setInviteModalVisible(true)}
-                style={{ marginTop: spacing.xs }}
-                accessibilityLabel={t('ui.gatheringDetail.inviteA11y')}
-                accessibilityRole="button"
-              >
-                <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.inviteFriendsArrow')}</Text>
-              </TouchableOpacity>
-              {viewer.actionable && (
+              <HostCommandCenter
+                stats={countdownStats}
+                invitations={hostInvitations}
+                canEdit={can('edit')}
+                canInvite={canInvite && viewer.time !== 'past'}
+                attendeesExpanded={attendeesExpanded}
+                onInvite={() => setInviteModalVisible(true)}
+                onEdit={() => navigation.navigate('EditGathering', { gathering })}
+                onMessage={() => navigation.navigate('GatheringChat', { gatheringId, gatheringTitle: gathering.title })}
+                onToggleAttendees={() => setAttendeesExpanded((v) => !v)}
+                onCancel={confirmCancelGatheringInDetail}
+                attendeeManager={(
+                  <HostAttendeeManager gatheringId={gatheringId} onChanged={load} expanded={attendeesExpanded} refreshKey={hostRefreshKey} />
+                )}
+                businessSection={viewer.actionable ? (
+
                 acceptedBusinessOffer ? (
                   // Gap #1: the accepted business offer, shown inline
                   // instead of only ever living on a separate
@@ -999,8 +958,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
                     style={{ marginTop: spacing.xs }}
                   />
                 ) : businessRequest ? (
-                  <View style={{ marginTop: spacing.xs }}>
-                    <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.waitingBusinesses')}</Text>
+                  <View>
+                    <Text style={styles.hostBannerLink}>{hostBusinessText}</Text>
                     <TouchableOpacity
                       onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
                       accessibilityLabel={t('ui.gatheringDetail.viewRequestA11y')}
@@ -1104,7 +1063,17 @@ export default function GatheringDetailScreen({ route, navigation }) {
                     )}
                   </View>
                 )
-              )}
+              
+                ) : null}
+              />
+              <TouchableOpacity
+                onPress={() => navigation.navigate('GatheringHub', { gatheringId })}
+                style={{ marginTop: spacing.xs }}
+                accessibilityLabel={t('ui.gatheringDetail.hubA11y')}
+                accessibilityRole="button"
+              >
+                <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.hubRocket')}</Text>
+              </TouchableOpacity>
               {!gathering.community_id && viewer.time === 'past' && (
                 <TouchableOpacity
                   onPress={() => navigation.navigate('CreateCommunity', {
@@ -1421,18 +1390,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   hostBannerText: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: spacing.xs },
   hostBannerLink: { color: colors.primary, fontSize: 14, fontWeight: '700' },
-  manageSectionLabel: {
-    ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase',
-    letterSpacing: 0.5, marginTop: spacing.md, marginBottom: spacing.xs,
-  },
-  countdownRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.lg, paddingVertical: spacing.sm, width: '100%', marginVertical: spacing.sm,
-  },
-  countdownStat: { flex: 1, alignItems: 'center' },
-  countdownNumber: { color: colors.textPrimary, fontSize: 18, fontWeight: '800' },
-  countdownLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '600', marginTop: 2 },
-  countdownDivider: { width: 1, height: 28, backgroundColor: colors.border },
   youreInPanel: {
     marginTop: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.lg, alignItems: 'center',

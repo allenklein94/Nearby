@@ -1453,8 +1453,30 @@ export async function getPendingInterestCount(gatheringId) {
     .eq('gathering_id', gatheringId)
     .eq('status', 'pending');
 
-  if (error) return 0;
+  // A failed lookup is unknown (null), never "0 requests" (the host's command center leaves an unknown out).
+  if (error) return null;
   return count ?? 0;
+}
+
+// The invitations the HOST sent for one of their gatherings, with each invitee's name where the host may read it
+// (verified profiles; else null and the screen says "A friend"). Attendees' own invitations are not included: those
+// are theirs (social_invites RLS = inviter or invitee). Feeds the host command center (utils/hostCommandCenter.js).
+export async function getHostSentInvitations(gatheringId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId || !gatheringId) return [];
+  const { data, error } = await supabase
+    .from('social_invites')
+    .select('invitee_id, status, created_at')
+    .eq('inviter_id', myId)
+    .eq('invite_type', 'gathering')
+    .eq('target_id', gatheringId);
+  if (error) throw new Error(error.message);
+  const ids = [...new Set((data ?? []).map((r) => r.invitee_id))];
+  if (ids.length === 0) return [];
+  const { data: people } = await supabase.from('profiles').select('id, display_name').in('id', ids);
+  const names = new Map((people ?? []).map((p) => [p.id, p.display_name]));
+  return (data ?? []).map((r) => ({ ...r, name: names.get(r.invitee_id) ?? null }));
 }
 
 // Count-only, for the organizer countdown card — a real number

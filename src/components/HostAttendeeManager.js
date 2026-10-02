@@ -9,7 +9,9 @@ import { spacing, radius } from '../theme';
 // Host-only: approve/decline join requests and remove attendees, inline on
 // GatheringDetail (the one place everything about a gathering is managed).
 // Same RPCs and copy the Gatherings hosting list uses.
-export default function HostAttendeeManager({ gatheringId, onChanged }) {
+// expanded=false (the host command center's default): only pending requests show, because they need a decision; going and
+// waitlisted people appear when the host taps "Manage attendees". refreshKey reloads the list when the parent reloads.
+export default function HostAttendeeManager({ gatheringId, onChanged, expanded = true, refreshKey }) {
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -21,7 +23,7 @@ export default function HostAttendeeManager({ gatheringId, onChanged }) {
 
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, refreshKey]);
 
   async function refresh() {
     await load();
@@ -65,12 +67,13 @@ export default function HostAttendeeManager({ gatheringId, onChanged }) {
     );
   }
 
-  if (rows == null || rows.length === 0) return null;
+  const shown = expanded ? rows : (rows ?? []).filter((r) => r.status === 'pending');
+  if (shown == null || shown.length === 0) return null;
 
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{t('ui.gatheringParts.requestsAttendees')}</Text>
-      {rows.map((row) => {
+      {shown.map((row) => {
         const name = row.profiles?.display_name ?? t('ui.gatheringParts.someone');
         return (
           <View key={row.id} style={styles.row}>

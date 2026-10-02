@@ -416,23 +416,28 @@ export async function getAcceptedOfferForRequest(requestId) {
 // accepted offer yet -- a genuinely new, tiny query, not a widened one, so
 // getAcceptedOfferForRequest's already-verified contract is untouched.
 export async function getOpenOfferCounts(requestId) {
-  if (!requestId) return { pendingCount: 0, offeredCount: 0 };
+  if (!requestId) return { pendingCount: 0, offeredCount: 0, offeredNames: [] };
   const { data, error } = await supabase
     .from('business_request_offers')
-    .select('status')
+    .select('status, brand_partners(name)')
     .eq('request_id', requestId)
     .in('status', ['pending', 'offered']);
   if (error) {
     console.error('getOpenOfferCounts error', error);
-    return { pendingCount: 0, offeredCount: 0 };
+    return { pendingCount: 0, offeredCount: 0, offeredNames: [] };
   }
   let pendingCount = 0;
   let offeredCount = 0;
+  // Names only of businesses that actually replied with an offer (the host command center's
+  // "<business> · Offer received"); a business that has not answered is never named.
+  const offeredNames = [];
   for (const row of data ?? []) {
-    if (row.status === 'offered') offeredCount += 1;
-    else pendingCount += 1;
+    if (row.status === 'offered') {
+      offeredCount += 1;
+      if (row.brand_partners?.name) offeredNames.push(row.brand_partners.name);
+    } else pendingCount += 1;
   }
-  return { pendingCount, offeredCount };
+  return { pendingCount, offeredCount, offeredNames };
 }
 
 // Batched, list-shaped counterpart to getBusinessRequestForGathering()/

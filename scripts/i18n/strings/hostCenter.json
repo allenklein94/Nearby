@@ -1,0 +1,571 @@
+{
+ "en": {
+  "stat.going": {
+   "one": "{count} attending",
+   "other": "{count} attending"
+  },
+  "stat.requests": {
+   "one": "{count} request to join",
+   "other": "{count} requests to join"
+  },
+  "stat.waitlisted": {
+   "one": "{count} on the waitlist",
+   "other": "{count} on the waitlist"
+  },
+  "stat.interested": {
+   "one": "{count} interested",
+   "other": "{count} interested"
+  },
+  "interestedNote": "Interested is private: you see how many, never who.",
+  "section.invitations": "Invitations you sent",
+  "section.business": "Business",
+  "section.actions": "Actions",
+  "invite.going": "Going",
+  "invite.requested": "Asked to join",
+  "invite.waitlisted": "On the waitlist",
+  "invite.accepted": "Said yes, not joined yet",
+  "invite.invited": "Invited",
+  "invite.declined": "Can't make it",
+  "invite.expired": "Expired",
+  "aFriend": "A friend",
+  "showAll": "Show all ({count})",
+  "showLess": "Show less",
+  "biz.offerReceived": "{name} · Offer received",
+  "biz.offerReceivedNoName": "A business made you an offer",
+  "biz.offersReceived": {
+   "one": "{count} offer received, choose one",
+   "other": "{count} offers received, choose one"
+  },
+  "biz.waiting": {
+   "one": "Waiting for {count} business to reply",
+   "other": "Waiting for {count} businesses to reply"
+  },
+  "biz.asked": "You asked nearby businesses",
+  "biz.partnerConfirmed": "{name} · Confirmed",
+  "biz.partnerPending": "{name} · Waiting for their reply",
+  "action.invite": "Invite",
+  "action.edit": "Edit",
+  "action.message": "Message",
+  "action.manage": "Manage attendees",
+  "action.hideAttendees": "Hide attendees",
+  "action.cancel": "Cancel"
+ },
+ "es": {
+  "stat.going": {
+   "one": "{count} asiste",
+   "other": "{count} asisten"
+  },
+  "stat.requests": {
+   "one": "{count} solicitud para unirse",
+   "other": "{count} solicitudes para unirse"
+  },
+  "stat.waitlisted": {
+   "one": "{count} en lista de espera",
+   "other": "{count} en lista de espera"
+  },
+  "stat.interested": {
+   "one": "{count} interesada",
+   "other": "{count} interesadas"
+  },
+  "interestedNote": "Interesado es privado: ves cuántos, nunca quiénes.",
+  "section.invitations": "Invitaciones que enviaste",
+  "section.business": "Negocio",
+  "section.actions": "Acciones",
+  "invite.going": "Va",
+  "invite.requested": "Pidió unirse",
+  "invite.waitlisted": "En lista de espera",
+  "invite.accepted": "Dijo que sí, aún no se une",
+  "invite.invited": "Invitado",
+  "invite.declined": "No puede ir",
+  "invite.expired": "Vencida",
+  "aFriend": "Un amigo",
+  "showAll": "Ver todos ({count})",
+  "showLess": "Ver menos",
+  "biz.offerReceived": "{name} · Oferta recibida",
+  "biz.offerReceivedNoName": "Un negocio te hizo una oferta",
+  "biz.offersReceived": {
+   "one": "{count} oferta recibida, elige una",
+   "other": "{count} ofertas recibidas, elige una"
+  },
+  "biz.waiting": {
+   "one": "Esperando la respuesta de {count} negocio",
+   "other": "Esperando la respuesta de {count} negocios"
+  },
+  "biz.asked": "Pediste a negocios cercanos",
+  "biz.partnerConfirmed": "{name} · Confirmado",
+  "biz.partnerPending": "{name} · Esperando su respuesta",
+  "action.invite": "Invitar",
+  "action.edit": "Editar",
+  "action.message": "Mensaje",
+  "action.manage": "Gestionar asistentes",
+  "action.hideAttendees": "Ocultar asistentes",
+  "action.cancel": "Cancelar"
+ },
+ "de": {
+  "stat.going": {
+   "one": "{count} dabei",
+   "other": "{count} dabei"
+  },
+  "stat.requests": {
+   "one": "{count} Beitrittsanfrage",
+   "other": "{count} Beitrittsanfragen"
+  },
+  "stat.waitlisted": {
+   "one": "{count} auf der Warteliste",
+   "other": "{count} auf der Warteliste"
+  },
+  "stat.interested": {
+   "one": "{count} interessiert",
+   "other": "{count} interessiert"
+  },
+  "interestedNote": "Interessiert ist privat: Du siehst wie viele, nie wer.",
+  "section.invitations": "Deine Einladungen",
+  "section.business": "Geschäft",
+  "section.actions": "Aktionen",
+  "invite.going": "Dabei",
+  "invite.requested": "Möchte beitreten",
+  "invite.waitlisted": "Auf der Warteliste",
+  "invite.accepted": "Hat zugesagt, noch nicht beigetreten",
+  "invite.invited": "Eingeladen",
+  "invite.declined": "Kann nicht",
+  "invite.expired": "Abgelaufen",
+  "aFriend": "Ein Freund",
+  "showAll": "Alle anzeigen ({count})",
+  "showLess": "Weniger anzeigen",
+  "biz.offerReceived": "{name} · Angebot erhalten",
+  "biz.offerReceivedNoName": "Ein Geschäft hat dir ein Angebot gemacht",
+  "biz.offersReceived": {
+   "one": "{count} Angebot erhalten, wähle eins",
+   "other": "{count} Angebote erhalten, wähle eins"
+  },
+  "biz.waiting": {
+   "one": "Warte auf die Antwort von {count} Geschäft",
+   "other": "Warte auf die Antwort von {count} Geschäften"
+  },
+  "biz.asked": "Du hast Geschäfte in der Nähe gefragt",
+  "biz.partnerConfirmed": "{name} · Bestätigt",
+  "biz.partnerPending": "{name} · Wartet auf Antwort",
+  "action.invite": "Einladen",
+  "action.edit": "Bearbeiten",
+  "action.message": "Nachricht",
+  "action.manage": "Teilnehmer verwalten",
+  "action.hideAttendees": "Teilnehmer ausblenden",
+  "action.cancel": "Absagen"
+ },
+ "fr": {
+  "stat.going": {
+   "one": "{count} participant",
+   "other": "{count} participants"
+  },
+  "stat.requests": {
+   "one": "{count} demande pour rejoindre",
+   "other": "{count} demandes pour rejoindre"
+  },
+  "stat.waitlisted": {
+   "one": "{count} en liste d'attente",
+   "other": "{count} en liste d'attente"
+  },
+  "stat.interested": {
+   "one": "{count} intéressé",
+   "other": "{count} intéressés"
+  },
+  "interestedNote": "Intéressé est privé : vous voyez combien, jamais qui.",
+  "section.invitations": "Vos invitations",
+  "section.business": "Commerce",
+  "section.actions": "Actions",
+  "invite.going": "Participe",
+  "invite.requested": "A demandé à rejoindre",
+  "invite.waitlisted": "En liste d'attente",
+  "invite.accepted": "A dit oui, pas encore inscrit",
+  "invite.invited": "Invité",
+  "invite.declined": "Ne peut pas venir",
+  "invite.expired": "Expirée",
+  "aFriend": "Un ami",
+  "showAll": "Tout voir ({count})",
+  "showLess": "Voir moins",
+  "biz.offerReceived": "{name} · Offre reçue",
+  "biz.offerReceivedNoName": "Un commerce vous a fait une offre",
+  "biz.offersReceived": {
+   "one": "{count} offre reçue, choisissez-en une",
+   "other": "{count} offres reçues, choisissez-en une"
+  },
+  "biz.waiting": {
+   "one": "En attente de la réponse de {count} commerce",
+   "other": "En attente de la réponse de {count} commerces"
+  },
+  "biz.asked": "Vous avez demandé aux commerces proches",
+  "biz.partnerConfirmed": "{name} · Confirmé",
+  "biz.partnerPending": "{name} · En attente de réponse",
+  "action.invite": "Inviter",
+  "action.edit": "Modifier",
+  "action.message": "Message",
+  "action.manage": "Gérer les participants",
+  "action.hideAttendees": "Masquer les participants",
+  "action.cancel": "Annuler"
+ },
+ "pt": {
+  "stat.going": {
+   "one": "{count} vai",
+   "other": "{count} vão"
+  },
+  "stat.requests": {
+   "one": "{count} pedido para participar",
+   "other": "{count} pedidos para participar"
+  },
+  "stat.waitlisted": {
+   "one": "{count} na lista de espera",
+   "other": "{count} na lista de espera"
+  },
+  "stat.interested": {
+   "one": "{count} interessado",
+   "other": "{count} interessados"
+  },
+  "interestedNote": "Interessado é privado: você vê quantos, nunca quem.",
+  "section.invitations": "Convites que você enviou",
+  "section.business": "Negócio",
+  "section.actions": "Ações",
+  "invite.going": "Vai",
+  "invite.requested": "Pediu para participar",
+  "invite.waitlisted": "Na lista de espera",
+  "invite.accepted": "Disse sim, ainda não entrou",
+  "invite.invited": "Convidado",
+  "invite.declined": "Não pode ir",
+  "invite.expired": "Expirado",
+  "aFriend": "Um amigo",
+  "showAll": "Ver todos ({count})",
+  "showLess": "Ver menos",
+  "biz.offerReceived": "{name} · Oferta recebida",
+  "biz.offerReceivedNoName": "Um negócio fez uma oferta para você",
+  "biz.offersReceived": {
+   "one": "{count} oferta recebida, escolha uma",
+   "other": "{count} ofertas recebidas, escolha uma"
+  },
+  "biz.waiting": {
+   "one": "Aguardando a resposta de {count} negócio",
+   "other": "Aguardando a resposta de {count} negócios"
+  },
+  "biz.asked": "Você pediu a negócios próximos",
+  "biz.partnerConfirmed": "{name} · Confirmado",
+  "biz.partnerPending": "{name} · Aguardando resposta",
+  "action.invite": "Convidar",
+  "action.edit": "Editar",
+  "action.message": "Mensagem",
+  "action.manage": "Gerenciar participantes",
+  "action.hideAttendees": "Ocultar participantes",
+  "action.cancel": "Cancelar"
+ },
+ "ht": {
+  "stat.going": {
+   "one": "{count} ap vini",
+   "other": "{count} ap vini"
+  },
+  "stat.requests": {
+   "one": "{count} demann pou antre",
+   "other": "{count} demann pou antre"
+  },
+  "stat.waitlisted": {
+   "one": "{count} sou lis datant",
+   "other": "{count} sou lis datant"
+  },
+  "stat.interested": {
+   "one": "{count} enterese",
+   "other": "{count} enterese"
+  },
+  "interestedNote": "Enterese se prive: ou wè konbyen, pa janm kiyès.",
+  "section.invitations": "Envitasyon ou voye",
+  "section.business": "Biznis",
+  "section.actions": "Aksyon",
+  "invite.going": "Ap vini",
+  "invite.requested": "Mande pou antre",
+  "invite.waitlisted": "Sou lis datant",
+  "invite.accepted": "Di wi, poko antre",
+  "invite.invited": "Envite",
+  "invite.declined": "Pa ka vini",
+  "invite.expired": "Ekspire",
+  "aFriend": "Yon zanmi",
+  "showAll": "Wè tout ({count})",
+  "showLess": "Wè mwens",
+  "biz.offerReceived": "{name} · Òf resevwa",
+  "biz.offerReceivedNoName": "Yon biznis fè ou yon òf",
+  "biz.offersReceived": {
+   "one": "{count} òf resevwa, chwazi youn",
+   "other": "{count} òf resevwa, chwazi youn"
+  },
+  "biz.waiting": {
+   "one": "N ap tann repons {count} biznis",
+   "other": "N ap tann repons {count} biznis"
+  },
+  "biz.asked": "Ou mande biznis ki toupre yo",
+  "biz.partnerConfirmed": "{name} · Konfime",
+  "biz.partnerPending": "{name} · N ap tann repons yo",
+  "action.invite": "Envite",
+  "action.edit": "Modifye",
+  "action.message": "Mesaj",
+  "action.manage": "Jere moun ki vini",
+  "action.hideAttendees": "Kache moun ki vini",
+  "action.cancel": "Anile"
+ },
+ "zh": {
+  "stat.going": {
+   "one": "{count} 人参加",
+   "other": "{count} 人参加"
+  },
+  "stat.requests": {
+   "one": "{count} 个加入申请",
+   "other": "{count} 个加入申请"
+  },
+  "stat.waitlisted": {
+   "one": "{count} 人在候补",
+   "other": "{count} 人在候补"
+  },
+  "stat.interested": {
+   "one": "{count} 人感兴趣",
+   "other": "{count} 人感兴趣"
+  },
+  "interestedNote": "“感兴趣”是私密的：你只能看到人数，看不到是谁。",
+  "section.invitations": "你发出的邀请",
+  "section.business": "商家",
+  "section.actions": "操作",
+  "invite.going": "参加",
+  "invite.requested": "申请加入",
+  "invite.waitlisted": "候补中",
+  "invite.accepted": "已答应，尚未加入",
+  "invite.invited": "已邀请",
+  "invite.declined": "去不了",
+  "invite.expired": "已过期",
+  "aFriend": "一位朋友",
+  "showAll": "查看全部（{count}）",
+  "showLess": "收起",
+  "biz.offerReceived": "{name} · 已收到报价",
+  "biz.offerReceivedNoName": "有商家给你发了报价",
+  "biz.offersReceived": {
+   "one": "已收到 {count} 个报价，选一个",
+   "other": "已收到 {count} 个报价，选一个"
+  },
+  "biz.waiting": {
+   "one": "正在等待 {count} 家商家回复",
+   "other": "正在等待 {count} 家商家回复"
+  },
+  "biz.asked": "你已询问附近的商家",
+  "biz.partnerConfirmed": "{name} · 已确认",
+  "biz.partnerPending": "{name} · 等待对方回复",
+  "action.invite": "邀请",
+  "action.edit": "编辑",
+  "action.message": "发消息",
+  "action.manage": "管理参加者",
+  "action.hideAttendees": "隐藏参加者",
+  "action.cancel": "取消"
+ },
+ "vi": {
+  "stat.going": {
+   "one": "{count} người tham gia",
+   "other": "{count} người tham gia"
+  },
+  "stat.requests": {
+   "one": "{count} yêu cầu tham gia",
+   "other": "{count} yêu cầu tham gia"
+  },
+  "stat.waitlisted": {
+   "one": "{count} người trong danh sách chờ",
+   "other": "{count} người trong danh sách chờ"
+  },
+  "stat.interested": {
+   "one": "{count} người quan tâm",
+   "other": "{count} người quan tâm"
+  },
+  "interestedNote": "Quan tâm là riêng tư: bạn thấy bao nhiêu người, không bao giờ thấy là ai.",
+  "section.invitations": "Lời mời bạn đã gửi",
+  "section.business": "Doanh nghiệp",
+  "section.actions": "Thao tác",
+  "invite.going": "Tham gia",
+  "invite.requested": "Xin tham gia",
+  "invite.waitlisted": "Trong danh sách chờ",
+  "invite.accepted": "Đã đồng ý, chưa tham gia",
+  "invite.invited": "Đã mời",
+  "invite.declined": "Không đến được",
+  "invite.expired": "Đã hết hạn",
+  "aFriend": "Một người bạn",
+  "showAll": "Xem tất cả ({count})",
+  "showLess": "Thu gọn",
+  "biz.offerReceived": "{name} · Đã nhận ưu đãi",
+  "biz.offerReceivedNoName": "Một doanh nghiệp đã gửi ưu đãi cho bạn",
+  "biz.offersReceived": {
+   "one": "Đã nhận {count} ưu đãi, hãy chọn một",
+   "other": "Đã nhận {count} ưu đãi, hãy chọn một"
+  },
+  "biz.waiting": {
+   "one": "Đang chờ {count} doanh nghiệp trả lời",
+   "other": "Đang chờ {count} doanh nghiệp trả lời"
+  },
+  "biz.asked": "Bạn đã hỏi các doanh nghiệp gần đây",
+  "biz.partnerConfirmed": "{name} · Đã xác nhận",
+  "biz.partnerPending": "{name} · Đang chờ họ trả lời",
+  "action.invite": "Mời",
+  "action.edit": "Sửa",
+  "action.message": "Nhắn tin",
+  "action.manage": "Quản lý người tham gia",
+  "action.hideAttendees": "Ẩn người tham gia",
+  "action.cancel": "Hủy"
+ },
+ "tl": {
+  "stat.going": {
+   "one": "{count} dadalo",
+   "other": "{count} dadalo"
+  },
+  "stat.requests": {
+   "one": "{count} hiling na sumali",
+   "other": "{count} hiling na sumali"
+  },
+  "stat.waitlisted": {
+   "one": "{count} nasa waitlist",
+   "other": "{count} nasa waitlist"
+  },
+  "stat.interested": {
+   "one": "{count} interesado",
+   "other": "{count} interesado"
+  },
+  "interestedNote": "Pribado ang Interesado: makikita mo kung ilan, hindi kung sino.",
+  "section.invitations": "Mga imbitasyong ipinadala mo",
+  "section.business": "Negosyo",
+  "section.actions": "Mga aksyon",
+  "invite.going": "Dadalo",
+  "invite.requested": "Humiling na sumali",
+  "invite.waitlisted": "Nasa waitlist",
+  "invite.accepted": "Pumayag, hindi pa sumasali",
+  "invite.invited": "Inimbitahan",
+  "invite.declined": "Hindi makakadalo",
+  "invite.expired": "Expired na",
+  "aFriend": "Isang kaibigan",
+  "showAll": "Ipakita lahat ({count})",
+  "showLess": "Ipakita nang mas kaunti",
+  "biz.offerReceived": "{name} · May natanggap na alok",
+  "biz.offerReceivedNoName": "May negosyong nag-alok sa iyo",
+  "biz.offersReceived": {
+   "one": "{count} alok ang natanggap, pumili ng isa",
+   "other": "{count} alok ang natanggap, pumili ng isa"
+  },
+  "biz.waiting": {
+   "one": "Hinihintay ang sagot ng {count} negosyo",
+   "other": "Hinihintay ang sagot ng {count} negosyo"
+  },
+  "biz.asked": "Nagtanong ka sa mga negosyo sa malapit",
+  "biz.partnerConfirmed": "{name} · Kumpirmado",
+  "biz.partnerPending": "{name} · Hinihintay ang sagot nila",
+  "action.invite": "Mag-imbita",
+  "action.edit": "I-edit",
+  "action.message": "Mag-message",
+  "action.manage": "Pamahalaan ang dadalo",
+  "action.hideAttendees": "Itago ang dadalo",
+  "action.cancel": "Kanselahin"
+ },
+ "ru": {
+  "stat.going": {
+   "one": "{count} участник",
+   "few": "{count} участника",
+   "many": "{count} участников",
+   "other": "{count} участника"
+  },
+  "stat.requests": {
+   "one": "{count} заявка на участие",
+   "few": "{count} заявки на участие",
+   "many": "{count} заявок на участие",
+   "other": "{count} заявки на участие"
+  },
+  "stat.waitlisted": {
+   "one": "{count} в листе ожидания",
+   "other": "{count} в листе ожидания"
+  },
+  "stat.interested": {
+   "one": "{count} заинтересован",
+   "few": "{count} заинтересованы",
+   "many": "{count} заинтересованы",
+   "other": "{count} заинтересованы"
+  },
+  "interestedNote": "«Интересно» — это приватно: вы видите сколько, но не кто.",
+  "section.invitations": "Ваши приглашения",
+  "section.business": "Бизнес",
+  "section.actions": "Действия",
+  "invite.going": "Идёт",
+  "invite.requested": "Просит присоединиться",
+  "invite.waitlisted": "В листе ожидания",
+  "invite.accepted": "Согласился, ещё не присоединился",
+  "invite.invited": "Приглашён",
+  "invite.declined": "Не сможет",
+  "invite.expired": "Истекло",
+  "aFriend": "Друг",
+  "showAll": "Показать всех ({count})",
+  "showLess": "Свернуть",
+  "biz.offerReceived": "{name} · Получено предложение",
+  "biz.offerReceivedNoName": "Бизнес прислал вам предложение",
+  "biz.offersReceived": {
+   "one": "Получено {count} предложение, выберите одно",
+   "few": "Получено {count} предложения, выберите одно",
+   "many": "Получено {count} предложений, выберите одно",
+   "other": "Получено {count} предложения, выберите одно"
+  },
+  "biz.waiting": {
+   "one": "Ждём ответа от {count} бизнеса",
+   "other": "Ждём ответа от {count} бизнесов"
+  },
+  "biz.asked": "Вы спросили ближайшие бизнесы",
+  "biz.partnerConfirmed": "{name} · Подтверждено",
+  "biz.partnerPending": "{name} · Ждём их ответа",
+  "action.invite": "Пригласить",
+  "action.edit": "Изменить",
+  "action.message": "Написать",
+  "action.manage": "Управлять участниками",
+  "action.hideAttendees": "Скрыть участников",
+  "action.cancel": "Отменить"
+ },
+ "ko": {
+  "stat.going": {
+   "one": "{count}명 참석",
+   "other": "{count}명 참석"
+  },
+  "stat.requests": {
+   "one": "참여 요청 {count}건",
+   "other": "참여 요청 {count}건"
+  },
+  "stat.waitlisted": {
+   "one": "대기자 {count}명",
+   "other": "대기자 {count}명"
+  },
+  "stat.interested": {
+   "one": "관심 {count}명",
+   "other": "관심 {count}명"
+  },
+  "interestedNote": "관심 표시는 비공개예요. 몇 명인지만 보이고 누구인지는 보이지 않아요.",
+  "section.invitations": "보낸 초대",
+  "section.business": "비즈니스",
+  "section.actions": "할 일",
+  "invite.going": "참석",
+  "invite.requested": "참여 요청",
+  "invite.waitlisted": "대기 중",
+  "invite.accepted": "수락함, 아직 참여 안 함",
+  "invite.invited": "초대함",
+  "invite.declined": "참석 불가",
+  "invite.expired": "만료됨",
+  "aFriend": "친구",
+  "showAll": "모두 보기 ({count})",
+  "showLess": "접기",
+  "biz.offerReceived": "{name} · 제안 받음",
+  "biz.offerReceivedNoName": "비즈니스가 제안을 보냈어요",
+  "biz.offersReceived": {
+   "one": "제안 {count}개를 받았어요. 하나를 고르세요",
+   "other": "제안 {count}개를 받았어요. 하나를 고르세요"
+  },
+  "biz.waiting": {
+   "one": "비즈니스 {count}곳의 답변을 기다리는 중",
+   "other": "비즈니스 {count}곳의 답변을 기다리는 중"
+  },
+  "biz.asked": "근처 비즈니스에 요청했어요",
+  "biz.partnerConfirmed": "{name} · 확정",
+  "biz.partnerPending": "{name} · 답변 기다리는 중",
+  "action.invite": "초대",
+  "action.edit": "수정",
+  "action.message": "메시지",
+  "action.manage": "참석자 관리",
+  "action.hideAttendees": "참석자 숨기기",
+  "action.cancel": "취소"
+ }
+}
