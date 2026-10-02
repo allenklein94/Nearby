@@ -11,7 +11,9 @@ const root = path.join(__dirname, '..', '..');
 const mig = (f) => fs.readFileSync(path.join(root, 'supabase', 'migrations', f), 'utf8');
 const base = mig('20270258_notification_preferences_central.sql'); // derivation trigger, _send_push check
 const sql = mig('20270259_business_owner_notification_preferences.sql'); // seed, owner senders (item 143)
-const msg = mig('20270260_messages_notification_group.sql'); // current CHECK, setter, derivation; message -> messages
+const msg = mig('20270261_video_calls_notification_group.sql'); // current CHECK, setter, derivation
+// Type moves after the item-143 seed, in order: message -> messages (20270260), video_call -> video_calls (20270261).
+const moves = ['20270260_messages_notification_group.sql', '20270261_video_calls_notification_group.sql'].map(mig).join('\n');
 
 describe('every push type is placed exactly once', () => {
   test('8. person-mutable groups + account notices = every push type, exactly once', () => {
@@ -33,7 +35,7 @@ describe('the database copy is identical', () => {
   test('notification_type_groups seed = NOTIFICATION_GROUP_BY_TYPE', () => {
     const ins = sql.slice(sql.indexOf('insert into public.notification_type_groups'), sql.indexOf('-- Keep what people already chose'));
     const seed = Object.fromEntries([...ins.matchAll(/\('([a-z_]+)', '([a-z_]+)'\)/g)].map((m) => [m[1], m[2]]));
-    for (const m of msg.matchAll(/update public\.notification_type_groups set group_key = '([a-z_]+)' where type = '([a-z_]+)'/g)) seed[m[2]] = m[1];
+    for (const m of moves.matchAll(/update public\.notification_type_groups set group_key = '([a-z_]+)' where type = '([a-z_]+)'/g)) seed[m[2]] = m[1];
     expect(seed).toEqual(NOTIFICATION_GROUP_BY_TYPE);
   });
   test('the CHECK and the setter accept exactly the groups', () => {

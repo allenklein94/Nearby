@@ -15,7 +15,7 @@
   "group.friends_occasions.label": "Birthdays and occasions",
   "group.friends_occasions.hint": "A friend's birthday or an occasion coming up.",
   "group.dating.label": "Dating matches",
-  "group.dating.hint": "New matches, waves, calls and things you add together.",
+  "group.dating.hint": "New matches, waves and things you add together.",
   "group.business_offers.label": "Offers",
   "group.business_offers.hint": "A business makes you an offer or posts an update.",
   "group.business_responses.label": "Replies to your requests",
@@ -30,11 +30,13 @@
   "section.business_owner.label": "Your business",
   "section.business_owner.hint": "Alerts for running your business. Separate from Businesses you use.",
   "section.people.label": "People",
-  "section.people.hint": "Friends, messages, birthdays, dating and people you cross paths with.",
+  "section.people.hint": "Friends, messages, calls, birthdays, dating and people you cross paths with.",
   "section.nearby.label": "Nearby",
   "section.nearby.hint": "Ideas near you, and communities you lead.",
   "group.messages.label": "Messages",
-  "group.messages.hint": "New messages in your one-on-one chats, with friends and matches."
+  "group.messages.hint": "New messages in your one-on-one chats, with friends and matches.",
+  "group.video_calls.label": "Video calls",
+  "group.video_calls.hint": "Someone starts a video or voice call with you, friends and matches alike."
  },
  "es": {
   "section.plans.label": "Planes",
@@ -52,7 +54,7 @@
   "group.friends_occasions.label": "Cumpleaños y ocasiones",
   "group.friends_occasions.hint": "El cumpleaños de un amigo o una ocasión que se acerca.",
   "group.dating.label": "Matches de citas",
-  "group.dating.hint": "Nuevos matches, saludos, llamadas y lo que agregan juntos.",
+  "group.dating.hint": "Nuevos matches, saludos y lo que agregan juntos.",
   "group.business_offers.label": "Ofertas",
   "group.business_offers.hint": "Un negocio te hace una oferta o publica una novedad.",
   "group.business_responses.label": "Respuestas a tus solicitudes",
@@ -67,11 +69,13 @@
   "section.business_owner.label": "Tu negocio",
   "section.business_owner.hint": "Avisos para gestionar tu negocio. Aparte de Negocios que usas.",
   "section.people.label": "Personas",
-  "section.people.hint": "Amigos, mensajes, cumpleaños, citas y personas con las que te cruzas.",
+  "section.people.hint": "Amigos, mensajes, llamadas, cumpleaños, citas y personas con las que te cruzas.",
   "section.nearby.label": "Cerca",
   "section.nearby.hint": "Ideas cerca de ti y las comunidades que diriges.",
   "group.messages.label": "Mensajes",
-  "group.messages.hint": "Mensajes nuevos en tus chats individuales, con amigos y matches."
+  "group.messages.hint": "Mensajes nuevos en tus chats individuales, con amigos y matches.",
+  "group.video_calls.label": "Videollamadas",
+  "group.video_calls.hint": "Alguien inicia una videollamada o llamada de voz contigo, sean amigos o matches."
  },
  "de": {
   "section.plans.label": "Pläne",
@@ -89,7 +93,7 @@
   "group.friends_occasions.label": "Geburtstage und Anlässe",
   "group.friends_occasions.hint": "Der Geburtstag eines Freundes oder ein bevorstehender Anlass.",
   "group.dating.label": "Dating-Matches",
-  "group.dating.hint": "Neue Matches, Winken, Anrufe und was ihr gemeinsam hinzufügt.",
+  "group.dating.hint": "Neue Matches, Winken und was ihr gemeinsam hinzufügt.",
   "group.business_offers.label": "Angebote",
   "group.business_offers.hint": "Ein Geschäft macht dir ein Angebot oder postet ein Update.",
   "group.business_responses.label": "Antworten auf deine Anfragen",
@@ -104,11 +108,13 @@
   "section.business_owner.label": "Dein Geschäft",
   "section.business_owner.hint": "Hinweise zur Führung deines Geschäfts. Getrennt von „Geschäfte, die du nutzt“.",
   "section.people.label": "Menschen",
-  "section.people.hint": "Freunde, Nachrichten, Geburtstage, Dating und Menschen, denen du begegnest.",
+  "section.people.hint": "Freunde, Nachrichten, Anrufe, Geburtstage, Dating und Menschen, denen du begegnest.",
   "section.nearby.label": "In der Nähe",
   "section.nearby.hint": "Ideen in deiner Nähe und Communitys, die du leitest.",
   "group.messages.label": "Nachrichten",
-  "group.messages.hint": "Neue Nachrichten in deinen Einzelchats, mit Freunden und Matches."
+  "group.messages.hint": "Neue Nachrichten in deinen Einzelchats, mit Freunden und Matches.",
+  "group.video_calls.label": "Videoanrufe",
+  "group.video_calls.hint": "Jemand startet einen Video- oder Sprachanruf mit dir, Freunde wie Matches."
  },
  "fr": {
   "section.plans.label": "Plans",
@@ -126,7 +132,7 @@
   "group.friends_occasions.label": "Anniversaires et occasions",
   "group.friends_occasions.hint": "L'anniversaire d'un ami ou une occasion qui approche.",
   "group.dating.label": "Matchs de rencontre",
-  "group.dating.hint": "Nouveaux matchs, coucous, appels et ce que vous ajoutez ensemble.",
+  "group.dating.hint": "Nouveaux matchs, coucous et ce que vous ajoutez ensemble.",
   "group.business_offers.label": "Offres",
   "group.business_offers.hint": "Un commerce vous fait une offre ou publie une nouveauté.",
   "group.business_responses.label": "Réponses à vos demandes",
@@ -141,11 +147,13 @@
   "section.business_owner.label": "Votre commerce",
   "section.business_owner.hint": "Alertes pour gérer votre commerce. Distinctes de « Commerces que vous utilisez ».",
   "section.people.label": "Personnes",
-  "section.people.hint": "Amis, messages, anniversaires, rencontres et personnes que vous croisez.",
+  "section.people.hint": "Amis, messages, appels, anniversaires, rencontres et personnes que vous croisez.",
   "section.nearby.label": "À proximité",
   "section.nearby.hint": "Des idées près de chez vous et les communautés que vous animez.",
   "group.messages.label": "Messages",
-  "group.messages.hint": "Nouveaux messages dans vos discussions privées, avec vos amis et vos matchs."
+  "group.messages.hint": "Nouveaux messages dans vos discussions privées, avec vos amis et vos matchs.",
+  "group.video_calls.label": "Appels vidéo",
+  "group.video_calls.hint": "Quelqu’un lance un appel vidéo ou vocal avec vous, ami ou match."
  },
  "pt": {
   "section.plans.label": "Planos",
@@ -163,7 +171,7 @@
   "group.friends_occasions.label": "Aniversários e ocasiões",
   "group.friends_occasions.hint": "O aniversário de um amigo ou uma ocasião chegando.",
   "group.dating.label": "Matches de encontros",
-  "group.dating.hint": "Novos matches, acenos, chamadas e o que vocês adicionam juntos.",
+  "group.dating.hint": "Novos matches, acenos e o que vocês adicionam juntos.",
   "group.business_offers.label": "Ofertas",
   "group.business_offers.hint": "Um negócio faz uma oferta ou publica uma novidade.",
   "group.business_responses.label": "Respostas aos seus pedidos",
@@ -178,11 +186,13 @@
   "section.business_owner.label": "Seu negócio",
   "section.business_owner.hint": "Alertas para administrar seu negócio. Separados de Negócios que você usa.",
   "section.people.label": "Pessoas",
-  "section.people.hint": "Amigos, mensagens, aniversários, encontros e pessoas com quem você cruza.",
+  "section.people.hint": "Amigos, mensagens, chamadas, aniversários, encontros e pessoas com quem você cruza.",
   "section.nearby.label": "Por perto",
   "section.nearby.hint": "Ideias perto de você e comunidades que você lidera.",
   "group.messages.label": "Mensagens",
-  "group.messages.hint": "Novas mensagens nas suas conversas individuais, com amigos e matches."
+  "group.messages.hint": "Novas mensagens nas suas conversas individuais, com amigos e matches.",
+  "group.video_calls.label": "Chamadas de vídeo",
+  "group.video_calls.hint": "Alguém inicia uma chamada de vídeo ou de voz com você, amigos ou matches."
  },
  "ht": {
   "section.plans.label": "Plan",
@@ -200,7 +210,7 @@
   "group.friends_occasions.label": "Anivèsè ak okazyon",
   "group.friends_occasions.hint": "Anivèsè yon zanmi oswa yon okazyon k ap vini.",
   "group.dating.label": "Match randevou",
-  "group.dating.hint": "Nouvo match, bonjou, apèl ak sa nou ajoute ansanm.",
+  "group.dating.hint": "Nouvo match, bonjou ak sa nou ajoute ansanm.",
   "group.business_offers.label": "Òf",
   "group.business_offers.hint": "Yon biznis fè ou yon òf oswa poste yon nouvèl.",
   "group.business_responses.label": "Repons a demann ou yo",
@@ -215,11 +225,13 @@
   "section.business_owner.label": "Biznis ou",
   "section.business_owner.hint": "Alèt pou jere biznis ou. Separe ak Biznis ou itilize.",
   "section.people.label": "Moun",
-  "section.people.hint": "Zanmi, mesaj, anivèsè, randevou ak moun ou kwaze.",
+  "section.people.hint": "Zanmi, mesaj, apèl, anivèsè, randevou ak moun ou kwaze.",
   "section.nearby.label": "Toupre",
   "section.nearby.hint": "Ide toupre w, ak kominote w ap dirije.",
   "group.messages.label": "Mesaj",
-  "group.messages.hint": "Nouvo mesaj nan chat youn-a-youn ou, ak zanmi ak match."
+  "group.messages.hint": "Nouvo mesaj nan chat youn-a-youn ou, ak zanmi ak match.",
+  "group.video_calls.label": "Apèl videyo",
+  "group.video_calls.hint": "Yon moun kòmanse yon apèl videyo oswa vwa avè w, zanmi kou match."
  },
  "zh": {
   "section.plans.label": "计划",
@@ -237,7 +249,7 @@
   "group.friends_occasions.label": "生日和纪念日",
   "group.friends_occasions.hint": "好友的生日或即将到来的纪念日。",
   "group.dating.label": "约会配对",
-  "group.dating.hint": "新配对、打招呼、通话，以及你们一起添加的内容。",
+  "group.dating.hint": "新配对、打招呼，以及你们一起添加的内容。",
   "group.business_offers.label": "报价",
   "group.business_offers.hint": "商家向你发出报价或发布更新。",
   "group.business_responses.label": "对你请求的回复",
@@ -252,11 +264,13 @@
   "section.business_owner.label": "你的商家",
   "section.business_owner.hint": "经营你的商家时的提醒。与“你光顾的商家”分开。",
   "section.people.label": "人",
-  "section.people.hint": "好友、消息、生日、约会，以及与你擦肩而过的人。",
+  "section.people.hint": "好友、消息、通话、生日、约会，以及与你擦肩而过的人。",
   "section.nearby.label": "附近",
   "section.nearby.hint": "你附近的点子，以及你管理的社区。",
   "group.messages.label": "消息",
-  "group.messages.hint": "你一对一聊天中的新消息，包括好友和配对。"
+  "group.messages.hint": "你一对一聊天中的新消息，包括好友和配对。",
+  "group.video_calls.label": "视频通话",
+  "group.video_calls.hint": "有人向你发起视频或语音通话，好友和配对都包括。"
  },
  "vi": {
   "section.plans.label": "Kế hoạch",
@@ -274,7 +288,7 @@
   "group.friends_occasions.label": "Sinh nhật và dịp đặc biệt",
   "group.friends_occasions.hint": "Sinh nhật của bạn bè hoặc một dịp sắp đến.",
   "group.dating.label": "Ghép đôi hẹn hò",
-  "group.dating.hint": "Ghép đôi mới, lời chào, cuộc gọi và những gì hai bạn cùng thêm.",
+  "group.dating.hint": "Ghép đôi mới, lời chào và những gì hai bạn cùng thêm.",
   "group.business_offers.label": "Ưu đãi",
   "group.business_offers.hint": "Một doanh nghiệp gửi bạn ưu đãi hoặc đăng cập nhật.",
   "group.business_responses.label": "Phản hồi cho yêu cầu của bạn",
@@ -289,11 +303,13 @@
   "section.business_owner.label": "Doanh nghiệp của bạn",
   "section.business_owner.hint": "Thông báo để vận hành doanh nghiệp của bạn. Tách riêng với Doanh nghiệp bạn dùng.",
   "section.people.label": "Mọi người",
-  "section.people.hint": "Bạn bè, tin nhắn, sinh nhật, hẹn hò và những người bạn tình cờ gặp.",
+  "section.people.hint": "Bạn bè, tin nhắn, cuộc gọi, sinh nhật, hẹn hò và những người bạn tình cờ gặp.",
   "section.nearby.label": "Gần đây",
   "section.nearby.hint": "Ý tưởng gần bạn và các cộng đồng bạn dẫn dắt.",
   "group.messages.label": "Tin nhắn",
-  "group.messages.hint": "Tin nhắn mới trong các cuộc trò chuyện riêng, với bạn bè và người ghép đôi."
+  "group.messages.hint": "Tin nhắn mới trong các cuộc trò chuyện riêng, với bạn bè và người ghép đôi.",
+  "group.video_calls.label": "Cuộc gọi video",
+  "group.video_calls.hint": "Ai đó bắt đầu cuộc gọi video hoặc thoại với bạn, cả bạn bè lẫn người ghép đôi."
  },
  "tl": {
   "section.plans.label": "Mga Plano",
@@ -311,7 +327,7 @@
   "group.friends_occasions.label": "Kaarawan at okasyon",
   "group.friends_occasions.hint": "Kaarawan ng kaibigan o paparating na okasyon.",
   "group.dating.label": "Mga dating match",
-  "group.dating.hint": "Mga bagong match, kaway, tawag at mga idinadagdag ninyo nang magkasama.",
+  "group.dating.hint": "Mga bagong match, kaway at mga idinadagdag ninyo nang magkasama.",
   "group.business_offers.label": "Mga alok",
   "group.business_offers.hint": "May negosyong nag-alok sa iyo o nag-post ng update.",
   "group.business_responses.label": "Mga sagot sa request mo",
@@ -326,11 +342,13 @@
   "section.business_owner.label": "Ang negosyo mo",
   "section.business_owner.hint": "Mga alerto sa pagpapatakbo ng negosyo mo. Hiwalay sa Mga negosyong ginagamit mo.",
   "section.people.label": "Mga tao",
-  "section.people.hint": "Mga kaibigan, mensahe, kaarawan, dating at mga taong nakakasalubong mo.",
+  "section.people.hint": "Mga kaibigan, mensahe, tawag, kaarawan, dating at mga taong nakakasalubong mo.",
   "section.nearby.label": "Malapit",
   "section.nearby.hint": "Mga ideya malapit sa iyo, at mga komunidad na pinamumunuan mo.",
   "group.messages.label": "Mga mensahe",
-  "group.messages.hint": "Mga bagong mensahe sa one-on-one chats mo, kasama ang mga kaibigan at match."
+  "group.messages.hint": "Mga bagong mensahe sa one-on-one chats mo, kasama ang mga kaibigan at match.",
+  "group.video_calls.label": "Mga video call",
+  "group.video_calls.hint": "May nagsimula ng video o voice call sa iyo, kaibigan man o match."
  },
  "ru": {
   "section.plans.label": "Планы",
@@ -348,7 +366,7 @@
   "group.friends_occasions.label": "Дни рождения и события",
   "group.friends_occasions.hint": "День рождения друга или приближающееся событие.",
   "group.dating.label": "Знакомства: совпадения",
-  "group.dating.hint": "Новые совпадения, приветы, звонки и то, что вы добавляете вместе.",
+  "group.dating.hint": "Новые совпадения, приветы и то, что вы добавляете вместе.",
   "group.business_offers.label": "Предложения",
   "group.business_offers.hint": "Бизнес делает вам предложение или публикует новость.",
   "group.business_responses.label": "Ответы на ваши запросы",
@@ -363,11 +381,13 @@
   "section.business_owner.label": "Ваш бизнес",
   "section.business_owner.hint": "Уведомления для ведения вашего бизнеса. Отдельно от «Заведения, которыми вы пользуетесь».",
   "section.people.label": "Люди",
-  "section.people.hint": "Друзья, сообщения, дни рождения, знакомства и люди, которых вы встречаете.",
+  "section.people.hint": "Друзья, сообщения, звонки, дни рождения, знакомства и люди, которых вы встречаете.",
   "section.nearby.label": "Рядом",
   "section.nearby.hint": "Идеи поблизости и сообщества, которыми вы руководите.",
   "group.messages.label": "Сообщения",
-  "group.messages.hint": "Новые сообщения в личных чатах с друзьями и совпадениями."
+  "group.messages.hint": "Новые сообщения в личных чатах с друзьями и совпадениями.",
+  "group.video_calls.label": "Видеозвонки",
+  "group.video_calls.hint": "Кто-то начинает с вами видео- или голосовой звонок, друзья и совпадения."
  },
  "ko": {
   "section.plans.label": "계획",
@@ -385,7 +405,7 @@
   "group.friends_occasions.label": "생일과 기념일",
   "group.friends_occasions.hint": "친구의 생일이나 다가오는 기념일.",
   "group.dating.label": "데이트 매치",
-  "group.dating.hint": "새 매치, 인사, 통화, 함께 추가한 항목.",
+  "group.dating.hint": "새 매치, 인사, 함께 추가한 항목.",
   "group.business_offers.label": "제안",
   "group.business_offers.hint": "업체가 제안을 보내거나 소식을 올렸을 때.",
   "group.business_responses.label": "내 요청에 대한 답변",
@@ -400,10 +420,12 @@
   "section.business_owner.label": "내 업체",
   "section.business_owner.hint": "업체 운영 알림. ‘이용하는 업체’와 별개입니다.",
   "section.people.label": "사람",
-  "section.people.hint": "친구, 메시지, 생일, 데이트, 그리고 마주친 사람.",
+  "section.people.hint": "친구, 메시지, 통화, 생일, 데이트, 그리고 마주친 사람.",
   "section.nearby.label": "근처",
   "section.nearby.hint": "근처의 아이디어와 내가 운영하는 커뮤니티.",
   "group.messages.label": "메시지",
-  "group.messages.hint": "친구와 매치와의 1:1 채팅 새 메시지."
+  "group.messages.hint": "친구와 매치와의 1:1 채팅 새 메시지.",
+  "group.video_calls.label": "영상 통화",
+  "group.video_calls.hint": "친구나 매치가 영상 또는 음성 통화를 시작할 때."
  }
 }

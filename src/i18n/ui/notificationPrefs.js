@@ -17,7 +17,7 @@ export default {
       },
       people: {
         label: "People",
-        hint: "Friends, messages, birthdays, dating and people you cross paths with.",
+        hint: "Friends, messages, calls, birthdays, dating and people you cross paths with.",
       },
       nearby: {
         label: "Nearby",
@@ -47,7 +47,7 @@ export default {
       },
       dating: {
         label: "Dating matches",
-        hint: "New matches, waves, calls and things you add together.",
+        hint: "New matches, waves and things you add together.",
       },
       business_offers: {
         label: "Offers",
@@ -73,6 +73,10 @@ export default {
         label: "Messages",
         hint: "New messages in your one-on-one chats, with friends and matches.",
       },
+      video_calls: {
+        label: "Video calls",
+        hint: "Someone starts a video or voice call with you, friends and matches alike.",
+      },
     },
     toggleA11y: "Notify me about {label}",
   },
@@ -92,7 +96,7 @@ export default {
       },
       people: {
         label: "Personas",
-        hint: "Amigos, mensajes, cumpleaños, citas y personas con las que te cruzas.",
+        hint: "Amigos, mensajes, llamadas, cumpleaños, citas y personas con las que te cruzas.",
       },
       nearby: {
         label: "Cerca",
@@ -122,7 +126,7 @@ export default {
       },
       dating: {
         label: "Matches de citas",
-        hint: "Nuevos matches, saludos, llamadas y lo que agregan juntos.",
+        hint: "Nuevos matches, saludos y lo que agregan juntos.",
       },
       business_offers: {
         label: "Ofertas",
@@ -148,6 +152,10 @@ export default {
         label: "Mensajes",
         hint: "Mensajes nuevos en tus chats individuales, con amigos y matches.",
       },
+      video_calls: {
+        label: "Videollamadas",
+        hint: "Alguien inicia una videollamada o llamada de voz contigo, sean amigos o matches.",
+      },
     },
     toggleA11y: "Notificarme sobre {label}",
   },
@@ -167,7 +175,7 @@ export default {
       },
       people: {
         label: "Menschen",
-        hint: "Freunde, Nachrichten, Geburtstage, Dating und Menschen, denen du begegnest.",
+        hint: "Freunde, Nachrichten, Anrufe, Geburtstage, Dating und Menschen, denen du begegnest.",
       },
       nearby: {
         label: "In der Nähe",
@@ -197,7 +205,7 @@ export default {
       },
       dating: {
         label: "Dating-Matches",
-        hint: "Neue Matches, Winken, Anrufe und was ihr gemeinsam hinzufügt.",
+        hint: "Neue Matches, Winken und was ihr gemeinsam hinzufügt.",
       },
       business_offers: {
         label: "Angebote",
@@ -223,6 +231,10 @@ export default {
         label: "Nachrichten",
         hint: "Neue Nachrichten in deinen Einzelchats, mit Freunden und Matches.",
       },
+      video_calls: {
+        label: "Videoanrufe",
+        hint: "Jemand startet einen Video- oder Sprachanruf mit dir, Freunde wie Matches.",
+      },
     },
     toggleA11y: "Benachrichtige mich über {label}",
   },
@@ -242,7 +254,7 @@ export default {
       },
       people: {
         label: "Personnes",
-        hint: "Amis, messages, anniversaires, rencontres et personnes que vous croisez.",
+        hint: "Amis, messages, appels, anniversaires, rencontres et personnes que vous croisez.",
       },
       nearby: {
         label: "À proximité",
@@ -272,7 +284,7 @@ export default {
       },
       dating: {
         label: "Matchs de rencontre",
-        hint: "Nouveaux matchs, coucous, appels et ce que vous ajoutez ensemble.",
+        hint: "Nouveaux matchs, coucous et ce que vous ajoutez ensemble.",
       },
       business_offers: {
         label: "Offres",
@@ -298,6 +310,10 @@ export default {
         label: "Messages",
         hint: "Nouveaux messages dans vos discussions privées, avec vos amis et vos matchs.",
       },
+      video_calls: {
+        label: "Appels vidéo",
+        hint: "Quelqu’un lance un appel vidéo ou vocal avec vous, ami ou match.",
+      },
     },
     toggleA11y: "Me prévenir pour {label}",
   },
@@ -317,7 +333,7 @@ export default {
       },
       people: {
         label: "Pessoas",
-        hint: "Amigos, mensagens, aniversários, encontros e pessoas com quem você cruza.",
+        hint: "Amigos, mensagens, chamadas, aniversários, encontros e pessoas com quem você cruza.",
       },
       nearby: {
         label: "Por perto",
@@ -347,7 +363,7 @@ export default {
       },
       dating: {
         label: "Matches de encontros",
-        hint: "Novos matches, acenos, chamadas e o que vocês adicionam juntos.",
+        hint: "Novos matches, acenos e o que vocês adicionam juntos.",
       },
       business_offers: {
         label: "Ofertas",
@@ -373,6 +389,10 @@ export default {
         label: "Mensagens",
         hint: "Novas mensagens nas suas conversas individuais, com amigos e matches.",
       },
+      video_calls: {
+        label: "Chamadas de vídeo",
+        hint: "Alguém inicia uma chamada de vídeo ou de voz com você, amigos ou matches.",
+      },
     },
     toggleA11y: "Notificar sobre {label}",
   },
@@ -392,7 +412,7 @@ export default {
       },
       people: {
         label: "Moun",
-        hint: "Zanmi, mesaj, anivèsè, randevou ak moun ou kwaze.",
+        hint: "Zanmi, mesaj, apèl, anivèsè, randevou ak moun ou kwaze.",
       },
       nearby: {
         label: "Toupre",
@@ -422,7 +442,7 @@ export default {
       },
       dating: {
         label: "Match randevou",
-        hint: "Nouvo match, bonjou, apèl ak sa nou ajoute ansanm.",
+        hint: "Nouvo match, bonjou ak sa nou ajoute ansanm.",
       },
       business_offers: {
         label: "Òf",
@@ -448,6 +468,10 @@ export default {
         label: "Mesaj",
         hint: "Nouvo mesaj nan chat youn-a-youn ou, ak zanmi ak match.",
       },
+      video_calls: {
+        label: "Apèl videyo",
+        hint: "Yon moun kòmanse yon apèl videyo oswa vwa avè w, zanmi kou match.",
+      },
     },
     toggleA11y: "Fè m konnen sou {label}",
   },
@@ -467,7 +491,7 @@ export default {
       },
       people: {
         label: "人",
-        hint: "好友、消息、生日、约会，以及与你擦肩而过的人。",
+        hint: "好友、消息、通话、生日、约会，以及与你擦肩而过的人。",
       },
       nearby: {
         label: "附近",
@@ -497,7 +521,7 @@ export default {
       },
       dating: {
         label: "约会配对",
-        hint: "新配对、打招呼、通话，以及你们一起添加的内容。",
+        hint: "新配对、打招呼，以及你们一起添加的内容。",
       },
       business_offers: {
         label: "报价",
@@ -523,6 +547,10 @@ export default {
         label: "消息",
         hint: "你一对一聊天中的新消息，包括好友和配对。",
       },
+      video_calls: {
+        label: "视频通话",
+        hint: "有人向你发起视频或语音通话，好友和配对都包括。",
+      },
     },
     toggleA11y: "通知我：{label}",
   },
@@ -542,7 +570,7 @@ export default {
       },
       people: {
         label: "Mọi người",
-        hint: "Bạn bè, tin nhắn, sinh nhật, hẹn hò và những người bạn tình cờ gặp.",
+        hint: "Bạn bè, tin nhắn, cuộc gọi, sinh nhật, hẹn hò và những người bạn tình cờ gặp.",
       },
       nearby: {
         label: "Gần đây",
@@ -572,7 +600,7 @@ export default {
       },
       dating: {
         label: "Ghép đôi hẹn hò",
-        hint: "Ghép đôi mới, lời chào, cuộc gọi và những gì hai bạn cùng thêm.",
+        hint: "Ghép đôi mới, lời chào và những gì hai bạn cùng thêm.",
       },
       business_offers: {
         label: "Ưu đãi",
@@ -598,6 +626,10 @@ export default {
         label: "Tin nhắn",
         hint: "Tin nhắn mới trong các cuộc trò chuyện riêng, với bạn bè và người ghép đôi.",
       },
+      video_calls: {
+        label: "Cuộc gọi video",
+        hint: "Ai đó bắt đầu cuộc gọi video hoặc thoại với bạn, cả bạn bè lẫn người ghép đôi.",
+      },
     },
     toggleA11y: "Thông báo cho tôi về {label}",
   },
@@ -617,7 +649,7 @@ export default {
       },
       people: {
         label: "Mga tao",
-        hint: "Mga kaibigan, mensahe, kaarawan, dating at mga taong nakakasalubong mo.",
+        hint: "Mga kaibigan, mensahe, tawag, kaarawan, dating at mga taong nakakasalubong mo.",
       },
       nearby: {
         label: "Malapit",
@@ -647,7 +679,7 @@ export default {
       },
       dating: {
         label: "Mga dating match",
-        hint: "Mga bagong match, kaway, tawag at mga idinadagdag ninyo nang magkasama.",
+        hint: "Mga bagong match, kaway at mga idinadagdag ninyo nang magkasama.",
       },
       business_offers: {
         label: "Mga alok",
@@ -673,6 +705,10 @@ export default {
         label: "Mga mensahe",
         hint: "Mga bagong mensahe sa one-on-one chats mo, kasama ang mga kaibigan at match.",
       },
+      video_calls: {
+        label: "Mga video call",
+        hint: "May nagsimula ng video o voice call sa iyo, kaibigan man o match.",
+      },
     },
     toggleA11y: "Abisuhan ako tungkol sa {label}",
   },
@@ -692,7 +728,7 @@ export default {
       },
       people: {
         label: "Люди",
-        hint: "Друзья, сообщения, дни рождения, знакомства и люди, которых вы встречаете.",
+        hint: "Друзья, сообщения, звонки, дни рождения, знакомства и люди, которых вы встречаете.",
       },
       nearby: {
         label: "Рядом",
@@ -722,7 +758,7 @@ export default {
       },
       dating: {
         label: "Знакомства: совпадения",
-        hint: "Новые совпадения, приветы, звонки и то, что вы добавляете вместе.",
+        hint: "Новые совпадения, приветы и то, что вы добавляете вместе.",
       },
       business_offers: {
         label: "Предложения",
@@ -748,6 +784,10 @@ export default {
         label: "Сообщения",
         hint: "Новые сообщения в личных чатах с друзьями и совпадениями.",
       },
+      video_calls: {
+        label: "Видеозвонки",
+        hint: "Кто-то начинает с вами видео- или голосовой звонок, друзья и совпадения.",
+      },
     },
     toggleA11y: "Уведомлять о: {label}",
   },
@@ -767,7 +807,7 @@ export default {
       },
       people: {
         label: "사람",
-        hint: "친구, 메시지, 생일, 데이트, 그리고 마주친 사람.",
+        hint: "친구, 메시지, 통화, 생일, 데이트, 그리고 마주친 사람.",
       },
       nearby: {
         label: "근처",
@@ -797,7 +837,7 @@ export default {
       },
       dating: {
         label: "데이트 매치",
-        hint: "새 매치, 인사, 통화, 함께 추가한 항목.",
+        hint: "새 매치, 인사, 함께 추가한 항목.",
       },
       business_offers: {
         label: "제안",
@@ -822,6 +862,10 @@ export default {
       messages: {
         label: "메시지",
         hint: "친구와 매치와의 1:1 채팅 새 메시지.",
+      },
+      video_calls: {
+        label: "영상 통화",
+        hint: "친구나 매치가 영상 또는 음성 통화를 시작할 때.",
       },
     },
     toggleA11y: "{label} 알림 받기",

@@ -9,7 +9,7 @@ begin
   perform set_config('app.push_handoff_test_failure', 'true', true);  -- never call send-push for real
 
   -- 1. a muted group's push is never queued; the sender says why
-  update profiles set notification_mutes = '{dating,messages}' where id = a;
+  update profiles set notification_mutes = '{dating,messages,video_calls}' where id = a;
   select count(*) into n from push_outbox;
   r := public._send_push(a, 't', 'b', jsonb_build_object('type', 'new_match'));
   if r <> 'muted' then raise exception '1 expected muted, got %', r; end if;

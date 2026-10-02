@@ -1,4 +1,4 @@
-// Notification settings UX (owner, 2026-10-02): the same switches (16 with Messages), drawn in a few plain sections. Display only: the
+// Notification settings UX (owner, 2026-10-02): the same switches (17: Messages and Video calls split out of Dating), drawn in a few plain sections. Display only: the
 // storage, the type table and the one sender (_send_push) are unchanged. These tests check that the screen reflects the
 // central mapping and that one switch changes only its own notification types.
 const fs = require('fs');
@@ -34,12 +34,15 @@ describe('sections reflect the central mapping', () => {
     const where = (g) => SETTINGS_SECTIONS.find((s) => s.groups.includes(g)).key;
     expect(typesForGroup('friends_occasions')).toEqual(expect.arrayContaining(['birthday', 'birthday_upcoming']));
     expect(typesForGroup('messages')).toEqual(['message']);
+    expect(typesForGroup('video_calls')).toEqual(['video_call']);
     expect(typesForGroup('dating')).toEqual(expect.arrayContaining(['new_match', 'wave']));
     expect(typesForGroup('dating')).not.toContain('message');
+    expect(typesForGroup('dating')).not.toContain('video_call');
     expect(typesForGroup('discover_nearby_people')).toEqual(['crossed_paths_sighting']);
     expect(where('friends_occasions')).toBe('people');
     expect(where('dating')).toBe('people');
     expect(where('messages')).toBe('people');
+    expect(where('video_calls')).toBe('people');
     expect(where('discover_nearby_people')).toBe('people');
   });
   test('business-owner alerts stay separate from customer business alerts', () => {
@@ -75,8 +78,8 @@ describe('one switch changes only its own types', () => {
     expect(isMuted('message', toggleGroup([], 'messages', false))).toBe(true);
   });
   test('earlier Dating opt-outs keep chat messages off (onboarding answer, older column key)', () => {
-    expect(mutesFromOnboardingChoices({ dating: false })).toEqual(['dating', 'messages']);
-    expect(mutesFromOnboardingChoices({ notify_dating: false })).toEqual(['dating', 'messages']);
+    expect(mutesFromOnboardingChoices({ dating: false })).toEqual(['dating', 'messages', 'video_calls']);
+    expect(mutesFromOnboardingChoices({ notify_dating: false })).toEqual(['dating', 'messages', 'video_calls']);
   });
   test('toggling one switch never changes another switch', () => {
     const everyOtherOff = NOTIFICATION_GROUPS.filter((x) => x !== 'dating');
@@ -114,6 +117,7 @@ describe('plain labels in every language', () => {
     expect(en('friends_activity')).toBe('Friend requests and activity');
     expect(en('dating')).toBe('Dating matches');
     expect(en('messages')).toBe('Messages');
+    expect(en('video_calls')).toBe('Video calls');
     expect(en('communities')).toBe('Communities you lead');
     expect(en('business_responses')).toBe('Replies to your requests');
     expect(en('discover_nearby_people')).toBe('People you cross paths with');
@@ -148,5 +152,49 @@ describe('the Messages split migration', () => {
   test('no sender is changed: the migration defines only the store helpers', () => {
     const fns = [...mig.matchAll(/create or replace function public\.(\w+)/gi)].map((m) => m[1]).sort();
     expect(fns).toEqual(['_canonical_notification_mutes', '_derive_legacy_notify_columns', 'set_my_notification_group']);
+  });
+});
+
+describe('Video calls split from Dating (owner, 20270261)', () => {
+  const mig = fs.readFileSync(path.join(__dirname, '..', '..', 'supabase', 'migrations', '20270261_video_calls_notification_group.sql'), 'utf8');
+  const allowed = (mutes, type) => !isMuted(type, mutes);
+  test('1. Dating off, Messages on, Video calls on: messages and calls allowed', () => {
+    expect(allowed(['dating'], 'message')).toBe(true);
+    expect(allowed(['dating'], 'video_call')).toBe(true);
+    expect(allowed(['dating'], 'new_match')).toBe(false);
+  });
+  test('2. Dating on, Messages off, Video calls on: calls allowed, messages suppressed', () => {
+    expect(allowed(['messages'], 'video_call')).toBe(true);
+    expect(allowed(['messages'], 'message')).toBe(false);
+  });
+  test('3. Dating on, Messages on, Video calls off: messages allowed, calls suppressed', () => {
+    expect(allowed(['video_calls'], 'message')).toBe(true);
+    expect(allowed(['video_calls'], 'video_call')).toBe(false);
+    expect(allowed(['video_calls'], 'new_match')).toBe(true);
+  });
+  test('4/5. one call type for friend and dating matches: the switch is decided by type, never by the kind of match', () => {
+    expect(Object.keys(NOTIFICATION_GROUP_BY_TYPE).filter((t) => /(^|_)call(_|$)/.test(t))).toEqual(['video_call']);
+    // (the live script checks a friend-match call and a dating-match call through the real sender)
+  });
+  test('6. opt-out migration state: Dating off gains Video calls off; nothing removed, Messages untouched', () => {
+    expect(mig).toMatch(/notification_mutes \|\| array\['video_calls'\]\)\s+where 'dating' = any \(notification_mutes\)/);
+    const updates = [...mig.matchAll(/update public\.profiles set notification_mutes = ([^\n]*)/g)].map((m) => m[1]);
+    expect(updates).toHaveLength(1);
+    expect(updates[0]).not.toMatch(/array_remove/);
+    expect(updates[0]).not.toMatch(/messages/);
+  });
+  test('7. onboarding and Settings write the same groups through the one mapping', () => {
+    expect(toggleGroup([], 'video_calls', false)).toEqual(['video_calls']);
+    expect(toggleGroup(['dating', 'messages'], 'video_calls', false)).toEqual(['dating', 'messages', 'video_calls']);
+    expect(mutesFromOnboardingChoices({ dating: false })).toEqual(['dating', 'messages', 'video_calls']);
+    expect(mutesFromOnboardingChoices({ dating: true })).toEqual([]);
+  });
+  test('9. the older Dating flag cannot override an enabled Video calls switch (derivation needs all three off)', () => {
+    expect(mig).toMatch(/new\.notify_dating := not \(m @> array\['dating', 'messages', 'video_calls'\]\)/);
+  });
+  test('no sender, call function or permission is changed', () => {
+    const fns = [...mig.matchAll(/create or replace function public\.(\w+)/gi)].map((m) => m[1]).sort();
+    expect(fns).toEqual(['_canonical_notification_mutes', '_derive_legacy_notify_columns', 'set_my_notification_group']);
+    expect(mig).not.toMatch(/notify_video_call_started\s*\(/);
   });
 });
