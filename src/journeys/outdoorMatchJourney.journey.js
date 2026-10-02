@@ -216,6 +216,25 @@ d('journey: a business declares outdoor seating -> "something outside" -> it app
     expect(nameOf(rows[0].partnerId)).toBe(INDOOR);
   });
 
+  // The same flow typed in other app languages (constants/environmentWords.js): the words are understood, and the strict rule
+  // keeps only the declared side. An ordinary ask in the language stays broad.
+  test.each([
+    ['es', 'algo al aire libre', 'algo bajo techo', 'un café'],
+    ['de', 'etwas draußen', 'etwas drinnen', 'ein Kaffee'],
+    ['fr', 'quelque chose en plein air', "quelque chose à l'intérieur", 'un café'],
+    ['pt', 'algo ao ar livre', 'algo em ambiente fechado', 'um café'],
+    ['ht', 'yon bagay deyò', 'yon bagay anndan', 'yon kafe'],
+    ['zh', '户外的地方', '室内的地方', '咖啡'],
+    ['vi', 'chỗ nào ngoài trời', 'chỗ nào trong nhà', 'cà phê'],
+    ['tl', 'isang lugar sa labas', 'isang lugar sa loob', 'kape'],
+    ['ru', 'что-нибудь на улице', 'что-нибудь в помещении', 'кофе'],
+    ['ko', '야외에서 할 거', '실내에서 할 거', '커피'],
+  ])('%s: outdoor -> only the patio cafe, indoor -> only the declared-indoor cafe, ordinary -> all three', async (_lang, out, inn, plain) => {
+    expect(businessRows(await runIntentSearch(out)).map((i) => nameOf(i.partnerId))).toEqual([PATIO]);
+    expect(businessRows(await runIntentSearch(inn)).map((i) => nameOf(i.partnerId))).toEqual([INDOOR]);
+    expect(businessRows(await runIntentSearch(plain)).map((i) => nameOf(i.partnerId)).sort()).toEqual([INDOOR, PATIO, PLAIN].sort());
+  });
+
   test('Discover Outdoor narrowing over the real getNearbyBusinesses result: patio in, unknown and indoor out', async () => {
     const list = await getNearbyBusinesses(10.0, -150.0);
     expect(list.map((b) => b.name).sort()).toEqual([INDOOR, PATIO, PLAIN].sort()); // no narrowing = all three

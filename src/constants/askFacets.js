@@ -10,6 +10,7 @@ import { vibesFromAsk } from './businessVibes';
 import { appendReason, askedForEnvironmentReason } from './recommendationReasonVocabulary';
 import { CATEGORY_GROUPS, groupForTag } from './gatheringCategories';
 import { categoryEnvironment } from './gatheringIndoorOutdoor';
+import { I18N_POS_OUTDOOR, I18N_POS_INDOOR, I18N_NEG_OUTDOOR, I18N_NEG_INDOOR, I18N_TENTATIVE, I18N_FIRM, I18N_SEATING, hits, SENTENCE_SPLIT } from './environmentWords';
 
 export const ALCOHOL_TAGS = ['Bars & Lounges', 'Breweries', 'Wine', 'Wineries', 'Happy Hour', 'Nightclubs'];
 export const CROWDED_TAGS = ['Festivals', 'Nightclubs', 'Concerts', 'Nightlife', 'Street Events', 'Special Events'];
@@ -39,24 +40,34 @@ export function parseAskFacets(text) {
   if (typeof text !== 'string' || !text) return out;
   let rest = text;
   const take = (re, on) => { if (re.test(rest)) { on(); } rest = rest.replace(re, ' '); };
-  take(NEG_OUTDOOR, () => out.exclude.push('outdoor'));
-  take(NEG_INDOOR, () => out.exclude.push('indoor'));
+  // Indoor / outdoor in the other 10 languages (constants/environmentWords.js): the same rules, after the English ones.
+  const takeOnce = (re, key) => { if (re.test(rest) && !out.exclude.includes(key)) out.exclude.push(key); rest = rest.replace(re, ' '); };
+  takeOnce(NEG_OUTDOOR, 'outdoor');
+  takeOnce(NEG_INDOOR, 'indoor');
+  takeOnce(I18N_NEG_OUTDOOR, 'outdoor');
+  takeOnce(I18N_NEG_INDOOR, 'indoor');
   take(NEG_ALCOHOL, () => out.exclude.push('alcohol'));
   take(NEG_CROWD, () => out.exclude.push('crowded'));
   take(NEG_PRICEY, () => { out.pricey = true; });
-  rest = rest.replace(OUTSIDE_SEATING, ' ');
+  rest = rest.replace(OUTSIDE_SEATING, ' ').replace(I18N_SEATING, ' ');
   // Positive environment only from what is left after the negations were removed ("nothing outdoors" must not read as outdoors).
-  if (POS_OUTDOOR.test(rest) && !out.exclude.includes('outdoor')) out.environment = 'outdoor';
-  else if (POS_INDOOR.test(rest) && !out.exclude.includes('indoor')) out.environment = 'indoor';
+  const saysOutdoor = POS_OUTDOOR.test(rest) || hits(I18N_POS_OUTDOOR, rest);
+  const saysIndoor = POS_INDOOR.test(rest) || hits(I18N_POS_INDOOR, rest);
+  if (saysOutdoor && !out.exclude.includes('outdoor')) out.environment = 'outdoor';
+  else if (saysIndoor && !out.exclude.includes('indoor')) out.environment = 'indoor';
   // Item 103: a plainly stated environment is a MUST ("somewhere outside tonight": only known-outdoor results stay, 2026-10-02);
   // one said only after a hedge ("preferably outside") stays a preference (the lift below, nothing removed).
   // Item 105 (2026-09-27): tentative wording in the SAME sentence ("maybe something outdoors?", "perhaps outside") is also only a
   // preference; firm wording ("definitely outside", "has to be outdoors") keeps it a must even beside a "maybe".
   if (out.environment) {
     const h = splitHedge(text);
-    const plainRe = out.environment === 'outdoor' ? POS_OUTDOOR : POS_INDOOR;
-    const plain = (h ? `${h.before}. ${h.rest}` : text).replace(OUTSIDE_SEATING, ' ');
-    out.environmentRequired = plain.split(/[.;!?\n]+/).some((sentence) => plainRe.test(sentence) && (FIRM.test(sentence) || !TENTATIVE.test(sentence)));
+    const said = out.environment === 'outdoor'
+      ? (x) => POS_OUTDOOR.test(x) || hits(I18N_POS_OUTDOOR, x)
+      : (x) => POS_INDOOR.test(x) || hits(I18N_POS_INDOOR, x);
+    const firm = (x) => FIRM.test(x) || hits(I18N_FIRM, x);
+    const tentative = (x) => TENTATIVE.test(x) || hits(I18N_TENTATIVE, x);
+    const plain = (h ? `${h.before}. ${h.rest}` : text).replace(OUTSIDE_SEATING, ' ').replace(I18N_SEATING, ' ');
+    out.environmentRequired = plain.split(SENTENCE_SPLIT).some((sentence) => said(sentence) && (firm(sentence) || !tentative(sentence)));
   }
   return out;
 }
@@ -168,6 +179,8 @@ const ATTRIBUTE_ASKS = [
 export function attributesFromAsk(text, { partyType = null } = {}) {
   if (typeof text !== 'string') return partyType === 'date' ? ['date_friendly'] : [];
   const out = ATTRIBUTE_ASKS.filter(([, re]) => re.test(text)).map(([k]) => k);
+  // a terrace / sitting outside in the other 10 languages (constants/environmentWords.js) is the same outdoor_seating ask
+  if (!out.includes('outdoor_seating') && hits(I18N_SEATING, text)) out.push('outdoor_seating');
   // "nothing outside" / "don't want to sit outside" is never an ask for outdoor seating.
   const negSeating = /\b(?:don'?t|do\s+not|can'?t|cannot|won'?t|not|never|no)\s+(?:want\s+to\s+|wanna\s+|like\s+to\s+)?(?:sit|eat|dine|drink)\w*\s+(?:outside|outdoors)\b/i;
   if ((negSeating.test(text) || parseAskFacets(text).exclude.includes('outdoor')) && out.includes('outdoor_seating')) out.splice(out.indexOf('outdoor_seating'), 1);
