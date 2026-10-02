@@ -99,9 +99,20 @@ d('journey: a request about to expire warns its business once, and the tap shows
   log := log || jsonb_build_array(jsonb_build_object('step','owner_turned_business_notifications_off','ok', ${warned('i')} = 0));
   update profiles set notification_mutes = '{}' where id = v_owner;
 
+  -- vice versa (item 143): the customer also owns a business and turned ALL owner alerts off; the business's reply to
+  -- their own request (a real customer Businesses push) still reaches them
+  perform set_config('app.trusted_update', 'true', true);
+  update profiles set managed_partner_id = (select id from brand_partners where id <> v_partner order by id limit 1),
+         notification_mutes = '{owner_requests,owner_offers,owner_reservations,owner_demand}' where id = v_host;
+
   -- the tap, after the state changed: the owner answers a, b expires, then the owner's own list is read
   perform set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   perform submit_business_offer(request_id_param := a, offer_type_param := 'standard', offer_description_param := 'We can accommodate this as requested.');
+  log := log || jsonb_build_array(jsonb_build_object('step','owner_mute_keeps_customer_business_alert','ok',
+     (select count(*) from push_outbox where recipient_id = v_host and data->>'type' = 'business_offer_received' and data->>'request_id' = a::text) = 1
+     and (select managed_partner_id is not null from profiles where id = v_host),
+     'data', (select jsonb_agg(data->>'type') from push_outbox where recipient_id = v_host)));
+  update profiles set notification_mutes = '{}' where id = v_host;
   update business_requests set expires_at = now() - interval '1 minute' where id = b;
   v_list := get_business_opportunities(v_partner);
   log := log || jsonb_build_array(jsonb_build_object('step','owner_list','ok', true, 'data', jsonb_build_object(
@@ -122,7 +133,7 @@ d('journey: a request about to expire warns its business once, and the tap shows
   test.each([
     'open_request_warned', 'not_due_yet', 'arrived_with_under_two_hours', 'already_answered', 'accepted_before',
     'another_business_accepted', 'cancelled_before', 'already_expired', 'only_the_owner', 'duplicate_runs', 'warned_when_due',
-    'customer_business_mute_keeps_owner_warning', 'owner_turned_business_notifications_off', 'non_owner_refused', 'job_not_client_callable',
+    'customer_business_mute_keeps_owner_warning', 'owner_turned_business_notifications_off', 'owner_mute_keeps_customer_business_alert', 'non_owner_refused', 'job_not_client_callable',
   ])('%s', (step) => {
     expect(s[step]).toBeDefined();
     expect({ step, ok: s[step].ok, data: s[step].data }).toEqual(expect.objectContaining({ ok: true }));
