@@ -635,6 +635,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
   }, [expandedContext]);
 
   const [loadingCore, setLoadingCore] = useState(true);
+  // Item 138: Discover refreshes every time it regains focus (e.g. Back from a result). Only the FIRST load shows the
+  // loader; later refreshes update the lists in place, so Back returns to the same category, filters, search and scroll
+  // position instead of a loader pushing everything down.
+  const [coreLoadedOnce, setCoreLoadedOnce] = useState(false);
+  const showCoreLoader = loadingCore && !coreLoadedOnce;
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const placesRequestId = useRef(0);
 
@@ -718,6 +723,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         })
       );
       setCoverPhotoUrls(Object.fromEntries(coverEntries.filter(Boolean)));
+      setCoreLoadedOnce(true);
 
       // Fire-and-forget, never awaited -- a real forecast signal is
       // supplementary ranking context (see the `recommended` computation
@@ -2450,7 +2456,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </View>
           )}
 
-          {loadingCore && (
+          {showCoreLoader && (
             <View style={{ marginVertical: spacing.lg }}>
               <NLoader fullScreen={false} size="compact" kind="activities" />
             </View>
