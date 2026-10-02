@@ -24,6 +24,8 @@ import {
   getApprovedAttendeeCount,
   getPendingInterestCount,
   getHostSentInvitations,
+  getGatheringMessageCount,
+  subscribeToGatheringMessageChanges,
   getGatheringRequestsForHost,
   cancelGathering,
   stopRecurringSeries,
@@ -110,6 +112,9 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [hostInvitations, setHostInvitations] = useState(null);
   const [attendeesExpanded, setAttendeesExpanded] = useState(false);
   const [hostRefreshKey, setHostRefreshKey] = useState(0);
+  // The Message action's count (supplemental to the label): getGatheringMessageCount, re-read on load/focus and when the
+  // chat changes; null = unknown = no badge.
+  const [hostMessageCount, setHostMessageCount] = useState(null);
   const [businessRequest, setBusinessRequest] = useState(null);
   const [acceptedBusinessOffer, setAcceptedBusinessOffer] = useState(null);
   const [placeOfferCounts, setPlaceOfferCounts] = useState({ pendingCount: 0, offeredCount: 0 });
@@ -188,12 +193,14 @@ export default function GatheringDetailScreen({ route, navigation }) {
       if (g.isHost) {
         // requests = pending JOIN requests (they need the host's decision); Interested is the separate private count
         // (g.interestedCount, count only). A failed lookup is null and is left out, never shown as 0.
-        const [going, requests, invites, joinRows] = await Promise.all([
+        const [going, requests, invites, joinRows, messageCount] = await Promise.all([
           getApprovedAttendeeCount(gatheringId),
           getPendingInterestCount(gatheringId),
           getHostSentInvitations(gatheringId).catch(() => null),
           getGatheringRequestsForHost(gatheringId),
+          getGatheringMessageCount(gatheringId),
         ]);
+        setHostMessageCount(messageCount);
         setCountdownStats({
           going: going ?? attendeeTotal(g),
           requests,
@@ -307,6 +314,24 @@ export default function GatheringDetailScreen({ route, navigation }) {
       load();
     }, [load])
   );
+
+  // Host only: keep the Message count current while this screen is open. A chat change only triggers a RE-COUNT through
+  // the same RLS-scoped count read; the realtime payload (body, sender) is never read, so nothing the host may not see
+  // can reach the badge (a blocked sender's message is not counted, exactly as the chat does not show it).
+  const isHostViewer = !!gathering?.isHost;
+  useEffect(() => {
+    if (!isHostViewer || !gatheringId) return undefined;
+    let cancelled = false;
+    const recount = async () => {
+      const n = await getGatheringMessageCount(gatheringId);
+      if (!cancelled) setHostMessageCount(n);
+    };
+    const unsubscribe = subscribeToGatheringMessageChanges(gatheringId, recount);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [isHostViewer, gatheringId]);
 
   async function openPlanDetail() {
     try {
@@ -932,6 +957,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 canEdit={can('edit')}
                 canInvite={canInvite && viewer.time !== 'past'}
                 attendeesExpanded={attendeesExpanded}
+                messageCount={hostMessageCount}
                 onInvite={() => setInviteModalVisible(true)}
                 onEdit={() => navigation.navigate('EditGathering', { gathering })}
                 onMessage={() => navigation.navigate('GatheringChat', { gatheringId, gatheringTitle: gathering.title })}

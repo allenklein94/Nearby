@@ -43,6 +43,7 @@ export default {
       hideAttendees: "Hide attendees",
       cancel: "Cancel",
     },
+    messageCountA11y: { one: "Message, {count} message in the group chat", other: "Message, {count} messages in the group chat" },
   },
   es: {
     stat: {
@@ -86,6 +87,7 @@ export default {
       hideAttendees: "Ocultar asistentes",
       cancel: "Cancelar",
     },
+    messageCountA11y: { one: "Mensaje, {count} mensaje en el chat del grupo", other: "Mensaje, {count} mensajes en el chat del grupo" },
   },
   de: {
     stat: {
@@ -129,6 +131,7 @@ export default {
       hideAttendees: "Teilnehmer ausblenden",
       cancel: "Absagen",
     },
+    messageCountA11y: { one: "Nachricht, {count} Nachricht im Gruppenchat", other: "Nachricht, {count} Nachrichten im Gruppenchat" },
   },
   fr: {
     stat: {
@@ -172,6 +175,7 @@ export default {
       hideAttendees: "Masquer les participants",
       cancel: "Annuler",
     },
+    messageCountA11y: { one: "Message, {count} message dans la discussion de groupe", other: "Message, {count} messages dans la discussion de groupe" },
   },
   pt: {
     stat: {
@@ -215,6 +219,7 @@ export default {
       hideAttendees: "Ocultar participantes",
       cancel: "Cancelar",
     },
+    messageCountA11y: { one: "Mensagem, {count} mensagem no chat do grupo", other: "Mensagem, {count} mensagens no chat do grupo" },
   },
   ht: {
     stat: {
@@ -258,6 +263,7 @@ export default {
       hideAttendees: "Kache moun ki vini",
       cancel: "Anile",
     },
+    messageCountA11y: { one: "Mesaj, {count} mesaj nan chat gwoup la", other: "Mesaj, {count} mesaj nan chat gwoup la" },
   },
   zh: {
     stat: {
@@ -301,6 +307,7 @@ export default {
       hideAttendees: "隐藏参加者",
       cancel: "取消",
     },
+    messageCountA11y: { one: "发消息，群聊中有 {count} 条消息", other: "发消息，群聊中有 {count} 条消息" },
   },
   vi: {
     stat: {
@@ -344,6 +351,7 @@ export default {
       hideAttendees: "Ẩn người tham gia",
       cancel: "Hủy",
     },
+    messageCountA11y: { one: "Nhắn tin, {count} tin nhắn trong nhóm chat", other: "Nhắn tin, {count} tin nhắn trong nhóm chat" },
   },
   tl: {
     stat: {
@@ -387,6 +395,7 @@ export default {
       hideAttendees: "Itago ang dadalo",
       cancel: "Kanselahin",
     },
+    messageCountA11y: { one: "Mag-message, {count} mensahe sa group chat", other: "Mag-message, {count} mensahe sa group chat" },
   },
   ru: {
     stat: {
@@ -430,6 +439,7 @@ export default {
       hideAttendees: "Скрыть участников",
       cancel: "Отменить",
     },
+    messageCountA11y: { one: "Написать, {count} сообщение в групповом чате", few: "Написать, {count} сообщения в групповом чате", many: "Написать, {count} сообщений в групповом чате", other: "Написать, {count} сообщения в групповом чате" },
   },
   ko: {
     stat: {
@@ -473,5 +483,6 @@ export default {
       hideAttendees: "참석자 숨기기",
       cancel: "취소",
     },
+    messageCountA11y: { one: "메시지, 그룹 채팅에 메시지 {count}개", other: "메시지, 그룹 채팅에 메시지 {count}개" },
   },
 };

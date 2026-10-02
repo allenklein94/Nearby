@@ -1479,16 +1479,28 @@ export async function getHostSentInvitations(gatheringId) {
   return (data ?? []).map((r) => ({ ...r, name: names.get(r.invitee_id) ?? null }));
 }
 
-// Count-only, for the organizer countdown card — a real number
-// without pulling every message body down just to know how many exist.
+// Count-only, for the host command center's Message action -- a real number without pulling any message body or sender
+// down. Read through gathering_messages RLS (host + approved attendees, blocked senders excluded either way), so it is
+// exactly the chat the caller can open. A failed lookup is unknown (null), never "0 messages".
 export async function getGatheringMessageCount(gatheringId) {
   const { count, error } = await supabase
     .from('gathering_messages')
     .select('id', { count: 'exact', head: true })
     .eq('gathering_id', gatheringId);
 
-  if (error) return 0;
+  if (error) return null;
   return count ?? 0;
+}
+
+// Calls onChange (with nothing) whenever this gathering's chat changes, so a caller can re-read
+// getGatheringMessageCount. The realtime payload is deliberately dropped: the count always comes from the RLS-scoped
+// read, never from an event's body or sender. Returns the unsubscribe function.
+export function subscribeToGatheringMessageChanges(gatheringId, onChange) {
+  const channel = supabase
+    .channel(`gathering_message_count:${gatheringId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'gathering_messages', filter: `gathering_id=eq.${gatheringId}` }, () => onChange())
+    .subscribe();
+  return () => supabase.removeChannel(channel);
 }
 
 // Confirmation screen's "Invite Connections" — friends only (locked

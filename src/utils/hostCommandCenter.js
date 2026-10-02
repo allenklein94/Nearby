@@ -83,3 +83,12 @@ export function hostActions({ canEdit, canInvite, hasChat = true } = {}) {
   if (canEdit) out.push('cancel');
   return out;
 }
+
+// The Message action's count (supplemental; the label stays "Message"). The figure is getGatheringMessageCount: a
+// count-only read through gathering_messages RLS, so it is exactly what the host can open in the chat (blocked
+// senders excluded either way); no message content or sender is ever read for it. 0 and unknown show no badge.
+export const MESSAGE_BADGE_MAX = 99;
+export function messageBadge(count) {
+  if (!Number.isFinite(count) || count <= 0) return null;
+  return count > MESSAGE_BADGE_MAX ? `${MESSAGE_BADGE_MAX}+` : String(count);
+}

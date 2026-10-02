@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
-import { hostStats, hostActions } from '../utils/hostCommandCenter';
+import { hostStats, hostActions, messageBadge } from '../utils/hostCommandCenter';
 
 const INVITE_PREVIEW = 5;
 
@@ -17,6 +17,7 @@ export default function HostCommandCenter({
   canEdit,
   canInvite,
   attendeesExpanded,
+  messageCount,
   onInvite,
   onEdit,
   onMessage,
@@ -34,6 +35,9 @@ export default function HostCommandCenter({
   const invites = invitations ?? [];
   const visibleInvites = showAllInvites ? invites : invites.slice(0, INVITE_PREVIEW);
   const actions = hostActions({ canEdit, canInvite });
+  // The Message chip keeps its label; the count is a small neutral pill beside it (a total, not an unread alert, so
+  // never the red unread badge). 0 or unknown = no pill.
+  const msgBadge = messageBadge(messageCount);
 
   const actionLabel = (a) => {
     if (a === 'manage') return t(attendeesExpanded ? 'ui.hostCenter.action.hideAttendees' : 'ui.hostCenter.action.manage');
@@ -95,10 +99,17 @@ export default function HostCommandCenter({
               onPress={onAction[a]}
               style={[styles.actionChip, a === 'cancel' && styles.actionChipDanger]}
               accessibilityRole="button"
-              accessibilityLabel={actionLabel(a)}
+              accessibilityLabel={a === 'message' && msgBadge ? t('ui.hostCenter.messageCountA11y', { count: messageCount }) : actionLabel(a)}
               accessibilityState={a === 'manage' ? { expanded: !!attendeesExpanded } : undefined}
             >
-              <Text style={[styles.actionText, a === 'cancel' && { color: colors.danger }]}>{actionLabel(a)}</Text>
+              <View style={styles.actionInner}>
+                <Text style={[styles.actionText, a === 'cancel' && { color: colors.danger }]}>{actionLabel(a)}</Text>
+                {a === 'message' && msgBadge ? (
+                  <View style={styles.countPill} testID="host-message-count">
+                    <Text style={styles.countPillText}>{msgBadge}</Text>
+                  </View>
+                ) : null}
+              </View>
             </TouchableOpacity>
           ))}
         </View>
@@ -124,5 +135,11 @@ const getStyles = (colors) => StyleSheet.create({
     paddingHorizontal: spacing.md, paddingVertical: 6, backgroundColor: colors.surface,
   },
   actionChipDanger: { borderColor: colors.danger },
+  actionInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   actionText: { color: colors.textPrimary, fontSize: 13, fontWeight: '700' },
+  countPill: {
+    minWidth: 18, height: 18, borderRadius: radius.full, paddingHorizontal: 5,
+    backgroundColor: colors.border, alignItems: 'center', justifyContent: 'center',
+  },
+  countPillText: { color: colors.textSecondary, fontSize: 11, fontWeight: '700' },
 });
