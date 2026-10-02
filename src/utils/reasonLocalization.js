@@ -34,7 +34,7 @@ export const REASON_PARSE_ORDER = [
   'reasons.friendGoingManyOne', 'reasons.friendGoingMany', 'reasons.aFriendGoing', 'reasons.friendsGoingCount', 'reasons.friendGoingTwo', 'reasons.friendGoingOne',
   'reasons.friendIntoManyOne', 'reasons.friendIntoMany', 'reasons.aFriendInto', 'reasons.friendsIntoCount', 'reasons.friendIntoTwo', 'reasons.friendIntoOne',
   'reasons.aFriendHosting', 'reasons.aFriendHosted', 'reasons.friendHosting', 'reasons.friendHosted',
-  'reasons.friendsPlanActivity', 'reasons.activity', 'reasons.becauseYouLike', 'reasons.askedForCuisine', 'reasons.askedFor',
+  'reasons.friendsPlanActivity', 'reasons.activity', 'reasons.becauseYouLike', 'reasons.askedForCuisine', 'reasons.askedForOutdoor', 'reasons.askedForIndoor', 'reasons.askedFor',
   'reasons.occasionOffered', 'reasons.genreInterest', 'reasons.relatedInterest', 'reasons.recentActivity',
   'reasons.trendingGoing', 'reasons.trendingNearby', 'reasons.startingSoon', 'reasons.happeningToday',
   'reasons.onePersonAttending', 'reasons.peopleAttending', 'reasons.oneFriendAttending', 'reasons.friendsAttending', 'reasons.oneFirstTimer', 'reasons.firstTimers', 'reasons.attendingCount',

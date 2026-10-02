@@ -13,7 +13,7 @@ import { groupKeyForTag } from '../constants/interestGraph';
 import { BROAD_GROUP_POINTS } from '../constants/blendedRanking';
 import { comfortFits } from '../constants/socialComfort';
 import { SCORE_INTEREST_MATCH, SCORE_CLOSE_DISTANCE, SCORE_HAPPENING_NOW, SCORE_OWN_NETWORK } from './intentResolverScoring';
-import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
+import { gatheringEnvironment } from '../constants/environmentMatch';
 import { gatheringWeatherWindow } from '../utils/weatherWindow';
 import { businessWeatherAdjustment } from '../utils/weatherBias';
 // P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): shared, canonical
@@ -58,15 +58,16 @@ function isToday(iso) {
 // Since 2026-09-20 the weather is judged AT the gathering's own start time
 // (utils/weatherWindow.js) from forecast-block facts, not from a single
 // right-now label; an unknown forecast or uncovered time is no nudge.
-function weatherAdjustment(interestTag, weather, scheduledAt) {
+function weatherAdjustment(gathering, weather, scheduledAt) {
+  const env = gatheringEnvironment(gathering);
   // Judged at the gathering's own start time (utils/weatherWindow.js); no
   // covering forecast block / unknown forecast = no nudge.
   const w = gatheringWeatherWindow(weather, scheduledAt);
   if (!w) return null;
-  if (w.bias === 'indoor' && isIndoorCategory(interestTag)) {
+  if (w.bias === 'indoor' && env === 'indoor') {
     return { points: SCORE_HAPPENING_NOW, reason: REASON_TEXT.WEATHER_GOOD_INDOOR.text };
   }
-  if (w.bias === 'outdoor' && isOutdoorCategory(interestTag)) {
+  if (w.bias === 'outdoor' && env === 'outdoor') {
     // Ordinary good weather ranks outdoor plans up silently (no reason line on every card); the reason is spoken only when
     // the weather is exceptional (item 62).
     return { points: SCORE_HAPPENING_NOW, reason: w.exceptional ? REASON_TEXT.WEATHER_GOOD_OUTDOOR.text : null };
@@ -123,7 +124,7 @@ function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel,
     score += weightSignal(SCORE_HAPPENING_NOW, SIGNAL_SOURCES.CONTEXTUAL, maturity);
     reasons.push(REASON_TEXT.HAPPENING_TODAY.text);
   }
-  const weatherBonus = weatherAdjustment(gathering.interest_tag, weather, gathering.scheduled_at);
+  const weatherBonus = weatherAdjustment(gathering, weather, gathering.scheduled_at);
   if (weatherBonus) {
     // CONTEXTUAL: today's real weather, always full weight.
     score += weightSignal(weatherBonus.points, SIGNAL_SOURCES.CONTEXTUAL, maturity);

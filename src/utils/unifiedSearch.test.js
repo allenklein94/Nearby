@@ -52,6 +52,6 @@ describe('one search across everything (item 92)', () => {
     expect(u).not.toMatch(/supabase|getNearbyMatches|getFriendDiscoveryCandidates|profiles/);
   });
   it('nearby businesses carry their declared type so search can match it', () => {
-    expect(read('services/brandOffers.js')).toMatch(/booking_mode, category, subcategory, categories, cuisine'\)/);
+    expect(read('services/brandOffers.js')).toMatch(/booking_mode, category, subcategory, categories, cuisine(?:, weather_setting)?'\)/);
   });
 });

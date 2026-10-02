@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 import { getNearbyMatches } from './proximity';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 import { getNearbyGatherings, getMyInterestedGatherings, pickBestGathering, getMyTopGatheringCategories, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
-import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
+import { gatheringEnvironment } from '../constants/environmentMatch';
 import { createWeatherLoader } from './weatherLoader';
 import { getMyGroupPlans } from './groupPlans';
 import { getUserLocation } from './userLocation';
@@ -462,7 +462,7 @@ export async function getHomeDashboard() {
   // out to be — that's a separate call), only ever rendered by
   // HomeScreen when the weather signal is actually bad.
   const indoorGatheringsToday = gatheringsToday
-    .filter((g) => isIndoorCategory(g.interest_tag))
+    .filter((g) => gatheringEnvironment(g) === 'indoor')
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 4);
   // Symmetric to indoorGatheringsToday, for the weather card's real
@@ -471,7 +471,7 @@ export async function getHomeDashboard() {
   // to actively suggest an outdoor gathering, not just avoid warning about
   // a bad one. Same "no new query, always computed here" convention.
   const outdoorGatheringsToday = gatheringsToday
-    .filter((g) => isOutdoorCategory(g.interest_tag))
+    .filter((g) => gatheringEnvironment(g) === 'outdoor')
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 4);
   let trendingGatherings = nearbyGatherings

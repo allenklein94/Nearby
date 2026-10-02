@@ -97,8 +97,8 @@ describe('organic code never touches the sponsored system', () => {
   });
   it('DiscoverHub renders the slot only on the Places and Perks tabs, never in the blended view or a search', () => {
     const src = read('src/screens/DiscoverHubScreen.js');
-    expect(src).toMatch(/typeFilter === 'places' && !isSearching && !openNowActive && \(\s*<SponsoredSpotlightSlot/);
-    expect(src).toMatch(/typeFilter === 'perks' && !isSearching && !openNowActive && \(\s*<SponsoredSpotlightSlot/);
+    expect(src).toMatch(/typeFilter === 'places' && !isSearching && !openNowActive && !environmentFilter && \(\s*<SponsoredSpotlightSlot/);
+    expect(src).toMatch(/typeFilter === 'perks' && !isSearching && !openNowActive && !environmentFilter && \(\s*<SponsoredSpotlightSlot/);
     expect((src.match(/<SponsoredSpotlightSlot/g) || []).length).toBe(2);
   });
 });

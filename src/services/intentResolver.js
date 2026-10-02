@@ -13,6 +13,8 @@ import { applyBusinessPriceToCandidates } from '../utils/priceBias';
 import { vibesFromAsk, applyVibeSinks, applyQualityDepth, frameDatePlaces, isDateAsk, datePartySize, dateFrame } from '../constants/businessVibes';
 import { canonicalGroupForTag } from '../constants/categoryMapping';
 import { applyAskWeather } from '../utils/askWeather';
+import { gatheringEnvironment, businessEnvironment } from '../constants/environmentMatch';
+import { categoryEnvironment } from '../constants/gatheringIndoorOutdoor';
 import { occasionLabel } from '../constants/businessAttributes';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, searchOccasionOfferingBusinesses, getMyBusinessAffinitySignals } from './businessFulfillment';
 import { getWhoForPreferenceSignals } from './preferencePolls';
@@ -777,9 +779,18 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const narrowedGroup = isCategoryGroup(narrowGroup) ? narrowGroup : null;
   const parsedFacets = parseAskFacets(rawText);
   const isPartnerResult = (c) => c.partnerId && (BUSINESS_RESULT_TYPES.includes(c.type) || c.type === 'perk');
+  // Outdoor / indoor from DECLARED data only (constants/environmentMatch.js, one rule for every surface): a gathering by its
+  // host's outdoor seating or its category, a business or perk by its own weather setting / outdoor seating (never its
+  // category; a failed partner lookup = unknown), anything else by its category.
+  const envOf = (c) => {
+    if (c?.type === 'gathering') return gatheringEnvironment({ interest_tag: c.category, features: c.features });
+    // The partner row, else the business's own declarations the result already carries (a posting's copy of its attributes).
+    if (isPartnerResult(c)) return businessEnvironment(partnerInfo.get(c.partnerId) ?? null) ?? (c.type === 'perk' ? null : businessEnvironment({ attributes: c.matchedAvailability?.attributes ?? c.attributes }));
+    return categoryEnvironment(c?.category);
+  };
   const eligibility = await runAskEligibility(deduped, {
     restrictionFacts, declinedLookup: getDeclinedBusinesses, isPartnerResult, isBusiness: (c) => BUSINESS_RESULT_TYPES.includes(c.type),
-    openEndedGroups, narrowGroup: narrowedGroup, facets: parsedFacets, openNowOnly, toEntity: (c) => candidateEntity(c, partnerInfo),
+    openEndedGroups, narrowGroup: narrowedGroup, facets: parsedFacets, openNowOnly, toEntity: (c) => candidateEntity(c, partnerInfo), envOf,
   });
   deduped = eligibility.items;
 
@@ -941,7 +952,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Combinations + negative intent (items 47/48): "outside", "no alcohol", "nothing crowded", "not too expensive" from the person's
   // own words. Exclusions drop only KNOWN conflicts; the caption says what was left out (constants/askFacets.js).
   // Stage 1 removed the known conflicts; the stated environment's lift and the "not too expensive" sink apply here.
-  deduped = askFacetsLift(deduped, parsedFacets);
+  deduped = askFacetsLift(deduped, parsedFacets, envOf);
   step('ask_facets');
 
   // Open now (owner item 71, utils/operatingStatus.js, the one resolver): "what's open" / "still open" / "somewhere I can go

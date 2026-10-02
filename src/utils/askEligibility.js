@@ -24,7 +24,7 @@ import { filterOpenNow } from './operatingStatus';
 export const ELIGIBILITY_RULES = ['compatibility', 'open_ended', 'category_narrow', 'ask_facets', 'open_now'];
 
 // ctx: { restrictionFacts, declinedLookup(ids, facts) -> Map, isPartnerResult(c), isBusiness(c), openEndedGroups,
-//        narrowGroup, facets, openNowOnly, toEntity(c) }
+//        narrowGroup, facets, openNowOnly, toEntity(c), envOf(c) (a candidate's declared side, constants/environmentMatch.js) }
 // Returns { items, removed: { rule: count }, compatibilityCaption, removedOpposite }.
 export async function runAskEligibility(candidates, ctx = {}) {
   let items = Array.isArray(candidates) ? candidates : [];
@@ -48,10 +48,15 @@ export async function runAskEligibility(candidates, ctx = {}) {
     }
   }
 
-  apply('open_ended', openEndedEligible(items, ctx.openEndedGroups ?? null));
+  // A result whose DECLARED side is the one the words asked for ("something outside" + a patio restaurant) answers the ask
+  // even outside the routed groups; the open-ended group limit is about category, not about overruling a declared match.
+  const askedEnv = ctx.facets?.environment ?? null;
+  const declaredMatch = (c) => !!(askedEnv && ctx.envOf && ctx.envOf(c) === askedEnv);
+  const openEndedKept = new Set(openEndedEligible(items, ctx.openEndedGroups ?? null));
+  apply('open_ended', items.filter((c) => openEndedKept.has(c) || declaredMatch(c)));
   apply('category_narrow', narrowToGroup(items, ctx.narrowGroup ?? null));
 
-  const facets = askFacetsEligible(items, ctx.facets ?? null);
+  const facets = askFacetsEligible(items, ctx.facets ?? null, ...(ctx.envOf ? [ctx.envOf] : []));
   apply('ask_facets', facets.items);
 
   if (ctx.openNowOnly && typeof ctx.toEntity === 'function') apply('open_now', filterOpenNow(items, ctx.toEntity));

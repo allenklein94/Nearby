@@ -210,51 +210,56 @@
   {
     "label": "firm outside",
     "order": [
+      "business_availability:b-patio",
       "gathering:g-hike",
       "perk:k-coffee",
       "perk:k-bar"
     ],
     "fullOrder": [
+      "b-patio@8",
       "g-hike@9",
       "k-coffee@0",
       "k-bar@0"
     ],
     "experience": null,
     "note": "Looking across Outdoors & Nature · Weather data unavailable",
-    "candidateCount": 3,
+    "candidateCount": 4,
     "exclusions": {
-      "open_ended": 16
+      "open_ended": 15
     }
   },
   {
     "label": "firm outside walking",
     "order": [
+      "business_availability:b-patio",
       "gathering:g-hike",
       "perk:k-coffee",
       "perk:k-bar"
     ],
     "fullOrder": [
+      "b-patio@8",
       "g-hike@11",
       "k-coffee@0",
       "k-bar@0"
     ],
     "experience": null,
     "note": "Looking across Outdoors & Nature · Keeping it very close by · Weather data unavailable",
-    "candidateCount": 3,
+    "candidateCount": 4,
     "exclusions": {
-      "open_ended": 16
+      "open_ended": 15
     }
   },
   {
     "label": "tentative outdoors",
     "order": [
       "gathering:g-hike",
+      "business_availability:b-patio",
       "gathering:g-club",
-      "gathering:g-live",
-      "gathering:g-trivia"
+      "gathering:g-live"
     ],
     "fullOrder": [
       "g-hike@8",
+      "b-patio@6",
       "g-club@9",
       "g-live@9",
       "g-trivia@6",
@@ -264,15 +269,14 @@
       "b-plumb@7",
       "b-bar@7",
       "b-rest@7",
-      "b-patio@4",
+      "b-cafe@4",
       "b-arcade@4",
       "k-coffee@0",
       "k-bar@0",
       "g-coffee@8",
       "g-yoga@8",
       "g-wine@5",
-      "g-museum@5",
-      "b-cafe@3"
+      "g-museum@5"
     ],
     "experience": null,
     "note": "Weather data unavailable",

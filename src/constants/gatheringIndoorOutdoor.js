@@ -1,3 +1,6 @@
+import { groupForTag } from './gatheringCategories';
+import { gatheringEnvironment } from './environmentMatch';
+
 // A real categorization of the 26 canonical interest_tag values (the same
 // list gatheringCategories.js's INTEREST_OPTIONS already exports as the
 // single source of truth for every category tag in this app) into
@@ -38,18 +41,29 @@ export const CATEGORY_INDOOR_OUTDOOR = {
   // Travel, Music, Fitness, Photography, Sports, Concerts, Volunteering.
 };
 
+// The ONE category -> side rule (2026-10-02, owner: one Outdoor rule, no duplicates). The table above, else a tag in the
+// Outdoors & Nature group is outdoor (Kayaking, Trails, Beaches...); everything else unknown. This used to exist twice: the
+// weather card / Discover / Gatherings narrowing read only the table, typed asks also read the group (askFacets.environmentOf,
+// which now calls this), so a Kayaking gathering was outdoor in a typed ask and missing from Discover's Outdoor view.
+// For a CATEGORY only; a business's side comes from what it declared (environmentMatch.js), never from its category.
+export function categoryEnvironment(interestTag) {
+  if (!interestTag) return null;
+  if (CATEGORY_INDOOR_OUTDOOR[interestTag]) return CATEGORY_INDOOR_OUTDOOR[interestTag];
+  return groupForTag(interestTag)?.key === 'outdoors_nature' ? 'outdoor' : null;
+}
+
 export function isIndoorCategory(interestTag) {
-  return CATEGORY_INDOOR_OUTDOOR[interestTag] === 'indoor';
+  return categoryEnvironment(interestTag) === 'indoor';
 }
 
 export function isOutdoorCategory(interestTag) {
-  return CATEGORY_INDOOR_OUTDOOR[interestTag] === 'outdoor';
+  return categoryEnvironment(interestTag) === 'outdoor';
 }
 
 // One environment narrowing for every gatherings list (the Gatherings feed's filter and Discover's carried-in context,
-// item 137): null = unchanged; 'indoor' / 'outdoor' = only gatherings whose category is known to be that side.
+// item 137): null = unchanged; 'indoor' / 'outdoor' = only gatherings whose side is known (environmentMatch.js: the host's
+// declared outdoor seating, else the gathering's category).
 export function filterGatheringsByEnvironment(list, environment) {
   if (!environment || !Array.isArray(list)) return list;
-  const fits = environment === 'indoor' ? isIndoorCategory : isOutdoorCategory;
-  return list.filter((g) => fits(g?.interest_tag));
+  return list.filter((g) => gatheringEnvironment(g) === environment);
 }

@@ -54,6 +54,7 @@ import { recordIntentSelection, getMyTopSearchedCategory } from '../services/int
 import { recordPeopleSubModeUse, getMyPeopleSubModeUsage } from '../services/peopleSubModeUsage';
 import { resolveDefaultPeopleSubMode } from '../utils/peopleSubModePreference';
 import { isIndoorCategory, isOutdoorCategory, filterGatheringsByEnvironment } from '../constants/gatheringIndoorOutdoor';
+import { filterByEnvironment } from '../constants/environmentMatch';
 import {
   SCORE_HAPPENING_NOW as WEATHER_BONUS,
   INTENT_SEARCH_TYPE_EMOJI, intentSearchDateLabel, intentSearchFallbackTitle, intentPhaseCaption,
@@ -870,18 +871,21 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const openNowActive = openNowOnly && (!!expandedContext || typeFilter !== 'communities');
   const openNowAt = new Date();
   const applyOpenNow = (list, toEntity) => (openNowActive ? filterOpenNow(list, toEntity, openNowAt) : list);
+  // Outdoor / Indoor (carried in from a Home weather card): one declared-data rule for every kind (constants/environmentMatch.js).
+  // Unknown is left out; a business's side is only what it declared, never its type; Google places declare nothing.
+  const applyEnv = (list, kind) => filterByEnvironment(list, kind, environmentFilter);
   const filteredGatherings = filterGatheringsByEnvironment(
     applyOpenNow(isSearching ? (searchResultsFresh ? searchedGatherings : []) : gatherings, gatheringEntity),
     environmentFilter,
   );
-  const filteredCommunities = openNowActive ? [] : (isSearching ? (searchResultsFresh ? searchedCommunities : []) : communities);
+  const filteredCommunities = openNowActive ? [] : applyEnv(isSearching ? (searchResultsFresh ? searchedCommunities : []) : communities, 'community');
   // Offers: real server-side, indexed search results (searchedOffers,
   // populated by the debounced effect above — a genuine cross-table search
   // over brand_offers.title/description and brand_partners.name via the new
   // search_offer_ids() RPC) once actively searching, instead of the
   // client-side .filter().includes() this used before.
   // A business's own weather setting re-ranks perks (item 63): ranks, never hides; unchanged order without a weather signal.
-  const filteredOffers = rankOffersByBusinessWeather(applyOpenNow(isSearching ? (searchResultsFresh ? searchedOffers : []) : offers, (o) => perkEntity(o)), weatherSignal);
+  const filteredOffers = rankOffersByBusinessWeather(applyEnv(applyOpenNow(isSearching ? (searchResultsFresh ? searchedOffers : []) : offers, (o) => perkEntity(o)), 'perk'), weatherSignal);
 
   // Weather-aware re-ranking (CLAUDE.md, 14-item UX review item 9) --
   // reuses isIndoorCategory/isOutdoorCategory (Home's own weather card
@@ -1044,7 +1048,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // real and already applied -- the label names the constraint that's
   // genuinely in force rather than claiming one that isn't.
   const contextGatheringsAll = expandedContext
-    ? applyOpenNow(gatherings, gatheringEntity).filter((g) => (expandedContext.categoryTags
+    ? filterGatheringsByEnvironment(applyOpenNow(gatherings, gatheringEntity), environmentFilter).filter((g) => (expandedContext.categoryTags
         ? expandedContext.categoryTags.includes(g.interest_tag)
         : g.interest_tag === expandedContext.interestTag && gatheringTimeBadge(g.scheduled_at) === expandedContext.timeBucket))
     : [];
@@ -1057,7 +1061,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // is always empty there -- not a second, redundant listing of the exact
   // same rows.
   const contextOtherTimeAll = expandedContext && !expandedContext.categoryTags
-    ? applyOpenNow(gatherings, gatheringEntity).filter((g) => g.interest_tag === expandedContext.interestTag && !contextGatheringIds.has(g.id))
+    ? filterGatheringsByEnvironment(applyOpenNow(gatherings, gatheringEntity), environmentFilter).filter((g) => g.interest_tag === expandedContext.interestTag && !contextGatheringIds.has(g.id))
     : [];
   // "Happening tonight": a slice of the two lists above (same rows, same time badge); a gathering shown there is removed from
   // the list it came from, so it never appears twice. Empty (and not rendered) when nothing is on tonight.
@@ -1073,7 +1077,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const contextScope = expandedContext
     ? { tags: (expandedContext.categoryTags ?? [expandedContext.interestTag]).filter(Boolean), groupKey: expandedContext.categoryKey ?? null }
     : { tags: [], groupKey: null };
-  const contextOffersAnyTime = expandedContext ? offers.filter((o) => offerInContext(o, contextScope)) : [];
+  const contextOffersAnyTime = expandedContext ? applyEnv(offers.filter((o) => offerInContext(o, contextScope)), 'perk') : [];
   const contextOffersBroad = openNowActive ? applyOpenNow(contextOffersAnyTime, (o) => perkEntity(o)) : contextOffersAnyTime;
   // The cuisine row exists only in a context that holds the restaurant branch; a cuisine is an EXACT declared match that
   // combines with Open now (both filters apply) and never widens. Clearing it restores contextOffersBroad unchanged.
@@ -1109,8 +1113,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const tag = contextTags.find((t) => friendsInterestReason(t, contextFriendMap?.[t]));
     return tag ? friendsInterestReason(tag, contextFriendMap[tag]) : null;
   })();
-  const contextPlacesShown = applyOpenNow(contextPlaces, placeEntity);
-  const contextCommunities = expandedContext && !openNowActive ? communities.filter((c) => contextTags.includes(c.interest_tag)) : [];
+  const contextPlacesShown = applyEnv(applyOpenNow(contextPlaces, placeEntity), 'place');
+  const contextCommunities = expandedContext && !openNowActive ? applyEnv(communities.filter((c) => contextTags.includes(c.interest_tag)), 'community') : [];
 
   // Real Google Places keyword search on the context's own interest tag
   // ("Coffee", "Yoga"), fired only once a context is actually open --
@@ -1197,7 +1201,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // list right below it. A no-op when `notableGatherings` is empty
   // (Communities/Places/Perks views, or while actively searching).
   const dedupedGatherings = filteredGatherings.filter((g) => !notableGatheringIds.has(g.id));
-  const visiblePlaces = applyOpenNow(placesFresh ? places : [], placeEntity);
+  const visiblePlaces = applyEnv(applyOpenNow(placesFresh ? places : [], placeEntity), 'place');
 
   // Decision 5 (CLAUDE.md, Aug 27 2026): a real "nothing anywhere matched"
   // state, checked against all three real searchable sections regardless of
@@ -1209,7 +1213,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // it join the gatherings / communities / perks / places the search already returned (utils/unifiedSearch.js).
   const searchedTopic = isSearching ? searchTopic(query.literalTerm) : null;
   const searchedBusinesses = isSearching && (isAll || typeFilter === 'places')
-    ? applyOpenNow(matchBusinesses(businesses, query.literalTerm, searchedTopic), (b) => businessEntity(b))
+    ? applyEnv(applyOpenNow(matchBusinesses(businesses, query.literalTerm, searchedTopic), (b) => businessEntity(b)), 'business')
     : [];
   const searchFriendsLine = isAll ? friendsLineForTopic(searchedTopic, searchTopicFriendMap) : null;
   // Item 93: the search covers everything, the UI shows it in tabs. Only tabs with results (or still loading) exist;
@@ -2021,6 +2025,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
         )}
         {mode === 'things' && openNowActive && (
           <Text style={styles.openNowNote}>{t('ui.discover.openNowNote')}</Text>
+        )}
+        {mode === 'things' && !!environmentFilter && (
+          <Text style={styles.openNowNote}>{t(environmentFilter === 'outdoor' ? 'ui.discover.envNoteOutdoor' : 'ui.discover.envNoteIndoor')}</Text>
         )}
 
         {mode === 'things' && !expandedContext && (
@@ -2881,8 +2888,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
 
           {/* Sponsored slot (item 44): Places tab only, its own card above the organic list; never in the blended All view or a search. */}
-          {/* Not shown while Open now is on: a paid card must never ride the filter (it carries no hours). */}
-          {typeFilter === 'places' && !isSearching && !openNowActive && (
+          {/* Not shown while Open now or Outdoor/Indoor is on: a paid card must never ride an organic filter. */}
+          {typeFilter === 'places' && !isSearching && !openNowActive && !environmentFilter && (
             <SponsoredSpotlightSlot
               userLocation={userLocation}
               categoryGroup={placesCategory}
@@ -2989,7 +2996,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
 
           {/* Sponsored slot (item 44): Perks tab only (no category filter here, so any allow-listed category in range). */}
-          {typeFilter === 'perks' && !isSearching && !openNowActive && (
+          {typeFilter === 'perks' && !isSearching && !openNowActive && !environmentFilter && (
             <SponsoredSpotlightSlot userLocation={userLocation} categoryGroup={null} navigation={navigation} />
           )}
 

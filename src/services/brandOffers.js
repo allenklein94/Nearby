@@ -235,7 +235,7 @@ export async function getNearbyBusinesses(lat, lng, radiusMiles = 50) {
   const { lat: myLat, lng: myLng } = await resolveCoords(lat, lng);
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, name, logo_url, latitude, longitude, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, category, subcategory, categories, cuisine')
+    .select('id, name, logo_url, latitude, longitude, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, category, subcategory, categories, cuisine, weather_setting')
     .eq('active', true)
     .not('latitude', 'is', null)
     .not('longitude', 'is', null)
@@ -1039,7 +1039,7 @@ export async function getPartnerOperatingInfo(partnerIds) {
   if (ids.length === 0) return new Map();
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, name, latitude, longitude, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, max_group_size, private_room_capacity, outdoor_capacity, dietary_options, cuisine, accommodates_party_types')
+    .select('id, name, latitude, longitude, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, max_group_size, private_room_capacity, outdoor_capacity, dietary_options, cuisine, accommodates_party_types, weather_setting')
     .in('id', ids);
   if (error) return new Map();
   return new Map((data ?? []).map((r) => [r.id, r]));

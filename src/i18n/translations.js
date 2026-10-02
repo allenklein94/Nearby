@@ -641,6 +641,8 @@ export const translations = {
     reasons: {
       becauseYouLike: "Because you like {category}",
       askedFor: "Because you asked for {category}",
+      askedForOutdoor: "Because you asked for something outdoors",
+      askedForIndoor: "Because you asked for something indoors",
       activity: "Good for {activity}",
       friendsPlanActivity: "A friends plan, good for {activity}",
       occasionOffered: "Offers {occasion} experiences",
@@ -1730,6 +1732,8 @@ export const translations = {
     reasons: {
       becauseYouLike: "Porque te gusta {category}",
       askedFor: "Porque pediste {category}",
+      askedForOutdoor: "Porque pediste algo al aire libre",
+      askedForIndoor: "Porque pediste algo bajo techo",
       activity: "Ideal para {activity}",
       friendsPlanActivity: "Un plan con amigos, ideal para {activity}",
       occasionOffered: "Ofrece experiencias de {occasion}",
@@ -2817,6 +2821,8 @@ export const translations = {
     reasons: {
       becauseYouLike: "Weil du {category} magst",
       askedFor: "Weil du nach {category} gefragt hast",
+      askedForOutdoor: "Weil du nach etwas draußen gefragt hast",
+      askedForIndoor: "Weil du nach etwas drinnen gefragt hast",
       activity: "Gut für {activity}",
       friendsPlanActivity: "Ein Plan mit Freunden, gut für {activity}",
       occasionOffered: "Bietet Erlebnisse zum Anlass „{occasion}“ an",
@@ -3889,6 +3895,8 @@ export const translations = {
     reasons: {
       becauseYouLike: "Parce que vous aimez {category}",
       askedFor: "Parce que vous avez demandé {category}",
+      askedForOutdoor: "Parce que tu as demandé quelque chose en plein air",
+      askedForIndoor: "Parce que tu as demandé quelque chose en intérieur",
       activity: "Idéal pour {activity}",
       friendsPlanActivity: "Un plan entre amis, idéal pour {activity}",
       occasionOffered: "Propose des expériences « {occasion} »",
@@ -4970,6 +4978,8 @@ export const translations = {
     reasons: {
       becauseYouLike: "Porque você gosta de {category}",
       askedFor: "Porque você pediu {category}",
+      askedForOutdoor: "Porque você pediu algo ao ar livre",
+      askedForIndoor: "Porque você pediu algo em local fechado",
       activity: "Bom para {activity}",
       friendsPlanActivity: "Um plano entre amigos, bom para {activity}",
       occasionOffered: "Oferece experiências de {occasion}",
@@ -6059,6 +6069,8 @@ export const translations = {
     reasons: {
       becauseYouLike: "Paske ou renmen {category}",
       askedFor: "Paske ou te mande {category}",
+      askedForOutdoor: "Paske ou te mande yon bagay deyò",
+      askedForIndoor: "Paske ou te mande yon bagay andedan",
       activity: "Bon pou {activity}",
       friendsPlanActivity: "Yon plan ak zanmi, bon pou {activity}",
       occasionOffered: "Ofri eksperyans {occasion}",
@@ -7133,6 +7145,8 @@ export const translations = {
     reasons: {
       becauseYouLike: "因为你喜欢{category}",
       askedFor: "因为你想找{category}",
+      askedForOutdoor: "因为你想找户外的",
+      askedForIndoor: "因为你想找室内的",
       activity: "适合{activity}",
       friendsPlanActivity: "朋友聚会计划，适合{activity}",
       occasionOffered: "提供{occasion}体验",
@@ -8205,6 +8219,8 @@ export const translations = {
     reasons: {
       becauseYouLike: "Vì bạn thích {category}",
       askedFor: "Vì bạn đã hỏi về {category}",
+      askedForOutdoor: "Vì bạn muốn tìm hoạt động ngoài trời",
+      askedForIndoor: "Vì bạn muốn tìm hoạt động trong nhà",
       activity: "Phù hợp để {activity}",
       friendsPlanActivity: "Kế hoạch với bạn bè, phù hợp để {activity}",
       occasionOffered: "Có trải nghiệm {occasion}",
@@ -9279,6 +9295,8 @@ export const translations = {
     reasons: {
       becauseYouLike: "Dahil gusto mo ang {category}",
       askedFor: "Dahil hinanap mo ang {category}",
+      askedForOutdoor: "Dahil humiling ka ng nasa labas",
+      askedForIndoor: "Dahil humiling ka ng nasa loob",
       activity: "Maganda para sa {activity}",
       friendsPlanActivity: "Plano ng magkakaibigan, maganda para sa {activity}",
       occasionOffered: "May mga karanasan para sa {occasion}",
@@ -10364,6 +10382,8 @@ export const translations = {
     reasons: {
       becauseYouLike: "Потому что вам нравится {category}",
       askedFor: "Потому что вы искали {category}",
+      askedForOutdoor: "Потому что вы искали что-то на свежем воздухе",
+      askedForIndoor: "Потому что вы искали что-то в помещении",
       activity: "Подходит для: {activity}",
       friendsPlanActivity: "План с друзьями, подходит для: {activity}",
       occasionOffered: "Предлагает впечатления: {occasion}",
@@ -11457,6 +11477,8 @@ export const translations = {
     reasons: {
       becauseYouLike: "{category}을(를) 좋아하셔서",
       askedFor: "{category}을(를) 찾으셔서",
+      askedForOutdoor: "야외를 원하셨기 때문이에요",
+      askedForIndoor: "실내를 원하셨기 때문이에요",
       activity: "{activity}에 좋아요",
       friendsPlanActivity: "친구들과의 계획, {activity}에 좋아요",
       occasionOffered: "{occasion} 경험 제공",

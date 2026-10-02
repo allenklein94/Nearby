@@ -104,6 +104,13 @@ export function askedForReason(label) {
   return clean ? reasonText('askedFor', { category: clean }) : null;
 }
 
+// The ask said outside / indoors and the result's DECLARED side matches (constants/environmentMatch.js).
+export function askedForEnvironmentReason(environment) {
+  if (environment === 'outdoor') return reasonText('askedForOutdoor');
+  if (environment === 'indoor') return reasonText('askedForIndoor');
+  return null;
+}
+
 // The ask wants to do this activity and the business/gathering declared what supports it (constants/activityLayer.js).
 export function activityReason(activityLabel) {
   const clean = cleanLabel(activityLabel);

@@ -7,8 +7,9 @@
 // only sinks a known $$$ result. The caption always says what was left out, so nothing disappears silently.
 import { splitHedge } from '../utils/askPreferences';
 import { vibesFromAsk } from './businessVibes';
+import { appendReason, askedForEnvironmentReason } from './recommendationReasonVocabulary';
 import { CATEGORY_GROUPS, groupForTag } from './gatheringCategories';
-import { CATEGORY_INDOOR_OUTDOOR } from './gatheringIndoorOutdoor';
+import { categoryEnvironment } from './gatheringIndoorOutdoor';
 
 export const ALCOHOL_TAGS = ['Bars & Lounges', 'Breweries', 'Wine', 'Wineries', 'Happy Hour', 'Nightclubs'];
 export const CROWDED_TAGS = ['Festivals', 'Nightclubs', 'Concerts', 'Nightlife', 'Street Events', 'Special Events'];
@@ -64,18 +65,19 @@ export function partnerPartyType(text) {
   return typeof text === 'string' && PARTNER.test(text) ? 'date' : null;
 }
 
+// A category's side: the one shared rule (gatheringIndoorOutdoor.categoryEnvironment).
 export function environmentOf(tag) {
-  if (!tag) return null;
-  if (CATEGORY_INDOOR_OUTDOOR[tag]) return CATEGORY_INDOOR_OUTDOOR[tag];
-  const g = groupForTag(tag);
-  return g?.key === 'outdoors_nature' ? 'outdoor' : null;
+  return categoryEnvironment(tag);
 }
 
-function conflicts(c, key) {
+// A typed-ask candidate's side when no resolver-built envOf is given (older callers and tests): its category.
+const categoryEnvOf = (c) => environmentOf(c?.category);
+
+function conflicts(c, key, envOf = categoryEnvOf) {
   const tag = c?.category;
   if (key === 'alcohol') return ALCOHOL_TAGS.includes(tag);
-  if (key === 'outdoor') return environmentOf(tag) === 'outdoor';
-  if (key === 'indoor') return environmentOf(tag) === 'indoor';
+  if (key === 'outdoor') return envOf(c) === 'outdoor';
+  if (key === 'indoor') return envOf(c) === 'indoor';
   if (key === 'crowded') {
     if (CROWDED_TAGS.includes(tag)) return true;
     // capacity counts everyone including the host; attendeeCount is guests only, so the host is added once here.
@@ -91,23 +93,29 @@ export const PRICEY_POINTS = -2;
 // sinks a known $$$. Returns { items, caption } (caption null when the ask stated none of these).
 // Item 118: the eligibility half (typed-ask Stage 1, utils/askEligibility.js). A firm environment removes KNOWN opposites; an
 // exclusion removes a result only when its own known property conflicts. Unknown is kept.
-export function askFacetsEligible(candidates, facets) {
+// envOf(c): the candidate's side (the resolver passes constants/environmentMatch.js's declared-data rule; default = category).
+export function askFacetsEligible(candidates, facets, envOf = categoryEnvOf) {
   if (!facets || (!facets.environment && !facets.exclude.length && !facets.pricey)) return { items: candidates, removedOpposite: false };
   const opposite = facets.environmentRequired ? (facets.environment === 'outdoor' ? 'indoor' : 'outdoor') : null;
-  const kept = candidates.filter((c) => !opposite || environmentOf(c?.category) !== opposite);
+  const kept = candidates.filter((c) => !opposite || envOf(c) !== opposite);
   const removedOpposite = kept.length < candidates.length;
-  return { items: kept.filter((c) => !facets.exclude.some((k) => conflicts(c, k))), removedOpposite };
+  return { items: kept.filter((c) => !facets.exclude.some((k) => conflicts(c, k, envOf))), removedOpposite };
 }
 
 // The ranking half (Stage 2): a stated environment lifts its match and nudges a known opposite; "not too expensive" sinks $$$.
-export function askFacetsLift(candidates, facets) {
+// A result whose side matches the asked one also carries the real reason (askedForEnvironmentReason).
+export function askFacetsLift(candidates, facets, envOf = categoryEnvOf) {
   if (!facets || (!facets.environment && !facets.pricey)) return candidates;
   return candidates.map((c) => {
     let delta = 0;
-    const env = environmentOf(c?.category);
-    if (facets.environment && env) delta += env === facets.environment ? ENVIRONMENT_POINTS : -1;
+    const env = envOf(c);
+    const matched = !!(facets.environment && env && env === facets.environment);
+    if (facets.environment && env) delta += matched ? ENVIRONMENT_POINTS : -1;
     if (facets.pricey && c?.priceLevel === '$$$') delta += PRICEY_POINTS;
-    return delta ? { ...c, score: (c.score ?? 0) + delta } : c;
+    if (!delta && !matched) return c;
+    const next = { ...c, score: (c.score ?? 0) + delta };
+    if (matched) next.reasons = appendReason(c.reasons, askedForEnvironmentReason(facets.environment));
+    return next;
   });
 }
 

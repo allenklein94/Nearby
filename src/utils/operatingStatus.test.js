@@ -215,7 +215,7 @@ describe('guards', () => {
   });
   test('sponsored placements never ride the filter', () => {
     expect(read('src/components/SponsoredSpotlightSlot.js')).not.toMatch(/operatingStatus|openNow/);
-    expect(discover).toMatch(/!isSearching && !openNowActive && \(\s*<SponsoredSpotlightSlot/);
+    expect(discover).toMatch(/!isSearching && !openNowActive && !environmentFilter && \(\s*<SponsoredSpotlightSlot/);
   });
   test('15. no new screen, tab or navigation: the chip only toggles state in place', () => {
     const screens = fs.readdirSync(path.join(ROOT, 'src/screens'));
