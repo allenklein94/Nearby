@@ -35,7 +35,7 @@ d('journey: domain events -> one notification layer (item 125)', () => {
   else
     update friendships set status = 'accepted' where (user_a = v_a and user_b = v_b) or (user_a = v_b and user_b = v_a);
   end if;
-  update profiles set notify_planning = true, notify_business = true, notify_discovery = true where id in (v_a, v_b, v_c, v_owner);
+  update profiles set notification_mutes = '{}' where id in (v_a, v_b, v_c, v_owner);
   update profiles set interests = array['Coffee'], notify_things_to_do_categories = null, notify_things_to_do_max_distance_miles = null,
          notify_things_to_do_time_pref = 'anytime', notify_things_to_do_frequency = 'as_they_happen' where id = v_c;
   delete from presence_reports where user_id = v_c;
@@ -87,9 +87,9 @@ d('journey: domain events -> one notification layer (item 125)', () => {
       'inviter', (select display_name from profiles where id = v_a), 'source', (select source from domain_events where object_id = v_inv1 and type = 'INVITATION_SENT'))));
 
   -- 2b. muted: B turned Plans notifications off -> recorded, outcome muted, no push
-  update profiles set notify_planning = false where id = v_b;
+  update profiles set notification_mutes = '{plans_invitations,plans_changes,plans_reminders}' where id = v_b;
   perform invite_friend_to_gathering(v_g2, v_b);
-  update profiles set notify_planning = true where id = v_b;
+  update profiles set notification_mutes = '{}' where id = v_b;
   log := log || jsonb_build_array(jsonb_build_object('step','invitation_sent_muted','ok',
     (select count(*) from jq where b->>'recipient_id' = v_b::text and b->'data'->>'gathering_id' = v_g2::text) = 0,
     'data', jsonb_build_object('outcome', (select n.outcome from domain_event_notifications n join domain_events e on e.id = n.event_id
@@ -170,10 +170,10 @@ d('journey: domain events -> one notification layer (item 125)', () => {
       'leaks_raw_text', position('Coffee for the group' in coalesce(v_body, '')) > 0)));
 
   -- 4b. muted business: recorded, outcome muted, no push
-  update profiles set notify_business = false where id = v_owner;
+  update profiles set notification_mutes = '{business_offers,business_responses}' where id = v_owner;
   v_res := create_business_request_for_gathering(v_g2, 'Another ask', 'Coffee', 20, 15, null, null, v_partner, null);
   v_req2 := (v_res->>'requestId')::uuid;
-  update profiles set notify_business = true where id = v_owner;
+  update profiles set notification_mutes = '{}' where id = v_owner;
   log := log || jsonb_build_array(jsonb_build_object('step','request_sent_muted','ok',
     (select count(*) from jq where b->'data'->>'request_id' = v_req2::text) = 0,
     'data', jsonb_build_object('outcome', (select n.outcome from domain_event_notifications n join domain_events e on e.id = n.event_id

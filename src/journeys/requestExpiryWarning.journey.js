@@ -32,7 +32,7 @@ d('journey: a request about to expire warns its business once, and the tap shows
       v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_host uuid := '${host.id}'; v_host2 uuid := '${host2.id}'; v_other uuid;
       v_g uuid; a uuid; b uuid; c uuid; dd uuid; e uuid; f uuid; g uuid; h uuid; i uuid; v_n int; v_o record; v_err text; v_list jsonb;`, `
   update brand_partners set active = true, latitude = 40.0, longitude = -75.0 where id = v_partner;
-  update profiles set notify_business = true where id = v_owner;
+  update profiles set notification_mutes = '{}' where id = v_owner;
   ${mk('a', '1 day', '110 minutes')}
   ${mk('b', '1 day', '5 hours')}
   ${mk('c', '30 minutes', '80 minutes')}
@@ -88,10 +88,10 @@ d('journey: a request about to expire warns its business once, and the tap shows
 
   -- the owner's business notifications off: nothing
   ${mk('i', '1 day', '100 minutes')}
-  update profiles set notify_business = false where id = v_owner;
+  update profiles set notification_mutes = '{business_offers,business_responses}' where id = v_owner;
   perform send_business_request_expiry_warnings();
   log := log || jsonb_build_array(jsonb_build_object('step','owner_turned_business_notifications_off','ok', ${warned('i')} = 0));
-  update profiles set notify_business = true where id = v_owner;
+  update profiles set notification_mutes = '{}' where id = v_owner;
 
   -- the tap, after the state changed: the owner answers a, b expires, then the owner's own list is read
   perform set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);

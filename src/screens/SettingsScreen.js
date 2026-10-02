@@ -3,6 +3,8 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch, Linking, Platform, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../services/supabase';
+import { NOTIFICATION_AREAS, toggleGroup } from '../constants/notificationPreferences';
+import { setMyNotificationGroup } from '../services/notificationPrefs';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -77,28 +79,9 @@ export default function SettingsScreen({ navigation, route }) {
   const [womenMessageFirst, setWomenMessageFirst] = useState(false);
   const [intentVisibility, setIntentVisibility] = useState('friends_and_matches');
 
-  // External UX critique item 29 (2026-09-11): "notifications should be an
-  // intelligent layer, not a firehose" -- the growing pile of individual
-  // per-feature toggles (notify_friends/dating/messages/waves/plans/
-  // things_to_do/nearby_opportunities/crossed_paths/businesses_offers,
-  // several generations of one-off additions) is replaced with 6 named
-  // categories the user actually chose: Social, Discovery, Proximity,
-  // Planning, Business, Community. Every push-sending function in the
-  // database was individually re-gated onto these 6 columns (including a
-  // dozen real, previously *ungated* business-side pushes found during
-  // this audit) -- see the migration's own header comment for the full
-  // per-function mapping. Discovery is the one category with real
-  // sub-preferences underneath it (frequency/distance/time/categories,
-  // still separately tracked per the Things To Do / Nearby Opportunities
-  // domains from item 17) -- those are unchanged, only their plain on/off
-  // master switch collapsed into notify_discovery below.
-  const [notifySocial, setNotifySocial] = useState(true);
-  const [notifyDating, setNotifyDating] = useState(true);
-  const [notifyDiscovery, setNotifyDiscovery] = useState(true);
-  const [notifyProximity, setNotifyProximity] = useState(true);
-  const [notifyPlanning, setNotifyPlanning] = useState(true);
-  const [notifyBusiness, setNotifyBusiness] = useState(true);
-  const [notifyCommunity, setNotifyCommunity] = useState(true);
+  // Item 142: notification choices are groups the person turned off (profiles.notification_mutes), one switch per group,
+  // grouped by area (constants/notificationPreferences.js). Applied centrally by the server's push sender.
+  const [notificationMutes, setNotificationMutes] = useState([]);
   const [osNotifPermission, setOsNotifPermission] = useState('granted');
 
   // External UX critique item 17 follow-up (2026-09-11): the "this matches
@@ -204,13 +187,7 @@ export default function SettingsScreen({ navigation, route }) {
 
     const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
     if (data) {
-      setNotifySocial(data.notify_social ?? true);
-      setNotifyDating(data.notify_dating ?? true);
-      setNotifyDiscovery(data.notify_discovery ?? true);
-      setNotifyProximity(data.notify_proximity ?? true);
-      setNotifyPlanning(data.notify_planning ?? true);
-      setNotifyBusiness(data.notify_business ?? true);
-      setNotifyCommunity(data.notify_community ?? true);
+      setNotificationMutes(data.notification_mutes ?? []);
       setMyInterests(data.interests ?? []);
       loadLearned();
       setMotivations(data.onboarding_motivations ?? []);
@@ -254,12 +231,16 @@ export default function SettingsScreen({ navigation, route }) {
     }
   }
 
-  async function toggleNotifPref(key, value, setter) {
-    setter(value);
-    const { error } = await supabase.from('profiles').update({ [key]: value }).eq('id', userId);
-    if (error) {
-      setter(!value);
-      presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => toggleNotifPref(key, value, setter) });
+  async function toggleNotificationGroup(group, enabled) {
+    const previous = notificationMutes;
+    setNotificationMutes(toggleGroup(previous, group, enabled));
+    try {
+      setNotificationMutes(await setMyNotificationGroup(group, enabled));
+      // No recommendations = no reason to keep the coarse notification area (same as before).
+      if (group === 'discover_recommendations' && !enabled) clearNotificationArea().catch(() => {});
+    } catch (e) {
+      setNotificationMutes(previous);
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => toggleNotificationGroup(group, enabled) });
     }
   }
 
@@ -671,162 +652,97 @@ export default function SettingsScreen({ navigation, route }) {
 
         <Text style={styles.groupHeader} accessibilityRole="header">{t('settings.notifications')}</Text>
         <View style={styles.card}>
-          <View style={styles.settingRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>{t('ui.settings.friends')}</Text>
-              <Text style={styles.helperText}>{t('ui.settings.friendRequestsFriendsStoriesAnd')}</Text>
+          {NOTIFICATION_AREAS.map((area, ai) => (
+            <View key={area.key}>
+              {ai > 0 && <View style={styles.divider} />}
+              <Text style={styles.settingLabel} accessibilityRole="header">{area.icon} {t(`ui.notificationPrefs.area.${area.key}.label`)}</Text>
+              {area.groups.map((g) => {
+                const on = !notificationMutes.includes(g);
+                const label = t(`ui.notificationPrefs.group.${g}.label`);
+                return (
+                  <View key={g}>
+                    <View style={styles.settingRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.helperText}><Text style={{ fontWeight: '600' }}>{label}</Text>{'\n'}{t(`ui.notificationPrefs.group.${g}.hint`)}</Text>
+                      </View>
+                      <Switch
+                        value={on}
+                        onValueChange={(v) => toggleNotificationGroup(g, v)}
+                        trackColor={{ true: colors.primary, false: colors.border }}
+                        accessibilityLabel={t('ui.notificationPrefs.toggleA11y', { label })}
+                      />
+                    </View>
+                    {g === 'discover_recommendations' && on && (
+                      <>
+                    <TouchableOpacity
+                      style={styles.customizeLink}
+                      onPress={() => clearNotificationArea()
+                        .then(() => showSuccessToast(t('ui.settings.savedAreaCleared'), t('ui.settings.nearbyWillSaveAFresh')))
+                        .catch((e) => presentRecoverableError(Alert, { what: 'complete that', error: e }))}
+                      accessibilityLabel={t('ui.settings.clearMySavedAreaA11y')}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.customizeLinkText}>{t('ui.settings.clearMySavedAreaRefreshes')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.customizeLink}
+                      onPress={() => setExpandedRecPanel(expandedRecPanel === 'things_to_do' ? null : 'things_to_do')}
+                      accessibilityLabel={t('ui.settings.customizeThingsToDoNotificationsA11y')}
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: expandedRecPanel === 'things_to_do' }}
+                    >
+                      <Text style={styles.customizeLinkText}>
+                        {expandedRecPanel === 'things_to_do' ? t('ui.settings.hideThingsToDoFrequency') : t('ui.settings.thingsToDoFrequencyCategories')}
+                      </Text>
+                    </TouchableOpacity>
+                    {expandedRecPanel === 'things_to_do' && (
+                      <RecommendationCustomizePanel
+                        colors={colors}
+                        myInterests={myInterests}
+                        frequency={ttdFrequency}
+                        distance={ttdDistance}
+                        timePref={ttdTimePref}
+                        selectedCategories={ttdCategories}
+                        onChangeFrequency={(v) => saveRecPref('notify_things_to_do_frequency', v, setTtdFrequency)}
+                        onChangeDistance={(v) => saveRecPref('notify_things_to_do_max_distance_miles', v, setTtdDistance)}
+                        onChangeTimePref={(v) => saveRecPref('notify_things_to_do_time_pref', v, setTtdTimePref)}
+                        onToggleCategory={(tag) => toggleRecCategory(tag, ttdCategories, 'notify_things_to_do_categories', setTtdCategories)}
+                        onPressAddInterests={() => navigation.navigate('Profile', { scrollToInterestsSection: true })}
+                      />
+                    )}
+                    <TouchableOpacity
+                      style={styles.customizeLink}
+                      onPress={() => setExpandedRecPanel(expandedRecPanel === 'nearby_opportunities' ? null : 'nearby_opportunities')}
+                      accessibilityLabel={t('ui.settings.customizeNearbyOpportunitiesNotificationsA11y')}
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: expandedRecPanel === 'nearby_opportunities' }}
+                    >
+                      <Text style={styles.customizeLinkText}>
+                        {expandedRecPanel === 'nearby_opportunities' ? t('ui.settings.hideNearbyOpportunitiesFrequencyCategories') : t('ui.settings.nearbyOpportunitiesFrequencyCategoriesDistance')}
+                      </Text>
+                    </TouchableOpacity>
+                    {expandedRecPanel === 'nearby_opportunities' && (
+                      <RecommendationCustomizePanel
+                        colors={colors}
+                        myInterests={myInterests}
+                        frequency={noFrequency}
+                        distance={noDistance}
+                        timePref={noTimePref}
+                        selectedCategories={noCategories}
+                        onChangeFrequency={(v) => saveRecPref('notify_nearby_opportunities_frequency', v, setNoFrequency)}
+                        onChangeDistance={(v) => saveRecPref('notify_nearby_opportunities_max_distance_miles', v, setNoDistance)}
+                        onChangeTimePref={(v) => saveRecPref('notify_nearby_opportunities_time_pref', v, setNoTimePref)}
+                        onToggleCategory={(tag) => toggleRecCategory(tag, noCategories, 'notify_nearby_opportunities_categories', setNoCategories)}
+                        onPressAddInterests={() => navigation.navigate('Profile', { scrollToInterestsSection: true })}
+                      />
+                    )}
+                      </>
+                    )}
+                  </View>
+                );
+              })}
             </View>
-            <Switch
-              value={notifySocial}
-              onValueChange={(v) => toggleNotifPref('notify_social', v, setNotifySocial)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.settings.notifyMeAboutFriendsFriendA11y')}
-            />
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.settingRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>{t('ui.settings.dating')}</Text>
-              <Text style={styles.helperText}>{t('ui.settings.matchesMessagesWavesCallsAnd')}</Text>
-            </View>
-            <Switch
-              value={notifyDating}
-              onValueChange={(v) => toggleNotifPref('notify_dating', v, setNotifyDating)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.settings.notifyMeAboutDatingMatchesA11y')}
-            />
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.settingRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>{t('ui.settings.discovery')}</Text>
-              <Text style={styles.helperText}>{t('ui.settings.aNewGatheringOrBusiness')}</Text>
-            </View>
-            <Switch
-              value={notifyDiscovery}
-              onValueChange={(v) => { toggleNotifPref('notify_discovery', v, setNotifyDiscovery); if (!v) clearNotificationArea().catch(() => {}); }}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.settings.notifyMeWhenSomethingNewA11y')}
-            />
-          </View>
-          {notifyDiscovery && (
-            <>
-              <TouchableOpacity
-                style={styles.customizeLink}
-                onPress={() => clearNotificationArea()
-                  .then(() => showSuccessToast(t('ui.settings.savedAreaCleared'), t('ui.settings.nearbyWillSaveAFresh')))
-                  .catch((e) => presentRecoverableError(Alert, { what: 'complete that', error: e }))}
-                accessibilityLabel={t('ui.settings.clearMySavedAreaA11y')}
-                accessibilityRole="button"
-              >
-                <Text style={styles.customizeLinkText}>{t('ui.settings.clearMySavedAreaRefreshes')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.customizeLink}
-                onPress={() => setExpandedRecPanel(expandedRecPanel === 'things_to_do' ? null : 'things_to_do')}
-                accessibilityLabel={t('ui.settings.customizeThingsToDoNotificationsA11y')}
-                accessibilityRole="button"
-                accessibilityState={{ expanded: expandedRecPanel === 'things_to_do' }}
-              >
-                <Text style={styles.customizeLinkText}>
-                  {expandedRecPanel === 'things_to_do' ? t('ui.settings.hideThingsToDoFrequency') : t('ui.settings.thingsToDoFrequencyCategories')}
-                </Text>
-              </TouchableOpacity>
-              {expandedRecPanel === 'things_to_do' && (
-                <RecommendationCustomizePanel
-                  colors={colors}
-                  myInterests={myInterests}
-                  frequency={ttdFrequency}
-                  distance={ttdDistance}
-                  timePref={ttdTimePref}
-                  selectedCategories={ttdCategories}
-                  onChangeFrequency={(v) => saveRecPref('notify_things_to_do_frequency', v, setTtdFrequency)}
-                  onChangeDistance={(v) => saveRecPref('notify_things_to_do_max_distance_miles', v, setTtdDistance)}
-                  onChangeTimePref={(v) => saveRecPref('notify_things_to_do_time_pref', v, setTtdTimePref)}
-                  onToggleCategory={(tag) => toggleRecCategory(tag, ttdCategories, 'notify_things_to_do_categories', setTtdCategories)}
-                  onPressAddInterests={() => navigation.navigate('Profile', { scrollToInterestsSection: true })}
-                />
-              )}
-              <TouchableOpacity
-                style={styles.customizeLink}
-                onPress={() => setExpandedRecPanel(expandedRecPanel === 'nearby_opportunities' ? null : 'nearby_opportunities')}
-                accessibilityLabel={t('ui.settings.customizeNearbyOpportunitiesNotificationsA11y')}
-                accessibilityRole="button"
-                accessibilityState={{ expanded: expandedRecPanel === 'nearby_opportunities' }}
-              >
-                <Text style={styles.customizeLinkText}>
-                  {expandedRecPanel === 'nearby_opportunities' ? t('ui.settings.hideNearbyOpportunitiesFrequencyCategories') : t('ui.settings.nearbyOpportunitiesFrequencyCategoriesDistance')}
-                </Text>
-              </TouchableOpacity>
-              {expandedRecPanel === 'nearby_opportunities' && (
-                <RecommendationCustomizePanel
-                  colors={colors}
-                  myInterests={myInterests}
-                  frequency={noFrequency}
-                  distance={noDistance}
-                  timePref={noTimePref}
-                  selectedCategories={noCategories}
-                  onChangeFrequency={(v) => saveRecPref('notify_nearby_opportunities_frequency', v, setNoFrequency)}
-                  onChangeDistance={(v) => saveRecPref('notify_nearby_opportunities_max_distance_miles', v, setNoDistance)}
-                  onChangeTimePref={(v) => saveRecPref('notify_nearby_opportunities_time_pref', v, setNoTimePref)}
-                  onToggleCategory={(tag) => toggleRecCategory(tag, noCategories, 'notify_nearby_opportunities_categories', setNoCategories)}
-                  onPressAddInterests={() => navigation.navigate('Profile', { scrollToInterestsSection: true })}
-                />
-              )}
-            </>
-          )}
-          <View style={styles.divider} />
-          <View style={styles.settingRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>{t('ui.settings.proximity')}</Text>
-              <Text style={styles.helperText}>{t('ui.settings.whenYouCrossPathsWith')}</Text>
-            </View>
-            <Switch
-              value={notifyProximity}
-              onValueChange={(v) => toggleNotifPref('notify_proximity', v, setNotifyProximity)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.settings.notifyMeWhenICrossA11y')}
-            />
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.settingRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>{t('ui.settings.planning')}</Text>
-              <Text style={styles.helperText}>{t('ui.settings.gatheringInterestApprovalsAndReminders')}</Text>
-            </View>
-            <Switch
-              value={notifyPlanning}
-              onValueChange={(v) => toggleNotifPref('notify_planning', v, setNotifyPlanning)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.settings.notifyMeAboutPlansImA11y')}
-            />
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.settingRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>{t('ui.settings.business')}</Text>
-              <Text style={styles.helperText}>{t('ui.settings.aPlaceYouveInteractedWith')}</Text>
-            </View>
-            <Switch
-              value={notifyBusiness}
-              onValueChange={(v) => toggleNotifPref('notify_business', v, setNotifyBusiness)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.settings.notifyMeAboutBusinessOffersA11y')}
-            />
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.settingRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>{t('ui.settings.community')}</Text>
-              <Text style={styles.helperText}>{t('ui.settings.newActivityInACommunity')}</Text>
-            </View>
-            <Switch
-              value={notifyCommunity}
-              onValueChange={(v) => toggleNotifPref('notify_community', v, setNotifyCommunity)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.settings.notifyMeAboutActivityInA11y')}
-            />
-          </View>
+          ))}
         </View>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.settings.whatYoureHereToDo')}</Text>

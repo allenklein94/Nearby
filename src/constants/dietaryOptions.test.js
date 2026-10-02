@@ -99,7 +99,12 @@ describe('structured and declared only; wired where it matters', () => {
   });
   it('an access or dietary need from an ask is never stored on the person', () => {
     const migs = fs.readdirSync(path.join(ROOT, 'supabase/migrations')).filter((f) => f >= '20270230');
-    for (const f of migs) expect(r(`supabase/migrations/${f}`)).not.toMatch(/alter table public\.profiles/);
+    // A later migration may add an unrelated profiles column (item 142: notification_mutes), never a dietary/access one.
+    for (const f of migs) {
+      for (const stmt of r(`supabase/migrations/${f}`).match(/alter table public\.profiles[^;]*;/gi) ?? []) {
+        expect(stmt).not.toMatch(/dietar|allerg|vegan|vegetarian|gluten|halal|kosher|wheelchair|accessib/i);
+      }
+    }
   });
   it('dashboard, public profile, resolver and card are wired', () => {
     const dash = r('src/screens/BusinessDashboardScreen.js');

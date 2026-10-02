@@ -4,7 +4,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Aler
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../services/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { notificationOptOuts } from '../constants/notificationCategories';
+import { mutesFromOnboardingChoices } from '../constants/notificationPreferences';
 import { ONBOARDING_ANSWERS_KEY, ONBOARDING_DRAFT_KEY } from './OnboardingQuestionsScreen';
 import { canonicalizeInterests, sanitizeInterestGroups } from '../constants/interestGraph';
 import { pickProfilePhoto, uploadProfilePhoto } from '../services/photos';
@@ -246,7 +246,8 @@ export default function CompleteProfileScreen() {
         ...(canonicalizeInterests(onboardingAnswers.monthly_interests).length ? { monthly_interests: canonicalizeInterests(onboardingAnswers.monthly_interests), monthly_interests_updated_at: new Date().toISOString() } : {}),
         ...(sanitizeInterestGroups(onboardingAnswers.interest_groups).length ? { interest_groups: sanitizeInterestGroups(onboardingAnswers.interest_groups) } : {}),
         ...(wantsFriends ? { open_to_friend_discovery: true } : {}),
-        ...notificationOptOuts(onboardingAnswers.notification_choices),
+        // Item 142: onboarding's per-area choices become muted groups (the older columns are derived from them server-side).
+        ...(mutesFromOnboardingChoices(onboardingAnswers.notification_choices).length ? { notification_mutes: mutesFromOnboardingChoices(onboardingAnswers.notification_choices) } : {}),
       });
       if (!profileError) {
         // Marks this as a fresh signup so the navigator shows the
