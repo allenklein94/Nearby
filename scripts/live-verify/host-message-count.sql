@@ -1,9 +1,8 @@
 -- Host command center: the Message action's count (getGatheringMessageCount = a count-only read of gathering_messages
 -- through RLS), run as real users under the authenticated role. Always rolls back. Usage: append `rollback;`.
 -- Expect: host_count 2 (own + attendee; the attendee the HOST blocked is excluded), stranger_count 0,
--- host_count_after_new_message 3. host_count_reverse_block = what the host sees when the ATTENDEE blocked the host: 4 today (all)
--- (the chat's own RLS reads `blocks` under the viewer's RLS, which only shows blocks the viewer made; a pre-existing gap in
--- the chat policy, reported 2026-10-02; the count only mirrors the chat, it adds nothing).
+-- host_count_after_new_message 3, host_count_reverse_block 3 (the ATTENDEE blocked the host: that attendee's message is
+-- hidden too, since 20270263 the chat policy uses viewer_blocked_either_way; was 4 before, the leak reported 2026-10-02).
 begin;
 create temp table out(k text, v text) on commit drop;
 grant all on out to authenticated;
