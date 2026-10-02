@@ -125,6 +125,25 @@ describe('1. a push opened from Discover, then Back', () => {
   });
 });
 
+describe('the offer push ("Coastal Coffee made you an offer")', () => {
+  test('opens the request ON that offer, on top of wherever the person was; Back returns there, not Home', async () => {
+    const ref = makeRef();
+    ref.switchTab('Activity');
+    ref.open('ViewProfile', { userId: 'u1' });
+    ref.open('Chat', { matchId: 'm1' });
+    const chat = ref.top();
+    await handleNotificationResponse(response('offer-1', { type: 'business_offer_received', request_id: 'r1', offer_id: 'o1' }, 'Coastal Coffee made you an offer'), ref);
+    expect(ref.names()).toEqual(['MainTabs', 'ViewProfile', 'Chat', 'BusinessRequestDetail']);
+    expect(ref.top().params).toEqual({ requestId: 'r1', focusOfferId: 'o1', notificationReason: 'Coastal Coffee made you an offer' });
+    ref.back();
+    expect(ref.top()).toBe(chat);
+    ref.back();
+    expect(ref.top().name).toBe('ViewProfile');
+    ref.back();
+    expect(ref.tab()).toBe('Activity');
+  });
+});
+
 describe('2. a push opened from a gathering detail, then Back', () => {
   test('another gathering opens on top; Back returns to the first one, unchanged', async () => {
     const ref = makeRef();
