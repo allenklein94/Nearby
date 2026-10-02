@@ -378,6 +378,11 @@ export async function notificationDestination(data, { lookupAvailability = async
         return to('BusinessRequestDetail', { requestId: data.request_id, notificationReason: data.body ?? null });
       }
       break;
+    // Item 140: "Request expires soon" opens the dashboard ON that request, which re-reads its current state and says it
+    // (still open / already replied / expired / chosen another...). Nothing else is trusted from the push.
+    case 'business_request_expiring':
+      if (data.request_id) return to('BusinessDashboard', { initialSection: 'requests', focusRequestId: data.request_id });
+      return to('BusinessDashboard', { initialSection: 'requests' });
     case 'reservation_cancelled_by_customer':
     // Item 90: cancel_business_request() previously notified no one at
     // all, including a business whose pending/offered ask just vanished.

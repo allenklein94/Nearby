@@ -316,7 +316,19 @@
   "fulfillmentPolicy": "Fulfillment Policy",
   "editFulfillmentPolicyA11y": "Edit fulfillment policy",
   "setAFulfillmentPolicyA11y": "Set a fulfillment policy",
-  "setAPolicy": "+ Set a Policy"
+  "setAPolicy": "+ Set a Policy",
+  "focus.title": "From your notification",
+  "focus.respondBy": "Still open. Reply before {when}.",
+  "focus.respondOpen": "Still open. Reply below.",
+  "focus.unavailable": "This request isn't available anymore.",
+  "focus.reviewing": "We're reviewing your offer.",
+  "focus.expired": "This request has expired. Nothing more to do.",
+  "focus.customerChoseAnother": "The customer chose another business.",
+  "focus.customerCancelled": "The customer cancelled this request.",
+  "focus.closed": "This request is closed.",
+  "focus.youReplied": "You already replied to this request.",
+  "focus.booked": "You're booked for this request.",
+  "focus.youDeclined": "You declined this request."
  },
  "es": {
   "peopleLookingForCategory": {
@@ -635,7 +647,19 @@
   "fulfillmentPolicy": "Política de atención",
   "editFulfillmentPolicyA11y": "Editar política de atención",
   "setAFulfillmentPolicyA11y": "Definir una política de atención",
-  "setAPolicy": "+ Definir una política"
+  "setAPolicy": "+ Definir una política",
+  "focus.title": "De tu notificación",
+  "focus.respondBy": "Sigue abierta. Responde antes de {when}.",
+  "focus.respondOpen": "Sigue abierta. Responde abajo.",
+  "focus.unavailable": "Esta solicitud ya no está disponible.",
+  "focus.reviewing": "Estamos revisando tu oferta.",
+  "focus.expired": "Esta solicitud venció. No hay nada más que hacer.",
+  "focus.customerChoseAnother": "El cliente eligió otro negocio.",
+  "focus.customerCancelled": "El cliente canceló esta solicitud.",
+  "focus.closed": "Esta solicitud está cerrada.",
+  "focus.youReplied": "Ya respondiste a esta solicitud.",
+  "focus.booked": "Tienes una reserva para esta solicitud.",
+  "focus.youDeclined": "Rechazaste esta solicitud."
  },
  "de": {
   "peopleLookingForCategory": {
@@ -954,7 +978,19 @@
   "fulfillmentPolicy": "Erfüllungsrichtlinie",
   "editFulfillmentPolicyA11y": "Erfüllungsrichtlinie bearbeiten",
   "setAFulfillmentPolicyA11y": "Eine Erfüllungsrichtlinie festlegen",
-  "setAPolicy": "+ Richtlinie festlegen"
+  "setAPolicy": "+ Richtlinie festlegen",
+  "focus.title": "Aus deiner Benachrichtigung",
+  "focus.respondBy": "Noch offen. Antworte bis {when}.",
+  "focus.respondOpen": "Noch offen. Antworte unten.",
+  "focus.unavailable": "Diese Anfrage ist nicht mehr verfügbar.",
+  "focus.reviewing": "Wir prüfen dein Angebot.",
+  "focus.expired": "Diese Anfrage ist abgelaufen. Es gibt nichts mehr zu tun.",
+  "focus.customerChoseAnother": "Der Kunde hat ein anderes Geschäft gewählt.",
+  "focus.customerCancelled": "Der Kunde hat diese Anfrage storniert.",
+  "focus.closed": "Diese Anfrage ist geschlossen.",
+  "focus.youReplied": "Du hast auf diese Anfrage bereits geantwortet.",
+  "focus.booked": "Für diese Anfrage hast du eine Buchung.",
+  "focus.youDeclined": "Du hast diese Anfrage abgelehnt."
  },
  "fr": {
   "peopleLookingForCategory": {
@@ -1273,7 +1309,19 @@
   "fulfillmentPolicy": "Politique de prise en charge",
   "editFulfillmentPolicyA11y": "Modifier la politique de prise en charge",
   "setAFulfillmentPolicyA11y": "Définir une politique de prise en charge",
-  "setAPolicy": "+ Définir une politique"
+  "setAPolicy": "+ Définir une politique",
+  "focus.title": "Depuis votre notification",
+  "focus.respondBy": "Toujours ouverte. Répondez avant {when}.",
+  "focus.respondOpen": "Toujours ouverte. Répondez ci-dessous.",
+  "focus.unavailable": "Cette demande n'est plus disponible.",
+  "focus.reviewing": "Nous examinons votre offre.",
+  "focus.expired": "Cette demande a expiré. Il n'y a plus rien à faire.",
+  "focus.customerChoseAnother": "Le client a choisi un autre commerce.",
+  "focus.customerCancelled": "Le client a annulé cette demande.",
+  "focus.closed": "Cette demande est fermée.",
+  "focus.youReplied": "Vous avez déjà répondu à cette demande.",
+  "focus.booked": "Vous avez une réservation pour cette demande.",
+  "focus.youDeclined": "Vous avez refusé cette demande."
  },
  "pt": {
   "peopleLookingForCategory": {
@@ -1592,7 +1640,19 @@
   "fulfillmentPolicy": "Política de atendimento",
   "editFulfillmentPolicyA11y": "Editar política de atendimento",
   "setAFulfillmentPolicyA11y": "Definir uma política de atendimento",
-  "setAPolicy": "+ Definir uma política"
+  "setAPolicy": "+ Definir uma política",
+  "focus.title": "Da sua notificação",
+  "focus.respondBy": "Ainda aberto. Responda antes de {when}.",
+  "focus.respondOpen": "Ainda aberto. Responda abaixo.",
+  "focus.unavailable": "Este pedido não está mais disponível.",
+  "focus.reviewing": "Estamos analisando sua oferta.",
+  "focus.expired": "Este pedido expirou. Não há mais nada a fazer.",
+  "focus.customerChoseAnother": "O cliente escolheu outro negócio.",
+  "focus.customerCancelled": "O cliente cancelou este pedido.",
+  "focus.closed": "Este pedido está fechado.",
+  "focus.youReplied": "Você já respondeu a este pedido.",
+  "focus.booked": "Você tem uma reserva para este pedido.",
+  "focus.youDeclined": "Você recusou este pedido."
  },
  "ht": {
   "peopleLookingForCategory": {
@@ -1911,7 +1971,19 @@
   "fulfillmentPolicy": "Politik sèvis",
   "editFulfillmentPolicyA11y": "Modifye politik sèvis",
   "setAFulfillmentPolicyA11y": "Defini yon politik sèvis",
-  "setAPolicy": "+ Defini yon politik"
+  "setAPolicy": "+ Defini yon politik",
+  "focus.title": "Nan notifikasyon ou",
+  "focus.respondBy": "Li toujou louvri. Reponn anvan {when}.",
+  "focus.respondOpen": "Li toujou louvri. Reponn anba a.",
+  "focus.unavailable": "Demann sa a pa disponib ankò.",
+  "focus.reviewing": "N ap revize òf ou a.",
+  "focus.expired": "Demann sa a ekspire. Pa gen anyen pou fè ankò.",
+  "focus.customerChoseAnother": "Kliyan an chwazi yon lòt biznis.",
+  "focus.customerCancelled": "Kliyan an anile demann sa a.",
+  "focus.closed": "Demann sa a fèmen.",
+  "focus.youReplied": "Ou deja reponn demann sa a.",
+  "focus.booked": "Ou gen yon rezèvasyon pou demann sa a.",
+  "focus.youDeclined": "Ou refize demann sa a."
  },
  "zh": {
   "peopleLookingForCategory": {
@@ -2217,7 +2289,19 @@
   "fulfillmentPolicy": "接待规则",
   "editFulfillmentPolicyA11y": "编辑接待规则",
   "setAFulfillmentPolicyA11y": "设置接待规则",
-  "setAPolicy": "+ 设置规则"
+  "setAPolicy": "+ 设置规则",
+  "focus.title": "来自你的通知",
+  "focus.respondBy": "仍在开放。请在 {when} 之前回复。",
+  "focus.respondOpen": "仍在开放。请在下方回复。",
+  "focus.unavailable": "此请求已不可用。",
+  "focus.reviewing": "我们正在审核你的报价。",
+  "focus.expired": "此请求已过期，无需再操作。",
+  "focus.customerChoseAnother": "客户选择了另一家商家。",
+  "focus.customerCancelled": "客户取消了此请求。",
+  "focus.closed": "此请求已关闭。",
+  "focus.youReplied": "你已回复此请求。",
+  "focus.booked": "此请求已为你预订。",
+  "focus.youDeclined": "你已拒绝此请求。"
  },
  "vi": {
   "peopleLookingForCategory": {
@@ -2523,7 +2607,19 @@
   "fulfillmentPolicy": "Chính sách phục vụ",
   "editFulfillmentPolicyA11y": "Sửa chính sách phục vụ",
   "setAFulfillmentPolicyA11y": "Đặt chính sách phục vụ",
-  "setAPolicy": "+ Đặt chính sách"
+  "setAPolicy": "+ Đặt chính sách",
+  "focus.title": "Từ thông báo của bạn",
+  "focus.respondBy": "Vẫn đang mở. Hãy trả lời trước {when}.",
+  "focus.respondOpen": "Vẫn đang mở. Hãy trả lời bên dưới.",
+  "focus.unavailable": "Yêu cầu này không còn nữa.",
+  "focus.reviewing": "Chúng tôi đang xem xét ưu đãi của bạn.",
+  "focus.expired": "Yêu cầu này đã hết hạn. Không cần làm gì thêm.",
+  "focus.customerChoseAnother": "Khách hàng đã chọn một doanh nghiệp khác.",
+  "focus.customerCancelled": "Khách hàng đã hủy yêu cầu này.",
+  "focus.closed": "Yêu cầu này đã đóng.",
+  "focus.youReplied": "Bạn đã trả lời yêu cầu này.",
+  "focus.booked": "Bạn đã có lượt đặt cho yêu cầu này.",
+  "focus.youDeclined": "Bạn đã từ chối yêu cầu này."
  },
  "tl": {
   "peopleLookingForCategory": {
@@ -2842,7 +2938,19 @@
   "fulfillmentPolicy": "Fulfillment policy",
   "editFulfillmentPolicyA11y": "I-edit ang fulfillment policy",
   "setAFulfillmentPolicyA11y": "Magtakda ng fulfillment policy",
-  "setAPolicy": "+ Magtakda ng policy"
+  "setAPolicy": "+ Magtakda ng policy",
+  "focus.title": "Mula sa iyong notification",
+  "focus.respondBy": "Bukas pa. Sumagot bago ang {when}.",
+  "focus.respondOpen": "Bukas pa. Sumagot sa ibaba.",
+  "focus.unavailable": "Hindi na available ang request na ito.",
+  "focus.reviewing": "Sinusuri namin ang iyong alok.",
+  "focus.expired": "Nag-expire na ang request na ito. Wala nang kailangang gawin.",
+  "focus.customerChoseAnother": "Pumili ang customer ng ibang negosyo.",
+  "focus.customerCancelled": "Kinansela ng customer ang request na ito.",
+  "focus.closed": "Sarado na ang request na ito.",
+  "focus.youReplied": "Sumagot ka na sa request na ito.",
+  "focus.booked": "May booking ka para sa request na ito.",
+  "focus.youDeclined": "Tinanggihan mo ang request na ito."
  },
  "ru": {
   "peopleLookingForCategory": {
@@ -3187,7 +3295,19 @@
   "fulfillmentPolicy": "Политика обслуживания",
   "editFulfillmentPolicyA11y": "Изменить политику обслуживания",
   "setAFulfillmentPolicyA11y": "Задать политику обслуживания",
-  "setAPolicy": "+ Задать политику"
+  "setAPolicy": "+ Задать политику",
+  "focus.title": "Из вашего уведомления",
+  "focus.respondBy": "Ещё открыт. Ответьте до {when}.",
+  "focus.respondOpen": "Ещё открыт. Ответьте ниже.",
+  "focus.unavailable": "Этот запрос больше недоступен.",
+  "focus.reviewing": "Мы проверяем ваше предложение.",
+  "focus.expired": "Срок этого запроса истёк. Больше ничего делать не нужно.",
+  "focus.customerChoseAnother": "Клиент выбрал другой бизнес.",
+  "focus.customerCancelled": "Клиент отменил этот запрос.",
+  "focus.closed": "Этот запрос закрыт.",
+  "focus.youReplied": "Вы уже ответили на этот запрос.",
+  "focus.booked": "По этому запросу у вас бронирование.",
+  "focus.youDeclined": "Вы отклонили этот запрос."
  },
  "ko": {
   "peopleLookingForCategory": {
@@ -3493,6 +3613,18 @@
   "fulfillmentPolicy": "응대 정책",
   "editFulfillmentPolicyA11y": "응대 정책 수정",
   "setAFulfillmentPolicyA11y": "응대 정책 설정",
-  "setAPolicy": "+ 정책 설정"
+  "setAPolicy": "+ 정책 설정",
+  "focus.title": "알림에서 열림",
+  "focus.respondBy": "아직 열려 있어요. {when} 전에 답장하세요.",
+  "focus.respondOpen": "아직 열려 있어요. 아래에서 답장하세요.",
+  "focus.unavailable": "이 요청은 더 이상 볼 수 없어요.",
+  "focus.reviewing": "제안을 검토하고 있어요.",
+  "focus.expired": "이 요청은 만료되었어요. 더 할 일은 없어요.",
+  "focus.customerChoseAnother": "고객이 다른 업체를 선택했어요.",
+  "focus.customerCancelled": "고객이 이 요청을 취소했어요.",
+  "focus.closed": "이 요청은 마감되었어요.",
+  "focus.youReplied": "이미 이 요청에 답장했어요.",
+  "focus.booked": "이 요청은 예약이 확정되었어요.",
+  "focus.youDeclined": "이 요청을 거절했어요."
  }
 }

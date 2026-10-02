@@ -29,7 +29,7 @@ const FULL = { gathering_id: 'g', match_id: 'm', request_id: 'r', offer_id: 'o',
 const ACTION_OPENS = {
   view_plan: ['GatheringDetail', 'BusinessRequestDetail', 'GroupPlan', 'GroupOccasionPlan', 'DateProposal', 'SharedNight'],
   view_offer: ['BusinessRequestDetail', 'GroupPlan'],
-  review_request: ['BusinessRequestDetail'],
+  review_request: ['BusinessRequestDetail', 'BusinessDashboard'],
   view_gathering: ['GatheringDetail'],
   view_invite: ['GatheringDetail', 'GroupPlan', 'GroupOccasionPlan'],
   view_attendees: ['GatheringDetail'],
@@ -46,7 +46,7 @@ const ACTION_OPENS = {
 
 describe('every notification has one next action', () => {
   test('every push type the app handles has an action, and nothing else does', () => {
-    expect(PUSH_TYPES).toHaveLength(87);
+    expect(PUSH_TYPES).toHaveLength(88);
     expect(Object.keys(NOTIFICATION_ACTION_BY_TYPE).sort()).toEqual([...PUSH_TYPES].sort());
     for (const a of Object.values(NOTIFICATION_ACTION_BY_TYPE)) expect(NOTIFICATION_ACTION_KEYS).toContain(a);
     expect(new Set(Object.values(NOTIFICATION_ACTION_BY_TYPE))).toEqual(new Set(NOTIFICATION_ACTION_KEYS)); // no unused labels

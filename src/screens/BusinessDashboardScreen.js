@@ -102,6 +102,8 @@ import BusinessNotificationPreferences from '../components/BusinessNotificationP
 import BusinessEmailNotifications from '../components/BusinessEmailNotifications';
 import { useTheme } from '../context/ThemeContext';
 import { formatDateTime, formatAgo } from '../utils/timeLabels';
+import { focusedOpportunityView, focusFirst } from '../utils/focusedOpportunity';
+import { localWhen, localClock } from '../i18n/format';
 import { spacing, radius, typography } from '../theme';
 
 import { NLoader, modalAnimation, showSuccessToast } from '../motion';
@@ -120,6 +122,14 @@ const SECTIONS = [
 
 // Older names for these places (push routing's initialSection, "view it" links) still resolve, to the tab that now
 // holds that content. 'inbox_modal' is not a tab; it stays a full-screen conversation view.
+// Item 140: a reply deadline as a clock time today ("7:30 PM"), else the localized day + time. Never "Starts in ...".
+function deadlineLabel(iso, language) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return localClock(d.getHours() * 60 + d.getMinutes(), language);
+  return localWhen(iso, now, language);
+}
 const LEGACY_SECTION_TAB = { requests: 'opportunities', gatherings: 'bookings', community: 'bookings', insights: 'home', business: 'profile' };
 const MORE_TOOLS = [
   { key: 'ai', icon: '🤖' },
@@ -480,6 +490,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // it always has, never a stuck/loading state.
   const [businessWeather, setBusinessWeather] = useState(null);
   const [opportunities, setOpportunities] = useState([]);
+  // Item 140: a push about ONE request ("Request expires soon") opens on it. null until the list has loaded once.
+  const focusRequestId = route?.params?.focusRequestId ?? null;
+  const [opportunitiesLoaded, setOpportunitiesLoaded] = useState(null); // null = not yet, true = loaded, false = failed
   // Item 83: offers being screened in the background / recently decided ("Reviewing your offer…").
   const [offerSubmissions, setOfferSubmissions] = useState([]);
   const [resendingSubmissionId, setResendingSubmissionId] = useState(null);
@@ -1906,11 +1919,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     try {
       const results = await getBusinessOpportunities(partnerId);
       setOpportunities(results);
+      setOpportunitiesLoaded(true);
       getMyBusinessNoShows().then(setNoShowIds).catch(() => {});
     } catch (e) {
       // Non-fatal -- the rest of the dashboard already loaded independently.
+      setOpportunitiesLoaded(false);
     }
   }
+
+  // Item 140: opened (or re-opened in place) on one request: show the Opportunities tab and re-read its CURRENT state.
+  useEffect(() => {
+    if (!focusRequestId) return;
+    setSection('opportunities');
+    if (selectedPartner) loadOpportunities(selectedPartner.id);
+  }, [focusRequestId]);
 
   // Nearby 2.0 vision layer 1, "Aggregated demand -> business
   // opportunities" (see CLAUDE.md's "Nearby 2.0 Vision" doc): real,
@@ -4265,6 +4287,19 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.helperText}>
                   {t('ui.bizDash2.nearbyMatchedTheseToYour')}
                 </Text>
+                {!!focusRequestId && opportunitiesLoaded !== null && (() => {
+                  // Item 140: what is true about the request the notification named, as just loaded (never the push's wording).
+                  const fv = focusedOpportunityView(opportunities, focusRequestId, { loadFailed: opportunitiesLoaded === false, inFlight: offerInFlight.has(focusRequestId) });
+                  const line = fv.kind === 'unavailable' ? t('ui.bizDash2.focus.unavailable')
+                    : fv.kind === 'respondable' ? (fv.expiresAt ? t('ui.bizDash2.focus.respondBy', { when: deadlineLabel(fv.expiresAt, language) }) : t('ui.bizDash2.focus.respondOpen'))
+                    : t(`ui.bizDash2.focus.${fv.key}`);
+                  return (
+                    <View style={[styles.gatheringRow, { borderColor: colors.primary, borderWidth: 1 }]} accessibilityLiveRegion="polite">
+                      <Text style={styles.notesLabel}>{t('ui.bizDash2.focus.title')}</Text>
+                      <Text style={[styles.breakdownText, { fontWeight: '700', color: fv.kind === 'respondable' ? colors.textPrimary : colors.textSecondary }]}>{line}</Text>
+                    </View>
+                  );
+                })()}
                 {scoredOpportunities.length === 0 ? (
                   <View style={{ alignItems: 'center', paddingVertical: spacing.md }}>
                     <EmptyCopy id="business_opportunities" />
@@ -4273,7 +4308,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </TouchableOpacity>
                   </View>
                 ) : (
-                  scoredOpportunities.map((o) => {
+                  focusFirst(scoredOpportunities, focusRequestId).map((o) => {
                     // "Business Story" plan, Phase 4: closes the real,
                     // already-flagged gap (see CLAUDE.md) -- this row's
                     // own request.attributes/cuisine are now selected (see
@@ -4351,7 +4386,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     const contextLine = [surpriseTag, planTimeLabel ? `🕐 ${planTimeLabel}` : null].filter(Boolean).join(' · ');
                     const oppAction = opportunityPrimaryAction(o, { inFlight: offerInFlight.has(o.request_id) });
                     return (
-                    <View key={o.id} style={styles.gatheringRow}>
+                    <View key={o.id} style={[styles.gatheringRow, o.request_id === focusRequestId && { borderColor: colors.primary, borderWidth: 2 }]}>
                       {/* Item 73: the card's action comes from the opportunity's state (utils/primaryAction.js). */}
                       {oppAction.kind === 'send_offer' ? (
                         <Text style={[styles.breakdownText, { color: colors.info, fontWeight: '700' }]}>
