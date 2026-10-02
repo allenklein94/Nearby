@@ -970,7 +970,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   deduped.sort(compareRanked);
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
-  const openEndedNote = [openNowOnly ? OPEN_NOW_CAPTION : null, planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacetsCaption(parsedFacets, eligibility.removedOpposite), eligibility.compatibilityCaption].filter(Boolean).join(' · ') || null;
+  const openEndedNote = [openNowOnly ? OPEN_NOW_CAPTION : null, planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacetsCaption(parsedFacets, eligibility.removedOpposite, eligibility.removedUnknown), eligibility.compatibilityCaption].filter(Boolean).join(' · ') || null;
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,

@@ -211,42 +211,36 @@
     "label": "firm outside",
     "order": [
       "business_availability:b-patio",
-      "gathering:g-hike",
-      "perk:k-coffee",
-      "perk:k-bar"
+      "gathering:g-hike"
     ],
     "fullOrder": [
       "b-patio@8",
-      "g-hike@9",
-      "k-coffee@0",
-      "k-bar@0"
+      "g-hike@9"
     ],
     "experience": null,
-    "note": "Looking across Outdoors & Nature · Weather data unavailable",
-    "candidateCount": 4,
+    "note": "Looking across Outdoors & Nature · Weather data unavailable · Leaving out places that haven't said",
+    "candidateCount": 2,
     "exclusions": {
-      "open_ended": 15
+      "open_ended": 15,
+      "ask_facets": 2
     }
   },
   {
     "label": "firm outside walking",
     "order": [
       "business_availability:b-patio",
-      "gathering:g-hike",
-      "perk:k-coffee",
-      "perk:k-bar"
+      "gathering:g-hike"
     ],
     "fullOrder": [
       "b-patio@8",
-      "g-hike@11",
-      "k-coffee@0",
-      "k-bar@0"
+      "g-hike@11"
     ],
     "experience": null,
-    "note": "Looking across Outdoors & Nature · Keeping it very close by · Weather data unavailable",
-    "candidateCount": 4,
+    "note": "Looking across Outdoors & Nature · Keeping it very close by · Weather data unavailable · Leaving out places that haven't said",
+    "candidateCount": 2,
     "exclusions": {
-      "open_ended": 15
+      "open_ended": 15,
+      "ask_facets": 2
     }
   },
   {

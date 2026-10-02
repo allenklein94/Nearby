@@ -35,10 +35,11 @@ describe('must-have vs nice-to-have (item 103)', () => {
     expect(splitHedge("I don't know, maybe coffee")).toBeNull();
   });
 
-  test('hedged environment ranks, plain environment removes only KNOWN opposites', () => {
+  test('hedged environment ranks, plain environment keeps only the KNOWN asked side', () => {
     const list = [{ category: 'Hiking', score: 0 }, { category: 'Movies', score: 0 }, { category: 'Something Unknown', score: 0 }];
     expect(applyAskFacets(list, parseAskFacets('tonight, preferably outside')).items).toHaveLength(3);
-    expect(applyAskFacets(list, parseAskFacets('outside tonight')).items.map((c) => c.category)).toEqual(['Hiking', 'Something Unknown']);
+    expect(applyAskFacets(list, parseAskFacets('outside tonight')).items.map((c) => c.category)).toEqual(['Hiking']);
+    expect(applyAskFacets(list, parseAskFacets('indoors tonight')).items.map((c) => c.category)).toEqual(['Movies']);
     // sitting outside at a place is an attribute (item 102), never an environment must that removes cafés
     expect(parseAskFacets('coffee where we can sit outside').environmentRequired).toBe(false);
   });

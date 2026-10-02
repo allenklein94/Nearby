@@ -185,17 +185,35 @@ d('journey: a business declares outdoor seating -> "something outside" -> it app
     }
   });
 
-  // Typed asks remove only KNOWN opposites; "something outside" also routes to the Outdoors group, which is why the
-  // undeclared cafe was left out above (a declared match survives that limit). "Indoors" has no such route, so the
-  // undeclared cafe stays (unknown is neither lifted nor sunk), the declared-outdoor patio is removed, and the
-  // declared-indoor cafe leads with the reason.
-  test('typed search "something indoors right now": declared indoor leads with its reason, patio removed, unknown kept unlifted', async () => {
+  // Owner, 2026-10-02: an explicit indoor/outdoor ask is strict both ways, like Discover's narrowing: only the KNOWN asked
+  // side stays; the opposite and "hasn't said" are removed.
+  test('typed search "something indoors right now": only the declared-indoor cafe, with its reason; unknown and outdoor out', async () => {
     const r = await runIntentSearch('something indoors right now');
     const rows = businessRows(r);
-    expect(rows.map((i) => nameOf(i.partnerId))).toEqual([INDOOR, PLAIN]);
+    expect(rows.map((i) => nameOf(i.partnerId))).toEqual([INDOOR]);
     expect(rows[0].reasons).toContain(INDOOR_REASON);
-    expect(rows[1].reasons ?? []).not.toContain(INDOOR_REASON);
-    expect(rows[0].score).toBeGreaterThan(rows[1].score);
+    expect(r.openEndedNote).toMatch(/Leaving out outdoor options and places that haven't said/);
+  });
+
+  test('typed search "indoor coffee right now": the category still applies, and only the declared-indoor cafe stays', async () => {
+    const r = await runIntentSearch('indoor coffee right now');
+    expect(r.classifyResult.category).toBe('Coffee');
+    expect(businessRows(r).map((i) => nameOf(i.partnerId))).toEqual([INDOOR]);
+  });
+
+  // "outside" also routes to the Outdoors group first, so the two cafés are already gone (open_ended) before the environment
+  // rule runs; the audit records that removal. Only the declared-outdoor patio survives the route.
+  test('outdoor ask: both controls are recorded as removed, and the interpretation says it was a firm outdoor ask', async () => {
+    const r = await runIntentSearch('something outside right now');
+    expect(r.audit.interpretation).toMatchObject({ environment: 'outdoor', environment_required: true });
+    expect(r.audit.trace.exclusions().open_ended).toBeGreaterThanOrEqual(2);
+  });
+
+  test('a hedged ask stays broad: "maybe something indoors" keeps every cafe, the declared one first', async () => {
+    const r = await runIntentSearch('maybe something indoors right now?');
+    const rows = businessRows(r);
+    expect(rows.map((i) => nameOf(i.partnerId)).sort()).toEqual([INDOOR, PATIO, PLAIN].sort());
+    expect(nameOf(rows[0].partnerId)).toBe(INDOOR);
   });
 
   test('Discover Outdoor narrowing over the real getNearbyBusinesses result: patio in, unknown and indoor out', async () => {

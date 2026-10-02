@@ -30,6 +30,7 @@ const TENTATIVE = /\b(?:maybe|perhaps|possibly|probably|might|could\s+be|or\s+so
 const FIRM = /\b(?:definitely|absolutely|must|has\s+to|have\s+to|needs?\s+to|only|really\s+want|for\s+sure)\b/i;
 const PARTNER = /\b(girlfriend|boyfriend|wife|husband|fianc[ée]e?|partner|spouse|my\s+date|date\s+night)\b/i;
 
+export const UNKNOWN_SIDE_LABEL = "places that haven't said";
 export const EXCLUSION_LABELS = { alcohol: 'alcohol', outdoor: 'outdoor options', indoor: 'indoor options', crowded: 'crowded places' };
 
 // { environment: 'outdoor'|'indoor'|null, exclude: string[], pricey: boolean } -- empty/false when the ask says none of it.
@@ -47,7 +48,7 @@ export function parseAskFacets(text) {
   // Positive environment only from what is left after the negations were removed ("nothing outdoors" must not read as outdoors).
   if (POS_OUTDOOR.test(rest) && !out.exclude.includes('outdoor')) out.environment = 'outdoor';
   else if (POS_INDOOR.test(rest) && !out.exclude.includes('indoor')) out.environment = 'indoor';
-  // Item 103: a plainly stated environment is a MUST ("somewhere outside tonight": known-indoor results are removed, unknown kept);
+  // Item 103: a plainly stated environment is a MUST ("somewhere outside tonight": only known-outdoor results stay, 2026-10-02);
   // one said only after a hedge ("preferably outside") stays a preference (the lift below, nothing removed).
   // Item 105 (2026-09-27): tentative wording in the SAME sentence ("maybe something outdoors?", "perhaps outside") is also only a
   // preference; firm wording ("definitely outside", "has to be outdoors") keeps it a must even beside a "maybe".
@@ -94,12 +95,22 @@ export const PRICEY_POINTS = -2;
 // Item 118: the eligibility half (typed-ask Stage 1, utils/askEligibility.js). A firm environment removes KNOWN opposites; an
 // exclusion removes a result only when its own known property conflicts. Unknown is kept.
 // envOf(c): the candidate's side (the resolver passes constants/environmentMatch.js's declared-data rule; default = category).
+// Owner, 2026-10-02 (supersedes item 103's "unknown kept"): a FIRM indoor/outdoor ask keeps only results whose side is KNOWN to
+// be the asked one (constants/environmentMatch.js: declared data, a gathering's category); the opposite AND unknown are removed,
+// the same strictness as Discover's Outdoor/Indoor narrowing. A tentative/hedged ask (item 105) removes nothing.
 export function askFacetsEligible(candidates, facets, envOf = categoryEnvOf) {
-  if (!facets || (!facets.environment && !facets.exclude.length && !facets.pricey)) return { items: candidates, removedOpposite: false };
-  const opposite = facets.environmentRequired ? (facets.environment === 'outdoor' ? 'indoor' : 'outdoor') : null;
-  const kept = candidates.filter((c) => !opposite || envOf(c) !== opposite);
-  const removedOpposite = kept.length < candidates.length;
-  return { items: kept.filter((c) => !facets.exclude.some((k) => conflicts(c, k, envOf))), removedOpposite };
+  if (!facets || (!facets.environment && !facets.exclude.length && !facets.pricey)) return { items: candidates, removedOpposite: false, removedUnknown: false };
+  const strict = facets.environmentRequired && !!facets.environment;
+  const opposite = facets.environment === 'outdoor' ? 'indoor' : 'outdoor';
+  let removedOpposite = false;
+  let removedUnknown = false;
+  const kept = !strict ? candidates : candidates.filter((c) => {
+    const env = envOf(c);
+    if (env === facets.environment) return true;
+    if (env === opposite) removedOpposite = true; else removedUnknown = true;
+    return false;
+  });
+  return { items: kept.filter((c) => !facets.exclude.some((k) => conflicts(c, k, envOf))), removedOpposite, removedUnknown };
 }
 
 // The ranking half (Stage 2): a stated environment lifts its match and nudges a known opposite; "not too expensive" sinks $$$.
@@ -120,10 +131,11 @@ export function askFacetsLift(candidates, facets, envOf = categoryEnvOf) {
 }
 
 // What was left out, in one line (the exclusions the words named, the opposite environment only when one was really removed).
-export function askFacetsCaption(facets, removedOpposite = false) {
+export function askFacetsCaption(facets, removedOpposite = false, removedUnknown = false) {
   if (!facets || (!facets.environment && !facets.exclude.length && !facets.pricey)) return null;
   const opposite = facets.environment === 'outdoor' ? 'indoor' : 'outdoor';
-  const parts = [...facets.exclude.map((k) => EXCLUSION_LABELS[k]), ...(removedOpposite ? [EXCLUSION_LABELS[opposite]] : []), ...(facets.pricey ? ['pricier options'] : [])];
+  const parts = [...facets.exclude.map((k) => EXCLUSION_LABELS[k]), ...(removedOpposite ? [EXCLUSION_LABELS[opposite]] : []),
+    ...(removedUnknown ? [UNKNOWN_SIDE_LABEL] : []), ...(facets.pricey ? ['pricier options'] : [])];
   const list = parts.length <= 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
   return parts.length ? `Leaving out ${list}` : null;
 }
@@ -131,8 +143,8 @@ export function askFacetsCaption(facets, removedOpposite = false) {
 // All three in one call (older callers and tests).
 export function applyAskFacets(candidates, facets) {
   if (!facets || (!facets.environment && !facets.exclude.length && !facets.pricey)) return { items: candidates, caption: null };
-  const { items, removedOpposite } = askFacetsEligible(candidates, facets);
-  return { items: askFacetsLift(items, facets), caption: askFacetsCaption(facets, removedOpposite) };
+  const { items, removedOpposite, removedUnknown } = askFacetsEligible(candidates, facets);
+  return { items: askFacetsLift(items, facets), caption: askFacetsCaption(facets, removedOpposite, removedUnknown) };
 }
 
 // Attributes the person's own words name (owner items 51/52). A coffee shop stays Food & Drink -> Coffee and CARRIES dog_friendly /

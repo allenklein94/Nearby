@@ -162,11 +162,13 @@ describe('typed-ask audit on the real resolver', () => {
     });
 
     it.each(['It has to be outside', 'Somewhere outside tonight', 'maybe dinner, but it has to be outside'])(
-      'firm or plain (%s): recorded as required; the known-indoor result is gone and its removal is counted; unknown kept', async (text) => {
+      'firm or plain (%s): recorded as required; known-indoor and unknown are gone and their removal is counted', async (text) => {
         const snap = await run(text);
         expect(snap.interpretation).toMatchObject({ environment: 'outdoor', environment_required: true });
         expect(idsOf(snap)).not.toContain('movie');
-        expect(idsOf(snap)).toContain('open');
+        // owner, 2026-10-02: an explicit indoor/outdoor ask never presents an unknown side as satisfying it
+        expect(idsOf(snap)).not.toContain('open');
+        expect(idsOf(snap)).toContain('hike');
         // removed by the outdoor route (open_ended, it runs first) or the environment must (ask_facets); the record names which
         expect((snap.exclusions.open_ended ?? 0) + (snap.exclusions.ask_facets ?? 0)).toBeGreaterThanOrEqual(1);
       });

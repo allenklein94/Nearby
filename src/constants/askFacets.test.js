@@ -32,12 +32,15 @@ describe('ask facets: combinations and negative intent (items 47/48)', () => {
     const list = [{ category: 'Festivals' }, { category: 'Coffee', capacity: 30 }, { category: 'Coffee', attendeeCount: 25 }, { category: 'Coffee', capacity: 6 }, { category: 'Coffee' }];
     expect(applyAskFacets(list, parseAskFacets('nothing crowded')).items).toHaveLength(2);
   });
-  it('nothing outdoors removes known outdoor; a PLAIN outdoor ask is a must (known indoor removed, unknown kept); a HEDGED one only ranks (item 103)', () => {
+  it('nothing outdoors removes known outdoor; a PLAIN outdoor ask keeps only known outdoor (2026-10-02); a HEDGED one only ranks (item 103)', () => {
     const list = [{ category: 'Hiking', score: 1 }, { category: 'Movies', score: 1 }, { category: 'Music', score: 1 }];
     expect(applyAskFacets(list, parseAskFacets('nothing outdoors')).items.map((c) => c.category)).toEqual(['Movies', 'Music']);
     const must = applyAskFacets(list, parseAskFacets('something outside'));
-    expect(must.items.map((c) => [c.category, c.score])).toEqual([['Hiking', 3], ['Music', 1]]);
-    expect(must.caption).toBe('Leaving out indoor options');
+    expect(must.items.map((c) => [c.category, c.score])).toEqual([['Hiking', 3]]);
+    expect(must.caption).toBe("Leaving out indoor options and places that haven't said");
+    const indoor = applyAskFacets(list, parseAskFacets('something indoors'));
+    expect(indoor.items.map((c) => c.category)).toEqual(['Movies']);
+    expect(indoor.caption).toBe("Leaving out outdoor options and places that haven't said");
     const pref = applyAskFacets(list, parseAskFacets('something tonight, preferably outside')).items;
     expect(pref.map((c) => c.score)).toEqual([3, 0, 1]);
     expect(pref).toHaveLength(3);

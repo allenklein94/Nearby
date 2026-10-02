@@ -28,14 +28,22 @@ describe('runAskEligibility', () => {
     expect(out.compatibilityCaption).toMatch(/children/);
   });
 
-  it('unknown is never a failure: no category / unknown environment / failed lookup all stay', async () => {
+  it('unknown is never a failure: no category / failed lookup / an exclusion it cannot conflict with all stay', async () => {
     const list = [c('x', null), c('y', null)];
     const out = await runAskEligibility(list, {
       restrictionFacts: { children: true }, declinedLookup: async () => { throw new Error('down'); }, isPartnerResult: () => true,
-      openEndedGroups: ['food_drink'], facets: parseAskFacets('something outside, nothing crowded'),
+      openEndedGroups: ['food_drink'], facets: parseAskFacets('something fun, nothing crowded'),
     });
     expect(out.items).toEqual(list);
     expect(out.removed).toEqual({});
+  });
+
+  it('an explicit indoor/outdoor ask is the exception: unknown side is removed (owner, 2026-10-02)', async () => {
+    const list = [c('x', null), c('y', null)];
+    const out = await runAskEligibility(list, { facets: parseAskFacets('something indoors tonight') });
+    expect(out.items).toEqual([]);
+    expect(out.removed).toEqual({ ask_facets: 2 });
+    expect(out.removedUnknown).toBe(true);
   });
 
   it('open now keeps only confirmed-usable results, only when asked', async () => {

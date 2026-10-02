@@ -25,7 +25,7 @@ export const ELIGIBILITY_RULES = ['compatibility', 'open_ended', 'category_narro
 
 // ctx: { restrictionFacts, declinedLookup(ids, facts) -> Map, isPartnerResult(c), isBusiness(c), openEndedGroups,
 //        narrowGroup, facets, openNowOnly, toEntity(c), envOf(c) (a candidate's declared side, constants/environmentMatch.js) }
-// Returns { items, removed: { rule: count }, compatibilityCaption, removedOpposite }.
+// Returns { items, removed: { rule: count }, compatibilityCaption, removedOpposite, removedUnknown }.
 export async function runAskEligibility(candidates, ctx = {}) {
   let items = Array.isArray(candidates) ? candidates : [];
   const removed = {};
@@ -61,5 +61,5 @@ export async function runAskEligibility(candidates, ctx = {}) {
 
   if (ctx.openNowOnly && typeof ctx.toEntity === 'function') apply('open_now', filterOpenNow(items, ctx.toEntity));
 
-  return { items, removed, compatibilityCaption, removedOpposite: facets.removedOpposite };
+  return { items, removed, compatibilityCaption, removedOpposite: facets.removedOpposite, removedUnknown: facets.removedUnknown };
 }

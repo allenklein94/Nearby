@@ -59,12 +59,28 @@ describe('missing data', () => {
     expect(filterByEnvironment([{ id: 1 }, { id: 2, weather_setting: 'outdoor' }], 'business', 'outdoor').map((x) => x.id)).toEqual([2]);
     expect(filterByEnvironment([{ id: 1 }], 'business', null)).toEqual([{ id: 1 }]);
   });
-  test('typed ask: unknown is neither lifted nor sunk nor removed', () => {
-    const facets = parseAskFacets('something outside tonight');
+  test('firm typed ask (outdoor or indoor): only the known asked side stays; unknown and the opposite are removed', () => {
+    const envOf = (c) => c.env ?? null;
+    const items = [{ id: 'u', score: 5 }, { id: 'in', env: 'indoor', score: 5 }, { id: 'out', env: 'outdoor', score: 5 }];
+    const outdoor = askFacetsEligible(items, parseAskFacets('something outside tonight'), envOf);
+    expect(outdoor.items.map((c) => c.id)).toEqual(['out']);
+    expect(outdoor).toMatchObject({ removedOpposite: true, removedUnknown: true });
+    const indoor = askFacetsEligible(items, parseAskFacets('something indoors tonight'), envOf);
+    expect(indoor.items.map((c) => c.id)).toEqual(['in']);
+    expect(indoor).toMatchObject({ removedOpposite: true, removedUnknown: true });
+  });
+  test('tentative typed ask: nothing removed; unknown neither lifted nor sunk', () => {
+    const facets = parseAskFacets('maybe something outdoors tonight?');
     const envOf = (c) => c.env ?? null;
     const items = [{ id: 'u', score: 5 }, { id: 'in', env: 'indoor', score: 5 }];
-    expect(askFacetsEligible(items, facets, envOf).items.map((c) => c.id)).toEqual(['u']);
+    expect(askFacetsEligible(items, facets, envOf).items.map((c) => c.id)).toEqual(['u', 'in']);
     expect(askFacetsLift([{ id: 'u', score: 5 }], facets, envOf)[0].score).toBe(5);
+  });
+  test('an ordinary ask applies no environment at all', () => {
+    const facets = parseAskFacets('coffee right now');
+    expect(facets.environment).toBeNull();
+    const items = [{ id: 'u' }, { id: 'in', env: 'indoor' }];
+    expect(askFacetsEligible(items, facets, (c) => c.env ?? null).items).toBe(items);
   });
 });
 
