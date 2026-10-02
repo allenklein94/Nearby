@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { navigationRef } from '../navigation/RootNavigator';
+import { openOnTop } from '../navigation/openOnTop';
 import { getBusinessAvailabilityById } from './businessFulfillment';
 import { extractNameFromBirthdayTitle } from './celebrateSomething';
 import { ANDROID_NOTIFICATION_CHANNELS } from '../constants/notificationTier';
@@ -109,6 +110,12 @@ export async function updateBadgeCount(userId) {
   await Notifications.setBadgeCountAsync(count ?? 0);
 }
 
+// Item 139: every push destination opens through here (see notificationNav.js):
+// on top of the current history, so Back returns to where the person was.
+function openFromTap(name, params) {
+  openOnTop(navigationRef, name, params);
+}
+
 // Routes a tapped notification to the right screen, based on the
 // `type` set by whichever database trigger sent it. Notifications can
 // arrive while the app is backgrounded or fully closed, so this needs
@@ -142,11 +149,11 @@ export async function routeNotificationTap(data) {
       // these are per-match content additions or nudges, all carry a
       // match_id, all belong in that match's own chat.
       if (data.match_id) {
-        navigationRef.navigate('Chat', { matchId: data.match_id });
+        openFromTap('Chat', { matchId: data.match_id });
       }
       break;
     case 'wave':
-      navigationRef.navigate('Notices');
+      openFromTap('Notices');
       break;
     // Item 55 ("deep links should preserve context, too" -- CLAUDE.md):
     // don't just dump the tap onto a bare GatheringDetail as if the user
@@ -164,13 +171,13 @@ export async function routeNotificationTap(data) {
     case 'gathering_interest':
     case 'recommended_gathering':
       if (data.gathering_id) {
-        navigationRef.navigate('GatheringDetail', {
+        openFromTap('GatheringDetail', {
           gatheringId: data.gathering_id,
           notificationReason: data.body ?? null,
           notificationSuggestsInvite: true,
         });
       } else {
-        navigationRef.navigate('Gatherings');
+        openFromTap('Gatherings');
       }
       break;
     case 'gathering_invite':
@@ -181,9 +188,9 @@ export async function routeNotificationTap(data) {
     case 'friend_joined_gathering':
     case 'recurring_gathering':
       if (data.gathering_id) {
-        navigationRef.navigate('GatheringDetail', { gatheringId: data.gathering_id, notificationReason: data.body ?? null });
+        openFromTap('GatheringDetail', { gatheringId: data.gathering_id, notificationReason: data.body ?? null });
       } else {
-        navigationRef.navigate('Gatherings');
+        openFromTap('Gatherings');
       }
       break;
     // Item 49 (CLAUDE.md, "don't notify users about things they can't
@@ -204,7 +211,7 @@ export async function routeNotificationTap(data) {
         try {
           const posting = await getBusinessAvailabilityById(data.availability_id);
           if (posting) {
-            navigationRef.navigate('AskBusiness', {
+            openFromTap('AskBusiness', {
               matchedAvailability: {
                 availabilityId: posting.id,
                 partnerName: posting.partner_name,
@@ -222,14 +229,14 @@ export async function routeNotificationTap(data) {
           // Fall through to the generic landing below.
         }
       }
-      navigationRef.navigate('MainTabs', { screen: 'Discover' });
+      openFromTap('MainTabs', { screen: 'Discover' });
       break;
     case 'gathering_cancelled':
       // Deliberately no gathering_id in this payload — the row is already
       // deleted by the time this fires (an ON DELETE trigger), so there's
       // nothing left to open. Land on browse instead of doing nothing.
     case 'first_mission_reminder':
-      navigationRef.navigate('Gatherings');
+      openFromTap('Gatherings');
       break;
     // Item 49 audit fix: community_cancelled previously had no case at all
     // (tap did nothing) despite carrying a real, specific reason. Same
@@ -237,15 +244,15 @@ export async function routeNotificationTap(data) {
     // above — cancel_community() doesn't delete the row, but there's no
     // dedicated post-cancellation detail view to land on either way.
     case 'community_cancelled':
-      navigationRef.navigate('Communities');
+      openFromTap('Communities');
       break;
     case 'friend_request':
     case 'friend_accepted':
-      navigationRef.navigate('Friends');
+      openFromTap('Friends');
       break;
     case 'birthday':
       if (data.birthday_user_id) {
-        navigationRef.navigate('ViewProfile', { userId: data.birthday_user_id });
+        openFromTap('ViewProfile', { userId: data.birthday_user_id });
       }
       break;
     // "Birthday reminders as a recurring retention mechanism" (CLAUDE.md):
@@ -264,7 +271,7 @@ export async function routeNotificationTap(data) {
     // prefilled) rather than guess a name wrong.
     case 'birthday_upcoming':
       if (data.birthday_user_id) {
-        navigationRef.navigate('CelebrateSomething', {
+        openFromTap('CelebrateSomething', {
           initialOccasion: 'birthday',
           initialWhoFor: 'friend',
           initialWhoForName: data.display_name ?? null,
@@ -272,11 +279,11 @@ export async function routeNotificationTap(data) {
         });
       } else if (data.occasion_title) {
         const extractedName = extractNameFromBirthdayTitle(data.occasion_title);
-        navigationRef.navigate('CelebrateSomething', extractedName
+        openFromTap('CelebrateSomething', extractedName
           ? { initialOccasion: 'birthday', initialWhoFor: 'family', initialWhoForName: extractedName }
           : { initialOccasion: 'birthday' });
       } else {
-        navigationRef.navigate('Occasions');
+        openFromTap('Occasions');
       }
       break;
     // "Anniversaries could work the same way" (CLAUDE.md, direct follow-up):
@@ -290,16 +297,16 @@ export async function routeNotificationTap(data) {
     // inferred from the free-text title.
     case 'anniversary_upcoming':
       if (data.connected_user_id) {
-        navigationRef.navigate('CelebrateSomething', {
+        openFromTap('CelebrateSomething', {
           initialOccasion: 'anniversary',
           initialWhoFor: 'friend',
           initialWhoForName: data.connected_display_name ?? null,
           initialWhoForFriendId: data.connected_user_id,
         });
       } else if (data.occasion_title) {
-        navigationRef.navigate('CelebrateSomething', { initialOccasion: 'anniversary' });
+        openFromTap('CelebrateSomething', { initialOccasion: 'anniversary' });
       } else {
-        navigationRef.navigate('Occasions');
+        openFromTap('Occasions');
       }
       break;
     // "Make Occasions proactive, not just user-created" (CLAUDE.md, direct
@@ -324,24 +331,24 @@ export async function routeNotificationTap(data) {
       // this item built, with the actual recall detail and both real
       // choices; the wizard has neither.
       if (data.has_recall === true || data.has_recall === 'true') {
-        navigationRef.navigate('MainTabs', { screen: 'Home' });
+        openFromTap('MainTabs', { screen: 'Home' });
       } else if (data.who_for_friend_id) {
-        navigationRef.navigate('CelebrateSomething', {
+        openFromTap('CelebrateSomething', {
           initialOccasion: data.occasion_type,
           initialWhoFor: 'friend',
           initialWhoForName: data.who_for_name ?? null,
           initialWhoForFriendId: data.who_for_friend_id,
         });
       } else if (data.who_for_name) {
-        navigationRef.navigate('CelebrateSomething', {
+        openFromTap('CelebrateSomething', {
           initialOccasion: data.occasion_type,
           initialWhoFor: data.occasion_type === 'birthday' ? 'family' : 'someone_else',
           initialWhoForName: data.who_for_name,
         });
       } else if (data.occasion_type) {
-        navigationRef.navigate('CelebrateSomething', { initialOccasion: data.occasion_type });
+        openFromTap('CelebrateSomething', { initialOccasion: data.occasion_type });
       } else {
-        navigationRef.navigate('Occasions');
+        openFromTap('Occasions');
       }
       break;
     case 'business_recall_outreach':
@@ -351,7 +358,7 @@ export async function routeNotificationTap(data) {
       // this-exact-business orchestration Item 101's own "Return to
       // {partner}" action already uses -- no new screen needed.
       if (data.partner_id) {
-        navigationRef.navigate('MakeAPlan', {
+        openFromTap('MakeAPlan', {
           partnerId: data.partner_id,
           initialTitle: data.package_name ? `${data.package_name} at ${data.partner_name ?? ''}`.trim() : null,
         });
@@ -363,7 +370,7 @@ export async function routeNotificationTap(data) {
       // Dating and Friends") -- there's no dedicated sighting-detail screen,
       // the person's own profile is the real place this is actionable from.
       if (data.other_user_id) {
-        navigationRef.navigate('ViewProfile', { userId: data.other_user_id });
+        openFromTap('ViewProfile', { userId: data.other_user_id });
       }
       break;
     case 'new_story':
@@ -372,26 +379,26 @@ export async function routeNotificationTap(data) {
       // navigable screen. This is the closest real destination (the
       // poster's own profile), not a claim that it opens the story itself.
       if (data.story_user_id) {
-        navigationRef.navigate('ViewProfile', { userId: data.story_user_id });
+        openFromTap('ViewProfile', { userId: data.story_user_id });
       }
       break;
     case 'momentum_streak_nudge':
-      navigationRef.navigate('Momentum');
+      openFromTap('Momentum');
       break;
     case 'reward_tier_nudge':
-      navigationRef.navigate('Rewards');
+      openFromTap('Rewards');
       break;
     case 'business_partner_approved':
-      navigationRef.navigate('BusinessDashboard');
+      openFromTap('BusinessDashboard');
       break;
     case 'business_partner_denied':
-      navigationRef.navigate('MyBusinessApplication');
+      openFromTap('MyBusinessApplication');
       break;
     // "Request More Information" reviewer state (see CLAUDE.md's own entry)
     // -- lands on the same status screen, which now renders a real
     // resubmit form for a 'needs_info' row.
     case 'business_partner_needs_info':
-      navigationRef.navigate('MyBusinessApplication');
+      openFromTap('MyBusinessApplication');
       break;
     // Item 55 fast-follow #2 (CLAUDE.md): CommunityDetail, the other
     // candidate the original Item 55 paragraph flagged and BusinessRequest
@@ -400,14 +407,14 @@ export async function routeNotificationTap(data) {
     // obvious next thing to look at, same reasoning as BusinessRequestDetail).
     case 'business_partnership_response':
       if (data.target_type === 'gathering' && data.target_id) {
-        navigationRef.navigate('GatheringDetail', { gatheringId: data.target_id, notificationReason: data.body ?? null });
+        openFromTap('GatheringDetail', { gatheringId: data.target_id, notificationReason: data.body ?? null });
       } else if (data.target_type === 'community' && data.target_id) {
-        navigationRef.navigate('CommunityDetail', { communityId: data.target_id, notificationReason: data.body ?? null });
+        openFromTap('CommunityDetail', { communityId: data.target_id, notificationReason: data.body ?? null });
       }
       break;
     case 'business_update':
       if (data.partner_id) {
-        navigationRef.navigate('BusinessProfile', { partnerId: data.partner_id });
+        openFromTap('BusinessProfile', { partnerId: data.partner_id });
       }
       break;
     // Item 49 audit fix: business_offer_withdrawn previously had no case at
@@ -443,7 +450,7 @@ export async function routeNotificationTap(data) {
     case 'plan_item_time_changed':
       if (data.request_id) {
         // An offer push opens the request ON that offer (destination contract, item 136); the others carry no offer_id.
-        navigationRef.navigate('BusinessRequestDetail', { requestId: data.request_id, notificationReason: data.body ?? null, ...(data.type === 'business_offer_received' && data.offer_id ? { focusOfferId: data.offer_id } : {}) });
+        openFromTap('BusinessRequestDetail', { requestId: data.request_id, notificationReason: data.body ?? null, ...(data.type === 'business_offer_received' && data.offer_id ? { focusOfferId: data.offer_id } : {}) });
       }
       break;
     case 'business_opportunity_received':
@@ -461,7 +468,7 @@ export async function routeNotificationTap(data) {
     // real "crosses 2 nearby" shape, same tab, just keyed on occasion
     // instead of category.
     case 'occasion_demand_growing':
-      navigationRef.navigate('BusinessDashboard', { initialSection: 'requests' });
+      openFromTap('BusinessDashboard', { initialSection: 'requests' });
       break;
     // Community demand-generation (see CLAUDE.md's "community
     // demand-generation" entry) -- the community-Area-scoped counterpart to
@@ -470,11 +477,11 @@ export async function routeNotificationTap(data) {
     // detail screen, the one real place this signal is actionable from.
     case 'community_area_demand_growing':
       if (data.community_id) {
-        navigationRef.navigate('CommunityDetail', { communityId: data.community_id, notificationReason: data.body ?? null });
+        openFromTap('CommunityDetail', { communityId: data.community_id, notificationReason: data.body ?? null });
       }
       break;
     case 'business_offer_accepted':
-      navigationRef.navigate('BusinessDashboard');
+      openFromTap('BusinessDashboard');
       break;
     // Item 50 (state consistency audit, fix 5): cancel_business_reservation()
     // notifies whichever side didn't initiate the cancellation -- two
@@ -482,7 +489,7 @@ export async function routeNotificationTap(data) {
     // for the same underlying event (see that RPC's own comment).
     case 'business_reservation_cancelled':
       if (data.request_id) {
-        navigationRef.navigate('BusinessRequestDetail', { requestId: data.request_id, notificationReason: data.body ?? null });
+        openFromTap('BusinessRequestDetail', { requestId: data.request_id, notificationReason: data.body ?? null });
       }
       break;
     case 'reservation_cancelled_by_customer':
@@ -491,7 +498,7 @@ export async function routeNotificationTap(data) {
     // Same destination as its sibling above -- same "check your requests"
     // action either way.
     case 'business_request_cancelled':
-      navigationRef.navigate('BusinessDashboard', { initialSection: 'requests' });
+      openFromTap('BusinessDashboard', { initialSection: 'requests' });
       break;
     // Nearby 2.0 vision layer 3 (see CLAUDE.md's "Nearby 2.0 Vision" doc):
     // a real "N people you know are looking for X" signal just crossed
@@ -499,7 +506,7 @@ export async function routeNotificationTap(data) {
     // group-intent card (built the same pass) re-fetches and renders it
     // fresh, same as any other Home visit.
     case 'group_intent_signal':
-      navigationRef.navigate('MainTabs', { screen: 'Home' });
+      openFromTap('MainTabs', { screen: 'Home' });
       break;
     // "Nearby V3/V4" plan, Phase D (see CLAUDE.md) -- every group-plan
     // event, whether it's a fresh invite, a response, a budget re-consent
@@ -525,7 +532,7 @@ export async function routeNotificationTap(data) {
     case 'social_offer_received':
     case 'social_offer_responded':
       if (data.proposal_id) {
-        navigationRef.navigate('GroupPlan', { proposalId: data.proposal_id });
+        openFromTap('GroupPlan', { proposalId: data.proposal_id });
       }
       break;
     // Item 49 audit fix: date_proposal/date_proposal_response previously
@@ -536,7 +543,7 @@ export async function routeNotificationTap(data) {
     case 'date_proposal':
     case 'date_proposal_response':
       if (data.match_id) {
-        navigationRef.navigate('DateProposal', { matchId: data.match_id });
+        openFromTap('DateProposal', { matchId: data.match_id });
       }
       break;
     // "Group planning for an Occasion" (CLAUDE.md): an invite to propose/
@@ -566,7 +573,7 @@ export async function routeNotificationTap(data) {
     case 'occasion_group_plan_cancelled':
     case 'occasion_group_plan_guest_rsvp':
       if (data.plan_id) {
-        navigationRef.navigate('GroupOccasionPlan', { planId: data.plan_id });
+        openFromTap('GroupOccasionPlan', { planId: data.plan_id });
       }
       break;
     // Item 96 (CLAUDE.md, "Add surprise mode... Eventually: Reveal plan
@@ -576,13 +583,13 @@ export async function routeNotificationTap(data) {
     // "Upcoming" section already surfaces a shared occasion there).
     // A friend shared their "Your night" with me (view-only): the read-only shared screen.
     case 'experience_shared':
-      if (data.plan_id) navigationRef.navigate('SharedNight', { planId: data.plan_id });
+      if (data.plan_id) openFromTap('SharedNight', { planId: data.plan_id });
       break;
     case 'occasion_surprise_revealed':
       if (data.owner_id) {
-        navigationRef.navigate('ViewProfile', { userId: data.owner_id });
+        openFromTap('ViewProfile', { userId: data.owner_id });
       } else {
-        navigationRef.navigate('Occasions');
+        openFromTap('Occasions');
       }
       break;
     // Item 100 (CLAUDE.md, "Let the recipient contribute preferences
@@ -592,7 +599,7 @@ export async function routeNotificationTap(data) {
     // payload never carries occasion_context, so there's nothing more
     // specific to route to anyway).
     case 'preference_poll_received':
-      navigationRef.navigate('PreferencePolls');
+      openFromTap('PreferencePolls');
       break;
     default:
       break;

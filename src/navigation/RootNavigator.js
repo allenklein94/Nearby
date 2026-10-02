@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { openOnTop, linkActionFromState } from './openOnTop';
 import { registerForPushNotifications, updateBadgeCount, consumePendingNotificationTap } from '../services/notifications';
 import { startBackgroundPresenceReporting } from '../services/proximity';
 import { initPurchases } from '../services/purchases';
@@ -150,6 +151,8 @@ const linking = {
       BusinessPartnerApply: 'business-apply',
     },
   },
+  // Item 139: a warm link opens on top of where the person was (openOnTop.js).
+  getActionFromState: (state, options) => linkActionFromState(navigationRef)(state, options),
 };
 
 // GatheringDetail (like every screen but Onboarding/Login/CompleteProfile)
@@ -191,9 +194,9 @@ async function resolveAndNavigateToBusiness(partnerId) {
   if (!navigationRef.isReady()) return;
   const myPartner = await getMyManagedPartner();
   if (myPartner?.id === partnerId) {
-    navigationRef.navigate('BusinessDashboard');
+    openOnTop(navigationRef, 'BusinessDashboard');
   } else {
-    navigationRef.navigate('BusinessProfile', { partnerId });
+    openOnTop(navigationRef, 'BusinessProfile', { partnerId });
   }
 }
 
@@ -318,7 +321,7 @@ export default function RootNavigator() {
           AsyncStorage.removeItem(PENDING_GATHERING_LINK_KEY);
           setTimeout(() => {
             if (navigationRef.isReady()) {
-              navigationRef.navigate('GatheringDetail', { gatheringId });
+              openOnTop(navigationRef, 'GatheringDetail', { gatheringId });
             }
           }, 300);
         }
