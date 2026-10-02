@@ -8,6 +8,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { supabase, functionUrl } from './supabase';
 import { requireUserLocation, getUserLocation } from './userLocation';
 import { videoFrameTimes } from '../utils/offerMedia';
+import { throwSingleError } from '../utils/notFound';
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -540,7 +541,7 @@ export async function getBusinessRequestWithOffers(requestId) {
     .select('*')
     .eq('id', requestId)
     .single();
-  if (requestError) throw new Error(requestError.message);
+  throwSingleError(requestError); // a deleted/invisible request reads as not found (item 139)
 
   // business_reservations(business_payments(...)) is a real, honest nested
   // embed -- both the requester and the business owner already have their

@@ -6,6 +6,7 @@ import Constants from 'expo-constants';
 import { getGoogleMapsRequestHeaders } from './places';
 import { getUserLocation } from './userLocation';
 import { isGatheringUpcoming } from '../utils/objectState';
+import { isNotFound } from '../utils/notFound';
 
 // Callers that don't pass coordinates (Matches, Gatherings) used to get an unfiltered, location-blind
 // offers list. Nearby knows where the user is, so fall back to the shared position -- passively, never
@@ -878,10 +879,10 @@ export async function submitBusinessUpdateForScreening(partnerId, title, body) {
 
 export async function getBusinessProfile(partnerId) {
   const { data, error } = await supabase.from('brand_partners').select('*').eq('id', partnerId).single();
-  if (error) {
-    console.error('getBusinessProfile error', error);
-    return null;
-  }
+  // Item 139: null means the business does not exist (or is not visible). Any other failure throws, so a screen can tell
+  // "gone" from "couldn't load", and the profile-save paths below never write back blanks read from a failed lookup.
+  if (error && isNotFound(error)) return null;
+  if (error) throw new Error(error.message);
   return data;
 }
 

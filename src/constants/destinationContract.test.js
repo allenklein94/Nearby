@@ -82,7 +82,7 @@ describe('Home statements', () => {
 
 describe('pushes and screens follow the contract', () => {
   test('an offer push carries the offer into the request screen', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', 'services', 'notifications.js'), 'utf8');
+    const src = fs.readFileSync(path.join(__dirname, '..', 'navigation', 'notificationDestinations.js'), 'utf8');
     expect(src).toMatch(/business_offer_received' && data\.offer_id \? \{ focusOfferId: data\.offer_id \}/);
   });
   test('the request screen scrolls to and marks the focused offer', () => {

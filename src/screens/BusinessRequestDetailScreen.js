@@ -48,6 +48,8 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
 import { businessReplyStatus, acceptedReplyTitle, businessReplyKind } from '../utils/offerCopy';
+import { isNotFound } from '../utils/notFound';
+import UnavailableState from '../components/UnavailableState';
 
 // Wording lives in ui.requestDetail.status.<status> / offerStatus.<status> / offerType.<type>; these list the known keys.
 const STATUS_COPY = {
@@ -174,6 +176,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  // Item 139: the object was deleted or is no longer visible (often opened from a push or link): say so, never retry.
+  const [unavailable, setUnavailable] = useState(false);
   const [actingOfferId, setActingOfferId] = useState(null);
   const [cancelling, setCancelling] = useState(false);
   // Success state (per the Nearby Motion Language): accepting an offer used to be a
@@ -429,7 +433,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           .catch((e) => console.error('group_plan_participants pending-invite check failed', e));
       }
     } catch (e) {
-      setLoadError(true);
+      if (isNotFound(e)) setUnavailable(true);
+      else setLoadError(true);
     }
     setLoading(false);
   }, [requestId]);
@@ -770,6 +775,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         <NLoader fullScreen={false} />
       </SafeAreaView>
     );
+  }
+
+  if (unavailable || (!loadError && !loading && !request)) {
+    return <SafeAreaView style={styles.container}><UnavailableState navigation={navigation} /></SafeAreaView>;
   }
 
   if (loadError) {

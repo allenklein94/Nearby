@@ -67,9 +67,12 @@ describe('item 139 guards', () => {
   const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
   test('push taps never call navigationRef.navigate directly', () => {
     const src = read('services/notifications.js');
+    expect(src).not.toMatch(/navigationRef\.navigate\(/);
     const body = src.slice(src.indexOf('export async function routeNotificationTap'), src.indexOf('export async function consumePendingNotificationTap'));
-    expect(body).not.toMatch(/navigationRef\.navigate\(/);
-    expect(body).toMatch(/openFromTap\(/);
+    expect(body).toMatch(/notificationDestination\(/);
+    expect(body).toMatch(/openOnTop\(ref, dest\.name, dest\.params\)/);
+    // The destination table only decides; it never navigates.
+    expect(read('navigation/notificationDestinations.js')).not.toMatch(/(navigationRef|openOnTop|\.navigate|dispatch)\(/);
   });
   test('deep links open on top too', () => {
     const src = read('navigation/RootNavigator.js');

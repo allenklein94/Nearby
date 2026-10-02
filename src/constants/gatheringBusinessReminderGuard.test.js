@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270146_gathering_business_reminder.sql'), 'utf8');
-const notifications = fs.readFileSync(path.join(__dirname, '../services/notifications.js'), 'utf8');
+const notifications = fs.readFileSync(path.join(__dirname, '../navigation/notificationDestinations.js'), 'utf8');
 
 describe('gathering business reminder', () => {
   test('never creates a request or an offer', () => {

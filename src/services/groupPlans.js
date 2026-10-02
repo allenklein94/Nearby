@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { throwSingleError } from '../utils/notFound';
 
 // "Nearby V3/V4" plan, Phase D (see CLAUDE.md) -- group intent becoming a
 // real, jointly-consented business request. Every write here goes through
@@ -189,7 +190,7 @@ export async function getGroupPlanDetail(proposalId) {
     .select('*')
     .eq('id', proposalId)
     .single();
-  if (proposalError) throw new Error(proposalError.message);
+  throwSingleError(proposalError); // a deleted/invisible proposal reads as not found (item 139)
 
   const { data: participants, error: participantsError } = await supabase
     .from('group_plan_participants')

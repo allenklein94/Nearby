@@ -26,6 +26,8 @@ import { getUserLocation } from '../services/userLocation';
 import { isGatheringUpcoming } from '../utils/objectState';
 
 import { unlockStatus } from '../utils/unlockProgress';
+import { isNotFound } from '../utils/notFound';
+import UnavailableState from '../components/UnavailableState';
 const ROLE_LABELS = { creator: 'Creator', leader: 'Leader', member: 'Member' };
 
 export default function CommunityDetailScreen({ route, navigation }) {
@@ -56,6 +58,8 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [gatherings, setGatherings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  // Item 139: the object was deleted or is no longer visible (often opened from a push or link): say so, never retry.
+  const [unavailable, setUnavailable] = useState(false);
   const [followingBusiness, setFollowingBusiness] = useState(false);
   const [myManagedPartner, setMyManagedPartner] = useState(null);
   const [members, setMembers] = useState([]);
@@ -94,7 +98,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
       // another (the old shape was a real ~8-round-trip sequential chain
       // gating this screen's loading spinner, the same bug already found
       // and fixed on Home).
-      const [{ data }, { data: sessionData }, mine, count, upcoming, memberList, [communityOffers, myRedemptions]] = await Promise.all([
+      const [{ data, error: communityError }, { data: sessionData }, mine, count, upcoming, memberList, [communityOffers, myRedemptions]] = await Promise.all([
         supabase.from('communities').select('*').eq('id', communityId).single(),
         supabase.auth.getSession(),
         getMyCommunities(),
@@ -104,6 +108,8 @@ export default function CommunityDetailScreen({ route, navigation }) {
         Promise.all([getCommunityOffers(communityId), getMyRedemptions()]),
       ]);
 
+      if (communityError && !isNotFound(communityError)) throw new Error(communityError.message);
+      if (!data) { setUnavailable(true); return; }
       const myId = sessionData?.session?.user?.id;
       setCommunity(data);
       recordBehaviorEvent('open', 'community', communityId, data?.interest_tag);
@@ -371,6 +377,10 @@ export default function CommunityDetailScreen({ route, navigation }) {
         <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm }}>{t('ui.community.loadingCommunity')}</Text>
       </SafeAreaView>
     );
+  }
+
+  if (unavailable) {
+    return <SafeAreaView style={styles.container}><UnavailableState navigation={navigation} /></SafeAreaView>;
   }
 
   if (loadError || !community) {

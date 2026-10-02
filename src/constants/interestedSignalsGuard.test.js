@@ -17,7 +17,7 @@ describe('Interested reminder + friend-joined push (migration 20270150)', () => 
     expect(friendFn).not.toMatch(/'recipient_id', g\.host_id/);
   });
   it('taps route to the gathering', () => {
-    const n = fs.readFileSync(path.join(__dirname, '../services/notifications.js'), 'utf8');
+    const n = fs.readFileSync(path.join(__dirname, '../navigation/notificationDestinations.js'), 'utf8');
     expect(n).toMatch(/case 'friend_joined_gathering':/);
   });
 });

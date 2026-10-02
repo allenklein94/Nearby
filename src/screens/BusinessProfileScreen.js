@@ -21,6 +21,8 @@ import { spacing, radius, typography } from '../theme';
 import { unlockStatus } from '../utils/unlockProgress';
 import { categoryName } from '../i18n/categoryNames';
 import { followerCountLine, reliabilityLine, hoursLine, weekHoursRows, bookingModeLine, priceLine, largestGroupLine, spaceLines, restrictionsLine, dietaryLine, dietaryNote, pulseLabel, cuisineName, businessAttributeName, partyTypeName, thingsToDoLabels, suitedAgesLabel } from '../i18n/businessProfileDisplay';
+import { isNotFound } from '../utils/notFound';
+import UnavailableState from '../components/UnavailableState';
 
 // Phase 4 (media upload, CLAUDE.md) -- a Signature Experience's own real
 // uploaded creative, rendered INSIDE its existing experience card, never
@@ -67,6 +69,8 @@ export default function BusinessProfileScreen({ route, navigation }) {
   const thingsToDo = partner ? thingsToDoLabels(partner, language) : [];
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  // Item 139: the object was deleted or is no longer visible (often opened from a push or link): say so, never retry.
+  const [unavailable, setUnavailable] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [following, setFollowing] = useState(false);
   const [gatherings, setGatherings] = useState([]);
@@ -118,6 +122,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
         logBusinessProfileView(partnerId, route.params?.source === 'deep_link' ? 'deep_link' : 'in_app');
       }
 
+      if (!profile) { setUnavailable(true); return; }
       setPartner(profile);
       setFollowerCount(count);
       setFollowing(isFollowing);
@@ -221,6 +226,10 @@ export default function BusinessProfileScreen({ route, navigation }) {
         <NLoader fullScreen={false} />
       </SafeAreaView>
     );
+  }
+
+  if (unavailable) {
+    return <SafeAreaView style={styles.container}><UnavailableState navigation={navigation} /></SafeAreaView>;
   }
 
   if (loadError || !partner) {

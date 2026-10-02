@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { openOnTop, linkActionFromState } from './openOnTop';
+import { canOpenFromOutside, keepEntry, takeEntry, whenOpenable, parseNearbyUrl } from './outsideEntry';
 import { noteNavigationState, clearTrail } from './returnTrail';
 import { registerForPushNotifications, updateBadgeCount, consumePendingNotificationTap } from '../services/notifications';
 import { startBackgroundPresenceReporting } from '../services/proximity';
@@ -147,6 +148,8 @@ export const navigationRef = createNavigationContainerRef();
 const linking = {
   prefixes: ['nearby://'],
   config: {
+    // Item 139: a cold-start link opens its screen with Home underneath, so Back lands on Home instead of leaving the app.
+    initialRouteName: 'MainTabs',
     screens: {
       GatheringDetail: 'gathering/:gatheringId',
       BusinessPartnerApply: 'business-apply',
@@ -177,22 +180,8 @@ const PENDING_GATHERING_LINK_KEY = 'pending_deep_link_gathering_id';
 const PENDING_BUSINESS_LINK_KEY = 'pending_deep_link_business_id';
 const PENDING_BUSINESS_APPLY_LINK_KEY = 'pending_deep_link_business_apply';
 
-function gatheringIdFromUrl(url) {
-  const match = /gathering\/([^/?#]+)/.exec(url ?? '');
-  return match ? match[1] : null;
-}
-
-function businessIdFromUrl(url) {
-  const match = /business\/([^/?#]+)/.exec(url ?? '');
-  return match ? match[1] : null;
-}
-
-function isBusinessApplyUrl(url) {
-  return /business-apply/.test(url ?? '');
-}
-
 async function resolveAndNavigateToBusiness(partnerId) {
-  if (!navigationRef.isReady()) return;
+  if (!canOpenFromOutside(navigationRef)) return;
   const myPartner = await getMyManagedPartner();
   if (myPartner?.id === partnerId) {
     openOnTop(navigationRef, 'BusinessDashboard');
@@ -304,60 +293,46 @@ export default function RootNavigator() {
     if (!session) clearTrail();
   }, [session]);
 
-  // Runs once, independent of auth state, so a nearby://gathering/:id link
-  // tapped before signing in (or mid-onboarding) isn't lost — see the
-  // PENDING_GATHERING_LINK_KEY comment above the linking config.
+  // Item 139: one handler for every nearby:// link (outsideEntry.js). Signed in and mounted: open it now, on top of where
+  // the person is (a gathering/apply link the linking config already opened is refreshed in place, not duplicated).
+  // Otherwise (signed out, onboarding, still starting): keep it, timestamped, and open it once signed in. A link is never
+  // kept while the signed-in stack is mounted, so nothing replays on a later launch.
   useEffect(() => {
-    function stashIfGathering(url) {
-      const gatheringId = gatheringIdFromUrl(url);
-      if (gatheringId) AsyncStorage.setItem(PENDING_GATHERING_LINK_KEY, gatheringId);
-      const partnerId = businessIdFromUrl(url);
-      if (partnerId) AsyncStorage.setItem(PENDING_BUSINESS_LINK_KEY, partnerId);
-      if (isBusinessApplyUrl(url)) AsyncStorage.setItem(PENDING_BUSINESS_APPLY_LINK_KEY, 'true');
+    function handleUrl(url, { initial }) {
+      const link = parseNearbyUrl(url);
+      if (!link) return;
+      if (canOpenFromOutside(navigationRef)) {
+        if (link.kind === 'business') resolveAndNavigateToBusiness(link.id);
+        // A warm gathering/apply link is opened by the linking config itself; only the launch URL is opened here.
+        else if (initial && link.kind === 'gathering') openOnTop(navigationRef, 'GatheringDetail', { gatheringId: link.id });
+        else if (initial && link.kind === 'apply') openOnTop(navigationRef, 'BusinessPartnerApply');
+        return;
+      }
+      if (link.kind === 'gathering') keepEntry(AsyncStorage, PENDING_GATHERING_LINK_KEY, link.id);
+      if (link.kind === 'business') keepEntry(AsyncStorage, PENDING_BUSINESS_LINK_KEY, link.id);
+      if (link.kind === 'apply') keepEntry(AsyncStorage, PENDING_BUSINESS_APPLY_LINK_KEY, 'true');
     }
-    Linking.getInitialURL().then(stashIfGathering);
-    const subscription = Linking.addEventListener('url', ({ url }) => stashIfGathering(url));
+    Linking.getInitialURL().then((url) => handleUrl(url, { initial: true }));
+    const subscription = Linking.addEventListener('url', ({ url }) => handleUrl(url, { initial: false }));
     return () => subscription.remove();
   }, []);
 
   useEffect(() => {
     if (session && profileComplete) {
-      AsyncStorage.getItem(PENDING_GATHERING_LINK_KEY).then((gatheringId) => {
-        if (gatheringId) {
-          AsyncStorage.removeItem(PENDING_GATHERING_LINK_KEY);
-          setTimeout(() => {
-            if (navigationRef.isReady()) {
-              openOnTop(navigationRef, 'GatheringDetail', { gatheringId });
-            }
-          }, 300);
-        }
-      });
-      AsyncStorage.getItem(PENDING_BUSINESS_LINK_KEY).then((partnerId) => {
-        if (partnerId) {
-          AsyncStorage.removeItem(PENDING_BUSINESS_LINK_KEY);
-          setTimeout(() => resolveAndNavigateToBusiness(partnerId), 300);
-        }
-      });
-      // BusinessPartnerApply always resolves to the same screen for everyone, so a warm tap
-      // is already covered for free by linking.config.screens above (same as GatheringDetail)
-      // — this consume-once is only for the cold-start case, mirroring PENDING_GATHERING_LINK_KEY.
-      AsyncStorage.getItem(PENDING_BUSINESS_APPLY_LINK_KEY).then((flag) => {
-        if (flag === 'true') {
-          AsyncStorage.removeItem(PENDING_BUSINESS_APPLY_LINK_KEY);
-          setTimeout(() => {
-            if (navigationRef.isReady()) {
-              navigationRef.navigate('BusinessPartnerApply');
-            }
-          }, 300);
-        }
+      // Kept links and push taps open once the signed-in stack is actually mounted (it may still be rendering).
+      whenOpenable(navigationRef, async () => {
+        const gatheringId = await takeEntry(AsyncStorage, PENDING_GATHERING_LINK_KEY);
+        if (gatheringId) openOnTop(navigationRef, 'GatheringDetail', { gatheringId });
+        const partnerId = await takeEntry(AsyncStorage, PENDING_BUSINESS_LINK_KEY);
+        if (partnerId) await resolveAndNavigateToBusiness(partnerId);
+        const apply = await takeEntry(AsyncStorage, PENDING_BUSINESS_APPLY_LINK_KEY);
+        if (apply === 'true') openOnTop(navigationRef, 'BusinessPartnerApply');
+        await consumePendingNotificationTap();
       });
       initPurchases(session.user.id);
       registerForPushNotifications(session.user.id);
       startBackgroundPresenceReporting();
       updateBadgeCount(session.user.id);
-      setTimeout(() => {
-        consumePendingNotificationTap();
-      }, 300);
       // Checked and cleared here so the recommendations screen only
       // ever shows once, right after a fresh signup — every
       // subsequent app open goes straight to MainTabs as normal.
@@ -377,19 +352,6 @@ export default function RootNavigator() {
     }
   }, [session, profileComplete]);
 
-  // Handles a business link tapped while the app is already open and authenticated
-  // (BusinessDashboard/BusinessProfile already mounted, navigationRef already ready)
-  // — the always-on stash listener above only ever gets *consumed* on an
-  // auth-state transition, so a warm tap needs its own live listener, scoped to
-  // exactly the window where the authenticated stack actually exists.
-  useEffect(() => {
-    if (!(session && profileComplete)) return undefined;
-    const subscription = Linking.addEventListener('url', ({ url }) => {
-      const partnerId = businessIdFromUrl(url);
-      if (partnerId) resolveAndNavigateToBusiness(partnerId);
-    });
-    return () => subscription.remove();
-  }, [session, profileComplete]);
 
   // Item 57 ("the N mark as product language ... subtle brand transitions"):
   // the Stack.Navigator below swaps its entire set of screens (a different

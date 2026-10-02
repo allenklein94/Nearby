@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { notificationTier, RECOMMENDATION_TYPES_FOR_TEST } = require('./notificationTier');
 
-// Reads notifications.js's own real routeNotificationTap() switch cases
+// Reads the real push destination table's switch cases (navigation/notificationDestinations.js, item 139; moved from notifications.js)
 // directly from source, rather than hand-maintaining a second copy of the
 // vocabulary in this test -- so this test actually catches drift (a new
 // push type added to that switch with no matching tier classification, or
@@ -10,7 +10,7 @@ const { notificationTier, RECOMMENDATION_TYPES_FOR_TEST } = require('./notificat
 // re-asserting whatever the classifier itself already claims.
 function realNotificationTypes() {
   const source = fs.readFileSync(
-    path.join(__dirname, '../services/notifications.js'),
+    path.join(__dirname, '../navigation/notificationDestinations.js'),
     'utf8'
   );
   const matches = [...source.matchAll(/case '([a-z_]+)':/g)];
@@ -56,6 +56,6 @@ describe('a business response completes the loop the person started (item 68)', 
   it('business_offer_received is an important (loud) push and taps route to the request', () => {
     const { notificationTier } = require('./notificationTier');
     expect(notificationTier('business_offer_received')).toBe('important');
-    expect(require('fs').readFileSync('src/services/notifications.js', 'utf8')).toMatch(/case 'business_offer_received':/);
+    expect(require('fs').readFileSync('src/navigation/notificationDestinations.js', 'utf8')).toMatch(/case 'business_offer_received':/);
   });
 });

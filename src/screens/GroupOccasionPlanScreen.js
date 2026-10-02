@@ -53,6 +53,8 @@ import { isOccasionInviteExpired, expiredDateLabel } from '../utils/inviteExpiry
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { isNotFound } from '../utils/notFound';
+import UnavailableState from '../components/UnavailableState';
 
 // "Group planning for an Occasion" (CLAUDE.md, direct user follow-up to the
 // Occasion rename/simplify pass). User's own example: "Sarah's 30th
@@ -120,6 +122,8 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  // Item 139: the object was deleted or is no longer visible (often opened from a push or link): say so, never retry.
+  const [unavailable, setUnavailable] = useState(false);
   const [acting, setActing] = useState(false);
   const [reasonAsk, setReasonAsk] = useState(null);
   const [proposeType, setProposeType] = useState(null);
@@ -179,7 +183,8 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
       setDetail(result);
       setLoadError(false);
     } catch (e) {
-      setLoadError(true);
+      if (isNotFound(e)) setUnavailable(true);
+      else setLoadError(true);
     }
     setLoading(false);
   }, [planId]);
@@ -570,6 +575,10 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
         <NLoader fullScreen={false} />
       </SafeAreaView>
     );
+  }
+
+  if (unavailable) {
+    return <SafeAreaView style={styles.container}><UnavailableState navigation={navigation} /></SafeAreaView>;
   }
 
   if (loadError) {

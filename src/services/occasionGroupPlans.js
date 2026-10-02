@@ -9,6 +9,7 @@
 // goes through a SECURITY DEFINER RPC, same "no direct client INSERT/UPDATE
 // on a lifecycle table" convention this schema always uses.
 import { supabase } from './supabase';
+import { notFoundError } from '../utils/notFound';
 
 export async function createOccasionGroupPlan({
   occasionType,
@@ -101,7 +102,10 @@ export async function getOccasionGroupPlanDetail(planId) {
   const { data, error } = await supabase.rpc('get_occasion_group_plan_detail', {
     plan_id_param: planId,
   });
+  // The server answers a deleted plan, or one this person is no longer part of, with this one refusal (item 139).
+  if (error && /not part of this plan/i.test(error.message ?? '')) throw notFoundError();
   if (error) throw new Error(error.message);
+  if (!data) throw notFoundError();
   return data;
 }
 

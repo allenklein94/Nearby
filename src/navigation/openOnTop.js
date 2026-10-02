@@ -1,12 +1,16 @@
 import { StackActions, CommonActions, getActionFromState as defaultGetActionFromState } from '@react-navigation/native';
 import { notificationNavAction } from './notificationNav';
 import { beginTrail, TAB_HOST } from './returnTrail';
+import { isRegistered } from './outsideEntry';
 
 // Item 139: the one way an outside entry (push tap, nearby:// link) opens an
 // object: on top of the current history, refreshed in place when it is already
 // the top screen, tab switches as navigation. Decision lives in notificationNav.js.
+// Returns whether it opened. A destination the current stack does not register (signed out, onboarding) is never
+// dispatched: callers keep the entry and open it once signed in (outsideEntry.js).
 export function openOnTop(ref, name, params) {
-  if (!ref.isReady()) return;
+  if (!ref.isReady()) return false;
+  if (!isRegistered(ref, name)) return false;
   const current = ref.getCurrentRoute();
   const action = notificationNavAction(current, name, params);
   if (action === 'setParams') {
@@ -18,6 +22,7 @@ export function openOnTop(ref, name, params) {
     if (name === TAB_HOST) beginTrail(ref.getRootState(), params?.screen ?? null);
     ref.navigate(name, params);
   }
+  return true;
 }
 
 // For NavigationContainer `linking.getActionFromState`: a warm nearby:// link to a
@@ -26,7 +31,10 @@ export function openOnTop(ref, name, params) {
 export function linkActionFromState(ref) {
   return (state, options) => {
     const routes = state?.routes ?? [];
-    const leaf = routes.length === 1 ? routes[0] : null;
+    // A link resolves to [destination], or [tab host, destination] since the linking config puts Home under a cold-start
+    // link; either way the destination is the leaf.
+    const leaf = routes.length === 1 ? routes[0]
+      : routes.length === 2 && routes[0].name === TAB_HOST && !routes[0].state ? routes[1] : null;
     if (leaf && !leaf.state && ref.isReady()) {
       const current = ref.getCurrentRoute();
       const action = notificationNavAction(current, leaf.name, leaf.params);

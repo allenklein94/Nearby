@@ -17,13 +17,18 @@ export const NAVIGATE_DESTINATIONS = new Set(['MainTabs']);
 // Params that identify WHICH object a screen shows. Everything else
 // (notificationReason, focusOfferId, initialSection, openJoin...) is context
 // for that visit and may change without making it a different object.
+// One level of nesting counts too (AskBusiness carries its posting as matchedAvailability.availabilityId), so two different
+// postings are two different screens, never one overwriting the other's form.
 export function identityOf(params) {
   const out = {};
-  Object.keys(params ?? {})
-    .filter((k) => /Id$/.test(k) && k !== 'focusOfferId')
-    .sort()
-    .forEach((k) => { out[k] = params[k] == null ? null : String(params[k]); });
-  return JSON.stringify(out);
+  const p = params ?? {};
+  for (const k of Object.keys(p)) {
+    if (/Id$/.test(k) && k !== 'focusOfferId') out[k] = p[k] == null ? null : String(p[k]);
+    else if (p[k] && typeof p[k] === 'object' && !Array.isArray(p[k])) {
+      for (const kk of Object.keys(p[k])) if (/Id$/.test(kk)) out[`${k}.${kk}`] = p[k][kk] == null ? null : String(p[k][kk]);
+    }
+  }
+  return JSON.stringify(Object.fromEntries(Object.entries(out).sort(([a], [b]) => (a < b ? -1 : 1))));
 }
 
 export function notificationNavAction(currentRoute, name, params) {

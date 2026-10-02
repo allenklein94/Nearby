@@ -30,6 +30,8 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
 import { moneyLabel } from '../utils/outcomeDisplay';
+import { isNotFound } from '../utils/notFound';
+import UnavailableState from '../components/UnavailableState';
 
 // Display labels by stored status, read through ui.groupPlan (status values stay canonical).
 const PARTICIPANT_STATUS_KEYS = ['invited', 'accepted', 'declined', 'left'];
@@ -59,6 +61,8 @@ export default function GroupPlanScreen({ navigation, route }) {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  // Item 139: the object was deleted or is no longer visible (often opened from a push or link): say so, never retry.
+  const [unavailable, setUnavailable] = useState(false);
   const [acting, setActing] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
   const [excludeIds, setExcludeIds] = useState([]);
@@ -105,7 +109,8 @@ export default function GroupPlanScreen({ navigation, route }) {
           .forEach((o) => markSocialOfferViewed(o.id));
       }
     } catch (e) {
-      setLoadError(true);
+      if (isNotFound(e)) setUnavailable(true);
+      else setLoadError(true);
     }
     setLoading(false);
   }, [proposalId]);
@@ -313,6 +318,10 @@ export default function GroupPlanScreen({ navigation, route }) {
         <NLoader fullScreen={false} />
       </SafeAreaView>
     );
+  }
+
+  if (unavailable) {
+    return <SafeAreaView style={styles.container}><UnavailableState navigation={navigation} /></SafeAreaView>;
   }
 
   if (loadError) {
