@@ -3,7 +3,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch, Linking, Platform, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../services/supabase';
-import { visibleNotificationAreas, groupTextKeys, toggleGroup } from '../constants/notificationPreferences';
+import { visibleSettingsSections, groupTextKeys, toggleGroup } from '../constants/notificationPreferences';
 import { setMyNotificationGroup } from '../services/notificationPrefs';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -655,11 +655,11 @@ export default function SettingsScreen({ navigation, route }) {
 
         <Text style={styles.groupHeader} accessibilityRole="header">{t('settings.notifications')}</Text>
         <View style={styles.card}>
-          {visibleNotificationAreas({ isBusinessOwner }).map((area, ai) => (
+          {visibleSettingsSections({ isBusinessOwner }).map((area, ai) => (
             <View key={area.key}>
               {ai > 0 && <View style={styles.divider} />}
-              <Text style={styles.settingLabel} accessibilityRole="header">{area.icon} {t(`ui.notificationPrefs.area.${area.key}.label`)}</Text>
-              <Text style={styles.helperText}>{t(`ui.notificationPrefs.area.${area.key}.hint`)}</Text>
+              <Text style={styles.settingLabel} accessibilityRole="header">{area.icon} {t(`ui.notificationPrefs.section.${area.key}.label`)}</Text>
+              <Text style={styles.helperText}>{t(`ui.notificationPrefs.section.${area.key}.hint`)}</Text>
               {area.groups.map((g) => {
                 const on = !notificationMutes.includes(g);
                 const keys = groupTextKeys(g);

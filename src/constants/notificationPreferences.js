@@ -31,6 +31,24 @@ export const isOwnerGroup = (g) => OWNER_GROUPS.includes(g);
 export function visibleNotificationAreas({ isBusinessOwner } = {}) {
   return NOTIFICATION_AREAS.filter((a) => !a.ownerOnly || isBusinessOwner);
 }
+// Settings DISPLAY only (owner, 2026-10-02): the same 15 switches shown in a few plain sections. Storage, the older
+// columns and onboarding keep the areas above; this only decides where each switch is drawn. Every group appears in
+// exactly one section (test-enforced), customer and owner business alerts stay in separate sections, and nothing here
+// is read by any sender: _send_push stays the only place a choice is applied.
+export const SETTINGS_SECTIONS = [
+  { key: 'plans', icon: '📅', groups: ['plans_invitations', 'plans_changes', 'plans_reminders'] },
+  { key: 'people', icon: '🤝', groups: ['friends_activity', 'friends_occasions', 'dating', 'discover_nearby_people'] },
+  { key: 'nearby', icon: '🎯', groups: ['discover_recommendations', 'communities'] },
+  { key: 'businesses', icon: '🏪', groups: ['business_offers', 'business_responses'] },
+  { key: 'business_owner', icon: '💼', ownerOnly: true, groups: OWNER_GROUPS },
+];
+export function visibleSettingsSections({ isBusinessOwner } = {}) {
+  return SETTINGS_SECTIONS.filter((s) => !s.ownerOnly || isBusinessOwner);
+}
+// The push types one switch controls (what a toggle changes, read from the one type table).
+export function typesForGroup(group) {
+  return Object.keys(NOTIFICATION_GROUP_BY_TYPE).filter((t) => NOTIFICATION_GROUP_BY_TYPE[t] === group);
+}
 // Translation keys for a group's label and hint. Owner groups reuse the dashboard's own wording (ui.bizComp.notifGroup).
 export function groupTextKeys(g) {
   if (isOwnerGroup(g)) {

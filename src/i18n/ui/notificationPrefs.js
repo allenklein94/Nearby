@@ -2,34 +2,26 @@
 // wording; the other ten languages are machine-authored and need native-speaker review. Edit the JSON, then rebuild.
 export default {
   en: {
-    area: {
+    section: {
       plans: {
         label: "Plans",
         hint: "Invitations, changes and reminders for plans you're part of.",
-      },
-      friends: {
-        label: "Friends",
-        hint: "Friend requests, what friends are up to, birthdays.",
-      },
-      dating: {
-        label: "Dating",
-        hint: "Matches, messages, waves and calls.",
       },
       businesses: {
         label: "Businesses you use",
         hint: "Offers and replies to requests you made as a customer.",
       },
-      discover: {
-        label: "Discover",
-        hint: "Things to do that fit your interests, and people you cross paths with.",
-      },
-      communities: {
-        label: "Communities",
-        hint: "Activity in communities you lead.",
-      },
       business_owner: {
         label: "Your business",
         hint: "Alerts for running your business. Separate from Businesses you use.",
+      },
+      people: {
+        label: "People",
+        hint: "Friends, birthdays, dating and people you cross paths with.",
+      },
+      nearby: {
+        label: "Nearby",
+        hint: "Ideas near you, and communities you lead.",
       },
     },
     group: {
@@ -38,7 +30,7 @@ export default {
         hint: "Someone invites you to a gathering or plan.",
       },
       plans_changes: {
-        label: "Changes",
+        label: "Changes to your plans",
         hint: "You're approved, a time or place moves, a plan is confirmed or cancelled.",
       },
       plans_reminders: {
@@ -46,7 +38,7 @@ export default {
         hint: "Before something you're going to starts.",
       },
       friends_activity: {
-        label: "Friend activity",
+        label: "Friend requests and activity",
         hint: "Friend requests, a friend joins a gathering, new stories.",
       },
       friends_occasions: {
@@ -54,7 +46,7 @@ export default {
         hint: "A friend's birthday or an occasion coming up.",
       },
       dating: {
-        label: "Matches and messages",
+        label: "Dating matches and messages",
         hint: "New matches, messages, waves and calls.",
       },
       business_offers: {
@@ -62,7 +54,7 @@ export default {
         hint: "A business makes you an offer or posts an update.",
       },
       business_responses: {
-        label: "Request responses",
+        label: "Replies to your requests",
         hint: "A business declines, withdraws or confirms your booking.",
       },
       discover_recommendations: {
@@ -74,41 +66,33 @@ export default {
         hint: "When you cross paths with someone nearby.",
       },
       communities: {
-        label: "Community activity",
+        label: "Communities you lead",
         hint: "Demand growing in, or a change to, a community you lead.",
       },
     },
     toggleA11y: "Notify me about {label}",
   },
   es: {
-    area: {
+    section: {
       plans: {
         label: "Planes",
         hint: "Invitaciones, cambios y recordatorios de los planes en los que participas.",
-      },
-      friends: {
-        label: "Amigos",
-        hint: "Solicitudes de amistad, lo que hacen tus amigos, cumpleaños.",
-      },
-      dating: {
-        label: "Citas",
-        hint: "Matches, mensajes, saludos y llamadas.",
       },
       businesses: {
         label: "Negocios que usas",
         hint: "Ofertas y respuestas a las solicitudes que hiciste como cliente.",
       },
-      discover: {
-        label: "Descubrir",
-        hint: "Cosas que hacer según tus intereses y personas con las que te cruzas.",
-      },
-      communities: {
-        label: "Comunidades",
-        hint: "Actividad en las comunidades que diriges.",
-      },
       business_owner: {
         label: "Tu negocio",
         hint: "Avisos para gestionar tu negocio. Aparte de Negocios que usas.",
+      },
+      people: {
+        label: "Personas",
+        hint: "Amigos, cumpleaños, citas y personas con las que te cruzas.",
+      },
+      nearby: {
+        label: "Cerca",
+        hint: "Ideas cerca de ti y las comunidades que diriges.",
       },
     },
     group: {
@@ -117,7 +101,7 @@ export default {
         hint: "Alguien te invita a una reunión o un plan.",
       },
       plans_changes: {
-        label: "Cambios",
+        label: "Cambios en tus planes",
         hint: "Te aprueban, cambia la hora o el lugar, se confirma o cancela un plan.",
       },
       plans_reminders: {
@@ -125,7 +109,7 @@ export default {
         hint: "Antes de que empiece algo a lo que vas.",
       },
       friends_activity: {
-        label: "Actividad de amigos",
+        label: "Solicitudes y actividad de amigos",
         hint: "Solicitudes de amistad, un amigo se une a una reunión, nuevas historias.",
       },
       friends_occasions: {
@@ -133,7 +117,7 @@ export default {
         hint: "El cumpleaños de un amigo o una ocasión que se acerca.",
       },
       dating: {
-        label: "Matches y mensajes",
+        label: "Matches y mensajes de citas",
         hint: "Nuevos matches, mensajes, saludos y llamadas.",
       },
       business_offers: {
@@ -141,7 +125,7 @@ export default {
         hint: "Un negocio te hace una oferta o publica una novedad.",
       },
       business_responses: {
-        label: "Respuestas a solicitudes",
+        label: "Respuestas a tus solicitudes",
         hint: "Un negocio rechaza, retira o confirma tu reserva.",
       },
       discover_recommendations: {
@@ -153,41 +137,33 @@ export default {
         hint: "Cuando te cruzas con alguien cerca.",
       },
       communities: {
-        label: "Actividad de la comunidad",
+        label: "Comunidades que diriges",
         hint: "Crece la demanda en una comunidad que diriges o hay un cambio en ella.",
       },
     },
     toggleA11y: "Notificarme sobre {label}",
   },
   de: {
-    area: {
+    section: {
       plans: {
         label: "Pläne",
         hint: "Einladungen, Änderungen und Erinnerungen zu Plänen, bei denen du dabei bist.",
-      },
-      friends: {
-        label: "Freunde",
-        hint: "Freundschaftsanfragen, was Freunde vorhaben, Geburtstage.",
-      },
-      dating: {
-        label: "Dating",
-        hint: "Matches, Nachrichten, Winken und Anrufe.",
       },
       businesses: {
         label: "Geschäfte, die du nutzt",
         hint: "Angebote und Antworten auf Anfragen, die du als Kunde gestellt hast.",
       },
-      discover: {
-        label: "Entdecken",
-        hint: "Unternehmungen passend zu deinen Interessen und Menschen, denen du begegnest.",
-      },
-      communities: {
-        label: "Communities",
-        hint: "Aktivität in Communities, die du leitest.",
-      },
       business_owner: {
         label: "Dein Geschäft",
         hint: "Hinweise zur Führung deines Geschäfts. Getrennt von „Geschäfte, die du nutzt“.",
+      },
+      people: {
+        label: "Menschen",
+        hint: "Freunde, Geburtstage, Dating und Menschen, denen du begegnest.",
+      },
+      nearby: {
+        label: "In der Nähe",
+        hint: "Ideen in deiner Nähe und Communitys, die du leitest.",
       },
     },
     group: {
@@ -196,7 +172,7 @@ export default {
         hint: "Jemand lädt dich zu einem Treffen oder Plan ein.",
       },
       plans_changes: {
-        label: "Änderungen",
+        label: "Änderungen an deinen Plänen",
         hint: "Du bist bestätigt, Zeit oder Ort ändern sich, ein Plan wird bestätigt oder abgesagt.",
       },
       plans_reminders: {
@@ -204,7 +180,7 @@ export default {
         hint: "Bevor etwas beginnt, zu dem du gehst.",
       },
       friends_activity: {
-        label: "Aktivität von Freunden",
+        label: "Freundschaftsanfragen und Aktivität",
         hint: "Freundschaftsanfragen, ein Freund tritt einem Treffen bei, neue Storys.",
       },
       friends_occasions: {
@@ -212,7 +188,7 @@ export default {
         hint: "Der Geburtstag eines Freundes oder ein bevorstehender Anlass.",
       },
       dating: {
-        label: "Matches und Nachrichten",
+        label: "Dating-Matches und Nachrichten",
         hint: "Neue Matches, Nachrichten, Winken und Anrufe.",
       },
       business_offers: {
@@ -220,7 +196,7 @@ export default {
         hint: "Ein Geschäft macht dir ein Angebot oder postet ein Update.",
       },
       business_responses: {
-        label: "Antworten auf Anfragen",
+        label: "Antworten auf deine Anfragen",
         hint: "Ein Geschäft lehnt ab, zieht zurück oder bestätigt deine Buchung.",
       },
       discover_recommendations: {
@@ -232,41 +208,33 @@ export default {
         hint: "Wenn du jemandem in der Nähe begegnest.",
       },
       communities: {
-        label: "Community-Aktivität",
+        label: "Communitys, die du leitest",
         hint: "Wachsende Nachfrage in oder eine Änderung an einer Community, die du leitest.",
       },
     },
     toggleA11y: "Benachrichtige mich über {label}",
   },
   fr: {
-    area: {
+    section: {
       plans: {
         label: "Plans",
         hint: "Invitations, changements et rappels pour les plans auxquels vous participez.",
-      },
-      friends: {
-        label: "Amis",
-        hint: "Demandes d'amis, ce que font vos amis, anniversaires.",
-      },
-      dating: {
-        label: "Rencontres",
-        hint: "Matchs, messages, saluts et appels.",
       },
       businesses: {
         label: "Commerces que vous utilisez",
         hint: "Offres et réponses aux demandes que vous avez faites en tant que client.",
       },
-      discover: {
-        label: "Découvrir",
-        hint: "Des sorties selon vos centres d'intérêt et les personnes que vous croisez.",
-      },
-      communities: {
-        label: "Communautés",
-        hint: "L'activité des communautés que vous animez.",
-      },
       business_owner: {
         label: "Votre commerce",
         hint: "Alertes pour gérer votre commerce. Distinctes de « Commerces que vous utilisez ».",
+      },
+      people: {
+        label: "Personnes",
+        hint: "Amis, anniversaires, rencontres et personnes que vous croisez.",
+      },
+      nearby: {
+        label: "À proximité",
+        hint: "Des idées près de chez vous et les communautés que vous animez.",
       },
     },
     group: {
@@ -275,7 +243,7 @@ export default {
         hint: "Quelqu'un vous invite à une rencontre ou un plan.",
       },
       plans_changes: {
-        label: "Changements",
+        label: "Changements de vos plans",
         hint: "Vous êtes accepté, l'heure ou le lieu change, un plan est confirmé ou annulé.",
       },
       plans_reminders: {
@@ -283,7 +251,7 @@ export default {
         hint: "Avant le début d'un événement auquel vous allez.",
       },
       friends_activity: {
-        label: "Activité des amis",
+        label: "Demandes d’amis et activité",
         hint: "Demandes d'amis, un ami rejoint une rencontre, nouvelles stories.",
       },
       friends_occasions: {
@@ -291,7 +259,7 @@ export default {
         hint: "L'anniversaire d'un ami ou une occasion qui approche.",
       },
       dating: {
-        label: "Matchs et messages",
+        label: "Matchs et messages de rencontre",
         hint: "Nouveaux matchs, messages, saluts et appels.",
       },
       business_offers: {
@@ -299,7 +267,7 @@ export default {
         hint: "Un commerce vous fait une offre ou publie une nouveauté.",
       },
       business_responses: {
-        label: "Réponses aux demandes",
+        label: "Réponses à vos demandes",
         hint: "Un commerce refuse, retire ou confirme votre réservation.",
       },
       discover_recommendations: {
@@ -311,41 +279,33 @@ export default {
         hint: "Quand vous croisez quelqu'un à proximité.",
       },
       communities: {
-        label: "Activité de la communauté",
+        label: "Communautés que vous animez",
         hint: "La demande grandit dans une communauté que vous animez, ou elle change.",
       },
     },
     toggleA11y: "Me prévenir pour {label}",
   },
   pt: {
-    area: {
+    section: {
       plans: {
         label: "Planos",
         hint: "Convites, mudanças e lembretes dos planos de que você participa.",
-      },
-      friends: {
-        label: "Amigos",
-        hint: "Pedidos de amizade, o que seus amigos estão fazendo, aniversários.",
-      },
-      dating: {
-        label: "Encontros",
-        hint: "Matches, mensagens, acenos e chamadas.",
       },
       businesses: {
         label: "Negócios que você usa",
         hint: "Ofertas e respostas aos pedidos que você fez como cliente.",
       },
-      discover: {
-        label: "Descobrir",
-        hint: "Coisas para fazer de acordo com seus interesses e pessoas que cruzam seu caminho.",
-      },
-      communities: {
-        label: "Comunidades",
-        hint: "Atividade nas comunidades que você lidera.",
-      },
       business_owner: {
         label: "Seu negócio",
         hint: "Alertas para administrar seu negócio. Separados de Negócios que você usa.",
+      },
+      people: {
+        label: "Pessoas",
+        hint: "Amigos, aniversários, encontros e pessoas com quem você cruza.",
+      },
+      nearby: {
+        label: "Por perto",
+        hint: "Ideias perto de você e comunidades que você lidera.",
       },
     },
     group: {
@@ -354,7 +314,7 @@ export default {
         hint: "Alguém convida você para um encontro ou plano.",
       },
       plans_changes: {
-        label: "Mudanças",
+        label: "Mudanças nos seus planos",
         hint: "Você é aprovado, o horário ou local muda, um plano é confirmado ou cancelado.",
       },
       plans_reminders: {
@@ -362,7 +322,7 @@ export default {
         hint: "Antes de começar algo a que você vai.",
       },
       friends_activity: {
-        label: "Atividade dos amigos",
+        label: "Pedidos e atividade de amigos",
         hint: "Pedidos de amizade, um amigo entra em um encontro, novos stories.",
       },
       friends_occasions: {
@@ -370,7 +330,7 @@ export default {
         hint: "O aniversário de um amigo ou uma ocasião chegando.",
       },
       dating: {
-        label: "Matches e mensagens",
+        label: "Matches e mensagens de encontros",
         hint: "Novos matches, mensagens, acenos e chamadas.",
       },
       business_offers: {
@@ -378,7 +338,7 @@ export default {
         hint: "Um negócio faz uma oferta ou publica uma novidade.",
       },
       business_responses: {
-        label: "Respostas a pedidos",
+        label: "Respostas aos seus pedidos",
         hint: "Um negócio recusa, retira ou confirma sua reserva.",
       },
       discover_recommendations: {
@@ -390,41 +350,33 @@ export default {
         hint: "Quando você cruza com alguém por perto.",
       },
       communities: {
-        label: "Atividade da comunidade",
+        label: "Comunidades que você lidera",
         hint: "A demanda cresce em uma comunidade que você lidera, ou ela muda.",
       },
     },
     toggleA11y: "Notificar sobre {label}",
   },
   ht: {
-    area: {
+    section: {
       plans: {
         label: "Plan",
         hint: "Envitasyon, chanjman ak rapèl pou plan ou ladan yo.",
-      },
-      friends: {
-        label: "Zanmi",
-        hint: "Demann zanmi, sa zanmi ou ap fè, anivèsè.",
-      },
-      dating: {
-        label: "Rankont",
-        hint: "Match, mesaj, salitasyon ak apèl.",
       },
       businesses: {
         label: "Biznis ou itilize",
         hint: "Òf ak repons sou demann ou te fè kòm kliyan.",
       },
-      discover: {
-        label: "Dekouvri",
-        hint: "Bagay pou fè ki matche ak enterè ou, ak moun ou kwaze.",
-      },
-      communities: {
-        label: "Kominote",
-        hint: "Aktivite nan kominote ou dirije.",
-      },
       business_owner: {
         label: "Biznis ou",
         hint: "Alèt pou jere biznis ou. Separe ak Biznis ou itilize.",
+      },
+      people: {
+        label: "Moun",
+        hint: "Zanmi, anivèsè, randevou ak moun ou kwaze.",
+      },
+      nearby: {
+        label: "Toupre",
+        hint: "Ide toupre w, ak kominote w ap dirije.",
       },
     },
     group: {
@@ -433,7 +385,7 @@ export default {
         hint: "Yon moun envite ou nan yon rasanbleman oswa yon plan.",
       },
       plans_changes: {
-        label: "Chanjman",
+        label: "Chanjman nan plan ou",
         hint: "Yo apwouve ou, lè oswa kote a chanje, yon plan konfime oswa anile.",
       },
       plans_reminders: {
@@ -441,7 +393,7 @@ export default {
         hint: "Anvan yon bagay ou prale kòmanse.",
       },
       friends_activity: {
-        label: "Aktivite zanmi",
+        label: "Demann zanmi ak aktivite",
         hint: "Demann zanmi, yon zanmi antre nan yon rasanbleman, nouvo istwa.",
       },
       friends_occasions: {
@@ -449,7 +401,7 @@ export default {
         hint: "Anivèsè yon zanmi oswa yon okazyon k ap vini.",
       },
       dating: {
-        label: "Match ak mesaj",
+        label: "Match ak mesaj randevou",
         hint: "Nouvo match, mesaj, salitasyon ak apèl.",
       },
       business_offers: {
@@ -457,7 +409,7 @@ export default {
         hint: "Yon biznis fè ou yon òf oswa poste yon nouvèl.",
       },
       business_responses: {
-        label: "Repons a demann",
+        label: "Repons a demann ou yo",
         hint: "Yon biznis refize, retire oswa konfime rezèvasyon ou.",
       },
       discover_recommendations: {
@@ -469,41 +421,33 @@ export default {
         hint: "Lè ou kwaze yon moun toupre.",
       },
       communities: {
-        label: "Aktivite kominote",
+        label: "Kominote w ap dirije",
         hint: "Demann ap grandi nan yon kominote ou dirije, oswa li chanje.",
       },
     },
     toggleA11y: "Fè m konnen sou {label}",
   },
   zh: {
-    area: {
+    section: {
       plans: {
         label: "计划",
         hint: "你参与的计划的邀请、变更和提醒。",
-      },
-      friends: {
-        label: "好友",
-        hint: "好友请求、好友动态、生日。",
-      },
-      dating: {
-        label: "约会",
-        hint: "配对、消息、招呼和通话。",
       },
       businesses: {
         label: "你光顾的商家",
         hint: "你作为顾客发出的请求收到的优惠和回复。",
       },
-      discover: {
-        label: "发现",
-        hint: "符合你兴趣的活动，以及与你擦肩而过的人。",
-      },
-      communities: {
-        label: "社区",
-        hint: "你管理的社区中的动态。",
-      },
       business_owner: {
         label: "你的商家",
         hint: "经营你的商家时的提醒。与“你光顾的商家”分开。",
+      },
+      people: {
+        label: "人",
+        hint: "好友、生日、约会，以及与你擦肩而过的人。",
+      },
+      nearby: {
+        label: "附近",
+        hint: "你附近的点子，以及你管理的社区。",
       },
     },
     group: {
@@ -512,7 +456,7 @@ export default {
         hint: "有人邀请你参加聚会或计划。",
       },
       plans_changes: {
-        label: "变更",
+        label: "你的计划变更",
         hint: "你被批准、时间或地点变化、计划确认或取消。",
       },
       plans_reminders: {
@@ -520,7 +464,7 @@ export default {
         hint: "你要参加的活动开始之前。",
       },
       friends_activity: {
-        label: "好友动态",
+        label: "好友请求和动态",
         hint: "好友请求、好友加入聚会、新动态。",
       },
       friends_occasions: {
@@ -528,7 +472,7 @@ export default {
         hint: "好友的生日或即将到来的纪念日。",
       },
       dating: {
-        label: "配对和消息",
+        label: "约会配对和消息",
         hint: "新配对、消息、招呼和通话。",
       },
       business_offers: {
@@ -536,7 +480,7 @@ export default {
         hint: "商家向你发出报价或发布更新。",
       },
       business_responses: {
-        label: "请求回复",
+        label: "对你请求的回复",
         hint: "商家拒绝、撤回或确认你的预订。",
       },
       discover_recommendations: {
@@ -548,41 +492,33 @@ export default {
         hint: "当你与附近的人擦肩而过时。",
       },
       communities: {
-        label: "社区动态",
+        label: "你管理的社区",
         hint: "你管理的社区需求增长或发生变化。",
       },
     },
     toggleA11y: "通知我：{label}",
   },
   vi: {
-    area: {
+    section: {
       plans: {
         label: "Kế hoạch",
         hint: "Lời mời, thay đổi và lời nhắc cho các kế hoạch bạn tham gia.",
-      },
-      friends: {
-        label: "Bạn bè",
-        hint: "Lời mời kết bạn, bạn bè đang làm gì, sinh nhật.",
-      },
-      dating: {
-        label: "Hẹn hò",
-        hint: "Ghép đôi, tin nhắn, vẫy tay và cuộc gọi.",
       },
       businesses: {
         label: "Doanh nghiệp bạn dùng",
         hint: "Ưu đãi và phản hồi cho các yêu cầu bạn gửi với tư cách khách hàng.",
       },
-      discover: {
-        label: "Khám phá",
-        hint: "Hoạt động hợp với sở thích của bạn và những người bạn tình cờ gặp.",
-      },
-      communities: {
-        label: "Cộng đồng",
-        hint: "Hoạt động trong các cộng đồng bạn quản lý.",
-      },
       business_owner: {
         label: "Doanh nghiệp của bạn",
         hint: "Thông báo để vận hành doanh nghiệp của bạn. Tách riêng với Doanh nghiệp bạn dùng.",
+      },
+      people: {
+        label: "Mọi người",
+        hint: "Bạn bè, sinh nhật, hẹn hò và những người bạn tình cờ gặp.",
+      },
+      nearby: {
+        label: "Gần đây",
+        hint: "Ý tưởng gần bạn và các cộng đồng bạn dẫn dắt.",
       },
     },
     group: {
@@ -591,7 +527,7 @@ export default {
         hint: "Ai đó mời bạn tham gia buổi gặp mặt hoặc kế hoạch.",
       },
       plans_changes: {
-        label: "Thay đổi",
+        label: "Thay đổi trong kế hoạch của bạn",
         hint: "Bạn được duyệt, giờ hoặc địa điểm thay đổi, kế hoạch được xác nhận hoặc bị hủy.",
       },
       plans_reminders: {
@@ -599,7 +535,7 @@ export default {
         hint: "Trước khi điều bạn sẽ tham gia bắt đầu.",
       },
       friends_activity: {
-        label: "Hoạt động của bạn bè",
+        label: "Lời mời kết bạn và hoạt động",
         hint: "Lời mời kết bạn, bạn bè tham gia buổi gặp mặt, tin mới.",
       },
       friends_occasions: {
@@ -607,7 +543,7 @@ export default {
         hint: "Sinh nhật của bạn bè hoặc một dịp sắp đến.",
       },
       dating: {
-        label: "Ghép đôi và tin nhắn",
+        label: "Ghép đôi và tin nhắn hẹn hò",
         hint: "Ghép đôi mới, tin nhắn, vẫy tay và cuộc gọi.",
       },
       business_offers: {
@@ -615,7 +551,7 @@ export default {
         hint: "Một doanh nghiệp gửi bạn ưu đãi hoặc đăng cập nhật.",
       },
       business_responses: {
-        label: "Phản hồi yêu cầu",
+        label: "Phản hồi cho yêu cầu của bạn",
         hint: "Doanh nghiệp từ chối, rút lại hoặc xác nhận đặt chỗ của bạn.",
       },
       discover_recommendations: {
@@ -627,41 +563,33 @@ export default {
         hint: "Khi bạn tình cờ gặp ai đó gần đây.",
       },
       communities: {
-        label: "Hoạt động cộng đồng",
+        label: "Cộng đồng bạn dẫn dắt",
         hint: "Nhu cầu tăng hoặc có thay đổi trong cộng đồng bạn quản lý.",
       },
     },
     toggleA11y: "Thông báo cho tôi về {label}",
   },
   tl: {
-    area: {
+    section: {
       plans: {
         label: "Mga Plano",
         hint: "Mga imbitasyon, pagbabago at paalala para sa mga planong kasali ka.",
-      },
-      friends: {
-        label: "Mga Kaibigan",
-        hint: "Mga friend request, ginagawa ng mga kaibigan, kaarawan.",
-      },
-      dating: {
-        label: "Dating",
-        hint: "Mga match, mensahe, kaway at tawag.",
       },
       businesses: {
         label: "Mga negosyong ginagamit mo",
         hint: "Mga alok at sagot sa mga request mo bilang customer.",
       },
-      discover: {
-        label: "Tuklasin",
-        hint: "Mga gawaing tugma sa interes mo, at mga taong nakakasalubong mo.",
-      },
-      communities: {
-        label: "Mga Komunidad",
-        hint: "Aktibidad sa mga komunidad na pinamumunuan mo.",
-      },
       business_owner: {
         label: "Ang negosyo mo",
         hint: "Mga alerto sa pagpapatakbo ng negosyo mo. Hiwalay sa Mga negosyong ginagamit mo.",
+      },
+      people: {
+        label: "Mga tao",
+        hint: "Mga kaibigan, kaarawan, dating at mga taong nakakasalubong mo.",
+      },
+      nearby: {
+        label: "Malapit",
+        hint: "Mga ideya malapit sa iyo, at mga komunidad na pinamumunuan mo.",
       },
     },
     group: {
@@ -670,7 +598,7 @@ export default {
         hint: "May nag-imbita sa iyo sa isang gathering o plano.",
       },
       plans_changes: {
-        label: "Mga pagbabago",
+        label: "Mga pagbabago sa plano mo",
         hint: "Naaprubahan ka, nagbago ang oras o lugar, nakumpirma o nakansela ang plano.",
       },
       plans_reminders: {
@@ -678,7 +606,7 @@ export default {
         hint: "Bago magsimula ang isang pupuntahan mo.",
       },
       friends_activity: {
-        label: "Aktibidad ng kaibigan",
+        label: "Mga friend request at aktibidad",
         hint: "Mga friend request, may kaibigang sumali sa gathering, bagong stories.",
       },
       friends_occasions: {
@@ -686,7 +614,7 @@ export default {
         hint: "Kaarawan ng kaibigan o paparating na okasyon.",
       },
       dating: {
-        label: "Mga match at mensahe",
+        label: "Mga dating match at mensahe",
         hint: "Bagong match, mensahe, kaway at tawag.",
       },
       business_offers: {
@@ -694,7 +622,7 @@ export default {
         hint: "May negosyong nag-alok sa iyo o nag-post ng update.",
       },
       business_responses: {
-        label: "Mga sagot sa request",
+        label: "Mga sagot sa request mo",
         hint: "Tinanggihan, binawi o kinumpirma ng negosyo ang booking mo.",
       },
       discover_recommendations: {
@@ -706,41 +634,33 @@ export default {
         hint: "Kapag may nakasalubong kang tao sa malapit.",
       },
       communities: {
-        label: "Aktibidad ng komunidad",
+        label: "Mga komunidad na pinamumunuan mo",
         hint: "Lumalaki ang demand o may pagbabago sa komunidad na pinamumunuan mo.",
       },
     },
     toggleA11y: "Abisuhan ako tungkol sa {label}",
   },
   ru: {
-    area: {
+    section: {
       plans: {
         label: "Планы",
         hint: "Приглашения, изменения и напоминания о планах, в которых вы участвуете.",
-      },
-      friends: {
-        label: "Друзья",
-        hint: "Заявки в друзья, чем заняты друзья, дни рождения.",
-      },
-      dating: {
-        label: "Знакомства",
-        hint: "Совпадения, сообщения, приветы и звонки.",
       },
       businesses: {
         label: "Заведения, которыми вы пользуетесь",
         hint: "Предложения и ответы на заявки, которые вы отправили как клиент.",
       },
-      discover: {
-        label: "Открыть",
-        hint: "Занятия по вашим интересам и люди, с которыми вы пересекаетесь.",
-      },
-      communities: {
-        label: "Сообщества",
-        hint: "Активность в сообществах, которые вы ведёте.",
-      },
       business_owner: {
         label: "Ваш бизнес",
         hint: "Уведомления для ведения вашего бизнеса. Отдельно от «Заведения, которыми вы пользуетесь».",
+      },
+      people: {
+        label: "Люди",
+        hint: "Друзья, дни рождения, знакомства и люди, которых вы встречаете.",
+      },
+      nearby: {
+        label: "Рядом",
+        hint: "Идеи поблизости и сообщества, которыми вы руководите.",
       },
     },
     group: {
@@ -749,7 +669,7 @@ export default {
         hint: "Вас приглашают на встречу или в план.",
       },
       plans_changes: {
-        label: "Изменения",
+        label: "Изменения в ваших планах",
         hint: "Вас одобрили, изменились время или место, план подтверждён или отменён.",
       },
       plans_reminders: {
@@ -757,7 +677,7 @@ export default {
         hint: "Перед началом того, куда вы идёте.",
       },
       friends_activity: {
-        label: "Активность друзей",
+        label: "Заявки в друзья и активность",
         hint: "Заявки в друзья, друг присоединился к встрече, новые истории.",
       },
       friends_occasions: {
@@ -765,7 +685,7 @@ export default {
         hint: "День рождения друга или приближающееся событие.",
       },
       dating: {
-        label: "Совпадения и сообщения",
+        label: "Знакомства: совпадения и сообщения",
         hint: "Новые совпадения, сообщения, приветы и звонки.",
       },
       business_offers: {
@@ -773,7 +693,7 @@ export default {
         hint: "Бизнес делает вам предложение или публикует новость.",
       },
       business_responses: {
-        label: "Ответы на запросы",
+        label: "Ответы на ваши запросы",
         hint: "Бизнес отказывает, отзывает предложение или подтверждает бронь.",
       },
       discover_recommendations: {
@@ -785,41 +705,33 @@ export default {
         hint: "Когда вы пересекаетесь с кем-то рядом.",
       },
       communities: {
-        label: "Активность сообщества",
+        label: "Сообщества, которыми вы руководите",
         hint: "Растёт спрос в сообществе, которое вы ведёте, или оно меняется.",
       },
     },
     toggleA11y: "Уведомлять о: {label}",
   },
   ko: {
-    area: {
+    section: {
       plans: {
         label: "계획",
         hint: "참여 중인 계획의 초대, 변경, 알림.",
-      },
-      friends: {
-        label: "친구",
-        hint: "친구 요청, 친구 소식, 생일.",
-      },
-      dating: {
-        label: "데이트",
-        hint: "매치, 메시지, 인사, 통화.",
       },
       businesses: {
         label: "이용하는 업체",
         hint: "고객으로서 보낸 요청에 대한 혜택과 답변.",
       },
-      discover: {
-        label: "탐색",
-        hint: "관심사에 맞는 할 일과 마주친 사람들.",
-      },
-      communities: {
-        label: "커뮤니티",
-        hint: "운영 중인 커뮤니티의 활동.",
-      },
       business_owner: {
         label: "내 업체",
         hint: "업체 운영 알림. ‘이용하는 업체’와 별개입니다.",
+      },
+      people: {
+        label: "사람",
+        hint: "친구, 생일, 데이트, 그리고 마주친 사람.",
+      },
+      nearby: {
+        label: "근처",
+        hint: "근처의 아이디어와 내가 운영하는 커뮤니티.",
       },
     },
     group: {
@@ -828,7 +740,7 @@ export default {
         hint: "누군가 모임이나 계획에 초대했을 때.",
       },
       plans_changes: {
-        label: "변경",
+        label: "내 계획 변경",
         hint: "승인되었거나, 시간·장소가 바뀌었거나, 계획이 확정·취소되었을 때.",
       },
       plans_reminders: {
@@ -836,7 +748,7 @@ export default {
         hint: "참여하는 일정이 시작되기 전.",
       },
       friends_activity: {
-        label: "친구 활동",
+        label: "친구 요청과 활동",
         hint: "친구 요청, 친구의 모임 참여, 새 스토리.",
       },
       friends_occasions: {
@@ -844,7 +756,7 @@ export default {
         hint: "친구의 생일이나 다가오는 기념일.",
       },
       dating: {
-        label: "매치와 메시지",
+        label: "데이트 매치와 메시지",
         hint: "새 매치, 메시지, 인사, 통화.",
       },
       business_offers: {
@@ -852,7 +764,7 @@ export default {
         hint: "업체가 제안을 보내거나 소식을 올렸을 때.",
       },
       business_responses: {
-        label: "요청 답변",
+        label: "내 요청에 대한 답변",
         hint: "업체가 거절, 철회하거나 예약을 확정했을 때.",
       },
       discover_recommendations: {
@@ -864,7 +776,7 @@ export default {
         hint: "주변에서 누군가와 마주쳤을 때.",
       },
       communities: {
-        label: "커뮤니티 활동",
+        label: "내가 운영하는 커뮤니티",
         hint: "운영 중인 커뮤니티의 수요 증가나 변경.",
       },
     },
