@@ -3,6 +3,7 @@
 // outside a component). English is the app's own wording; the other ten are machine-authored and need native-speaker review.
 // Display text only: never a stored value, a canonical key, a name or anything a person typed.
 import common from './common';
+import notificationActions from './notificationActions';
 import askNotes from './askNotes';
 import returnTrail from './returnTrail';
 import bizHelp from './bizHelp';
@@ -101,7 +102,7 @@ import actions from './actions';
 import home from './home';
 import homeParts from './homeParts';
 
-export const UI_NAMESPACES = { common, plans, shared, empty, actions, home, homeParts, discover, gatherings, gatheringVocab, gatheringDetail, gatheringOptions, gatheringForm, activity, offerCopy, basicsVocab, profile, settings, optionVocab, askBusiness, requestDetail, groupPlan, planDetail, groupOccasionPlan, celebrate, chat, groupChat, onboarding, nav, community, viewProfile, matches, planCompletion, friends, crossedPaths, gatheringConfirmation, gatheringHub, hubContent, gatheringParts, occasions, dating, dateProposal, features, datingPrefs, createHub, billing, momentum, chemistryDiary, brandOffersUi, relationshipLegacy, dateCheckIn, paywallUi, compatibility, reportBlock, emergencyContacts, selectLocation, media, startSomething, goodbyeArchive, makeAPlan, places, relationship, sharedDecisions, tripPlanning, sharedPlaylist, musicMode, matchNotes, chemistryEntry, legacyLibrary, rehearsal, sharedNight, businessProfile, suitedAges, requestPartner, datingPrompt, recCustomize, rewards, idVerification, gatheringIntent, inviteModal, mapView, swipeCards, acceptedOffer, experienceList, blockedUsers, quickPicks, sponsored, ageRange, inviteFriends, confidenceBanner, smallParts, bizDash1, bizDash2, bizDash3, bizComp, bizHelp, returnTrail, askNotes };
+export const UI_NAMESPACES = { common, plans, shared, empty, actions, home, homeParts, discover, gatherings, gatheringVocab, gatheringDetail, gatheringOptions, gatheringForm, activity, offerCopy, basicsVocab, profile, settings, optionVocab, askBusiness, requestDetail, groupPlan, planDetail, groupOccasionPlan, celebrate, chat, groupChat, onboarding, nav, community, viewProfile, matches, planCompletion, friends, crossedPaths, gatheringConfirmation, gatheringHub, hubContent, gatheringParts, occasions, dating, dateProposal, features, datingPrefs, createHub, billing, momentum, chemistryDiary, brandOffersUi, relationshipLegacy, dateCheckIn, paywallUi, compatibility, reportBlock, emergencyContacts, selectLocation, media, startSomething, goodbyeArchive, makeAPlan, places, relationship, sharedDecisions, tripPlanning, sharedPlaylist, musicMode, matchNotes, chemistryEntry, legacyLibrary, rehearsal, sharedNight, businessProfile, suitedAges, requestPartner, datingPrompt, recCustomize, rewards, idVerification, gatheringIntent, inviteModal, mapView, swipeCards, acceptedOffer, experienceList, blockedUsers, quickPicks, sponsored, ageRange, inviteFriends, confidenceBanner, smallParts, bizDash1, bizDash2, bizDash3, bizComp, bizHelp, returnTrail, askNotes, notificationActions };
 
 export const UI_LANGUAGES = ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl', 'ru', 'ko'];
 

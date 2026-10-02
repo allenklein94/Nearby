@@ -9,6 +9,8 @@ import { getBusinessAvailabilityById } from './businessFulfillment';
 import { notificationDestination } from '../navigation/notificationDestinations';
 import { canOpenFromOutside, keepEntry, takeEntry, whenOpenable, firstTimeSeen } from '../navigation/outsideEntry';
 import { ANDROID_NOTIFICATION_CHANNELS } from '../constants/notificationTier';
+import { NOTIFICATION_ACTION_KEYS, CATEGORY_PREFIX, OPEN_ACTION_ID } from '../constants/notificationActions';
+import { translate, getCurrentLanguage } from '../i18n/translate';
 
 // A push tap can arrive (via getLastNotificationResponseAsync, below) before
 // the authenticated stack is mounted — e.g. the app was fully closed and the
@@ -44,6 +46,8 @@ export async function registerForPushNotifications(userId) {
   if (finalStatus !== 'granted') {
     return;
   }
+
+  await registerNotificationActions();
 
   const tokenData = await Notifications.getExpoPushTokenAsync();
   const token = tokenData.data;
@@ -81,6 +85,20 @@ export async function registerForPushNotifications(userId) {
       lightColor: '#e94560',
     });
   }
+}
+
+// Item 140: one notification category per next action (constants/notificationActions.js), each with ONE button labelled in
+// the person's language. send-push sets the matching categoryId; the button opens exactly what tapping the notification
+// opens (handleNotificationResponse ignores which of the two was tapped). Re-registered on every sign-in, so a language
+// change takes effect then. Best effort: a failure only means no button, the notification itself is unaffected.
+export async function registerNotificationActions(language = getCurrentLanguage()) {
+  if (Platform.OS === 'web') return;
+  await Promise.all(NOTIFICATION_ACTION_KEYS.map((key) =>
+    Notifications.setNotificationCategoryAsync(`${CATEGORY_PREFIX}${key}`, [{
+      identifier: OPEN_ACTION_ID,
+      buttonTitle: translate(language, `ui.notificationActions.${key}`),
+      options: { opensAppToForeground: true },
+    }]).catch(() => null)));
 }
 
 export async function disablePushNotifications(userId) {

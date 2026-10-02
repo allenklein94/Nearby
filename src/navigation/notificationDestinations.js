@@ -15,7 +15,6 @@ export async function notificationDestination(data, { lookupAvailability = async
     case 'new_match':
     case 'friend_discovery_match':
     case 'message':
-    case 'gathering_approved':
     case 'playlist_addition':
     case 'trip_idea_addition':
     case 'shared_decision_addition':
@@ -33,6 +32,12 @@ export async function notificationDestination(data, { lookupAvailability = async
         return to('Chat', { matchId: data.match_id });
       }
       break;
+    // Item 140: "You're approved" / "A spot opened up and you're in" opens the PLAN (the group chat is one tap away there).
+    // Pushes sent before the payload carried gathering_id still open the chat, as they did.
+    case 'gathering_approved':
+      if (data.gathering_id) return to('GatheringDetail', { gatheringId: data.gathering_id, notificationReason: data.body ?? null });
+      if (data.match_id) return to('Chat', { matchId: data.match_id });
+      return null;
     case 'wave':
       return to('Notices');
       break;
