@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Platform, BackHandler, StyleSheet } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { spacing, radius } from '../theme';
 import { navigationRef } from '../navigation/RootNavigator';
-import { getTrail, subscribeTrail, clearTrail, trailLabel } from '../navigation/returnTrail';
+import { getTrail, subscribeTrail, clearTrail, trailLabelKey } from '../navigation/returnTrail';
 import { restoreTrail } from '../navigation/returnTrailNav';
 
 // Item 139 follow-up: the way back after a push switched to this tab and closed
@@ -14,6 +15,7 @@ import { restoreTrail } from '../navigation/returnTrailNav';
 // takes over any other control.
 export default function ReturnTrailChip({ tab }) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const focused = useIsFocused();
   const [trail, setTrail] = useState(getTrail());
   useEffect(() => subscribeTrail(setTrail), []);
@@ -29,7 +31,7 @@ export default function ReturnTrailChip({ tab }) {
   }, [mine, focused]);
 
   if (!mine || Platform.OS !== 'ios') return null;
-  const label = trailLabel(mine);
+  const label = t(trailLabelKey(mine));
   return (
     <View style={styles.row}>
       <TouchableOpacity
@@ -40,7 +42,7 @@ export default function ReturnTrailChip({ tab }) {
       >
         <Text style={{ color: colors.textPrimary, fontWeight: '600' }}>← {label}</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={clearTrail} accessibilityRole="button" accessibilityLabel="Dismiss" style={styles.dismiss}>
+      <TouchableOpacity onPress={clearTrail} accessibilityRole="button" accessibilityLabel={t('ui.returnTrail.dismiss')} style={styles.dismiss}>
         <Text style={{ color: colors.textSecondary }}>✕</Text>
       </TouchableOpacity>
     </View>

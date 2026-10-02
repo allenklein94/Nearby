@@ -86,26 +86,27 @@ export function restorableRoutes(routes, canOpen) {
   return (routes ?? []).filter((r, i) => canOpen[i] !== false);
 }
 
-const LABELS = {
-  Chat: 'Chat',
-  GroupChat: 'the group chat',
-  GatheringDetail: 'the gathering',
-  GatheringHub: 'the gathering',
-  ViewProfile: 'the profile',
-  BusinessProfile: 'the business',
-  BusinessRequestDetail: 'your request',
-  PlanDetail: 'your plan',
-  GroupPlan: 'the group plan',
-  CommunityDetail: 'the community',
-  Matches: 'Matches',
-  Profile: 'your profile',
-  Settings: 'Settings',
-  Notices: 'Notices',
+// Key under ui.returnTrail (11 languages, scripts/i18n/strings/returnTrail.json),
+// named by the screen the person was last on ("Back to Chat").
+const LABEL_KEYS = {
+  Chat: 'chat',
+  GroupChat: 'groupChat',
+  GatheringDetail: 'gathering',
+  GatheringHub: 'gathering',
+  ViewProfile: 'profile',
+  BusinessProfile: 'business',
+  BusinessRequestDetail: 'request',
+  PlanDetail: 'plan',
+  GroupPlan: 'groupPlan',
+  CommunityDetail: 'community',
+  Matches: 'matches',
+  Profile: 'myProfile',
+  Settings: 'settings',
+  Notices: 'notices',
 };
 
-// "Back to Chat": named by the screen the person was last on.
-export function trailLabel(t) {
+export function trailLabelKey(t) {
   const last = t?.routes?.[t.routes.length - 1];
   if (!last) return null;
-  return `Back to ${LABELS[last.name] ?? 'where you were'}`;
+  return `ui.returnTrail.${LABEL_KEYS[last.name] ?? 'fallback'}`;
 }

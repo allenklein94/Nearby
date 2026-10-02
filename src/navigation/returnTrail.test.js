@@ -81,7 +81,10 @@ describe('a push to a tab remembers what it closed', () => {
     expect(ref.names()).toEqual(['MainTabs']);
     expect(ref.tab()).toBe('Discover');
     expect(T.getTrail().routes.map((r) => r.name)).toEqual(['GatheringDetail', 'ViewProfile', 'Chat']);
-    expect(T.trailLabel(T.getTrail())).toBe('Back to Chat');
+    expect(T.trailLabelKey(T.getTrail())).toBe('ui.returnTrail.chat');
+    const ns = require('../i18n/ui/returnTrail').default;
+    expect(ns.en.chat).toBe('Back to Chat');
+    expect(ns.es.chat).toBe('Volver al chat');
   });
 
   test('Back reopens them in order on top of the same tab host; Back again walks them', async () => {
@@ -184,6 +187,17 @@ describe('never traps, never duplicates', () => {
     expect(top).toMatch(/if \(name === TAB_HOST\) beginTrail/);
     const n = fs.readFileSync(path.join(__dirname, '..', 'services', 'notifications.js'), 'utf8');
     expect((n.match(/openFromTap\('MainTabs'/g) ?? []).length).toBe(3);
+  });
+  test('every label key exists in all 11 languages', () => {
+    const ns = require('../i18n/ui/returnTrail').default;
+    const keys = Object.keys(ns.en);
+    expect(Object.keys(ns)).toHaveLength(11);
+    for (const lang of Object.keys(ns)) expect(Object.keys(ns[lang]).sort()).toEqual([...keys].sort());
+    for (const name of ['Chat', 'GatheringDetail', 'ViewProfile', 'Notices', 'SomethingNew']) {
+      const key = T.trailLabelKey({ routes: [{ name }] }).replace('ui.returnTrail.', '');
+      expect(keys).toContain(key);
+    }
+    expect(chip).not.toMatch(/accessibilityLabel="/);
   });
   test('Home and Discover render the chip', () => {
     const home = fs.readFileSync(path.join(__dirname, '..', 'screens', 'HomeScreen.js'), 'utf8');
