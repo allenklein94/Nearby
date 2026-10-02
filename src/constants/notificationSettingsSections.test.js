@@ -1,11 +1,11 @@
-// Notification settings UX (owner, 2026-10-02): the same 15 switches, drawn in a few plain sections. Display only: the
+// Notification settings UX (owner, 2026-10-02): the same switches (16 with Messages), drawn in a few plain sections. Display only: the
 // storage, the type table and the one sender (_send_push) are unchanged. These tests check that the screen reflects the
 // central mapping and that one switch changes only its own notification types.
 const fs = require('fs');
 const path = require('path');
 import {
   SETTINGS_SECTIONS, visibleSettingsSections, typesForGroup, NOTIFICATION_GROUPS, NOTIFICATION_GROUP_BY_TYPE,
-  ACCOUNT_NOTICE_TYPES, OWNER_GROUPS, groupTextKeys, toggleGroup, isMuted, NOTIFICATION_AREAS,
+  ACCOUNT_NOTICE_TYPES, OWNER_GROUPS, groupTextKeys, toggleGroup, isMuted, NOTIFICATION_AREAS, mutesFromOnboardingChoices,
 } from './notificationPreferences';
 import { translate, hasOwnTranslation } from '../i18n/translate';
 
@@ -33,10 +33,13 @@ describe('sections reflect the central mapping', () => {
   test('the separate switches the owner asked to keep are still their own switches', () => {
     const where = (g) => SETTINGS_SECTIONS.find((s) => s.groups.includes(g)).key;
     expect(typesForGroup('friends_occasions')).toEqual(expect.arrayContaining(['birthday', 'birthday_upcoming']));
-    expect(typesForGroup('dating')).toEqual(expect.arrayContaining(['message', 'new_match']));
+    expect(typesForGroup('messages')).toEqual(['message']);
+    expect(typesForGroup('dating')).toEqual(expect.arrayContaining(['new_match', 'wave']));
+    expect(typesForGroup('dating')).not.toContain('message');
     expect(typesForGroup('discover_nearby_people')).toEqual(['crossed_paths_sighting']);
     expect(where('friends_occasions')).toBe('people');
     expect(where('dating')).toBe('people');
+    expect(where('messages')).toBe('people');
     expect(where('discover_nearby_people')).toBe('people');
   });
   test('business-owner alerts stay separate from customer business alerts', () => {
@@ -65,6 +68,15 @@ describe('one switch changes only its own types', () => {
     for (const [type, group] of Object.entries(NOTIFICATION_GROUP_BY_TYPE)) expect(isMuted(type, off)).toBe(group === g);
     for (const t of ACCOUNT_NOTICE_TYPES) expect(isMuted(t, off)).toBe(false);
     expect(toggleGroup(off, g, true)).toEqual([]);
+  });
+  test('chat messages and dating are independent switches (friends\' chats no longer follow Dating)', () => {
+    expect(isMuted('message', toggleGroup([], 'dating', false))).toBe(false);
+    expect(isMuted('new_match', toggleGroup([], 'messages', false))).toBe(false);
+    expect(isMuted('message', toggleGroup([], 'messages', false))).toBe(true);
+  });
+  test('earlier Dating opt-outs keep chat messages off (onboarding answer, older column key)', () => {
+    expect(mutesFromOnboardingChoices({ dating: false })).toEqual(['dating', 'messages']);
+    expect(mutesFromOnboardingChoices({ notify_dating: false })).toEqual(['dating', 'messages']);
   });
   test('toggling one switch never changes another switch', () => {
     const everyOtherOff = NOTIFICATION_GROUPS.filter((x) => x !== 'dating');
@@ -100,7 +112,8 @@ describe('plain labels in every language', () => {
     const en = (g) => translate('en', groupTextKeys(g).label);
     expect(en('plans_changes')).toBe('Changes to your plans');
     expect(en('friends_activity')).toBe('Friend requests and activity');
-    expect(en('dating')).toBe('Dating matches and messages');
+    expect(en('dating')).toBe('Dating matches');
+    expect(en('messages')).toBe('Messages');
     expect(en('communities')).toBe('Communities you lead');
     expect(en('business_responses')).toBe('Replies to your requests');
     expect(en('discover_nearby_people')).toBe('People you cross paths with');
@@ -121,5 +134,19 @@ describe('the Settings screen draws the sections and enforces nothing itself', (
     expect(settings).not.toMatch(/\bisMuted\(/);
     expect(settings).not.toMatch(/NOTIFICATION_GROUP_BY_TYPE/);
     expect(settings).not.toMatch(/notification_mutes['"]?\s*[:,]\s*\[/); // never writes the store directly
+  });
+});
+
+describe('the Messages split migration', () => {
+  const mig = fs.readFileSync(path.join(__dirname, '..', '..', 'supabase', 'migrations', '20270260_messages_notification_group.sql'), 'utf8');
+  test('people who had Dating off keep chat messages off', () => {
+    expect(mig).toMatch(/notification_mutes \|\| array\['messages'\]\)\s+where 'dating' = any \(notification_mutes\)/);
+  });
+  test('notify_dating is off only when both Dating and Messages are off, so the message sender\'s older check never blocks a chat left on', () => {
+    expect(mig).toMatch(/new\.notify_dating := not \(m @> array\['dating', 'messages'\]\)/);
+  });
+  test('no sender is changed: the migration defines only the store helpers', () => {
+    const fns = [...mig.matchAll(/create or replace function public\.(\w+)/gi)].map((m) => m[1]).sort();
+    expect(fns).toEqual(['_canonical_notification_mutes', '_derive_legacy_notify_columns', 'set_my_notification_group']);
   });
 });

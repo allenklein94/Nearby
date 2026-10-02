@@ -18,7 +18,9 @@
 export const NOTIFICATION_AREAS = [
   { key: 'plans', icon: '📅', groups: ['plans_invitations', 'plans_changes', 'plans_reminders'], legacyColumn: 'notify_planning' },
   { key: 'friends', icon: '🤝', groups: ['friends_activity', 'friends_occasions'], legacyColumn: 'notify_social' },
-  { key: 'dating', icon: '❤️', groups: ['dating'], legacyColumn: 'notify_dating' },
+  // 'messages' (every 1:1 chat, friends' too) has its own switch but lives in this storage area: notify_dating is off only
+  // when both are off, so the message sender's older notify_dating check never blocks a chat the person left on.
+  { key: 'dating', icon: '❤️', groups: ['dating', 'messages'], legacyColumn: 'notify_dating' },
   { key: 'businesses', icon: '🏪', groups: ['business_offers', 'business_responses'], legacyColumn: 'notify_business' },
   { key: 'discover', icon: '🎯', groups: ['discover_recommendations', 'discover_nearby_people'] },
   { key: 'communities', icon: '🏘️', groups: ['communities'], legacyColumn: 'notify_community' },
@@ -31,13 +33,13 @@ export const isOwnerGroup = (g) => OWNER_GROUPS.includes(g);
 export function visibleNotificationAreas({ isBusinessOwner } = {}) {
   return NOTIFICATION_AREAS.filter((a) => !a.ownerOnly || isBusinessOwner);
 }
-// Settings DISPLAY only (owner, 2026-10-02): the same 15 switches shown in a few plain sections. Storage, the older
+// Settings DISPLAY only (owner, 2026-10-02): the same switches shown in a few plain sections. Storage, the older
 // columns and onboarding keep the areas above; this only decides where each switch is drawn. Every group appears in
 // exactly one section (test-enforced), customer and owner business alerts stay in separate sections, and nothing here
 // is read by any sender: _send_push stays the only place a choice is applied.
 export const SETTINGS_SECTIONS = [
   { key: 'plans', icon: '📅', groups: ['plans_invitations', 'plans_changes', 'plans_reminders'] },
-  { key: 'people', icon: '🤝', groups: ['friends_activity', 'friends_occasions', 'dating', 'discover_nearby_people'] },
+  { key: 'people', icon: '🤝', groups: ['friends_activity', 'friends_occasions', 'messages', 'dating', 'discover_nearby_people'] },
   { key: 'nearby', icon: '🎯', groups: ['discover_recommendations', 'communities'] },
   { key: 'businesses', icon: '🏪', groups: ['business_offers', 'business_responses'] },
   { key: 'business_owner', icon: '💼', ownerOnly: true, groups: OWNER_GROUPS },
@@ -61,7 +63,7 @@ export function groupTextKeys(g) {
 export const LEGACY_COLUMN_GROUPS = {
   notify_planning: ['plans_invitations', 'plans_changes', 'plans_reminders'],
   notify_social: ['friends_activity', 'friends_occasions'],
-  notify_dating: ['dating'],
+  notify_dating: ['dating', 'messages'],
   notify_business: ['business_offers', 'business_responses'],
   notify_discovery: ['discover_recommendations'],
   notify_proximity: ['discover_nearby_people'],
@@ -94,7 +96,9 @@ export const NOTIFICATION_GROUP_BY_TYPE = {
   birthday: 'friends_occasions', birthday_upcoming: 'friends_occasions', anniversary_upcoming: 'friends_occasions',
   occasion_upcoming: 'friends_occasions',
   // Dating
-  match: 'dating', new_match: 'dating', message: 'dating', wave: 'dating', video_call: 'dating', screenshot: 'dating',
+  // Messages: the one chat push, sent for every match (dating, gathering and friend matches alike)
+  message: 'messages',
+  match: 'dating', new_match: 'dating', wave: 'dating', video_call: 'dating', screenshot: 'dating',
   match_reminder: 'dating', playlist_addition: 'dating', trip_idea_addition: 'dating', shared_decision_addition: 'dating',
   constitution_addition: 'dating', memory_addition: 'dating', stress_test_addition: 'dating', timeline_addition: 'dating',
   // Businesses (as a customer)

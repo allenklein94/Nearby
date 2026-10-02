@@ -17,7 +17,7 @@ export default {
       },
       people: {
         label: "People",
-        hint: "Friends, birthdays, dating and people you cross paths with.",
+        hint: "Friends, messages, birthdays, dating and people you cross paths with.",
       },
       nearby: {
         label: "Nearby",
@@ -46,8 +46,8 @@ export default {
         hint: "A friend's birthday or an occasion coming up.",
       },
       dating: {
-        label: "Dating matches and messages",
-        hint: "New matches, messages, waves and calls.",
+        label: "Dating matches",
+        hint: "New matches, waves, calls and things you add together.",
       },
       business_offers: {
         label: "Offers",
@@ -69,6 +69,10 @@ export default {
         label: "Communities you lead",
         hint: "Demand growing in, or a change to, a community you lead.",
       },
+      messages: {
+        label: "Messages",
+        hint: "New messages in your one-on-one chats, with friends and matches.",
+      },
     },
     toggleA11y: "Notify me about {label}",
   },
@@ -88,7 +92,7 @@ export default {
       },
       people: {
         label: "Personas",
-        hint: "Amigos, cumpleaños, citas y personas con las que te cruzas.",
+        hint: "Amigos, mensajes, cumpleaños, citas y personas con las que te cruzas.",
       },
       nearby: {
         label: "Cerca",
@@ -117,8 +121,8 @@ export default {
         hint: "El cumpleaños de un amigo o una ocasión que se acerca.",
       },
       dating: {
-        label: "Matches y mensajes de citas",
-        hint: "Nuevos matches, mensajes, saludos y llamadas.",
+        label: "Matches de citas",
+        hint: "Nuevos matches, saludos, llamadas y lo que agregan juntos.",
       },
       business_offers: {
         label: "Ofertas",
@@ -140,6 +144,10 @@ export default {
         label: "Comunidades que diriges",
         hint: "Crece la demanda en una comunidad que diriges o hay un cambio en ella.",
       },
+      messages: {
+        label: "Mensajes",
+        hint: "Mensajes nuevos en tus chats individuales, con amigos y matches.",
+      },
     },
     toggleA11y: "Notificarme sobre {label}",
   },
@@ -159,7 +167,7 @@ export default {
       },
       people: {
         label: "Menschen",
-        hint: "Freunde, Geburtstage, Dating und Menschen, denen du begegnest.",
+        hint: "Freunde, Nachrichten, Geburtstage, Dating und Menschen, denen du begegnest.",
       },
       nearby: {
         label: "In der Nähe",
@@ -188,8 +196,8 @@ export default {
         hint: "Der Geburtstag eines Freundes oder ein bevorstehender Anlass.",
       },
       dating: {
-        label: "Dating-Matches und Nachrichten",
-        hint: "Neue Matches, Nachrichten, Winken und Anrufe.",
+        label: "Dating-Matches",
+        hint: "Neue Matches, Winken, Anrufe und was ihr gemeinsam hinzufügt.",
       },
       business_offers: {
         label: "Angebote",
@@ -211,6 +219,10 @@ export default {
         label: "Communitys, die du leitest",
         hint: "Wachsende Nachfrage in oder eine Änderung an einer Community, die du leitest.",
       },
+      messages: {
+        label: "Nachrichten",
+        hint: "Neue Nachrichten in deinen Einzelchats, mit Freunden und Matches.",
+      },
     },
     toggleA11y: "Benachrichtige mich über {label}",
   },
@@ -230,7 +242,7 @@ export default {
       },
       people: {
         label: "Personnes",
-        hint: "Amis, anniversaires, rencontres et personnes que vous croisez.",
+        hint: "Amis, messages, anniversaires, rencontres et personnes que vous croisez.",
       },
       nearby: {
         label: "À proximité",
@@ -259,8 +271,8 @@ export default {
         hint: "L'anniversaire d'un ami ou une occasion qui approche.",
       },
       dating: {
-        label: "Matchs et messages de rencontre",
-        hint: "Nouveaux matchs, messages, saluts et appels.",
+        label: "Matchs de rencontre",
+        hint: "Nouveaux matchs, coucous, appels et ce que vous ajoutez ensemble.",
       },
       business_offers: {
         label: "Offres",
@@ -282,6 +294,10 @@ export default {
         label: "Communautés que vous animez",
         hint: "La demande grandit dans une communauté que vous animez, ou elle change.",
       },
+      messages: {
+        label: "Messages",
+        hint: "Nouveaux messages dans vos discussions privées, avec vos amis et vos matchs.",
+      },
     },
     toggleA11y: "Me prévenir pour {label}",
   },
@@ -301,7 +317,7 @@ export default {
       },
       people: {
         label: "Pessoas",
-        hint: "Amigos, aniversários, encontros e pessoas com quem você cruza.",
+        hint: "Amigos, mensagens, aniversários, encontros e pessoas com quem você cruza.",
       },
       nearby: {
         label: "Por perto",
@@ -330,8 +346,8 @@ export default {
         hint: "O aniversário de um amigo ou uma ocasião chegando.",
       },
       dating: {
-        label: "Matches e mensagens de encontros",
-        hint: "Novos matches, mensagens, acenos e chamadas.",
+        label: "Matches de encontros",
+        hint: "Novos matches, acenos, chamadas e o que vocês adicionam juntos.",
       },
       business_offers: {
         label: "Ofertas",
@@ -353,6 +369,10 @@ export default {
         label: "Comunidades que você lidera",
         hint: "A demanda cresce em uma comunidade que você lidera, ou ela muda.",
       },
+      messages: {
+        label: "Mensagens",
+        hint: "Novas mensagens nas suas conversas individuais, com amigos e matches.",
+      },
     },
     toggleA11y: "Notificar sobre {label}",
   },
@@ -372,7 +392,7 @@ export default {
       },
       people: {
         label: "Moun",
-        hint: "Zanmi, anivèsè, randevou ak moun ou kwaze.",
+        hint: "Zanmi, mesaj, anivèsè, randevou ak moun ou kwaze.",
       },
       nearby: {
         label: "Toupre",
@@ -401,8 +421,8 @@ export default {
         hint: "Anivèsè yon zanmi oswa yon okazyon k ap vini.",
       },
       dating: {
-        label: "Match ak mesaj randevou",
-        hint: "Nouvo match, mesaj, salitasyon ak apèl.",
+        label: "Match randevou",
+        hint: "Nouvo match, bonjou, apèl ak sa nou ajoute ansanm.",
       },
       business_offers: {
         label: "Òf",
@@ -424,6 +444,10 @@ export default {
         label: "Kominote w ap dirije",
         hint: "Demann ap grandi nan yon kominote ou dirije, oswa li chanje.",
       },
+      messages: {
+        label: "Mesaj",
+        hint: "Nouvo mesaj nan chat youn-a-youn ou, ak zanmi ak match.",
+      },
     },
     toggleA11y: "Fè m konnen sou {label}",
   },
@@ -443,7 +467,7 @@ export default {
       },
       people: {
         label: "人",
-        hint: "好友、生日、约会，以及与你擦肩而过的人。",
+        hint: "好友、消息、生日、约会，以及与你擦肩而过的人。",
       },
       nearby: {
         label: "附近",
@@ -472,8 +496,8 @@ export default {
         hint: "好友的生日或即将到来的纪念日。",
       },
       dating: {
-        label: "约会配对和消息",
-        hint: "新配对、消息、招呼和通话。",
+        label: "约会配对",
+        hint: "新配对、打招呼、通话，以及你们一起添加的内容。",
       },
       business_offers: {
         label: "报价",
@@ -495,6 +519,10 @@ export default {
         label: "你管理的社区",
         hint: "你管理的社区需求增长或发生变化。",
       },
+      messages: {
+        label: "消息",
+        hint: "你一对一聊天中的新消息，包括好友和配对。",
+      },
     },
     toggleA11y: "通知我：{label}",
   },
@@ -514,7 +542,7 @@ export default {
       },
       people: {
         label: "Mọi người",
-        hint: "Bạn bè, sinh nhật, hẹn hò và những người bạn tình cờ gặp.",
+        hint: "Bạn bè, tin nhắn, sinh nhật, hẹn hò và những người bạn tình cờ gặp.",
       },
       nearby: {
         label: "Gần đây",
@@ -543,8 +571,8 @@ export default {
         hint: "Sinh nhật của bạn bè hoặc một dịp sắp đến.",
       },
       dating: {
-        label: "Ghép đôi và tin nhắn hẹn hò",
-        hint: "Ghép đôi mới, tin nhắn, vẫy tay và cuộc gọi.",
+        label: "Ghép đôi hẹn hò",
+        hint: "Ghép đôi mới, lời chào, cuộc gọi và những gì hai bạn cùng thêm.",
       },
       business_offers: {
         label: "Ưu đãi",
@@ -566,6 +594,10 @@ export default {
         label: "Cộng đồng bạn dẫn dắt",
         hint: "Nhu cầu tăng hoặc có thay đổi trong cộng đồng bạn quản lý.",
       },
+      messages: {
+        label: "Tin nhắn",
+        hint: "Tin nhắn mới trong các cuộc trò chuyện riêng, với bạn bè và người ghép đôi.",
+      },
     },
     toggleA11y: "Thông báo cho tôi về {label}",
   },
@@ -585,7 +617,7 @@ export default {
       },
       people: {
         label: "Mga tao",
-        hint: "Mga kaibigan, kaarawan, dating at mga taong nakakasalubong mo.",
+        hint: "Mga kaibigan, mensahe, kaarawan, dating at mga taong nakakasalubong mo.",
       },
       nearby: {
         label: "Malapit",
@@ -614,8 +646,8 @@ export default {
         hint: "Kaarawan ng kaibigan o paparating na okasyon.",
       },
       dating: {
-        label: "Mga dating match at mensahe",
-        hint: "Bagong match, mensahe, kaway at tawag.",
+        label: "Mga dating match",
+        hint: "Mga bagong match, kaway, tawag at mga idinadagdag ninyo nang magkasama.",
       },
       business_offers: {
         label: "Mga alok",
@@ -637,6 +669,10 @@ export default {
         label: "Mga komunidad na pinamumunuan mo",
         hint: "Lumalaki ang demand o may pagbabago sa komunidad na pinamumunuan mo.",
       },
+      messages: {
+        label: "Mga mensahe",
+        hint: "Mga bagong mensahe sa one-on-one chats mo, kasama ang mga kaibigan at match.",
+      },
     },
     toggleA11y: "Abisuhan ako tungkol sa {label}",
   },
@@ -656,7 +692,7 @@ export default {
       },
       people: {
         label: "Люди",
-        hint: "Друзья, дни рождения, знакомства и люди, которых вы встречаете.",
+        hint: "Друзья, сообщения, дни рождения, знакомства и люди, которых вы встречаете.",
       },
       nearby: {
         label: "Рядом",
@@ -685,8 +721,8 @@ export default {
         hint: "День рождения друга или приближающееся событие.",
       },
       dating: {
-        label: "Знакомства: совпадения и сообщения",
-        hint: "Новые совпадения, сообщения, приветы и звонки.",
+        label: "Знакомства: совпадения",
+        hint: "Новые совпадения, приветы, звонки и то, что вы добавляете вместе.",
       },
       business_offers: {
         label: "Предложения",
@@ -708,6 +744,10 @@ export default {
         label: "Сообщества, которыми вы руководите",
         hint: "Растёт спрос в сообществе, которое вы ведёте, или оно меняется.",
       },
+      messages: {
+        label: "Сообщения",
+        hint: "Новые сообщения в личных чатах с друзьями и совпадениями.",
+      },
     },
     toggleA11y: "Уведомлять о: {label}",
   },
@@ -727,7 +767,7 @@ export default {
       },
       people: {
         label: "사람",
-        hint: "친구, 생일, 데이트, 그리고 마주친 사람.",
+        hint: "친구, 메시지, 생일, 데이트, 그리고 마주친 사람.",
       },
       nearby: {
         label: "근처",
@@ -756,8 +796,8 @@ export default {
         hint: "친구의 생일이나 다가오는 기념일.",
       },
       dating: {
-        label: "데이트 매치와 메시지",
-        hint: "새 매치, 메시지, 인사, 통화.",
+        label: "데이트 매치",
+        hint: "새 매치, 인사, 통화, 함께 추가한 항목.",
       },
       business_offers: {
         label: "제안",
@@ -778,6 +818,10 @@ export default {
       communities: {
         label: "내가 운영하는 커뮤니티",
         hint: "운영 중인 커뮤니티의 수요 증가나 변경.",
+      },
+      messages: {
+        label: "메시지",
+        hint: "친구와 매치와의 1:1 채팅 새 메시지.",
       },
     },
     toggleA11y: "{label} 알림 받기",

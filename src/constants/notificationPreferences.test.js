@@ -10,7 +10,8 @@ const { NOTIFICATION_PRIORITY_BY_TYPE } = require('./notificationTier');
 const root = path.join(__dirname, '..', '..');
 const mig = (f) => fs.readFileSync(path.join(root, 'supabase', 'migrations', f), 'utf8');
 const base = mig('20270258_notification_preferences_central.sql'); // derivation trigger, _send_push check
-const sql = mig('20270259_business_owner_notification_preferences.sql'); // current seed, CHECK and setter (item 143)
+const sql = mig('20270259_business_owner_notification_preferences.sql'); // seed, owner senders (item 143)
+const msg = mig('20270260_messages_notification_group.sql'); // current CHECK, setter, derivation; message -> messages
 
 describe('every push type is placed exactly once', () => {
   test('8. person-mutable groups + account notices = every push type, exactly once', () => {
@@ -32,17 +33,18 @@ describe('the database copy is identical', () => {
   test('notification_type_groups seed = NOTIFICATION_GROUP_BY_TYPE', () => {
     const ins = sql.slice(sql.indexOf('insert into public.notification_type_groups'), sql.indexOf('-- Keep what people already chose'));
     const seed = Object.fromEntries([...ins.matchAll(/\('([a-z_]+)', '([a-z_]+)'\)/g)].map((m) => [m[1], m[2]]));
+    for (const m of msg.matchAll(/update public\.notification_type_groups set group_key = '([a-z_]+)' where type = '([a-z_]+)'/g)) seed[m[2]] = m[1];
     expect(seed).toEqual(NOTIFICATION_GROUP_BY_TYPE);
   });
   test('the CHECK and the setter accept exactly the groups', () => {
-    const check = sql.match(/notification_mutes <@ array\[([\s\S]*?)\]/)[1];
+    const check = msg.match(/notification_mutes <@ array\[([\s\S]*?)\]/)[1];
     expect([...check.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort()).toEqual([...NOTIFICATION_GROUPS].sort());
-    const setter = sql.match(/group_param not in \(([\s\S]*?)\)/)[1];
+    const setter = msg.match(/group_param not in \(([\s\S]*?)\)/)[1];
     expect([...setter.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort()).toEqual([...NOTIFICATION_GROUPS].sort());
   });
   test('each older column is derived from exactly its area groups', () => {
     for (const [col, groups] of Object.entries(LEGACY_COLUMN_GROUPS)) {
-      const m = base.match(new RegExp(`new\\.${col} := not \\(m @> array\\[([^\\]]*)\\]`));
+      const m = msg.match(new RegExp(`new\\.${col} := not \\(m @> array\\[([^\\]]*)\\]`));
       expect(m).not.toBeNull();
       expect([...m[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1])).toEqual(groups);
     }

@@ -9,9 +9,9 @@ begin
   perform set_config('app.push_handoff_test_failure', 'true', true);  -- never call send-push for real
 
   -- 1. a muted group's push is never queued; the sender says why
-  update profiles set notification_mutes = '{dating}' where id = a;
+  update profiles set notification_mutes = '{dating,messages}' where id = a;
   select count(*) into n from push_outbox;
-  r := public._send_push(a, 't', 'b', jsonb_build_object('type', 'message'));
+  r := public._send_push(a, 't', 'b', jsonb_build_object('type', 'new_match'));
   if r <> 'muted' then raise exception '1 expected muted, got %', r; end if;
   if (select count(*) from push_outbox) <> n then raise exception '1 a muted push was queued'; end if;
 
@@ -30,6 +30,17 @@ begin
   update profiles set notify_planning = true where id = a;
   if (select notify_planning from profiles where id = a) then raise exception '3 direct write overrode the store'; end if;
   if not (select notify_dating from profiles where id = a) then raise exception '3 notify_dating should be back on'; end if;
+
+  -- 3b. chat messages are their own switch (20270260): Dating off leaves chats on, Messages off silences only chats,
+  --     and notify_dating (read by the message sender) is off only when both are off
+  update profiles set notification_mutes = '{dating}' where id = a;
+  if public._push_muted(a, 'message') then raise exception '3b dating muted chat messages'; end if;
+  if not public._push_muted(a, 'new_match') then raise exception '3b dating did not mute new_match'; end if;
+  if not (select notify_dating from profiles where id = a) then raise exception '3b notify_dating off with Messages on'; end if;
+  update profiles set notification_mutes = '{messages}' where id = a;
+  if not public._push_muted(a, 'message') then raise exception '3b messages did not mute message'; end if;
+  if public._push_muted(a, 'new_match') or public._push_muted(a, 'friend_request') then raise exception '3b messages muted another type'; end if;
+  if (select group_key from notification_type_groups where type = 'message') <> 'messages' then raise exception '3b seed'; end if;
 
   -- 4. unknown group refused by the CHECK
   begin
