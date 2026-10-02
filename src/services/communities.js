@@ -388,28 +388,8 @@ export async function getCommunityMembers(communityId) {
   // or is demanded today, so a cap alone closes the unbounded-download
   // risk without building pagination UI nothing currently needs.
   //
-  // Relationship-state audit (item 32, 2026-09-11): every sibling roster
-  // surface (getFellowAttendees, the dating/friend discovery candidate
-  // pools) filters blocked users both directions; this one didn't --
-  // closing that gap here rather than leaving community member lists as
-  // the one place a blocked person's name/photo still renders.
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData?.session?.user?.id;
-
-  const { data: blockedByMe } = await supabase
-    .from('blocks')
-    .select('blocked_id')
-    .eq('blocker_id', userId);
-  const { data: blockedMe } = await supabase
-    .from('blocks')
-    .select('blocker_id')
-    .eq('blocked_id', userId);
-
-  const excludedUserIds = new Set([
-    ...(blockedByMe ?? []).map((b) => b.blocked_id),
-    ...(blockedMe ?? []).map((b) => b.blocker_id),
-  ]);
-
+  // A member in a block with the viewer, either way, is not returned at all: community_members' read policy applies the
+  // shared two-way rule (migration 20270265). Never filtered here from `blocks` (blocks RLS hides other people's blocks).
   const { data, error } = await supabase
     .from('community_members')
     .select('user_id, role, joined_at, profiles(display_name, photo_url)')
@@ -421,7 +401,7 @@ export async function getCommunityMembers(communityId) {
     console.error('getCommunityMembers error', error);
     return [];
   }
-  return (data ?? []).filter((row) => !excludedUserIds.has(row.user_id));
+  return data ?? [];
 }
 
 export async function setCommunityMemberRole(communityId, memberUserId, role) {

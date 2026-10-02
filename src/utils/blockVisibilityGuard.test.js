@@ -1,4 +1,4 @@
-// Group chats (gathering 20270263, community 20270264): a message is visible only when neither the viewer nor the
+// Block visibility. Group chats (gathering 20270263, community 20270264): a message is visible only when neither the viewer nor the
 // sender blocked the other. The rule lives in the database; these guards keep every read path on it, and keep any NEW
 // read rule from reading `blocks` inline (blocks RLS shows a viewer only the blocks they made, so an inline read leaks
 // the reverse direction). Behavior is proven against production by scripts/live-verify/gathering-chat-blocks-either-way.sql
@@ -124,5 +124,47 @@ describe('no NEW read rule reads blocks inline', () => {
     }
     const inline = [...latest].filter(([, body]) => /from\s+(public\.)?blocks\b/i.test(body)).map(([k]) => k).sort();
     expect(inline).toEqual(KNOWN_INLINE.sort());
+  });
+});
+
+describe('client code never decides "who blocked me" (migration 20270265)', () => {
+  // A read of `blocks` filtered on blocked_id = me always returns nothing (blocks RLS shows a viewer only the blocks
+  // they made), so a client-side block filter can only ever be one-way. Hiding a blocked pair belongs to the server read.
+  const blockReads = (file) => (fs.readFileSync(file, 'utf8').match(/\.from\('blocks'\)/g) || []).length;
+  const readers = Object.fromEntries(
+    srcFiles.filter((f) => blockReads(f) > 0).map((f) => [path.relative(root, f), blockReads(f)])
+  );
+
+  test('the three fixed surfaces (community members, friends, discovery/proximity) no longer read blocks', () => {
+    for (const f of ['src/services/communities.js', 'src/services/friends.js', 'src/services/friendDiscovery.js', 'src/services/proximity.js']) {
+      expect(readers[f]).toBeUndefined();
+    }
+  });
+
+  test('only known readers remain: the own-blocks Settings list, and the reported one-way filters not yet moved', () => {
+    expect(readers).toEqual({
+      'src/services/blockedUsers.js': 2,     // the person's own block list + unblock (blocker_id = me): legitimate
+      'src/services/gatherings.js': 10,      // reported 2026-10-02, not changed yet
+      'src/services/stories.js': 2,          // reported 2026-10-02, not changed yet
+      'src/screens/ActivityScreen.js': 2,    // reported 2026-10-02, not changed yet
+    });
+  });
+
+  test('the fixed reads go through the server rule instead', () => {
+    const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
+    expect(read('src/services/friends.js')).toMatch(/from\('people_visible_to_me'\)/);
+    expect(read('src/services/proximity.js').match(/from\('people_visible_to_me'\)/g)).toHaveLength(2);
+    expect(read('src/services/friendDiscovery.js')).toMatch(/from\('people_visible_to_me'\)/);
+    const mig = readMig('20270265_people_reads_block_either_way.sql');
+    expect(mig).toMatch(/with \(security_invoker = true\)/);
+    expect(mig).toMatch(/not public\.viewer_blocked_either_way\(user_id\)/);                         // community members
+    expect(mig.match(/not public\.viewer_blocked_either_way\(case when user_a = auth\.uid\(\)/g)).toHaveLength(2); // friendships read + create
+    expect(mig).toMatch(/and not public\.viewer_blocked_either_way\(other\.user_id\)/);                // crossed-paths partners
+    expect(mig).not.toMatch(/from\s+(public\.)?blocks/i);
+  });
+
+  test('a refused friend request reads the same whichever side blocked (one generic line, no direction)', () => {
+    const src = fs.readFileSync(path.join(root, 'src/services/friends.js'), 'utf8');
+    expect(src).toMatch(/error\.code === '42501'\) throw new Error\("You can't send a friend request to this person\."\)/);
   });
 });

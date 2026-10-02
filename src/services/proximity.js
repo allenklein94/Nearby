@@ -204,16 +204,9 @@ export async function getNearbyMatches() {
   const userId = sessionData?.session?.user?.id;
   if (!userId) return [];
 
-  // Blocking must be checked in BOTH directions — if I blocked them,
-  // or if they blocked me, neither of us should show up to the other.
-  const { data: blockedByMe } = await supabase
-    .from('blocks')
-    .select('blocked_id')
-    .eq('blocker_id', userId);
-  const { data: blockedMe } = await supabase
-    .from('blocks')
-    .select('blocker_id')
-    .eq('blocked_id', userId);
+  // Blocking hides a pair in BOTH directions, decided by the server where the rows are read: sightings (is_blocked in
+  // its policy), get_shared_gathering_partners and people_visible_to_me (viewer_blocked_either_way, 20270265). The
+  // client never reads `blocks` (blocks RLS hides other people's blocks, so it could only see one direction).
 
   const { data: sessionForFriends } = await supabase.auth.getSession();
   const myIdForFriends = sessionForFriends?.session?.user?.id;
@@ -224,8 +217,6 @@ export async function getNearbyMatches() {
     .or(`user_a.eq.${myIdForFriends},user_b.eq.${myIdForFriends}`);
 
   const excludedUserIds = new Set([
-    ...(blockedByMe ?? []).map((b) => b.blocked_id),
-    ...(blockedMe ?? []).map((b) => b.blocker_id),
     // Once a friendship is confirmed, that person shouldn't keep
     // showing up here to Notice/Wave — it risks creating a
     // duplicate match on top of the friendship, and someone you've
@@ -308,7 +299,7 @@ export async function getNearbyMatches() {
   const otherUserIds = eligible.map((m) => m.otherUserId);
 
   const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
+    .from('people_visible_to_me')
     .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
     .in('id', otherUserIds);
 
@@ -387,15 +378,8 @@ export async function getBrowseMatches(offset = 0) {
   const userId = sessionData?.session?.user?.id;
   if (!userId) return [];
 
-  const { data: blockedByMe } = await supabase
-    .from('blocks')
-    .select('blocked_id')
-    .eq('blocker_id', userId);
-  const { data: blockedMe } = await supabase
-    .from('blocks')
-    .select('blocker_id')
-    .eq('blocked_id', userId);
-
+  // People in a block with me, either way, never come back from people_visible_to_me (server rule, 20270265); the
+  // client never reads `blocks`.
   const { data: acceptedFriends } = await supabase
     .from('friendships')
     .select('user_a, user_b')
@@ -404,8 +388,6 @@ export async function getBrowseMatches(offset = 0) {
 
   const excludedUserIds = new Set([
     userId,
-    ...(blockedByMe ?? []).map((b) => b.blocked_id),
-    ...(blockedMe ?? []).map((b) => b.blocker_id),
     // Once a friendship is confirmed, that person shouldn't keep
     // showing up here to Notice/Wave — it risks creating a
     // duplicate match on top of the friendship.
@@ -459,7 +441,7 @@ export async function getBrowseMatches(offset = 0) {
   }
 
   const { data: profiles, error } = await supabase
-    .from('profiles')
+    .from('people_visible_to_me')
     .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
     .in('wide_area', neighborBuckets)
     // A stable order is required for paging: without one, Postgres may return rows in any order per request, so

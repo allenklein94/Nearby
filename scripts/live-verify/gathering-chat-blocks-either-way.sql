@@ -68,8 +68,9 @@ insert into out select 'chat_policy_uses_helper', (qual ilike '%viewer_blocked_e
   from pg_policies where tablename = 'gathering_messages' and cmd = 'SELECT';
 insert into out select 'chat_select_policies', count(*)::text from pg_policies where tablename = 'gathering_messages' and cmd = 'SELECT';
 
-select o.k, o.v, e.v as expected, o.v = e.v as ok
-  from out o join (values
+-- a right join, so an expected check that recorded nothing shows up as a failure instead of disappearing
+select e.k, o.v, e.v as expected, coalesce(o.v = e.v, false) as ok
+  from out o right join (values
     ('noblock_host.total','5'), ('noblock_host.from_c','2'), ('noblock_host.c_by_id','1'),
     ('noblock_b.total','5'), ('stranger.total','0'), ('stranger.c_by_id','0'),
     ('hostblocks_host.total','3'), ('hostblocks_host.from_c','0'), ('hostblocks_host.c_by_id','0'), ('hostblocks_host.from_host','1'),
@@ -81,4 +82,4 @@ select o.k, o.v, e.v as expected, o.v = e.v as ok
     ('unblocked_host.total','5'), ('unblocked_host.from_c','2'), ('unblocked_host.c_by_id','1'),
     ('dm_policy_uses_is_blocked','true'), ('chat_policy_uses_helper','true'), ('chat_select_policies','1')
   ) e(k, v) on e.k = o.k
- order by ok, o.k;
+ order by ok, e.k;

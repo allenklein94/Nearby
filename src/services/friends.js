@@ -17,20 +17,16 @@ export async function getRelationshipStatus(otherUserId) {
     return { blocked: false, friendshipStatus: null, friendshipId: null, matchId: null };
   }
 
-  const { data: blockedByMe } = await supabase
-    .from('blocks')
+  // `blocked` means "this person is not available to you": absent from people_visible_to_me, the server's own
+  // two-way block rule (migration 20270265). The client never reads `blocks` (blocks RLS hides the blocks other people
+  // made, so a direct read could only ever see one direction) and never learns which side blocked.
+  const { data: visible, error: visibleError } = await supabase
+    .from('people_visible_to_me')
     .select('id')
-    .eq('blocker_id', myId)
-    .eq('blocked_id', otherUserId)
-    .maybeSingle();
-  const { data: blockedMe } = await supabase
-    .from('blocks')
-    .select('id')
-    .eq('blocker_id', otherUserId)
-    .eq('blocked_id', myId)
+    .eq('id', otherUserId)
     .maybeSingle();
 
-  if (blockedByMe || blockedMe) {
+  if (!visibleError && !visible) {
     return { blocked: true, friendshipStatus: null, friendshipId: null, matchId: null };
   }
 
@@ -89,23 +85,6 @@ export async function sendFriendRequest(otherUserId) {
   if (!myId) throw new Error('Not signed in');
   if (myId === otherUserId) throw new Error("You can't add yourself as a friend.");
 
-  const { data: blockedByMe } = await supabase
-    .from('blocks')
-    .select('id')
-    .eq('blocker_id', myId)
-    .eq('blocked_id', otherUserId)
-    .maybeSingle();
-  const { data: blockedMe } = await supabase
-    .from('blocks')
-    .select('id')
-    .eq('blocker_id', otherUserId)
-    .eq('blocked_id', myId)
-    .maybeSingle();
-
-  if (blockedByMe || blockedMe) {
-    throw new Error("You can't send a friend request to this person.");
-  }
-
   const userA = myId < otherUserId ? myId : otherUserId;
   const userB = myId < otherUserId ? otherUserId : myId;
 
@@ -115,6 +94,9 @@ export async function sendFriendRequest(otherUserId) {
 
   if (error) {
     if (error.code === '23505') throw new Error("You've already sent or received a friend request with this person.");
+    // The friendships insert policy refuses a pair in a block either way (20270265). One generic line for it, whichever
+    // side blocked.
+    if (error.code === '42501') throw new Error("You can't send a friend request to this person.");
     throw error;
   }
 }

@@ -73,8 +73,9 @@ insert into out select 'select_policies', count(*)::text from pg_policies where 
 insert into out select 'functions_reading_table', count(*)::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public' and p.prokind = 'f' and pg_get_functiondef(p.oid) ilike '%community_messages%';
 
-select o.k, o.v, e.v as expected, o.v = e.v as ok
-  from out o join (values
+-- a right join, so an expected check that recorded nothing shows up as a failure instead of disappearing
+select e.k, o.v, e.v as expected, coalesce(o.v = e.v, false) as ok
+  from out o right join (values
     ('noblock_a.total','5'), ('noblock_a.recent','5'), ('noblock_a.from_c','2'), ('noblock_a.c_by_id','1'),
     ('noblock_b.total','5'), ('nonmember.total','0'), ('nonmember.recent','0'), ('nonmember.c_by_id','0'),
     ('ablocks_a.total','3'), ('ablocks_a.recent','3'), ('ablocks_a.from_c','0'), ('ablocks_a.c_by_id','0'), ('ablocks_a.from_a','1'),
@@ -86,4 +87,4 @@ select o.k, o.v, e.v as expected, o.v = e.v as ok
     ('unblocked_a.total','5'), ('unblocked_a.recent','5'), ('unblocked_a.from_c','2'), ('unblocked_a.c_by_id','1'),
     ('policy_uses_helper','true'), ('policy_reads_blocks_inline','false'), ('select_policies','1'), ('functions_reading_table','0')
   ) e(k, v) on e.k = o.k
- order by ok, o.k;
+ order by ok, e.k;

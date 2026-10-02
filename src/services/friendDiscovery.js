@@ -98,18 +98,17 @@ export async function getFriendCrossedPaths() {
 
   const candidateIds = merged.map((m) => m.otherUserId);
 
-  const [{ data: blockedByMe }, { data: blockedMe }, { data: friendshipRows }, { data: matchRows }, { data: swipeRows }, { data: candidateProfiles }] = await Promise.all([
-    supabase.from('blocks').select('blocked_id').eq('blocker_id', myId),
-    supabase.from('blocks').select('blocker_id').eq('blocked_id', myId),
+  // Blocks are not filtered here: both candidate sources already leave out anyone in a block with me, either way
+  // (sightings policy via is_blocked; get_shared_gathering_partners via viewer_blocked_either_way, 20270265), and the
+  // profiles come from people_visible_to_me. The client never reads `blocks` (it could only see one direction).
+  const [{ data: friendshipRows }, { data: matchRows }, { data: swipeRows }, { data: candidateProfiles }] = await Promise.all([
     supabase.from('friendships').select('user_a, user_b').or(`user_a.eq.${myId},user_b.eq.${myId}`),
     supabase.from('matches').select('user_a, user_b').or(`user_a.eq.${myId},user_b.eq.${myId}`),
     supabase.from('friend_discovery_swipes').select('to_user').eq('from_user', myId),
-    supabase.from('profiles').select('id, display_name, photo_url, bio, interests, photo_verified, open_to_friend_discovery').in('id', candidateIds),
+    supabase.from('people_visible_to_me').select('id, display_name, photo_url, bio, interests, photo_verified, open_to_friend_discovery').in('id', candidateIds),
   ]);
 
   const excludedUserIds = new Set([
-    ...(blockedByMe ?? []).map((b) => b.blocked_id),
-    ...(blockedMe ?? []).map((b) => b.blocker_id),
     ...(friendshipRows ?? []).map((f) => (f.user_a === myId ? f.user_b : f.user_a)),
     ...(matchRows ?? []).map((m) => (m.user_a === myId ? m.user_b : m.user_a)),
     ...(swipeRows ?? []).map((s) => s.to_user),
