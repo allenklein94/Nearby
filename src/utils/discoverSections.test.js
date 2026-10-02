@@ -118,7 +118,7 @@ describe('Discover contextual sections (item 91)', () => {
     expect(d).toMatch(/declared: personalization\.declared,/);
     expect(d).toMatch(/excludeIds: topCategoryIds,/);
     expect(d).toMatch(/gatherings: filteredGatherings,/);
-    expect(d).toMatch(/const filteredGatherings = applyOpenNow\(/);
+    expect(d).toMatch(/const filteredGatherings = filterGatheringsByEnvironment\(\s*applyOpenNow\(/);
     expect(d.indexOf('{topCategoryGatherings.map(renderGatheringTile)}')).toBeLessThan(d.indexOf('discoverSections.map('));
     expect(d).toMatch(/railGroups\(CATEGORY_GROUPS\)/);
     expect(d).toMatch(/\.\.\.\(showMoreCategories \? rail\.more : \[\]\)/);

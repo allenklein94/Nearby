@@ -12,6 +12,7 @@ export const DATE_OPTIONS = [
   { key: 'now', label: 'Right Now' },
   { key: 'soon', label: 'Starting Soon' },
   { key: 'today', label: 'Today' },
+  { key: 'tonight', label: 'Tonight' },
   { key: 'tomorrow', label: 'Tomorrow' },
   { key: 'weekend', label: 'This Weekend' },
   { key: 'week', label: 'This Week' },
@@ -19,6 +20,8 @@ export const DATE_OPTIONS = [
 
 // "Starting Soon" -- a real, narrower window than "Right Now"'s symmetric
 // +/- window: starts in the next 90 minutes and hasn't started yet.
+export const TONIGHT_START_HOUR = 18;
+
 const SOON_WINDOW_MS = 90 * 60 * 1000;
 
 export function matchesDateFilter(scheduledAt, filterKey) {
@@ -41,6 +44,14 @@ export function matchesDateFilter(scheduledAt, filterKey) {
     const tomorrowStart = new Date(todayStart);
     tomorrowStart.setDate(tomorrowStart.getDate() + 1);
     return date >= todayStart && date < tomorrowStart;
+  }
+
+  // Item 137: "Tonight" = later today from 6 PM, the same boundary the when line uses ("Tonight · 7 PM", timeContext.js),
+  // so a Quick Pick under Home's "Tonight" header lands on exactly what that header promised.
+  if (filterKey === 'tonight') {
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+    return date >= todayStart && date < tomorrowStart && date.getHours() >= TONIGHT_START_HOUR;
   }
 
   if (filterKey === 'tomorrow') {

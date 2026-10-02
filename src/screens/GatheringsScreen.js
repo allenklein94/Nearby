@@ -34,7 +34,7 @@ import * as Haptics from 'expo-haptics';
 import { getActiveOffers, getMyRedemptions } from '../services/brandOffers';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
-import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
+import { isIndoorCategory, isOutdoorCategory, filterGatheringsByEnvironment } from '../constants/gatheringIndoorOutdoor';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { getSocialForecast } from '../services/homeDashboard';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
@@ -98,7 +98,7 @@ export default function GatheringsScreen({ navigation, route }) {
   // item 12/9). null = either, 'indoor'/'outdoor' = only categories this
   // codebase can honestly classify -- a genuinely ambiguous category
   // (Sports, Music, etc.) is simply excluded from both, never guessed.
-  const [environmentFilter, setEnvironmentFilter] = useState(null);
+  const [environmentFilter, setEnvironmentFilter] = useState(route?.params?.initialEnvironment ?? null);
   // Real, host-declared filters -- backed by gatherings.price_level/
   // party_type (CLAUDE.md "Category/filter taxonomy pass"), not fabricated.
   // null = any; a gathering whose host never set the field is simply
@@ -455,7 +455,7 @@ export default function GatheringsScreen({ navigation, route }) {
     .filter((g) => forYouActive ? forYouCategories.includes(g.interest_tag) : (!interestFilter || g.interest_tag === interestFilter))
     .filter((g) => !trendingActive || (trendingIds.includes(g.id) && attendeeTotal(g) >= TRENDING_ATTENDANCE_MIN))
     .filter((g) => matchesDateFilter(g.scheduled_at, dateFilter))
-    .filter((g) => !environmentFilter || (environmentFilter === 'indoor' ? isIndoorCategory(g.interest_tag) : isOutdoorCategory(g.interest_tag)))
+    .filter((g) => filterGatheringsByEnvironment([g], environmentFilter).length > 0)
     .filter((g) => !priceFilter || g.price_level === priceFilter)
     .filter((g) => !partyTypeFilter || g.party_type === partyTypeFilter);
   // One ranking ladder for the feed (utils/gatheringFeedRanking.js, constants/signalPriority.js): friends going > room to join >

@@ -31,14 +31,26 @@ export function hasMeetIntent(motivations) {
 //   Friends pool -> friend-discovery candidates whose real distance bucket is 'Nearby' (under ~3 miles), not "In the wider area".
 // Nothing about the day of the week is used: a Friday with no supply says nothing.
 export const TONIGHT_SIGHTING_WINDOW_MS = 24 * 60 * 60 * 1000;
+export function isTonightSupply(person, { subMode = 'dating', now = new Date() } = {}) {
+  if (subMode === 'friends') return person?.distance_bucket === 'Nearby';
+  const t = person?.last_seen_at ? new Date(person.last_seen_at).getTime() : NaN;
+  return Number.isFinite(t) && t >= now.getTime() - TONIGHT_SIGHTING_WINDOW_MS && t <= now.getTime() + 60 * 1000;
+}
+
 export function countTonightSupply({ subMode = 'dating', list = null, now = new Date() } = {}) {
   if (!Array.isArray(list)) return null;
-  if (subMode === 'friends') return list.filter((c) => c?.distance_bucket === 'Nearby').length;
-  const cutoff = now.getTime() - TONIGHT_SIGHTING_WINDOW_MS;
-  return list.filter((p) => {
-    const t = p?.last_seen_at ? new Date(p.last_seen_at).getTime() : NaN;
-    return Number.isFinite(t) && t >= cutoff && t <= now.getTime() + 60 * 1000;
-  }).length;
+  return list.filter((p) => isTonightSupply(p, { subMode, now })).length;
+}
+
+// Item 137: People opened from "meet someone new tonight" keeps "tonight" -- the people the banner counted come first
+// (same rule as the count, so the first N cards ARE the N promised), everyone else after, in their own order. Ordering
+// only: nobody is removed, and nothing changes when People is opened any other way.
+export function orderForTonight(list, { subMode = 'dating', now = new Date() } = {}) {
+  if (!Array.isArray(list)) return list;
+  const tonight = [];
+  const rest = [];
+  for (const p of list) (isTonightSupply(p, { subMode, now }) ? tonight : rest).push(p);
+  return [...tonight, ...rest];
 }
 
 export function meetSomeoneTonight({ now = new Date(), nearbyPeopleCount = 0, motivations = null } = {}) {

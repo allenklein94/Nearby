@@ -38,6 +38,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { getMyFreeTonight, setFreeTonight, getMutualFreeTonightIds } from '../services/freeTonight';
 import { endOfTonight } from '../utils/freeTonight';
+import { orderForTonight } from '../utils/meetTonight';
 
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 const UNDO_WINDOW_SECONDS = 5;
@@ -69,7 +70,7 @@ function calculateAge(birthdateString) {
 // names this surface, so repeating "Nearby"/"Browse" underneath it would
 // just be noise. Everything else (the info/view-toggle/map buttons, the
 // Crossed Paths/Browse switcher, filters, the list/card deck) is unchanged.
-export default function DiscoveryScreen({ navigation, embedded = false }) {
+export default function DiscoveryScreen({ navigation, embedded = false, tonight = false }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
@@ -125,7 +126,9 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
 
   const load = useCallback(async () => {
     setLocationOff(!(await reportPresence()));
-    const results = await getNearbyMatches();
+    // Item 137: opened from "meet someone new tonight" -> the people seen nearby in the last day lead (ordering only).
+    const fetched = await getNearbyMatches();
+    const results = tonight ? orderForTonight(fetched, { subMode: 'dating' }) : fetched;
     setNearby(results);
     setInitialLoading(false);
 
@@ -170,7 +173,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
         setShowDatingPrefsPrompt(true);
       }
     }
-  }, []);
+  }, [tonight]);
 
   useEffect(() => {
     getMyFreeTonight().then(setMyFreeTonight).catch(() => setMyFreeTonight(null));

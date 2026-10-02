@@ -74,7 +74,8 @@ import { placeDistanceLabel } from '../services/places';
 import { homeQuickStatRows } from '../utils/homeQuiet';
 import { interestedConfirmation } from '../utils/actionConfirmations';
 
-const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
+// Item 137: a destination keeps the time it was offered under (the evening header reads "Tonight", so its chips open Tonight).
+const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'tonight', weekend: 'weekend' };
 
 // Labels are ui.home.period.<period> / ui.home.periodSubtitle.<period> (read in the person's language at render).
 const PERIOD_SECTION_LABEL_KEYS = { morning: 'goodMorning', afternoon: 'thisAfternoon', evening: 'tonight', weekend: 'thisWeekend' };
@@ -2336,7 +2337,8 @@ export default function HomeScreen({ navigation }) {
                   {!!card.detail && <Text style={styles.forecastDetail}>{card.detail}</Text>}
                   <TouchableOpacity
                     style={[styles.rowCta, { alignSelf: 'flex-start', marginTop: spacing.xs }]}
-                    onPress={() => navigation.navigate('Discover', { initialMode: 'things', initialTypeTab: 'gatherings' })}
+                    // Item 137: the card is about one side (indoor or outdoor), so Discover opens already narrowed to it (removable chip).
+                    onPress={() => navigation.navigate('Discover', { initialMode: 'things', initialTypeTab: 'gatherings', initialEnvironment: card.bias })}
                     accessibilityRole="button"
                     accessibilityLabel={t('ui.home.moreThingsA11y')}
                   >

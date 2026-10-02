@@ -52,7 +52,7 @@ import { discoverQuery } from '../utils/discoverQuery';
 import { recordIntentSelection, getMyTopSearchedCategory } from '../services/intentOutcomes';
 import { recordPeopleSubModeUse, getMyPeopleSubModeUsage } from '../services/peopleSubModeUsage';
 import { resolveDefaultPeopleSubMode } from '../utils/peopleSubModePreference';
-import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
+import { isIndoorCategory, isOutdoorCategory, filterGatheringsByEnvironment } from '../constants/gatheringIndoorOutdoor';
 import {
   SCORE_HAPPENING_NOW as WEATHER_BONUS,
   INTENT_SEARCH_TYPE_EMOJI, intentSearchDateLabel, intentSearchFallbackTitle, intentPhaseCaption,
@@ -445,6 +445,26 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Open now (owner item 71): one toggle over every tab and category view; typed "what's open" asks turn it on too. The rule
   // is utils/operatingStatus.js only -- this screen never decides open/closed itself.
   const [openNowOnly, setOpenNowOnly] = useState(false);
+  // Item 137: a destination keeps the context it was opened with. Arriving from a weather card's "outdoor"/"indoor" pick
+  // narrows gatherings to that side (the same category rule as the Gatherings feed's environment filter); it shows as a
+  // removable chip and is never set any other way (no new filter control).
+  const [environmentFilter, setEnvironmentFilter] = useState(() => {
+    const env = route.params?.initialEnvironment;
+    return env === 'outdoor' || env === 'indoor' ? env : null;
+  });
+  // Discover is a tab and stays mounted, so a later tap from Home with new context (a mode, a type tab, an environment)
+  // must apply when it arrives, not only on first mount. Each navigation carries its own context; one without an
+  // environment clears a previous one. The tab bar re-opens Discover with the SAME params object, so nothing re-applies.
+  const appliedParamsRef = useRef(route.params);
+  useEffect(() => {
+    const p = route.params;
+    if (!p || p === appliedParamsRef.current) return;
+    appliedParamsRef.current = p;
+    if (p.initialMode === 'things' || p.initialMode === 'people') setMode(p.initialMode);
+    if (p.initialPeopleSubMode === 'dating' || p.initialPeopleSubMode === 'friends') setPeopleSubMode(p.initialPeopleSubMode);
+    if (p.initialTypeTab) setTypeFilter(p.initialTypeTab);
+    setEnvironmentFilter(p.initialEnvironment === 'outdoor' || p.initialEnvironment === 'indoor' ? p.initialEnvironment : null);
+  }, [route.params]);
   // Item 76: the exact declared-cuisine filter inside the Restaurants view (null = broad). Lives only while a context is open.
   const [cuisineFilter, setCuisineFilter] = useState(null);
   const [viewStyle, setViewStyle] = useState('list');
@@ -843,7 +863,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const openNowActive = openNowOnly && (!!expandedContext || typeFilter !== 'communities');
   const openNowAt = new Date();
   const applyOpenNow = (list, toEntity) => (openNowActive ? filterOpenNow(list, toEntity, openNowAt) : list);
-  const filteredGatherings = applyOpenNow(isSearching ? (searchResultsFresh ? searchedGatherings : []) : gatherings, gatheringEntity);
+  const filteredGatherings = filterGatheringsByEnvironment(
+    applyOpenNow(isSearching ? (searchResultsFresh ? searchedGatherings : []) : gatherings, gatheringEntity),
+    environmentFilter,
+  );
   const filteredCommunities = openNowActive ? [] : (isSearching ? (searchResultsFresh ? searchedCommunities : []) : communities);
   // Offers: real server-side, indexed search results (searchedOffers,
   // populated by the debounced effect above — a genuine cross-table search
@@ -1223,6 +1246,23 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const nothingMatchedAnywhere = isSearching && !loadingSearch
     && filteredGatherings.length === 0 && filteredCommunities.length === 0 && filteredOffers.length === 0
     && searchedBusinesses.length === 0;
+
+  function renderEnvironmentChip() {
+    if (!environmentFilter) return null;
+    const label = t(environmentFilter === 'outdoor' ? 'ui.gatherings.envOutdoorChip' : 'ui.gatherings.envIndoorChip');
+    return (
+      <TapActiveChip
+        active
+        style={[styles.filterChip, styles.filterChipActive]}
+        onPress={() => { animateLayout(); setEnvironmentFilter(null); }}
+        accessibilityLabel={label}
+        accessibilityRole="switch"
+        accessibilityState={{ checked: true }}
+      >
+        <Text style={[styles.filterChipText, styles.filterChipTextActive]}>{`${label} ✕`}</Text>
+      </TapActiveChip>
+    );
+  }
 
   function renderOpenNowChip() {
     return (
@@ -1951,6 +1991,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </TouchableOpacity>
             <Text style={styles.breadcrumbText} numberOfLines={1}>{contextLabel}</Text>
             {renderOpenNowChip()}
+            {renderEnvironmentChip()}
           </View>
         )}
         {mode === 'things' && expandedContext && contextCuisineChips.length > 0 && (
@@ -2037,6 +2078,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   );
                 })}
                 {typeFilter !== 'communities' && renderOpenNowChip()}
+                {renderEnvironmentChip()}
               </ScrollView>
               {showViewToggle && (
                 <TouchableOpacity
@@ -2164,9 +2206,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
               its own cue independent of the outer one. */}
           <ModeTransition activeKey={peopleSubMode} style={{ flex: 1 }}>
             {peopleSubMode === 'dating' ? (
-              <DiscoveryScreen navigation={navigation} embedded />
+              <DiscoveryScreen navigation={navigation} embedded tonight={meetTonightContext} />
             ) : (
-              <FriendDiscoveryScreen navigation={navigation} embedded />
+              <FriendDiscoveryScreen navigation={navigation} embedded tonight={meetTonightContext} />
             )}
           </ModeTransition>
         </View>

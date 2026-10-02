@@ -24,6 +24,7 @@ import useCategoryNames from '../hooks/useCategoryNames';
 import { FRIEND_DEFAULT_ORDER, FRIEND_DEFAULT_VISIBLE } from '../constants/quickFilterCatalog';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { orderForTonight } from '../utils/meetTonight';
 
 // Taxonomy audit Phase 3 (CLAUDE.md, Aug 25 2026): the 3 real distance
 // buckets get_friend_discovery_candidates() already returns -- never a
@@ -57,7 +58,7 @@ const DISTANCE_BUCKETS = ['Nearby', 'A few miles away', 'In the wider area'];
 // On/Off switch both stay -- the subtitle is the one place the "separate
 // from dating" boundary is actually stated, and the switch is a real,
 // necessary control, not decoration.
-export default function FriendDiscoveryScreen({ navigation, embedded = false }) {
+export default function FriendDiscoveryScreen({ navigation, embedded = false, tonight = false }) {
   const { t, language } = useLanguage();
   const names = useCategoryNames();
   const { colors, shadow } = useTheme();
@@ -146,7 +147,8 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
       if (isOn) {
         const results = discoveryMode === 'crossedPaths'
           ? await getFriendCrossedPaths()
-          : await getFriendDiscoveryCandidates(20);
+          // Item 137: opened from "meet someone new tonight" -> really-nearby candidates lead (ordering only).
+          : (tonight ? orderForTonight(await getFriendDiscoveryCandidates(20), { subMode: 'friends' }) : await getFriendDiscoveryCandidates(20));
         setCandidates(results);
 
         const urlEntries = await Promise.all(
@@ -166,7 +168,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
       setLoadError(true);
     }
     setLoading(false);
-  }, [discoveryMode]);
+  }, [discoveryMode, tonight]);
 
   function switchDiscoveryMode(mode) {
     if (mode === discoveryMode) return;

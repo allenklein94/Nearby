@@ -45,3 +45,11 @@ export function isIndoorCategory(interestTag) {
 export function isOutdoorCategory(interestTag) {
   return CATEGORY_INDOOR_OUTDOOR[interestTag] === 'outdoor';
 }
+
+// One environment narrowing for every gatherings list (the Gatherings feed's filter and Discover's carried-in context,
+// item 137): null = unchanged; 'indoor' / 'outdoor' = only gatherings whose category is known to be that side.
+export function filterGatheringsByEnvironment(list, environment) {
+  if (!environment || !Array.isArray(list)) return list;
+  const fits = environment === 'indoor' ? isIndoorCategory : isOutdoorCategory;
+  return list.filter((g) => fits(g?.interest_tag));
+}
