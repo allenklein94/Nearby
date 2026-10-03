@@ -1050,8 +1050,13 @@
   var selectedApplyCategory = null;
   var selectedApplySubcategory = null;
   function applyNorm(t) { return String(t || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
-  // Same plural rule as the app (categorySynonyms.js singular) and the server keys (item 182).
+  // Same plural rule as the app (categorySynonyms.js singular) and the server keys (items 182/183).
+  var APPLY_IE_NOUNS = ["auntie", "barbie", "beanie", "birdie", "boogie", "bookie", "bootie", "boulangerie", "brasserie", "brownie", "budgie", "calorie", "charcuterie", "collie", "cookie", "coterie", "cowrie", "creperie", "cutie", "doggie", "eyrie", "foodie", "freebie", "fromagerie", "genie", "goalie", "goodie", "hippie", "hoodie", "indie", "junkie", "kiddie", "lassie", "lingerie", "magpie", "meanie", "menagerie", "movie", "newbie", "oldie", "patisserie", "pixie", "prairie", "quickie", "reverie", "rookie", "roomie", "rotisserie", "selfie", "smoothie", "sortie", "specie", "sweetie", "talkie", "techie", "veggie", "walkie", "yorkie", "zombie"];
   function applySingular(w) {
+    if (w.length > 4 && /ies$/.test(w)) {
+      var ie = w.slice(0, -1);
+      return APPLY_IE_NOUNS.indexOf(ie) >= 0 ? ie : w.slice(0, -3) + 'y';
+    }
     if (w.length > 4 && /(ss|ch|sh|x)es$/.test(w)) return w.slice(0, -2);
     if (w.length > 3 && /(ss|ch|sh)e$/.test(w)) return w.slice(0, -1);
     return w.length > 4 && !/ss$/.test(w) ? w.replace(/s$/, '') : w;

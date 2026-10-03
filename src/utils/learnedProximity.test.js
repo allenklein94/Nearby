@@ -130,8 +130,9 @@ describe('storage and privacy (migration 20270255)', () => {
   test('no other migration, edge function or business-facing code reads trip_miles', () => {
     const walk = (d, out = []) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p, out); else out.push(p); } return out; };
     const sqlUsers = walk(path.join(root, 'supabase')).filter((f) => /\.(sql|ts)$/.test(f) && fs.readFileSync(f, 'utf8').includes('trip_miles'));
-    // 20270273 re-creates the same record_behavior_event (item 156 accept guard); its trip logic is unchanged
-    expect(sqlUsers.map((f) => path.basename(f)).sort()).toEqual(['20270255_learned_trip_distances.sql', '20270273_behavior_learn_from_redemption.sql']);
+    // 20270273 (item 156 accept guard) and 20270280 (item 183 never-learned categories) re-create the same
+    // record_behavior_event; its trip logic is unchanged
+    expect(sqlUsers.map((f) => path.basename(f)).sort()).toEqual(['20270255_learned_trip_distances.sql', '20270273_behavior_learn_from_redemption.sql', '20270280_ies_plurals_never_learn_faith.sql']);
     const src = walk(path.join(root, 'src')).filter((f) => /\.js$/.test(f) && !/\.test\.js$/.test(f));
     const appUsers = src.filter((f) => /trip_miles|get_my_trip_choices/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(path.join(root, 'src'), f)).sort();
     expect(appUsers).toEqual(['services/learnedProximity.js', 'utils/learnedProximity.js']);

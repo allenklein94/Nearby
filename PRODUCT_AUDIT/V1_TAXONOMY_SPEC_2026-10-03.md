@@ -51,7 +51,8 @@ matching, privacy or business-demand change.
 | 37 | Education & Classes wordings (item 182 table; bare "business class" and bare "training" stay unmapped) | item 182, LOCKED |
 | 38 | Plural rule fixed in the ONE normalization (all four copies: client `key`, web signup `applyKey`, server `_category_phrase_key` + `_category_search_key`) so -es plurals (classes, beaches, boxes) resolve like their singular; no duplicate plural wordings (`src/constants/pluralNormalization.regression.test.js`) | item 182, **APPLIED 2026-10-03** (migration `20270279`) |
 | 39 | `education_classes` is per-tag for needs; only **Tutoring** and **Certifications** are in `NEED_TAG_KEYS` | item 182, **APPLIED 2026-10-03** (need side; the group leaves `NEED_GROUP_KEYS` for the open-ended rule in the pass) |
-| 40 | Community & Volunteering coverage (see item 183: wordings, no new category, -ies plural gap) | item 183, proposed |
+| 40 | Community & Volunteering wordings (item 183 table) + faith wordings church / temple / mosque / synagogue -> Faith & Spirituality (search resolution only; land together with the search-log strip below) | item 183, LOCKED |
+| 41 | -ies plurals in the one plural rule (ordinary English, -ie exception list) + Faith & Spirituality never learned | item 183, **APPLIED 2026-10-03** (migration `20270280`) |
 
 Result: 19 canonical groups.
 
@@ -691,7 +692,7 @@ Classes, caught by the item-130 benchmark); a generic format key now yields to a
 class/lesson table), so "I need a tutor for my son" stays a `todo`. Verified: dry run rolled back (server keys equal the
 app's on 24 words), applied, single overloads, the three emerging-category / synonym live scripts ALL OK; Jest 4714.
 
-## Item 183: Community & Volunteering coverage (proposed, owner to confirm)
+## Item 183: Community & Volunteering coverage (LOCKED 2026-10-03)
 
 Today: Volunteering, Faith & Spirituality, Fundraiser, Charity, Community Events, Neighborhood Events, Cleanups, Donation
 Drives. Fundraiser is also an occasion (item 42), unchanged. Checked against the live resolver on 2026-10-03.
@@ -726,3 +727,28 @@ migration. Same regression test file; applied now like item 182 (a resolver fix,
 **Not on the list, flagged:** church / temple / mosque / synagogue find nothing (Faith & Spirituality exists). Religion
 is sensitive, so mapping those words is your call; recommendation: add them as wordings (they are the person's own words
 in their own search, never stored on a profile), or leave unmapped.
+
+**Owner decision (2026-10-03, LOCKED):** (1) Wordings approved as in the table, with "volunteer" / "community service" /
+"give back" -> Volunteering, "nonprofit" / "non profit" -> Charity, "charities" via the plural fix; no Local Groups
+category (Communities), "local group" and "meetup" unmapped, no Civic category, no new format. (2) Nothing in the group is
+need-capable, no exceptions; "I need volunteer hours" = WANT. (3) **-ies plurals, corrected rule (APPLIED, migration
+`20270280`):** ordinary English, not a blanket -ie -> -y rewrite. A word ending -ies keeps -ie when that singular is on the
+one exception list (`IE_SINGULAR_NOUNS`: movie, cookie, patisserie, brasserie, smoothie...), otherwise becomes -y
+(charities = charity, galleries = gallery, libraries = library, bakeries = bakery). Singular words are never rewritten
+("patisserie" stays "patisserie"); ordinary -s plurals (movie/movies) go through the list, not the -y branch. Same four
+copies as item 182 (app `singular()`, web `applySingular()` + `APPLY_IE_NOUNS`, server `_category_singular()`), the list
+test-enforced identical; no stored key changed. (4) **Faith wordings approved for search resolution only.** Applied now
+(same migration): Faith & Spirituality is never learned from any behavior: `record_behavior_event` and the redemption
+trigger skip it, `get_my_behavior_categories` never returns it, and the client never sends it (`NEVER_LEARNED_CATEGORIES`
+in `behaviorSignals.js` = server `_category_never_learned`, test-enforced); 0 rows existed. A person may still declare it
+as their own profile interest (explicit, unchanged).
+
+**Precondition before the faith wordings land (found while applying):** a typed ask that resolves to a category is
+logged with that category permanently on `intent_submissions.category` (and the typed-ask audit interpretation), tied to
+the person, and that column feeds the business demand aggregate (floored at 5) and the internal category trends. For
+Faith & Spirituality that is a persistent record of a religious search. Proposal: in the same pass, the search logs store
+no category for a never-learned category (the same way item 88 strips stated dietary and access needs from the logged
+words), so the wording resolves the current search and leaves nothing behind. Owner to confirm.
+
+Verified: dry run rolled back (server keys equal the app's; a Faith search records nothing, Coffee still does), applied,
+single overloads, the emerging-category / synonym and four behavior-learning live scripts all OK; Jest 4730.

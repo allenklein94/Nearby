@@ -11,8 +11,15 @@ function sendBehaviorEvent(params) {
     .catch(() => {});
 }
 
+// Item 183 (owner, LOCKED): sensitive categories are never learned. An explicit search may RESOLVE to Faith & Spirituality,
+// but no search, view, join, community or redemption in it becomes learned affinity, a ranking signal, a "Based on your
+// recent activity" reason or a "What Nearby has noticed" row. Identical to the server's _category_never_learned
+// (migration 20270280), which also refuses it; a person can still declare it as their own interest.
+export const NEVER_LEARNED_CATEGORIES = Object.freeze(['Faith & Spirituality']);
+
 export function recordBehaviorEvent(eventType, entityType, entityId, category) {
   if (!category || (entityType !== 'search' && !entityId)) return;
+  if (NEVER_LEARNED_CATEGORIES.includes(category)) return;
   try {
     const params = { event_type_param: eventType, entity_type_param: entityType, entity_id_param: entityId ?? null, category_param: category };
     if (eventType !== 'join' || entityType !== 'gathering') { sendBehaviorEvent(params); return; }

@@ -9837,6 +9837,13 @@
    "group": null
   },
   {
+   "tag": "Faith & Spirituality",
+   "file": "src/services/behaviorSignals.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Yoga",
    "file": "src/services/gatherings.js",
    "consumer": "code",

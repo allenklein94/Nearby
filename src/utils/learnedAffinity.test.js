@@ -73,8 +73,9 @@ describe('item 157: repeated evidence before personalizing', () => {
     const dir = path.join(__dirname, '..', '..', 'supabase', 'migrations');
     const latest = fs.readdirSync(dir).sort().filter((f) => fs.readFileSync(path.join(dir, f), 'utf8').includes('function public.get_my_behavior_categories')).pop();
     const sql = fs.readFileSync(path.join(dir, latest), 'utf8');
+    const minEvidence = fs.readdirSync(dir).sort().filter((f) => fs.readFileSync(path.join(dir, f), 'utf8').includes('function public.behavior_min_evidence')).pop();
     expect(sql).toMatch(/having count\(distinct coalesce\(be\.entity_id::text, 'search:' \|\| be\.id::text\)\) >= public\.behavior_min_evidence\(\)/);
-    expect(sql).toMatch(/behavior_min_evidence\(\)\s*returns integer language sql immutable set search_path to 'public' as \$\$ select 2 \$\$/);
+    expect(fs.readFileSync(path.join(dir, minEvidence), 'utf8')).toMatch(/behavior_min_evidence\(\)\s*returns integer language sql immutable set search_path to 'public' as \$\$ select 2 \$\$/);
     expect(LEARNED_MIN_WEIGHT).toBe(1);
   });
 });

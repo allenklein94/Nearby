@@ -72,11 +72,21 @@ export const SYNONYM_GROUPS = [
 export const UNMATCHED_PHRASES = ['paddle tennis', 'platform tennis', 'business class'];
 
 const norm = (s) => String(s ?? '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
-// Plural trim per word so a singular and its plural share one key (item 182): "cafes" = "cafe", "classes" = "class",
+// Plural trim per word so a singular and its plural share one key (items 182/183): "cafes" = "cafe", "classes" = "class",
 // "beaches" = "beach", "boxes" = "box"; a word whose singular ends in -che/-she/-sse also drops that e, so "headache" and
 // "headaches" agree. The SAME rule lives in docs/business.html (applyKey) and the server's _category_phrase_key and
 // _category_search_key; pluralNormalization.regression.test.js keeps the copies identical.
+// Item 183: -ies plurals follow ordinary English. A noun whose singular ends in -ie keeps it (movies = movie,
+// patisseries = patisserie); every other -ies plural becomes -y (charities = charity, galleries = gallery). Singular words
+// are never rewritten, so "patisserie" stays "patisserie". The list is the one exception table, copied verbatim into the
+// web page and the server (pluralNormalization.regression.test.js keeps all copies equal).
+export const IE_SINGULAR_NOUNS = Object.freeze(['auntie', 'barbie', 'beanie', 'birdie', 'boogie', 'bookie', 'bootie', 'boulangerie', 'brasserie', 'brownie', 'budgie', 'calorie', 'charcuterie', 'collie', 'cookie', 'coterie', 'cowrie', 'creperie', 'cutie', 'doggie', 'eyrie', 'foodie', 'freebie', 'fromagerie', 'genie', 'goalie', 'goodie', 'hippie', 'hoodie', 'indie', 'junkie', 'kiddie', 'lassie', 'lingerie', 'magpie', 'meanie', 'menagerie', 'movie', 'newbie', 'oldie', 'patisserie', 'pixie', 'prairie', 'quickie', 'reverie', 'rookie', 'roomie', 'rotisserie', 'selfie', 'smoothie', 'sortie', 'specie', 'sweetie', 'talkie', 'techie', 'veggie', 'walkie', 'yorkie', 'zombie']);
+const IE_NOUN_SET = new Set(IE_SINGULAR_NOUNS);
 export const singular = (w) => {
+  if (w.length > 4 && w.endsWith('ies')) {
+    const ie = w.slice(0, -1);
+    return IE_NOUN_SET.has(ie) ? ie : `${w.slice(0, -3)}y`;
+  }
   if (w.length > 4 && /(ss|ch|sh|x)es$/.test(w)) return w.slice(0, -2);
   if (w.length > 3 && /(ss|ch|sh)e$/.test(w)) return w.slice(0, -1);
   return w.length > 4 && !w.endsWith('ss') ? w.replace(/s$/, '') : w;

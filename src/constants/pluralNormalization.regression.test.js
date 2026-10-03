@@ -53,11 +53,12 @@ describe('singular and plural resolve the same', () => {
 
 describe('the four copies stay identical', () => {
   const WORDS = ['cafes', 'classes', 'class', 'beaches', 'boxes', 'dishes', 'glasses', 'headache', 'headaches', 'bus',
-    'axes', 'business', 'businesses', 'gas', 'tennis', 'yes', 'ache', 'aches', 'niche', 'tutors', 'matches', 'posse'];
+    'axes', 'business', 'businesses', 'gas', 'tennis', 'yes', 'ache', 'aches', 'niche', 'tutors', 'matches', 'posse',
+    'charities', 'charity', 'movies', 'movie', 'patisserie', 'patisseries', 'galleries', 'pies', 'series', 'cookies'];
 
   it('the web signup page uses the same rule', () => {
     const html = fs.readFileSync(path.join(root, 'docs/business.html'), 'utf8');
-    const m = html.match(/function applySingular\(w\) \{[\s\S]*?\n  \}/);
+    const m = html.match(/var APPLY_IE_NOUNS = [^\n]*\n  function applySingular\(w\) \{[\s\S]*?\n  \}/);
     expect(m).not.toBeNull();
     const web = new Function(`${m[0]}; return applySingular;`)();
     for (const w of WORDS) expect(web(w)).toBe(singular(w));
@@ -72,5 +73,39 @@ describe('the four copies stay identical', () => {
     const src = fs.readFileSync(path.join(root, 'src/constants/categorySynonyms.js'), 'utf8');
     expect(src).toMatch(/w\.length > 4 && \/\(ss\|ch\|sh\|x\)es\$\/\.test\(w\)\) return w\.slice\(0, -2\)/);
     expect(src).toMatch(/w\.length > 3 && \/\(ss\|ch\|sh\)e\$\/\.test\(w\)\) return w\.slice\(0, -1\)/);
+  });
+});
+
+describe('-ies plurals follow ordinary English (item 183)', () => {
+  it.each([
+    ['charity', 'charities'], ['gallery', 'galleries'], ['library', 'libraries'], ['bakery', 'bakeries'],
+    ['movie', 'movies'], ['patisserie', 'patisseries'], ['cookie', 'cookies'], ['brewery', 'breweries'],
+    ['activity', 'activities'], ['party', 'parties'],
+  ])('"%s" and "%s" share one key', (one, many) => {
+    expect(singular(many)).toBe(singular(one));
+  });
+
+  it('singular words are never rewritten', () => {
+    for (const w of ['patisserie', 'movie', 'cookie', 'charity', 'foodie', 'brasserie']) expect(singular(w)).toBe(w);
+  });
+
+  it('category search agrees', () => {
+    expect(tagsForPhrase('charities')).toEqual(['Charity']);
+    expect(tagsForPhrase('art galleries')).toEqual(tagsForPhrase('art gallery'));
+    expect(tagsForPhrase('movies')).toEqual(['Movies']);
+    expect(tagsForPhrase('movie')).toEqual(['Movies']);
+    expect(tagsForPhrase('bakeries')).toEqual(['Bakeries']);
+    expect(tagsForPhrase('patisseries')).toEqual(tagsForPhrase('patisserie'));
+    expect(tagsForPhrase('kids activities')).toEqual(['Kids Activity']);
+  });
+
+  it('the web page and the server carry the same -ie exception list', () => {
+    const { IE_SINGULAR_NOUNS } = require('./categorySynonyms');
+    const html = fs.readFileSync(path.join(root, 'docs/business.html'), 'utf8');
+    expect(JSON.parse(html.match(/var APPLY_IE_NOUNS = (\[.*\]);/)[1])).toEqual([...IE_SINGULAR_NOUNS]);
+    const sql = fs.readFileSync(path.join(root, 'supabase/migrations/20270280_ies_plurals_never_learn_faith.sql'), 'utf8');
+    const arr = sql.match(/left\(w, -1\) = any \(array\[([^\]]*)\]\)/)[1].split(',').map((x) => x.trim().replace(/'/g, ''));
+    expect(arr).toEqual([...IE_SINGULAR_NOUNS]);
+    expect(sql.match(/public\._category_singular\(w\)/g)).toBeNull(); // only redefines the helper; the key functions call it
   });
 });
