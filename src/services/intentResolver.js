@@ -992,7 +992,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     } catch (e) {
       console.error('reliability lookup skipped', e);
     }
-    deduped = orderNeedResults(deduped, { toEntity: (c) => candidateEntity(c, partnerInfo), at: needAvailabilityTime(dateWindow, new Date(), { clockWindow, dateAnchor }), reputations });
+    deduped = orderNeedResults(deduped, { toEntity: (c) => candidateEntity(c, partnerInfo), at: needAvailabilityTime(dateWindow, new Date(), { clockWindow, dateAnchor, spontaneity }), reputations });
   }
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)

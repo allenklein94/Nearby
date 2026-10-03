@@ -1,5 +1,9 @@
+jest.mock('../services/intentOutcomes', () => ({ recordIntentSelection: jest.fn() }));
 import { TAG_COMMITMENT, commitmentOf, commitmentAsk, applyCommitmentToCandidates } from './commitmentLevel';
-import { spontaneityOf, spontaneityDelta, applySpontaneityToCandidates, spontaneityCaption } from './spontaneity';
+import { spontaneityOf, spontaneityDelta, applySpontaneityToCandidates, spontaneityCaption, endOfThisWeek, isImmediate, SPONTANEITY } from './spontaneity';
+import { dateWindowFromText } from '../utils/askResolver';
+import { needAvailabilityTime } from '../utils/needAsk';
+import { askBusinessParamsFromAsk } from '../services/askToBusiness';
 import { energyFit } from './energyLevel';
 import { groupForTag } from './gatheringCategories';
 
@@ -38,7 +42,7 @@ describe('spontaneity (item 46)', () => {
     expect(spontaneityOf({ dateWindow: 'today', rawText: 'something in the next few hours' })).toBe('next_hours');
     expect(spontaneityOf({ dateWindow: 'flexible', rawText: 'I like to plan ahead' })).toBe('plan_ahead');
     expect(spontaneityOf({ dateWindow: 'tonight' })).toBe('tonight');
-    expect(spontaneityOf({ dateWindow: 'today' })).toBeNull();
+    expect(spontaneityOf({ dateWindow: 'today' })).toBe('today');
     expect(spontaneityOf({})).toBeNull();
   });
   it('sooner starts rank up for immediate asks, later ones for plan-ahead; unknown times untouched', () => {
@@ -64,5 +68,60 @@ describe('energy: host-declared level beats the tag', () => {
     expect(energyFit('Coffee', ['low_key'], 5).delta).toBe(-1);
     expect(energyFit('Coffee', ['low_key'], 3).delta).toBe(0);
     expect(energyFit('Coffee', ['low_key'], null).delta).toBe(2);
+  });
+});
+
+describe('urgency (owner item 163): the owner\'s levels on the one spontaneity scale, words only', () => {
+  const urg = (text) => spontaneityOf({ dateWindow: dateWindowFromText(text), rawText: text });
+  it.each([
+    ['I need a haircut now', 'now'],
+    ['I need a plumber ASAP', 'now'],
+    ['as soon as possible please', 'now'],
+    ['dinner today', 'today'],
+    ['something fun tonight', 'tonight'],
+    ['I need a haircut this week', 'this_week'],
+    ['get my car detailed by the end of the week', 'this_week'],
+    ['I need a haircut, no rush', 'no_rush'],
+    ['a florist, whenever works', 'no_rush'],
+    ['not in a hurry, just want a car wash', 'no_rush'],
+  ])('"%s" -> %s', (text, want) => expect(urg(text)).toBe(want));
+
+  it('an explicit time beats "no rush"; "this weekend" is not "this week"; plain asks claim nothing', () => {
+    expect(urg('no rush, sometime this week')).toBe('this_week');
+    expect(urg('no rush, tomorrow is fine')).toBe('tomorrow');
+    expect(urg('brunch this weekend')).toBe('weekend');
+    expect(urg('coffee')).toBeNull();
+    expect(SPONTANEITY).toEqual(expect.arrayContaining(['now', 'today', 'tonight', 'this_week', 'no_rush']));
+  });
+
+  it('this week lifts starts before the end of this Sunday; no rush lifts nothing and is never immediate', () => {
+    const wed = new Date(2026, 8, 30, 15, 0, 0).getTime(); // Wednesday
+    const end = new Date(endOfThisWeek(wed));
+    expect([end.getDay(), end.getDate(), end.getHours()]).toEqual([1, 5, 0]); // Monday Oct 5, 00:00 = end of Sunday
+    const sun = new Date(2026, 9, 4, 10).getTime();
+    expect(new Date(endOfThisWeek(sun)).getDate()).toBe(5);
+    expect(spontaneityDelta(new Date(2026, 9, 3, 19).toISOString(), 'this_week', wed)).toBe(2); // Saturday
+    expect(spontaneityDelta(new Date(2026, 9, 6, 19).toISOString(), 'this_week', wed)).toBe(0); // next Tuesday
+    expect(spontaneityDelta(new Date(2026, 8, 30, 16).toISOString(), 'no_rush', wed)).toBe(0);
+    expect(isImmediate('no_rush')).toBe(false);
+    expect(spontaneityCaption('this_week')).toMatch(/this week/);
+    expect(spontaneityCaption('no_rush')).toMatch(/^No rush/);
+  });
+
+  it('a NEED ask: ASAP is judged now; no rush / this week / next week name no moment (availability ties)', () => {
+    const now = new Date(2026, 8, 30, 15);
+    expect(needAvailabilityTime('now', now, { spontaneity: 'now' })).toBe(now);
+    expect(needAvailabilityTime(null, now, { spontaneity: 'no_rush' })).toBeNull();
+    expect(needAvailabilityTime(null, now, { spontaneity: 'this_week' })).toBeNull();
+    expect(needAvailabilityTime(null, now, { spontaneity: 'plan_ahead' })).toBeNull();
+    expect(needAvailabilityTime('today', now, { spontaneity: 'no_rush' })).toBe(now); // a stated day still counts
+    expect(needAvailabilityTime(null, now, {})).toBe(now);
+  });
+
+  it('"no rush" carries into Ask a business as "I\'m flexible"; a stated day still wins', () => {
+    const p = (c) => askBusinessParamsFromAsk({ classifyResult: c, typedText: 'x' }).prefillDateWindow;
+    expect(p({ dateWindow: null, structured: { spontaneity: 'no_rush' } })).toBe('flexible');
+    expect(p({ dateWindow: 'tomorrow', structured: { spontaneity: 'tomorrow' } })).toBe('tomorrow');
+    expect(p({ dateWindow: null, structured: { spontaneity: 'this_week' } })).toBeNull();
   });
 });

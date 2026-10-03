@@ -22,7 +22,7 @@ const en = (key) => translate(DEFAULT_LANGUAGE, `ui.askNotes.${key}`);
 // ---- fixed sentences, read from the builders themselves ----
 function fixedMap() {
   const m = new Map([[OPEN_NOW_CAPTION, 'openNow'], [NEED_CAPTION, 'need']]);
-  for (const k of ['now', 'next_hours', 'plan_ahead']) m.set(spontaneityCaption(k), `spont.${k}`);
+  for (const k of ['now', 'next_hours', 'plan_ahead', 'this_week', 'no_rush']) m.set(spontaneityCaption(k), `spont.${k}`);
   for (const d of DISTANCE_WILLINGNESS) if (d.caption) m.set(d.caption, `dist.${d.key}`);
   for (const mode of TRANSPORT_MODES) if (mode.caption) m.set(mode.caption, `mode.${mode.key}`);
   m.set(en('weatherUnknown'), 'weatherUnknown');

@@ -110,6 +110,16 @@ describe('need ordering: strictly availability > proximity > reliability > perso
     expect(ids).toEqual(['open', 'near']);
   });
 
+  it('urgency (item 163): ASAP keeps open-right-now first; "no rush" lets the closer place lead', async () => {
+    const rows = () => [row('near', { miles: 0.5, live: false }), row('open', { miles: 8 })];
+    const asap = await ask('I need a car wash ASAP', 'Car Wash', rows(), { dateWindow: 'now' });
+    expect(asap.ids).toEqual(['open', 'near']);
+    const relaxed = await ask('I need a car wash, no rush', 'Car Wash', rows(), { dateWindow: null });
+    expect(relaxed.ids).toEqual(['near', 'open']);
+    expect(relaxed.out.audit.interpretation.spontaneity).toBe('no_rush');
+    expect(relaxed.out.openEndedNote).toContain('No rush');
+  });
+
   it('availability tied: proximity decides; reliability and personalization cannot override a measured distance', async () => {
     const { ids } = await ask('I need a car wash today', 'Car Wash', [row('far', { miles: 6 }), row('near', { miles: 3 })], { followed: ['far'], established: ['far'] });
     expect(ids).toEqual(['near', 'far']);

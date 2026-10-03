@@ -11,7 +11,8 @@ export function askBusinessParamsFromAsk({ classifyResult, typedText, submission
     prefillCategory: c.category ?? null,
     prefillPartySize: c.partySize ?? null,
     prefillBudgetMax: c.budgetMax ?? null,
-    prefillDateWindow: c.dateWindow ?? null,
+    // "no rush" / "whenever" (item 163) is the person's own answer to When?: "I'm flexible". Nothing else is filled from it.
+    prefillDateWindow: c.dateWindow ?? (c.structured?.spontaneity === 'no_rush' ? 'flexible' : null),
     prefillOccasion: c.occasion ?? null,
     prefillSubmissionId: submissionId ?? null,
   };

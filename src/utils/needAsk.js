@@ -1,8 +1,8 @@
 // Want vs Need (owner item 162, 2026-10-03, LOCKED). "I want something fun tonight" is a WANT (discovery, personalization,
 // inspiration: the existing ranking, unchanged). "I need a car wash today" is a NEED: the person has a task to get done, so
 // within the results the ask ALREADY returned, the order is strictly:
-//   1 availability: the existing usable-now tiers (available > open > unknown > closed) at the asked time. Now, today or no
-//     time = now; an explicit clock start on a named day ("tomorrow after 2 PM") = that time; anything else (tonight,
+//   1 availability: the existing usable-now tiers (available > open > unknown > closed) at the asked time. Now/ASAP, today or
+//     no time = now (but "no rush" / "this week" / "next week" = no moment, item 163); an explicit clock start on a named day ("tomorrow after 2 PM") = that time; anything else (tonight,
 //     tomorrow with no clock) names no time, so availability ties for everyone. A time is never invented.
 //   2 proximity: measured distance, nearest first; an unknown distance after every measured one. The existing closeness
 //     signal is continuous, so no buckets are invented: any measured difference decides.
@@ -67,12 +67,16 @@ export function askKind({ category = null, rawText = '' } = {}) {
 
 // The time availability is judged at, from the ask's own words only: now / today / no time = now; an explicit clock start
 // on one named day = that moment; anything else = null (availability ties for everyone; nothing is invented).
-export function needAvailabilityTime(dateWindow, now = new Date(), { clockWindow = null, dateAnchor = null } = {}) {
+// Urgency (item 163): an ask that says it is not about right now ("no rush", "this week", "next week") names no moment, so
+// availability ties; ASAP / now keeps "now".
+const NOT_NOW = ['no_rush', 'this_week', 'plan_ahead'];
+export function needAvailabilityTime(dateWindow, now = new Date(), { clockWindow = null, dateAnchor = null, spontaneity = null } = {}) {
   if (clockWindow?.after != null && dateAnchor?.kind === 'day' && dateAnchor.dates?.length === 1) {
     const d = new Date(dateAnchor.dates[0]);
     d.setHours(0, 0, 0, 0);
     return new Date(d.getTime() + clockWindow.after * 60000);
   }
+  if (NOT_NOW.includes(spontaneity) && (!dateWindow || dateWindow === 'flexible')) return null;
   return !dateWindow || dateWindow === 'now' || dateWindow === 'today' ? now : null;
 }
 
