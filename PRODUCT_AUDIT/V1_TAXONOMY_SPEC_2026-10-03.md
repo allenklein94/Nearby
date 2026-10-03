@@ -24,6 +24,8 @@ matching, privacy or business-demand change.
 | 10 | New category **Personal Training** (Sports & Fitness) | item 171, LOCKED |
 | 11 | Wording: baseball, softball, hockey, sports club, athletic club -> Sports; crossfit -> Gyms + Fitness; dance fitness, zumba -> Fitness | item 171, LOCKED |
 | 12 | New gathering format value **league** (format vocabulary + CHECK, not a category; it does not exist today) | item 171, LOCKED |
+| 13 | Wording: scenic area / scenic spot / viewpoint / overlook -> Scenic Views; water activities -> Water Sports; nature center / nature preserve -> Parks + Wildlife | item 172, proposed |
+| 14 | Move **Boating** and **Water Sports** from Activities & Recreation to Outdoors & Nature (reopens item 171's Activities list) | item 172, proposed |
 
 Result: 19 canonical groups.
 
@@ -157,3 +159,28 @@ Create asks it no Casual / Competitive question.
 Activities & Recreation group alone (or that group plus no tag), since such a business today serves every tag of the
 group and would stop covering the 18 tags that move. Nothing about a business's classification or routing changes
 silently: the owner sees that list first.
+
+## Item 172: Outdoors & Nature coverage (proposed, owner to confirm)
+
+| Owner entry | Represented as today | Proposal |
+|---|---|---|
+| Beaches, Parks, Hiking, Trails, Camping, Fishing, Kayaking, Paddleboarding, Surfing, Snorkeling, Diving, Wildlife, Gardens | subcategories of Outdoors & Nature | covered |
+| Scenic Areas | subcategory Scenic Views (no "scenic area" wording) | wording -> Scenic Views |
+| **Nature Centers** | nothing | wording -> Parks + Wildlife (smallest fix; a category only if owner wants it) |
+| Water Activities | subcategory Water Sports (Activities & Recreation), no "water activities" wording | wording -> Water Sports |
+| Boating | subcategory, Activities & Recreation | move to Outdoors & Nature (proposed) |
+| Glamping | subcategory, Stay & Getaway (Travel & Getaways after item 168) | leave: it is a place to stay; one group per tag |
+
+Outdoors & Nature also keeps Outdoors, Picnics and Gardening (not in the owner list; nothing removed).
+
+**Weather sensitivity, what exists today:**
+- **Gatherings:** every tag in Outdoors & Nature is outdoor automatically (`categoryEnvironment`). Weather is judged at
+  each gathering's own start: indoor-worthy weather (storm, snow, heavy rain, >95F, <45F) sinks it, a good daylight
+  window lifts it (+/-2 in typed asks, the Home weather card, Discover's / Gatherings' Outdoor view). Ranking only,
+  never hidden. This is why moving Boating and Water Sports here matters: today they get no weather sensitivity at all.
+- **Businesses:** sensitive only through what they DECLARED (`weather_setting` outdoor / weather dependent, or outdoor
+  seating), never from their category (locked 2026-10-02). A kayak rental that never answered the weather question is
+  treated as unknown.
+
+Making it "stronger" would mean either raising the weather weight (a ranking change, outside this taxonomy pass) or
+inferring weather from a business's category (reverses the 2026-10-02 rule). Neither is proposed here.
