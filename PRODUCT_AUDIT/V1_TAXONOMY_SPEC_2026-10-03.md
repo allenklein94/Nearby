@@ -18,6 +18,8 @@ matching, privacy or business-demand change.
 | 4 | Keep Health & Personal Care and Attractions & Things to See as their own groups | item 168 |
 | 5 | Food & Drink coverage gap: **Tea** (+ wording: tea, tea house, tea room, bubble tea...) | item 169 |
 | 6 | Food & Drink coverage gap: **Distilleries** (+ wording: distillery, craft spirits...) | item 169 |
+| 7 | Activities gaps: **Axe Throwing, Laser Tag, Go-Karts, Paintball, Trampoline Parks, Horseback Riding, Recreation Centers** (+ wording) | item 170 |
+| 8 | Wording: "adventure park", "ropes course", "zipline" -> existing **Adventure** | item 170 |
 
 Result: 19 canonical groups.
 
@@ -51,3 +53,35 @@ display-only sections.
 findable as LITERAL search text (a gathering/community/offer whose own words contain "pizza"). A typed ask "pizza
 tonight" gets no category from the deterministic rules (the AI classifier, when it runs, may still suggest a food tag). Start Something's Pizza / Burgers chips are only title quick-starts, not categories. Making them
 structurally findable needs an item-77 decision (a specialty axis), which the owner has declined for V1.
+
+## Item 170: Activities & Recreation coverage (coverage spec, not a hierarchy)
+
+Same rule as item 169: existing flat layers first, one group per tag, nothing migrated now. This list has no sports,
+so it is unaffected by the item-168 Sports & Fitness split (it describes the remaining Activities & Recreation).
+
+| Owner entry | Represented as today | Status |
+|---|---|---|
+| Bowling | subcategory, Activities & Recreation | covered |
+| Mini Golf, Escape Rooms | subcategories, **Entertainment & Nightlife** | covered (other group) |
+| Arcades | subcategory Arcade, **Entertainment & Nightlife** (plural matches) | covered (other group) |
+| Indoor Play | subcategory, **Family & Kids** | covered (other group) |
+| Tours | subcategory, **Travel & Experiences** (Travel & Getaways after item 168) | covered (other group) |
+| Classes, Workshops | subcategories, **Education & Classes**; also the `format` class / workshop (item 66) | covered (other group) |
+| Group Activities | NOT a category: who-with = party type `groups` (item 43) + business attribute `group_friendly` (item 80) | covered by existing layers |
+| Adventure Parks | nearest is the existing **Adventure** subcategory; no wording maps to it | **wording gap -> pending #8** |
+| **Axe Throwing** | nothing (already the known unmapped example, item 128) | **gap -> pending #7** |
+| **Laser Tag, Go-Karts, Paintball, Trampoline Parks, Horseback Riding** | nothing | **gap -> pending #7** |
+| **Recreational Centers** | nothing (Gyms / Community Events are different things) | **gap -> pending #7** |
+
+**Group Activities stays out of the category list on purpose:** a category would duplicate the group layer, and the
+nearest tag, Group Hangouts, is in `NEVER_SHARE_WITH_BUSINESS`, so it must not become a business classification.
+
+**Open question for the owner (placement, not decided):** Mini Golf, Escape Rooms, Arcades, Indoor Play, Tours,
+Classes and Workshops already exist under other groups. One group per tag means listing them under Activities would be
+a MOVE, which changes category routing for businesses that only declared the group (a group-only business serves its
+whole group). Default is to leave them where they are; moving any of them must be decided explicitly and then joins
+the item-168 old -> new mapping.
+
+**Emerging activities** need no restructuring: a new leaf tag is one row through the canonical path, and business
+signup wording surfaces candidates through the emerging-category loop (item 30). After V1, additions follow the
+item-166 miss process (synonym first, new tag last).
