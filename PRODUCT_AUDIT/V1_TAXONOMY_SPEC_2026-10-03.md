@@ -45,7 +45,9 @@ matching, privacy or business-demand change.
 | 31 | Home services wordings + AC fix (ac repair / air conditioning / heating / furnace -> HVAC, never Repairs) | item 180, LOCKED |
 | 32 | `home_local_services` leaves `NEED_GROUP_KEYS`; every service tag of the group (incl. the four new) joins `NEED_TAG_KEYS` | item 180, LOCKED |
 | 33 | FLAG for the final mapping review: **Locksmith** (not canonical today; not created here) | item 180 |
-| 34 | Auto & Transportation coverage (see item 181: four categories, wordings, used cars fix, tag-level need list) | item 181, proposed |
+| 34 | New categories **Auto Parts, Dealerships, Gas Stations, Transportation Services** + their wording | item 181, LOCKED |
+| 35 | Auto wordings + used cars fix (used cars / new cars / buy a car -> Dealerships, never the Cars hobby tag) | item 181, LOCKED |
+| 36 | `auto_transportation` leaves `NEED_GROUP_KEYS`; every service tag (incl. the four new) joins `NEED_TAG_KEYS`; the need check reads the RESOLVED TAG (`src/utils/needTagLevel.regression.test.js`) | item 181, LOCKED |
 
 Result: 19 canonical groups.
 
@@ -574,7 +576,7 @@ keep it strict (item 162: never infer a need) and revisit only from real misses 
 4. **Locksmith is not a canonical category today** (checked: no tag, no synonym). Not created here; flagged for the
    final V1 taxonomy mapping review.
 
-## Item 181: Auto & Transportation coverage (proposed, owner to confirm)
+## Item 181: Auto & Transportation coverage
 
 Today: Car Wash, Detailing, Auto Repair, Tires, Oil Change, EV Charging, Car Rental, Parking, Towing. Checked against
 the live search and the need classifier on 2026-10-03.
@@ -604,4 +606,16 @@ fun tonight?" = an open-ended WANT (ordinary ranking, service businesses left ou
 (Auto & Transportation) with the tag as its subcategory (Tires), and is a need because the group is a need group. Once
 needs are tag-level, the need check must read that subcategory tag, or these asks silently become wants. The same
 applies to Home & Local Services ("I need a plumber" -> group + Plumbing) and Pets. Regression-test each.
+
+**Owner decision (2026-10-03, LOCKED):** all three approved. Four new categories; the wordings as in the table (bare
+"rentals" and bare "charging" stay unmapped); "used cars" / "new cars" / "buy a car" -> **Dealerships** (one of the four
+NEW categories, not an existing one; today it lands on the Cars hobby tag). Transportation is never a need group; each
+approved service tag is need-capable with explicit task framing ("my car won't start" = want, "I need a tow truck" =
+need). **The need decision runs on the final resolved canonical tag, never only the parent group**, for every
+service-category need from items 175-181. Regression suite added now (before the migration):
+`src/utils/needTagLevel.regression.test.js` runs the real deterministic resolver and the exact category the intent
+resolver receives; it passes today (tire, oil change, plumber, haircut = need; fun tonight, car won't start, car wash
+near me, plumbers near me, AC is broken = want) and lists as `todo` the cases whose wording or category only exists
+after the migration (tow truck, fix my AC, dog walker, pet sitting, pet food, hotel tonight, and the want cases from
+items 178-179); those turn into real tests in the pass.
 
