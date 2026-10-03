@@ -748,7 +748,7 @@ logged with that category permanently on `intent_submissions.category` (and the 
 the person, and that column feeds the business demand aggregate (floored at 5) and the internal category trends. For
 Faith & Spirituality that is a persistent record of a religious search. Proposal: in the same pass, the search logs store
 no category for a never-learned category (the same way item 88 strips stated dietary and access needs from the logged
-words), so the wording resolves the current search and leaves nothing behind. Owner to confirm.
+words), so the wording resolves the current search and leaves nothing behind. **Owner APPROVED and APPLIED (2026-10-03, migration `20270281`):** generalized as a persistence rule over the never-learned list; search log, tap log and typed-ask audit keep no category, words or title for it; a declared profile interest stays allowed. The faith wordings may land in the pass.
 
 Verified: dry run rolled back (server keys equal the app's; a Faith search records nothing, Coffee still does), applied,
 single overloads, the emerging-category / synonym and four behavior-learning live scripts all OK; Jest 4730.
