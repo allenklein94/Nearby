@@ -20,6 +20,10 @@ matching, privacy or business-demand change.
 | 6 | Food & Drink coverage gap: **Distilleries** (+ wording: distillery, craft spirits...) | item 169 |
 | 7 | New canonical categories under Activities & Recreation (the part that stays after the item-168 split): **Axe Throwing, Laser Tag, Go-Karts, Paintball, Trampoline Parks, Horseback Riding, Recreation Centers** (+ their own wording) | item 170, LOCKED |
 | 8 | Wording: "adventure park", "ropes course", "zipline" -> existing **Adventure** (synonyms, not categories) | item 170, LOCKED |
+| 9 | Sports & Fitness membership (the item-168 split), from the owner's list; see item 171 | item 171, proposed |
+| 10 | New categories **Baseball, Softball, Hockey, Personal Training** (Sports & Fitness) | item 171, proposed |
+| 11 | Wording: crossfit -> Gyms + Fitness; dance fitness / zumba -> Fitness; sports club / athletic club -> Sports | item 171, proposed |
+| 12 | New gathering format value **league** (format vocabulary + CHECK, not a category) | item 171, proposed |
 
 Result: 19 canonical groups.
 
@@ -101,3 +105,35 @@ first, new category only when warranted).
 (`CATEGORY_GROUPS`) + seed-parity test, every category CHECK / registered column, translations
 (`vocab.categories.tags.<key>` in 11 languages), the Discover rail / category view, routes, the static signup export,
 the code-dependency inventory, and regression tests.
+
+## Item 171: Sports & Fitness coverage (proposed, owner to confirm)
+
+The owner's Fitness / Sports / Recreation headings are not stored (same rule as 169/170). This list also tells us what
+the item-168 split moves.
+
+| Owner entry | Represented as today | Proposal |
+|---|---|---|
+| Gyms, Yoga, Pilates, Cycling, Running, Martial Arts | subcategories (Activities & Recreation) | covered; move to Sports & Fitness |
+| Pickleball, Tennis, Basketball, Soccer, Volleyball, Golf, Swimming | subcategories (Activities & Recreation) | covered; move to Sports & Fitness |
+| **Personal Training** | nothing | new category (a service businesses sell, like Massage) |
+| **CrossFit** | nothing | wording -> Gyms + Fitness (a brand name, so not its own category) |
+| **Dance Fitness** | nothing (Dancing = Entertainment, Dance Classes = Education) | wording "dance fitness", "zumba" -> Fitness |
+| **Baseball, Softball, Hockey** | nothing (only generic Sports) | new categories, same footing as Basketball / Soccer |
+| Open Play, Tournaments | gathering format (item 66) | covered; not categories |
+| **Leagues** | no format value | add format `league`; not a category |
+| Training | format `class` + skill level (item 67) | covered; "training" alone stays unmapped (dog training = Pet Training) |
+| **Sports Clubs** | nothing ("Social Clubs" is Dating & Social, different) | wording "sports club", "athletic club" -> Sports |
+
+**Split membership (proposed):** Sports & Fitness = Fitness, Gyms, Personal Training, Yoga, Pilates, Cycling, Running,
+Martial Arts, Sports, Pickleball, Padel, Tennis, Basketball, Soccer, Volleyball, Golf, Baseball, Softball, Hockey,
+Swimming. Stay in Activities & Recreation: Bowling, Climbing, Walking, Skating, Water Sports, Boating, Adventure, Cars
+and the seven from item 170. Kids Sports stays in Family & Kids. A move changes routing only for businesses that
+declared the group alone (they serve every tag of their group); the migration's mapping must list them.
+
+**Pickleball vs Padel: already separate canonical categories (item 75), kept.** Each has its own tag and key; they are
+related siblings (with Tennis), which gives only a weak labeled lift ("Related to your interest in Pickleball"), never a
+search match. "paddle" -> Pickleball; "paddle tennis" / "platform tennis" map to nothing; a canonical name can never be
+taught as another tag's synonym (refused server-side). Both move to Sports & Fitness together.
+
+New sports join the existing sport list (`SPORT_TAGS`), so Create asks Casual / Competitive for them like Basketball;
+no other special behavior.
