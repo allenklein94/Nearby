@@ -2,7 +2,7 @@ jest.mock('../services/intentOutcomes', () => ({ recordIntentSelection: jest.fn(
 import { TAG_COMMITMENT, commitmentOf, commitmentAsk, applyCommitmentToCandidates } from './commitmentLevel';
 import { spontaneityOf, spontaneityDelta, applySpontaneityToCandidates, spontaneityCaption, endOfThisWeek, isImmediate, SPONTANEITY } from './spontaneity';
 import { dateWindowFromText } from '../utils/askResolver';
-import { needAvailabilityTime } from '../utils/needAsk';
+import { needAvailabilityWindow } from '../utils/needAsk';
 import { askBusinessParamsFromAsk } from '../services/askToBusiness';
 import { energyFit } from './energyLevel';
 import { groupForTag } from './gatheringCategories';
@@ -105,17 +105,18 @@ describe('urgency (owner item 163): the owner\'s levels on the one spontaneity s
     expect(spontaneityDelta(new Date(2026, 8, 30, 16).toISOString(), 'no_rush', wed)).toBe(0);
     expect(isImmediate('no_rush')).toBe(false);
     expect(spontaneityCaption('this_week')).toMatch(/this week/);
-    expect(spontaneityCaption('no_rush')).toMatch(/^No rush/);
+    expect(spontaneityCaption('no_rush')).toBeNull(); // changes no order for a want; a need says what it applied
   });
 
   it('a NEED ask: ASAP is judged now; no rush / this week / next week name no moment (availability ties)', () => {
     const now = new Date(2026, 8, 30, 15);
-    expect(needAvailabilityTime('now', now, { spontaneity: 'now' })).toBe(now);
-    expect(needAvailabilityTime(null, now, { spontaneity: 'no_rush' })).toBeNull();
-    expect(needAvailabilityTime(null, now, { spontaneity: 'this_week' })).toBeNull();
-    expect(needAvailabilityTime(null, now, { spontaneity: 'plan_ahead' })).toBeNull();
-    expect(needAvailabilityTime('today', now, { spontaneity: 'no_rush' })).toBe(now); // a stated day still counts
-    expect(needAvailabilityTime(null, now, {})).toBe(now);
+    const w = (o) => needAvailabilityWindow(o, now);
+    expect(w({ dateWindow: 'now', spontaneity: 'now' })).toMatchObject({ basis: 'now', startMs: now.getTime() });
+    expect(w({ spontaneity: 'no_rush' })).toBeNull();
+    expect(w({ spontaneity: 'this_week' })).toBeNull();
+    expect(w({ spontaneity: 'plan_ahead' })).toBeNull();
+    expect(w({ dateWindow: 'today', spontaneity: 'no_rush' })).toMatchObject({ basis: 'now' }); // a stated day still counts
+    expect(w({})).toMatchObject({ basis: 'now' });
   });
 
   it('"no rush" carries into Ask a business as "I\'m flexible"; a stated day still wins', () => {

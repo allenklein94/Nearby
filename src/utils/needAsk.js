@@ -1,9 +1,8 @@
 // Want vs Need (owner item 162, 2026-10-03, LOCKED). "I want something fun tonight" is a WANT (discovery, personalization,
 // inspiration: the existing ranking, unchanged). "I need a car wash today" is a NEED: the person has a task to get done, so
 // within the results the ask ALREADY returned, the order is strictly:
-//   1 availability: the existing usable-now tiers (available > open > unknown > closed) at the asked time. Now/ASAP, today or
-//     no time = now (but "no rush" / "this week" / "next week" = no moment, item 163); an explicit clock start on a named day ("tomorrow after 2 PM") = that time; anything else (tonight,
-//     tomorrow with no clock) names no time, so availability ties for everyone. A time is never invented.
+//   1 availability: the existing usable-now tiers (available > open > unknown > closed) at the time the words give, by the
+//     timing hierarchy in needAvailabilityWindow below (item 163). A time is never invented.
 //   2 proximity: measured distance, nearest first; an unknown distance after every measured one. The existing closeness
 //     signal is continuous, so no buckets are invented: any measured difference decides.
 //   3 reliability: the "Our pick" record (utils/reliabilityRecord.js). Established record > no record. No record is NEUTRAL;
@@ -24,7 +23,7 @@
 // appointment), so NEED_FRAMING below is the one list.
 import { CATEGORY_GROUPS, groupForTag, isNeedCategory } from '../constants/gatheringCategories';
 import { tagsInText, normalizedWords } from '../constants/categorySynonyms';
-import { usableNowTier } from './operatingStatus';
+import { usableNowTier, usableTierInSpan } from './operatingStatus';
 import { hasEstablishedRecord } from './reliabilityRecord';
 
 export const NEED_CAPTION = "Showing what's available and close by";
@@ -65,25 +64,62 @@ export function askKind({ category = null, rawText = '' } = {}) {
   return isNeedCategory(category) && hasNeedFraming(rawText, category) ? 'need' : 'want';
 }
 
-// The time availability is judged at, from the ask's own words only: now / today / no time = now; an explicit clock start
-// on one named day = that moment; anything else = null (availability ties for everyone; nothing is invented).
-// Urgency (item 163): an ask that says it is not about right now ("no rush", "this week", "next week") names no moment, so
-// availability ties; ASAP / now keeps "now".
+// WHEN availability is judged for a NEED (owner item 163, 2026-10-03, LOCKED). Timing never classifies an ask; it only ranks a
+// need that askKind already found. From the person's own words, strongest first:
+//   1 an explicit day or clock time: "at 4 PM" (today if still ahead, never moved to another day), a clock on one named day
+//     ("tomorrow after 2 PM" = that moment, "by 4 PM today" = until then), a named day with no clock ("tomorrow", "Saturday",
+//     "this weekend", "tonight" = 5-11 PM, the app's existing evening) = anywhere inside it. "Today" keeps its existing meaning
+//     (now). A stated day always beats "no rush" ("no rush, tomorrow is fine" = tomorrow).
+//   2 explicit urgency: now / ASAP / right away = now (open right now can beat a closer place that isn't).
+//   3 explicit flexibility: "no rush", "this week", "next week" = no moment, so availability ties and proximity leads.
+//   4 no timing: the existing no-time meaning, now.
+// Returns { startMs, endMs, basis } (startMs === endMs = one moment) or null (availability ties for everyone).
 const NOT_NOW = ['no_rush', 'this_week', 'plan_ahead'];
-export function needAvailabilityTime(dateWindow, now = new Date(), { clockWindow = null, dateAnchor = null, spontaneity = null } = {}) {
-  if (clockWindow?.after != null && dateAnchor?.kind === 'day' && dateAnchor.dates?.length === 1) {
-    const d = new Date(dateAnchor.dates[0]);
-    d.setHours(0, 0, 0, 0);
-    return new Date(d.getTime() + clockWindow.after * 60000);
+const DAY_MS = 24 * 3600 * 1000;
+const dayStart = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x.getTime(); };
+const isSameDay = (a, b) => dayStart(a) === dayStart(b);
+
+export function needAvailabilityWindow({ dateWindow = null, clockWindow = null, dateAnchor = null, pointClock = null, spontaneity = null } = {}, now = new Date()) {
+  const nowMs = now.getTime();
+  const point = (t) => (t >= nowMs - 60000 ? { startMs: t, endMs: t, basis: 'stated' } : null);
+  const span = (a, b) => { const s = Math.max(a, nowMs); return b > s ? { startMs: s, endMs: b, basis: 'stated' } : null; };
+  const oneDay = dateAnchor?.kind === 'day' && dateAnchor.dates?.length === 1 ? dayStart(dateAnchor.dates[0]) : null;
+  // 1a. a clock on one named day
+  if (oneDay != null && clockWindow && (clockWindow.after != null || clockWindow.before != null)) {
+    if (clockWindow.after != null) return point(oneDay + clockWindow.after * 60000);
+    return span(oneDay, oneDay + clockWindow.before * 60000);
   }
-  if (NOT_NOW.includes(spontaneity) && (!dateWindow || dateWindow === 'flexible')) return null;
-  return !dateWindow || dateWindow === 'now' || dateWindow === 'today' ? now : null;
+  // 1b. one stated clock time ("at 4 PM"): on the named day, else today
+  if (pointClock != null && (oneDay != null || !dateAnchor)) return point((oneDay ?? dayStart(now)) + pointClock * 60000);
+  // 1c. a named day / period with no clock (today keeps its existing meaning below)
+  if (dateWindow === 'tonight' && oneDay != null) return span(oneDay + 17 * 3600000, oneDay + 23 * 3600000) ?? { startMs: nowMs, endMs: nowMs, basis: 'stated' };
+  if (oneDay != null && !isSameDay(oneDay, now)) return span(oneDay, oneDay + DAY_MS);
+  if (dateAnchor?.kind === 'period' && dateAnchor.dates?.length) {
+    const days = dateAnchor.dates.map(dayStart).sort((a, b) => a - b);
+    return span(days[0], days[days.length - 1] + DAY_MS);
+  }
+  // 2. explicit urgency
+  if (dateWindow === 'now') return { startMs: nowMs, endMs: nowMs, basis: 'now' };
+  // 3. explicit flexibility (a stated day was handled above)
+  if (NOT_NOW.includes(spontaneity) && dateWindow !== 'today') return null;
+  // 4. no timing / today: the existing meaning
+  return !dateWindow || dateWindow === 'today' || dateWindow === 'flexible' ? { startMs: nowMs, endMs: nowMs, basis: 'now' } : null;
+}
+
+// The one caption a need shows, describing what was applied: availability (at a stated time or now) and closeness, or, when
+// nothing named a moment, closeness alone. Never the ranking ladder itself.
+export const NEED_CLOSE_CAPTION = 'Showing what\'s close by first';
+export function needCaption(window) {
+  return window ? NEED_CAPTION : NEED_CLOSE_CAPTION;
 }
 
 const AVAILABILITY_RANK = { available: 3, open: 2, unknown: 1, closed: 0 };
 
-export function needKeys(c, { toEntity, at, reputations }) {
-  const avail = at ? (AVAILABILITY_RANK[usableNowTier(toEntity(c), at)] ?? 1) : 1;
+// `window` from needAvailabilityWindow (or `at`, one moment); neither = availability ties for everyone.
+export function needKeys(c, { toEntity, at, window, reputations }) {
+  const w = window ?? (at ? { startMs: at.getTime(), endMs: at.getTime() } : null);
+  const tier = !w ? null : w.endMs > w.startMs ? usableTierInSpan(toEntity(c), w.startMs, w.endMs) : usableNowTier(toEntity(c), w.startMs);
+  const avail = tier ? (AVAILABILITY_RANK[tier] ?? 1) : 1;
   const d = c?.distanceMiles;
   const distance = typeof d === 'number' && Number.isFinite(d) && d >= 0 ? d : Infinity;
   const rel = c?.partnerId && hasEstablishedRecord(reputations?.get?.(c.partnerId)) ? 1 : 0;

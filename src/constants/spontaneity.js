@@ -63,12 +63,13 @@ export function applySpontaneityToCandidates(candidates, spont, now = Date.now()
   });
 }
 
+// Captions only for levels that really change the order (no rush changes nothing for a want; a need says what it applied,
+// utils/needAsk.js needCaption, and shows no spontaneity line).
 const CAPTION = {
   now: 'Showing what is happening right now',
   next_hours: 'Showing what starts in the next few hours',
   plan_ahead: 'Looking ahead: plans a few days out come first',
   this_week: 'Showing what happens this week first',
-  no_rush: 'No rush: showing the best fit, not just the soonest',
 };
 export function spontaneityCaption(spont) {
   return CAPTION[spont] ?? null;

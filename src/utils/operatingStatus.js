@@ -54,14 +54,21 @@ function span([open, close]) {
   return { o, c: c <= o ? c + 1440 : c };
 }
 
+const FORMATTERS = new Map(); // one formatter per time zone (an invalid zone throws on construction and is never cached)
+
 // The wall clock at `at` in an IANA time zone: { dateKey 'YYYY-MM-DD', day 'mon', minutes }. null for an unknown zone.
 export function localClock(at, timeZone) {
   if (!timeZone || typeof timeZone !== 'string') return null;
   let parts;
   try {
-    parts = new Intl.DateTimeFormat('en-US', {
-      timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', weekday: 'short',
-    }).formatToParts(new Date(nowMs(at)));
+    let fmt = FORMATTERS.get(timeZone);
+    if (!fmt) {
+      fmt = new Intl.DateTimeFormat('en-US', {
+        timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', weekday: 'short',
+      });
+      FORMATTERS.set(timeZone, fmt);
+    }
+    parts = fmt.formatToParts(new Date(nowMs(at)));
   } catch (e) {
     return null;
   }
@@ -330,6 +337,27 @@ export function usableNowTier(entity, at = new Date()) {
   const op = getOperatingStatus(entity, at);
   if (avail === 'unavailable') return 'closed';
   return op === 'open' ? 'open' : op;
+}
+// The best usableNowTier anywhere inside [startMs, endMs) (item 163: a need asked for "tomorrow" or "this weekend" with no
+// clock). The same rule judged at moments across the stated span, never a moment chosen for the person: every 15 minutes plus
+// the start of a posting or gathering inside it. available > open > unknown > closed.
+const TIER_RANK = { available: 3, open: 2, unknown: 1, closed: 0 };
+const SPAN_STEP_MS = 15 * 60 * 1000;
+export function usableTierInSpan(entity, startMs, endMs) {
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return usableNowTier(entity, startMs);
+  const points = [];
+  for (let t = startMs; t < endMs; t += SPAN_STEP_MS) points.push(t);
+  for (const v of [entity?.posting?.startsAt, entity?.startsAt]) {
+    const t = ms(v);
+    if (t != null && t >= startMs && t < endMs) points.push(t);
+  }
+  let best = 'closed';
+  for (const t of points) {
+    const tier = usableNowTier(entity, t);
+    if (TIER_RANK[tier] > TIER_RANK[best]) best = tier;
+    if (best === 'available') break;
+  }
+  return best;
 }
 export function isConfirmedUsableNow(entity, at = new Date()) {
   const tier = usableNowTier(entity, at);

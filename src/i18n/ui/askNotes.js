@@ -8,7 +8,6 @@ export default {
       next_hours: "Showing what starts in the next few hours",
       plan_ahead: "Looking ahead: plans a few days out come first",
       this_week: "Showing what happens this week first",
-      no_rush: "No rush: showing the best fit, not just the soonest",
     },
     dist: {
       very_nearby: "Keeping it very close by",
@@ -93,6 +92,7 @@ export default {
     listSep: ", ",
     listAnd: " and ",
     need: "Showing what's available and close by",
+    needClose: "Showing what's close by first",
   },
   es: {
     openNow: "Solo lo que está abierto ahora mismo",
@@ -101,7 +101,6 @@ export default {
       next_hours: "Lo que empieza en las próximas horas",
       plan_ahead: "Mirando adelante: primero los planes de dentro de unos días",
       this_week: "Primero lo que pasa esta semana",
-      no_rush: "Sin prisa: lo que mejor encaja, no solo lo más pronto",
     },
     dist: {
       very_nearby: "Muy cerca de ti",
@@ -186,6 +185,7 @@ export default {
     listSep: ", ",
     listAnd: " y ",
     need: "Mostrando lo disponible y cercano",
+    needClose: "Primero lo que está más cerca",
   },
   de: {
     openNow: "Nur was gerade geöffnet hat",
@@ -194,7 +194,6 @@ export default {
       next_hours: "Was in den nächsten Stunden beginnt",
       plan_ahead: "Vorausgeplant: Pläne in ein paar Tagen zuerst",
       this_week: "Was diese Woche stattfindet, zuerst",
-      no_rush: "Keine Eile: was am besten passt, nicht nur das Früheste",
     },
     dist: {
       very_nearby: "Ganz in der Nähe",
@@ -279,6 +278,7 @@ export default {
     listSep: ", ",
     listAnd: " und ",
     need: "Zeigt, was verfügbar und in der Nähe ist",
+    needClose: "Was in der Nähe ist, zuerst",
   },
   fr: {
     openNow: "Seulement ce qui est ouvert maintenant",
@@ -287,7 +287,6 @@ export default {
       next_hours: "Ce qui commence dans les prochaines heures",
       plan_ahead: "En avance : les plans dans quelques jours d'abord",
       this_week: "Ce qui se passe cette semaine d'abord",
-      no_rush: "Pas de rush : ce qui convient le mieux, pas seulement le plus tôt",
     },
     dist: {
       very_nearby: "Tout près",
@@ -372,6 +371,7 @@ export default {
     listSep: ", ",
     listAnd: " et ",
     need: "Ce qui est disponible et à proximité",
+    needClose: "Ce qui est tout près d'abord",
   },
   pt: {
     openNow: "Só o que está aberto agora",
@@ -380,7 +380,6 @@ export default {
       next_hours: "O que começa nas próximas horas",
       plan_ahead: "Olhando à frente: planos para daqui a alguns dias primeiro",
       this_week: "Primeiro o que acontece esta semana",
-      no_rush: "Sem pressa: o que combina melhor, não só o mais cedo",
     },
     dist: {
       very_nearby: "Bem pertinho",
@@ -465,6 +464,7 @@ export default {
     listSep: ", ",
     listAnd: " e ",
     need: "Mostrando o que está disponível e perto",
+    needClose: "Primeiro o que está mais perto",
   },
   ht: {
     openNow: "Sèlman sa ki louvri kounye a",
@@ -473,7 +473,6 @@ export default {
       next_hours: "Sa ki kòmanse nan kèk èdtan k ap vini yo",
       plan_ahead: "Pi devan: plan pou kèk jou pita an premye",
       this_week: "Sa k ap pase semèn sa a an premye",
-      no_rush: "Pa gen prese: sa ki pi bon pou ou, pa sèlman sa ki pi vit",
     },
     dist: {
       very_nearby: "Tou pre",
@@ -558,6 +557,7 @@ export default {
     listSep: ", ",
     listAnd: " ak ",
     need: "Nou montre sa ki disponib e ki tou pre",
+    needClose: "Sa ki pi pre an premye",
   },
   zh: {
     openNow: "只显示此刻营业的地方",
@@ -566,7 +566,6 @@ export default {
       next_hours: "接下来几小时内开始的活动",
       plan_ahead: "提前规划：几天后的计划排在前面",
       this_week: "本周的活动排在前面",
-      no_rush: "不着急：优先最合适的，而不只是最早的",
     },
     dist: {
       very_nearby: "就在附近",
@@ -651,6 +650,7 @@ export default {
     listSep: "、",
     listAnd: "和",
     need: "显示可用且离你近的选项",
+    needClose: "附近的排在前面",
   },
   vi: {
     openNow: "Chỉ những nơi đang mở cửa",
@@ -659,7 +659,6 @@ export default {
       next_hours: "Những gì bắt đầu trong vài giờ tới",
       plan_ahead: "Nhìn xa hơn: kế hoạch vài ngày tới được ưu tiên",
       this_week: "Ưu tiên những gì diễn ra trong tuần này",
-      no_rush: "Không vội: ưu tiên phù hợp nhất, không chỉ sớm nhất",
     },
     dist: {
       very_nearby: "Rất gần",
@@ -744,6 +743,7 @@ export default {
     listSep: ", ",
     listAnd: " và ",
     need: "Hiển thị những nơi có sẵn và gần bạn",
+    needClose: "Ưu tiên những nơi gần bạn",
   },
   tl: {
     openNow: "Ang bukas lang ngayon",
@@ -752,7 +752,6 @@ export default {
       next_hours: "Ang magsisimula sa susunod na ilang oras",
       plan_ahead: "Pauna: inuuna ang mga plano ilang araw mula ngayon",
       this_week: "Inuuna ang mangyayari ngayong linggo",
-      no_rush: "Walang madalian: ang pinakaangkop, hindi lang ang pinakamaaga",
     },
     dist: {
       very_nearby: "Napakalapit",
@@ -837,6 +836,7 @@ export default {
     listSep: ", ",
     listAnd: " at ",
     need: "Ipinapakita ang available at malapit",
+    needClose: "Inuuna ang pinakamalapit",
   },
   ru: {
     openNow: "Только то, что открыто прямо сейчас",
@@ -845,7 +845,6 @@ export default {
       next_hours: "То, что начнётся в ближайшие часы",
       plan_ahead: "Наперёд: сначала планы через несколько дней",
       this_week: "Сначала то, что будет на этой неделе",
-      no_rush: "Без спешки: то, что подходит лучше всего, а не только самое раннее",
     },
     dist: {
       very_nearby: "Совсем рядом",
@@ -930,6 +929,7 @@ export default {
     listSep: ", ",
     listAnd: " и ",
     need: "Показываем то, что доступно и рядом",
+    needClose: "Сначала то, что рядом",
   },
   ko: {
     openNow: "지금 영업 중인 곳만 보여드려요",
@@ -938,7 +938,6 @@ export default {
       next_hours: "앞으로 몇 시간 안에 시작하는 것을 보여드려요",
       plan_ahead: "미리 보기: 며칠 뒤 계획을 먼저 보여드려요",
       this_week: "이번 주에 있는 것을 먼저 보여드려요",
-      no_rush: "서두르지 않아도 돼요: 가장 빠른 것보다 가장 잘 맞는 것을 보여드려요",
     },
     dist: {
       very_nearby: "아주 가까운 곳으로",
@@ -1023,5 +1022,6 @@ export default {
     listSep: ", ",
     listAnd: " 및 ",
     need: "지금 이용할 수 있고 가까운 곳을 보여드려요",
+    needClose: "가까운 곳을 먼저 보여드려요",
   },
 };

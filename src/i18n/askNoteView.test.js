@@ -8,6 +8,7 @@ import { OPEN_NOW_CAPTION } from '../utils/operatingStatus';
 import { planCaption } from '../utils/planAsk';
 import { openEndedCaption } from '../utils/openEndedAsk';
 import { spontaneityCaption } from '../constants/spontaneity';
+import { NEED_CAPTION, NEED_CLOSE_CAPTION } from '../utils/needAsk';
 import { timeBudgetCaption } from '../constants/timeBudget';
 import { clockWindowCaption } from '../constants/clockWindow';
 import { distanceWillingnessCaption, DISTANCE_WILLINGNESS_KEYS } from '../constants/distanceWillingness';
@@ -21,7 +22,9 @@ const LANGS = Object.keys(translations).filter((l) => l !== 'en');
 function allCaptions() {
   const out = new Set([OPEN_NOW_CAPTION]);
   const add = (c) => { if (c) out.add(c); };
-  ['now', 'next_hours', 'plan_ahead'].forEach((k) => add(spontaneityCaption(k)));
+  ['now', 'next_hours', 'plan_ahead', 'this_week'].forEach((k) => add(spontaneityCaption(k)));
+  add(NEED_CAPTION);
+  add(NEED_CLOSE_CAPTION);
   DISTANCE_WILLINGNESS_KEYS.forEach((k) => add(distanceWillingnessCaption(k)));
   TRANSPORT_MODE_KEYS.forEach((k) => add(transportModeCaption(k)));
   for (let m = 1; m <= 12 * 60; m += 1) add(timeBudgetCaption(m));

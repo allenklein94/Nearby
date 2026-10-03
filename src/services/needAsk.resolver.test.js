@@ -26,7 +26,10 @@ jest.mock('./behaviorSignals', () => ({ recordSearchBehavior: jest.fn(), getMyLe
 import { runIntentSearch } from './intentResolver';
 import { searchActiveBusinessAvailability, getMyBusinessAffinitySignals, getPartnerReputations } from './businessFulfillment';
 import { classifyCreateRequest } from './createAssistant';
-import { askKind, orderNeedResults, needAvailabilityTime, NEED_CAPTION } from '../utils/needAsk';
+import { askKind, orderNeedResults, needAvailabilityWindow, NEED_CAPTION, NEED_CLOSE_CAPTION } from '../utils/needAsk';
+import { dateWindowFromText } from '../utils/askResolver';
+import { clockWindowFromText, dateAnchorFromText, pointClockFromText } from '../constants/clockWindow';
+import { spontaneityOf } from '../constants/spontaneity';
 import { isNeedCategory } from '../constants/gatheringCategories';
 import { RELIABILITY_MIN_OPPORTUNITIES } from '../utils/reliabilityRecord';
 
@@ -36,9 +39,10 @@ afterAll(() => jest.useRealTimers());
 const at = (h) => new Date(Date.now() + h * 3600 * 1000).toISOString();
 
 // live = a posting open right now (available); later = a posting that starts in 3 hours (not usable now: unknown)
-const row = (id, { miles = 1, live = true, category = 'Car Wash' } = {}) => ({
+// slot = [startHours, endHours] from now, overriding live
+const row = (id, { miles = 1, live = true, category = 'Car Wash', slot = null } = {}) => ({
   id, partner_id: `p-${id}`, partner_name: `Biz ${id}`, title: 'Open slots', category,
-  distance_miles: miles, starts_at: live ? at(-1) : at(3), ends_at: live ? at(2) : at(6), remaining_capacity: 5,
+  distance_miles: miles, starts_at: slot ? at(slot[0]) : live ? at(-1) : at(3), ends_at: slot ? at(slot[1]) : live ? at(2) : at(6), remaining_capacity: 5,
 });
 const ESTABLISHED = { total_opportunities: RELIABILITY_MIN_OPPORTUNITIES, completion_rate: 90 };
 
@@ -91,7 +95,7 @@ describe('classification: a need/service category AND task framing in the words 
     expect(isNeedCategory('Coffee')).toBe(false);
     expect(isNeedCategory('home_local_services')).toBe(true);
     const src = require('fs').readFileSync(require('path').join(__dirname, '../utils/needAsk.js'), 'utf8');
-    expect(src).not.toMatch(/classifyCreateRequest|supabase|historyScore\s*[><]|dateWindow\s*===\s*'tonight'/);
+    expect(src).not.toMatch(/classifyCreateRequest|supabase|historyScore\s*[><]/);
   });
 
   it('a need ask shows the caption and records ask_kind; a want does neither', async () => {
@@ -117,7 +121,37 @@ describe('need ordering: strictly availability > proximity > reliability > perso
     const relaxed = await ask('I need a car wash, no rush', 'Car Wash', rows(), { dateWindow: null });
     expect(relaxed.ids).toEqual(['near', 'open']);
     expect(relaxed.out.audit.interpretation.spontaneity).toBe('no_rush');
-    expect(relaxed.out.openEndedNote).toContain('No rush');
+    expect(relaxed.out.openEndedNote).toContain(NEED_CLOSE_CAPTION);
+  });
+
+  // FIXED_NOW = Wednesday 3 PM. 'near' = a 0.5 mi place open right now (2-5 PM today); 'tmrw' = 8 mi, a slot tomorrow 10 AM-1 PM.
+  const timing = () => [row('near', { miles: 0.5 }), row('tmrw', { miles: 8, slot: [19, 22] })];
+  it('timing rule 1: a stated day decides availability ("tomorrow" = anywhere tomorrow), and beats "no rush"', async () => {
+    expect((await ask('I need a car wash tomorrow', 'Car Wash', timing(), { dateWindow: null })).ids).toEqual(['tmrw', 'near']);
+    const r = await ask('I need a car wash, no rush, tomorrow is fine', 'Car Wash', timing(), { dateWindow: null });
+    expect(r.ids).toEqual(['tmrw', 'near']);
+    expect(r.out.openEndedNote).toContain(NEED_CAPTION);
+  });
+  it('timing rule 1: a stated clock time decides ("at 4 PM" today), never moved to another day', async () => {
+    const rows = () => [row('later', { miles: 8, slot: [3, 6] }), row('near', { miles: 0.5 })]; // later = 6-9 PM
+    expect((await ask('I need a car wash at 4 PM', 'Car Wash', rows(), { dateWindow: null })).ids).toEqual(['near', 'later']);
+    expect((await ask('I need a car wash at 7 PM', 'Car Wash', rows(), { dateWindow: null })).ids).toEqual(['later', 'near']);
+    // 1 PM already passed today: no moment, availability ties, proximity leads
+    const past = await ask('I need a car wash at 1 PM', 'Car Wash', [row('later', { miles: 8, slot: [3, 6] }), row('closer', { miles: 2, live: false })], { dateWindow: null });
+    expect(past.ids).toEqual(['closer', 'later']);
+    expect(past.out.openEndedNote).toContain(NEED_CLOSE_CAPTION);
+  });
+  it('timing rules 2-3: ASAP = now; "this week" = no moment; the caption says what was applied, one line', async () => {
+    expect((await ask('I need a car wash ASAP', 'Car Wash', timing(), { dateWindow: 'now' })).ids).toEqual(['near', 'tmrw']);
+    const wk = await ask('I need a car wash this week', 'Car Wash', [row('soon', { miles: 8 }), row('closer', { miles: 2, live: false })], { dateWindow: null });
+    expect(wk.ids).toEqual(['closer', 'soon']);
+    expect(wk.out.openEndedNote).toContain(NEED_CLOSE_CAPTION);
+    expect(wk.out.openEndedNote).not.toContain(NEED_CAPTION);
+    expect(wk.out.openEndedNote).not.toMatch(/this week first/); // no second, spontaneity line for a need
+  });
+  it('timing never classifies: "haircut ASAP" / "car wash tomorrow, no rush" stay WANT', () => {
+    expect(askKind({ category: 'Barbers', rawText: 'haircut ASAP' })).toBe('want');
+    expect(askKind({ category: 'Car Wash', rawText: 'car wash tomorrow, no rush' })).toBe('want');
   });
 
   it('availability tied: proximity decides; reliability and personalization cannot override a measured distance', async () => {
@@ -164,22 +198,34 @@ describe('orderNeedResults (the rule, buckets reuse existing ones)', () => {
     const items = [{ id: 'x', entity: open }, { id: 'y', entity: open, distanceMiles: 9 }, { id: 'z', entity: open, distanceMiles: 9 }];
     expect(orderNeedResults(items, { toEntity: ent, at: now, reputations: new Map() }).map((c) => c.id)).toEqual(['y', 'z', 'x']);
   });
-  it('a time window with no specific time (tonight, tomorrow, weekend) leaves availability tied for everyone', () => {
-    expect(needAvailabilityTime('today', now)).toBe(now);
-    expect(needAvailabilityTime(null, now)).toBe(now);
-    expect(needAvailabilityTime('tonight', now)).toBeNull();
-    expect(needAvailabilityTime('tomorrow', now)).toBeNull();
-  });
-  it('an explicit clock start on one named day is evaluated at that time', () => {
-    const day = new Date(2026, 9, 1);
-    const t = needAvailabilityTime('tomorrow', now, { clockWindow: { after: 14 * 60, before: null }, dateAnchor: { kind: 'day', dates: [day] } });
-    expect([t.getDate(), t.getHours()]).toEqual([1, 14]);
-    expect(needAvailabilityTime('tomorrow', now, { clockWindow: { after: null, before: 15 * 60 }, dateAnchor: { kind: 'day', dates: [day] } })).toBeNull();
-  });
   it('reliability: established record > no record; there is no bucket below no record', () => {
     const base = { entity: open, distanceMiles: 2 };
     const items = [{ id: 'none', ...base, partnerId: 'n' }, { id: 'est', ...base, partnerId: 'e' }, { id: 'weak', ...base, partnerId: 'w' }];
     const reps = new Map([['e', { total_opportunities: 9 }], ['w', { total_opportunities: 2 }]]);
     expect(orderNeedResults(items, { toEntity: ent, at: now, reputations: reps }).map((c) => c.id)).toEqual(['est', 'none', 'weak']);
+  });
+  it('needAvailabilityWindow, from the real parsers: the locked timing hierarchy', () => {
+    const now = new Date(2026, 8, 30, 15, 0, 0); // Wednesday 3 PM
+    const win = (text) => {
+      const dw = dateWindowFromText(text);
+      return needAvailabilityWindow({ dateWindow: dw, clockWindow: clockWindowFromText(text), dateAnchor: dateAnchorFromText(text, now), pointClock: pointClockFromText(text), spontaneity: spontaneityOf({ dateWindow: dw, rawText: text }) }, now);
+    };
+    const h = (w, k) => new Date(w[k]).getHours();
+    expect(win('I need a plumber at 4 PM')).toMatchObject({ basis: 'stated' });
+    expect(h(win('I need a plumber at 4 PM'), 'startMs')).toBe(16);
+    expect(win('I need a plumber at 1 PM')).toBeNull(); // passed: never moved to tomorrow
+    const tmrw = win('I need a haircut tomorrow');
+    expect([new Date(tmrw.startMs).getDate(), h(tmrw, 'startMs'), tmrw.endMs - tmrw.startMs]).toEqual([1, 0, 24 * 3600 * 1000]);
+    expect(new Date(win('I need a haircut tomorrow at 2 PM').startMs).getHours()).toBe(14);
+    expect(new Date(win('haircut tomorrow after 2 PM').startMs).getHours()).toBe(14);
+    expect(h(win('I need a haircut tonight'), 'startMs')).toBe(17);
+    expect(win('no rush, tomorrow is fine').basis).toBe('stated');
+    expect(win('I need a plumber ASAP')).toMatchObject({ basis: 'now' });
+    expect(win('I need a haircut, no rush')).toBeNull();
+    expect(win('I need a haircut this week')).toBeNull();
+    expect(win('I need a haircut next week')).toBeNull();
+    expect(win('I need a haircut today')).toMatchObject({ basis: 'now' }); // today keeps its existing meaning
+    expect(win('I need a haircut')).toMatchObject({ basis: 'now' }); // no timing: existing meaning
+    expect(win('I need a car wash this weekend').basis).toBe('stated');
   });
 });

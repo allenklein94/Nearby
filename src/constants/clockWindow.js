@@ -64,6 +64,16 @@ export function clockWindowFromText(text) {
   return { after, before };
 }
 
+// A single stated clock time ("at 4 PM", "at 4:30", "at noon"), in minutes after midnight, or null. Read ONLY for a need's
+// availability moment (item 163); gathering windows keep using clockWindowFromText. A bare 8-11 is not guessed (parseClock).
+export function pointClockFromText(text) {
+  if (typeof text !== 'string' || !text) return null;
+  const m = text.toLowerCase().match(new RegExp(String.raw`\bat\s+${TIME}(?![\w:])`));
+  if (!m) return null;
+  const raw = m[1].trim();
+  return parseClock(raw);
+}
+
 const minutesOfDay = (d) => d.getHours() * 60 + d.getMinutes();
 const toDate = (v) => { const d = v ? new Date(v) : null; return d && !Number.isNaN(d.getTime()) ? d : null; };
 

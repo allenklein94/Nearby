@@ -18,7 +18,7 @@ import { gatheringEnvironment, businessEnvironment } from '../constants/environm
 import { categoryEnvironment } from '../constants/gatheringIndoorOutdoor';
 import { occasionLabel } from '../constants/businessAttributes';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, searchOccasionOfferingBusinesses, getMyBusinessAffinitySignals, getPartnerReputations } from './businessFulfillment';
-import { askKind, needAvailabilityTime, orderNeedResults, NEED_CAPTION } from '../utils/needAsk';
+import { askKind, needAvailabilityWindow, needCaption, orderNeedResults } from '../utils/needAsk';
 import { getWhoForPreferenceSignals } from './preferencePolls';
 import { searchOccasionPackages, formatOccasionPackageDetail } from './occasionPackages';
 import { getSocialForecast } from './homeDashboard';
@@ -84,7 +84,7 @@ import { wordsBackedAttributes, applyCapabilitiesToCandidates, applyLikelyGroupT
 import { restrictionAsk } from '../constants/businessRestrictions';
 import { genresFromText, applyGenreToCandidates } from '../constants/genreMatch';
 import { timeBudgetFromText, applyTimeBudgetToCandidates, timeBudgetCaption } from '../constants/timeBudget';
-import { clockWindowFromText, dateAnchorFromText, applyClockWindowToCandidates, clockWindowCaption, windowSpan, clockLabel } from '../constants/clockWindow';
+import { clockWindowFromText, dateAnchorFromText, pointClockFromText, applyClockWindowToCandidates, clockWindowCaption, windowSpan, clockLabel } from '../constants/clockWindow';
 import { fitExperienceToTime } from '../utils/planTiming';
 import { intensityFromText, effortFromText, applyIntensityToCandidates, applyEffortToCandidates, energiesWithoutIntensity } from '../constants/intensityEffort';
 import { socialSignalsFromText, applySocialToCandidates } from '../constants/socialContext';
@@ -985,6 +985,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Item 162: a NEED (the asked category is a need/service group) is ordered availability > proximity > reliability >
   // personalization, each a tie-breaker for the one before (utils/needAsk.js). A want keeps the order above, unchanged.
   const kind = askKind({ category, rawText });
+  const needWindow = kind === 'need' ? needAvailabilityWindow({ dateWindow, clockWindow, dateAnchor: dateAnchor ?? dateAnchorFromText(rawText), pointClock: pointClockFromText(rawText), spontaneity }) : null;
   if (kind === 'need') {
     let reputations = new Map();
     try {
@@ -992,11 +993,11 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     } catch (e) {
       console.error('reliability lookup skipped', e);
     }
-    deduped = orderNeedResults(deduped, { toEntity: (c) => candidateEntity(c, partnerInfo), at: needAvailabilityTime(dateWindow, new Date(), { clockWindow, dateAnchor, spontaneity }), reputations });
+    deduped = orderNeedResults(deduped, { toEntity: (c) => candidateEntity(c, partnerInfo), window: needWindow, reputations });
   }
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
-  const openEndedNote = [openNowOnly ? OPEN_NOW_CAPTION : null, kind === 'need' ? NEED_CAPTION : null, planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacetsCaption(parsedFacets, eligibility.removedOpposite, eligibility.removedUnknown), eligibility.compatibilityCaption].filter(Boolean).join(' · ') || null;
+  const openEndedNote = [openNowOnly ? OPEN_NOW_CAPTION : null, kind === 'need' ? needCaption(needWindow) : null, planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), kind === 'need' ? null : spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacetsCaption(parsedFacets, eligibility.removedOpposite, eligibility.removedUnknown), eligibility.compatibilityCaption].filter(Boolean).join(' · ') || null;
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,
