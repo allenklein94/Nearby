@@ -34,6 +34,11 @@ update business_request_offers set status = 'completed' where request_id = (sele
 insert into r select 'a repeated completion adds nothing', (select count(*) from behavior_events where entity_id = (select req2 from fx)) = 1;
 update business_request_offers set status = 'completed', completed_at = now() where request_id = (select req3 from fx);
 insert into r select 'a request with no category is never learned', not exists (select 1 from behavior_events where entity_id = (select req3 from fx));
+do $$ begin insert into behavior_events (user_id, event_type, entity_type, entity_id, category, redeemed_at)
+  select uid, 'redeem', 'business_request', req1, 'Coffee', now() from fx; insert into r values ('a second evidence row for one request is refused by the table', false);
+exception when unique_violation then insert into r values ('a second evidence row for one request is refused by the table', true); end $$;
+insert into r select 'exactly one evidence row per person per request',
+  not exists (select 1 from behavior_events where event_type in ('accept','redeem') group by user_id, entity_id having count(*) > 1);
 -- an old accept (outside the 90-day window) that is redeemed today counts again, once
 insert into behavior_events (user_id, event_type, entity_type, entity_id, category, created_at)
 select uid, 'accept', 'business_request', req4, 'Coffee', now() - interval '100 days' from fx;
