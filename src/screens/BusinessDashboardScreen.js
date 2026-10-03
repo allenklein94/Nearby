@@ -4428,6 +4428,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       {!!o.business_requests?.note && o.is_directed === true && (
                         <Text style={styles.breakdownText}>{t('ui.bizDash2.theirNote', { note: o.business_requests.note })}</Text>
                       )}
+                      {/* Item 164: the customer's stated timing, only while the business can still answer. */}
+                      {oppAction.kind === 'send_offer' && !!card.needsLine && <Text style={styles.opportunityWhen}>{card.needsLine}</Text>}
                       {card.whenLine !== '' && <Text style={styles.opportunityWhen}>{card.whenLine}</Text>}
                       {/* Item 149: potential value, only while the business can still answer; never called earnings. */}
                       {oppAction.kind === 'send_offer' && card.potential && (

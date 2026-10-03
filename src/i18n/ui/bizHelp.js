@@ -176,6 +176,14 @@ export default {
       potentialValueUpTo: "Potential value: up to {amount}",
       potentialBasisBudget: "{people} × their budget of {amount} per person",
       potentialNote: "What this could be worth, not money earned.",
+      needs: {
+        today: "Needs this today",
+        todayAt: "Needs this today at {time}",
+        tomorrow: "Needs this tomorrow",
+        tomorrowAt: "Needs this tomorrow at {time}",
+        on: "Needs this {day}",
+        onAt: "Needs this {day} at {time}",
+      },
     },
     budget: {
       upTo: "Up to {amount}/person",
@@ -513,6 +521,14 @@ export default {
       potentialValueUpTo: "Valor potencial: hasta {amount}",
       potentialBasisBudget: "{people} × su presupuesto de {amount} por persona",
       potentialNote: "Lo que podría valer, no dinero ganado.",
+      needs: {
+        today: "Lo necesita hoy",
+        todayAt: "Lo necesita hoy a las {time}",
+        tomorrow: "Lo necesita mañana",
+        tomorrowAt: "Lo necesita mañana a las {time}",
+        on: "Lo necesita el {day}",
+        onAt: "Lo necesita el {day} a las {time}",
+      },
     },
     budget: {
       upTo: "Hasta {amount}/persona",
@@ -850,6 +866,14 @@ export default {
       potentialValueUpTo: "Möglicher Wert: bis zu {amount}",
       potentialBasisBudget: "{people} × ihr Budget von {amount} pro Person",
       potentialNote: "Was das wert sein könnte, kein verdientes Geld.",
+      needs: {
+        today: "Braucht das heute",
+        todayAt: "Braucht das heute um {time}",
+        tomorrow: "Braucht das morgen",
+        tomorrowAt: "Braucht das morgen um {time}",
+        on: "Braucht das am {day}",
+        onAt: "Braucht das am {day} um {time}",
+      },
     },
     budget: {
       upTo: "Bis zu {amount}/Person",
@@ -1187,6 +1211,14 @@ export default {
       potentialValueUpTo: "Valeur potentielle : jusqu'à {amount}",
       potentialBasisBudget: "{people} × leur budget de {amount} par personne",
       potentialNote: "Ce que cela pourrait valoir, pas de l'argent gagné.",
+      needs: {
+        today: "En a besoin aujourd'hui",
+        todayAt: "En a besoin aujourd'hui à {time}",
+        tomorrow: "En a besoin demain",
+        tomorrowAt: "En a besoin demain à {time}",
+        on: "En a besoin le {day}",
+        onAt: "En a besoin le {day} à {time}",
+      },
     },
     budget: {
       upTo: "Jusqu'à {amount}/personne",
@@ -1524,6 +1556,14 @@ export default {
       potentialValueUpTo: "Valor potencial: até {amount}",
       potentialBasisBudget: "{people} × o orçamento deles de {amount} por pessoa",
       potentialNote: "O que isso pode valer, não dinheiro ganho.",
+      needs: {
+        today: "Precisa disso hoje",
+        todayAt: "Precisa disso hoje às {time}",
+        tomorrow: "Precisa disso amanhã",
+        tomorrowAt: "Precisa disso amanhã às {time}",
+        on: "Precisa disso em {day}",
+        onAt: "Precisa disso em {day} às {time}",
+      },
     },
     budget: {
       upTo: "Até {amount}/pessoa",
@@ -1861,6 +1901,14 @@ export default {
       potentialValueUpTo: "Valè posib: jiska {amount}",
       potentialBasisBudget: "{people} × bidjè yo a {amount} pa moun",
       potentialNote: "Sa li ta ka vo, se pa lajan ou fè.",
+      needs: {
+        today: "Bezwen sa jodi a",
+        todayAt: "Bezwen sa jodi a a {time}",
+        tomorrow: "Bezwen sa demen",
+        tomorrowAt: "Bezwen sa demen a {time}",
+        on: "Bezwen sa {day}",
+        onAt: "Bezwen sa {day} a {time}",
+      },
     },
     budget: {
       upTo: "Jiska {amount}/moun",
@@ -2198,6 +2246,14 @@ export default {
       potentialValueUpTo: "潜在价值：最多 {amount}",
       potentialBasisBudget: "{people} × 对方每人 {amount} 的预算",
       potentialNote: "这是可能的价值，不是已赚到的钱。",
+      needs: {
+        today: "今天需要",
+        todayAt: "今天 {time} 需要",
+        tomorrow: "明天需要",
+        tomorrowAt: "明天 {time} 需要",
+        on: "{day} 需要",
+        onAt: "{day} {time} 需要",
+      },
     },
     budget: {
       upTo: "最多 {amount}/人",
@@ -2535,6 +2591,14 @@ export default {
       potentialValueUpTo: "Giá trị tiềm năng: tối đa {amount}",
       potentialBasisBudget: "{people} × ngân sách của họ {amount} mỗi người",
       potentialNote: "Đây là giá trị có thể có, không phải tiền đã kiếm.",
+      needs: {
+        today: "Cần trong hôm nay",
+        todayAt: "Cần hôm nay lúc {time}",
+        tomorrow: "Cần vào ngày mai",
+        tomorrowAt: "Cần ngày mai lúc {time}",
+        on: "Cần vào {day}",
+        onAt: "Cần vào {day} lúc {time}",
+      },
     },
     budget: {
       upTo: "Tối đa {amount}/người",
@@ -2872,6 +2936,14 @@ export default {
       potentialValueUpTo: "Posibleng halaga: hanggang {amount}",
       potentialBasisBudget: "{people} × ang budget nila na {amount} bawat tao",
       potentialNote: "Ito ang posibleng halaga, hindi perang kinita.",
+      needs: {
+        today: "Kailangan ito ngayong araw",
+        todayAt: "Kailangan ito ngayong araw nang {time}",
+        tomorrow: "Kailangan ito bukas",
+        tomorrowAt: "Kailangan ito bukas nang {time}",
+        on: "Kailangan ito sa {day}",
+        onAt: "Kailangan ito sa {day} nang {time}",
+      },
     },
     budget: {
       upTo: "Hanggang {amount}/tao",
@@ -3209,6 +3281,14 @@ export default {
       potentialValueUpTo: "Возможная ценность: до {amount}",
       potentialBasisBudget: "{people} × их бюджет {amount} на человека",
       potentialNote: "Сколько это может стоить, а не заработанные деньги.",
+      needs: {
+        today: "Нужно сегодня",
+        todayAt: "Нужно сегодня в {time}",
+        tomorrow: "Нужно завтра",
+        tomorrowAt: "Нужно завтра в {time}",
+        on: "Нужно {day}",
+        onAt: "Нужно {day} в {time}",
+      },
     },
     budget: {
       upTo: "До {amount}/чел.",
@@ -3546,6 +3626,14 @@ export default {
       potentialValueUpTo: "예상 가치: 최대 {amount}",
       potentialBasisBudget: "{people} × 고객의 1인당 예산 {amount}",
       potentialNote: "받을 수 있는 금액이지, 번 돈이 아닙니다.",
+      needs: {
+        today: "오늘 필요해요",
+        todayAt: "오늘 {time}에 필요해요",
+        tomorrow: "내일 필요해요",
+        tomorrowAt: "내일 {time}에 필요해요",
+        on: "{day}에 필요해요",
+        onAt: "{day} {time}에 필요해요",
+      },
     },
     budget: {
       upTo: "1인 최대 {amount}",

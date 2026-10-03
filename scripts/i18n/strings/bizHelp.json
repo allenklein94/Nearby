@@ -291,7 +291,13 @@
     "funnel.offersSent": "Offers sent",
     "funnel.accepted": "Offers accepted",
     "funnel.redemptions": "Redemptions",
-    "funnel.value": "Value of offers redeemed"
+    "funnel.value": "Value of offers redeemed",
+    "opportunity.needs.today": "Needs this today",
+    "opportunity.needs.todayAt": "Needs this today at {time}",
+    "opportunity.needs.tomorrow": "Needs this tomorrow",
+    "opportunity.needs.tomorrowAt": "Needs this tomorrow at {time}",
+    "opportunity.needs.on": "Needs this {day}",
+    "opportunity.needs.onAt": "Needs this {day} at {time}"
   },
   "es": {
     "mostAttendedStart": "Hora de inicio con más asistencia: {hour} (de {n})",
@@ -585,7 +591,13 @@
     "funnel.offersSent": "Ofertas enviadas",
     "funnel.accepted": "Ofertas aceptadas",
     "funnel.redemptions": "Canjes",
-    "funnel.value": "Valor de las ofertas canjeadas"
+    "funnel.value": "Valor de las ofertas canjeadas",
+    "opportunity.needs.today": "Lo necesita hoy",
+    "opportunity.needs.todayAt": "Lo necesita hoy a las {time}",
+    "opportunity.needs.tomorrow": "Lo necesita mañana",
+    "opportunity.needs.tomorrowAt": "Lo necesita mañana a las {time}",
+    "opportunity.needs.on": "Lo necesita el {day}",
+    "opportunity.needs.onAt": "Lo necesita el {day} a las {time}"
   },
   "de": {
     "mostAttendedStart": "Bestbesuchte Startzeit: {hour} (aus {n})",
@@ -879,7 +891,13 @@
     "funnel.offersSent": "Gesendete Angebote",
     "funnel.accepted": "Angenommene Angebote",
     "funnel.redemptions": "Einlösungen",
-    "funnel.value": "Wert der eingelösten Angebote"
+    "funnel.value": "Wert der eingelösten Angebote",
+    "opportunity.needs.today": "Braucht das heute",
+    "opportunity.needs.todayAt": "Braucht das heute um {time}",
+    "opportunity.needs.tomorrow": "Braucht das morgen",
+    "opportunity.needs.tomorrowAt": "Braucht das morgen um {time}",
+    "opportunity.needs.on": "Braucht das am {day}",
+    "opportunity.needs.onAt": "Braucht das am {day} um {time}"
   },
   "fr": {
     "mostAttendedStart": "Heure de début la plus fréquentée : {hour} (sur {n})",
@@ -1173,7 +1191,13 @@
     "funnel.offersSent": "Offres envoyées",
     "funnel.accepted": "Offres acceptées",
     "funnel.redemptions": "Utilisations",
-    "funnel.value": "Valeur des offres utilisées"
+    "funnel.value": "Valeur des offres utilisées",
+    "opportunity.needs.today": "En a besoin aujourd'hui",
+    "opportunity.needs.todayAt": "En a besoin aujourd'hui à {time}",
+    "opportunity.needs.tomorrow": "En a besoin demain",
+    "opportunity.needs.tomorrowAt": "En a besoin demain à {time}",
+    "opportunity.needs.on": "En a besoin le {day}",
+    "opportunity.needs.onAt": "En a besoin le {day} à {time}"
   },
   "pt": {
     "mostAttendedStart": "Horário de início com mais público: {hour} (de {n})",
@@ -1467,7 +1491,13 @@
     "funnel.offersSent": "Ofertas enviadas",
     "funnel.accepted": "Ofertas aceitas",
     "funnel.redemptions": "Resgates",
-    "funnel.value": "Valor das ofertas resgatadas"
+    "funnel.value": "Valor das ofertas resgatadas",
+    "opportunity.needs.today": "Precisa disso hoje",
+    "opportunity.needs.todayAt": "Precisa disso hoje às {time}",
+    "opportunity.needs.tomorrow": "Precisa disso amanhã",
+    "opportunity.needs.tomorrowAt": "Precisa disso amanhã às {time}",
+    "opportunity.needs.on": "Precisa disso em {day}",
+    "opportunity.needs.onAt": "Precisa disso em {day} às {time}"
   },
   "ht": {
     "mostAttendedStart": "Lè kòmansman ki gen plis moun: {hour} (sou {n})",
@@ -1744,7 +1774,13 @@
     "funnel.offersSent": "Òf voye",
     "funnel.accepted": "Òf aksepte",
     "funnel.redemptions": "Itilizasyon",
-    "funnel.value": "Valè òf ki itilize yo"
+    "funnel.value": "Valè òf ki itilize yo",
+    "opportunity.needs.today": "Bezwen sa jodi a",
+    "opportunity.needs.todayAt": "Bezwen sa jodi a a {time}",
+    "opportunity.needs.tomorrow": "Bezwen sa demen",
+    "opportunity.needs.tomorrowAt": "Bezwen sa demen a {time}",
+    "opportunity.needs.on": "Bezwen sa {day}",
+    "opportunity.needs.onAt": "Bezwen sa {day} a {time}"
   },
   "zh": {
     "mostAttendedStart": "到场人数最多的开始时间：{hour}（来自 {n}）",
@@ -2021,7 +2057,13 @@
     "funnel.offersSent": "已发送的报价",
     "funnel.accepted": "已接受的报价",
     "funnel.redemptions": "兑换",
-    "funnel.value": "已兑换报价的价值"
+    "funnel.value": "已兑换报价的价值",
+    "opportunity.needs.today": "今天需要",
+    "opportunity.needs.todayAt": "今天 {time} 需要",
+    "opportunity.needs.tomorrow": "明天需要",
+    "opportunity.needs.tomorrowAt": "明天 {time} 需要",
+    "opportunity.needs.on": "{day} 需要",
+    "opportunity.needs.onAt": "{day} {time} 需要"
   },
   "vi": {
     "mostAttendedStart": "Giờ bắt đầu đông khách nhất: {hour} (từ {n})",
@@ -2298,7 +2340,13 @@
     "funnel.offersSent": "Ưu đãi đã gửi",
     "funnel.accepted": "Ưu đãi được chấp nhận",
     "funnel.redemptions": "Lượt sử dụng",
-    "funnel.value": "Giá trị ưu đãi đã sử dụng"
+    "funnel.value": "Giá trị ưu đãi đã sử dụng",
+    "opportunity.needs.today": "Cần trong hôm nay",
+    "opportunity.needs.todayAt": "Cần hôm nay lúc {time}",
+    "opportunity.needs.tomorrow": "Cần vào ngày mai",
+    "opportunity.needs.tomorrowAt": "Cần ngày mai lúc {time}",
+    "opportunity.needs.on": "Cần vào {day}",
+    "opportunity.needs.onAt": "Cần vào {day} lúc {time}"
   },
   "tl": {
     "mostAttendedStart": "Oras ng simula na pinakamaraming dumalo: {hour} (mula sa {n})",
@@ -2575,7 +2623,13 @@
     "funnel.offersSent": "Mga alok na naipadala",
     "funnel.accepted": "Mga alok na tinanggap",
     "funnel.redemptions": "Mga na-redeem",
-    "funnel.value": "Halaga ng mga na-redeem na alok"
+    "funnel.value": "Halaga ng mga na-redeem na alok",
+    "opportunity.needs.today": "Kailangan ito ngayong araw",
+    "opportunity.needs.todayAt": "Kailangan ito ngayong araw nang {time}",
+    "opportunity.needs.tomorrow": "Kailangan ito bukas",
+    "opportunity.needs.tomorrowAt": "Kailangan ito bukas nang {time}",
+    "opportunity.needs.on": "Kailangan ito sa {day}",
+    "opportunity.needs.onAt": "Kailangan ito sa {day} nang {time}"
   },
   "ru": {
     "mostAttendedStart": "Самое посещаемое время начала: {hour} (по {n})",
@@ -2918,7 +2972,13 @@
     "funnel.offersSent": "Отправлено предложений",
     "funnel.accepted": "Принято предложений",
     "funnel.redemptions": "Использовано",
-    "funnel.value": "Стоимость использованных предложений"
+    "funnel.value": "Стоимость использованных предложений",
+    "opportunity.needs.today": "Нужно сегодня",
+    "opportunity.needs.todayAt": "Нужно сегодня в {time}",
+    "opportunity.needs.tomorrow": "Нужно завтра",
+    "opportunity.needs.tomorrowAt": "Нужно завтра в {time}",
+    "opportunity.needs.on": "Нужно {day}",
+    "opportunity.needs.onAt": "Нужно {day} в {time}"
   },
   "ko": {
     "mostAttendedStart": "가장 많이 참석한 시작 시간: {hour} ({n} 기준)",
@@ -3195,6 +3255,12 @@
     "funnel.offersSent": "보낸 제안",
     "funnel.accepted": "수락된 제안",
     "funnel.redemptions": "사용",
-    "funnel.value": "사용된 제안의 가치"
+    "funnel.value": "사용된 제안의 가치",
+    "opportunity.needs.today": "오늘 필요해요",
+    "opportunity.needs.todayAt": "오늘 {time}에 필요해요",
+    "opportunity.needs.tomorrow": "내일 필요해요",
+    "opportunity.needs.tomorrowAt": "내일 {time}에 필요해요",
+    "opportunity.needs.on": "{day}에 필요해요",
+    "opportunity.needs.onAt": "{day} {time}에 필요해요"
   }
 }

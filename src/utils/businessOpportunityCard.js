@@ -1,7 +1,7 @@
 import { formatBudgetLine } from './budgetTier';
 import { bizMoney } from '../i18n/bizFormat';
 import { tr } from '../i18n/translate';
-import { bizDate, bizTimeRange } from '../i18n/bizFormat';
+import { bizDate, bizTimeRange, bizClock } from '../i18n/bizFormat';
 
 const P = (key, vars) => tr(`ui.bizHelp.opportunity.${key}`, vars);
 
@@ -31,7 +31,29 @@ export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addo
   const lookingFor = [cuisineLabel, ...attributeLabels].filter(Boolean);
   // "Coffee + Pastries": what the customer picked from the closed list; absent when they picked nothing.
   const requestedLine = itemLabels.length > 0 ? itemLabels.join(' + ') : '';
-  return { title, whenLine, feelLine, lookingFor, requestedLine, potential };
+  return { title, whenLine, feelLine, lookingFor, requestedLine, potential, needsLine: requestTimingLabel(r) };
+}
+
+// Item 164 (owner, 2026-10-03, LOCKED): the customer's EXPLICIT requested timing as one request-level line on the card:
+// "Needs this today" / "Needs this tomorrow at 7 PM" / "Needs this Fri, Oct 9". Read ONLY from the request's own stored
+// day (`date`) and start time (`time_window_start`), the same fields the who/when line shows. No day = flexible / no rush /
+// not said = no line (a time with no day says nothing either). A past day = no line. Never the need/want classification,
+// urgency level, a score, ranking, the customer's searches or anything learned; routing and eligibility do not read it.
+// "Today" is the device's local calendar day, like every date label on the dashboard (no business timezone is stored).
+const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+export function requestTimingLabel(req, now = new Date()) {
+  const r = req ?? {};
+  if (typeof r.date !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(r.date)) return null;
+  const day = r.date.slice(0, 10);
+  const today = ymd(now);
+  if (day < today) return null;
+  const tomorrow = ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+  const time = r.time_window_start ? bizClock(r.time_window_start) : null;
+  const at = time ? 'At' : '';
+  if (day === today) return P(`needs.today${at}`, { time });
+  if (day === tomorrow) return P(`needs.tomorrow${at}`, { time });
+  const label = bizDate(day);
+  return label ? P(`needs.on${at}`, { day: label, time }) : null;
 }
 
 // Item 149 (owner, LOCKED): "Potential value" = what this opportunity could be worth IF it converts. It is not
