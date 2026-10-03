@@ -104,3 +104,53 @@ describe('5. financial metrics stay on realized transactions', () => {
     expect(read(`supabase/migrations/${latest}`)).toMatch(/status\s*=\s*'completed'/);
   });
 });
+
+// Owner follow-up (2026-10-03): the guard must not depend on English. In EVERY supported language the Potential
+// value line and its basis must name a potential/opportunity amount (a per-language marker) and must not use that
+// language's words for earnings, revenue, realized income or profit. The disclaimer note is excluded on purpose:
+// it says "not money earned", so it names the concept to negate it. Word lists are a regression net for machine
+// translation, not a native-quality review.
+describe('potential value keeps its meaning in every language', () => {
+  const POTENTIAL_MARKER = {
+    en: /potential/i, es: /potencial/i, de: /möglich/i, fr: /potentiel/i, pt: /potencial/i, ht: /posib/i,
+    zh: /潜在/, vi: /tiềm năng/i, tl: /posible/i, ru: /возможн/i, ko: /예상|잠재/,
+  };
+  const EARNINGS_WORDS = {
+    en: /earn|revenue|income|profit|takings|sales/i,
+    es: /ganancia|ingreso|beneficio|ganad|facturaci|venta/i,
+    de: /einnahme|umsatz|ertrag|gewinn|verdien|einkommen|erlös/i,
+    fr: /revenu|gain|recette|bénéfice|chiffre d'affaires|gagn/i,
+    pt: /receita|ganho|lucro|renda|faturamento|ganhou|vendas/i,
+    ht: /revni|benefis|pwofi|lajan ou fè|lavant/i,
+    zh: /收入|收益|营收|营业额|利润|赚|盈利/,
+    vi: /doanh thu|thu nhập|lợi nhuận|kiếm được|tiền lãi/i,
+    tl: /\bkita\b|kinita|tubo|\bkinikita|benta/i,
+    ru: /доход|выручк|прибыл|заработ|оборот/i,
+    ko: /수익|매출|수입|이익|번 돈|소득/,
+  };
+  const all = JSON.parse(read('scripts/i18n/strings/bizHelp.json'));
+  const LANGS = Object.keys(all);
+
+  test('every supported language has a marker and an earnings list', () => {
+    expect(LANGS.sort()).toEqual(Object.keys(POTENTIAL_MARKER).sort());
+    expect(LANGS.sort()).toEqual(Object.keys(EARNINGS_WORDS).sort());
+  });
+
+  test.each(Object.keys(POTENTIAL_MARKER))('%s: the label says potential value', (lang) => {
+    expect(all[lang]['opportunity.potentialValueUpTo']).toMatch(POTENTIAL_MARKER[lang]);
+  });
+
+  test.each(Object.keys(EARNINGS_WORDS))('%s: label and basis use no earnings / revenue / income words', (lang) => {
+    ['opportunity.potentialValueUpTo', 'opportunity.potentialBasisBudget'].forEach((k) => {
+      expect(all[lang][k]).not.toMatch(EARNINGS_WORDS[lang]);
+    });
+  });
+
+  test('a label that drifts into earnings wording is caught (self-check)', () => {
+    expect('Ingresos estimados: {amount}').toMatch(EARNINGS_WORDS.es);
+    expect('预计收入：{amount}').toMatch(EARNINGS_WORDS.zh);
+    expect('Ожидаемый доход: {amount}').toMatch(EARNINGS_WORDS.ru);
+    expect('예상 수익: {amount}').toMatch(EARNINGS_WORDS.ko);
+    expect('Geschätzte Einnahmen: {amount}').toMatch(EARNINGS_WORDS.de);
+  });
+});
