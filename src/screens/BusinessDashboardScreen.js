@@ -4399,6 +4399,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       cuisineLabel: o.business_requests?.cuisine ? (language === 'en' ? cuisineLabel(o.business_requests.cuisine) : cuisineName(o.business_requests.cuisine, language)) : null,
                       itemLabels: (o.business_requests?.requested_items ?? []).map((k) => (language === 'en' ? requestedItemLabel(k) : t(`ui.bizHelp.item.${k}`))),
                       categoryLabel: o.business_requests?.category ? categoryName(o.business_requests.category, language) : null,
+                      typicalSpend: selectedPartner?.typical_spend_per_person ?? null,
                     });
                     // Context that changes how the request should be read stays, but as one quiet line, not chips.
                     const matchReasons = buildMatchReasons(o.opportunityReasons, {
@@ -4427,6 +4428,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         <Text style={styles.breakdownText}>{t('ui.bizDash2.theirNote', { note: o.business_requests.note })}</Text>
                       )}
                       {card.whenLine !== '' && <Text style={styles.opportunityWhen}>{card.whenLine}</Text>}
+                      {/* Item 149: potential value, only while the business can still answer; never called earnings. */}
+                      {oppAction.kind === 'send_offer' && card.potential && (
+                        <View style={{ marginTop: spacing.xs }}>
+                          <Text style={styles.opportunityWhen}>{card.potential.line}</Text>
+                          <Text style={styles.breakdownText}>{card.potential.basis}. {card.potential.note}</Text>
+                        </View>
+                      )}
                       {card.feelLine !== '' && <Text style={styles.breakdownText}>{card.feelLine}</Text>}
                       {card.requestedLine !== '' && <Text style={styles.opportunityWhen}>{t('ui.bizDash2.requested', { requestedLine: card.requestedLine })}</Text>}
                       {contextLine !== '' && <Text style={styles.breakdownText}>{contextLine}</Text>}
@@ -6886,12 +6894,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 const ctx = buildOpportunityCard(offerModalRequest, {
                   occasionLabel: offerModalRequest.occasion ? (language === 'en' ? occasionLabel(offerModalRequest.occasion) : categoryName(occasionLabel(offerModalRequest.occasion), language)) : null,
                   categoryLabel: offerModalRequest.category ? categoryName(offerModalRequest.category, language) : null,
+                  typicalSpend: selectedPartner?.typical_spend_per_person ?? null,
                 });
                 return (
                   <View style={{ marginBottom: spacing.md }}>
                     <Text style={styles.notesLabel}>{t('ui.bizDash3.forThisRequest')}</Text>
                     <Text style={styles.offerTitle}>{ctx.title}</Text>
                     {ctx.whenLine !== '' && <Text style={styles.breakdownText}>{ctx.whenLine}</Text>}
+                    {ctx.potential && <Text style={[styles.breakdownText, { fontWeight: '600' }]}>{ctx.potential.line}</Text>}
                     {ctx.feelLine !== '' && <Text style={styles.breakdownText}>{ctx.feelLine}</Text>}
                   </View>
                 );

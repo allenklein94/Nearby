@@ -46,7 +46,8 @@ describe('party total and display', () => {
   });
   it('the business card uses it', () => {
     const card = buildOpportunityCard({ budget_max: 60, party_size: 6 }, { experienceLabel: 'Special' });
-    expect(card.feelLine).toBe('Special · Up to $60/person · $360 for the party · $$');
+    expect(card.feelLine).toBe('Special · Up to $60/person · $$');
+    expect(card.potential.line).toBe('Potential value: up to $360');
     expect(buildOpportunityCard({ budget_max: 0 }, {}).feelLine).toBe('');
   });
 });

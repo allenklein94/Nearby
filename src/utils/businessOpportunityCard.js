@@ -1,4 +1,5 @@
 import { formatBudgetLine } from './budgetTier';
+import { bizMoney } from '../i18n/bizFormat';
 import { tr } from '../i18n/translate';
 import { bizDate, bizTimeRange } from '../i18n/bizFormat';
 
@@ -8,7 +9,7 @@ const P = (key, vars) => tr(`ui.bizHelp.opportunity.${key}`, vars);
 // Built ONLY from the structured fields get_business_opportunities already returns (never raw text, never invented
 // tiers): a title, one "who / when" line, one "how special / how much" line, and what the customer is looking for.
 // Labels are injected so this stays dependency-free and unit-testable.
-export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addonLabel, attributeLabels = [], cuisineLabel = null, itemLabels = [], categoryLabel = null }) {
+export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addonLabel, attributeLabels = [], cuisineLabel = null, itemLabels = [], categoryLabel = null, typicalSpend = null }) {
   const r = req ?? {};
   // `categoryLabel` = the category's name in the viewer's language (the caller translates it); r.category is the stored value.
   const cat = categoryLabel ?? r.category;
@@ -23,12 +24,43 @@ export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addo
     timeLabel,
   ].filter(Boolean).join(' · ');
 
-  const feelLine = [experienceLabel, formatBudgetLine(r.budget_max, r.party_size)].filter(Boolean).join(' · ');
+  const potential = potentialValue(r, typicalSpend);
+  // With a potential value shown, the budget line drops its "$360 for the party" part so the total is said once.
+  const feelLine = [experienceLabel, formatBudgetLine(r.budget_max, potential ? null : r.party_size)].filter(Boolean).join(' · ');
 
   const lookingFor = [cuisineLabel, ...attributeLabels].filter(Boolean);
   // "Coffee + Pastries": what the customer picked from the closed list; absent when they picked nothing.
   const requestedLine = itemLabels.length > 0 ? itemLabels.join(' + ') : '';
-  return { title, whenLine, feelLine, lookingFor, requestedLine };
+  return { title, whenLine, feelLine, lookingFor, requestedLine, potential };
+}
+
+// Item 149 (owner, LOCKED): "Potential value" = what this request could be worth to the business, NEVER earnings or
+// revenue (a guard forbids those words here). Only real numbers: the party size the customer gave times a per-person
+// figure someone actually stated -- the business's own declared typical spend (item 82), capped by the customer's own
+// per-person budget when that is lower; else the customer's budget alone, worded "up to" because it is a ceiling.
+// No party size, or neither figure = null (no line, never "$0" or a guess from category/price tier).
+export function potentialValue(req, typicalSpend = null) {
+  const r = req ?? {};
+  const people = Number(r.party_size);
+  if (!Number.isInteger(people) || people < 1) return null;
+  const usual = Number(typicalSpend);
+  const budget = Number(r.budget_max);
+  const hasUsual = typicalSpend != null && usual > 0;
+  const hasBudget = r.budget_max != null && budget > 0;
+  if (!hasUsual && !hasBudget) return null;
+  // The customer's budget is a ceiling, so a value resting on it is "up to".
+  const fromBudget = !hasUsual || (hasBudget && budget < usual);
+  const perPerson = fromBudget ? budget : usual;
+  const amount = Math.round(perPerson * people * 100) / 100;
+  const peopleLabel = P('people', { count: people });
+  return {
+    amount,
+    upTo: fromBudget,
+    source: fromBudget ? 'budget' : 'typical',
+    line: P(fromBudget ? 'potentialValueUpTo' : 'potentialValue', { amount: bizMoney(amount) }),
+    basis: P(fromBudget ? 'potentialBasisBudget' : 'potentialBasisTypical', { people: peopleLabel, amount: bizMoney(perPerson) }),
+    note: P('potentialNote'),
+  };
 }
 
 // "Why this matches": the trust line on a pending opportunity. Every line traces to a real scoring reason (or, for the

@@ -26,7 +26,8 @@ test('English is unchanged', () => {
   expect(d.detail).toBe('Friday evening · 7 people · last 14 days · 5 still waiting for an offer · 2 businesses offer this nearby');
   const card = buildOpportunityCard(req, {});
   expect(card.whenLine).toMatch(/^4 people · .+ · 7–8 PM$/);
-  expect(card.feelLine).toBe('Up to $30/person · $120 for the party · $$');
+  expect(card.feelLine).toBe('Up to $30/person · $$');
+  expect(card.potential.line).toBe('Potential value: up to $120');
   expect(buildMatchReasons([{ key: 'offered_occasion' }], { occasion: 'birthday' })).toEqual(['You offer birthday experiences', 'You are within the area they asked for']);
   expect(submissionView({ status: 'needs_changes', matched_categories: ['weapons', 'fraud_scams'] }).detail).toBe("Your offer or its photo or video appears to involve weapons and fraud or scams, which Nearby doesn't allow. Edit your offer and send it again.");
   expect(statsLine({ status: 'active', impressions: 3, taps: 1 })).toBe('About 3 views · 1 tap · about 33% tapped');
