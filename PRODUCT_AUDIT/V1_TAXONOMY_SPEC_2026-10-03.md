@@ -41,7 +41,10 @@ matching, privacy or business-demand change.
 | 27 | Travel & Getaways wordings (item 179 approved table) | item 179, LOCKED |
 | 28 | Resolver bug fix: bed and breakfast / b&b -> Hotels, never Breakfast (regression test) | item 179, LOCKED |
 | 29 | Keep Romantic Getaways, Family Resorts, Spa Resorts as canonical categories (not attribute + stay) | item 179, LOCKED |
-| 30 | Home & Local Services coverage (see item 180: four categories, wordings, AC fix, tag-level need list) | item 180, proposed |
+| 30 | New categories **House Painting, Storage, Contractors, Home Security** (Home & Local Services) + their wording | item 180, LOCKED |
+| 31 | Home services wordings + AC fix (ac repair / air conditioning / heating / furnace -> HVAC, never Repairs) | item 180, LOCKED |
+| 32 | `home_local_services` leaves `NEED_GROUP_KEYS`; every service tag of the group (incl. the four new) joins `NEED_TAG_KEYS` | item 180, LOCKED |
+| 33 | FLAG for the final mapping review: **Locksmith** (not canonical today; not created here) | item 180 |
 
 Result: 19 canonical groups.
 
@@ -522,7 +525,7 @@ to See or Attractions category).
      Attractions & Things to See (existing synonym structure; no group alias, no new object or storage level). The group
      stays its own canonical group.
 
-## Item 180: Home & Local Services coverage (proposed, owner to confirm)
+## Item 180: Home & Local Services coverage
 
 Today: Cleaning, Landscaping, Plumbing, Electrical, HVAC, Handyman, Moving, Pest Control, Repairs, Interior Design.
 Checked against the live search on 2026-10-03.
@@ -554,4 +557,18 @@ cleaner" = need; "plumbers near me" = want (ordinary ranking).
 a need today and does not resolve to a category. The wordings above make "AC", "bed bugs", "termites" find the right
 service, but "my AC is broken" stays an ordinary ask unless a task word is present ("fix my AC" works). Recommendation:
 keep it strict (item 162: never infer a need) and revisit only from real misses (item 166).
+
+**Owner decision (2026-10-03, LOCKED):**
+1. The four new canonical categories approved: House Painting, Storage, Contractors, Home Security, with their wordings
+   from the table (bare "painting" and bare "security" stay unmapped).
+2. Wordings approved: maid, housekeeping -> Cleaning; landscaper, gardener -> Landscaping; movers -> Moving;
+   exterminator, bed bugs, termites -> Pest Control; ac repair, air conditioning, heating, furnace -> HVAC (never the
+   generic Repairs). Lawn care / lawn mowing / mow my lawn -> Landscaping and "ac" / "heat pump" -> HVAC were in the
+   table but not restated: to confirm in the final mapping review.
+3. Per-category needs: the group is not need-capable; each service tag (incl. the four new) is, with task framing
+   mandatory. Regression cases: "I need a plumber", "fix my AC", "book a cleaner" = need; "plumbers near me" = want;
+   "my AC is broken" = want (a problem statement is not task framing). Never inferred from urgency, proximity,
+   availability or the existence of a problem.
+4. **Locksmith is not a canonical category today** (checked: no tag, no synonym). Not created here; flagged for the
+   final V1 taxonomy mapping review.
 
