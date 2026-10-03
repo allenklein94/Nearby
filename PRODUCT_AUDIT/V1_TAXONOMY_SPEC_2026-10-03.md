@@ -28,6 +28,9 @@ matching, privacy or business-demand change.
 | 14 | Move **Boating** and **Water Sports** from Activities & Recreation to Outdoors & Nature (Activities & Recreation drops to 11) | item 172, LOCKED |
 | 15 | Wording: night market -> Markets; cinema / movie theater -> Movies; stand-up / standup -> Comedy; nightlife event -> Nightlife | item 173, LOCKED |
 | 16 | Wording: gallery / galleries -> Art Galleries; exhibition -> Exhibits; art show / art fair -> Art; local event / local events -> Community Events; book event / book signing / author talk / book club -> Reading | item 174, LOCKED |
+| 17 | New Shopping categories **Grocery, Sporting Goods, Toys, Bookstores, Beauty Supply** (+ their wording) | item 175, proposed |
+| 18 | Shopping wordings (see item 175 table) | item 175, proposed |
+| 19 | Need list after the Travel / Stay merge: `stay_getaway` leaves `NEED_GROUP_KEYS`; its stay tags join `NEED_TAG_KEYS` (see item 175 note) | item 175, proposed |
 
 Result: 19 canonical groups.
 
@@ -257,3 +260,37 @@ unmapped (item 173); only the full phrase "book club" reaches Reading. **Event =
 gathering is the one event object, lifecycle and source of truth; its format says what kind of event it is; its
 category says what it is about; format-like categories keep their existing format mapping. No separate event object,
 no Events category, no second event representation or lifecycle. Arts, Culture & Events membership unchanged (13).
+
+## Item 175: Shopping coverage (proposed, owner to confirm)
+
+Shopping today: Farmers Markets, Thrift & Vintage, Florist, Party & Event Decor, Gift Shop, Boutiques, Clothing,
+Jewelry, Home & Furniture, Electronics, Markets, Pop-Ups, Local Shopping, Camera Shops. The Everyday / Specialty /
+Local headings are not stored. Shopping stays a place a business can describe itself, never a retail feed or directory
+(item 64, creep guard).
+
+| Owner entry | Represented as today | Proposal |
+|---|---|---|
+| Clothing, Jewelry, Electronics, Boutiques, Markets, Farmers Markets | subcategories | covered |
+| Gifts | Gift Shop; "gift", "present" already map (item 161) | covered; add "gift store" |
+| Vintage, Thrift | Thrift & Vintage (no wording for the single words) | wording thrift store / thrift shop / vintage store / consignment -> Thrift & Vintage |
+| Furniture, Home Décor | Home & Furniture (no wording; Party & Event Decor is a different thing) | wording furniture / home decor / home goods -> Home & Furniture |
+| Shoes | nothing | wording shoe store / shoes / sneakers -> Clothing |
+| Flea Markets | nothing | wording flea market / swap meet -> Markets |
+| **Grocery** | nothing | new category; wording grocery store / supermarket |
+| Convenience | nothing | wording convenience store / bodega / corner store -> Grocery |
+| **Sporting Goods** | nothing | new category; wording sports store / sporting goods store |
+| **Toys** | nothing | new category; wording toy store / toy shop |
+| **Books** | the book wording now maps to Reading (item 174) | new category **Bookstores**; wording bookstore / book shop / bookshop (longer phrase wins; bare "books" stays Reading) |
+| **Beauty** | Wellness & Beauty holds beauty SERVICES (Salons, Nails, Skin Care) | new category **Beauty Supply** (products); wording cosmetics / makeup store / beauty supply / beauty store |
+| **Pharmacy** | Pharmacies exists as a BUSINESS-ONLY clinical tag (Health & Personal Care) | **no change:** never a consumer category (2026-09-21 sign-off: Nearby never infers or routes a medical need) |
+| **Department Stores** | nothing | **not added** (recommendation): chains are unlikely partners and the only honest mapping would be a guess across several categories; revisit through item 166 |
+
+**Need vs want (item 162):** a need = a need category + the person's own task words. Grocery is the obvious everyday
+need ("I need groceries tonight"), so the proposal adds it to `NEED_TAG_KEYS` beside Florist and Gift Shop; the other
+new shopping categories stay wants unless framed as a task, exactly like Clothing today. This changes no weight or
+rule, only which list a category is on.
+
+**Found while checking (an item-168 consequence):** `stay_getaway` is a need GROUP today. After the merge into Travel &
+Getaways, a group-level need flag would make Tours, Day Trip and other outings needs too. Proposal: the merged group is
+NOT a need group; its stay tags (Hotels, Resorts, Vacation Rentals, ...) join `NEED_TAG_KEYS`, so "I need a hotel
+tonight" stays a need and "day trip" stays a want, as today.
