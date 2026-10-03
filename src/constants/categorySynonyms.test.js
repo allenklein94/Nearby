@@ -50,7 +50,8 @@ describe('database seed', () => {
     const added = rowsIn(miniGolf.slice(miniGolf.indexOf('insert into public.category_synonyms')));
     const dict = read('20270213_activity_dictionary_padel.sql');
     const dictRows = rowsIn(dict.slice(dict.indexOf('insert into public.category_synonyms'), dict.indexOf('create or replace')));
-    const rows = [...rowsIn(read('20270190_category_synonyms.sql')).filter((r) => !removed.includes(r)), ...added, ...dictRows];
+    const needs = rowsIn(read('20270276_need_synonyms.sql'));
+    const rows = [...rowsIn(read('20270190_category_synonyms.sql')).filter((r) => !removed.includes(r)), ...added, ...dictRows, ...needs];
     const expected = seedRows().map((r) => `${r.phrase}|${r.tag}`);
     expect(rows.sort()).toEqual(expected.sort());
   });

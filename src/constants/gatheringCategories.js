@@ -137,6 +137,17 @@ export const CATEGORY_GROUPS = [
 // Flattened union of every group's tags -- the flat vocabulary consumed by
 // every "what kind of event is this" picker that doesn't need the group
 // structure (community/offer/automation-rule creation, Quick Picks, etc.).
+// Needs vs things to do (owner item 161, 2026-10-03): the category groups that describe a NEED (a service, an errand,
+// supply: a car wash, a plumber, a groomer) rather than something to go and do. The ONE list every surface reads; not a new
+// taxonomy layer or a second classification: each group stays exactly where it is. Today it keeps them out of an open-ended
+// "something fun" ask (utils/openEndedAsk.js). Shopping, Wellness & Beauty and Food & Drink are deliberately NOT here: they
+// can be an outing as well as a need, and the open-ended rule has always kept them.
+export const NEED_GROUP_KEYS = Object.freeze(['home_local_services', 'auto_transportation', 'business_networking', 'health_personal_care', 'stay_getaway', 'pets', 'education_classes']);
+
+export function isNeedGroup(groupKey) {
+  return NEED_GROUP_KEYS.includes(groupKey);
+}
+
 export const INTEREST_OPTIONS = CATEGORY_GROUPS.flatMap((g) => g.tags);
 
 // The shared list for "what am I into" (personal interests, edited on

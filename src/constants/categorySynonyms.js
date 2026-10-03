@@ -40,6 +40,11 @@ export const SYNONYM_GROUPS = [
   { tags: ['Massage'], phrases: ['massage therapy', 'spa massage'] },
   { tags: ['Salons'], phrases: ['hair salon', 'hairdresser', 'hair stylist'] },
   { tags: ['Barbers'], phrases: ['barber shop', 'barbershop'] },
+  // Item 161 (2026-10-03): everyday NEED wording ("I need a haircut / flowers / a gift / a dog groomer") that named no tag.
+  { tags: ['Barbers', 'Salons'], phrases: ['haircut', 'hair cut'] },
+  { tags: ['Florist'], phrases: ['flowers', 'bouquet'] },
+  { tags: ['Gift Shop'], phrases: ['gift', 'present'] },
+  { tags: ['Grooming'], phrases: ['dog groomer', 'pet grooming'] },
   { tags: ['Nails'], phrases: ['nail salon', 'manicure', 'pedicure'] },
   { tags: ['Spa Day'], phrases: ['day spa', 'spa'] },
   { tags: ['Car Wash'], phrases: ['car wash', 'auto wash'] },

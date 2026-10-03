@@ -4,13 +4,12 @@
 // (a) drops results whose own category belongs to a non-social group and (b) gives a small lift to the ones that fit. Only
 // candidates with a KNOWN category are ever dropped; uncategorized ones are kept, and a real category in the ask turns all of this off.
 import { parseAskFacets } from '../constants/askFacets';
-import { CATEGORY_GROUPS, groupForTag } from '../constants/gatheringCategories';
+import { CATEGORY_GROUPS, groupForTag, isNeedGroup } from '../constants/gatheringCategories';
 import { energiesFromText } from '../constants/energyLevel';
 import { detectIntentRoute, ROUTE_SURFACES } from '../constants/intentRoutes';
 import { undecidedAskFromText } from '../constants/undecidedAsk';
 
-// Groups that describe supply or services rather than something to go and do. Never part of a "something fun" ask.
-const SUPPLY_GROUPS = ['home_local_services', 'auto_transportation', 'business_networking', 'health_personal_care', 'stay_getaway', 'pets', 'education_classes'];
+// Need groups (services, errands, supply) are never part of a "something fun" ask: the one list, NEED_GROUP_KEYS (item 161).
 const FAMILY_GROUP = 'family_kids';
 
 // Phrases that mean "I have no specific activity yet": something fun / to do / interesting, bored, hang out, go out, what should we do.
@@ -34,7 +33,7 @@ export function openEndedAskGroups({ category = null, rawText = '', occasion = n
   const kidFriendly = Array.isArray(attributes) && attributes.includes('kid_friendly');
   return CATEGORY_GROUPS
     .map((g) => g.key)
-    .filter((k) => !SUPPLY_GROUPS.includes(k) && (k !== FAMILY_GROUP || kidFriendly));
+    .filter((k) => !isNeedGroup(k) && (k !== FAMILY_GROUP || kidFriendly));
 }
 
 export function groupKeyOf(candidate) {

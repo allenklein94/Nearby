@@ -82,7 +82,7 @@
    "tag": "Barbers",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 3,
+   "occurrences": 5,
    "group": "wellness_beauty"
   },
   {
@@ -649,7 +649,7 @@
    "tag": "Florist",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "shopping"
   },
   {
@@ -705,7 +705,7 @@
    "tag": "Gift Shop",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "shopping"
   },
   {
@@ -726,7 +726,7 @@
    "tag": "Grooming",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "pets"
   },
   {
@@ -1335,7 +1335,7 @@
    "tag": "Salons",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 4,
+   "occurrences": 6,
    "group": "wellness_beauty"
   },
   {
@@ -2168,7 +2168,7 @@
    "tag": "Barbers",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": null
   },
   {
@@ -2291,6 +2291,13 @@
    "group": null
   },
   {
+   "tag": "Florist",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Food Trucks",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
@@ -2298,7 +2305,21 @@
    "group": null
   },
   {
+   "tag": "Gift Shop",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Golf",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Grooming",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -2441,7 +2462,7 @@
    "tag": "Salons",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": null
   },
   {
