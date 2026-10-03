@@ -752,3 +752,31 @@ words), so the wording resolves the current search and leaves nothing behind. **
 
 Verified: dry run rolled back (server keys equal the app's; a Faith search records nothing, Coffee still does), applied,
 single overloads, the emerging-category / synonym and four behavior-learning live scripts all OK; Jest 4730.
+
+## Item 184: Business & Networking coverage (PROPOSED 2026-10-03, awaiting owner)
+
+Today: Networking, Coworking, Conferences, Professional Events, Entrepreneurship, Career Events, Real Estate, Finance
+(Tech Meetup lives in Education & Classes; one group per tag, kept). Also related, not categories: occasion `networking`
+(item 42), party type `coworkers` (item 43), occasion `business_meal`. Checked against the resolver on 2026-10-03.
+
+| Owner entry | Represented as today | Proposal |
+|---|---|---|
+| Networking, Coworking, Conferences, Entrepreneurship, Career Events | subcategories (singular/plural work) | covered |
+| Coworking wordings | "co-working", "shared office" find nothing | wording: co-working, shared office, shared workspace -> Coworking |
+| Seminars | nothing maps | wording: seminar -> Professional Events + Lectures (one phrase, two tags, like gym -> Gyms + Fitness) |
+| Business Events, Industry Events | nothing maps | wording: business event, industry event, trade show, trade expo, business expo -> Professional Events; bare "expo" unmapped |
+| Professional Groups | nothing maps | wording: professional group, professional association, industry group -> Professional Events. Not a Communities replacement: a standing group is a Nearby Community |
+| Entrepreneurship wordings | "entrepreneur", "startup event", "founders meetup" find nothing | wording: entrepreneur, startup event, startup meetup, founders meetup, pitch night -> Entrepreneurship; bare "startup" unmapped |
+| Career Events wordings | "career fair", "job fair" find nothing | wording: career fair, job fair, hiring event -> Career Events |
+| Business Services | Real Estate, Finance only; accountant / lawyer / printing / marketing find nothing | wording: accountant, accounting, bookkeeping, tax preparation, tax prep, financial advisor -> Finance; realtor, real estate agent -> Real Estate. Legal, printing, marketing: no category; stay unmapped (taxonomy frozen, item 166: add only on a confirmed real miss) |
+
+**Need-behavior bug.** The whole group is in `NEED_GROUP_KEYS`, so "find a networking event tonight" and "looking for
+a conference" are classified NEED today (availability-first ordering). Following items 175-182 (a group is never a need):
+per-tag; need-capable = **Coworking, Finance, Real Estate** (services someone must get done); Networking, Conferences,
+Professional Events, Entrepreneurship, Career Events = wants. Can be applied now like item 182 (`TAG_LEVEL_NEED_GROUP_KEYS`).
+
+**Not LinkedIn (proposed lock).** The group exists so people can find business EVENTS and business SERVICES nearby. Never:
+professional profiles beyond the existing optional dating-style "Job Title" basic (never searchable, matched or ranked on),
+employer / résumé / skills / endorsements fields, job listings or applications, a professional people search or
+"connect with professionals" feed, or professional-graph signals in ranking. Career Events and Networking are gatherings
+like any other; meeting people there follows the existing rules (counts to strangers, friends by name).
