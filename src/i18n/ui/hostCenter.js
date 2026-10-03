@@ -50,6 +50,15 @@ export default {
       requested: "Requested to join",
       a11y: "Review join requests",
     },
+    moderate: {
+      more: "More",
+      moreA11y: "More options for {name}",
+      remove: "Remove from gathering",
+      block: "Block",
+      report: "Report",
+      blockTitle: "Block {name}?",
+      blockBody: "They'll be removed from this gathering and won't be able to see you or message you.",
+    },
   },
   es: {
     stat: {
@@ -99,6 +108,15 @@ export default {
       hide: "Ocultar",
       requested: "Pidió unirse",
       a11y: "Revisar solicitudes para unirse",
+    },
+    moderate: {
+      more: "Más",
+      moreA11y: "Más opciones para {name}",
+      remove: "Quitar de la reunión",
+      block: "Bloquear",
+      report: "Denunciar",
+      blockTitle: "¿Bloquear a {name}?",
+      blockBody: "Se le quitará de esta reunión y no podrá verte ni escribirte.",
     },
   },
   de: {
@@ -150,6 +168,15 @@ export default {
       requested: "Möchte teilnehmen",
       a11y: "Teilnahmeanfragen prüfen",
     },
+    moderate: {
+      more: "Mehr",
+      moreA11y: "Weitere Optionen für {name}",
+      remove: "Aus dem Treffen entfernen",
+      block: "Blockieren",
+      report: "Melden",
+      blockTitle: "{name} blockieren?",
+      blockBody: "Die Person wird aus diesem Treffen entfernt und kann dich weder sehen noch dir schreiben.",
+    },
   },
   fr: {
     stat: {
@@ -199,6 +226,15 @@ export default {
       hide: "Masquer",
       requested: "A demandé à participer",
       a11y: "Examiner les demandes de participation",
+    },
+    moderate: {
+      more: "Plus",
+      moreA11y: "Plus d'options pour {name}",
+      remove: "Retirer de la sortie",
+      block: "Bloquer",
+      report: "Signaler",
+      blockTitle: "Bloquer {name} ?",
+      blockBody: "Cette personne sera retirée de cette sortie et ne pourra ni te voir ni t'écrire.",
     },
   },
   pt: {
@@ -250,6 +286,15 @@ export default {
       requested: "Pediu para participar",
       a11y: "Revisar pedidos de participação",
     },
+    moderate: {
+      more: "Mais",
+      moreA11y: "Mais opções para {name}",
+      remove: "Remover do encontro",
+      block: "Bloquear",
+      report: "Denunciar",
+      blockTitle: "Bloquear {name}?",
+      blockBody: "A pessoa será removida deste encontro e não poderá ver você nem enviar mensagens.",
+    },
   },
   ht: {
     stat: {
@@ -299,6 +344,15 @@ export default {
       hide: "Kache",
       requested: "Mande pou vini",
       a11y: "Revize demann pou vini",
+    },
+    moderate: {
+      more: "Plis",
+      moreA11y: "Plis opsyon pou {name}",
+      remove: "Retire nan rasanbleman an",
+      block: "Bloke",
+      report: "Siyale",
+      blockTitle: "Bloke {name}?",
+      blockBody: "Y ap retire moun nan nan rasanbleman sa a, epi li p ap ka wè w ni ekri w.",
     },
   },
   zh: {
@@ -350,6 +404,15 @@ export default {
       requested: "申请加入",
       a11y: "查看加入申请",
     },
+    moderate: {
+      more: "更多",
+      moreA11y: "{name} 的更多选项",
+      remove: "从聚会中移除",
+      block: "屏蔽",
+      report: "举报",
+      blockTitle: "要屏蔽 {name} 吗？",
+      blockBody: "对方将被移出这次聚会，并且无法看到你或给你发消息。",
+    },
   },
   vi: {
     stat: {
@@ -399,6 +462,15 @@ export default {
       hide: "Ẩn",
       requested: "Đã xin tham gia",
       a11y: "Xem xét yêu cầu tham gia",
+    },
+    moderate: {
+      more: "Thêm",
+      moreA11y: "Thêm tùy chọn cho {name}",
+      remove: "Xóa khỏi buổi gặp",
+      block: "Chặn",
+      report: "Báo cáo",
+      blockTitle: "Chặn {name}?",
+      blockBody: "Người này sẽ bị xóa khỏi buổi gặp và không thể thấy hoặc nhắn tin cho bạn.",
     },
   },
   tl: {
@@ -450,6 +522,15 @@ export default {
       requested: "Humiling na sumali",
       a11y: "Suriin ang mga hiling na sumali",
     },
+    moderate: {
+      more: "Higit pa",
+      moreA11y: "Higit pang opsyon para kay {name}",
+      remove: "Alisin sa pagtitipon",
+      block: "I-block",
+      report: "I-report",
+      blockTitle: "I-block si {name}?",
+      blockBody: "Aalisin siya sa pagtitipong ito at hindi ka niya makikita o mamemensahe.",
+    },
   },
   ru: {
     stat: {
@@ -500,6 +581,15 @@ export default {
       requested: "Хочет присоединиться",
       a11y: "Просмотреть заявки на участие",
     },
+    moderate: {
+      more: "Ещё",
+      moreA11y: "Ещё действия для {name}",
+      remove: "Убрать со встречи",
+      block: "Заблокировать",
+      report: "Пожаловаться",
+      blockTitle: "Заблокировать {name}?",
+      blockBody: "Человек будет убран с этой встречи и не сможет видеть вас или писать вам.",
+    },
   },
   ko: {
     stat: {
@@ -549,6 +639,15 @@ export default {
       hide: "숨기기",
       requested: "참여 요청함",
       a11y: "참여 요청 검토",
+    },
+    moderate: {
+      more: "더보기",
+      moreA11y: "{name} 님 더보기",
+      remove: "모임에서 내보내기",
+      block: "차단",
+      report: "신고",
+      blockTitle: "{name} 님을 차단할까요?",
+      blockBody: "이 모임에서 내보내지고, 회원님을 보거나 메시지를 보낼 수 없게 됩니다.",
     },
   },
 };

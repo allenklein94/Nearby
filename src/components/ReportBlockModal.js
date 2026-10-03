@@ -18,7 +18,9 @@ const REPORT_REASONS = [
   { value: 'Other', key: 'other' },
 ];
 
-export default function ReportBlockModal({ visible, onClose, onBlocked, reportedUserId, reportedUserName }) {
+// reportOnly: the caller owns blocking (a host's Block in Manage attendees also takes the person off the gathering), so
+// the sheet shows only the report.
+export default function ReportBlockModal({ visible, onClose, onBlocked, reportedUserId, reportedUserName, reportOnly = false }) {
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -108,9 +110,11 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
             <Text style={styles.reportButtonText}>{submitting ? t('ui.reportBlock.submitting') : t('ui.reportBlock.submitReport')}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.blockButton} onPress={blockUser}>
-            <Text style={styles.blockButtonText}>{t('ui.reportBlock.blockUser')}</Text>
-          </TouchableOpacity>
+          {!reportOnly && (
+            <TouchableOpacity style={styles.blockButton} onPress={blockUser}>
+              <Text style={styles.blockButtonText}>{t('ui.reportBlock.blockUser')}</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.md }}>
             <Text style={styles.cancelText}>{t('ui.reportBlock.cancel')}</Text>

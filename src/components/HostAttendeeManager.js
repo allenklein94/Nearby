@@ -5,7 +5,9 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { getGatheringRequestsForHost, approveInterest, hostRemoveAttendee } from '../services/gatherings';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
-import { pendingReview, applyDecision } from '../utils/hostCommandCenter';
+import { pendingReview, applyDecision, moderationActions } from '../utils/hostCommandCenter';
+import { blockAndUnmatch } from '../services/blockedUsers';
+import ReportBlockModal from './ReportBlockModal';
 
 // Host-only: approve/decline join requests and remove attendees, inline on
 // GatheringDetail (the one place everything about a gathering is managed).
@@ -19,6 +21,9 @@ export default function HostAttendeeManager({ gatheringId, onChanged, expanded =
   const styles = getStyles(colors);
   const [rows, setRows] = useState(null);
   const [reviewOpen, setReviewOpen] = useState(false);
+  // Moderation (item 146): which person's More menu is open, and who is being reported. Only inside Manage attendees.
+  const [menuFor, setMenuFor] = useState(null);
+  const [reporting, setReporting] = useState(null);
 
   // Only the newest load may write the list: a focus reload and a post-decision reload can overlap, and an older answer
   // landing last would bring back a request already decided (count and list come from this one array, item 144).
@@ -79,16 +84,64 @@ export default function HostAttendeeManager({ gatheringId, onChanged, expanded =
     );
   }
 
+  // Block from Manage attendees: take them off this gathering first (decline or remove, same server action as Remove),
+  // then block. One confirmation says both.
+  function confirmBlock(row) {
+    const name = row.profiles?.display_name ?? t('ui.gatheringParts.someone');
+    Alert.alert(
+      t('ui.hostCenter.moderate.blockTitle', { name }),
+      t('ui.hostCenter.moderate.blockBody'),
+      [
+        { text: t('ui.gatheringParts.cancel'), style: 'cancel' },
+        {
+          text: t('ui.hostCenter.moderate.block'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await hostRemoveAttendee(row.id);
+              setRows((prev) => applyDecision(prev, row.id, null));
+              await blockAndUnmatch(row.user_id);
+              setMenuFor(null);
+              refresh();
+            } catch (e) {
+              presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmBlock(row) });
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  function runModeration(row, action) {
+    setMenuFor(null);
+    if (action === 'remove') confirmRemove(row, false);
+    else if (action === 'block') confirmBlock(row);
+    else if (action === 'report') setReporting({ id: row.user_id, name: row.profiles?.display_name });
+  }
+
   const review = pendingReview(rows);
   // Once the last request is decided the row disappears, and the next request starts collapsed again.
   useEffect(() => {
     if (!review.show && reviewOpen) setReviewOpen(false);
   }, [review.show, reviewOpen]);
 
-  const renderRow = (row) => {
+  const renderRow = (row, manage = false) => {
     const name = row.profiles?.display_name ?? t('ui.gatheringParts.someone');
+    const actions = manage ? moderationActions(row) : [];
+    const more = actions.length > 0 && (
+      <TouchableOpacity
+        onPress={() => setMenuFor((id) => (id === row.id ? null : row.id))}
+        accessibilityRole="button"
+        accessibilityLabel={t('ui.hostCenter.moderate.moreA11y', { name })}
+        accessibilityState={{ expanded: menuFor === row.id }}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Text style={styles.more}>{t('ui.hostCenter.moderate.more')}</Text>
+      </TouchableOpacity>
+    );
     return (
-      <View key={row.id} style={styles.row}>
+      <View key={row.id}>
+      <View style={styles.row}>
         {row.status === 'pending' ? (
           <View style={styles.who}>
             <Text style={styles.name}>{name}</Text>
@@ -105,18 +158,37 @@ export default function HostAttendeeManager({ gatheringId, onChanged, expanded =
             <TouchableOpacity onPress={() => confirmRemove(row, true)} accessibilityLabel={t('ui.gatheringParts.declineSRequestA11y', { name: name })} accessibilityRole="button">
               <Text style={styles.decline}>{t('ui.gatheringParts.decline2')}</Text>
             </TouchableOpacity>
+            {more}
           </View>
         ) : (
           <View style={styles.actions}>
             <Text style={styles.status}>{row.status === 'waitlisted' ? t('ui.gatheringParts.waitlisted') : t('ui.gatheringParts.approved2')}</Text>
-            <TouchableOpacity onPress={() => confirmRemove(row, false)} accessibilityLabel={t('ui.gatheringParts.removeA11y', { name: name })} accessibilityRole="button">
-              <Text style={styles.decline}>{t('ui.gatheringParts.remove2')}</Text>
-            </TouchableOpacity>
+            {more}
           </View>
         )}
       </View>
+      {menuFor === row.id && actions.length > 0 && (
+        <View style={styles.menu}>
+          {actions.map((a) => (
+            <TouchableOpacity key={a} onPress={() => runModeration(row, a)} accessibilityRole="button" style={styles.menuItem}>
+              <Text style={a === 'report' ? styles.menuText : styles.decline}>{t(`ui.hostCenter.moderate.${a}`)}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+      </View>
     );
   };
+
+  const reportModal = (
+    <ReportBlockModal
+      visible={!!reporting}
+      reportOnly
+      onClose={() => setReporting(null)}
+      reportedUserId={reporting?.id}
+      reportedUserName={reporting?.name}
+    />
+  );
 
   // Collapsed (default): the one Review row; tapping it opens the requests in place. No pending request = nothing.
   if (!expanded) {
@@ -133,7 +205,7 @@ export default function HostAttendeeManager({ gatheringId, onChanged, expanded =
           <Text style={styles.reviewCount}>{t('ui.hostCenter.stat.requests', { count: review.count })}</Text>
           <Text style={styles.reviewLink}>{reviewOpen ? t('ui.hostCenter.review.hide') : t('ui.hostCenter.review.open')}</Text>
         </TouchableOpacity>
-        {reviewOpen && review.rows.map(renderRow)}
+        {reviewOpen && review.rows.map((row) => renderRow(row))}
       </View>
     );
   }
@@ -142,7 +214,8 @@ export default function HostAttendeeManager({ gatheringId, onChanged, expanded =
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{t('ui.gatheringParts.requestsAttendees')}</Text>
-      {rows.map(renderRow)}
+      {rows.map((row) => renderRow(row, true))}
+      {reportModal}
     </View>
   );
 }
@@ -165,4 +238,8 @@ const getStyles = (colors) => StyleSheet.create({
   approveText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   decline: { color: colors.danger, fontSize: 12, fontWeight: '600' },
   status: { color: colors.success, fontSize: 12, fontWeight: '700' },
+  more: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
+  menu: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.md, paddingBottom: spacing.xs },
+  menuItem: { paddingVertical: 2 },
+  menuText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
 });

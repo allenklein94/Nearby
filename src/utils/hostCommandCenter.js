@@ -30,6 +30,17 @@ export function applyDecision(rows, id, status) {
   return status == null ? rows.filter((r) => r.id !== id) : rows.map((r) => (r.id === id ? { ...r, status } : r));
 }
 
+// Owner item 146: moderation lives under Manage attendees, behind one "More" control per person, never on a card. A
+// pending request already shows Decline beside Approve, so its menu holds only Block and Report; someone going or
+// waitlisted gets Remove from gathering, Block, Report. Block also takes them off this gathering (the host does not want
+// them there, and a block alone would leave them attending). Unknown rows get nothing.
+export function moderationActions(row) {
+  if (!row?.user_id) return [];
+  if (row.status === 'pending') return ['block', 'report'];
+  if (row.status === 'approved' || row.status === 'waitlisted') return ['remove', 'block', 'report'];
+  return [];
+}
+
 // The Review row: present only while there is at least one pending request to decide. Visibility is deliberately not read
 // (owner, 2026-10-02): a pending request exists only where the host must decide (public + Require approval, Friends,
 // Community, Invite-only), so the row shows for any of them.

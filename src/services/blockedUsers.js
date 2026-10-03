@@ -21,3 +21,8 @@ export async function unblockUser(blockId) {
   const { error } = await supabase.from('blocks').delete().eq('id', blockId);
   if (error) throw error;
 }
+// The one block action (same RPC as ReportBlockModal): records the block and ends any match/friendship between the two.
+export async function blockAndUnmatch(userId) {
+  const { error } = await supabase.rpc('block_and_unmatch', { blocked_user_id: userId });
+  if (error) throw error;
+}

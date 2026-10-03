@@ -56,7 +56,14 @@
   "review.open": "Review",
   "review.hide": "Hide",
   "review.requested": "Requested to join",
-  "review.a11y": "Review join requests"
+  "review.a11y": "Review join requests",
+  "moderate.more": "More",
+  "moderate.moreA11y": "More options for {name}",
+  "moderate.remove": "Remove from gathering",
+  "moderate.block": "Block",
+  "moderate.report": "Report",
+  "moderate.blockTitle": "Block {name}?",
+  "moderate.blockBody": "They'll be removed from this gathering and won't be able to see you or message you."
  },
  "es": {
   "stat.going": {
@@ -115,7 +122,14 @@
   "review.open": "Revisar",
   "review.hide": "Ocultar",
   "review.requested": "Pidió unirse",
-  "review.a11y": "Revisar solicitudes para unirse"
+  "review.a11y": "Revisar solicitudes para unirse",
+  "moderate.more": "Más",
+  "moderate.moreA11y": "Más opciones para {name}",
+  "moderate.remove": "Quitar de la reunión",
+  "moderate.block": "Bloquear",
+  "moderate.report": "Denunciar",
+  "moderate.blockTitle": "¿Bloquear a {name}?",
+  "moderate.blockBody": "Se le quitará de esta reunión y no podrá verte ni escribirte."
  },
  "de": {
   "stat.going": {
@@ -174,7 +188,14 @@
   "review.open": "Prüfen",
   "review.hide": "Ausblenden",
   "review.requested": "Möchte teilnehmen",
-  "review.a11y": "Teilnahmeanfragen prüfen"
+  "review.a11y": "Teilnahmeanfragen prüfen",
+  "moderate.more": "Mehr",
+  "moderate.moreA11y": "Weitere Optionen für {name}",
+  "moderate.remove": "Aus dem Treffen entfernen",
+  "moderate.block": "Blockieren",
+  "moderate.report": "Melden",
+  "moderate.blockTitle": "{name} blockieren?",
+  "moderate.blockBody": "Die Person wird aus diesem Treffen entfernt und kann dich weder sehen noch dir schreiben."
  },
  "fr": {
   "stat.going": {
@@ -233,7 +254,14 @@
   "review.open": "Examiner",
   "review.hide": "Masquer",
   "review.requested": "A demandé à participer",
-  "review.a11y": "Examiner les demandes de participation"
+  "review.a11y": "Examiner les demandes de participation",
+  "moderate.more": "Plus",
+  "moderate.moreA11y": "Plus d'options pour {name}",
+  "moderate.remove": "Retirer de la sortie",
+  "moderate.block": "Bloquer",
+  "moderate.report": "Signaler",
+  "moderate.blockTitle": "Bloquer {name} ?",
+  "moderate.blockBody": "Cette personne sera retirée de cette sortie et ne pourra ni te voir ni t'écrire."
  },
  "pt": {
   "stat.going": {
@@ -292,7 +320,14 @@
   "review.open": "Revisar",
   "review.hide": "Ocultar",
   "review.requested": "Pediu para participar",
-  "review.a11y": "Revisar pedidos de participação"
+  "review.a11y": "Revisar pedidos de participação",
+  "moderate.more": "Mais",
+  "moderate.moreA11y": "Mais opções para {name}",
+  "moderate.remove": "Remover do encontro",
+  "moderate.block": "Bloquear",
+  "moderate.report": "Denunciar",
+  "moderate.blockTitle": "Bloquear {name}?",
+  "moderate.blockBody": "A pessoa será removida deste encontro e não poderá ver você nem enviar mensagens."
  },
  "ht": {
   "stat.going": {
@@ -351,7 +386,14 @@
   "review.open": "Revize",
   "review.hide": "Kache",
   "review.requested": "Mande pou vini",
-  "review.a11y": "Revize demann pou vini"
+  "review.a11y": "Revize demann pou vini",
+  "moderate.more": "Plis",
+  "moderate.moreA11y": "Plis opsyon pou {name}",
+  "moderate.remove": "Retire nan rasanbleman an",
+  "moderate.block": "Bloke",
+  "moderate.report": "Siyale",
+  "moderate.blockTitle": "Bloke {name}?",
+  "moderate.blockBody": "Y ap retire moun nan nan rasanbleman sa a, epi li p ap ka wè w ni ekri w."
  },
  "zh": {
   "stat.going": {
@@ -410,7 +452,14 @@
   "review.open": "查看",
   "review.hide": "收起",
   "review.requested": "申请加入",
-  "review.a11y": "查看加入申请"
+  "review.a11y": "查看加入申请",
+  "moderate.more": "更多",
+  "moderate.moreA11y": "{name} 的更多选项",
+  "moderate.remove": "从聚会中移除",
+  "moderate.block": "屏蔽",
+  "moderate.report": "举报",
+  "moderate.blockTitle": "要屏蔽 {name} 吗？",
+  "moderate.blockBody": "对方将被移出这次聚会，并且无法看到你或给你发消息。"
  },
  "vi": {
   "stat.going": {
@@ -469,7 +518,14 @@
   "review.open": "Xem xét",
   "review.hide": "Ẩn",
   "review.requested": "Đã xin tham gia",
-  "review.a11y": "Xem xét yêu cầu tham gia"
+  "review.a11y": "Xem xét yêu cầu tham gia",
+  "moderate.more": "Thêm",
+  "moderate.moreA11y": "Thêm tùy chọn cho {name}",
+  "moderate.remove": "Xóa khỏi buổi gặp",
+  "moderate.block": "Chặn",
+  "moderate.report": "Báo cáo",
+  "moderate.blockTitle": "Chặn {name}?",
+  "moderate.blockBody": "Người này sẽ bị xóa khỏi buổi gặp và không thể thấy hoặc nhắn tin cho bạn."
  },
  "tl": {
   "stat.going": {
@@ -528,7 +584,14 @@
   "review.open": "Suriin",
   "review.hide": "Itago",
   "review.requested": "Humiling na sumali",
-  "review.a11y": "Suriin ang mga hiling na sumali"
+  "review.a11y": "Suriin ang mga hiling na sumali",
+  "moderate.more": "Higit pa",
+  "moderate.moreA11y": "Higit pang opsyon para kay {name}",
+  "moderate.remove": "Alisin sa pagtitipon",
+  "moderate.block": "I-block",
+  "moderate.report": "I-report",
+  "moderate.blockTitle": "I-block si {name}?",
+  "moderate.blockBody": "Aalisin siya sa pagtitipong ito at hindi ka niya makikita o mamemensahe."
  },
  "ru": {
   "stat.going": {
@@ -597,7 +660,14 @@
   "review.open": "Просмотреть",
   "review.hide": "Скрыть",
   "review.requested": "Хочет присоединиться",
-  "review.a11y": "Просмотреть заявки на участие"
+  "review.a11y": "Просмотреть заявки на участие",
+  "moderate.more": "Ещё",
+  "moderate.moreA11y": "Ещё действия для {name}",
+  "moderate.remove": "Убрать со встречи",
+  "moderate.block": "Заблокировать",
+  "moderate.report": "Пожаловаться",
+  "moderate.blockTitle": "Заблокировать {name}?",
+  "moderate.blockBody": "Человек будет убран с этой встречи и не сможет видеть вас или писать вам."
  },
  "ko": {
   "stat.going": {
@@ -656,6 +726,13 @@
   "review.open": "검토",
   "review.hide": "숨기기",
   "review.requested": "참여 요청함",
-  "review.a11y": "참여 요청 검토"
+  "review.a11y": "참여 요청 검토",
+  "moderate.more": "더보기",
+  "moderate.moreA11y": "{name} 님 더보기",
+  "moderate.remove": "모임에서 내보내기",
+  "moderate.block": "차단",
+  "moderate.report": "신고",
+  "moderate.blockTitle": "{name} 님을 차단할까요?",
+  "moderate.blockBody": "이 모임에서 내보내지고, 회원님을 보거나 메시지를 보낼 수 없게 됩니다."
  }
 }

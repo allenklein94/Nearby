@@ -181,7 +181,7 @@ describe('item 144: join requests have their own Review row', () => {
   test('collapsed: one Review row that opens the requests in place (no navigation)', () => {
     expect(manager).toMatch(/t\('ui\.hostCenter\.stat\.requests', \{ count: review\.count \}\)/);
     expect(manager).toMatch(/reviewOpen \? t\('ui\.hostCenter\.review\.hide'\) : t\('ui\.hostCenter\.review\.open'\)/);
-    expect(manager).toMatch(/\{reviewOpen && review\.rows\.map\(renderRow\)\}/);
+    expect(manager).toMatch(/\{reviewOpen && review\.rows\.map\(\(row\) => renderRow\(row\)\)\}/);
     expect(manager).not.toMatch(/navigation\./);
   });
 
@@ -253,7 +253,7 @@ describe('item 144 audit: one source, every visibility, no stale state', () => {
     expect(manager).toMatch(/if \(!review\.show && reviewOpen\) setReviewOpen\(false\)/);
     // the count and the list are the same array: no second count source anywhere in the command center
     expect(manager).toMatch(/const review = pendingReview\(rows\)/);
-    expect(manager).toMatch(/\{reviewOpen && review\.rows\.map\(renderRow\)\}/);
+    expect(manager).toMatch(/\{reviewOpen && review\.rows\.map\(\(row\) => renderRow\(row\)\)\}/);
   });
 
   test('the request source is one unpaginated query, reloaded on every focus', () => {
@@ -263,5 +263,66 @@ describe('item 144 audit: one source, every visibility, no stale state', () => {
     const detail = fs.readFileSync(path.join(__dirname, '..', 'screens/GatheringDetailScreen.js'), 'utf8');
     expect(detail).toMatch(/setHostRefreshKey\(\(k\) => k \+ 1\)/);
     expect(detail).toMatch(/refreshKey=\{hostRefreshKey\}/);
+  });
+});
+
+// Owner item 146: Remove / Block / Report for the host live under Manage attendees, behind one "More" per person; never
+// on a feed card, the Review row or anywhere else.
+describe('item 146: host moderation lives under Manage attendees', () => {
+  const { moderationActions } = require('./hostCommandCenter');
+  const fs = require('fs');
+  const path = require('path');
+  const manager = fs.readFileSync(path.join(__dirname, '..', 'components/HostAttendeeManager.js'), 'utf8');
+  const modal = fs.readFileSync(path.join(__dirname, '..', 'components/ReportBlockModal.js'), 'utf8');
+
+  test('actions per state: going/waitlisted = Remove, Block, Report; a request = Block, Report (Decline is already shown)', () => {
+    expect(moderationActions({ user_id: 'u', status: 'approved' })).toEqual(['remove', 'block', 'report']);
+    expect(moderationActions({ user_id: 'u', status: 'waitlisted' })).toEqual(['remove', 'block', 'report']);
+    expect(moderationActions({ user_id: 'u', status: 'pending' })).toEqual(['block', 'report']);
+    expect(moderationActions({ user_id: 'u', status: 'declined' })).toEqual([]);
+    expect(moderationActions({ status: 'approved' })).toEqual([]);
+    expect(moderationActions(null)).toEqual([]);
+  });
+
+  test('More appears only in the Manage attendees list, never on the collapsed Review row', () => {
+    expect(manager).toMatch(/const actions = manage \? moderationActions\(row\) : \[\]/);
+    expect(manager).toMatch(/rows\.map\(\(row\) => renderRow\(row, true\)\)/);
+    expect(manager).toMatch(/review\.rows\.map\(\(row\) => renderRow\(row\)\)/);
+    // no Remove button sitting on the row itself any more: it is inside the More menu
+    expect(manager).not.toMatch(/removeA11y/);
+  });
+
+  test('Block takes them off this gathering, then blocks through the one block RPC; one confirmation says both', () => {
+    const block = manager.slice(manager.indexOf('function confirmBlock'), manager.indexOf('function runModeration'));
+    expect(block.indexOf('hostRemoveAttendee(row.id)')).toBeGreaterThan(-1);
+    expect(block.indexOf('hostRemoveAttendee(row.id)')).toBeLessThan(block.indexOf('blockAndUnmatch(row.user_id)'));
+    expect(translate('en', 'ui.hostCenter.moderate.blockBody')).toMatch(/removed from this gathering/);
+    expect(fs.readFileSync(path.join(__dirname, '..', 'services/blockedUsers.js'), 'utf8')).toMatch(/rpc\('block_and_unmatch'/);
+  });
+
+  test('Report reuses the one report sheet, without its own block button', () => {
+    expect(manager).toMatch(/<ReportBlockModal[\s\S]*?reportOnly/);
+    expect(modal).toMatch(/\{!reportOnly && \(/);
+  });
+
+  test('host moderation does not appear on any other screen or card', () => {
+    const dir = path.join(__dirname, '..');
+    const offenders = [];
+    for (const sub of ['screens', 'components']) {
+      for (const f of fs.readdirSync(path.join(dir, sub))) {
+        if (!f.endsWith('.js') || f.endsWith('.test.js') || f === 'HostAttendeeManager.js') continue;
+        const src = fs.readFileSync(path.join(dir, sub, f), 'utf8');
+        if (/hostRemoveAttendee|moderationActions|ui\.hostCenter\.moderate/.test(src)) offenders.push(f);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  test('wording, in all 11 languages', () => {
+    for (const lang of ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl', 'ru', 'ko']) {
+      for (const k of ['more', 'moreA11y', 'remove', 'block', 'report', 'blockTitle', 'blockBody']) {
+        expect(translate(lang, `ui.hostCenter.moderate.${k}`)).not.toMatch(/^ui\./);
+      }
+    }
   });
 });
