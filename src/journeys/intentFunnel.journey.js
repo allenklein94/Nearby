@@ -245,7 +245,21 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
   log := log || jsonb_build_array(jsonb_build_object('step','summary_rates','ok',
      w.shown_rate = 0.9 and w.viewed_rate = round(2/9.0, 4) and w.interested_rate = 0.4 and w.attending_rate = 0.4
      and w.interested_to_attending_rate = 0.5 and w.business_requested_rate = 0.4 and w.offer_received_rate = 0.5 and w.offer_accepted_rate = 0.5 and w.redeemed_rate = 1
-     and w.offer_received_drop_off = 0.5 and w.viewed_drop_off = round(1 - 2/9.0, 4)));
+));
+  -- drop-off is a COUNT of people who reached a stage and not the next one (20270269), never a fraction
+  log := log || jsonb_build_array(jsonb_build_object('step','summary_drop_off_counts','ok',
+     w.drop_off_before_shown = 1 and w.drop_off_before_viewed = 7 and w.drop_off_before_interested = 3
+     and w.drop_off_before_attending_after_interested = 1 and w.drop_off_before_business_request = 6
+     and w.drop_off_before_offer_received = 2 and w.drop_off_before_offer_accepted = 1 and w.drop_off_before_redeemed = 0, 'data', to_jsonb(w)));
+  -- the same numbers as Stage | Reached | Drop-off before next stage; a chain's last stage has none
+  log := log || jsonb_build_array(jsonb_build_object('step','stages_table','ok',
+     (select jsonb_agg(jsonb_build_array(stage, reached, drop_off_before_next_stage) order by stage_order)
+        from intent_funnel_stages where dimension = 'week' and value = '2020-01-06' and chain = 'gathering')
+       = '[["Gathering shown", 5, 3], ["Interested", 2, 1], ["Attending after Interested", 1, null]]'::jsonb
+     and (select jsonb_agg(jsonb_build_array(stage, reached, drop_off_before_next_stage) order by stage_order)
+        from intent_funnel_stages where dimension = 'week' and value = '2020-01-06' and chain = 'business')
+       = '[["Typed asks", 10, 6], ["Business request", 4, 2], ["Offer received", 2, 1], ["Offer accepted", 1, 0], ["Redeemed", 1, null]]'::jsonb
+     and not exists (select 1 from intent_funnel_stages where drop_off_before_next_stage < 0)));
   -- breakdowns add up: every dimension partitions the same asks as the overall row
   log := log || jsonb_build_array(jsonb_build_object('step','breakdowns_partition','ok',
      (select sum(asks) from intent_funnel_summary where dimension = 'area') = (select asks from intent_funnel_summary where dimension = 'overall')
@@ -260,10 +274,12 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
   set local role authenticated;
   begin perform 1 from intent_funnel limit 1; exception when insufficient_privilege then v_n := v_n + 1; end;
   begin perform 1 from intent_funnel_summary limit 1; exception when insufficient_privilege then v_n := v_n + 1; end;
+  begin perform 1 from intent_funnel_stages limit 1; exception when insufficient_privilege then v_n := v_n + 1; end;
   reset role;
   set local role anon;
   begin perform 1 from intent_funnel limit 1; exception when insufficient_privilege then v_n := v_n + 1; end;
   begin perform 1 from intent_funnel_summary limit 1; exception when insufficient_privilege then v_n := v_n + 1; end;
+  begin perform 1 from intent_funnel_stages limit 1; exception when insufficient_privilege then v_n := v_n + 1; end;
   reset role;
   set local role authenticated;
   begin perform 1 from gathering_interested_joins limit 1; exception when insufficient_privilege then v_n := v_n + 1; end;
@@ -271,7 +287,7 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
   set local role anon;
   begin perform 1 from gathering_interested_joins limit 1; exception when insufficient_privilege then v_n := v_n + 1; end;
   reset role;
-  log := log || jsonb_build_array(jsonb_build_object('step','internal_only','ok', v_n = 6
+  log := log || jsonb_build_array(jsonb_build_object('step','internal_only','ok', v_n = 8
      and not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name in ('intent_funnel', 'intent_funnel_summary')
                      and column_name in ('user_id', 'raw_text', 'requester_id', 'interpretation', 'latitude', 'longitude'))));
 `);
@@ -281,7 +297,7 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
   test.each([
     'one_row_per_ask', 'redeemed', 'declined', 'expired', 'cancelled', 'gathering_path', 'nothing_shown',
     'join_before_ask_not_attributed', 'interested_then_attending', 'interested_removed', 'attending_without_interested',
-    'still_interested', 'independent_requests_not_attributed', 'summary_counts', 'summary_rates', 'breakdowns_partition', 'internal_only',
+    'still_interested', 'independent_requests_not_attributed', 'summary_counts', 'summary_rates', 'summary_drop_off_counts', 'stages_table', 'breakdowns_partition', 'internal_only',
   ])('step %s', (name) => {
     expect(s[name]).toBeDefined();
     if (!s[name].ok) console.log(name, JSON.stringify(s[name].data));

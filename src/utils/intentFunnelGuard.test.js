@@ -53,4 +53,20 @@ describe('intent funnel (item 126)', () => {
       .filter((f) => /\.(js|ts)$/.test(f) && !f.endsWith('.test.js') && !f.endsWith('.journey.js'));
     for (const f of files) expect(fs.readFileSync(f, 'utf8')).not.toMatch(/gathering_interested_joins/);
   });
+
+  it('reports drop-off as a count before the next stage, never a fraction (20270269)', () => {
+    const dir = path.join(root, 'supabase/migrations');
+    const mig = fs.readFileSync(path.join(dir, '20270269_intent_funnel_drop_off_counts.sql'), 'utf8')
+      .split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
+    expect(mig).not.toMatch(/\b\w+_drop_off\b(?!_)/);         // the old fraction columns are gone
+    expect(mig).not.toMatch(/1\s*-\s*\w+::numeric/);           // no 1 - rate anywhere
+    expect(mig).toMatch(/shown - viewed as drop_off_before_viewed/);
+    expect(mig).toMatch(/reached - lead\(reached\) over w as drop_off_before_next_stage/);
+    expect(mig).toMatch(/revoke all on public\.intent_funnel_summary from public, anon, authenticated/);
+    expect(mig).toMatch(/revoke all on public\.intent_funnel_stages from public, anon, authenticated/);
+    expect(mig).not.toMatch(/\bgrant\b/i);
+    for (const f of walk(path.join(root, 'src')).filter((x) => /\.(js|ts)$/.test(x) && !x.endsWith('.test.js') && !x.endsWith('.journey.js'))) {
+      expect(fs.readFileSync(f, 'utf8')).not.toMatch(/intent_funnel_stages/);
+    }
+  });
 });
