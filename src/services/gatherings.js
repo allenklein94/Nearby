@@ -359,31 +359,6 @@ export async function searchGatherings(queryText, tier = 'wide') {
   return enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, context.myInterests, tier);
 }
 
-export async function getMyTopGatheringCategories() {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData?.session?.user?.id;
-
-  const { data, error } = await supabase
-    .from('gathering_interest')
-    .select('gatherings(interest_tag)')
-    .eq('user_id', userId);
-
-  if (error) {
-    console.error('getMyTopGatheringCategories error', error);
-    return [];
-  }
-
-  const counts = {};
-  for (const row of data ?? []) {
-    const tag = row.gatherings?.interest_tag;
-    if (!tag) continue;
-    counts[tag] = (counts[tag] ?? 0) + 1;
-  }
-
-  return Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .map(([tag]) => tag);
-}
 
 export async function getMyGatherings() {
   const { data: sessionData } = await supabase.auth.getSession();

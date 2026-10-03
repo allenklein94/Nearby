@@ -146,10 +146,10 @@ for (const [period, items] of Object.entries(QUICK_PROMPTS_BY_PERIOD)) {
   }
 }
 
-// Real personalization, not a fabricated one: `topCategories` is the
-// caller's own real most-attended interest tags (getMyTopGatheringCategories,
-// already fetched by getHomeDashboard() for the "Because You're Into"
-// section — reused here, not a new query). A category with an established
+// Real personalization, not a fabricated one: `topCategories` is Home's
+// "Because you like" list (blendedRanking.becauseYouLikeCategories, item 158:
+// declared interests first, then categories learned from 2+ separate real
+// choices), already fetched by getHomeDashboard() — reused here, not a new query. A category with an established
 // period-flavored label/icon (from the static defaults above) keeps that
 // flavor; anything else falls back to a generic icon (via categoryStyleFor,
 // passed in so this stays a pure function) and the tag itself as the label

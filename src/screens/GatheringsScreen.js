@@ -11,7 +11,7 @@ import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { gatheringCardModel } from '../utils/recommendationCard';
 import { openDestination } from '../services/openDestination';
-import { getNearbyGatherings, searchGatherings, expressInterest, getMyTopGatheringCategories } from '../services/gatherings';
+import { getNearbyGatherings, searchGatherings, expressInterest } from '../services/gatherings';
 import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { getMyFriends } from '../services/friends';
 import { getPublicStoriesOnMap } from '../services/stories';
@@ -44,7 +44,7 @@ import { useTheme } from '../context/ThemeContext';
 import { formatDateTime } from '../utils/timeLabels';
 import { countLabel } from '../utils/plural';
 import useMyInterests from '../hooks/useMyInterests';
-import { becauseYouLikeCategories } from '../constants/interestGraph';
+import { canonicalizeInterests } from '../constants/interestGraph';
 import { relatedInterestReason } from '../constants/hobbyRelations';
 import { getFriendsInterestedIn } from '../services/friendInterests';
 import { friendsInterestReason } from '../utils/friendInterests';
@@ -109,13 +109,12 @@ export default function GatheringsScreen({ navigation, route }) {
   const [forYouActive, setForYouActive] = useState(false);
   const [trendingActive, setTrendingActive] = useState(false);
   const [trendingIds, setTrendingIds] = useState([]);
-  const [topCategories, setTopCategories] = useState([]);
   const myInterests = useMyInterests();
   const personalization = usePersonalization();
-  // "For You": declared interests from day one; behavior joins in as the account matures (blendedRanking.js). Falls back to the
-  // older behavior-then-declared list while personalization is still loading.
+  // "For You": declared interests from day one; learned behavior joins in as the account matures (blendedRanking.js). While
+  // personalization is still loading it falls back to the declared interests alone (item 158: never an all-time join count).
   const blendedForYou = forYouBlend(personalization.declared, personalization.behavior, personalization.maturity, 50, personalization.declaredGroups);
-  const forYouCategories = blendedForYou.length > 0 ? blendedForYou : becauseYouLikeCategories(topCategories, myInterests, [], 50);
+  const forYouCategories = blendedForYou.length > 0 ? blendedForYou : canonicalizeInterests(myInterests);
   const [initialLoading, setInitialLoading] = useState(true);
   const [newOfferCount, setNewOfferCount] = useState(0);
   const [viewStyle, setViewStyle] = useState('list');
@@ -150,12 +149,8 @@ export default function GatheringsScreen({ navigation, route }) {
 
   const load = useCallback(async () => {
     supabase.auth.getSession().then(({ data }) => setMyUserId(data?.session?.user?.id ?? null)).catch(() => {});
-    const [nearbyResults, topCats] = await Promise.all([
-      getNearbyGatherings(radiusTier),
-      getMyTopGatheringCategories(),
-    ]);
+    const nearbyResults = await getNearbyGatherings(radiusTier);
     setNearby(nearbyResults);
-    setTopCategories(topCats);
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();

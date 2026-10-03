@@ -63,15 +63,6 @@ export function canonicalizeInterests(labels) {
   return out;
 }
 
-// "Because you're into..." categories: real behavior wins; a brand-new account with none falls back to
-// the interests the user explicitly declared (profile interests, then this month's mood), so what
-// onboarding asked is used from the first Home visit instead of sitting unread.
-export function becauseYouLikeCategories(behavioral, declaredInterests, monthlyInterests, limit = 3) {
-  const history = Array.isArray(behavioral) ? behavioral : [];
-  if (history.length > 0) return history.slice(0, limit);
-  return canonicalizeInterests([...(declaredInterests ?? []), ...(monthlyInterests ?? [])]).slice(0, limit);
-}
-
 // Progressive dining prompt: offered only when the user has told us they're into food & drink (any
 // food_drink tag), hasn't already set cuisine/venue tastes, and hasn't dismissed it. Cuisine/venue
 // aren't derivable from interests, so this asks -- once, skippable -- instead of guessing.

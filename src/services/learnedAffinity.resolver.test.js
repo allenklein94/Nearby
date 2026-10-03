@@ -100,11 +100,11 @@ describe('scope guard', () => {
   const fs = require('fs');
   const path = require('path');
   const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? walk(path.join(dir, d.name)) : [path.join(dir, d.name)]));
-  it('only the typed-ask resolver applies it (not routing, sponsored, eligibility or business code)', () => {
+  it('only consumer ranking reads it: the typed-ask resolver and Home (item 158), never routing, sponsored, eligibility or business code', () => {
     const users = walk(path.join(__dirname, '..')).filter((f) => /\.js$/.test(f) && !/\.test\.js$/.test(f))
       .filter((f) => /applyLearnedAffinity\(|getMyLearnedAffinity\(/.test(fs.readFileSync(f, 'utf8')));
     expect(users.map((f) => path.relative(path.join(__dirname, '..'), f)).sort())
-      .toEqual(['services/behaviorSignals.js', 'services/intentResolver.js', 'utils/learnedAffinity.js']);
+      .toEqual(['services/behaviorSignals.js', 'services/homeDashboard.js', 'services/intentResolver.js', 'utils/learnedAffinity.js']);
   });
   it('nothing outside the trigger writes a redeem event, and the client cannot', () => {
     const src = fs.readFileSync(path.join(__dirname, 'behaviorSignals.js'), 'utf8');

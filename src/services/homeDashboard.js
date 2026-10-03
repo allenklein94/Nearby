@@ -2,7 +2,7 @@ import { tr } from '../i18n/translate';
 import { supabase } from './supabase';
 import { getNearbyMatches } from './proximity';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
-import { getNearbyGatherings, getMyInterestedGatherings, pickBestGathering, getMyTopGatheringCategories, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
+import { getNearbyGatherings, getMyInterestedGatherings, pickBestGathering, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
 import { gatheringEnvironment } from '../constants/environmentMatch';
 import { createWeatherLoader } from './weatherLoader';
 import { getMyGroupPlans } from './groupPlans';
@@ -10,7 +10,9 @@ import { getUserLocation } from './userLocation';
 import { subModeFromMotivations } from '../utils/peopleSubModePreference';
 import { getFriendDiscoveryCandidates } from './friendDiscovery';
 import { meetSomeoneTonight, countTonightSupply } from '../utils/meetTonight';
-import { canonicalizeInterests, becauseYouLikeCategories } from '../constants/interestGraph';
+import { canonicalizeInterests } from '../constants/interestGraph';
+import { becauseYouLikeCategories } from '../constants/blendedRanking';
+import { getMyLearnedAffinity } from './behaviorSignals';
 import { relatedHobbyFor } from '../constants/hobbyRelations';
 import { getFriendsInterestedIn } from './friendInterests';
 import { isGatheringPast } from '../utils/objectState';
@@ -443,10 +445,11 @@ export async function getHomeDashboard() {
   // screen can say "didn't load, try again" instead of reading like there is nothing nearby.
   const loadFailures = [];
   const settle = (promise, key) => promise.catch((e) => { loadFailures.push(key); console.error(`home dashboard: ${key} failed`, e); return []; });
-  const [nearbyPeople, nearbyGatherings, topCategories, { count: friendsCount }] = await Promise.all([
+  const [nearbyPeople, nearbyGatherings, learned, { count: friendsCount }] = await Promise.all([
     settle(getNearbyMatches(), 'people'),
     settle(getNearbyGatherings('wide'), 'gatherings'),
-    settle(getMyTopGatheringCategories(), 'interests'),
+    // item 158: the one learned signal (2+ separate pieces of evidence, 90 days, Forget/Clear apply); null = failed
+    getMyLearnedAffinity().catch((e) => { loadFailures.push('interests'); console.error('home dashboard: interests failed', e); return null; }),
     supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('status', 'accepted').or(`user_a.eq.${myId},user_b.eq.${myId}`),
   ]);
 
@@ -596,7 +599,12 @@ export async function getHomeDashboard() {
   // to so nothing is suggested twice. Built from the full attending/
   // hosting sets, not just the display-capped plansGoing/plansHosting
   // above, so a plan that fell outside the top-3 preview still counts.
-  const topInterestCategories = becauseYouLikeCategories(topCategories, profileData?.interests, profileData?.monthly_interests);
+  const learnedBehavior = learned?.behavior ?? {};
+  const learnedCategories = Object.keys(learnedBehavior);
+  const topInterestCategories = becauseYouLikeCategories({
+    declared: [...(profileData?.interests ?? []), ...(profileData?.monthly_interests ?? [])],
+    behavior: learnedBehavior, maturity: learned?.maturity ?? null,
+  });
   const upcomingPlanIds = new Set([
     ...(attendingUpcoming ?? []).map((row) => row.gatherings?.id).filter(Boolean),
     ...(hostingUpcoming ?? []).map((g) => g.id),
@@ -760,6 +768,7 @@ export async function getHomeDashboard() {
     loadFailures,
     becauseYouLike,
     becauseYouLikeCategories: topInterestCategories,
+    learnedCategories,
     declaredInterests: canonicalizeInterests([...(profileData?.interests ?? []), ...(profileData?.monthly_interests ?? [])]),
     indoorGatheringsToday,
     outdoorGatheringsToday,

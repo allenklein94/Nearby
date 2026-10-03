@@ -33,6 +33,23 @@ export function blendedCategoryScore(category, { declared = [], declaredGroups =
   return explicit + weightSignal(raw, SIGNAL_SOURCES.BEHAVIORAL, maturity);
 }
 
+// "Because you like..." categories (Home's list + Quick Picks), owner item 158 (2026-10-03, LOCKED): explicit interest is strong,
+// repeated behavior grows, a single click is weak. Ordered by the SAME blendedCategoryScore every feed uses: a declared interest
+// (5, never dampened) always beats a behavior-only category (at most 4, scaled by maturity and repetition), and behavior on a
+// declared interest lifts it further. Behavior = the learned signal only (get_my_behavior_categories: 2+ separate pieces of
+// evidence, item 157; 90 days; Forget / Clear apply), so one click never enters. Only exact declared or learned categories,
+// never a broad group or a related hobby (those have their own wording). Ties keep the declared order.
+export function becauseYouLikeCategories({ declared = [], behavior = {}, maturity = null } = {}, limit = 3) {
+  const mine = canonicalizeInterests(declared);
+  const cats = [...new Set([...mine, ...Object.keys(behavior ?? {})])];
+  return cats
+    .map((c, i) => ({ c, i, s: blendedCategoryScore(c, { declared: mine, behavior, maturity }) }))
+    .filter((x) => x.s > 0)
+    .sort((a, b) => b.s - a.s || a.i - b.i)
+    .slice(0, limit)
+    .map((x) => x.c);
+}
+
 // A small lift for a gathering that fits the person's stated social comfort: below any declared interest (5) and any real behavior
 // signal. The Gatherings feed ranks with it (utils/gatheringFeedRanking.js, the one ranking ladder).
 export const COMFORT_POINTS = 1;

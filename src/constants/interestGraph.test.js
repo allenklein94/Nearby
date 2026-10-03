@@ -26,13 +26,6 @@ test('canonicalizeInterests maps legacy, fixes case, dedupes, drops unknown', ()
   expect(canonicalizeInterests(null)).toEqual([]);
 });
 
-test('becauseYouLikeCategories: behavior wins, else declared, else empty', () => {
-  const { becauseYouLikeCategories } = require('./interestGraph');
-  expect(becauseYouLikeCategories(['Yoga', 'Coffee'], ['Music'], [])).toEqual(['Yoga', 'Coffee']);
-  expect(becauseYouLikeCategories([], ['Music', 'Hiking'], ['Food'])).toEqual(['Music', 'Hiking', 'Foodie']);
-  expect(becauseYouLikeCategories([], [], null)).toEqual([]);
-});
-
 test('shouldOfferDiningPrompt: only for food interests with no tastes set and not dismissed', () => {
   const { shouldOfferDiningPrompt } = require('./interestGraph');
   expect(shouldOfferDiningPrompt({ interests: ['Coffee'], cuisinePreferences: [], venuePreferences: [] })).toBe(true);

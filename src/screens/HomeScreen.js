@@ -410,7 +410,7 @@ export default function HomeScreen({ navigation }) {
     friendIds: dashboard?.friendIds ? new Set(dashboard.friendIds) : null,
     isPast: (g) => isGatheringPast(g),
     declaredInterests: dashboard?.declaredInterests ?? null,
-    activityCategories: dashboard?.becauseYouLikeCategories ?? [],
+    activityCategories: dashboard?.learnedCategories ?? [], // item 158: only categories really learned, never the declared ones
     friendInterests: dashboard?.friendInterestByTag ?? null,
   });
 
@@ -838,11 +838,9 @@ export default function HomeScreen({ navigation }) {
         // Phase J (CLAUDE.md) -- both real, zero-new-query: accountAgeDays
         // from profile.created_at (this same load() call's own already-
         // fetched profile row); hasBehavioralHistory from
-        // result.becauseYouLikeCategories (getHomeDashboard()'s own
-        // already-fetched getMyTopGatheringCategories() result, reused
-        // here for a second, different purpose -- non-empty means the
-        // caller has genuinely joined/hosted something with a real
-        // category before, empty means a brand-new account with nothing
+        // result.learnedCategories (getHomeDashboard()'s already-fetched
+        // learned signal, item 158 -- non-empty means at least one category
+        // rests on 2+ separate real choices, empty means nothing learned
         // yet). A missing created_at (shouldn't happen for a real row,
         // but never trusted blind) falls back to null, which
         // computeAccountMaturity() reads as "unknown -> full trust", the
@@ -850,7 +848,7 @@ export default function HomeScreen({ navigation }) {
         const accountAgeDays = profile?.created_at
           ? (Date.now() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24)
           : null;
-        const hasBehavioralHistory = (result?.becauseYouLikeCategories?.length ?? 0) > 0;
+        const hasBehavioralHistory = (result?.learnedCategories?.length ?? 0) > 0; // item 158: the learned signal only
         setHomeRecommendations(
           buildHomeRecommendations({
             gatherings: result?.nearbyGatherings ?? [],

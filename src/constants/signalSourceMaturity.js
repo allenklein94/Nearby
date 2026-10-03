@@ -13,9 +13,9 @@
 //   - it never fabricates a "maturity score" from nothing -- maturity is
 //     computed from exactly two real, already-observable facts: real
 //     account age (profiles.created_at) and whether the account has any
-//     real behavioral history at all (a non-empty getMyTopGatheringCategories()
-//     result -- already fetched by getHomeDashboard() for the "Because
-//     You're Into..." section, reused here with zero new query).
+//     real behavioral history at all (a non-empty learned-category list,
+//     get_my_behavior_categories, read by Home through behaviorSignals.js, already
+//     fetched by getHomeDashboard(), reused here with zero new query).
 //   - it never merges the app's several independent scoring formulas into
 //     one universal score. SCORE_INTEREST_MATCH/SCORE_CLOSE_DISTANCE/
 //     SCORE_HAPPENING_NOW/SCORE_OWN_NETWORK (intentResolverScoring.js) are
