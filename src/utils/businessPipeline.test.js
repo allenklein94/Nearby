@@ -109,3 +109,26 @@ describe('item 147: business request pipeline', () => {
     }
   });
 });
+
+// Item 147 follow-up (migration 20270267): the dashboard shows one current stage, but the lifecycle history is kept by
+// an append-only trigger on both tables. Live proof: scripts/live-verify/business-lifecycle-history.sql.
+describe('item 147: lifecycle history is kept underneath the current stage', () => {
+  const dir = path.join(__dirname, '..', '..', 'supabase/migrations');
+  const mig = fs.readFileSync(path.join(dir, '20270267_business_lifecycle_history.sql'), 'utf8');
+
+  test('every insert and status change of a request or offer is recorded, by trigger, whatever function writes it', () => {
+    expect(mig).toMatch(/after insert or update of status on public\.business_requests/);
+    expect(mig).toMatch(/after insert or update of status on public\.business_request_offers/);
+    expect(mig).toMatch(/revoke all on public\.business_lifecycle_events from public, anon, authenticated/);
+  });
+
+  test('no later migration drops the triggers or deletes history', () => {
+    const later = fs.readdirSync(dir).filter((f) => f > '20270267_business_lifecycle_history.sql');
+    for (const f of later) {
+      const src = fs.readFileSync(path.join(dir, f), 'utf8');
+      expect(src).not.toMatch(/drop trigger[^;]*lifecycle_history/i);
+      expect(src).not.toMatch(/delete from (public\.)?business_lifecycle_events/i);
+      expect(src).not.toMatch(/drop table[^;]*business_lifecycle_events/i);
+    }
+  });
+});
