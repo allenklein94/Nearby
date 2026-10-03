@@ -132,7 +132,7 @@ describe('item 88 scope lock (owner, 2026-09-26)', () => {
     expect(redactSensitiveNeeds('coffee tonight')).toBe('coffee tonight');
     expect(redactSensitiveNeeds(null)).toBeNull();
     const src = r('src/services/intentOutcomes.js');
-    expect((src.match(/raw_text: redactSensitiveNeeds\(rawText\)/g) ?? []).length).toBe(2);
+    expect((src.match(/raw_text: (?:protectedAsk \? null : )?redactSensitiveNeeds\(rawText\)/g) ?? []).length).toBe(2);
     expect(src).not.toMatch(/raw_text: rawText/);
   });
   it('accessibility asks map ONLY to the existing accessibility attributes (no second taxonomy)', () => {

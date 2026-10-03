@@ -7,6 +7,7 @@ import * as Location from 'expo-location';
 import { findRecurringIntentPattern, formatSmartPlaceholder, findTopSearchedCategory } from '../utils/intentPatterns';
 import { getTimePeriod } from '../utils/timeContext';
 import { redactSensitiveNeeds } from '../utils/sensitiveNeeds';
+import { isNeverLearnedCategory } from '../constants/neverLearned';
 
 // Same coarse-bucketing convention already established for profiles.wide_area
 // and gatherings.wide_area (see the 20260823_intent_submissions_wide_area.sql
@@ -48,14 +49,16 @@ export async function recordIntentSelection({ rawText, category, dateWindow, res
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+    // Item 183: a never-learned category (religion) resolves the search but is never kept: no category, words or title.
+    const protectedAsk = isNeverLearnedCategory(category);
     await supabase.from('intent_outcomes').insert({
       user_id: user.id,
-      raw_text: redactSensitiveNeeds(rawText),
-      category: category ?? null,
+      raw_text: protectedAsk ? null : redactSensitiveNeeds(rawText),
+      category: protectedAsk ? null : (category ?? null),
       date_window: dateWindow ?? null,
       result_type: resultType,
       result_id: resultId ?? null,
-      result_title: resultTitle ?? null,
+      result_title: protectedAsk ? null : (resultTitle ?? null),
       submission_id: submissionId ?? null,
       // typed-ask audit link (item 105): which shown row of which snapshot this tap came from
       snapshot_id: snapshotId ?? null,
@@ -87,12 +90,13 @@ export async function recordIntentSubmission({ rawText, category, dateWindow, in
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
     const wideAreaValue = await bestEffortWideArea();
+    const protectedAsk = isNeverLearnedCategory(category); // item 183: resolved for this search only, never logged
     const { data, error } = await supabase
       .from('intent_submissions')
       .insert({
         user_id: user.id,
-        raw_text: redactSensitiveNeeds(rawText),
-        category: category ?? null,
+        raw_text: protectedAsk ? null : redactSensitiveNeeds(rawText),
+        category: protectedAsk ? null : (category ?? null),
         date_window: dateWindow ?? null,
         intent_kind: intentKind ?? null,
         had_any_result: !!hadAnyResult,

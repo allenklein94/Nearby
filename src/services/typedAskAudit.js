@@ -5,6 +5,7 @@
 import { randomUUID } from 'expo-crypto';
 import { supabase } from './supabase';
 import { buildTypedAskSnapshot, displayedIntentResults } from '../utils/typedAskAudit';
+import { isNeverLearnedCategory } from '../constants/neverLearned';
 
 // `result` = the object the surface renders from: { items, experience, outcome?, submissionId, audit, classifyResult }.
 // Returns { snapshotId, displayed } immediately (or null when nothing can be recorded); the write itself is fire-and-forget.
@@ -20,6 +21,10 @@ export function recordTypedAsk(surface, result) {
       ...(result.audit?.interpretation ?? { category: classify.category ?? null, date_window: classify.dateWindow ?? null }),
       intent: classify.intent ?? null,
     };
+    // Item 183: an ask about a never-learned category (religion) is resolved for this search only and never audited.
+    if ([interpretation.category, interpretation.preferred_category, interpretation.date_tag].some(isNeverLearnedCategory)) {
+      return { snapshotId: null, displayed };
+    }
     const payload = buildTypedAskSnapshot({
       id: snapshotId, surface, submissionId: result.submissionId ?? null, outcome, audit: result.audit ?? null, displayed, interpretation,
       refinement: result.refinement ?? null,

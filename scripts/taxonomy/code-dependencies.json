@@ -7135,6 +7135,13 @@
    "group": null
   },
   {
+   "tag": "Faith & Spirituality",
+   "file": "src/constants/neverLearned.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Dating",
    "file": "src/constants/notificationCategories.js",
    "consumer": "code",
@@ -9832,13 +9839,6 @@
   {
    "tag": "Coffee",
    "file": "src/screens/PlacesScreen.js",
-   "consumer": "code",
-   "occurrences": 1,
-   "group": null
-  },
-  {
-   "tag": "Faith & Spirituality",
-   "file": "src/services/behaviorSignals.js",
    "consumer": "code",
    "occurrences": 1,
    "group": null
