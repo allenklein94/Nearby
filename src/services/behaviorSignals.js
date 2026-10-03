@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
 import { searchTopic } from '../utils/unifiedSearch';
+import { behaviorWeightMap } from '../constants/blendedRanking';
+import { computeAccountMaturity } from '../constants/signalSourceMaturity';
 
 // Behavioral signal capture (private, owner-only -- see 20261215_behavior_events.sql). Fire-and-forget: a failure here
 // must never affect the screen, and the server dedupes repeat events within an hour.
@@ -29,6 +31,29 @@ export function recordBehaviorEvent(eventType, entityType, entityId, category) {
   }
 }
 
+// Owner item 156: the learned affinity a typed ask reads = exactly what Settings > "What Nearby has noticed" lists and Forget /
+// Clear history remove (get_my_behavior_categories), plus the account maturity that dampens it. Cached 60 s. Any failure or an
+// unknown account age = nothing learned (empty), so a typed ask ranks exactly as before.
+let learnedCache = null;
+export async function getMyLearnedAffinity() {
+  if (learnedCache && Date.now() - learnedCache.at < 60000) return learnedCache.value;
+  const { data: sessionData } = await supabase.auth.getSession();
+  const uid = sessionData?.session?.user?.id;
+  if (!uid) return { behavior: {}, maturity: null };
+  const [rows, { data: profile }] = await Promise.all([
+    getMyBehaviorCategories(),
+    supabase.from('profiles').select('created_at').eq('id', uid).single(),
+  ]);
+  const behavior = behaviorWeightMap(rows);
+  const ageDays = profile?.created_at ? (Date.now() - new Date(profile.created_at).getTime()) / 86400000 : null;
+  const value = ageDays == null
+    ? { behavior: {}, maturity: null }
+    : { behavior, maturity: computeAccountMaturity({ accountAgeDays: ageDays, hasBehavioralHistory: Object.keys(behavior).length > 0 }) };
+  learnedCache = { at: Date.now(), value };
+  return value;
+}
+export function resetLearnedAffinityCache() { learnedCache = null; }
+
 export async function getMyBehaviorCategories(daysBack = 90) {
   const { data, error } = await supabase.rpc('get_my_behavior_categories', { days_back_param: daysBack });
   if (error) throw new Error(error.message);
@@ -37,6 +62,7 @@ export async function getMyBehaviorCategories(daysBack = 90) {
 
 export async function clearMyBehaviorHistory() {
   const { error } = await supabase.rpc('clear_my_behavior_history');
+  learnedCache = null; // a typed ask right after Clear must not use what was cleared
   if (error) throw new Error(error.message);
 }
 
@@ -55,6 +81,7 @@ export function recordAcceptBehavior(requestId, category) {
 
 export async function forgetBehaviorCategory(category) {
   const { error } = await supabase.rpc('forget_my_behavior_category', { category_param: category });
+  learnedCache = null; // same for Forget
   if (error) throw new Error(error.message);
 }
 

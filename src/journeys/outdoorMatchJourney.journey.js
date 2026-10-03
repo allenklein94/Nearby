@@ -14,7 +14,7 @@ jest.mock('expo-location', () => ({}));
 jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { extra: {} } } }));
 jest.mock('../services/places', () => ({ getGoogleMapsRequestHeaders: () => ({}) }));
 jest.mock('react-native', () => ({ Linking: { openURL: jest.fn() } }));
-jest.mock('../services/behaviorSignals', () => ({ recordSearchBehavior: jest.fn() }));
+jest.mock('../services/behaviorSignals', () => ({ recordSearchBehavior: jest.fn(), getMyLearnedAffinity: jest.fn(async () => ({ behavior: {}, maturity: null })) }));
 jest.mock('../services/intentOutcomes', () => ({ recordIntentSubmission: jest.fn(async () => 'sub-1') }));
 jest.mock('../services/travelTime', () => ({ getTravelTimes: jest.fn(async () => null) }));
 jest.mock('../services/homeDashboard', () => ({ getSocialForecast: jest.fn(async () => null) }));

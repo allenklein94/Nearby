@@ -24,7 +24,7 @@ jest.mock('./occasionPackages', () => ({ searchOccasionPackages: jest.fn(async (
 jest.mock('./homeDashboard', () => ({ getSocialForecast: jest.fn(async () => null) }));
 jest.mock('./createAssistant', () => ({ classifyCreateRequest: jest.fn() }));
 jest.mock('./intentOutcomes', () => ({ recordIntentSubmission: jest.fn(async () => 'sub-1') }));
-jest.mock('./behaviorSignals', () => ({ recordSearchBehavior: jest.fn() }));
+jest.mock('./behaviorSignals', () => ({ recordSearchBehavior: jest.fn(), getMyLearnedAffinity: jest.fn(async () => ({ behavior: {}, maturity: null })) }));
 
 import { resolveIntent } from './intentResolver';
 import { getNearbyGatherings } from './gatherings';

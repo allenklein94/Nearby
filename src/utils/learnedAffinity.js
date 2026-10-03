@@ -13,3 +13,31 @@ export function learnedAffinities(rows, declaredInterests = []) {
     .slice(0, LEARNED_MAX_SHOWN)
     .map((r) => ({ category: r.category, weight: Number(r.weight), inProfile: declared.has(r.category) }));
 }
+
+// Typed asks (owner item 156, 2026-10-03, LOCKED): the SAME learned affinity lifts results a typed ask already returned in a
+// category the person has really been choosing. Subordinate to the ask, always:
+//   - only results already in the list are touched; nothing is added, removed or narrowed, and no category joins the ask;
+//   - the lift is behaviorNudge (0..BEHAVIOR_MAX_POINTS = 4, scaled by account maturity), strictly below a declared
+//     interest (EXPLICIT_POINTS = 5), the same cap and dampening the feeds use;
+//   - it counts as HISTORY (historyScore), so when the ask states a mood or quality ("something quiet") the session-intent
+//     rule (constants/sessionIntent.js) cuts it to a tie-breaker, or to nothing for a result that conflicts with the ask;
+//   - unknown maturity (the account lookup failed) = nothing learned, never full weight.
+// Reason: "Based on your recent activity: Coffee" (never "you like"). Ranking only; never stored, never sent anywhere.
+import { behaviorNudge } from '../constants/blendedRanking';
+import { reasonText, appendReason } from '../constants/recommendationReasonVocabulary';
+
+export function applyLearnedAffinity(candidates, learned) {
+  if (!Array.isArray(candidates) || !learned || learned.maturity == null) return candidates;
+  const behavior = learned.behavior ?? {};
+  if (Object.keys(behavior).length === 0) return candidates;
+  return candidates.map((c) => {
+    const lift = behaviorNudge(c?.category, { behavior, maturity: learned.maturity });
+    if (!(lift > 0)) return c;
+    return {
+      ...c,
+      score: (c.score ?? 0) + lift,
+      historyScore: (Number.isFinite(c.historyScore) ? c.historyScore : 0) + lift,
+      reasons: appendReason(c.reasons, reasonText('recentActivity', { category: c.category })),
+    };
+  });
+}

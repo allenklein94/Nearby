@@ -1,4 +1,5 @@
-import { recordSearchBehavior } from './behaviorSignals';
+import { recordSearchBehavior, getMyLearnedAffinity } from './behaviorSignals';
+import { applyLearnedAffinity } from '../utils/learnedAffinity';
 import { openDestination } from './openDestination';
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
@@ -713,6 +714,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
 
   // Item 137: how far this person usually goes per category (their own past choices). Started now, awaited by its pass.
   const learnedProximityPromise = getMyLearnedProximity().catch(() => ({}));
+  // Item 156: the person's learned category affinity (the same signal the feeds use). Started now, awaited by its pass.
+  const learnedAffinityPromise = getMyLearnedAffinity().catch(() => null);
 
   // Item 69: "willing to travel" widens every search one step on the shared radius list (15 -> 30 mi), bounded by its maximum.
   const distanceWillingness = distanceWillingnessFromText(rawText);
@@ -935,6 +938,11 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Vibe (item 83): a declared vibe the person said to avoid, or the declared opposite of one they want, sinks a little. Never hides.
   deduped = applyVibeSinks(deduped, vibesFromAsk(rawText));
   step('vibe');
+  // Item 156: categories the person has really been choosing (joins, accepted offers, confirmed visits...) lift results this
+  // ask ALREADY returned, below a declared interest, as history: the session-intent pass right after keeps it to a
+  // tie-breaker when the ask states a mood. Never adds, removes or narrows anything (utils/learnedAffinity.js).
+  deduped = applyLearnedAffinity(deduped, await learnedAffinityPromise);
+  step('learned_affinity');
   // Item 114: what the person asked for tonight outranks who they usually are (constants/sessionIntent.js).
   deduped = applySessionIntent(deduped, sessionIntentFromText(rawText));
   step('session_intent');

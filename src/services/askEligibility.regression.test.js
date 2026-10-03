@@ -6,7 +6,7 @@
 jest.mock('expo-location', () => ({}));
 jest.mock('react-native', () => ({ Linking: { openURL: jest.fn() } }));
 jest.mock('./supabase', () => ({ supabase: {} }));
-jest.mock('./behaviorSignals', () => ({ recordSearchBehavior: jest.fn() }));
+jest.mock('./behaviorSignals', () => ({ recordSearchBehavior: jest.fn(), getMyLearnedAffinity: jest.fn(async () => ({ behavior: {}, maturity: null })) }));
 jest.mock('./userLocation', () => ({ getUserLocation: jest.fn(async () => ({ coords: { latitude: 40.3, longitude: -75.2 } })) }));
 jest.mock('./gatherings', () => ({ getNearbyGatherings: jest.fn(), getGatheringFitReasons: jest.fn(() => ({ reasons: [] })) }));
 jest.mock('./communities', () => ({ getMyCommunities: jest.fn(async () => []), getPublicCommunities: jest.fn(async () => []) }));
