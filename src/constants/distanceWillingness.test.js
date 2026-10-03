@@ -110,6 +110,6 @@ describe('scope', () => {
     }
     const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
     // Exception: the internal typed-ask audit (item 105) lists this field as recordable; no client or business reads it (typedAskAudit.test.js).
-    for (const f of walk(path.join(ROOT, 'supabase')).filter((f) => /\.(sql|ts)$/.test(f) && !f.endsWith('20270238_typed_ask_audit.sql') && !f.endsWith('20270240_typed_ask_category_narrow.sql'))) expect([f, /distance_willingness/.test(fs.readFileSync(f, 'utf8'))]).toEqual([f, false]);
+    for (const f of walk(path.join(ROOT, 'supabase')).filter((f) => /\.(sql|ts)$/.test(f) && !f.endsWith('20270238_typed_ask_audit.sql') && !f.endsWith('20270240_typed_ask_category_narrow.sql') && !f.endsWith('20270277_typed_ask_need_want.sql'))) expect([f, /distance_willingness/.test(fs.readFileSync(f, 'utf8'))]).toEqual([f, false]);
   });
 });

@@ -1,4 +1,5 @@
 import { recordAcceptBehavior } from '../services/behaviorSignals';
+import { hasEstablishedRecord } from '../utils/reliabilityRecord';
 import { useLanguage } from '../context/LanguageContext';
 import { displayClock } from '../i18n/display';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -277,7 +278,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
 
     function reliabilityRank(offer) {
       const rep = partnerStats[offer.partner_id]?.reputation;
-      const established = !!rep && rep.total_opportunities >= 5;
+      const established = hasEstablishedRecord(rep);
       return { established, completionRate: established ? (rep.completion_rate ?? -1) : null };
     }
     const reordered = offeredIndices
@@ -299,7 +300,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const pickOfferId = useMemo(() => {
     const first = displayOffers.find((o) => o.status === 'offered');
     const rep = first ? partnerStats[first.partner_id]?.reputation : null;
-    return displayOffers.filter((o) => o.status === 'offered').length >= 2 && rep && rep.total_opportunities >= 5 ? first.id : null;
+    return displayOffers.filter((o) => o.status === 'offered').length >= 2 && hasEstablishedRecord(rep) ? first.id : null;
   }, [displayOffers, partnerStats]);
 
   const load = useCallback(async () => {

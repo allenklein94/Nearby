@@ -79,7 +79,8 @@
   "out.booking": "places that need a booking first",
   "out.other": "places that can't take this request",
   "listSep": ", ",
-  "listAnd": " and "
+  "listAnd": " and ",
+  "need": "Showing what's available and close by"
  },
  "es": {
   "openNow": "Solo lo que está abierto ahora mismo",
@@ -161,7 +162,8 @@
   "out.booking": "lugares que piden reserva",
   "out.other": "lugares que no pueden atender esta solicitud",
   "listSep": ", ",
-  "listAnd": " y "
+  "listAnd": " y ",
+  "need": "Mostrando lo disponible y cercano"
  },
  "de": {
   "openNow": "Nur was gerade geöffnet hat",
@@ -243,7 +245,8 @@
   "out.booking": "Orte, die vorher eine Buchung brauchen",
   "out.other": "Orte, die diese Anfrage nicht annehmen können",
   "listSep": ", ",
-  "listAnd": " und "
+  "listAnd": " und ",
+  "need": "Zeigt, was verfügbar und in der Nähe ist"
  },
  "fr": {
   "openNow": "Seulement ce qui est ouvert maintenant",
@@ -325,7 +328,8 @@
   "out.booking": "lieux qui demandent une réservation",
   "out.other": "lieux qui ne peuvent pas prendre cette demande",
   "listSep": ", ",
-  "listAnd": " et "
+  "listAnd": " et ",
+  "need": "Ce qui est disponible et à proximité"
  },
  "pt": {
   "openNow": "Só o que está aberto agora",
@@ -407,7 +411,8 @@
   "out.booking": "lugares que exigem reserva",
   "out.other": "lugares que não podem atender este pedido",
   "listSep": ", ",
-  "listAnd": " e "
+  "listAnd": " e ",
+  "need": "Mostrando o que está disponível e perto"
  },
  "ht": {
   "openNow": "Sèlman sa ki louvri kounye a",
@@ -489,7 +494,8 @@
   "out.booking": "kote ki bezwen rezèvasyon davans",
   "out.other": "kote ki pa ka pran demann sa a",
   "listSep": ", ",
-  "listAnd": " ak "
+  "listAnd": " ak ",
+  "need": "Nou montre sa ki disponib e ki tou pre"
  },
  "zh": {
   "openNow": "只显示此刻营业的地方",
@@ -571,7 +577,8 @@
   "out.booking": "需要提前预订的地方",
   "out.other": "无法接受此请求的地方",
   "listSep": "、",
-  "listAnd": "和"
+  "listAnd": "和",
+  "need": "显示可用且离你近的选项"
  },
  "vi": {
   "openNow": "Chỉ những nơi đang mở cửa",
@@ -653,7 +660,8 @@
   "out.booking": "nơi cần đặt chỗ trước",
   "out.other": "nơi không nhận yêu cầu này",
   "listSep": ", ",
-  "listAnd": " và "
+  "listAnd": " và ",
+  "need": "Hiển thị những nơi có sẵn và gần bạn"
  },
  "tl": {
   "openNow": "Ang bukas lang ngayon",
@@ -735,7 +743,8 @@
   "out.booking": "mga lugar na kailangan munang mag-book",
   "out.other": "mga lugar na hindi matatanggap ang request na ito",
   "listSep": ", ",
-  "listAnd": " at "
+  "listAnd": " at ",
+  "need": "Ipinapakita ang available at malapit"
  },
  "ru": {
   "openNow": "Только то, что открыто прямо сейчас",
@@ -817,7 +826,8 @@
   "out.booking": "места, где нужна предварительная бронь",
   "out.other": "места, которые не могут принять этот запрос",
   "listSep": ", ",
-  "listAnd": " и "
+  "listAnd": " и ",
+  "need": "Показываем то, что доступно и рядом"
  },
  "ko": {
   "openNow": "지금 영업 중인 곳만 보여드려요",
@@ -899,6 +909,7 @@
   "out.booking": "미리 예약이 필요한 곳",
   "out.other": "이 요청을 받을 수 없는 곳",
   "listSep": ", ",
-  "listAnd": " 및 "
+  "listAnd": " 및 ",
+  "need": "지금 이용할 수 있고 가까운 곳을 보여드려요"
  }
 }

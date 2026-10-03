@@ -37,8 +37,11 @@ export function applySessionIntent(candidates, intent) {
   if (!intent?.active || !Array.isArray(candidates)) return candidates;
   return candidates.map((c) => {
     const history = Number.isFinite(c?.historyScore) ? c.historyScore : 0;
+    const conflict = conflictsWithSessionIntent(c, intent);
+    // a learned tie-break (item 156 under a stated constraint) is history too: a conflicting result keeps none of it
+    if (conflict && c?.learnedTieBreak) c = { ...c, learnedTieBreak: 0 };
     if (history <= 0) return c;
-    const keep = conflictsWithSessionIntent(c, intent) ? 0 : Math.min(history, HISTORY_TIEBREAK);
+    const keep = conflict ? 0 : Math.min(history, HISTORY_TIEBREAK);
     if (keep === history) return c;
     return { ...c, score: (c.score ?? 0) - history + keep, historyScore: keep };
   });

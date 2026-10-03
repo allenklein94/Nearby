@@ -78,7 +78,7 @@ describe('interpretation', () => {
   });
 
   it('the recordable field list is identical in the client and the server', () => {
-    const LATEST = read('../../supabase/migrations/20270240_typed_ask_category_narrow.sql'); // latest definition (item 108)
+    const LATEST = read('../../supabase/migrations/20270277_typed_ask_need_want.sql'); // latest definition (item 162)
     const sql = LATEST.match(/_typed_ask_interpretation_fields\(\)[\s\S]*?select array\[([\s\S]*?)\]::text\[\]/)[1];
     const server = [...sql.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
     expect(server).toEqual(INTERPRETATION_FIELDS);
@@ -170,7 +170,7 @@ describe('wiring and boundaries', () => {
     expect(MIGRATION).not.toMatch(/grant select/i);
     expect(MIGRATION).toMatch(/grant execute on function public\.record_typed_ask_snapshot\(jsonb\) to authenticated/);
     const dir = path.join(__dirname, '../../supabase/migrations');
-    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.sql') && !['20270238_typed_ask_audit.sql', '20270239_typed_ask_refinements.sql', '20270240_typed_ask_category_narrow.sql', '20270241_live_loop_instrumentation.sql', '20270249_intent_funnel.sql', '20270250_interested_to_attending.sql', '20270251_category_trends.sql', '20270270_request_funnel_summary.sql'].includes(x))) {
+    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.sql') && !['20270238_typed_ask_audit.sql', '20270239_typed_ask_refinements.sql', '20270240_typed_ask_category_narrow.sql', '20270241_live_loop_instrumentation.sql', '20270249_intent_funnel.sql', '20270250_interested_to_attending.sql', '20270251_category_trends.sql', '20270270_request_funnel_summary.sql', '20270277_typed_ask_need_want.sql'].includes(x))) {
       expect(fs.readFileSync(path.join(dir, f), 'utf8')).not.toMatch(/typed_ask_/);
     }
     const fnDir = path.join(__dirname, '../../supabase/functions');

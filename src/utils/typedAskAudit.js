@@ -177,7 +177,7 @@ export const INTERPRETATION_FIELDS = [
   'energies', 'formats', 'skill_levels', 'genres', 'intensity', 'effort', 'social_context', 'meet_new_people',
   'distance_willingness', 'search_widened', 'transport_mode', 'time_budget_minutes', 'clock_window', 'date_anchor',
   'commitment', 'spontaneity', 'open_now', 'open_now_chip', 'environment', 'environment_required', 'exclude', 'avoid_pricey',
-  'open_ended_groups', 'vibes_avoid', 'narrow_group',
+  'open_ended_groups', 'vibes_avoid', 'narrow_group', 'ask_kind',
 ];
 
 function cleanValue(v, depth = 0) {

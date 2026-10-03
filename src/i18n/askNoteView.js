@@ -11,6 +11,7 @@ import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { clockLabel } from '../constants/clockWindow';
 import { timeBudgetCaption } from '../constants/timeBudget';
 import { OPEN_NOW_CAPTION } from '../utils/operatingStatus';
+import { NEED_CAPTION } from '../utils/needAsk';
 import { spontaneityCaption } from '../constants/spontaneity';
 import { DISTANCE_WILLINGNESS } from '../constants/distanceWillingness';
 import { TRANSPORT_MODES } from '../constants/transportMode';
@@ -20,7 +21,7 @@ const en = (key) => translate(DEFAULT_LANGUAGE, `ui.askNotes.${key}`);
 
 // ---- fixed sentences, read from the builders themselves ----
 function fixedMap() {
-  const m = new Map([[OPEN_NOW_CAPTION, 'openNow']]);
+  const m = new Map([[OPEN_NOW_CAPTION, 'openNow'], [NEED_CAPTION, 'need']]);
   for (const k of ['now', 'next_hours', 'plan_ahead']) m.set(spontaneityCaption(k), `spont.${k}`);
   for (const d of DISTANCE_WILLINGNESS) if (d.caption) m.set(d.caption, `dist.${d.key}`);
   for (const mode of TRANSPORT_MODES) if (mode.caption) m.set(mode.caption, `mode.${mode.key}`);

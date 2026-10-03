@@ -26,8 +26,7 @@ import { runIntentSearch } from './intentResolver';
 import { getNearbyGatherings } from './gatherings';
 import { classifyCreateRequest } from './createAssistant';
 import { getMyLearnedAffinity } from './behaviorSignals';
-import { applyLearnedAffinity, askStatesConstraint } from '../utils/learnedAffinity';
-import { HISTORY_TIEBREAK } from '../constants/sessionIntent';
+import { applyLearnedAffinity, askStatesConstraint, compareLearnedTieBreak } from '../utils/learnedAffinity';
 import { BEHAVIOR_MAX_POINTS, EXPLICIT_POINTS } from '../constants/blendedRanking';
 
 const FIXED_NOW = new Date(2026, 8, 30, 15, 0, 0);
@@ -100,8 +99,16 @@ describe('any explicit stated constraint makes learned affinity a tie-breaker on
     ['an environment', 'something to do outdoors', null, 'Hiking'],
     ['a vibe', 'somewhere casual', null, 'Bowling'],
     ['a mood', 'somewhere quiet', null, 'Bowling'],
-  ])('%s caps it at the tie-break', async (_, text, dw, tag) => {
-    expect(await lift(text, dw, tag)).toBe(HISTORY_TIEBREAK);
+  ])('%s: no score at all, only a literal tie-break', async (_, text, dw, tag) => {
+    expect(await lift(text, dw, tag)).toBe(0);
+  });
+
+  it('a tie-breaker cannot move a result past one that ranks higher on anything else (here: closer, a measured difference)', async () => {
+    const items = await search('something to do tonight', [g('bowl', 'Bowling', { distanceMiles: 6 }), g('art', 'Art Galleries', { distanceMiles: 1 })], MATURE);
+    expect(items.map((i) => i.id)).toEqual(['art', 'bowl']);
+    // with no constraint the learned category may still lead (the ordinary item-156 lift)
+    const free = await search('something to do', [g('bowl', 'Bowling', { distanceMiles: 6 }), g('art', 'Art Galleries', { distanceMiles: 1 })], MATURE, null);
+    expect(free[0].id).toBe('bowl');
   });
 
   it('it still breaks a tie, and the reason still names the category', async () => {
@@ -128,10 +135,13 @@ describe('any explicit stated constraint makes learned affinity a tie-breaker on
 });
 
 describe('applyLearnedAffinity (the rule)', () => {
-  it('constrained = capped at the tie-break, history recorded as the capped amount', () => {
+  it('constrained = nothing added to score or history; the lift only becomes the final tie-break', () => {
     const [c] = applyLearnedAffinity([{ category: 'Coffee', score: 0 }], { behavior: { Coffee: 12 }, maturity: 1 }, { constrained: true });
-    expect(c.score).toBe(HISTORY_TIEBREAK);
-    expect(c.historyScore).toBe(HISTORY_TIEBREAK);
+    expect(c.score).toBe(0);
+    expect(c.historyScore).toBeUndefined();
+    expect(c.learnedTieBreak).toBe(BEHAVIOR_MAX_POINTS);
+    expect(c.reasons).toContain('Based on your recent activity: Coffee');
+    expect(compareLearnedTieBreak(c, { category: 'Art', score: 0 })).toBeLessThan(0);
   });
   it('maturity scales and caps the lift; history is recorded for session intent', () => {
     const [half] = applyLearnedAffinity([{ category: 'Coffee', score: 0 }], { behavior: { Coffee: 12 }, maturity: 0.5 });

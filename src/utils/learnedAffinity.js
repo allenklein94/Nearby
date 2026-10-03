@@ -22,15 +22,15 @@ export function learnedAffinities(rows, declaredInterests = []) {
 //   - the lift is behaviorNudge (0..BEHAVIOR_MAX_POINTS = 4, scaled by account maturity), strictly below a declared
 //     interest (EXPLICIT_POINTS = 5), the same cap and dampening the feeds use;
 //   - owner decision (2026-10-03, LOCKED): when the ask states ANY explicit constraint (askStatesConstraint below: a time,
-//     a budget, indoor/outdoor, a vibe or energy, an exclusion, a required feature, open now, a distance...), the lift is
-//     capped at HISTORY_TIEBREAK (1): it can only break ties among results that already qualify. No hardcoded mood list;
+//     a budget, indoor/outdoor, a vibe or energy, an exclusion, a required feature, open now, a distance...), it is a LITERAL
+//     tie-breaker: it adds nothing to the score and only orders results that tie on every other comparison (never an
+//     additive boost that could overcome a higher-priority signal). No hardcoded mood list;
 //   - it also counts as HISTORY (historyScore), so the session-intent rule (constants/sessionIntent.js) still removes it
 //     entirely from a result that conflicts with a stated mood or quality;
 //   - unknown maturity (the account lookup failed) = nothing learned, never full weight.
 // Reason: "Based on your recent activity: Coffee" (never "you like"). Ranking only; never stored, never sent anywhere.
 import { behaviorNudge } from '../constants/blendedRanking';
 import { reasonText, appendReason } from '../constants/recommendationReasonVocabulary';
-import { HISTORY_TIEBREAK } from '../constants/sessionIntent';
 import { vibesFromAsk } from '../constants/businessVibes';
 import { energiesFromText } from '../constants/energyLevel';
 import { parseAskFacets, attributesFromAsk } from '../constants/askFacets';
@@ -65,14 +65,22 @@ export function applyLearnedAffinity(candidates, learned, { constrained = false 
   const behavior = learned.behavior ?? {};
   if (Object.keys(behavior).length === 0) return candidates;
   return candidates.map((c) => {
-    const full = behaviorNudge(c?.category, { behavior, maturity: learned.maturity });
-    const lift = constrained ? Math.min(full, HISTORY_TIEBREAK) : full;
+    const lift = behaviorNudge(c?.category, { behavior, maturity: learned.maturity });
     if (!(lift > 0)) return c;
+    const reasons = appendReason(c.reasons, reasonText('recentActivity', { category: c.category }));
+    // A stated constraint: a LITERAL tie-breaker. Nothing is added to the score, so it can never move a result past one that
+    // ranks higher on anything else; it only orders results that are otherwise tied (compareLearnedTieBreak).
+    if (constrained) return { ...c, learnedTieBreak: lift, reasons };
     return {
       ...c,
       score: (c.score ?? 0) + lift,
       historyScore: (Number.isFinite(c.historyScore) ? c.historyScore : 0) + lift,
-      reasons: appendReason(c.reasons, reasonText('recentActivity', { category: c.category })),
+      reasons,
     };
   });
+}
+
+// The final tie-break: only consulted when every ranking comparison said "equal".
+export function compareLearnedTieBreak(a, b) {
+  return (Number.isFinite(b?.learnedTieBreak) ? b.learnedTieBreak : 0) - (Number.isFinite(a?.learnedTieBreak) ? a.learnedTieBreak : 0);
 }

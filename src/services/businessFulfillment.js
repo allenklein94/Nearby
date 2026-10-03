@@ -1287,6 +1287,14 @@ export async function getPartnerAvgResponseTime(partnerId) {
   return data?.[0] ?? null;
 }
 
+// Need asks (item 162): the "Our pick" reliability record for several businesses at once. A failed lookup for one business is
+// simply absent (neutral), never an error for the whole ask.
+export async function getPartnerReputations(partnerIds) {
+  const ids = [...new Set((partnerIds ?? []).filter(Boolean))].slice(0, 30);
+  const rows = await Promise.all(ids.map((id) => getPartnerOfferReputation(id).then((r) => [id, r], () => [id, null])));
+  return new Map(rows.filter(([, r]) => r));
+}
+
 export async function getPartnerOfferReputation(partnerId) {
   const { data, error } = await supabase.rpc('get_partner_offer_reputation', { partner_id_param: partnerId });
   if (error) throw new Error(error.message);

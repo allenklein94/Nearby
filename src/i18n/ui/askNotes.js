@@ -90,6 +90,7 @@ export default {
     out: { alcohol: "alcohol", outdoor: "outdoor options", indoor: "indoor options", crowded: "crowded places", unsaid: "places that haven't said", pricey: "pricier options", children: "places that don't take children", pets: "places that don't allow pets", group: "places too small for your group", indoor_only: "indoor-only places", outdoor_only: "outdoor-only places", booking: "places that need a booking first", other: "places that can't take this request" },
     listSep: ", ",
     listAnd: " and ",
+    need: "Showing what's available and close by",
   },
   es: {
     openNow: "Solo lo que está abierto ahora mismo",
@@ -180,6 +181,7 @@ export default {
     out: { alcohol: "alcohol", outdoor: "opciones al aire libre", indoor: "opciones bajo techo", crowded: "lugares concurridos", unsaid: "lugares que no lo indican", pricey: "opciones más caras", children: "lugares que no admiten niños", pets: "lugares que no admiten mascotas", group: "lugares pequeños para tu grupo", indoor_only: "lugares solo bajo techo", outdoor_only: "lugares solo al aire libre", booking: "lugares que piden reserva", other: "lugares que no pueden atender esta solicitud" },
     listSep: ", ",
     listAnd: " y ",
+    need: "Mostrando lo disponible y cercano",
   },
   de: {
     openNow: "Nur was gerade geöffnet hat",
@@ -270,6 +272,7 @@ export default {
     out: { alcohol: "Alkohol", outdoor: "Outdoor-Optionen", indoor: "Indoor-Optionen", crowded: "volle Orte", unsaid: "Orte ohne Angabe", pricey: "teurere Optionen", children: "Orte, die keine Kinder aufnehmen", pets: "Orte, die keine Haustiere erlauben", group: "Orte, die für deine Gruppe zu klein sind", indoor_only: "reine Indoor-Orte", outdoor_only: "reine Outdoor-Orte", booking: "Orte, die vorher eine Buchung brauchen", other: "Orte, die diese Anfrage nicht annehmen können" },
     listSep: ", ",
     listAnd: " und ",
+    need: "Zeigt, was verfügbar und in der Nähe ist",
   },
   fr: {
     openNow: "Seulement ce qui est ouvert maintenant",
@@ -360,6 +363,7 @@ export default {
     out: { alcohol: "alcool", outdoor: "options en plein air", indoor: "options en intérieur", crowded: "lieux bondés", unsaid: "lieux sans indication", pricey: "options plus chères", children: "lieux qui n'acceptent pas les enfants", pets: "lieux qui n'acceptent pas les animaux", group: "lieux trop petits pour ton groupe", indoor_only: "lieux uniquement en intérieur", outdoor_only: "lieux uniquement en plein air", booking: "lieux qui demandent une réservation", other: "lieux qui ne peuvent pas prendre cette demande" },
     listSep: ", ",
     listAnd: " et ",
+    need: "Ce qui est disponible et à proximité",
   },
   pt: {
     openNow: "Só o que está aberto agora",
@@ -450,6 +454,7 @@ export default {
     out: { alcohol: "álcool", outdoor: "opções ao ar livre", indoor: "opções em local fechado", crowded: "lugares cheios", unsaid: "lugares que não informaram", pricey: "opções mais caras", children: "lugares que não aceitam crianças", pets: "lugares que não aceitam animais", group: "lugares pequenos demais para o seu grupo", indoor_only: "lugares só em local fechado", outdoor_only: "lugares só ao ar livre", booking: "lugares que exigem reserva", other: "lugares que não podem atender este pedido" },
     listSep: ", ",
     listAnd: " e ",
+    need: "Mostrando o que está disponível e perto",
   },
   ht: {
     openNow: "Sèlman sa ki louvri kounye a",
@@ -540,6 +545,7 @@ export default {
     out: { alcohol: "alkòl", outdoor: "opsyon deyò", indoor: "opsyon anndan", crowded: "kote ki gen twòp moun", unsaid: "kote ki pa di anyen", pricey: "opsyon ki pi chè", children: "kote ki pa pran timoun", pets: "kote ki pa pèmèt bèt", group: "kote ki twò piti pou gwoup ou", indoor_only: "kote ki sèlman anndan", outdoor_only: "kote ki sèlman deyò", booking: "kote ki bezwen rezèvasyon davans", other: "kote ki pa ka pran demann sa a" },
     listSep: ", ",
     listAnd: " ak ",
+    need: "Nou montre sa ki disponib e ki tou pre",
   },
   zh: {
     openNow: "只显示此刻营业的地方",
@@ -630,6 +636,7 @@ export default {
     out: { alcohol: "含酒精的地方", outdoor: "户外选项", indoor: "室内选项", crowded: "拥挤的地方", unsaid: "未说明的地点", pricey: "较贵的选项", children: "不接待儿童的地方", pets: "不允许宠物的地方", group: "容纳不下你们的地方", indoor_only: "仅限室内的地方", outdoor_only: "仅限户外的地方", booking: "需要提前预订的地方", other: "无法接受此请求的地方" },
     listSep: "、",
     listAnd: "和",
+    need: "显示可用且离你近的选项",
   },
   vi: {
     openNow: "Chỉ những nơi đang mở cửa",
@@ -720,6 +727,7 @@ export default {
     out: { alcohol: "đồ uống có cồn", outdoor: "lựa chọn ngoài trời", indoor: "lựa chọn trong nhà", crowded: "nơi đông đúc", unsaid: "những nơi chưa cho biết", pricey: "lựa chọn đắt hơn", children: "nơi không nhận trẻ em", pets: "nơi không cho thú cưng", group: "nơi quá nhỏ cho nhóm của bạn", indoor_only: "nơi chỉ trong nhà", outdoor_only: "nơi chỉ ngoài trời", booking: "nơi cần đặt chỗ trước", other: "nơi không nhận yêu cầu này" },
     listSep: ", ",
     listAnd: " và ",
+    need: "Hiển thị những nơi có sẵn và gần bạn",
   },
   tl: {
     openNow: "Ang bukas lang ngayon",
@@ -810,6 +818,7 @@ export default {
     out: { alcohol: "alak", outdoor: "mga opsyon sa labas", indoor: "mga opsyon sa loob", crowded: "matataong lugar", unsaid: "mga lugar na walang sinabi", pricey: "mas mahal na opsyon", children: "mga lugar na hindi tumatanggap ng bata", pets: "mga lugar na hindi pinapayagan ang alaga", group: "mga lugar na masyadong maliit para sa grupo mo", indoor_only: "mga lugar na sa loob lang", outdoor_only: "mga lugar na sa labas lang", booking: "mga lugar na kailangan munang mag-book", other: "mga lugar na hindi matatanggap ang request na ito" },
     listSep: ", ",
     listAnd: " at ",
+    need: "Ipinapakita ang available at malapit",
   },
   ru: {
     openNow: "Только то, что открыто прямо сейчас",
@@ -900,6 +909,7 @@ export default {
     out: { alcohol: "алкоголь", outdoor: "варианты на улице", indoor: "варианты в помещении", crowded: "людные места", unsaid: "места без указания", pricey: "более дорогие варианты", children: "места, где не принимают детей", pets: "места, куда нельзя с животными", group: "места, слишком маленькие для вашей группы", indoor_only: "места только в помещении", outdoor_only: "места только на улице", booking: "места, где нужна предварительная бронь", other: "места, которые не могут принять этот запрос" },
     listSep: ", ",
     listAnd: " и ",
+    need: "Показываем то, что доступно и рядом",
   },
   ko: {
     openNow: "지금 영업 중인 곳만 보여드려요",
@@ -990,5 +1000,6 @@ export default {
     out: { alcohol: "술", outdoor: "야외 옵션", indoor: "실내 옵션", crowded: "붐비는 곳", unsaid: "정보가 없는 곳", pricey: "더 비싼 옵션", children: "아이를 받지 않는 곳", pets: "반려동물 출입이 안 되는 곳", group: "인원에 비해 좁은 곳", indoor_only: "실내 전용 장소", outdoor_only: "야외 전용 장소", booking: "미리 예약이 필요한 곳", other: "이 요청을 받을 수 없는 곳" },
     listSep: ", ",
     listAnd: " 및 ",
+    need: "지금 이용할 수 있고 가까운 곳을 보여드려요",
   },
 };

@@ -1,5 +1,5 @@
 import { recordSearchBehavior, getMyLearnedAffinity } from './behaviorSignals';
-import { applyLearnedAffinity, askStatesConstraint } from '../utils/learnedAffinity';
+import { applyLearnedAffinity, askStatesConstraint, compareLearnedTieBreak } from '../utils/learnedAffinity';
 import { openDestination } from './openDestination';
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
@@ -17,7 +17,8 @@ import { applyAskWeather } from '../utils/askWeather';
 import { gatheringEnvironment, businessEnvironment } from '../constants/environmentMatch';
 import { categoryEnvironment } from '../constants/gatheringIndoorOutdoor';
 import { occasionLabel } from '../constants/businessAttributes';
-import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, searchOccasionOfferingBusinesses, getMyBusinessAffinitySignals } from './businessFulfillment';
+import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, searchOccasionOfferingBusinesses, getMyBusinessAffinitySignals, getPartnerReputations } from './businessFulfillment';
+import { askKind, needAvailabilityTime, orderNeedResults, NEED_CAPTION } from '../utils/needAsk';
 import { getWhoForPreferenceSignals } from './preferencePolls';
 import { searchOccasionPackages, formatOccasionPackageDetail } from './occasionPackages';
 import { getSocialForecast } from './homeDashboard';
@@ -978,10 +979,23 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   step('open_now');
 
   if (ledger) deduped = deduped.map((c) => ({ ...c, rankVector: typedAskRankVector(ledger.signalsFor(c)) }));
-  deduped.sort(compareRanked);
+  // Learned affinity under a stated constraint never touched the score: it orders only results that tie on everything else.
+  deduped.sort((a, b) => compareRanked(a, b) || compareLearnedTieBreak(a, b));
+  // Item 162: a NEED (the asked category is a need/service group) is ordered availability > proximity > reliability >
+  // personalization, each a tie-breaker for the one before (utils/needAsk.js). A want keeps the order above, unchanged.
+  const kind = askKind({ category });
+  if (kind === 'need') {
+    let reputations = new Map();
+    try {
+      reputations = await getPartnerReputations(deduped.map((c) => c.partnerId));
+    } catch (e) {
+      console.error('reliability lookup skipped', e);
+    }
+    deduped = orderNeedResults(deduped, { toEntity: (c) => candidateEntity(c, partnerInfo), at: needAvailabilityTime(dateWindow), reputations });
+  }
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
-  const openEndedNote = [openNowOnly ? OPEN_NOW_CAPTION : null, planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacetsCaption(parsedFacets, eligibility.removedOpposite, eligibility.removedUnknown), eligibility.compatibilityCaption].filter(Boolean).join(' · ') || null;
+  const openEndedNote = [openNowOnly ? OPEN_NOW_CAPTION : null, kind === 'need' ? NEED_CAPTION : null, planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacetsCaption(parsedFacets, eligibility.removedOpposite, eligibility.removedUnknown), eligibility.compatibilityCaption].filter(Boolean).join(' · ') || null;
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,
@@ -1016,7 +1030,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
         transport_mode: transportMode, time_budget_minutes: timeBudget, clock_window: clockWindow,
         date_anchor: dateAnchor?.kind ?? null, commitment: commitAsk, spontaneity, open_now: openNowOnly, open_now_chip: !!openNowChip,
         environment: parsedFacets.environment, environment_required: !!parsedFacets.environmentRequired, exclude: parsedFacets.exclude,
-        avoid_pricey: !!parsedFacets.pricey, open_ended_groups: openEndedGroups, narrow_group: narrowedGroup, vibes_avoid: [...(vibesFromAsk(rawText).avoid ?? [])],
+        avoid_pricey: !!parsedFacets.pricey, open_ended_groups: openEndedGroups, narrow_group: narrowedGroup, ask_kind: kind, vibes_avoid: [...(vibesFromAsk(rawText).avoid ?? [])],
       },
     };
   } catch (e) {

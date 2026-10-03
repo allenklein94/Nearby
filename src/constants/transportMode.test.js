@@ -183,7 +183,7 @@ describe('scope and safety', () => {
       expect([f, /registerTravelTimeProvider\(/.test(fs.readFileSync(f, 'utf8')) && !f.endsWith('travelTime.js')]).toEqual([f, false]);
     }
     // Exception: the internal typed-ask audit (item 105) lists this field as recordable; no client or business reads it (typedAskAudit.test.js).
-    for (const f of walk(path.join(ROOT, 'supabase')).filter((f) => /\.(sql|ts)$/.test(f) && !f.endsWith('20270238_typed_ask_audit.sql') && !f.endsWith('20270240_typed_ask_category_narrow.sql'))) {
+    for (const f of walk(path.join(ROOT, 'supabase')).filter((f) => /\.(sql|ts)$/.test(f) && !f.endsWith('20270238_typed_ask_audit.sql') && !f.endsWith('20270240_typed_ask_category_narrow.sql') && !f.endsWith('20270277_typed_ask_need_want.sql'))) {
       expect([f, /routes\.googleapis|computeRouteMatrix|transport_mode/i.test(fs.readFileSync(f, 'utf8'))]).toEqual([f, false]);
     }
   });
