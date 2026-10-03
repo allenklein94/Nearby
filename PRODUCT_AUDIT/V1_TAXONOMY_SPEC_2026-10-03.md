@@ -31,6 +31,7 @@ matching, privacy or business-demand change.
 | 17 | New Shopping categories **Grocery, Sporting Goods, Toys, Bookstores, Beauty Supply** (+ their wording) | item 175, LOCKED |
 | 18 | Shopping wordings (see item 175 table) | item 175, LOCKED |
 | 19 | Need list after the Travel / Stay merge: `stay_getaway` leaves `NEED_GROUP_KEYS`; its stay tags join `NEED_TAG_KEYS` (see item 175 note) | item 175, LOCKED |
+| 20 | Wording: facial / facials -> Skin Care; skincare -> Skin Care; beauty salon -> Salons | item 176, proposed |
 
 Result: 19 canonical groups.
 
@@ -311,3 +312,29 @@ tonight" stays a need and "day trip" stays a want, as today.
   rental" = need; day trip / tours / sightseeing = want. A correction for the merge, not a new need rule.
 - **Global:** being on the need list never classifies an ask by itself; never from urgency, time, distance, booking
   rules, category alone, learned behavior, declared interests or AI.
+
+## Item 176: Wellness & Beauty coverage (proposed, owner to confirm)
+
+Wellness & Beauty today: Meditation, Spa Day, Self-Care, Massage, Salons, Barbers, Nails, Skin Care, Wellness Centers,
+Sauna, Recovery. No new categories proposed.
+
+| Owner entry | Represented as today | Proposal |
+|---|---|---|
+| Spas | Spa Day; "spa", "day spa" already map | covered |
+| Massage, Barbers, Wellness Centers, Recovery, Meditation | subcategories | covered |
+| Saunas | Sauna (plural matches) | covered |
+| Hair Salons | Salons; "hair salon", "hairdresser", "haircut" already map | covered |
+| Nail Salons | Nails; "nail salon", "manicure", "pedicure" already map | covered |
+| Facials | nothing | wording "facial" -> Skin Care |
+| Skincare | Skin Care (two words); the one-word spelling does not match | wording "skincare" -> Skin Care |
+| Yoga | subcategory, **Sports & Fitness** (item 171) | covered (other group); not moved |
+| **Beauty** | services live here; beauty PRODUCTS are Beauty Supply (item 175) | "beauty salon" -> Salons; bare "beauty" stays unmapped (services or products is ambiguous, like bare "club") |
+| Wellness Classes | gathering format `class` + the category it is about (Yoga, Meditation...) | covered; not a category |
+
+**Targeted offers already exist for this group, nothing new proposed:** a business answers matching requests
+(opportunities -> offer), posts availability ("2 massage slots open at 4 PM"), creates occasion packages and perks
+targeted at a category. Routing is category-aware, so a Massage request reaches massage businesses first.
+
+**Need status (item 162):** Wellness & Beauty is deliberately not a need group (it is often a treat). Barbers and
+Salons are need tags already ("I need a haircut"). Open question: should **Nails** join them ("I need my nails
+done")? Recommendation: yes (an appointment-type upkeep task like a haircut); Massage, Spa Day and the rest stay wants.
