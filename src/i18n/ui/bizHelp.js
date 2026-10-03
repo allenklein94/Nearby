@@ -329,6 +329,14 @@ export default {
         body: "Views, followers and redemptions appear here once customers start finding your business.",
       },
     },
+    funnel: {
+      title: "This month",
+      opportunities: "Opportunities",
+      offersSent: "Offers sent",
+      accepted: "Offers accepted",
+      redemptions: "Redemptions",
+      value: "Value of offers redeemed",
+    },
   },
   es: {
     mostAttendedStart: "Hora de inicio con más asistencia: {hour} (de {n})",
@@ -657,6 +665,14 @@ export default {
         title: "Aún no hay actividad que mostrar",
         body: "Las vistas, los seguidores y los canjes aparecen aquí cuando los clientes empiecen a encontrar tu negocio.",
       },
+    },
+    funnel: {
+      title: "Este mes",
+      opportunities: "Oportunidades",
+      offersSent: "Ofertas enviadas",
+      accepted: "Ofertas aceptadas",
+      redemptions: "Canjes",
+      value: "Valor de las ofertas canjeadas",
     },
   },
   de: {
@@ -987,6 +1003,14 @@ export default {
         body: "Aufrufe, Follower und Einlösungen erscheinen hier, sobald Kunden dein Geschäft finden.",
       },
     },
+    funnel: {
+      title: "Diesen Monat",
+      opportunities: "Gelegenheiten",
+      offersSent: "Gesendete Angebote",
+      accepted: "Angenommene Angebote",
+      redemptions: "Einlösungen",
+      value: "Wert der eingelösten Angebote",
+    },
   },
   fr: {
     mostAttendedStart: "Heure de début la plus fréquentée : {hour} (sur {n})",
@@ -1315,6 +1339,14 @@ export default {
         title: "Pas encore d'activité à afficher",
         body: "Les vues, abonnés et utilisations apparaissent ici dès que les clients commencent à trouver votre établissement.",
       },
+    },
+    funnel: {
+      title: "Ce mois-ci",
+      opportunities: "Opportunités",
+      offersSent: "Offres envoyées",
+      accepted: "Offres acceptées",
+      redemptions: "Utilisations",
+      value: "Valeur des offres utilisées",
     },
   },
   pt: {
@@ -1645,6 +1677,14 @@ export default {
         body: "Visualizações, seguidores e resgates aparecem aqui quando os clientes começarem a encontrar seu negócio.",
       },
     },
+    funnel: {
+      title: "Este mês",
+      opportunities: "Oportunidades",
+      offersSent: "Ofertas enviadas",
+      accepted: "Ofertas aceitas",
+      redemptions: "Resgates",
+      value: "Valor das ofertas resgatadas",
+    },
   },
   ht: {
     mostAttendedStart: "Lè kòmansman ki gen plis moun: {hour} (sou {n})",
@@ -1973,6 +2013,14 @@ export default {
         title: "Poko gen aktivite pou montre",
         body: "Vi, abone ak itilizasyon parèt isit la lè kliyan yo kòmanse jwenn biznis ou.",
       },
+    },
+    funnel: {
+      title: "Mwa sa a",
+      opportunities: "Okazyon",
+      offersSent: "Òf voye",
+      accepted: "Òf aksepte",
+      redemptions: "Itilizasyon",
+      value: "Valè òf ki itilize yo",
     },
   },
   zh: {
@@ -2303,6 +2351,14 @@ export default {
         body: "顾客开始发现你的商家后，浏览、关注和兑换数据会显示在这里。",
       },
     },
+    funnel: {
+      title: "本月",
+      opportunities: "机会",
+      offersSent: "已发送的报价",
+      accepted: "已接受的报价",
+      redemptions: "兑换",
+      value: "已兑换报价的价值",
+    },
   },
   vi: {
     mostAttendedStart: "Giờ bắt đầu đông khách nhất: {hour} (từ {n})",
@@ -2631,6 +2687,14 @@ export default {
         title: "Chưa có hoạt động để hiển thị",
         body: "Lượt xem, người theo dõi và lượt dùng sẽ xuất hiện ở đây khi khách bắt đầu tìm thấy doanh nghiệp của bạn.",
       },
+    },
+    funnel: {
+      title: "Tháng này",
+      opportunities: "Cơ hội",
+      offersSent: "Ưu đãi đã gửi",
+      accepted: "Ưu đãi được chấp nhận",
+      redemptions: "Lượt sử dụng",
+      value: "Giá trị ưu đãi đã sử dụng",
     },
   },
   tl: {
@@ -2961,6 +3025,14 @@ export default {
         body: "Lalabas dito ang mga view, follower at redemption kapag nagsimula nang mahanap ng mga customer ang negosyo mo.",
       },
     },
+    funnel: {
+      title: "Ngayong buwan",
+      opportunities: "Mga oportunidad",
+      offersSent: "Mga alok na naipadala",
+      accepted: "Mga alok na tinanggap",
+      redemptions: "Mga na-redeem",
+      value: "Halaga ng mga na-redeem na alok",
+    },
   },
   ru: {
     mostAttendedStart: "Самое посещаемое время начала: {hour} (по {n})",
@@ -3290,6 +3362,14 @@ export default {
         body: "Просмотры, подписчики и использования появятся здесь, когда клиенты начнут находить ваш бизнес.",
       },
     },
+    funnel: {
+      title: "В этом месяце",
+      opportunities: "Возможности",
+      offersSent: "Отправлено предложений",
+      accepted: "Принято предложений",
+      redemptions: "Использовано",
+      value: "Стоимость использованных предложений",
+    },
   },
   ko: {
     mostAttendedStart: "가장 많이 참석한 시작 시간: {hour} ({n} 기준)",
@@ -3618,6 +3698,14 @@ export default {
         title: "아직 표시할 활동이 없습니다",
         body: "고객이 비즈니스를 찾기 시작하면 조회수, 팔로워, 사용 건수가 여기에 표시됩니다.",
       },
+    },
+    funnel: {
+      title: "이번 달",
+      opportunities: "기회",
+      offersSent: "보낸 제안",
+      accepted: "수락된 제안",
+      redemptions: "사용",
+      value: "사용된 제안의 가치",
     },
   },
 };

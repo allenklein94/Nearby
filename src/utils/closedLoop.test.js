@@ -36,6 +36,6 @@ describe('the closed loop, end to end (item 85)', () => {
     expect(read('../components/AcceptedBusinessOfferCard.js')).toContain("t('ui.acceptedOffer.takingCareOfGroup'");
     expect(read('../i18n/ui/acceptedOffer.js')).toContain('{name} is taking care of your group');
     expect((read('../screens/GatheringDetailScreen.js').match(/groupCare/g) || []).length).toBe(2);
-    expect(read('../screens/BusinessDashboardScreen.js')).toContain("offerValueLines(offerValue, 'month')");
+    expect(read('../screens/BusinessDashboardScreen.js')).toContain('offerFunnelView(offerFunnel, offerValue)'); // item 150: the value now sits under the funnel
   });
 });

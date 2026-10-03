@@ -285,7 +285,13 @@
     "empty.business_stats.body": "Views, followers and redemptions appear here once customers start finding your business.",
     "opportunity.potentialValueUpTo": "Potential value: up to {amount}",
     "opportunity.potentialBasisBudget": "{people} × their budget of {amount} per person",
-    "opportunity.potentialNote": "What this could be worth, not money earned."
+    "opportunity.potentialNote": "What this could be worth, not money earned.",
+    "funnel.title": "This month",
+    "funnel.opportunities": "Opportunities",
+    "funnel.offersSent": "Offers sent",
+    "funnel.accepted": "Offers accepted",
+    "funnel.redemptions": "Redemptions",
+    "funnel.value": "Value of offers redeemed"
   },
   "es": {
     "mostAttendedStart": "Hora de inicio con más asistencia: {hour} (de {n})",
@@ -573,7 +579,13 @@
     "empty.business_stats.body": "Las vistas, los seguidores y los canjes aparecen aquí cuando los clientes empiecen a encontrar tu negocio.",
     "opportunity.potentialValueUpTo": "Valor potencial: hasta {amount}",
     "opportunity.potentialBasisBudget": "{people} × su presupuesto de {amount} por persona",
-    "opportunity.potentialNote": "Lo que podría valer, no dinero ganado."
+    "opportunity.potentialNote": "Lo que podría valer, no dinero ganado.",
+    "funnel.title": "Este mes",
+    "funnel.opportunities": "Oportunidades",
+    "funnel.offersSent": "Ofertas enviadas",
+    "funnel.accepted": "Ofertas aceptadas",
+    "funnel.redemptions": "Canjes",
+    "funnel.value": "Valor de las ofertas canjeadas"
   },
   "de": {
     "mostAttendedStart": "Bestbesuchte Startzeit: {hour} (aus {n})",
@@ -861,7 +873,13 @@
     "empty.business_stats.body": "Aufrufe, Follower und Einlösungen erscheinen hier, sobald Kunden dein Geschäft finden.",
     "opportunity.potentialValueUpTo": "Möglicher Wert: bis zu {amount}",
     "opportunity.potentialBasisBudget": "{people} × ihr Budget von {amount} pro Person",
-    "opportunity.potentialNote": "Was das wert sein könnte, kein verdientes Geld."
+    "opportunity.potentialNote": "Was das wert sein könnte, kein verdientes Geld.",
+    "funnel.title": "Diesen Monat",
+    "funnel.opportunities": "Gelegenheiten",
+    "funnel.offersSent": "Gesendete Angebote",
+    "funnel.accepted": "Angenommene Angebote",
+    "funnel.redemptions": "Einlösungen",
+    "funnel.value": "Wert der eingelösten Angebote"
   },
   "fr": {
     "mostAttendedStart": "Heure de début la plus fréquentée : {hour} (sur {n})",
@@ -1149,7 +1167,13 @@
     "empty.business_stats.body": "Les vues, abonnés et utilisations apparaissent ici dès que les clients commencent à trouver votre établissement.",
     "opportunity.potentialValueUpTo": "Valeur potentielle : jusqu'à {amount}",
     "opportunity.potentialBasisBudget": "{people} × leur budget de {amount} par personne",
-    "opportunity.potentialNote": "Ce que cela pourrait valoir, pas de l'argent gagné."
+    "opportunity.potentialNote": "Ce que cela pourrait valoir, pas de l'argent gagné.",
+    "funnel.title": "Ce mois-ci",
+    "funnel.opportunities": "Opportunités",
+    "funnel.offersSent": "Offres envoyées",
+    "funnel.accepted": "Offres acceptées",
+    "funnel.redemptions": "Utilisations",
+    "funnel.value": "Valeur des offres utilisées"
   },
   "pt": {
     "mostAttendedStart": "Horário de início com mais público: {hour} (de {n})",
@@ -1437,7 +1461,13 @@
     "empty.business_stats.body": "Visualizações, seguidores e resgates aparecem aqui quando os clientes começarem a encontrar seu negócio.",
     "opportunity.potentialValueUpTo": "Valor potencial: até {amount}",
     "opportunity.potentialBasisBudget": "{people} × o orçamento deles de {amount} por pessoa",
-    "opportunity.potentialNote": "O que isso pode valer, não dinheiro ganho."
+    "opportunity.potentialNote": "O que isso pode valer, não dinheiro ganho.",
+    "funnel.title": "Este mês",
+    "funnel.opportunities": "Oportunidades",
+    "funnel.offersSent": "Ofertas enviadas",
+    "funnel.accepted": "Ofertas aceitas",
+    "funnel.redemptions": "Resgates",
+    "funnel.value": "Valor das ofertas resgatadas"
   },
   "ht": {
     "mostAttendedStart": "Lè kòmansman ki gen plis moun: {hour} (sou {n})",
@@ -1708,7 +1738,13 @@
     "empty.business_stats.body": "Vi, abone ak itilizasyon parèt isit la lè kliyan yo kòmanse jwenn biznis ou.",
     "opportunity.potentialValueUpTo": "Valè posib: jiska {amount}",
     "opportunity.potentialBasisBudget": "{people} × bidjè yo a {amount} pa moun",
-    "opportunity.potentialNote": "Sa li ta ka vo, se pa lajan ou fè."
+    "opportunity.potentialNote": "Sa li ta ka vo, se pa lajan ou fè.",
+    "funnel.title": "Mwa sa a",
+    "funnel.opportunities": "Okazyon",
+    "funnel.offersSent": "Òf voye",
+    "funnel.accepted": "Òf aksepte",
+    "funnel.redemptions": "Itilizasyon",
+    "funnel.value": "Valè òf ki itilize yo"
   },
   "zh": {
     "mostAttendedStart": "到场人数最多的开始时间：{hour}（来自 {n}）",
@@ -1979,7 +2015,13 @@
     "empty.business_stats.body": "顾客开始发现你的商家后，浏览、关注和兑换数据会显示在这里。",
     "opportunity.potentialValueUpTo": "潜在价值：最多 {amount}",
     "opportunity.potentialBasisBudget": "{people} × 对方每人 {amount} 的预算",
-    "opportunity.potentialNote": "这是可能的价值，不是已赚到的钱。"
+    "opportunity.potentialNote": "这是可能的价值，不是已赚到的钱。",
+    "funnel.title": "本月",
+    "funnel.opportunities": "机会",
+    "funnel.offersSent": "已发送的报价",
+    "funnel.accepted": "已接受的报价",
+    "funnel.redemptions": "兑换",
+    "funnel.value": "已兑换报价的价值"
   },
   "vi": {
     "mostAttendedStart": "Giờ bắt đầu đông khách nhất: {hour} (từ {n})",
@@ -2250,7 +2292,13 @@
     "empty.business_stats.body": "Lượt xem, người theo dõi và lượt dùng sẽ xuất hiện ở đây khi khách bắt đầu tìm thấy doanh nghiệp của bạn.",
     "opportunity.potentialValueUpTo": "Giá trị tiềm năng: tối đa {amount}",
     "opportunity.potentialBasisBudget": "{people} × ngân sách của họ {amount} mỗi người",
-    "opportunity.potentialNote": "Đây là giá trị có thể có, không phải tiền đã kiếm."
+    "opportunity.potentialNote": "Đây là giá trị có thể có, không phải tiền đã kiếm.",
+    "funnel.title": "Tháng này",
+    "funnel.opportunities": "Cơ hội",
+    "funnel.offersSent": "Ưu đãi đã gửi",
+    "funnel.accepted": "Ưu đãi được chấp nhận",
+    "funnel.redemptions": "Lượt sử dụng",
+    "funnel.value": "Giá trị ưu đãi đã sử dụng"
   },
   "tl": {
     "mostAttendedStart": "Oras ng simula na pinakamaraming dumalo: {hour} (mula sa {n})",
@@ -2521,7 +2569,13 @@
     "empty.business_stats.body": "Lalabas dito ang mga view, follower at redemption kapag nagsimula nang mahanap ng mga customer ang negosyo mo.",
     "opportunity.potentialValueUpTo": "Posibleng halaga: hanggang {amount}",
     "opportunity.potentialBasisBudget": "{people} × ang budget nila na {amount} bawat tao",
-    "opportunity.potentialNote": "Ito ang posibleng halaga, hindi perang kinita."
+    "opportunity.potentialNote": "Ito ang posibleng halaga, hindi perang kinita.",
+    "funnel.title": "Ngayong buwan",
+    "funnel.opportunities": "Mga oportunidad",
+    "funnel.offersSent": "Mga alok na naipadala",
+    "funnel.accepted": "Mga alok na tinanggap",
+    "funnel.redemptions": "Mga na-redeem",
+    "funnel.value": "Halaga ng mga na-redeem na alok"
   },
   "ru": {
     "mostAttendedStart": "Самое посещаемое время начала: {hour} (по {n})",
@@ -2858,7 +2912,13 @@
     "empty.business_stats.body": "Просмотры, подписчики и использования появятся здесь, когда клиенты начнут находить ваш бизнес.",
     "opportunity.potentialValueUpTo": "Возможная ценность: до {amount}",
     "opportunity.potentialBasisBudget": "{people} × их бюджет {amount} на человека",
-    "opportunity.potentialNote": "Сколько это может стоить, а не заработанные деньги."
+    "opportunity.potentialNote": "Сколько это может стоить, а не заработанные деньги.",
+    "funnel.title": "В этом месяце",
+    "funnel.opportunities": "Возможности",
+    "funnel.offersSent": "Отправлено предложений",
+    "funnel.accepted": "Принято предложений",
+    "funnel.redemptions": "Использовано",
+    "funnel.value": "Стоимость использованных предложений"
   },
   "ko": {
     "mostAttendedStart": "가장 많이 참석한 시작 시간: {hour} ({n} 기준)",
@@ -3129,6 +3189,12 @@
     "empty.business_stats.body": "고객이 비즈니스를 찾기 시작하면 조회수, 팔로워, 사용 건수가 여기에 표시됩니다.",
     "opportunity.potentialValueUpTo": "예상 가치: 최대 {amount}",
     "opportunity.potentialBasisBudget": "{people} × 고객의 1인당 예산 {amount}",
-    "opportunity.potentialNote": "받을 수 있는 금액이지, 번 돈이 아닙니다."
+    "opportunity.potentialNote": "받을 수 있는 금액이지, 번 돈이 아닙니다.",
+    "funnel.title": "이번 달",
+    "funnel.opportunities": "기회",
+    "funnel.offersSent": "보낸 제안",
+    "funnel.accepted": "수락된 제안",
+    "funnel.redemptions": "사용",
+    "funnel.value": "사용된 제안의 가치"
   }
 }

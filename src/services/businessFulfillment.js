@@ -1553,6 +1553,13 @@ export async function retryOfferSubmission(partnerId, submissionId) {
   return result;
 }
 
+// Item 150: this month's funnel stage counts (get_partner_offer_funnel, owner-only).
+export async function getPartnerOfferFunnel(partnerId) {
+  const { data, error } = await supabase.rpc('get_partner_offer_funnel', { partner_id_param: partnerId });
+  if (error) throw new Error(error.message);
+  return Array.isArray(data) ? data[0] ?? null : data;
+}
+
 // Item 85: redemptions and the value of the owner's OWN prices on them (see get_partner_offer_value).
 export async function getPartnerOfferValue(partnerId) {
   const { data, error } = await supabase.rpc('get_partner_offer_value', { partner_id_param: partnerId });
