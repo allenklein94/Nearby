@@ -148,6 +148,20 @@ export function isNeedGroup(groupKey) {
   return NEED_GROUP_KEYS.includes(groupKey);
 }
 
+// Item 162 (owner, 2026-10-03, LOCKED): service/errand TAGS that sit in a non-need group (Barbers and Salons under Wellness &
+// Beauty, Florist and Gift Shop under Shopping) but are needs when asked for as a task ("I need a haircut today"). Only the
+// need/want classification reads this; the open-ended rule keeps reading the groups alone (its behavior is unchanged).
+export const NEED_TAG_KEYS = Object.freeze(['Barbers', 'Salons', 'Florist', 'Gift Shop', 'Grooming']);
+
+// Is this resolved category (a tag or a group key) a need/service category?
+export function isNeedCategory(category) {
+  if (!category) return false;
+  if (NEED_TAG_KEYS.includes(category)) return true;
+  if (CATEGORY_GROUPS.some((g) => g.key === category)) return isNeedGroup(category);
+  const group = groupForTag(category) ?? CATEGORY_GROUPS.find((g) => (g.businessOnlyTags ?? []).includes(category));
+  return !!group && isNeedGroup(group.key);
+}
+
 export const INTEREST_OPTIONS = CATEGORY_GROUPS.flatMap((g) => g.tags);
 
 // The shared list for "what am I into" (personal interests, edited on

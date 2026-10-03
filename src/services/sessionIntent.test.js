@@ -27,7 +27,7 @@ import { getNearbyGatherings } from './gatherings';
 import { searchActiveBusinessAvailability, getMyBusinessAffinitySignals } from './businessFulfillment';
 import { classifyCreateRequest } from './createAssistant';
 import { getUserLocation } from './userLocation';
-import { applySessionIntent, sessionIntentFromText, conflictsWithSessionIntent, HISTORY_TIEBREAK } from '../constants/sessionIntent';
+import { applySessionIntent, sessionIntentFromText, conflictsWithSessionIntent } from '../constants/sessionIntent';
 
 // A FIXED local clock (item 118 follow-up): every relative time below ("now + 3 h" = this evening) is computed from it, so the
 // suite gives the same result at any hour and in any timezone. Only Date is faked; real timers keep async mocks running.
@@ -79,11 +79,13 @@ describe('the rule itself', () => {
     const list = [c({ category: 'Nightclubs' })];
     expect(applySessionIntent(list, sessionIntentFromText('dinner tonight'))).toBe(list);
   });
-  it('a conflicting result keeps no history; others keep only a tie-breaker', () => {
+  it('history leaves the score; a conflicting result keeps none, others keep it only as a literal tie-break (item 162)', () => {
     const intent = sessionIntentFromText('something quiet');
     const [clash, other] = applySessionIntent([c({ category: 'Nightclubs' }), c({ category: 'Museums' })], intent);
     expect(clash.score).toBe(5);
-    expect(other.score).toBe(10 - 5 + HISTORY_TIEBREAK);
+    expect(clash.historyTieBreak).toBe(0);
+    expect(other.score).toBe(5);
+    expect(other.historyTieBreak).toBe(5);
   });
   it('a declared opposite vibe is a conflict; an undeclared one is not', () => {
     const intent = sessionIntentFromText('nothing too lively');

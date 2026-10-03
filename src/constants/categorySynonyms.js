@@ -71,6 +71,10 @@ const norm = (s) => String(s ?? '').toLowerCase().replace(/&/g, ' and ').replace
 // Plural trim per word so "cafes" finds "cafe" (same idea as the server's _category_phrase_key).
 const singular = (w) => (w.length > 4 && !w.endsWith('ss') ? w.replace(/s$/, '') : w);
 const key = (s) => norm(s).split(' ').map(singular).join(' ');
+// The same normalized words tagsInText indexes into (item 162 locates a task verb relative to a category phrase).
+export function normalizedWords(text) {
+  return key(String(text ?? '')).split(' ').filter(Boolean);
+}
 
 const PHRASE_TO_TAGS = new Map();
 for (const { tags, phrases } of SYNONYM_GROUPS) {
@@ -160,7 +164,7 @@ export function tagsInText(text) {
     span.forEach((i) => taken.add(i));
     kept.push(h);
   }
-  return kept.sort((a, b) => a.start - b.start).flatMap((h) => h.tags.map((tag) => ({ tag, word: words[h.start], prev: words.slice(Math.max(0, h.start - 2), h.start).join(' ') })));
+  return kept.sort((a, b) => a.start - b.start).flatMap((h) => h.tags.map((tag) => ({ tag, word: words[h.start], prev: words.slice(Math.max(0, h.start - 2), h.start).join(' '), start: h.start })));
 }
 
 // Everything a search should look for: the person's own words first, then the canonical tag names their words stand for.

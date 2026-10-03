@@ -69,7 +69,7 @@ export function applyLearnedAffinity(candidates, learned, { constrained = false 
     if (!(lift > 0)) return c;
     const reasons = appendReason(c.reasons, reasonText('recentActivity', { category: c.category }));
     // A stated constraint: a LITERAL tie-breaker. Nothing is added to the score, so it can never move a result past one that
-    // ranks higher on anything else; it only orders results that are otherwise tied (compareLearnedTieBreak).
+    // ranks higher on anything else; it only orders results that are otherwise tied (comparePersonalTieBreak).
     if (constrained) return { ...c, learnedTieBreak: lift, reasons };
     return {
       ...c,
@@ -80,7 +80,10 @@ export function applyLearnedAffinity(candidates, learned, { constrained = false 
   });
 }
 
-// The final tie-break: only consulted when every ranking comparison said "equal".
-export function compareLearnedTieBreak(a, b) {
-  return (Number.isFinite(b?.learnedTieBreak) ? b.learnedTieBreak : 0) - (Number.isFinite(a?.learnedTieBreak) ? a.learnedTieBreak : 0);
+// The final tie-break: only consulted when every ranking comparison said "equal". Personalization that is a literal
+// tie-breaker lives here: learned affinity under a stated constraint (learnedTieBreak) and the declared-interest history a
+// stated mood moved out of the score (historyTieBreak, constants/sessionIntent.js).
+export function comparePersonalTieBreak(a, b) {
+  const v = (c) => (Number.isFinite(c?.learnedTieBreak) ? c.learnedTieBreak : 0) + (Number.isFinite(c?.historyTieBreak) ? c.historyTieBreak : 0);
+  return v(b) - v(a);
 }

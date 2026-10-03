@@ -11,8 +11,8 @@
 // sum as `historyScore`. When the ask states a session intent:
 //   - a result that CONFLICTS with it (declared a vibe the ask avoids / the opposite of one it wants, or a clear energy
 //     opposite) keeps NO history lift, so "you like nightlife" can never carry a lively bar over "something quiet";
-//   - every other result keeps at most HISTORY_TIEBREAK (1) of it: history may still break a tie, never outweigh a stated
-//     quality (the smallest ask-specific lift is 2).
+//   - every other result keeps it ONLY as a literal tie-breaker (historyTieBreak, item 162, 2026-10-03): it leaves the score
+//     and orders only results that tie on every other comparison. (Was: up to HISTORY_TIEBREAK = 1 point left in the score.)
 // No session intent = history untouched. Ranking only; nothing is removed.
 import { vibesFromAsk, vibesToSink, declaredQualities } from './businessVibes';
 import { energiesFromText, energyFit } from './energyLevel';
@@ -41,8 +41,9 @@ export function applySessionIntent(candidates, intent) {
     // a learned tie-break (item 156 under a stated constraint) is history too: a conflicting result keeps none of it
     if (conflict && c?.learnedTieBreak) c = { ...c, learnedTieBreak: 0 };
     if (history <= 0) return c;
-    const keep = conflict ? 0 : Math.min(history, HISTORY_TIEBREAK);
-    if (keep === history) return c;
-    return { ...c, score: (c.score ?? 0) - history + keep, historyScore: keep };
+    // Owner item 162 (2026-10-03, LOCKED): a literal tie-breaker. The history leaves the score entirely; a non-conflicting
+    // result keeps it only as historyTieBreak, which orders results that tie on every other comparison and can never move
+    // a result past one that ranks higher on anything else. A conflicting result keeps nothing.
+    return { ...c, score: (c.score ?? 0) - history, historyScore: 0, historyTieBreak: conflict ? 0 : history };
   });
 }

@@ -1,5 +1,5 @@
 import { recordSearchBehavior, getMyLearnedAffinity } from './behaviorSignals';
-import { applyLearnedAffinity, askStatesConstraint, compareLearnedTieBreak } from '../utils/learnedAffinity';
+import { applyLearnedAffinity, askStatesConstraint, comparePersonalTieBreak } from '../utils/learnedAffinity';
 import { openDestination } from './openDestination';
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
@@ -979,11 +979,12 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   step('open_now');
 
   if (ledger) deduped = deduped.map((c) => ({ ...c, rankVector: typedAskRankVector(ledger.signalsFor(c)) }));
-  // Learned affinity under a stated constraint never touched the score: it orders only results that tie on everything else.
-  deduped.sort((a, b) => compareRanked(a, b) || compareLearnedTieBreak(a, b));
+  // Personalization that became a literal tie-breaker (learned affinity under a stated constraint, declared-interest history
+  // under a stated mood) never touched the score: it orders only results that tie on everything else.
+  deduped.sort((a, b) => compareRanked(a, b) || comparePersonalTieBreak(a, b));
   // Item 162: a NEED (the asked category is a need/service group) is ordered availability > proximity > reliability >
   // personalization, each a tie-breaker for the one before (utils/needAsk.js). A want keeps the order above, unchanged.
-  const kind = askKind({ category });
+  const kind = askKind({ category, rawText });
   if (kind === 'need') {
     let reputations = new Map();
     try {
@@ -991,7 +992,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     } catch (e) {
       console.error('reliability lookup skipped', e);
     }
-    deduped = orderNeedResults(deduped, { toEntity: (c) => candidateEntity(c, partnerInfo), at: needAvailabilityTime(dateWindow), reputations });
+    deduped = orderNeedResults(deduped, { toEntity: (c) => candidateEntity(c, partnerInfo), at: needAvailabilityTime(dateWindow, new Date(), { clockWindow, dateAnchor }), reputations });
   }
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)

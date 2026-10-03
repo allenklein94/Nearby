@@ -26,7 +26,7 @@ import { runIntentSearch } from './intentResolver';
 import { getNearbyGatherings } from './gatherings';
 import { classifyCreateRequest } from './createAssistant';
 import { getMyLearnedAffinity } from './behaviorSignals';
-import { applyLearnedAffinity, askStatesConstraint, compareLearnedTieBreak } from '../utils/learnedAffinity';
+import { applyLearnedAffinity, askStatesConstraint, comparePersonalTieBreak } from '../utils/learnedAffinity';
 import { BEHAVIOR_MAX_POINTS, EXPLICIT_POINTS } from '../constants/blendedRanking';
 
 const FIXED_NOW = new Date(2026, 8, 30, 15, 0, 0);
@@ -141,7 +141,7 @@ describe('applyLearnedAffinity (the rule)', () => {
     expect(c.historyScore).toBeUndefined();
     expect(c.learnedTieBreak).toBe(BEHAVIOR_MAX_POINTS);
     expect(c.reasons).toContain('Based on your recent activity: Coffee');
-    expect(compareLearnedTieBreak(c, { category: 'Art', score: 0 })).toBeLessThan(0);
+    expect(comparePersonalTieBreak(c, { category: 'Art', score: 0 })).toBeLessThan(0);
   });
   it('maturity scales and caps the lift; history is recorded for session intent', () => {
     const [half] = applyLearnedAffinity([{ category: 'Coffee', score: 0 }], { behavior: { Coffee: 12 }, maturity: 0.5 });
