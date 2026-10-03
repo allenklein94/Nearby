@@ -48,6 +48,7 @@ matching, privacy or business-demand change.
 | 34 | New categories **Auto Parts, Dealerships, Gas Stations, Transportation Services** + their wording | item 181, LOCKED |
 | 35 | Auto wordings + used cars fix (used cars / new cars / buy a car -> Dealerships, never the Cars hobby tag) | item 181, LOCKED |
 | 36 | `auto_transportation` leaves `NEED_GROUP_KEYS`; every service tag (incl. the four new) joins `NEED_TAG_KEYS`; the need check reads the RESOLVED TAG (`src/utils/needTagLevel.regression.test.js`) | item 181, LOCKED |
+| 37 | Education & Classes coverage (see item 182: wordings, class/classes mismatch, Tutoring + Certifications as the only need tags) | item 182, proposed |
 
 Result: 19 canonical groups.
 
@@ -618,4 +619,39 @@ resolver receives; it passes today (tire, oil change, plumber, haircut = need; f
 near me, plumbers near me, AC is broken = want) and lists as `todo` the cases whose wording or category only exists
 after the migration (tow truck, fix my AC, dog walker, pet sitting, pet food, hotel tonight, and the want cases from
 items 178-179); those turn into real tests in the pass.
+
+## Item 182: Education & Classes coverage (proposed, owner to confirm)
+
+Today: Workshops, Lectures, Cooking Class, Study Group, Language Exchange, Tech Meetup, Classes, Language Classes,
+Technology Classes, Tutoring, Adult Education, Kids Education, Professional Development, Certifications, Dance Classes,
+Technology. Art Classes, Music Lessons and Pottery live in Arts, Culture & Events (one group per tag; kept, item 174).
+No new category is needed. Checked against the live search on 2026-10-03.
+
+| Owner entry | Represented as today | Proposal |
+|---|---|---|
+| Cooking | Cooking Class; but "cooking classes" -> **Cooking** (the food hobby) | wording: cooking classes, cooking lessons -> Cooking Class |
+| Art | Art Classes; but "art class" -> **Art** (the hobby), "painting class" finds nothing | wording: art class, painting class, drawing class -> Art Classes |
+| Music | Music Lessons; "music class" -> **Music** (entertainment), "guitar / piano lessons" find nothing | wording: music class, guitar lessons, piano lessons, voice lessons, singing lessons -> Music Lessons |
+| Dance | Dance Classes; but "dance class", "dance lessons" find nothing | wording: dance class, dance lessons, salsa lessons, ballet class -> Dance Classes |
+| Languages | Language Classes; "language class", "spanish lessons" find nothing | wording: language class, language lessons, ESL, english class, spanish class / lessons -> Language Classes |
+| Technology | Technology Classes; "coding class", "computer class" find nothing | wording: coding class, coding bootcamp, computer class, programming class -> Technology Classes |
+| Business | nothing maps | wording: business course, business workshop, entrepreneurship class -> Professional Development; bare "business class" stays unmapped (an airline seat) |
+| Professional Development, Workshops, Certifications | subcategories ("cpr certification" works) | covered |
+| Tutoring | subcategory; "tutor", "math tutor" find nothing | wording: tutor, math tutor, homework help -> Tutoring |
+| Kids Classes | "kids classes" -> generic Classes | already approved in item 177: kids classes -> Kids Education |
+| Adult Classes | "adult classes" -> generic Classes | wording: adult classes -> Adult Education |
+| Training | nothing maps | wording: job training, skills training -> Professional Development; bare "training" stays unmapped (Personal Training, Pet Training, jobs) |
+
+**The class / classes mismatch is a matching bug, not missing wording.** The plural trim turns "classes" into
+"classe", so the singular and plural of the same phrase land in different places ("art class" vs "art classes",
+"cooking class" vs "cooking classes") or nowhere ("dance class"). Two ways to fix in the pass: (a) fix the plural rule
+for -es words (class -> classes, also -ch / -sh / -x words) in the one normalization the synonym table, signup search and
+emerging-category flagging share; or (b) add both forms as wordings. Recommendation: (a), with a regression test for
+each pair above, because it fixes every such pair at once; (b) only for any pair (a) cannot reach.
+
+**Need behavior.** Today the whole group is a need group, so "find a cooking class" counts as a need. Following items
+175-181 (a group is never a need), only tags that are a task someone must get done are need-capable: **Tutoring** ("I
+need a tutor for my son") and **Certifications** ("I need to get CPR certified"). Classes, workshops, lectures, lessons
+and meetups are things people choose to do: wants. This deliberately changes "find a cooking class" from need to want
+(ordinary ranking instead of availability-first); a regression case records it.
 
