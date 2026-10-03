@@ -27,7 +27,7 @@ matching, privacy or business-demand change.
 | 13 | Wording: scenic area / scenic spot / viewpoint / overlook -> Scenic Views; water activities -> Water Sports; nature center / nature preserve -> Parks + Wildlife | item 172, LOCKED |
 | 14 | Move **Boating** and **Water Sports** from Activities & Recreation to Outdoors & Nature (Activities & Recreation drops to 11) | item 172, LOCKED |
 | 15 | Wording: night market -> Markets; cinema / movie theater -> Movies; stand-up / standup -> Comedy; nightlife event -> Nightlife | item 173, LOCKED |
-| 16 | Wording: gallery / galleries -> Art Galleries; exhibition -> Exhibits; art show / art fair -> Art; local event / local events -> Community Events; book event / book signing / author talk / book club -> Reading | item 174, proposed |
+| 16 | Wording: gallery / galleries -> Art Galleries; exhibition -> Exhibits; art show / art fair -> Art; local event / local events -> Community Events; book event / book signing / author talk / book club -> Reading | item 174, LOCKED |
 
 Result: 19 canonical groups.
 
@@ -224,7 +224,7 @@ longer phrase wins over Theater; the migration adds a regression test for it). B
 the gathering format Show. Tonight, Happening Now, Starting Soon and Right Now stay cross-category time features: no
 nightlife-specific time rules and no new categories in this pass. Entertainment & Nightlife membership unchanged (23).
 
-## Item 174: Arts, Culture & Events coverage (proposed, owner to confirm)
+## Item 174: Arts, Culture & Events coverage
 
 The group is renamed Arts, Culture & Events (item 168, stored key kept). Its own tags today: Reading, Art,
 Photography, Crafts, Art Galleries, Art Classes, Pottery, Cultural Events, History, Libraries, Music Lessons,
@@ -250,3 +250,10 @@ Exhibits -> exhibition). Category says what it is about, format says what kind o
 object or an "Events" category would be a second representation of the same thing (one source of truth, item 87) and
 is not proposed. Business-side, a business offering an event reaches people through availability postings and
 gatherings it hosts, both already in the model.
+
+**Owner decision (2026-10-03, LOCKED):** all five wording rows approved (gallery, exhibition, art show / art fair,
+local event, and the book phrases book event / book signing / author talk / book club -> Reading). Bare "club" stays
+unmapped (item 173); only the full phrase "book club" reaches Reading. **Event = gathering + format** is locked: the
+gathering is the one event object, lifecycle and source of truth; its format says what kind of event it is; its
+category says what it is about; format-like categories keep their existing format mapping. No separate event object,
+no Events category, no second event representation or lifecycle. Arts, Culture & Events membership unchanged (13).
