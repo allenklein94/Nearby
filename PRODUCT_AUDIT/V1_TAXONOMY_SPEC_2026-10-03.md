@@ -24,8 +24,8 @@ matching, privacy or business-demand change.
 | 10 | New category **Personal Training** (Sports & Fitness) | item 171, LOCKED |
 | 11 | Wording: baseball, softball, hockey, sports club, athletic club -> Sports; crossfit -> Gyms + Fitness; dance fitness, zumba -> Fitness | item 171, LOCKED |
 | 12 | New gathering format value **league** (format vocabulary + CHECK, not a category; it does not exist today) | item 171, LOCKED |
-| 13 | Wording: scenic area / scenic spot / viewpoint / overlook -> Scenic Views; water activities -> Water Sports; nature center / nature preserve -> Parks + Wildlife | item 172, proposed |
-| 14 | Move **Boating** and **Water Sports** from Activities & Recreation to Outdoors & Nature (reopens item 171's Activities list) | item 172, proposed |
+| 13 | Wording: scenic area / scenic spot / viewpoint / overlook -> Scenic Views; water activities -> Water Sports; nature center / nature preserve -> Parks + Wildlife | item 172, LOCKED |
+| 14 | Move **Boating** and **Water Sports** from Activities & Recreation to Outdoors & Nature (Activities & Recreation drops to 11) | item 172, LOCKED |
 
 Result: 19 canonical groups.
 
@@ -152,7 +152,7 @@ Create asks it no Casual / Competitive question.
 **Final membership:**
 - **Sports & Fitness (19):** Fitness, Gyms, Personal Training, Yoga, Pilates, Cycling, Running, Martial Arts, Climbing,
   Skating, Sports, Pickleball, Padel, Tennis, Basketball, Soccer, Volleyball, Golf, Swimming.
-- **Activities & Recreation (13):** Bowling, Walking, Water Sports, Boating, Adventure, Cars, Axe Throwing, Laser Tag,
+- **Activities & Recreation (11, after item 172):** Bowling, Walking, Adventure, Cars, Axe Throwing, Laser Tag,
   Go-Karts, Paintball, Trampoline Parks, Horseback Riding, Recreation Centers.
 
 **Required before the migration runs:** the complete final mapping, including every business whose declaration is the
@@ -160,7 +160,7 @@ Activities & Recreation group alone (or that group plus no tag), since such a bu
 group and would stop covering the 18 tags that move. Nothing about a business's classification or routing changes
 silently: the owner sees that list first.
 
-## Item 172: Outdoors & Nature coverage (proposed, owner to confirm)
+## Item 172: Outdoors & Nature coverage
 
 | Owner entry | Represented as today | Proposal |
 |---|---|---|
@@ -184,3 +184,14 @@ Outdoors & Nature also keeps Outdoors, Picnics and Gardening (not in the owner l
 
 Making it "stronger" would mean either raising the weather weight (a ranking change, outside this taxonomy pass) or
 inferring weather from a business's category (reverses the 2026-10-02 rule). Neither is proposed here.
+
+**Owner decision (2026-10-03, LOCKED):** Boating and Water Sports move to Outdoors & Nature (they are inherently
+weather-sensitive, and this switches on the existing gathering weather behavior with no special case). Nature Centers =
+wording of Parks + Wildlife, not a category. Glamping stays in Travel & Getaways (lodging; one group per tag). Scenic
+Areas and Water Activities wordings as proposed. **Weather behavior unchanged:** Outdoors & Nature gatherings are
+weather-sensitive at their own start time, reorder only, never hidden; businesses only through what they declared,
+never from their category (2026-10-02 rule intact); no weight increase in this pass. Possible later, not built: put
+the weather question up front at signup for outdoor categories.
+
+**Outdoors & Nature (19):** Hiking, Outdoors, Camping, Fishing, Kayaking, Parks, Beaches, Trails, Paddleboarding,
+Wildlife, Gardens, Scenic Views, Picnics, Surfing, Snorkeling, Diving, Gardening, Boating, Water Sports.
