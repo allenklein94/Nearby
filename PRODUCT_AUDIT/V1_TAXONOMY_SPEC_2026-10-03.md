@@ -34,6 +34,7 @@ matching, privacy or business-demand change.
 | 20 | Wording: facial / facials -> Skin Care; skincare -> Skin Care; beauty salon -> Salons | item 176, LOCKED |
 | 21 | **Nails** joins `NEED_TAG_KEYS` | item 176, LOCKED |
 | 22 | Wording: children's activities / kids activities -> Kids Activity; kids classes / educational activities -> Kids Education (exactly these four) | item 177, LOCKED |
+| 23 | Pets coverage (see item 178 table: wordings, Pet Sitting, the two pet-friendly tags, need list) | item 178, proposed |
 
 Result: 19 canonical groups.
 
@@ -396,3 +397,43 @@ Stroller friendly...). Nothing to migrate for this.
    declared SECONDARY categories (it used to read only subcategory and major), so Museums + Kids Museums shows under
    both groups from one record. No category changes, no ranking/routing/privacy/demand change. Google Places and
    communities carry no family declaration and are unchanged.
+
+## Item 178: Pets coverage (proposed, owner to confirm)
+
+Pets today: Dogs, Cats, Dog Meetup, Dog Parks, Pet Friendly Places, Pet Events, Grooming, Pet Stores, Pet Boarding,
+Dog Walking, Pet Training, Veterinary. Pet-friendly is already an attribute: `pet_friendly` (pets welcome) and
+`dog_friendly` (dogs specifically) in the one business attribute vocabulary, read from asks ("with my dog", "pet
+friendly"), matched against what businesses declared, and refused beside the No pets restriction (item 86).
+
+| Owner entry | Represented as today | Proposal |
+|---|---|---|
+| Dog Parks | subcategory ("dog park" -> Dogs + Dog Parks) | covered |
+| Dog Grooming | "dog grooming" / "dog groomer" / "pet grooming" -> Grooming | covered |
+| Pet Stores | subcategory; "pet shop" finds nothing | wording: pet shop, pet supply, pet supplies |
+| Veterinary | subcategory; "vet" / "veterinarian" / "animal hospital" find nothing | wording: vet, vets, veterinarian, animal hospital, pet clinic |
+| Pet Boarding | subcategory; "kennel" / "dog daycare" find nothing | wording: kennel, doggy daycare, dog daycare, pet hotel |
+| Dog Walking | subcategory; "dog walker" finds nothing | wording: dog walker |
+| Pet Sitting | **missing**, nothing maps | **new category Pet Sitting** (care in the owner's home, a different service from boarding) + wording pet sitter, cat sitter, house sitting for pets |
+| Pet-Friendly Restaurants | Restaurants + `pet_friendly` / `dog_friendly` (already how "pet friendly restaurant" resolves) | covered by the attribute |
+| Pet-Friendly Hotels | Hotels + the attribute ("dog friendly hotel" resolves this way) | covered by the attribute |
+| Pet Activities | nothing maps | wording -> Pet Events + Dog Meetup (things to do with a pet, never the services) |
+| Pet Events | subcategory | covered |
+| (also) dog training | nothing maps | wording -> Pet Training |
+
+**Conflict with "pet-friendly is an attribute":** two tags make pet-friendliness a category: **Pet Friendly Places**
+(Pets) and **Pet Friendly Stays** (Stay & Getaway / Travel & Getaways). Production uses neither (0 gatherings, 0
+businesses, 0 profile interests, no synonyms). Proposal: retire both in the item-168 pass with keep-existing (nothing to
+move); the words "pet friendly places / stays" then resolve to the attribute alone, "pet friendly hotel" to Hotels +
+the attribute. Pet Friendly Stays then leaves the item-175 need-tag list.
+
+**Where the attribute does NOT reach today (platform-wide gaps, outside the taxonomy pass):**
+1. **Gatherings cannot declare it.** The host-declared features list (9 keys) has no pet-friendly / dog-friendly, so
+   "dog-friendly hike" can only lift businesses, never a gathering, and a gathering's business request never carries it.
+   Proposal: add `pet_friendly` and `dog_friendly` to the gathering features (same recipe as outdoor seating, item 55;
+   they then ride into the gathering's business request automatically).
+2. Communities and Google Places carry no attributes at all (unchanged; no proposal).
+
+**Need status:** Pets is a whole need GROUP today, so "find a dog park" or "I need a pet event" is ranked as a need.
+Proposal (same pattern as Travel after item 175): Pets leaves `NEED_GROUP_KEYS`; the service tags join
+`NEED_TAG_KEYS`: Grooming (already), Veterinary, Pet Boarding, Dog Walking, Pet Sitting, Pet Training, Pet Stores. Dogs,
+Cats, Dog Meetup, Dog Parks and Pet Events stay wants. Task framing still required.
