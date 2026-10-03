@@ -451,6 +451,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
         requiresApproval: visibility !== 'invite_only' && requiresApproval,
         allowAttendeeInvites,
         hostNotifications,
+        // The typed ask this was explicitly created from ("Create it yourself"), else nothing. Recording only.
+        submissionId: route.params?.quickStartSubmissionId ?? null,
       });
       gatheringDraft.clear();
       recordBehaviorEvent('create', 'gathering', created.id, interestTag);

@@ -743,7 +743,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   // screen, prefilled but never auto-submitted.
   function proceedToCustomCreation() {
     const { classifyResult, typedText, submissionId } = customSearchResult ?? {};
-    routeClassifiedIntentToCreation(navigation, classifyResult, typedText);
+    routeClassifiedIntentToCreation(navigation, classifyResult, typedText, { submissionId });
     if (classifyResult?.intent !== 'business_partner') {
       recordIntentSelection({
         rawText: typedText, category: classifyResult?.category ?? null, dateWindow: classifyResult?.dateWindow ?? null,

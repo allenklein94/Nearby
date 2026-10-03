@@ -1539,7 +1539,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Item 109: Create from the typed ask Discover already understood (with its chips), never a second AI read of the words.
   function createFromAsk() {
     if (!intentSearch?.classifyResult) return;
-    routeClassifiedIntentToCreation(navigation, intentSearch.classifyResult, intentSearch.typedText ?? searchQuery.trim(), { explicitCreate: true });
+    routeClassifiedIntentToCreation(navigation, intentSearch.classifyResult, intentSearch.typedText ?? searchQuery.trim(), { explicitCreate: true, submissionId: intentSearch.submissionId ?? null });
   }
   async function handleCreateItFromSearch() {
     const typedText = searchQuery.trim();

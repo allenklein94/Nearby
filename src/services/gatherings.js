@@ -74,7 +74,7 @@ const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, sc
 // exists, from GatheringDetailScreen's own "Ready to see what's
 // available?" banner (or the existing manual "Ask Local Businesses" link)
 // -- see submitBusinessRequestForGathering() in businessFulfillment.js.
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null, showGroupInsights = true, requiresApproval = false, allowAttendeeInvites = true, hostNotifications = true, discoverable = true, equipmentProvided = null, durationMinutes = null, genre = null, format = null, skillLevel = null, effortLevel = null, features = [], suitedAgeMin = null, suitedAgeMax = null }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null, showGroupInsights = true, requiresApproval = false, allowAttendeeInvites = true, hostNotifications = true, discoverable = true, equipmentProvided = null, durationMinutes = null, genre = null, format = null, skillLevel = null, effortLevel = null, features = [], suitedAgeMin = null, suitedAgeMax = null, submissionId = null }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -127,6 +127,9 @@ export async function createGathering({ title, description, interestTag, schedul
       format: format ?? null,
       skill_level: skillLevel ?? null,
       effort_level: effortLevel ?? null,
+      // Flywheel gap 1: the typed ask this gathering was explicitly created from; the server keeps it only if it is the
+      // host's own ask and never lets it change afterwards.
+      ...(submissionId ? { submission_id: submissionId } : {}),
     })
     .select()
     .single();

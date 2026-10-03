@@ -945,7 +945,8 @@ export default function HomeScreen({ navigation }) {
   // intents, which the resolver doesn't apply to, or (b) once Phase 1b's
   // resolver has already checked Tiers 1/3 and genuinely found nothing.
   function proceedToCreation(result, typedText, submissionId, opts) {
-    routeClassifiedIntentToCreation(navigation, result, typedText, opts);
+    // Only the explicit "Create it yourself" buttons attribute the gathering to the ask; the automatic fall-through does not.
+    routeClassifiedIntentToCreation(navigation, result, typedText, opts?.explicitCreate ? { ...opts, submissionId } : opts);
     // Only a real "no existing supply matched, I'm creating something new"
     // moment counts as a trackable intent outcome -- a business_partner
     // proposal has no existing-supply concept to have checked against, so

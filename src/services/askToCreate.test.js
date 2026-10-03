@@ -79,7 +79,7 @@ describe('wiring', () => {
     const home = read('../screens/HomeScreen.js');
     expect(home.match(/\{ explicitCreate: true \}\)\}/g)).toHaveLength(2);
     const d = read('../screens/DiscoverHubScreen.js');
-    expect(d).toMatch(/routeClassifiedIntentToCreation\(navigation, intentSearch\.classifyResult, .*\{ explicitCreate: true \}\)/);
+    expect(d).toMatch(/routeClassifiedIntentToCreation\(navigation, intentSearch\.classifyResult, .*\{ explicitCreate: true[,}]/);
     expect(d).toMatch(/ui\.home\.noneCreate/); // "None of these? Create it yourself →", localized (ui/home.js)
     const fn = d.slice(d.indexOf('function createFromAsk'), d.indexOf('async function handleCreateItFromSearch'));
     expect(fn).not.toMatch(/classifyCreateRequest/);
