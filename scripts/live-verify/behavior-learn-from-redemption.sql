@@ -17,7 +17,7 @@ insert into business_request_offers (request_id, partner_id, status) select x, (
 select set_config('request.jwt.claims', json_build_object('sub', (select uid from fx), 'role', 'authenticated')::text, true);
 set local role authenticated;
 select public.record_behavior_event('accept', 'business_request', (select req1 from fx), 'Coffee');
-insert into r select 'accept alone = 3', (select weight from public.get_my_behavior_categories(90) where category = 'Coffee') = 3;
+insert into r select 'one accept alone is not yet learned (item 157)', not exists (select 1 from public.get_my_behavior_categories(90) where category = 'Coffee');
 do $$ begin perform public.record_behavior_event('redeem', 'business_request', (select req2 from fx), 'Coffee'); insert into r values ('client cannot record redeem', false);
 exception when others then insert into r values ('client cannot record redeem', true); end $$;
 reset role;
