@@ -48,7 +48,9 @@ matching, privacy or business-demand change.
 | 34 | New categories **Auto Parts, Dealerships, Gas Stations, Transportation Services** + their wording | item 181, LOCKED |
 | 35 | Auto wordings + used cars fix (used cars / new cars / buy a car -> Dealerships, never the Cars hobby tag) | item 181, LOCKED |
 | 36 | `auto_transportation` leaves `NEED_GROUP_KEYS`; every service tag (incl. the four new) joins `NEED_TAG_KEYS`; the need check reads the RESOLVED TAG (`src/utils/needTagLevel.regression.test.js`) | item 181, LOCKED |
-| 37 | Education & Classes coverage (see item 182: wordings, class/classes mismatch, Tutoring + Certifications as the only need tags) | item 182, proposed |
+| 37 | Education & Classes wordings (item 182 table; bare "business class" and bare "training" stay unmapped) | item 182, LOCKED |
+| 38 | Plural rule fixed in the ONE normalization (all four copies: client `key`, web signup `applyKey`, server `_category_phrase_key` + `_category_search_key`) so -es plurals (classes, beaches, boxes) resolve like their singular; no duplicate plural wordings (`src/constants/pluralNormalization.regression.test.js`) | item 182, LOCKED |
+| 39 | `education_classes` leaves `NEED_GROUP_KEYS`; only **Tutoring** and **Certifications** join `NEED_TAG_KEYS` | item 182, LOCKED |
 
 Result: 19 canonical groups.
 
@@ -620,7 +622,7 @@ near me, plumbers near me, AC is broken = want) and lists as `todo` the cases wh
 after the migration (tow truck, fix my AC, dog walker, pet sitting, pet food, hotel tonight, and the want cases from
 items 178-179); those turn into real tests in the pass.
 
-## Item 182: Education & Classes coverage (proposed, owner to confirm)
+## Item 182: Education & Classes coverage (LOCKED 2026-10-03)
 
 Today: Workshops, Lectures, Cooking Class, Study Group, Language Exchange, Tech Meetup, Classes, Language Classes,
 Technology Classes, Tutoring, Adult Education, Kids Education, Professional Development, Certifications, Dance Classes,
@@ -655,3 +657,17 @@ need a tutor for my son") and **Certifications** ("I need to get CPR certified")
 and meetups are things people choose to do: wants. This deliberately changes "find a cooking class" from need to want
 (ordinary ranking instead of availability-first); a regression case records it.
 
+**Owner decision (2026-10-03, LOCKED):** all three approved. (1) The wordings as in the table: tutor / math tutor /
+homework help -> Tutoring, adult classes -> Adult Education, kids classes -> **Kids Education** (item 177; the owner's
+note said "Kids Classes", which is not a category, so it is recorded as the already-approved Kids Education and no new
+category is created); bare "business class" (an airline seat) and bare "training" (Personal Training, Pet Training or
+job training) stay unmapped. "I need to get CPR certified" needs the wording "certified" -> Certifications (today only
+"certification" resolves). (2) **The plural rule is fixed once, globally**, in the shared normalization and its three
+copies, so singular and plural resolve identically; never by storing both forms. No duplicate plural rows. (3) Only
+Tutoring and Certifications are need-capable; classes, workshops, lectures, lessons and meetups are wants. "I need a
+tutor for my son" = NEED, "I need to get CPR certified" = NEED, "find a cooking class" = WANT (an intentional change from
+today's group-level NEED), "I need a cooking class" = WANT. "Need" alone, urgency, or looking for a class never makes a
+need when the resolved category is not need-capable; the parent group is never a need and explicit task framing is still
+required. **Not migrated:** regression cases recorded now (passing today: "I need CPR certification" = NEED, "business
+class" / "training" unmapped, -s plurals consistent; `todo` until the pass: the tutor / CPR certified / cooking-class
+cases in `needTagLevel.regression.test.js` and the -es plural pairs in `pluralNormalization.regression.test.js`).
