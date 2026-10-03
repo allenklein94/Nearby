@@ -1,5 +1,4 @@
-import { canRespondToOpportunity } from './objectLifecycle';
-import { isOfferExpired } from './objectState';
+import { isPipelineNew, isPipelineOffered, reviewingRequestIds } from './businessPipeline';
 import { countLabel } from './plural';
 import { offerPriceLabel } from './outcomeDisplay';
 
@@ -49,14 +48,16 @@ export function visitHasPassed(o, now = new Date()) {
   return date < localDayKey(now);
 }
 
-export function dashboardGlance(opportunities, owed, now = new Date()) {
+// "new" and "awaiting a reply" are the pipeline's New and Offered (utils/businessPipeline.js, item 147): one rule each.
+export function dashboardGlance(opportunities, owed, now = new Date(), submissions = []) {
   const list = opportunities ?? [];
   const todayKey = localDayKey(now);
-  const newCount = list.filter((o) => canRespondToOpportunity(o)).length;
+  const reviewing = reviewingRequestIds(submissions);
+  const newCount = list.filter((o) => isPipelineNew(o, reviewing, now)).length;
   const accepted = list.filter((o) => o.status === 'accepted');
   const confirmedToday = accepted.filter((o) => visitDayKey(o) === todayKey).length;
   const confirmedLater = accepted.filter((o) => { const k = visitDayKey(o); return k == null || k > todayKey; }).length;
-  const awaiting = list.filter((o) => o.status === 'offered' && !isOfferExpired(o, now)).length;
+  const awaiting = list.filter((o) => isPipelineOffered(o, now)).length;
 
   const today = [
     { key: 'new', text: `${newCount} new ${newCount === 1 ? 'opportunity' : 'opportunities'}`, section: 'requests', count: newCount },

@@ -69,6 +69,7 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 import { budgetMeetsMinSpend } from '../utils/budgetTier';
 import { businessLocationNotice } from '../utils/businessLocationNotice';
 import { dashboardGlance, visitHasPassed } from '../utils/dashboardGlance';
+import { businessPipeline, PIPELINE_STAGES, isPipelineWon } from '../utils/businessPipeline';
 import { buildOpportunityCard, buildMatchReasons, availabilityCoversRequest } from '../utils/businessOpportunityCard';
 import { matchFitLine } from '../utils/matchFitLine';
 import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardAvailabilityText, requestedWindowDefaults } from '../utils/quickOfferResponse';
@@ -3632,7 +3633,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <View style={styles.briefCard}>
                       <Text style={styles.sectionHeader}>{t('ui.bizDash1.todayAt', { name: selectedPartner.name })}</Text>
                       {(() => {
-                        const glance = dashboardGlance(opportunities, estimatedOwed);
+                        const glance = dashboardGlance(opportunities, estimatedOwed, new Date(), offerSubmissions);
                         return (
                           <View style={{ marginBottom: spacing.sm }}>
                             <Text style={styles.notesLabel}>{t('ui.bizDash1.today')}</Text>
@@ -4068,13 +4069,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <>
 {on('bookings') && (
 <>
-                {opportunities.filter((o) => o.status === 'accepted' && !noShowIds.has(o.id)).length > 0 && (
+                {opportunities.filter((o) => isPipelineWon(o, noShowIds)).length > 0 && (
                   <View style={{ marginBottom: spacing.lg }}>
                     <Text style={styles.sectionHeader}>{t('ui.bizDash2.upcomingNearbyVisits')}</Text>
                     <Text style={styles.helperText}>
                       {t('ui.bizDash2.realConfirmedVisitsHeadedYour')}
                     </Text>
-                    {opportunities.filter((o) => o.status === 'accepted' && !noShowIds.has(o.id)).map((o) => {
+                    {opportunities.filter((o) => isPipelineWon(o, noShowIds)).map((o) => {
                       const visit = describeVisit(o);
                       return (
                         <View key={o.id} style={styles.gatheringRow}>
@@ -4243,6 +4244,29 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 )}
 {on('opportunities') && (
 <>
+                {/* Item 147: the request pipeline, one definition per stage (utils/businessPipeline.js). Shown only once the
+                    requests have loaded, so a zero is a real zero. */}
+                {opportunitiesLoaded === true && (() => {
+                  const pipeline = businessPipeline(opportunities, offerSubmissions, { noShowIds });
+                  return (
+                    <View style={{ marginTop: spacing.lg }}>
+                      <Text style={styles.sectionHeader}>{t('ui.bizDash2.pipeline.title')}</Text>
+                      <View style={styles.pipelineRow}>
+                        {PIPELINE_STAGES.map((stage) => (
+                          <View
+                            key={stage}
+                            style={styles.pipelineStage}
+                            accessible
+                            accessibilityLabel={`${t(`ui.bizDash2.pipeline.${stage}`)}: ${t(`ui.bizDash2.pipeline.${stage}Sub`, { count: pipeline[stage] })}`}
+                          >
+                            <Text style={styles.statNumber}>{pipeline[stage]}</Text>
+                            <Text style={styles.statLabel}>{t(`ui.bizDash2.pipeline.${stage}`)}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  );
+                })()}
                 {offerSubmissions.length > 0 && (
                   <View style={{ marginTop: spacing.lg }}>
                     <Text style={styles.sectionHeader}>{t('ui.bizDash2.yourOffers')}</Text>
@@ -8122,6 +8146,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   statNumber: { ...typography.title, color: colors.textPrimary },
   statLabel: { color: colors.textTertiary, fontSize: 11, textAlign: 'center', marginTop: 2 },
+  pipelineRow: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm },
+  pipelineStage: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   helperText: { color: colors.textTertiary, fontSize: 12, lineHeight: 18, marginTop: spacing.lg, fontStyle: 'italic' },
   emptyText: { color: colors.textTertiary, textAlign: 'center', marginTop: spacing.md },
   postUpdateButton: {

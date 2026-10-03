@@ -328,7 +328,33 @@
   "focus.closed": "This request is closed.",
   "focus.youReplied": "You already replied to this request.",
   "focus.booked": "You're booked for this request.",
-  "focus.youDeclined": "You declined this request."
+  "focus.youDeclined": "You declined this request.",
+  "pipeline.title": "Your requests",
+  "pipeline.new": "New",
+  "pipeline.reviewing": "Reviewing",
+  "pipeline.offered": "Offered",
+  "pipeline.won": "Won",
+  "pipeline.completed": "Completed",
+  "pipeline.newSub": {
+   "one": "{count} new opportunity",
+   "other": "{count} new opportunities"
+  },
+  "pipeline.reviewingSub": {
+   "one": "{count} reply being checked",
+   "other": "{count} replies being checked"
+  },
+  "pipeline.offeredSub": {
+   "one": "{count} offer awaiting acceptance",
+   "other": "{count} offers awaiting acceptance"
+  },
+  "pipeline.wonSub": {
+   "one": "{count} accepted",
+   "other": "{count} accepted"
+  },
+  "pipeline.completedSub": {
+   "one": "{count} redeemed this month",
+   "other": "{count} redeemed this month"
+  }
  },
  "es": {
   "peopleLookingForCategory": {
@@ -659,7 +685,33 @@
   "focus.closed": "Esta solicitud está cerrada.",
   "focus.youReplied": "Ya respondiste a esta solicitud.",
   "focus.booked": "Tienes una reserva para esta solicitud.",
-  "focus.youDeclined": "Rechazaste esta solicitud."
+  "focus.youDeclined": "Rechazaste esta solicitud.",
+  "pipeline.title": "Tus solicitudes",
+  "pipeline.new": "Nuevas",
+  "pipeline.reviewing": "En revisión",
+  "pipeline.offered": "Ofertadas",
+  "pipeline.won": "Ganadas",
+  "pipeline.completed": "Completadas",
+  "pipeline.newSub": {
+   "one": "{count} oportunidad nueva",
+   "other": "{count} oportunidades nuevas"
+  },
+  "pipeline.reviewingSub": {
+   "one": "{count} respuesta en revisión",
+   "other": "{count} respuestas en revisión"
+  },
+  "pipeline.offeredSub": {
+   "one": "{count} oferta esperando respuesta",
+   "other": "{count} ofertas esperando respuesta"
+  },
+  "pipeline.wonSub": {
+   "one": "{count} aceptada",
+   "other": "{count} aceptadas"
+  },
+  "pipeline.completedSub": {
+   "one": "{count} canjeada este mes",
+   "other": "{count} canjeadas este mes"
+  }
  },
  "de": {
   "peopleLookingForCategory": {
@@ -990,7 +1042,33 @@
   "focus.closed": "Diese Anfrage ist geschlossen.",
   "focus.youReplied": "Du hast auf diese Anfrage bereits geantwortet.",
   "focus.booked": "Für diese Anfrage hast du eine Buchung.",
-  "focus.youDeclined": "Du hast diese Anfrage abgelehnt."
+  "focus.youDeclined": "Du hast diese Anfrage abgelehnt.",
+  "pipeline.title": "Deine Anfragen",
+  "pipeline.new": "Neu",
+  "pipeline.reviewing": "In Prüfung",
+  "pipeline.offered": "Angeboten",
+  "pipeline.won": "Gewonnen",
+  "pipeline.completed": "Abgeschlossen",
+  "pipeline.newSub": {
+   "one": "{count} neue Gelegenheit",
+   "other": "{count} neue Gelegenheiten"
+  },
+  "pipeline.reviewingSub": {
+   "one": "{count} Antwort wird geprüft",
+   "other": "{count} Antworten werden geprüft"
+  },
+  "pipeline.offeredSub": {
+   "one": "{count} Angebot wartet auf Annahme",
+   "other": "{count} Angebote warten auf Annahme"
+  },
+  "pipeline.wonSub": {
+   "one": "{count} angenommen",
+   "other": "{count} angenommen"
+  },
+  "pipeline.completedSub": {
+   "one": "{count} diesen Monat eingelöst",
+   "other": "{count} diesen Monat eingelöst"
+  }
  },
  "fr": {
   "peopleLookingForCategory": {
@@ -1321,7 +1399,33 @@
   "focus.closed": "Cette demande est fermée.",
   "focus.youReplied": "Vous avez déjà répondu à cette demande.",
   "focus.booked": "Vous avez une réservation pour cette demande.",
-  "focus.youDeclined": "Vous avez refusé cette demande."
+  "focus.youDeclined": "Vous avez refusé cette demande.",
+  "pipeline.title": "Tes demandes",
+  "pipeline.new": "Nouvelles",
+  "pipeline.reviewing": "En vérification",
+  "pipeline.offered": "Proposées",
+  "pipeline.won": "Gagnées",
+  "pipeline.completed": "Terminées",
+  "pipeline.newSub": {
+   "one": "{count} nouvelle opportunité",
+   "other": "{count} nouvelles opportunités"
+  },
+  "pipeline.reviewingSub": {
+   "one": "{count} réponse en vérification",
+   "other": "{count} réponses en vérification"
+  },
+  "pipeline.offeredSub": {
+   "one": "{count} offre en attente d'acceptation",
+   "other": "{count} offres en attente d'acceptation"
+  },
+  "pipeline.wonSub": {
+   "one": "{count} acceptée",
+   "other": "{count} acceptées"
+  },
+  "pipeline.completedSub": {
+   "one": "{count} utilisée ce mois-ci",
+   "other": "{count} utilisées ce mois-ci"
+  }
  },
  "pt": {
   "peopleLookingForCategory": {
@@ -1652,7 +1756,33 @@
   "focus.closed": "Este pedido está fechado.",
   "focus.youReplied": "Você já respondeu a este pedido.",
   "focus.booked": "Você tem uma reserva para este pedido.",
-  "focus.youDeclined": "Você recusou este pedido."
+  "focus.youDeclined": "Você recusou este pedido.",
+  "pipeline.title": "Seus pedidos",
+  "pipeline.new": "Novos",
+  "pipeline.reviewing": "Em análise",
+  "pipeline.offered": "Ofertados",
+  "pipeline.won": "Ganhos",
+  "pipeline.completed": "Concluídos",
+  "pipeline.newSub": {
+   "one": "{count} nova oportunidade",
+   "other": "{count} novas oportunidades"
+  },
+  "pipeline.reviewingSub": {
+   "one": "{count} resposta em análise",
+   "other": "{count} respostas em análise"
+  },
+  "pipeline.offeredSub": {
+   "one": "{count} oferta aguardando aceite",
+   "other": "{count} ofertas aguardando aceite"
+  },
+  "pipeline.wonSub": {
+   "one": "{count} aceito",
+   "other": "{count} aceitos"
+  },
+  "pipeline.completedSub": {
+   "one": "{count} resgatado este mês",
+   "other": "{count} resgatados este mês"
+  }
  },
  "ht": {
   "peopleLookingForCategory": {
@@ -1983,7 +2113,33 @@
   "focus.closed": "Demann sa a fèmen.",
   "focus.youReplied": "Ou deja reponn demann sa a.",
   "focus.booked": "Ou gen yon rezèvasyon pou demann sa a.",
-  "focus.youDeclined": "Ou refize demann sa a."
+  "focus.youDeclined": "Ou refize demann sa a.",
+  "pipeline.title": "Demann ou yo",
+  "pipeline.new": "Nouvo",
+  "pipeline.reviewing": "Ap verifye",
+  "pipeline.offered": "Ofri",
+  "pipeline.won": "Genyen",
+  "pipeline.completed": "Fini",
+  "pipeline.newSub": {
+   "one": "{count} nouvo opòtinite",
+   "other": "{count} nouvo opòtinite"
+  },
+  "pipeline.reviewingSub": {
+   "one": "{count} repons ap verifye",
+   "other": "{count} repons ap verifye"
+  },
+  "pipeline.offeredSub": {
+   "one": "{count} òf ap tann akseptasyon",
+   "other": "{count} òf ap tann akseptasyon"
+  },
+  "pipeline.wonSub": {
+   "one": "{count} aksepte",
+   "other": "{count} aksepte"
+  },
+  "pipeline.completedSub": {
+   "one": "{count} itilize mwa sa a",
+   "other": "{count} itilize mwa sa a"
+  }
  },
  "zh": {
   "peopleLookingForCategory": {
@@ -2301,7 +2457,28 @@
   "focus.closed": "此请求已关闭。",
   "focus.youReplied": "你已回复此请求。",
   "focus.booked": "此请求已为你预订。",
-  "focus.youDeclined": "你已拒绝此请求。"
+  "focus.youDeclined": "你已拒绝此请求。",
+  "pipeline.title": "你的请求",
+  "pipeline.new": "新的",
+  "pipeline.reviewing": "审核中",
+  "pipeline.offered": "已报价",
+  "pipeline.won": "已成交",
+  "pipeline.completed": "已完成",
+  "pipeline.newSub": {
+   "other": "{count} 个新机会"
+  },
+  "pipeline.reviewingSub": {
+   "other": "{count} 条回复正在审核"
+  },
+  "pipeline.offeredSub": {
+   "other": "{count} 个报价等待接受"
+  },
+  "pipeline.wonSub": {
+   "other": "{count} 个已接受"
+  },
+  "pipeline.completedSub": {
+   "other": "本月已兑换 {count} 个"
+  }
  },
  "vi": {
   "peopleLookingForCategory": {
@@ -2619,7 +2796,28 @@
   "focus.closed": "Yêu cầu này đã đóng.",
   "focus.youReplied": "Bạn đã trả lời yêu cầu này.",
   "focus.booked": "Bạn đã có lượt đặt cho yêu cầu này.",
-  "focus.youDeclined": "Bạn đã từ chối yêu cầu này."
+  "focus.youDeclined": "Bạn đã từ chối yêu cầu này.",
+  "pipeline.title": "Yêu cầu của bạn",
+  "pipeline.new": "Mới",
+  "pipeline.reviewing": "Đang kiểm tra",
+  "pipeline.offered": "Đã đề xuất",
+  "pipeline.won": "Đã chốt",
+  "pipeline.completed": "Hoàn tất",
+  "pipeline.newSub": {
+   "other": "{count} cơ hội mới"
+  },
+  "pipeline.reviewingSub": {
+   "other": "{count} phản hồi đang được kiểm tra"
+  },
+  "pipeline.offeredSub": {
+   "other": "{count} ưu đãi đang chờ chấp nhận"
+  },
+  "pipeline.wonSub": {
+   "other": "{count} đã chấp nhận"
+  },
+  "pipeline.completedSub": {
+   "other": "{count} đã đổi trong tháng này"
+  }
  },
  "tl": {
   "peopleLookingForCategory": {
@@ -2950,7 +3148,33 @@
   "focus.closed": "Sarado na ang request na ito.",
   "focus.youReplied": "Sumagot ka na sa request na ito.",
   "focus.booked": "May booking ka para sa request na ito.",
-  "focus.youDeclined": "Tinanggihan mo ang request na ito."
+  "focus.youDeclined": "Tinanggihan mo ang request na ito.",
+  "pipeline.title": "Mga request mo",
+  "pipeline.new": "Bago",
+  "pipeline.reviewing": "Sinusuri",
+  "pipeline.offered": "Inalok",
+  "pipeline.won": "Nakuha",
+  "pipeline.completed": "Tapos na",
+  "pipeline.newSub": {
+   "one": "{count} bagong pagkakataon",
+   "other": "{count} bagong pagkakataon"
+  },
+  "pipeline.reviewingSub": {
+   "one": "{count} sagot na sinusuri",
+   "other": "{count} sagot na sinusuri"
+  },
+  "pipeline.offeredSub": {
+   "one": "{count} alok na naghihintay ng pagtanggap",
+   "other": "{count} alok na naghihintay ng pagtanggap"
+  },
+  "pipeline.wonSub": {
+   "one": "{count} tinanggap",
+   "other": "{count} tinanggap"
+  },
+  "pipeline.completedSub": {
+   "one": "{count} na-redeem ngayong buwan",
+   "other": "{count} na-redeem ngayong buwan"
+  }
  },
  "ru": {
   "peopleLookingForCategory": {
@@ -3307,7 +3531,43 @@
   "focus.closed": "Этот запрос закрыт.",
   "focus.youReplied": "Вы уже ответили на этот запрос.",
   "focus.booked": "По этому запросу у вас бронирование.",
-  "focus.youDeclined": "Вы отклонили этот запрос."
+  "focus.youDeclined": "Вы отклонили этот запрос.",
+  "pipeline.title": "Ваши запросы",
+  "pipeline.new": "Новые",
+  "pipeline.reviewing": "На проверке",
+  "pipeline.offered": "Предложено",
+  "pipeline.won": "Принято",
+  "pipeline.completed": "Завершено",
+  "pipeline.newSub": {
+   "one": "{count} новая возможность",
+   "few": "{count} новые возможности",
+   "many": "{count} новых возможностей",
+   "other": "{count} новой возможности"
+  },
+  "pipeline.reviewingSub": {
+   "one": "{count} ответ на проверке",
+   "few": "{count} ответа на проверке",
+   "many": "{count} ответов на проверке",
+   "other": "{count} ответа на проверке"
+  },
+  "pipeline.offeredSub": {
+   "one": "{count} предложение ждёт ответа",
+   "few": "{count} предложения ждут ответа",
+   "many": "{count} предложений ждут ответа",
+   "other": "{count} предложения ждут ответа"
+  },
+  "pipeline.wonSub": {
+   "one": "{count} принято",
+   "few": "{count} принято",
+   "many": "{count} принято",
+   "other": "{count} принято"
+  },
+  "pipeline.completedSub": {
+   "one": "{count} использовано в этом месяце",
+   "few": "{count} использовано в этом месяце",
+   "many": "{count} использовано в этом месяце",
+   "other": "{count} использовано в этом месяце"
+  }
  },
  "ko": {
   "peopleLookingForCategory": {
@@ -3625,6 +3885,27 @@
   "focus.closed": "이 요청은 마감되었어요.",
   "focus.youReplied": "이미 이 요청에 답장했어요.",
   "focus.booked": "이 요청은 예약이 확정되었어요.",
-  "focus.youDeclined": "이 요청을 거절했어요."
+  "focus.youDeclined": "이 요청을 거절했어요.",
+  "pipeline.title": "내 요청",
+  "pipeline.new": "신규",
+  "pipeline.reviewing": "검토 중",
+  "pipeline.offered": "제안함",
+  "pipeline.won": "성사",
+  "pipeline.completed": "완료",
+  "pipeline.newSub": {
+   "other": "새 기회 {count}건"
+  },
+  "pipeline.reviewingSub": {
+   "other": "검토 중인 답변 {count}건"
+  },
+  "pipeline.offeredSub": {
+   "other": "수락 대기 중인 제안 {count}건"
+  },
+  "pipeline.wonSub": {
+   "other": "수락됨 {count}건"
+  },
+  "pipeline.completedSub": {
+   "other": "이번 달 사용 {count}건"
+  }
  }
 }
