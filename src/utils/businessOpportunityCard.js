@@ -9,7 +9,7 @@ const P = (key, vars) => tr(`ui.bizHelp.opportunity.${key}`, vars);
 // Built ONLY from the structured fields get_business_opportunities already returns (never raw text, never invented
 // tiers): a title, one "who / when" line, one "how special / how much" line, and what the customer is looking for.
 // Labels are injected so this stays dependency-free and unit-testable.
-export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addonLabel, attributeLabels = [], cuisineLabel = null, itemLabels = [], categoryLabel = null, typicalSpend = null }) {
+export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addonLabel, attributeLabels = [], cuisineLabel = null, itemLabels = [], categoryLabel = null }) {
   const r = req ?? {};
   // `categoryLabel` = the category's name in the viewer's language (the caller translates it); r.category is the stored value.
   const cat = categoryLabel ?? r.category;
@@ -24,7 +24,7 @@ export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addo
     timeLabel,
   ].filter(Boolean).join(' · ');
 
-  const potential = potentialValue(r, typicalSpend);
+  const potential = potentialValue(r);
   // With a potential value shown, the budget line drops its "$360 for the party" part so the total is said once.
   const feelLine = [experienceLabel, formatBudgetLine(r.budget_max, potential ? null : r.party_size)].filter(Boolean).join(' · ');
 
@@ -34,31 +34,23 @@ export function buildOpportunityCard(req, { occasionLabel, experienceLabel, addo
   return { title, whenLine, feelLine, lookingFor, requestedLine, potential };
 }
 
-// Item 149 (owner, LOCKED): "Potential value" = what this request could be worth to the business, NEVER earnings or
-// revenue (a guard forbids those words here). Only real numbers: the party size the customer gave times a per-person
-// figure someone actually stated -- the business's own declared typical spend (item 82), capped by the customer's own
-// per-person budget when that is lower; else the customer's budget alone, worded "up to" because it is a ceiling.
-// No party size, or neither figure = null (no line, never "$0" or a guess from category/price tier).
-export function potentialValue(req, typicalSpend = null) {
+// Item 149 (owner, LOCKED): "Potential value" = what this opportunity could be worth IF it converts. It is not
+// revenue and is never called earnings (guarded). Computed ONLY from the request's own explicit data: the party size
+// the customer gave times the per-person budget the customer stated, worded "up to" because a budget is a ceiling.
+// Never from the business's general pricing (typical spend, price tier, minimum spend) or a category guess; missing
+// either input = null (no line, never "$0"). Informational only: nothing that ranks, routes, decides eligibility,
+// picks offers or places sponsored items may read it (guarded in potentialValue.test.js).
+export function potentialValue(req) {
   const r = req ?? {};
   const people = Number(r.party_size);
-  if (!Number.isInteger(people) || people < 1) return null;
-  const usual = Number(typicalSpend);
   const budget = Number(r.budget_max);
-  const hasUsual = typicalSpend != null && usual > 0;
-  const hasBudget = r.budget_max != null && budget > 0;
-  if (!hasUsual && !hasBudget) return null;
-  // The customer's budget is a ceiling, so a value resting on it is "up to".
-  const fromBudget = !hasUsual || (hasBudget && budget < usual);
-  const perPerson = fromBudget ? budget : usual;
-  const amount = Math.round(perPerson * people * 100) / 100;
-  const peopleLabel = P('people', { count: people });
+  if (!Number.isInteger(people) || people < 1) return null;
+  if (r.budget_max == null || !(budget > 0)) return null;
+  const amount = Math.round(budget * people * 100) / 100;
   return {
     amount,
-    upTo: fromBudget,
-    source: fromBudget ? 'budget' : 'typical',
-    line: P(fromBudget ? 'potentialValueUpTo' : 'potentialValue', { amount: bizMoney(amount) }),
-    basis: P(fromBudget ? 'potentialBasisBudget' : 'potentialBasisTypical', { people: peopleLabel, amount: bizMoney(perPerson) }),
+    line: P('potentialValueUpTo', { amount: bizMoney(amount) }),
+    basis: P('potentialBasisBudget', { people: P('people', { count: people }), amount: bizMoney(budget) }),
     note: P('potentialNote'),
   };
 }

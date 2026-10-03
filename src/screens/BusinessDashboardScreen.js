@@ -4399,7 +4399,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       cuisineLabel: o.business_requests?.cuisine ? (language === 'en' ? cuisineLabel(o.business_requests.cuisine) : cuisineName(o.business_requests.cuisine, language)) : null,
                       itemLabels: (o.business_requests?.requested_items ?? []).map((k) => (language === 'en' ? requestedItemLabel(k) : t(`ui.bizHelp.item.${k}`))),
                       categoryLabel: o.business_requests?.category ? categoryName(o.business_requests.category, language) : null,
-                      typicalSpend: selectedPartner?.typical_spend_per_person ?? null,
                     });
                     // Context that changes how the request should be read stays, but as one quiet line, not chips.
                     const matchReasons = buildMatchReasons(o.opportunityReasons, {
@@ -6894,7 +6893,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 const ctx = buildOpportunityCard(offerModalRequest, {
                   occasionLabel: offerModalRequest.occasion ? (language === 'en' ? occasionLabel(offerModalRequest.occasion) : categoryName(occasionLabel(offerModalRequest.occasion), language)) : null,
                   categoryLabel: offerModalRequest.category ? categoryName(offerModalRequest.category, language) : null,
-                  typicalSpend: selectedPartner?.typical_spend_per_person ?? null,
                 });
                 return (
                   <View style={{ marginBottom: spacing.md }}>
