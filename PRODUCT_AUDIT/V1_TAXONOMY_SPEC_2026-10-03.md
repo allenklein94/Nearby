@@ -501,8 +501,9 @@ to See or Attractions category).
 |---|---|
 | family getaway, family vacation | Family Resorts |
 | cruise, sunset cruise, dinner cruise, harbor cruise | Boat Tours |
-| attractions, things to see | the Attractions & Things to See GROUP (stays its own group, never folded into Travel) |
+| attractions, things to see | the categories of Attractions & Things to See, via synonym rows (the group stays its own group, never folded into Travel) |
 | cabin, vacation home, beach house | Vacation Rentals |
+| weekend trip, weekend away | Weekend Getaway |
 | campground, campsite | Camping |
 | bed and breakfast, b&b | Hotels (bug fix: today it resolves to Breakfast; regression test that the lodging phrase wins) |
 
@@ -511,10 +512,11 @@ to See or Attractions category).
 - **Needs unchanged:** only individually approved lodging/service tags, task framing required. Regression cases:
   "I need a hotel tonight" = need, "I need a vacation rental" = need, "family resorts" / "romantic getaways" /
   "harbor cruises" = want.
-- **Implementation note (attractions -> group):** the resolver already has a group level, but only for a group's exact
-  name or key. For the pass, either map the two phrases to the group's consumer tags through the existing synonym table
-  (no new concept; searchScope then returns those tags at tag level), or let `groupForPhrase` read a short alias list
-  (returns level 'group'). To decide before the pass.
-- **Not in the approved table (to confirm):** "weekend trip" / "weekend away" -> Weekend Getaway (proposed, not listed).
-  **Camping need status (to confirm):** the rule above names Camping as need-capable, but Camping is an Outdoors &
-  Nature tag and is not on the approved need list (item 175 listed only the stay tags, incl. Glamping).
+- **Remaining questions answered (2026-10-03, LOCKED):**
+  1. "weekend trip", "weekend away" -> Weekend Getaway (wording only, no new category).
+  2. **Camping is NOT need-capable.** The need list stays exactly as approved (stay/service tags only); Camping stays an
+     Outdoors & Nature want. Regression cases: "campsite tonight", "camping this weekend", "campground near me" = want.
+     A real Camping need pattern later goes through item 166.
+  3. "attractions" / "things to see" use option (a): synonym rows mapping the phrases to the consumer tags of
+     Attractions & Things to See (existing synonym structure; no group alias, no new object or storage level). The group
+     stays its own canonical group.
