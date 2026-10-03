@@ -38,6 +38,7 @@ matching, privacy or business-demand change.
 | 24 | New category **Pet Sitting** (Pets) + wording pet sitter, cat sitter | item 178, LOCKED |
 | 25 | Retire **Pet Friendly Places** and **Pet Friendly Stays** (keep-existing; 0 uses); pet-friendliness is the attribute only | item 178, LOCKED |
 | 26 | `pets` leaves `NEED_GROUP_KEYS`; Veterinary, Pet Boarding, Dog Walking, Pet Sitting, Pet Training, Pet Stores join `NEED_TAG_KEYS` (Grooming already there); Pet Friendly Stays leaves the item-175 list | item 178, LOCKED |
+| 27 | Travel & Getaways coverage (see item 179: wordings, bed and breakfast fix, cruise, family getaway) | item 179, proposed |
 
 Result: 19 canonical groups.
 
@@ -457,3 +458,35 @@ Cats, Dog Meetup, Dog Parks and Pet Events stay wants. Task framing still requir
    Pet Training and Pet Stores are need-capable, with the task-framing rule still mandatory. Regression cases for the
    pass: "I need a dog walker" = need, "I need pet sitting" = need, "I need to get pet food" = need, "pet stores near
    me" = want, "dog parks" / "dogs" / "cats" / "dog meetup" / "pet events" = want.
+
+## Item 179: Travel & Getaways coverage (proposed, owner to confirm)
+
+After the item-168 merge, Travel & Getaways = Travel, Day Trip, Tours, Excursions, Boat Tours, Adventure Experiences,
+Local Experiences (from Travel & Experiences) + Weekend Getaway, Staycation, Road Trip, Resorts, Hotels, Vacation
+Rentals, Romantic Getaways, Spa Resorts, Family Resorts, Glamping (from Stay & Getaway; Pet Friendly Stays retired,
+item 178) = 17 tags. Checked against the live search on 2026-10-03.
+
+| Owner entry | Represented as today | Proposal |
+|---|---|---|
+| Hotels, Resorts, Vacation Rentals | subcategories ("hotel", "motel", "inn" -> Hotels) | covered; wording: cabin, cabin rental, vacation home, beach house -> Vacation Rentals |
+| Attractions | own group Attractions & Things to See (kept, item 168); bare "attractions" finds nothing | wording: attractions, things to see -> the Attractions & Things to See group (broad, like a group name); not moved into Travel |
+| Tours, Excursions | subcategories | covered |
+| Cruises | nothing maps | wording: cruise, sunset cruise, dinner cruise, harbor cruise -> Boat Tours (what a local business sells); no Cruises category |
+| Weekend Trips | "weekend trip" finds nothing | wording: weekend trip(s), weekend away -> Weekend Getaway |
+| Road Trips, Staycations, Romantic Getaways | subcategories | covered |
+| Family Getaways | "family getaway" / "family vacation" find nothing | wording -> Family Resorts (see the open question) |
+| Camping / Glamping | Camping (Outdoors & Nature), Glamping (here); one group per tag | covered; wording: campground, campsite -> Camping |
+
+**Wrong mapping found:** "bed and breakfast" resolves to **Breakfast** (Food & Drink). Fix: bed and breakfast, b&b ->
+Hotels (the longer phrase wins; regression-tested in the pass).
+
+**Open question (consistency with item 178):** Romantic Getaways, Family Resorts and Spa Resorts are, like the retired
+Pet Friendly Stays, a stay type plus a quality that already exists as an attribute (`romantic` / `date_friendly`,
+`kid_friendly`) or as a category (Spa). Production uses none of them (0 gatherings, businesses, interests). Two options:
+(a) keep them as categories (you listed Romantic and Family Getaways), with the wordings above; (b) retire them like
+Pet Friendly Stays, so "romantic getaway" = Weekend Getaway + `romantic`, "family resort" = Resorts + `kid_friendly`.
+Recommendation: (a) for Romantic Getaways and Family Resorts (a getaway TYPE people plan around, and you named both);
+Spa Resorts stays too (a resort type). Pet Friendly Stays differed because "pet friendly" is a house rule, not a trip.
+
+**Needs (item 175, unchanged):** the stay tags (Hotels, Resorts, Vacation Rentals, Spa Resorts, Family Resorts,
+Glamping) are need-capable with task framing ("I need a hotel tonight"); trips and tours stay wants.
