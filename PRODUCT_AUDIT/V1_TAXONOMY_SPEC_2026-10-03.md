@@ -51,6 +51,7 @@ matching, privacy or business-demand change.
 | 37 | Education & Classes wordings (item 182 table; bare "business class" and bare "training" stay unmapped) | item 182, LOCKED |
 | 38 | Plural rule fixed in the ONE normalization (all four copies: client `key`, web signup `applyKey`, server `_category_phrase_key` + `_category_search_key`) so -es plurals (classes, beaches, boxes) resolve like their singular; no duplicate plural wordings (`src/constants/pluralNormalization.regression.test.js`) | item 182, **APPLIED 2026-10-03** (migration `20270279`) |
 | 39 | `education_classes` is per-tag for needs; only **Tutoring** and **Certifications** are in `NEED_TAG_KEYS` | item 182, **APPLIED 2026-10-03** (need side; the group leaves `NEED_GROUP_KEYS` for the open-ended rule in the pass) |
+| 40 | Community & Volunteering coverage (see item 183: wordings, no new category, -ies plural gap) | item 183, proposed |
 
 Result: 19 canonical groups.
 
@@ -689,3 +690,39 @@ Classes, caught by the item-130 benchmark); a generic format key now yields to a
 **Still for the pass:** the other item-182 wordings (tutor / math tutor / homework help, adult classes, kids classes, the
 class/lesson table), so "I need a tutor for my son" stays a `todo`. Verified: dry run rolled back (server keys equal the
 app's on 24 words), applied, single overloads, the three emerging-category / synonym live scripts ALL OK; Jest 4714.
+
+## Item 183: Community & Volunteering coverage (proposed, owner to confirm)
+
+Today: Volunteering, Faith & Spirituality, Fundraiser, Charity, Community Events, Neighborhood Events, Cleanups, Donation
+Drives. Fundraiser is also an occasion (item 42), unchanged. Checked against the live resolver on 2026-10-03.
+
+| Owner entry | Represented as today | Proposal |
+|---|---|---|
+| Volunteer | Volunteering; but "volunteer", "volunteer opportunities", "community service", "give back" find nothing | wording: volunteer, volunteer opportunities, volunteer work, community service, give back, giving back -> Volunteering |
+| Fundraisers | Fundraiser (singular and plural work) | covered |
+| Community Events | Community Events | covered |
+| Nonprofits | nothing maps | wording: nonprofit, non profit -> Charity (a nonprofit applying as a business also files here) |
+| Local Groups | nothing maps | **not a category**: local groups are Nearby Communities (their own object, surface and tag); bare "local group" / "meetup" stay unmapped |
+| Charities | Charity; but **"charities" finds nothing** | plural bug, see below |
+| Cleanups | Cleanups ("beach cleanup", "park cleanup" work) | covered; bare "clean up" stays unmapped ("clean up my yard" is Cleaning) |
+| Food Drives | nothing maps | wording: food drive, food bank, toy drive, clothing drive, blood drive -> Donation Drives |
+| Community Meetings | nothing maps | wording: community meeting, town hall, public meeting -> Community Events; neighborhood meeting, HOA meeting, block party -> Neighborhood Events |
+| Civic Events | nothing maps | wording: civic event, city council meeting, public hearing -> Community Events. No Civic category (taxonomy frozen; a meeting is a gathering with a format) |
+
+**Gathering types.** These are already gathering categories (a host can tag a gathering Cleanups, Volunteering, Community
+Events...), and "how it runs" already has the format values meetup, festival, market, party. No new format: a town hall
+or a neighborhood meeting is a gathering in Community / Neighborhood Events with format meetup. Community-hosted
+gatherings already exist (community visibility).
+
+**-ies plural gap (follow-up to item 182's global rule).** item 182 fixed -es plurals; -ies still splits:
+"charity" vs "charities", "gallery" vs "galleries", "library" vs "libraries", "bakery" vs "bakeries". Proposal: in the same
+one rule (all four copies), a word ending -ies becomes -y, and a singular ending -ie also becomes -y, so both pairs agree
+("charities" = "charity", "movie" = "movies"). One stored synonym phrase changes key ("patisserie"), updated in the same
+migration. Same regression test file; applied now like item 182 (a resolver fix, not a taxonomy change), if approved.
+
+**Need behavior.** Not a need group and no need tags: volunteering, giving and attending are things people choose to do.
+"I need volunteer hours" = WANT (the category is not need-capable). No change.
+
+**Not on the list, flagged:** church / temple / mosque / synagogue find nothing (Faith & Spirituality exists). Religion
+is sensitive, so mapping those words is your call; recommendation: add them as wordings (they are the person's own words
+in their own search, never stored on a profile), or leave unmapped.
