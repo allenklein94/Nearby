@@ -26,7 +26,7 @@ matching, privacy or business-demand change.
 | 12 | New gathering format value **league** (format vocabulary + CHECK, not a category; it does not exist today) | item 171, LOCKED |
 | 13 | Wording: scenic area / scenic spot / viewpoint / overlook -> Scenic Views; water activities -> Water Sports; nature center / nature preserve -> Parks + Wildlife | item 172, LOCKED |
 | 14 | Move **Boating** and **Water Sports** from Activities & Recreation to Outdoors & Nature (Activities & Recreation drops to 11) | item 172, LOCKED |
-| 15 | Wording: night market -> Markets; cinema / movie theater -> Movies; stand-up / standup -> Comedy; nightlife event -> Nightlife | item 173, proposed |
+| 15 | Wording: night market -> Markets; cinema / movie theater -> Movies; stand-up / standup -> Comedy; nightlife event -> Nightlife | item 173, LOCKED |
 
 Result: 19 canonical groups.
 
@@ -197,7 +197,7 @@ the weather question up front at signup for outdoor categories.
 **Outdoors & Nature (19):** Hiking, Outdoors, Camping, Fishing, Kayaking, Parks, Beaches, Trails, Paddleboarding,
 Wildlife, Gardens, Scenic Views, Picnics, Surfing, Snorkeling, Diving, Gardening, Boating, Water Sports.
 
-## Item 173: Entertainment & Nightlife coverage (proposed, owner to confirm)
+## Item 173: Entertainment & Nightlife coverage
 
 | Owner entry | Represented as today | Proposal |
 |---|---|---|
@@ -217,3 +217,8 @@ migrate): the Gatherings "Tonight" filter (later today from 6 PM, the same bound
 Discover's sections in order Now, Tonight, Because you like, Friends are into, Trending, This Weekend, Home's
 Starting Soon (within 30 min) and the Right Now window (started up to 30 min ago or starting within 2 h). Typed
 "tonight" / "right now" asks rank by the spontaneity scale (item 46). No category gets special time behavior.
+
+**Owner decision (2026-10-03, LOCKED):** all four wordings approved; "movie theater" must resolve to Movies only (the
+longer phrase wins over Theater; the migration adds a regression test for it). Bare "club" stays unmapped. Shows stays
+the gathering format Show. Tonight, Happening Now, Starting Soon and Right Now stay cross-category time features: no
+nightlife-specific time rules and no new categories in this pass. Entertainment & Nightlife membership unchanged (23).
