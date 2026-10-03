@@ -45,6 +45,7 @@ matching, privacy or business-demand change.
 | 31 | Home services wordings + AC fix (ac repair / air conditioning / heating / furnace -> HVAC, never Repairs) | item 180, LOCKED |
 | 32 | `home_local_services` leaves `NEED_GROUP_KEYS`; every service tag of the group (incl. the four new) joins `NEED_TAG_KEYS` | item 180, LOCKED |
 | 33 | FLAG for the final mapping review: **Locksmith** (not canonical today; not created here) | item 180 |
+| 34 | Auto & Transportation coverage (see item 181: four categories, wordings, used cars fix, tag-level need list) | item 181, proposed |
 
 Result: 19 canonical groups.
 
@@ -572,4 +573,35 @@ keep it strict (item 162: never infer a need) and revisit only from real misses 
    availability or the existence of a problem.
 4. **Locksmith is not a canonical category today** (checked: no tag, no synonym). Not created here; flagged for the
    final V1 taxonomy mapping review.
+
+## Item 181: Auto & Transportation coverage (proposed, owner to confirm)
+
+Today: Car Wash, Detailing, Auto Repair, Tires, Oil Change, EV Charging, Car Rental, Parking, Towing. Checked against
+the live search and the need classifier on 2026-10-03.
+
+| Owner entry | Represented as today | Proposal |
+|---|---|---|
+| Auto Repair | subcategory ("mechanic", "car repair", "auto shop" work) | wording: body shop, collision repair, brakes, smog check, car inspection, windshield -> Auto Repair |
+| Tires, Oil Change, Car Wash, Detailing, Parking | subcategories ("flat tire", "tire shop", "parking garage" work) | covered |
+| Towing | subcategory; "tow truck" finds nothing | wording: tow truck, roadside assistance -> Towing |
+| Auto Parts | **missing** | new category **Auto Parts** + wording car parts, auto parts store |
+| Dealerships | **missing**; "used cars" goes to **Cars** (the car-enthusiast hobby tag in Activities) | new category **Dealerships** + wording car dealer, dealership, used cars, new cars, buy a car (fixes the used cars -> Cars mis-route) |
+| Rentals | Car Rental; "rental car" finds nothing | wording: rental car, rent a car -> Car Rental; bare "rentals" stays unmapped (bikes, vacation, equipment) |
+| Charging | EV Charging; "charging station" finds nothing | wording: charging station, ev charger, car charger -> EV Charging; bare "charging" stays unmapped |
+| Gas | **missing** | new category **Gas Stations** + wording gas station, gas, fuel, fill up; "gas leak" listed as an unmatched phrase so it never becomes a gas station |
+| Transportation Services | **missing** | new category **Transportation Services** + wording taxi service, car service, airport shuttle, shuttle service, limo, limousine, chauffeur, party bus. Bare "taxi", "uber", "lyft", "ride" stay unmapped: item 70 reads "by taxi / Uber" as HOW the person travels, and a dinner ask that says "we'll take a taxi" must not become a transportation request |
+
+**Need behavior.** Same rule as items 175-180: `auto_transportation` leaves the need groups; every service tag (the nine
+above + Auto Parts, Dealerships, Gas Stations, Transportation Services) is need-capable with task framing.
+
+**Your example is already handled, and must stay so** (regression cases for the pass): "I need a tire changed today"
+resolves to Tires + task framing = NEED, ordered by what is available today, then distance, then reliability; "What's
+fun tonight?" = an open-ended WANT (ordinary ranking, service businesses left out). Also: "I need an oil change" = need,
+"car wash near me" = want, "my car won't start" = want (a problem statement, item 180 rule), "tow truck now" = want
+(no task word) but "I need a tow truck" = need.
+
+**Implementation check for the pass:** today a deterministic ask such as "I need a tire changed" resolves to the GROUP
+(Auto & Transportation) with the tag as its subcategory (Tires), and is a need because the group is a need group. Once
+needs are tag-level, the need check must read that subcategory tag, or these asks silently become wants. The same
+applies to Home & Local Services ("I need a plumber" -> group + Plumbing) and Pets. Regression-test each.
 
