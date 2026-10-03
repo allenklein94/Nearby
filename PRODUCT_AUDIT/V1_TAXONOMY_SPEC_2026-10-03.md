@@ -31,7 +31,8 @@ matching, privacy or business-demand change.
 | 17 | New Shopping categories **Grocery, Sporting Goods, Toys, Bookstores, Beauty Supply** (+ their wording) | item 175, LOCKED |
 | 18 | Shopping wordings (see item 175 table) | item 175, LOCKED |
 | 19 | Need list after the Travel / Stay merge: `stay_getaway` leaves `NEED_GROUP_KEYS`; its stay tags join `NEED_TAG_KEYS` (see item 175 note) | item 175, LOCKED |
-| 20 | Wording: facial / facials -> Skin Care; skincare -> Skin Care; beauty salon -> Salons | item 176, proposed |
+| 20 | Wording: facial / facials -> Skin Care; skincare -> Skin Care; beauty salon -> Salons | item 176, LOCKED |
+| 21 | **Nails** joins `NEED_TAG_KEYS` | item 176, LOCKED |
 
 Result: 19 canonical groups.
 
@@ -313,7 +314,7 @@ tonight" stays a need and "day trip" stays a want, as today.
 - **Global:** being on the need list never classifies an ask by itself; never from urgency, time, distance, booking
   rules, category alone, learned behavior, declared interests or AI.
 
-## Item 176: Wellness & Beauty coverage (proposed, owner to confirm)
+## Item 176: Wellness & Beauty coverage
 
 Wellness & Beauty today: Meditation, Spa Day, Self-Care, Massage, Salons, Barbers, Nails, Skin Care, Wellness Centers,
 Sauna, Recovery. No new categories proposed.
@@ -338,3 +339,9 @@ targeted at a category. Routing is category-aware, so a Massage request reaches 
 **Need status (item 162):** Wellness & Beauty is deliberately not a need group (it is often a treat). Barbers and
 Salons are need tags already ("I need a haircut"). Open question: should **Nails** join them ("I need my nails
 done")? Recommendation: yes (an appointment-type upkeep task like a haircut); Massage, Spa Day and the rest stay wants.
+
+**Owner decision (2026-10-03, LOCKED):** the three wordings approved; bare "beauty" stays unmapped (never guess
+services vs products). **Nails joins `NEED_TAG_KEYS`** beside Barbers and Salons, task framing still required:
+"I need my nails done" / "I need a nail appointment" = need, "nails near me" = want (all three regression-tested in the
+pass). Wellness & Beauty is not a need group; Massage, Spa Day and the rest stay wants unless individually approved.
+Commercial behavior unchanged (offers, availability, packages, perks, category-aware routing).
