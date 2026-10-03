@@ -105,11 +105,17 @@ describe('web signup checklist is a faithful copy of the app checklist', () => {
     const m = html.match(/var APPLY_ATTR_OPTIONS = (\[.*\]);/);
     expect(JSON.parse(m[1])).toEqual(BUSINESS_ATTRIBUTE_OPTIONS.map((o) => [o.key, o.label, o.icon]));
   });
-  it('the edge function accepts only the same vocabulary and real tags of the chosen major', () => {
+  it('the edge function accepts only the same vocabulary and real current tags of ANY group (owner item 177)', () => {
     const fn = fs.readFileSync(require.resolve('../../supabase/functions/submit-business-application/index.ts'), 'utf8');
     const m = fn.match(/const VALID_ATTRIBUTES = (\[.*?\]);/);
     expect(JSON.parse(m[1])).toEqual(BUSINESS_ATTRIBUTE_OPTIONS.map((o) => o.key));
-    expect(fn).toMatch(/eq\('group_key', category\)(\.is\('retired_at', null\))?\.in\('tag', wanted\)/);
+    // Secondary tags are checked against the registry only (real, not retired), never limited to the main group, so a museum can
+    // also be Kids Museums, as the app's apply screen and dashboard editor already allow.
+    expect(fn).toMatch(/from\('category_tag_groups'\)\.select\('tag'\)\.is\('retired_at', null\)\.in\('tag', wanted\)/);
+    expect(fn).not.toMatch(/eq\('group_key', category\)\.is\('retired_at', null\)\.in\('tag', wanted\)/);
     expect(html).toContain('attributes: selectedApplyCategory ? applyAttributes : []');
+    // The web form offers "Also classify as" over the whole taxonomy and sends those tags with the checklist's own.
+    expect(html).toContain('id="apply-also-search"');
+    expect(html).toContain('applyExtraTags.concat(applyAlsoTags');
   });
 });

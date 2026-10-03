@@ -192,17 +192,18 @@ serve(async (req) => {
     subcategory = tagRow?.tag ?? null;
   }
 
-  // "What can customers do here?" additions: attributes must be in the closed vocabulary, extra tags must be real tags of the
-  // chosen major (the registry decides); anything else is dropped, never an error (the checklist is optional).
+  // "What can customers do here?" additions + "Also classify as": attributes must be in the closed vocabulary, extra tags must
+  // be real, current tags of ANY group (owner item 177: a museum can also be Kids Museums; the same universe the app's apply
+  // screen and dashboard editor offer). Anything else is dropped, never an error (both are optional).
   const attributes = Array.isArray(body.attributes)
     ? [...new Set(body.attributes.filter((a: unknown): a is string => typeof a === 'string' && VALID_ATTRIBUTES.includes(a)))].slice(0, VALID_ATTRIBUTES.length)
     : [];
   let categories: string[] = [];
   if (category && Array.isArray(body.categories) && body.categories.length > 0) {
-    const asked = [...new Set(body.categories.filter((t: unknown): t is string => typeof t === 'string'))].slice(0, 6);
+    const asked = [...new Set(body.categories.filter((t: unknown): t is string => typeof t === 'string'))].slice(0, 10);
     const wanted = (await Promise.all(asked.map(currentName))).filter((t): t is string => !!t);
     const { data: tagRows } = await supabase
-      .from('category_tag_groups').select('tag').eq('group_key', category).is('retired_at', null).in('tag', wanted);
+      .from('category_tag_groups').select('tag').is('retired_at', null).in('tag', wanted);
     categories = (tagRows ?? []).map((r: { tag: string }) => r.tag).filter((t: string) => t !== subcategory);
   }
 

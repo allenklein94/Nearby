@@ -841,6 +841,13 @@
         <div class="apply-category-row" id="apply-activities"></div>
       </div>
 
+      <div class="apply-field" id="apply-also-field" hidden>
+        <label for="apply-also-search">Also classify as <span class="hint">(optional, any category, e.g. a museum that is also a Kids Museum)</span></label>
+        <input type="text" id="apply-also-search" placeholder="Search another category" maxlength="100" autocomplete="off">
+        <div class="apply-category-row" id="apply-also-results"></div>
+        <div class="apply-category-row" id="apply-also-picked"></div>
+      </div>
+
       <div class="apply-field" id="apply-attrs-field" hidden>
         <label>What describes your business? <span class="hint">(optional)</span></label>
         <div class="apply-category-row" id="apply-attrs"></div>
@@ -1201,6 +1208,41 @@
   }
   var applyAttributes = [];
   var applyExtraTags = [];
+  // "Also classify as" (owner item 177): real tags from ANY group, kept separately from the checklist's own additions so a
+  // type change (which restarts the checklist) keeps them. The server re-checks every tag.
+  var applyAlsoTags = [];
+  var applyAlsoSearch = document.getElementById('apply-also-search');
+  function renderApplyAlso() {
+    var field = document.getElementById('apply-also-field');
+    var results = document.getElementById('apply-also-results');
+    var picked = document.getElementById('apply-also-picked');
+    field.hidden = !selectedApplyCategory;
+    results.textContent = '';
+    picked.textContent = '';
+    if (!selectedApplyCategory) return;
+    applyAlsoTags.forEach(function (tag) {
+      var pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'apply-category-chip selected';
+      pill.textContent = tag + '  \u2715';
+      pill.addEventListener('click', function () { applyAlsoTags = applyAlsoTags.filter(function (t) { return t !== tag; }); renderApplyAlso(); });
+      picked.appendChild(pill);
+    });
+    applySearchTypes(applyAlsoSearch.value).forEach(function (r) {
+      if (!r.subcategory || r.subcategory === selectedApplySubcategory || applyAlsoTags.indexOf(r.subcategory) >= 0) return;
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'apply-category-chip';
+      b.textContent = r.label;
+      b.addEventListener('click', function () {
+        if (applyAlsoTags.length < 6) applyAlsoTags = applyAlsoTags.concat([r.subcategory]);
+        applyAlsoSearch.value = '';
+        renderApplyAlso();
+      });
+      results.appendChild(b);
+    });
+  }
+  applyAlsoSearch.addEventListener('input', renderApplyAlso);
   function applyRow() { return { category: selectedApplyCategory, subcategory: selectedApplySubcategory, categories: applyExtraTags, attributes: applyAttributes }; }
   // Step 3: the same attribute vocabulary as plain chips. Shares applyAttributes with the checklist, so what an activity added shows
   // ticked here, and vice versa.
@@ -1209,6 +1251,7 @@
     var box = document.getElementById('apply-attrs');
     box.innerHTML = '';
     field.hidden = !selectedApplyCategory;
+    renderApplyAlso();
     if (!selectedApplyCategory) return;
     APPLY_ATTR_OPTIONS.forEach(function (o) {
       var on = applyAttributes.indexOf(o[0]) >= 0;
@@ -1304,7 +1347,7 @@
         category: selectedApplyCategory,
         subcategory: selectedApplySubcategory,
         attributes: selectedApplyCategory ? applyAttributes : [],
-        categories: selectedApplyCategory ? applyExtraTags : [],
+        categories: selectedApplyCategory ? applyExtraTags.concat(applyAlsoTags.filter(function (t) { return applyExtraTags.indexOf(t) < 0; })) : [],
         categoryText: categoryText,
         address: address,
         website: website,

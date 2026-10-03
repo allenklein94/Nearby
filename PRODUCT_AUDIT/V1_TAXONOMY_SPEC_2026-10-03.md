@@ -33,7 +33,7 @@ matching, privacy or business-demand change.
 | 19 | Need list after the Travel / Stay merge: `stay_getaway` leaves `NEED_GROUP_KEYS`; its stay tags join `NEED_TAG_KEYS` (see item 175 note) | item 175, LOCKED |
 | 20 | Wording: facial / facials -> Skin Care; skincare -> Skin Care; beauty salon -> Salons | item 176, LOCKED |
 | 21 | **Nails** joins `NEED_TAG_KEYS` | item 176, LOCKED |
-| 22 | Wording: children's activities / kids activities / things to do with kids -> Kids Activity; kids class / kids classes / educational activities -> Kids Education | item 177, proposed |
+| 22 | Wording: children's activities / kids activities -> Kids Activity; kids classes / educational activities -> Kids Education (exactly these four) | item 177, LOCKED |
 
 Result: 19 canonical groups.
 
@@ -347,7 +347,7 @@ services vs products). **Nails joins `NEED_TAG_KEYS`** beside Barbers and Salons
 pass). Wellness & Beauty is not a need group; Massage, Spa Day and the rest stay wants unless individually approved.
 Commercial behavior unchanged (offers, availability, packages, perks, category-aware routing).
 
-## Item 177: Family & Kids coverage (proposed, owner to confirm)
+## Item 177: Family & Kids coverage
 
 Family & Kids today: Family Playdate, Kids Activity, Family Events, Playgrounds, Indoor Play, Kids Museums, Camps,
 Kids Sports, Birthday Activities, Family Dining. Already oriented to what parents do, not "kids businesses".
@@ -376,3 +376,23 @@ Stroller friendly...). Nothing to migrate for this.
    not Kids Museums does not appear there. Option: the Family & Kids view also includes results whose OWNER/HOST
    DECLARED a family quality (Family-friendly, Kids menu, Family seating, Stroller friendly) or a suited age range,
    never inferred from category. That is a Discover behavior change, separate from this taxonomy pass.
+
+**Owner decision (2026-10-03, LOCKED):**
+1. **Wordings:** exactly four, in the item-168 pass through the existing synonym structure (no new hierarchy):
+   "children's activities" / "kids activities" -> Kids Activity; "kids classes" / "educational activities" -> Kids
+   Education. (The earlier proposal's "things to do with kids" and "kids class" were not approved.) Museums is in
+   **Attractions & Things to See** (never Arts & Culture); Kids Museums is in Family & Kids.
+2. **Web signup gap: FIXED now** (a capability fix, outside the item-168 pass). The public form `docs/business.html` has
+   "Also classify as", a search over the same embedded taxonomy as its main type search (the app's
+   `businessTagOptions` universe, business-only tags included), and `submit-business-application` keeps any real,
+   current tag from ANY group (registry check, retired dropped, max 10; the database trigger `enforce_category_tags_array`
+   still validates). Same rule as the app apply screen and the dashboard editor. One record; nothing duplicated.
+3. **Family & Kids view: BUILT now** (a behavior fix, outside the item-168 pass; `utils/familyDeclared.js`,
+   `familyDeclared.test.js`). Discover's Family & Kids GROUP view (only that view; a leaf-tag view such as Indoor Play
+   is unchanged) also includes a gathering whose host declared a family feature (Family-friendly, Stroller friendly,
+   Family seating), a suited age range or the plan kind Family, and a perk whose business declared a family attribute
+   (those three + Kids menu), a suited age range or Family in groups-we-take. Never the category alone, name,
+   description, reviews, distance, popularity or AI. Also: a perk now joins any category view through its business's
+   declared SECONDARY categories (it used to read only subcategory and major), so Museums + Kids Museums shows under
+   both groups from one record. No category changes, no ranking/routing/privacy/demand change. Google Places and
+   communities carry no family declaration and are unchanged.

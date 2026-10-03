@@ -14,12 +14,15 @@ export function contextHasCuisines(contextTags = []) {
 
 const partnerOf = (offer) => offer?.brand_partners ?? null;
 
-// A perk belongs to the context by its own target tag, or by its business's own declared type (subcategory / major).
+// A perk belongs to the context by its own target tag, or by its business's own declared type (subcategory, secondary
+// categories, major). Secondary categories count (owner item 177): a museum that also declared Kids Museums is one record
+// shown under both groups, the same rule as business_served_tags.
 export function offerInContext(offer, { tags = [], groupKey = null } = {}) {
   if (!offer) return false;
   if (offer.target_interest_tag && tags.includes(offer.target_interest_tag)) return true;
   const p = partnerOf(offer);
   if (p?.subcategory && tags.includes(p.subcategory)) return true;
+  if (Array.isArray(p?.categories) && p.categories.some((t) => tags.includes(t))) return true;
   return !!groupKey && p?.category === groupKey;
 }
 

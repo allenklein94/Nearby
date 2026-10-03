@@ -5,6 +5,7 @@ import { translate } from '../i18n/translate';
 import { peopleTonightBanner, countTonightSupply } from '../utils/meetTonight';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
+import { isFamilyView, gatheringDeclaresFamily, partnerDeclaresFamily } from '../utils/familyDeclared';
 import { contextHasCuisines, offerInContext, applyCuisine, cuisineChips, cuisineConstraintFromText, cuisineLabel } from '../utils/cuisineFilter';
 import { getNearbyMatches } from '../services/proximity';
 import { getFriendDiscoveryCandidates } from '../services/friendDiscovery';
@@ -1050,7 +1051,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // genuinely in force rather than claiming one that isn't.
   const contextGatheringsAll = expandedContext
     ? filterGatheringsByEnvironment(applyOpenNow(gatherings, gatheringEntity), environmentFilter).filter((g) => (expandedContext.categoryTags
-        ? expandedContext.categoryTags.includes(g.interest_tag)
+        ? (expandedContext.categoryTags.includes(g.interest_tag) || (isFamilyView(expandedContext) && gatheringDeclaresFamily(g)))
         : g.interest_tag === expandedContext.interestTag && gatheringTimeBadge(g.scheduled_at) === expandedContext.timeBucket))
     : [];
   const contextGatheringIds = new Set(contextGatheringsAll.map((g) => g.id));
@@ -1078,7 +1079,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const contextScope = expandedContext
     ? { tags: (expandedContext.categoryTags ?? [expandedContext.interestTag]).filter(Boolean), groupKey: expandedContext.categoryKey ?? null }
     : { tags: [], groupKey: null };
-  const contextOffersAnyTime = expandedContext ? applyEnv(offers.filter((o) => offerInContext(o, contextScope)), 'perk') : [];
+  const contextOffersAnyTime = expandedContext ? applyEnv(offers.filter((o) => offerInContext(o, contextScope) || (isFamilyView(expandedContext) && partnerDeclaresFamily(o.brand_partners))), 'perk') : [];
   const contextOffersBroad = openNowActive ? applyOpenNow(contextOffersAnyTime, (o) => perkEntity(o)) : contextOffersAnyTime;
   // The cuisine row exists only in a context that holds the restaurant branch; a cuisine is an EXACT declared match that
   // combines with Open now (both filters apply) and never widens. Clearing it restores contextOffersBroad unchanged.

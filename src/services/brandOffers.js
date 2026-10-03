@@ -113,7 +113,7 @@ export async function getActiveOffers(lat = null, lng = null) {
 
   const { data, error } = await supabase
     .from('brand_offers')
-    .select('*, brand_partners(name, logo_url, description, category, subcategory, cuisine, attributes, weather_setting, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode)')
+    .select('*, brand_partners(name, logo_url, description, category, subcategory, categories, cuisine, attributes, suited_age_min, suited_age_max, accommodates_party_types, weather_setting, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode)')
     .eq('active', true)
     .is('gathering_id', null)
     .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
@@ -199,7 +199,7 @@ export async function searchOffers(queryText, lat = null, lng = null) {
 
   const { data, error } = await supabase
     .from('brand_offers')
-    .select('*, brand_partners(name, logo_url, description, category, subcategory, cuisine, attributes, weather_setting, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode)')
+    .select('*, brand_partners(name, logo_url, description, category, subcategory, categories, cuisine, attributes, suited_age_min, suited_age_max, accommodates_party_types, weather_setting, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode)')
     .in('id', ids)
     .order('created_at', { ascending: false });
   if (error) {
