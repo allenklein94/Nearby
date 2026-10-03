@@ -20,10 +20,10 @@ matching, privacy or business-demand change.
 | 6 | Food & Drink coverage gap: **Distilleries** (+ wording: distillery, craft spirits...) | item 169 |
 | 7 | New canonical categories under Activities & Recreation (the part that stays after the item-168 split): **Axe Throwing, Laser Tag, Go-Karts, Paintball, Trampoline Parks, Horseback Riding, Recreation Centers** (+ their own wording) | item 170, LOCKED |
 | 8 | Wording: "adventure park", "ropes course", "zipline" -> existing **Adventure** (synonyms, not categories) | item 170, LOCKED |
-| 9 | Sports & Fitness membership (the item-168 split), from the owner's list; see item 171 | item 171, proposed |
-| 10 | New categories **Baseball, Softball, Hockey, Personal Training** (Sports & Fitness) | item 171, proposed |
-| 11 | Wording: crossfit -> Gyms + Fitness; dance fitness / zumba -> Fitness; sports club / athletic club -> Sports | item 171, proposed |
-| 12 | New gathering format value **league** (format vocabulary + CHECK, not a category) | item 171, proposed |
+| 9 | Sports & Fitness membership (the item-168 split); final lists in item 171 | item 171, LOCKED |
+| 10 | New category **Personal Training** (Sports & Fitness) | item 171, LOCKED |
+| 11 | Wording: baseball, softball, hockey, sports club, athletic club -> Sports; crossfit -> Gyms + Fitness; dance fitness, zumba -> Fitness | item 171, LOCKED |
+| 12 | New gathering format value **league** (format vocabulary + CHECK, not a category; it does not exist today) | item 171, LOCKED |
 
 Result: 19 canonical groups.
 
@@ -106,7 +106,7 @@ first, new category only when warranted).
 (`vocab.categories.tags.<key>` in 11 languages), the Discover rail / category view, routes, the static signup export,
 the code-dependency inventory, and regression tests.
 
-## Item 171: Sports & Fitness coverage (proposed, owner to confirm)
+## Item 171: Sports & Fitness coverage
 
 The owner's Fitness / Sports / Recreation headings are not stored (same rule as 169/170). This list also tells us what
 the item-168 split moves.
@@ -137,3 +137,23 @@ taught as another tag's synonym (refused server-side). Both move to Sports & Fit
 
 New sports join the existing sport list (`SPORT_TAGS`), so Create asks Casual / Competitive for them like Basketball;
 no other special behavior.
+
+**Owner decision (2026-10-03, LOCKED), supersedes the proposals above where they differ:** Personal Training is a real
+canonical category (a service businesses explicitly sell, like Massage). Baseball, Softball and Hockey are NOT
+categories: they are wordings of Sports (the generic Sports category represents individual sports), as are sports
+club / athletic club. CrossFit -> Gyms + Fitness; dance fitness and zumba -> Fitness (there is no Dance Fitness
+category). Leagues = a new format value `league`, never a category. Climbing and Skating ALSO move to Sports & Fitness.
+Kids Sports stays in Family & Kids; Group Activities is not a category. No new hierarchy level; no special ranking,
+routing, eligibility or matching for any of these. Personal Training is not added to the sport list (`SPORT_TAGS`), so
+Create asks it no Casual / Competitive question.
+
+**Final membership:**
+- **Sports & Fitness (19):** Fitness, Gyms, Personal Training, Yoga, Pilates, Cycling, Running, Martial Arts, Climbing,
+  Skating, Sports, Pickleball, Padel, Tennis, Basketball, Soccer, Volleyball, Golf, Swimming.
+- **Activities & Recreation (13):** Bowling, Walking, Water Sports, Boating, Adventure, Cars, Axe Throwing, Laser Tag,
+  Go-Karts, Paintball, Trampoline Parks, Horseback Riding, Recreation Centers.
+
+**Required before the migration runs:** the complete final mapping, including every business whose declaration is the
+Activities & Recreation group alone (or that group plus no tag), since such a business today serves every tag of the
+group and would stop covering the 18 tags that move. Nothing about a business's classification or routing changes
+silently: the owner sees that list first.
