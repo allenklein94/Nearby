@@ -42,7 +42,9 @@ export default {
       "kid_friendly": "Kids welcome",
       "stroller_friendly": "Stroller friendly",
       "family_seating": "Family seating",
-      "outdoor_seating": "Outdoor seating"
+      "outdoor_seating": "Outdoor seating",
+      "pet_friendly": "Pets welcome",
+      "dog_friendly": "Dogs welcome"
     },
     "equipment": {
       "provided": "Equipment provided",
@@ -141,7 +143,9 @@ export default {
       "kid_friendly": "Niños bienvenidos",
       "stroller_friendly": "Apto para carriolas",
       "family_seating": "Mesas para familias",
-      "outdoor_seating": "Mesas al aire libre"
+      "outdoor_seating": "Mesas al aire libre",
+      "pet_friendly": "Se admiten mascotas",
+      "dog_friendly": "Se admiten perros"
     },
     "equipment": {
       "provided": "Se incluye el equipo",
@@ -240,7 +244,9 @@ export default {
       "kid_friendly": "Kinder willkommen",
       "stroller_friendly": "Kinderwagenfreundlich",
       "family_seating": "Familienplätze",
-      "outdoor_seating": "Sitzplätze draußen"
+      "outdoor_seating": "Sitzplätze draußen",
+      "pet_friendly": "Haustiere willkommen",
+      "dog_friendly": "Hunde willkommen"
     },
     "equipment": {
       "provided": "Ausrüstung wird gestellt",
@@ -339,7 +345,9 @@ export default {
       "kid_friendly": "Enfants bienvenus",
       "stroller_friendly": "Accessible en poussette",
       "family_seating": "Places pour les familles",
-      "outdoor_seating": "Places en extérieur"
+      "outdoor_seating": "Places en extérieur",
+      "pet_friendly": "Animaux bienvenus",
+      "dog_friendly": "Chiens bienvenus"
     },
     "equipment": {
       "provided": "Équipement fourni",
@@ -438,7 +446,9 @@ export default {
       "kid_friendly": "Crianças bem-vindas",
       "stroller_friendly": "Acessível para carrinho de bebê",
       "family_seating": "Lugares para famílias",
-      "outdoor_seating": "Mesas ao ar livre"
+      "outdoor_seating": "Mesas ao ar livre",
+      "pet_friendly": "Animais bem-vindos",
+      "dog_friendly": "Cães bem-vindos"
     },
     "equipment": {
       "provided": "Equipamento fornecido",
@@ -537,7 +547,9 @@ export default {
       "kid_friendly": "Timoun byenveni",
       "stroller_friendly": "Bon pou pousèt",
       "family_seating": "Plas pou fanmi",
-      "outdoor_seating": "Plas deyò"
+      "outdoor_seating": "Plas deyò",
+      "pet_friendly": "Bèt kay akseptab",
+      "dog_friendly": "Chen akseptab"
     },
     "equipment": {
       "provided": "Yo bay ekipman",
@@ -636,7 +648,9 @@ export default {
       "kid_friendly": "欢迎儿童",
       "stroller_friendly": "方便婴儿车",
       "family_seating": "家庭座位",
-      "outdoor_seating": "户外座位"
+      "outdoor_seating": "户外座位",
+      "pet_friendly": "欢迎携带宠物",
+      "dog_friendly": "欢迎携带狗狗"
     },
     "equipment": {
       "provided": "提供装备",
@@ -735,7 +749,9 @@ export default {
       "kid_friendly": "Chào đón trẻ em",
       "stroller_friendly": "Thuận tiện xe đẩy",
       "family_seating": "Chỗ ngồi gia đình",
-      "outdoor_seating": "Chỗ ngồi ngoài trời"
+      "outdoor_seating": "Chỗ ngồi ngoài trời",
+      "pet_friendly": "Chào đón thú cưng",
+      "dog_friendly": "Chào đón chó"
     },
     "equipment": {
       "provided": "Có cung cấp dụng cụ",
@@ -834,7 +850,9 @@ export default {
       "kid_friendly": "Welcome ang mga bata",
       "stroller_friendly": "Puwede ang stroller",
       "family_seating": "Upuan para sa pamilya",
-      "outdoor_seating": "Upuan sa labas"
+      "outdoor_seating": "Upuan sa labas",
+      "pet_friendly": "Welcome ang mga alagang hayop",
+      "dog_friendly": "Welcome ang mga aso"
     },
     "equipment": {
       "provided": "May ibibigay na gamit",
@@ -933,7 +951,9 @@ export default {
       "kid_friendly": "Можно с детьми",
       "stroller_friendly": "Удобно с коляской",
       "family_seating": "Места для семей",
-      "outdoor_seating": "Места на улице"
+      "outdoor_seating": "Места на улице",
+      "pet_friendly": "Можно с питомцами",
+      "dog_friendly": "Можно с собаками"
     },
     "equipment": {
       "provided": "Снаряжение предоставляется",
@@ -1032,7 +1052,9 @@ export default {
       "kid_friendly": "아이 환영",
       "stroller_friendly": "유모차 이용 편리",
       "family_seating": "가족 좌석",
-      "outdoor_seating": "야외 좌석"
+      "outdoor_seating": "야외 좌석",
+      "pet_friendly": "반려동물 환영",
+      "dog_friendly": "반려견 환영"
     },
     "equipment": {
       "provided": "장비 제공",

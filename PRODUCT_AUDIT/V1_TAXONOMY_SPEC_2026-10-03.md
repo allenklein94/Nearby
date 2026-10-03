@@ -34,7 +34,10 @@ matching, privacy or business-demand change.
 | 20 | Wording: facial / facials -> Skin Care; skincare -> Skin Care; beauty salon -> Salons | item 176, LOCKED |
 | 21 | **Nails** joins `NEED_TAG_KEYS` | item 176, LOCKED |
 | 22 | Wording: children's activities / kids activities -> Kids Activity; kids classes / educational activities -> Kids Education (exactly these four) | item 177, LOCKED |
-| 23 | Pets coverage (see item 178 table: wordings, Pet Sitting, the two pet-friendly tags, need list) | item 178, proposed |
+| 23 | Pets wordings (item 178 table, plus pet food -> Pet Stores) | item 178, LOCKED |
+| 24 | New category **Pet Sitting** (Pets) + wording pet sitter, cat sitter | item 178, LOCKED |
+| 25 | Retire **Pet Friendly Places** and **Pet Friendly Stays** (keep-existing; 0 uses); pet-friendliness is the attribute only | item 178, LOCKED |
+| 26 | `pets` leaves `NEED_GROUP_KEYS`; Veterinary, Pet Boarding, Dog Walking, Pet Sitting, Pet Training, Pet Stores join `NEED_TAG_KEYS` (Grooming already there); Pet Friendly Stays leaves the item-175 list | item 178, LOCKED |
 
 Result: 19 canonical groups.
 
@@ -398,7 +401,7 @@ Stroller friendly...). Nothing to migrate for this.
    both groups from one record. No category changes, no ranking/routing/privacy/demand change. Google Places and
    communities carry no family declaration and are unchanged.
 
-## Item 178: Pets coverage (proposed, owner to confirm)
+## Item 178: Pets coverage
 
 Pets today: Dogs, Cats, Dog Meetup, Dog Parks, Pet Friendly Places, Pet Events, Grooming, Pet Stores, Pet Boarding,
 Dog Walking, Pet Training, Veterinary. Pet-friendly is already an attribute: `pet_friendly` (pets welcome) and
@@ -437,3 +440,20 @@ the attribute. Pet Friendly Stays then leaves the item-175 need-tag list.
 Proposal (same pattern as Travel after item 175): Pets leaves `NEED_GROUP_KEYS`; the service tags join
 `NEED_TAG_KEYS`: Grooming (already), Veterinary, Pet Boarding, Dog Walking, Pet Sitting, Pet Training, Pet Stores. Dogs,
 Cats, Dog Meetup, Dog Parks and Pet Events stay wants. Task framing still required.
+
+**Owner decision (2026-10-03, LOCKED):** all five approved.
+1. Wordings as in the table, plus **pet food / pet supplies -> Pet Stores** (so "I need to get pet food" can be framed
+   as a need). In the item-168 pass.
+2. **Pet Sitting** is a new canonical category (a distinct service, like Pet Boarding and Dog Walking). In the pass.
+3. **Pet Friendly Places and Pet Friendly Stays are retired** in the pass (keep-existing, nothing to move);
+   pet-friendliness lives only in the `pet_friendly` / `dog_friendly` attributes.
+4. **Gathering pet features: BUILT now, outside the pass** (migration `20270278`, live; "Pets welcome" / "Dogs welcome"
+   in the host's feature chips, 11 languages; `scripts/live-verify/gathering-pet-dog-friendly-features.sql`,
+   `gatheringPetFeatures.test.js`). Host-declared only, never inferred from category, title, description, place,
+   business or AI; carried into the gathering's business request and its opportunity by the existing feature snapshot;
+   lifts a gathering for a matching typed ask through the existing declared-feature pass. Communities and Google
+   Places stay attribute-free.
+5. **Need list:** the Pets group is not a need group; only Grooming, Veterinary, Pet Boarding, Dog Walking, Pet Sitting,
+   Pet Training and Pet Stores are need-capable, with the task-framing rule still mandatory. Regression cases for the
+   pass: "I need a dog walker" = need, "I need pet sitting" = need, "I need to get pet food" = need, "pet stores near
+   me" = want, "dog parks" / "dogs" / "cats" / "dog meetup" / "pet events" = want.
