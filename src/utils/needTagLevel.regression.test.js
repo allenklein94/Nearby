@@ -15,6 +15,7 @@ describe('need decisions survive the group -> per-tag need migration', () => {
     ['I need a plumber', 'Plumbing'],
     ['I need a haircut', 'Barbers'],
     ['I need CPR certification', 'Certifications'],
+    ['I need to get CPR certified', 'Certifications'],
   ])('"%s" resolves to %s and is a NEED', (text, tag) => {
     const c = classify(text);
     expect(c.category).toBe(tag);
@@ -27,6 +28,11 @@ describe('need decisions survive the group -> per-tag need migration', () => {
     ['car wash near me'],
     ['plumbers near me'],
     ['my AC is broken'],
+    // Item 182: Education & Classes is per-tag already; a class is something people choose to do, so "need" alone
+    // never makes it a need (an intentional change from the old group-level NEED).
+    ['find a cooking class'],
+    ['I need a cooking class'],
+    ['I need dance classes'],
   ])('"%s" is a WANT', (text) => {
     const c = classify(text);
     expect(askKind({ category: c.category, rawText: text })).toBe('want');
@@ -46,8 +52,5 @@ describe('need decisions survive the group -> per-tag need migration', () => {
   it.todo('"I need a hotel tonight" resolves to Hotels and is a NEED after stay_getaway leaves the need groups');
   it.todo('"dog parks", "pet events", "family resorts", "harbor cruises", "campsite tonight" stay WANTS after the change');
   // Item 182 (owner, LOCKED): only Tutoring and Certifications are need-capable in Education & Classes.
-  it.todo('"I need a tutor for my son" resolves to Tutoring and is a NEED (wording: tutor)');
-  it.todo('"I need to get CPR certified" resolves to Certifications and is a NEED (wording: certified)');
-  it.todo('"find a cooking class" resolves to Cooking Class and is a WANT (today a NEED, because the whole group is a need group)');
-  it.todo('"I need a cooking class" is a WANT: "need" alone never makes a need when the resolved category is not need-capable');
+  it.todo('"I need a tutor for my son" resolves to Tutoring and is a NEED (wording: tutor, lands with the other item-182 wordings)');
 });

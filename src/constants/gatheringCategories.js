@@ -151,15 +151,24 @@ export function isNeedGroup(groupKey) {
 // Item 162 (owner, 2026-10-03, LOCKED): service/errand TAGS that sit in a non-need group (Barbers and Salons under Wellness &
 // Beauty, Florist and Gift Shop under Shopping) but are needs when asked for as a task ("I need a haircut today"). Only the
 // need/want classification reads this; the open-ended rule keeps reading the groups alone (its behavior is unchanged).
-export const NEED_TAG_KEYS = Object.freeze(['Barbers', 'Salons', 'Florist', 'Gift Shop', 'Grooming']);
+// Item 182 adds Tutoring and Certifications: the only need-capable categories of Education & Classes.
+export const NEED_TAG_KEYS = Object.freeze(['Barbers', 'Salons', 'Florist', 'Gift Shop', 'Grooming', 'Tutoring', 'Certifications']);
+
+// Owner items 175-182 (LOCKED): a parent group is never a need; only the resolved TAG decides. Groups listed here have
+// already moved to per-tag needs (item 182, applied before the item-168 migration): their tags count as needs only when
+// they are in NEED_TAG_KEYS, and the bare group key is never a need. They stay in NEED_GROUP_KEYS for the open-ended
+// "something fun" rule, which is unchanged until the item-168 pass revisits it. Every other need group moves here in
+// that pass.
+export const TAG_LEVEL_NEED_GROUP_KEYS = Object.freeze(['education_classes']);
 
 // Is this resolved category (a tag or a group key) a need/service category?
 export function isNeedCategory(category) {
   if (!category) return false;
   if (NEED_TAG_KEYS.includes(category)) return true;
-  if (CATEGORY_GROUPS.some((g) => g.key === category)) return isNeedGroup(category);
+  const groupNeed = (key) => isNeedGroup(key) && !TAG_LEVEL_NEED_GROUP_KEYS.includes(key);
+  if (CATEGORY_GROUPS.some((g) => g.key === category)) return groupNeed(category);
   const group = groupForTag(category) ?? CATEGORY_GROUPS.find((g) => (g.businessOnlyTags ?? []).includes(category));
-  return !!group && isNeedGroup(group.key);
+  return !!group && groupNeed(group.key);
 }
 
 export const INTEREST_OPTIONS = CATEGORY_GROUPS.flatMap((g) => g.tags);

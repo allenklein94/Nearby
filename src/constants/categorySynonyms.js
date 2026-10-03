@@ -58,6 +58,8 @@ export const SYNONYM_GROUPS = [
   { tags: ['Photography'], phrases: ['photo walk', 'photographer'] },
   { tags: ['Hiking'], phrases: ['hike', 'trail walk'] },
   { tags: ['Cooking Class'], phrases: ['cooking lesson', 'culinary class'] },
+  // Item 182 (owner, LOCKED): "I need to get CPR certified" reaches Certifications (the tag's own name covers certification).
+  { tags: ['Certifications'], phrases: ['certified'] },
 ];
 
 // Distinct named sports Nearby has NO category for (owner rule, item 75): a specific multi-word phrase beats a broad
@@ -65,16 +67,29 @@ export const SYNONYM_GROUPS = [
 // become Pickleball through "paddle" (nor Tennis through "tennis"), so these phrases compete like any other and map to
 // NOTHING: the search stays literal until a real category exists (then move the phrase to SYNONYM_GROUPS, or let the
 // tag's own name match it). Never create a category just to resolve a collision.
-export const UNMATCHED_PHRASES = ['paddle tennis', 'platform tennis'];
+// Item 182 (owner, LOCKED): bare "business class" is an airline seat as often as a course, so it maps to nothing (once
+// "class" and "classes" share one key, it would otherwise fall into the generic Classes tag).
+export const UNMATCHED_PHRASES = ['paddle tennis', 'platform tennis', 'business class'];
 
 const norm = (s) => String(s ?? '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
-// Plural trim per word so "cafes" finds "cafe" (same idea as the server's _category_phrase_key).
-const singular = (w) => (w.length > 4 && !w.endsWith('ss') ? w.replace(/s$/, '') : w);
+// Plural trim per word so a singular and its plural share one key (item 182): "cafes" = "cafe", "classes" = "class",
+// "beaches" = "beach", "boxes" = "box"; a word whose singular ends in -che/-she/-sse also drops that e, so "headache" and
+// "headaches" agree. The SAME rule lives in docs/business.html (applyKey) and the server's _category_phrase_key and
+// _category_search_key; pluralNormalization.regression.test.js keeps the copies identical.
+export const singular = (w) => {
+  if (w.length > 4 && /(ss|ch|sh|x)es$/.test(w)) return w.slice(0, -2);
+  if (w.length > 3 && /(ss|ch|sh)e$/.test(w)) return w.slice(0, -1);
+  return w.length > 4 && !w.endsWith('ss') ? w.replace(/s$/, '') : w;
+};
 const key = (s) => norm(s).split(' ').map(singular).join(' ');
 // The same normalized words tagsInText indexes into (item 162 locates a task verb relative to a category phrase).
 export function normalizedWords(text) {
   return key(String(text ?? '')).split(' ').filter(Boolean);
 }
+
+// Item 182: keys of category names that are only a FORMAT word. Once "class" and "classes" share one key, the generic
+// Classes tag must not outrank a named activity next to it ("yoga class" stays Yoga).
+const GENERIC_FORMAT_KEYS = new Set(['class']);
 
 const PHRASE_TO_TAGS = new Map();
 for (const { tags, phrases } of SYNONYM_GROUPS) {
@@ -131,12 +146,18 @@ export function tagsForPhrase(text) {
   const map = phraseMap();
   if (map.has(q)) return [...map.get(q)];
   // The longest whole-word phrase inside the query wins, so a specific phrase beats a broad one ("paddle tennis" > "paddle").
+  // A generic format word ("class") only names the format: any other category in the query wins ("yoga class" = Yoga),
+  // and it counts alone only when nothing else matched ("find a class" = Classes).
   const padded = ` ${q} `;
   let best = null;
+  let generic = null;
   for (const [phrase, tags] of map) {
-    if (phrase.length >= 3 && padded.includes(` ${phrase} `) && (!best || phrase.length > best.phrase.length)) best = { phrase, tags };
+    if (phrase.length < 3 || !padded.includes(` ${phrase} `)) continue;
+    if (GENERIC_FORMAT_KEYS.has(phrase)) { generic = { phrase, tags }; continue; }
+    if (!best || phrase.length > best.phrase.length) best = { phrase, tags };
   }
-  return best ? [...best.tags] : [];
+  const hit = best ?? generic;
+  return hit ? [...hit.tags] : [];
 }
 
 // Every canonical tag the text NAMES, in word order (item 130): "dinner and live music" -> [Restaurants?, Live Music]. Same

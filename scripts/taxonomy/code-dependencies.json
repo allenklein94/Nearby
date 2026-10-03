@@ -236,7 +236,7 @@
    "tag": "Certifications",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "education_classes"
   },
   {
@@ -2207,6 +2207,13 @@
    "group": null
   },
   {
+   "tag": "Certifications",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Cleaning",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
@@ -4107,7 +4114,7 @@
    "tag": "Certifications",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "education_classes"
   },
   {
@@ -5451,7 +5458,7 @@
    "tag": "Tutoring",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "education_classes"
   },
   {

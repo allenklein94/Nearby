@@ -49,8 +49,8 @@ matching, privacy or business-demand change.
 | 35 | Auto wordings + used cars fix (used cars / new cars / buy a car -> Dealerships, never the Cars hobby tag) | item 181, LOCKED |
 | 36 | `auto_transportation` leaves `NEED_GROUP_KEYS`; every service tag (incl. the four new) joins `NEED_TAG_KEYS`; the need check reads the RESOLVED TAG (`src/utils/needTagLevel.regression.test.js`) | item 181, LOCKED |
 | 37 | Education & Classes wordings (item 182 table; bare "business class" and bare "training" stay unmapped) | item 182, LOCKED |
-| 38 | Plural rule fixed in the ONE normalization (all four copies: client `key`, web signup `applyKey`, server `_category_phrase_key` + `_category_search_key`) so -es plurals (classes, beaches, boxes) resolve like their singular; no duplicate plural wordings (`src/constants/pluralNormalization.regression.test.js`) | item 182, LOCKED |
-| 39 | `education_classes` leaves `NEED_GROUP_KEYS`; only **Tutoring** and **Certifications** join `NEED_TAG_KEYS` | item 182, LOCKED |
+| 38 | Plural rule fixed in the ONE normalization (all four copies: client `key`, web signup `applyKey`, server `_category_phrase_key` + `_category_search_key`) so -es plurals (classes, beaches, boxes) resolve like their singular; no duplicate plural wordings (`src/constants/pluralNormalization.regression.test.js`) | item 182, **APPLIED 2026-10-03** (migration `20270279`) |
+| 39 | `education_classes` is per-tag for needs; only **Tutoring** and **Certifications** are in `NEED_TAG_KEYS` | item 182, **APPLIED 2026-10-03** (need side; the group leaves `NEED_GROUP_KEYS` for the open-ended rule in the pass) |
 
 Result: 19 canonical groups.
 
@@ -671,3 +671,21 @@ need when the resolved category is not need-capable; the parent group is never a
 required. **Not migrated:** regression cases recorded now (passing today: "I need CPR certification" = NEED, "business
 class" / "training" unmapped, -s plurals consistent; `todo` until the pass: the tutor / CPR certified / cooking-class
 cases in `needTagLevel.regression.test.js` and the -es plural pairs in `pluralNormalization.regression.test.js`).
+
+**Owner follow-up (same day, LOCKED, APPLIED):** the non-taxonomy fixes were made now, the taxonomy migration stays
+deferred. (1) "kids classes" -> Kids Education (item 177); no "Kids Classes" category. (2) Wording "certified" ->
+Certifications added (migration `20270279`, client table, web signup page); "certification" keeps resolving through the
+tag's own name. (3) **One plural rule, applied to all four copies together:** the app's `singular()`
+(`src/constants/categorySynonyms.js`), the web signup page's `applySingular()` (`docs/business.html`), and the server's new
+`_category_singular()` called by both `_category_phrase_key` and `_category_search_key`. -sses/-ches/-shes/-xes drop "es";
+a singular ending in -che/-she/-sse drops its e so both forms agree. No stored key changed (no seeded phrase affected, 0
+dismissals). (4) Cooking Class stays the exact canonical category ("cooking classes" used to land on the Cooking hobby
+tag; it now reaches Cooking Class) and is want-only. (5) Needs: `TAG_LEVEL_NEED_GROUP_KEYS = ['education_classes']` in
+`gatheringCategories.js` makes Education per-tag now (Tutoring, Certifications in `NEED_TAG_KEYS`); the group stays in
+`NEED_GROUP_KEYS` only for the open-ended "something fun" rule, unchanged until the pass. **Two consequences handled:**
+once "class" and "classes" share a key, the generic Classes tag would have beaten a named activity ("yoga class" ->
+Classes, caught by the item-130 benchmark); a generic format key now yields to any other category in the query
+("yoga class" = Yoga, "find a class" = Classes). Bare "business class" joins `UNMATCHED_PHRASES` so it stays unmapped.
+**Still for the pass:** the other item-182 wordings (tutor / math tutor / homework help, adult classes, kids classes, the
+class/lesson table), so "I need a tutor for my son" stays a `todo`. Verified: dry run rolled back (server keys equal the
+app's on 24 words), applied, single overloads, the three emerging-category / synonym live scripts ALL OK; Jest 4714.
