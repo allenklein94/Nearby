@@ -563,8 +563,9 @@ keep it strict (item 162: never infer a need) and revisit only from real misses 
    from the table (bare "painting" and bare "security" stay unmapped).
 2. Wordings approved: maid, housekeeping -> Cleaning; landscaper, gardener -> Landscaping; movers -> Moving;
    exterminator, bed bugs, termites -> Pest Control; ac repair, air conditioning, heating, furnace -> HVAC (never the
-   generic Repairs). Lawn care / lawn mowing / mow my lawn -> Landscaping and "ac" / "heat pump" -> HVAC were in the
-   table but not restated: to confirm in the final mapping review.
+   generic Repairs). **Confirmed (same day):** lawn care, lawn mowing, mow my lawn -> Landscaping; ac, heat pump ->
+   HVAC ("ac" matched as a whole word only, regression-tested). Bare "painting" and bare "security" stay unmapped.
+   **Item 180 complete; items 175-180 settled.**
 3. Per-category needs: the group is not need-capable; each service tag (incl. the four new) is, with task framing
    mandatory. Regression cases: "I need a plumber", "fix my AC", "book a cleaner" = need; "plumbers near me" = want;
    "my AC is broken" = want (a problem statement is not task framing). Never inferred from urgency, proximity,
