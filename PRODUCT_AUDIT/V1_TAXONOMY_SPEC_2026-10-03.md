@@ -18,8 +18,8 @@ matching, privacy or business-demand change.
 | 4 | Keep Health & Personal Care and Attractions & Things to See as their own groups | item 168 |
 | 5 | Food & Drink coverage gap: **Tea** (+ wording: tea, tea house, tea room, bubble tea...) | item 169 |
 | 6 | Food & Drink coverage gap: **Distilleries** (+ wording: distillery, craft spirits...) | item 169 |
-| 7 | Activities gaps: **Axe Throwing, Laser Tag, Go-Karts, Paintball, Trampoline Parks, Horseback Riding, Recreation Centers** (+ wording) | item 170 |
-| 8 | Wording: "adventure park", "ropes course", "zipline" -> existing **Adventure** | item 170 |
+| 7 | New canonical categories under Activities & Recreation (the part that stays after the item-168 split): **Axe Throwing, Laser Tag, Go-Karts, Paintball, Trampoline Parks, Horseback Riding, Recreation Centers** (+ their own wording) | item 170, LOCKED |
+| 8 | Wording: "adventure park", "ropes course", "zipline" -> existing **Adventure** (synonyms, not categories) | item 170, LOCKED |
 
 Result: 19 canonical groups.
 
@@ -69,9 +69,9 @@ so it is unaffected by the item-168 Sports & Fitness split (it describes the rem
 | Classes, Workshops | subcategories, **Education & Classes**; also the `format` class / workshop (item 66) | covered (other group) |
 | Group Activities | NOT a category: who-with = party type `groups` (item 43) + business attribute `group_friendly` (item 80) | covered by existing layers |
 | Adventure Parks | nearest is the existing **Adventure** subcategory; no wording maps to it | **wording gap -> pending #8** |
-| **Axe Throwing** | nothing (already the known unmapped example, item 128) | **gap -> pending #7** |
-| **Laser Tag, Go-Karts, Paintball, Trampoline Parks, Horseback Riding** | nothing | **gap -> pending #7** |
-| **Recreational Centers** | nothing (Gyms / Community Events are different things) | **gap -> pending #7** |
+| **Axe Throwing** | nothing (already the known unmapped example, item 128) | **new category -> pending #7 (LOCKED)** |
+| **Laser Tag, Go-Karts, Paintball, Trampoline Parks, Horseback Riding** | nothing | **new category -> pending #7 (LOCKED)** |
+| **Recreational Centers** | nothing (Gyms / Community Events are different things) | **new category -> pending #7 (LOCKED)** |
 
 **Group Activities stays out of the category list on purpose:** a category would duplicate the group layer, and the
 nearest tag, Group Hangouts, is in `NEVER_SHARE_WITH_BUSINESS`, so it must not become a business classification.
@@ -85,3 +85,19 @@ the item-168 old -> new mapping.
 **Emerging activities** need no restructuring: a new leaf tag is one row through the canonical path, and business
 signup wording surfaces candidates through the emerging-category loop (item 30). After V1, additions follow the
 item-166 miss process (synonym first, new tag last).
+
+**Owner decision (2026-10-03, LOCKED):** the seven are intentional V1 coverage, real canonical categories (distinct
+activities people seek and businesses offer), not placeholders and not synonyms. They are added in the single item-168
+migration through the normal category-change process, as ordinary leaf tags of Activities & Recreation: no new
+hierarchy or storage level, no special ranking / routing / matching / business-demand behavior. A business that
+declares one is routed and matched exactly like any other category. Existing categories are NOT moved into them to
+populate them (existing mappings stand unless the final V1 mapping says otherwise; the placement question above is
+answered: nothing moves). Adventure park / ropes course / zipline stay wordings of Adventure. Group Activities stays
+out; Group Hangouts' never-shared-with-businesses rule is unchanged. Item 77 unchanged (no Pizza / Burgers /
+Steakhouse). This does NOT reopen expansion: later activities follow item 166 (existing synonym / attribute / category
+first, new category only when warranted).
+
+**The migration pass must cover them in:** the old -> new mapping, the category table + client list
+(`CATEGORY_GROUPS`) + seed-parity test, every category CHECK / registered column, translations
+(`vocab.categories.tags.<key>` in 11 languages), the Discover rail / category view, routes, the static signup export,
+the code-dependency inventory, and regression tests.
