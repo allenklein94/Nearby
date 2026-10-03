@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { getGatheringRequestsForHost, approveInterest, hostRemoveAttendee } from '../services/gatherings';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
-import { pendingReview } from '../utils/hostCommandCenter';
+import { pendingReview, applyDecision } from '../utils/hostCommandCenter';
 
 // Host-only: approve/decline join requests and remove attendees, inline on
 // GatheringDetail (the one place everything about a gathering is managed).
@@ -20,8 +20,13 @@ export default function HostAttendeeManager({ gatheringId, onChanged, expanded =
   const [rows, setRows] = useState(null);
   const [reviewOpen, setReviewOpen] = useState(false);
 
+  // Only the newest load may write the list: a focus reload and a post-decision reload can overlap, and an older answer
+  // landing last would bring back a request already decided (count and list come from this one array, item 144).
+  const loadSeq = useRef(0);
   const load = useCallback(async () => {
-    setRows(await getGatheringRequestsForHost(gatheringId));
+    const seq = ++loadSeq.current;
+    const next = await getGatheringRequestsForHost(gatheringId);
+    if (seq === loadSeq.current) setRows(next);
   }, [gatheringId]);
 
   useEffect(() => {
@@ -36,6 +41,9 @@ export default function HostAttendeeManager({ gatheringId, onChanged, expanded =
   async function handleApprove(row) {
     try {
       const result = await approveInterest(row.id);
+      // The decided request leaves the pending set at once (the Review row and its count follow), then the server reload
+      // confirms it.
+      setRows((prev) => applyDecision(prev, row.id, result?.status === 'waitlisted' ? 'waitlisted' : 'approved'));
       if (result?.status === 'waitlisted') {
         Alert.alert(t('ui.gatheringParts.gatheringFull'), t('ui.gatheringParts.thisGatheringIsAlreadyAt'));
       } else {
@@ -60,6 +68,7 @@ export default function HostAttendeeManager({ gatheringId, onChanged, expanded =
           onPress: async () => {
             try {
               await hostRemoveAttendee(row.id);
+              setRows((prev) => applyDecision(prev, row.id, null));
               refresh();
             } catch (e) {
               presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmRemove(row, isRequest) });
@@ -71,6 +80,10 @@ export default function HostAttendeeManager({ gatheringId, onChanged, expanded =
   }
 
   const review = pendingReview(rows);
+  // Once the last request is decided the row disappears, and the next request starts collapsed again.
+  useEffect(() => {
+    if (!review.show && reviewOpen) setReviewOpen(false);
+  }, [review.show, reviewOpen]);
 
   const renderRow = (row) => {
     const name = row.profiles?.display_name ?? t('ui.gatheringParts.someone');

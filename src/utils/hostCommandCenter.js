@@ -23,7 +23,16 @@ export function hostSummaryStats(stats) {
   return hostStats(stats).filter((s) => s.key !== 'requests');
 }
 
-// The Review row: present only while there is at least one pending request to decide.
+// A host's decision applied to the loaded rows right away: approved/waitlisted changes the status, null (declined or
+// removed) drops the row. The server reload that follows replaces the whole list.
+export function applyDecision(rows, id, status) {
+  if (!Array.isArray(rows)) return rows;
+  return status == null ? rows.filter((r) => r.id !== id) : rows.map((r) => (r.id === id ? { ...r, status } : r));
+}
+
+// The Review row: present only while there is at least one pending request to decide. Visibility is deliberately not read
+// (owner, 2026-10-02): a pending request exists only where the host must decide (public + Require approval, Friends,
+// Community, Invite-only), so the row shows for any of them.
 export function pendingReview(rows) {
   const pending = (rows ?? []).filter((r) => r.status === 'pending');
   return { count: pending.length, rows: pending, show: pending.length > 0 };

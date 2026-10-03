@@ -207,3 +207,61 @@ describe('item 144: join requests have their own Review row', () => {
     }
   });
 });
+
+// Item 144 consistency audit (owner, option 1): the Review row is a decision-needed signal for ANY gathering with a
+// pending request; it never reads visibility. Server side (each visibility really produces a pending request the host can
+// read; public without approval produces none) is proven by scripts/live-verify/host-review-pending-every-visibility.sql.
+describe('item 144 audit: one source, every visibility, no stale state', () => {
+  const { pendingReview, applyDecision } = require('./hostCommandCenter');
+  const fs = require('fs');
+  const path = require('path');
+  const manager = fs.readFileSync(path.join(__dirname, '..', 'components/HostAttendeeManager.js'), 'utf8');
+  const pending = (id) => ({ id, status: 'pending', profiles: { display_name: `P${id}` } });
+
+  test.each(['everyone', 'friends', 'community', 'invite_only'])('a %s gathering with a pending request shows the row', (visibility) => {
+    const r = pendingReview([{ ...pending(1), visibility }, { id: 2, status: 'approved', visibility }]);
+    expect(r).toMatchObject({ show: true, count: 1 });
+  });
+
+  test('zero pending = no row, whatever else is on the list', () => {
+    expect(pendingReview([]).show).toBe(false);
+    expect(pendingReview([{ id: 1, status: 'approved' }, { id: 2, status: 'waitlisted' }]).show).toBe(false);
+  });
+
+  test('the row and list never read the gathering\'s visibility or approval setting', () => {
+    const src = fs.readFileSync(path.join(__dirname, 'hostCommandCenter.js'), 'utf8');
+    const fn = src.slice(src.indexOf('export function pendingReview'), src.indexOf('}', src.indexOf('export function pendingReview')));
+    expect(fn).not.toMatch(/visibility|requires_approval|is_public/);
+    expect(manager).not.toMatch(/visibility|requires_approval|is_public/);
+  });
+
+  test('deciding the last request empties the pending set at once (approve, waitlisted, decline)', () => {
+    const one = [pending(1), { id: 2, status: 'approved' }];
+    expect(pendingReview(applyDecision(one, 1, 'approved')).show).toBe(false);
+    expect(pendingReview(applyDecision(one, 1, 'waitlisted')).show).toBe(false);
+    expect(pendingReview(applyDecision(one, 1, null)).show).toBe(false);
+    expect(applyDecision(one, 1, null)).toEqual([{ id: 2, status: 'approved' }]);
+    const three = [pending(1), pending(2), pending(3)];
+    expect(pendingReview(applyDecision(three, 2, 'approved'))).toMatchObject({ count: 2 });
+    expect(applyDecision(null, 1, null)).toBeNull();
+  });
+
+  test('both decisions update the list before the reload; only the newest load may write it; the row resets closed', () => {
+    expect(manager).toMatch(/setRows\(\(prev\) => applyDecision\(prev, row\.id, result\?\.status === 'waitlisted' \? 'waitlisted' : 'approved'\)\)/);
+    expect(manager).toMatch(/setRows\(\(prev\) => applyDecision\(prev, row\.id, null\)\)/);
+    expect(manager).toMatch(/if \(seq === loadSeq\.current\) setRows\(next\)/);
+    expect(manager).toMatch(/if \(!review\.show && reviewOpen\) setReviewOpen\(false\)/);
+    // the count and the list are the same array: no second count source anywhere in the command center
+    expect(manager).toMatch(/const review = pendingReview\(rows\)/);
+    expect(manager).toMatch(/\{reviewOpen && review\.rows\.map\(renderRow\)\}/);
+  });
+
+  test('the request source is one unpaginated query, reloaded on every focus', () => {
+    const svc = fs.readFileSync(path.join(__dirname, '..', 'services/gatherings.js'), 'utf8');
+    const fn = svc.slice(svc.indexOf('export async function getGatheringRequestsForHost'), svc.indexOf('export async function hostRemoveAttendee'));
+    expect(fn).not.toMatch(/\.range\(|\.limit\(/);
+    const detail = fs.readFileSync(path.join(__dirname, '..', 'screens/GatheringDetailScreen.js'), 'utf8');
+    expect(detail).toMatch(/setHostRefreshKey\(\(k\) => k \+ 1\)/);
+    expect(detail).toMatch(/refreshKey=\{hostRefreshKey\}/);
+  });
+});
