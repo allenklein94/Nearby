@@ -1,5 +1,7 @@
 # NEARBY_CANONICAL_TAXONOMY (2026-09-21)
 
+> **The ultimate rule (owner item 167, 2026-10-03, LOCKED):** Nearby's taxonomy exists to understand and connect consumer intent, real-world activities, gatherings, people, places, and businesses. It is not intended to function as a static directory of categories. Every taxonomy decision below serves that purpose; a change that only makes the list more complete, without helping Nearby understand or connect a real intent, is not a reason to change it.
+
 One taxonomy, taught once. `src/constants/nearbyTaxonomy.js` is the front door (`describeTag(tag)` joins every layer);
 each layer has exactly ONE source of truth below. Add "Padel" = an admin adds the tag (`admin_add_category_tag`) and its
 wordings (`admin_add_category_synonym`, or by resolving an emerging category, which registers the wordings itself). No

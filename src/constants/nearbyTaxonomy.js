@@ -1,3 +1,6 @@
+// THE ULTIMATE RULE (owner item 167, 2026-10-03, LOCKED): Nearby's taxonomy exists to understand and connect consumer intent, real-world activities, gatherings, people, places, and businesses.
+// It is not intended to function as a static directory of categories.
+//
 // NEARBY_CANONICAL_TAXONOMY (owner 2026-09-21): the ONE front door to everything Nearby knows about what things ARE.
 // It owns no data of its own -- each layer has exactly one source, listed below -- it only lets a system ask "what does
 // this tag mean everywhere?" without knowing where each layer lives. Teach a new concept ONCE (an admin adds the tag and its
