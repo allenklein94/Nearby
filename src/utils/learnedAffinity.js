@@ -21,19 +21,52 @@ export function learnedAffinities(rows, declaredInterests = []) {
 //   - only results already in the list are touched; nothing is added, removed or narrowed, and no category joins the ask;
 //   - the lift is behaviorNudge (0..BEHAVIOR_MAX_POINTS = 4, scaled by account maturity), strictly below a declared
 //     interest (EXPLICIT_POINTS = 5), the same cap and dampening the feeds use;
-//   - it counts as HISTORY (historyScore), so when the ask states a mood or quality ("something quiet") the session-intent
-//     rule (constants/sessionIntent.js) cuts it to a tie-breaker, or to nothing for a result that conflicts with the ask;
+//   - owner decision (2026-10-03, LOCKED): when the ask states ANY explicit constraint (askStatesConstraint below: a time,
+//     a budget, indoor/outdoor, a vibe or energy, an exclusion, a required feature, open now, a distance...), the lift is
+//     capped at HISTORY_TIEBREAK (1): it can only break ties among results that already qualify. No hardcoded mood list;
+//   - it also counts as HISTORY (historyScore), so the session-intent rule (constants/sessionIntent.js) still removes it
+//     entirely from a result that conflicts with a stated mood or quality;
 //   - unknown maturity (the account lookup failed) = nothing learned, never full weight.
 // Reason: "Based on your recent activity: Coffee" (never "you like"). Ranking only; never stored, never sent anywhere.
 import { behaviorNudge } from '../constants/blendedRanking';
 import { reasonText, appendReason } from '../constants/recommendationReasonVocabulary';
+import { HISTORY_TIEBREAK } from '../constants/sessionIntent';
+import { vibesFromAsk } from '../constants/businessVibes';
+import { energiesFromText } from '../constants/energyLevel';
+import { parseAskFacets, attributesFromAsk } from '../constants/askFacets';
+import { dateWindowFromText, priceLevelFromText, budgetMaxFromText } from './askResolver';
+import { clockWindowFromText } from '../constants/clockWindow';
+import { timeBudgetFromText } from '../constants/timeBudget';
+import { distanceWillingnessFromText } from '../constants/distanceWillingness';
+import { dietaryFromAsk } from '../constants/dietaryOptions';
+import { openNowAskFromText } from './operatingStatus';
+import { askedChildAges } from './suitedAges';
 
-export function applyLearnedAffinity(candidates, learned) {
+// Does THIS ask state an explicit constraint on the results? Only what the person said or explicitly picked (the words, or a
+// chip: budget, Open now, a Browse category). Reuses the existing parsers; nothing new is detected or stored. Who it is with
+// is social context, not a constraint on the results, so it is not counted.
+export function askStatesConstraint(text, { dateWindow = null, priceLevel = null, budgetMax = null, openNowChip = false, narrowGroup = null } = {}) {
+  if (dateWindow || priceLevel || budgetMax || openNowChip || narrowGroup) return true;
+  if (typeof text !== 'string' || !text.trim()) return false;
+  const vibes = vibesFromAsk(text);
+  const facets = parseAskFacets(text);
+  return !!(
+    vibes.want.length || vibes.avoid.length || energiesFromText(text).length
+    || facets.environment || facets.exclude.length || facets.pricey
+    || dateWindowFromText(text) || clockWindowFromText(text) || timeBudgetFromText(text)
+    || priceLevelFromText(text) || budgetMaxFromText(text)
+    || attributesFromAsk(text).length || dietaryFromAsk(text).length || askedChildAges(text).length
+    || distanceWillingnessFromText(text) || openNowAskFromText(text)
+  );
+}
+
+export function applyLearnedAffinity(candidates, learned, { constrained = false } = {}) {
   if (!Array.isArray(candidates) || !learned || learned.maturity == null) return candidates;
   const behavior = learned.behavior ?? {};
   if (Object.keys(behavior).length === 0) return candidates;
   return candidates.map((c) => {
-    const lift = behaviorNudge(c?.category, { behavior, maturity: learned.maturity });
+    const full = behaviorNudge(c?.category, { behavior, maturity: learned.maturity });
+    const lift = constrained ? Math.min(full, HISTORY_TIEBREAK) : full;
     if (!(lift > 0)) return c;
     return {
       ...c,

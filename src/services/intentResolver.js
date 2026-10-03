@@ -1,5 +1,5 @@
 import { recordSearchBehavior, getMyLearnedAffinity } from './behaviorSignals';
-import { applyLearnedAffinity } from '../utils/learnedAffinity';
+import { applyLearnedAffinity, askStatesConstraint } from '../utils/learnedAffinity';
 import { openDestination } from './openDestination';
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
@@ -940,8 +940,11 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   step('vibe');
   // Item 156: categories the person has really been choosing (joins, accepted offers, confirmed visits...) lift results this
   // ask ALREADY returned, below a declared interest, as history: the session-intent pass right after keeps it to a
-  // tie-breaker when the ask states a mood. Never adds, removes or narrows anything (utils/learnedAffinity.js).
-  deduped = applyLearnedAffinity(deduped, await learnedAffinityPromise);
+  // tie-breaker when the ask states any explicit constraint (time, budget, environment, vibe...). Never adds, removes or
+  // narrows anything (utils/learnedAffinity.js).
+  deduped = applyLearnedAffinity(deduped, await learnedAffinityPromise, {
+    constrained: askStatesConstraint(rawText, { dateWindow, priceLevel, budgetMax, openNowChip, narrowGroup }),
+  });
   step('learned_affinity');
   // Item 114: what the person asked for tonight outranks who they usually are (constants/sessionIntent.js).
   deduped = applySessionIntent(deduped, sessionIntentFromText(rawText));
