@@ -26,6 +26,7 @@ matching, privacy or business-demand change.
 | 12 | New gathering format value **league** (format vocabulary + CHECK, not a category; it does not exist today) | item 171, LOCKED |
 | 13 | Wording: scenic area / scenic spot / viewpoint / overlook -> Scenic Views; water activities -> Water Sports; nature center / nature preserve -> Parks + Wildlife | item 172, LOCKED |
 | 14 | Move **Boating** and **Water Sports** from Activities & Recreation to Outdoors & Nature (Activities & Recreation drops to 11) | item 172, LOCKED |
+| 15 | Wording: night market -> Markets; cinema / movie theater -> Movies; stand-up / standup -> Comedy; nightlife event -> Nightlife | item 173, proposed |
 
 Result: 19 canonical groups.
 
@@ -195,3 +196,24 @@ the weather question up front at signup for outdoor categories.
 
 **Outdoors & Nature (19):** Hiking, Outdoors, Camping, Fishing, Kayaking, Parks, Beaches, Trails, Paddleboarding,
 Wildlife, Gardens, Scenic Views, Picnics, Surfing, Snorkeling, Diving, Gardening, Boating, Water Sports.
+
+## Item 173: Entertainment & Nightlife coverage (proposed, owner to confirm)
+
+| Owner entry | Represented as today | Proposal |
+|---|---|---|
+| Live Music, Concerts, Comedy, Movies, Theater, Dancing, Karaoke, Trivia, DJs, Festivals, Casinos | subcategories of Entertainment & Nightlife | covered |
+| Clubs | subcategory Nightclubs; "nightclub", "night club", "dance club", "club night" already map to it | covered. Bare "club" stays unmapped on purpose (sports, tennis, social, book clubs) |
+| Shows | gathering format `show` (item 66), with Theater / Performing Arts / Comedy as the category | covered; not a category |
+| Nightlife Events | subcategory Nightlife | covered; add "nightlife event" wording for clarity |
+| **Night Markets** | nothing ("market" alone is Markets, under Shopping) | wording "night market" -> Markets (the evening part is the gathering's own time); not a new category |
+| Movies (wording) | "movie theater" today also hits Theater | wording "cinema", "movie theater" -> Movies, so the longer phrase wins |
+| Comedy (wording) | "stand-up" not mapped | wording "stand-up", "standup" -> Comedy |
+
+The group also keeps Music, Gaming, Performing Arts, Arcade, Mini Golf, Escape Rooms, Special Events, Street Events,
+Board Games and D&D (nothing removed or moved).
+
+**Tonight and Happening Now already exist, and are time, not taxonomy** (they apply to every group, nothing to
+migrate): the Gatherings "Tonight" filter (later today from 6 PM, the same boundary as the "Tonight · 7 PM" line),
+Discover's sections in order Now, Tonight, Because you like, Friends are into, Trending, This Weekend, Home's
+Starting Soon (within 30 min) and the Right Now window (started up to 30 min ago or starting within 2 h). Typed
+"tonight" / "right now" asks rank by the spontaneity scale (item 46). No category gets special time behavior.
