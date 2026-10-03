@@ -28,9 +28,9 @@ matching, privacy or business-demand change.
 | 14 | Move **Boating** and **Water Sports** from Activities & Recreation to Outdoors & Nature (Activities & Recreation drops to 11) | item 172, LOCKED |
 | 15 | Wording: night market -> Markets; cinema / movie theater -> Movies; stand-up / standup -> Comedy; nightlife event -> Nightlife | item 173, LOCKED |
 | 16 | Wording: gallery / galleries -> Art Galleries; exhibition -> Exhibits; art show / art fair -> Art; local event / local events -> Community Events; book event / book signing / author talk / book club -> Reading | item 174, LOCKED |
-| 17 | New Shopping categories **Grocery, Sporting Goods, Toys, Bookstores, Beauty Supply** (+ their wording) | item 175, proposed |
-| 18 | Shopping wordings (see item 175 table) | item 175, proposed |
-| 19 | Need list after the Travel / Stay merge: `stay_getaway` leaves `NEED_GROUP_KEYS`; its stay tags join `NEED_TAG_KEYS` (see item 175 note) | item 175, proposed |
+| 17 | New Shopping categories **Grocery, Sporting Goods, Toys, Bookstores, Beauty Supply** (+ their wording) | item 175, LOCKED |
+| 18 | Shopping wordings (see item 175 table) | item 175, LOCKED |
+| 19 | Need list after the Travel / Stay merge: `stay_getaway` leaves `NEED_GROUP_KEYS`; its stay tags join `NEED_TAG_KEYS` (see item 175 note) | item 175, LOCKED |
 
 Result: 19 canonical groups.
 
@@ -261,7 +261,7 @@ gathering is the one event object, lifecycle and source of truth; its format say
 category says what it is about; format-like categories keep their existing format mapping. No separate event object,
 no Events category, no second event representation or lifecycle. Arts, Culture & Events membership unchanged (13).
 
-## Item 175: Shopping coverage (proposed, owner to confirm)
+## Item 175: Shopping coverage
 
 Shopping today: Farmers Markets, Thrift & Vintage, Florist, Party & Event Decor, Gift Shop, Boutiques, Clothing,
 Jewelry, Home & Furniture, Electronics, Markets, Pop-Ups, Local Shopping, Camera Shops. The Everyday / Specialty /
@@ -294,3 +294,20 @@ rule, only which list a category is on.
 Getaways, a group-level need flag would make Tours, Day Trip and other outings needs too. Proposal: the merged group is
 NOT a need group; its stay tags (Hotels, Resorts, Vacation Rentals, ...) join `NEED_TAG_KEYS`, so "I need a hotel
 tonight" stays a need and "day trip" stays a want, as today.
+
+**Owner decision (2026-10-03, LOCKED):**
+- **The five new Shopping categories, exactly:** Grocery, Sporting Goods, Toys, Bookstores, Beauty Supply. (Florist
+  and Gift Shop already exist; Personal Training is the item-171 Sports & Fitness category.) No other categories.
+- **Grocery joins `NEED_TAG_KEYS`.** Necessary, not sufficient: the item-162 task framing still decides. "I need
+  groceries tonight" / "I need to get groceries" = need; "groceries near me" / "grocery stores" = want. A need follows
+  the existing order only (availability -> proximity -> reliability -> personalization as a literal tie-breaker); no new
+  weight or grocery logic. The migration must add the wording "groceries" (the plural trim does not reach "grocery")
+  and regression-test all four examples.
+- **Pharmacy** stays the business-only clinical tag; no consumer need matching. **Department Stores** not added.
+- **Travel & Getaways is NOT a need group.** Need-capable lodging tags (places to stay): Hotels, Resorts, Vacation
+  Rentals, Spa Resorts, Family Resorts, Pet Friendly Stays, Glamping. Wants (outings / trip types): Weekend Getaway,
+  Staycation, Road Trip, Romantic Getaways, and every former Travel & Experiences tag (Travel, Day Trip, Tours,
+  Excursions, Boat Tours, Adventure Experiences, Local Experiences). "I need a hotel tonight" / "I need a vacation
+  rental" = need; day trip / tours / sightseeing = want. A correction for the merge, not a new need rule.
+- **Global:** being on the need list never classifies an ask by itself; never from urgency, time, distance, booking
+  rules, category alone, learned behavior, declared interests or AI.
