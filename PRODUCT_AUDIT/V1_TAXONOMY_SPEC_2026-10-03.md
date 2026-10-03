@@ -41,6 +41,7 @@ matching, privacy or business-demand change.
 | 27 | Travel & Getaways wordings (item 179 approved table) | item 179, LOCKED |
 | 28 | Resolver bug fix: bed and breakfast / b&b -> Hotels, never Breakfast (regression test) | item 179, LOCKED |
 | 29 | Keep Romantic Getaways, Family Resorts, Spa Resorts as canonical categories (not attribute + stay) | item 179, LOCKED |
+| 30 | Home & Local Services coverage (see item 180: four categories, wordings, AC fix, tag-level need list) | item 180, proposed |
 
 Result: 19 canonical groups.
 
@@ -520,3 +521,37 @@ to See or Attractions category).
   3. "attractions" / "things to see" use option (a): synonym rows mapping the phrases to the consumer tags of
      Attractions & Things to See (existing synonym structure; no group alias, no new object or storage level). The group
      stays its own canonical group.
+
+## Item 180: Home & Local Services coverage (proposed, owner to confirm)
+
+Today: Cleaning, Landscaping, Plumbing, Electrical, HVAC, Handyman, Moving, Pest Control, Repairs, Interior Design.
+Checked against the live search on 2026-10-03.
+
+| Owner entry | Represented as today | Proposal |
+|---|---|---|
+| Cleaning | subcategory ("house cleaning", "cleaner" work; "maid" finds nothing) | wording: maid, maid service, housekeeping, house cleaner -> Cleaning |
+| Landscaping | subcategory ("landscaper", "gardener" find nothing) | wording: landscaper, gardener, yard work -> Landscaping |
+| Lawn Care | nothing maps | wording: lawn care, lawn service, lawn mowing, mow my lawn -> Landscaping (lawn-care businesses are landscapers; no separate category) |
+| Plumbing, Electrical, Handyman, Moving, Pest Control | subcategories | covered; wording: movers -> Moving; exterminator, bed bugs, termites -> Pest Control |
+| HVAC | subcategory; "ac repair" goes to the generic **Repairs**, "air conditioning", "heating", "furnace" find nothing | wording: ac repair, air conditioning, ac, heating, furnace, heat pump -> HVAC (fixes the AC -> Repairs mis-route) |
+| Home Repair | Repairs ("home repair" works) | covered |
+| Painting | **missing** | new category **House Painting** + wording house painter, painter, interior painting, exterior painting; bare "painting" stays unmapped (art vs home) |
+| Moving / Storage | Moving yes; storage **missing** | new category **Storage** + wording storage unit, self storage, storage space |
+| Home Improvement, Contractors | **missing** | new category **Contractors** + wording contractor, general contractor, home improvement, remodel, remodeling, renovation, roofer, roofing |
+| Security | **missing** | new category **Home Security** + wording security system, alarm system, home security, security cameras; bare "security" stays unmapped (guards, cybersecurity) |
+
+**Not on your list, for you to decide:** Locksmith (an urgent, common local service; today nothing maps). Options: its
+own category, or leave out until a real miss (item 166).
+
+**Need behavior (the important part).** Today the whole group is a need group. For consistency with Travel and Pets,
+make it tag-level: every service tag of the group is need-capable (Cleaning, Landscaping, Plumbing, Electrical, HVAC,
+Handyman, Moving, Pest Control, Repairs, Interior Design + the new House Painting, Storage, Contractors, Home Security),
+and the group itself is not a need group. Behavior is the same for these tags; it just stops a future non-service tag
+from becoming a need by membership. Task framing stays mandatory: "I need a plumber" / "get my AC fixed" / "book a
+cleaner" = need; "plumbers near me" = want (ordinary ranking).
+
+**One limit to know about:** a problem described without a task word ("my sink is leaking", "the AC is broken") is not
+a need today and does not resolve to a category. The wordings above make "AC", "bed bugs", "termites" find the right
+service, but "my AC is broken" stays an ordinary ask unless a task word is present ("fix my AC" works). Recommendation:
+keep it strict (item 162: never infer a need) and revisit only from real misses (item 166).
+
