@@ -33,6 +33,7 @@ matching, privacy or business-demand change.
 | 19 | Need list after the Travel / Stay merge: `stay_getaway` leaves `NEED_GROUP_KEYS`; its stay tags join `NEED_TAG_KEYS` (see item 175 note) | item 175, LOCKED |
 | 20 | Wording: facial / facials -> Skin Care; skincare -> Skin Care; beauty salon -> Salons | item 176, LOCKED |
 | 21 | **Nails** joins `NEED_TAG_KEYS` | item 176, LOCKED |
+| 22 | Wording: children's activities / kids activities / things to do with kids -> Kids Activity; kids class / kids classes / educational activities -> Kids Education | item 177, proposed |
 
 Result: 19 canonical groups.
 
@@ -345,3 +346,33 @@ services vs products). **Nails joins `NEED_TAG_KEYS`** beside Barbers and Salons
 "I need my nails done" / "I need a nail appointment" = need, "nails near me" = want (all three regression-tested in the
 pass). Wellness & Beauty is not a need group; Massage, Spa Day and the rest stay wants unless individually approved.
 Commercial behavior unchanged (offers, availability, packages, perks, category-aware routing).
+
+## Item 177: Family & Kids coverage (proposed, owner to confirm)
+
+Family & Kids today: Family Playdate, Kids Activity, Family Events, Playgrounds, Indoor Play, Kids Museums, Camps,
+Kids Sports, Birthday Activities, Family Dining. Already oriented to what parents do, not "kids businesses".
+
+| Owner entry | Represented as today | Proposal |
+|---|---|---|
+| Playgrounds, Indoor Play, Camps, Family Events, Birthday Activities, Family Dining | subcategories | covered |
+| Sports | Kids Sports | covered |
+| Children's Activities | Kids Activity (no wording for the phrase) | wording children's / kids activities -> Kids Activity |
+| Kids Classes, Educational Activities | Kids Education (Education & Classes) | wording -> Kids Education |
+| Museums | Museums (Attractions) and Kids Museums (here) | covered |
+| Zoos, Aquariums | subcategories, Attractions & Things to See | covered (other group) |
+
+**One museum in two places, no duplicate business: already the model.** A business is ONE row with one main
+category plus secondary categories (`categories`) and declared attributes. A museum can be Museums (main) + Kids
+Museums (secondary) + Family-friendly / suited ages, and it is matched and shown under both groups from that one row
+(`business_served_tags`). Gatherings: one category each, plus host-declared family features (Family-friendly,
+Stroller friendly...). Nothing to migrate for this.
+
+**Two gaps found, NOT taxonomy (owner decision needed, outside the item-168 pass):**
+1. **Web signup cannot add a secondary category from another group.** `submit-business-application` keeps only
+   secondary tags of the applicant's main group, so a museum applying on the web cannot also pick Kids Museums. The
+   app's dashboard profile editor already allows any category. Fix = let the web form keep secondary tags from any
+   group (still real tags only).
+2. **The Family & Kids view shows only things IN the group's categories.** A museum that declared Family-friendly but
+   not Kids Museums does not appear there. Option: the Family & Kids view also includes results whose OWNER/HOST
+   DECLARED a family quality (Family-friendly, Kids menu, Family seating, Stroller friendly) or a suited age range,
+   never inferred from category. That is a Discover behavior change, separate from this taxonomy pass.
