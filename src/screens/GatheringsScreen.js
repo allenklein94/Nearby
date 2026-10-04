@@ -1,4 +1,5 @@
 import { EXPERIENCE_PARTY_TYPE_OPTIONS } from '../constants/businessAttributes';
+import { PERKS_TAB } from '../utils/recommendationContext';
 import { practicalFactsIn } from '../i18n/gatheringFactsDisplay';
 import { attendeeSummary } from '../utils/gatheringAttendeeDisplay';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -10,7 +11,7 @@ import { PullToRefresh, FilterTransition, TapActiveChip, NLoader, SkeletonFeed }
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { gatheringCardModel } from '../utils/recommendationCard';
-import { openDestination } from '../services/openDestination';
+import { openDestination, navigateKeepingTrail } from '../services/openDestination';
 import { getNearbyGatherings, searchGatherings, expressInterest } from '../services/gatherings';
 import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { getMyFriends } from '../services/friends';
@@ -490,7 +491,7 @@ export default function GatheringsScreen({ navigation, route }) {
       {newOfferCount > 0 && (
         <TouchableOpacity
           style={styles.offersBanner}
-          onPress={() => navigation.navigate('BrandOffers')}
+          onPress={() => navigateKeepingTrail(navigation, 'Discover', { ...PERKS_TAB })}
           activeOpacity={0.85}
           accessibilityLabel={t('ui.gatherings.newOffersA11y', { text: t('ui.gatherings.newOffers', { count: newOfferCount }) })}
           accessibilityRole="button"

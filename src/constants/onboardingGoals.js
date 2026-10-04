@@ -42,7 +42,7 @@ const GOAL_DESTINATIONS = {
   'Make plans': { route: 'MakeAPlan', params: undefined, action: 'Make a plan' },
   'Discover places': { route: 'Discover', params: { initialMode: 'things', initialTypeTab: 'places' }, action: 'Discover places' },
   'Plan celebrations': { route: 'CelebrateSomething', params: undefined, action: 'Plan a celebration' },
-  'Find businesses and offers': { route: 'BrandOffers', params: undefined, action: 'Offers from businesses' },
+  'Find businesses and offers': { route: 'Discover', params: { initialMode: 'things', initialTypeTab: 'perks' }, action: 'Offers from businesses' },
 };
 
 export function goalShortcuts(motivations) {

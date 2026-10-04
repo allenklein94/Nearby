@@ -23,6 +23,9 @@ import { relatedHobbyFor, relatedInterestReason } from '../constants/hobbyRelati
 import { getFriendsInterestedIn } from '../services/friendInterests';
 import { friendsInterestReason } from '../utils/friendInterests';
 import ReturnTrailChip from '../components/ReturnTrailChip';
+import PerkRedemptionPanel from '../components/PerkRedemptionPanel';
+import { listWithSelectedPerk } from '../utils/perkSelection';
+import { getTrail, subscribeTrail } from '../navigation/returnTrail';
 import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Alert, BackHandler } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Video } from 'expo-av';
@@ -474,6 +477,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
     if (p.initialTypeTab) setTypeFilter(p.initialTypeTab);
     setEnvironmentFilter(p.initialEnvironment === 'outdoor' || p.initialEnvironment === 'indoor' ? p.initialEnvironment : null);
     setDateView(null); // a new navigation into Discover carries its own context; it never lands inside a date view
+    // A link to one perk opens Perks with that perk selected and scrolled into view; any other arrival starts unselected.
+    if (p.selectPerkId) {
+      closeContext();
+      setViewStyle('list');
+      selectPerk(p.selectPerkId, { fromLink: true });
+      setScrollToPerk(p.selectPerkId);
+    } else {
+      clearPerkSelection();
+    }
   }, [route.params]);
   // Item 76: the exact declared-cuisine filter inside the Restaurants view (null = broad). Lives only while a context is open.
   const [cuisineFilter, setCuisineFilter] = useState(null);
@@ -512,6 +524,23 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // signal) so a Perks row can honestly show "Redeemed ✓" instead of always
   // "Redeem" regardless of whether the user already has.
   const [redeemedOfferIds, setRedeemedOfferIds] = useState(new Set());
+  // Perk Selection State (owner, 2026-10-04): Discover -> Perks is the ONE perk surface. Tapping a perk (or arriving from a
+  // link to one: selectPerkId) selects it IN PLACE: its card expands to show the redemption context and Redeem, nothing
+  // navigates, no second list. It is temporary focus on one object, not a filter and not saved: Close / tapping the card
+  // again / Android Back returns to the normal list, and switching tabs, mode, type tab or search ends it.
+  const [selectedPerkId, setSelectedPerkId] = useState(() => route.params?.selectPerkId ?? null);
+  const [selectedPerkFromLink, setSelectedPerkFromLink] = useState(() => !!route.params?.selectPerkId);
+  const [scrollToPerk, setScrollToPerk] = useState(() => route.params?.selectPerkId ?? null);
+  const perkCardRefs = useRef({});
+  function selectPerk(id, { fromLink = false } = {}) {
+    setSelectedPerkId(id);
+    setSelectedPerkFromLink(fromLink);
+  }
+  function clearPerkSelection() {
+    setSelectedPerkId(null);
+    setSelectedPerkFromLink(false);
+    setScrollToPerk(null);
+  }
 
   // Phase 8 section F (CLAUDE.md, Discover visual hierarchy) -- "expand in
   // place". Tapping a notable card reconfigures THIS screen around that
@@ -703,6 +732,55 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const [searchedGatherings, setSearchedGatherings] = useState([]);
   const [searchedCommunities, setSearchedCommunities] = useState([]);
   const [searchedOffers, setSearchedOffers] = useState([]);
+
+  // Perk Selection State: Android Back returns to the normal Perks list first. A perk opened from another screen (a link,
+  // with a return trail back to that screen) goes straight back there instead, so Perks never traps the person. Re-registered
+  // when the trail changes so this handler stays ahead of ReturnTrailChip's.
+  const [trailVersion, setTrailVersion] = useState(0);
+  useEffect(() => subscribeTrail(() => setTrailVersion((v) => v + 1)), []);
+  useEffect(() => {
+    if (!selectedPerkId) return undefined;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      const backToOrigin = selectedPerkFromLink && getTrail()?.tab === 'Discover';
+      clearPerkSelection();
+      return !backToOrigin; // false lets the return trail reopen the screen the person came from
+    });
+    return () => sub.remove();
+  }, [selectedPerkId, selectedPerkFromLink, trailVersion]);
+  // Selection is not saved Discover state: switching to another tab ends it. A screen opened on top (the business profile)
+  // keeps it, so Back from there lands on the same selected perk.
+  useEffect(() => navigation.addListener('blur', () => {
+    const tabs = navigation.getState?.();
+    const focusedTab = tabs?.routes?.[tabs.index ?? 0]?.name;
+    if (focusedTab && focusedTab !== route.name) clearPerkSelection();
+  }), [navigation, route.name]);
+  // Leaving Perks (People mode, or a type tab without perks) ends the selection.
+  const perksTabShown = mode === 'things' && (typeFilter === 'all' || typeFilter === 'perks');
+  useEffect(() => {
+    if (selectedPerkId && !perksTabShown) clearPerkSelection();
+  }, [perksTabShown, selectedPerkId]);
+  // A link to a perk that is no longer active (expired, fully claimed and removed) selects nothing once perks have loaded.
+  useEffect(() => {
+    if (!selectedPerkId || !coreLoadedOnce) return;
+    if (!offers.some((o) => o.id === selectedPerkId) && !searchedOffers.some((o) => o.id === selectedPerkId)) clearPerkSelection();
+  }, [selectedPerkId, coreLoadedOnce, offers, searchedOffers]);
+  // Bring a linked (or map-picked) perk into view once its card is laid out.
+  useEffect(() => {
+    if (!scrollToPerk) return undefined;
+    const timer = setTimeout(() => {
+      const card = perkCardRefs.current[scrollToPerk];
+      const scroller = mainScrollRef.current;
+      if (!card || !scroller) return;
+      try {
+        card.measureLayout(scroller.getInnerViewNode?.() ?? scroller, (_x, y) => {
+          scroller.scrollTo({ y: Math.max(0, y - spacing.lg), animated: true });
+        }, () => {});
+      } catch (e) { /* measuring is best-effort: the card is still shown first when the list did not hold it */ }
+      setScrollToPerk(null);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [scrollToPerk, offers, searchedOffers, typeFilter]);
+
   const [loadingSearchRaw, setLoadingSearch] = useState(false);
   // Item 93: the exact term the searched lists / Places list belong to, so a previous query's results are never shown
   // under a new one (they count as still loading until the new term's results land).
@@ -1687,6 +1765,47 @@ export default function DiscoverHubScreen({ navigation, route }) {
     return recommendationContext(contextItem('community', c, { reasons: [communityReason(c, personalization.declared)] }), { language });
   }
 
+  // One perk card for every Perks list (the Perks section and the category view). Compact for browsing; the selected one
+  // expands in place with its redemption panel (Perk Selection State above).
+  function renderPerkCard(o) {
+    const pc = perkContext(o);
+    const card = (
+      <PlaceCard
+        key={o.id}
+        icon="🎁"
+        photoUrl={o.target_interest_tag ? curatedCoverPhotoFor(o.target_interest_tag) : null}
+        tintColor={o.target_interest_tag ? categoryStyleFor(o.target_interest_tag).color : null}
+        title={o.title}
+        // reason + distance + action from the one context object (the perk's own named tag, never a generic "Matches your interests")
+        reason={[o.brand_partners?.name, pc.context, businessSignalLine(o.brand_partners), pc.reason].filter(Boolean).join(' · ')}
+        onPress={() => (selectedPerkId === o.id ? clearPerkSelection() : selectPerk(o.id))}
+        accessibilityLabel={[o.title, o.brand_partners?.name, pc.action?.label].filter(Boolean).join(', ')}
+        accessibilityState={{ expanded: selectedPerkId === o.id }}
+        actionLabel={selectedPerkId === o.id ? null : pc.action?.label}
+        actionIsState={pc.action?.kind === 'status'}
+        style={selectedPerkId === o.id ? styles.selectedPerkCardTop : undefined}
+      />
+    );
+    if (selectedPerkId !== o.id) return card;
+    return (
+      <View key={o.id} ref={(r) => { perkCardRefs.current[o.id] = r; }} style={styles.selectedPerk}>
+        {card}
+        <PerkRedemptionPanel
+          offer={o}
+          redeemed={redeemedOfferIds.has(o.id)}
+          onRedeemed={(id) => setRedeemedOfferIds((prev) => new Set([...prev, id]))}
+          onClose={clearPerkSelection}
+          onOpenBusiness={() => openDestination(navigation, businessContext({ id: o.partner_id, name: o.brand_partners?.name }).destination)}
+        />
+      </View>
+    );
+  }
+
+  // The selected perk is always on screen (utils/perkSelection.js).
+  function withSelectedPerk(list) {
+    return listWithSelectedPerk(list, selectedPerkId, offers, searchedOffers);
+  }
+
   function perkContext(o) {
     return recommendationContext(contextItem('perk', o, {
       reasons: [o.target_interest_tag ? becauseYouLikeReason(o.target_interest_tag) : null],
@@ -2449,23 +2568,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             // coordinated container settle, not N independent per-card slides.
             <StaggeredReveal index={0}>
               <View>
-                {contextOffers.map((o) => {
-                  const pc = perkContext(o);
-                  return (
-                    <PlaceCard
-                      key={o.id}
-                      icon="🎁"
-                      photoUrl={o.target_interest_tag ? curatedCoverPhotoFor(o.target_interest_tag) : null}
-                      tintColor={o.target_interest_tag ? categoryStyleFor(o.target_interest_tag).color : null}
-                      title={o.title}
-                      reason={[o.brand_partners?.name, pc.context, businessSignalLine(o.brand_partners), pc.reason].filter(Boolean).join(' · ')}
-                      onPress={() => openDestination(navigation, pc.destination)}
-                      accessibilityLabel={[o.title, o.brand_partners?.name, pc.action?.label].filter(Boolean).join(', ')}
-                      actionLabel={pc.action?.label}
-                      actionIsState={pc.action?.kind === 'status'}
-                    />
-                  );
-                })}
+                {contextOffers.map((o) => renderPerkCard(o))}
               </View>
             </StaggeredReveal>
           )}
@@ -2533,7 +2636,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             businesses={mapBusinesses}
             userLocation={userLocation}
             onSelectGathering={(g) => openDestination(navigation, discoverCard(g).destination)}
-            onSelectDeal={(d) => openDestination(navigation, perkContext(d).destination)}
+            onSelectDeal={(d) => { setViewStyle('list'); selectPerk(d.id); setScrollToPerk(d.id); }}
             onSelectBusiness={(b) => openDestination(navigation, businessContext(b).destination)}
           />
         </View>
@@ -3075,7 +3178,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </>
           )}
 
-          {showPerks && isSearching && !loadingSearch && offersToShow.length === 0 && (
+          {showPerks && isSearching && !loadingSearch && withSelectedPerk(offersToShow).length === 0 && (
             <>
               <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.perks')}</Text>
               <EmptyCopy id="perks_search" vars={{ query: searchQuery.trim() }} />
@@ -3090,7 +3193,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <SponsoredSpotlightSlot userLocation={userLocation} categoryGroup={null} navigation={navigation} />
           )}
 
-          {showPerks && !(isSearching && loadingSearch) && offersToShow.length > 0 && (
+          {showPerks && !(isSearching && loadingSearch) && withSelectedPerk(offersToShow).length > 0 && (
             <>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionHeaderRowLabel}>{t('ui.discover.typeFilter.perks')}</Text>
@@ -3104,25 +3207,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   view -- one coordinated container settle, not N independent per-card slides. */}
               <StaggeredReveal index={0}>
               <View>
-              {offersToShow.map((o) => {
-                const pc = perkContext(o);
-                return (
-                  <PlaceCard
-                    key={o.id}
-                    icon="🎁"
-                    photoUrl={o.target_interest_tag ? curatedCoverPhotoFor(o.target_interest_tag) : null}
-                    tintColor={o.target_interest_tag ? categoryStyleFor(o.target_interest_tag).color : null}
-                    title={o.title}
-                    // reason + distance + action + destination from the one context object (the perk's own named tag,
-                    // never a generic "Matches your interests")
-                    reason={[o.brand_partners?.name, pc.context, businessSignalLine(o.brand_partners), pc.reason].filter(Boolean).join(' · ')}
-                    onPress={() => openDestination(navigation, pc.destination)}
-                    accessibilityLabel={[o.title, o.brand_partners?.name, pc.action?.label].filter(Boolean).join(', ')}
-                    actionLabel={pc.action?.label}
-                    actionIsState={pc.action?.kind === 'status'}
-                  />
-                );
-              })}
+              {withSelectedPerk(offersToShow).map((o) => renderPerkCard(o))}
               </View>
               </StaggeredReveal>
             </>
@@ -3240,6 +3325,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   scrollContent: { padding: spacing.lg, paddingTop: spacing.md },
+  // The selected perk: its compact card plus the redemption panel, outlined as one object (Perk Selection State).
+  selectedPerk: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 2, borderColor: colors.primary, marginBottom: spacing.md, ...shadow.card },
+  selectedPerkCardTop: { borderWidth: 0, marginBottom: 0, shadowOpacity: 0, elevation: 0, backgroundColor: 'transparent' },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   title: { ...typography.display, color: colors.textPrimary, marginBottom: 2 },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },

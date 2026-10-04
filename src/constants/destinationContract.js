@@ -21,7 +21,8 @@ export const DESTINATION_CONTRACT = {
   business_offer: { kind: 'navigate', screen: 'BusinessRequestDetail', requires: ['requestId', 'focusOfferId'] },
   business_request: { kind: 'navigate', screen: 'BusinessRequestDetail', requires: ['requestId'] },
   business: { kind: 'navigate', screen: 'BusinessProfile', requires: ['partnerId'] },
-  perk: { kind: 'navigate', screen: 'BrandOffers', requires: ['highlightOfferId'] },
+  // a perk -> Discover's Perks with that perk selected in place (its redemption controls open under its card)
+  perk: { kind: 'navigate', screen: 'Discover', params: { initialMode: 'things', initialTypeTab: 'perks' }, requires: ['selectPerkId'] },
   community: { kind: 'navigate', screen: 'CommunityDetail', requires: ['communityId'] },
   friend_request: { kind: 'navigate', screen: 'ViewProfile', requires: ['userId'] },
   place: { kind: 'url' },

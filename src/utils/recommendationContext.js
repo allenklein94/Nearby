@@ -62,12 +62,19 @@ function whenFor(item, now, language = DEFAULT_LANGUAGE) {
 // "1.2 mi" in English; the same figure in the person's words otherwise (miles stay miles, i18n/format.js).
 const distanceFor = (miles, language) => (!language || language === DEFAULT_LANGUAGE ? formatDistance(miles) : localDistance(miles, language));
 
+// A perk opens Discover -> Perks with that perk selected in place (owner, 2026-10-04: one canonical Perks surface; the
+// selected perk shows its redemption controls under its own card, never a separate perk screen).
+export const PERKS_TAB = { initialMode: 'things', initialTypeTab: 'perks' };
+export function perkDestination(offerId) {
+  return offerId ? { kind: 'navigate', screen: 'Discover', params: { ...PERKS_TAB, selectPerkId: offerId } } : null;
+}
+
 // Where a typed-ask result goes when tapped (the ONE mapping; side effects such as view logging stay with the caller).
 export function intentResultDestination(item, { typedText, classifyResult, submissionId, at = new Date() } = {}) {
   if (!item) return null;
   switch (item.type) {
     case 'gathering': return item.id ? { kind: 'navigate', screen: 'GatheringDetail', params: { gatheringId: item.id } } : null;
-    case 'perk': return item.id ? { kind: 'navigate', screen: 'BrandOffers', params: { highlightOfferId: item.id } } : null;
+    case 'perk': return perkDestination(item.id);
     case 'friend_request': return item.userId ? { kind: 'navigate', screen: 'ViewProfile', params: { userId: item.userId } } : null;
     case 'community': return item.id ? { kind: 'navigate', screen: 'CommunityDetail', params: { communityId: item.id, ...(item.title ? { communityName: item.title } : {}) } } : null;
     case 'business': return item.id ? { kind: 'navigate', screen: 'BusinessProfile', params: { partnerId: item.id } } : null;
@@ -81,7 +88,7 @@ export function intentResultDestination(item, { typedText, classifyResult, submi
     }
     // A sponsored placement opens the thing it promotes; it shares the destination rule, never ranking or reasons.
     case 'sponsored':
-      if (item.itemKind === 'offer') return item.itemId ? { kind: 'navigate', screen: 'BrandOffers', params: { highlightOfferId: item.itemId } } : null;
+      if (item.itemKind === 'offer') return perkDestination(item.itemId);
       return item.partnerId ? { kind: 'navigate', screen: 'BusinessProfile', params: { partnerId: item.partnerId } } : null;
     case 'friend_discovery': return { kind: 'navigate', screen: 'FriendDiscovery', params: undefined };
     default:

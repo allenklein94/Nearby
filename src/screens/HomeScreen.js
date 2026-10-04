@@ -1,4 +1,5 @@
 import { useLanguage } from '../context/LanguageContext';
+import { PERKS_TAB } from '../utils/recommendationContext';
 import { localizeAskNote } from '../i18n/askNoteView';
 import { surpriseView, surpriseText } from '../i18n/surpriseView';
 import { translate, tr } from '../i18n/translate';
@@ -61,7 +62,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { isGatheringPast } from '../utils/objectState';
 import { recommendationRow } from '../utils/recommendationFacts';
-import { openDestination } from '../services/openDestination';
+import { openDestination, navigateKeepingTrail } from '../services/openDestination';
 import { selectHomeAttention, cardWithoutIds, expandedListIds } from '../utils/homeAttention';
 import { gatheringCardModel } from '../utils/recommendationCard';
 import { confidenceHeadline } from '../utils/recommendationConfidence';
@@ -2318,7 +2319,7 @@ export default function HomeScreen({ navigation }) {
             {perksCount > 0 && (
               <TouchableOpacity
                 style={styles.perksBanner}
-                onPress={() => navigation.navigate('BrandOffers')}
+                onPress={() => navigateKeepingTrail(navigation, 'Discover', { ...PERKS_TAB })}
                 activeOpacity={0.85}
                 accessibilityLabel={t('ui.home.perksA11y', { count: perksCount })}
                 accessibilityRole="button"
@@ -2443,7 +2444,7 @@ export default function HomeScreen({ navigation }) {
                 <TouchableOpacity
                   key={g.key}
                   style={styles.quickActionChip}
-                  onPress={() => navigation.navigate(g.route, g.params)}
+                  onPress={() => navigateKeepingTrail(navigation, g.route, g.params && { ...g.params })}
                   activeOpacity={0.85}
                   accessibilityLabel={g.label}
                   accessibilityRole="button"

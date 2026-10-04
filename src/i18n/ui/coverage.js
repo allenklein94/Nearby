@@ -94,7 +94,7 @@ export const LOCALIZED_FILES = [
   'src/screens/BillingScreen.js',
   'src/screens/MomentumScreen.js',
   'src/screens/ChemistryDiaryListScreen.js',
-  'src/screens/BrandOffersScreen.js',
+  'src/components/PerkRedemptionPanel.js',
   'src/screens/RelationshipLegacyScreen.js',
   'src/components/DateCheckInModal.js',
   'src/screens/PaywallScreen.js',

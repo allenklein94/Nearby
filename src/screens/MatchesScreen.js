@@ -1,4 +1,6 @@
 import React, { useState, useCallback } from 'react';
+import { PERKS_TAB } from '../utils/recommendationContext';
+import { navigateKeepingTrail } from '../services/openDestination';
 import { getMatchDistanceMiles } from '../services/freeTonight';
 import { matchDistanceLabel } from '../utils/freeTonight';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image, Alert } from 'react-native';
@@ -296,7 +298,7 @@ export default function MatchesScreen({ navigation }) {
       {newOfferCount > 0 && (
         <TouchableOpacity
           style={styles.offersBanner}
-          onPress={() => navigation.navigate('BrandOffers')}
+          onPress={() => navigateKeepingTrail(navigation, 'Discover', { ...PERKS_TAB })}
           activeOpacity={0.85}
           accessibilityLabel={t('ui.matches.newOffersA11y', { count: newOfferCount })}
           accessibilityRole="button"

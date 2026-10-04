@@ -1,4 +1,6 @@
 import React, { useState, useCallback } from 'react';
+import { PERKS_TAB } from '../utils/recommendationContext';
+import { navigateKeepingTrail } from '../services/openDestination';
 import { useLanguage } from '../context/LanguageContext';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { NLoader } from '../motion';
@@ -124,7 +126,7 @@ export default function RewardsScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.ctaButton}
-          onPress={() => navigation.navigate('BrandOffers')}
+          onPress={() => navigateKeepingTrail(navigation, 'Discover', { ...PERKS_TAB })}
           activeOpacity={0.85}
           accessibilityLabel={t('ui.rewards.browsePerksNearYouA11y')}
           accessibilityRole="button"

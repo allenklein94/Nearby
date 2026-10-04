@@ -141,7 +141,7 @@ describe('businesses: declared booking mode vs none', () => {
 describe('perks, communities, requests and offers', () => {
   it('Home perk rows and Discover perk cards open the perk', () => {
     const row = recommendationRow({ type: 'perk', id: 'p1', title: '10% off', reasons: ['Because you like Coffee'], data: { distanceMiles: 0.3 } });
-    expect(row.destination).toEqual({ kind: 'navigate', screen: 'BrandOffers', params: { highlightOfferId: 'p1' } });
+    expect(row.destination).toEqual({ kind: 'navigate', screen: 'Discover', params: { initialMode: 'things', initialTypeTab: 'perks', selectPerkId: 'p1' } });
     expect(row).toMatchObject({ why: 'Because you like Coffee', meta: '0.3 mi' });
     const disc = recommendationContext(contextItem('perk', { id: 'p1', title: '10% off', distanceMiles: 0.3 }, { reasons: [becauseYouLikeReason('Coffee')], redeemed: false }));
     expect(disc.destination).toEqual(row.destination);
@@ -238,7 +238,7 @@ describe('guards: surfaces render the shared object and do not rebuild its rules
     const resolver = read('services/intentResolver.js');
     const nav = resolver.slice(resolver.indexOf('export function navigateToIntentResultItem('));
     expect(nav.slice(0, nav.indexOf('\n}\n'))).toMatch(/openDestination\(navigation, intentResultDestination\(item/);
-    expect(read('services/openDestination.js')).toMatch(/navigation\.navigate\(destination\.screen/);
+    expect(read('services/openDestination.js')).toMatch(/navigateKeepingTrail\(navigation, destination\.screen/);
   });
 });
 
@@ -325,7 +325,7 @@ describe('sponsored slot: shared destination only, never organic', () => {
   const card = { placement_id: 'pl', title: 'Latte week', partner_id: 'bp1', partner_name: 'Coastal Coffee', item_kind: 'offer', item_id: 'p9' };
   it('opens the promoted offer or business; carries no reason and no action', () => {
     const c = recommendationContext(contextItem('sponsored', card, { reasons: ['Because you like Coffee'] }));
-    expect(c.destination).toEqual({ kind: 'navigate', screen: 'BrandOffers', params: { highlightOfferId: 'p9' } });
+    expect(c.destination).toEqual({ kind: 'navigate', screen: 'Discover', params: { initialMode: 'things', initialTypeTab: 'perks', selectPerkId: 'p9' } });
     expect(c.reason).toBeNull();
     expect(c.action).toBeNull();
     expect(recommendationContext(contextItem('sponsored', { ...card, item_kind: 'business', item_id: null })).destination)

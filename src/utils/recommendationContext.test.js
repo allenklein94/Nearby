@@ -44,7 +44,7 @@ describe('the context object', () => {
     expect(recommendationContext(null).fields).toEqual([]);
   });
   it('destinations cover every result kind the resolver returns', () => {
-    expect(intentResultDestination({ type: 'perk', id: 'p' })).toEqual({ kind: 'navigate', screen: 'BrandOffers', params: { highlightOfferId: 'p' } });
+    expect(intentResultDestination({ type: 'perk', id: 'p' })).toEqual({ kind: 'navigate', screen: 'Discover', params: { initialMode: 'things', initialTypeTab: 'perks', selectPerkId: 'p' } });
     expect(intentResultDestination({ type: 'friend_request', userId: 'u' }).screen).toBe('ViewProfile');
     expect(intentResultDestination({ type: 'friend_discovery' }).screen).toBe('FriendDiscovery');
   });

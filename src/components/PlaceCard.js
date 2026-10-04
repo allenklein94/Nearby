@@ -43,6 +43,7 @@ export default function PlaceCard({
   // token -- never plain colors.surface -- so a photo-less row still reads
   // as a "functional card" instead of a blank white one.
   tintColor,
+  accessibilityState,
 }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -54,6 +55,7 @@ export default function PlaceCard({
       activeOpacity={0.85}
       accessibilityLabel={accessibilityLabel ?? `${title}${reason ? `, ${reason}` : ''}`}
       accessibilityRole="button"
+      accessibilityState={accessibilityState}
     >
       {photoUrl ? (
         <Image source={{ uri: photoUrl, headers: photoHeaders }} style={styles.image} />

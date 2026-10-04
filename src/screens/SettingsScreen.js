@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { PERKS_TAB } from '../utils/recommendationContext';
+import { navigateKeepingTrail } from '../services/openDestination';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch, Linking, Platform, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
@@ -1147,7 +1149,7 @@ export default function SettingsScreen({ navigation, route }) {
 
         <TouchableOpacity
           style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('BrandOffers')}
+          onPress={() => navigateKeepingTrail(navigation, 'Discover', { ...PERKS_TAB })}
           activeOpacity={0.85}
           accessibilityLabel={t('ui.settings.offersAndPerksA11y')}
           accessibilityRole="button"
