@@ -2057,7 +2057,23 @@ export default function DiscoverHubScreen({ navigation, route }) {
             >
               <Text style={styles.breadcrumbBack}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.breadcrumbText} numberOfLines={1}>{expandedContext ? contextLabel : sectionTitle(dateViewData)}</Text>
+            {expandedContext ? (
+              <Text style={styles.breadcrumbText} numberOfLines={1}>{contextLabel}</Text>
+            ) : (
+              /* Item 206: the active date as a removable chip; tapping it leaves the view exactly like the back arrow. */
+              <View style={{ flex: 1, flexDirection: 'row' }}>
+                <TapActiveChip
+                  active
+                  style={[styles.filterChip, styles.filterChipActive]}
+                  onPress={closeDateView}
+                  accessibilityLabel={t('ui.discover.selectedTapClear', { label: sectionTitle(dateViewData) })}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: true }}
+                >
+                  <Text style={[styles.filterChipText, styles.filterChipTextActive]} numberOfLines={1}>{`${sectionTitle(dateViewData)} ✕`}</Text>
+                </TapActiveChip>
+              </View>
+            )}
             {renderOpenNowChip()}
             {renderEnvironmentChip()}
           </View>

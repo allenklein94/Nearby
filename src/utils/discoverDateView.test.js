@@ -62,6 +62,10 @@ describe('Discover date view wiring (item 206 guards)', () => {
     expect(src).toMatch(/onContentSizeChange=\{restoreMainScroll\}/);
   });
 
+  it('shows the active date as a removable chip that exits exactly like Back', () => {
+    expect(src).toMatch(/onPress=\{closeDateView\}[\s\S]{0,400}\$\{sectionTitle\(dateViewData\)\} ✕/);
+  });
+
   it('closing changes only the date view: query, filters and mode are untouched', () => {
     const close = src.match(/function closeDateView\(\) \{([\s\S]*?)\n  \}/)[1];
     expect(close.trim()).toBe('setDateView(null);');
