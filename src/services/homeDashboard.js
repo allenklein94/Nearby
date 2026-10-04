@@ -512,7 +512,10 @@ export async function getHomeDashboard() {
   // "Your Plans" section shows Going and Hosting as two distinct groups
   // (an explicit commitment-type distinction the user asked for), not one
   // flat list that conflates "I'm attending" with "I'm running this."
+  // One gathering, one row, one role (owner item 24): a gathering you host is shown only as Hosting, never also as Going.
+  const hostedIds = new Set((hostingUpcoming ?? []).map((g) => g.id));
   const plansGoingRaw = (attendingUpcoming ?? [])
+    .filter((row) => row.gatherings && !hostedIds.has(row.gatherings.id))
     .map((row) => ({ ...row.gatherings, role: 'attending' }))
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 3);
@@ -539,7 +542,8 @@ export async function getHomeDashboard() {
   }
   // "Interested" (I might go): saved but not committed -- shown inline under Your Plans, never merged into Going.
   const allInterested = await settle(getMyInterestedGatherings(), 'interested');
-  const plansInterested = allInterested.slice(0, 3);
+  const committedIds = new Set([...hostedIds, ...(attendingUpcoming ?? []).map((row) => row.gatherings?.id)]);
+  const plansInterested = allInterested.filter((g) => !committedIds.has(g.id)).slice(0, 3);
   const interestedIds = allInterested.map((g) => g.id);
   const plansGoing = plansGoingRaw.map((p) => ({ ...p, peopleCount: approvedCountByGathering[p.id] ?? 0 }));
   const plansHosting = plansHostingRaw.map((p) => ({ ...p, peopleCount: approvedCountByGathering[p.id] ?? 0 }));

@@ -17,6 +17,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+import { mergePlanRows } from '../utils/planRows';
 import { attendeeTotal } from '../utils/gatheringFullness';
 // Tab labels are ui.plans.tab<Key> (display only; the key is the state).
 const TABS = [{ key: 'upcoming', labelKey: 'tabUpcoming' }, { key: 'hosting', labelKey: 'tabHosting' }, { key: 'past', labelKey: 'tabPast' }];
@@ -137,23 +138,23 @@ export default function PlansScreen({ navigation, route }) {
 
   const rowsFor = (activeTab) => {
     if (activeTab === 'upcoming') {
-      return [
+      return mergePlanRows([
         ...attending.upcoming.map((g) => ({ gathering: g, status: 'going' })),
         ...hosting.upcoming.map((g) => ({ gathering: g, status: 'hosting' })),
         ...interestedList.map((g) => ({ gathering: g, status: 'maybe' })),
-      ].sort((a, b) => new Date(a.gathering.scheduled_at) - new Date(b.gathering.scheduled_at));
+      ]).sort((a, b) => new Date(a.gathering.scheduled_at) - new Date(b.gathering.scheduled_at));
     }
     if (activeTab === 'hosting') {
-      return [
+      return mergePlanRows([
         ...hosting.upcoming.map((g) => ({ gathering: g, status: 'hosting', section: 'Upcoming' })),
         ...hosting.past.map((g) => ({ gathering: g, status: 'hosted', section: 'Past' })),
-      ];
+      ]);
     }
     // past
-    return [
+    return mergePlanRows([
       ...attending.past.map((g) => ({ gathering: g, status: 'attended' })),
       ...hosting.past.map((g) => ({ gathering: g, status: 'hosted' })),
-    ].sort((a, b) => new Date(b.gathering.scheduled_at) - new Date(a.gathering.scheduled_at));
+    ]).sort((a, b) => new Date(b.gathering.scheduled_at) - new Date(a.gathering.scheduled_at));
   };
 
   const rows = rowsFor(tab);
