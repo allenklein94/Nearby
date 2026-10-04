@@ -25,7 +25,6 @@ export const SCREEN_REGISTRY = {
   Activity: { surface: true, jobs: ['B'], reason: 'Tab: invitations, requests and replies that need an answer.' },
   Plans: { surface: true, jobs: ['C'], reason: 'Your upcoming, hosting and past plans; the way into managing each one.' },
   Gatherings: { surface: true, jobs: ['A'], reason: 'The nearby gatherings feed (filters change it in place).' },
-  Notices: { surface: true, jobs: ['B'], reason: 'The Activity screen opened on top of the current screen (wave and notice pushes), so Back returns to where you were.' },
 
   // ---- signing in and onboarding (one multi-step setup workflow) ----
   Onboarding: { jobs: ['C'], reason: 'Welcome step of setting up an account.' },
@@ -141,6 +140,14 @@ export const INFRASTRUCTURE_ROUTES = {
   MainTabs: 'The bottom-tab container; the tabs inside it are registered above.',
 };
 
+// Outside-entry presentations of an existing surface (owner, 2026-10-04): not screens of their own. Each renders exactly
+// its surface's component on top of the current history so a push tap keeps the person's place (item 139). The route ->
+// surface map lives in navigation/presentationRoutes.js (navigation reads it too); this states why each one exists.
+export { PRESENTATION_ROUTES } from '../navigation/presentationRoutes';
+export const PRESENTATION_REASONS = {
+  Notices: 'The wave push opens Activity on top of the current screen so Back returns exactly where you were; titled Activity, never a separate Notices screen.',
+};
+
 // Screen components that are never navigated to on their own: they render inside another registered screen.
 export const EMBEDDED_SCREENS = {
   MatchesScreen: 'Rendered inside Messages (the conversations list).',
@@ -153,6 +160,8 @@ export const RULE14_DECISIONS = {
     BrandOffers: 'Discover -> Perks (browse and redeem in place)',
     Rewards: 'one tier line at the top of Discover -> Perks',
   },
+  // Notices was registered as its own surface; it is Activity presented on top for push entry (PRESENTATION_ROUTES).
+  presentations: { Notices: 'Activity' },
   trimmed: { Communities: 'your own communities + Create; public discovery is Discover -> Communities' },
   borderlineKeep: ['Momentum'],
 };

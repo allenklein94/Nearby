@@ -75,7 +75,9 @@ function makeRef({ signedIn = true } = {}) {
     },
     dispatch: (action) => {
       if (action.type === 'SET_PARAMS') {
-        state = { ...state, routes: state.routes.map((r) => (r.key === action.source ? { ...r, params: { ...r.params, ...action.payload.params } } : r)) };
+        const set = (r) => (r.key === action.source ? { ...r, params: { ...r.params, ...action.payload.params } } : r);
+        // A tab route (inside the tab host) can be the one refreshed in place, too.
+        state = { ...state, routes: state.routes.map((r) => (r.state ? { ...set(r), state: { ...r.state, routes: r.state.routes.map(set) } } : set(r))) };
         return;
       }
       const next = stack.getStateForAction(state, action, opts(names));
@@ -364,3 +366,48 @@ describe('the audit: every push type has one registered destination', () => {
     expect(dest).toMatch(/case 'reward_tier_nudge':[\s\S]{0,200}to\('MainTabs', \{ screen: 'Discover', params: \{ \.\.\.PERKS_TAB \} \}\)/);
   });
 });
+
+describe('wave push -> Activity (Notices is Activity presented on top, owner 2026-10-04)', () => {
+  test('from elsewhere: Activity is presented on top; Back returns exactly to the origin screen', async () => {
+    const ref = makeRef();
+    ref.switchTab('Discover');
+    const discover = ref.discover();
+    ref.open('ViewProfile', { userId: 'u1' });
+    ref.open('Chat', { matchId: 'm1' });
+    const chat = ref.top();
+    await tap(ref, { type: 'wave' });
+    expect(ref.names()).toEqual(['MainTabs', 'ViewProfile', 'Chat', 'Notices']);
+    expect(T.getTrail()).toBeNull(); // not a tab switch: nothing was closed, so no trail is needed
+    ref.back();
+    expect(ref.top()).toBe(chat); // the same mounted Chat (draft and scroll survive)
+    ref.back();
+    ref.back();
+    expect(ref.tab()).toBe('Discover');
+    expect(ref.discover()).toBe(discover);
+  });
+
+  test('already on the Activity tab: Activity refreshes in place, no second Activity on the stack', async () => {
+    const ref = makeRef();
+    ref.switchTab('Activity');
+    const activity = ref.getCurrentRoute();
+    await tap(ref, { type: 'wave' });
+    expect(ref.names()).toEqual(['MainTabs']);
+    expect(ref.tab()).toBe('Activity');
+    const after = ref.getCurrentRoute();
+    expect(after.key).toBe(activity.key);
+    expect(typeof after.params.openedAt).toBe('number'); // ActivityScreen reloads on a new openedAt
+    // A second wave refreshes again, still without stacking.
+    await tap(ref, { type: 'wave' });
+    expect(ref.names()).toEqual(['MainTabs']);
+  });
+
+  test('already on the presented Activity: a second wave refreshes it instead of stacking another', async () => {
+    const ref = makeRef();
+    ref.switchTab('Home');
+    await tap(ref, { type: 'wave' });
+    await tap(ref, { type: 'wave' });
+    expect(ref.names()).toEqual(['MainTabs', 'Notices']);
+    expect(typeof ref.top().params.openedAt).toBe('number');
+  });
+});
+

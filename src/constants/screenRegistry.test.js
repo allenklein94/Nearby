@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
-import { SCREEN_REGISTRY, INFRASTRUCTURE_ROUTES, EMBEDDED_SCREENS, RULE14_DECISIONS, RULE14_JOBS } from './screenRegistry';
+import {
+  SCREEN_REGISTRY, INFRASTRUCTURE_ROUTES, EMBEDDED_SCREENS, RULE14_DECISIONS, RULE14_JOBS, PRESENTATION_ROUTES, PRESENTATION_REASONS,
+} from './screenRegistry';
 
 // Rule 14 guard: the navigators are the canonical list of screens; every route they register must say why it exists.
 const SRC = path.join(__dirname, '..');
@@ -20,12 +22,13 @@ describe('rule 14: every navigable screen has a reason to exist', () => {
   });
 
   it('every registered route has a registry entry (add one before shipping a new screen)', () => {
-    const missing = [...registered.keys()].filter((r) => !SCREEN_REGISTRY[r] && !INFRASTRUCTURE_ROUTES[r]);
+    const missing = [...registered.keys()].filter((r) => !SCREEN_REGISTRY[r] && !INFRASTRUCTURE_ROUTES[r] && !PRESENTATION_ROUTES[r]);
     expect(missing).toEqual([]);
   });
 
   it('every registry entry names a route the navigators really register (no stale entries)', () => {
-    const stale = [...Object.keys(SCREEN_REGISTRY), ...Object.keys(INFRASTRUCTURE_ROUTES)].filter((r) => !registered.has(r));
+    const stale = [...Object.keys(SCREEN_REGISTRY), ...Object.keys(INFRASTRUCTURE_ROUTES), ...Object.keys(PRESENTATION_ROUTES)]
+      .filter((r) => !registered.has(r));
     expect(stale).toEqual([]);
   });
 
@@ -60,5 +63,28 @@ describe('rule 14: every navigable screen has a reason to exist', () => {
     }
     expect(SCREEN_REGISTRY.Momentum.borderline).toBe(true);
     expect(SCREEN_REGISTRY.MarketValidation).toBeTruthy(); // admin screens are covered too
+  });
+
+  it('an outside-entry presentation is not a screen of its own: it renders exactly its surface\'s component', () => {
+    for (const [route, surface] of Object.entries(PRESENTATION_ROUTES)) {
+      expect({ route, inRegistry: !!SCREEN_REGISTRY[route] }).toEqual({ route, inRegistry: false });
+      expect(SCREEN_REGISTRY[surface]?.surface).toBe(true);
+      expect({ route, component: registered.get(route) }).toEqual({ route, component: registered.get(surface) });
+      expect(typeof PRESENTATION_REASONS[route] === 'string' && PRESENTATION_REASONS[route].length >= 10).toBe(true);
+    }
+    expect(Object.keys(PRESENTATION_REASONS).sort()).toEqual(Object.keys(PRESENTATION_ROUTES).sort());
+  });
+
+  it('Activity is the one canonical Activity surface; Notices is only its push-entry presentation', () => {
+    expect(registered.get('Activity')).toBe('ActivityScreen');
+    expect(registered.get('Notices')).toBe('ActivityScreen');
+    expect(PRESENTATION_ROUTES.Notices).toBe('Activity');
+    expect(SCREEN_REGISTRY.Notices).toBeUndefined();
+    expect(RULE14_DECISIONS.presentations.Notices).toBe('Activity');
+    // No other route renders ActivityScreen, and no second Activity/Notices screen file exists.
+    const activityRoutes = [...registered].filter(([, c]) => c === 'ActivityScreen').map(([r]) => r).sort();
+    expect(activityRoutes).toEqual(['Activity', 'Notices']);
+    const files = fs.readdirSync(path.join(SRC, 'screens')).filter((f) => /^(Notices|Notifications|Activity\w+)Screen/.test(f));
+    expect(files).toEqual([]);
   });
 });

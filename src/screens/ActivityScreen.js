@@ -1,7 +1,7 @@
 import { businessReplyTitle, acceptedReplyTitle } from '../utils/offerCopy';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Image, Alert } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
@@ -280,6 +280,17 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
       loadReminders();
     }, [load, loadConnectionRequests, loadInvitations, loadReminders])
   );
+
+  // A push tap for Activity while Activity is already showing refreshes it in place (openOnTop sets a fresh openedAt
+  // instead of stacking a second Activity); focus effects do not fire on a screen that is already focused.
+  const openedAt = route?.params?.openedAt;
+  useEffect(() => {
+    if (!openedAt) return;
+    load();
+    loadConnectionRequests();
+    loadInvitations();
+    loadReminders();
+  }, [openedAt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function onRefresh() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

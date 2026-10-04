@@ -8,10 +8,13 @@
 // Pure decision, no React Native imports, so it is unit-tested:
 //   'navigate'  -> tab/root destinations (MainTabs); switching tabs is navigation,
 //                  not a new screen on top
-//   'setParams' -> the screen already on top IS this object (same name, same ids):
+//   'setParams' -> the screen already on top IS this object (same surface, same ids; a presentation route such as
+//                  'Notices' counts as the surface it presents, so a wave tap while on the Activity tab refreshes it):
 //                  refresh it in place (e.g. a second offer on the same request
 //                  re-focuses it) instead of stacking a duplicate
 //   'push'      -> everything else: a new screen on top of the current history
+import { canonicalRoute } from './presentationRoutes';
+
 export const NAVIGATE_DESTINATIONS = new Set(['MainTabs']);
 
 // Params that identify WHICH object a screen shows. Everything else
@@ -33,7 +36,7 @@ export function identityOf(params) {
 
 export function notificationNavAction(currentRoute, name, params) {
   if (NAVIGATE_DESTINATIONS.has(name)) return 'navigate';
-  if (currentRoute && currentRoute.name === name && identityOf(currentRoute.params) === identityOf(params)) {
+  if (currentRoute && canonicalRoute(currentRoute.name) === canonicalRoute(name) && identityOf(currentRoute.params) === identityOf(params)) {
     return 'setParams';
   }
   return 'push';

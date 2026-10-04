@@ -2,6 +2,7 @@ import { StackActions, CommonActions, getActionFromState as defaultGetActionFrom
 import { notificationNavAction } from './notificationNav';
 import { beginTrail, TAB_HOST } from './returnTrail';
 import { isRegistered } from './outsideEntry';
+import { isPresentation } from './presentationRoutes';
 
 // Item 139: the one way an outside entry (push tap, nearby:// link) opens an
 // object: on top of the current history, refreshed in place when it is already
@@ -14,7 +15,10 @@ export function openOnTop(ref, name, params) {
   const current = ref.getCurrentRoute();
   const action = notificationNavAction(current, name, params);
   if (action === 'setParams') {
-    ref.dispatch({ ...CommonActions.setParams(params ?? {}), source: current.key });
+    // A presentation refreshed in place (a wave tap while Activity is showing) gets a fresh openedAt so the screen reloads;
+    // focus effects do not fire when the screen is already focused.
+    const next = isPresentation(name) ? { ...(params ?? {}), openedAt: Date.now() } : (params ?? {});
+    ref.dispatch({ ...CommonActions.setParams(next), source: current.key });
   } else if (action === 'push') {
     ref.dispatch(StackActions.push(name, params));
   } else {
