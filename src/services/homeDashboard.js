@@ -385,7 +385,9 @@ export async function getOnboardingRecommendations() {
   // invented "92% match" figure with nothing real behind it.
   const scored = (gatherings ?? []).map((g) => {
     const matchesInterest = monthlyInterests.some((i) => i.toLowerCase() === (g.interest_tag ?? '').toLowerCase());
-    return { ...g, matchScore: matchesInterest ? 1 : 0 };
+    // interestMatched: the gathering's own category equals an interest the person explicitly picked (the ONLY Why the
+    // "You're ready" card may show, readyCardWhy)
+    return { ...g, matchScore: matchesInterest ? 1 : 0, interestMatched: matchesInterest };
   });
 
   const top = scored

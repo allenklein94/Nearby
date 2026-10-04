@@ -46,7 +46,7 @@ describe('the wizard and Home cards use the why / how far / when rule', () => {
   const read = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
   test('onboarding wizard no longer shows the bare generic line', () => {
     const wizard = read('../screens/OnboardingRecommendationsScreen.js');
-    expect(wizard).toMatch(/recommendationFacts\(r\)/);
+    expect(wizard).toMatch(/readyCardWhy\(r\)/); // the strict Why rule (readyCardWhy.test.js)
     expect(wizard).not.toMatch(/⭐ Matches your interests/);
   });
   test('fit-reason scorers name the interest instead of the generic text', () => {

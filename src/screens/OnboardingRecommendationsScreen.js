@@ -8,7 +8,7 @@ import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { wantsCelebrationsStep } from '../constants/onboardingGoals';
-import { recommendationFacts } from '../utils/recommendationFacts';
+import { readyCardWhy } from '../utils/recommendationFacts';
 import { localizeReason } from '../utils/reasonLocalization';
 import { displayDistance, displayWhen, displayGatheringWhen } from '../i18n/display';
 import LoadErrorState from '../components/LoadErrorState';
@@ -63,9 +63,9 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
           <>
             <Text style={styles.foundText}>{t('ui.onboarding.foundCount', { count: recommendations.length })}</Text>
             {recommendations.map((r) => {
-              const baseFacts = recommendationFacts(r);
+              const why = readyCardWhy(r);
               const meta = [displayDistance(r.distanceMiles, language), displayGatheringWhen(r, language)].filter(Boolean).join(' · ') || null;
-              const facts = { why: baseFacts.why ? localizeReason(baseFacts.why, language) : null, meta };
+              const facts = { why: why ? localizeReason(why, language) : null, meta };
               return (
               <TouchableOpacity
                 key={r.id}

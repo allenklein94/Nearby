@@ -25,6 +25,16 @@ export function recommendationFacts(g) {
   return { why, distance, when, meta: [distance, when].filter(Boolean).join(' · ') || null };
 }
 
+// The "You're ready" onboarding card's Why (owner, 2026-10-04, LOCKED). A reason must explain the real signal that made THIS card
+// qualify. Those cards qualify only by a declared-interest match (else they are simply the soonest public gatherings), so the
+// only true Why is "Because you like {its own category}" when `interestMatched` is set by getOnboardingRecommendations.
+// Otherwise there is NO Why line: never "Matches your interests", "Recommended for you", a category without a match, an
+// inferred interest, distance, popularity, timing, AI text or paid status. Distance and When are their own facts.
+export function readyCardWhy(r) {
+  if (r?.interestMatched !== true) return null;
+  return becauseYouLikeReason(r.interest_tag);
+}
+
 // "1.3 mi · Today · 6:30 PM" for surfaces that already format their own time wording (e.g. Discover's "Tonight").
 export function factsMeta(g, when = null) {
   const parts = [formatDistance(g?.distanceMiles), when ?? (g?.scheduled_at ? formatHeroDateTime(g.scheduled_at) : null)].filter(Boolean);
