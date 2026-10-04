@@ -89,12 +89,26 @@ export function localMoney(amount, language) {
   return `$${Number.isInteger(amount) ? localNumber(amount, language) : localNumber(amount, language, 2)}`;
 }
 
-export function localWhen(iso, now = new Date(), language = DEFAULT_LANGUAGE) {
-  const p = whenParts(iso, now);
+// "7–10 PM" / "19–22 Uhr"-style: both clocks, the day part said once when a 12-hour language shares it.
+export function localClockRange(start, end, language) {
+  const c = vocabValue(language, 'clock') ?? {};
+  const a = localClockOfDate(start, language);
+  const b = localClockOfDate(end, language);
+  if (c.style !== '24' && (start.getHours() < 12) === (end.getHours() < 12)) {
+    const period = start.getHours() < 12 ? c.am : c.pm;
+    const strip = (x) => x.split(period).join('').trim();
+    const leading = String(c.whole ?? '').startsWith('{period}');
+    return leading ? `${a}–${strip(b)}` : `${strip(a)}–${b}`;
+  }
+  return `${a}–${b}`;
+}
+
+export function localWhen(iso, now = new Date(), language = DEFAULT_LANGUAGE, endIso = null) {
+  const p = whenParts(iso, now, endIso);
   if (!p) return null;
   if (p.form === 'now') return v(language, 'when.happeningNow');
   if (p.form === 'startsIn') return v(language, 'when.startsIn', { count: p.minutes });
-  const time = localClockOfDate(p.date, language);
+  const time = p.end ? localClockRange(p.date, p.end, language) : localClockOfDate(p.date, language);
   const count = clockCount(minutesOf(p.date), language);
   if (p.form === 'date') return v(language, 'when.dateTime', { date: localDate(p.date, language), time, count });
   return v(language, `when.${p.form}`, { time, count });
@@ -107,7 +121,7 @@ export function localWindow(win, now = new Date(), kind = 'event', language = DE
   const p = timeWindowParts(win, now, kind);
   switch (p.form) {
     case 'unknown': case 'over': return null;
-    case 'upcoming': return localWhen(new Date(p.startMs).toISOString(), new Date(p.nowMs), language);
+    case 'upcoming': return localWhen(new Date(p.startMs).toISOString(), new Date(p.nowMs), language, p.endMs != null ? new Date(p.endMs).toISOString() : null);
     case 'justStarted': return v(language, 'when.happeningNow');
     case 'overEnded': return v(language, kind === 'offer' ? 'when.expired' : 'when.ended');
     case 'endingSoon': return v(language, 'when.endsIn', { count: p.minutesLeft });

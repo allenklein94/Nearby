@@ -479,7 +479,7 @@ export async function getMyInterestedGatherings() {
   if (!userId) return [];
   const { data, error } = await supabase
     .from('gathering_interested')
-    .select('created_at, gatherings(id, title, description, interest_tag, scheduled_at, show_on_map, host_id, hosting_partner_id)')
+    .select('created_at, gatherings(id, title, description, interest_tag, scheduled_at, duration_minutes, show_on_map, host_id, hosting_partner_id)')
     .eq('user_id', userId);
   if (error) {
     console.error('getMyInterestedGatherings error', error);
@@ -498,7 +498,7 @@ export async function getMyAttendingGatherings() {
 
   const { data, error } = await supabase
     .from('gathering_interest')
-    .select('id, status, gatherings(id, title, description, interest_tag, scheduled_at, show_on_map, host_id, hosting_partner_id, energy_level, conversation_level, group_size_feel, beginner_friendly, skill_level, effort_level, timeline_steps, cover_photo_path, host:profiles!gatherings_host_id_fkey(display_name, photo_url))')
+    .select('id, status, gatherings(id, title, description, interest_tag, scheduled_at, duration_minutes, show_on_map, host_id, hosting_partner_id, energy_level, conversation_level, group_size_feel, beginner_friendly, skill_level, effort_level, timeline_steps, cover_photo_path, host:profiles!gatherings_host_id_fkey(display_name, photo_url))')
     .eq('user_id', userId)
     .eq('status', 'approved')
     .order('id', { ascending: false });

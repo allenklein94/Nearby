@@ -62,7 +62,7 @@ import { getGatheringPlanCompletion, formatPlaceStatusLabel } from '../utils/pla
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
-import { displayDateTime } from '../i18n/display';
+import { displayDateTime, displayGatheringDateTime } from '../i18n/display';
 import { useLanguage } from '../context/LanguageContext';
 import useCategoryNames from '../hooks/useCategoryNames';
 import { attendeeTotal, getGatheringFullness, gatheringBusinessPartySize } from '../utils/gatheringFullness';
@@ -659,7 +659,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
             <Text style={styles.title}>{gathering.title}</Text>
           </View>
           <Text style={styles.metaLine}>
-            {displayDateTime(gathering.scheduled_at, language)}{gathering.distanceLabel ? ` · ${gathering.distanceLabel}` : ''}
+            {displayGatheringDateTime(gathering, language)}{gathering.distanceLabel ? ` · ${gathering.distanceLabel}` : ''}
           </Text>
           {(gathering.isHost || gathering.myStatus === 'approved') && (
             <TouchableOpacity onPress={openPlanDetail} accessibilityRole="button" accessibilityLabel={t('ui.gatheringDetail.wholePlanA11y')}>

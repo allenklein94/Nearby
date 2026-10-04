@@ -16,26 +16,39 @@ function shortTime(d) {
 
 // The decision behind whenLabel, as data, so another language can word the same answer (i18n/format.js localWhen).
 //   { form: 'now' } | { form: 'startsIn', minutes } | { form: 'today' | 'tonight' | 'tomorrow' | 'date', date }
-export function whenParts(iso, now = new Date()) {
+// `endIso` (optional): the end the host gave (start + the host-chosen length, item 188 follow-up). With it, a clock form
+// carries `end` and reads as a range ("Tonight · 7–10 PM"); without it nothing is invented.
+export function whenParts(iso, now = new Date(), endIso = null) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
+  const e = endIso == null ? null : new Date(endIso);
+  const end = e && Number.isFinite(e.getTime()) && e.getTime() > d.getTime() ? e : null;
   const diffMs = d.getTime() - now.getTime();
   if (diffMs <= 0 && -diffMs <= HAPPENING_NOW_PAST_MS) return { form: 'now', date: d };
   if (diffMs > 0 && diffMs <= STARTS_IN_WINDOW_MIN * 60000) return { form: 'startsIn', minutes: Math.max(1, Math.ceil(diffMs / 60000)), date: d };
   const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   const tomorrow = new Date(now);
   tomorrow.setDate(now.getDate() + 1);
-  if (isSameDay(d, now)) return { form: d.getHours() >= 18 ? 'tonight' : 'today', date: d };
-  if (isSameDay(d, tomorrow)) return { form: 'tomorrow', date: d };
-  return { form: 'date', date: d };
+  if (isSameDay(d, now)) return { form: d.getHours() >= 18 ? 'tonight' : 'today', date: d, end };
+  if (isSameDay(d, tomorrow)) return { form: 'tomorrow', date: d, end };
+  return { form: 'date', date: d, end };
 }
 
-export function whenLabel(iso, now = new Date()) {
-  const p = whenParts(iso, now);
+// "7–10 PM", "6:30–9 PM", "11 AM–1 PM": the AM/PM is said once when both ends share it.
+export function clockRange(start, end) {
+  const a = shortTime(start);
+  const b = shortTime(end);
+  const pa = a.match(/\s?([AP]M)$/i);
+  const pb = b.match(/\s?([AP]M)$/i);
+  return pa && pb && pa[1].toUpperCase() === pb[1].toUpperCase() ? `${a.slice(0, a.length - pa[0].length)}–${b}` : `${a}–${b}`;
+}
+
+export function whenLabel(iso, now = new Date(), endIso = null) {
+  const p = whenParts(iso, now, endIso);
   if (!p) return null;
   if (p.form === 'now') return 'Happening now';
   if (p.form === 'startsIn') return `Starts in ${p.minutes} min`;
-  const time = shortTime(p.date);
+  const time = p.end ? clockRange(p.date, p.end) : shortTime(p.date);
   if (p.form === 'today') return `Today · ${time}`;
   if (p.form === 'tonight') return `Tonight · ${time}`;
   if (p.form === 'tomorrow') return `Tomorrow · ${time}`;
@@ -43,8 +56,8 @@ export function whenLabel(iso, now = new Date()) {
 }
 
 // Kept as the shared name every card already calls; it now picks the clearest wording (see whenLabel).
-export function formatHeroDateTime(iso, now = new Date()) {
-  return whenLabel(iso, now) ?? '';
+export function formatHeroDateTime(iso, now = new Date(), endIso = null) {
+  return whenLabel(iso, now, endIso) ?? '';
 }
 
 // Aug 30 2026 (CLAUDE.md) -- Home's "Friends' Activity" cards used to show

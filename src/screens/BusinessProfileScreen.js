@@ -15,7 +15,7 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { availabilityPulseIcon, isAvailabilityPulseFresh, experiencePriceLabel } from '../constants/businessAttributes';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
-import { displayDateTime } from '../i18n/display';
+import { displayDateTime, displayGatheringDateTime } from '../i18n/display';
 import { spacing, radius, typography } from '../theme';
 
 import { unlockStatus } from '../utils/unlockProgress';
@@ -616,7 +616,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
                   <Text style={styles.gatheringIcon}>{categoryStyle.icon}</Text>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.gatheringTitle}>{g.title}</Text>
-                    <Text style={styles.gatheringMeta}>{displayDateTime(g.scheduled_at, language)}</Text>
+                    <Text style={styles.gatheringMeta}>{displayGatheringDateTime(g, language)}</Text>
                   </View>
                 </TouchableOpacity>
               );

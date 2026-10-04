@@ -61,11 +61,14 @@ export function durationLabel(minutes) {
 }
 
 // Short labelled facts for a card / detail, only for what the host really said.
+export const hasStartTime = (g) => g?.scheduled_at != null && Number.isFinite(new Date(g.scheduled_at).getTime());
+
 export function practicalFacts(g) {
   const out = [];
   if (g?.equipment_provided === true) out.push('🎾 Equipment provided');
   else if (g?.equipment_provided === false) out.push('🎒 Bring your own equipment');
-  const d = durationLabel(g?.duration_minutes);
+  // Item 188 follow-up: with a start time the length is shown as the range on the when line ("7–10 PM"), never twice.
+  const d = hasStartTime(g) ? null : durationLabel(g?.duration_minutes);
   if (d) out.push(`⏱️ About ${d}`);
   // Item 188: a declared fact only; Nearby never sells or links to tickets.
   if (g?.ticket_required === true) out.push('🎟️ Ticket needed, bought separately');

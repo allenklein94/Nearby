@@ -2,7 +2,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { localizeAskNote } from '../i18n/askNoteView';
 import { surpriseView, surpriseText } from '../i18n/surpriseView';
 import { translate, tr } from '../i18n/translate';
-import { displayHeroWhen } from '../i18n/display';
+import { displayHeroWhen, displayGatheringWhen } from '../i18n/display';
 import { categoryName } from '../i18n/categoryNames';
 import { quickOptionLabel } from '../i18n/optionLabels';
 import { resultRowView, contextItem } from '../utils/recommendationContext';
@@ -1951,7 +1951,7 @@ export default function HomeScreen({ navigation }) {
                       icon={categoryStyleFor(plan.interest_tag).icon}
                       iconColor={categoryStyleFor(plan.interest_tag).color}
                       title={plan.title}
-                      dateTimeText={displayHeroWhen(plan.scheduled_at, language)}
+                      dateTimeText={displayGatheringWhen(plan, language)}
                       peopleCount={plan.peopleCount}
                       hostingPartnerId={plan.hosting_partner_id}
                       venueName={venueNameForPlan(plan.id)}
@@ -1970,7 +1970,7 @@ export default function HomeScreen({ navigation }) {
                       icon={categoryStyleFor(plan.interest_tag).icon}
                       iconColor={categoryStyleFor(plan.interest_tag).color}
                       title={plan.title}
-                      dateTimeText={displayHeroWhen(plan.scheduled_at, language)}
+                      dateTimeText={displayGatheringWhen(plan, language)}
                       peopleCount={plan.peopleCount}
                       hostingPartnerId={plan.hosting_partner_id}
                       venueName={venueNameForPlan(plan.id)}
@@ -1990,7 +1990,7 @@ export default function HomeScreen({ navigation }) {
                       iconColor={categoryStyleFor(plan.interest_tag).color}
                       title={plan.title}
                       roleLabel={t('ui.home.interested')}
-                      dateTimeText={displayHeroWhen(plan.scheduled_at, language)}
+                      dateTimeText={displayGatheringWhen(plan, language)}
                       hostingPartnerId={plan.hosting_partner_id}
                       onPress={() => navigation.navigate('GatheringDetail', { gatheringId: plan.id })}
                     />
@@ -2369,7 +2369,7 @@ export default function HomeScreen({ navigation }) {
                           style={styles.weatherSuggestionRow}
                           onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
                           activeOpacity={0.85}
-                          accessibilityLabel={`${g.title}, ${displayHeroWhen(g.scheduled_at, language)}`}
+                          accessibilityLabel={`${g.title}, ${displayGatheringWhen(g, language)}`}
                           accessibilityRole="button"
                         >
                           <Text style={styles.weatherSuggestionIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
@@ -2377,7 +2377,7 @@ export default function HomeScreen({ navigation }) {
                             <Text style={[styles.weatherSuggestionText, { flex: 0, flexGrow: 0, flexBasis: 'auto' }]} numberOfLines={1}>{g.title}</Text>
                             {attention.absorbed.get(g.id)?.length ? <Text style={styles.weatherSuggestionTime} numberOfLines={1}>{attention.absorbed.get(g.id).join(' · ')}</Text> : null}
                           </View>
-                          <Text style={styles.weatherSuggestionTime}>{displayHeroWhen(g.scheduled_at, language)}</Text>
+                          <Text style={styles.weatherSuggestionTime}>{displayGatheringWhen(g, language)}</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -2396,7 +2396,7 @@ export default function HomeScreen({ navigation }) {
                           style={styles.weatherSuggestionRow}
                           onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
                           activeOpacity={0.85}
-                          accessibilityLabel={`${g.title}, ${displayHeroWhen(g.scheduled_at, language)}`}
+                          accessibilityLabel={`${g.title}, ${displayGatheringWhen(g, language)}`}
                           accessibilityRole="button"
                         >
                           <Text style={styles.weatherSuggestionIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
@@ -2404,7 +2404,7 @@ export default function HomeScreen({ navigation }) {
                             <Text style={[styles.weatherSuggestionText, { flex: 0, flexGrow: 0, flexBasis: 'auto' }]} numberOfLines={1}>{g.title}</Text>
                             {attention.absorbed.get(g.id)?.length ? <Text style={styles.weatherSuggestionTime} numberOfLines={1}>{attention.absorbed.get(g.id).join(' · ')}</Text> : null}
                           </View>
-                          <Text style={styles.weatherSuggestionTime}>{displayHeroWhen(g.scheduled_at, language)}</Text>
+                          <Text style={styles.weatherSuggestionTime}>{displayGatheringWhen(g, language)}</Text>
                         </TouchableOpacity>
                       ))}
                     </View>

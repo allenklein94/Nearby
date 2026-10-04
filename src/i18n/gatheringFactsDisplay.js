@@ -3,7 +3,7 @@
 // ui.gatheringParts.fact.* and ui.suitedAges.*. Display only.
 import { translate } from './translate';
 import { localDuration } from './format';
-import { practicalFacts, durationLabel, genreLabel, cleanFeatures, GATHERING_FEATURE_OPTIONS } from '../utils/gatheringPractical';
+import { practicalFacts, hasStartTime, durationLabel, genreLabel, cleanFeatures, GATHERING_FEATURE_OPTIONS } from '../utils/gatheringPractical';
 import { formatLabel, formatIcon } from '../constants/activityFormat';
 import { skillLabel } from '../constants/skillLevel';
 import { effortLabel } from '../constants/intensityEffort';
@@ -16,7 +16,7 @@ export function practicalFactsIn(g, language) {
   const out = [];
   if (g?.equipment_provided === true) out.push(`🎾 ${o('equipment.provided')}`);
   else if (g?.equipment_provided === false) out.push(`🎒 ${f('byoEquipment')}`);
-  if (durationLabel(g?.duration_minutes)) out.push(`⏱️ ${f('about', { duration: localDuration(g.duration_minutes, language) })}`);
+  if (!hasStartTime(g) && durationLabel(g?.duration_minutes)) out.push(`⏱️ ${f('about', { duration: localDuration(g.duration_minutes, language) })}`);
   if (g?.ticket_required === true) out.push(`🎟️ ${f('ticketNeeded')}`);
   if (genreLabel(g?.genre)) out.unshift(`🎵 ${o(`genre.${g.genre}`)}`);
   const fmt = formatLabel(g?.format) ? `${formatIcon(g.format)} ${o(`format.${g.format}`)}` : null;

@@ -20,7 +20,6 @@ import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
-import { formatDateTime } from '../utils/timeLabels';
 import { spacing, radius, typography } from '../theme';
 import { getUserLocation } from '../services/userLocation';
 import { isGatheringUpcoming } from '../utils/objectState';
@@ -28,10 +27,11 @@ import { isGatheringUpcoming } from '../utils/objectState';
 import { unlockStatus } from '../utils/unlockProgress';
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
+import { displayGatheringDateTime } from '../i18n/display';
 const ROLE_LABELS = { creator: 'Creator', leader: 'Leader', member: 'Member' };
 
 export default function CommunityDetailScreen({ route, navigation }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const membersLabel = (n) => (Number.isFinite(n) ? t('ui.common.count.members', { count: n }) : null);
   const { communityId, communityName } = route.params;
   const { colors, shadow } = useTheme();
@@ -364,10 +364,6 @@ export default function CommunityDetailScreen({ route, navigation }) {
         },
       ]
     );
-  }
-
-  function formatDate(iso) {
-    return formatDateTime(iso);
   }
 
   if (loading) {
@@ -818,7 +814,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
             ).map((g) => (
               <View key={g.id} style={styles.gatheringCard}>
                 <Text style={styles.gatheringTitle}>{g.title}</Text>
-                <Text style={styles.gatheringMeta}>{formatDate(g.scheduled_at)}</Text>
+                <Text style={styles.gatheringMeta}>{displayGatheringDateTime(g, language)}</Text>
               </View>
             ))}
           </>

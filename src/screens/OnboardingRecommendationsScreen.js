@@ -10,7 +10,7 @@ import { typography, spacing, radius } from '../theme';
 import { wantsCelebrationsStep } from '../constants/onboardingGoals';
 import { recommendationFacts } from '../utils/recommendationFacts';
 import { localizeReason } from '../utils/reasonLocalization';
-import { displayDistance, displayWhen } from '../i18n/display';
+import { displayDistance, displayWhen, displayGatheringWhen } from '../i18n/display';
 import LoadErrorState from '../components/LoadErrorState';
 
 import { NLoader } from '../motion';
@@ -64,7 +64,7 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
             <Text style={styles.foundText}>{t('ui.onboarding.foundCount', { count: recommendations.length })}</Text>
             {recommendations.map((r) => {
               const baseFacts = recommendationFacts(r);
-              const meta = [displayDistance(r.distanceMiles, language), r.scheduled_at ? displayWhen(r.scheduled_at, language) : null].filter(Boolean).join(' · ') || null;
+              const meta = [displayDistance(r.distanceMiles, language), displayGatheringWhen(r, language)].filter(Boolean).join(' · ') || null;
               const facts = { why: baseFacts.why ? localizeReason(baseFacts.why, language) : null, meta };
               return (
               <TouchableOpacity

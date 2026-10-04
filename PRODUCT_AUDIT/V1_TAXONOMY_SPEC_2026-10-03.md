@@ -961,6 +961,17 @@ no function, policy, view, trigger or edge function). (3) **Age stays parked:** 
 first define whether it means an age restriction, a recommended age or an audience. Not device-tested (parse-checked);
 business web export regenerated.
 
+**Time range follow-up (owner, 2026-10-04, LOCKED, applied, no migration; `utils/gatheringTimeRange.test.js`):** a gathering's
+when line reads start–end ("Tonight · 7–10 PM", "Sat, Oct 10 · 6:30–8 PM", "Tonight · 7–7:30 PM"; AM/PM said once when
+shared; "10 PM–1 AM" across midnight) whenever the host chose a length. The display end = start + the host-chosen
+`duration_minutes` (`gatheringDisplayEnd`, read only by the time engine and the display helpers); duration stays the
+source of truth, no end column, and scheduling, overlap, availability, ranking and notifications are untouched. No length =
+the start alone, nothing invented. While it runs: "Happening now · until 10 PM" (same calculation, unchanged). "About 3 hr"
+is no longer shown when there is a start time. One engine (`whenParts`/`whenLabel`/`localWhen` take the end), so cards,
+Plans rows, Home's plan and weather rows, the detail page, business profile and community gathering lists agree; all 11
+languages (e.g. "Heute Abend · 19 Uhr–22 Uhr", "今晚 · 下午7点–10点"). Plans/community list queries now also read
+`duration_minutes`. Not device-tested (parse-checked); business web export regenerated.
+
 ## Item 189: Activities can be standalone, no business attached (APPROVED + BUILT 2026-10-04, option 1)
 
 **Already true:** nothing requires a business. A gathering needs no business (item 187: a business request is optional),

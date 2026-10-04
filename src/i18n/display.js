@@ -2,10 +2,11 @@
 // formatters unchanged (byte-identical); every other language through i18n/format.js (same decisions, localized words).
 // Display only: nothing here is ever stored or compared.
 import { DEFAULT_LANGUAGE, translate } from './translate';
-import { whenLabel, formatHeroDateTime } from '../utils/timeContext';
+import { whenLabel, formatHeroDateTime, clockRange } from '../utils/timeContext';
 import { formatDistance, formatDistanceAway } from '../utils/formatDistance';
 import { formatDay, formatDateTime, formatAgo, parseDate, formatLocalHour } from '../utils/timeLabels';
-import { localWhen, localDistance, localDate, localClockOfDate, vocabValue, localMoney } from './format';
+import { timeWindowState, gatheringDisplayEnd } from '../utils/timeWindow';
+import { localWindow, localClockRange, localWhen, localDistance, localDate, localClockOfDate, vocabValue, localMoney } from './format';
 
 const isEnglish = (language) => !language || language === DEFAULT_LANGUAGE;
 const c = (language, key, vars) => translate(language, `ui.common.${key}`, vars);
@@ -14,8 +15,19 @@ const c = (language, key, vars) => translate(language, `ui.common.${key}`, vars)
 export function displayWhen(iso, language, now = new Date()) {
   return isEnglish(language) ? whenLabel(iso, now) : localWhen(iso, now, language);
 }
-export function displayHeroWhen(iso, language, now = new Date()) {
-  return isEnglish(language) ? formatHeroDateTime(iso, now) : (localWhen(iso, now, language) ?? '');
+export function displayHeroWhen(iso, language, now = new Date(), endIso = null) {
+  return isEnglish(language) ? formatHeroDateTime(iso, now, endIso) : (localWhen(iso, now, language, endIso) ?? '');
+}
+// A gathering's when line (item 188 follow-up): "Tonight · 7–10 PM" when the host chose a length, "Happening now · until
+// 10 PM" while it runs, else the start alone. Same engine as every card, so no surface disagrees.
+export function displayGatheringWhen(g, language, now = new Date()) {
+  if (!g?.scheduled_at) return null;
+  const win = { start: g.scheduled_at, durationMinutes: g.duration_minutes ?? g.durationMinutes ?? null };
+  const st = timeWindowState(win, now, 'event');
+  if (st.phase === 'upcoming' || st.phase === 'live' || st.phase === 'ending_soon') {
+    return isEnglish(language) ? st.label : localWindow(win, now, 'event', language);
+  }
+  return displayHeroWhen(g.scheduled_at, language, now, gatheringDisplayEnd(g));
 }
 // "1.2 mi" (miles everywhere; words and decimal mark localized)
 export function displayDistance(miles, language) {
@@ -47,6 +59,16 @@ export function displayDateTime(iso, language) {
   const d = parseDate(iso);
   if (!d) return null;
   return c(language, 'dateTime', { date: localDate(d, language), time: localClockOfDate(d, language) });
+}
+// A gathering's full date + time for its own page: "Fri, Aug 14, 7–10 PM" when the host chose a length, else the start.
+export function displayGatheringDateTime(g, language) {
+  const d = parseDate(g?.scheduled_at);
+  if (!d) return null;
+  const endIso = gatheringDisplayEnd(g);
+  if (!endIso) return displayDateTime(g.scheduled_at, language);
+  const end = new Date(endIso);
+  if (isEnglish(language)) return `${d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}, ${clockRange(d, end)}`;
+  return c(language, 'dateTime', { date: localDate(d, language), time: localClockRange(d, end, language) });
 }
 // "7:15 PM" / "19:15"
 export function displayClock(iso, language) {

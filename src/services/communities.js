@@ -430,7 +430,7 @@ export async function updateCommunityArea(communityId, { city, region, label, la
 export async function getCommunityGatherings(communityId) {
   const { data, error } = await supabase
     .from('gatherings')
-    .select('id, title, description, interest_tag, scheduled_at, host_id')
+    .select('id, title, description, interest_tag, scheduled_at, duration_minutes, host_id')
     .eq('community_id', communityId)
     .order('scheduled_at', { ascending: true });
 

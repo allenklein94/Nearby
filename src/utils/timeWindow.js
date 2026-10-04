@@ -40,7 +40,7 @@ export function timeWindowParts(win, now = new Date(), kind = 'event') {
   const s = toMs(win?.start);
   const e = windowEnd(win ?? {});
   if (s == null && e == null) return { phase: 'unknown', form: 'unknown', kind, nowMs };
-  if (s != null && s > nowMs) return { phase: 'upcoming', form: 'upcoming', kind, nowMs, startMs: s };
+  if (s != null && s > nowMs) return { phase: 'upcoming', form: 'upcoming', kind, nowMs, startMs: s, endMs: e };
   if (e == null) {
     // Start only: the shared "just started" rule; never claims it is still going after that.
     return nowMs - s <= JUST_STARTED_MIN * 60000 ? { phase: 'live', form: 'justStarted', kind, nowMs } : { phase: 'over', form: 'over', kind, nowMs };
@@ -57,7 +57,7 @@ export function timeWindowState(win, now = new Date(), kind = 'event') {
   const p = timeWindowParts(win, now, kind);
   switch (p.form) {
     case 'unknown': return { phase: 'unknown', label: null, minutesLeft: null };
-    case 'upcoming': return { phase: 'upcoming', label: whenLabel(new Date(p.startMs).toISOString(), new Date(p.nowMs)), minutesLeft: null };
+    case 'upcoming': return { phase: 'upcoming', label: whenLabel(new Date(p.startMs).toISOString(), new Date(p.nowMs), p.endMs != null ? new Date(p.endMs).toISOString() : null), minutesLeft: null };
     case 'justStarted': return { phase: 'live', label: 'Happening now', minutesLeft: null };
     case 'over': return { phase: 'over', label: null, minutesLeft: null };
     case 'overEnded': return { phase: 'over', label: kind === 'offer' ? 'Expired' : 'Ended', minutesLeft: 0 };
@@ -74,6 +74,13 @@ export function timeWindowState(win, now = new Date(), kind = 'event') {
 export function gatheringWhen(g, now = new Date()) {
   if (!g?.scheduled_at) return null;
   return timeWindowState({ start: g.scheduled_at, durationMinutes: g.duration_minutes }, now, 'event').label;
+}
+
+// A gathering's end for DISPLAY only (item 188 follow-up): start + the length the host chose, else null. Never stored, never
+// used for scheduling, overlap, availability, ranking or notifications; duration stays the source of truth.
+export function gatheringDisplayEnd(g) {
+  const e = windowEnd({ start: g?.scheduled_at, durationMinutes: g?.duration_minutes ?? g?.durationMinutes ?? null });
+  return e == null ? null : new Date(e).toISOString();
 }
 
 // One line for a window with explicit start/end (owner-facing lists): the engine's label for a live or upcoming window, null

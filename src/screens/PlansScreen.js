@@ -8,7 +8,7 @@ import { getMyAttendingGatherings, getMyGatherings, getMyInterestedGatherings } 
 import { getMyGroupPlans } from '../services/groupPlans';
 import { getMyStandaloneBusinessRequestPlans, getMyDateProposalPlans, getMyExperiencePlans, getSharedExperiencePlans } from '../services/plans';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
-import { displayHeroWhen } from '../i18n/display';
+import { displayHeroWhen, displayGatheringWhen } from '../i18n/display';
 import { useLanguage } from '../context/LanguageContext';
 import { GATHERING_STATUS_META } from '../components/GatheringStatusBadge';
 import PlanCard from '../components/PlanCard';
@@ -375,7 +375,7 @@ export default function PlansScreen({ navigation, route }) {
                 iconColor={categoryStyleFor(g.interest_tag).color}
                 title={g.title}
                 roleLabel={needsRoleLabel ? GATHERING_STATUS_META[item.status]?.label : null}
-                dateTimeText={displayHeroWhen(g.scheduled_at, language)}
+                dateTimeText={displayGatheringWhen(g, language)}
                 peopleCount={peopleCountFor(item)}
                 hostingPartnerId={g.hosting_partner_id}
                 status={item.status === 'maybe' ? null : resolveGatheringPlanStatus(legacy)}
