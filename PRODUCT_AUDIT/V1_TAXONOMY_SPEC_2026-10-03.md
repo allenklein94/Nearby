@@ -960,3 +960,26 @@ code reads it (guard `src/utils/ticketRequired.test.js`: only the gathering serv
 no function, policy, view, trigger or edge function). (3) **Age stays parked:** no age field or logic in V1; if revisited,
 first define whether it means an age restriction, a recommended age or an audience. Not device-tested (parse-checked);
 business web export regenerated.
+
+## Item 189: Activities can be standalone, no business attached (PROPOSED 2026-10-04)
+
+**Already true:** nothing requires a business. A gathering needs no business (item 187: a business request is optional),
+an activity tag (Walking, Hiking, Parks, Trails, Beaches, Picnics, Scenic Views...) exists without any business serving
+it, and Discover's category view for such a tag already lists real nearby public places from Google Places (keyword
+search on the tag, `contextItem('place')`: distance + directions only, never a reason, booking or action). The Places
+screen and Create's "Where" step also use Google Places. "Create it yourself" turns "go for a walk" into a gathering.
+
+**Gap:** a TYPED ask ("go for a walk", "somewhere to walk tonight") is answered only from Nearby-native supply
+(gatherings, businesses, perks, communities, friends' asks). With no walking gathering nearby it returns nothing, or a
+business that happens to rank, never "Waterfront trail" or a park.
+
+**Locked rules this must respect:** Places are not night/experience components (2026-09-21); a Google place is
+unconfirmable supply, so it never gets a reason, a booking action, an availability claim or an "our pick"; Places
+results are metered (on-demand only); a place is never a business opportunity or a request target.
+
+**Proposal (for owner decision):** when a typed ask's resolved activity is a PUBLIC-PLACE activity (a short closed list:
+Walking, Hiking, Running, Trails, Parks, Beaches, Picnics, Scenic Views, Gardens, Playgrounds), the results get one
+separate "Places to go" section of up to 3 nearby public places from the existing Places search, shown as
+`contextItem('place')` (name, distance, "Get directions"), below Nearby's own results and never mixed into or ranked
+against them, never in Surprise Me rows or multi-part plans, nothing stored or learned, no business routing. "Create it
+yourself" stays. Alternative: leave typed asks Nearby-native only and rely on Discover's category view (no build).
