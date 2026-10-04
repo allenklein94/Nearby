@@ -1,0 +1,64 @@
+import fs from 'fs';
+import path from 'path';
+import { SCREEN_REGISTRY, INFRASTRUCTURE_ROUTES, EMBEDDED_SCREENS, RULE14_DECISIONS, RULE14_JOBS } from './screenRegistry';
+
+// Rule 14 guard: the navigators are the canonical list of screens; every route they register must say why it exists.
+const SRC = path.join(__dirname, '..');
+const NAVIGATORS = ['navigation/RootNavigator.js', 'navigation/BusinessWebNavigator.js'];
+const navSource = NAVIGATORS.map((f) => fs.readFileSync(path.join(SRC, f), 'utf8')).join('\n');
+// <Stack.Screen name="X" component={Y}> (also across line breaks).
+const registered = new Map(
+  [...navSource.matchAll(/<(\w+)\.Screen\s+name="([^"]+)"\s+component=\{(\w+)\}/g)].map((m) => [m[2], m[3]]),
+);
+
+describe('rule 14: every navigable screen has a reason to exist', () => {
+  it('reads the navigators (sanity: the parser finds every <X.Screen> element)', () => {
+    const elements = (navSource.match(/<\w+\.Screen\b/g) ?? []).length;
+    const parsed = [...navSource.matchAll(/<(\w+)\.Screen\s+name="([^"]+)"\s+component=\{(\w+)\}/g)].length;
+    expect(parsed).toBe(elements); // a screen written another way would silently escape the guard
+    expect(registered.size).toBeGreaterThan(50);
+  });
+
+  it('every registered route has a registry entry (add one before shipping a new screen)', () => {
+    const missing = [...registered.keys()].filter((r) => !SCREEN_REGISTRY[r] && !INFRASTRUCTURE_ROUTES[r]);
+    expect(missing).toEqual([]);
+  });
+
+  it('every registry entry names a route the navigators really register (no stale entries)', () => {
+    const stale = [...Object.keys(SCREEN_REGISTRY), ...Object.keys(INFRASTRUCTURE_ROUTES)].filter((r) => !registered.has(r));
+    expect(stale).toEqual([]);
+  });
+
+  it('each entry gives a reason and at least one real job letter (surfaces may give none)', () => {
+    for (const [route, e] of Object.entries(SCREEN_REGISTRY)) {
+      expect({ route, reason: typeof e.reason === 'string' && e.reason.trim().length >= 10 }).toEqual({ route, reason: true });
+      const jobs = e.jobs ?? [];
+      for (const j of jobs) expect({ route, job: j, known: !!RULE14_JOBS[j] }).toEqual({ route, job: j, known: true });
+      expect(new Set(jobs).size).toBe(jobs.length);
+      if (!e.surface) expect({ route, hasJob: jobs.length > 0 }).toEqual({ route, hasJob: true });
+    }
+  });
+
+  it('every screen file is either navigable (registered) or explicitly embedded in another screen', () => {
+    const components = new Set(registered.values());
+    const files = fs.readdirSync(path.join(SRC, 'screens')).filter((f) => /Screen(\.web)?\.js$/.test(f));
+    const orphans = files.map((f) => f.replace(/(\.web)?\.js$/, '')).filter((c) => !components.has(c) && !EMBEDDED_SCREENS[c]);
+    expect(orphans).toEqual([]);
+    for (const c of Object.keys(EMBEDDED_SCREENS)) {
+      expect(fs.existsSync(path.join(SRC, 'screens', `${c}.js`))).toBe(true);
+      expect(components.has(c)).toBe(false);
+    }
+  });
+
+  it('reflects the 2026-10-04 audit: removed and folded screens stay gone; trimmed and borderline ones stay', () => {
+    for (const r of [...RULE14_DECISIONS.removed, ...Object.keys(RULE14_DECISIONS.folded)]) {
+      expect({ r, registered: registered.has(r) }).toEqual({ r, registered: false });
+      expect({ r, file: fs.existsSync(path.join(SRC, 'screens', `${r}Screen.js`)) }).toEqual({ r, file: false });
+    }
+    for (const r of [...Object.keys(RULE14_DECISIONS.trimmed), ...RULE14_DECISIONS.borderlineKeep]) {
+      expect(registered.has(r)).toBe(true);
+    }
+    expect(SCREEN_REGISTRY.Momentum.borderline).toBe(true);
+    expect(SCREEN_REGISTRY.MarketValidation).toBeTruthy(); // admin screens are covered too
+  });
+});
