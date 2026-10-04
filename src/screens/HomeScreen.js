@@ -2347,9 +2347,10 @@ export default function HomeScreen({ navigation }) {
                 <View style={styles.forecastCard}>
                   <View style={styles.forecastLabelRow}>
                     <Ionicons name="partly-sunny-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
-                    <Text style={styles.forecastLabel}>{t('ui.home.rightNow')}</Text>
+                    <Text style={styles.forecastLabel}>{t('ui.homeParts.weatherLabel')}</Text>
                   </View>
-                  <Text style={styles.forecastValue}>{tr(`ui.homeParts.weather.${card.kind}`) === `ui.homeParts.weather.${card.kind}` ? card.label : tr(`ui.homeParts.weather.${card.kind}`)}</Text>
+                  {/* Item 192: when + why ("Rain expected tonight"), then what it offers. */}
+                  <Text style={styles.forecastValue}>{t(`ui.homeParts.weatherWhen.${card.kind}.${card.when}`)}</Text>
                   {!!card.detail && <Text style={styles.forecastDetail}>{card.detail}</Text>}
                   <TouchableOpacity
                     style={[styles.rowCta, { alignSelf: 'flex-start', marginTop: spacing.xs }]}
@@ -2365,7 +2366,7 @@ export default function HomeScreen({ navigation }) {
                       <View style={styles.weatherSuggestionsHeaderRow}>
                         <Ionicons name="home-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
                         <Text style={styles.weatherSuggestionsHeader}>
-                          {t('ui.home.indoorToday', { count: indoorUpcoming.length })}
+                          {t('ui.homeParts.weatherPicks.indoor')}
                         </Text>
                       </View>
                       {indoorUpcoming.map((g) => (
@@ -2392,7 +2393,7 @@ export default function HomeScreen({ navigation }) {
                       <View style={styles.weatherSuggestionsHeaderRow}>
                         <Ionicons name="sunny-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
                         <Text style={styles.weatherSuggestionsHeader}>
-                          {t('ui.home.outdoorToday', { count: outdoorUpcoming.length })}
+                          {t('ui.homeParts.weatherPicks.outdoor')}
                         </Text>
                       </View>
                       {outdoorUpcoming.map((g) => (

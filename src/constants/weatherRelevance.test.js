@@ -42,7 +42,7 @@ describe('gatheringWeatherWindow', () => {
 describe('homeWeatherCard', () => {
   it('renders only with a real thing to point at, from the gathering-time window', () => {
     expect(homeWeatherCard({ weather: wx(), outdoorUpcoming: [] })).toBeNull();
-    expect(homeWeatherCard({ weather: wx(), outdoorUpcoming: [g()] }).label).toBe('Perfect weather for outdoor plans');
+    expect(homeWeatherCard({ weather: wx(), outdoorUpcoming: [g()] }).label).toMatch(/^Perfect (evening|day) for outdoor plans$/);
   });
   it('indoor gatherings only under an indoor window; outdoor ones never appear then', () => {
     const rain = wx({ pop: 0.8, id: 501 });
@@ -83,5 +83,46 @@ describe('good-weather card cap (item 62)', () => {
     expect(goodWeatherCardAllowed({ loaded: true, storedDay: '2026-09-19', todayKey: today, shownThisSession: false })).toBe(true);
     expect(goodWeatherCardAllowed({ loaded: true, storedDay: today, todayKey: today, shownThisSession: false })).toBe(false);
     expect(goodWeatherCardAllowed({ loaded: true, storedDay: today, todayKey: today, shownThisSession: true })).toBe(true);
+  });
+});
+
+describe('the card says when and why, never a generic line (item 192)', () => {
+  const { WEATHER_HEADLINES, weatherCardWhen } = require('./weatherRelevance');
+  const { translate } = require('../i18n/translate');
+  const fs = require('fs');
+  const path = require('path');
+  const at = (h) => { const d = new Date(); d.setHours(h, 0, 0, 0); return { id: `g${h}`, scheduled_at: d.toISOString() }; };
+
+  it('tonight only when every pointed-at gathering starts at 6 PM or later', () => {
+    expect(weatherCardWhen([at(19), at(20)])).toBe('tonight');
+    expect(weatherCardWhen([at(14), at(20)])).toBe('today');
+    expect(weatherCardWhen([])).toBe('today');
+  });
+
+  it('owner examples: rain tonight with indoor options, a perfect evening for outdoor plans', () => {
+    expect(WEATHER_HEADLINES.wet.tonight).toBe('Rain expected tonight');
+    expect(WEATHER_HEADLINES.outdoor_window.tonight).toBe('Perfect evening for outdoor plans');
+    expect(translate('en', 'ui.homeParts.weatherPicks.indoor')).toBe('Here are some indoor options');
+    const card = homeWeatherCard({ weather: wx({ pop: 0.8, id: 501 }), indoorUpcoming: [g()] });
+    expect(card.label).toBe(WEATHER_HEADLINES.wet[card.when]);
+  });
+
+  it('every headline exists in all 11 languages and English matches the rule table', () => {
+    for (const lang of ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl', 'ru', 'ko']) {
+      for (const [kind, w] of Object.entries(WEATHER_HEADLINES)) {
+        for (const when of ['tonight', 'today']) {
+          const s = translate(lang, `ui.homeParts.weatherWhen.${kind}.${when}`);
+          expect(s).not.toMatch(/^ui\./);
+          if (lang === 'en') expect(s).toBe(w[when]);
+        }
+      }
+      expect(translate(lang, 'ui.homeParts.weatherPicks.outdoor')).not.toMatch(/^ui\./);
+    }
+  });
+
+  it('Home renders the headline from the rule (no generic "looks great" copy, no "Right Now" over a forecast)', () => {
+    const home = fs.readFileSync(path.join(__dirname, '..', 'screens', 'HomeScreen.js'), 'utf8');
+    expect(home).toContain("t(`ui.homeParts.weatherWhen.${card.kind}.${card.when}`)");
+    expect(home).not.toMatch(/looks (great|amazing|perfect)/i);
   });
 });
