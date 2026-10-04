@@ -49,6 +49,12 @@ export default {
       "time": "Time",
       "people": "People"
     },
+    "error": {
+      "invalidChoice": "This choice isn't available. Pick one from the list, or leave it empty.",
+      "invalidCapacity": "Set a limit of at least 1 person, or choose No limit.",
+      "fixBeforePublishing": "Fix these before publishing:",
+      "goToStep": "Go to {step}"
+    },
     "ticket": "🎟️ Ticket needed, bought separately",
     "ticketHelp": "Just lets people know. Nearby doesn't sell tickets, and joining here doesn't include one.",
     "hideSummaryA11y": "Hide this summary",
@@ -245,6 +251,12 @@ export default {
       "purpose": "Motivo",
       "time": "Hora",
       "people": "Personas"
+    },
+    "error": {
+      "invalidChoice": "Esta opción no está disponible. Elige una de la lista o déjala vacía.",
+      "invalidCapacity": "Pon un límite de al menos 1 persona o elige Sin límite.",
+      "fixBeforePublishing": "Corrige esto antes de publicar:",
+      "goToStep": "Ir a {step}"
     },
     "ticket": "🎟️ Se necesita entrada, se compra aparte",
     "ticketHelp": "Solo es un aviso. Nearby no vende entradas y unirte aquí no incluye una.",
@@ -443,6 +455,12 @@ export default {
       "time": "Zeit",
       "people": "Personen"
     },
+    "error": {
+      "invalidChoice": "Diese Auswahl ist nicht verfügbar. Wähle eine aus der Liste oder lass das Feld leer.",
+      "invalidCapacity": "Lege ein Limit von mindestens 1 Person fest oder wähle Kein Limit.",
+      "fixBeforePublishing": "Bitte vor dem Veröffentlichen beheben:",
+      "goToStep": "Zu {step}"
+    },
     "ticket": "🎟️ Ticket nötig, separat zu kaufen",
     "ticketHelp": "Nur ein Hinweis. Nearby verkauft keine Tickets, und die Teilnahme hier enthält keins.",
     "hideSummaryA11y": "Diese Zusammenfassung ausblenden",
@@ -639,6 +657,12 @@ export default {
       "purpose": "Objectif",
       "time": "Moment",
       "people": "Personnes"
+    },
+    "error": {
+      "invalidChoice": "Ce choix n’est pas disponible. Choisissez-en un dans la liste ou laissez vide.",
+      "invalidCapacity": "Fixez une limite d’au moins 1 personne ou choisissez Sans limite.",
+      "fixBeforePublishing": "Corrigez ceci avant de publier :",
+      "goToStep": "Aller à {step}"
     },
     "ticket": "🎟️ Billet nécessaire, acheté séparément",
     "ticketHelp": "Simple information. Nearby ne vend pas de billets, et rejoindre ici n’en inclut pas.",
@@ -837,6 +861,12 @@ export default {
       "time": "Horário",
       "people": "Pessoas"
     },
+    "error": {
+      "invalidChoice": "Esta opção não está disponível. Escolha uma da lista ou deixe em branco.",
+      "invalidCapacity": "Defina um limite de pelo menos 1 pessoa ou escolha Sem limite.",
+      "fixBeforePublishing": "Corrija isto antes de publicar:",
+      "goToStep": "Ir para {step}"
+    },
     "ticket": "🎟️ Ingresso necessário, comprado à parte",
     "ticketHelp": "Só um aviso. A Nearby não vende ingressos, e participar aqui não inclui um.",
     "hideSummaryA11y": "Ocultar este resumo",
@@ -1033,6 +1063,12 @@ export default {
       "purpose": "Rezon",
       "time": "Lè",
       "people": "Moun"
+    },
+    "error": {
+      "invalidChoice": "Chwa sa a pa disponib. Chwazi youn nan lis la, oswa kite l vid.",
+      "invalidCapacity": "Mete yon limit omwen 1 moun, oswa chwazi San limit.",
+      "fixBeforePublishing": "Korije bagay sa yo anvan ou pibliye:",
+      "goToStep": "Ale nan {step}"
     },
     "ticket": "🎟️ Bezwen tikè, achte apa",
     "ticketHelp": "Se jis yon enfòmasyon. Nearby pa vann tikè, epi rantre isit la pa gen tikè ladan l.",
@@ -1231,6 +1267,12 @@ export default {
       "time": "时间",
       "people": "人数"
     },
+    "error": {
+      "invalidChoice": "此选项不可用。请从列表中选择，或留空。",
+      "invalidCapacity": "请设置至少 1 人的上限，或选择不限。",
+      "fixBeforePublishing": "发布前请先修正：",
+      "goToStep": "前往{step}"
+    },
     "ticket": "🎟️ 需要门票，需另行购买",
     "ticketHelp": "仅作提示。Nearby 不售票，在这里加入也不包含门票。",
     "hideSummaryA11y": "隐藏此摘要",
@@ -1427,6 +1469,12 @@ export default {
       "purpose": "Mục đích",
       "time": "Thời gian",
       "people": "Số người"
+    },
+    "error": {
+      "invalidChoice": "Lựa chọn này không có sẵn. Hãy chọn một mục trong danh sách hoặc để trống.",
+      "invalidCapacity": "Đặt giới hạn ít nhất 1 người, hoặc chọn Không giới hạn.",
+      "fixBeforePublishing": "Hãy sửa những mục này trước khi đăng:",
+      "goToStep": "Đến {step}"
     },
     "ticket": "🎟️ Cần vé, mua riêng",
     "ticketHelp": "Chỉ để mọi người biết. Nearby không bán vé, và tham gia ở đây không kèm vé.",
@@ -1625,6 +1673,12 @@ export default {
       "time": "Oras",
       "people": "Tao"
     },
+    "error": {
+      "invalidChoice": "Hindi available ang piniling ito. Pumili sa listahan, o iwanang blangko.",
+      "invalidCapacity": "Magtakda ng limit na hindi bababa sa 1 tao, o piliin ang Walang limit.",
+      "fixBeforePublishing": "Ayusin muna ang mga ito bago i-publish:",
+      "goToStep": "Pumunta sa {step}"
+    },
     "ticket": "🎟️ Kailangan ng tiket, hiwalay na binibili",
     "ticketHelp": "Paalala lang. Hindi nagbebenta ng tiket ang Nearby, at hindi kasama ang tiket sa pagsali rito.",
     "hideSummaryA11y": "Itago ang buod na ito",
@@ -1822,6 +1876,12 @@ export default {
       "time": "Время",
       "people": "Люди"
     },
+    "error": {
+      "invalidChoice": "Этот вариант недоступен. Выберите из списка или оставьте пустым.",
+      "invalidCapacity": "Укажите лимит от 1 человека или выберите «Без лимита».",
+      "fixBeforePublishing": "Исправьте перед публикацией:",
+      "goToStep": "Перейти: {step}"
+    },
     "ticket": "🎟️ Нужен билет, покупается отдельно",
     "ticketHelp": "Просто для сведения. Nearby не продаёт билеты, и участие здесь билет не включает.",
     "hideSummaryA11y": "Скрыть эту сводку",
@@ -2018,6 +2078,12 @@ export default {
       "purpose": "목적",
       "time": "시간",
       "people": "인원"
+    },
+    "error": {
+      "invalidChoice": "이 선택은 사용할 수 없어요. 목록에서 고르거나 비워 두세요.",
+      "invalidCapacity": "최소 1명으로 제한하거나 제한 없음을 선택하세요.",
+      "fixBeforePublishing": "게시하기 전에 다음을 고쳐 주세요:",
+      "goToStep": "{step}(으)로 이동"
     },
     "ticket": "🎟️ 티켓 필요, 별도 구매",
     "ticketHelp": "안내용이에요. Nearby는 티켓을 팔지 않고, 여기서 참여해도 티켓은 포함되지 않아요.",

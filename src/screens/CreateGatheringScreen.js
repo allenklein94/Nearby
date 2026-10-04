@@ -23,7 +23,8 @@ import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { CATEGORY_GROUPS, groupForTag } from '../constants/gatheringCategories';
 import FriendInviteSelector, { selectedFriendIdList, selectionFromSuggested } from '../components/FriendInviteSelector';
 import { sendGatheringInvites } from '../services/invites';
-import { whatStepProblem, canSkipWhatStep, startAfterWhatStep, capacityForPartySize } from '../utils/gatheringStructure';
+import { stepProblems, publishProblems, problemFor } from '../utils/createGatheringValidation';
+import { canSkipWhatStep, startAfterWhatStep, capacityForPartySize } from '../utils/gatheringStructure';
 import useMyInterests from '../hooks/useMyInterests';
 import { orderGroupsByInterests } from '../constants/interestGraph';
 import { VISIBILITY_OPTIONS } from '../constants/gatheringVisibility';
@@ -385,26 +386,35 @@ export default function CreateGatheringScreen({ navigation, route }) {
       ? Math.max(10, capacityCustom)
       : CAPACITY_OPTIONS.find((c) => c.key === capacityOption)?.capacity ?? null;
 
+  // One form object for both checks: step validation (only what is needed to leave this step) and the full Publish check.
+  const validationForm = {
+    title, interestTag, scheduledAt, whenPreset, locationMode, customLocation, recurrenceRule, priceLevel, durationMinutes,
+    format, effortLevel, genre, partyType, features, ageMin, ageMax, visibility, communityId, capacity: capacityValue,
+    hasCommunities: loadingCommunities ? null : myCommunities.length > 0,
+  };
+  // Errors appear only after Next was pressed on this step, and each one clears as soon as its value is fixed.
+  const [attemptedStep, setAttemptedStep] = useState(null);
+  const shownProblems = attemptedStep === stepKey ? stepProblems(stepKey, validationForm) : [];
+  const finalProblems = stepKey === 'publish' ? publishProblems(validationForm, STEP_DEFS.map((s) => s.key)) : [];
+  const ERROR_TEXT = {
+    titleRequired: 'ui.gatheringForm.alert.titleRequiredBody', pickActivity: 'ui.gatheringForm.alert.pickCategoryBody',
+    pickTime: 'ui.gatheringForm.alert.pickTimeBody', pickPlace: 'ui.gatheringForm.alert.pickPlaceBody',
+    pickCommunity: 'ui.gatheringForm.alert.pickCommunityBody', noCommunities: 'ui.gatheringForm.alert.noCommunitiesBody',
+    invalidChoice: 'ui.gatheringForm.error.invalidChoice', invalidCapacity: 'ui.gatheringForm.error.invalidCapacity',
+  };
+  function fieldError(field) {
+    const p = problemFor(shownProblems, field);
+    return p ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{t(ERROR_TEXT[p.code])}</Text> : null;
+  }
+
+  // Blocks only on a required value that is missing or invalid; keeps every value and stays on this step.
   function goNext() {
-    if (stepKey === 'what') {
-      const problem = whatStepProblem({ title, interestTag });
-      if (problem === 'title') return Alert.alert(t('ui.gatheringForm.alert.titleRequired'), t('ui.gatheringForm.alert.titleRequiredBody'));
-      // Item 64: the category is structured input everything downstream reads (business requests, recommendations,
-      // weather, demand), so it is asked for here rather than guessed later from the title.
-      if (problem === 'category') return Alert.alert(t('ui.gatheringForm.alert.pickActivity'), t('ui.gatheringForm.alert.pickCategoryBody'));
+    if (stepProblems(stepKey, validationForm).length > 0) {
+      setAttemptedStep(stepKey);
+      if (stepKey === 'details') setShowMoreOptions(true); // its fields live under More options
+      return;
     }
-    if (stepKey === 'settings' && visibility === 'community' && !communityId) {
-      if (!loadingCommunities && myCommunities.length === 0) {
-        return Alert.alert(t('ui.gatheringForm.alert.noCommunities'), t('ui.gatheringForm.alert.noCommunitiesBody'));
-      }
-      return Alert.alert(t('ui.gatheringForm.alert.pickCommunity'), t('ui.gatheringForm.alert.pickCommunityBody'));
-    }
-    if (stepKey === 'when' && (!whenPreset || scheduledAt.getTime() <= Date.now())) {
-      return Alert.alert(t('ui.gatheringForm.alert.pickTime'), t('ui.gatheringForm.alert.pickTimeBody'));
-    }
-    if (stepKey === 'where' && locationMode === 'choose_place' && !customLocation) {
-      return Alert.alert(t('ui.gatheringForm.alert.pickPlace'), t('ui.gatheringForm.alert.pickPlaceBody'));
-    }
+    setAttemptedStep(null);
     Haptics.selectionAsync();
     setStep((s) => Math.min(s + 1, STEP_DEFS.length - 1));
   }
@@ -414,10 +424,21 @@ export default function CreateGatheringScreen({ navigation, route }) {
       return;
     }
     Haptics.selectionAsync();
+    setAttemptedStep(null);
     setStep((s) => Math.max(s - 1, 0));
+  }
+  // Only from a tap on "Go to <step>" in the Publish check: the person chooses where to go.
+  function goToStep(key) {
+    const i = STEP_DEFS.findIndex((s) => s.key === key);
+    if (i < 0) return;
+    setAttemptedStep(key);
+    if (key === 'details') setShowMoreOptions(true);
+    setStep(i);
   }
 
   async function submit() {
+    // Re-run every required check now; earlier step checks are never trusted.
+    if (publishProblems(validationForm, STEP_DEFS.map((s) => s.key)).length > 0) return;
     const titleCheck = await checkTextModeration(title);
     if (!titleCheck.safe) {
       return Alert.alert(t('ui.gatheringForm.alert.titleNotAllowed'), t('ui.gatheringForm.alert.reviseBody'));
@@ -544,8 +565,10 @@ export default function CreateGatheringScreen({ navigation, route }) {
               onChangeText={setTitle}
               accessibilityLabel={t('ui.gatheringForm.titleA11y')}
             />
+            {fieldError('title')}
 
             <Text style={styles.label}>{t('ui.gatheringForm.activityLabel')}</Text>
+            {fieldError('activity')}
             {orderGroupsByInterests(CATEGORY_GROUPS, myInterests).map((group) => (
               <View key={group.key} style={{ marginBottom: spacing.sm }}>
                 <Text style={styles.subLabel}>{group.icon} {names.group(group.key, group.label)}</Text>
@@ -619,6 +642,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         {stepKey === 'when' && (
           <>
             <Text style={styles.label}>{t('ui.gatheringForm.whenQ')}</Text>
+            {fieldError('time')}
             <View style={styles.chipsWrap}>
               {WHEN_PRESETS.map((p) => {
                 const selected = whenPreset === p.key;
@@ -682,6 +706,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         {stepKey === 'where' && (
           <>
             <Text style={styles.label}>{t('ui.gatheringForm.whereQ')}</Text>
+            {fieldError('place')}
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
               <TouchableOpacity
                 style={[styles.publicToggle, locationMode === 'near_me' && styles.publicToggleActive]}
@@ -787,6 +812,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
             {showMoreOptions && (
               <>
                 <Text style={styles.label}>{t('ui.gatheringForm.repeats')}</Text>
+                {fieldError('repeats')}
                 <View style={styles.chipsWrap}>
                   {[null, 'weekly', 'biweekly', 'monthly'].map((key) => ({ key, label: t(`ui.gatheringOptions.repeat.${key ?? 'none'}`) })).map((option) => {
                     const selected = recurrenceRule === option.key;
@@ -807,6 +833,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 </View>
 
                 <Text style={styles.label}>{t('ui.gatheringForm.price')}</Text>
+                {fieldError('price')}
                 <View style={styles.chipsWrap}>
                   {PRICE_OPTIONS.map((o) => ({ ...o, label: priceText(t, o) })).map((option) => {
                     const selected = priceLevel === option.key;
@@ -827,6 +854,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 </View>
 
                 <Text style={styles.label}>{t('ui.gatheringForm.features')}</Text>
+                {fieldError('features')}
                 <View style={styles.chipsWrap}>
                   {GATHERING_FEATURE_OPTIONS.map((o) => ({ ...o, label: optionText(t, 'feature', o) })).map((option) => {
                     const selected = features.includes(option.key);
@@ -847,6 +875,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 </View>
 
                 <AgeRangePicker min={ageMin} max={ageMax} onChange={(a, b) => { setAgeMin(a); setAgeMax(b); }} />
+                {fieldError('ages')}
 
                 {/* Item 188: informational only. Nearby sells no tickets and this changes no join, capacity or ranking rule. */}
                 <TouchableOpacity
@@ -882,6 +911,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 </View>
 
                 <Text style={styles.label}>{t('ui.gatheringForm.howLong')}</Text>
+                {fieldError('duration')}
                 <View style={styles.chipsWrap}>
                   {DURATION_OPTIONS.map((o) => ({ ...o, label: optionText(t, 'duration', o) })).map((option) => {
                     const selected = durationMinutes === option.key;
@@ -904,6 +934,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 {isMusicTag(interestTag) && (
                   <>
                     <Text style={styles.label}>{t('ui.gatheringForm.genre')}</Text>
+                    {fieldError('genre')}
                     <View style={styles.chipsWrap}>
                       {GENRE_OPTIONS.map((o) => ({ ...o, label: optionText(t, 'genre', o) })).map((option) => {
                         const selected = genre === option.key;
@@ -918,6 +949,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   </>
                 )}
                 <Text style={styles.label}>{t('ui.gatheringForm.formatQ')}</Text>
+                {fieldError('format')}
                 <View style={styles.chipsWrap}>
                   {FORMAT_OPTIONS.map((o) => ({ ...o, label: formatText(t, o) })).map((option) => {
                     const selected = format === option.key;
@@ -946,6 +978,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 {skillOptionsFor(skillContext({ tag: interestTag, format })) && (
                   <>
                     <Text style={styles.label}>{t('ui.gatheringForm.effort')}</Text>
+                    {fieldError('effort')}
                     <View style={styles.chipsWrap}>
                       {EFFORT_OPTIONS.map((o) => ({ ...o, label: optionText(t, 'effort', o) })).map((option) => {
                         const selected = effortLevel === option.key;
@@ -959,6 +992,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   </>
                 )}
                 <Text style={styles.label}>{t('ui.gatheringForm.kindQ')}</Text>
+                {fieldError('partyType')}
                 <View style={styles.chipsWrap}>
                   {PARTY_TYPE_OPTIONS.map((o) => ({ ...o, label: t(o.labelKey) })).map((option) => {
                     const selected = partyType === option.key;
@@ -999,6 +1033,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         {stepKey === 'settings' && (
           <>
             <Text style={styles.label}>{t('ui.gatheringForm.visibility')}</Text>
+            {fieldError('visibility')}
             {VISIBILITY_OPTIONS.map((o) => ({ ...o, label: t(`ui.gatheringVocab.visibility.${o.key}.label`), hint: t(`ui.gatheringVocab.visibility.${o.key}.hint`) })).map((opt) => {
               const selected = visibility === opt.key;
               return (
@@ -1020,6 +1055,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
               );
             })}
 
+            {fieldError('community')}
             {visibility === 'community' && (
               loadingCommunities ? (
                 <NLoader fullScreen={false} size="inline" caption={t('ui.gatheringForm.loadingCommunities')} />
@@ -1105,6 +1141,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
             )}
 
             <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.gatheringForm.capacity')}</Text>
+                {fieldError('capacity')}
                 {suggestedPartySize ? <Text style={styles.helperText}>{t('ui.gatheringForm.planningFor', { count: suggestedPartySize })}</Text> : null}
                 <View style={styles.chipsWrap}>
                   {CAPACITY_OPTIONS.map((o) => ({ ...o, label: t(`ui.gatheringOptions.capacity.${o.key}`) })).map((option) => {
@@ -1232,6 +1269,22 @@ export default function CreateGatheringScreen({ navigation, route }) {
           </>
         )}
 
+        {stepKey === 'publish' && finalProblems.length > 0 && (
+          <View style={styles.publishCheck} accessibilityLiveRegion="polite">
+            <Text style={styles.publishCheckTitle}>{t('ui.gatheringForm.error.fixBeforePublishing')}</Text>
+            {finalProblems.map((p) => (
+              <View key={`${p.step}-${p.field}`} style={styles.publishCheckRow}>
+                <Text style={styles.fieldError}>{t(ERROR_TEXT[p.code])}</Text>
+                {STEP_DEFS.some((s) => s.key === p.step) && (
+                  <TouchableOpacity onPress={() => goToStep(p.step)} accessibilityRole="button">
+                    <Text style={styles.whenAdjustLink}>{t('ui.gatheringForm.error.goToStep', { step: STEP_DEFS.find((s) => s.key === p.step).label })}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
         {stepKey === 'publish' && (
           <View style={styles.previewCard}>
             <View style={styles.previewHeaderRow}>
@@ -1327,9 +1380,9 @@ export default function CreateGatheringScreen({ navigation, route }) {
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={[styles.nextButton, selectedStyle && { backgroundColor: selectedStyle.color }]}
+              style={[styles.nextButton, selectedStyle && { backgroundColor: selectedStyle.color }, finalProblems.length > 0 && { opacity: 0.5 }]}
               onPress={submit}
-              disabled={submitting}
+              disabled={submitting || finalProblems.length > 0}
               activeOpacity={0.85}
               accessibilityLabel={submitting ? t('gatherings.posting') : t('gatherings.postButton')}
               accessibilityRole="button"
@@ -1369,6 +1422,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
   chipTextSelected: { color: '#fff' },
   helperText: { color: colors.textTertiary, fontSize: 12, marginTop: spacing.xs },
+  fieldError: { color: colors.danger, fontSize: 13, marginTop: spacing.xs, marginBottom: spacing.xs },
+  publishCheck: { borderWidth: 1, borderColor: colors.danger, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md },
+  publishCheckTitle: { ...typography.caption, color: colors.textPrimary, fontWeight: '700' },
+  publishCheckRow: { marginTop: spacing.xs },
   navRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xl },
   backButton: {
     paddingVertical: 16, paddingHorizontal: spacing.lg, borderRadius: radius.full,

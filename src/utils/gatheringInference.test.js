@@ -81,7 +81,10 @@ describe('Create flow: ask only what is missing', () => {
     expect(screen).toMatch(/quickStartPartyType/);
     expect(screen).toMatch(/ui\.gatheringForm\.fromWhatYouSaid'/);
     // The When step still validates a picked, future time before moving on.
-    expect(screen).toMatch(/stepKey === 'when' && \(!whenPreset/);
+    // The When step must be confirmed before moving on: a preset/picked time in the future (createGatheringValidation).
+    const validation = require('fs').readFileSync(require('path').join(__dirname, '../utils/createGatheringValidation.js'), 'utf8');
+    expect(validation).toMatch(/if \(!f\.whenPreset \|\| !Number\.isFinite\(at\) \|\| at <= f\.now\)/);
+    expect(screen).toMatch(/stepProblems\(stepKey, validationForm\)/);
   });
   it('does not ask for energy, commitment, occasion, activity or attributes at creation', () => {
     const params = createParamsFromInference(null, 'Coffee tonight with some friends');

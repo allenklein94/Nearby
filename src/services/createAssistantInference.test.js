@@ -34,7 +34,10 @@ describe('time only from explicit words', () => {
     const screen = fs.readFileSync(path.join(__dirname, '../screens/CreateGatheringScreen.js'), 'utf8');
     expect(screen).toMatch(/setWhenPreset\(preset\)/); // prefill uses the chip state
     expect(screen).toMatch(/onPress=\{\(\) => pickPreset\(p\.key\)\}/); // and the host can change it
-    expect(screen).toMatch(/stepKey === 'when' && \(!whenPreset \|\| scheduledAt\.getTime\(\) <= Date\.now\(\)\)/); // confirmed before moving on
+    // The When step must be confirmed before moving on: a preset/picked time in the future (createGatheringValidation).
+    const validation = require('fs').readFileSync(require('path').join(__dirname, '../utils/createGatheringValidation.js'), 'utf8');
+    expect(validation).toMatch(/if \(!f\.whenPreset \|\| !Number\.isFinite\(at\) \|\| at <= f\.now\)/);
+    expect(screen).toMatch(/stepProblems\(stepKey, validationForm\)/);
   });
 });
 
