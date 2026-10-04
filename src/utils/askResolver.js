@@ -20,7 +20,7 @@ import { wordsBackedAttributes, likelyGroupFromAsk } from '../constants/business
 import { energiesFromText } from '../constants/energyLevel';
 import { commitmentAsk } from '../constants/commitmentLevel';
 import { spontaneityOf } from '../constants/spontaneity';
-import { tagsForPhrase } from '../constants/categorySynonyms';
+import { tagsForPhrase, isDatingTag } from '../constants/categorySynonyms';
 import { groupFromText, whenPresetFromText, partySizeFromText, titleFromText, inferredSummary, inviteStepApplies } from './gatheringInference';
 import { planAsk, occasionFromAsk } from './planAsk';
 import { recognizeCombination } from '../constants/planCombinations';
@@ -117,7 +117,10 @@ export function resolveAsk(text, ai = null) {
   const plan = planAsk(t);
 
   // WHAT: the AI classifies when it gives a real consumer tag; else the synonym table. A multi-part plan has no single category.
-  const aiTag = realTag(a.category);
+  // Item 185: an AI dating tag never replaces a concrete category the words name ("first date coffee" = Coffee).
+  const aiGuess = realTag(a.category);
+  const wordConcrete = tagsForPhrase(t).find((x) => realTag(x) && !isDatingTag(x)) ?? null;
+  const aiTag = aiGuess && isDatingTag(aiGuess) && wordConcrete ? null : aiGuess;
   const wordTag = tagsForPhrase(t).find((x) => realTag(x)) ?? null;
   const subcategory = plan ? null : set('subcategory', aiTag ?? wordTag, aiTag ? 'ai' : 'words');
   const categoryKey = subcategory ? canonicalGroupForTag(subcategory) : null;

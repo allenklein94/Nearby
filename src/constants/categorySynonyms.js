@@ -122,6 +122,11 @@ function phraseMap() {
   return m;
 }
 
+const DATING_GROUP_KEY = 'dating_social';
+export function isDatingTag(tag) {
+  return !!CATEGORY_GROUPS.find((g) => g.key === DATING_GROUP_KEY)?.tags.includes(tag);
+}
+
 // The canonical tag whose own name has this key, or null.
 function ownTagOf(k) {
   for (const g of CATEGORY_GROUPS) for (const t of [...g.tags, ...(g.businessOnlyTags ?? [])]) if (key(t) === k) return t;
@@ -158,14 +163,20 @@ export function tagsForPhrase(text) {
   // The longest whole-word phrase inside the query wins, so a specific phrase beats a broad one ("paddle tennis" > "paddle").
   // A generic format word ("class") only names the format: any other category in the query wins ("yoga class" = Yoga),
   // and it counts alone only when nothing else matched ("find a class" = Classes).
+  // Item 185 (owner, LOCKED): a Dating & Social tag is the WHY of an outing, never its market. When the words also name a
+  // concrete category ("first date coffee"), the concrete one is the result; the dating part stays a date signal (party
+  // type / occasion), so the search keeps its useful category filter.
   const padded = ` ${q} `;
   let best = null;
+  let concrete = null;
   let generic = null;
   for (const [phrase, tags] of map) {
     if (phrase.length < 3 || !padded.includes(` ${phrase} `)) continue;
     if (GENERIC_FORMAT_KEYS.has(phrase)) { generic = { phrase, tags }; continue; }
     if (!best || phrase.length > best.phrase.length) best = { phrase, tags };
+    if (tags.length && !tags.every(isDatingTag) && (!concrete || phrase.length > concrete.phrase.length)) concrete = { phrase, tags };
   }
+  if (best && best.tags.length && best.tags.every(isDatingTag) && concrete) best = concrete;
   const hit = best ?? generic;
   return hit ? [...hit.tags] : [];
 }

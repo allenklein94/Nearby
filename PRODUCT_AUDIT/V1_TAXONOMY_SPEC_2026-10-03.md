@@ -794,7 +794,7 @@ notice list); `job_title` is now excluded (`NEVER_COMPARED_BASICS` in `services/
 `src/constants/notLinkedIn.test.js`: job_title read only by its declaration, labels and that exclusion; identical titles
 never change the score; no employer/endorsement/résumé/job-listing fields anywhere.
 
-## Item 185: Dating & Social coverage (PROPOSED 2026-10-04, awaiting owner)
+## Item 185: Dating & Social coverage (LOCKED 2026-10-04)
 
 Today: Dating, Speed Dating, Singles Events, Group Hangouts, Date Night, First Date, Double Date, Make New Friends,
 Couples, Social Clubs. Related, not categories: occasions `date_night` / `first_date` (and anniversary), party types `date`
@@ -831,3 +831,18 @@ tag is the category and the dating tag the lift (`date_tag`). Regression: "first
 "date night" alone = no category, pulls from everywhere.
 
 **Need behavior:** not a need group, no need tags. No change.
+
+**Owner decision (2026-10-04, LOCKED):** (1) wordings approved as in the table; nothing in Dating & Social is
+need-capable. (2) **Business/customer boundary, in the single V1 migration (not now):** a new customer-only marker, the
+opposite of `business_only`. Business-selectable: Speed Dating, Singles Events, Social Clubs. Customer-only: Dating, Date
+Night, First Date, Double Date, Couples, Group Hangouts, Make New Friends; never a business's main or secondary category.
+A business good for dates uses `date_friendly` / `romantic`. Every surface reads the same flags after the migration: app +
+web signup, dashboard category editing, server validation (CHECK / trigger / `update_business_profile`), routing
+(`business_served_tags`: a major-only business never serves a customer-only tag) and consumer category views. One taxonomy,
+no second category universe. Production taxonomy data unchanged until then. (3) **Concrete category beats a dating
+category, APPLIED now (no migration):** `tagsForPhrase` prefers the longest non-dating phrase when the longest match is
+only a Dating & Social tag (`isDatingTag`), and `resolveAsk` drops an AI dating guess when the words name a concrete tag.
+"first date coffee" = Coffee + occasion first_date + party date; "coffee date" = Coffee + party date; "first date",
+"date night", "speed dating" alone are unchanged. Regression: `src/utils/datingConcreteCategory.regression.test.js`.
+Because `tagsForPhrase` is shared, the app's business-type search follows the same rule ("speed dating bar" offers Bars &
+Lounges); the web signup form's own copy is unchanged until the migration regenerates it.
