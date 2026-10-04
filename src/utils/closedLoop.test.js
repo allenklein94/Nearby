@@ -16,7 +16,7 @@ describe('the closed loop, end to end (item 85)', () => {
     // Item 61: the hand-off goes through the shared inference merge, which keeps the classifier's headcount.
     expect(read('../services/createAssistant.js')).toContain('createParamsFromAsk(result.structured ?? resolveAsk(typedText, result)');
     const resolver = read('./askResolver.js');
-    expect(resolver).toContain('quickStartPartySize: r.group.partySize');
+    expect(resolver).toContain('quickStartPartySize: statedSize'); // item 187: a stated number only
     const screen = read('../screens/CreateGatheringScreen.js');
     expect(screen).toContain("t('ui.gatheringForm.planningFor', { count: suggestedPartySize })");
     expect(require('../i18n/ui/gatheringForm').default.en.planningFor).toBe('Planning for {count}? We set this from what you told us. Change it any time.');

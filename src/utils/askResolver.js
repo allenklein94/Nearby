@@ -233,11 +233,13 @@ export function toClassification(r) {
 // search); a party type the person chose there wins over the one first read from the words. Nothing else is taken from it.
 export function createParamsFromAsk(r, typedText, current = null) {
   const partyType = current && 'partyType' in current ? (current.partyType ?? null) : r.group.partyType;
+  // Item 187: Create's People (and its capacity suggestion) only from a number the person stated, never a date's assumed 2.
+  const statedSize = r.sources?.partySize === 'words' || NUMBER_WORDS.test(String(typedText ?? '')) ? r.group.partySize : null;
   const inf = {
     tag: r.subcategory,
     categoryLabel: r.category?.label ?? null,
     partyType,
-    partySize: r.group.partySize,
+    partySize: statedSize,
     whenPreset: r.time.whenPreset,
     activities: r.activities,
   };
@@ -245,7 +247,7 @@ export function createParamsFromAsk(r, typedText, current = null) {
   return {
     quickStartTitle: title,
     quickStartCategory: r.subcategory,
-    quickStartPartySize: r.group.partySize,
+    quickStartPartySize: statedSize,
     quickStartPartyType: partyType,
     ...(r.time.whenPreset ? { quickStartWhenPreset: r.time.whenPreset } : {}),
     inferredSummary: inferredSummary(inf),

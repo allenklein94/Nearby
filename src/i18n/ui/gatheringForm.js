@@ -31,7 +31,8 @@ export default {
       "titleNotAllowed": "Title not allowed",
       "descNotAllowed": "Description not allowed",
       "reviseBody": "Please revise your title and try again.",
-      "reviseDescBody": "Please revise your description and try again."
+      "reviseDescBody": "Please revise your description and try again.",
+      "pickActivity": "Pick an activity"
     },
     "titleA11y": "Gathering title",
     "categoryA11y": "Category: {name}",
@@ -39,6 +40,15 @@ export default {
     "checkTimeThenPlace": "Check the time below, then pick a place.",
     "pickTimeThenPlace": "Pick a time, then a place.",
     "changeOnStep": "Change anything on its step (Back for the title and category).",
+    "activityLabel": "Activity",
+    "activityA11y": "Activity: {name}",
+    "changeOnStepActivity": "Change anything on its step (Back for the title and activity).",
+    "summary": {
+      "activity": "Activity",
+      "purpose": "Purpose",
+      "time": "Time",
+      "people": "People"
+    },
     "hideSummaryA11y": "Hide this summary",
     "hide": "Hide",
     "whenQ": "When?",
@@ -216,7 +226,8 @@ export default {
       "titleNotAllowed": "Título no permitido",
       "descNotAllowed": "Descripción no permitida",
       "reviseBody": "Revisa tu título e inténtalo de nuevo.",
-      "reviseDescBody": "Revisa tu descripción e inténtalo de nuevo."
+      "reviseDescBody": "Revisa tu descripción e inténtalo de nuevo.",
+      "pickActivity": "Elige una actividad"
     },
     "titleA11y": "Título de la reunión",
     "categoryA11y": "Categoría: {name}",
@@ -224,6 +235,15 @@ export default {
     "checkTimeThenPlace": "Revisa la hora abajo y luego elige un lugar.",
     "pickTimeThenPlace": "Elige una hora y luego un lugar.",
     "changeOnStep": "Cambia lo que quieras en su paso (Atrás para el título y la categoría).",
+    "activityLabel": "Actividad",
+    "activityA11y": "Actividad: {name}",
+    "changeOnStepActivity": "Cambia lo que quieras en su paso (Atrás para el título y la actividad).",
+    "summary": {
+      "activity": "Actividad",
+      "purpose": "Motivo",
+      "time": "Hora",
+      "people": "Personas"
+    },
     "hideSummaryA11y": "Ocultar este resumen",
     "hide": "Ocultar",
     "whenQ": "¿Cuándo?",
@@ -401,7 +421,8 @@ export default {
       "titleNotAllowed": "Titel nicht erlaubt",
       "descNotAllowed": "Beschreibung nicht erlaubt",
       "reviseBody": "Bitte überarbeite deinen Titel und versuche es erneut.",
-      "reviseDescBody": "Bitte überarbeite deine Beschreibung und versuche es erneut."
+      "reviseDescBody": "Bitte überarbeite deine Beschreibung und versuche es erneut.",
+      "pickActivity": "Wähle eine Aktivität"
     },
     "titleA11y": "Titel des Treffens",
     "categoryA11y": "Kategorie: {name}",
@@ -409,6 +430,15 @@ export default {
     "checkTimeThenPlace": "Prüfe unten die Zeit und wähle dann einen Ort.",
     "pickTimeThenPlace": "Wähle eine Zeit, dann einen Ort.",
     "changeOnStep": "Ändere alles im jeweiligen Schritt („Zurück“ für Titel und Kategorie).",
+    "activityLabel": "Aktivität",
+    "activityA11y": "Aktivität: {name}",
+    "changeOnStepActivity": "Ändere alles im jeweiligen Schritt („Zurück“ für Titel und Aktivität).",
+    "summary": {
+      "activity": "Aktivität",
+      "purpose": "Anlass",
+      "time": "Zeit",
+      "people": "Personen"
+    },
     "hideSummaryA11y": "Diese Zusammenfassung ausblenden",
     "hide": "Ausblenden",
     "whenQ": "Wann?",
@@ -586,7 +616,8 @@ export default {
       "titleNotAllowed": "Titre non autorisé",
       "descNotAllowed": "Description non autorisée",
       "reviseBody": "Veuillez modifier votre titre et réessayer.",
-      "reviseDescBody": "Veuillez modifier votre description et réessayer."
+      "reviseDescBody": "Veuillez modifier votre description et réessayer.",
+      "pickActivity": "Choisissez une activité"
     },
     "titleA11y": "Titre de la rencontre",
     "categoryA11y": "Catégorie : {name}",
@@ -594,6 +625,15 @@ export default {
     "checkTimeThenPlace": "Vérifiez l’heure ci-dessous, puis choisissez un lieu.",
     "pickTimeThenPlace": "Choisissez une heure, puis un lieu.",
     "changeOnStep": "Modifiez chaque élément à son étape (Retour pour le titre et la catégorie).",
+    "activityLabel": "Activité",
+    "activityA11y": "Activité : {name}",
+    "changeOnStepActivity": "Modifiez chaque élément à son étape (Retour pour le titre et l’activité).",
+    "summary": {
+      "activity": "Activité",
+      "purpose": "Objectif",
+      "time": "Moment",
+      "people": "Personnes"
+    },
     "hideSummaryA11y": "Masquer ce résumé",
     "hide": "Masquer",
     "whenQ": "Quand ?",
@@ -771,7 +811,8 @@ export default {
       "titleNotAllowed": "Título não permitido",
       "descNotAllowed": "Descrição não permitida",
       "reviseBody": "Revise o título e tente novamente.",
-      "reviseDescBody": "Revise a descrição e tente novamente."
+      "reviseDescBody": "Revise a descrição e tente novamente.",
+      "pickActivity": "Escolha uma atividade"
     },
     "titleA11y": "Título do encontro",
     "categoryA11y": "Categoria: {name}",
@@ -779,6 +820,15 @@ export default {
     "checkTimeThenPlace": "Confira o horário abaixo e depois escolha um lugar.",
     "pickTimeThenPlace": "Escolha um horário e depois um lugar.",
     "changeOnStep": "Altere qualquer item na etapa dele (Voltar para o título e a categoria).",
+    "activityLabel": "Atividade",
+    "activityA11y": "Atividade: {name}",
+    "changeOnStepActivity": "Altere qualquer item na etapa dele (Voltar para o título e a atividade).",
+    "summary": {
+      "activity": "Atividade",
+      "purpose": "Propósito",
+      "time": "Horário",
+      "people": "Pessoas"
+    },
     "hideSummaryA11y": "Ocultar este resumo",
     "hide": "Ocultar",
     "whenQ": "Quando?",
@@ -956,7 +1006,8 @@ export default {
       "titleNotAllowed": "Tit sa a pa pèmèt",
       "descNotAllowed": "Deskripsyon sa a pa pèmèt",
       "reviseBody": "Tanpri chanje tit ou a epi eseye ankò.",
-      "reviseDescBody": "Tanpri chanje deskripsyon ou a epi eseye ankò."
+      "reviseDescBody": "Tanpri chanje deskripsyon ou a epi eseye ankò.",
+      "pickActivity": "Chwazi yon aktivite"
     },
     "titleA11y": "Tit rasanbleman an",
     "categoryA11y": "Kategori: {name}",
@@ -964,6 +1015,15 @@ export default {
     "checkTimeThenPlace": "Tcheke lè a anba a, epi chwazi yon kote.",
     "pickTimeThenPlace": "Chwazi yon lè, epi yon kote.",
     "changeOnStep": "Chanje nenpòt bagay nan etap li (Retounen pou tit ak kategori a).",
+    "activityLabel": "Aktivite",
+    "activityA11y": "Aktivite: {name}",
+    "changeOnStepActivity": "Chanje nenpòt bagay nan etap li (Retounen pou tit ak aktivite a).",
+    "summary": {
+      "activity": "Aktivite",
+      "purpose": "Rezon",
+      "time": "Lè",
+      "people": "Moun"
+    },
     "hideSummaryA11y": "Kache rezime sa a",
     "hide": "Kache",
     "whenQ": "Kilè?",
@@ -1141,7 +1201,8 @@ export default {
       "titleNotAllowed": "标题不被允许",
       "descNotAllowed": "描述不被允许",
       "reviseBody": "请修改标题后重试。",
-      "reviseDescBody": "请修改描述后重试。"
+      "reviseDescBody": "请修改描述后重试。",
+      "pickActivity": "选择一个活动"
     },
     "titleA11y": "聚会标题",
     "categoryA11y": "类别：{name}",
@@ -1149,6 +1210,15 @@ export default {
     "checkTimeThenPlace": "请确认下方时间，然后选择地点。",
     "pickTimeThenPlace": "先选时间，再选地点。",
     "changeOnStep": "可在对应步骤修改任何内容（返回可改标题和类别）。",
+    "activityLabel": "活动",
+    "activityA11y": "活动：{name}",
+    "changeOnStepActivity": "可在对应步骤修改任何内容（返回可改标题和活动）。",
+    "summary": {
+      "activity": "活动",
+      "purpose": "目的",
+      "time": "时间",
+      "people": "人数"
+    },
     "hideSummaryA11y": "隐藏此摘要",
     "hide": "隐藏",
     "whenQ": "什么时候？",
@@ -1326,7 +1396,8 @@ export default {
       "titleNotAllowed": "Tiêu đề không được phép",
       "descNotAllowed": "Mô tả không được phép",
       "reviseBody": "Vui lòng sửa tiêu đề rồi thử lại.",
-      "reviseDescBody": "Vui lòng sửa mô tả rồi thử lại."
+      "reviseDescBody": "Vui lòng sửa mô tả rồi thử lại.",
+      "pickActivity": "Chọn một hoạt động"
     },
     "titleA11y": "Tiêu đề buổi gặp mặt",
     "categoryA11y": "Danh mục: {name}",
@@ -1334,6 +1405,15 @@ export default {
     "checkTimeThenPlace": "Kiểm tra thời gian bên dưới, rồi chọn địa điểm.",
     "pickTimeThenPlace": "Chọn thời gian, rồi địa điểm.",
     "changeOnStep": "Đổi bất cứ điều gì ở bước của nó (Quay lại để đổi tiêu đề và danh mục).",
+    "activityLabel": "Hoạt động",
+    "activityA11y": "Hoạt động: {name}",
+    "changeOnStepActivity": "Đổi bất cứ điều gì ở bước của nó (Quay lại để đổi tiêu đề và hoạt động).",
+    "summary": {
+      "activity": "Hoạt động",
+      "purpose": "Mục đích",
+      "time": "Thời gian",
+      "people": "Số người"
+    },
     "hideSummaryA11y": "Ẩn phần tóm tắt này",
     "hide": "Ẩn",
     "whenQ": "Khi nào?",
@@ -1511,7 +1591,8 @@ export default {
       "titleNotAllowed": "Hindi pinapayagan ang pamagat",
       "descNotAllowed": "Hindi pinapayagan ang paglalarawan",
       "reviseBody": "Pakibago ang pamagat at subukan ulit.",
-      "reviseDescBody": "Pakibago ang paglalarawan at subukan ulit."
+      "reviseDescBody": "Pakibago ang paglalarawan at subukan ulit.",
+      "pickActivity": "Pumili ng aktibidad"
     },
     "titleA11y": "Pamagat ng gathering",
     "categoryA11y": "Kategorya: {name}",
@@ -1519,6 +1600,15 @@ export default {
     "checkTimeThenPlace": "Tingnan ang oras sa ibaba, tapos pumili ng lugar.",
     "pickTimeThenPlace": "Pumili ng oras, tapos lugar.",
     "changeOnStep": "Palitan ang kahit ano sa sariling hakbang nito (Bumalik para sa pamagat at kategorya).",
+    "activityLabel": "Aktibidad",
+    "activityA11y": "Aktibidad: {name}",
+    "changeOnStepActivity": "Palitan ang kahit ano sa sariling hakbang nito (Bumalik para sa pamagat at aktibidad).",
+    "summary": {
+      "activity": "Aktibidad",
+      "purpose": "Layunin",
+      "time": "Oras",
+      "people": "Tao"
+    },
     "hideSummaryA11y": "Itago ang buod na ito",
     "hide": "Itago",
     "whenQ": "Kailan?",
@@ -1696,7 +1786,8 @@ export default {
       "titleNotAllowed": "Название не разрешено",
       "descNotAllowed": "Описание не разрешено",
       "reviseBody": "Измените название и попробуйте снова.",
-      "reviseDescBody": "Измените описание и попробуйте снова."
+      "reviseDescBody": "Измените описание и попробуйте снова.",
+      "pickActivity": "Выберите занятие"
     },
     "titleA11y": "Название встречи",
     "categoryA11y": "Категория: {name}",
@@ -1704,6 +1795,15 @@ export default {
     "checkTimeThenPlace": "Проверьте время ниже, затем выберите место.",
     "pickTimeThenPlace": "Выберите время, затем место.",
     "changeOnStep": "Любой пункт можно изменить на его шаге («Назад» — для названия и категории).",
+    "activityLabel": "Занятие",
+    "activityA11y": "Занятие: {name}",
+    "changeOnStepActivity": "Любой пункт можно изменить на его шаге («Назад» — для названия и занятия).",
+    "summary": {
+      "activity": "Занятие",
+      "purpose": "Повод",
+      "time": "Время",
+      "people": "Люди"
+    },
     "hideSummaryA11y": "Скрыть эту сводку",
     "hide": "Скрыть",
     "whenQ": "Когда?",
@@ -1881,7 +1981,8 @@ export default {
       "titleNotAllowed": "허용되지 않는 제목",
       "descNotAllowed": "허용되지 않는 설명",
       "reviseBody": "제목을 수정한 뒤 다시 시도하세요.",
-      "reviseDescBody": "설명을 수정한 뒤 다시 시도하세요."
+      "reviseDescBody": "설명을 수정한 뒤 다시 시도하세요.",
+      "pickActivity": "활동을 선택하세요"
     },
     "titleA11y": "모임 제목",
     "categoryA11y": "카테고리: {name}",
@@ -1889,6 +1990,15 @@ export default {
     "checkTimeThenPlace": "아래 시간을 확인한 뒤 장소를 고르세요.",
     "pickTimeThenPlace": "시간을 고르고 장소를 고르세요.",
     "changeOnStep": "각 단계에서 무엇이든 바꿀 수 있어요(제목과 카테고리는 뒤로).",
+    "activityLabel": "활동",
+    "activityA11y": "활동: {name}",
+    "changeOnStepActivity": "각 단계에서 무엇이든 바꿀 수 있어요(제목과 활동은 뒤로).",
+    "summary": {
+      "activity": "활동",
+      "purpose": "목적",
+      "time": "시간",
+      "people": "인원"
+    },
     "hideSummaryA11y": "이 요약 숨기기",
     "hide": "숨기기",
     "whenQ": "언제?",

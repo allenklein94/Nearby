@@ -18,8 +18,9 @@ describe('item 61: the owner example', () => {
       tag: 'Coffee', categoryKey: 'food_drink', categoryLabel: 'Food & Drink',
       partyType: 'friends', whenPreset: 'tonight', activities: ['meet_a_friend'], title: 'Coffee with some friends',
     });
+    // Item 187: the summary is the plan (Activity / Purpose / Time / People), never the business group.
     expect(inferredSummary(inf).map((r) => [r.label, r.value])).toEqual([
-      ['Category', 'Food & Drink'], ['What', 'Coffee'], ['Who', 'Friends'], ['When', 'Tonight'], ['To do', 'Meet friends'],
+      ['Activity', 'Coffee'], ['Purpose', 'Friends'], ['Time', 'Tonight'],
     ]);
   });
 });
@@ -138,5 +139,54 @@ describe('party size: one shared parser, total people, no arbitrary numbers', ()
     const defs = fs.readdirSync(src, { recursive: true }).filter((f) => /\.js$/.test(f) && !/test\.js$/.test(f))
       .filter((f) => /function\s+\w*[pP]artySize\w*FromText\b/.test(fs.readFileSync(path.join(src, f), 'utf8')));
     expect(defs.map((f) => f.split(path.sep).join('/'))).toEqual(['utils/gatheringInference.js']);
+  });
+});
+
+describe('item 187: "From what you said" describes the plan, not the taxonomy', () => {
+  const layers = (text, ai = null) => createParamsFromAsk(resolveAsk(text, ai), text).inferredSummary;
+
+  it('never shows a category/group row, a derived "To do" row or anything outside the four', () => {
+    for (const text of ['Coffee tonight with some friends', 'dinner for 4 tonight', 'pickleball tomorrow with my family', 'first date coffee']) {
+      const rows = layers(text);
+      expect(rows.every((r) => ['activity', 'purpose', 'time', 'people'].includes(r.layer))).toBe(true);
+      expect(rows.map((r) => r.value)).not.toContain('Food & Drink');
+    }
+  });
+
+  it('Activity is the canonical stored tag, unchanged', () => {
+    const rows = layers('Coffee tonight with some friends');
+    expect(rows.find((r) => r.layer === 'activity')).toMatchObject({ key: 'Coffee', value: 'Coffee' });
+  });
+
+  it('a date keeps Coffee as the activity; the date is only the purpose', () => {
+    const rows = layers('first date coffee');
+    expect(rows.find((r) => r.layer === 'activity').key).toBe('Coffee');
+    expect(rows.find((r) => r.layer === 'purpose').key).toBe('date');
+  });
+
+  it('People only from a stated number', () => {
+    expect(layers('coffee for 4 tonight').find((r) => r.layer === 'people')).toMatchObject({ key: 4, value: '4' });
+    for (const text of ['coffee tonight', 'birthday dinner tonight', 'family outing tomorrow', 'coffee with my girlfriend']) {
+      expect(layers(text).find((r) => r.layer === 'people')).toBeUndefined();
+    }
+  });
+
+  it('an AI "2 for a date" is never shown as People nor suggested as capacity', () => {
+    const text = 'coffee with my girlfriend tonight';
+    const params = createParamsFromAsk(resolveAsk(text, { category: 'Coffee', partySize: 2 }), text);
+    expect(params.inferredSummary.find((r) => r.layer === 'people')).toBeUndefined();
+    expect(params.quickStartPartySize).toBeNull();
+  });
+
+  it('no Purpose row when nothing said who it is for', () => {
+    expect(layers('pickleball tonight').find((r) => r.layer === 'purpose')).toBeUndefined();
+  });
+
+  it('Create labels the first-step picker Activity and renders only the four rows', () => {
+    const src = read('screens/CreateGatheringScreen.js');
+    expect(src).toContain("t('ui.gatheringForm.activityLabel')");
+    expect(src).not.toContain("t('gatherings.categoryLabel')");
+    expect(src).toContain("const SUMMARY_LAYERS = ['activity', 'purpose', 'time', 'people'];");
+    expect(src).not.toMatch(/\{r\.label\}/);
   });
 });

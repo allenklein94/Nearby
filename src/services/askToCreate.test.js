@@ -36,7 +36,7 @@ describe('the ask prefills Create', () => {
     n = nav();
     routeClassifiedIntentToCreation(n, off, text, { explicitCreate: true });
     expect(n.navigate.mock.calls[0][1].quickStartPartyType).toBeNull();
-    expect(n.navigate.mock.calls[0][1].inferredSummary.find((x) => x.layer === 'group')).toBeUndefined();
+    expect(n.navigate.mock.calls[0][1].inferredSummary.find((x) => x.layer === 'purpose')).toBeUndefined();
   });
 
   it('time is still only what the words said (never invented)', () => {

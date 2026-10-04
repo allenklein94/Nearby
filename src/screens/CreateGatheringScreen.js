@@ -57,6 +57,9 @@ const PRICE_OPTIONS = [
 // "What kind of plan is this?" (owner item 54): the same `party_type` column and vocabulary as everywhere else, worded as the KIND of
 // plan. Networking is the existing `coworkers` value and a casual hangout is `friends` (one value each, no second list); a plan is one
 // kind, so this stays single-select. Not specified stays the default.
+// Item 187: the only rows the "From what you said" summary shows, in this order.
+const SUMMARY_LAYERS = ['activity', 'purpose', 'time', 'people'];
+
 const PARTY_TYPE_OPTIONS = [null, 'friends', 'date', 'family', 'coworkers', 'new_people', 'groups', 'solo'].map((key) => ({
   key, labelKey: key ? `ui.gatheringOptions.kind.${key}` : 'ui.gatheringOptions.notSpecified',
 }));
@@ -252,6 +255,14 @@ export default function CreateGatheringScreen({ navigation, route }) {
     if (pt && PARTY_TYPE_OPTIONS.some((o) => o.key === pt)) setPartyType(pt);
   }, [route.params?.quickStartPartyType]);
   const inferredRows = Array.isArray(route.params?.inferredSummary) ? route.params.inferredSummary : [];
+  // Item 187: the summary describes the plan in the person's language; stored values (the canonical tag, party type, preset)
+  // are only looked up for display, never renamed. A row from an older build with another layer is not shown.
+  const summaryValue = (r) => {
+    if (r.layer === 'activity') return names.tag(r.key ?? r.value);
+    if (r.layer === 'purpose' && r.key) return t(`ui.gatheringOptions.kind.${r.key}`);
+    if (r.layer === 'time' && r.key) return t(`ui.gatheringOptions.when.${r.key}`);
+    return r.value;
+  };
   const [inferredDismissed, setInferredDismissed] = useState(false);
 
   // "Planning for 4?": a headcount from the person's own words, suggested (visible + editable) rather than committed.
@@ -379,7 +390,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
       if (problem === 'title') return Alert.alert(t('ui.gatheringForm.alert.titleRequired'), t('ui.gatheringForm.alert.titleRequiredBody'));
       // Item 64: the category is structured input everything downstream reads (business requests, recommendations,
       // weather, demand), so it is asked for here rather than guessed later from the title.
-      if (problem === 'category') return Alert.alert(t('ui.gatheringForm.alert.pickCategory'), t('ui.gatheringForm.alert.pickCategoryBody'));
+      if (problem === 'category') return Alert.alert(t('ui.gatheringForm.alert.pickActivity'), t('ui.gatheringForm.alert.pickCategoryBody'));
     }
     if (stepKey === 'settings' && visibility === 'community' && !communityId) {
       if (!loadingCommunities && myCommunities.length === 0) {
@@ -532,7 +543,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
               accessibilityLabel={t('ui.gatheringForm.titleA11y')}
             />
 
-            <Text style={styles.label}>{t('gatherings.categoryLabel')}</Text>
+            <Text style={styles.label}>{t('ui.gatheringForm.activityLabel')}</Text>
             {orderGroupsByInterests(CATEGORY_GROUPS, myInterests).map((group) => (
               <View key={group.key} style={{ marginBottom: spacing.sm }}>
                 <Text style={styles.subLabel}>{group.icon} {names.group(group.key, group.label)}</Text>
@@ -555,7 +566,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                         ]}
                         onPress={() => setInterestTag(interestTag === option ? null : option)}
                         activeOpacity={0.85}
-                        accessibilityLabel={t('ui.gatheringForm.categoryA11y', { name: names.tag(option) })}
+                        accessibilityLabel={t('ui.gatheringForm.activityA11y', { name: names.tag(option) })}
                         accessibilityRole="button"
                         accessibilityState={{ selected: isSelected }}
                       >
@@ -589,13 +600,13 @@ export default function CreateGatheringScreen({ navigation, route }) {
         {stepKey === 'when' && inferredRows.length > 0 && !inferredDismissed && (
           <View style={{ marginBottom: spacing.md, padding: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }} accessibilityLabel={t('ui.gatheringForm.fromWhatYouSaid')}>
             <Text style={[styles.label, { marginTop: 0 }]}>{t('ui.gatheringForm.fromWhatYouSaid')}</Text>
-            {inferredRows.map((r) => (
+            {inferredRows.filter((r) => SUMMARY_LAYERS.includes(r.layer)).map((r) => (
               <Text key={r.layer} style={{ color: colors.text, marginTop: 2 }}>
-                <Text style={{ color: colors.textSecondary }}>{r.label}: </Text>{r.value}
+                <Text style={{ color: colors.textSecondary }}>{t(`ui.gatheringForm.summary.${r.layer}`)}: </Text>{summaryValue(r)}
               </Text>
             ))}
             <Text style={{ color: colors.textSecondary, marginTop: spacing.xs }}>
-              {whenPreset ? t('ui.gatheringForm.checkTimeThenPlace') : t('ui.gatheringForm.pickTimeThenPlace')} {t('ui.gatheringForm.changeOnStep')}
+              {whenPreset ? t('ui.gatheringForm.checkTimeThenPlace') : t('ui.gatheringForm.pickTimeThenPlace')} {t('ui.gatheringForm.changeOnStepActivity')}
             </Text>
             <TouchableOpacity onPress={() => setInferredDismissed(true)} accessibilityRole="button" accessibilityLabel={t('ui.gatheringForm.hideSummaryA11y')} style={{ marginTop: spacing.xs, alignSelf: 'flex-start' }}>
               <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{t('ui.gatheringForm.hide')}</Text>

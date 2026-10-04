@@ -891,7 +891,7 @@ both, attributes unlimited; enforced in every signup / edit / server path in the
 Note: no surface shows that label today (English shows the stored name "Coffee"); showing it would be a display-name entry
 (English beside the 10 translations in `vocab.categories.tags.coffee`), never a taxonomy change.
 
-## Item 187: A gathering is described by what people will do, not a business category (PROPOSED 2026-10-04)
+## Item 187: A gathering is described by what people will do, not a business category (APPLIED 2026-10-04)
 
 Already the model. A gathering never stores a business major or a business classification; it stores what the host said:
 
@@ -908,4 +908,15 @@ Already the model. A gathering never stores a business major or a business class
 opens with "Category: Food & Drink" (the business group) before "What: Coffee", and the What step's picker is labeled
 "Category". Proposal: show the summary as Activity / Purpose / Time / People (drop the group row; it is never stored), and
 label the picker "Activity" (group headings stay as picker sections). Display only: no column, routing, request or
-ranking change; 11 languages for the new labels. Not applied: awaiting owner decision.
+ranking change; 11 languages for the new labels.
+
+**Owner decision (2026-10-04, APPLIED, presentation only):** the summary shows only Activity (the canonical stored tag, shown
+through the category-name lookup, never renamed) / Purpose (the existing "What kind of plan is this?" value, only when the
+words or a chip said it; never from the activity, venue, timing or AI; it never replaces the activity: "first date coffee" =
+Activity Coffee + Purpose Date) / Time (the When preset the words named) / People (only a number the person stated). The
+group row and the derived "To do" row are gone, with no replacement. The first-step picker reads "Activity", with the group
+headings kept as sections. **One related fix:** an AI-returned 2 for a date (no number in the words) is no longer shown as
+People nor suggested as capacity (`statedSize` in `createParamsFromAsk`); a stated number still is. No schema, stored
+value, routing, request, ranking or taxonomy change; the gathering's place stays the place the host picks ("nearby" is
+discovery context). Edit's fill-only category picker (item 64) is unchanged. Tests: `gatheringInference.test.js` (item 187
+block), `askToCreate.test.js`, `closedLoop.test.js`. Not device-tested (parse-checked); business web export regenerated.

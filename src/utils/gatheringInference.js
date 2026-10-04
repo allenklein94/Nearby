@@ -103,20 +103,24 @@ export function inferGatheringFromText(text) {
   };
 }
 
-// What the Create screen should show as "from what you said", in ontology order, only for layers really inferred.
+// What the Create screen shows as "From what you said" (item 187): the person's PLAN, never the business-directory taxonomy.
+// Activity / Purpose / Time / People, each only when really captured, and nothing else:
+//   Activity = the canonical tag the gathering will store (`interest_tag`); its group (Food & Drink) is never shown here.
+//   Purpose  = the existing "What kind of plan is this?" value (`party_type`), from the person's own words or a chip.
+//   Time     = the When preset the words named (words-only, never the AI's dateWindow).
+//   People   = a number the person actually stated (suggested into capacity); never inferred from a date, birthday or family.
+// No group/category row and no derived "To do" row (activities are derived, never stored). `key` is the stored value the
+// screen localizes; `label`/`value` stay English for logs and tests.
 const PARTY_LABELS = { solo: 'Just you', friends: 'Friends', groups: 'A big group', date: 'A date', family: 'Family', coworkers: 'Coworkers', new_people: 'New people' };
 const WHEN_LABELS = { now: 'Now', tonight: 'Tonight', tomorrow: 'Tomorrow' };
 
 export function inferredSummary(inf) {
   if (!inf) return [];
   const rows = [];
-  if (inf.categoryLabel) rows.push({ layer: 'category', label: 'Category', value: inf.categoryLabel });
-  if (inf.tag) rows.push({ layer: 'subcategory', label: 'What', value: inf.tag });
-  if (inf.partyType) rows.push({ layer: 'group', label: 'Who', value: PARTY_LABELS[inf.partyType] ?? inf.partyType });
-  if (inf.partySize) rows.push({ layer: 'group_size', label: 'How many', value: `${inf.partySize} people` });
-  if (inf.whenPreset) rows.push({ layer: 'time', label: 'When', value: WHEN_LABELS[inf.whenPreset] });
-  const acts = (inf.activities ?? []).map((k) => ACTIVITIES.find((a) => a.key === k)?.display).filter(Boolean);
-  if (acts.length) rows.push({ layer: 'activity', label: 'To do', value: acts.join(', ') });
+  if (inf.tag) rows.push({ layer: 'activity', label: 'Activity', value: inf.tag, key: inf.tag });
+  if (inf.partyType && PARTY_LABELS[inf.partyType]) rows.push({ layer: 'purpose', label: 'Purpose', value: PARTY_LABELS[inf.partyType], key: inf.partyType });
+  if (inf.whenPreset && WHEN_LABELS[inf.whenPreset]) rows.push({ layer: 'time', label: 'Time', value: WHEN_LABELS[inf.whenPreset], key: inf.whenPreset });
+  if (Number.isInteger(inf.partySize) && inf.partySize > 0) rows.push({ layer: 'people', label: 'People', value: String(inf.partySize), key: inf.partySize });
   return rows;
 }
 
