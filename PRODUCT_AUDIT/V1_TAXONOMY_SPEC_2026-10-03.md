@@ -846,3 +846,32 @@ only a Dating & Social tag (`isDatingTag`), and `resolveAsk` drops an AI dating 
 "date night", "speed dating" alone are unchanged. Regression: `src/utils/datingConcreteCategory.regression.test.js`.
 Because `tagsForPhrase` is shared, the app's business-type search follows the same rule ("speed dating bar" offers Bars &
 Lounges); the web signup form's own copy is unchanged until the migration regenerates it.
+
+## Item 186: One primary category, many secondary classifications (PROPOSED 2026-10-04, awaiting owner)
+
+The rule already holds in the schema (checked on production 2026-10-04). `brand_partners` has:
+
+| Layer | Column | Answers | Enforced by |
+|---|---|---|---|
+| Primary group | `category` (one of the 19 majors) | what market | CHECK / allowed keys |
+| Primary category | `subcategory` (one tag, must belong to `category`) | what it is | FK to `category_tag_groups` + `update_business_profile`; 0 rows violate it |
+| Secondary categories | `categories text[]` (any real tags, any group) | what else it is | trigger `enforce_category_tags_array` |
+| Attributes | `attributes text[]` (closed vocabulary of 40) | what it is like | CHECK |
+| Other declared facts | `cuisine`, `offered_occasions`, `accommodates_party_types`, `dietary_options`, `booking_mode`, `price_level`, hours, capacities, `not_accommodated` | how it serves | their own CHECKs (items 72-88) |
+
+Coastal Coffee on today's model: primary Food & Drink -> Coffee; secondary categories Breakfast, Dessert & Ice Cream;
+attributes `date_friendly`, `group_friendly`, `outdoor_seating`, `pet_friendly`, `wifi`, `laptop_friendly` (= Work-friendly).
+Routing reads primary + secondary categories (`business_served_tags`; a business with neither serves its whole group);
+ranking and "Customer is looking for" read attributes. "Coffee & Cafés" is a display label for the Coffee tag; "café"
+already maps to it (item 169); no rename (item 168: never migrate only for a label).
+
+**Keep the two secondary lists separate (proposed lock).** The example mixes them; they must stay two lists: a secondary
+CATEGORY is another market the business serves (routes requests, appears in that category view), an ATTRIBUTE is a quality
+(ranks and explains, never routes, never a category view). Never one combined "secondary" list, never an attribute stored as
+a category or the reverse.
+
+**Gap: no cap on secondary categories.** Nothing limits `categories`, and every secondary tag widens routing, so a business
+could declare dozens and receive requests in all of them ("category stuffing"), which undermines category-aware routing.
+Proposal (in the V1 migration): at most N secondary categories (suggest 5), enforced in the same trigger and shown in
+signup and the dashboard; the customer-only marker (item 185) applies to primary AND secondary. Attributes stay uncapped
+(they never route). Prod today: 1 business, no overflow to convert.
