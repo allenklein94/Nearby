@@ -7,16 +7,13 @@ export default {
       together: {
         title: "With Someone",
         subtitle: "Shared tools, used together with a specific match.",
+        where: "Open a match's chat and tap {menu}.",
       },
       onYourOwn: {
         title: "On Your Own",
         subtitle: "Private reflection — nothing here is shared with a match.",
       },
       row: {
-        tools: {
-          label: "Relationship Tools",
-          a11y: "Relationship tools shared with a specific match",
-        },
         vault: {
           label: "Memory Vault",
           a11y: "Memory vault, memories saved with your matches",
@@ -42,16 +39,6 @@ export default {
           a11y: "Relationship toolkit",
         },
       },
-    },
-    tools: {
-      loading: "Loading relationship tools...",
-      loadError: "Couldn't load your relationship tools.",
-      intro: "These tools are shared with a specific match — pick who you want to use one with.",
-      meetPeopleA11y: "Meet people",
-      meetPeople: "Meet People →",
-      withA11y: "Relationship tools with {name}",
-      someone: "Someone",
-      toolsWith: "Tools with {name}",
     },
     kit: {
       expandA11y: "{title}, double tap to expand",
@@ -89,16 +76,13 @@ export default {
       together: {
         title: "Con alguien",
         subtitle: "Herramientas compartidas, para usar junto a un match concreto.",
+        where: "Abre el chat de un match y toca {menu}.",
       },
       onYourOwn: {
         title: "Por tu cuenta",
         subtitle: "Reflexión privada: nada de esto se comparte con un match.",
       },
       row: {
-        tools: {
-          label: "Herramientas de pareja",
-          a11y: "Herramientas de pareja compartidas con un match concreto",
-        },
         vault: {
           label: "Baúl de recuerdos",
           a11y: "Baúl de recuerdos, recuerdos guardados con tus matches",
@@ -124,16 +108,6 @@ export default {
           a11y: "Herramientas para la relación",
         },
       },
-    },
-    tools: {
-      loading: "Cargando herramientas de pareja...",
-      loadError: "No pudimos cargar tus herramientas de pareja.",
-      intro: "Estas herramientas se comparten con un match concreto: elige con quién quieres usarlas.",
-      meetPeopleA11y: "Conocer gente",
-      meetPeople: "Conocer gente →",
-      withA11y: "Herramientas de pareja con {name}",
-      someone: "Alguien",
-      toolsWith: "Herramientas con {name}",
     },
     kit: {
       expandA11y: "{title}, toca dos veces para abrir",
@@ -171,16 +145,13 @@ export default {
       together: {
         title: "Mit jemandem",
         subtitle: "Gemeinsame Werkzeuge, zusammen mit einem bestimmten Match genutzt.",
+        where: "Öffne den Chat eines Matches und tippe auf {menu}.",
       },
       onYourOwn: {
         title: "Für dich allein",
         subtitle: "Private Reflexion – nichts davon wird mit einem Match geteilt.",
       },
       row: {
-        tools: {
-          label: "Beziehungswerkzeuge",
-          a11y: "Beziehungswerkzeuge, die du mit einem bestimmten Match teilst",
-        },
         vault: {
           label: "Erinnerungstresor",
           a11y: "Erinnerungstresor, mit deinen Matches gespeicherte Erinnerungen",
@@ -206,16 +177,6 @@ export default {
           a11y: "Werkzeugkasten für Beziehungen",
         },
       },
-    },
-    tools: {
-      loading: "Beziehungswerkzeuge werden geladen...",
-      loadError: "Deine Beziehungswerkzeuge konnten nicht geladen werden.",
-      intro: "Diese Werkzeuge teilst du mit einem bestimmten Match – wähle, mit wem du eines nutzen möchtest.",
-      meetPeopleA11y: "Leute kennenlernen",
-      meetPeople: "Leute kennenlernen →",
-      withA11y: "Beziehungswerkzeuge mit {name}",
-      someone: "Jemand",
-      toolsWith: "Werkzeuge mit {name}",
     },
     kit: {
       expandA11y: "{title}, zum Aufklappen doppelt tippen",
@@ -253,16 +214,13 @@ export default {
       together: {
         title: "Avec quelqu’un",
         subtitle: "Des outils partagés, à utiliser avec un match en particulier.",
+        where: "Ouvrez la conversation d'un match et touchez {menu}.",
       },
       onYourOwn: {
         title: "Pour toi",
         subtitle: "Réflexion privée : rien ici n’est partagé avec un match.",
       },
       row: {
-        tools: {
-          label: "Outils pour le couple",
-          a11y: "Outils pour le couple partagés avec un match en particulier",
-        },
         vault: {
           label: "Coffre à souvenirs",
           a11y: "Coffre à souvenirs, souvenirs enregistrés avec tes matchs",
@@ -288,16 +246,6 @@ export default {
           a11y: "Boîte à outils pour la relation",
         },
       },
-    },
-    tools: {
-      loading: "Chargement des outils pour le couple...",
-      loadError: "Impossible de charger tes outils pour le couple.",
-      intro: "Ces outils se partagent avec un match en particulier : choisis avec qui tu veux en utiliser un.",
-      meetPeopleA11y: "Rencontrer des gens",
-      meetPeople: "Rencontrer des gens →",
-      withA11y: "Outils pour le couple avec {name}",
-      someone: "Quelqu’un",
-      toolsWith: "Outils avec {name}",
     },
     kit: {
       expandA11y: "{title}, touche deux fois pour ouvrir",
@@ -335,16 +283,13 @@ export default {
       together: {
         title: "Com alguém",
         subtitle: "Ferramentas compartilhadas, usadas junto com um match específico.",
+        where: "Abra o chat de um match e toque em {menu}.",
       },
       onYourOwn: {
         title: "Só você",
         subtitle: "Reflexão privada: nada aqui é compartilhado com um match.",
       },
       row: {
-        tools: {
-          label: "Ferramentas do relacionamento",
-          a11y: "Ferramentas do relacionamento compartilhadas com um match específico",
-        },
         vault: {
           label: "Cofre de memórias",
           a11y: "Cofre de memórias, lembranças salvas com seus matches",
@@ -370,16 +315,6 @@ export default {
           a11y: "Ferramentas para o relacionamento",
         },
       },
-    },
-    tools: {
-      loading: "Carregando ferramentas do relacionamento...",
-      loadError: "Não foi possível carregar suas ferramentas do relacionamento.",
-      intro: "Essas ferramentas são compartilhadas com um match específico: escolha com quem quer usar.",
-      meetPeopleA11y: "Conhecer pessoas",
-      meetPeople: "Conhecer pessoas →",
-      withA11y: "Ferramentas do relacionamento com {name}",
-      someone: "Alguém",
-      toolsWith: "Ferramentas com {name}",
     },
     kit: {
       expandA11y: "{title}, toque duas vezes para abrir",
@@ -417,16 +352,13 @@ export default {
       together: {
         title: "Ak yon moun",
         subtitle: "Zouti pataje, pou itilize ansanm ak yon match espesifik.",
+        where: "Louvri chat yon match epi peze {menu}.",
       },
       onYourOwn: {
         title: "Pou kont ou",
         subtitle: "Refleksyon prive — anyen isit la pa pataje ak yon match.",
       },
       row: {
-        tools: {
-          label: "Zouti relasyon",
-          a11y: "Zouti relasyon ou pataje ak yon match espesifik",
-        },
         vault: {
           label: "Kòf souvni",
           a11y: "Kòf souvni, souvni ou anrejistre ak match ou yo",
@@ -452,16 +384,6 @@ export default {
           a11y: "Zouti pou relasyon",
         },
       },
-    },
-    tools: {
-      loading: "N ap chaje zouti relasyon yo...",
-      loadError: "Nou pa t ka chaje zouti relasyon ou yo.",
-      intro: "Zouti sa yo pataje ak yon match espesifik — chwazi ak kiyès ou vle itilize youn.",
-      meetPeopleA11y: "Rankontre moun",
-      meetPeople: "Rankontre moun →",
-      withA11y: "Zouti relasyon ak {name}",
-      someone: "Yon moun",
-      toolsWith: "Zouti ak {name}",
     },
     kit: {
       expandA11y: "{title}, tape de fwa pou louvri",
@@ -499,16 +421,13 @@ export default {
       together: {
         title: "和某人一起",
         subtitle: "共享工具，与特定的配对对象一起使用。",
+        where: "打开某个配对的聊天，然后点按「{menu}」。",
       },
       onYourOwn: {
         title: "独自一人",
         subtitle: "私人反思——这里的内容都不会与配对对象分享。",
       },
       row: {
-        tools: {
-          label: "感情工具",
-          a11y: "与特定配对对象共享的感情工具",
-        },
         vault: {
           label: "回忆保险箱",
           a11y: "回忆保险箱，与配对对象保存的回忆",
@@ -534,16 +453,6 @@ export default {
           a11y: "感情工具箱",
         },
       },
-    },
-    tools: {
-      loading: "正在加载感情工具...",
-      loadError: "无法加载你的感情工具。",
-      intro: "这些工具需要与特定的配对对象共享——选择你想和谁一起使用。",
-      meetPeopleA11y: "认识新朋友",
-      meetPeople: "认识新朋友 →",
-      withA11y: "与 {name} 的感情工具",
-      someone: "某人",
-      toolsWith: "与 {name} 的工具",
     },
     kit: {
       expandA11y: "{title}，双击展开",
@@ -581,16 +490,13 @@ export default {
       together: {
         title: "Cùng một người",
         subtitle: "Công cụ dùng chung, sử dụng cùng một người kết đôi cụ thể.",
+        where: "Mở cuộc trò chuyện với một người tương hợp và chạm vào {menu}.",
       },
       onYourOwn: {
         title: "Một mình",
         subtitle: "Suy ngẫm riêng tư — không có gì ở đây được chia sẻ với người kết đôi.",
       },
       row: {
-        tools: {
-          label: "Công cụ tình cảm",
-          a11y: "Công cụ tình cảm dùng chung với một người kết đôi cụ thể",
-        },
         vault: {
           label: "Kho kỷ niệm",
           a11y: "Kho kỷ niệm, những kỷ niệm lưu cùng người kết đôi",
@@ -616,16 +522,6 @@ export default {
           a11y: "Bộ công cụ cho mối quan hệ",
         },
       },
-    },
-    tools: {
-      loading: "Đang tải công cụ tình cảm...",
-      loadError: "Không thể tải công cụ tình cảm của bạn.",
-      intro: "Những công cụ này được dùng chung với một người kết đôi cụ thể — hãy chọn người bạn muốn dùng cùng.",
-      meetPeopleA11y: "Gặp gỡ mọi người",
-      meetPeople: "Gặp gỡ mọi người →",
-      withA11y: "Công cụ tình cảm với {name}",
-      someone: "Ai đó",
-      toolsWith: "Công cụ với {name}",
     },
     kit: {
       expandA11y: "{title}, chạm hai lần để mở",
@@ -663,16 +559,13 @@ export default {
       together: {
         title: "Kasama ang isang tao",
         subtitle: "Mga shared tool, ginagamit kasama ang isang partikular na match.",
+        where: "Buksan ang chat ng isang match at i-tap ang {menu}.",
       },
       onYourOwn: {
         title: "Mag-isa",
         subtitle: "Pribadong pagninilay — walang ibinabahagi rito sa isang match.",
       },
       row: {
-        tools: {
-          label: "Mga tool sa relasyon",
-          a11y: "Mga tool sa relasyon na ibinabahagi sa isang partikular na match",
-        },
         vault: {
           label: "Memory vault",
           a11y: "Memory vault, mga alaalang na-save kasama ang iyong mga match",
@@ -698,16 +591,6 @@ export default {
           a11y: "Toolkit sa relasyon",
         },
       },
-    },
-    tools: {
-      loading: "Nilo-load ang mga tool sa relasyon...",
-      loadError: "Hindi ma-load ang iyong mga tool sa relasyon.",
-      intro: "Ibinabahagi ang mga tool na ito sa isang partikular na match — piliin kung sino ang gusto mong kasama.",
-      meetPeopleA11y: "Makakilala ng tao",
-      meetPeople: "Makakilala ng tao →",
-      withA11y: "Mga tool sa relasyon kasama si {name}",
-      someone: "Isang tao",
-      toolsWith: "Mga tool kasama si {name}",
     },
     kit: {
       expandA11y: "{title}, i-double tap para buksan",
@@ -745,16 +628,13 @@ export default {
       together: {
         title: "Вместе с кем-то",
         subtitle: "Общие инструменты, которыми пользуются вместе с конкретным мэтчем.",
+        where: "Откройте чат с мэтчем и нажмите «{menu}».",
       },
       onYourOwn: {
         title: "Для себя",
         subtitle: "Личные размышления — ничего отсюда не видно мэтчу.",
       },
       row: {
-        tools: {
-          label: "Инструменты для отношений",
-          a11y: "Инструменты для отношений, общие с конкретным мэтчем",
-        },
         vault: {
           label: "Хранилище воспоминаний",
           a11y: "Хранилище воспоминаний, воспоминания с вашими мэтчами",
@@ -780,16 +660,6 @@ export default {
           a11y: "Инструменты для отношений",
         },
       },
-    },
-    tools: {
-      loading: "Загружаем инструменты для отношений...",
-      loadError: "Не удалось загрузить ваши инструменты для отношений.",
-      intro: "Эти инструменты общие с конкретным мэтчем — выберите, с кем хотите ими пользоваться.",
-      meetPeopleA11y: "Знакомиться",
-      meetPeople: "Знакомиться →",
-      withA11y: "Инструменты для отношений с {name}",
-      someone: "Кто-то",
-      toolsWith: "Инструменты с {name}",
     },
     kit: {
       expandA11y: "{title}, дважды коснитесь, чтобы развернуть",
@@ -827,16 +697,13 @@ export default {
       together: {
         title: "누군가와 함께",
         subtitle: "특정 매치와 함께 쓰는 공유 도구예요.",
+        where: "매치와의 채팅을 열고 {menu}을(를) 누르세요.",
       },
       onYourOwn: {
         title: "나 혼자",
         subtitle: "나만의 회고 — 여기 있는 것은 매치와 공유되지 않아요.",
       },
       row: {
-        tools: {
-          label: "관계 도구",
-          a11y: "특정 매치와 공유하는 관계 도구",
-        },
         vault: {
           label: "추억 보관함",
           a11y: "추억 보관함, 매치와 저장한 추억",
@@ -862,16 +729,6 @@ export default {
           a11y: "관계 도구 모음",
         },
       },
-    },
-    tools: {
-      loading: "관계 도구 불러오는 중...",
-      loadError: "관계 도구를 불러오지 못했어요.",
-      intro: "이 도구들은 특정 매치와 함께 써요. 함께 쓸 사람을 골라 주세요.",
-      meetPeopleA11y: "사람 만나기",
-      meetPeople: "사람 만나기 →",
-      withA11y: "{name}님과의 관계 도구",
-      someone: "누군가",
-      toolsWith: "{name}님과 쓰는 도구",
     },
     kit: {
       expandA11y: "{title}, 두 번 탭하여 펼치기",

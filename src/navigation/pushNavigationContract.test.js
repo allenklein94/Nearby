@@ -356,8 +356,11 @@ describe('the audit: every push type has one registered destination', () => {
     }
     expect(seen.size).toBeGreaterThanOrEqual(20);
   });
-  test('only the two Home pushes switch tabs; nothing falls back to a generic Discover', () => {
+  test('only the two Home pushes and the perk-tier nudge switch tabs; nothing falls back to a generic Discover', () => {
     expect((dest.match(/to\('MainTabs', \{ screen: 'Home' \}\)/g) ?? []).length).toBe(2);
-    expect(dest).not.toMatch(/'Discover'/);
+    // Rule 14: the Rewards screen folded into Discover -> Perks, so "Almost at Silver" opens the Perks tab where the tier
+    // line now lives. That is the tier's one home, not a fallback; it is the only Discover destination.
+    expect(dest.match(/'Discover'/g)).toEqual(["'Discover'"]);
+    expect(dest).toMatch(/case 'reward_tier_nudge':[\s\S]{0,200}to\('MainTabs', \{ screen: 'Discover', params: \{ \.\.\.PERKS_TAB \} \}\)/);
   });
 });

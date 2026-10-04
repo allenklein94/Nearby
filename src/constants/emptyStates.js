@@ -57,7 +57,6 @@ export const EMPTY_STATES = {
   perks_search: { title: "No perks match \"{query}\"", body: "Try a different word, or clear the search." },
   // Item 80, second sweep: two-part, chat, dynamic-label and remaining empties.
   legacy_library: { title: "Nothing shared yet", body: "This library grows as couples choose to leave their reflections." },
-  relationship_tools: { title: "No matches yet", body: "Once you match with someone, you can use these tools together." },
   friend_discovery_empty: { title: "No one nearby right now", body: "People nearby who turn on friend discovery will show up here. Check back later." },
   momentum_empty: { title: "Nothing in the last {weeks} weeks", body: "Join or host a gathering to see it here." },
   chemistry_diary: { title: "Nothing here yet", body: "Add an entry any time after spending time with someone, from above, their profile or a chat." },

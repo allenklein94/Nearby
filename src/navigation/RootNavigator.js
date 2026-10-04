@@ -80,12 +80,10 @@ import LegacyLibraryScreen from '../screens/LegacyLibraryScreen';
 import GoodbyeArchiveEntryScreen from '../screens/GoodbyeArchiveEntryScreen';
 import GoodbyeArchiveListScreen from '../screens/GoodbyeArchiveListScreen';
 import RelationshipEmergencyKitScreen from '../screens/RelationshipEmergencyKitScreen';
-import RelationshipToolsScreen from '../screens/RelationshipToolsScreen';
 import TimelinePlannerScreen from '../screens/TimelinePlannerScreen';
 import MemoryVaultScreen from '../screens/MemoryVaultScreen';
 import MomentumScreen from '../screens/MomentumScreen';
 import PlansScreen from '../screens/PlansScreen';
-import RewardsScreen from '../screens/RewardsScreen';
 import MarketValidationScreen from '../screens/MarketValidationScreen';
 import BusinessAIAssistantScreen from '../screens/BusinessAIAssistantScreen';
 import BusinessAIAutomationScreen from '../screens/BusinessAIAutomationScreen';
@@ -448,7 +446,6 @@ export default function RootNavigator() {
             <Stack.Screen name="GoodbyeArchiveEntry" component={GoodbyeArchiveEntryScreen} options={{ headerShown: true, title: t('ui.nav.title.goodbyeArchiveEntry'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="GoodbyeArchiveList" component={GoodbyeArchiveListScreen} options={{ headerShown: true, title: t('ui.nav.title.goodbyeArchiveList'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="RelationshipEmergencyKit" component={RelationshipEmergencyKitScreen} options={{ headerShown: true, title: t('ui.nav.title.relationshipEmergencyKit'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="RelationshipTools" component={RelationshipToolsScreen} options={{ headerShown: true, title: t('ui.nav.title.relationshipTools'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="TimelinePlanner" component={TimelinePlannerScreen} options={{ headerShown: true, title: t('ui.nav.title.timelinePlanner'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MemoryVault" component={MemoryVaultScreen} options={{ headerShown: true, title: t('ui.nav.title.memoryVault'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             {/* Convergence pass P2 (CLAUDE.md): the old separate "Insights"
@@ -456,7 +453,6 @@ export default function RootNavigator() {
                 real "how am I doing" destination instead of two. */}
             <Stack.Screen name="Momentum" component={MomentumScreen} options={{ headerShown: true, title: t('ui.nav.title.momentum'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Plans" component={PlansScreen} options={{ headerShown: true, title: t('ui.nav.title.plans'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="Rewards" component={RewardsScreen} options={{ headerShown: true, title: t('ui.nav.title.rewards'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MarketValidation" component={MarketValidationScreen} options={{ headerShown: true, title: 'Market Validation', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BusinessAIAssistant" component={BusinessAIAssistantScreen} options={{ headerShown: true, title: 'AI Assistant', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BusinessAIAutomation" component={BusinessAIAutomationScreen} options={{ headerShown: true, title: 'AI Automation', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

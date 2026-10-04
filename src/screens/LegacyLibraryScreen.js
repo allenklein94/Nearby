@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import EmptyCopy from '../components/EmptyCopy';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader, PullToRefresh } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
@@ -79,17 +79,10 @@ export default function LegacyLibraryScreen({ navigation }) {
           {t('ui.legacyLibrary.realAnonymousReflectionsFromCouples')}
         </Text>
 
-        {navigation && (
-          <TouchableOpacity
-            style={styles.contributeLink}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('RelationshipTools')}
-            accessibilityRole="button"
-            accessibilityLabel={t('ui.legacyLibrary.leaveYourOwnRelationshipWisdomA11y')}
-          >
-            <Text style={styles.contributeLinkText}>{t('ui.legacyLibrary.wantToAddYourOwn')}</Text>
-          </TouchableOpacity>
-        )}
+        {/* Rule 14: wisdom is left from a match's own chat ("Do Something Together"), the one place match tools live. */}
+        <View style={styles.contributeNote}>
+          <Text style={styles.contributeNoteText}>{t('ui.legacyLibrary.wantToAddYourOwn', { menu: t('ui.chat.doSomethingTogether') })}</Text>
+        </View>
 
         {entries.length === 0 && (
           <FadeInState style={styles.emptyState}>
@@ -121,11 +114,9 @@ const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs, marginBottom: spacing.md, lineHeight: 18 },
-  contributeLink: {
-    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
-    marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border,
-  },
-  contributeLinkText: { ...typography.caption, color: colors.textPrimary, fontWeight: '700' },
+  // Informational, not a button (it points to the match chat's menu; it does not navigate).
+  contributeNote: { marginBottom: spacing.lg },
+  contributeNoteText: { ...typography.caption, color: colors.textSecondary, lineHeight: 18 },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary, textAlign: 'center', lineHeight: 20 },

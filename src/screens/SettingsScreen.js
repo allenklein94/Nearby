@@ -69,8 +69,10 @@ function toE164(rawInput) {
 // who opens Dating before ever visiting Settings; it didn't remove
 // anything from this screen.
 // Relationship tools, shown as a Settings section (rule 14; formerly the RelationshipHub screen). Labels: ui.relationship.hub.*.
+// The tools shared with a match live only in that match's chat ("Do Something Together"); this section says where, with no
+// link of its own (the RelationshipTools pick-a-match screen was a duplicate of that menu and is removed, rule 14).
 const RELATIONSHIP_SECTIONS = [
-  { key: 'together', rows: [{ key: 'tools', icon: '🧩', route: 'RelationshipTools' }] },
+  { key: 'together', rows: [], whereKey: 'ui.relationship.hub.together.where' },
   { key: 'onYourOwn', rows: [
     { key: 'rehearsal', icon: '🎭', route: 'RehearsalRoom' },
     { key: 'chemistry', icon: '📔', route: 'ChemistryDiaryList' },
@@ -1159,11 +1161,14 @@ export default function SettingsScreen({ navigation, route }) {
         </TouchableOpacity>
 
         {/* Rule 14: the relationship tools are a section here, not a menu screen of their own. Memory Vaults open from each
-            match's own chat ("Do something together"); the match-specific tools from Relationship Tools. */}
+            match's own chat ("Do something together"), as do the other match-specific tools. */}
         <Text style={styles.groupHeader} accessibilityRole="header">{t('ui.settings.relationship')}</Text>
         {RELATIONSHIP_SECTIONS.map((section) => (
           <View key={section.key}>
             <Text style={styles.relSectionSubtitle}>{t(`ui.relationship.hub.${section.key}.subtitle`)}</Text>
+            {section.whereKey && (
+              <Text style={styles.relSectionSubtitle}>{t(section.whereKey, { menu: t('ui.chat.doSomethingTogether') })}</Text>
+            )}
             {section.rows.map((row) => (
               <TouchableOpacity
                 key={row.key}

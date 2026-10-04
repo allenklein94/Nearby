@@ -5,6 +5,7 @@
 // (gathering_cancelled, community_cancelled) opens the browse list it came from; a business posting that has gone opens
 // the business. Moved verbatim from services/notifications.js (routeNotificationTap); comments kept.
 import { extractNameFromBirthdayTitle } from '../services/celebrateSomething';
+import { PERKS_TAB } from '../utils/recommendationContext';
 
 const to = (name, params) => (params === undefined ? { name } : { name, params });
 
@@ -272,7 +273,8 @@ export async function notificationDestination(data, { lookupAvailability = async
       return to('Momentum');
       break;
     case 'reward_tier_nudge':
-      return to('Rewards');
+      // Rule 14: the perk tier is a line at the top of Discover -> Perks (the Rewards screen was folded in there).
+      return to('MainTabs', { screen: 'Discover', params: { ...PERKS_TAB } });
       break;
     case 'business_partner_approved':
       return to('BusinessDashboard');

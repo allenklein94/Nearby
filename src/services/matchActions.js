@@ -12,7 +12,7 @@ export async function unmatch(matchId) {
 //
 // This did not exist before: every other caller that needed "my matches"
 // inlined its own ad hoc `matches` query (MatchesScreen, ChatScreen,
-// ActivityScreen, memoryVault, RelationshipToolsScreen, ...), each
+// ActivityScreen, memoryVault, ...), each
 // selecting a different column set for its own screen. This is the one
 // minimal, reusable version. The `matches` table has no status column --
 // a row existing IS the match (see the baseline schema) -- so there is

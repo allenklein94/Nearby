@@ -796,15 +796,8 @@ export default function ProfileScreen({ navigation, route }) {
             doing / what have I earned" set of links, not the plans
             themselves. */}
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.yourStory')}</Text>
-        {/* Aug 23 2026 Product Coherence Audit P2 (CLAUDE.md): "Your
-            Activity" and "Your Rewards" read as two similar "how am I
-            doing" rows with no framing telling a reader why they're
-            different things (a real social-participation streak vs. a
-            real loyalty-tier count from perk redemptions -- genuinely
-            different core objects, correctly kept as two screens, per
-            the same audit's own "flows that should remain separate"
-            list). A one-line subtitle per row, added to all four here
-            for visual consistency rather than singling two out. */}
+        {/* One-line subtitle per row. "Your Rewards" was folded into Discover -> Perks as a tier line (rule 14,
+            2026-10-04); the perk tier is context for Perks, not a destination of its own. */}
         <TouchableOpacity
           style={styles.timelineLink}
           onPress={() => navigation.navigate('Timeline')}
@@ -832,19 +825,6 @@ export default function ProfileScreen({ navigation, route }) {
           <View style={styles.timelineLinkTextCol}>
             <Text style={styles.timelineLinkText}>{t('ui.profile.yourActivity')}</Text>
             <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.yourWeeklyStreakAndSocial')}</Text>
-          </View>
-          <Text style={styles.timelineLinkChevron}>›</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.timelineLink}
-          onPress={() => navigation.navigate('Rewards')}
-          activeOpacity={0.85}
-          accessibilityLabel={t('ui.profile.viewYourRewardsTierA11y')}
-          accessibilityRole="button"
-        >
-          <View style={styles.timelineLinkTextCol}>
-            <Text style={styles.timelineLinkText}>{t('ui.profile.yourRewards')}</Text>
-            <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.yourLoyaltyTierFromPerks')}</Text>
           </View>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>

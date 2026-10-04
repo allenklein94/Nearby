@@ -19,9 +19,10 @@ export async function getMyRewardStatus() {
     .from('offer_redemptions')
     .select('id', { count: 'exact', head: true });
 
+  // A failed count is unknown, never 0 redemptions (global rule 7): the Perks tier line then shows nothing.
   if (error) {
     console.error('getMyRewardStatus error', error);
-    return { points: 0, tier: null, nextTier: null, pointsToNextTier: null, allTiers: TIERS };
+    return null;
   }
 
   const points = count ?? 0;

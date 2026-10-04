@@ -13,6 +13,7 @@ import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 import ExperienceComponentList from '../components/ExperienceComponentList';
 import SponsoredSpotlightSlot from '../components/SponsoredSpotlightSlot';
+import PerkTierLine from '../components/PerkTierLine';
 import usePersonalization from '../hooks/usePersonalization';
 import usePlacesToGo from '../hooks/usePlacesToGo';
 import PlacesToGoSection from '../components/PlacesToGoSection';
@@ -3187,6 +3188,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
               </TouchableOpacity>
             </>
           )}
+
+          {/* Rule 14: the perk tier (formerly the Rewards screen) is one informational line, Perks tab only, never a dashboard. */}
+          {typeFilter === 'perks' && !isSearching && <PerkTierLine />}
 
           {/* Sponsored slot (item 44): Perks tab only (no category filter here, so any allow-listed category in range). */}
           {typeFilter === 'perks' && !isSearching && !openNowActive && !environmentFilter && (

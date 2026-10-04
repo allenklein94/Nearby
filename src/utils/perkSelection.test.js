@@ -38,7 +38,7 @@ describe('one Perks surface', () => {
   });
 
   it('the plain perk entry points open the Perks tab with a fresh params object (so Discover re-applies it)', () => {
-    for (const f of ['Home', 'Matches', 'Gatherings', 'Settings', 'Rewards']) {
+    for (const f of ['Home', 'Matches', 'Gatherings', 'Settings']) {
       const src = read(`screens/${f}Screen.js`);
       expect(src).toMatch(/navigateKeepingTrail\(navigation, 'Discover', \{ \.\.\.PERKS_TAB \}\)/);
     }
@@ -74,15 +74,15 @@ describe('opening a tab from a screen above the tabs keeps the way back', () => 
     return { getParent: () => root, navigate: jest.fn() };
   };
   it('remembers the screens it closes', () => {
-    const nav = fakeNav({ index: 1, routes: [{ name: 'MainTabs' }, { name: 'Rewards' }] });
+    const nav = fakeNav({ index: 1, routes: [{ name: 'MainTabs' }, { name: 'Momentum' }] });
     navigateKeepingTrail(nav, 'Discover', { ...PERKS_TAB });
-    expect(getTrail()).toMatchObject({ tab: 'Discover', routes: [{ name: 'Rewards' }] });
+    expect(getTrail()).toMatchObject({ tab: 'Discover', routes: [{ name: 'Momentum' }] });
     expect(nav.navigate).toHaveBeenCalledWith('Discover', PERKS_TAB);
   });
   it('starts no trail from a tab, and never for a non-tab screen', () => {
     navigateKeepingTrail(fakeNav({ index: 0, routes: [{ name: 'MainTabs' }] }), 'Discover', {});
     expect(getTrail()).toBeNull();
-    navigateKeepingTrail(fakeNav({ index: 1, routes: [{ name: 'MainTabs' }, { name: 'Rewards' }] }), 'GatheringDetail', {});
+    navigateKeepingTrail(fakeNav({ index: 1, routes: [{ name: 'MainTabs' }, { name: 'Momentum' }] }), 'GatheringDetail', {});
     expect(getTrail()).toBeNull();
   });
 });
