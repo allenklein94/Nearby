@@ -1,0 +1,13 @@
+{
+ "en": {"viewBusiness": "View business", "viewBusinessA11y": "View {name}'s full profile", "closeA11y": "Close the preview of {name}"},
+ "es": {"viewBusiness": "Ver negocio", "viewBusinessA11y": "Ver el perfil completo de {name}", "closeA11y": "Cerrar la vista previa de {name}"},
+ "de": {"viewBusiness": "Geschäft ansehen", "viewBusinessA11y": "Das ganze Profil von {name} ansehen", "closeA11y": "Vorschau von {name} schließen"},
+ "fr": {"viewBusiness": "Voir le commerce", "viewBusinessA11y": "Voir le profil complet de {name}", "closeA11y": "Fermer l'aperçu de {name}"},
+ "pt": {"viewBusiness": "Ver estabelecimento", "viewBusinessA11y": "Ver o perfil completo de {name}", "closeA11y": "Fechar a prévia de {name}"},
+ "ht": {"viewBusiness": "Gade biznis la", "viewBusinessA11y": "Gade tout pwofil {name}", "closeA11y": "Fèmen apèsi {name}"},
+ "zh": {"viewBusiness": "查看商家", "viewBusinessA11y": "查看{name}的完整资料", "closeA11y": "关闭{name}的预览"},
+ "vi": {"viewBusiness": "Xem doanh nghiệp", "viewBusinessA11y": "Xem hồ sơ đầy đủ của {name}", "closeA11y": "Đóng bản xem trước của {name}"},
+ "tl": {"viewBusiness": "Tingnan ang negosyo", "viewBusinessA11y": "Tingnan ang buong profile ng {name}", "closeA11y": "Isara ang preview ng {name}"},
+ "ru": {"viewBusiness": "Открыть заведение", "viewBusinessA11y": "Открыть полный профиль {name}", "closeA11y": "Закрыть превью {name}"},
+ "ko": {"viewBusiness": "업체 보기", "viewBusinessA11y": "{name}의 전체 프로필 보기", "closeA11y": "{name} 미리보기 닫기"}
+}

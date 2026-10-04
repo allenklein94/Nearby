@@ -24,6 +24,7 @@ import { relatedHobbyFor, relatedInterestReason } from '../constants/hobbyRelati
 import { getFriendsInterestedIn } from '../services/friendInterests';
 import { friendsInterestReason } from '../utils/friendInterests';
 import ReturnTrailChip from '../components/ReturnTrailChip';
+import BusinessPreviewSheet from '../components/BusinessPreviewSheet';
 import PerkRedemptionPanel from '../components/PerkRedemptionPanel';
 import { listWithSelectedPerk } from '../utils/perkSelection';
 import { getTrail, subscribeTrail } from '../navigation/returnTrail';
@@ -555,6 +556,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // opens GatheringDetailScreen exactly as before, since that's where the
   // real join mutation and all its edge cases live.
   const [expandedContext, setExpandedContext] = useState(null);
+  // Item 17 (owner, 2026-10-04): a business tapped on a browsing surface (result row, map pin) opens the shared preview sheet
+  // over Discover; nothing underneath changes. Perks and gatherings keep their own in-place expansion.
+  const [previewBusiness, setPreviewBusiness] = useState(null);
+  // A screen opened on top (a push tap, an action from the sheet) never keeps the sheet floating over it.
+  useFocusEffect(useCallback(() => () => setPreviewBusiness(null), []));
   // Owner item 206: "See all" on Tonight/Today or This Weekend turns Discover into the full date view IN PLACE ('today' |
   // 'weekend' | null). Everything else (mode, type tab, Open now, Outdoor, search) is untouched, and leaving restores the
   // sections at the scroll position they were left at.
@@ -2638,7 +2644,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             userLocation={userLocation}
             onSelectGathering={(g) => openDestination(navigation, discoverCard(g).destination)}
             onSelectDeal={(d) => { setViewStyle('list'); selectPerk(d.id); setScrollToPerk(d.id); }}
-            onSelectBusiness={(b) => openDestination(navigation, businessContext(b).destination)}
+            onSelectBusiness={(b) => setPreviewBusiness(b)}
           />
         </View>
       ) : (
@@ -2938,7 +2944,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 <TouchableOpacity
                   key={`biz-${b.id}`}
                   style={styles.searchTopicRow}
-                  onPress={() => openDestination(navigation, bc.destination)}
+                  onPress={() => setPreviewBusiness(b)}
                   accessibilityLabel={[b.name, bc.reason, bc.context].filter(Boolean).join(', ')}
                   accessibilityRole="button"
                 >
@@ -3292,6 +3298,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           />
         </SafeAreaView>
       </Modal>
+      <BusinessPreviewSheet partner={previewBusiness} navigation={navigation} onClose={() => setPreviewBusiness(null)} />
     </SafeAreaView>
   );
 }
