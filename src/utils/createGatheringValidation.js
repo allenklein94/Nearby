@@ -63,10 +63,10 @@ const CHECKS = {
 
 // The five Create steps and the check groups each one owns (a step can only be left once all of its groups pass).
 export const STEP_CHECKS = {
-  what: ['what', 'details'],
+  what: ['what'],
   whenWhere: ['when', 'where'],
   who: ['invite', 'settings'],
-  business: [],
+  details: ['details'],
   publish: [],
 };
 

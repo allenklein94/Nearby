@@ -54,8 +54,8 @@ describe('1-2. prefill, then the invite step only with invite context', () => {
     expect(inviteStepApplies('new_people', 'tennis')).toBe(false);
   });
   it('the five grouped steps hold the friend picker inside Who, and only with the flag', () => {
-    const defs = CREATE.slice(CREATE.indexOf('const STEP_DEFS = ['), CREATE.indexOf('];', CREATE.indexOf('const STEP_DEFS = [')));
-    expect(defs.replace(/\s+/g, ' ')).toMatch(/'what'.*'whenWhere'.*'who'.*'business'.*'publish'/);
+    const defs = CREATE.slice(CREATE.indexOf('const STEP_DEFS = ['), CREATE.indexOf('].filter(', CREATE.indexOf('const STEP_DEFS = [')));
+    expect(defs.replace(/\s+/g, ' ')).toMatch(/'what'.*'whenWhere'.*'who'.*'details'.*'publish'/);
     expect(CREATE).toMatch(/stepKey === 'who' && askInvite && \(/);
     expect(CREATE).toMatch(/const askInvite = route\.params\?\.quickStartInvite === true \|\| suggestedInviteeIds\.length > 0;/);
     expect(CREATE).toMatch(/ui\.gatheringForm\.inviteQ'/);

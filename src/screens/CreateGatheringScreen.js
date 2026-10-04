@@ -135,17 +135,18 @@ export default function CreateGatheringScreen({ navigation, route }) {
   // Celebrate Something's own suggested friends (explicit, organizer-picked) also open the step and start checked.
   const suggestedInviteeIds = Array.isArray(route.params?.suggestedInviteeIds) ? route.params.suggestedInviteeIds : [];
   const askInvite = route.params?.quickStartInvite === true || suggestedInviteeIds.length > 0;
-  // Five steps, each grouping related facts (owner, 2026-10-04): What you're doing (+ optional details), When & where,
-  // Who's invited (who can find/join it, capacity, and the friend picker when the ask said who), an optional business
-  // connection, then Review. A quick-pick or an understood ask STARTS on When & where; What stays one Back away.
+  // Five steps, each answering one question (owner, 2026-10-04): What (title + activity), When & where, Who's invited
+  // (who can find/join it, capacity, and the friend picker when the ask said who), Details (description + optional extras
+  // under More options, incl. the business-request consent), then Review & Publish. An already-answered What is skipped:
+  // a quick-pick removes it from the flow, an understood ask starts on When & where with What one Back away.
   const STEP_DEFS = [
     { key: 'what', label: t('ui.gatheringForm.step.what') },
     { key: 'whenWhere', label: t('ui.gatheringForm.step.whenWhere') },
     { key: 'who', label: t('ui.gatheringForm.step.who') },
-    { key: 'business', label: t('ui.gatheringForm.step.business') },
+    { key: 'details', label: t('ui.gatheringForm.step.details') },
     { key: 'publish', label: t('ui.gatheringForm.step.review') },
-  ];
-  const [step, setStep] = useState(() => (skipWhat || startAfterWhatStep(route.params) ? 1 : 0));
+  ].filter((s) => !(s.key === 'what' && skipWhat));
+  const [step, setStep] = useState(() => (startAfterWhatStep(route.params) ? 1 : 0));
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [interestTag, setInterestTag] = useState(null);
@@ -413,7 +414,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
   function goNext() {
     if (stepProblems(stepKey, validationForm).length > 0) {
       setAttemptedStep(stepKey);
-      if (stepKey === 'what' && stepProblems('what', validationForm).some((p) => p.field !== 'title' && p.field !== 'activity')) setShowMoreOptions(true); // details live under More options
+      if (stepKey === 'details') setShowMoreOptions(true); // its fields live under More options
       return;
     }
     setAttemptedStep(null);
@@ -434,7 +435,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
     const i = STEP_DEFS.findIndex((s) => s.key === key);
     if (i < 0) return;
     setAttemptedStep(key);
-    if (key === 'what') setShowMoreOptions(true);
+    if (key === 'details') setShowMoreOptions(true);
     setStep(i);
   }
 
@@ -789,7 +790,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
           </>
         )}
 
-        {stepKey === 'what' && (
+        {stepKey === 'details' && (
           <>
             <Text style={styles.label}>{t('ui.gatheringForm.detailsQ')}</Text>
             <TextInput
@@ -1027,6 +1028,22 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 <Text style={styles.helperText}>
                   {t('ui.gatheringForm.insightsHelp')}
                 </Text>
+
+                {/* Consent only: the request itself is made later from the gathering page ("Yes, look now"). */}
+            <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.gatheringForm.businessRequests')}</Text>
+                <TouchableOpacity
+                  style={styles.womenOnlyToggle}
+                  onPress={() => { Haptics.selectionAsync(); setAskLocalBusinesses((v) => !v); }}
+                  activeOpacity={0.85}
+                  accessibilityLabel={askLocalBusinesses ? t('ui.gatheringForm.askBizOnA11y') : t('ui.gatheringForm.askBizOffA11y')}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: askLocalBusinesses }}
+                >
+                  <Text style={styles.womenOnlyToggleText}>{askLocalBusinesses ? '✓ ' : ''}{t('ui.gatheringForm.askBiz')}</Text>
+                </TouchableOpacity>
+                <Text style={styles.helperText}>
+                  {t('ui.gatheringForm.askBizHelp')}
+                </Text>
               </>
             )}
           </>
@@ -1252,25 +1269,6 @@ export default function CreateGatheringScreen({ navigation, route }) {
             >
               <Text style={styles.womenOnlyToggleText}>{hostNotifications ? '✓ ' : ''}{t('ui.gatheringForm.notify')}</Text>
             </TouchableOpacity>
-          </>
-        )}
-
-        {stepKey === 'business' && (
-          <>
-            <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.gatheringForm.businessRequests')}</Text>
-                <TouchableOpacity
-                  style={styles.womenOnlyToggle}
-                  onPress={() => { Haptics.selectionAsync(); setAskLocalBusinesses((v) => !v); }}
-                  activeOpacity={0.85}
-                  accessibilityLabel={askLocalBusinesses ? t('ui.gatheringForm.askBizOnA11y') : t('ui.gatheringForm.askBizOffA11y')}
-                  accessibilityRole="switch"
-                  accessibilityState={{ checked: askLocalBusinesses }}
-                >
-                  <Text style={styles.womenOnlyToggleText}>{askLocalBusinesses ? '✓ ' : ''}{t('ui.gatheringForm.askBiz')}</Text>
-                </TouchableOpacity>
-                <Text style={styles.helperText}>
-                  {t('ui.gatheringForm.askBizHelp')}
-                </Text>
           </>
         )}
 

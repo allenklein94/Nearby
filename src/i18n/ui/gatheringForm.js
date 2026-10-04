@@ -13,7 +13,6 @@ export default {
       "publish": "Publish",
       "whenWhere": "When & where",
       "who": "Who's invited",
-      "business": "Business",
       "review": "Review"
     },
     "stepA11y": "Step {n} of {total}: {label}",
@@ -220,7 +219,6 @@ export default {
       "publish": "Publicar",
       "whenWhere": "Cuándo y dónde",
       "who": "Invitados",
-      "business": "Negocio",
       "review": "Revisar"
     },
     "stepA11y": "Paso {n} de {total}: {label}",
@@ -427,7 +425,6 @@ export default {
       "publish": "Veröffentlichen",
       "whenWhere": "Wann & wo",
       "who": "Wer kommt",
-      "business": "Unternehmen",
       "review": "Prüfen"
     },
     "stepA11y": "Schritt {n} von {total}: {label}",
@@ -634,7 +631,6 @@ export default {
       "publish": "Publier",
       "whenWhere": "Quand et où",
       "who": "Invités",
-      "business": "Commerce",
       "review": "Vérifier"
     },
     "stepA11y": "Étape {n} sur {total} : {label}",
@@ -841,7 +837,6 @@ export default {
       "publish": "Publicar",
       "whenWhere": "Quando e onde",
       "who": "Convidados",
-      "business": "Negócio",
       "review": "Revisar"
     },
     "stepA11y": "Etapa {n} de {total}: {label}",
@@ -1048,7 +1043,6 @@ export default {
       "publish": "Pibliye",
       "whenWhere": "Kilè ak ki kote",
       "who": "Ki moun ki envite",
-      "business": "Biznis",
       "review": "Revize"
     },
     "stepA11y": "Etap {n} sou {total}: {label}",
@@ -1255,7 +1249,6 @@ export default {
       "publish": "发布",
       "whenWhere": "时间和地点",
       "who": "邀请谁",
-      "business": "商家",
       "review": "确认"
     },
     "stepA11y": "第 {n} 步，共 {total} 步：{label}",
@@ -1462,7 +1455,6 @@ export default {
       "publish": "Đăng",
       "whenWhere": "Khi nào & ở đâu",
       "who": "Mời ai",
-      "business": "Doanh nghiệp",
       "review": "Xem lại"
     },
     "stepA11y": "Bước {n}/{total}: {label}",
@@ -1669,7 +1661,6 @@ export default {
       "publish": "I-publish",
       "whenWhere": "Kailan at saan",
       "who": "Sino ang imbitado",
-      "business": "Negosyo",
       "review": "Suriin"
     },
     "stepA11y": "Hakbang {n} sa {total}: {label}",
@@ -1876,7 +1867,6 @@ export default {
       "publish": "Опубликовать",
       "whenWhere": "Когда и где",
       "who": "Кто приглашён",
-      "business": "Заведение",
       "review": "Проверка"
     },
     "stepA11y": "Шаг {n} из {total}: {label}",
@@ -2083,7 +2073,6 @@ export default {
       "publish": "게시",
       "whenWhere": "언제 · 어디",
       "who": "누구를 초대",
-      "business": "업체",
       "review": "검토"
     },
     "stepA11y": "{total}단계 중 {n}단계: {label}",

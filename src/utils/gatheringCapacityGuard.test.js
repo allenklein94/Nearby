@@ -48,15 +48,15 @@ describe('host controls are centralized (item 73)', () => {
 
 describe('the Create wizard centralizes the same settings (item 73, regrouped into five steps 2026-10-04)', () => {
   const create = fs.readFileSync(path.join(__dirname, '../screens/CreateGatheringScreen.js'), 'utf8');
-  const who = create.slice(create.lastIndexOf("stepKey === 'who' && ("), create.indexOf("stepKey === 'business' && ("));
-  const business = create.slice(create.indexOf("stepKey === 'business' && ("), create.indexOf("stepKey === 'publish' && finalProblems"));
+  const who = create.slice(create.lastIndexOf("stepKey === 'who' && ("), create.indexOf("stepKey === 'publish' && finalProblems"));
+  const details = create.slice(create.indexOf("stepKey === 'details' && ("), create.lastIndexOf("stepKey === 'who' && ("));
   it("Who's invited holds who can find/join it, capacity, women-only, guest invites and notifications", () => {
     ['visibility', 'findQ', 'joinQ', 'capacity', 'womenOnly', 'guestsInvite', 'notify'].forEach((k) => expect(who).toContain(`ui.gatheringForm.${k}'`));
     expect(who).not.toContain("ui.gatheringForm.businessRequests'");
   });
-  it('the optional business connection is its own step', () => {
-    expect(business).toContain("ui.gatheringForm.businessRequests'");
-    expect(business).toContain('setAskLocalBusinesses');
+  it('the business-request consent is an optional extra in Details, not its own step', () => {
+    expect(details).toContain("ui.gatheringForm.businessRequests'");
+    expect(create).not.toMatch(/stepKey === 'business'/);
   });
   it('the new settings reach the insert', () => {
     expect(create).toMatch(/allowAttendeeInvites,\s*hostNotifications,/);
