@@ -890,3 +890,22 @@ both, attributes unlimited; enforced in every signup / edit / server path in the
 **"Coffee & Cafés"** is only a display label: the canonical category stays Coffee (permanent key `coffee`), no stored rename.
 Note: no surface shows that label today (English shows the stored name "Coffee"); showing it would be a display-name entry
 (English beside the 10 translations in `vocab.categories.tags.coffee`), never a taxonomy change.
+
+## Item 187: A gathering is described by what people will do, not a business category (PROPOSED 2026-10-04)
+
+Already the model. A gathering never stores a business major or a business classification; it stores what the host said:
+
+| Owner field | Stored as today | Notes |
+|---|---|---|
+| Activity: Coffee | `gatherings.interest_tag` (one canonical tag) | the same tag vocabulary as businesses, so a request from it routes correctly; the group (Food & Drink) is derived server-side for routing only, never stored on the gathering |
+| Purpose: Meet friends | `party_type` friends (+ host-declared friends plan, item 132); "Meet a friend" is a derived activity, never stored | occasion (birthday...) when there is one |
+| Time: Tonight | `scheduled_at` (When preset, words-only) | never inferred from AI |
+| People: 4 | `capacity` = TOTAL people incl. host | business party size = max(guests + 1, capacity) |
+| Location: Nearby | `latitude` / `longitude` / `area` | the host picks a real place; "nearby" is the discovery view, not a stored value |
+| Business request: Coastal Coffee | optional: "Request a specific business" (directed request, item 29) or "Ask nearby businesses" (`ask_local_businesses` + "Yes, look now") | a business is never required; the request is its own object (item 65) |
+
+**Gap (presentation only):** Create's "From what you said" summary (`inferredSummary` in `utils/gatheringInference.js`)
+opens with "Category: Food & Drink" (the business group) before "What: Coffee", and the What step's picker is labeled
+"Category". Proposal: show the summary as Activity / Purpose / Time / People (drop the group row; it is never stored), and
+label the picker "Activity" (group headings stay as picker sections). Display only: no column, routing, request or
+ranking change; 11 languages for the new labels. Not applied: awaiting owner decision.
