@@ -4233,7 +4233,7 @@
    "tag": "Coworking",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "business_networking"
   },
   {
@@ -4492,7 +4492,7 @@
    "tag": "Finance",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "business_networking"
   },
   {
@@ -5157,7 +5157,7 @@
    "tag": "Real Estate",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "business_networking"
   },
   {

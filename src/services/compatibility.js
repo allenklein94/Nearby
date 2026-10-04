@@ -41,6 +41,8 @@ function withRelationshipIntention(basics, profile) {
   return { ...basics, relationship_intention: [...intention].sort().join(',') };
 }
 
+export const NEVER_COMPARED_BASICS = Object.freeze(['job_title']);
+
 export function generateCompatibilityReport(myProfile, theirProfile) {
   const myInterests = myProfile?.interests ?? [];
   const theirInterests = theirProfile?.interests ?? [];
@@ -65,7 +67,8 @@ export function generateCompatibilityReport(myProfile, theirProfile) {
     interestScore = sharedInterests.length / union.size;
   }
 
-  const comparableKeys = Object.keys(myBasics).filter((key) => theirBasics[key] !== undefined);
+  // Item 184 (owner, LOCKED, not LinkedIn): Job Title is a profile fact only; it is never compared, matched or scored.
+  const comparableKeys = Object.keys(myBasics).filter((key) => !NEVER_COMPARED_BASICS.includes(key) && theirBasics[key] !== undefined);
   const matchingFields = [];
   const differingFields = [];
 

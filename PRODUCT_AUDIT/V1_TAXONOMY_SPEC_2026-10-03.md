@@ -753,7 +753,7 @@ words), so the wording resolves the current search and leaves nothing behind. **
 Verified: dry run rolled back (server keys equal the app's; a Faith search records nothing, Coffee still does), applied,
 single overloads, the emerging-category / synonym and four behavior-learning live scripts all OK; Jest 4730.
 
-## Item 184: Business & Networking coverage (PROPOSED 2026-10-03, awaiting owner)
+## Item 184: Business & Networking coverage (LOCKED 2026-10-03)
 
 Today: Networking, Coworking, Conferences, Professional Events, Entrepreneurship, Career Events, Real Estate, Finance
 (Tech Meetup lives in Education & Classes; one group per tag, kept). Also related, not categories: occasion `networking`
@@ -780,3 +780,16 @@ professional profiles beyond the existing optional dating-style "Job Title" basi
 employer / résumé / skills / endorsements fields, job listings or applications, a professional people search or
 "connect with professionals" feed, or professional-graph signals in ranking. Career Events and Networking are gatherings
 like any other; meeting people there follows the existing rules (counts to strangers, friends by name).
+
+**Owner decision (2026-10-03, LOCKED):** (1) wordings approved as in the table; lawyer, printing and marketing stay
+unrecognized, no speculative categories or synonyms (revisit only through the item-166 live-market gap process).
+(2) **Per-tag needs, APPLIED now (no migration):** `business_networking` joins `TAG_LEVEL_NEED_GROUP_KEYS`; Coworking,
+Finance, Real Estate join `NEED_TAG_KEYS`; the group key is never a need; task framing still required. "find a networking
+event tonight" / "looking for a conference" = WANT (regression cases in `src/utils/needTagLevel.regression.test.js`).
+(3) **Not LinkedIn, LOCKED:** no professional people search/discovery, connection graph or connection signals; no
+matching or ranking on employer, résumé, skills, endorsements or Job Title; no job listings or applications. The optional
+Job Title basic stays as a profile fact only. **Fixed while locking it:** the dating compatibility report compared every
+basic, so an identical job title raised the match % (shown on profiles, matches, Discover; it also orders Activity's
+notice list); `job_title` is now excluded (`NEVER_COMPARED_BASICS` in `services/compatibility.js`). Guard
+`src/constants/notLinkedIn.test.js`: job_title read only by its declaration, labels and that exclusion; identical titles
+never change the score; no employer/endorsement/résumé/job-listing fields anywhere.

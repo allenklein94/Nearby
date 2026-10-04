@@ -152,14 +152,15 @@ export function isNeedGroup(groupKey) {
 // Beauty, Florist and Gift Shop under Shopping) but are needs when asked for as a task ("I need a haircut today"). Only the
 // need/want classification reads this; the open-ended rule keeps reading the groups alone (its behavior is unchanged).
 // Item 182 adds Tutoring and Certifications: the only need-capable categories of Education & Classes.
-export const NEED_TAG_KEYS = Object.freeze(['Barbers', 'Salons', 'Florist', 'Gift Shop', 'Grooming', 'Tutoring', 'Certifications']);
+// Item 184 adds Coworking, Finance and Real Estate: the only need-capable categories of Business & Networking.
+export const NEED_TAG_KEYS = Object.freeze(['Barbers', 'Salons', 'Florist', 'Gift Shop', 'Grooming', 'Tutoring', 'Certifications', 'Coworking', 'Finance', 'Real Estate']);
 
 // Owner items 175-182 (LOCKED): a parent group is never a need; only the resolved TAG decides. Groups listed here have
 // already moved to per-tag needs (item 182, applied before the item-168 migration): their tags count as needs only when
 // they are in NEED_TAG_KEYS, and the bare group key is never a need. They stay in NEED_GROUP_KEYS for the open-ended
 // "something fun" rule, which is unchanged until the item-168 pass revisits it. Every other need group moves here in
 // that pass.
-export const TAG_LEVEL_NEED_GROUP_KEYS = Object.freeze(['education_classes']);
+export const TAG_LEVEL_NEED_GROUP_KEYS = Object.freeze(['education_classes', 'business_networking']); // item 184 adds Business & Networking
 
 // Is this resolved category (a tag or a group key) a need/service category?
 export function isNeedCategory(category) {

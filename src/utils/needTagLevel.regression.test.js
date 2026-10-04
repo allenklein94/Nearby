@@ -16,6 +16,9 @@ describe('need decisions survive the group -> per-tag need migration', () => {
     ['I need a haircut', 'Barbers'],
     ['I need CPR certification', 'Certifications'],
     ['I need to get CPR certified', 'Certifications'],
+    // Item 184: the three need-capable Business & Networking categories, with task framing
+    ['I need a coworking space', 'Coworking'],
+    ['I need help with my finances', 'Finance'],
   ])('"%s" resolves to %s and is a NEED', (text, tag) => {
     const c = classify(text);
     expect(c.category).toBe(tag);
@@ -33,6 +36,15 @@ describe('need decisions survive the group -> per-tag need migration', () => {
     ['find a cooking class'],
     ['I need a cooking class'],
     ['I need dance classes'],
+    // Item 184: Business & Networking is per-tag; events never inherit NEED from the parent group
+    ['find a networking event tonight'],
+    ['looking for a conference'],
+    ['I need to find a networking event'],
+    ['find a career event'],
+    ['entrepreneurship meetup this week'],
+    // ...and the three service categories still need task framing
+    ['coworking near me'],
+    ['real estate'],
   ])('"%s" is a WANT', (text) => {
     const c = classify(text);
     expect(askKind({ category: c.category, rawText: text })).toBe('want');
@@ -52,5 +64,18 @@ describe('need decisions survive the group -> per-tag need migration', () => {
   it.todo('"I need a hotel tonight" resolves to Hotels and is a NEED after stay_getaway leaves the need groups');
   it.todo('"dog parks", "pet events", "family resorts", "harbor cruises", "campsite tonight" stay WANTS after the change');
   // Item 182 (owner, LOCKED): only Tutoring and Certifications are need-capable in Education & Classes.
+  // Item 184 wordings (land with the item-168 migration)
+  it.todo('"I need an accountant" resolves to Finance and is a NEED (wording: accountant)');
+  it.todo('"I need a realtor" resolves to Real Estate and is a NEED (wording: realtor)');
+  it.todo('"seminar", "trade show", "career fair", "co-working" resolve to Professional Events + Lectures / Professional Events / Career Events / Coworking');
   it.todo('"I need a tutor for my son" resolves to Tutoring and is a NEED (wording: tutor, lands with the other item-182 wordings)');
+});
+
+// Item 184 (owner, LOCKED): only the resolved tag decides; the bare Business & Networking group is never a need.
+describe('Business & Networking needs are per tag', () => {
+  const { isNeedCategory } = require('../constants/gatheringCategories');
+  it('only Coworking, Finance and Real Estate are need-capable; the group key and every event tag are not', () => {
+    expect(['Coworking', 'Finance', 'Real Estate'].every(isNeedCategory)).toBe(true);
+    expect(['business_networking', 'Networking', 'Conferences', 'Professional Events', 'Entrepreneurship', 'Career Events'].some(isNeedCategory)).toBe(false);
+  });
 });
