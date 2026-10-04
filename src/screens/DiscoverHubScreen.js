@@ -86,6 +86,7 @@ import { SIGNAL_TIERS, tierVector } from '../constants/signalPriority';
 import { recordSearchBehavior } from '../services/behaviorSignals';
 import { searchTopic, matchBusinesses, friendsLineForTopic } from '../utils/unifiedSearch';
 import { searchResultTabs, topResultKinds, effectiveResultTab, resultKindView } from '../utils/searchResultTabs';
+import { foundBlockShownIds, withoutFoundBlock } from '../utils/searchTopDedupe';
 import { matchesDateFilter } from '../utils/gatheringDateFilter';
 import { lightenHex } from '../utils/colorUtils';
 import GatheringsMapView from '../components/GatheringsMapView';
@@ -1384,10 +1385,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const showPlaces = typeShowsPlaces && kindView('places').show;
   const showPerks = typeShowsPerks && kindView('offers').show;
   const showSearchTopic = resultTabsActive && !!searchedTopic && (resultTab === 'top' || resultTab === 'activities');
-  const businessesToShow = kindView('places').show ? capList(searchedBusinesses, 'places') : [];
-  const gatheringsToShow = capList(dedupedGatherings, 'plans');
+  // Item 134: on Top Results, whatever the found block already shows is left out of the Plans / Offers / Places
+  // previews (the found block wins; tabs and their counts are unchanged). utils/searchTopDedupe.js.
+  const foundBlockShowing = isSearching && !intentSearching && (intentSearch?.outcome === 'results' || !!intentSearch?.refined);
+  const topShown = resultTabsActive && resultTab === 'top' && foundBlockShowing ? foundBlockShownIds(intentSearch) : null;
+  const businessesToShow = kindView('places').show ? capList(withoutFoundBlock(searchedBusinesses, 'places', topShown), 'places') : [];
+  const gatheringsToShow = capList(withoutFoundBlock(dedupedGatherings, 'plans', topShown), 'plans');
   const communitiesToShow = capList(filteredCommunities, 'activities');
-  const offersToShow = capList(filteredOffers, 'offers');
+  const offersToShow = capList(withoutFoundBlock(filteredOffers, 'offers', topShown), 'offers');
   const placesToShow = capList(visiblePlaces, 'places');
   const onTopOrNotTabbed = !resultTabsActive || resultTab === 'top';
   // "See all" inside a preview: switches to that result tab during a search, else to the type tab as before.
@@ -2974,7 +2979,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </>
           )}
 
-          {showFlatGatheringsSection && isSearching && !loadingSearch && gatheringsToShow.length === 0 && (
+          {showFlatGatheringsSection && isSearching && !loadingSearch && dedupedGatherings.length === 0 && (
             <>
               <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.gatherings')}</Text>
               <EmptyCopy id="gatherings_search" vars={{ query: searchQuery.trim() }} />
@@ -3185,7 +3190,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </>
           )}
 
-          {showPerks && isSearching && !loadingSearch && withSelectedPerk(offersToShow).length === 0 && (
+          {showPerks && isSearching && !loadingSearch && withSelectedPerk(filteredOffers).length === 0 && (
             <>
               <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.perks')}</Text>
               <EmptyCopy id="perks_search" vars={{ query: searchQuery.trim() }} />
