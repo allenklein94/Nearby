@@ -51,6 +51,7 @@ import { shouldOfferDiningPrompt, personalizeQuickOptions } from '../constants/i
 import useMyGoals from '../hooks/useMyGoals';
 import usePlacesToGo from '../hooks/usePlacesToGo';
 import PlacesToGoSection from '../components/PlacesToGoSection';
+import { askBusinessesFits } from '../utils/placesToGo';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { iconNameForCategory } from '../constants/quickPickIcons';
 import LoadErrorState from '../components/LoadErrorState';
@@ -1798,13 +1799,15 @@ export default function HomeScreen({ navigation }) {
               })()}
               {/* Item 189: public places for an allowlisted activity, below Nearby's own results, never ranked with them. */}
               <PlacesToGoSection places={placesToGo.places} navigation={navigation} />
-              <TouchableOpacity style={styles.askBusinessButton} onPress={handleAskBusinessFromResults}>
-                <Ionicons name="storefront-outline" size={18} color="#fff" style={styles.intentResultIcon} />
-                <Text style={styles.askBusinessButtonText}>{t('ui.home.askBusinesses')}</Text>
+              {/* Item 190: Create it yourself leads; businesses are a secondary link, and absent for a public-place ask. */}
+              <TouchableOpacity style={styles.primaryCreateButton} onPress={() => proceedToCreation(intentResults.classifyResult, intentResults.typedText, intentResults.submissionId, { explicitCreate: true })} accessibilityRole="button">
+                <Text style={styles.primaryCreateButtonText}>{t('ui.home.noneCreate')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => proceedToCreation(intentResults.classifyResult, intentResults.typedText, intentResults.submissionId, { explicitCreate: true })}>
-                <Text style={styles.intentResultsCreateNew}>{t('ui.home.noneCreate')}</Text>
-              </TouchableOpacity>
+              {askBusinessesFits(intentResults.typedText) && (
+                <TouchableOpacity onPress={handleAskBusinessFromResults} accessibilityRole="button">
+                  <Text style={styles.intentResultsCreateNew}>{t('ui.home.askBusinesses')}</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity onPress={handleIntentResultsDismiss}>
                 <Text style={styles.intentResultsDismiss}>{t('ui.home.trySomethingElse')}</Text>
               </TouchableOpacity>
@@ -1820,13 +1823,15 @@ export default function HomeScreen({ navigation }) {
               )}
               <Text style={styles.intentResultsHeading}>{t('ui.home.nothingHappening')}</Text>
               <PlacesToGoSection places={placesToGo.places} navigation={navigation} />
-              <TouchableOpacity style={styles.askBusinessButton} onPress={handleAskBusiness}>
-                <Ionicons name="storefront-outline" size={18} color="#fff" style={styles.intentResultIcon} />
-                <Text style={styles.askBusinessButtonText}>{t('ui.home.askBusinesses')}</Text>
+              {/* Item 190: Create it yourself leads; businesses are a secondary link, and absent for a public-place ask. */}
+              <TouchableOpacity style={styles.primaryCreateButton} onPress={() => proceedToCreation(intentEmptyFallback.classifyResult, intentEmptyFallback.typedText, intentEmptyFallback.submissionId, { explicitCreate: true })} accessibilityRole="button">
+                <Text style={styles.primaryCreateButtonText}>{t('ui.home.orCreate')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => proceedToCreation(intentEmptyFallback.classifyResult, intentEmptyFallback.typedText, intentEmptyFallback.submissionId, { explicitCreate: true })}>
-                <Text style={styles.intentResultsCreateNew}>{t('ui.home.orCreate')}</Text>
-              </TouchableOpacity>
+              {askBusinessesFits(intentEmptyFallback.typedText) && (
+                <TouchableOpacity onPress={handleAskBusiness} accessibilityRole="button">
+                  <Text style={styles.intentResultsCreateNew}>{t('ui.home.askBusinesses')}</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity onPress={handleIntentResultsDismiss}>
                 <Text style={styles.intentResultsDismiss}>{t('ui.home.trySomethingElse')}</Text>
               </TouchableOpacity>
@@ -2818,11 +2823,11 @@ const getStyles = (colors) => StyleSheet.create({
     paddingVertical: spacing.sm, alignItems: 'center', justifyContent: 'center',
   },
   surpriseShuffleButtonText: { color: colors.textSecondary, fontWeight: '700', fontSize: 13 },
-  askBusinessButton: {
+  primaryCreateButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm,
+    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, marginTop: spacing.sm,
   },
-  askBusinessButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  primaryCreateButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   plansCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.sm,

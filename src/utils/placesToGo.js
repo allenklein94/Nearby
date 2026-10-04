@@ -31,6 +31,13 @@ export function placesToGoActivity(text) {
   return WALK_PHRASES.test(cleaned) ? 'Walking' : null;
 }
 
+// Owner item 190 (2026-10-04, LOCKED): a typed ask whose words name a public-place activity (the SAME allowlist, never a second
+// definition) is fulfilled without a business, so its results offer no "Ask nearby businesses". Presentation only: business
+// matching, routing, ranking and eligibility are untouched.
+export function askBusinessesFits(text) {
+  return placesToGoActivity(text) == null;
+}
+
 // At most 3 places, nearest measured first (unmeasured after), shown through the shared place context: name, distance and a
 // directions destination only. Places with no name or no way to get directions are dropped.
 export function pickPlacesToGo(places, language) {

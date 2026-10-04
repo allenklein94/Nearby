@@ -16,6 +16,7 @@ import SponsoredSpotlightSlot from '../components/SponsoredSpotlightSlot';
 import usePersonalization from '../hooks/usePersonalization';
 import usePlacesToGo from '../hooks/usePlacesToGo';
 import PlacesToGoSection from '../components/PlacesToGoSection';
+import { askBusinessesFits } from '../utils/placesToGo';
 import { learnedProximityFor } from '../utils/learnedProximity';
 import { behaviorNudge, broadGroupNudge, relatedHobbyNudge } from '../constants/blendedRanking';
 import { relatedHobbyFor, relatedInterestReason } from '../constants/hobbyRelations';
@@ -2702,17 +2703,19 @@ export default function DiscoverHubScreen({ navigation, route }) {
               {/* Item 189: public places for an allowlisted activity, below Nearby's own results, never ranked with them. */}
               <PlacesToGoSection places={placesToGo.places} navigation={navigation} />
               {/* Item 109: nothing here fits -> Create starts from this ask as it stands (what, when, who incl. a chip). */}
-              {/* Item 110: ask businesses with what was already said (what, how many, which day). */}
-              <TouchableOpacity
-                onPress={() => askBusinessFromAsk(navigation, { classifyResult: intentSearch.classifyResult, typedText: intentSearch.typedText ?? searchQuery.trim(), submissionId: intentSearch.submissionId })}
-                accessibilityLabel={t('ui.discover.askBusinessesA11y')}
-                accessibilityRole="button"
-              >
-                <Text style={styles.emptyActionText}>{t('ui.discover.askBusinesses')}</Text>
-              </TouchableOpacity>
               <TouchableOpacity onPress={createFromAsk} accessibilityLabel={t('ui.discover.createYourselfA11y')} accessibilityRole="button">
                 <Text style={styles.emptyActionText}>{t('ui.home.noneCreate')}</Text>
               </TouchableOpacity>
+              {/* Item 110: ask businesses with what was already said. Item 190: secondary, and absent for a public-place ask. */}
+              {askBusinessesFits(intentSearch.typedText ?? searchQuery.trim()) && (
+                <TouchableOpacity
+                  onPress={() => askBusinessFromAsk(navigation, { classifyResult: intentSearch.classifyResult, typedText: intentSearch.typedText ?? searchQuery.trim(), submissionId: intentSearch.submissionId })}
+                  accessibilityLabel={t('ui.discover.askBusinessesA11y')}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.emptyActionText}>{t('ui.discover.askBusinesses')}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
