@@ -57,3 +57,29 @@ describe('category health (internal view)', () => {
     for (const f of files) expect(fs.readFileSync(f, 'utf8')).not.toMatch(/category_health/);
   });
 });
+
+// Item 204: Demand Market Areas are an internal reporting layer only (owner-maintained by SQL, never app/business-read).
+describe('demand market areas (item 204)', () => {
+  const MKT = fs.readFileSync(path.join(root, 'supabase/migrations/20270284_demand_market_areas.sql'), 'utf8');
+  const mcode = MKT.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
+
+  it('is internal: no grants, RLS on, revoked from every client role', () => {
+    expect(mcode).not.toMatch(/\bgrant\b/i);
+    expect(mcode).toMatch(/revoke all on public\.demand_markets, public\.demand_market_cells from public, anon, authenticated/);
+    expect(mcode).toMatch(/revoke all on public\.demand_market_coverage from public, anon, authenticated/);
+    expect(mcode).toMatch(/revoke all on function public\._demand_market_for\(text\) from public, anon, authenticated/);
+  });
+
+  it('maps each existing wide_area cell to at most one market, and only markets of 4+ cells report', () => {
+    expect(mcode).toMatch(/cell text primary key/);
+    expect(mcode).toMatch(/cell = public\._health_area\(/);
+    expect(mcode).toMatch(/select 4/);
+  });
+
+  it('no app, edge function or business page reads it, and it adds no geocoding', () => {
+    const files = [...walk(path.join(root, 'src')), ...walk(path.join(root, 'supabase/functions')), path.join(root, 'docs/business.html')]
+      .filter((f) => /\.(js|ts|html)$/.test(f) && !f.endsWith('.test.js') && !f.endsWith('.journey.js'));
+    for (const f of files) expect(fs.readFileSync(f, 'utf8')).not.toMatch(/demand_market/);
+    expect(mcode).not.toMatch(/geocod|zip|postal|municipal/i);
+  });
+});
