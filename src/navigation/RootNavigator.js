@@ -186,16 +186,18 @@ async function resolveAndNavigateToBusiness(partnerId) {
 // reachable via a single buried hyperlink) despite being a core
 // exploration surface -- it's a real tab again, with People folded in as
 // a mode inside it (Things to Do / People) rather than People keeping its
-// own tab for comparatively little content. Profile stays off the bottom
-// bar, reached via the persistent header-icon avatar (TabHeaderActions);
-// `navigate('Profile')` still resolves via the normal parent-navigator
-// bubbling React Navigation does for an unmatched route name.
+// own tab for comparatively little content. Profile is the fifth tab again
+// (owner, 2026-10-04): Home / Discover / Create / Activity / Profile, one job
+// each; only Messages stays a header icon. A stack screen whose workflow a
+// tab switch would close opens MyProfile, the same ProfileScreen presented on
+// top (navigation/presentationRoutes.js).
 const lcFirst = (n) => n.charAt(0).toLowerCase() + n.slice(1);
 const TAB_ICONS = {
   Home: { active: 'home', inactive: 'home-outline' },
   Discover: { active: 'compass', inactive: 'compass-outline' },
   Create: { active: 'add-circle', inactive: 'add-circle-outline' },
   Activity: { active: 'notifications', inactive: 'notifications-outline' },
+  Profile: { active: 'person-circle', inactive: 'person-circle-outline' },
 };
 
 function BouncyTabButton({ children, onPress, accessibilityLabel, accessibilityState }) {
@@ -268,6 +270,7 @@ function MainTabs() {
       <Tab.Screen name="Discover" component={DiscoverHubScreen} />
       <Tab.Screen name="Create" component={CreateHubScreen} />
       <Tab.Screen name="Activity" component={ActivityScreen} options={{ tabBarBadge: activityBadgeCount > 0 ? activityBadgeCount : undefined }} listeners={{ focus: loadActivityBadgeCount }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
@@ -404,7 +407,7 @@ export default function RootNavigator() {
                 into it as a mode, so there's no separate pushed Discover
                 screen anymore; `navigate('Discover')` from a sibling tab
                 resolves to the tab directly. */}
-            <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="MyProfile" component={ProfileScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Messages" component={MessagesScreen} options={{ headerShown: true, title: t('ui.nav.title.messages'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="OnboardingRecommendations" component={OnboardingRecommendationsScreen} />
             <Stack.Screen name="OnboardingOccasions" component={OnboardingOccasionsScreen} />

@@ -56,7 +56,7 @@ const T = require('./returnTrail');
 const SIGNED_IN = ['MainTabs', 'GatheringDetail', 'ViewProfile', 'Chat', 'BusinessRequestDetail', 'Notices', 'CommunityDetail',
   'AskBusiness', 'BusinessProfile', 'Gatherings', 'GroupPlan', 'BusinessPartnerApply'];
 const SIGNED_OUT = ['Onboarding', 'Login'];
-const TABS = ['Home', 'Discover', 'Create', 'Activity'];
+const TABS = ['Home', 'Discover', 'Create', 'Activity', 'Profile'];
 const opts = (names) => ({ routeNames: names, routeParamList: {}, routeGetIdList: {} });
 
 function makeRef({ signedIn = true } = {}) {

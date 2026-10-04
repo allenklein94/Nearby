@@ -7,7 +7,7 @@ export default {
     unavailable: { title: "This isn't available anymore", message: "It may have been removed, or you no longer have access to it.", back: "← Go back" },
     draft: { gathering: 'You have an unfinished gathering.', request: 'You have an unfinished request.', offer: 'You have an unfinished offer.', draft: 'You have an unfinished draft.', savedAgo: 'Saved {ago}.', continue: 'Continue editing', startOver: 'Start over' },
     onboarding: { back: 'Back', backArrow: '← Back', signInA11y: 'Already have an account? Sign in', haveAccount: 'Already have an account?', signIn: 'Sign in' },
-    header: { messages: 'Messages', messagesUnread: 'Messages, {count} unread', profile: 'Your Profile', hint: '💬 Messages and your profile live here now', dismissHint: 'Dismiss this tip', gotIt: 'Got it' },
+    header: { messages: 'Messages', messagesUnread: 'Messages, {count} unread', profile: 'Your Profile', hint: '💬 Your messages live here now', dismissHint: 'Dismiss this tip', gotIt: 'Got it' },
     gatheringStatus: { hosting: 'Hosting', going: 'Going', interested: 'Requested', maybe: 'Interested', waitlisted: 'Waitlisted', attended: 'Attended', hosted: 'Hosted', didNotAttend: "Didn't attend" },
     planStatus: { pending: 'Pending', accepted: 'Accepted', confirmed: 'Confirmed', declined: 'Declined', cancelled: 'Cancelled', completed: 'Completed' },
     errors: {
@@ -49,7 +49,7 @@ export default {
     unavailable: { title: "Esto ya no está disponible", message: "Puede que se haya eliminado o que ya no tengas acceso.", back: "← Volver" },
     draft: { gathering: 'Tienes una reunión sin terminar.', request: 'Tienes una solicitud sin terminar.', offer: 'Tienes una oferta sin terminar.', draft: 'Tienes un borrador sin terminar.', savedAgo: 'Guardado {ago}.', continue: 'Seguir editando', startOver: 'Empezar de nuevo' },
     onboarding: { back: 'Atrás', backArrow: '← Atrás', signInA11y: '¿Ya tienes una cuenta? Inicia sesión', haveAccount: '¿Ya tienes una cuenta?', signIn: 'Inicia sesión' },
-    header: { messages: 'Mensajes', messagesUnread: 'Mensajes, {count} sin leer', profile: 'Tu perfil', hint: '💬 Tus mensajes y tu perfil ahora están aquí', dismissHint: 'Descartar este consejo', gotIt: 'Entendido' },
+    header: { messages: 'Mensajes', messagesUnread: 'Mensajes, {count} sin leer', profile: 'Tu perfil', hint: '💬 Tus mensajes ahora están aquí', dismissHint: 'Descartar este consejo', gotIt: 'Entendido' },
     gatheringStatus: { hosting: 'Organizas', going: 'Vas', interested: 'Solicitado', maybe: 'Te interesa', waitlisted: 'En lista de espera', attended: 'Asististe', hosted: 'Organizaste', didNotAttend: 'No asististe' },
     planStatus: { pending: 'Pendiente', accepted: 'Aceptado', confirmed: 'Confirmado', declined: 'Rechazado', cancelled: 'Cancelado', completed: 'Completado' },
     errors: {
@@ -91,7 +91,7 @@ export default {
     unavailable: { title: "Das ist nicht mehr verfügbar", message: "Es wurde vielleicht entfernt, oder du hast keinen Zugriff mehr darauf.", back: "← Zurück" },
     draft: { gathering: 'Du hast ein unfertiges Treffen.', request: 'Du hast eine unfertige Anfrage.', offer: 'Du hast ein unfertiges Angebot.', draft: 'Du hast einen unfertigen Entwurf.', savedAgo: 'Gespeichert {ago}.', continue: 'Weiter bearbeiten', startOver: 'Neu beginnen' },
     onboarding: { back: 'Zurück', backArrow: '← Zurück', signInA11y: 'Schon ein Konto? Anmelden', haveAccount: 'Schon ein Konto?', signIn: 'Anmelden' },
-    header: { messages: 'Nachrichten', messagesUnread: 'Nachrichten, {count} ungelesen', profile: 'Dein Profil', hint: '💬 Nachrichten und dein Profil findest du jetzt hier', dismissHint: 'Tipp ausblenden', gotIt: 'Verstanden' },
+    header: { messages: 'Nachrichten', messagesUnread: 'Nachrichten, {count} ungelesen', profile: 'Dein Profil', hint: '💬 Deine Nachrichten findest du jetzt hier', dismissHint: 'Tipp ausblenden', gotIt: 'Verstanden' },
     gatheringStatus: { hosting: 'Du veranstaltest', going: 'Du gehst hin', interested: 'Angefragt', maybe: 'Interessiert', waitlisted: 'Auf der Warteliste', attended: 'Teilgenommen', hosted: 'Veranstaltet', didNotAttend: 'Nicht teilgenommen' },
     planStatus: { pending: 'Ausstehend', accepted: 'Angenommen', confirmed: 'Bestätigt', declined: 'Abgelehnt', cancelled: 'Abgesagt', completed: 'Abgeschlossen' },
     errors: {
@@ -133,7 +133,7 @@ export default {
     unavailable: { title: "Ce contenu n'est plus disponible", message: "Il a peut-être été supprimé, ou vous n'y avez plus accès.", back: "← Retour" },
     draft: { gathering: 'Vous avez une rencontre non terminée.', request: 'Vous avez une demande non terminée.', offer: 'Vous avez une offre non terminée.', draft: 'Vous avez un brouillon non terminé.', savedAgo: 'Enregistré {ago}.', continue: 'Continuer la modification', startOver: 'Recommencer' },
     onboarding: { back: 'Retour', backArrow: '← Retour', signInA11y: 'Vous avez déjà un compte ? Connectez-vous', haveAccount: 'Vous avez déjà un compte ?', signIn: 'Connectez-vous' },
-    header: { messages: 'Messages', messagesUnread: 'Messages, {count} non lus', profile: 'Votre profil', hint: '💬 Vos messages et votre profil se trouvent désormais ici', dismissHint: 'Ignorer ce conseil', gotIt: 'Compris' },
+    header: { messages: 'Messages', messagesUnread: 'Messages, {count} non lus', profile: 'Votre profil', hint: '💬 Vos messages se trouvent désormais ici', dismissHint: 'Ignorer ce conseil', gotIt: 'Compris' },
     gatheringStatus: { hosting: "Vous l'organisez", going: "Vous y allez", interested: 'Demandé', maybe: 'Intéressé', waitlisted: "Sur liste d'attente", attended: 'Participé', hosted: 'Organisé', didNotAttend: 'Absent' },
     planStatus: { pending: 'En attente', accepted: 'Accepté', confirmed: 'Confirmé', declined: 'Refusé', cancelled: 'Annulé', completed: 'Terminé' },
     errors: {
@@ -175,7 +175,7 @@ export default {
     unavailable: { title: "Isto não está mais disponível", message: "Pode ter sido removido ou você não tem mais acesso.", back: "← Voltar" },
     draft: { gathering: 'Você tem um encontro não concluído.', request: 'Você tem um pedido não concluído.', offer: 'Você tem uma oferta não concluída.', draft: 'Você tem um rascunho não concluído.', savedAgo: 'Salvo {ago}.', continue: 'Continuar editando', startOver: 'Começar de novo' },
     onboarding: { back: 'Voltar', backArrow: '← Voltar', signInA11y: 'Já tem uma conta? Entrar', haveAccount: 'Já tem uma conta?', signIn: 'Entrar' },
-    header: { messages: 'Mensagens', messagesUnread: 'Mensagens, {count} não lidas', profile: 'Seu perfil', hint: '💬 Suas mensagens e seu perfil agora ficam aqui', dismissHint: 'Dispensar esta dica', gotIt: 'Entendi' },
+    header: { messages: 'Mensagens', messagesUnread: 'Mensagens, {count} não lidas', profile: 'Seu perfil', hint: '💬 Suas mensagens agora ficam aqui', dismissHint: 'Dispensar esta dica', gotIt: 'Entendi' },
     gatheringStatus: { hosting: 'Você organiza', going: 'Você vai', interested: 'Solicitado', maybe: 'Interessado', waitlisted: 'Na lista de espera', attended: 'Participou', hosted: 'Organizou', didNotAttend: 'Não participou' },
     planStatus: { pending: 'Pendente', accepted: 'Aceito', confirmed: 'Confirmado', declined: 'Recusado', cancelled: 'Cancelado', completed: 'Concluído' },
     errors: {
@@ -217,7 +217,7 @@ export default {
     unavailable: { title: "Sa a pa disponib ankò", message: "Yo ka retire l, oswa ou pa gen aksè ladan l ankò.", back: "← Retounen" },
     draft: { gathering: 'Ou gen yon rasanbleman ou poko fini.', request: 'Ou gen yon demann ou poko fini.', offer: 'Ou gen yon òf ou poko fini.', draft: 'Ou gen yon bouyon ou poko fini.', savedAgo: 'Anrejistre {ago}.', continue: 'Kontinye modifye', startOver: 'Rekòmanse' },
     onboarding: { back: 'Retounen', backArrow: '← Retounen', signInA11y: 'Ou gen yon kont deja? Konekte', haveAccount: 'Ou gen yon kont deja?', signIn: 'Konekte' },
-    header: { messages: 'Mesaj', messagesUnread: 'Mesaj, {count} ou poko li', profile: 'Pwofil ou', hint: '💬 Mesaj ou ak pwofil ou la a kounye a', dismissHint: 'Retire konsèy sa a', gotIt: 'Mwen konprann' },
+    header: { messages: 'Mesaj', messagesUnread: 'Mesaj, {count} ou poko li', profile: 'Pwofil ou', hint: '💬 Mesaj ou yo la a kounye a', dismissHint: 'Retire konsèy sa a', gotIt: 'Mwen konprann' },
     gatheringStatus: { hosting: 'W ap òganize', going: 'W ap prale', interested: 'Mande', maybe: 'Enterese', waitlisted: 'Sou lis datant', attended: 'Te ale', hosted: 'Te òganize', didNotAttend: 'Pa t ale' },
     planStatus: { pending: 'Ap tann', accepted: 'Aksepte', confirmed: 'Konfime', declined: 'Refize', cancelled: 'Anile', completed: 'Fini' },
     errors: {
@@ -259,7 +259,7 @@ export default {
     unavailable: { title: "此内容已不可用", message: "它可能已被删除，或你已无权访问。", back: "← 返回" },
     draft: { gathering: '你有一个未完成的聚会。', request: '你有一个未完成的请求。', offer: '你有一个未完成的优惠。', draft: '你有一份未完成的草稿。', savedAgo: '保存于{ago}。', continue: '继续编辑', startOver: '重新开始' },
     onboarding: { back: '返回', backArrow: '← 返回', signInA11y: '已有账户？登录', haveAccount: '已有账户？', signIn: '登录' },
-    header: { messages: '消息', messagesUnread: '消息，{count}条未读', profile: '你的个人资料', hint: '💬 消息和个人资料现在都在这里', dismissHint: '关闭此提示', gotIt: '知道了' },
+    header: { messages: '消息', messagesUnread: '消息，{count}条未读', profile: '你的个人资料', hint: '💬 消息现在在这里', dismissHint: '关闭此提示', gotIt: '知道了' },
     gatheringStatus: { hosting: '你是组织者', going: '你会去', interested: '已申请', maybe: '感兴趣', waitlisted: '候补中', attended: '已参加', hosted: '已组织', didNotAttend: '未参加' },
     planStatus: { pending: '待定', accepted: '已接受', confirmed: '已确认', declined: '已拒绝', cancelled: '已取消', completed: '已完成' },
     errors: {
@@ -301,7 +301,7 @@ export default {
     unavailable: { title: "Nội dung này không còn nữa", message: "Có thể nó đã bị xóa hoặc bạn không còn quyền truy cập.", back: "← Quay lại" },
     draft: { gathering: 'Bạn có một buổi gặp mặt chưa hoàn tất.', request: 'Bạn có một yêu cầu chưa hoàn tất.', offer: 'Bạn có một ưu đãi chưa hoàn tất.', draft: 'Bạn có một bản nháp chưa hoàn tất.', savedAgo: 'Đã lưu {ago}.', continue: 'Tiếp tục chỉnh sửa', startOver: 'Làm lại từ đầu' },
     onboarding: { back: 'Quay lại', backArrow: '← Quay lại', signInA11y: 'Đã có tài khoản? Đăng nhập', haveAccount: 'Đã có tài khoản?', signIn: 'Đăng nhập' },
-    header: { messages: 'Tin nhắn', messagesUnread: 'Tin nhắn, {count} chưa đọc', profile: 'Hồ sơ của bạn', hint: '💬 Tin nhắn và hồ sơ của bạn giờ nằm ở đây', dismissHint: 'Ẩn mẹo này', gotIt: 'Đã hiểu' },
+    header: { messages: 'Tin nhắn', messagesUnread: 'Tin nhắn, {count} chưa đọc', profile: 'Hồ sơ của bạn', hint: '💬 Tin nhắn của bạn giờ nằm ở đây', dismissHint: 'Ẩn mẹo này', gotIt: 'Đã hiểu' },
     gatheringStatus: { hosting: 'Bạn tổ chức', going: 'Bạn sẽ đi', interested: 'Đã gửi yêu cầu', maybe: 'Quan tâm', waitlisted: 'Trong danh sách chờ', attended: 'Đã tham dự', hosted: 'Đã tổ chức', didNotAttend: 'Không tham dự' },
     planStatus: { pending: 'Đang chờ', accepted: 'Đã chấp nhận', confirmed: 'Đã xác nhận', declined: 'Đã từ chối', cancelled: 'Đã hủy', completed: 'Đã hoàn thành' },
     errors: {
@@ -343,7 +343,7 @@ export default {
     unavailable: { title: "Hindi na ito available", message: "Maaaring natanggal na ito, o wala ka nang access dito.", back: "← Bumalik" },
     draft: { gathering: 'May hindi pa tapos na pagtitipon ka.', request: 'May hindi pa tapos na kahilingan ka.', offer: 'May hindi pa tapos na alok ka.', draft: 'May hindi pa tapos na draft ka.', savedAgo: 'Na-save {ago}.', continue: 'Ituloy ang pag-edit', startOver: 'Magsimula ulit' },
     onboarding: { back: 'Bumalik', backArrow: '← Bumalik', signInA11y: 'May account ka na? Mag-sign in', haveAccount: 'May account ka na?', signIn: 'Mag-sign in' },
-    header: { messages: 'Mga Mensahe', messagesUnread: 'Mga Mensahe, {count} hindi pa nababasa', profile: 'Ang Iyong Profile', hint: '💬 Nandito na ngayon ang mga mensahe at profile mo', dismissHint: 'Isara ang tip na ito', gotIt: 'Sige' },
+    header: { messages: 'Mga Mensahe', messagesUnread: 'Mga Mensahe, {count} hindi pa nababasa', profile: 'Ang Iyong Profile', hint: '💬 Nandito na ngayon ang mga mensahe mo', dismissHint: 'Isara ang tip na ito', gotIt: 'Sige' },
     gatheringStatus: { hosting: 'Ikaw ang host', going: 'Pupunta ka', interested: 'Humiling', maybe: 'Interesado', waitlisted: 'Nasa waitlist', attended: 'Dumalo', hosted: 'Nag-host', didNotAttend: 'Hindi dumalo' },
     planStatus: { pending: 'Nakabinbin', accepted: 'Tinanggap', confirmed: 'Kumpirmado', declined: 'Tinanggihan', cancelled: 'Kinansela', completed: 'Tapos na' },
     errors: {
@@ -385,7 +385,7 @@ export default {
     unavailable: { title: "Это больше недоступно", message: "Возможно, это удалили или у вас больше нет доступа.", back: "← Назад" },
     draft: { gathering: 'У вас есть незавершённая встреча.', request: 'У вас есть незавершённый запрос.', offer: 'У вас есть незавершённое предложение.', draft: 'У вас есть незавершённый черновик.', savedAgo: 'Сохранено {ago}.', continue: 'Продолжить редактирование', startOver: 'Начать заново' },
     onboarding: { back: 'Назад', backArrow: '← Назад', signInA11y: 'Уже есть аккаунт? Войти', haveAccount: 'Уже есть аккаунт?', signIn: 'Войти' },
-    header: { messages: 'Сообщения', messagesUnread: 'Сообщения, непрочитанных: {count}', profile: 'Ваш профиль', hint: '💬 Сообщения и профиль теперь здесь', dismissHint: 'Скрыть подсказку', gotIt: 'Понятно' },
+    header: { messages: 'Сообщения', messagesUnread: 'Сообщения, непрочитанных: {count}', profile: 'Ваш профиль', hint: '💬 Сообщения теперь здесь', dismissHint: 'Скрыть подсказку', gotIt: 'Понятно' },
     gatheringStatus: { hosting: 'Вы организатор', going: 'Вы идёте', interested: 'Запрос отправлен', maybe: 'Интересно', waitlisted: 'В листе ожидания', attended: 'Были', hosted: 'Организовали', didNotAttend: 'Не были' },
     planStatus: { pending: 'Ожидает', accepted: 'Принято', confirmed: 'Подтверждено', declined: 'Отклонено', cancelled: 'Отменено', completed: 'Завершено' },
     errors: {
@@ -427,7 +427,7 @@ export default {
     unavailable: { title: "더 이상 볼 수 없어요", message: "삭제되었거나 더 이상 접근 권한이 없을 수 있어요.", back: "← 돌아가기" },
     draft: { gathering: '완성하지 않은 모임이 있어요.', request: '완성하지 않은 요청이 있어요.', offer: '완성하지 않은 혜택이 있어요.', draft: '완성하지 않은 초안이 있어요.', savedAgo: '{ago} 저장됨.', continue: '계속 편집', startOver: '처음부터 다시' },
     onboarding: { back: '뒤로', backArrow: '← 뒤로', signInA11y: '이미 계정이 있나요? 로그인', haveAccount: '이미 계정이 있나요?', signIn: '로그인' },
-    header: { messages: '메시지', messagesUnread: '메시지, 읽지 않음 {count}개', profile: '내 프로필', hint: '💬 이제 메시지와 프로필은 여기에 있어요', dismissHint: '이 팁 닫기', gotIt: '알겠어요' },
+    header: { messages: '메시지', messagesUnread: '메시지, 읽지 않음 {count}개', profile: '내 프로필', hint: '💬 이제 메시지는 여기에 있어요', dismissHint: '이 팁 닫기', gotIt: '알겠어요' },
     gatheringStatus: { hosting: '주최 중', going: '참석 예정', interested: '요청함', maybe: '관심 있음', waitlisted: '대기 중', attended: '참석함', hosted: '주최함', didNotAttend: '불참' },
     planStatus: { pending: '대기 중', accepted: '수락됨', confirmed: '확정됨', declined: '거절됨', cancelled: '취소됨', completed: '완료됨' },
     errors: {

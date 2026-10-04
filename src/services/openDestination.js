@@ -6,7 +6,7 @@ import { beginTrail, routesAboveTabs } from '../navigation/returnTrail';
 
 // The bottom tabs. Opening one from a screen above the tabs closes that screen; remember it (navigation/returnTrail.js) so
 // Android Back / the iOS chip on that tab reopens it instead of stranding the person on the tab.
-const TAB_SCREENS = new Set(['Home', 'Discover', 'Create', 'Activity']);
+const TAB_SCREENS = new Set(['Home', 'Discover', 'Create', 'Activity', 'Profile']);
 
 function rootState(navigation) {
   let n = navigation;

@@ -728,7 +728,7 @@ export default function SettingsScreen({ navigation, route }) {
                         onChangeDistance={(v) => saveRecPref('notify_things_to_do_max_distance_miles', v, setTtdDistance)}
                         onChangeTimePref={(v) => saveRecPref('notify_things_to_do_time_pref', v, setTtdTimePref)}
                         onToggleCategory={(tag) => toggleRecCategory(tag, ttdCategories, 'notify_things_to_do_categories', setTtdCategories)}
-                        onPressAddInterests={() => navigation.navigate('Profile', { scrollToInterestsSection: true })}
+                        onPressAddInterests={() => navigateKeepingTrail(navigation, 'Profile', { scrollToInterestsSection: Date.now() })}
                       />
                     )}
                     <TouchableOpacity
@@ -754,7 +754,7 @@ export default function SettingsScreen({ navigation, route }) {
                         onChangeDistance={(v) => saveRecPref('notify_nearby_opportunities_max_distance_miles', v, setNoDistance)}
                         onChangeTimePref={(v) => saveRecPref('notify_nearby_opportunities_time_pref', v, setNoTimePref)}
                         onToggleCategory={(tag) => toggleRecCategory(tag, noCategories, 'notify_nearby_opportunities_categories', setNoCategories)}
-                        onPressAddInterests={() => navigation.navigate('Profile', { scrollToInterestsSection: true })}
+                        onPressAddInterests={() => navigateKeepingTrail(navigation, 'Profile', { scrollToInterestsSection: Date.now() })}
                       />
                     )}
                       </>

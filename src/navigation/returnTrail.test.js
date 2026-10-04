@@ -26,7 +26,7 @@ const { restoreTrail } = require('./returnTrailNav');
 const T = require('./returnTrail');
 
 const ROOT = ['MainTabs', 'GatheringDetail', 'ViewProfile', 'Chat', 'BusinessRequestDetail', 'Notices', 'CommunityDetail'];
-const TABS = ['Home', 'Discover', 'Create', 'Activity'];
+const TABS = ['Home', 'Discover', 'Create', 'Activity', 'Profile'];
 const opts = (names) => ({ routeNames: names, routeParamList: {}, routeGetIdList: {} });
 
 function makeRef(screens = []) {

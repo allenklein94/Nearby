@@ -70,6 +70,7 @@ export default {
       discover: "Discover",
       create: "Create",
       activity: "Activity",
+      profile: "Profile",
     },
   },
   es: {
@@ -141,6 +142,7 @@ export default {
       discover: "Descubrir",
       create: "Crear",
       activity: "Actividad",
+      profile: "Perfil",
     },
   },
   de: {
@@ -212,6 +214,7 @@ export default {
       discover: "Entdecken",
       create: "Erstellen",
       activity: "Aktivität",
+      profile: "Profil",
     },
   },
   fr: {
@@ -283,6 +286,7 @@ export default {
       discover: "Découvrir",
       create: "Créer",
       activity: "Activité",
+      profile: "Profil",
     },
   },
   pt: {
@@ -354,6 +358,7 @@ export default {
       discover: "Descobrir",
       create: "Criar",
       activity: "Atividade",
+      profile: "Perfil",
     },
   },
   ht: {
@@ -425,6 +430,7 @@ export default {
       discover: "Dekouvri",
       create: "Kreye",
       activity: "Aktivite",
+      profile: "Pwofil",
     },
   },
   zh: {
@@ -496,6 +502,7 @@ export default {
       discover: "发现",
       create: "创建",
       activity: "动态",
+      profile: "个人资料",
     },
   },
   vi: {
@@ -567,6 +574,7 @@ export default {
       discover: "Khám phá",
       create: "Tạo",
       activity: "Hoạt động",
+      profile: "Hồ sơ",
     },
   },
   tl: {
@@ -638,6 +646,7 @@ export default {
       discover: "Tuklasin",
       create: "Gumawa",
       activity: "Aktibidad",
+      profile: "Profile",
     },
   },
   ru: {
@@ -709,6 +718,7 @@ export default {
       discover: "Обзор",
       create: "Создать",
       activity: "Активность",
+      profile: "Профиль",
     },
   },
   ko: {
@@ -780,6 +790,7 @@ export default {
       discover: "둘러보기",
       create: "만들기",
       activity: "활동",
+      profile: "프로필",
     },
   },
 };

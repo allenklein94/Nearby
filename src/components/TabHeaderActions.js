@@ -1,11 +1,10 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../services/supabase';
-import { getSignedPhotoUrl } from '../services/photos';
 import { getUnreadMessagesCount } from '../services/homeDashboard';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -31,11 +30,11 @@ const HINT_AUTO_HIDE_MS = 6000;
 // all four at once) -- a real, disclosed scope boundary, not a silent
 // gap: this renders on the 4 main tab screens, not on every one of the
 // ~70 other pushed detail screens in the app.
+// 2026-10-04 (owner): Profile is the fifth bottom tab again, so only Messages lives here now (the avatar icon was removed).
 export default function TabHeaderActions({ navigation }) {
   const { t, language } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
-  const [photoUrl, setPhotoUrl] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const hintTimerRef = useRef(null);
@@ -66,11 +65,6 @@ export default function TabHeaderActions({ navigation }) {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
       if (!userId) return;
-
-      const { data } = await supabase.from('profiles').select('photo_url').eq('id', userId).single();
-      if (data?.photo_url) {
-        setPhotoUrl(await getSignedPhotoUrl(data.photo_url));
-      }
 
       const count = await getUnreadMessagesCount();
       setUnreadCount(count);
@@ -107,18 +101,6 @@ export default function TabHeaderActions({ navigation }) {
           </View>
         )}
       </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => navigation.navigate('Profile')}
-        style={styles.iconButton}
-        accessibilityLabel={t('ui.shared.header.profile')}
-        accessibilityRole="button"
-      >
-        {photoUrl ? (
-          <Image source={{ uri: photoUrl }} style={styles.avatar} />
-        ) : (
-          <Ionicons name="person-circle-outline" size={28} color={colors.textPrimary} />
-        )}
-      </TouchableOpacity>
 
       {showHint && (
         <View style={styles.hintBubble} pointerEvents="box-none">
@@ -134,12 +116,10 @@ export default function TabHeaderActions({ navigation }) {
 
 const getStyles = (colors) => StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, position: 'relative' },
-  iconButton: { padding: 2 },
   messageButton: {
     width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primary,
     alignItems: 'center', justifyContent: 'center',
   },
-  avatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.surfaceElevated },
   badge: {
     position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: 8,
     backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,

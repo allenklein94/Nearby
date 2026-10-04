@@ -37,7 +37,7 @@ export const SCREEN_REGISTRY = {
   CompleteProfile: { jobs: ['C'], reason: 'Finishing your profile before using the app.' },
 
   // ---- you ----
-  Profile: { jobs: ['C'], reason: 'Edit your profile, photos and prompts.' },
+  Profile: { surface: true, jobs: ['C'], reason: 'The Profile tab: you, your identity, photos and prompts, and the way into Settings.' },
   Settings: { jobs: ['C'], reason: 'Preferences, privacy, notifications and account controls.' },
   DatingPreferences: { jobs: ['C'], reason: 'Edit your dating profile and who you want to see.' },
   QuickFilterCustomize: { jobs: ['C'], reason: 'Choose, set and reorder your quick filters.' },
@@ -144,6 +144,7 @@ export const INFRASTRUCTURE_ROUTES = {
 export { PRESENTATION_ROUTES } from '../navigation/presentationRoutes';
 export const PRESENTATION_REASONS = {
   Notices: 'The wave push opens Activity on top of the current screen so Back returns exactly where you were; titled Activity, never a separate Notices screen.',
+  MyProfile: 'The Profile tab opened on top of a stack screen (Dating Preferences) so Back returns there; the same ProfileScreen, never a second Profile surface.',
   FriendDiscovery: 'People -> Friends opened on top of a stack screen (Friends list, gathering published, typed-ask people row, Create invite picker) so Back returns there; the same FriendDiscoveryScreen Discover embeds, never a separate Friends surface.',
 };
 
@@ -161,7 +162,7 @@ export const RULE14_DECISIONS = {
     Rewards: 'one tier line at the top of Discover -> Perks',
   },
   // Notices was registered as its own surface; it is Activity presented on top for push entry (PRESENTATION_ROUTES).
-  presentations: { Notices: 'Activity', FriendDiscovery: 'Discover -> People -> Friends' },
+  presentations: { Notices: 'Activity', FriendDiscovery: 'Discover -> People -> Friends', MyProfile: 'Profile' },
   trimmed: { Communities: 'your own communities + Create; public discovery is Discover -> Communities' },
   borderlineKeep: ['Momentum'],
 };

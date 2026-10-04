@@ -100,7 +100,7 @@ const LABEL_KEYS = {
   GroupPlan: 'groupPlan',
   CommunityDetail: 'community',
   Matches: 'matches',
-  Profile: 'myProfile',
+  MyProfile: 'myProfile',
   Settings: 'settings',
   Notices: 'notices',
 };

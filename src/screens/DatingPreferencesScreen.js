@@ -428,7 +428,7 @@ export default function DatingPreferencesScreen({ navigation }) {
           )}
           <TouchableOpacity
             style={{ marginTop: spacing.md }}
-            onPress={() => navigation.navigate('Profile')}
+            onPress={() => navigation.push('MyProfile')}
             accessibilityLabel={t('ui.datingPrefs.editYourInterestsOnProfileA11y')}
             accessibilityRole="button"
           >
@@ -438,7 +438,7 @@ export default function DatingPreferencesScreen({ navigation }) {
 
         <TouchableOpacity
           style={{ marginTop: spacing.sm, marginBottom: spacing.xxl }}
-          onPress={() => navigation.navigate('Profile', { scrollToGenderSection: true })}
+          onPress={() => navigation.push('MyProfile', { scrollToGenderSection: Date.now() })}
           accessibilityLabel={t('ui.datingPrefs.genderIdentityEthnicityAndTheirA11y')}
           accessibilityRole="button"
         >

@@ -64,6 +64,7 @@
     "tab.discover": "Discover",
     "tab.create": "Create",
     "tab.activity": "Activity",
+    "tab.profile": "Profile",
     "title.messagesFriends": "Friends"
   },
   "es": {
@@ -131,6 +132,7 @@
     "tab.discover": "Descubrir",
     "tab.create": "Crear",
     "tab.activity": "Actividad",
+    "tab.profile": "Perfil",
     "title.messagesFriends": "Amigos"
   },
   "de": {
@@ -198,6 +200,7 @@
     "tab.discover": "Entdecken",
     "tab.create": "Erstellen",
     "tab.activity": "Aktivität",
+    "tab.profile": "Profil",
     "title.messagesFriends": "Freunde"
   },
   "fr": {
@@ -265,6 +268,7 @@
     "tab.discover": "Découvrir",
     "tab.create": "Créer",
     "tab.activity": "Activité",
+    "tab.profile": "Profil",
     "title.messagesFriends": "Amis"
   },
   "pt": {
@@ -332,6 +336,7 @@
     "tab.discover": "Descobrir",
     "tab.create": "Criar",
     "tab.activity": "Atividade",
+    "tab.profile": "Perfil",
     "title.messagesFriends": "Amigos"
   },
   "ht": {
@@ -399,6 +404,7 @@
     "tab.discover": "Dekouvri",
     "tab.create": "Kreye",
     "tab.activity": "Aktivite",
+    "tab.profile": "Pwofil",
     "title.messagesFriends": "Zanmi"
   },
   "zh": {
@@ -466,6 +472,7 @@
     "tab.discover": "发现",
     "tab.create": "创建",
     "tab.activity": "动态",
+    "tab.profile": "个人资料",
     "title.messagesFriends": "朋友"
   },
   "vi": {
@@ -533,6 +540,7 @@
     "tab.discover": "Khám phá",
     "tab.create": "Tạo",
     "tab.activity": "Hoạt động",
+    "tab.profile": "Hồ sơ",
     "title.messagesFriends": "Bạn bè"
   },
   "tl": {
@@ -600,6 +608,7 @@
     "tab.discover": "Tuklasin",
     "tab.create": "Gumawa",
     "tab.activity": "Aktibidad",
+    "tab.profile": "Profile",
     "title.messagesFriends": "Mga kaibigan"
   },
   "ru": {
@@ -667,6 +676,7 @@
     "tab.discover": "Обзор",
     "tab.create": "Создать",
     "tab.activity": "Активность",
+    "tab.profile": "Профиль",
     "title.messagesFriends": "Друзья"
   },
   "ko": {
@@ -734,6 +744,7 @@
     "tab.discover": "둘러보기",
     "tab.create": "만들기",
     "tab.activity": "활동",
+    "tab.profile": "프로필",
     "title.messagesFriends": "친구"
   }
 }
