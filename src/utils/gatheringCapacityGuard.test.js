@@ -46,20 +46,17 @@ describe('host controls are centralized (item 73)', () => {
   });
 });
 
-describe('the Create wizard centralizes the same settings (item 73)', () => {
+describe('the Create wizard centralizes the same settings (item 73, regrouped into five steps 2026-10-04)', () => {
   const create = fs.readFileSync(path.join(__dirname, '../screens/CreateGatheringScreen.js'), 'utf8');
-  const settings = create.slice(create.indexOf("stepKey === 'settings' && ("), create.indexOf("stepKey === 'publish' && ("));
-  const details = create.slice(create.indexOf("stepKey === 'details' && ("), create.indexOf("stepKey === 'settings' && ("));
-  it('has one Settings step after Details and no separate Who step', () => {
-    expect(create).toMatch(/key: 'settings', label: t\('ui\.gatheringForm\.step\.settings'\)/);
-    expect(create).not.toMatch(/key: 'who'/);
-    expect(create.indexOf("key: 'details'")).toBeLessThan(create.indexOf("key: 'settings'"));
+  const who = create.slice(create.lastIndexOf("stepKey === 'who' && ("), create.indexOf("stepKey === 'business' && ("));
+  const business = create.slice(create.indexOf("stepKey === 'business' && ("), create.indexOf("stepKey === 'publish' && finalProblems"));
+  it("Who's invited holds who can find/join it, capacity, women-only, guest invites and notifications", () => {
+    ['visibility', 'findQ', 'joinQ', 'capacity', 'womenOnly', 'guestsInvite', 'notify'].forEach((k) => expect(who).toContain(`ui.gatheringForm.${k}'`));
+    expect(who).not.toContain("ui.gatheringForm.businessRequests'");
   });
-  it.each(['visibility', 'findQ', 'joinQ', 'capacity', 'businessRequests', 'womenOnly', 'guestsInvite', 'notify'])('Settings holds %s', (k) => {
-    expect(settings).toContain(`ui.gatheringForm.${k}'`);
-  });
-  it('More options no longer scatters those controls', () => {
-    ['How many people?', 'Ask Local Businesses', 'Women-Only', 'Map Visibility'].forEach((t) => expect(details).not.toContain(t));
+  it('the optional business connection is its own step', () => {
+    expect(business).toContain("ui.gatheringForm.businessRequests'");
+    expect(business).toContain('setAskLocalBusinesses');
   });
   it('the new settings reach the insert', () => {
     expect(create).toMatch(/allowAttendeeInvites,\s*hostNotifications,/);

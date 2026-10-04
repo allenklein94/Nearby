@@ -10,7 +10,11 @@ export default {
       "where": "Where",
       "details": "Details",
       "settings": "Settings",
-      "publish": "Publish"
+      "publish": "Publish",
+      "whenWhere": "When & where",
+      "who": "Who's invited",
+      "business": "Business",
+      "review": "Review"
     },
     "stepA11y": "Step {n} of {total}: {label}",
     "walk": "{min} min walk",
@@ -213,7 +217,11 @@ export default {
       "where": "Dónde",
       "details": "Detalles",
       "settings": "Ajustes",
-      "publish": "Publicar"
+      "publish": "Publicar",
+      "whenWhere": "Cuándo y dónde",
+      "who": "Invitados",
+      "business": "Negocio",
+      "review": "Revisar"
     },
     "stepA11y": "Paso {n} de {total}: {label}",
     "walk": "{min} min a pie",
@@ -416,7 +424,11 @@ export default {
       "where": "Wo",
       "details": "Details",
       "settings": "Einstellungen",
-      "publish": "Veröffentlichen"
+      "publish": "Veröffentlichen",
+      "whenWhere": "Wann & wo",
+      "who": "Wer kommt",
+      "business": "Unternehmen",
+      "review": "Prüfen"
     },
     "stepA11y": "Schritt {n} von {total}: {label}",
     "walk": "{min} Min. zu Fuß",
@@ -619,7 +631,11 @@ export default {
       "where": "Où",
       "details": "Détails",
       "settings": "Paramètres",
-      "publish": "Publier"
+      "publish": "Publier",
+      "whenWhere": "Quand et où",
+      "who": "Invités",
+      "business": "Commerce",
+      "review": "Vérifier"
     },
     "stepA11y": "Étape {n} sur {total} : {label}",
     "walk": "{min} min à pied",
@@ -822,7 +838,11 @@ export default {
       "where": "Onde",
       "details": "Detalhes",
       "settings": "Configurações",
-      "publish": "Publicar"
+      "publish": "Publicar",
+      "whenWhere": "Quando e onde",
+      "who": "Convidados",
+      "business": "Negócio",
+      "review": "Revisar"
     },
     "stepA11y": "Etapa {n} de {total}: {label}",
     "walk": "{min} min a pé",
@@ -1025,7 +1045,11 @@ export default {
       "where": "Ki kote",
       "details": "Detay",
       "settings": "Paramèt",
-      "publish": "Pibliye"
+      "publish": "Pibliye",
+      "whenWhere": "Kilè ak ki kote",
+      "who": "Ki moun ki envite",
+      "business": "Biznis",
+      "review": "Revize"
     },
     "stepA11y": "Etap {n} sou {total}: {label}",
     "walk": "{min} min apye",
@@ -1228,7 +1252,11 @@ export default {
       "where": "地点",
       "details": "详情",
       "settings": "设置",
-      "publish": "发布"
+      "publish": "发布",
+      "whenWhere": "时间和地点",
+      "who": "邀请谁",
+      "business": "商家",
+      "review": "确认"
     },
     "stepA11y": "第 {n} 步，共 {total} 步：{label}",
     "walk": "步行 {min} 分钟",
@@ -1431,7 +1459,11 @@ export default {
       "where": "Ở đâu",
       "details": "Chi tiết",
       "settings": "Cài đặt",
-      "publish": "Đăng"
+      "publish": "Đăng",
+      "whenWhere": "Khi nào & ở đâu",
+      "who": "Mời ai",
+      "business": "Doanh nghiệp",
+      "review": "Xem lại"
     },
     "stepA11y": "Bước {n}/{total}: {label}",
     "walk": "{min} phút đi bộ",
@@ -1634,7 +1666,11 @@ export default {
       "where": "Saan",
       "details": "Detalye",
       "settings": "Settings",
-      "publish": "I-publish"
+      "publish": "I-publish",
+      "whenWhere": "Kailan at saan",
+      "who": "Sino ang imbitado",
+      "business": "Negosyo",
+      "review": "Suriin"
     },
     "stepA11y": "Hakbang {n} sa {total}: {label}",
     "walk": "{min} min lakad",
@@ -1837,7 +1873,11 @@ export default {
       "where": "Где",
       "details": "Детали",
       "settings": "Настройки",
-      "publish": "Опубликовать"
+      "publish": "Опубликовать",
+      "whenWhere": "Когда и где",
+      "who": "Кто приглашён",
+      "business": "Заведение",
+      "review": "Проверка"
     },
     "stepA11y": "Шаг {n} из {total}: {label}",
     "walk": "{min} мин пешком",
@@ -2040,7 +2080,11 @@ export default {
       "where": "어디",
       "details": "세부 정보",
       "settings": "설정",
-      "publish": "게시"
+      "publish": "게시",
+      "whenWhere": "언제 · 어디",
+      "who": "누구를 초대",
+      "business": "업체",
+      "review": "검토"
     },
     "stepA11y": "{total}단계 중 {n}단계: {label}",
     "walk": "도보 {min}분",

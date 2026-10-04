@@ -61,13 +61,22 @@ const CHECKS = {
   publish() { return []; },
 };
 
+// The five Create steps and the check groups each one owns (a step can only be left once all of its groups pass).
+export const STEP_CHECKS = {
+  what: ['what', 'details'],
+  whenWhere: ['when', 'where'],
+  who: ['invite', 'settings'],
+  business: [],
+  publish: [],
+};
+
 export function stepProblems(stepKey, form) {
-  const check = CHECKS[stepKey];
-  return check ? check({ now: Date.now(), ...form }).map((p) => ({ step: stepKey, ...p })) : [];
+  const f = { now: Date.now(), ...form };
+  return (STEP_CHECKS[stepKey] ?? []).flatMap((g) => CHECKS[g](f).map((p) => ({ step: stepKey, ...p })));
 }
 
-// Every step the flow contains (a skipped What step still has its values checked: it was skipped only because they were valid).
-export function publishProblems(form, stepKeys = ['what', 'when', 'invite', 'where', 'details', 'settings']) {
+// Every step's checks, re-run before Publish. 'what' is always included (a quick-pick that starts later still has it checked).
+export function publishProblems(form, stepKeys = Object.keys(STEP_CHECKS)) {
   const keys = [...new Set(['what', ...stepKeys])].filter((k) => k !== 'publish');
   return keys.flatMap((k) => stepProblems(k, form));
 }

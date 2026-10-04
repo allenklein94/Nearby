@@ -53,9 +53,10 @@ describe('1-2. prefill, then the invite step only with invite context', () => {
     expect(inviteStepApplies('solo', 'tennis')).toBe(false);
     expect(inviteStepApplies('new_people', 'tennis')).toBe(false);
   });
-  it('the step order is What, When, Invite, Where, Details, Settings, Publish, and Invite exists only with the flag', () => {
-    const defs = CREATE.slice(CREATE.indexOf('const STEP_DEFS = ['), CREATE.indexOf('].filter('));
-    expect(defs.replace(/\s+/g, ' ')).toMatch(/'what'.*'when'.*\.\.\.\(askInvite \? \[\{ key: 'invite', label: t\('ui\.gatheringForm\.step\.invite'\) \}\] : \[\]\).*'where'.*'details'.*'settings'.*'publish'/);
+  it('the five grouped steps hold the friend picker inside Who, and only with the flag', () => {
+    const defs = CREATE.slice(CREATE.indexOf('const STEP_DEFS = ['), CREATE.indexOf('];', CREATE.indexOf('const STEP_DEFS = [')));
+    expect(defs.replace(/\s+/g, ' ')).toMatch(/'what'.*'whenWhere'.*'who'.*'business'.*'publish'/);
+    expect(CREATE).toMatch(/stepKey === 'who' && askInvite && \(/);
     expect(CREATE).toMatch(/const askInvite = route\.params\?\.quickStartInvite === true \|\| suggestedInviteeIds\.length > 0;/);
     expect(CREATE).toMatch(/ui\.gatheringForm\.inviteQ'/);
   });
