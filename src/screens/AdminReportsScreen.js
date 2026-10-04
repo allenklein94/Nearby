@@ -11,7 +11,7 @@ import { PullToRefresh } from '../motion';
 // This screen is reached as a top-level stack push (not a bottom tab),
 // headerShown: false in RootNavigator, and previously took no navigation
 // prop at all -- the same "reachable, but no visible way back" shape
-// found and fixed on FriendDiscoveryScreen/PlacesScreen/TimelineScreen.
+// found and fixed on FriendDiscoveryScreen.
 export default function AdminReportsScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);

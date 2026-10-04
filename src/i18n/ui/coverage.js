@@ -142,7 +142,6 @@ export const LOCALIZED_FILES = [
   'src/components/ConfidenceModeBanner.js',
   'src/components/RecurringBadge.js',
   'src/components/DiningPreferencesPromptModal.js',
-  'src/screens/TimelineScreen.js',
   'src/components/SightingMapModal.js',
   'src/components/GatheringFeedbackPrompt.js',
   'src/components/FriendInviteSelector.js',

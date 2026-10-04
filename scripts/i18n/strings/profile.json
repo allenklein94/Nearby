@@ -56,9 +56,6 @@
   "communities": "Communities",
   "friends": "Friends",
   "yourStory": "Your Story",
-  "viewYourTimelineHowYourA11y": "View your timeline, how your social life has grown",
-  "viewYourTimeline": "📖 View Your Timeline",
-  "howYourSocialLifeHas": "How your social life has grown over time",
   "viewYourMemoryVaultsOneA11y": "View your memory vaults, one per match",
   "memoryVault": "💫 Memory Vault",
   "savedMomentsOneCollectionPer": "Saved moments, one collection per match",
@@ -141,7 +138,8 @@
   "goal.network": "Network",
   "goal.exploreCity": "Explore my city",
   "goal.findCommunity": "Find community",
-  "goal.getOutMore": "Get out more"
+  "goal.getOutMore": "Get out more",
+  "joinedNearbyOn": "Joined Nearby on {date}"
  },
  "es": {
   "yourProfileIsComplete": "Tu perfil está completo al {percent}%",
@@ -200,9 +198,6 @@
   "communities": "Comunidades",
   "friends": "Amigos",
   "yourStory": "Tu historia",
-  "viewYourTimelineHowYourA11y": "Ver tu cronología: cómo ha crecido tu vida social",
-  "viewYourTimeline": "📖 Ver tu cronología",
-  "howYourSocialLifeHas": "Cómo ha crecido tu vida social con el tiempo",
   "viewYourMemoryVaultsOneA11y": "Ver tus baúles de recuerdos, uno por match",
   "memoryVault": "💫 Baúl de recuerdos",
   "savedMomentsOneCollectionPer": "Momentos guardados, una colección por match",
@@ -285,7 +280,8 @@
   "goal.network": "Networking",
   "goal.exploreCity": "Explorar mi ciudad",
   "goal.findCommunity": "Encontrar comunidad",
-  "goal.getOutMore": "Salir más"
+  "goal.getOutMore": "Salir más",
+  "joinedNearbyOn": "Se unió a Nearby el {date}"
  },
  "de": {
   "yourProfileIsComplete": "Dein Profil ist zu {percent} % vollständig",
@@ -344,9 +340,6 @@
   "communities": "Communities",
   "friends": "Freunde",
   "yourStory": "Deine Geschichte",
-  "viewYourTimelineHowYourA11y": "Deine Zeitleiste ansehen – wie dein soziales Leben gewachsen ist",
-  "viewYourTimeline": "📖 Deine Zeitleiste",
-  "howYourSocialLifeHas": "Wie dein soziales Leben mit der Zeit gewachsen ist",
   "viewYourMemoryVaultsOneA11y": "Deine Erinnerungsschätze ansehen, einer pro Match",
   "memoryVault": "💫 Erinnerungsschatz",
   "savedMomentsOneCollectionPer": "Gespeicherte Momente, eine Sammlung pro Match",
@@ -429,7 +422,8 @@
   "goal.network": "Netzwerken",
   "goal.exploreCity": "Meine Stadt entdecken",
   "goal.findCommunity": "Gemeinschaft finden",
-  "goal.getOutMore": "Öfter rausgehen"
+  "goal.getOutMore": "Öfter rausgehen",
+  "joinedNearbyOn": "Bei Nearby seit {date}"
  },
  "fr": {
   "yourProfileIsComplete": "Votre profil est complet à {percent} %",
@@ -488,9 +482,6 @@
   "communities": "Communautés",
   "friends": "Amis",
   "yourStory": "Votre histoire",
-  "viewYourTimelineHowYourA11y": "Voir votre chronologie : comment votre vie sociale a évolué",
-  "viewYourTimeline": "📖 Voir votre chronologie",
-  "howYourSocialLifeHas": "Comment votre vie sociale a évolué au fil du temps",
   "viewYourMemoryVaultsOneA11y": "Voir vos coffres à souvenirs, un par match",
   "memoryVault": "💫 Coffre à souvenirs",
   "savedMomentsOneCollectionPer": "Moments enregistrés, une collection par match",
@@ -573,7 +564,8 @@
   "goal.network": "Réseauter",
   "goal.exploreCity": "Explorer ma ville",
   "goal.findCommunity": "Trouver une communauté",
-  "goal.getOutMore": "Sortir davantage"
+  "goal.getOutMore": "Sortir davantage",
+  "joinedNearbyOn": "A rejoint Nearby le {date}"
  },
  "pt": {
   "yourProfileIsComplete": "Seu perfil está {percent}% completo",
@@ -632,9 +624,6 @@
   "communities": "Comunidades",
   "friends": "Amigos",
   "yourStory": "Sua história",
-  "viewYourTimelineHowYourA11y": "Ver sua linha do tempo: como sua vida social cresceu",
-  "viewYourTimeline": "📖 Ver sua linha do tempo",
-  "howYourSocialLifeHas": "Como sua vida social cresceu com o tempo",
   "viewYourMemoryVaultsOneA11y": "Ver seus baús de memórias, um por match",
   "memoryVault": "💫 Baú de memórias",
   "savedMomentsOneCollectionPer": "Momentos salvos, uma coleção por match",
@@ -717,7 +706,8 @@
   "goal.network": "Networking",
   "goal.exploreCity": "Explorar minha cidade",
   "goal.findCommunity": "Encontrar uma comunidade",
-  "goal.getOutMore": "Sair mais"
+  "goal.getOutMore": "Sair mais",
+  "joinedNearbyOn": "Entrou no Nearby em {date}"
  },
  "ht": {
   "yourProfileIsComplete": "Pwofil ou fini a {percent}%",
@@ -776,9 +766,6 @@
   "communities": "Kominote",
   "friends": "Zanmi",
   "yourStory": "Istwa w",
-  "viewYourTimelineHowYourA11y": "Gade istwa w — jan lavi sosyal ou grandi",
-  "viewYourTimeline": "📖 Gade istwa w",
-  "howYourSocialLifeHas": "Jan lavi sosyal ou grandi avèk tan",
   "viewYourMemoryVaultsOneA11y": "Gade kòf souvni ou, youn pou chak match",
   "memoryVault": "💫 Kòf souvni",
   "savedMomentsOneCollectionPer": "Moman anrejistre, yon koleksyon pou chak match",
@@ -861,7 +848,8 @@
   "goal.network": "Fè rezo",
   "goal.exploreCity": "Eksplore vil mwen",
   "goal.findCommunity": "Jwenn yon kominote",
-  "goal.getOutMore": "Soti plis"
+  "goal.getOutMore": "Soti plis",
+  "joinedNearbyOn": "Antre nan Nearby {date}"
  },
  "zh": {
   "yourProfileIsComplete": "你的资料已完成 {percent}%",
@@ -920,9 +908,6 @@
   "communities": "社区",
   "friends": "好友",
   "yourStory": "你的故事",
-  "viewYourTimelineHowYourA11y": "查看你的时间线：社交生活如何成长",
-  "viewYourTimeline": "📖 查看时间线",
-  "howYourSocialLifeHas": "你的社交生活如何随时间成长",
   "viewYourMemoryVaultsOneA11y": "查看你的回忆库，每个配对一个",
   "memoryVault": "💫 回忆库",
   "savedMomentsOneCollectionPer": "保存的时刻，每个配对一个合集",
@@ -1005,7 +990,8 @@
   "goal.network": "拓展人脉",
   "goal.exploreCity": "探索我的城市",
   "goal.findCommunity": "找到归属",
-  "goal.getOutMore": "多出去走走"
+  "goal.getOutMore": "多出去走走",
+  "joinedNearbyOn": "于 {date} 加入 Nearby"
  },
  "vi": {
   "yourProfileIsComplete": "Hồ sơ của bạn đã hoàn thành {percent}%",
@@ -1064,9 +1050,6 @@
   "communities": "Cộng đồng",
   "friends": "Bạn bè",
   "yourStory": "Câu chuyện của bạn",
-  "viewYourTimelineHowYourA11y": "Xem dòng thời gian — đời sống xã hội của bạn đã phát triển thế nào",
-  "viewYourTimeline": "📖 Xem dòng thời gian",
-  "howYourSocialLifeHas": "Đời sống xã hội của bạn phát triển theo thời gian",
   "viewYourMemoryVaultsOneA11y": "Xem kho kỷ niệm, mỗi người tương hợp một kho",
   "memoryVault": "💫 Kho kỷ niệm",
   "savedMomentsOneCollectionPer": "Khoảnh khắc đã lưu, mỗi người tương hợp một bộ sưu tập",
@@ -1149,7 +1132,8 @@
   "goal.network": "Mở rộng quan hệ",
   "goal.exploreCity": "Khám phá thành phố",
   "goal.findCommunity": "Tìm cộng đồng",
-  "goal.getOutMore": "Ra ngoài nhiều hơn"
+  "goal.getOutMore": "Ra ngoài nhiều hơn",
+  "joinedNearbyOn": "Tham gia Nearby vào {date}"
  },
  "tl": {
   "yourProfileIsComplete": "{percent}% kumpleto na ang profile mo",
@@ -1208,9 +1192,6 @@
   "communities": "Mga Komunidad",
   "friends": "Mga Kaibigan",
   "yourStory": "Ang Kuwento Mo",
-  "viewYourTimelineHowYourA11y": "Tingnan ang timeline mo, kung paano lumago ang social life mo",
-  "viewYourTimeline": "📖 Tingnan ang Timeline Mo",
-  "howYourSocialLifeHas": "Kung paano lumago ang social life mo sa paglipas ng panahon",
   "viewYourMemoryVaultsOneA11y": "Tingnan ang memory vaults mo, isa bawat match",
   "memoryVault": "💫 Memory Vault",
   "savedMomentsOneCollectionPer": "Mga na-save na sandali, isang koleksyon bawat match",
@@ -1293,7 +1274,8 @@
   "goal.network": "Networking",
   "goal.exploreCity": "Tuklasin ang lungsod ko",
   "goal.findCommunity": "Makahanap ng komunidad",
-  "goal.getOutMore": "Mas madalas lumabas"
+  "goal.getOutMore": "Mas madalas lumabas",
+  "joinedNearbyOn": "Sumali sa Nearby noong {date}"
  },
  "ru": {
   "yourProfileIsComplete": "Ваш профиль заполнен на {percent}%",
@@ -1352,9 +1334,6 @@
   "communities": "Сообщества",
   "friends": "Друзья",
   "yourStory": "Ваша история",
-  "viewYourTimelineHowYourA11y": "Посмотреть хронологию: как росла ваша социальная жизнь",
-  "viewYourTimeline": "📖 Хронология",
-  "howYourSocialLifeHas": "Как со временем росла ваша социальная жизнь",
   "viewYourMemoryVaultsOneA11y": "Посмотреть шкатулки воспоминаний, по одной на пару",
   "memoryVault": "💫 Шкатулка воспоминаний",
   "savedMomentsOneCollectionPer": "Сохранённые моменты, по коллекции на каждую пару",
@@ -1437,7 +1416,8 @@
   "goal.network": "Нетворкинг",
   "goal.exploreCity": "Узнать свой город",
   "goal.findCommunity": "Найти своих",
-  "goal.getOutMore": "Чаще выходить из дома"
+  "goal.getOutMore": "Чаще выходить из дома",
+  "joinedNearbyOn": "В Nearby с {date}"
  },
  "ko": {
   "yourProfileIsComplete": "프로필이 {percent}% 완성됐어요",
@@ -1496,9 +1476,6 @@
   "communities": "커뮤니티",
   "friends": "친구",
   "yourStory": "나의 이야기",
-  "viewYourTimelineHowYourA11y": "타임라인 보기, 나의 사회생활이 어떻게 자랐는지",
-  "viewYourTimeline": "📖 타임라인 보기",
-  "howYourSocialLifeHas": "시간이 흐르며 달라진 나의 사회생활",
   "viewYourMemoryVaultsOneA11y": "추억 보관함 보기, 매치마다 하나씩",
   "memoryVault": "💫 추억 보관함",
   "savedMomentsOneCollectionPer": "저장한 순간들, 매치마다 한 모음",
@@ -1581,6 +1558,7 @@
   "goal.network": "네트워킹",
   "goal.exploreCity": "우리 동네 탐험",
   "goal.findCommunity": "커뮤니티 찾기",
-  "goal.getOutMore": "더 자주 외출하기"
+  "goal.getOutMore": "더 자주 외출하기",
+  "joinedNearbyOn": "{date}에 Nearby 가입"
  }
 }

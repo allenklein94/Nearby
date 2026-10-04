@@ -3,6 +3,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, UIManager, Switch } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
+import { joinedNearbyDate } from '../utils/joinedDate';
 import { useLanguage } from '../context/LanguageContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
 import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, setAsMainPhoto } from '../services/extraPhotos';
@@ -102,6 +103,8 @@ export default function ProfileScreen({ navigation, route }) {
   const { t, language } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [displayName, setDisplayName] = useState('');
+  const [joinedAt, setJoinedAt] = useState(null);
+  const joinedLabel = joinedNearbyDate(joinedAt, language);
   const [bio, setBio] = useState('');
   const [userId, setUserId] = useState(null);
   const [photoUrl, setPhotoUrl] = useState(null);
@@ -223,6 +226,7 @@ export default function ProfileScreen({ navigation, route }) {
     const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
     if (data) {
       setDisplayName(data.display_name || '');
+      setJoinedAt(data.created_at ?? null);
       setBio(data.bio || '');
       setPhotoVerified(!!data.photo_verified);
       setInterests(data.interests || []);
@@ -798,19 +802,9 @@ export default function ProfileScreen({ navigation, route }) {
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.yourStory')}</Text>
         {/* One-line subtitle per row. "Your Rewards" was folded into Discover -> Perks as a tier line (rule 14,
             2026-10-04); the perk tier is context for Perks, not a destination of its own. */}
-        <TouchableOpacity
-          style={styles.timelineLink}
-          onPress={() => navigation.navigate('Timeline')}
-          activeOpacity={0.85}
-          accessibilityLabel={t('ui.profile.viewYourTimelineHowYourA11y')}
-          accessibilityRole="button"
-        >
-          <View style={styles.timelineLinkTextCol}>
-            <Text style={styles.timelineLinkText}>{t('ui.profile.viewYourTimeline')}</Text>
-            <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.howYourSocialLifeHas')}</Text>
-          </View>
-          <Text style={styles.timelineLinkChevron}>›</Text>
-        </TouchableOpacity>
+        {/* Rule 14 (2026-10-04): the read-only Timeline screen is removed (past gatherings live in Plans -> Past, activity
+            in Momentum). Its one fact worth keeping is this quiet, non-interactive line, from profiles.created_at. */}
+        {joinedLabel && <Text style={styles.joinedLine}>{t('ui.profile.joinedNearbyOn', { date: joinedLabel })}</Text>}
         {/* Convergence pass P2 (CLAUDE.md): "Your Insights" and "Your
             Momentum" were two separate rows both answering "how am I
             doing?" -- merged into one destination (still the Momentum
@@ -1475,6 +1469,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   timelineLinkTextCol: { flex: 1 },
   timelineLinkText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
   timelineLinkSubtitle: { color: colors.textTertiary, fontSize: 11, marginTop: 2 },
+  joinedLine: { color: colors.textTertiary, fontSize: 13, marginBottom: spacing.sm },
   timelineLinkChevron: { color: colors.textTertiary, fontSize: 18, fontWeight: '700' },
   earnedStatsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   earnedStat: {

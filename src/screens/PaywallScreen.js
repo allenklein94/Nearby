@@ -80,8 +80,8 @@ export default function PaywallScreen({ navigation }) {
       {/* presentation: 'modal' relies on swipe-down (iOS) / hardware back
           (Android) to dismiss, with no visible affordance telling anyone
           either exists -- the same "reachable, no obvious way out" gap
-          found and fixed on FriendDiscoveryScreen/PlacesScreen/
-          TimelineScreen/AdminReportsScreen. A paywall specifically also
+          found and fixed on FriendDiscoveryScreen and other
+          screens (AdminReportsScreen). A paywall specifically also
           deserves an explicit close, standard for this kind of screen. */}
       <TouchableOpacity
         onPress={() => navigation.goBack()}

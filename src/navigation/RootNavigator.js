@@ -55,7 +55,6 @@ import AdminContentReviewScreen from '../screens/AdminContentReviewScreen';
 import BusinessConversationScreen from '../screens/BusinessConversationScreen';
 import BusinessProfileScreen from '../screens/BusinessProfileScreen';
 import EditGatheringScreen from '../screens/EditGatheringScreen';
-import TimelineScreen from '../screens/TimelineScreen';
 import ActivityScreen from '../screens/ActivityScreen';
 import GatheringsScreen from '../screens/GatheringsScreen';
 import GatheringDetailScreen from '../screens/GatheringDetailScreen';
@@ -591,7 +590,6 @@ export default function RootNavigator() {
             />
             <Stack.Screen name="BusinessProfile" component={BusinessProfileScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="EditGathering" component={EditGatheringScreen} options={{ headerShown: true, title: t('ui.nav.title.editGathering'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
-            <Stack.Screen name="Timeline" component={TimelineScreen} options={{ headerShown: false }} />
             <Stack.Screen name="FriendDiscovery" component={FriendDiscoveryScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
           </>
         )}

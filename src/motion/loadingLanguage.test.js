@@ -28,7 +28,7 @@ test('skeletons and the N loader are two distinct, both-present treatments (Item
 test('feeds of the user\'s own content use skeletons; finding/searching uses the N', () => {
   const fs = require('fs'); const path = require('path');
   const read = (f) => fs.readFileSync(path.join(__dirname, '../screens', f), 'utf8');
-  ['MatchesScreen.js', 'FriendsScreen.js', 'PlansScreen.js', 'TimelineScreen.js', 'ActivityScreen.js'].forEach((f) => {
+  ['MatchesScreen.js', 'FriendsScreen.js', 'PlansScreen.js', 'ActivityScreen.js'].forEach((f) => {
     expect(read(f)).toMatch(/<SkeletonFeed/);
   });
   ['HomeScreen.js', 'DiscoverHubScreen.js'].forEach((f) => {
