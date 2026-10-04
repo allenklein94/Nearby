@@ -63,7 +63,7 @@ import {
   SCORE_HAPPENING_NOW as WEATHER_BONUS,
   INTENT_SEARCH_TYPE_EMOJI, intentSearchDateLabel, intentSearchFallbackTitle, intentPhaseCaption,
 } from '../services/intentResolverScoring';
-import { isWeatherIndoorBiased, isWeatherOutdoorBiased, rankOffersByBusinessWeather } from '../utils/weatherBias';
+import { isWeatherIndoorBiased, isWeatherOutdoorBiased, rankOffersByBusinessWeather, weatherMention } from '../utils/weatherBias';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { PLACE_CATEGORIES } from '../constants/placeCategories';
@@ -915,9 +915,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // no new fetch.
   const weatherIndoorBias = isWeatherIndoorBiased(weatherSignal);
   const weatherOutdoorBias = isWeatherOutdoorBiased(weatherSignal);
-  const weatherBanner = weatherIndoorBias
+  // Item 193: the banner and the card reasons name the weather only when it materially changes the picks (weatherMention);
+  // ordinary good weather still nudges outdoor gatherings up through the bias above, silently.
+  const weatherSaid = weatherMention(weatherSignal);
+  const weatherBanner = weatherSaid === 'indoor'
     ? t('ui.discover.weatherIndoor')
-    : weatherOutdoorBias
+    : weatherSaid === 'outdoor'
       ? t('ui.discover.weatherOutdoor')
       : null;
 
@@ -941,10 +944,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const fit = getGatheringFitReasons(g);
     if (weatherIndoorBias && isIndoorCategory(g.interest_tag)) {
       fit.score += WEATHER_BONUS;
-      fit.reasons = [...fit.reasons, reasonText('goodForWeather')];
+      if (weatherSaid === 'indoor') fit.reasons = [...fit.reasons, reasonText('goodForWeather')];
     } else if (weatherOutdoorBias && isOutdoorCategory(g.interest_tag)) {
       fit.score += WEATHER_BONUS;
-      fit.reasons = [...fit.reasons, reasonText('greatWeatherForIt')];
+      if (weatherSaid === 'outdoor') fit.reasons = [...fit.reasons, reasonText('greatWeatherForIt')];
     }
     // Behavior (what this user actually opens/creates/joins) nudges the score as the account matures; declared interests are
     // already inside fit.score, so only the behavioral part is added here.

@@ -1,3 +1,4 @@
+import { gatheringWeatherWindow } from './weatherWindow';
 // Universal Signal Remediation Pass, P2 item 7 (CLAUDE.md, Aug 28 2026) --
 // one real, shared definition of "is the weather bad enough right now to
 // bias toward indoor" / "good enough to bias toward outdoor," replacing
@@ -61,6 +62,20 @@ export function isWeatherOutdoorBiased(weather) {
   if (!weather) return false;
   if (isWeatherIndoorBiased(weather)) return false;
   return weather.outdoor_favorable === true;
+}
+
+// Owner item 193 (2026-10-04, LOCKED): weather is MENTIONED only when it materially changes what is recommended. One rule for
+// every surface that talks about weather (Discover's banner + card reasons, the Gatherings feed banner; Home's card and reasons
+// already follow it through weatherRelevance / homeRecommendations):
+//   'indoor'  = indoor-worthy weather (the same signal that re-ranks: rain risk, heat, cold, a quiet forecast label)
+//   'outdoor' = an EXCEPTIONAL outdoor window right now (comfortable, clearly dry, daylight: weatherWindow's `exceptional`)
+//   null      = no meaningful effect: say nothing. Ordinary good weather still re-ranks silently (item 62); it is never named.
+export function weatherMention(weather, now = new Date()) {
+  if (!weather) return null;
+  if (isWeatherIndoorBiased(weather)) return 'indoor';
+  if (!isWeatherOutdoorBiased(weather)) return null;
+  const w = gatheringWeatherWindow(weather, now.toISOString());
+  return w && w.bias === 'outdoor' && w.exceptional === true ? 'outdoor' : null;
 }
 
 // Item 63: a business's own weather_setting ('indoor' | 'outdoor' | 'weather_dependent' | null) against today's weather.

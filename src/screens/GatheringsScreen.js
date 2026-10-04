@@ -37,7 +37,7 @@ import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { isIndoorCategory, isOutdoorCategory, filterGatheringsByEnvironment } from '../constants/gatheringIndoorOutdoor';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { getSocialForecast } from '../services/homeDashboard';
-import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
+import { isWeatherIndoorBiased, isWeatherOutdoorBiased, weatherMention } from '../utils/weatherBias';
 import { DATE_OPTIONS, matchesDateFilter } from '../utils/gatheringDateFilter';
 import { attendeeTotal, gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { useTheme } from '../context/ThemeContext';
@@ -425,13 +425,13 @@ export default function GatheringsScreen({ navigation, route }) {
   };
   // Weather is one tier of the feed's order (below friends, room, today and interests), so the banner says it moves options
   // up, never that they come first.
-  const weatherBanner = weatherSignal
-    ? (isWeatherIndoorBiased(weatherSignal)
-        ? t('ui.gatherings.weatherIndoor')
-        : isWeatherOutdoorBiased(weatherSignal)
-          ? t('ui.gatherings.weatherOutdoor')
-          : null)
-    : null;
+  // Item 193: named only when it materially changes the picks; ordinary good weather re-ranks silently.
+  const weatherSaid = weatherMention(weatherSignal);
+  const weatherBanner = weatherSaid === 'indoor'
+    ? t('ui.gatherings.weatherIndoor')
+    : weatherSaid === 'outdoor'
+      ? t('ui.gatherings.weatherOutdoor')
+      : null;
   // FilterTransition (the Nearby Motion System, CLAUDE.md Item 116): a
   // results-reorganizing cue on the nearby tab whenever a real filter chip
   // changes (When/category/trending/environment/price/party-type) -- these
