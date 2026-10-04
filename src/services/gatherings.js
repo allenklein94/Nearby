@@ -60,7 +60,7 @@ const tierMaxMiles = (tier) => boundedSearchMiles(tier === 'local' ? LOCAL_TIER_
 // unknown, never a guessed value" convention. Added here (the one shared
 // select list every gathering-fetching function already reads from) so
 // every caller starts returning them for free, no per-call-site change.
-const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity, ask_local_businesses, price_level, party_type, show_group_insights, requires_approval, host_notifications, allow_attendee_invites, discoverable, equipment_provided, duration_minutes, genre, format, skill_level, effort_level, features, suited_age_min, suited_age_max';
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity, ask_local_businesses, price_level, party_type, show_group_insights, requires_approval, host_notifications, allow_attendee_invites, discoverable, equipment_provided, duration_minutes, genre, format, skill_level, effort_level, features, suited_age_min, suited_age_max, ticket_required';
 
 // ask_local_businesses only ever stores the host's real consent/intent at
 // creation time -- it does NOT itself create a business_requests row. A
@@ -74,7 +74,7 @@ const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, sc
 // exists, from GatheringDetailScreen's own "Ready to see what's
 // available?" banner (or the existing manual "Ask Local Businesses" link)
 // -- see submitBusinessRequestForGathering() in businessFulfillment.js.
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null, showGroupInsights = true, requiresApproval = false, allowAttendeeInvites = true, hostNotifications = true, discoverable = true, equipmentProvided = null, durationMinutes = null, genre = null, format = null, skillLevel = null, effortLevel = null, features = [], suitedAgeMin = null, suitedAgeMax = null, submissionId = null }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null, showGroupInsights = true, requiresApproval = false, allowAttendeeInvites = true, hostNotifications = true, discoverable = true, equipmentProvided = null, ticketRequired = false, durationMinutes = null, genre = null, format = null, skillLevel = null, effortLevel = null, features = [], suitedAgeMin = null, suitedAgeMax = null, submissionId = null }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -119,6 +119,7 @@ export async function createGathering({ title, description, interestTag, schedul
       allow_attendee_invites: allowAttendeeInvites,
       host_notifications: hostNotifications,
       equipment_provided: equipmentProvided ?? null,
+      ticket_required: ticketRequired === true,
       features: cleanFeatures(features),
       suited_age_min: cleanAgeRange(suitedAgeMin, suitedAgeMax).min,
       suited_age_max: cleanAgeRange(suitedAgeMin, suitedAgeMax).max,
@@ -801,7 +802,7 @@ export async function setGatheringCapacity(gatheringId, capacity) {
   return data;
 }
 
-export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps, showGroupInsights, requiresApproval, askLocalBusinesses, hostNotifications, allowAttendeeInvites, discoverable, equipmentProvided, durationMinutes, genre, format, skillLevel, effortLevel, features, suitedAgeMin, suitedAgeMax }) {
+export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps, showGroupInsights, requiresApproval, askLocalBusinesses, hostNotifications, allowAttendeeInvites, discoverable, equipmentProvided, ticketRequired, durationMinutes, genre, format, skillLevel, effortLevel, features, suitedAgeMin, suitedAgeMax }) {
   const { error } = await supabase
     .from('gatherings')
     .update({
@@ -811,6 +812,7 @@ export async function updateGathering(gatheringId, { title, description, schedul
       ...(hostNotifications === undefined ? {} : { host_notifications: hostNotifications }),
       ...(allowAttendeeInvites === undefined ? {} : { allow_attendee_invites: allowAttendeeInvites }),
       ...(equipmentProvided === undefined ? {} : { equipment_provided: equipmentProvided }),
+      ...(ticketRequired === undefined ? {} : { ticket_required: ticketRequired === true }),
       ...(features === undefined ? {} : { features: cleanFeatures(features) }),
       ...(suitedAgeMin === undefined && suitedAgeMax === undefined ? {} : { suited_age_min: cleanAgeRange(suitedAgeMin, suitedAgeMax).min, suited_age_max: cleanAgeRange(suitedAgeMin, suitedAgeMax).max }),
       ...(durationMinutes === undefined ? {} : { duration_minutes: durationMinutes }),

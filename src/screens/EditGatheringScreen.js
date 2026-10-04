@@ -55,6 +55,7 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [conversationLevel, setConversationLevel] = useState(gathering.conversation_level ?? null);
   const [groupSizeFeel, setGroupSizeFeel] = useState(gathering.group_size_feel ?? null);
   const [equipmentProvided, setEquipmentProvided] = useState(gathering.equipment_provided ?? null);
+  const [ticketRequired, setTicketRequired] = useState(gathering.ticket_required === true); // item 188
   const [features, setFeatures] = useState(cleanFeatures(gathering.features));
   const [ageMin, setAgeMin] = useState(cleanAgeRange(gathering.suited_age_min, gathering.suited_age_max).min);
   const [ageMax, setAgeMax] = useState(cleanAgeRange(gathering.suited_age_min, gathering.suited_age_max).max);
@@ -151,6 +152,7 @@ export default function EditGatheringScreen({ route, navigation }) {
         conversationLevel,
         groupSizeFeel,
         equipmentProvided,
+        ticketRequired,
         features,
         suitedAgeMin: ageMin,
         suitedAgeMax: ageMax,
@@ -319,6 +321,13 @@ export default function EditGatheringScreen({ route, navigation }) {
           </View>
 
           <AgeRangePicker min={ageMin} max={ageMax} onChange={(a, b) => { setAgeMin(a); setAgeMax(b); }} />
+
+          {/* Item 188: informational only. Nearby sells no tickets and this changes no join, capacity or ranking rule. */}
+          <View style={styles.toggleRow}>
+            <Text style={styles.label}>{t('ui.gatheringForm.ticket')}</Text>
+            <Switch value={ticketRequired} onValueChange={setTicketRequired} accessibilityLabel={t('ui.gatheringForm.ticket')} />
+          </View>
+          <Text style={styles.subheader}>{t('ui.gatheringForm.ticketHelp')}</Text>
 
           <Text style={styles.label}>{t('ui.gatheringForm.equipment')}</Text>
           <View style={styles.chipsWrap}>

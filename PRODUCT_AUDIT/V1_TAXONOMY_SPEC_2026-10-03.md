@@ -921,7 +921,7 @@ value, routing, request, ranking or taxonomy change; the gathering's place stays
 discovery context). Edit's fill-only category picker (item 64) is unchanged. Tests: `gatheringInference.test.js` (item 187
 block), `askToCreate.test.js`, `closedLoop.test.js`. Not device-tested (parse-checked); business web export regenerated.
 
-## Item 188: Events (PROPOSED 2026-10-04; conflicts with item 174 and the parked age rule flagged)
+## Item 188: Events (LOCKED + APPLIED 2026-10-04)
 
 **Conflict, flagged rather than changed silently:** item 174 (LOCKED) says an event is a gathering + `format`, never a
 separate Event object, Events category or second lifecycle. "Events need another model" would reverse that. Mapping the
@@ -947,4 +947,16 @@ owner's example shows the existing gathering already carries almost all of it, s
 3. **Selling tickets in Nearby:** not recommended (real money: Stripe approvals; and the creep guard against reservation /
    ticketing platforms).
 
-Nothing built for item 188 pending the owner's choice.
+**Owner decision (2026-10-04, LOCKED):** (1) item 174 stands: an event is a gathering + `format`, one canonical record read
+by id everywhere. Capacity = total people incl. the host, no upper limit, waitlist once full; no second capacity field and
+never derived from People / purpose / category (the 5-secondary-category cap is a business taxonomy rule, unrelated).
+(2) **Ticketing option 1 APPLIED** (migration `20270282`, live): `gatherings.ticket_required boolean not null default
+false`, host-written through the existing RLS (verified live rolled-back: the host updates, a stranger updates 0 rows; the
+25 existing gatherings unchanged). Create (Details) toggle + Edit switch "🎟️ Ticket needed, bought separately" with
+"Just lets people know. Nearby doesn't sell tickets, and joining here doesn't include one."; shown in the gathering's
+practical facts (card + detail) only when on; 11 languages (machine-authored). Nearby sells nothing, collects nothing,
+links nowhere, holds no inventory; no join / capacity / waitlist / ranking / routing / recommendation / business-matching
+code reads it (guard `src/utils/ticketRequired.test.js`: only the gathering service, display and the two screens touch it;
+no function, policy, view, trigger or edge function). (3) **Age stays parked:** no age field or logic in V1; if revisited,
+first define whether it means an age restriction, a recommended age or an audience. Not device-tested (parse-checked);
+business web export regenerated.

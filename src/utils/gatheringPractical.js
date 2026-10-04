@@ -67,6 +67,8 @@ export function practicalFacts(g) {
   else if (g?.equipment_provided === false) out.push('🎒 Bring your own equipment');
   const d = durationLabel(g?.duration_minutes);
   if (d) out.push(`⏱️ About ${d}`);
+  // Item 188: a declared fact only; Nearby never sells or links to tickets.
+  if (g?.ticket_required === true) out.push('🎟️ Ticket needed, bought separately');
   const genre = genreLabel(g?.genre);
   if (genre) out.unshift(`🎵 ${genre}`);
   // Item 66: the host-declared format leads (how it runs), never inferred from the category.

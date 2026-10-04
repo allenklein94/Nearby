@@ -53,7 +53,7 @@ describe('suited age range (item 50)', () => {
     const mig = r('supabase/migrations/20270199_suited_age_range.sql');
     expect(mig).toMatch(/suited_age_min <= suited_age_max/);
     expect(mig).toMatch(/managed_partner_id = partner_id_param/);
-    expect(r('src/services/gatherings.js')).toMatch(/suited_age_min, suited_age_max'/);
+    expect(r('src/services/gatherings.js')).toMatch(/suited_age_min, suited_age_max\b/);
     for (const f of ['CreateGatheringScreen', 'EditGatheringScreen']) expect(r(`src/screens/${f}.js`)).toMatch(/AgeRangePicker/);
     expect(r('src/screens/BusinessDashboardScreen.js')).toMatch(/setBusinessSuitedAges/);
     expect(r('src/services/intentResolver.js')).toMatch(/askedChildAges/);

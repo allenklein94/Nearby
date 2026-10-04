@@ -190,6 +190,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [askLocalBusinesses, setAskLocalBusinesses] = useState(false);
   const [priceLevel, setPriceLevel] = useState(null);
   const [equipmentProvided, setEquipmentProvided] = useState(null);
+  const [ticketRequired, setTicketRequired] = useState(false); // item 188: a declared fact only
   const [features, setFeatures] = useState([]);
   const [ageMin, setAgeMin] = useState(null);
   const [ageMax, setAgeMax] = useState(null);
@@ -211,7 +212,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
     step, title, description, interestTag, visibility, discoverable, communityId,
     scheduledAt: scheduledAt instanceof Date ? scheduledAt.toISOString() : null, whenPreset,
     locationMode, customLocation, placeName, showOnMap, womenOnly, recurrenceRule, capacityOption, capacityCustom,
-    askLocalBusinesses, priceLevel, partyType, showGroupInsights, allowAttendeeInvites, hostNotifications, requiresApproval, inviteIds, equipmentProvided, durationMinutes, genre, format, skillLevel, effortLevel, features, ageMin, ageMax,
+    askLocalBusinesses, priceLevel, partyType, showGroupInsights, allowAttendeeInvites, hostNotifications, requiresApproval, inviteIds, equipmentProvided, ticketRequired, durationMinutes, genre, format, skillLevel, effortLevel, features, ageMin, ageMax,
   };
   const gatheringDraft = useFormDraft('gathering', gatheringSnapshot, {
     isEmpty: (d) => !String(d.title ?? '').trim() && !String(d.description ?? '').trim(),
@@ -226,7 +227,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
     setLocationMode(d.locationMode ?? 'near_me'); setCustomLocation(d.customLocation ?? null); setPlaceName(d.placeName ?? null);
     setShowOnMap(d.showOnMap !== false); setWomenOnly(!!d.womenOnly); setRecurrenceRule(d.recurrenceRule ?? null);
     setCapacityOption(d.capacityOption ?? 'no_limit'); setCapacityCustom(d.capacityCustom ?? 15);
-    setAskLocalBusinesses(!!d.askLocalBusinesses); setPriceLevel(d.priceLevel ?? null); setEquipmentProvided(d.equipmentProvided ?? null); setDurationMinutes(d.durationMinutes ?? null); setGenre(d.genre ?? null); setFormat(d.format ?? null); setSkillLevel(d.skillLevel ?? null); setEffortLevel(d.effortLevel ?? null); setFeatures(cleanFeatures(d.features)); setAgeMin(cleanAgeRange(d.ageMin, d.ageMax).min); setAgeMax(cleanAgeRange(d.ageMin, d.ageMax).max); setPartyType(d.partyType ?? null);
+    setAskLocalBusinesses(!!d.askLocalBusinesses); setPriceLevel(d.priceLevel ?? null); setEquipmentProvided(d.equipmentProvided ?? null); setTicketRequired(d.ticketRequired === true); setDurationMinutes(d.durationMinutes ?? null); setGenre(d.genre ?? null); setFormat(d.format ?? null); setSkillLevel(d.skillLevel ?? null); setEffortLevel(d.effortLevel ?? null); setFeatures(cleanFeatures(d.features)); setAgeMin(cleanAgeRange(d.ageMin, d.ageMax).min); setAgeMax(cleanAgeRange(d.ageMin, d.ageMax).max); setPartyType(d.partyType ?? null);
     setShowGroupInsights(d.showGroupInsights !== false); setAllowAttendeeInvites(d.allowAttendeeInvites !== false);
     setHostNotifications(d.hostNotifications !== false); setRequiresApproval(!!d.requiresApproval);
     setInviteIds(d.inviteIds && typeof d.inviteIds === 'object' ? d.inviteIds : {});
@@ -448,6 +449,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         askLocalBusinesses,
         priceLevel,
         equipmentProvided,
+        ticketRequired,
         features,
         suitedAgeMin: ageMin,
         suitedAgeMax: ageMax,
@@ -845,6 +847,19 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 </View>
 
                 <AgeRangePicker min={ageMin} max={ageMax} onChange={(a, b) => { setAgeMin(a); setAgeMax(b); }} />
+
+                {/* Item 188: informational only. Nearby sells no tickets and this changes no join, capacity or ranking rule. */}
+                <TouchableOpacity
+                  style={styles.womenOnlyToggle}
+                  onPress={() => { Haptics.selectionAsync(); setTicketRequired((v) => !v); }}
+                  activeOpacity={0.85}
+                  accessibilityLabel={t('ui.gatheringForm.ticket')}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: ticketRequired }}
+                >
+                  <Text style={styles.womenOnlyToggleText}>{ticketRequired ? '✓ ' : ''}{t('ui.gatheringForm.ticket')}</Text>
+                </TouchableOpacity>
+                <Text style={styles.subLabel}>{t('ui.gatheringForm.ticketHelp')}</Text>
 
                 <Text style={styles.label}>{t('ui.gatheringForm.equipment')}</Text>
                 <View style={styles.chipsWrap}>

@@ -62,7 +62,8 @@
   "hostLabel": "Host:",
   "fact.byoEquipment": "Bring your own equipment",
   "fact.about": "About {duration}",
-  "fact.effort": "{level} effort"
+  "fact.effort": "{level} effort",
+  "fact.ticketNeeded": "Ticket needed, bought separately"
  },
  "es": {
   "gatheringFull": "Reunión llena",
@@ -127,7 +128,8 @@
   "hostLabel": "Anfitrión:",
   "fact.byoEquipment": "Trae tu propio equipo",
   "fact.about": "Aprox. {duration}",
-  "fact.effort": "Esfuerzo: {level}"
+  "fact.effort": "Esfuerzo: {level}",
+  "fact.ticketNeeded": "Se necesita entrada, se compra aparte"
  },
  "de": {
   "gatheringFull": "Treffen voll",
@@ -192,7 +194,8 @@
   "hostLabel": "Gastgeber:",
   "fact.byoEquipment": "Eigene Ausrüstung mitbringen",
   "fact.about": "Etwa {duration}",
-  "fact.effort": "Anstrengung: {level}"
+  "fact.effort": "Anstrengung: {level}",
+  "fact.ticketNeeded": "Ticket nötig, separat zu kaufen"
  },
  "fr": {
   "gatheringFull": "Rencontre complète",
@@ -257,7 +260,8 @@
   "hostLabel": "Hôte :",
   "fact.byoEquipment": "Apporte ton propre matériel",
   "fact.about": "Environ {duration}",
-  "fact.effort": "Effort : {level}"
+  "fact.effort": "Effort : {level}",
+  "fact.ticketNeeded": "Billet nécessaire, acheté séparément"
  },
  "pt": {
   "gatheringFull": "Encontro lotado",
@@ -322,7 +326,8 @@
   "hostLabel": "Anfitrião:",
   "fact.byoEquipment": "Traga seu próprio equipamento",
   "fact.about": "Cerca de {duration}",
-  "fact.effort": "Esforço: {level}"
+  "fact.effort": "Esforço: {level}",
+  "fact.ticketNeeded": "Ingresso necessário, comprado à parte"
  },
  "ht": {
   "gatheringFull": "Rasanbleman an plen",
@@ -387,7 +392,8 @@
   "hostLabel": "Òganizatè:",
   "fact.byoEquipment": "Pote pwòp ekipman ou",
   "fact.about": "Anviwon {duration}",
-  "fact.effort": "Efò: {level}"
+  "fact.effort": "Efò: {level}",
+  "fact.ticketNeeded": "Bezwen tikè, achte apa"
  },
  "zh": {
   "gatheringFull": "聚会已满",
@@ -452,7 +458,8 @@
   "hostLabel": "主办人：",
   "fact.byoEquipment": "自带装备",
   "fact.about": "约 {duration}",
-  "fact.effort": "强度：{level}"
+  "fact.effort": "强度：{level}",
+  "fact.ticketNeeded": "需要门票，需另行购买"
  },
  "vi": {
   "gatheringFull": "Buổi gặp mặt đã đủ người",
@@ -517,7 +524,8 @@
   "hostLabel": "Người tổ chức:",
   "fact.byoEquipment": "Tự mang dụng cụ",
   "fact.about": "Khoảng {duration}",
-  "fact.effort": "Mức sức: {level}"
+  "fact.effort": "Mức sức: {level}",
+  "fact.ticketNeeded": "Cần vé, mua riêng"
  },
  "tl": {
   "gatheringFull": "Puno na ang gathering",
@@ -582,7 +590,8 @@
   "hostLabel": "Host:",
   "fact.byoEquipment": "Magdala ng sariling gamit",
   "fact.about": "Mga {duration}",
-  "fact.effort": "Hirap: {level}"
+  "fact.effort": "Hirap: {level}",
+  "fact.ticketNeeded": "Kailangan ng tiket, hiwalay na binibili"
  },
  "ru": {
   "gatheringFull": "Встреча заполнена",
@@ -647,7 +656,8 @@
   "hostLabel": "Организатор:",
   "fact.byoEquipment": "Свой инвентарь",
   "fact.about": "Около {duration}",
-  "fact.effort": "Нагрузка: {level}"
+  "fact.effort": "Нагрузка: {level}",
+  "fact.ticketNeeded": "Нужен билет, покупается отдельно"
  },
  "ko": {
   "gatheringFull": "모임 정원 마감",
@@ -712,6 +722,7 @@
   "hostLabel": "호스트:",
   "fact.byoEquipment": "장비 개별 지참",
   "fact.about": "약 {duration}",
-  "fact.effort": "강도: {level}"
+  "fact.effort": "강도: {level}",
+  "fact.ticketNeeded": "티켓 필요, 별도 구매"
  }
 }

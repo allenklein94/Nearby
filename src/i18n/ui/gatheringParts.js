@@ -66,6 +66,7 @@ export default {
       byoEquipment: "Bring your own equipment",
       about: "About {duration}",
       effort: "{level} effort",
+      ticketNeeded: "Ticket needed, bought separately",
     },
   },
   es: {
@@ -133,6 +134,7 @@ export default {
       byoEquipment: "Trae tu propio equipo",
       about: "Aprox. {duration}",
       effort: "Esfuerzo: {level}",
+      ticketNeeded: "Se necesita entrada, se compra aparte",
     },
   },
   de: {
@@ -200,6 +202,7 @@ export default {
       byoEquipment: "Eigene Ausrüstung mitbringen",
       about: "Etwa {duration}",
       effort: "Anstrengung: {level}",
+      ticketNeeded: "Ticket nötig, separat zu kaufen",
     },
   },
   fr: {
@@ -267,6 +270,7 @@ export default {
       byoEquipment: "Apporte ton propre matériel",
       about: "Environ {duration}",
       effort: "Effort : {level}",
+      ticketNeeded: "Billet nécessaire, acheté séparément",
     },
   },
   pt: {
@@ -334,6 +338,7 @@ export default {
       byoEquipment: "Traga seu próprio equipamento",
       about: "Cerca de {duration}",
       effort: "Esforço: {level}",
+      ticketNeeded: "Ingresso necessário, comprado à parte",
     },
   },
   ht: {
@@ -401,6 +406,7 @@ export default {
       byoEquipment: "Pote pwòp ekipman ou",
       about: "Anviwon {duration}",
       effort: "Efò: {level}",
+      ticketNeeded: "Bezwen tikè, achte apa",
     },
   },
   zh: {
@@ -468,6 +474,7 @@ export default {
       byoEquipment: "自带装备",
       about: "约 {duration}",
       effort: "强度：{level}",
+      ticketNeeded: "需要门票，需另行购买",
     },
   },
   vi: {
@@ -535,6 +542,7 @@ export default {
       byoEquipment: "Tự mang dụng cụ",
       about: "Khoảng {duration}",
       effort: "Mức sức: {level}",
+      ticketNeeded: "Cần vé, mua riêng",
     },
   },
   tl: {
@@ -602,6 +610,7 @@ export default {
       byoEquipment: "Magdala ng sariling gamit",
       about: "Mga {duration}",
       effort: "Hirap: {level}",
+      ticketNeeded: "Kailangan ng tiket, hiwalay na binibili",
     },
   },
   ru: {
@@ -669,6 +678,7 @@ export default {
       byoEquipment: "Свой инвентарь",
       about: "Около {duration}",
       effort: "Нагрузка: {level}",
+      ticketNeeded: "Нужен билет, покупается отдельно",
     },
   },
   ko: {
@@ -736,6 +746,7 @@ export default {
       byoEquipment: "장비 개별 지참",
       about: "약 {duration}",
       effort: "강도: {level}",
+      ticketNeeded: "티켓 필요, 별도 구매",
     },
   },
 };

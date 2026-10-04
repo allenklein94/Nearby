@@ -49,6 +49,8 @@ export default {
       "time": "Time",
       "people": "People"
     },
+    "ticket": "🎟️ Ticket needed, bought separately",
+    "ticketHelp": "Just lets people know. Nearby doesn't sell tickets, and joining here doesn't include one.",
     "hideSummaryA11y": "Hide this summary",
     "hide": "Hide",
     "whenQ": "When?",
@@ -244,6 +246,8 @@ export default {
       "time": "Hora",
       "people": "Personas"
     },
+    "ticket": "🎟️ Se necesita entrada, se compra aparte",
+    "ticketHelp": "Solo es un aviso. Nearby no vende entradas y unirte aquí no incluye una.",
     "hideSummaryA11y": "Ocultar este resumen",
     "hide": "Ocultar",
     "whenQ": "¿Cuándo?",
@@ -439,6 +443,8 @@ export default {
       "time": "Zeit",
       "people": "Personen"
     },
+    "ticket": "🎟️ Ticket nötig, separat zu kaufen",
+    "ticketHelp": "Nur ein Hinweis. Nearby verkauft keine Tickets, und die Teilnahme hier enthält keins.",
     "hideSummaryA11y": "Diese Zusammenfassung ausblenden",
     "hide": "Ausblenden",
     "whenQ": "Wann?",
@@ -634,6 +640,8 @@ export default {
       "time": "Moment",
       "people": "Personnes"
     },
+    "ticket": "🎟️ Billet nécessaire, acheté séparément",
+    "ticketHelp": "Simple information. Nearby ne vend pas de billets, et rejoindre ici n’en inclut pas.",
     "hideSummaryA11y": "Masquer ce résumé",
     "hide": "Masquer",
     "whenQ": "Quand ?",
@@ -829,6 +837,8 @@ export default {
       "time": "Horário",
       "people": "Pessoas"
     },
+    "ticket": "🎟️ Ingresso necessário, comprado à parte",
+    "ticketHelp": "Só um aviso. A Nearby não vende ingressos, e participar aqui não inclui um.",
     "hideSummaryA11y": "Ocultar este resumo",
     "hide": "Ocultar",
     "whenQ": "Quando?",
@@ -1024,6 +1034,8 @@ export default {
       "time": "Lè",
       "people": "Moun"
     },
+    "ticket": "🎟️ Bezwen tikè, achte apa",
+    "ticketHelp": "Se jis yon enfòmasyon. Nearby pa vann tikè, epi rantre isit la pa gen tikè ladan l.",
     "hideSummaryA11y": "Kache rezime sa a",
     "hide": "Kache",
     "whenQ": "Kilè?",
@@ -1219,6 +1231,8 @@ export default {
       "time": "时间",
       "people": "人数"
     },
+    "ticket": "🎟️ 需要门票，需另行购买",
+    "ticketHelp": "仅作提示。Nearby 不售票，在这里加入也不包含门票。",
     "hideSummaryA11y": "隐藏此摘要",
     "hide": "隐藏",
     "whenQ": "什么时候？",
@@ -1414,6 +1428,8 @@ export default {
       "time": "Thời gian",
       "people": "Số người"
     },
+    "ticket": "🎟️ Cần vé, mua riêng",
+    "ticketHelp": "Chỉ để mọi người biết. Nearby không bán vé, và tham gia ở đây không kèm vé.",
     "hideSummaryA11y": "Ẩn phần tóm tắt này",
     "hide": "Ẩn",
     "whenQ": "Khi nào?",
@@ -1609,6 +1625,8 @@ export default {
       "time": "Oras",
       "people": "Tao"
     },
+    "ticket": "🎟️ Kailangan ng tiket, hiwalay na binibili",
+    "ticketHelp": "Paalala lang. Hindi nagbebenta ng tiket ang Nearby, at hindi kasama ang tiket sa pagsali rito.",
     "hideSummaryA11y": "Itago ang buod na ito",
     "hide": "Itago",
     "whenQ": "Kailan?",
@@ -1804,6 +1822,8 @@ export default {
       "time": "Время",
       "people": "Люди"
     },
+    "ticket": "🎟️ Нужен билет, покупается отдельно",
+    "ticketHelp": "Просто для сведения. Nearby не продаёт билеты, и участие здесь билет не включает.",
     "hideSummaryA11y": "Скрыть эту сводку",
     "hide": "Скрыть",
     "whenQ": "Когда?",
@@ -1999,6 +2019,8 @@ export default {
       "time": "시간",
       "people": "인원"
     },
+    "ticket": "🎟️ 티켓 필요, 별도 구매",
+    "ticketHelp": "안내용이에요. Nearby는 티켓을 팔지 않고, 여기서 참여해도 티켓은 포함되지 않아요.",
     "hideSummaryA11y": "이 요약 숨기기",
     "hide": "숨기기",
     "whenQ": "언제?",

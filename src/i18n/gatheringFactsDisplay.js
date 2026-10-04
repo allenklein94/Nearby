@@ -17,6 +17,7 @@ export function practicalFactsIn(g, language) {
   if (g?.equipment_provided === true) out.push(`🎾 ${o('equipment.provided')}`);
   else if (g?.equipment_provided === false) out.push(`🎒 ${f('byoEquipment')}`);
   if (durationLabel(g?.duration_minutes)) out.push(`⏱️ ${f('about', { duration: localDuration(g.duration_minutes, language) })}`);
+  if (g?.ticket_required === true) out.push(`🎟️ ${f('ticketNeeded')}`);
   if (genreLabel(g?.genre)) out.unshift(`🎵 ${o(`genre.${g.genre}`)}`);
   const fmt = formatLabel(g?.format) ? `${formatIcon(g.format)} ${o(`format.${g.format}`)}` : null;
   if (fmt) out.unshift(fmt);
