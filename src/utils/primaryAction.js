@@ -43,7 +43,8 @@ const A = (key) => tr(`ui.actions.${key}`);
 // Business dashboard labels (business dashboard localization, phase 6): ui.bizHelp.cta, English = the locked copy.
 const H = (key) => tr(`ui.bizHelp.cta.${key}`);
 
-// Returns { kind, label, showView }.
+// Returns { kind, label, status?, state }. One explicit action per compact card (owner item 200, LOCKED): the whole card opens the
+// gathering, so View is never a second button beside a real action; it is the action only when nothing stronger exists.
 //   kind: 'interested' (private maybe, toggles) | 'join' (opens the normal join confirmation on the detail screen) | 'view_plan' | 'requested' | 'view'
 // opts.lowCommitment (Trending: popular nearby, not personal): an open join becomes the private "I'm Interested"
 // (opts.interestedIds = the viewer's own Interested gathering ids); Join stays reachable through View.
@@ -63,7 +64,7 @@ export function gatheringPrimaryAction(gathering, myUserId, now = Date.now(), op
 }
 
 function gatheringActionFromState(gathering, myUserId, now, opts) {
-  const view = { kind: 'view', label: A('view'), showView: false };
+  const view = { kind: 'view', label: A('view') };
   if (!gathering) return view;
   // Attendance rows tell us the viewer's state; without them we cannot know it: offer only View, never a wrong "Join".
   const known = Boolean(myUserId) && Array.isArray(gathering.attendees);
@@ -83,11 +84,11 @@ function gatheringActionFromState(gathering, myUserId, now, opts) {
     return view;
   }
 
-  if (relation === 'hosting') return { kind: 'view_plan', label: A('viewPlan'), status: A('hosting'), showView: false };
+  if (relation === 'hosting') return { kind: 'view_plan', label: A('viewPlan'), status: A('hosting') };
   if (!known) return view;
-  if (relation === 'attending') return { kind: 'view_plan', label: A('viewPlan'), status: A('going'), showView: false };
-  if (relation === 'requested') return { kind: 'requested', label: A('requested'), status: A('requested'), showView: true };
-  if (relation === 'waitlisted') return { kind: 'requested', label: A('onWaitlist'), status: A('onWaitlist'), showView: true };
+  if (relation === 'attending') return { kind: 'view_plan', label: A('viewPlan'), status: A('going') };
+  if (relation === 'requested') return { kind: 'requested', label: A('requested'), status: A('requested') };
+  if (relation === 'waitlisted') return { kind: 'requested', label: A('onWaitlist'), status: A('onWaitlist') };
 
   if (!canDo('gathering', lifecycle, 'join') && !canDo('gathering', lifecycle, 'request')) return view;
 
@@ -96,13 +97,13 @@ function gatheringActionFromState(gathering, myUserId, now, opts) {
 
   if (opts.lowCommitment && opts.interestedIds) {
     const on = opts.interestedIds.has(gathering.id);
-    return { kind: 'interested', label: on ? A('interestedOn') : A('interestedOff'), on, showView: true };
+    return { kind: 'interested', label: on ? A('interestedOn') : A('interestedOff'), on };
   }
 
   // Server count first: a non-member only receives friends' rows (item 75), so the visible rows are not the total.
   const visibleApproved = gathering.attendees.filter((a) => a.status === 'approved').length;
   const isFull = isGatheringFull(gathering, Math.max(attendeeTotal(gathering), visibleApproved));
-  return { ...gatheringJoinAction(gathering, { isFull, interested: opts.interestedIds?.has?.(gathering.id) === true }), showView: true };
+  return { ...gatheringJoinAction(gathering, { isFull, interested: opts.interestedIds?.has?.(gathering.id) === true }) };
 }
 
 // The join button's words, from the gathering's state: full -> Join Waitlist, approval/non-public -> Request to Join, else Join

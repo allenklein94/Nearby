@@ -468,6 +468,8 @@ export default function HomeScreen({ navigation }) {
     return gatheringCardModel(g, { signals, myUserId, language, actionOpts: variant === 'trending' ? { lowCommitment: true, interestedIds: interestedSet } : {} });
   }
 
+  // Item 200 (owner, LOCKED): ONE explicit action per compact card (Join / Request to Join / Join Waitlist / I'm Interested on
+  // Trending / View Plan), or a status line; never a second View button beside it: the whole card already opens the gathering.
   function renderGatheringCta(g, card, variant) {
     const action = card.action;
     if (!action) return null;
@@ -475,8 +477,6 @@ export default function HomeScreen({ navigation }) {
     const hero = variant === 'hero';
     const primaryStyle = hero ? styles.heroCta : styles.rowCta;
     const primaryText = hero ? styles.heroCtaText : styles.rowCtaText;
-    const viewStyle = hero ? [styles.heroCta, styles.heroCtaGhost] : styles.rowCtaGhost;
-    const viewText = hero ? styles.heroCtaText : styles.rowCtaGhostText;
     if (action.kind === 'view' || action.kind === 'view_plan') {
       return (
         <TouchableOpacity style={primaryStyle} onPress={() => openDetail()} accessibilityRole="button" accessibilityLabel={`${action.label} ${g.title}`}>
@@ -497,9 +497,6 @@ export default function HomeScreen({ navigation }) {
         ) : (
           <Text style={hero ? styles.heroMeta : styles.trendingMeta}>{action.label}</Text>
         )}
-        <TouchableOpacity style={viewStyle} onPress={() => openDetail()} accessibilityRole="button" accessibilityLabel={t('ui.home.viewTitleA11y', { title: g.title })}>
-          <Text style={viewText}>{t('ui.actions.view')}</Text>
-        </TouchableOpacity>
       </View>
     );
   }
@@ -2992,7 +2989,6 @@ const getStyles = (colors) => StyleSheet.create({
     paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2,
   },
   heroCtaText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
-  heroCtaGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(255,255,255,0.85)' },
   ctaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   rowCta: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, alignSelf: 'flex-start' },
   rowCtaText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
