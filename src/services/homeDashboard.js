@@ -2,7 +2,7 @@ import { tr } from '../i18n/translate';
 import { supabase } from './supabase';
 import { getNearbyMatches } from './proximity';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
-import { getNearbyGatherings, getMyInterestedGatherings, pickBestGathering, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
+import { getNearbyGatherings, getMyInterestedGatherings, getApprovedCounts, pickBestGathering, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
 import { gatheringEnvironment } from '../constants/environmentMatch';
 import { createWeatherLoader } from './weatherLoader';
 import { getMyGroupPlans } from './groupPlans';
@@ -370,7 +370,7 @@ export async function getOnboardingRecommendations() {
 
   const { data: gatherings } = await supabase
     .from('gatherings')
-    .select('id, title, interest_tag, scheduled_at, host_id, profiles!gatherings_host_id_fkey(display_name)')
+    .select('id, title, interest_tag, scheduled_at, host_id, capacity, visibility, is_public, requires_approval, profiles!gatherings_host_id_fkey(display_name), attendees:gathering_interest(status, user_id)')
     .eq('wide_area', myProfile.wide_area)
     .eq('is_public', true)
     .eq('discoverable', true)
@@ -390,9 +390,12 @@ export async function getOnboardingRecommendations() {
     return { ...g, matchScore: matchesInterest ? 1 : 0, interestMatched: matchesInterest };
   });
 
-  const top = scored
+  const ranked = scored
     .sort((a, b) => b.matchScore - a.matchScore || new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 3);
+  // item 196: the server attendee count, so the card's Join / Join Waitlist is the real one (attendee rows are RLS-limited)
+  const counts = await getApprovedCounts(ranked.map((g) => g.id)).catch(() => ({}));
+  const top = ranked.map((g) => (typeof counts[g.id] === 'number' ? { ...g, approvedCount: counts[g.id] } : g));
 
   // How far: measured server-side (get_gathering_distances never exposes a host's precise position) from the
   // device's own position. No permission or no fix = no distance shown, never a guess.

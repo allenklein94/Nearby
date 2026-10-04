@@ -181,6 +181,18 @@ export function contextItem(kind, row, { reasons = [], ...extra } = {}) {
 
 const COMPOSED_TITLE_TYPES = ['business_availability', 'business_policy_match', 'friend_request'];
 
+// Item 196: the action label a gathering ROW shows (typed-ask results, the "You're ready" cards), from the one state-aware
+// gatheringPrimaryAction. A takeable action shows its words (Join, Request to Join, Join Waitlist, View Plan, Requested, On
+// waitlist); a state with nothing to take shows its status (Invite only, Past, Request expired); a plain View (the viewer's
+// state is unknown) shows nothing, never a placeholder. The row's tap still opens the gathering, where Join really happens.
+const ROW_ACTION_KINDS = ['join', 'view_plan', 'requested', 'interested'];
+export function gatheringRowAction(action) {
+  if (!action) return null;
+  if (ROW_ACTION_KINDS.includes(action.kind) && action.label) return { kind: action.kind, label: action.label };
+  if (action.status) return { kind: 'status', label: action.status };
+  return null;
+}
+
 // The row a typed-ask or Surprise Me result renders (Home and Discover): the context's reason, its when/where line, the item's
 // own status note (price, "business confirmation required", a full gathering's waitlist line) only when it is NOT an explanation
 // already shown, and the action. The resolver's `subtitle` is a detail line, never a second explanation system.
@@ -197,7 +209,8 @@ export function resultRowView(item, opts = {}) {
     reason: c.reason,
     meta: [c.context, note].filter(Boolean).join(' · ') || null,
     warn: Boolean(item?.isFull),
-    action: BUSINESS_RESULT_TYPES.includes(item?.type) ? c.action : null,
+    // a business result's booking action; a gathering's state-aware action or status (item 196); nothing for a plain View
+    action: BUSINESS_RESULT_TYPES.includes(item?.type) ? c.action : item?.type === 'gathering' ? gatheringRowAction(c.action) : null,
     destination: c.destination,
   };
 }

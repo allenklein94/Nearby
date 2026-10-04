@@ -1517,7 +1517,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     // friend_discovery is a synthetic fallback item appended after the real ranked candidates,
     // never itself a scored "pick" -- excluded even in the edge case where it's the only item.
     const isTopPick = pickBadge && index === 0 && item.type !== 'friend_discovery';
-    const row = resultRowView(item, { language }); // typed-ask AND Surprise Me rows: the one context object's reason / context / action
+    const row = resultRowView(item, { language, myUserId }); // typed-ask AND Surprise Me rows: the one context object's reason / context / action
     return (
       <StaggeredReveal key={`${item.type}-${item.id}`} index={index}>
       <TouchableOpacity
@@ -1534,9 +1534,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {row.reason ? <Text style={styles.intentSearchResultSubtitle} numberOfLines={1}>{row.reason}</Text> : null}
           {row.meta ? <Text style={[styles.intentSearchResultSubtitle, row.warn && { color: colors.danger }]} numberOfLines={1}>{row.meta}</Text> : null}
         </View>
-        {/* Item 72/135: a business result names the action its tap takes, from the one context object. */}
+        {/* Item 72/135/196: a business or gathering result names the action its tap takes (a status is neutral, never coral). */}
         {row.action ? (
-          <Text style={[styles.intentSearchResultChevron, { color: colors.primary, fontWeight: '700' }]}>{row.action.label} ›</Text>
+          <Text style={[styles.intentSearchResultChevron, { color: row.action.kind === 'status' ? colors.textSecondary : colors.primary, fontWeight: '700' }]}>{row.action.label} ›</Text>
         ) : (
           <Text style={styles.intentSearchResultChevron}>›</Text>
         )}

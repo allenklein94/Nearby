@@ -225,14 +225,14 @@ describe('guards: surfaces render the shared object and do not rebuild its rules
   });
   it('Surprise Me and typed-ask rows on both screens use the one row view', () => {
     const rawSubtitle = /item\.subtitle \? \(?\s*<Text/g;
-    for (const src of [home, discover]) expect(src).toMatch(/resultRowView\(item, \{ language \}\)/);
+    for (const src of [home, discover]) expect(src).toMatch(/resultRowView\(item, \{ language, myUserId \}\)/);
     expect(discover.match(rawSubtitle) ?? []).toHaveLength(0);
     // Home keeps exactly one: a friend's own request row, which is a person's words, not a recommendation
     expect(home.match(rawSubtitle) ?? []).toHaveLength(1);
-    expect(home.slice(home.indexOf("if (item.type === 'friend_request') {"), home.indexOf('const row = resultRowView(item, { language });'))).toMatch(rawSubtitle);
+    expect(home.slice(home.indexOf("if (item.type === 'friend_request') {"), home.indexOf('const row = resultRowView(item, { language, myUserId });'))).toMatch(rawSubtitle);
     // Home's surprise lane rows specifically
     const lanes = home.slice(home.indexOf('surpriseShown.lanes.map'), home.indexOf('surpriseShown.connectedLine &&'));
-    expect(lanes).toMatch(/resultRowView\(item, \{ language \}\)/);
+    expect(lanes).toMatch(/resultRowView\(item, \{ language, myUserId \}\)/);
   });
   it('only openDestination follows a destination; the context object is the one place destinations are built', () => {
     const resolver = read('services/intentResolver.js');

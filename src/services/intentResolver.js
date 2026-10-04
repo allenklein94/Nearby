@@ -156,6 +156,14 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       // gathering filling "Something to Do") without a second fetch.
       category: gathering.interest_tag ?? null,
       capacity: gathering.capacity ?? null,
+      // item 196: what the row's state-aware action reads (utils/primaryAction.js gatheringPrimaryAction): the viewer's own
+      // attendance row (RLS shows a stranger only their own and friends' rows), the server attendee count, and the join mode
+      host_id: gathering.host_id ?? null,
+      attendees: Array.isArray(gathering.attendees) ? gathering.attendees : undefined,
+      approvedCount: typeof gathering.approvedCount === 'number' ? gathering.approvedCount : undefined,
+      visibility: gathering.visibility ?? null,
+      is_public: gathering.is_public,
+      requires_approval: gathering.requires_approval === true,
       // the real measured distance, read by the distance-willingness pass (constants/distanceWillingness.js)
       distanceMiles: gathering.distanceMiles ?? null,
       // host-declared social facts the social-context pass compares a typed ask against (constants/socialContext.js; nothing new stored)

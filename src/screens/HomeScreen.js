@@ -1152,7 +1152,7 @@ export default function HomeScreen({ navigation }) {
         </View>
       );
     }
-    const row = resultRowView(item, { language }); // the one context object: reason, when/where, status note, action
+    const row = resultRowView(item, { language, myUserId }); // the one context object: reason, when/where, status note, action
     return (
       <TouchableOpacity
         key={`${item.type}-${item.id}`}
@@ -1175,9 +1175,9 @@ export default function HomeScreen({ navigation }) {
             <Text style={[styles.intentResultSubtitle, row.warn && { color: colors.danger }]} numberOfLines={1}>{row.meta}</Text>
           ) : null}
         </View>
-        {/* Item 72/135: a business result names the action its tap takes, from the one context object. */}
+        {/* Item 72/135/196: a business or gathering result names the action its tap takes (a status is neutral, never coral). */}
         {row.action ? (
-          <Text style={{ color: colors.primary, fontWeight: '700', marginRight: 4 }}>{row.action.label}</Text>
+          <Text style={{ color: row.action.kind === 'status' ? colors.textSecondary : colors.primary, fontWeight: '700', marginRight: 4 }}>{row.action.label}</Text>
         ) : null}
         <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
       </TouchableOpacity>
@@ -1639,7 +1639,7 @@ export default function HomeScreen({ navigation }) {
                         <View key={lane.key} style={{ marginBottom: spacing.sm }}>
                           <Text style={styles.intentGroupLabel}>{lane.heading}</Text>
                           {lane.items.map((item) => {
-                            const row = resultRowView(item, { language }); // Surprise Me rows read the same context object as every result
+                            const row = resultRowView(item, { language, myUserId }); // Surprise Me rows read the same context object as every result
                             return (
                             <TouchableOpacity
                               key={`${item.type}-${item.id}`}
@@ -1654,7 +1654,7 @@ export default function HomeScreen({ navigation }) {
                                 {row.reason ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{row.reason}</Text> : null}
                                 {row.meta ? <Text style={[styles.intentResultSubtitle, row.warn && { color: colors.danger }]} numberOfLines={1}>{row.meta}</Text> : null}
                               </View>
-                              {row.action ? <Text style={{ color: colors.primary, fontWeight: '700', marginRight: 4 }}>{row.action.label}</Text> : null}
+                              {row.action ? <Text style={{ color: row.action.kind === 'status' ? colors.textSecondary : colors.primary, fontWeight: '700', marginRight: 4 }}>{row.action.label}</Text> : null}
                               <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                             </TouchableOpacity>
                             );

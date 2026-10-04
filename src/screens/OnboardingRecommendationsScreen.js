@@ -9,6 +9,8 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { wantsCelebrationsStep } from '../constants/onboardingGoals';
 import { readyCardWhy } from '../utils/recommendationFacts';
+import { gatheringPrimaryAction } from '../utils/primaryAction';
+import { gatheringRowAction } from '../utils/recommendationContext';
 import { localizeReason } from '../utils/reasonLocalization';
 import { displayDistance, displayWhen, displayGatheringWhen } from '../i18n/display';
 import LoadErrorState from '../components/LoadErrorState';
@@ -20,6 +22,7 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
   const styles = getStyles(colors, shadow);
   const [recommendations, setRecommendations] = useState([]);
   const [myName, setMyName] = useState('');
+  const [myUserId, setMyUserId] = useState(null);
   const [wantsCelebrations, setWantsCelebrations] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -33,6 +36,7 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
       setLoadError(false);
       const { data: sessionData } = await supabase.auth.getSession();
       const myId = sessionData?.session?.user?.id;
+      setMyUserId(myId ?? null);
       if (myId) {
         const { data: profile } = await supabase.from('profiles').select('display_name, onboarding_motivations').eq('id', myId).single();
         setMyName(profile?.display_name?.split(' ')[0] ?? '');
@@ -66,13 +70,15 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
               const why = readyCardWhy(r);
               const meta = [displayDistance(r.distanceMiles, language), displayGatheringWhen(r, language)].filter(Boolean).join(' · ') || null;
               const facts = { why: why ? localizeReason(why, language) : null, meta };
+              // item 196: the one state-aware action (Join / Request to Join / Join Waitlist / View Plan / Requested...), or none
+              const action = gatheringRowAction(gatheringPrimaryAction(r, myUserId));
               return (
               <TouchableOpacity
                 key={r.id}
                 style={styles.card}
                 onPress={() => navigation.navigate('GatheringDetail', { gatheringId: r.id })}
                 activeOpacity={0.85}
-                accessibilityLabel={`${r.title}, ${[facts.why, facts.meta].filter(Boolean).join(', ')}`}
+                accessibilityLabel={`${r.title}, ${[facts.why, facts.meta, action?.label].filter(Boolean).join(', ')}`}
                 accessibilityRole="button"
               >
                 <View style={{ flex: 1 }}>
@@ -80,6 +86,7 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
                   {facts.why ? <Text style={styles.cardMatch}>⭐ {facts.why}</Text> : null}
                   <Text style={styles.cardDate}>{facts.meta}</Text>
                 </View>
+                {action ? <Text style={[styles.cardAction, action.kind === 'status' && { color: colors.textSecondary }]}>{action.label}</Text> : null}
                 <Text style={styles.cardChevron}>›</Text>
               </TouchableOpacity>
               );
@@ -124,6 +131,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   cardTitle: { color: colors.textPrimary, fontWeight: '700', fontSize: 15 },
   cardDate: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   cardMatch: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', marginTop: 4 },
+  cardAction: { color: colors.primary, fontWeight: '700', fontSize: 14, marginRight: 6 },
   cardChevron: { color: colors.textTertiary, fontSize: 18, fontWeight: '700' },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },

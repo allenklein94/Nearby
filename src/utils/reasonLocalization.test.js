@@ -443,11 +443,11 @@ describe('wiring guards', () => {
     }
     const home = read('screens/HomeScreen.js');
     expect(home).toMatch(/gatheringCardModel\(g, \{ signals, myUserId, language/);
-    expect(home.match(/resultRowView\(item, \{ language \}\)/g)).toHaveLength(2);
+    expect(home.match(/resultRowView\(item, \{ language, myUserId \}\)/g)).toHaveLength(2);
     expect(home.match(/recommendationRow\(item, \{ language \}\)/g)).toHaveLength(2);
     expect(home.match(/confidenceHeadline\((?:signals|attention\.hero\.reasons\.map\(\(text\) => \(\{ text \}\)\)), \{ language \}\)/g).length).toBe(4);
     const discover = read('screens/DiscoverHubScreen.js');
-    expect(discover).toMatch(/resultRowView\(item, \{ language \}\)/);
+    expect(discover).toMatch(/resultRowView\(item, \{ language, myUserId \}\)/);
     expect(discover.match(/\), \{ language \}\);/g).length).toBeGreaterThanOrEqual(3);
   });
   it('the Gatherings feed badges use the shared reason wording (no translated prefix + English tag)', () => {
