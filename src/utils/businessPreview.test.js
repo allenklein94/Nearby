@@ -75,6 +75,12 @@ describe('where the sheet is used (business browsing on Discover only)', () => {
     expect(discover).toMatch(/<BusinessPreviewSheet partner=\{previewBusiness\}/);
     expect(discover).toMatch(/useFocusEffect\(useCallback\(\(\) => \(\) => setPreviewBusiness\(null\), \[\]\)\)/); // never left over another screen
   });
+  test('a business map pin opens the sheet in one tap (no label step promising a profile)', () => {
+    const map = read('src/components/GatheringsMapView.js');
+    const block = map.slice(map.indexOf('key={`business-${b.id}`}'), map.indexOf('pinnableStories.map'));
+    expect(block).toMatch(/onPress=\{\(\) => onSelectBusiness\(b\)\}/);
+    expect(block).not.toMatch(/<Callout|tapToViewProfile/);
+  });
   test('Discover is the only user: Home typed-ask results, perks and gatherings keep their own patterns', () => {
     const SRC = path.join(ROOT, 'src');
     const users = [];

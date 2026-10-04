@@ -117,14 +117,10 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
           coordinate={{ latitude: b.latitude, longitude: b.longitude }}
           pinColor="#5B9AA0"
           accessibilityLabel={t('ui.mapView.businessA11y', { name: b.name })}
-        >
-          <Callout onPress={() => onSelectBusiness(b)} tooltip={false}>
-            <View style={styles.calloutCard}>
-              <Text style={styles.calloutTitle} numberOfLines={1}>🏪 {b.name}</Text>
-              <Text style={styles.calloutAction}>{t('ui.mapView.tapToViewProfile')}</Text>
-            </View>
-          </Callout>
-        </Marker>
+          accessibilityRole="button"
+          // Items 17-19: a business pin opens the business sheet in one tap (the sheet is its quick look; no label step first).
+          onPress={() => onSelectBusiness(b)}
+        />
       ))}
       {pinnableStories.map((s) => (
         <Marker
