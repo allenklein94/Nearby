@@ -24,16 +24,17 @@ const SOCIAL_KINDS = ['going', 'friend'];
 
 // signals: [{ kind, text }] from mergeHomeGatheringSignals (optional). Without them WHY is the facts helper's reason
 // and there is no social proof line.
-export function gatheringCardModel(g, { signals = null, myUserId = null, now = Date.now(), actionOpts = {}, language } = {}) {
+export function gatheringCardModel(g, { signals = null, myUserId = null, now = Date.now(), actionOpts = {}, language, leadReason = null } = {}) {
   if (!g) return { what: null, why: null, meta: null, social: null, action: null, destination: null, entity: null, reasons: [], fields: [] };
   const list = Array.isArray(signals) ? signals : null;
   const allWhy = list ? validReasons({ reasons: list.filter((s) => !SOCIAL_KINDS.includes(s.kind)).map((s) => s.text) }) : [recommendationFacts(g).why].filter(Boolean);
   const allSocial = list ? list.filter((s) => SOCIAL_KINDS.includes(s.kind)).map((s) => s.text) : [];
   // item 194: WHY and SOCIAL PROOF together show at most the two strongest reasons, then each keeps its own line
-  const shown = strongestReasons([...allWhy, ...allSocial]);
+  // a section's own reason (leadReason) leads when the card carries it; the second slot is the next independent one
+  const shown = strongestReasons([...allWhy, ...allSocial], undefined, { lead: leadReason });
   const whyParts = allWhy.filter((t) => shown.includes(t));
   const socialParts = allSocial.filter((t) => shown.includes(t));
-  const c = recommendationContext(contextItem('gathering', g, { reasons: whyParts }), { myUserId, now: new Date(now), actionOpts, language });
+  const c = recommendationContext(contextItem('gathering', g, { reasons: whyParts }), { myUserId, now: new Date(now), actionOpts, language, leadReason });
   const model = {
     what: g.title || null,
     why: c.reasons.join(' · ') || null,

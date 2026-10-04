@@ -130,7 +130,7 @@ export function recommendationContext(item, opts = {}) {
   // selection happens on the canonical English reasons; only the shown text is put in the person's language (opts.language)
   const canonical = validReasons(item);
   // item 194: only the one or two strongest reasons are shown (`canonicalReasons` keeps them all for dedupe and evidence)
-  const reasons = localizeReasons(strongestReasons(canonical), opts.language);
+  const reasons = localizeReasons(strongestReasons(canonical, undefined, { lead: opts.leadReason ?? null }), opts.language);
   const model = {
     entity: { kind: item.type, id: item.id ?? null, title: item.title ?? null },
     reason: reasons[0] ?? null,

@@ -81,7 +81,7 @@ import { localizeReason } from '../utils/reasonLocalization';
 import { localizeAskNote } from '../i18n/askNoteView';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { splitTonight } from '../utils/categoryTonight';
-import { buildDiscoverSections, buildDiscoverDateView, compareDiscover } from '../utils/discoverSections';
+import { buildDiscoverSections, buildDiscoverDateView, compareDiscover, sectionLeadReason } from '../utils/discoverSections';
 import { SIGNAL_TIERS, tierVector } from '../constants/signalPriority';
 import { recordSearchBehavior } from '../services/behaviorSignals';
 import { searchTopic, matchBusinesses, friendsLineForTopic } from '../utils/unifiedSearch';
@@ -1769,8 +1769,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
     ].filter(Boolean);
   }
 
-  function discoverCard(g) {
-    return gatheringCardModel(g, { signals: discoverReasons(g).map((text) => ({ kind: 'reason', text })), myUserId, language });
+  // sectionKey: the Discover section the card sits in; its own reason leads the two shown (sectionLeadReason).
+  function discoverCard(g, sectionKey = null) {
+    const leadReason = sectionKey ? sectionLeadReason(sectionKey, g, { friendInterestByTag }) : null;
+    return gatheringCardModel(g, { signals: discoverReasons(g).map((text) => ({ kind: 'reason', text })), myUserId, language, leadReason });
   }
 
   function communityContext(c) {
@@ -1977,8 +1979,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // shared by the dedicated Gatherings tab's notableGatherings AND the new
   // Today/This Weekend sections below, instead of three copies of this
   // block drifting apart.
-  function renderGatheringTile(g, index) {
-    const card = discoverCard(g);
+  function renderGatheringTile(g, index, sectionKey = null) {
+    const card = discoverCard(g, sectionKey);
     const action = gatheringActionInfo(g, card);
     const reasonLine = card.reasons[0] ?? null;
 
@@ -2637,7 +2639,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
            The breadcrumb's back arrow (or Android back) returns to the sections where they were left. */
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {dateViewData.items.length > 0
-            ? dateViewData.items.map(renderGatheringTile)
+            ? dateViewData.items.map((g, i) => renderGatheringTile(g, i))
             : <EmptyCopy id="discover_date_none" />}
         </ScrollView>
       ) : viewStyle === 'map' && showViewToggle ? (
@@ -2705,7 +2707,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   <Text style={styles.seeAllInline}>{t('ui.common.seeAll')}</Text>
                 </TouchableOpacity>
               </View>
-              {topCategoryGatherings.map(renderGatheringTile)}
+              {topCategoryGatherings.map((g, i) => renderGatheringTile(g, i))}
             </>
           )}
 
@@ -2747,7 +2749,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                       </TouchableOpacity>
                     ) : null}
                   </View>
-                  {section.items.map(renderGatheringTile)}
+                  {section.items.map((g, i) => renderGatheringTile(g, i, section.key))}
                 </>
               )}
             </React.Fragment>
@@ -2970,7 +2972,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {notableGatherings.length > 0 && (
             <Text style={styles.sectionHeader}>{t('ui.discover.recommended')}</Text>
           )}
-          {notableGatherings.map(renderGatheringTile)}
+          {notableGatherings.map((g, i) => renderGatheringTile(g, i))}
 
           {showFlatGatheringsSection && isSearching && loadingSearch && (
             <>

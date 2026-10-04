@@ -4,6 +4,21 @@ import { attendeeTotal } from './gatheringFullness';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 import { friendsInterestReason } from './friendInterests';
 import { compareTierVectors } from '../constants/signalPriority';
+import { becauseYouLikeReason, reasonText } from '../constants/recommendationReasonVocabulary';
+
+// The reason a section itself stands for (owner, 2026-10-04): it leads the card's two shown reasons in that section.
+// Only sections that ARE a reason have one; Now / Tonight / This Weekend are timing, already on the card's when line.
+// Built with the same builders the card's reasons use, so it matches only when the card really carries it.
+export function sectionLeadReason(sectionKey, g, { friendInterestByTag = {} } = {}) {
+  if (!g) return null;
+  if (sectionKey === 'because') return g.interest_tag ? becauseYouLikeReason(g.interest_tag) : null;
+  if (sectionKey === 'friends') return g.interest_tag ? friendsInterestReason(g.interest_tag, friendInterestByTag?.[g.interest_tag]) : null;
+  if (sectionKey === 'trending') {
+    const n = attendeeTotal(g);
+    return n >= TRENDING_ATTENDANCE_MIN ? reasonText('attendingCount', { count: n }) : null;
+  }
+  return null;
+}
 
 // Discover's contextual sections (owner item 91; order re-set 2026-09-27 to the one ranking ladder): after the search box and
 // the Browse rail, the All view reads as Happening Now -> Tonight -> Because you like X -> Friends are into X -> Trending Near

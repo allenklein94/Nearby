@@ -186,6 +186,8 @@ const PATTERN_MATCHES = [
   { pattern: /^.+ (is|are) into .+$/, category: REASON_CATEGORIES.INTEREST },
   // getGatheringFitReasons()'s real attendee-count reason.
   { pattern: /^\d+ (person|people) attending$/, category: REASON_CATEGORIES.POPULARITY },
+  // reasons.attendingCount ("12 attending", Discover's card): attendance is popularity (item 59)
+  { pattern: /^\d+ attending$/, category: REASON_CATEGORIES.POPULARITY },
   // getGatheringFitReasons()'s real first-timer-count reason.
   { pattern: /^\d+ attendees? (is|are) also first-timers?$/, category: REASON_CATEGORIES.CONTEXT },
   // getGatheringFitReasons()'s real friends-attending reason (Group

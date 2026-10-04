@@ -59,13 +59,21 @@ export function reasonTier(text) {
 // Strongest = lowest tier on the ladder above; equal tiers keep the engine's own order. Works on canonical English text (the
 // shown text is localized afterwards). Selection only: what ranks an item never reads this.
 export const MAX_SHOWN_REASONS = 2;
-export function strongestReasons(texts = [], max = MAX_SHOWN_REASONS) {
+// `lead` (owner, 2026-10-04, item 194 refined): the reason of the SECTION the card sits in (e.g. "12 attending" under
+// Trending Near You) takes the first slot, but only when the card really carries it (never invented). The remaining
+// slots take the next strongest INDEPENDENT reasons: never the same tier as the lead, so a section's own signal is not
+// said twice. No lead (or a lead the card does not carry) = the plain strongest-first order.
+export function strongestReasons(texts = [], max = MAX_SHOWN_REASONS, { lead = null } = {}) {
   const list = (Array.isArray(texts) ? texts : []).filter((t) => typeof t === 'string' && t.trim());
-  return list
+  const ranked = list
     .map((text, i) => ({ text, i, tier: reasonTier(text) }))
-    .sort((a, b) => a.tier - b.tier || a.i - b.i)
-    .slice(0, Math.max(0, max))
-    .map((r) => r.text);
+    .sort((a, b) => a.tier - b.tier || a.i - b.i);
+  const cap = Math.max(0, max);
+  const leading = typeof lead === 'string' ? ranked.find((r) => r.text === lead) : null;
+  if (!leading || cap === 0) return ranked.slice(0, cap).map((r) => r.text);
+  // an unclassified (discovery-tier) lead is not known to be the same signal as another unclassified reason
+  const rest = ranked.filter((r) => r !== leading && r.text !== leading.text && (r.tier !== leading.tier || r.tier === WORST_TIER));
+  return [leading, ...rest].slice(0, cap).map((r) => r.text);
 }
 
 export function signalTier(signal) {
