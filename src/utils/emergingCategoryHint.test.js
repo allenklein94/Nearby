@@ -26,6 +26,9 @@ describe('emerging category: existing or new (item 129)', () => {
     const add = emergingResolveCopy({ name: 'Curling', group: 'activities_recreation', groupLabel: 'Activities', applicants: 3 });
     expect(add.existing).toBe(false);
     expect(add.body).toMatch(/permanent category/);
+    // item 202: a new category needs a real customer intent; a business's marketing phrase is never the reason
+    expect(add.body).toMatch(/customers would ask for this by name/);
+    expect(add.body).toMatch(/marketing phrase is not a reason/);
   });
 
   it('stops an existing name under the wrong group before the server refuses it', () => {

@@ -44,7 +44,8 @@ export function emergingResolveCopy({ name, group, groupLabel, applicants }) {
   return {
     existing: false,
     title: `Add "${name}" under ${groupLabel}?`,
-    body: `It becomes a permanent category, and the ${n} that used these words are mapped to it. It cannot be renamed or removed here.`,
+    // item 202 (LOCKED): a category exists for a real CONSUMER intent, never because businesses requested or described one
+    body: `Only add it if customers would ask for this by name, as something they want to do. A business's own marketing phrase is not a reason: file it under an existing category instead. It becomes a permanent category, and the ${n} that used these words are mapped to it. It cannot be renamed or removed here.`,
     action: 'Add and map',
     done: (mapped) => `${name} is now a category. ${mapped} application${mapped === 1 ? '' : 's'} mapped.`,
     tag: name,

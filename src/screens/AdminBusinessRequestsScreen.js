@@ -200,11 +200,11 @@ export default function AdminBusinessRequestsScreen() {
         refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
         ListHeaderComponent={emerging.length ? (
           <View style={styles.card}>
-            <Text style={styles.businessName}>Potential new categories</Text>
-            <Text style={styles.contact}>Three or more different businesses described themselves, in their own words, in a way no category covers. Only that description counts, never searches.</Text>
+            <Text style={styles.businessName}>Business wording no category covers</Text>
+            <Text style={styles.contact}>Three or more different businesses described themselves, in their own words, in a way no category covers. That alone never justifies a new category: file it under an existing category whenever one fits (its qualities stay attributes on each business). Add a new category only when this is something customers would actually ask for by name.</Text>
             {emerging.map((flag) => (
               <View key={flag.phrase_key} style={{ marginTop: spacing.sm }}>
-                <Text style={styles.category}>Potential emerging category: {flag.sample_phrase} · {flag.applicants} distinct businesses</Text>
+                <Text style={styles.category}>{flag.sample_phrase} · {flag.applicants} distinct businesses</Text>
                 {Array.isArray(flag.wordings) && flag.wordings.length ? (
                   <Text style={styles.contact}>They wrote: {flag.wordings.map((w) => `"${w}"`).join(', ')}</Text>
                 ) : null}
@@ -228,7 +228,7 @@ export default function AdminBusinessRequestsScreen() {
                     </View>
                   </View>
                 ) : null}
-                <Text style={styles.contact}>Pick a group and a name. An existing category's name files these applications under it; a new name creates the category. Either way the applications are mapped (an already-approved business is updated too) and the wording is remembered. Nothing happens until you confirm.</Text>
+                <Text style={styles.contact}>Pick a group and a name. An existing category's name files these applications under it (the default); a new name creates the category, only for a real customer intent. Either way the applications are mapped (an already-approved business is updated too) and the wording is remembered. Nothing happens until you confirm.</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
                   {BUSINESS_CATEGORIES.map((c) => (
                     <TouchableOpacity key={c.key} onPress={() => setEmGroup((p) => ({ ...p, [flag.phrase_key]: c.key }))} accessibilityRole="button" accessibilityState={{ selected: emGroup[flag.phrase_key] === c.key }} accessibilityLabel={c.label}>
