@@ -60,8 +60,6 @@ export const SCREEN_REGISTRY = {
   Chat: { jobs: ['D'], reason: 'One conversation with a match, and the "Do Something Together" tools.' },
   ViewProfile: { jobs: ['A', 'F'], reason: 'Someone\'s full profile, to decide whether to connect.' },
   Friends: { jobs: ['C'], reason: 'Your friends and friend requests to accept or decline.' },
-  FriendDiscovery: { jobs: ['A'], reason: 'People nearby who opted in to meet friends: say hi or pass.' },
-  Nearby: { jobs: ['A'], reason: 'The dating deck: people to notice or pass.' },
   PreferencePolls: { jobs: ['D'], reason: 'Answer a quick question a match sent you.' },
   DateProposal: { jobs: ['B', 'D'], reason: 'Propose, accept or decline a date with a match.' },
 
@@ -146,22 +144,24 @@ export const INFRASTRUCTURE_ROUTES = {
 export { PRESENTATION_ROUTES } from '../navigation/presentationRoutes';
 export const PRESENTATION_REASONS = {
   Notices: 'The wave push opens Activity on top of the current screen so Back returns exactly where you were; titled Activity, never a separate Notices screen.',
+  FriendDiscovery: 'People -> Friends opened on top of a stack screen (Friends list, gathering published, typed-ask people row, Create invite picker) so Back returns there; the same FriendDiscoveryScreen Discover embeds, never a separate Friends surface.',
 };
 
 // Screen components that are never navigated to on their own: they render inside another registered screen.
 export const EMBEDDED_SCREENS = {
   MatchesScreen: 'Rendered inside Messages (the conversations list).',
+  DiscoveryScreen: 'Discover -> People -> Dating (the dating deck); its standalone Nearby route was removed 2026-10-04.',
 };
 
 // The rule 14 audit (owner, 2026-10-04). Removed and folded routes must stay gone; trimmed and borderline ones stay.
 export const RULE14_DECISIONS = {
-  removed: ['Places', 'FeaturesOverview', 'RelationshipHub', 'MemoryVaultIndex', 'RelationshipTools', 'Timeline'],
+  removed: ['Places', 'FeaturesOverview', 'RelationshipHub', 'MemoryVaultIndex', 'RelationshipTools', 'Timeline', 'Nearby'],
   folded: {
     BrandOffers: 'Discover -> Perks (browse and redeem in place)',
     Rewards: 'one tier line at the top of Discover -> Perks',
   },
   // Notices was registered as its own surface; it is Activity presented on top for push entry (PRESENTATION_ROUTES).
-  presentations: { Notices: 'Activity' },
+  presentations: { Notices: 'Activity', FriendDiscovery: 'Discover -> People -> Friends' },
   trimmed: { Communities: 'your own communities + Create; public discovery is Discover -> Communities' },
   borderlineKeep: ['Momentum'],
 };

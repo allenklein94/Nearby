@@ -65,12 +65,21 @@ describe('rule 14: every navigable screen has a reason to exist', () => {
     expect(SCREEN_REGISTRY.MarketValidation).toBeTruthy(); // admin screens are covered too
   });
 
-  it('an outside-entry presentation is not a screen of its own: it renders exactly its surface\'s component', () => {
-    for (const [route, surface] of Object.entries(PRESENTATION_ROUTES)) {
+  it('an outside-entry presentation is not a screen of its own: it renders exactly its surface\'s component (or the mode component that surface embeds)', () => {
+    for (const [route, p] of Object.entries(PRESENTATION_ROUTES)) {
       expect({ route, inRegistry: !!SCREEN_REGISTRY[route] }).toEqual({ route, inRegistry: false });
-      expect(SCREEN_REGISTRY[surface]?.surface).toBe(true);
-      expect({ route, component: registered.get(route) }).toEqual({ route, component: registered.get(surface) });
+      expect({ route, surface: SCREEN_REGISTRY[p.surface]?.surface }).toEqual({ route, surface: true });
+      if (!p.mode) {
+        expect({ route, component: registered.get(route) }).toEqual({ route, component: registered.get(p.surface) });
+      } else {
+        // a mode presentation renders the very component the canonical surface embeds for that mode, never a second copy
+        expect({ route, component: registered.get(route) }).toEqual({ route, component: p.component });
+        const surfaceFile = fs.readFileSync(path.join(SRC, 'screens', `${registered.get(p.surface)}.js`), 'utf8');
+        expect(surfaceFile).toMatch(new RegExp(`import ${p.component} from '\\./${p.component}'`));
+        expect(surfaceFile).toMatch(new RegExp(`<${p.component}\\b[^>]*\\bembedded\\b`));
+      }
       expect(typeof PRESENTATION_REASONS[route] === 'string' && PRESENTATION_REASONS[route].length >= 10).toBe(true);
+      expect(RULE14_DECISIONS.presentations[route]).toBeTruthy();
     }
     expect(Object.keys(PRESENTATION_REASONS).sort()).toEqual(Object.keys(PRESENTATION_ROUTES).sort());
   });
@@ -78,13 +87,26 @@ describe('rule 14: every navigable screen has a reason to exist', () => {
   it('Activity is the one canonical Activity surface; Notices is only its push-entry presentation', () => {
     expect(registered.get('Activity')).toBe('ActivityScreen');
     expect(registered.get('Notices')).toBe('ActivityScreen');
-    expect(PRESENTATION_ROUTES.Notices).toBe('Activity');
+    expect(PRESENTATION_ROUTES.Notices).toEqual({ surface: 'Activity' });
     expect(SCREEN_REGISTRY.Notices).toBeUndefined();
     expect(RULE14_DECISIONS.presentations.Notices).toBe('Activity');
     // No other route renders ActivityScreen, and no second Activity/Notices screen file exists.
     const activityRoutes = [...registered].filter(([, c]) => c === 'ActivityScreen').map(([r]) => r).sort();
     expect(activityRoutes).toEqual(['Activity', 'Notices']);
     const files = fs.readdirSync(path.join(SRC, 'screens')).filter((f) => /^(Notices|Notifications|Activity\w+)Screen/.test(f));
+    expect(files).toEqual([]);
+  });
+
+  it('People -> Friends is the one canonical Friends surface; FriendDiscovery is only its outside-entry presentation', () => {
+    expect(PRESENTATION_ROUTES.FriendDiscovery).toEqual({ surface: 'Discover', mode: 'people/friends', component: 'FriendDiscoveryScreen' });
+    expect(SCREEN_REGISTRY.FriendDiscovery).toBeUndefined();
+    // the only routes that render the Friends deck are this presentation (Discover embeds it directly)
+    expect([...registered].filter(([, c]) => c === 'FriendDiscoveryScreen').map(([r]) => r)).toEqual(['FriendDiscovery']);
+    // the dating deck has no standalone route either: Discover -> People -> Dating only
+    expect([...registered].filter(([, c]) => c === 'DiscoveryScreen')).toEqual([]);
+    expect(EMBEDDED_SCREENS.DiscoveryScreen).toBeTruthy();
+    // no second Friends/People screen file
+    const files = fs.readdirSync(path.join(SRC, 'screens')).filter((f) => /^(People|FriendsDiscover|MeetPeople)\w*Screen/.test(f));
     expect(files).toEqual([]);
   });
 });

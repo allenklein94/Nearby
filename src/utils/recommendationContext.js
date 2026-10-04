@@ -65,6 +65,10 @@ const distanceFor = (miles, language) => (!language || language === DEFAULT_LANG
 // A perk opens Discover -> Perks with that perk selected in place (owner, 2026-10-04: one canonical Perks surface; the
 // selected perk shows its redemption controls under its own card, never a separate perk screen).
 export const PERKS_TAB = { initialMode: 'things', initialTypeTab: 'perks' };
+// The canonical People -> Friends surface (owner, 2026-10-04). Entries that start on a tab open it in place with a fresh params
+// object each time (Discover applies each new params object once). Entries from a stack screen use the FriendDiscovery
+// presentation instead (navigation/presentationRoutes.js), so Back returns to that screen.
+export const PEOPLE_FRIENDS = { initialMode: 'people', initialPeopleSubMode: 'friends' };
 export function perkDestination(offerId) {
   return offerId ? { kind: 'navigate', screen: 'Discover', params: { ...PERKS_TAB, selectPerkId: offerId } } : null;
 }

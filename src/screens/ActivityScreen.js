@@ -26,7 +26,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { inviteAction } from '../utils/primaryAction';
-import { recommendationContext, contextItem } from '../utils/recommendationContext';
+import { recommendationContext, contextItem, PEOPLE_FRIENDS } from '../utils/recommendationContext';
 import { openDestination } from '../services/openDestination';
 import { activityLoadNotice } from '../utils/homeLoadNotice';
 import { displayAgo } from '../i18n/display';
@@ -625,7 +625,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                 <TouchableOpacity onPress={() => navigation.navigate('Discover')} accessibilityLabel={t('ui.activity.exploreA11y')} accessibilityRole="button">
                   <Text style={styles.emptyActionText}>{t('ui.activity.exploreCta')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => navigation.navigate('FriendDiscovery')} accessibilityLabel={t('ui.activity.peopleA11y')} accessibilityRole="button">
+                <TouchableOpacity onPress={() => navigation.navigate('Discover', { ...PEOPLE_FRIENDS })} accessibilityLabel={t('ui.activity.peopleA11y')} accessibilityRole="button">
                   <Text style={styles.emptyActionText}>{t('ui.activity.peopleCta')}</Text>
                 </TouchableOpacity>
               </View>

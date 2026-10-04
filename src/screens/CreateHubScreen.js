@@ -12,6 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { NLoader } from '../motion';
+import { PEOPLE_FRIENDS } from '../utils/recommendationContext';
 // "I'd call the whole feature 'Occasion' ... I wouldn't clutter Create
 // with 10 separate buttons" (direct user request, CLAUDE.md, 2026-09-12):
 // replaced the old "big-button icon grid + With people/With businesses/
@@ -74,7 +75,8 @@ const WHO_FOR_OPTIONS = [
 const QUICK_ACTIONS = [
   { icon: 'person-add-outline', key: 'inviteFriends', route: 'InviteFriends' },
   { icon: 'heart-outline', key: 'planADate', route: 'Messages' },
-  { icon: 'people-outline', key: 'meetNewPeople', route: 'FriendDiscovery' },
+  // The canonical People -> Friends surface, opened in place from this tab (owner, 2026-10-04).
+  { icon: 'people-outline', key: 'meetNewPeople', route: 'Discover', params: PEOPLE_FRIENDS },
   { icon: 'storefront-outline', key: 'askNearbyBusinesses', route: 'AskBusiness' },
   { icon: 'repeat-outline', key: 'weeklyMeetup', route: 'CreateGathering', params: { quickStartRecurring: true } },
   // Item 111 ("We'll plan it for you" -- CLAUDE.md): the real front door
@@ -164,7 +166,8 @@ export default function CreateHubScreen({ navigation, route }) {
       // initialActivityType already set via action.params below.
       extraParams = buildOccasionWhoForParams({ whoFor, whoForName: trimmedName, whoForFriendId });
     }
-    navigation.navigate(action.route, extraParams ? { ...action.params, ...extraParams } : action.params);
+    // a fresh params object every tap: Discover applies each new params object once
+    navigation.navigate(action.route, extraParams ? { ...action.params, ...extraParams } : (action.params ? { ...action.params } : undefined));
   }
 
   function handlePrimaryCardPress(opt) {
