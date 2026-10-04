@@ -818,19 +818,6 @@ export default function ProfileScreen({ navigation, route }) {
           </View>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.timelineLink}
-          onPress={() => navigation.navigate('MemoryVaultIndex')}
-          activeOpacity={0.85}
-          accessibilityLabel={t('ui.profile.viewYourMemoryVaultsOneA11y')}
-          accessibilityRole="button"
-        >
-          <View style={styles.timelineLinkTextCol}>
-            <Text style={styles.timelineLinkText}>{t('ui.profile.memoryVault')}</Text>
-            <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.savedMomentsOneCollectionPer')}</Text>
-          </View>
-          <Text style={styles.timelineLinkChevron}>›</Text>
-        </TouchableOpacity>
         {/* Convergence pass P2 (CLAUDE.md): "Your Insights" and "Your
             Momentum" were two separate rows both answering "how am I
             doing?" -- merged into one destination (still the Momentum

@@ -9837,13 +9837,6 @@
    "group": null
   },
   {
-   "tag": "Coffee",
-   "file": "src/screens/PlacesScreen.js",
-   "consumer": "code",
-   "occurrences": 1,
-   "group": null
-  },
-  {
    "tag": "Yoga",
    "file": "src/services/gatherings.js",
    "consumer": "code",

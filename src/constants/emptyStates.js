@@ -9,7 +9,6 @@ export const EMPTY_STATES = {
   activity: { title: 'Nothing new yet', body: 'Notices, crossed paths and other activity will show up here.' },
   business_opportunities: { title: 'No new opportunities', body: "We'll show requests from nearby customers here." },
   business_stats: { title: 'No activity to show yet', body: 'Views, followers and redemptions appear here once customers start finding your business.' },
-  places_category: { title: 'Nothing nearby in this category', body: 'Try another category or widen what you are looking for.' },
   // Open now (item 71): the list has items, none confirmed open this minute.
   open_now_none: { title: 'Nothing confirmed open right now', body: 'Only places with known hours or live availability can show here. Turn off Open now to see everything nearby.' },
   // Cuisine chip in the Restaurants view (item 76): an exact declared-cuisine filter found nothing in view.
@@ -18,7 +17,6 @@ export const EMPTY_STATES = {
   refine_none: { title: 'Nothing nearby fits that yet', body: 'Tap the chip again to go back to all the ideas.' },
   category_narrow_none: { title: 'No {topic} ideas for this yet', body: 'Your ask is kept. Clear the category to see all the ideas again.' },
   surprise_none: { title: 'Nothing to pick from nearby right now', body: 'Try another time or place in your words, or clear the search to see everything around you.' },
-  places_search: { title: 'No places match "{query}"', body: 'Try a different word, or clear the search.' },
   // Item 80 sweep: the rest of the bare-fragment empties.
   admin_business_requests: { title: "No pending requests", body: "New business applications will appear here for review." },
   admin_content_review: { title: "Nothing to review", body: "Every recent submission was either published automatically or blocked outright." },
@@ -59,7 +57,6 @@ export const EMPTY_STATES = {
   perks_search: { title: "No perks match \"{query}\"", body: "Try a different word, or clear the search." },
   // Item 80, second sweep: two-part, chat, dynamic-label and remaining empties.
   legacy_library: { title: "Nothing shared yet", body: "This library grows as couples choose to leave their reflections." },
-  memory_vault_index: { title: "No matches yet", body: "Once you match with someone, you'll each get a shared memory vault here." },
   relationship_tools: { title: "No matches yet", body: "Once you match with someone, you can use these tools together." },
   friend_discovery_empty: { title: "No one nearby right now", body: "People nearby who turn on friend discovery will show up here. Check back later." },
   momentum_empty: { title: "Nothing in the last {weeks} weeks", body: "Join or host a gathering to see it here." },

@@ -31,7 +31,7 @@ test('feeds of the user\'s own content use skeletons; finding/searching uses the
   ['MatchesScreen.js', 'FriendsScreen.js', 'PlansScreen.js', 'TimelineScreen.js', 'ActivityScreen.js'].forEach((f) => {
     expect(read(f)).toMatch(/<SkeletonFeed/);
   });
-  ['PlacesScreen.js', 'HomeScreen.js', 'DiscoverHubScreen.js'].forEach((f) => {
+  ['HomeScreen.js', 'DiscoverHubScreen.js'].forEach((f) => {
     expect(read(f)).toMatch(/<NLoader fullScreen=\{false\}/);
   });
 });

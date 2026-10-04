@@ -66,6 +66,18 @@ function toE164(rawInput) {
 // an *earlier*, contextual first ask inside DiscoveryScreen.js for a user
 // who opens Dating before ever visiting Settings; it didn't remove
 // anything from this screen.
+// Relationship tools, shown as a Settings section (rule 14; formerly the RelationshipHub screen). Labels: ui.relationship.hub.*.
+const RELATIONSHIP_SECTIONS = [
+  { key: 'together', rows: [{ key: 'tools', icon: '🧩', route: 'RelationshipTools' }] },
+  { key: 'onYourOwn', rows: [
+    { key: 'rehearsal', icon: '🎭', route: 'RehearsalRoom' },
+    { key: 'chemistry', icon: '📔', route: 'ChemistryDiaryList' },
+    { key: 'goodbye', icon: '🌙', route: 'GoodbyeArchiveList' },
+    { key: 'legacy', icon: '💌', route: 'LegacyLibrary' },
+    { key: 'kit', icon: '🧰', route: 'RelationshipEmergencyKit' },
+  ] },
+];
+
 export default function SettingsScreen({ navigation, route }) {
   const { isAdmin } = useAuth();
   const { colors, shadow, isDark, toggleTheme } = useTheme();
@@ -1144,28 +1156,29 @@ export default function SettingsScreen({ navigation, route }) {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('RelationshipHub')}
-          activeOpacity={0.85}
-          accessibilityLabel={t('ui.settings.relationshipToolsAndReflectionForA11y')}
-          accessibilityRole="button"
-        >
-          <Text style={styles.rowButtonText}>{t('ui.settings.relationship')}</Text>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
+        {/* Rule 14: the relationship tools are a section here, not a menu screen of their own. Memory Vaults open from each
+            match's own chat ("Do something together"); the match-specific tools from Relationship Tools. */}
+        <Text style={styles.groupHeader} accessibilityRole="header">{t('ui.settings.relationship')}</Text>
+        {RELATIONSHIP_SECTIONS.map((section) => (
+          <View key={section.key}>
+            <Text style={styles.relSectionSubtitle}>{t(`ui.relationship.hub.${section.key}.subtitle`)}</Text>
+            {section.rows.map((row) => (
+              <TouchableOpacity
+                key={row.key}
+                style={styles.rowButtonCard}
+                onPress={() => navigation.navigate(row.route)}
+                activeOpacity={0.85}
+                accessibilityLabel={t(`ui.relationship.hub.row.${row.key}.a11y`)}
+                accessibilityRole="button"
+              >
+                <Text style={styles.rowButtonText}>{row.icon} {t(`ui.relationship.hub.row.${row.key}.label`)}</Text>
+                <Text style={styles.chevron}>›</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ))}
 
         <Text style={styles.groupHeader} accessibilityRole="header">{t('ui.settings.support')}</Text>
-        <TouchableOpacity
-          style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('FeaturesOverview')}
-          activeOpacity={0.85}
-          accessibilityLabel={t('ui.settings.everythingInNearbyAGuideA11y')}
-          accessibilityRole="button"
-        >
-          <Text style={styles.rowButtonText}>{t('ui.settings.everythingInNearby')}</Text>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.rowButtonCard}
@@ -1232,6 +1245,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   cancelText: { color: colors.textTertiary, textAlign: 'center', fontSize: 13 },
   rowButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  relSectionSubtitle: { color: colors.textTertiary, fontSize: 12, marginBottom: spacing.sm, lineHeight: 16 },
   rowButtonCard: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,

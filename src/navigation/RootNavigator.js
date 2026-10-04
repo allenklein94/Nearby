@@ -55,7 +55,6 @@ import AdminContentReviewScreen from '../screens/AdminContentReviewScreen';
 import BusinessConversationScreen from '../screens/BusinessConversationScreen';
 import BusinessProfileScreen from '../screens/BusinessProfileScreen';
 import EditGatheringScreen from '../screens/EditGatheringScreen';
-import PlacesScreen from '../screens/PlacesScreen';
 import TimelineScreen from '../screens/TimelineScreen';
 import ActivityScreen from '../screens/ActivityScreen';
 import GatheringsScreen from '../screens/GatheringsScreen';
@@ -82,10 +81,8 @@ import GoodbyeArchiveEntryScreen from '../screens/GoodbyeArchiveEntryScreen';
 import GoodbyeArchiveListScreen from '../screens/GoodbyeArchiveListScreen';
 import RelationshipEmergencyKitScreen from '../screens/RelationshipEmergencyKitScreen';
 import RelationshipToolsScreen from '../screens/RelationshipToolsScreen';
-import RelationshipHubScreen from '../screens/RelationshipHubScreen';
 import TimelinePlannerScreen from '../screens/TimelinePlannerScreen';
 import MemoryVaultScreen from '../screens/MemoryVaultScreen';
-import MemoryVaultIndexScreen from '../screens/MemoryVaultIndexScreen';
 import MomentumScreen from '../screens/MomentumScreen';
 import PlansScreen from '../screens/PlansScreen';
 import RewardsScreen from '../screens/RewardsScreen';
@@ -106,7 +103,6 @@ import IdVerificationScreen from '../screens/IdVerificationScreen';
 import AdminVerificationScreen from '../screens/AdminVerificationScreen';
 import InviteFriendsScreen from '../screens/InviteFriendsScreen';
 import BlockedUsersScreen from '../screens/BlockedUsersScreen';
-import FeaturesOverviewScreen from '../screens/FeaturesOverviewScreen';
 import SelectGatheringLocationScreen from '../screens/SelectGatheringLocationScreen';
 import FriendsScreen from '../screens/FriendsScreen';
 import GatheringChatScreen from '../screens/GatheringChatScreen';
@@ -454,10 +450,8 @@ export default function RootNavigator() {
             <Stack.Screen name="GoodbyeArchiveList" component={GoodbyeArchiveListScreen} options={{ headerShown: true, title: t('ui.nav.title.goodbyeArchiveList'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="RelationshipEmergencyKit" component={RelationshipEmergencyKitScreen} options={{ headerShown: true, title: t('ui.nav.title.relationshipEmergencyKit'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="RelationshipTools" component={RelationshipToolsScreen} options={{ headerShown: true, title: t('ui.nav.title.relationshipTools'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="RelationshipHub" component={RelationshipHubScreen} options={{ headerShown: true, title: t('ui.nav.title.relationshipHub'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="TimelinePlanner" component={TimelinePlannerScreen} options={{ headerShown: true, title: t('ui.nav.title.timelinePlanner'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MemoryVault" component={MemoryVaultScreen} options={{ headerShown: true, title: t('ui.nav.title.memoryVault'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="MemoryVaultIndex" component={MemoryVaultIndexScreen} options={{ headerShown: true, title: t('ui.nav.title.memoryVaultIndex'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             {/* Convergence pass P2 (CLAUDE.md): the old separate "Insights"
                 route is retired -- MomentumScreen now covers both, one
                 real "how am I doing" destination instead of two. */}
@@ -480,7 +474,6 @@ export default function RootNavigator() {
             <Stack.Screen name="AdminVerification" component={AdminVerificationScreen} options={{ headerShown: true, title: 'Verifications (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="InviteFriends" component={InviteFriendsScreen} options={{ headerShown: true, title: t('ui.nav.title.inviteFriends'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} options={{ headerShown: true, title: t('ui.nav.title.blockedUsers'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="FeaturesOverview" component={FeaturesOverviewScreen} options={{ headerShown: true, title: t('ui.nav.title.featuresOverview'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="SelectGatheringLocation" component={SelectGatheringLocationScreen} options={{ headerShown: true, title: t('ui.nav.title.selectGatheringLocation'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Nearby" component={DiscoveryScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Gatherings" component={GatheringsScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
@@ -604,7 +597,6 @@ export default function RootNavigator() {
             />
             <Stack.Screen name="BusinessProfile" component={BusinessProfileScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="EditGathering" component={EditGatheringScreen} options={{ headerShown: true, title: t('ui.nav.title.editGathering'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
-            <Stack.Screen name="Places" component={PlacesScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Timeline" component={TimelineScreen} options={{ headerShown: false }} />
             <Stack.Screen name="FriendDiscovery" component={FriendDiscoveryScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
           </>

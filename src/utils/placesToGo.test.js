@@ -103,6 +103,6 @@ describe('boundaries', () => {
     expect(hook).toMatch(/if \(!activity\) \{ setState/);
     expect(read('src/screens/HomeScreen.js')).toContain('usePlacesToGo(intentResults?.typedText ?? intentEmptyFallback?.typedText ?? null, language)');
     const callers = appFiles.filter((f) => /searchNearbyPlaces\(/.test(read(f)) && f !== 'src/services/places.js');
-    expect(callers.sort()).toEqual(['src/hooks/usePlacesToGo.js', 'src/screens/CreateGatheringScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/screens/PlacesScreen.js']);
+    expect(callers.sort()).toEqual(['src/hooks/usePlacesToGo.js', 'src/screens/CreateGatheringScreen.js', 'src/screens/DiscoverHubScreen.js']);
   });
 });

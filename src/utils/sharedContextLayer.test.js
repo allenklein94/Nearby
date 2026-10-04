@@ -313,7 +313,7 @@ describe('Google Places', () => {
     expect(none.context).toBeNull();
   });
   it('Discover and the Places screen open places only through openDestination', () => {
-    for (const f of ['screens/DiscoverHubScreen.js', 'screens/PlacesScreen.js']) {
+    for (const f of ['screens/DiscoverHubScreen.js']) {
       const src = read(f);
       expect(src).toMatch(/contextItem\('place'/);
       expect(src).not.toMatch(/Linking\.openURL\(buildDirectionsUrl/);

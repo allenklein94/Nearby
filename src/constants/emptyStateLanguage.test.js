@@ -17,7 +17,7 @@ describe('empty-state language (item 80)', () => {
     }
   });
   it('fills variables and returns null for an unknown id', () => {
-    expect(emptyCopy('places_search', { query: 'tacos' }).title).toBe('No places match "tacos"');
+    expect(emptyCopy('gatherings_search', { query: 'tacos' }).title).toBe('No gatherings match "tacos"');
     expect(emptyCopy('nope')).toBeNull();
   });
   it('the owner-specified wording is intact', () => {
@@ -45,7 +45,7 @@ describe('empty-state language (item 80)', () => {
     for (const id of Object.keys(EMPTY_STATES)) expect(used.has(id)).toBe(true);
   });
   it('the converted screens no longer print database-voice empties', () => {
-    for (const [f, re] of [['screens/BusinessDashboardScreen.js', /No data yet|No packages yet\.|No offers sent yet\./], ['screens/PlacesScreen.js', /Nothing found nearby/]]) {
+    for (const [f, re] of [['screens/BusinessDashboardScreen.js', /No data yet|No packages yet\.|No offers sent yet\./]]) {
       expect(read(f)).not.toMatch(re);
     }
   });
