@@ -1,26 +1,29 @@
 import React, { useState, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader, PullToRefresh } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
-import { getMyCommunities, getPublicCommunities, joinCommunity, getCommunityMemberCount } from '../services/communities';
-import { recordBehaviorEvent } from '../services/behaviorSignals';
+import { getMyCommunities, getCommunityMemberCount } from '../services/communities';
+import { navigateKeepingTrail } from '../services/openDestination';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
-import BusinessHostBadge from '../components/BusinessHostBadge';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { placeDistanceLabel } from '../services/places';
 import { spacing, radius, typography } from '../theme';
 
-// "Boca Raton, FL · 2.3 mi away" -- the distance part only when the row carries a real one (public communities
-// ordered by the shared position); a community you're a member of, or with no map point, just shows its area.
+// "Boca Raton, FL" -- a community's area (member communities carry no distance; the distance part shows only when a row
+// carries a real one).
 function areaLine(c) {
   const area = c.area_label || [c.area_city, c.area_region].filter(Boolean).join(', ') || null;
   return [area, placeDistanceLabel(c.distanceMiles)].filter(Boolean).join(' · ') || null;
 }
+
+// Rule 14 (owner, 2026-10-04): this screen is the person's MANAGEMENT surface for communities they belong to (Your
+// Communities + Create). Finding and joining public communities lives in ONE place, Discover -> Communities; this screen
+// links there ("Discover communities ->") and never lists public communities or Join buttons of its own.
+export const DISCOVER_COMMUNITIES = { initialMode: 'things', initialTypeTab: 'communities' };
 
 export default function CommunitiesScreen({ navigation }) {
   const { t } = useLanguage();
@@ -28,7 +31,6 @@ export default function CommunitiesScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [myCommunities, setMyCommunities] = useState([]);
-  const [discoverCommunities, setDiscoverCommunities] = useState([]);
   const [memberCounts, setMemberCounts] = useState({});
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -36,16 +38,9 @@ export default function CommunitiesScreen({ navigation }) {
 
   const load = useCallback(async () => {
     try {
-      const [mine, publicOnes] = await Promise.all([getMyCommunities(), getPublicCommunities()]);
+      const mine = await getMyCommunities();
       setMyCommunities(mine);
-
-      const myIds = new Set(mine.map((c) => c.id));
-      const toDiscover = publicOnes.filter((c) => !myIds.has(c.id));
-      setDiscoverCommunities(toDiscover);
-
-      const counts = await Promise.all(
-        [...mine, ...toDiscover].map(async (c) => [c.id, await getCommunityMemberCount(c.id)])
-      );
+      const counts = await Promise.all(mine.map(async (c) => [c.id, await getCommunityMemberCount(c.id)]));
       setMemberCounts(Object.fromEntries(counts));
       setLoadError(false);
     } catch (e) {
@@ -67,15 +62,8 @@ export default function CommunitiesScreen({ navigation }) {
     setRefreshing(false);
   }
 
-  async function handleJoin(communityId) {
-    try {
-      await joinCommunity(communityId);
-      recordBehaviorEvent('join', 'community', communityId, [...myCommunities, ...discoverCommunities].find((c) => c.id === communityId)?.interest_tag);
-      load();
-    } catch (e) {
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleJoin(communityId) });
-    }
-  }
+  // A fresh params object each tap so Discover re-applies it; the return trail brings Back here (item 139).
+  const openDiscoverCommunities = () => navigateKeepingTrail(navigation, 'Discover', { ...DISCOVER_COMMUNITIES });
 
   if (loading) {
     return (
@@ -94,10 +82,21 @@ export default function CommunitiesScreen({ navigation }) {
     );
   }
 
+  const discoverLink = (
+    <TouchableOpacity
+      onPress={openDiscoverCommunities}
+      accessibilityLabel={t('ui.community.discoverCommunitiesA11y')}
+      accessibilityRole="button"
+      style={{ marginTop: spacing.md }}
+    >
+      <Text style={styles.emptyActionText}>{t('ui.community.discoverCommunities')}</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
-        data={discoverCommunities}
+        data={myCommunities}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: spacing.lg }}
         refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
@@ -114,80 +113,42 @@ export default function CommunitiesScreen({ navigation }) {
                 <Text style={styles.createButtonText}>{t('ui.community.create')}</Text>
               </TouchableOpacity>
             </View>
-
-            {myCommunities.length > 0 && (
-              <>
-                <Text style={styles.sectionHeader}>{t('ui.community.yourCommunities')}</Text>
-                {myCommunities.map((c) => {
-                  const categoryStyle = categoryStyleFor(c.interest_tag);
-                  return (
-                    <TouchableOpacity
-                      key={c.id}
-                      style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }]}
-                      onPress={() => navigation.navigate('CommunityDetail', { communityId: c.id, communityName: c.name })}
-                      accessibilityLabel={`${c.name}, ${membersLabel(memberCounts[c.id]) ?? t('ui.community.communityWord')}`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.cardIcon}>{categoryStyle.icon}</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.cardTitle}>{c.name}</Text>
-                        {membersLabel(memberCounts[c.id]) ? <Text style={styles.cardMeta}>{membersLabel(memberCounts[c.id])}</Text> : null}
-                        {areaLine(c) ? <Text style={styles.cardArea}>📍 {areaLine(c)}</Text> : null}
-                      </View>
-                      <Text style={styles.cardChevron}>›</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-                <View style={styles.divider} />
-              </>
-            )}
-
-            <Text style={styles.sectionHeader}>{t('ui.community.discover')}</Text>
+            {myCommunities.length > 0 && <Text style={styles.sectionHeader}>{t('ui.community.yourCommunities')}</Text>}
           </>
         }
         ListEmptyComponent={
-          !loading && (
-            <FadeInState opportunity style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>🏘️</Text>
-              <EmptyCopy id="communities_discover" />
-              <TouchableOpacity
-                onPress={() => navigation.navigate('CreateCommunity')}
-                accessibilityLabel={t('ui.community.createACommunityA11y')}
-                accessibilityRole="button"
-                style={{ marginTop: spacing.md }}
-              >
-                <Text style={styles.emptyActionText}>{t('ui.community.createACommunity')}</Text>
-              </TouchableOpacity>
-            </FadeInState>
-          )
+          <FadeInState opportunity style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>🏘️</Text>
+            <EmptyCopy id="communities_mine" />
+            {discoverLink}
+            <TouchableOpacity
+              onPress={() => navigation.navigate('CreateCommunity')}
+              accessibilityLabel={t('ui.community.createACommunityA11y')}
+              accessibilityRole="button"
+              style={{ marginTop: spacing.md }}
+            >
+              <Text style={styles.emptyActionText}>{t('ui.community.createACommunity')}</Text>
+            </TouchableOpacity>
+          </FadeInState>
         }
-        renderItem={({ item }) => {
-          const categoryStyle = categoryStyleFor(item.interest_tag);
+        ListFooterComponent={myCommunities.length > 0 ? <View style={styles.footer}>{discoverLink}</View> : null}
+        renderItem={({ item: c }) => {
+          const categoryStyle = categoryStyleFor(c.interest_tag);
           return (
-            <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }]}>
-              <TouchableOpacity
-                style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
-                onPress={() => navigation.navigate('CommunityDetail', { communityId: item.id, communityName: item.name })}
-                accessibilityLabel={`${item.name}, ${membersLabel(memberCounts[item.id]) ?? t('ui.community.communityWord')}`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.cardIcon}>{categoryStyle.icon}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cardTitle}>{item.name}</Text>
-                  {membersLabel(memberCounts[item.id]) ? <Text style={styles.cardMeta}>{membersLabel(memberCounts[item.id])}</Text> : null}
-                  {areaLine(item) ? <Text style={styles.cardArea}>📍 {areaLine(item)}</Text> : null}
-                  <BusinessHostBadge hostingPartnerId={item.hosting_partner_id} navigation={navigation} />
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.joinButton}
-                onPress={() => handleJoin(item.id)}
-                accessibilityLabel={t('ui.community.joinA11y', { name: item.name })}
-                accessibilityRole="button"
-              >
-                <Text style={styles.joinButtonText}>{t('ui.community.join')}</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }]}
+              onPress={() => navigation.navigate('CommunityDetail', { communityId: c.id, communityName: c.name })}
+              accessibilityLabel={`${c.name}, ${membersLabel(memberCounts[c.id]) ?? t('ui.community.communityWord')}`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.cardIcon}>{categoryStyle.icon}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>{c.name}</Text>
+                {membersLabel(memberCounts[c.id]) ? <Text style={styles.cardMeta}>{membersLabel(memberCounts[c.id])}</Text> : null}
+                {areaLine(c) ? <Text style={styles.cardArea}>📍 {areaLine(c)}</Text> : null}
+              </View>
+              <Text style={styles.cardChevron}>›</Text>
+            </TouchableOpacity>
           );
         }}
       />
@@ -205,7 +166,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase',
     letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.sm,
   },
-  divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
+  footer: { alignItems: 'center', paddingVertical: spacing.md },
   card: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm, ...shadow.card,
@@ -215,8 +176,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   cardMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   cardArea: { color: colors.textTertiary, fontSize: 11, marginTop: 1 },
   cardChevron: { color: colors.textTertiary, fontSize: 20 },
-  joinButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
-  joinButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 40, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },

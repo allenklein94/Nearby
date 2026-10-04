@@ -112,10 +112,8 @@
     "createANewCommunityA11y": "Create a new community",
     "create": "+ Create",
     "yourCommunities": "Your Communities",
-    "discover": "Discover",
     "createACommunityA11y": "Create a community",
     "createACommunity": "+ Create a Community →",
-    "join": "Join",
     "sinceYouManageThisCommunity": "🏪 Since you manage {name}, this community will be linked to your business page and appear on your Business Dashboard's Community tab.",
     "nameRequired": "Name required",
     "giveYourCommunityAName": "Give your community a name.",
@@ -174,7 +172,9 @@
     "unlock.attendeesProgress": {
       "one": "🔒 Unlocks at {count} attendee ({progress}/{count} so far)",
       "other": "🔒 Unlocks at {count} attendees ({progress}/{count} so far)"
-    }
+    },
+    "discoverCommunities": "Discover communities →",
+    "discoverCommunitiesA11y": "Find communities to join in Discover"
   },
   "es": {
     "thisCommunityIsLinkedTo": "🏪 Esta comunidad está vinculada a tu negocio, {name}; por eso aparece en la pestaña Comunidad de tu Panel de negocio.",
@@ -289,10 +289,8 @@
     "createANewCommunityA11y": "Crear una comunidad nueva",
     "create": "+ Crear",
     "yourCommunities": "Tus comunidades",
-    "discover": "Descubrir",
     "createACommunityA11y": "Crear una comunidad",
     "createACommunity": "+ Crear una comunidad →",
-    "join": "Unirse",
     "sinceYouManageThisCommunity": "🏪 Como gestionas {name}, esta comunidad se vinculará a la página de tu negocio y aparecerá en la pestaña Comunidad de tu Panel de negocio.",
     "nameRequired": "Falta el nombre",
     "giveYourCommunityAName": "Ponle un nombre a tu comunidad.",
@@ -351,7 +349,9 @@
     "unlock.attendeesProgress": {
       "one": "🔒 Se desbloquea con {count} asistente ({progress}/{count} por ahora)",
       "other": "🔒 Se desbloquea con {count} asistentes ({progress}/{count} por ahora)"
-    }
+    },
+    "discoverCommunities": "Descubrir comunidades →",
+    "discoverCommunitiesA11y": "Busca comunidades para unirte en Descubrir"
   },
   "de": {
     "thisCommunityIsLinkedTo": "🏪 Diese Community ist mit deinem Geschäft {name} verknüpft; deshalb erscheint sie im Community-Tab deines Business-Dashboards.",
@@ -466,10 +466,8 @@
     "createANewCommunityA11y": "Neue Community erstellen",
     "create": "+ Erstellen",
     "yourCommunities": "Deine Communities",
-    "discover": "Entdecken",
     "createACommunityA11y": "Community erstellen",
     "createACommunity": "+ Community erstellen →",
-    "join": "Beitreten",
     "sinceYouManageThisCommunity": "🏪 Da du {name} verwaltest, wird diese Community mit deiner Geschäftsseite verknüpft und erscheint im Community-Tab deines Business-Dashboards.",
     "nameRequired": "Name fehlt",
     "giveYourCommunityAName": "Gib deiner Community einen Namen.",
@@ -528,7 +526,9 @@
     "unlock.attendeesProgress": {
       "one": "🔒 Wird ab {count} Teilnehmer freigeschaltet (bisher {progress}/{count})",
       "other": "🔒 Wird ab {count} Teilnehmenden freigeschaltet (bisher {progress}/{count})"
-    }
+    },
+    "discoverCommunities": "Communities entdecken →",
+    "discoverCommunitiesA11y": "Communities zum Beitreten in Entdecken finden"
   },
   "fr": {
     "thisCommunityIsLinkedTo": "🏪 Cette communauté est liée à votre commerce, {name} ; c'est pour ça qu'elle apparaît dans l'onglet Communauté de votre tableau de bord.",
@@ -643,10 +643,8 @@
     "createANewCommunityA11y": "Créer une nouvelle communauté",
     "create": "+ Créer",
     "yourCommunities": "Vos communautés",
-    "discover": "Découvrir",
     "createACommunityA11y": "Créer une communauté",
     "createACommunity": "+ Créer une communauté →",
-    "join": "Rejoindre",
     "sinceYouManageThisCommunity": "🏪 Comme vous gérez {name}, cette communauté sera liée à la page de votre commerce et apparaîtra dans l'onglet Communauté de votre tableau de bord.",
     "nameRequired": "Nom requis",
     "giveYourCommunityAName": "Donnez un nom à votre communauté.",
@@ -705,7 +703,9 @@
     "unlock.attendeesProgress": {
       "one": "🔒 Se débloque à {count} participant ({progress}/{count} pour l'instant)",
       "other": "🔒 Se débloque à {count} participants ({progress}/{count} pour l'instant)"
-    }
+    },
+    "discoverCommunities": "Découvrir des communautés →",
+    "discoverCommunitiesA11y": "Trouver des communautés à rejoindre dans Découvrir"
   },
   "pt": {
     "thisCommunityIsLinkedTo": "🏪 Esta comunidade está vinculada ao seu negócio, {name}; por isso ela aparece na aba Comunidade do seu Painel do negócio.",
@@ -820,10 +820,8 @@
     "createANewCommunityA11y": "Criar uma nova comunidade",
     "create": "+ Criar",
     "yourCommunities": "Suas comunidades",
-    "discover": "Descobrir",
     "createACommunityA11y": "Criar uma comunidade",
     "createACommunity": "+ Criar uma comunidade →",
-    "join": "Entrar",
     "sinceYouManageThisCommunity": "🏪 Como você gerencia {name}, esta comunidade será vinculada à página do seu negócio e aparecerá na aba Comunidade do seu Painel do negócio.",
     "nameRequired": "Nome obrigatório",
     "giveYourCommunityAName": "Dê um nome à sua comunidade.",
@@ -882,7 +880,9 @@
     "unlock.attendeesProgress": {
       "one": "🔒 Desbloqueia com {count} participante ({progress}/{count} até agora)",
       "other": "🔒 Desbloqueia com {count} participantes ({progress}/{count} até agora)"
-    }
+    },
+    "discoverCommunities": "Descobrir comunidades →",
+    "discoverCommunitiesA11y": "Encontre comunidades para participar em Descobrir"
   },
   "ht": {
     "thisCommunityIsLinkedTo": "🏪 Kominote sa a konekte ak biznis ou, {name}; se pou sa li parèt nan onglet Kominote nan Tablo biznis ou.",
@@ -997,10 +997,8 @@
     "createANewCommunityA11y": "Kreye yon nouvo kominote",
     "create": "+ Kreye",
     "yourCommunities": "Kominote ou yo",
-    "discover": "Dekouvri",
     "createACommunityA11y": "Kreye yon kominote",
     "createACommunity": "+ Kreye yon kominote →",
-    "join": "Antre",
     "sinceYouManageThisCommunity": "🏪 Paske se ou ki jere {name}, kominote sa a pral konekte ak paj biznis ou epi parèt nan onglet Kominote nan Tablo biznis ou.",
     "nameRequired": "Non obligatwa",
     "giveYourCommunityAName": "Bay kominote w la yon non.",
@@ -1059,7 +1057,9 @@
     "unlock.attendeesProgress": {
       "one": "🔒 Ap debloke ak {count} patisipan ({progress}/{count} pou kounye a)",
       "other": "🔒 Ap debloke ak {count} patisipan ({progress}/{count} pou kounye a)"
-    }
+    },
+    "discoverCommunities": "Dekouvri kominote →",
+    "discoverCommunitiesA11y": "Jwenn kominote pou antre nan Dekouvri"
   },
   "zh": {
     "thisCommunityIsLinkedTo": "🏪 这个社群与你的商家 {name} 关联，所以它会出现在你商家后台的“社群”标签中。",
@@ -1174,10 +1174,8 @@
     "createANewCommunityA11y": "创建新社群",
     "create": "+ 创建",
     "yourCommunities": "你的社群",
-    "discover": "发现",
     "createACommunityA11y": "创建社群",
     "createACommunity": "+ 创建社群 →",
-    "join": "加入",
     "sinceYouManageThisCommunity": "🏪 由于你管理 {name}，这个社群将关联到你的商家页面，并出现在你商家后台的“社群”标签中。",
     "nameRequired": "需要名称",
     "giveYourCommunityAName": "给你的社群起个名字。",
@@ -1231,7 +1229,9 @@
     },
     "unlock.attendeesProgress": {
       "other": "🔒 达到 {count} 位参加者后解锁（目前 {progress}/{count}）"
-    }
+    },
+    "discoverCommunities": "发现社群 →",
+    "discoverCommunitiesA11y": "在发现中寻找可加入的社群"
   },
   "vi": {
     "thisCommunityIsLinkedTo": "🏪 Cộng đồng này được liên kết với cửa hàng của bạn, {name}; vì vậy nó xuất hiện trong thẻ Cộng đồng trên Bảng điều khiển doanh nghiệp.",
@@ -1346,10 +1346,8 @@
     "createANewCommunityA11y": "Tạo cộng đồng mới",
     "create": "+ Tạo",
     "yourCommunities": "Cộng đồng của bạn",
-    "discover": "Khám phá",
     "createACommunityA11y": "Tạo cộng đồng",
     "createACommunity": "+ Tạo cộng đồng →",
-    "join": "Tham gia",
     "sinceYouManageThisCommunity": "🏪 Vì bạn quản lý {name}, cộng đồng này sẽ được liên kết với trang cửa hàng và xuất hiện trong thẻ Cộng đồng trên Bảng điều khiển doanh nghiệp.",
     "nameRequired": "Cần có tên",
     "giveYourCommunityAName": "Hãy đặt tên cho cộng đồng.",
@@ -1403,7 +1401,9 @@
     },
     "unlock.attendeesProgress": {
       "other": "🔒 Mở khóa khi có {count} người tham dự (hiện {progress}/{count})"
-    }
+    },
+    "discoverCommunities": "Khám phá cộng đồng →",
+    "discoverCommunitiesA11y": "Tìm cộng đồng để tham gia trong Khám phá"
   },
   "tl": {
     "thisCommunityIsLinkedTo": "🏪 Naka-link ang komunidad na ito sa negosyo mo, {name}; kaya ito lumalabas sa Community tab ng Business Dashboard mo.",
@@ -1518,10 +1518,8 @@
     "createANewCommunityA11y": "Gumawa ng bagong komunidad",
     "create": "+ Gumawa",
     "yourCommunities": "Ang mga komunidad mo",
-    "discover": "Tuklasin",
     "createACommunityA11y": "Gumawa ng komunidad",
     "createACommunity": "+ Gumawa ng komunidad →",
-    "join": "Sumali",
     "sinceYouManageThisCommunity": "🏪 Dahil ikaw ang namamahala sa {name}, ili-link ang komunidad na ito sa page ng negosyo mo at lalabas ito sa Community tab ng Business Dashboard mo.",
     "nameRequired": "Kailangan ng pangalan",
     "giveYourCommunityAName": "Bigyan ng pangalan ang komunidad mo.",
@@ -1580,7 +1578,9 @@
     "unlock.attendeesProgress": {
       "one": "🔒 Maa-unlock sa {count} dumalo ({progress}/{count} sa ngayon)",
       "other": "🔒 Maa-unlock sa {count} dumalo ({progress}/{count} sa ngayon)"
-    }
+    },
+    "discoverCommunities": "Tuklasin ang mga komunidad →",
+    "discoverCommunitiesA11y": "Maghanap ng komunidad na sasalihan sa Tuklasin"
   },
   "ru": {
     "thisCommunityIsLinkedTo": "🏪 Это сообщество связано с вашим заведением «{name}», поэтому оно отображается на вкладке «Сообщество» в бизнес-панели.",
@@ -1695,10 +1695,8 @@
     "createANewCommunityA11y": "Создать новое сообщество",
     "create": "+ Создать",
     "yourCommunities": "Ваши сообщества",
-    "discover": "Обзор",
     "createACommunityA11y": "Создать сообщество",
     "createACommunity": "+ Создать сообщество →",
-    "join": "Вступить",
     "sinceYouManageThisCommunity": "🏪 Так как вы управляете «{name}», это сообщество будет связано со страницей заведения и появится на вкладке «Сообщество» в бизнес-панели.",
     "nameRequired": "Нужно название",
     "giveYourCommunityAName": "Дайте сообществу название.",
@@ -1767,7 +1765,9 @@
       "few": "🔒 Откроется при {count} участниках (сейчас {progress}/{count})",
       "many": "🔒 Откроется при {count} участниках (сейчас {progress}/{count})",
       "other": "🔒 Откроется при {count} участника (сейчас {progress}/{count})"
-    }
+    },
+    "discoverCommunities": "Найти сообщества →",
+    "discoverCommunitiesA11y": "Найти сообщества в разделе «Обзор»"
   },
   "ko": {
     "thisCommunityIsLinkedTo": "🏪 이 커뮤니티는 내 가게 {name}에 연결되어 있어서 비즈니스 대시보드의 커뮤니티 탭에 표시돼요.",
@@ -1882,10 +1882,8 @@
     "createANewCommunityA11y": "새 커뮤니티 만들기",
     "create": "+ 만들기",
     "yourCommunities": "내 커뮤니티",
-    "discover": "둘러보기",
     "createACommunityA11y": "커뮤니티 만들기",
     "createACommunity": "+ 커뮤니티 만들기 →",
-    "join": "가입",
     "sinceYouManageThisCommunity": "🏪 {name}을(를) 관리하고 있으므로 이 커뮤니티는 가게 페이지에 연결되고 비즈니스 대시보드의 커뮤니티 탭에 표시돼요.",
     "nameRequired": "이름이 필요해요",
     "giveYourCommunityAName": "커뮤니티 이름을 정해 주세요.",
@@ -1939,6 +1937,8 @@
     },
     "unlock.attendeesProgress": {
       "other": "🔒 참석자 {count}명이 되면 열려요 (현재 {progress}/{count})"
-    }
+    },
+    "discoverCommunities": "커뮤니티 둘러보기 →",
+    "discoverCommunitiesA11y": "둘러보기에서 참여할 커뮤니티 찾기"
   }
 }

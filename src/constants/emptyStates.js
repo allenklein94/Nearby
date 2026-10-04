@@ -42,7 +42,7 @@ export const EMPTY_STATES = {
   community_members: { title: "No members yet", body: "People who join will appear here." },
   community_calendar: { title: "Nothing on the calendar", body: "Be the first to plan something." },
   request_no_responses: { title: "No responses yet", body: "Nearby is matching your request with businesses. You'll be notified when one responds." },
-  communities_discover: { title: "No communities nearby yet", body: "Start your own and people nearby can join." },
+  communities_mine: { title: "You're not in any communities yet", body: "Find one to join in Discover, or start your own." },
   emergency_contacts: { title: "No emergency contacts yet", body: "Add someone you trust for date safety." },
   friend_circles: { title: "No circles yet", body: "Group your friends into circles to plan together." },
   shared_thoughts: { title: "No thoughts shared yet", body: "Add one to start the conversation." },
