@@ -55,6 +55,19 @@ export function reasonTier(text) {
   }
 }
 
+// Owner item 194 (2026-10-04): a recommendation shows only its one or two STRONGEST reasons, never every reason it earned.
+// Strongest = lowest tier on the ladder above; equal tiers keep the engine's own order. Works on canonical English text (the
+// shown text is localized afterwards). Selection only: what ranks an item never reads this.
+export const MAX_SHOWN_REASONS = 2;
+export function strongestReasons(texts = [], max = MAX_SHOWN_REASONS) {
+  const list = (Array.isArray(texts) ? texts : []).filter((t) => typeof t === 'string' && t.trim());
+  return list
+    .map((text, i) => ({ text, i, tier: reasonTier(text) }))
+    .sort((a, b) => a.tier - b.tier || a.i - b.i)
+    .slice(0, Math.max(0, max))
+    .map((r) => r.text);
+}
+
 export function signalTier(signal) {
   if (!signal) return WORST_TIER;
   if (signal.kind && KIND_TIER[signal.kind] != null) return KIND_TIER[signal.kind];

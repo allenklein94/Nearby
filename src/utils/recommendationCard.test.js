@@ -20,7 +20,7 @@ describe('gatheringCardModel', () => {
       { kind: 'trending', text: 'Trending nearby' },
       { kind: 'going', text: 'Sam is going' },
     ] });
-    expect(m.why).toBe('Because you like Coffee · Trending nearby');
+    expect(m.why).toBe('Because you like Coffee'); // item 194: three reasons -> the two strongest (friend going + interest)
     expect(m.social).toBe('Sam is going');
     expect(m.fields).toContain('social');
   });

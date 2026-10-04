@@ -17,6 +17,7 @@ import { formatDistance } from './formatDistance';
 import { timeWindowState, windowPhrase } from './timeWindow';
 import { gatheringPrimaryAction, offerPrimaryAction } from './primaryAction';
 import { isContextRestatement } from '../constants/recommendationReasonVocabulary';
+import { strongestReasons } from '../constants/signalPriority';
 import { localizeReasons, localizeNote, localizeTitle } from './reasonLocalization';
 import { localDistance, localWindow } from '../i18n/format';
 import { translate, DEFAULT_LANGUAGE } from '../i18n/translate';
@@ -117,7 +118,8 @@ export function recommendationContext(item, opts = {}) {
   const context = [distanceFor(item.distanceMiles, opts.language), whenFor(item, now, opts.language)].filter(Boolean).join(' · ') || null;
   // selection happens on the canonical English reasons; only the shown text is put in the person's language (opts.language)
   const canonical = validReasons(item);
-  const reasons = localizeReasons(canonical, opts.language);
+  // item 194: only the one or two strongest reasons are shown (`canonicalReasons` keeps them all for dedupe and evidence)
+  const reasons = localizeReasons(strongestReasons(canonical), opts.language);
   const model = {
     entity: { kind: item.type, id: item.id ?? null, title: item.title ?? null },
     reason: reasons[0] ?? null,
@@ -125,7 +127,7 @@ export function recommendationContext(item, opts = {}) {
     destination: intentResultDestination(item, { ...opts, at: now }),
     action: actionFor(item, { myUserId: opts.myUserId ?? null, now, actionOpts: opts.actionOpts ?? {} }),
   };
-  // `reasons` = every valid reason (a card with room may show several; `reason` is always the first of them)
+  // `reasons` = the strongest valid reasons, at most two (item 194); `reason` is the strongest of them
   return { ...model, reasons, canonicalReasons: canonical, fields: CONTEXT_FIELDS.filter((f) => model[f]) };
 }
 

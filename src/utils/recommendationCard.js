@@ -16,6 +16,8 @@
 import { recommendationFacts } from './recommendationFacts';
 import { recommendationContext, contextItem } from './recommendationContext';
 import { localizeReasons } from './reasonLocalization';
+import { strongestReasons } from '../constants/signalPriority';
+import { validReasons } from './recommendationContext';
 
 export const CARD_FIELD_ORDER = ['what', 'why', 'meta', 'social', 'action'];
 const SOCIAL_KINDS = ['going', 'friend'];
@@ -25,8 +27,12 @@ const SOCIAL_KINDS = ['going', 'friend'];
 export function gatheringCardModel(g, { signals = null, myUserId = null, now = Date.now(), actionOpts = {}, language } = {}) {
   if (!g) return { what: null, why: null, meta: null, social: null, action: null, destination: null, entity: null, reasons: [], fields: [] };
   const list = Array.isArray(signals) ? signals : null;
-  const whyParts = list ? list.filter((s) => !SOCIAL_KINDS.includes(s.kind)).map((s) => s.text) : [recommendationFacts(g).why].filter(Boolean);
-  const socialParts = list ? list.filter((s) => SOCIAL_KINDS.includes(s.kind)).map((s) => s.text) : [];
+  const allWhy = list ? validReasons({ reasons: list.filter((s) => !SOCIAL_KINDS.includes(s.kind)).map((s) => s.text) }) : [recommendationFacts(g).why].filter(Boolean);
+  const allSocial = list ? list.filter((s) => SOCIAL_KINDS.includes(s.kind)).map((s) => s.text) : [];
+  // item 194: WHY and SOCIAL PROOF together show at most the two strongest reasons, then each keeps its own line
+  const shown = strongestReasons([...allWhy, ...allSocial]);
+  const whyParts = allWhy.filter((t) => shown.includes(t));
+  const socialParts = allSocial.filter((t) => shown.includes(t));
   const c = recommendationContext(contextItem('gathering', g, { reasons: whyParts }), { myUserId, now: new Date(now), actionOpts, language });
   const model = {
     what: g.title || null,
