@@ -53,6 +53,13 @@ matching, privacy or business-demand change.
 | 39 | `education_classes` is per-tag for needs; only **Tutoring** and **Certifications** are in `NEED_TAG_KEYS` | item 182, **APPLIED 2026-10-03** (need side; the group leaves `NEED_GROUP_KEYS` for the open-ended rule in the pass) |
 | 40 | Community & Volunteering wordings (item 183 table) + faith wordings church / temple / mosque / synagogue -> Faith & Spirituality (search resolution only; land together with the search-log strip below) | item 183, LOCKED |
 | 41 | -ies plurals in the one plural rule (ordinary English, -ie exception list) + Faith & Spirituality never learned | item 183, **APPLIED 2026-10-03** (migration `20270280`) |
+| 42 | Business & Networking wordings (item 184 table; lawyer / printing / marketing, bare expo / startup stay unmapped) | item 184, LOCKED |
+| 43 | `business_networking` per-tag needs (Coworking, Finance, Real Estate) + not-LinkedIn guard + Job Title out of the dating match % | item 184, **APPLIED 2026-10-03** (no migration; the group leaves `NEED_GROUP_KEYS` for the open-ended rule in the pass) |
+| 44 | Dating & Social wordings (item 185 table) | item 185, LOCKED |
+| 45 | **Customer-only marker** (opposite of `business_only`): Dating & Social business-selectable only for Speed Dating, Singles Events, Social Clubs; the rest customer-only, for primary AND secondary; signup (app + web), dashboard editing, server validation, routing (`business_served_tags`) and category views read the same flags | item 185, LOCKED |
+| 46 | Concrete category beats a dating category ("first date coffee" = Coffee) | item 185, **APPLIED 2026-10-04** (no migration) |
+| 47 | **Max 5 secondary categories per business** (a business-assignment product rule, not a property of any category): enforced in app + web signup, dashboard editing, `update_business_profile` / `enforce_category_tags_array` / signup edge function, and the migration; one primary; primary + secondary from the same canonical taxonomy; attributes unlimited | item 186, LOCKED |
+| 48 | **Secondary categories and attributes stay two separate lists** (`categories` routes and places in category views; `attributes` only rank/explain, never route, never stand in for a category); checklist item: no surface, API or migration merges them | item 186, LOCKED |
 
 Result: 19 canonical groups.
 
@@ -847,7 +854,7 @@ only a Dating & Social tag (`isDatingTag`), and `resolveAsk` drops an AI dating 
 Because `tagsForPhrase` is shared, the app's business-type search follows the same rule ("speed dating bar" offers Bars &
 Lounges); the web signup form's own copy is unchanged until the migration regenerates it.
 
-## Item 186: One primary category, many secondary classifications (PROPOSED 2026-10-04, awaiting owner)
+## Item 186: One primary category, many secondary classifications (LOCKED 2026-10-04)
 
 The rule already holds in the schema (checked on production 2026-10-04). `brand_partners` has:
 
@@ -875,3 +882,11 @@ could declare dozens and receive requests in all of them ("category stuffing"), 
 Proposal (in the V1 migration): at most N secondary categories (suggest 5), enforced in the same trigger and shown in
 signup and the dashboard; the customer-only marker (item 185) applies to primary AND secondary. Attributes stay uncapped
 (they never route). Prod today: 1 business, no overflow to convert.
+
+**Owner decision (2026-10-04, LOCKED):** (1) secondary categories and attributes are two separate lists, never one
+"secondary" list; attributes never route and never substitute for a category. (2) Max 5 secondary categories per business,
+a business-assignment product rule (not a taxonomy property), one primary, same canonical universe, customer-only applies to
+both, attributes unlimited; enforced in every signup / edit / server path in the V1 migration (pending rows 47-48).
+**"Coffee & Cafés"** is only a display label: the canonical category stays Coffee (permanent key `coffee`), no stored rename.
+Note: no surface shows that label today (English shows the stored name "Coffee"); showing it would be a display-name entry
+(English beside the 10 translations in `vocab.categories.tags.coffee`), never a taxonomy change.
