@@ -920,3 +920,31 @@ People nor suggested as capacity (`statedSize` in `createParamsFromAsk`); a stat
 value, routing, request, ranking or taxonomy change; the gathering's place stays the place the host picks ("nearby" is
 discovery context). Edit's fill-only category picker (item 64) is unchanged. Tests: `gatheringInference.test.js` (item 187
 block), `askToCreate.test.js`, `closedLoop.test.js`. Not device-tested (parse-checked); business web export regenerated.
+
+## Item 188: Events (PROPOSED 2026-10-04; conflicts with item 174 and the parked age rule flagged)
+
+**Conflict, flagged rather than changed silently:** item 174 (LOCKED) says an event is a gathering + `format`, never a
+separate Event object, Events category or second lifecycle. "Events need another model" would reverse that. Mapping the
+owner's example shows the existing gathering already carries almost all of it, so the proposal keeps item 174:
+
+| Owner field | Already on the gathering | Gap |
+|---|---|---|
+| Event type: Concert | `format` = concert (16 formats: concert, show, festival, tour...) | none |
+| Category: Entertainment | `interest_tag` (Live Music / Concerts...), group derived; `genre` for music | none |
+| Start 7 PM | `scheduled_at` | none |
+| End 10 PM | `duration_minutes` (15-720, host-declared); the time engine already derives the end ("Happening now · until 10 PM") | cards show "About 3 hr", not "7-10 PM"; optional display-only follow-up |
+| Venue: business/location | the place the host picks (`precise_lat/lng`, `area`); a business venue/co-host = `hosting_partner_id` | none |
+| Capacity 500 | `capacity` (total people incl. host, no upper limit; joins waitlist when full) | none |
+| Ticketing: required | nothing (only `price_level`) | **decision needed** (below) |
+| Age 18+ | nothing; gathering 18+/21+ is PARKED (items 39/79/87 LOCKED: an eligibility system needing verified age, never a label) | **stays parked** unless the owner opens the verified-age design |
+| Many contexts, no duplicates | one row, every surface reads it by id (item 134) and merges reasons (item 32) | none |
+
+**Ticketing options (owner to choose):**
+1. **Declared fact only (recommended if wanted):** an optional host-declared `ticket_required` on the gathering, shown as
+   "🎟️ Ticket needed, bought separately". Nearby sells nothing, links nowhere (external links were declined in item 28),
+   and join/capacity/ranking/routing are unchanged. One column + Create/Edit switch + display + 11 languages.
+2. **Not built:** keep `price_level` as the only cost signal until a real event host needs it in the live market.
+3. **Selling tickets in Nearby:** not recommended (real money: Stripe approvals; and the creep guard against reservation /
+   ticketing platforms).
+
+Nothing built for item 188 pending the owner's choice.
