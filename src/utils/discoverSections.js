@@ -1,4 +1,4 @@
-import { matchesDateFilter } from './gatheringDateFilter';
+import { matchesDateFilter, TONIGHT_START_HOUR } from './gatheringDateFilter';
 import { gatheringTimeBadge } from './gatheringTimeLabel';
 import { attendeeTotal } from './gatheringFullness';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
@@ -97,4 +97,28 @@ export function buildDiscoverSections({
   if (weekendTaken.items.length) sections.push({ key: 'weekend', title: '🌴 This Weekend', dateFilter: 'weekend', ...weekendTaken });
 
   return sections;
+}
+
+// Owner item 206: "See all" on Tonight/Today or This Weekend switches Discover into a FULL date view in place (no new screen).
+// It lists every gathering in that window from the list Discover already holds (its Open now / Outdoor filters still apply),
+// ordered by the same ladder; the capped sections are not shown while it is open, so nothing appears twice. Titled by the same
+// rule as the section: "Tonight" only when every item is a tonight start, else "Today".
+export const DATE_VIEW_FILTERS = ['today', 'weekend'];
+export function buildDiscoverDateView({
+  gatherings = [],
+  dateFilter,
+  score = (g) => ({ ...g, fit: g.fit ?? { score: 0, reasons: [] } }),
+  now = new Date(),
+  isInWindow = matchesDateFilter,
+} = {}) {
+  if (!DATE_VIEW_FILTERS.includes(dateFilter)) return null;
+  const items = gatherings.filter((g) => g && isInWindow(g.scheduled_at, dateFilter)).map(score).sort(compareDiscover);
+  if (dateFilter === 'weekend') return { key: 'weekend', dateFilter, title: '🌴 This Weekend', items };
+  // Unlike the section, the full view also holds what is starting right now, so an evening start counts as tonight either way.
+  const isTonight = (g) => {
+    const badge = gatheringTimeBadge(g.scheduled_at, now);
+    return badge === 'TONIGHT' || (badge === 'RIGHT NOW' && new Date(g.scheduled_at).getHours() >= TONIGHT_START_HOUR);
+  };
+  const allTonight = items.length > 0 && items.every(isTonight);
+  return { key: 'tonight', dateFilter, title: allTonight ? '🌙 Tonight' : '🌅 Today', items };
 }

@@ -49,6 +49,7 @@ const en = {
   group_plan_options: { title: 'No options yet', body: 'Options will appear here once they are added.' },
   gatherings_for_you: { title: 'Nothing matching your history yet', body: 'Check back later as you join more gatherings.' },
   gatherings_filtered: { title: 'No gatherings match these filters', body: 'Try widening the date or category.' },
+  discover_date_none: { title: 'Nothing here with these filters', body: 'Turn off a filter, or go back to see everything else nearby.' },
 };
 
 const es = {
@@ -99,6 +100,7 @@ const es = {
   group_plan_options: { title: 'Aún no hay opciones', body: 'Las opciones aparecerán aquí cuando se añadan.' },
   gatherings_for_you: { title: 'Aún nada coincide con tu historial', body: 'Vuelve más tarde a medida que te unas a más reuniones.' },
   gatherings_filtered: { title: 'Ninguna reunión coincide con estos filtros', body: 'Prueba a ampliar la fecha o la categoría.' },
+  discover_date_none: { title: 'No hay nada con estos filtros', body: 'Quita un filtro o vuelve atrás para ver todo lo demás cerca.' },
 };
 
 const de = {
@@ -149,6 +151,7 @@ const de = {
   group_plan_options: { title: 'Noch keine Optionen', body: 'Optionen erscheinen hier, sobald sie hinzugefügt wurden.' },
   gatherings_for_you: { title: 'Noch nichts passend zu deinem Verlauf', body: 'Schau später wieder vorbei, wenn du mehr Treffen besucht hast.' },
   gatherings_filtered: { title: 'Keine Treffen passen zu diesen Filtern', body: 'Probiere einen größeren Zeitraum oder eine andere Kategorie.' },
+  discover_date_none: { title: 'Mit diesen Filtern gibt es hier nichts', body: 'Schalte einen Filter aus oder geh zurück, um alles andere in der Nähe zu sehen.' },
 };
 
 const fr = {
@@ -199,6 +202,7 @@ const fr = {
   group_plan_options: { title: 'Aucune option pour le moment', body: 'Les options apparaîtront ici une fois ajoutées.' },
   gatherings_for_you: { title: 'Rien ne correspond encore à votre historique', body: 'Revenez plus tard, au fil des rencontres que vous rejoindrez.' },
   gatherings_filtered: { title: 'Aucune rencontre ne correspond à ces filtres', body: 'Essayez d’élargir la date ou la catégorie.' },
+  discover_date_none: { title: 'Rien ici avec ces filtres', body: 'Désactivez un filtre ou revenez en arrière pour voir tout le reste à proximité.' },
 };
 
 const pt = {
@@ -249,6 +253,7 @@ const pt = {
   group_plan_options: { title: 'Nenhuma opção ainda', body: 'As opções aparecerão aqui quando forem adicionadas.' },
   gatherings_for_you: { title: 'Nada combina com seu histórico ainda', body: 'Volte mais tarde, conforme participar de mais encontros.' },
   gatherings_filtered: { title: 'Nenhum encontro corresponde a estes filtros', body: 'Tente ampliar a data ou a categoria.' },
+  discover_date_none: { title: 'Nada aqui com estes filtros', body: 'Desative um filtro ou volte para ver tudo o mais por perto.' },
 };
 
 const ht = {
@@ -299,6 +304,7 @@ const ht = {
   group_plan_options: { title: 'Poko gen opsyon', body: 'Opsyon yo ap parèt la a lè yo ajoute yo.' },
   gatherings_for_you: { title: 'Poko gen anyen ki koresponn ak istwa w', body: 'Tounen pita pandan w ap antre nan plis rasanbleman.' },
   gatherings_filtered: { title: 'Pa gen rasanbleman ki koresponn ak filt sa yo', body: 'Eseye elaji dat la oswa kategori a.' },
+  discover_date_none: { title: 'Pa gen anyen la ak filt sa yo', body: 'Retire yon filt, oswa tounen pou wè tout lòt bagay ki toupre.' },
 };
 
 const zh = {
@@ -349,6 +355,7 @@ const zh = {
   group_plan_options: { title: '还没有选项', body: '添加选项后会显示在这里。' },
   gatherings_for_you: { title: '暂时没有与你的记录匹配的内容', body: '参加更多聚会后再来看看。' },
   gatherings_filtered: { title: '没有符合这些筛选条件的聚会', body: '试试放宽日期或类别。' },
+  discover_date_none: { title: '在这些筛选条件下没有内容', body: '关闭一个筛选条件，或返回查看附近的其他内容。' },
 };
 
 const vi = {
@@ -399,6 +406,7 @@ const vi = {
   group_plan_options: { title: 'Chưa có lựa chọn', body: 'Các lựa chọn sẽ hiện ở đây khi được thêm vào.' },
   gatherings_for_you: { title: 'Chưa có gì khớp với lịch sử của bạn', body: 'Hãy quay lại sau khi bạn tham gia thêm các buổi gặp mặt.' },
   gatherings_filtered: { title: 'Không có buổi gặp mặt nào khớp với bộ lọc này', body: 'Thử mở rộng ngày hoặc danh mục.' },
+  discover_date_none: { title: 'Không có gì với các bộ lọc này', body: 'Tắt một bộ lọc, hoặc quay lại để xem mọi thứ khác ở gần.' },
 };
 
 const tl = {
@@ -449,6 +457,7 @@ const tl = {
   group_plan_options: { title: 'Wala pang opsyon', body: 'Lalabas dito ang mga opsyon kapag naidagdag na.' },
   gatherings_for_you: { title: 'Wala pang tugma sa kasaysayan mo', body: 'Bumalik mamaya habang sumasali ka sa mas maraming pagtitipon.' },
   gatherings_filtered: { title: 'Walang pagtitipong tugma sa mga filter na ito', body: 'Subukang palawakin ang petsa o kategorya.' },
+  discover_date_none: { title: 'Walang laman dito sa mga filter na ito', body: 'Patayin ang isang filter, o bumalik para makita ang lahat ng iba pa sa malapit.' },
 };
 
 const ru = {
@@ -499,6 +508,7 @@ const ru = {
   group_plan_options: { title: 'Пока нет вариантов', body: 'Варианты появятся здесь, когда их добавят.' },
   gatherings_for_you: { title: 'Пока ничего не подходит под вашу историю', body: 'Загляните позже, когда посетите больше встреч.' },
   gatherings_filtered: { title: 'Нет встреч по этим фильтрам', body: 'Попробуйте расширить даты или категорию.' },
+  discover_date_none: { title: 'С этими фильтрами здесь ничего нет', body: 'Отключите фильтр или вернитесь назад, чтобы увидеть всё остальное рядом.' },
 };
 
 const ko = {
@@ -549,6 +559,7 @@ const ko = {
   group_plan_options: { title: '아직 옵션이 없어요', body: '옵션이 추가되면 여기에 표시돼요.' },
   gatherings_for_you: { title: '아직 기록과 맞는 모임이 없어요', body: '모임에 더 참여한 뒤 다시 확인해 보세요.' },
   gatherings_filtered: { title: '이 필터와 일치하는 모임이 없어요', body: '날짜나 카테고리를 넓혀 보세요.' },
+  discover_date_none: { title: '이 필터로는 표시할 항목이 없어요', body: '필터를 끄거나 뒤로 가서 근처의 다른 항목을 확인해 보세요.' },
 };
 
 export default { en, es, de, fr, pt, ht, zh, vi, tl, ru, ko };

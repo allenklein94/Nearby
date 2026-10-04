@@ -76,7 +76,7 @@ import { localizeReason } from '../utils/reasonLocalization';
 import { localizeAskNote } from '../i18n/askNoteView';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { splitTonight } from '../utils/categoryTonight';
-import { buildDiscoverSections, compareDiscover } from '../utils/discoverSections';
+import { buildDiscoverSections, buildDiscoverDateView, compareDiscover } from '../utils/discoverSections';
 import { SIGNAL_TIERS, tierVector } from '../constants/signalPriority';
 import { recordSearchBehavior } from '../services/behaviorSignals';
 import { searchTopic, matchBusinesses, friendsLineForTopic } from '../utils/unifiedSearch';
@@ -473,6 +473,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     if (p.initialPeopleSubMode === 'dating' || p.initialPeopleSubMode === 'friends') setPeopleSubMode(p.initialPeopleSubMode);
     if (p.initialTypeTab) setTypeFilter(p.initialTypeTab);
     setEnvironmentFilter(p.initialEnvironment === 'outdoor' || p.initialEnvironment === 'indoor' ? p.initialEnvironment : null);
+    setDateView(null); // a new navigation into Discover carries its own context; it never lands inside a date view
   }, [route.params]);
   // Item 76: the exact declared-cuisine filter inside the Restaurants view (null = broad). Lives only while a context is open.
   const [cuisineFilter, setCuisineFilter] = useState(null);
@@ -524,6 +525,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // opens GatheringDetailScreen exactly as before, since that's where the
   // real join mutation and all its edge cases live.
   const [expandedContext, setExpandedContext] = useState(null);
+  // Owner item 206: "See all" on Tonight/Today or This Weekend turns Discover into the full date view IN PLACE ('today' |
+  // 'weekend' | null). Everything else (mode, type tab, Open now, Outdoor, search) is untouched, and leaving restores the
+  // sections at the scroll position they were left at.
+  const [dateView, setDateView] = useState(null);
+  const mainScrollRef = useRef(null);
+  const mainScrollY = useRef(0);
+  const restoreScrollY = useRef(null);
   const [contextPlaces, setContextPlaces] = useState([]);
   const [loadingContextPlaces, setLoadingContextPlaces] = useState(false);
   // Section G -- real connections only (accepted friends + real matches),
@@ -606,6 +614,25 @@ export default function DiscoverHubScreen({ navigation, route }) {
     setExpandedContext({ interestTag: topSearchedCategory.category });
   }
 
+  function openDateView(dateFilter) {
+    restoreScrollY.current = mainScrollY.current;
+    setDateView(dateFilter);
+  }
+
+  function closeDateView() {
+    setDateView(null);
+  }
+
+  // The default list remounts when the date view closes; put it back where the person left it once its content is laid out.
+  function restoreMainScroll(_w, h) {
+    const y = restoreScrollY.current;
+    if (y == null || dateView) return;
+    if (h >= y) {
+      restoreScrollY.current = null;
+      mainScrollRef.current?.scrollTo({ y, animated: false });
+    }
+  }
+
   function closeContext() {
     setExpandedContext(null);
     setCuisineFilter(null);
@@ -642,6 +669,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
     });
     return () => sub.remove();
   }, [expandedContext]);
+  // Item 206: Android back leaves the date view first (one level), the same way it leaves a category view.
+  useEffect(() => {
+    if (!dateView) return undefined;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      closeDateView();
+      return true;
+    });
+    return () => sub.remove();
+  }, [dateView]);
 
   const [loadingCore, setLoadingCore] = useState(true);
   // Item 138: Discover refreshes every time it regains focus (e.g. Back from a result). Only the FIRST load shows the
@@ -1047,6 +1083,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
         excludeIds: topCategoryIds,
       })
     : [];
+
+  // Item 206: the full date view, from the same filtered list the sections read (so Open now / Outdoor still apply). Only on
+  // the plain All view: a search, another type tab or a category view replaces it.
+  const dateViewData = dateView && isAll && !isSearching && !expandedContext
+    ? buildDiscoverDateView({ gatherings: filteredGatherings, dateFilter: dateView, score: scoreGathering })
+    : null;
+  // A search, another type tab or a category view ends the date view (it never reappears later on its own).
+  useEffect(() => {
+    if (dateView && (!isAll || isSearching || expandedContext)) setDateView(null);
+  }, [dateView, isAll, isSearching, expandedContext]);
 
   // Phase 8 section F -- the expanded context's own real content, filtered
   // out of what this screen already fetched. No new gatherings/offers query
@@ -2001,17 +2047,17 @@ export default function DiscoverHubScreen({ navigation, route }) {
             leaving them live would let someone silently contradict the
             breadcrumb they're looking at. Back just clears the state --
             there was never a screen pushed to pop. */}
-        {mode === 'things' && expandedContext && (
+        {mode === 'things' && (expandedContext || dateViewData) && (
           <View style={styles.breadcrumbRow}>
             <TouchableOpacity
               style={styles.breadcrumbBackButton}
-              onPress={closeContext}
+              onPress={expandedContext ? closeContext : closeDateView}
               accessibilityLabel={t('ui.discover.backA11y')}
               accessibilityRole="button"
             >
               <Text style={styles.breadcrumbBack}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.breadcrumbText} numberOfLines={1}>{contextLabel}</Text>
+            <Text style={styles.breadcrumbText} numberOfLines={1}>{expandedContext ? contextLabel : sectionTitle(dateViewData)}</Text>
             {renderOpenNowChip()}
             {renderEnvironmentChip()}
           </View>
@@ -2040,7 +2086,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           <Text style={styles.openNowNote}>{t(environmentFilter === 'outdoor' ? 'ui.discover.envNoteOutdoor' : 'ui.discover.envNoteIndoor')}</Text>
         )}
 
-        {mode === 'things' && !expandedContext && (
+        {mode === 'things' && !expandedContext && !dateViewData && (
           <>
             <Text style={styles.searchPrompt} accessibilityRole="header">{t('ui.discover.lookingFor')}</Text>
             <View style={styles.searchBarWrap}>
@@ -2249,7 +2295,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         // one swaps entire branches) so the cue survives the branch swap the
         // same way the outer ModeTransition above survives the People<->
         // Things swap.
-        <FilterTransition activeKey={contextLabel} style={{ flex: 1 }}>
+        <FilterTransition activeKey={contextLabel ?? (dateViewData ? `date:${dateViewData.dateFilter}` : null)} style={{ flex: 1 }}>
         {expandedContext ? (
         /* Phase 8 section F -- the same screen, reconfigured. Gatherings /
            Places / Perks are the primary content, all three scoped to this
@@ -2455,6 +2501,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </>
           )}
         </ScrollView>
+      ) : dateViewData ? (
+        /* Item 206: the full Tonight/Today or This Weekend list, in place of the capped sections (so nothing shows twice).
+           The breadcrumb's back arrow (or Android back) returns to the sections where they were left. */
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {dateViewData.items.length > 0
+            ? dateViewData.items.map(renderGatheringTile)
+            : <EmptyCopy id="discover_date_none" />}
+        </ScrollView>
       ) : viewStyle === 'map' && showViewToggle ? (
         <View style={{ flex: 1 }}>
           <GatheringsMapView
@@ -2468,7 +2522,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
           />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView
+          ref={mainScrollRef}
+          contentContainerStyle={styles.scrollContent}
+          onScroll={(e) => { mainScrollY.current = e.nativeEvent.contentOffset.y; }}
+          scrollEventThrottle={64}
+          onContentSizeChange={restoreMainScroll}
+        >
           {weatherBanner && (
             <View style={styles.weatherBanner}>
               <Text style={styles.weatherBannerText}>{weatherBanner}</Text>
@@ -2551,7 +2611,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   <View style={styles.sectionHeaderRow}>
                     <Text style={styles.sectionHeaderRowLabel} numberOfLines={1}>{sectionTitle(section)}</Text>
                     {section.hasMore && section.dateFilter ? (
-                      <TouchableOpacity onPress={() => navigation.navigate('Gatherings', { initialDateFilter: section.dateFilter })} accessibilityLabel={t('ui.discover.seeAllA11y', { title: sectionTitle(section) })} accessibilityRole="button">
+                      <TouchableOpacity onPress={() => openDateView(section.dateFilter)} accessibilityLabel={t('ui.discover.seeAllA11y', { title: sectionTitle(section) })} accessibilityRole="button">
                         <Text style={styles.seeAllInline}>{t('ui.common.seeAll')}</Text>
                       </TouchableOpacity>
                     ) : null}

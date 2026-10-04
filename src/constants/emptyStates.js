@@ -82,6 +82,7 @@ export const EMPTY_STATES = {
   group_plan_options: { title: "No options yet", body: "Options will appear here once they are added." },
   gatherings_for_you: { title: "Nothing matching your history yet", body: "Check back later as you join more gatherings." },
   gatherings_filtered: { title: "No gatherings match these filters", body: "Try widening the date or category." },
+  discover_date_none: { title: "Nothing here with these filters", body: "Turn off a filter, or go back to see everything else nearby." },
 };
 
 export function emptyCopy(id, vars = {}) {
