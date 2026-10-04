@@ -793,3 +793,41 @@ basic, so an identical job title raised the match % (shown on profiles, matches,
 notice list); `job_title` is now excluded (`NEVER_COMPARED_BASICS` in `services/compatibility.js`). Guard
 `src/constants/notLinkedIn.test.js`: job_title read only by its declaration, labels and that exclusion; identical titles
 never change the score; no employer/endorsement/résumé/job-listing fields anywhere.
+
+## Item 185: Dating & Social coverage (PROPOSED 2026-10-04, awaiting owner)
+
+Today: Dating, Speed Dating, Singles Events, Group Hangouts, Date Night, First Date, Double Date, Make New Friends,
+Couples, Social Clubs. Related, not categories: occasions `date_night` / `first_date` (and anniversary), party types `date`
+/ `friends` / `new_people` / `groups`, attributes `date_friendly` / `romantic`, the People surface. `NEVER_SHARE_WITH_BUSINESS`
+(interestGraph.js) already keeps Dating, Speed Dating, Singles Events and Group Hangouts off business payloads. Checked
+against the resolver and production on 2026-10-04 (0 businesses, 0 applications, 0 gatherings in the group).
+
+**"Dating = restaurants" is already prevented on the consumer side (item 85, kept):** a date ask never hard-filters by a
+Dating & Social tag; the tag is the WHY (+2 lift for gatherings carrying it) and the inventory comes from every group
+(cafés, bars, restaurants, things to do), with places qualifying only by a DECLARED `date_friendly` / `romantic`.
+
+| Owner entry | Represented as today | Proposal |
+|---|---|---|
+| Date Night, First Date, Speed Dating, Group Hangouts | subcategories (+ occasions for the first two) | covered |
+| Singles Events | subcategory; "singles mixer", "singles night" find nothing | wording: singles mixer, singles night, singles meetup -> Singles Events; bare "singles" unmapped (tennis singles) |
+| Meet New People | party type `new_people` ("meet new people", "meet people" already set it); tag Make New Friends | no category: it is WHO, not WHAT; keep as the party type so it pulls from everywhere |
+| Social Groups | Social Clubs; "social group(s)" find nothing | wording: social group, social groups -> Social Clubs (a standing group with members is still a Nearby Community) |
+| Friend Activities | party type `friends` (+ host-declared friends plan, item 132) | no category, same reason as Meet New People |
+| Social Events | nothing maps | no wording: "social event" is any gathering; the open-ended ask already searches across groups. Bare "mixer" unmapped |
+
+**Gap 1, the business side (the real "Dating = restaurants" risk).** A business can pick Dating & Social as its major
+(app + web signup) or a tag like Date Night. A major-only business serves its whole group (`business_served_tags`), so a
+restaurant filed there would answer every Date Night / First Date request and show in the Dating & Social category view.
+Proposal for the pass: only Speed Dating, Singles Events and Social Clubs are business-selectable (event organizers,
+matchmakers, social clubs); Dating, Date Night, First Date, Double Date, Couples, Group Hangouts and Make New Friends are
+consumer-only (an occasion or social context, never a kind of business), and the Dating & Social major is not offered as a
+business's primary category unless it picks one of those three. A restaurant that is good for dates says so with
+`date_friendly` / `romantic`. Needs a consumer-only flag (the inverse of `business_only`, item 56-style).
+
+**Gap 2, a named market inside a date ask is lost.** "first date coffee" resolves to First Date, which the resolver turns
+into the date lift with NO category, so the Coffee the person named filters nothing ("coffee date" works: Coffee + date).
+Proposal (resolver fix, can apply now): when the words name both a Dating & Social tag and another canonical tag, the other
+tag is the category and the dating tag the lift (`date_tag`). Regression: "first date coffee" = Coffee + First Date lift;
+"date night" alone = no category, pulls from everywhere.
+
+**Need behavior:** not a need group, no need tags. No change.
