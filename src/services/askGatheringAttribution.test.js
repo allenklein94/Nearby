@@ -66,7 +66,7 @@ describe('only the Create-it-yourself buttons pass the id', () => {
   it('Celebrate: only its "Create it yourself" passes it', () => {
     const src = read('src/screens/CelebrateSomethingScreen.js');
     expect(src.match(/routeClassifiedIntentToCreation\([^)]*submissionId/g)).toHaveLength(1);
-    expect(src).toMatch(/function proceedToCustomCreation\(\) \{\n[^\n]*\n\s*routeClassifiedIntentToCreation\(navigation, classifyResult, typedText, \{ submissionId \}\)/);
+    expect(src).toMatch(/function proceedToCustomCreation\(\) \{\n[^\n]*\n\s*routeClassifiedIntentToCreation\(navigation, classifyResult, typedText, \{ submissionId, onTop: true \}\)/);
   });
   it('CreateGathering sends only the route param it was given (never a draft value) and createGathering writes it only on insert', () => {
     const screen = read('src/screens/CreateGatheringScreen.js');

@@ -73,6 +73,59 @@ describe('entries from a stack screen open the FriendDiscovery presentation on t
   });
 });
 
+describe('Celebrate (a stack screen) -> intent people row presents People -> Friends on top', () => {
+  const { navigateIntentRoute, detectIntentRoute } = require('../constants/intentRoutes');
+  const fakeNav = () => { const calls = []; return { calls, navigate: (...a) => calls.push(a) }; };
+  test('the shared intent router: onTop opens the FriendDiscovery presentation, a tab caller still opens Discover in place', () => {
+    const routed = detectIntentRoute('I want to meet new people');
+    expect(routed.route).toEqual({ surface: 'people', subMode: 'friends' });
+    const stackNav = fakeNav();
+    expect(navigateIntentRoute(stackNav, routed, 'I want to meet new people', { onTop: true })).toBe(true);
+    expect(stackNav.calls).toEqual([['FriendDiscovery']]);
+    const tabNav = fakeNav();
+    expect(navigateIntentRoute(tabNav, routed, 'I want to meet new people')).toBe(true);
+    expect(tabNav.calls).toEqual([['Discover', { initialMode: 'people', initialPeopleSubMode: 'friends' }]]);
+  });
+  test('createAssistant passes onTop through; Celebrate passes it on both of its intent calls', () => {
+    expect(read('services/createAssistant.js')).toMatch(/navigateIntentRoute\(navigation, detectIntentRoute\(typedText\), typedText, \{ onTop \}\)/);
+    const celebrate = read('screens/CelebrateSomethingScreen.js');
+    const calls = celebrate.match(/routeClassifiedIntentToCreation\(navigation,[^)]*\)/g);
+    expect(calls).toHaveLength(2);
+    for (const c of calls) expect(c).toMatch(/onTop: true/);
+  });
+  test('Back from the presentation returns to Celebrate itself', () => {
+    const r = StackRouter({});
+    const o = { routeNames: ['MainTabs', 'CelebrateSomething', 'FriendDiscovery'], routeParamList: {}, routeGetIdList: {} };
+    let st = r.getStateForAction(r.getInitialState(o), StackActions.push('CelebrateSomething', { step: 'kept' }), o);
+    const celebrateRoute = st.routes[1];
+    st = r.getStateForAction(st, CommonActions.navigate('FriendDiscovery'), o);
+    expect(st.routes.map((x) => x.name)).toEqual(['MainTabs', 'CelebrateSomething', 'FriendDiscovery']);
+    st = r.getStateForAction(st, CommonActions.goBack(), o);
+    expect(st.routes.map((x) => x.name)).toEqual(['MainTabs', 'CelebrateSomething']);
+    expect(st.routes[1]).toBe(celebrateRoute);
+  });
+});
+
+describe('the standalone dating deck route (Nearby) is gone everywhere', () => {
+  const files = [];
+  const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).forEach((e) => {
+    const f = path.join(d, e.name);
+    if (e.isDirectory()) walk(f); else if (/\.js$/.test(e.name) && !/\.test\.js$/.test(e.name)) files.push(f);
+  });
+  walk(SRC);
+  test('no navigation call, destination, link or registry entry names it as a route', () => {
+    const ROUTE_USE = /(navigate|push|replace|openOnTop|navigateKeepingTrail|to)\(\s*['"]Nearby['"]|screen:\s*['"]Nearby['"]|name="Nearby"|route:\s*['"]Nearby['"]/;
+    const hits = files.filter((f) => fs.readFileSync(f, 'utf8').split('\n').some((l) => !/^\s*\/\//.test(l) && ROUTE_USE.test(l)));
+    expect(hits.map((f) => path.relative(SRC, f))).toEqual([]);
+    expect(read('navigation/RootNavigator.js')).not.toMatch(/import DiscoveryScreen\b/);
+  });
+  test('the dating deck renders only inside Discover -> People -> Dating', () => {
+    const users = files.filter((f) => /<DiscoveryScreen\b/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(SRC, f));
+    expect(users).toEqual(['screens/DiscoverHubScreen.js']);
+    expect(read('screens/DiscoverHubScreen.js')).toMatch(/<DiscoveryScreen navigation=\{navigation\} embedded/);
+  });
+});
+
 describe('FriendDiscovery is a presentation of the canonical surface, never its own surface', () => {
   test('registered as a mode presentation of Discover rendering the embedded Friends component', () => {
     expect(isPresentation('FriendDiscovery')).toBe(true);

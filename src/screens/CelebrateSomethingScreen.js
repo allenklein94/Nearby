@@ -692,7 +692,8 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     try {
       const result = await runIntentSearch(typedText, { onPhase: setCustomPhase });
       if (result.outcome === 'business_partner') {
-        routeClassifiedIntentToCreation(navigation, result.classifyResult, typedText);
+        // Celebrate is a stack screen: an intent that opens another surface presents it on top so Back returns here
+        routeClassifiedIntentToCreation(navigation, result.classifyResult, typedText, { onTop: true });
         return;
       }
       setCustomSearchResult(result);
@@ -743,7 +744,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   // screen, prefilled but never auto-submitted.
   function proceedToCustomCreation() {
     const { classifyResult, typedText, submissionId } = customSearchResult ?? {};
-    routeClassifiedIntentToCreation(navigation, classifyResult, typedText, { submissionId });
+    routeClassifiedIntentToCreation(navigation, classifyResult, typedText, { submissionId, onTop: true });
     if (classifyResult?.intent !== 'business_partner') {
       recordIntentSelection({
         rawText: typedText, category: classifyResult?.category ?? null, dateWindow: classifyResult?.dateWindow ?? null,

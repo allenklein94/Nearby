@@ -85,10 +85,10 @@ function withAsk(params, submissionId) {
   return typeof submissionId === 'string' && submissionId ? { ...params, quickStartSubmissionId: submissionId } : params;
 }
 
-export function routeClassifiedIntentToCreation(navigation, result, typedText, { explicitCreate = false, submissionId = null } = {}) {
+export function routeClassifiedIntentToCreation(navigation, result, typedText, { explicitCreate = false, submissionId = null, onTop = false } = {}) {
   // A recognised intent (constants/intentRoutes.js) that belongs on another existing surface goes there, unless the AI
   // already found a named community or a specific business (those are explicit and win).
-  if (!explicitCreate && result.intent !== 'community' && result.intent !== 'business_partner' && navigateIntentRoute(navigation, detectIntentRoute(typedText), typedText)) return;
+  if (!explicitCreate && result.intent !== 'community' && result.intent !== 'business_partner' && navigateIntentRoute(navigation, detectIntentRoute(typedText), typedText, { onTop })) return;
   if (explicitCreate && result.intent !== 'community' && result.intent !== 'business_partner') {
     const r = result.structured ?? resolveAsk(typedText, result);
     navigation.navigate('CreateGathering', withAsk({ ...createParamsFromAsk(r, typedText, result), quickStartTitle: r.title || typedText }, submissionId));

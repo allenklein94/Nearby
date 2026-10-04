@@ -83,8 +83,9 @@ export function intentRecipeFor(rawText) {
 
 // Where a recognised intent sends the person when they are STARTING something (the create flow). Only the surfaces that
 // differ from the default "create a gathering" are handled; the caller keeps its own behaviour for anything else.
-// Returns true when it navigated.
-export function navigateIntentRoute(navigation, routed, typedText) {
+// Returns true when it navigated. `onTop`: the caller is a stack screen (e.g. Celebrate) whose workflow a tab switch would
+// close, so People -> Friends opens as its FriendDiscovery presentation on top instead (owner, 2026-10-04).
+export function navigateIntentRoute(navigation, routed, typedText, { onTop = false } = {}) {
   if (!routed) return false;
   const { surface, subMode } = routed.route;
   if (surface === ROUTE_SURFACES.BUSINESS_REQUEST) {
@@ -96,6 +97,10 @@ export function navigateIntentRoute(navigation, routed, typedText) {
     return true;
   }
   if (surface === ROUTE_SURFACES.PEOPLE) {
+    if (onTop && (subMode ?? 'friends') === 'friends') {
+      navigation.navigate('FriendDiscovery');
+      return true;
+    }
     navigation.navigate('Discover', { initialMode: 'people', initialPeopleSubMode: subMode ?? 'friends' });
     return true;
   }
