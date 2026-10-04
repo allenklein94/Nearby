@@ -49,6 +49,8 @@ import QuickPicksEditModal from '../components/QuickPicksEditModal';
 import DiningPreferencesPromptModal from '../components/DiningPreferencesPromptModal';
 import { shouldOfferDiningPrompt, personalizeQuickOptions } from '../constants/interestGraph';
 import useMyGoals from '../hooks/useMyGoals';
+import usePlacesToGo from '../hooks/usePlacesToGo';
+import PlacesToGoSection from '../components/PlacesToGoSection';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { iconNameForCategory } from '../constants/quickPickIcons';
 import LoadErrorState from '../components/LoadErrorState';
@@ -264,6 +266,8 @@ export default function HomeScreen({ navigation }) {
   const [intentPhase, setIntentPhase] = useState(null); // Item 135: real pipeline phase
   const [intentResults, setIntentResults] = useState(null);
   const [intentEmptyFallback, setIntentEmptyFallback] = useState(null);
+  // Item 189: only the SUBMITTED typed ask (results or the empty fallback) can trigger the Places search.
+  const placesToGo = usePlacesToGo(intentResults?.typedText ?? intentEmptyFallback?.typedText ?? null, language);
   const [intentPlaceholder, setIntentPlaceholder] = useState(() => INTENT_PLACEHOLDER_EXAMPLES[Math.floor(Math.random() * INTENT_PLACEHOLDER_EXAMPLES.length)]);
   // "Surprise Me" (critique item 28) -- entirely separate state from the
   // typed-ask intentResults above (no classifyResult/typedText exists for
@@ -1792,6 +1796,8 @@ export default function HomeScreen({ navigation }) {
                   </>
                 );
               })()}
+              {/* Item 189: public places for an allowlisted activity, below Nearby's own results, never ranked with them. */}
+              <PlacesToGoSection places={placesToGo.places} navigation={navigation} />
               <TouchableOpacity style={styles.askBusinessButton} onPress={handleAskBusinessFromResults}>
                 <Ionicons name="storefront-outline" size={18} color="#fff" style={styles.intentResultIcon} />
                 <Text style={styles.askBusinessButtonText}>{t('ui.home.askBusinesses')}</Text>
@@ -1813,6 +1819,7 @@ export default function HomeScreen({ navigation }) {
                 </Text>
               )}
               <Text style={styles.intentResultsHeading}>{t('ui.home.nothingHappening')}</Text>
+              <PlacesToGoSection places={placesToGo.places} navigation={navigation} />
               <TouchableOpacity style={styles.askBusinessButton} onPress={handleAskBusiness}>
                 <Ionicons name="storefront-outline" size={18} color="#fff" style={styles.intentResultIcon} />
                 <Text style={styles.askBusinessButtonText}>{t('ui.home.askBusinesses')}</Text>

@@ -14,6 +14,8 @@ import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 import ExperienceComponentList from '../components/ExperienceComponentList';
 import SponsoredSpotlightSlot from '../components/SponsoredSpotlightSlot';
 import usePersonalization from '../hooks/usePersonalization';
+import usePlacesToGo from '../hooks/usePlacesToGo';
+import PlacesToGoSection from '../components/PlacesToGoSection';
 import { learnedProximityFor } from '../utils/learnedProximity';
 import { behaviorNudge, broadGroupNudge, relatedHobbyNudge } from '../constants/blendedRanking';
 import { relatedHobbyFor, relatedInterestReason } from '../constants/hobbyRelations';
@@ -370,6 +372,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // already moved on, same pattern searchRequestId/placesRequestId below
   // already use for the exact same race.
   const [intentSearch, setIntentSearch] = useState(null);
+  // Item 189: only a submitted typed ask (never Surprise Me / pick-for-me, never typing) can trigger the Places search.
+  const placesToGo = usePlacesToGo(intentSearch && intentSearch.outcome !== 'pick_for_me' ? (intentSearch.typedText ?? null) : null, language);
   const [intentRefining, setIntentRefining] = useState(false); // item 107 refinement chips
   const [intentSearching, setIntentSearching] = useState(false);
   const [intentPhase, setIntentPhase] = useState(null); // Item 135: real pipeline phase
@@ -2695,6 +2699,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
               ) : (
                 intentSearch.items.map(renderIntentSearchResultRow)
               )}
+              {/* Item 189: public places for an allowlisted activity, below Nearby's own results, never ranked with them. */}
+              <PlacesToGoSection places={placesToGo.places} navigation={navigation} />
               {/* Item 109: nothing here fits -> Create starts from this ask as it stands (what, when, who incl. a chip). */}
               {/* Item 110: ask businesses with what was already said (what, how many, which day). */}
               <TouchableOpacity

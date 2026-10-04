@@ -1,0 +1,57 @@
+{
+ "en": {
+  "heading": "Places to go",
+  "directions": "Get directions",
+  "directionsA11y": "Get directions to {name}"
+ },
+ "es": {
+  "heading": "Lugares para ir",
+  "directions": "Cómo llegar",
+  "directionsA11y": "Cómo llegar a {name}"
+ },
+ "de": {
+  "heading": "Orte zum Hingehen",
+  "directions": "Route",
+  "directionsA11y": "Route zu {name}"
+ },
+ "fr": {
+  "heading": "Où aller",
+  "directions": "Itinéraire",
+  "directionsA11y": "Itinéraire vers {name}"
+ },
+ "pt": {
+  "heading": "Lugares para ir",
+  "directions": "Como chegar",
+  "directionsA11y": "Como chegar a {name}"
+ },
+ "ht": {
+  "heading": "Kote pou ale",
+  "directions": "Jwenn direksyon",
+  "directionsA11y": "Jwenn direksyon pou {name}"
+ },
+ "zh": {
+  "heading": "可以去的地方",
+  "directions": "获取路线",
+  "directionsA11y": "获取前往{name}的路线"
+ },
+ "vi": {
+  "heading": "Nơi có thể đến",
+  "directions": "Chỉ đường",
+  "directionsA11y": "Chỉ đường đến {name}"
+ },
+ "tl": {
+  "heading": "Mga lugar na mapupuntahan",
+  "directions": "Kunin ang direksyon",
+  "directionsA11y": "Kunin ang direksyon papunta sa {name}"
+ },
+ "ru": {
+  "heading": "Куда можно пойти",
+  "directions": "Маршрут",
+  "directionsA11y": "Маршрут до {name}"
+ },
+ "ko": {
+  "heading": "가 볼 만한 곳",
+  "directions": "길찾기",
+  "directionsA11y": "{name} 길찾기"
+ }
+}

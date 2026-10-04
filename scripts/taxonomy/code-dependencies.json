@@ -9949,6 +9949,76 @@
    "group": null
   },
   {
+   "tag": "Beaches",
+   "file": "src/utils/placesToGo.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Gardens",
+   "file": "src/utils/placesToGo.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Hiking",
+   "file": "src/utils/placesToGo.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Parks",
+   "file": "src/utils/placesToGo.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Picnics",
+   "file": "src/utils/placesToGo.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Playgrounds",
+   "file": "src/utils/placesToGo.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Running",
+   "file": "src/utils/placesToGo.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Scenic Views",
+   "file": "src/utils/placesToGo.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Trails",
+   "file": "src/utils/placesToGo.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Walking",
+   "file": "src/utils/placesToGo.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
    "tag": "Outdoors",
    "file": "src/utils/planAsk.js",
    "consumer": "code",

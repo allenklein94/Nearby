@@ -26,7 +26,7 @@ const PARTS = [
 const PLACE_WORD = /(^|\s)(near|by|at|in|around|beside|behind|inside|outside)(\s(the|a|an|my|our|this|that))?$/;
 const NOT_A_PART = new Set(['Outdoors']);
 // How far / how they get there is never an activity ("walking distance", "on my bike", "I'm driving": items 69/70).
-const TRAVEL_WORDS = /\bwalk(?:ing|able)?\s+distance\b|\bwithin\s+(?:a\s+)?walk(?:ing)?\b|\bwalk(?:ing)?\s+(?:there|over|from)\b|\bwalkable\b|\bon\s+(?:my|a|our)\s+bikes?\b|\bby\s+(?:bike|car|bus|train)\b|\bbik(?:e|ing)\s+(?:there|over)\b|\b(?:i'?m|we'?re|i\s+am|we\s+are)\s+(?:driving|walking|biking)\b|\b(?:a\s+)?short\s+drive\b|\bworth\s+the\s+drive\b/gi;
+export const TRAVEL_WORDS = /\bwalk(?:ing|able)?\s+distance\b|\bwithin\s+(?:a\s+)?walk(?:ing)?\b|\bwalk(?:ing)?\s+(?:there|over|from)\b|\bwalkable\b|\bon\s+(?:my|a|our)\s+bikes?\b|\bby\s+(?:bike|car|bus|train)\b|\bbik(?:e|ing)\s+(?:there|over)\b|\b(?:i'?m|we'?re|i\s+am|we\s+are)\s+(?:driving|walking|biking)\b|\b(?:a\s+)?short\s+drive\b|\bworth\s+the\s+drive\b/gi;
 const ACTIVITY_GROUPS = new Set(['activities_recreation', 'entertainment_nightlife', 'arts_culture_learning', 'outdoors_nature', 'attractions_things_to_see', 'family_kids']);
 
 // Explicit occasion words the person used. Deterministic; only these, never a guess from the category. Item 130 added the

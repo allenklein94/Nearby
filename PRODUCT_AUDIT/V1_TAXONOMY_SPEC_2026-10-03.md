@@ -961,7 +961,7 @@ no function, policy, view, trigger or edge function). (3) **Age stays parked:** 
 first define whether it means an age restriction, a recommended age or an audience. Not device-tested (parse-checked);
 business web export regenerated.
 
-## Item 189: Activities can be standalone, no business attached (PROPOSED 2026-10-04)
+## Item 189: Activities can be standalone, no business attached (APPROVED + BUILT 2026-10-04, option 1)
 
 **Already true:** nothing requires a business. A gathering needs no business (item 187: a business request is optional),
 an activity tag (Walking, Hiking, Parks, Trails, Beaches, Picnics, Scenic Views...) exists without any business serving
@@ -983,3 +983,14 @@ separate "Places to go" section of up to 3 nearby public places from the existin
 `contextItem('place')` (name, distance, "Get directions"), below Nearby's own results and never mixed into or ranked
 against them, never in Surprise Me rows or multi-part plans, nothing stored or learned, no business routing. "Create it
 yourself" stays. Alternative: leave typed asks Nearby-native only and rely on Discover's category view (no build).
+
+**Owner decision (2026-10-04, LOCKED): option 1, as fallback ENRICHMENT of a typed ask, never a discovery surface.** Built,
+no migration (`utils/placesToGo.js`, `hooks/usePlacesToGo.js`, `components/PlacesToGoSection.js`, `utils/placesToGo.test.js`).
+The fixed allowlist above is the ONLY gate (`PLACES_TO_GO_ACTIVITIES`; read from the person's own words through the
+canonical tags/synonyms plus gate-only walk phrases "go for a walk", "take a walk", "a stroll"; travel phrasing such as
+"walking distance" and "walk-in" never qualifies; no AI). The metered Places search runs only for a SUBMITTED qualifying
+ask (Home results or its empty fallback, Discover's typed ask; never while typing, never pick-for-me/Surprise Me), cached
+10 min in memory per activity + ~1 km area. Up to 3 places, nearest first, name + distance + "Get directions" only
+(11 languages, machine-authored), in a separate section below Nearby's results. Never ranked with Nearby results, never a
+reason / "our pick" / availability / booking / business opportunity, never in Surprise Me or plans, nothing stored, logged
+or learned (the tap only opens directions). "Create it yourself" unchanged. Not device-tested (parse-checked).
