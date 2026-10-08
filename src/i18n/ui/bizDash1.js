@@ -233,6 +233,14 @@ export default {
       update: "Broadcast update",
       offer_response: "Offer response",
     },
+    tiles: {
+      opportunities: "Opportunities",
+      offers: "Offers",
+      performance: "Performance",
+      newRequests: { one: "{count} new request", other: "{count} new requests" },
+      pendingOffers: { one: "{count} pending", other: "{count} pending" },
+      funnelLine: "This month: {sent} sent · {accepted} accepted · {redeemed} redeemed",
+    },
   },
   es: {
     peopleFoundYouInThe: { one: "👀 {count} persona lo encontró en los últimos 30 días", other: "👀 {count} personas lo encontraron en los últimos 30 días" },
@@ -465,6 +473,14 @@ export default {
       availability: "Disponibilidad publicada",
       update: "Novedad para seguidores",
       offer_response: "Respuesta a una oferta",
+    },
+    tiles: {
+      opportunities: "Oportunidades",
+      offers: "Ofertas",
+      performance: "Rendimiento",
+      newRequests: { one: "{count} solicitud nueva", other: "{count} solicitudes nuevas" },
+      pendingOffers: { one: "{count} pendiente", other: "{count} pendientes" },
+      funnelLine: "Este mes: {sent} enviadas · {accepted} aceptadas · {redeemed} canjeadas",
     },
   },
   de: {
@@ -699,6 +715,14 @@ export default {
       update: "Neuigkeit an Follower",
       offer_response: "Antwort mit Angebot",
     },
+    tiles: {
+      opportunities: "Anfragen",
+      offers: "Angebote",
+      performance: "Leistung",
+      newRequests: { one: "{count} neue Anfrage", other: "{count} neue Anfragen" },
+      pendingOffers: { one: "{count} offen", other: "{count} offen" },
+      funnelLine: "Diesen Monat: {sent} gesendet · {accepted} angenommen · {redeemed} eingelöst",
+    },
   },
   fr: {
     peopleFoundYouInThe: { one: "👀 {count} personne vous a trouvé ces 30 derniers jours", other: "👀 {count} personnes vous ont trouvé ces 30 derniers jours" },
@@ -931,6 +955,14 @@ export default {
       availability: "Disponibilité publiée",
       update: "Actualité pour les abonnés",
       offer_response: "Réponse avec offre",
+    },
+    tiles: {
+      opportunities: "Opportunités",
+      offers: "Offres",
+      performance: "Performance",
+      newRequests: { one: "{count} nouvelle demande", other: "{count} nouvelles demandes" },
+      pendingOffers: { one: "{count} en attente", other: "{count} en attente" },
+      funnelLine: "Ce mois-ci : {sent} envoyées · {accepted} acceptées · {redeemed} utilisées",
     },
   },
   pt: {
@@ -1165,6 +1197,14 @@ export default {
       update: "Novidade para seguidores",
       offer_response: "Resposta com oferta",
     },
+    tiles: {
+      opportunities: "Oportunidades",
+      offers: "Ofertas",
+      performance: "Desempenho",
+      newRequests: { one: "{count} novo pedido", other: "{count} novos pedidos" },
+      pendingOffers: { one: "{count} pendente", other: "{count} pendentes" },
+      funnelLine: "Este mês: {sent} enviadas · {accepted} aceitas · {redeemed} resgatadas",
+    },
   },
   ht: {
     peopleFoundYouInThe: { one: "👀 {count} moun jwenn ou nan 30 dènye jou yo", other: "👀 {count} moun jwenn ou nan 30 dènye jou yo" },
@@ -1397,6 +1437,14 @@ export default {
       availability: "Disponiblite pibliye",
       update: "Nouvèl pou moun k ap swiv",
       offer_response: "Repons ak òf",
+    },
+    tiles: {
+      opportunities: "Opòtinite",
+      offers: "Òf",
+      performance: "Rezilta",
+      newRequests: { one: "{count} nouvo demann", other: "{count} nouvo demann" },
+      pendingOffers: { one: "{count} ap tann", other: "{count} ap tann" },
+      funnelLine: "Mwa sa a: {sent} voye · {accepted} aksepte · {redeemed} itilize",
     },
   },
   zh: {
@@ -1631,6 +1679,14 @@ export default {
       update: "给关注者的动态",
       offer_response: "优惠回复",
     },
+    tiles: {
+      opportunities: "商机",
+      offers: "报价",
+      performance: "表现",
+      newRequests: { other: "{count} 个新请求" },
+      pendingOffers: { other: "{count} 个待回复" },
+      funnelLine: "本月：已发送 {sent} · 已接受 {accepted} · 已兑换 {redeemed}",
+    },
   },
   vi: {
     peopleFoundYouInThe: { other: "👀 {count} người đã tìm thấy bạn trong 30 ngày qua" },
@@ -1863,6 +1919,14 @@ export default {
       availability: "Tin chỗ trống",
       update: "Tin cho người theo dõi",
       offer_response: "Phản hồi kèm ưu đãi",
+    },
+    tiles: {
+      opportunities: "Cơ hội",
+      offers: "Ưu đãi",
+      performance: "Hiệu quả",
+      newRequests: { other: "{count} yêu cầu mới" },
+      pendingOffers: { other: "{count} đang chờ" },
+      funnelLine: "Tháng này: {sent} đã gửi · {accepted} được nhận · {redeemed} đã dùng",
     },
   },
   tl: {
@@ -2097,6 +2161,14 @@ export default {
       update: "Update sa mga follower",
       offer_response: "Sagot na may offer",
     },
+    tiles: {
+      opportunities: "Mga oportunidad",
+      offers: "Mga alok",
+      performance: "Performance",
+      newRequests: { one: "{count} bagong request", other: "{count} bagong request" },
+      pendingOffers: { one: "{count} naghihintay", other: "{count} naghihintay" },
+      funnelLine: "Ngayong buwan: {sent} naipadala · {accepted} tinanggap · {redeemed} na-redeem",
+    },
   },
   ru: {
     peopleFoundYouInThe: { one: "👀 {count} человек нашёл вас за последние 30 дней", few: "👀 {count} человека нашли вас за последние 30 дней", many: "👀 {count} человек нашли вас за последние 30 дней", other: "👀 {count} человека нашли вас за последние 30 дней" },
@@ -2330,6 +2402,14 @@ export default {
       update: "Новость для подписчиков",
       offer_response: "Ответ с предложением",
     },
+    tiles: {
+      opportunities: "Возможности",
+      offers: "Предложения",
+      performance: "Результаты",
+      newRequests: { one: "{count} новый запрос", few: "{count} новых запроса", many: "{count} новых запросов", other: "{count} новых запроса" },
+      pendingOffers: { one: "{count} ожидает", few: "{count} ожидают", many: "{count} ожидают", other: "{count} ожидают" },
+      funnelLine: "В этом месяце: отправлено {sent} · принято {accepted} · использовано {redeemed}",
+    },
   },
   ko: {
     peopleFoundYouInThe: { other: "👀 지난 30일 동안 {count}명이 회원님을 찾았습니다" },
@@ -2562,6 +2642,14 @@ export default {
       availability: "이용 가능 게시물",
       update: "공지 업데이트",
       offer_response: "제안 응답",
+    },
+    tiles: {
+      opportunities: "기회",
+      offers: "제안",
+      performance: "성과",
+      newRequests: { other: "새 요청 {count}건" },
+      pendingOffers: { other: "대기 중 {count}건" },
+      funnelLine: "이번 달: 보냄 {sent} · 수락 {accepted} · 사용 {redeemed}",
     },
   },
 };

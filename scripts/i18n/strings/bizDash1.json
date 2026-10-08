@@ -251,7 +251,19 @@
   "target.offer": "Standing offer",
   "target.availability": "Availability posting",
   "target.update": "Broadcast update",
-  "target.offer_response": "Offer response"
+  "target.offer_response": "Offer response",
+  "tiles.opportunities": "Opportunities",
+  "tiles.offers": "Offers",
+  "tiles.performance": "Performance",
+  "tiles.newRequests": {
+   "one": "{count} new request",
+   "other": "{count} new requests"
+  },
+  "tiles.pendingOffers": {
+   "one": "{count} pending",
+   "other": "{count} pending"
+  },
+  "tiles.funnelLine": "This month: {sent} sent · {accepted} accepted · {redeemed} redeemed"
  },
  "es": {
   "peopleFoundYouInThe": {
@@ -505,7 +517,19 @@
   "target.offer": "Oferta permanente",
   "target.availability": "Disponibilidad publicada",
   "target.update": "Novedad para seguidores",
-  "target.offer_response": "Respuesta a una oferta"
+  "target.offer_response": "Respuesta a una oferta",
+  "tiles.opportunities": "Oportunidades",
+  "tiles.offers": "Ofertas",
+  "tiles.performance": "Rendimiento",
+  "tiles.newRequests": {
+   "one": "{count} solicitud nueva",
+   "other": "{count} solicitudes nuevas"
+  },
+  "tiles.pendingOffers": {
+   "one": "{count} pendiente",
+   "other": "{count} pendientes"
+  },
+  "tiles.funnelLine": "Este mes: {sent} enviadas · {accepted} aceptadas · {redeemed} canjeadas"
  },
  "de": {
   "peopleFoundYouInThe": {
@@ -759,7 +783,19 @@
   "target.offer": "Dauerangebot",
   "target.availability": "Verfügbarkeitsmeldung",
   "target.update": "Neuigkeit an Follower",
-  "target.offer_response": "Antwort mit Angebot"
+  "target.offer_response": "Antwort mit Angebot",
+  "tiles.opportunities": "Anfragen",
+  "tiles.offers": "Angebote",
+  "tiles.performance": "Leistung",
+  "tiles.newRequests": {
+   "one": "{count} neue Anfrage",
+   "other": "{count} neue Anfragen"
+  },
+  "tiles.pendingOffers": {
+   "one": "{count} offen",
+   "other": "{count} offen"
+  },
+  "tiles.funnelLine": "Diesen Monat: {sent} gesendet · {accepted} angenommen · {redeemed} eingelöst"
  },
  "fr": {
   "peopleFoundYouInThe": {
@@ -1013,7 +1049,19 @@
   "target.offer": "Offre permanente",
   "target.availability": "Disponibilité publiée",
   "target.update": "Actualité pour les abonnés",
-  "target.offer_response": "Réponse avec offre"
+  "target.offer_response": "Réponse avec offre",
+  "tiles.opportunities": "Opportunités",
+  "tiles.offers": "Offres",
+  "tiles.performance": "Performance",
+  "tiles.newRequests": {
+   "one": "{count} nouvelle demande",
+   "other": "{count} nouvelles demandes"
+  },
+  "tiles.pendingOffers": {
+   "one": "{count} en attente",
+   "other": "{count} en attente"
+  },
+  "tiles.funnelLine": "Ce mois-ci : {sent} envoyées · {accepted} acceptées · {redeemed} utilisées"
  },
  "pt": {
   "peopleFoundYouInThe": {
@@ -1267,7 +1315,19 @@
   "target.offer": "Oferta permanente",
   "target.availability": "Disponibilidade publicada",
   "target.update": "Novidade para seguidores",
-  "target.offer_response": "Resposta com oferta"
+  "target.offer_response": "Resposta com oferta",
+  "tiles.opportunities": "Oportunidades",
+  "tiles.offers": "Ofertas",
+  "tiles.performance": "Desempenho",
+  "tiles.newRequests": {
+   "one": "{count} novo pedido",
+   "other": "{count} novos pedidos"
+  },
+  "tiles.pendingOffers": {
+   "one": "{count} pendente",
+   "other": "{count} pendentes"
+  },
+  "tiles.funnelLine": "Este mês: {sent} enviadas · {accepted} aceitas · {redeemed} resgatadas"
  },
  "ht": {
   "peopleFoundYouInThe": {
@@ -1521,7 +1581,19 @@
   "target.offer": "Òf pèmanan",
   "target.availability": "Disponiblite pibliye",
   "target.update": "Nouvèl pou moun k ap swiv",
-  "target.offer_response": "Repons ak òf"
+  "target.offer_response": "Repons ak òf",
+  "tiles.opportunities": "Opòtinite",
+  "tiles.offers": "Òf",
+  "tiles.performance": "Rezilta",
+  "tiles.newRequests": {
+   "one": "{count} nouvo demann",
+   "other": "{count} nouvo demann"
+  },
+  "tiles.pendingOffers": {
+   "one": "{count} ap tann",
+   "other": "{count} ap tann"
+  },
+  "tiles.funnelLine": "Mwa sa a: {sent} voye · {accepted} aksepte · {redeemed} itilize"
  },
  "zh": {
   "peopleFoundYouInThe": {
@@ -1766,7 +1838,17 @@
   "target.offer": "长期优惠",
   "target.availability": "空位发布",
   "target.update": "给关注者的动态",
-  "target.offer_response": "优惠回复"
+  "target.offer_response": "优惠回复",
+  "tiles.opportunities": "商机",
+  "tiles.offers": "报价",
+  "tiles.performance": "表现",
+  "tiles.newRequests": {
+   "other": "{count} 个新请求"
+  },
+  "tiles.pendingOffers": {
+   "other": "{count} 个待回复"
+  },
+  "tiles.funnelLine": "本月：已发送 {sent} · 已接受 {accepted} · 已兑换 {redeemed}"
  },
  "vi": {
   "peopleFoundYouInThe": {
@@ -2011,7 +2093,17 @@
   "target.offer": "Ưu đãi cố định",
   "target.availability": "Tin chỗ trống",
   "target.update": "Tin cho người theo dõi",
-  "target.offer_response": "Phản hồi kèm ưu đãi"
+  "target.offer_response": "Phản hồi kèm ưu đãi",
+  "tiles.opportunities": "Cơ hội",
+  "tiles.offers": "Ưu đãi",
+  "tiles.performance": "Hiệu quả",
+  "tiles.newRequests": {
+   "other": "{count} yêu cầu mới"
+  },
+  "tiles.pendingOffers": {
+   "other": "{count} đang chờ"
+  },
+  "tiles.funnelLine": "Tháng này: {sent} đã gửi · {accepted} được nhận · {redeemed} đã dùng"
  },
  "tl": {
   "peopleFoundYouInThe": {
@@ -2265,7 +2357,19 @@
   "target.offer": "Pangmatagalang offer",
   "target.availability": "Post ng availability",
   "target.update": "Update sa mga follower",
-  "target.offer_response": "Sagot na may offer"
+  "target.offer_response": "Sagot na may offer",
+  "tiles.opportunities": "Mga oportunidad",
+  "tiles.offers": "Mga alok",
+  "tiles.performance": "Performance",
+  "tiles.newRequests": {
+   "one": "{count} bagong request",
+   "other": "{count} bagong request"
+  },
+  "tiles.pendingOffers": {
+   "one": "{count} naghihintay",
+   "other": "{count} naghihintay"
+  },
+  "tiles.funnelLine": "Ngayong buwan: {sent} naipadala · {accepted} tinanggap · {redeemed} na-redeem"
  },
  "ru": {
   "peopleFoundYouInThe": {
@@ -2537,7 +2641,23 @@
   "target.offer": "Постоянное предложение",
   "target.availability": "Объявление о свободных местах",
   "target.update": "Новость для подписчиков",
-  "target.offer_response": "Ответ с предложением"
+  "target.offer_response": "Ответ с предложением",
+  "tiles.opportunities": "Возможности",
+  "tiles.offers": "Предложения",
+  "tiles.performance": "Результаты",
+  "tiles.newRequests": {
+   "one": "{count} новый запрос",
+   "few": "{count} новых запроса",
+   "many": "{count} новых запросов",
+   "other": "{count} новых запроса"
+  },
+  "tiles.pendingOffers": {
+   "one": "{count} ожидает",
+   "few": "{count} ожидают",
+   "many": "{count} ожидают",
+   "other": "{count} ожидают"
+  },
+  "tiles.funnelLine": "В этом месяце: отправлено {sent} · принято {accepted} · использовано {redeemed}"
  },
  "ko": {
   "peopleFoundYouInThe": {
@@ -2782,6 +2902,16 @@
   "target.offer": "상시 제안",
   "target.availability": "이용 가능 게시물",
   "target.update": "공지 업데이트",
-  "target.offer_response": "제안 응답"
+  "target.offer_response": "제안 응답",
+  "tiles.opportunities": "기회",
+  "tiles.offers": "제안",
+  "tiles.performance": "성과",
+  "tiles.newRequests": {
+   "other": "새 요청 {count}건"
+  },
+  "tiles.pendingOffers": {
+   "other": "대기 중 {count}건"
+  },
+  "tiles.funnelLine": "이번 달: 보냄 {sent} · 수락 {accepted} · 사용 {redeemed}"
  }
 }

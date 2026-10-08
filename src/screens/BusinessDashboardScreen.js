@@ -20,7 +20,7 @@ import { offerRevealHeader } from '../utils/offerCopy';
 import { replySentConfirmation, offerQueuedConfirmation } from '../utils/actionConfirmations';
 import useFormDraft from '../hooks/useFormDraft';
 import { serializableAsset, assetStillExists } from '../services/formDrafts';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PlatformDateTimeInput from '../components/PlatformDateTimeInput';
@@ -69,6 +69,7 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 import { budgetMeetsMinSpend } from '../utils/budgetTier';
 import { businessLocationNotice } from '../utils/businessLocationNotice';
 import { dashboardGlance, visitHasPassed } from '../utils/dashboardGlance';
+import { businessHomeTiles } from '../utils/businessHomeTiles';
 import { businessPipeline, PIPELINE_STAGES, isPipelineWon } from '../utils/businessPipeline';
 import { buildOpportunityCard, buildMatchReasons, availabilityCoversRequest } from '../utils/businessOpportunityCard';
 import { matchFitLine } from '../utils/matchFitLine';
@@ -304,6 +305,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   };
   const on = (...tabs) => tabs.includes(section);
   const tool = (key) => section === 'home' && openTool === key;
+  // Item 36: the Performance tile opens Offer Performance (More tools -> Analytics) and scrolls to it once it has laid out.
+  const mainScrollRef = useRef(null);
+  const scrollToPerformanceRef = useRef(false);
+  const performanceYRef = useRef(null);
+  function openHomeTile(target) {
+    if (target === 'performance' && section === 'home' && openTool === 'analytics' && performanceYRef.current != null) {
+      mainScrollRef.current?.scrollTo({ y: performanceYRef.current, animated: true }); // already open: just go there
+    } else if (target === 'performance') {
+      scrollToPerformanceRef.current = true;
+      setSection('insights');
+    } else {
+      setSection(target);
+    }
+  }
   // Secondary areas stay collapsed: Availability leads with "tell us when you have room", Profile with "tell us what you offer".
   const [moreOffersOpen, setMoreOffersOpen] = useState(false);
   const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
@@ -3500,7 +3515,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+      <ScrollView ref={mainScrollRef} contentContainerStyle={{ padding: spacing.lg }}>
         {loading ? (
           <NLoader fullScreen={false} size="compact" kind="content" />
         ) : loadError ? (
@@ -3636,11 +3651,34 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       <Text style={styles.sectionHeader}>{t('ui.bizDash1.todayAt', { name: selectedPartner.name })}</Text>
                       {(() => {
                         const glance = dashboardGlance(opportunities, estimatedOwed, new Date(), offerSubmissions);
+                        // Item 36: Opportunities / Offers / Performance lead Home, each one tap into its collection. The
+                        // glance below keeps only the bookings lines (confirmed today, visits coming up); new requests and
+                        // offers awaiting a reply live in the tiles, and the month is the Performance tile.
+                        const tiles = businessHomeTiles({ opportunities, submissions: offerSubmissions, loaded: opportunitiesLoaded, funnel: offerFunnel, value: offerValue });
+                        const todayBookings = glance.today.filter((item) => item.key !== 'new');
+                        const upcomingBookings = glance.upcoming.filter((item) => item.key !== 'awaiting');
                         return (
                           <View style={{ marginBottom: spacing.sm }}>
+                            {tiles.length > 0 && (
+                              <View style={styles.homeTileRow}>
+                                {tiles.map((tile) => (
+                                  <TouchableOpacity
+                                    key={tile.key}
+                                    style={[styles.homeTile, tile.highlight && { borderColor: colors.primary }]}
+                                    onPress={() => openHomeTile(tile.target)}
+                                    accessibilityLabel={[tile.title, tile.line, tile.valueLine].filter(Boolean).join(', ')}
+                                    accessibilityRole="button"
+                                  >
+                                    <Text style={styles.notesLabel}>{tile.title}</Text>
+                                    <Text style={styles.homeTileLine}>{tile.line}</Text>
+                                    {!!tile.valueLine && <Text style={styles.breakdownText}>{tile.valueLine}</Text>}
+                                  </TouchableOpacity>
+                                ))}
+                              </View>
+                            )}
                             <Text style={styles.notesLabel}>{t('ui.bizDash1.today')}</Text>
                             <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                              {glance.today.map((item) => (
+                              {todayBookings.map((item) => (
                                 <TouchableOpacity
                                   key={item.key}
                                   style={[styles.chip, item.key === 'new' && item.count > 0 && { borderColor: colors.primary }]}
@@ -3652,22 +3690,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                                 </TouchableOpacity>
                               ))}
                             </View>
-                            {glance.upcoming.length > 0 && (
+                            {upcomingBookings.length > 0 && (
                               <>
                                 <Text style={styles.notesLabel}>{t('ui.bizDash1.upcoming')}</Text>
                                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                                  {glance.upcoming.map((item) => (
+                                  {upcomingBookings.map((item) => (
                                     <TouchableOpacity key={item.key} style={styles.chip} onPress={() => setSection(item.section)} accessibilityLabel={item.text} accessibilityRole="button">
                                       <Text style={styles.chipText}>{item.text}</Text>
                                     </TouchableOpacity>
                                   ))}
                                 </View>
-                              </>
-                            )}
-                            {glance.month.length > 0 && (
-                              <>
-                                <Text style={styles.notesLabel}>{t('ui.bizDash1.thisMonth')}</Text>
-                                <Text style={styles.offerDescription}>{glance.month.map((m) => m.text).join(' · ')}</Text>
                               </>
                             )}
                           </View>
@@ -5036,7 +5068,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   type, for an offer with no linked template) -- built
                   entirely over already-tracked data, no new signal
                   invented. */}
-              <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>{t('ui.bizDash2.offerPerformance')}</Text>
+              <Text
+                style={[styles.sectionHeader, { marginTop: spacing.lg }]}
+                onLayout={(e) => {
+                  performanceYRef.current = Math.max(0, e.nativeEvent.layout.y - spacing.lg);
+                  if (!scrollToPerformanceRef.current) return;
+                  scrollToPerformanceRef.current = false;
+                  mainScrollRef.current?.scrollTo({ y: performanceYRef.current, animated: true });
+                }}
+              >{t('ui.bizDash2.offerPerformance')}</Text>
               {/* Item 150: one row per funnel stage this month, then the value of the offers redeemed (never "revenue"). */}
               {(() => {
                 const f = offerFunnelView(offerFunnel, offerValue);
@@ -8165,6 +8205,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   statNumber: { ...typography.title, color: colors.textPrimary },
   statLabel: { color: colors.textTertiary, fontSize: 11, textAlign: 'center', marginTop: 2 },
+  homeTileRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
+  homeTile: { flexGrow: 1, flexBasis: '30%', minWidth: 140, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  homeTileLine: { color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 2 },
   pipelineRow: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm },
   pipelineStage: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   helperText: { color: colors.textTertiary, fontSize: 12, lineHeight: 18, marginTop: spacing.lg, fontStyle: 'italic' },
