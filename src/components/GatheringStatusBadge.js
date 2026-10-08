@@ -29,6 +29,20 @@ export const GATHERING_STATUS_META = {
   didNotAttend: statusMeta('didNotAttend', '—', 'past'),
 };
 
+// Item 39: the badge for a viewer's ONE relation x time (objectState.gatheringViewerState). Badge keys are older display
+// names: 'interested' reads "Requested" (a pending join request) and 'maybe' reads "Interested" (the private maybe).
+export function relationBadgeStatus({ relation, time } = {}) {
+  const past = time === 'past';
+  switch (relation) {
+    case 'hosting': return past ? 'hosted' : 'hosting';
+    case 'attending': return past ? 'attended' : 'going';
+    case 'waitlisted': return past ? null : 'waitlisted';
+    case 'requested': return past ? null : 'interested';
+    case 'interested': return past ? null : 'maybe';
+    default: return null;
+  }
+}
+
 // `label`, when passed, fully replaces the default "{icon} {label}" text
 // (icon included) — used by callers that need a translated string
 // (e.g. GatheringsScreen's t('gatherings.youreGoing')) instead of the

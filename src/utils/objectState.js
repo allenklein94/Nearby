@@ -72,11 +72,18 @@ export function isOfferExpired(offer, now) {
 //   time:     'upcoming' | 'past' | null
 //   expired:  a request/waitlist spot whose gathering has passed (view/dismiss only)
 //   actionable: something can still be done (upcoming); false for past, and for an unknown date
-export function gatheringViewerState({ isHost = false, myStatus = null, scheduled_at = null } = {}, now) {
+// Item 39 (owner, 2026-10-08): states, not folders. A gathering is ONE object; a viewer has ONE relationship to it
+// (hosting > attending > requested / waitlisted > interested > none) and a time (upcoming / past). Surfaces (Plans tabs,
+// Home's Your Plans, Profile counts) filter objects by relation x time; there is never a screen per state.
+// Interested is the private "maybe" (gathering_interested); it is the relation only when nothing stronger holds.
+export const GATHERING_RELATION_RANK = { hosting: 4, attending: 3, requested: 2, waitlisted: 2, interested: 1, none: 0 };
+
+export function gatheringViewerState({ isHost = false, myStatus = null, isInterested = false, scheduled_at = null } = {}, now) {
   const relation = isHost ? 'hosting'
     : myStatus === 'approved' ? 'attending'
     : myStatus === 'pending' ? 'requested'
     : myStatus === 'waitlisted' ? 'waitlisted'
+    : isInterested ? 'interested'
     : 'none';
   const time = gatheringTimeState(scheduled_at, now);
   return {

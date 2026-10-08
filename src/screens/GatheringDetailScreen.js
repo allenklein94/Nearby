@@ -53,7 +53,7 @@ import GatheringFeedbackPrompt from '../components/GatheringFeedbackPrompt';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import GatheringIntentModal from '../components/GatheringIntentModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
-import GatheringStatusBadge from '../components/GatheringStatusBadge';
+import GatheringStatusBadge, { relationBadgeStatus } from '../components/GatheringStatusBadge';
 import ReasonList from '../components/ReasonList';
 import LoadErrorState from '../components/LoadErrorState';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
@@ -138,9 +138,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const notificationSuggestsInvite = route.params?.notificationSuggestsInvite ?? false;
   const openJoinHandled = useRef(false);
   // One explicit viewer state (relation + time) instead of re-combining myStatus/isHost/date per block.
-  const viewer = gathering ? gatheringViewerState(gathering) : null;
+  // Item 39: Interested is part of the same relation (the strongest one wins), never a separate flag per block.
+  const viewerInput = gathering ? { ...gathering, isInterested: gathering.myInterested === true } : null;
+  const viewer = gathering ? gatheringViewerState(viewerInput) : null;
   // What this state allows comes from the lifecycle table, not re-derived per block.
-  const can = (action) => (gathering ? canDo('gathering', gatheringLifecycleState(gathering), action) : false);
+  const can = (action) => (gathering ? canDo('gathering', gatheringLifecycleState(viewerInput), action) : false);
   useEffect(() => {
     if (!openJoinRequested || openJoinHandled.current || !gathering) return;
     openJoinHandled.current = true;
@@ -678,15 +680,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
             </Text>
           )}
 
-          {viewer.relation === 'hosting' ? (
-            <GatheringStatusBadge status="hosting" />
-          ) : viewer.relation === 'attending' ? (
-            <GatheringStatusBadge status="going" />
-          ) : viewer.relation === 'waitlisted' ? (
-            <GatheringStatusBadge status="waitlisted" />
-          ) : viewer.relation === 'requested' ? (
-            <GatheringStatusBadge status="interested" />
-          ) : null}
+          {relationBadgeStatus(viewer) && <GatheringStatusBadge status={relationBadgeStatus(viewer)} />}
 
           {gathering.capacity != null && (
             <Text style={styles.capacityLine}>

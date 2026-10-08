@@ -17,11 +17,13 @@ export const LIFECYCLE = {
     upcoming_waitlisted: ['view', 'withdraw'],
     upcoming_attending: ['view', 'leave', 'invite'],
     upcoming_hosting: ['view', 'edit', 'cancel', 'invite', 'manage_attendees'],
+    upcoming_interested: ['view', 'join', 'request', 'interested', 'invite'], // 'interested' here = take the mark off
     past_none: ['view'],
     past_requested: ['view', 'dismiss'],
     past_waitlisted: ['view', 'dismiss'],
     past_attending: ['view'],
     past_hosting: ['view'],
+    past_interested: ['view'],
     unknown: ['view'],
   },
   request: {
