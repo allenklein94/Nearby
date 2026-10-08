@@ -37,7 +37,7 @@ describe('Discover date view (item 206)', () => {
 
   it('is empty (never invented) when nothing fits, and refuses any other filter', () => {
     expect(view([], 'today').items).toEqual([]);
-    expect(view([g('a')], 'now')).toBeNull();
+    expect(view([g('a')], 'tomorrow')).toBeNull(); // 'now' is a time chip since item 34
     expect(view([g('a')], 'anytime')).toBeNull();
   });
 });
@@ -63,7 +63,9 @@ describe('Discover date view wiring (item 206 guards)', () => {
   });
 
   it('shows the active date as a removable chip that exits exactly like Back', () => {
-    expect(src).toMatch(/onPress=\{closeDateView\}[\s\S]{0,400}\$\{sectionTitle\(dateViewData\)\} ✕/);
+    // Item 34: the active time chip carries the view's own title + ✕, and tapping it closes the view (selectTimeChip).
+    expect(src).toMatch(/const label = active \? sectionTitle\(dateViewData\)/);
+    expect(src).toMatch(/\{active \? `\$\{label\} ✕` : label\}/);
   });
 
   it('closing changes only the date view: query, filters and mode are untouched', () => {
@@ -74,5 +76,29 @@ describe('Discover date view wiring (item 206 guards)', () => {
   it('Home "See all plans" still opens Plans (a management surface, not an inline expansion)', () => {
     const home = fs.readFileSync(path.join(__dirname, '../screens/HomeScreen.js'), 'utf8');
     expect(home).toMatch(/onPress=\{\(\) => navigation\.navigate\('Plans'\)\}\s*accessibilityLabel=\{t\('ui\.home\.seeAllPlansA11y'\)\}/);
+  });
+});
+
+// Item 34 (owner, 2026-10-08): the time chips Happening Now · Today · This Weekend reuse this same in-place view.
+describe('time chips (item 34)', () => {
+  const { buildDiscoverDateView: build, TIME_CHIPS } = require('./discoverSections');
+  const fs = require('fs');
+  const path = require('path');
+  const now = new Date(2026, 9, 10, 18, 0);
+  const inMin = (id, m) => ({ id, scheduled_at: new Date(now.getTime() + m * 60000).toISOString() });
+  it('three chips, and Happening Now = the next 2 hours (the Right Now window)', () => {
+    expect(TIME_CHIPS).toEqual(['now', 'today', 'weekend']);
+    const v = build({ gatherings: [inMin('soon', 30), inMin('edge', 119), inMin('later', 180)], dateFilter: 'now', now });
+    expect(v.key).toBe('now');
+    expect(v.items.map((g) => g.id).sort()).toEqual(['edge', 'soon']);
+  });
+  it('the screen opens the one date view (no second implementation), one chip at a time, the active chip closes it', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../screens/DiscoverHubScreen.js'), 'utf8');
+    const fn = src.slice(src.indexOf('function selectTimeChip'), src.indexOf('function renderTimeChips'));
+    expect(fn).toMatch(/if \(dateView === f\) closeDateView\(\)/);
+    expect(fn).toMatch(/else if \(dateView\) setDateView\(f\)/);
+    expect(fn).toMatch(/else openDateView\(f\)/);
+    expect(src).toMatch(/isAll && !isSearching && \(\s*<View style=\{\[styles\.filterRow, \{ flexDirection: 'row' \}\]\}>\{renderTimeChips\(\)\}/);
+    expect((src.match(/buildDiscoverDateView\(/g) ?? []).length).toBe(1);
   });
 });

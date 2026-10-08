@@ -81,7 +81,7 @@ import { localizeReason } from '../utils/reasonLocalization';
 import { localizeAskNote } from '../i18n/askNoteView';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { splitTonight } from '../utils/categoryTonight';
-import { buildDiscoverSections, buildDiscoverDateView, compareDiscover, sectionLeadReason } from '../utils/discoverSections';
+import { buildDiscoverSections, buildDiscoverDateView, compareDiscover, sectionLeadReason, TIME_CHIPS } from '../utils/discoverSections';
 import { SIGNAL_TIERS, tierVector } from '../constants/signalPriority';
 import { recordSearchBehavior } from '../services/behaviorSignals';
 import { searchTopic, matchBusinesses, friendsLineForTopic } from '../utils/unifiedSearch';
@@ -658,6 +658,38 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
   function closeDateView() {
     setDateView(null);
+  }
+
+  // Item 34: the time chips open the same in-place date view as "See all". One at a time; the active chip closes it; another
+  // chip switches without losing where the sections were left.
+  function selectTimeChip(f) {
+    if (dateView === f) closeDateView();
+    else if (dateView) setDateView(f);
+    else openDateView(f);
+  }
+
+  function renderTimeChips() {
+    return (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }} style={{ flex: 1 }}>
+        {TIME_CHIPS.map((f) => {
+          const active = !!dateViewData && dateViewData.dateFilter === f;
+          const label = active ? sectionTitle(dateViewData) : t(`ui.discover.section.${f}`);
+          return (
+            <TapActiveChip
+              key={f}
+              active={active}
+              style={[styles.filterChip, active && styles.filterChipActive]}
+              onPress={() => selectTimeChip(f)}
+              accessibilityLabel={active ? t('ui.discover.selectedTapClear', { label }) : label}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+            >
+              <Text style={[styles.filterChipText, active && styles.filterChipTextActive]} numberOfLines={1}>{active ? `${label} ✕` : label}</Text>
+            </TapActiveChip>
+          );
+        })}
+      </ScrollView>
+    );
   }
 
   // The default list remounts when the date view closes; put it back where the person left it once its content is laid out.
@@ -2193,19 +2225,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
             {expandedContext ? (
               <Text style={styles.breadcrumbText} numberOfLines={1}>{contextLabel}</Text>
             ) : (
-              /* Item 206: the active date as a removable chip; tapping it leaves the view exactly like the back arrow. */
-              <View style={{ flex: 1, flexDirection: 'row' }}>
-                <TapActiveChip
-                  active
-                  style={[styles.filterChip, styles.filterChipActive]}
-                  onPress={closeDateView}
-                  accessibilityLabel={t('ui.discover.selectedTapClear', { label: sectionTitle(dateViewData) })}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: true }}
-                >
-                  <Text style={[styles.filterChipText, styles.filterChipTextActive]} numberOfLines={1}>{`${sectionTitle(dateViewData)} ✕`}</Text>
-                </TapActiveChip>
-              </View>
+              /* Items 206/34: the time chips stay visible; the active one (✕) leaves the view exactly like the back arrow. */
+              <View style={{ flex: 1, flexDirection: 'row' }}>{renderTimeChips()}</View>
             )}
             {renderOpenNowChip()}
             {renderEnvironmentChip()}
@@ -2311,6 +2332,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 </TouchableOpacity>
               )}
             </View>
+            {isAll && !isSearching && (
+              <View style={[styles.filterRow, { flexDirection: 'row' }]}>{renderTimeChips()}</View>
+            )}
 
             {typeFilter === 'places' && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingTop: spacing.sm }}>
@@ -2640,7 +2664,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {dateViewData.items.length > 0
             ? dateViewData.items.map((g, i) => renderGatheringTile(g, i))
-            : <EmptyCopy id="discover_date_none" />}
+            : (
+              <>
+                <EmptyCopy id={openNowActive || environmentFilter ? 'discover_date_none' : 'discover_date_empty'} />
+                <TouchableOpacity onPress={closeDateView} accessibilityLabel={t('ui.discover.showEverythingA11y')} accessibilityRole="button">
+                  <Text style={styles.emptyActionText}>{t('ui.discover.showEverything')}</Text>
+                </TouchableOpacity>
+              </>
+            )}
         </ScrollView>
       ) : viewStyle === 'map' && showViewToggle ? (
         <View style={{ flex: 1 }}>

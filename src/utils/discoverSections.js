@@ -1,3 +1,4 @@
+import { isWithinRightNowWindow } from './rightNowWindow';
 import { matchesDateFilter, TONIGHT_START_HOUR } from './gatheringDateFilter';
 import { gatheringTimeBadge } from './gatheringTimeLabel';
 import { attendeeTotal } from './gatheringFullness';
@@ -118,7 +119,10 @@ export function buildDiscoverSections({
 // It lists every gathering in that window from the list Discover already holds (its Open now / Outdoor filters still apply),
 // ordered by the same ladder; the capped sections are not shown while it is open, so nothing appears twice. Titled by the same
 // rule as the section: "Tonight" only when every item is a tonight start, else "Today".
-export const DATE_VIEW_FILTERS = ['today', 'weekend'];
+// Item 34 (owner, 2026-10-08): the same view also backs Discover's time chips (Happening Now · Today · This Weekend);
+// 'now' = the canonical Right Now window (next 2 hours), the same as Home's Nearby Right Now.
+export const DATE_VIEW_FILTERS = ['now', 'today', 'weekend'];
+export const TIME_CHIPS = ['now', 'today', 'weekend'];
 export function buildDiscoverDateView({
   gatherings = [],
   dateFilter,
@@ -127,7 +131,9 @@ export function buildDiscoverDateView({
   isInWindow = matchesDateFilter,
 } = {}) {
   if (!DATE_VIEW_FILTERS.includes(dateFilter)) return null;
-  const items = gatherings.filter((g) => g && isInWindow(g.scheduled_at, dateFilter)).map(score).sort(compareDiscover);
+  const inWindow = dateFilter === 'now' ? (at) => isWithinRightNowWindow(at, now) : isInWindow;
+  const items = gatherings.filter((g) => g && inWindow(g.scheduled_at, dateFilter)).map(score).sort(compareDiscover);
+  if (dateFilter === 'now') return { key: 'now', dateFilter, title: '⚡ Happening Now', items };
   if (dateFilter === 'weekend') return { key: 'weekend', dateFilter, title: '🌴 This Weekend', items };
   // Unlike the section, the full view also holds what is starting right now, so an evening start counts as tonight either way.
   const isTonight = (g) => {

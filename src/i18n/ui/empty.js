@@ -46,6 +46,7 @@ const en = {
   gatherings_for_you: { title: 'Nothing matching your history yet', body: 'Check back later as you join more gatherings.' },
   gatherings_filtered: { title: 'No gatherings match these filters', body: 'Try widening the date or category.' },
   discover_date_none: { title: 'Nothing here with these filters', body: 'Turn off a filter, or go back to see everything else nearby.' },
+  discover_date_empty: { title: 'Nothing nearby for this time yet', body: 'New gatherings appear here as people create them. Go back to see everything else nearby.' },
 };
 
 const es = {
@@ -93,6 +94,7 @@ const es = {
   gatherings_for_you: { title: 'Aún nada coincide con tu historial', body: 'Vuelve más tarde a medida que te unas a más reuniones.' },
   gatherings_filtered: { title: 'Ninguna reunión coincide con estos filtros', body: 'Prueba a ampliar la fecha o la categoría.' },
   discover_date_none: { title: 'No hay nada con estos filtros', body: 'Quita un filtro o vuelve atrás para ver todo lo demás cerca.' },
+  discover_date_empty: { title: 'Todavía no hay nada cerca para este momento', body: 'Las nuevas reuniones aparecen aquí cuando alguien las crea. Vuelve atrás para ver todo lo demás cerca.' },
 };
 
 const de = {
@@ -140,6 +142,7 @@ const de = {
   gatherings_for_you: { title: 'Noch nichts passend zu deinem Verlauf', body: 'Schau später wieder vorbei, wenn du mehr Treffen besucht hast.' },
   gatherings_filtered: { title: 'Keine Treffen passen zu diesen Filtern', body: 'Probiere einen größeren Zeitraum oder eine andere Kategorie.' },
   discover_date_none: { title: 'Mit diesen Filtern gibt es hier nichts', body: 'Schalte einen Filter aus oder geh zurück, um alles andere in der Nähe zu sehen.' },
+  discover_date_empty: { title: 'Für diese Zeit gibt es in der Nähe noch nichts', body: 'Neue Treffen erscheinen hier, sobald jemand sie erstellt. Geh zurück, um alles andere in der Nähe zu sehen.' },
 };
 
 const fr = {
@@ -187,6 +190,7 @@ const fr = {
   gatherings_for_you: { title: 'Rien ne correspond encore à votre historique', body: 'Revenez plus tard, au fil des rencontres que vous rejoindrez.' },
   gatherings_filtered: { title: 'Aucune rencontre ne correspond à ces filtres', body: 'Essayez d’élargir la date ou la catégorie.' },
   discover_date_none: { title: 'Rien ici avec ces filtres', body: 'Désactivez un filtre ou revenez en arrière pour voir tout le reste à proximité.' },
+  discover_date_empty: { title: 'Rien à proximité pour ce moment pour l\'instant', body: 'Les nouveaux rassemblements apparaissent ici dès qu\'ils sont créés. Revenez en arrière pour voir tout le reste à proximité.' },
 };
 
 const pt = {
@@ -234,6 +238,7 @@ const pt = {
   gatherings_for_you: { title: 'Nada combina com seu histórico ainda', body: 'Volte mais tarde, conforme participar de mais encontros.' },
   gatherings_filtered: { title: 'Nenhum encontro corresponde a estes filtros', body: 'Tente ampliar a data ou a categoria.' },
   discover_date_none: { title: 'Nada aqui com estes filtros', body: 'Desative um filtro ou volte para ver tudo o mais por perto.' },
+  discover_date_empty: { title: 'Ainda não há nada por perto para este horário', body: 'Novos encontros aparecem aqui quando alguém os cria. Volte para ver tudo o mais por perto.' },
 };
 
 const ht = {
@@ -281,6 +286,7 @@ const ht = {
   gatherings_for_you: { title: 'Poko gen anyen ki koresponn ak istwa w', body: 'Tounen pita pandan w ap antre nan plis rasanbleman.' },
   gatherings_filtered: { title: 'Pa gen rasanbleman ki koresponn ak filt sa yo', body: 'Eseye elaji dat la oswa kategori a.' },
   discover_date_none: { title: 'Pa gen anyen la ak filt sa yo', body: 'Retire yon filt, oswa tounen pou wè tout lòt bagay ki toupre.' },
+  discover_date_empty: { title: 'Pa gen anyen toupre pou lè sa a ankò', body: 'Nouvo rasanbleman parèt isit la lè moun kreye yo. Tounen pou wè tout lòt bagay ki toupre.' },
 };
 
 const zh = {
@@ -328,6 +334,7 @@ const zh = {
   gatherings_for_you: { title: '暂时没有与你的记录匹配的内容', body: '参加更多聚会后再来看看。' },
   gatherings_filtered: { title: '没有符合这些筛选条件的聚会', body: '试试放宽日期或类别。' },
   discover_date_none: { title: '在这些筛选条件下没有内容', body: '关闭一个筛选条件，或返回查看附近的其他内容。' },
+  discover_date_empty: { title: '这个时间附近暂时还没有活动', body: '有人创建新聚会后会显示在这里。返回查看附近的其他内容。' },
 };
 
 const vi = {
@@ -375,6 +382,7 @@ const vi = {
   gatherings_for_you: { title: 'Chưa có gì khớp với lịch sử của bạn', body: 'Hãy quay lại sau khi bạn tham gia thêm các buổi gặp mặt.' },
   gatherings_filtered: { title: 'Không có buổi gặp mặt nào khớp với bộ lọc này', body: 'Thử mở rộng ngày hoặc danh mục.' },
   discover_date_none: { title: 'Không có gì với các bộ lọc này', body: 'Tắt một bộ lọc, hoặc quay lại để xem mọi thứ khác ở gần.' },
+  discover_date_empty: { title: 'Chưa có gì gần bạn cho khung giờ này', body: 'Các buổi tụ họp mới sẽ xuất hiện ở đây khi có người tạo. Quay lại để xem mọi thứ khác ở gần.' },
 };
 
 const tl = {
@@ -422,6 +430,7 @@ const tl = {
   gatherings_for_you: { title: 'Wala pang tugma sa kasaysayan mo', body: 'Bumalik mamaya habang sumasali ka sa mas maraming pagtitipon.' },
   gatherings_filtered: { title: 'Walang pagtitipong tugma sa mga filter na ito', body: 'Subukang palawakin ang petsa o kategorya.' },
   discover_date_none: { title: 'Walang laman dito sa mga filter na ito', body: 'Patayin ang isang filter, o bumalik para makita ang lahat ng iba pa sa malapit.' },
+  discover_date_empty: { title: 'Wala pang malapit para sa oras na ito', body: 'Lalabas dito ang mga bagong pagtitipon kapag may gumawa. Bumalik para makita ang lahat ng iba pa sa malapit.' },
 };
 
 const ru = {
@@ -469,6 +478,7 @@ const ru = {
   gatherings_for_you: { title: 'Пока ничего не подходит под вашу историю', body: 'Загляните позже, когда посетите больше встреч.' },
   gatherings_filtered: { title: 'Нет встреч по этим фильтрам', body: 'Попробуйте расширить даты или категорию.' },
   discover_date_none: { title: 'С этими фильтрами здесь ничего нет', body: 'Отключите фильтр или вернитесь назад, чтобы увидеть всё остальное рядом.' },
+  discover_date_empty: { title: 'Рядом на это время пока ничего нет', body: 'Новые встречи появятся здесь, когда их создадут. Вернитесь назад, чтобы увидеть всё остальное рядом.' },
 };
 
 const ko = {
@@ -516,6 +526,7 @@ const ko = {
   gatherings_for_you: { title: '아직 기록과 맞는 모임이 없어요', body: '모임에 더 참여한 뒤 다시 확인해 보세요.' },
   gatherings_filtered: { title: '이 필터와 일치하는 모임이 없어요', body: '날짜나 카테고리를 넓혀 보세요.' },
   discover_date_none: { title: '이 필터로는 표시할 항목이 없어요', body: '필터를 끄거나 뒤로 가서 근처의 다른 항목을 확인해 보세요.' },
+  discover_date_empty: { title: '이 시간대에는 아직 근처에 아무것도 없어요', body: '누군가 새 모임을 만들면 여기에 표시돼요. 뒤로 가서 근처의 다른 항목을 확인해 보세요.' },
 };
 
 export default { en, es, de, fr, pt, ht, zh, vi, tl, ru, ko };

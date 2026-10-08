@@ -79,6 +79,7 @@ export const EMPTY_STATES = {
   gatherings_for_you: { title: "Nothing matching your history yet", body: "Check back later as you join more gatherings." },
   gatherings_filtered: { title: "No gatherings match these filters", body: "Try widening the date or category." },
   discover_date_none: { title: "Nothing here with these filters", body: "Turn off a filter, or go back to see everything else nearby." },
+  discover_date_empty: { title: "Nothing nearby for this time yet", body: "New gatherings appear here as people create them. Go back to see everything else nearby." },
 };
 
 export function emptyCopy(id, vars = {}) {
