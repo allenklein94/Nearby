@@ -308,7 +308,7 @@ export async function getAllActivePartners() {
 // Phase 4 of the "build everything" plan (see CLAUDE.md): the one real
 // new fetch "Make a plan" needs -- a single perk, its own real
 // latitude/longitude when set, and its business partner's real
-// name/address/coordinates, so MakeAPlanScreen.js can seed a real
+// name/address/coordinates/declared types, so Create Gathering (fromBusiness) can seed a real
 // gathering location without re-deriving anything already computed
 // elsewhere. No explicit `.eq('active', true)` filter needed in the
 // query itself -- brand_offers' own real SELECT RLS policy ("Anyone can
@@ -319,7 +319,7 @@ export async function getAllActivePartners() {
 export async function getOfferById(offerId) {
   const { data, error } = await supabase
     .from('brand_offers')
-    .select('*, brand_partners(name, address, latitude, longitude)')
+    .select('*, brand_partners(name, address, latitude, longitude, subcategory, categories)')
     .eq('id', offerId)
     .maybeSingle();
 

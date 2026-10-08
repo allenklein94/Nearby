@@ -107,7 +107,6 @@ export const LOCALIZED_FILES = [
   'src/components/StartSomethingModal.js',
   'src/screens/GoodbyeArchiveListScreen.js',
   'src/screens/GoodbyeArchiveEntryScreen.js',
-  'src/screens/MakeAPlanScreen.js',
   'src/screens/RelationshipEmergencyKitScreen.js',
   'src/screens/SharedDecisionsScreen.js',
   'src/screens/TripPlanningScreen.js',

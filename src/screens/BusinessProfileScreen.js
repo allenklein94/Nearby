@@ -23,6 +23,7 @@ import { categoryName } from '../i18n/categoryNames';
 import { followerCountLine, reliabilityLine, hoursLine, weekHoursRows, bookingModeLine, priceLine, largestGroupLine, spaceLines, restrictionsLine, dietaryLine, dietaryNote, pulseLabel, cuisineName, businessAttributeName, partyTypeName, thingsToDoLabels, suitedAgesLabel } from '../i18n/businessProfileDisplay';
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
+import { createFromBusinessParams } from '../utils/businessPlanPrefill';
 
 // Phase 4 (media upload, CLAUDE.md) -- a Signature Experience's own real
 // uploaded creative, rendered INSIDE its existing experience card, never
@@ -439,7 +440,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
         ) : (
           <TouchableOpacity
             style={styles.planHereButton}
-            onPress={() => navigation.navigate('MakeAPlan', { partnerId })}
+            onPress={() => navigation.navigate('CreateGathering', createFromBusinessParams({ partnerId }))}
             activeOpacity={0.85}
             accessibilityLabel={t('ui.businessProfile.planSomethingAtA11y', { name: partner.name })}
             accessibilityRole="button"
@@ -475,7 +476,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
           {bookingAction ? (
             <TouchableOpacity
               style={styles.messageButton}
-              onPress={() => navigation.navigate('MakeAPlan', { partnerId })}
+              onPress={() => navigation.navigate('CreateGathering', createFromBusinessParams({ partnerId }))}
               activeOpacity={0.85}
               accessibilityLabel={t('ui.businessProfile.planSomethingAtA11y', { name: partner.name })}
               accessibilityRole="button"

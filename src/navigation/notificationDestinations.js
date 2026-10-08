@@ -6,6 +6,7 @@
 // the business. Moved verbatim from services/notifications.js (routeNotificationTap); comments kept.
 import { extractNameFromBirthdayTitle } from '../services/celebrateSomething';
 import { PERKS_TAB } from '../utils/recommendationContext';
+import { createFromBusinessParams } from '../utils/businessPlanPrefill';
 
 const to = (name, params) => (params === undefined ? { name } : { name, params });
 
@@ -245,10 +246,10 @@ export async function notificationDestination(data, { lookupAvailability = async
       // this-exact-business orchestration Item 101's own "Return to
       // {partner}" action already uses -- no new screen needed.
       if (data.partner_id) {
-        return to('MakeAPlan', {
+        return to('CreateGathering', createFromBusinessParams({
           partnerId: data.partner_id,
-          initialTitle: data.package_name ? `${data.package_name} at ${data.partner_name ?? ''}`.trim() : null,
-        });
+          title: data.package_name ? `${data.package_name} at ${data.partner_name ?? ''}`.trim() : null,
+        }));
       }
       break;
     case 'crossed_paths_sighting':

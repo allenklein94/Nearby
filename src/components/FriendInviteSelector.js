@@ -1,4 +1,4 @@
-// The one "pick friends to invite" list for a gathering that does not exist yet (MakeAPlan; Create's "Who do you want to
+// The one "pick friends to invite" list for a gathering that does not exist yet (Create's "Who do you want to
 // invite?" step, item 109). Accepted friends only (getFriendsWithSharedContext; never strangers, never inferred picks). It only
 // SELECTS: the caller sends with sendGatheringInvites (services/invites.js) after the gathering is created. The post-publish
 // panel on GatheringConfirmation sends one invite per tap and stays separate.

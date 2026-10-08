@@ -39,7 +39,7 @@ export function wantsCelebrationsStep(motivations) {
 const GOAL_DESTINATIONS = {
   'Meet people': { route: 'Discover', params: { initialMode: 'people' }, action: 'Meet someone new' },
   'Find things to do': { route: 'Discover', params: { initialMode: 'things' }, action: 'Find something to do' },
-  'Make plans': { route: 'MakeAPlan', params: undefined, action: 'Make a plan' },
+  'Make plans': { route: 'CreateGathering', params: undefined, action: 'Make a plan' },
   'Discover places': { route: 'Discover', params: { initialMode: 'things', initialTypeTab: 'places' }, action: 'Discover places' },
   'Plan celebrations': { route: 'CelebrateSomething', params: undefined, action: 'Plan a celebration' },
   'Find businesses and offers': { route: 'Discover', params: { initialMode: 'things', initialTypeTab: 'perks' }, action: 'Offers from businesses' },

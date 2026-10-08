@@ -79,6 +79,7 @@ import { getUserLocation } from '../services/userLocation';
 import { placeDistanceLabel } from '../services/places';
 import { homeQuickStatRows } from '../utils/homeQuiet';
 import { interestedConfirmation } from '../utils/actionConfirmations';
+import { createFromBusinessParams } from '../utils/businessPlanPrefill';
 
 // Item 137: a destination keeps the time it was offered under (the evening header reads "Tonight", so its chips open Tonight).
 const PERIOD_DATE_FILTER = { morning: 'morning', afternoon: 'afternoon', evening: 'tonight', weekend: 'weekend' };
@@ -495,7 +496,7 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.trendingTitle}>🎁 {item.title}</Text>
           {row.why ? <Text style={styles.trendingMeta}>{row.why}</Text> : null}
           {row.meta ? <Text style={styles.trendingMeta}>{row.meta}</Text> : null}
-          <TouchableOpacity onPress={() => navigation.navigate('MakeAPlan', { offerId: item.id })} accessibilityLabel={t('ui.home.makePlanA11y', { title: item.title })} accessibilityRole="button">
+          <TouchableOpacity onPress={() => navigation.navigate('CreateGathering', createFromBusinessParams({ offerId: item.id }))} accessibilityLabel={t('ui.home.makePlanA11y', { title: item.title })} accessibilityRole="button">
             <Text style={styles.makePlanLink}>{t('ui.home.makePlan')}</Text>
           </TouchableOpacity>
         </TouchableOpacity>
@@ -1432,18 +1433,18 @@ export default function HomeScreen({ navigation }) {
   }
 
   // Item 101 (CLAUDE.md, "Occasions can become recurring"): the real
-  // "return to last year's place" action -- MakeAPlanScreen's existing
-  // partnerId mode already does exactly this (a real plan at that exact
-  // business), no new creation primitive needed.
+  // "return to last year's place" action -- Create Gathering opened
+  // fromBusiness does exactly this (a real plan at that exact business),
+  // no new creation primitive needed.
   function handleOccasionRecallReturn() {
     if (!occasionNudge || !occasionRecall || occasionRecall.planType !== 'business') return;
     const dismissKey = `occasion_dismiss_${new Date().toDateString()}_${occasionNudge.occasion_id}`;
-    const params = { partnerId: occasionRecall.partnerId, initialTitle: occasionNudge.title };
+    const params = createFromBusinessParams({ partnerId: occasionRecall.partnerId, title: occasionNudge.title });
     setOccasionNudge(null);
     setOccasionRecall(null);
     AsyncStorage.setItem(dismissKey, '1').catch(() => {});
     recordNudgeEvent('predictive', 'acted', 'occasion_recall_return');
-    navigation.navigate('MakeAPlan', params);
+    navigation.navigate('CreateGathering', params);
   }
 
   // The real "try something new" action -- lands on the same Occasion

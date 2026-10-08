@@ -18,6 +18,8 @@ import { EFFORT_OPTIONS } from '../constants/intensityEffort';
 import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_OPTIONS, cleanFeatures, toggleFeature, isMusicTag } from '../utils/gatheringPractical';
 import { searchNearbyPlaces, priceLevelLabel } from '../services/places';
 import { checkTextModeration } from '../services/textModeration';
+import { getOfferById, getBusinessProfile } from '../services/brandOffers';
+import { businessPlanPrefill } from '../utils/businessPlanPrefill';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { CATEGORY_GROUPS, groupForTag } from '../constants/gatheringCategories';
@@ -134,7 +136,12 @@ export default function CreateGatheringScreen({ navigation, route }) {
   // set by createParamsFromAsk). Ordinary gatherings keep the same steps as before.
   // Celebrate Something's own suggested friends (explicit, organizer-picked) also open the step and start checked.
   const suggestedInviteeIds = Array.isArray(route.params?.suggestedInviteeIds) ? route.params.suggestedInviteeIds : [];
-  const askInvite = route.params?.quickStartInvite === true || suggestedInviteeIds.length > 0;
+  // "Make a plan" at a business (a perk, a business profile, an occasion recall, a business's welcome-back push) opens this
+  // flow with fromBusiness (audit B4, replacing the separate MakeAPlan screen): the business is loaded below and fills the
+  // form, and the invite step is on, as it was there.
+  const fromBusiness = route.params?.fromBusiness && (route.params.fromBusiness.offerId || route.params.fromBusiness.partnerId)
+    ? route.params.fromBusiness : null;
+  const askInvite = route.params?.quickStartInvite === true || suggestedInviteeIds.length > 0 || !!fromBusiness;
   // Five steps, each answering one question (owner, 2026-10-04): What (title + activity), When & where, Who's invited
   // (who can find/join it, capacity, and the friend picker when the ask said who), Details (description + optional extras
   // under More options, incl. the business-request consent), then Review & Publish. An already-answered What is skipped:
@@ -218,7 +225,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
   };
   const gatheringDraft = useFormDraft('gathering', gatheringSnapshot, {
     isEmpty: (d) => !String(d.title ?? '').trim() && !String(d.description ?? '').trim(),
-    enabled: !route.params?.quickStartTitle && !route.params?.quickStartCategory,
+    enabled: !route.params?.quickStartTitle && !route.params?.quickStartCategory && !fromBusiness,
   });
   function applyGatheringDraft(d) {
     // Restore by step NAME; a draft saved with the older seven-step layout reopens on the first step, values kept.
@@ -236,6 +243,41 @@ export default function CreateGatheringScreen({ navigation, route }) {
     setHostNotifications(d.hostNotifications !== false); setRequiresApproval(!!d.requiresApproval);
     setInviteIds(d.inviteIds && typeof d.inviteIds === 'object' ? d.inviteIds : {});
   }
+
+  // fromBusiness: load the perk / business once and fill only what is still empty (a value the person already typed or
+  // picked is never overwritten). A failed load leaves the form as it is and says so on the place step.
+  const [businessPlace, setBusinessPlace] = useState(null);
+  const [businessLoadFailed, setBusinessLoadFailed] = useState(false);
+  const fromOfferId = fromBusiness?.offerId ?? null;
+  const fromPartnerId = fromBusiness?.partnerId ?? null;
+  const fromTitle = fromBusiness?.title ?? null;
+  useEffect(() => {
+    if (!fromOfferId && !fromPartnerId) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const offer = fromOfferId ? await getOfferById(fromOfferId) : null;
+        const partner = !offer && fromPartnerId ? await getBusinessProfile(fromPartnerId) : null;
+        if (cancelled) return;
+        if (!offer && !partner) { setBusinessLoadFailed(true); return; }
+        const prefill = businessPlanPrefill({ offer, partner, title: fromTitle });
+        setBusinessLoadFailed(false);
+        if (prefill.title) setTitle((cur) => (cur.trim() ? cur : prefill.title));
+        if (prefill.category) setInterestTag((cur) => cur ?? prefill.category);
+        if (prefill.description) setDescription((cur) => (cur.trim() ? cur : prefill.description));
+        if (prefill.place) {
+          setBusinessPlace(prefill.place);
+          setCustomLocation((cur) => cur ?? { latitude: prefill.place.latitude, longitude: prefill.place.longitude });
+          setPlaceName((cur) => cur ?? prefill.place.name);
+          setLocationMode((cur) => (cur === 'near_me' ? 'choose_place' : cur));
+        }
+      } catch (e) {
+        console.error('CreateGathering business prefill failed', e);
+        if (!cancelled) setBusinessLoadFailed(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [fromOfferId, fromPartnerId, fromTitle]);
 
   useEffect(() => {
     if (route.params?.selectedLat && route.params?.selectedLng) {
@@ -735,8 +777,30 @@ export default function CreateGatheringScreen({ navigation, route }) {
               </TouchableOpacity>
             </View>
 
+            {businessLoadFailed && (
+              <Text style={styles.helperText}>{t(fromOfferId ? 'ui.makeAPlan.couldntLoadThisPerk' : 'ui.makeAPlan.couldntLoadThisBusiness')}</Text>
+            )}
             {locationMode === 'choose_place' && (
               <View>
+                {businessPlace && (() => {
+                  const selected = customLocation?.latitude === businessPlace.latitude && customLocation?.longitude === businessPlace.longitude;
+                  const label = businessPlace.name ? t('ui.makeAPlan.withBusiness', { name: businessPlace.name }) : t('ui.gatheringForm.preview.customLocation');
+                  return (
+                    <TouchableOpacity
+                      style={[styles.placeRow, selected && styles.optionCardActive]}
+                      onPress={() => pickPlace(businessPlace)}
+                      activeOpacity={0.85}
+                      accessibilityLabel={label}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.placeRowTitle, selected && styles.optionCardTitleActive]}>{label}</Text>
+                      </View>
+                      {selected && <Text style={styles.checkmark}>✓</Text>}
+                    </TouchableOpacity>
+                  );
+                })()}
                 <Text style={styles.subLabel}>{t('ui.gatheringForm.popularNearby')}</Text>
                 {loadingPlaces ? (
                   <View style={{ marginTop: spacing.sm }}>

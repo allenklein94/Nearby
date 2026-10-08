@@ -69,7 +69,6 @@ import ViewProfileScreen from '../screens/ViewProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import LegalScreen from '../screens/LegalScreen';
 import CreateGatheringScreen from '../screens/CreateGatheringScreen';
-import MakeAPlanScreen from '../screens/MakeAPlanScreen';
 import GatheringConfirmationScreen from '../screens/GatheringConfirmationScreen';
 import SharedPlaylistScreen from '../screens/SharedPlaylistScreen';
 import TripPlanningScreen from '../screens/TripPlanningScreen';
@@ -438,7 +437,6 @@ export default function RootNavigator() {
                 renaming plumbing purely for a copy change. See
                 CelebrateSomethingScreen.js's own header. */}
             <Stack.Screen name="CelebrateSomething" component={CelebrateSomethingScreen} options={{ headerShown: true, title: t('ui.nav.title.celebrateSomething'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
-            <Stack.Screen name="MakeAPlan" component={MakeAPlanScreen} options={{ headerShown: true, title: t('ui.nav.title.makeAPlan'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="GatheringConfirmation" component={GatheringConfirmationScreen} options={{ headerShown: false, presentation: 'modal', gestureEnabled: false }} />
             <Stack.Screen name="SharedPlaylist" component={SharedPlaylistScreen} options={{ headerShown: true, title: t('ui.nav.title.sharedPlaylist'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="TripPlanning" component={TripPlanningScreen} options={{ headerShown: true, title: t('ui.nav.title.tripPlanning'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

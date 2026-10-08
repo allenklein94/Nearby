@@ -69,7 +69,7 @@ export async function getMyReceivedInvites() {
   }));
 }
 
-// Invitations picked BEFORE the gathering existed (MakeAPlan, and Create's "Who do you want to invite?" step, item 109): sent
+// Invitations picked BEFORE the gathering existed (Create's "Who do you want to invite?" step, item 109): sent
 // once, right after the gathering is created, through the same send_social_invite (accepted friends only, never across a
 // block; the server decides). Never throws: a failed send is counted, not rolled back, and shown on the confirmation screen
 // ("We invited 1 of 2"), where the regular Invite Connections panel is the retry.

@@ -104,7 +104,6 @@ export const SCREEN_REGISTRY = {
 
   // ---- plans, occasions and business requests ----
   CelebrateSomething: { jobs: ['C'], reason: 'The plan-for-someone workflow.' },
-  MakeAPlan: { jobs: ['B', 'C'], reason: 'Make a plan with friends and invite them.' },
   PlanDetail: { jobs: ['C'], reason: 'One plan: its stops, date, sharing and edits.' },
   PlanChat: { jobs: ['D'], reason: 'A plan\'s group chat.' },
   SharedNight: { jobs: ['F'], reason: 'A night someone shared with you, read-only (the only view a shared person gets).' },
@@ -160,6 +159,7 @@ export const RULE14_DECISIONS = {
   folded: {
     BrandOffers: 'Discover -> Perks (browse and redeem in place)',
     Rewards: 'one tier line at the top of Discover -> Perks',
+    MakeAPlan: 'CreateGathering opened fromBusiness (the business fills place, title, activity; screen-reduction audit B4, 2026-10-08)',
   },
   // Notices was registered as its own surface; it is Activity presented on top for push entry (PRESENTATION_ROUTES).
   presentations: { Notices: 'Activity', FriendDiscovery: 'Discover -> People -> Friends' },

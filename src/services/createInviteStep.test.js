@@ -57,7 +57,7 @@ describe('1-2. prefill, then the invite step only with invite context', () => {
     const defs = CREATE.slice(CREATE.indexOf('const STEP_DEFS = ['), CREATE.indexOf('].filter(', CREATE.indexOf('const STEP_DEFS = [')));
     expect(defs.replace(/\s+/g, ' ')).toMatch(/'what'.*'whenWhere'.*'who'.*'details'.*'publish'/);
     expect(CREATE).toMatch(/stepKey === 'who' && askInvite && \(/);
-    expect(CREATE).toMatch(/const askInvite = route\.params\?\.quickStartInvite === true \|\| suggestedInviteeIds\.length > 0;/);
+    expect(CREATE).toMatch(/const askInvite = route\.params\?\.quickStartInvite === true \|\| suggestedInviteeIds\.length > 0 \|\| !!fromBusiness;/);
     expect(CREATE).toMatch(/ui\.gatheringForm\.inviteQ'/);
   });
 });
@@ -109,8 +109,8 @@ describe('6-8. eligibility, no strangers, no second system', () => {
     expect(imports).not.toMatch(/getNearby|friendDiscovery|getFriendDiscoveryCandidates|matches/i);
     expect(read('./invites.js')).toMatch(/sendGatheringInvites[\s\S]*sendInvite\('gathering', gatheringId, id\)/);
   });
-  it('one picker and one pre-publish send path, shared by MakeAPlan and Create', () => {
-    for (const f of ['../screens/MakeAPlanScreen.js', '../screens/CreateGatheringScreen.js']) {
+  it('one picker and one pre-publish send path, in Create (MakeAPlan folded into it, audit B4)', () => {
+    for (const f of ['../screens/CreateGatheringScreen.js']) {
       const src = read(f);
       expect(src).toMatch(/<FriendInviteSelector /);
       expect(src).toMatch(/sendGatheringInvites\(created\.id,/);
@@ -149,7 +149,7 @@ describe('Celebrate suggestions are preselected on the shared step', () => {
   });
   it('Create starts from the suggestions only, opens the step for them, and says they can be unchecked', () => {
     expect(CREATE).toMatch(/useState\(\(\) => selectionFromSuggested\(suggestedInviteeIds\)\)/);
-    expect(CREATE).toMatch(/const askInvite = route\.params\?\.quickStartInvite === true \|\| suggestedInviteeIds\.length > 0;/);
+    expect(CREATE).toMatch(/const askInvite = route\.params\?\.quickStartInvite === true \|\| suggestedInviteeIds\.length > 0 \|\| !!fromBusiness;/);
     expect(CREATE).toMatch(/ui\.gatheringForm\.suggestedChecked(With)?'/);
     expect(require('../i18n/ui/gatheringForm').default.en.suggestedChecked).toMatch(/Uncheck anyone you'd rather not invite\./);
     expect(CREATE).toMatch(/suggestedIds=\{suggestedInviteeIds\}/);

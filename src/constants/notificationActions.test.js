@@ -37,7 +37,7 @@ const ACTION_OPENS = {
   see_details: ['AskBusiness', 'BusinessProfile', 'GatheringDetail', 'CommunityDetail'],
   browse_gatherings: ['Gatherings'], find_something_else: ['Gatherings', 'Communities'],
   view_friend_request: ['Friends'], view_friends: ['Friends'], view_profile: ['ViewProfile'],
-  start_planning: ['CelebrateSomething', 'Occasions', 'MainTabs'], plan_visit: ['MakeAPlan'],
+  start_planning: ['CelebrateSomething', 'Occasions', 'MainTabs'], plan_visit: ['CreateGathering'],
   view_progress: ['Momentum', 'MainTabs'], open_dashboard: ['BusinessDashboard'], view_application: ['MyBusinessApplication'],
   view_business: ['BusinessProfile'], view_opportunities: ['BusinessDashboard'], view_your_offers: ['BusinessDashboard'],
   view_booking: ['BusinessDashboard'], view_community: ['CommunityDetail'], see_ideas: ['MainTabs'],
