@@ -92,7 +92,6 @@ const LABEL_KEYS = {
   Chat: 'chat',
   GroupChat: 'groupChat',
   GatheringDetail: 'gathering',
-  GatheringHub: 'gathering',
   ViewProfile: 'profile',
   BusinessProfile: 'business',
   BusinessRequestDetail: 'request',

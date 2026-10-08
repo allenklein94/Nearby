@@ -85,7 +85,6 @@ export const SCREEN_REGISTRY = {
 
   // ---- gatherings ----
   GatheringDetail: { jobs: ['A', 'B', 'C'], reason: 'Decide and join; hosts manage attendees, edit and cancel here.' },
-  GatheringHub: { jobs: ['D'], reason: 'Attendees on the day: notices and who you\'ll meet.' },
   GatheringChat: { jobs: ['D'], reason: 'The gathering\'s group chat.' },
   CreateGathering: { jobs: ['C'], reason: 'The multi-step workflow that creates a gathering.' },
   EditGathering: { jobs: ['C'], reason: 'Edit a gathering you host and its settings.' },
@@ -159,6 +158,7 @@ export const RULE14_DECISIONS = {
   folded: {
     BrandOffers: 'Discover -> Perks (browse and redeem in place)',
     Rewards: 'one tier line at the top of Discover -> Perks',
+    GatheringHub: 'the attending section on GatheringDetail (joining changes your state on the gathering, never the screen; screen-reduction audit B1, 2026-10-08)',
     MakeAPlan: 'CreateGathering opened fromBusiness (the business fills place, title, activity; screen-reduction audit B4, 2026-10-08)',
   },
   // Notices was registered as its own surface; it is Activity presented on top for push entry (PRESENTATION_ROUTES).

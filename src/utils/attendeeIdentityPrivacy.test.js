@@ -91,18 +91,17 @@ describe('attendee identities: friends see names, strangers see counts (item 75)
       const i = svc.indexOf('export async function getFirstTimerAttendeeIds');
       expect(svc.slice(i, i + 900)).not.toMatch(/from\('gathering_interest'\)/);
     });
-    it('the Hub still lists approved attendees (Who You\'ll Meet unchanged)', () => {
-      const hub = read('../screens/GatheringHubScreen.js');
+    it('the attending section still lists approved attendees (Who You\'ll Meet unchanged)', () => {
+      const hub = read('../components/GatheringAttendingSection.js');
       expect(hub).toContain("t('ui.gatheringHub.whoYoullMeet')");
       expect(require('../i18n/ui/gatheringHub').default.en.whoYoullMeet).toBe("Who You'll Meet");
       expect(hub).toMatch(/gathering\.approvedAttendees\.filter/);
     });
     it('no other screen renders an attendee\'s name or photo from a gathering payload', () => {
-      const screens = fs.readdirSync(path.join(__dirname, '../screens')).filter((f) => f.endsWith('.js') && !f.includes('.test.'));
-      const offenders = screens.filter((f) => {
-        if (['GatheringsScreen.js', 'GatheringDetailScreen.js', 'GatheringHubScreen.js', 'GatheringChatScreen.js'].includes(f)) return false;
-        return /approvedAttendees[^\n]*(display_name|photo_url)/.test(read(`../screens/${f}`));
-      });
+      const files = ['screens', 'components'].flatMap((d) => fs.readdirSync(path.join(__dirname, '..', d))
+        .filter((f) => f.endsWith('.js') && !f.includes('.test.')).map((f) => `../${d}/${f}`));
+      const allowed = ['../screens/GatheringsScreen.js', '../screens/GatheringDetailScreen.js', '../components/GatheringAttendingSection.js', '../screens/GatheringChatScreen.js'];
+      const offenders = files.filter((f) => !allowed.includes(f) && /approvedAttendees[^\n]*(display_name|photo_url)/.test(read(f)));
       expect(offenders).toEqual([]);
     });
   });

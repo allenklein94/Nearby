@@ -50,6 +50,7 @@ import HostAttendeeManager from '../components/HostAttendeeManager';
 import HostCommandCenter from '../components/HostCommandCenter';
 import { invitationRows, hostBusinessLine } from '../utils/hostCommandCenter';
 import GatheringFeedbackPrompt from '../components/GatheringFeedbackPrompt';
+import GatheringAttendingSection from '../components/GatheringAttendingSection';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import GatheringIntentModal from '../components/GatheringIntentModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
@@ -102,6 +103,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [lovedTags, setLovedTags] = useState([]);
   const [intentModalVisible, setIntentModalVisible] = useState(false);
   const [joining, setJoining] = useState(false);
+  // Set by an auto-approved join on THIS screen: the attending section shows "You're in" then "bring someone" (audit B1).
+  const [justJoined, setJustJoined] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
   // The host can turn invitations off for everyone but themselves (allow_attendee_invites; also enforced server-side).
@@ -397,21 +400,16 @@ export default function GatheringDetailScreen({ route, navigation }) {
       const result = await expressInterest(gatheringId);
       recordBehaviorEvent('join', 'gathering', gatheringId, gathering?.interest_tag);
       posthog.capture('gathering_interest_expressed', { source: 'detail_screen', status: result.status });
+      // Joining changes the viewer's state on THIS screen; it never moves them to another one (screen-reduction audit B1:
+      // the separate Gathering Hub is folded in here as the attending section). An auto-approved join gets the Success
+      // beat and the "You're in" banner; a pending request or a waitlist spot gets the lighter Medium impact (nothing to
+      // celebrate yet), matching the Light-tap / Medium-meaningful-action / Success-fully-done haptic convention.
       if (result.status === 'approved') {
-        // Auto-approved gatherings land straight in the Gathering Hub —
-        // the live, day-of experience — rather than back on this
-        // persuade-you-to-join page. Host-approval and waitlisted joins
-        // stay here (pending panel / waitlisted panel), since there's
-        // nothing live to enter yet either way.
-        navigation.replace('GatheringHub', { gatheringId, justJoined: true });
-        return;
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setJustJoined(true);
+      } else {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
-      // Pending/waitlisted joins stay on this screen (no Hub hand-off, so
-      // no Success haptic from that screen either) — a lighter Medium
-      // impact confirms the request itself went through, matching this
-      // codebase's own Light-tap/Medium-meaningful-action/Success-fully-
-      // done haptic convention.
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await load();
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleConfirmIntent() });
@@ -1086,14 +1084,6 @@ export default function GatheringDetailScreen({ route, navigation }) {
               
                 ) : null}
               />
-              <TouchableOpacity
-                onPress={() => navigation.navigate('GatheringHub', { gatheringId })}
-                style={{ marginTop: spacing.xs }}
-                accessibilityLabel={t('ui.gatheringDetail.hubA11y')}
-                accessibilityRole="button"
-              >
-                <Text style={styles.hostBannerLink}>{t('ui.gatheringDetail.hubRocket')}</Text>
-              </TouchableOpacity>
               {!gathering.community_id && viewer.time === 'past' && (
                 <TouchableOpacity
                   onPress={() => navigation.navigate('CreateCommunity', {
@@ -1129,15 +1119,6 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   style={{ marginBottom: spacing.sm }}
                 />
               )}
-              <TouchableOpacity
-                style={styles.sayHelloButton}
-                onPress={() => navigation.navigate('GatheringHub', { gatheringId })}
-                activeOpacity={0.85}
-                accessibilityLabel={t('ui.gatheringDetail.hubA11y')}
-                accessibilityRole="button"
-              >
-                <Text style={styles.sayHelloButtonText}>{t('ui.gatheringDetail.hub')}</Text>
-              </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => navigation.navigate('GatheringChat', { gatheringId, gatheringTitle: gathering.title })}
                 style={{ marginTop: spacing.sm }}
@@ -1271,6 +1252,15 @@ export default function GatheringDetailScreen({ route, navigation }) {
               )}
             </>
           )}
+
+          {/* The host's and an approved attendee's day-of block (was the Gathering Hub screen). */}
+          <GatheringAttendingSection
+            gathering={gathering}
+            gatheringId={gatheringId}
+            navigation={navigation}
+            justJoined={justJoined}
+            onChanged={load}
+          />
         </View>
       </ScrollView>
 
@@ -1416,8 +1406,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   youreInTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: 4 },
   youreInSub: { color: colors.textSecondary, fontSize: 14, marginBottom: spacing.md },
-  sayHelloButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg },
-  sayHelloButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   sayHelloLink: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
   leaveLink: { color: '#ef4444', fontSize: 13, fontWeight: '600' },
   pendingPanel: {

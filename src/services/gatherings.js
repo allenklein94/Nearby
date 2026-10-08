@@ -33,7 +33,7 @@ function wideArea(latitude, longitude) {
 
 // Item 72 (CLAUDE.md): "Make invitations frictionless -- don't require
 // everyone to download Nearby just to participate." Every existing share
-// call site (GatheringConfirmationScreen, GatheringHubScreen,
+// call site (GatheringConfirmationScreen, GatheringAttendingSection,
 // InviteFriendsModal's own handleShareWithNonUser) used to share a bare
 // `nearby://gathering/:id` deep link -- a custom URL scheme with no web
 // fallback, so it silently does nothing for anyone without the app
@@ -1530,7 +1530,7 @@ export async function getFriendsWithSharedContext(hostId) {
 // heavier — fuzzed coordinates, full attendee lists — more than a chat-list
 // row needs) for Inbox's Messages tab, which previously had no way to reach
 // gathering group chats at all (only reachable from deep inside
-// GatheringDetail/GatheringHub/GatheringsScreen). Covers gatherings from
+// GatheringDetail (+ its attending section)/GatheringsScreen). Covers gatherings from
 // the last 7 days through anything upcoming — a chat can still be live
 // shortly after the event, not just before it.
 export async function getMyGatheringChats() {

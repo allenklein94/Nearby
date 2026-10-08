@@ -57,7 +57,6 @@ import EditGatheringScreen from '../screens/EditGatheringScreen';
 import ActivityScreen from '../screens/ActivityScreen';
 import GatheringsScreen from '../screens/GatheringsScreen';
 import GatheringDetailScreen from '../screens/GatheringDetailScreen';
-import GatheringHubScreen from '../screens/GatheringHubScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
@@ -156,8 +155,8 @@ const linking = {
 // NavigationContainer's own `linking` resolution above has nothing to
 // navigate to for a tapped nearby://gathering/:id link from someone not
 // yet signed in, which is exactly the audience "Share Gathering"/"Share
-// Link" actually targets (GatheringConfirmationScreen.js,
-// GatheringHubScreen.js). Without this, that link would silently do
+// Link" actually targets (GatheringConfirmationScreen.js, and the
+// attending section on GatheringDetailScreen.js). Without this, that link would silently do
 // nothing for a not-yet-authenticated recipient — the same class of
 // dead-link bug this file has already caught and fixed once for this
 // exact feature. Captured independently of NavigationContainer's own
@@ -471,7 +470,6 @@ export default function RootNavigator() {
             <Stack.Screen name="SelectGatheringLocation" component={SelectGatheringLocationScreen} options={{ headerShown: true, title: t('ui.nav.title.selectGatheringLocation'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Gatherings" component={GatheringsScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="GatheringDetail" component={GatheringDetailScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="GatheringHub" component={GatheringHubScreen} options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Notices" component={ActivityScreen} options={{ headerShown: true, title: t('ui.nav.title.notices'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: true, title: t('ui.nav.title.friends'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen
@@ -483,8 +481,8 @@ export default function RootNavigator() {
                 // "the chat-header issue is easy") -- matches 1:1
                 // ChatScreen's own tappable-header-title pattern
                 // (headerTitle -> ViewProfile). GatheringChat has 3 real
-                // entry points (GatheringDetail/GatheringHub/
-                // GatheringsScreen), never just the one CommunityChatScreen
+                // entry points (GatheringDetail and its
+                // attending section, GatheringsScreen), never just the one CommunityChatScreen
                 // has -- so, unlike that screen's own already-fixed "tap
                 // just pops back to where you came from" bug, tapping here
                 // genuinely pushes a real GatheringDetail most of the time,

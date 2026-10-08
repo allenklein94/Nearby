@@ -14,7 +14,7 @@ describe('host controls live on GatheringDetail', () => {
   });
   test('every host action is reachable from Detail', () => {
     expect(detail).toMatch(/<HostAttendeeManager/);
-    for (const s of ["'EditGathering'", 'confirmCancelGatheringInDetail', 'setInviteModalVisible(true)', "'GatheringChat'", "'GatheringHub'"]) {
+    for (const s of ["'EditGathering'", 'confirmCancelGatheringInDetail', 'setInviteModalVisible(true)', "'GatheringChat'", '<GatheringAttendingSection']) {
       expect(detail).toContain(s);
     }
     const mgr = read('../components/HostAttendeeManager.js');
@@ -47,12 +47,12 @@ describe('host controls live on GatheringDetail', () => {
     expect(g).not.toMatch(/getMyAttendingGatherings|getFellowAttendees|sendNoticeTo/);
   });
   test('attending actions moved off the retired tab are still reachable', () => {
-    expect(read('GatheringHubScreen.js')).toMatch(/sendNoticeTo/);
+    expect(read('../components/GatheringAttendingSection.js')).toMatch(/sendNoticeTo/);
     expect(read('GatheringDetailScreen.js')).toMatch(/<GatheringFeedbackPrompt/);
     expect(read('PlansScreen.js')).toMatch(/getMyAttendingGatherings/);
   });
-  test('the Hub meet list (and its notice button) excludes people I blocked', () => {
-    const h = read('GatheringHubScreen.js');
+  test('the attending section\'s meet list (and its notice button) excludes people I blocked', () => {
+    const h = read('../components/GatheringAttendingSection.js');
     expect(h).toMatch(/getMyBlockedUsers/);
     expect(h).toMatch(/!blockedIds\.has\(a\.user_id\)/);
   });
