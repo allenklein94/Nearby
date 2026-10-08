@@ -204,7 +204,9 @@ describe('incomplete data is omitted, never invented', () => {
 describe('guards: surfaces render the shared object and do not rebuild its rules', () => {
   const home = read('screens/HomeScreen.js');
   const discover = read('screens/DiscoverHubScreen.js');
-  const pickedForYou = home.slice(home.indexOf("{t('ui.home.pickedForYou')}</Text>"), home.indexOf('dashboard?.plansGoing?.length > 0 ||'));
+  // Picked For You's section + the one compact-card renderer it shares with Nearby Right Now (item 33).
+  const pickedForYou = home.slice(home.indexOf("{t('ui.home.pickedForYou')}</Text>"), home.indexOf('(homePlans.total > 0) &&'))
+    + home.slice(home.indexOf('const renderAttentionEntry = '), home.indexOf('// Item 200 (owner, LOCKED)'));
   it('Home Picked For You + Best Pick build from the card model and tap its destination', () => {
     expect(pickedForYou).toMatch(/homeGatheringCard\(attention\.hero/);
     expect(pickedForYou).toMatch(/homeGatheringCard\(g, \{ signals, variant \}\)/);

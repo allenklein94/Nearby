@@ -11,7 +11,7 @@ export const SURFACES = {
   nearbyRightNow: {
     label: 'Right Now',
     means: 'Things that are geographically close AND inside the canonical Right Now window (started up to 30 min ago, or starts within 2 h; utils/rightNowWindow.js).',
-    where: 'Gatherings "Right Now" filter, Discover "Happening Now" bucket.',
+    where: 'Gatherings "Right Now" filter, Discover "Happening Now" bucket, Home "Nearby Right Now" section (item 33).',
   },
   openNow: {
     label: 'Open now',

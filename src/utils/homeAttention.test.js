@@ -38,7 +38,7 @@ describe('selectHomeAttention', () => {
     expect(ids).toEqual(['weather', 'trending']);
   });
   it('one object appears once across engines, keeping the merged card', () => {
-    const out = selectHomeAttention({ hero: { id: 'h' }, cards: [card('a', 300)], recommended: [rec('a', 300), rec('h', 300), rec('b', 300)], soon: [{ id: 'a' }, { id: 'b' }, { id: 'c', scheduled_at: at(20) }], now });
+    const out = selectHomeAttention({ hero: { id: 'h' }, cards: [card('a', 300)], recommended: [rec('a', 300), rec('h', 300), rec('b', 300)], soon: [{ id: 'a' }, { id: 'b' }, { id: 'c', scheduled_at: at(20) }], now, max: 5 });
     const ids = out.items.map((i) => i.gathering?.id ?? `perk-${i.item.id}`);
     expect(ids.sort()).toEqual(['a', 'b', 'c']);
   });
@@ -142,7 +142,7 @@ describe('Best Pick can never cause a duplicate on Home', () => {
     expect(placements({ heroIn: 'X', weatherIds: ['X'] })).toContain('X');
   });
   it('priority order is explicit and Best Pick sits below plans and weather', () => {
-    expect(HOME_SECTION_PRIORITY).toEqual(['firstRun', 'yourPlans', 'expandedList', 'weather', 'bestPick', 'pickedForYou']);
+    expect(HOME_SECTION_PRIORITY).toEqual(['firstRun', 'yourPlans', 'expandedList', 'weather', 'bestPick', 'pickedForYou', 'rightNow']);
   });
   it('Home source has no lead exemption and renders the hero from the deduped selection', () => {
     const home = fs.readFileSync(path.join(__dirname, '..', 'screens', 'HomeScreen.js'), 'utf8');

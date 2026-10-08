@@ -16,7 +16,11 @@ import { isWithinRightNowWindow } from './rightNowWindow';
 import { recommendationRow } from './recommendationFacts';
 import { signalTier, tierVector, compareTierVectors, SIGNAL_TIERS } from '../constants/signalPriority';
 
-export const MAX_HOME_ATTENTION = 5;
+// Item 33 (owner, 2026-10-08): Home hierarchy = intent, Picked For You (2-3), Your Plans (1-3) + See all, the social line,
+// Nearby Right Now (2-3), then more. Each list is capped at 3.
+export const MAX_HOME_ATTENTION = 3;
+export const MAX_HOME_PLANS = 3;
+export const MAX_HOME_RIGHT_NOW = 3;
 
 function isUrgent(g, now) {
   return !!g?.scheduled_at && isWithinRightNowWindow(g.scheduled_at, now);
@@ -109,11 +113,33 @@ export function cardWithoutIds(card, ids) {
 // rows, Best Pick, Picked For You), which refill as usual. Collapsing it gives them back. It does not reach above itself:
 // the first-run card and the person's own plans are not recommendations and stay as they are. Discover and every other
 // screen are unaffected (this is Home presentation only).
-export const HOME_SECTION_PRIORITY = ['firstRun', 'yourPlans', 'expandedList', 'weather', 'bestPick', 'pickedForYou'];
+export const HOME_SECTION_PRIORITY = ['firstRun', 'yourPlans', 'expandedList', 'weather', 'bestPick', 'pickedForYou', 'rightNow'];
 
 // Ids shown by the open expanded list, or an empty set when nothing is expanded. Dedupe is by gathering id only.
 export function expandedListIds(insight, expandedKind) {
   const dest = insight?.cta?.destination;
   if (!insight || !expandedKind || insight.kind !== expandedKind || dest?.kind !== 'inline') return new Set();
   return new Set((dest.items ?? []).map((it) => it?.gathering?.id).filter(Boolean));
+}
+
+// Your Plans on Home (item 33): at most MAX_HOME_PLANS rows; the full list lives on Plans (See all). Commitments first
+// (going + hosting, soonest start first), then group plans (by date), then Interested. Each role list keeps its order.
+export function selectHomePlans({ plansGoing = [], plansHosting = [], plansGroup = [], plansInterested = [] } = {}, max = MAX_HOME_PLANS) {
+  const t = (g) => { const ms = new Date(g?.scheduled_at).getTime(); return Number.isFinite(ms) ? ms : Infinity; };
+  const committed = [...(plansGoing ?? []).map((g) => ({ k: 'going', g })), ...(plansHosting ?? []).map((g) => ({ k: 'hosting', g }))]
+    .sort((a, b) => t(a.g) - t(b.g));
+  const ordered = [...committed, ...(plansGroup ?? []).map((g) => ({ k: 'group', g })), ...(plansInterested ?? []).map((g) => ({ k: 'interested', g }))];
+  const keep = new Set(ordered.slice(0, Math.max(0, max)).map((e) => e.g));
+  const pick = (list) => (list ?? []).filter((g) => keep.has(g));
+  return { going: pick(plansGoing), hosting: pick(plansHosting), group: pick(plansGroup), interested: pick(plansInterested), total: ordered.length };
+}
+
+// Nearby Right Now on Home (item 33): nearby gatherings inside the canonical Right Now window (utils/rightNowWindow.js),
+// minus everything a higher placement already shows (`exclude`), soonest first, then nearest. Empty = no section.
+export function selectRightNow({ gatherings = [], exclude = null, now = new Date(), max = MAX_HOME_RIGHT_NOW } = {}) {
+  const seen = new Set();
+  return (gatherings ?? [])
+    .filter((g) => g?.id && !seen.has(g.id) && seen.add(g.id) && !(exclude && exclude.has(g.id)) && g.scheduled_at && isWithinRightNowWindow(g.scheduled_at, now))
+    .sort((a, b) => (new Date(a.scheduled_at) - new Date(b.scheduled_at)) || ((a.distanceMiles ?? Infinity) - (b.distanceMiles ?? Infinity)))
+    .slice(0, Math.max(0, max));
 }

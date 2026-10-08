@@ -63,7 +63,7 @@ import { spacing, radius, typography } from '../theme';
 import { isGatheringPast } from '../utils/objectState';
 import { recommendationRow } from '../utils/recommendationFacts';
 import { openDestination, navigateKeepingTrail } from '../services/openDestination';
-import { selectHomeAttention, cardWithoutIds, expandedListIds } from '../utils/homeAttention';
+import { selectHomeAttention, cardWithoutIds, expandedListIds, selectHomePlans, selectRightNow } from '../utils/homeAttention';
 import { gatheringCardModel } from '../utils/recommendationCard';
 import { confidenceHeadline } from '../utils/recommendationConfidence';
 import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
@@ -426,9 +426,11 @@ export default function HomeScreen({ navigation }) {
   // A gathering appears ONCE on Home (utils/homeAttention.js HOME_SECTION_PRIORITY: firstRun > yourPlans > weather > bestPick >
   // pickedForYou). `above` collects what higher placements already render; lower ones suppress it and refill.
   const firstRunIds = seenFirstRunMoment === false ? homeRecommendations.slice(0, 2).filter((r) => r.type === 'gathering').map((r) => r.id) : [];
+  // Every committed/Interested gathering, not only the capped rows shown (item 33): a plan beyond the cap is never recommended.
+  const homePlans = selectHomePlans(dashboard ?? {});
   const yourPlansIds = [
     ...(dashboard?.plansGoing ?? []), ...(dashboard?.plansHosting ?? []), ...(dashboard?.plansInterested ?? []),
-  ].map((g) => g?.id).filter(Boolean);
+  ].map((g) => g?.id).concat(dashboard?.upcomingPlanIds ?? [], dashboard?.interestedIds ?? []).filter(Boolean);
   // An insight list the person opened (item 136) sits above the recommendation placements: shown in full, and its
   // gatherings leave weather / Best Pick / Picked For You while it is open.
   const homeInsight = getHomeInsight(dashboard);
@@ -462,12 +464,72 @@ export default function HomeScreen({ navigation }) {
     recommended: homeRecommendations,
     soon: (dashboard?.happeningNow ?? []).filter((g) => !shownInMergeIds.has(g.id)),
   });
+  // Nearby Right Now (item 33): the time view, below everything personal; never repeats a gathering shown above it.
+  const rightNow = selectRightNow({
+    gatherings: dashboard?.nearbyGatherings ?? [],
+    exclude: new Set([
+      ...aboveWeather, ...(weatherCard ? weatherCard.gatherings.map((g) => g.id) : []),
+      attention.hero?.id, ...attention.items.filter((e) => e.kind === 'gathering').map((e) => e.gathering?.id),
+    ].filter(Boolean)),
+  });
 
   // Shared context layer: the card's action and tap destination come from the ONE context object (gatheringCardModel ->
   // utils/recommendationContext.js); this only lays them out.
   function homeGatheringCard(g, { signals = null, variant = 'row' } = {}) {
     return gatheringCardModel(g, { signals, myUserId, language, actionOpts: variant === 'trending' ? { lowCommitment: true, interestedIds: interestedSet } : {} });
   }
+
+  // One compact card for Picked For You and Nearby Right Now (item 33): same layout, same action rules.
+  const renderAttentionEntry = (entry) => {
+    if (entry.kind === 'perk') {
+      const item = entry.item;
+      const row = recommendationRow(item, { language });
+      return (
+        <TouchableOpacity
+          key={`perk-${item.id}`}
+          style={styles.trendingCard}
+          onPress={() => openDestination(navigation, row.destination)}
+          accessibilityLabel={`${item.title}, ${[row.why, row.meta].filter(Boolean).join(', ')}`}
+          accessibilityRole="button"
+        >
+          <Text style={styles.trendingTitle}>🎁 {item.title}</Text>
+          {row.why ? <Text style={styles.trendingMeta}>{row.why}</Text> : null}
+          {row.meta ? <Text style={styles.trendingMeta}>{row.meta}</Text> : null}
+          <TouchableOpacity onPress={() => navigation.navigate('MakeAPlan', { offerId: item.id })} accessibilityLabel={t('ui.home.makePlanA11y', { title: item.title })} accessibilityRole="button">
+            <Text style={styles.makePlanLink}>{t('ui.home.makePlan')}</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      );
+    }
+    const { gathering: g, signals, hasFriend, trendingOnly } = entry;
+    const variant = trendingOnly ? 'trending' : 'row';
+    const card = homeGatheringCard(g, { signals, variant });
+    const timing = hasFriend && g.scheduled_at ? describeFriendGatheringTiming(g.scheduled_at) : null;
+    const past = !!timing?.isPast;
+    return (
+      <TouchableOpacity
+        key={g.id}
+        style={styles.trendingCard}
+        onPress={() => openDestination(navigation, card.destination)}
+        accessibilityLabel={`${[g.title, card.why, card.meta].filter(Boolean).join(', ')}`}
+        accessibilityRole="button"
+      >
+        <Text style={styles.trendingTitle}>{categoryStyleFor(g.interest_tag).icon} {g.title}</Text>
+        {confidenceHeadline(signals, { language }) ? <Text style={styles.trendingMeta}>{confidenceHeadline(signals, { language })}</Text> : null}
+        {card.why ? <Text style={styles.trendingMeta}>{card.why}</Text> : null}
+        <Text style={styles.trendingMeta}>
+          {[card.meta, g.approvedAttendees ? translate(language, 'reasons.attendingCount', { count: attendeeTotal(g) }) : null].filter(Boolean).join(' · ')}
+        </Text>
+        {card.social ? <Text style={styles.trendingMeta}>{card.social}</Text> : null}
+        {gatheringFullnessLabel(g) && (
+          <Text style={[styles.trendingMeta, gatheringFullnessLabel(g).startsWith('🔒') && { color: colors.danger }]}>
+            {gatheringFullnessLabel(g)}
+          </Text>
+        )}
+        {!past && card.action && <View style={{ marginTop: spacing.xs }}>{renderGatheringCta(g, card, variant)}</View>}
+      </TouchableOpacity>
+    );
+  };
 
   // Item 200 (owner, LOCKED): ONE explicit action per compact card (Join / Request to Join / Join Waitlist / I'm Interested on
   // Trending / View Plan), or a status line; never a second View button beside it: the whole card already opens the gathering.
@@ -1960,60 +2022,11 @@ export default function HomeScreen({ navigation }) {
               );
             })()}
 
-            {attention.items.map((entry) => {
-              if (entry.kind === 'perk') {
-                const item = entry.item;
-                const row = recommendationRow(item, { language });
-                return (
-                  <TouchableOpacity
-                    key={`perk-${item.id}`}
-                    style={styles.trendingCard}
-                    onPress={() => openDestination(navigation, row.destination)}
-                    accessibilityLabel={`${item.title}, ${[row.why, row.meta].filter(Boolean).join(', ')}`}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.trendingTitle}>🎁 {item.title}</Text>
-                    {row.why ? <Text style={styles.trendingMeta}>{row.why}</Text> : null}
-                    {row.meta ? <Text style={styles.trendingMeta}>{row.meta}</Text> : null}
-                    <TouchableOpacity onPress={() => navigation.navigate('MakeAPlan', { offerId: item.id })} accessibilityLabel={t('ui.home.makePlanA11y', { title: item.title })} accessibilityRole="button">
-                      <Text style={styles.makePlanLink}>{t('ui.home.makePlan')}</Text>
-                    </TouchableOpacity>
-                  </TouchableOpacity>
-                );
-              }
-              const { gathering: g, signals, hasFriend, trendingOnly } = entry;
-              const variant = trendingOnly ? 'trending' : 'row';
-              const card = homeGatheringCard(g, { signals, variant });
-              const timing = hasFriend && g.scheduled_at ? describeFriendGatheringTiming(g.scheduled_at) : null;
-              const past = !!timing?.isPast;
-              return (
-                <TouchableOpacity
-                  key={g.id}
-                  style={styles.trendingCard}
-                  onPress={() => openDestination(navigation, card.destination)}
-                  accessibilityLabel={`${[g.title, card.why, card.meta].filter(Boolean).join(', ')}`}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.trendingTitle}>{categoryStyleFor(g.interest_tag).icon} {g.title}</Text>
-                  {confidenceHeadline(signals, { language }) ? <Text style={styles.trendingMeta}>{confidenceHeadline(signals, { language })}</Text> : null}
-                  {card.why ? <Text style={styles.trendingMeta}>{card.why}</Text> : null}
-                  <Text style={styles.trendingMeta}>
-                    {[card.meta, g.approvedAttendees ? translate(language, 'reasons.attendingCount', { count: attendeeTotal(g) }) : null].filter(Boolean).join(' · ')}
-                  </Text>
-                  {card.social ? <Text style={styles.trendingMeta}>{card.social}</Text> : null}
-                  {gatheringFullnessLabel(g) && (
-                    <Text style={[styles.trendingMeta, gatheringFullnessLabel(g).startsWith('🔒') && { color: colors.danger }]}>
-                      {gatheringFullnessLabel(g)}
-                    </Text>
-                  )}
-                  {!past && card.action && <View style={{ marginTop: spacing.xs }}>{renderGatheringCta(g, card, variant)}</View>}
-                </TouchableOpacity>
-              );
-            })}
+            {attention.items.map(renderAttentionEntry)}
           </>
         )}
 
-        {(dashboard?.plansGoing?.length > 0 || dashboard?.plansHosting?.length > 0 || dashboard?.plansGroup?.length > 0 || dashboard?.plansInterested?.length > 0) && (
+        {(homePlans.total > 0) && (
           <>
             {/* Home hierarchy audit recommendation #3 (PRODUCT_AUDIT/
                 HOME_VISUAL_HIERARCHY_AUDIT_2026-08-14.md): a real, heavier
@@ -2023,10 +2036,10 @@ export default function HomeScreen({ navigation }) {
                 by position below the intent box. */}
             <Text style={styles.primaryHeader}>{t('ui.home.yourPlans')}</Text>
             <View style={styles.plansCard}>
-              {dashboard.plansGoing.length > 0 && (
+              {homePlans.going.length > 0 && (
                 <>
                   <Text style={styles.subLabel}>{t('ui.actions.going')}</Text>
-                  {dashboard.plansGoing.map((plan) => (
+                  {homePlans.going.map((plan) => (
                     <PlanCard
                       key={plan.id}
                       icon={categoryStyleFor(plan.interest_tag).icon}
@@ -2042,10 +2055,10 @@ export default function HomeScreen({ navigation }) {
                   ))}
                 </>
               )}
-              {dashboard.plansHosting.length > 0 && (
+              {homePlans.hosting.length > 0 && (
                 <>
-                  <Text style={[styles.subLabel, dashboard.plansGoing.length > 0 && styles.subLabelSpaced]}>{t('ui.actions.hosting')}</Text>
-                  {dashboard.plansHosting.map((plan) => (
+                  <Text style={[styles.subLabel, homePlans.going.length > 0 && styles.subLabelSpaced]}>{t('ui.actions.hosting')}</Text>
+                  {homePlans.hosting.map((plan) => (
                     <PlanCard
                       key={plan.id}
                       icon={categoryStyleFor(plan.interest_tag).icon}
@@ -2061,10 +2074,10 @@ export default function HomeScreen({ navigation }) {
                   ))}
                 </>
               )}
-              {dashboard.plansInterested?.length > 0 && (
+              {homePlans.interested?.length > 0 && (
                 <>
-                  <Text style={[styles.subLabel, (dashboard.plansGoing.length > 0 || dashboard.plansHosting.length > 0) && styles.subLabelSpaced]}>{t('ui.home.yourInterest')}</Text>
-                  {dashboard.plansInterested.map((plan) => (
+                  <Text style={[styles.subLabel, (homePlans.going.length > 0 || homePlans.hosting.length > 0) && styles.subLabelSpaced]}>{t('ui.home.yourInterest')}</Text>
+                  {homePlans.interested.map((plan) => (
                     <PlanCard
                       key={plan.id}
                       icon={categoryStyleFor(plan.interest_tag).icon}
@@ -2078,10 +2091,10 @@ export default function HomeScreen({ navigation }) {
                   ))}
                 </>
               )}
-              {dashboard.plansGroup?.length > 0 && (
+              {homePlans.group?.length > 0 && (
                 <>
-                  <Text style={[styles.subLabel, (dashboard.plansGoing.length > 0 || dashboard.plansHosting.length > 0 || dashboard.plansInterested?.length > 0) && styles.subLabelSpaced]}>{t('ui.home.groupPlans')}</Text>
-                  {dashboard.plansGroup.map((plan) => (
+                  <Text style={[styles.subLabel, (homePlans.going.length > 0 || homePlans.hosting.length > 0 || homePlans.interested?.length > 0) && styles.subLabelSpaced]}>{t('ui.home.groupPlans')}</Text>
+                  {homePlans.group.map((plan) => (
                     <PlanCard
                       key={plan.id}
                       icon={categoryStyleFor(plan.category).icon}
@@ -2154,6 +2167,16 @@ export default function HomeScreen({ navigation }) {
             </View>
           );
         })()}
+
+        {rightNow.length > 0 && (
+          <>
+            <View style={styles.sectionHeaderRow}>
+              <Ionicons name="time-outline" size={14} color={colors.textTertiary} style={styles.bannerIcon} />
+              <Text style={styles.sectionHeaderText}>{t('ui.home.nearbyRightNow')}</Text>
+            </View>
+            {rightNow.map((g) => renderAttentionEntry({ kind: 'gathering', gathering: g, signals: [], hasFriend: false, trendingOnly: false }))}
+          </>
+        )}
 
         {/* Phase 1 of the "Build everything" plan (CLAUDE.md) -- a new,
             genuinely additive section reusing the shared intent-resolver
