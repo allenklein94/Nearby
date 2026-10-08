@@ -145,7 +145,9 @@
   "discardTitle": "Discard changes?",
   "discardBody": "You have unsaved changes to your profile.",
   "discardChanges": "Discard changes",
-  "keepEditing": "Keep editing"
+  "keepEditing": "Keep editing",
+  "interested": "Interested",
+  "interestedA11y": "{interested} gatherings you marked Interested"
  },
  "es": {
   "yourProfileIsComplete": "Tu perfil está completo al {percent}%",
@@ -293,7 +295,9 @@
   "discardTitle": "¿Descartar cambios?",
   "discardBody": "Tienes cambios sin guardar en tu perfil.",
   "discardChanges": "Descartar cambios",
-  "keepEditing": "Seguir editando"
+  "keepEditing": "Seguir editando",
+  "interested": "Me interesa",
+  "interestedA11y": "{interested} encuentros que marcaste como Me interesa"
  },
  "de": {
   "yourProfileIsComplete": "Dein Profil ist zu {percent} % vollständig",
@@ -441,7 +445,9 @@
   "discardTitle": "Änderungen verwerfen?",
   "discardBody": "Du hast ungespeicherte Änderungen an deinem Profil.",
   "discardChanges": "Änderungen verwerfen",
-  "keepEditing": "Weiter bearbeiten"
+  "keepEditing": "Weiter bearbeiten",
+  "interested": "Interessiert",
+  "interestedA11y": "{interested} Treffen, die du als interessiert markiert hast"
  },
  "fr": {
   "yourProfileIsComplete": "Votre profil est complet à {percent} %",
@@ -589,7 +595,9 @@
   "discardTitle": "Abandonner les modifications ?",
   "discardBody": "Tu as des modifications non enregistrées sur ton profil.",
   "discardChanges": "Abandonner les modifications",
-  "keepEditing": "Continuer à modifier"
+  "keepEditing": "Continuer à modifier",
+  "interested": "Intéressé",
+  "interestedA11y": "{interested} rencontres marquées Intéressé"
  },
  "pt": {
   "yourProfileIsComplete": "Seu perfil está {percent}% completo",
@@ -737,7 +745,9 @@
   "discardTitle": "Descartar alterações?",
   "discardBody": "Você tem alterações não salvas no seu perfil.",
   "discardChanges": "Descartar alterações",
-  "keepEditing": "Continuar editando"
+  "keepEditing": "Continuar editando",
+  "interested": "Interessado",
+  "interestedA11y": "{interested} encontros que você marcou como Interessado"
  },
  "ht": {
   "yourProfileIsComplete": "Pwofil ou fini a {percent}%",
@@ -885,7 +895,9 @@
   "discardTitle": "Abandone chanjman yo?",
   "discardBody": "Ou gen chanjman ou poko anrejistre sou pwofil ou.",
   "discardChanges": "Abandone chanjman yo",
-  "keepEditing": "Kontinye modifye"
+  "keepEditing": "Kontinye modifye",
+  "interested": "Enterese",
+  "interestedA11y": "{interested} rasanbleman ou make Enterese"
  },
  "zh": {
   "yourProfileIsComplete": "你的资料已完成 {percent}%",
@@ -1033,7 +1045,9 @@
   "discardTitle": "放弃更改？",
   "discardBody": "你的个人资料有未保存的更改。",
   "discardChanges": "放弃更改",
-  "keepEditing": "继续编辑"
+  "keepEditing": "继续编辑",
+  "interested": "感兴趣",
+  "interestedA11y": "你标记为感兴趣的 {interested} 个聚会"
  },
  "vi": {
   "yourProfileIsComplete": "Hồ sơ của bạn đã hoàn thành {percent}%",
@@ -1181,7 +1195,9 @@
   "discardTitle": "Bỏ các thay đổi?",
   "discardBody": "Bạn có thay đổi chưa lưu trên hồ sơ.",
   "discardChanges": "Bỏ thay đổi",
-  "keepEditing": "Tiếp tục chỉnh sửa"
+  "keepEditing": "Tiếp tục chỉnh sửa",
+  "interested": "Quan tâm",
+  "interestedA11y": "{interested} buổi gặp mặt bạn đã đánh dấu Quan tâm"
  },
  "tl": {
   "yourProfileIsComplete": "{percent}% kumpleto na ang profile mo",
@@ -1329,7 +1345,9 @@
   "discardTitle": "Itapon ang mga pagbabago?",
   "discardBody": "May mga hindi pa nase-save na pagbabago sa iyong profile.",
   "discardChanges": "Itapon ang mga pagbabago",
-  "keepEditing": "Ituloy ang pag-edit"
+  "keepEditing": "Ituloy ang pag-edit",
+  "interested": "Interesado",
+  "interestedA11y": "{interested} na pagtitipon na minarkahan mong Interesado"
  },
  "ru": {
   "yourProfileIsComplete": "Ваш профиль заполнен на {percent}%",
@@ -1477,7 +1495,9 @@
   "discardTitle": "Отменить изменения?",
   "discardBody": "В вашем профиле есть несохранённые изменения.",
   "discardChanges": "Отменить изменения",
-  "keepEditing": "Продолжить редактирование"
+  "keepEditing": "Продолжить редактирование",
+  "interested": "Интересно",
+  "interestedA11y": "{interested} встреч, отмеченных «Интересно»"
  },
  "ko": {
   "yourProfileIsComplete": "프로필이 {percent}% 완성됐어요",
@@ -1625,6 +1645,8 @@
   "discardTitle": "변경 사항을 삭제할까요?",
   "discardBody": "프로필에 저장하지 않은 변경 사항이 있어요.",
   "discardChanges": "변경 사항 삭제",
-  "keepEditing": "계속 편집"
+  "keepEditing": "계속 편집",
+  "interested": "관심 있음",
+  "interestedA11y": "관심 있음으로 표시한 모임 {interested}개"
  }
 }

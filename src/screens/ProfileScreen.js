@@ -806,6 +806,14 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
               <Text style={styles.quickStatNumber}>{quickStats.upcomingPlans}</Text>
               <Text style={styles.quickStatLabel}>{t('ui.profile.upcoming')}</Text>
             </TouchableOpacity>
+            {/* Item 38: Interested is a state on the gathering, not a destination; its collection is Plans > Upcoming
+                (rows labelled Interested). Shown only when there is at least one, so a failed or zero count adds nothing. */}
+            {quickStats.interested > 0 && (
+              <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'upcoming' })} accessibilityLabel={t('ui.profile.interestedA11y', { interested: quickStats.interested })} accessibilityRole="button">
+                <Text style={styles.quickStatNumber}>{quickStats.interested}</Text>
+                <Text style={styles.quickStatLabel}>{t('ui.profile.interested')}</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'past' })} accessibilityLabel={t('ui.profile.pastExperiencesA11y', { pastGatherings: quickStats.pastGatherings })} accessibilityRole="button">
               <Text style={styles.quickStatNumber}>{quickStats.pastGatherings}</Text>
               <Text style={styles.quickStatLabel}>{t('ui.profile.past')}</Text>
