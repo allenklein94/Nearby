@@ -141,7 +141,11 @@
   "goal.getOutMore": "Get out more",
   "joinedNearbyOn": "Joined Nearby on {date}",
   "editInterests": "Edit interests ›",
-  "addInterests": "Add your interests ›"
+  "addInterests": "Add your interests ›",
+  "discardTitle": "Discard changes?",
+  "discardBody": "You have unsaved changes to your profile.",
+  "discardChanges": "Discard changes",
+  "keepEditing": "Keep editing"
  },
  "es": {
   "yourProfileIsComplete": "Tu perfil está completo al {percent}%",
@@ -285,7 +289,11 @@
   "goal.getOutMore": "Salir más",
   "joinedNearbyOn": "Se unió a Nearby el {date}",
   "editInterests": "Editar intereses ›",
-  "addInterests": "Añade tus intereses ›"
+  "addInterests": "Añade tus intereses ›",
+  "discardTitle": "¿Descartar cambios?",
+  "discardBody": "Tienes cambios sin guardar en tu perfil.",
+  "discardChanges": "Descartar cambios",
+  "keepEditing": "Seguir editando"
  },
  "de": {
   "yourProfileIsComplete": "Dein Profil ist zu {percent} % vollständig",
@@ -429,7 +437,11 @@
   "goal.getOutMore": "Öfter rausgehen",
   "joinedNearbyOn": "Bei Nearby seit {date}",
   "editInterests": "Interessen bearbeiten ›",
-  "addInterests": "Füge deine Interessen hinzu ›"
+  "addInterests": "Füge deine Interessen hinzu ›",
+  "discardTitle": "Änderungen verwerfen?",
+  "discardBody": "Du hast ungespeicherte Änderungen an deinem Profil.",
+  "discardChanges": "Änderungen verwerfen",
+  "keepEditing": "Weiter bearbeiten"
  },
  "fr": {
   "yourProfileIsComplete": "Votre profil est complet à {percent} %",
@@ -573,7 +585,11 @@
   "goal.getOutMore": "Sortir davantage",
   "joinedNearbyOn": "A rejoint Nearby le {date}",
   "editInterests": "Modifier les centres d'intérêt ›",
-  "addInterests": "Ajoute tes centres d'intérêt ›"
+  "addInterests": "Ajoute tes centres d'intérêt ›",
+  "discardTitle": "Abandonner les modifications ?",
+  "discardBody": "Tu as des modifications non enregistrées sur ton profil.",
+  "discardChanges": "Abandonner les modifications",
+  "keepEditing": "Continuer à modifier"
  },
  "pt": {
   "yourProfileIsComplete": "Seu perfil está {percent}% completo",
@@ -717,7 +733,11 @@
   "goal.getOutMore": "Sair mais",
   "joinedNearbyOn": "Entrou no Nearby em {date}",
   "editInterests": "Editar interesses ›",
-  "addInterests": "Adicione seus interesses ›"
+  "addInterests": "Adicione seus interesses ›",
+  "discardTitle": "Descartar alterações?",
+  "discardBody": "Você tem alterações não salvas no seu perfil.",
+  "discardChanges": "Descartar alterações",
+  "keepEditing": "Continuar editando"
  },
  "ht": {
   "yourProfileIsComplete": "Pwofil ou fini a {percent}%",
@@ -861,7 +881,11 @@
   "goal.getOutMore": "Soti plis",
   "joinedNearbyOn": "Antre nan Nearby {date}",
   "editInterests": "Modifye enterè yo ›",
-  "addInterests": "Ajoute enterè ou yo ›"
+  "addInterests": "Ajoute enterè ou yo ›",
+  "discardTitle": "Abandone chanjman yo?",
+  "discardBody": "Ou gen chanjman ou poko anrejistre sou pwofil ou.",
+  "discardChanges": "Abandone chanjman yo",
+  "keepEditing": "Kontinye modifye"
  },
  "zh": {
   "yourProfileIsComplete": "你的资料已完成 {percent}%",
@@ -1005,7 +1029,11 @@
   "goal.getOutMore": "多出去走走",
   "joinedNearbyOn": "于 {date} 加入 Nearby",
   "editInterests": "编辑兴趣 ›",
-  "addInterests": "添加你的兴趣 ›"
+  "addInterests": "添加你的兴趣 ›",
+  "discardTitle": "放弃更改？",
+  "discardBody": "你的个人资料有未保存的更改。",
+  "discardChanges": "放弃更改",
+  "keepEditing": "继续编辑"
  },
  "vi": {
   "yourProfileIsComplete": "Hồ sơ của bạn đã hoàn thành {percent}%",
@@ -1149,7 +1177,11 @@
   "goal.getOutMore": "Ra ngoài nhiều hơn",
   "joinedNearbyOn": "Tham gia Nearby vào {date}",
   "editInterests": "Sửa sở thích ›",
-  "addInterests": "Thêm sở thích của bạn ›"
+  "addInterests": "Thêm sở thích của bạn ›",
+  "discardTitle": "Bỏ các thay đổi?",
+  "discardBody": "Bạn có thay đổi chưa lưu trên hồ sơ.",
+  "discardChanges": "Bỏ thay đổi",
+  "keepEditing": "Tiếp tục chỉnh sửa"
  },
  "tl": {
   "yourProfileIsComplete": "{percent}% kumpleto na ang profile mo",
@@ -1293,7 +1325,11 @@
   "goal.getOutMore": "Mas madalas lumabas",
   "joinedNearbyOn": "Sumali sa Nearby noong {date}",
   "editInterests": "I-edit ang mga interes ›",
-  "addInterests": "Idagdag ang iyong mga interes ›"
+  "addInterests": "Idagdag ang iyong mga interes ›",
+  "discardTitle": "Itapon ang mga pagbabago?",
+  "discardBody": "May mga hindi pa nase-save na pagbabago sa iyong profile.",
+  "discardChanges": "Itapon ang mga pagbabago",
+  "keepEditing": "Ituloy ang pag-edit"
  },
  "ru": {
   "yourProfileIsComplete": "Ваш профиль заполнен на {percent}%",
@@ -1437,7 +1473,11 @@
   "goal.getOutMore": "Чаще выходить из дома",
   "joinedNearbyOn": "В Nearby с {date}",
   "editInterests": "Изменить интересы ›",
-  "addInterests": "Добавьте свои интересы ›"
+  "addInterests": "Добавьте свои интересы ›",
+  "discardTitle": "Отменить изменения?",
+  "discardBody": "В вашем профиле есть несохранённые изменения.",
+  "discardChanges": "Отменить изменения",
+  "keepEditing": "Продолжить редактирование"
  },
  "ko": {
   "yourProfileIsComplete": "프로필이 {percent}% 완성됐어요",
@@ -1581,6 +1621,10 @@
   "goal.getOutMore": "더 자주 외출하기",
   "joinedNearbyOn": "{date}에 Nearby 가입",
   "editInterests": "관심사 편집 ›",
-  "addInterests": "관심사 추가하기 ›"
+  "addInterests": "관심사 추가하기 ›",
+  "discardTitle": "변경 사항을 삭제할까요?",
+  "discardBody": "프로필에 저장하지 않은 변경 사항이 있어요.",
+  "discardChanges": "변경 사항 삭제",
+  "keepEditing": "계속 편집"
  }
 }

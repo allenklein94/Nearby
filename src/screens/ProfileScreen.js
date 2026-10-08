@@ -26,6 +26,7 @@ import { typography, spacing, radius } from '../theme';
 import { modalAnimation, showSuccessToast, animateLayout } from '../motion';
 import { countLabel } from '../utils/plural';
 import useCategoryNames from '../hooks/useCategoryNames';
+import { profileFormSnapshot, isProfileFormDirty, guardProfileLeave } from '../utils/profileEditDirty';
 const MAX_VOICE_INTRO_SECONDS = 30;
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -178,6 +179,10 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   const scrollRef = useRef(null);
   const editSectionYRef = useRef(0);
   const interestsSectionYRef = useRef(0);
+  // Edit mode: what the form held when it loaded (or was last saved), so Back can tell whether anything would be lost.
+  const baselineRef = useRef(null);
+  const allowLeaveRef = useRef(false);
+  const dirtyRef = useRef(false);
 
   useEffect(() => {
     if (editing) load();
@@ -189,6 +194,24 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
       if (recordingIntroTimerRef.current) clearInterval(recordingIntroTimerRef.current);
     };
   }, []);
+
+  // Item 35 follow-up (owner, 2026-10-08): leaving Edit Profile with unsaved changes asks first, wherever it was opened from
+  // (Profile, Settings, the interests link, Dating Preferences). beforeRemove covers the header back, Android back and swipe.
+  useEffect(() => {
+    if (!editing || !navigation?.addListener) return undefined;
+    return navigation.addListener('beforeRemove', (event) => {
+      guardProfileLeave({
+        dirty: dirtyRef.current,
+        allowLeave: allowLeaveRef.current,
+        event,
+        proceed: (action) => { allowLeaveRef.current = true; navigation.dispatch(action); },
+        confirm: ({ onKeepEditing, onDiscard }) => Alert.alert(t('ui.profile.discardTitle'), t('ui.profile.discardBody'), [
+          { text: t('ui.profile.keepEditing'), style: 'cancel', onPress: onKeepEditing },
+          { text: t('ui.profile.discardChanges'), style: 'destructive', onPress: onDiscard },
+        ]),
+      });
+    });
+  }, [navigation, editing, t]);
 
   // Taxonomy audit Phase 1: Settings' "Gender identity & who you're
   // interested in are managed on your Profile ->" link lands here.
@@ -255,6 +278,14 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
       setConnectionGoal(data.connection_goal || '');
       setVoiceIntroPath(data.voice_intro_path || null);
       setManagesBusiness(!!data.managed_partner_id);
+      baselineRef.current = profileFormSnapshot({
+        displayName: data.display_name || '', bio: data.bio || '', interests: data.interests || [],
+        cuisinePreferences: data.cuisine_preferences || [], venuePreferences: data.venue_preferences || [],
+        pronouns: data.pronouns || '', gender: data.gender || '', sexualOrientation: data.sexual_orientation || '',
+        genderIdentity: data.gender_identity || [], interestedInGenders: data.interested_in_genders || [],
+        myEthnicity: data.ethnicity ?? null, heightFeet: heightPair.feet, heightInchesVal: heightPair.inches,
+        basics: data.basics || {}, prompts: data.prompts || [], connectionGoal: data.connection_goal || '',
+      });
     }
 
     // Quietly keep the stored timezone current — used server-side
@@ -491,6 +522,17 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
     ]);
   }
 
+  // Photo changes save at once; re-read only the photos so nothing typed into the form (and not yet saved) is reset.
+  async function reloadPhotos() {
+    if (!userId) return;
+    const { data } = await supabase.from('profiles').select('photo_url, photo_verified').eq('id', userId).single();
+    setPhotoVerified(!!data?.photo_verified);
+    await Promise.all([
+      data?.photo_url ? getSignedPhotoUrl(data.photo_url).then(setPhotoUrl) : Promise.resolve(setPhotoUrl(null)),
+      getExtraPhotos(userId).then(setExtraPhotos),
+    ]);
+  }
+
   async function save() {
     const nameCheck = await checkTextModeration(displayName);
     if (!nameCheck.safe) {
@@ -557,7 +599,11 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
       .eq('id', userId);
     if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => save() });
     showSuccessToast(t('ui.profile.saved'));
-    if (editing && navigation.canGoBack?.()) navigation.goBack();
+    baselineRef.current = currentSnapshot;
+    if (editing && navigation.canGoBack?.()) {
+      allowLeaveRef.current = true;
+      navigation.goBack();
+    }
   }
 
   async function changePhoto() {
@@ -568,7 +614,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
       await uploadProfilePhoto(userId, asset);
       setUploading(false);
       showSuccessToast(t('ui.profile.photoUpdated'), t('ui.profile.yourNewPhotoIsBeing'));
-      load();
+      reloadPhotos();
     } catch (e) {
       setUploading(false);
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => changePhoto() });
@@ -585,7 +631,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
       setUploadingExtra(true);
       await uploadExtraPhoto(userId, asset, extraPhotos.length);
       setUploadingExtra(false);
-      load();
+      reloadPhotos();
     } catch (e) {
       setUploadingExtra(false);
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => addExtraPhoto() });
@@ -600,7 +646,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
         onPress: async () => {
           try {
             await setAsMainPhoto(userId, photo.id);
-            load();
+            reloadPhotos();
           } catch (e) {
             presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmDeleteExtraPhoto(photo) });
           }
@@ -612,7 +658,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
         onPress: async () => {
           try {
             await deleteExtraPhoto(photo.id, photo.photo_url);
-            load();
+            reloadPhotos();
           } catch (e) {
             presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmDeleteExtraPhoto(photo) });
           }
@@ -622,6 +668,11 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   }
 
   const usedQuestions = prompts.map((p) => p.question);
+  const currentSnapshot = profileFormSnapshot({
+    displayName, bio, interests, cuisinePreferences, venuePreferences, pronouns, gender, sexualOrientation,
+    genderIdentity, interestedInGenders, myEthnicity, heightFeet, heightInchesVal, basics, prompts, connectionGoal,
+  });
+  dirtyRef.current = editing && isProfileFormDirty(baselineRef.current, currentSnapshot);
   const completeness = getProfileCompleteness({ photoUrl, bio, prompts, interests, connectionGoal, extraPhotos });
 
   return (

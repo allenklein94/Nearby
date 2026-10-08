@@ -80,7 +80,7 @@ describe('one Profile surface, one edit screen', () => {
   });
   test('saving on Edit Profile returns to where the person came from; the tab re-reads on focus', () => {
     const p = read('screens/ProfileScreen.js');
-    expect(p).toMatch(/if \(editing && navigation\.canGoBack\?\.\(\)\) navigation\.goBack\(\);/);
+    expect(p).toMatch(/if \(editing && navigation\.canGoBack\?\.\(\)\) \{\n      allowLeaveRef\.current = true;\n      navigation\.goBack\(\);/);
     expect(p).toMatch(/editing \? null : navigation\.addListener\?\.\('focus', load\)/);
   });
   test('no navigable reference is left to a stack "Profile" route', () => {
