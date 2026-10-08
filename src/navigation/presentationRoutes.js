@@ -10,9 +10,6 @@ export const PRESENTATION_ROUTES = {
   // rows, Create's invite picker), where switching tabs would close what the person was doing. Same FriendDiscoveryScreen
   // that Discover embeds for its Friends mode; entries that start on a tab open Discover -> People -> Friends instead.
   FriendDiscovery: { surface: 'Discover', mode: 'people/friends', component: 'FriendDiscoveryScreen' },
-  // The Profile tab opened on top of a stack screen whose workflow a tab switch would close (Dating Preferences' "edit
-  // gender / interests on your Profile" links), so Back returns there. Same ProfileScreen as the tab.
-  MyProfile: { surface: 'Profile' },
 };
 
 // The surface a route really shows, for "is this already on screen?" (notificationNav.js). Only whole-surface presentations

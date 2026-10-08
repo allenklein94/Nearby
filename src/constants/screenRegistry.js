@@ -37,7 +37,8 @@ export const SCREEN_REGISTRY = {
   CompleteProfile: { jobs: ['C'], reason: 'Finishing your profile before using the app.' },
 
   // ---- you ----
-  Profile: { surface: true, jobs: ['C'], reason: 'The Profile tab: you, your identity, photos and prompts, and the way into Settings.' },
+  Profile: { surface: true, jobs: ['C'], reason: 'The Profile tab, a destination: you, your interests, friends, gatherings, business and the way into Settings.' },
+  EditProfile: { jobs: ['C'], reason: 'Editing your profile (photos, prompts, about you, basics, interests) is its own task (item 35); Save returns to where you came from.' },
   Settings: { jobs: ['C'], reason: 'Preferences, privacy, notifications and account controls.' },
   DatingPreferences: { jobs: ['C'], reason: 'Edit your dating profile and who you want to see.' },
   QuickFilterCustomize: { jobs: ['C'], reason: 'Choose, set and reorder your quick filters.' },
@@ -144,7 +145,6 @@ export const INFRASTRUCTURE_ROUTES = {
 export { PRESENTATION_ROUTES } from '../navigation/presentationRoutes';
 export const PRESENTATION_REASONS = {
   Notices: 'The wave push opens Activity on top of the current screen so Back returns exactly where you were; titled Activity, never a separate Notices screen.',
-  MyProfile: 'The Profile tab opened on top of a stack screen (Dating Preferences) so Back returns there; the same ProfileScreen, never a second Profile surface.',
   FriendDiscovery: 'People -> Friends opened on top of a stack screen (Friends list, gathering published, typed-ask people row, Create invite picker) so Back returns there; the same FriendDiscoveryScreen Discover embeds, never a separate Friends surface.',
 };
 
@@ -156,13 +156,13 @@ export const EMBEDDED_SCREENS = {
 
 // The rule 14 audit (owner, 2026-10-04). Removed and folded routes must stay gone; trimmed and borderline ones stay.
 export const RULE14_DECISIONS = {
-  removed: ['Places', 'FeaturesOverview', 'RelationshipHub', 'MemoryVaultIndex', 'RelationshipTools', 'Timeline', 'Nearby'],
+  removed: ['Places', 'FeaturesOverview', 'RelationshipHub', 'MemoryVaultIndex', 'RelationshipTools', 'Timeline', 'Nearby', 'MyProfile'],
   folded: {
     BrandOffers: 'Discover -> Perks (browse and redeem in place)',
     Rewards: 'one tier line at the top of Discover -> Perks',
   },
   // Notices was registered as its own surface; it is Activity presented on top for push entry (PRESENTATION_ROUTES).
-  presentations: { Notices: 'Activity', FriendDiscovery: 'Discover -> People -> Friends', MyProfile: 'Profile' },
+  presentations: { Notices: 'Activity', FriendDiscovery: 'Discover -> People -> Friends' },
   trimmed: { Communities: 'your own communities + Create; public discovery is Discover -> Communities' },
   borderlineKeep: ['Momentum'],
 };

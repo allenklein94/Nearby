@@ -60,6 +60,7 @@ import GatheringDetailScreen from '../screens/GatheringDetailScreen';
 import GatheringHubScreen from '../screens/GatheringHubScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
 import PaywallScreen from '../screens/PaywallScreen';
 import BillingScreen from '../screens/BillingScreen';
 import DatingPreferencesScreen from '../screens/DatingPreferencesScreen';
@@ -188,9 +189,9 @@ async function resolveAndNavigateToBusiness(partnerId) {
 // a mode inside it (Things to Do / People) rather than People keeping its
 // own tab for comparatively little content. Profile is the fifth tab again
 // (owner, 2026-10-04): Home / Discover / Create / Activity / Profile, one job
-// each; only Messages stays a header icon. A stack screen whose workflow a
-// tab switch would close opens MyProfile, the same ProfileScreen presented on
-// top (navigation/presentationRoutes.js).
+// each; only Messages stays a header icon. Editing your profile is its own
+// stack screen, EditProfile (item 35, 2026-10-08), opened from the Profile tab,
+// Settings and Dating Preferences, so Back returns to where the person was.
 const lcFirst = (n) => n.charAt(0).toLowerCase() + n.slice(1);
 const TAB_ICONS = {
   Home: { active: 'home', inactive: 'home-outline' },
@@ -407,7 +408,7 @@ export default function RootNavigator() {
                 into it as a mode, so there's no separate pushed Discover
                 screen anymore; `navigate('Discover')` from a sibling tab
                 resolves to the tab directly. */}
-            <Stack.Screen name="MyProfile" component={ProfileScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('ui.profile.editYourProfile'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Messages" component={MessagesScreen} options={{ headerShown: true, title: t('ui.nav.title.messages'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="OnboardingRecommendations" component={OnboardingRecommendationsScreen} />
             <Stack.Screen name="OnboardingOccasions" component={OnboardingOccasionsScreen} />

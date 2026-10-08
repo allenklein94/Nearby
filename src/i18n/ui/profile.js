@@ -146,6 +146,8 @@ export default {
       getOutMore: "Get out more",
     },
     joinedNearbyOn: "Joined Nearby on {date}",
+    editInterests: "Edit interests ›",
+    addInterests: "Add your interests ›",
   },
   es: {
     yourProfileIsComplete: "Tu perfil está completo al {percent}%",
@@ -292,6 +294,8 @@ export default {
       getOutMore: "Salir más",
     },
     joinedNearbyOn: "Se unió a Nearby el {date}",
+    editInterests: "Editar intereses ›",
+    addInterests: "Añade tus intereses ›",
   },
   de: {
     yourProfileIsComplete: "Dein Profil ist zu {percent} % vollständig",
@@ -438,6 +442,8 @@ export default {
       getOutMore: "Öfter rausgehen",
     },
     joinedNearbyOn: "Bei Nearby seit {date}",
+    editInterests: "Interessen bearbeiten ›",
+    addInterests: "Füge deine Interessen hinzu ›",
   },
   fr: {
     yourProfileIsComplete: "Votre profil est complet à {percent} %",
@@ -584,6 +590,8 @@ export default {
       getOutMore: "Sortir davantage",
     },
     joinedNearbyOn: "A rejoint Nearby le {date}",
+    editInterests: "Modifier les centres d'intérêt ›",
+    addInterests: "Ajoute tes centres d'intérêt ›",
   },
   pt: {
     yourProfileIsComplete: "Seu perfil está {percent}% completo",
@@ -730,6 +738,8 @@ export default {
       getOutMore: "Sair mais",
     },
     joinedNearbyOn: "Entrou no Nearby em {date}",
+    editInterests: "Editar interesses ›",
+    addInterests: "Adicione seus interesses ›",
   },
   ht: {
     yourProfileIsComplete: "Pwofil ou fini a {percent}%",
@@ -876,6 +886,8 @@ export default {
       getOutMore: "Soti plis",
     },
     joinedNearbyOn: "Antre nan Nearby {date}",
+    editInterests: "Modifye enterè yo ›",
+    addInterests: "Ajoute enterè ou yo ›",
   },
   zh: {
     yourProfileIsComplete: "你的资料已完成 {percent}%",
@@ -1022,6 +1034,8 @@ export default {
       getOutMore: "多出去走走",
     },
     joinedNearbyOn: "于 {date} 加入 Nearby",
+    editInterests: "编辑兴趣 ›",
+    addInterests: "添加你的兴趣 ›",
   },
   vi: {
     yourProfileIsComplete: "Hồ sơ của bạn đã hoàn thành {percent}%",
@@ -1168,6 +1182,8 @@ export default {
       getOutMore: "Ra ngoài nhiều hơn",
     },
     joinedNearbyOn: "Tham gia Nearby vào {date}",
+    editInterests: "Sửa sở thích ›",
+    addInterests: "Thêm sở thích của bạn ›",
   },
   tl: {
     yourProfileIsComplete: "{percent}% kumpleto na ang profile mo",
@@ -1314,6 +1330,8 @@ export default {
       getOutMore: "Mas madalas lumabas",
     },
     joinedNearbyOn: "Sumali sa Nearby noong {date}",
+    editInterests: "I-edit ang mga interes ›",
+    addInterests: "Idagdag ang iyong mga interes ›",
   },
   ru: {
     yourProfileIsComplete: "Ваш профиль заполнен на {percent}%",
@@ -1460,6 +1478,8 @@ export default {
       getOutMore: "Чаще выходить из дома",
     },
     joinedNearbyOn: "В Nearby с {date}",
+    editInterests: "Изменить интересы ›",
+    addInterests: "Добавьте свои интересы ›",
   },
   ko: {
     yourProfileIsComplete: "프로필이 {percent}% 완성됐어요",
@@ -1606,5 +1626,7 @@ export default {
       getOutMore: "더 자주 외출하기",
     },
     joinedNearbyOn: "{date}에 Nearby 가입",
+    editInterests: "관심사 편집 ›",
+    addInterests: "관심사 추가하기 ›",
   },
 };

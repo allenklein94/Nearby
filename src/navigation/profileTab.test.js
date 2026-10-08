@@ -1,6 +1,6 @@
-// Profile is the fifth bottom tab (owner, 2026-10-04): Home / Discover / Create / Activity / Profile, one job each. A tab
-// entry switches to it; a stack screen whose workflow a tab switch would close (Dating Preferences) opens MyProfile, the same
-// ProfileScreen presented on top, so Back returns there. Driven through React Navigation's real Stack and Tab routers.
+// Profile is the fifth bottom tab (owner, 2026-10-04): Home / Discover / Create / Activity / Profile, one job each. Profile is
+// a destination (item 35, 2026-10-08): editing it is its own stack screen, EditProfile, opened from the tab, Settings and
+// Dating Preferences, so Back returns to where the person was. Driven through React Navigation's real Stack and Tab routers.
 const fs = require('fs');
 const path = require('path');
 const { StackRouter, TabRouter, StackActions, CommonActions } = require('@react-navigation/routers');
@@ -46,15 +46,42 @@ describe('the five tabs', () => {
   });
 });
 
-describe('one Profile surface', () => {
-  test('ProfileScreen renders only as the tab and its on-top presentation', () => {
-    const uses = [...nav.matchAll(/<(\w+)\.Screen name="(\w+)" component=\{ProfileScreen\}/g)].map((m) => `${m[1]}:${m[2]}`);
-    expect(uses.sort()).toEqual(['Stack:MyProfile', 'Tab:Profile']);
-    expect(PRESENTATION_ROUTES.MyProfile).toEqual({ surface: 'Profile' });
-    expect(canonicalRoute('MyProfile')).toBe('Profile');
-    const { SCREEN_REGISTRY } = require('../constants/screenRegistry');
+describe('one Profile surface, one edit screen', () => {
+  test('ProfileScreen renders only as the tab; EditProfile renders it in edit mode', () => {
+    const uses = [...nav.matchAll(/<(\w+)\.Screen name="(\w+)" component=\{(ProfileScreen|EditProfileScreen)\}/g)].map((m) => `${m[1]}:${m[2]}:${m[3]}`);
+    expect(uses.sort()).toEqual(['Stack:EditProfile:EditProfileScreen', 'Tab:Profile:ProfileScreen']);
+    expect(read('screens/EditProfileScreen.js')).toMatch(/<ProfileScreen \{\.\.\.props\} mode="edit" \/>/);
+    expect(PRESENTATION_ROUTES.MyProfile).toBeUndefined();
+    const { SCREEN_REGISTRY, RULE14_DECISIONS } = require('../constants/screenRegistry');
     expect(SCREEN_REGISTRY.Profile.surface).toBe(true);
-    expect(SCREEN_REGISTRY.MyProfile).toBeUndefined();
+    expect(SCREEN_REGISTRY.EditProfile.jobs).toEqual(['C']);
+    expect(RULE14_DECISIONS.removed).toContain('MyProfile');
+  });
+  test('the summary holds no edit form; the form renders only in edit mode', () => {
+    const p = read('screens/ProfileScreen.js');
+    const summary = p.slice(p.indexOf('{!editing && ('), p.indexOf('{editing && ('));
+    const edit = p.slice(p.indexOf('{editing && ('), p.indexOf('</ScrollView>'));
+    for (const field of ['onPress={changePhoto}', 'onPress={save}', 'onPress={openAddPrompt}', 'onChangeText={setBio}']) {
+      expect({ field, inSummary: summary.includes(field) }).toEqual({ field, inSummary: false });
+    }
+    expect(edit).toMatch(/onPress=\{save\}/);
+    expect(edit).toMatch(/onPress=\{changePhoto\}/);
+    // Edit Profile, Complete profile and the interests link all open the edit screen; nothing scrolls the tab to a form
+    expect(summary.match(/navigation\.navigate\('EditProfile'/g)).toHaveLength(3);
+    expect(summary).not.toMatch(/editSectionYRef/);
+  });
+  test('the summary reads: you, interests, friends, gatherings, ..., business, settings', () => {
+    const p = read('screens/ProfileScreen.js');
+    const summary = p.slice(p.indexOf('{!editing && ('), p.indexOf('{editing && ('));
+    const at = (k) => summary.indexOf(k);
+    const order = ['snapshotCard', "ui.profile.myInterests", "ui.profile.yourConnections", "ui.profile.yourPlans", "ui.profile.business')", "ui.nav.title.settings"].map(at);
+    expect(order.every((x) => x >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+  test('saving on Edit Profile returns to where the person came from; the tab re-reads on focus', () => {
+    const p = read('screens/ProfileScreen.js');
+    expect(p).toMatch(/if \(editing && navigation\.canGoBack\?\.\(\)\) navigation\.goBack\(\);/);
+    expect(p).toMatch(/editing \? null : navigation\.addListener\?\.\('focus', load\)/);
   });
   test('no navigable reference is left to a stack "Profile" route', () => {
     const files = [];
@@ -63,7 +90,7 @@ describe('one Profile surface', () => {
       if (e.isDirectory()) walk(f); else if (/\.js$/.test(e.name) && !/\.test\.js$/.test(e.name)) files.push(f);
     });
     walk(SRC);
-    const ok = (f) => ['screens/SettingsScreen.js'].includes(path.relative(SRC, f));
+    const ok = () => false;
     const hits = files.filter((f) => !ok(f) && /(navigate|push)\(\s*'Profile'/.test(fs.readFileSync(f, 'utf8')));
     expect(hits.map((f) => path.relative(SRC, f))).toEqual([]);
   });
@@ -71,55 +98,39 @@ describe('one Profile surface', () => {
 
 // Real routers: a root stack whose first route hosts the tabs.
 const stackR = StackRouter({});
-const sOpts = { routeNames: ['MainTabs', 'Settings', 'DatingPreferences', 'MyProfile', 'Plans', 'Messages'], routeParamList: {}, routeGetIdList: {} };
+const sOpts = { routeNames: ['MainTabs', 'Settings', 'DatingPreferences', 'EditProfile', 'Plans', 'Messages'], routeParamList: {}, routeGetIdList: {} };
 const tabR = TabRouter({});
 const tOpts = { routeNames: TABS, routeParamList: {}, routeGetIdList: {} };
 const names = (s) => s.routes.map((r) => r.name);
 
-describe('Settings -> Profile is a tab switch', () => {
-  test('Settings uses the trail-keeping tab navigation with a fresh scroll target each tap', () => {
-    const src = read('screens/SettingsScreen.js');
-    expect(src.match(/navigateKeepingTrail\(navigation, 'Profile', \{ scrollToInterestsSection: Date\.now\(\) \}\)/g)).toHaveLength(2);
-    expect(read('services/openDestination.js')).toMatch(/new Set\(\['Home', 'Discover', 'Create', 'Activity', 'Profile'\]\)/);
+describe('every edit entry pushes Edit Profile on top', () => {
+  test('Settings and Dating Preferences push EditProfile with a fresh scroll target, never a tab switch', () => {
+    const settings = read('screens/SettingsScreen.js');
+    expect(settings.match(/navigation\.push\('EditProfile', \{ scrollToInterestsSection: Date\.now\(\) \}\)/g)).toHaveLength(2);
+    expect(settings).not.toMatch(/'Profile', \{ scrollTo/);
+    const dp = read('screens/DatingPreferencesScreen.js');
+    expect(dp).toMatch(/navigation\.push\('EditProfile', \{ scrollToInterestsSection: Date\.now\(\) \}\)/);
+    expect(dp).toMatch(/navigation\.push\('EditProfile', \{ scrollToGenderSection: Date\.now\(\) \}\)/);
+    expect(dp).not.toMatch(/navigate\('Profile'|'MyProfile'/);
   });
-  test('focusing the Profile tab closes Settings above the tabs and selects Profile, keeping the other tabs', () => {
-    let tabs = tabR.getInitialState(tOpts);
-    const homeRoute = tabs.routes[0];
-    let root = stackR.getStateForAction(stackR.getInitialState(sOpts), StackActions.push('Settings'), sOpts);
-    expect(names(root)).toEqual(['MainTabs', 'Settings']);
-    // the tab router handles the navigate; the stack focuses the tab host (React Navigation's route-focus step)
-    tabs = tabR.getStateForAction(tabs, CommonActions.navigate('Profile', { scrollToInterestsSection: 1 }), tOpts);
-    root = stackR.getStateForRouteFocus(root, root.routes[0].key);
-    expect(names(root)).toEqual(['MainTabs']);
-    expect(tabs.routes[tabs.index].name).toBe('Profile');
-    expect(tabs.routes[tabs.index].params).toEqual({ scrollToInterestsSection: 1 });
-    expect(tabs.routes[0]).toBe(homeRoute);
-  });
-  test('Profile re-scrolls on a second tap (the scroll target is a new value, not the same true)', () => {
+  test('Edit Profile re-scrolls on a second tap (the scroll target is a new value, not the same true)', () => {
     const p = read('screens/ProfileScreen.js');
     expect(p).toMatch(/\}, \[route\?\.params\?\.scrollToInterestsSection\]\);/);
     expect(p).toMatch(/\}, \[route\?\.params\?\.scrollToGenderSection\]\);/);
   });
-});
-
-describe('a stack-origin Profile entry presents Profile on top', () => {
-  test('Dating Preferences opens MyProfile (both links), never a tab switch', () => {
-    const src = read('screens/DatingPreferencesScreen.js');
-    expect(src).toMatch(/navigation\.push\('MyProfile'\)/);
-    expect(src).toMatch(/navigation\.push\('MyProfile', \{ scrollToGenderSection: Date\.now\(\) \}\)/);
-    expect(src).not.toMatch(/navigate\('Profile'/);
+  test('Back from Edit Profile returns exactly to the screen that opened it', () => {
+    for (const origin of ['Settings', 'DatingPreferences']) {
+      let root = stackR.getStateForAction(stackR.getInitialState(sOpts), StackActions.push(origin, { draft: 'kept' }), sOpts);
+      const before = root.routes[1];
+      root = stackR.getStateForAction(root, StackActions.push('EditProfile', { scrollToGenderSection: 5 }), sOpts);
+      expect(names(root)).toEqual(['MainTabs', origin, 'EditProfile']);
+      root = stackR.getStateForAction(root, CommonActions.goBack(), sOpts);
+      expect(names(root)).toEqual(['MainTabs', origin]);
+      expect(root.routes[1]).toBe(before);
+    }
   });
-  test('Back from MyProfile returns exactly to Dating Preferences', () => {
-    let root = stackR.getStateForAction(stackR.getInitialState(sOpts), StackActions.push('DatingPreferences', { draft: 'kept' }), sOpts);
-    const origin = root.routes[1];
-    root = stackR.getStateForAction(root, StackActions.push('MyProfile', { scrollToGenderSection: 5 }), sOpts);
-    expect(names(root)).toEqual(['MainTabs', 'DatingPreferences', 'MyProfile']);
-    root = stackR.getStateForAction(root, CommonActions.goBack(), sOpts);
-    expect(names(root)).toEqual(['MainTabs', 'DatingPreferences']);
-    expect(root.routes[1]).toBe(origin);
-  });
-  test('the return trail names the presentation "Back to your profile"', () => {
+  test('the return trail names Edit Profile "Back to your profile"', () => {
     const { trailLabelKey } = require('./returnTrail');
-    expect(trailLabelKey({ routes: [{ name: 'MyProfile' }] })).toBe('ui.returnTrail.myProfile');
+    expect(trailLabelKey({ routes: [{ name: 'EditProfile' }] })).toBe('ui.returnTrail.myProfile');
   });
 });

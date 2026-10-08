@@ -139,7 +139,9 @@
   "goal.exploreCity": "Explore my city",
   "goal.findCommunity": "Find community",
   "goal.getOutMore": "Get out more",
-  "joinedNearbyOn": "Joined Nearby on {date}"
+  "joinedNearbyOn": "Joined Nearby on {date}",
+  "editInterests": "Edit interests ›",
+  "addInterests": "Add your interests ›"
  },
  "es": {
   "yourProfileIsComplete": "Tu perfil está completo al {percent}%",
@@ -281,7 +283,9 @@
   "goal.exploreCity": "Explorar mi ciudad",
   "goal.findCommunity": "Encontrar comunidad",
   "goal.getOutMore": "Salir más",
-  "joinedNearbyOn": "Se unió a Nearby el {date}"
+  "joinedNearbyOn": "Se unió a Nearby el {date}",
+  "editInterests": "Editar intereses ›",
+  "addInterests": "Añade tus intereses ›"
  },
  "de": {
   "yourProfileIsComplete": "Dein Profil ist zu {percent} % vollständig",
@@ -423,7 +427,9 @@
   "goal.exploreCity": "Meine Stadt entdecken",
   "goal.findCommunity": "Gemeinschaft finden",
   "goal.getOutMore": "Öfter rausgehen",
-  "joinedNearbyOn": "Bei Nearby seit {date}"
+  "joinedNearbyOn": "Bei Nearby seit {date}",
+  "editInterests": "Interessen bearbeiten ›",
+  "addInterests": "Füge deine Interessen hinzu ›"
  },
  "fr": {
   "yourProfileIsComplete": "Votre profil est complet à {percent} %",
@@ -565,7 +571,9 @@
   "goal.exploreCity": "Explorer ma ville",
   "goal.findCommunity": "Trouver une communauté",
   "goal.getOutMore": "Sortir davantage",
-  "joinedNearbyOn": "A rejoint Nearby le {date}"
+  "joinedNearbyOn": "A rejoint Nearby le {date}",
+  "editInterests": "Modifier les centres d'intérêt ›",
+  "addInterests": "Ajoute tes centres d'intérêt ›"
  },
  "pt": {
   "yourProfileIsComplete": "Seu perfil está {percent}% completo",
@@ -707,7 +715,9 @@
   "goal.exploreCity": "Explorar minha cidade",
   "goal.findCommunity": "Encontrar uma comunidade",
   "goal.getOutMore": "Sair mais",
-  "joinedNearbyOn": "Entrou no Nearby em {date}"
+  "joinedNearbyOn": "Entrou no Nearby em {date}",
+  "editInterests": "Editar interesses ›",
+  "addInterests": "Adicione seus interesses ›"
  },
  "ht": {
   "yourProfileIsComplete": "Pwofil ou fini a {percent}%",
@@ -849,7 +859,9 @@
   "goal.exploreCity": "Eksplore vil mwen",
   "goal.findCommunity": "Jwenn yon kominote",
   "goal.getOutMore": "Soti plis",
-  "joinedNearbyOn": "Antre nan Nearby {date}"
+  "joinedNearbyOn": "Antre nan Nearby {date}",
+  "editInterests": "Modifye enterè yo ›",
+  "addInterests": "Ajoute enterè ou yo ›"
  },
  "zh": {
   "yourProfileIsComplete": "你的资料已完成 {percent}%",
@@ -991,7 +1003,9 @@
   "goal.exploreCity": "探索我的城市",
   "goal.findCommunity": "找到归属",
   "goal.getOutMore": "多出去走走",
-  "joinedNearbyOn": "于 {date} 加入 Nearby"
+  "joinedNearbyOn": "于 {date} 加入 Nearby",
+  "editInterests": "编辑兴趣 ›",
+  "addInterests": "添加你的兴趣 ›"
  },
  "vi": {
   "yourProfileIsComplete": "Hồ sơ của bạn đã hoàn thành {percent}%",
@@ -1133,7 +1147,9 @@
   "goal.exploreCity": "Khám phá thành phố",
   "goal.findCommunity": "Tìm cộng đồng",
   "goal.getOutMore": "Ra ngoài nhiều hơn",
-  "joinedNearbyOn": "Tham gia Nearby vào {date}"
+  "joinedNearbyOn": "Tham gia Nearby vào {date}",
+  "editInterests": "Sửa sở thích ›",
+  "addInterests": "Thêm sở thích của bạn ›"
  },
  "tl": {
   "yourProfileIsComplete": "{percent}% kumpleto na ang profile mo",
@@ -1275,7 +1291,9 @@
   "goal.exploreCity": "Tuklasin ang lungsod ko",
   "goal.findCommunity": "Makahanap ng komunidad",
   "goal.getOutMore": "Mas madalas lumabas",
-  "joinedNearbyOn": "Sumali sa Nearby noong {date}"
+  "joinedNearbyOn": "Sumali sa Nearby noong {date}",
+  "editInterests": "I-edit ang mga interes ›",
+  "addInterests": "Idagdag ang iyong mga interes ›"
  },
  "ru": {
   "yourProfileIsComplete": "Ваш профиль заполнен на {percent}%",
@@ -1417,7 +1435,9 @@
   "goal.exploreCity": "Узнать свой город",
   "goal.findCommunity": "Найти своих",
   "goal.getOutMore": "Чаще выходить из дома",
-  "joinedNearbyOn": "В Nearby с {date}"
+  "joinedNearbyOn": "В Nearby с {date}",
+  "editInterests": "Изменить интересы ›",
+  "addInterests": "Добавьте свои интересы ›"
  },
  "ko": {
   "yourProfileIsComplete": "프로필이 {percent}% 완성됐어요",
@@ -1559,6 +1579,8 @@
   "goal.exploreCity": "우리 동네 탐험",
   "goal.findCommunity": "커뮤니티 찾기",
   "goal.getOutMore": "더 자주 외출하기",
-  "joinedNearbyOn": "{date}에 Nearby 가입"
+  "joinedNearbyOn": "{date}에 Nearby 가입",
+  "editInterests": "관심사 편집 ›",
+  "addInterests": "관심사 추가하기 ›"
  }
 }

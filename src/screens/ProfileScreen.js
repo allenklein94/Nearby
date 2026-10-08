@@ -97,7 +97,10 @@ const getAccordionStyles = (colors) => StyleSheet.create({
   body: { paddingBottom: spacing.md },
 });
 
-export default function ProfileScreen({ navigation, route }) {
+// Item 35 (owner, 2026-10-08): one component, two jobs. mode 'summary' = the Profile tab (a destination: who you are, interests,
+// friends, gatherings, business, settings); mode 'edit' = the Edit Profile screen (EditProfileScreen.js), the editing task.
+export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
+  const editing = mode === 'edit';
   const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
   const { colors, shadow } = useTheme();
   const { t, language } = useLanguage();
@@ -177,8 +180,12 @@ export default function ProfileScreen({ navigation, route }) {
   const interestsSectionYRef = useRef(0);
 
   useEffect(() => {
-    load();
+    if (editing) load();
+    // The summary loads on every focus (first focus included), so changes saved on Edit Profile show the moment the person
+    // comes back so changes saved on Edit Profile show the moment the person comes back.
+    const unsubscribe = editing ? null : navigation.addListener?.('focus', load);
     return () => {
+      if (unsubscribe) unsubscribe();
       if (recordingIntroTimerRef.current) clearInterval(recordingIntroTimerRef.current);
     };
   }, []);
@@ -550,6 +557,7 @@ export default function ProfileScreen({ navigation, route }) {
       .eq('id', userId);
     if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => save() });
     showSuccessToast(t('ui.profile.saved'));
+    if (editing && navigation.canGoBack?.()) navigation.goBack();
   }
 
   async function changePhoto() {
@@ -619,6 +627,8 @@ export default function ProfileScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView ref={scrollRef} contentContainerStyle={{ padding: spacing.lg }}>
+        {!editing && (
+          <>
         <View style={styles.header}>
           <Text style={styles.headerTitle} accessibilityRole="header">{t('profile.title')}</Text>
           <TouchableOpacity
@@ -632,36 +642,14 @@ export default function ProfileScreen({ navigation, route }) {
         </View>
         <Text style={styles.subtitle}>{t('ui.profile.yourStoryYourStatsYour')}</Text>
 
-        {/* Aug 27 2026 plan (CLAUDE.md), Decision 7: a real, distinct
-            "Preferences ->" entry point, separate from the generic Settings
-            gear above -- lands scrolled straight to Settings' own
-            Preferences group instead of the top of the screen, reusing the
-            same scroll-target route-param pattern this file's own
-            scrollToGenderSection consume already established. The plain
-            Settings gear is untouched -- this is additive, not a
-            replacement. */}
-        <TouchableOpacity
-          style={styles.timelineLink}
-          onPress={() => navigation.navigate('Settings', { scrollToPreferences: true })}
-          activeOpacity={0.85}
-          accessibilityLabel={t('ui.profile.preferencesControlWhoAndWhatA11y')}
-          accessibilityRole="button"
-        >
-          <View style={styles.timelineLinkTextCol}>
-            <Text style={styles.timelineLinkText}>{t('ui.profile.preferences')}</Text>
-            <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.controlWhoAndWhatNearby')}</Text>
-          </View>
-          <Text style={styles.timelineLinkChevron}>›</Text>
-        </TouchableOpacity>
-
         {/* Aug 23 2026 IA pass (CLAUDE.md): a real "who am I" snapshot,
             first thing on the screen — direct feedback was that this
             screen dropped straight into numbers (stat tiles) with no
             visual sense of "this is me" until scrolling all the way down
             to the photo/bio editing fields. Read-only preview of the
             same already-loaded state the edit fields below use (no new
-            query) — tapping "Edit Profile" scrolls straight to that
-            section instead of making the user hunt for it. */}
+            query) — tapping "Edit Profile" opens the Edit Profile screen
+            (item 35: editing is a different task, its own screen). */}
         <View style={styles.snapshotCard}>
           {photoUrl ? (
             <Image source={{ uri: photoUrl }} style={styles.snapshotPhoto} />
@@ -674,7 +662,7 @@ export default function ProfileScreen({ navigation, route }) {
               {bio ? bio : t('ui.profile.addABioSoPeople')}
             </Text>
             <TouchableOpacity
-              onPress={() => scrollRef.current?.scrollTo({ y: editSectionYRef.current, animated: true })}
+              onPress={() => navigation.navigate('EditProfile')}
               accessibilityLabel={t('ui.profile.editYourProfileA11y')}
               accessibilityRole="button"
             >
@@ -702,7 +690,7 @@ export default function ProfileScreen({ navigation, route }) {
             </View>
             <TouchableOpacity
               style={styles.completenessCta}
-              onPress={() => scrollRef.current?.scrollTo({ y: editSectionYRef.current, animated: true })}
+              onPress={() => navigation.navigate('EditProfile')}
               accessibilityLabel={t('ui.profile.completeYourProfileA11y')}
               accessibilityRole="button"
             >
@@ -711,32 +699,37 @@ export default function ProfileScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* External UX critique item 31 (2026-09-11): "Profile should be
-            about ME" -- identity, interests, plans, communities, activity,
-            in that order. Identity (the snapshot card above) already led;
-            Plans/Connections/Story already followed, but interests
-            themselves only ever showed up as an editable chooser far down
-            inside "Edit Your Profile" -- there was no read-only "this is
-            what I'm into" summary near the top the way there already is
-            for plans/connections. Same chip treatment ViewProfileScreen
-            already uses to show a real *other* person's interests
-            (read-only, primary-tinted) -- not the toggleable chooser
-            further down, which stays exactly where it is as the actual
-            editing tool. Tapping through goes to that same chooser via the
-            snapshot card's own "Edit Profile ›" link above; no duplicate
-            edit affordance needed here. */}
+        {/* Item 35 (owner, 2026-10-08): interests are always a section of the summary; editing them is the Edit Profile
+            screen's job, opened scrolled to the interest picker. No interests = the same link reads "Add your interests". */}
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.myInterests')}</Text>
         {interests.length > 0 && (
-          <>
-            <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.myInterests')}</Text>
-            <View style={styles.chipsWrap}>
-              {interests.map((interest) => (
-                <View key={interest} style={styles.interestSummaryChip}>
-                  <Text style={styles.interestSummaryChipText}>{names.tag(interest)}</Text>
-                </View>
-              ))}
-            </View>
-          </>
+          <View style={styles.chipsWrap}>
+            {interests.map((interest) => (
+              <View key={interest} style={styles.interestSummaryChip}>
+                <Text style={styles.interestSummaryChipText}>{names.tag(interest)}</Text>
+              </View>
+            ))}
+          </View>
         )}
+        <TouchableOpacity
+          onPress={() => navigation.navigate('EditProfile', { scrollToInterestsSection: Date.now() })}
+          accessibilityLabel={interests.length > 0 ? t('ui.profile.editInterests') : t('ui.profile.addInterests')}
+          accessibilityRole="button"
+        >
+          <Text style={styles.snapshotEditLink}>{interests.length > 0 ? t('ui.profile.editInterests') : t('ui.profile.addInterests')}</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.yourConnections')}</Text>
+        <View style={styles.quickStatsRow}>
+          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Communities')} accessibilityLabel={countLabel(quickStats.communities, 'community', 'communities')} accessibilityRole="button">
+            <Text style={styles.quickStatNumber}>{quickStats.communities}</Text>
+            <Text style={styles.quickStatLabel}>{t('ui.profile.communities')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Friends')} accessibilityLabel={countLabel(quickStats.friends, 'friend')} accessibilityRole="button">
+            <Text style={styles.quickStatNumber}>{quickStats.friends}</Text>
+            <Text style={styles.quickStatLabel}>{t('ui.profile.friends')}</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Aug 23 2026 IA pass (CLAUDE.md): "Your Plans" pulled out as its
             own leading section — "what am I actually doing" is a more
@@ -780,18 +773,6 @@ export default function ProfileScreen({ navigation, route }) {
               <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.anniversariesGraduationsAndOtherReal')}</Text>
             </View>
             <Text style={styles.timelineLinkChevron}>›</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.yourConnections')}</Text>
-        <View style={styles.quickStatsRow}>
-          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Communities')} accessibilityLabel={countLabel(quickStats.communities, 'community', 'communities')} accessibilityRole="button">
-            <Text style={styles.quickStatNumber}>{quickStats.communities}</Text>
-            <Text style={styles.quickStatLabel}>{t('ui.profile.communities')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Friends')} accessibilityLabel={countLabel(quickStats.friends, 'friend')} accessibilityRole="button">
-            <Text style={styles.quickStatNumber}>{quickStats.friends}</Text>
-            <Text style={styles.quickStatLabel}>{t('ui.profile.friends')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -879,17 +860,44 @@ export default function ProfileScreen({ navigation, route }) {
           </TouchableOpacity>
         )}
 
-        {/* A real visual break, not just another sectionLabel — everything
-            above this point is a read-only summary of "your life on
-            Nearby" (plans, connections, story, business); everything
-            below is the identity-editing form. onLayout captures this
-            section's real y-position so the snapshot card's "Edit
-            Profile" link can scroll straight to it. */}
+        {/* Item 35: Settings is the last section of the summary (the gear in the header stays as the usual shortcut). */}
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.nav.title.settings')}</Text>
+        <TouchableOpacity
+          style={styles.timelineLink}
+          onPress={() => navigation.navigate('Settings', { scrollToPreferences: true })}
+          activeOpacity={0.85}
+          accessibilityLabel={t('ui.profile.preferencesControlWhoAndWhatA11y')}
+          accessibilityRole="button"
+        >
+          <View style={styles.timelineLinkTextCol}>
+            <Text style={styles.timelineLinkText}>{t('ui.profile.preferences')}</Text>
+            <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.controlWhoAndWhatNearby')}</Text>
+          </View>
+          <Text style={styles.timelineLinkChevron}>›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.timelineLink}
+          onPress={() => navigation.navigate('Settings')}
+          activeOpacity={0.85}
+          accessibilityLabel={t('ui.profile.settingsA11y')}
+          accessibilityRole="button"
+        >
+          <View style={styles.timelineLinkTextCol}>
+            <Text style={styles.timelineLinkText}>{t('ui.nav.title.settings')}</Text>
+          </View>
+          <Text style={styles.timelineLinkChevron}>›</Text>
+        </TouchableOpacity>
+
+          </>
+        )}
+        {editing && (
+          <>
+        {/* Item 35 (owner, 2026-10-08): the identity-editing form is its own screen (EditProfile), not the bottom of the
+            Profile tab. onLayout keeps the top of the form measurable for the "gender identity" scroll target. */}
         <View
           style={styles.editSectionDivider}
           onLayout={(e) => { editSectionYRef.current = e.nativeEvent.layout.y; }}
         >
-          <Text style={styles.editSectionTitle} accessibilityRole="header">{t('ui.profile.editYourProfile')}</Text>
           <Text style={styles.editSectionSubtitle}>{t('ui.profile.yourPhotosBioAndWhat')}</Text>
         </View>
         <TouchableOpacity
@@ -1344,6 +1352,8 @@ export default function ProfileScreen({ navigation, route }) {
         >
           <Text style={styles.buttonText}>{t('profile.save')}</Text>
         </TouchableOpacity>
+          </>
+        )}
       </ScrollView>
 
       <Modal visible={questionPickerVisible} animationType={modalAnimation('slide')} onRequestClose={() => setQuestionPickerVisible(false)}>
