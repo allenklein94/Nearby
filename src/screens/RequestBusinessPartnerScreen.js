@@ -1,30 +1,19 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ScrollView, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyPartnershipTargets, requestBusinessPartnership } from '../services/businessPartnerships';
-import { getActivePartnersByName, getAllActivePartners } from '../services/brandOffers';
-import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
-import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
-import { groupName } from '../i18n/categoryNames';
-import { tr } from '../i18n/translate';
+import BusinessPicker from '../components/BusinessPicker';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
-// A business category chip/label in the person's language: the group's icon + its translated name (ui.requestPartner.otherCategory for
-// a business filed under Other).
-function categoryLabel(key, language) {
-  const g = CATEGORY_GROUPS.find((x) => x.key === key);
-  return g ? `${g.icon} ${groupName(key, language)}` : `✨ ${tr('ui.requestPartner.otherCategory')}`;
-}
-
-// Two entry shapes: no targetType/targetId (top-level Create tab — pick a
-// target first) or both passed (a per-target link on GatheringDetailScreen/
-// CommunityDetailScreen — skip straight to business search).
+// Partner a COMMUNITY with one business (pick it, add a note, send the partnership request), or, from the Create tab with
+// no target, pick which gathering or community first. A gathering never stays here: asking one business for a gathering
+// is the ordinary request on Ask a business, which picks the business in place (screen-reduction audit B7, 2026-10-09).
 export default function RequestBusinessPartnerScreen({ navigation, route }) {
   const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
@@ -42,15 +31,9 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
     presetTargetType ? { type: presetTargetType, id: presetTargetId, title: presetTargetTitle } : null
   );
 
-  const [businessQuery, setBusinessQuery] = useState(initialBusinessQuery);
-  const [results, setResults] = useState([]);
-  const [searching, setSearching] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [browsablePartners, setBrowsablePartners] = useState([]);
-  const [loadingBrowsable, setLoadingBrowsable] = useState(true);
-  const [categoryFilter, setCategoryFilter] = useState(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -66,46 +49,6 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
       return () => { cancelled = true; };
     }, [presetTargetType])
   );
-
-  // Every active business on the platform, shown by default underneath the
-  // search box — without this, a business you don't already know the name
-  // of is undiscoverable, since search only ever matches a typed name.
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false;
-      (async () => {
-        const data = await getAllActivePartners();
-        if (!cancelled) {
-          setBrowsablePartners(data);
-          setLoadingBrowsable(false);
-        }
-      })();
-      return () => { cancelled = true; };
-    }, [])
-  );
-
-  async function search(text) {
-    setBusinessQuery(text);
-    if (text.trim().length < 2) {
-      setResults([]);
-      return;
-    }
-    setSearching(true);
-    const data = await getActivePartnersByName(text);
-    setResults(data);
-    setSearching(false);
-  }
-
-  // Only chip categories that at least one real business on the platform
-  // actually has — never all 6 keys unconditionally, which would be a filter
-  // row promising results a tap would never return. "Uncategorized" only
-  // appears if a real business genuinely has no category set yet.
-  const availableCategories = useMemo(() => {
-    const present = new Set(browsablePartners.map((p) => p.category ?? 'uncategorized'));
-    return BUSINESS_CATEGORIES.filter((c) => present.has(c.key)).concat(
-      present.has('uncategorized') ? [{ key: 'uncategorized', label: t('ui.requestPartner.uncategorized') }] : []
-    );
-  }, [browsablePartners]);
 
   async function submit() {
     if (!selectedTarget || !selectedPartner) return;
@@ -168,6 +111,17 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
               style={styles.row}
               activeOpacity={0.85}
               onPress={() => {
+                if (item.type === 'gathering') {
+                  // A gathering's ask to one business is the ordinary request; Ask a business picks the business in place.
+                  navigation.replace('AskBusiness', {
+                    gatheringId: item.id,
+                    gatheringTitle: item.title,
+                    pickBusiness: true,
+                    initialBusinessQuery,
+                    partnershipTarget: { targetType: 'gathering', targetId: item.id },
+                  });
+                  return;
+                }
                 setSelectedTarget(item);
                 setStep('business');
               }}
@@ -193,93 +147,9 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
         <Text style={styles.subheader}>for {selectedTarget?.title}</Text>
 
         {!selectedPartner ? (
-          <>
-            <TextInput
-              style={styles.input}
-              placeholder={t('ui.requestPartner.searchBusinessesByName')}
-              placeholderTextColor={colors.textTertiary}
-              value={businessQuery}
-              onChangeText={search}
-              accessibilityLabel={t('ui.requestPartner.searchBusinessesA11y')}
-            />
-            {(() => {
-              const isSearching = businessQuery.trim().length >= 2;
-              const sourceData = isSearching ? results : browsablePartners;
-              const listData = categoryFilter
-                ? sourceData.filter((p) => (p.category ?? 'uncategorized') === categoryFilter)
-                : sourceData;
-              const busy = isSearching ? searching : loadingBrowsable;
-              return (
-                <>
-                  {availableCategories.length > 0 && (
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      style={{ marginTop: spacing.md }}
-                      contentContainerStyle={{ gap: spacing.xs }}
-                    >
-                      <TouchableOpacity
-                        style={[styles.chip, !categoryFilter && styles.chipActive]}
-                        onPress={() => setCategoryFilter(null)}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('ui.requestPartner.allCategoriesA11y')}
-                        accessibilityState={{ selected: !categoryFilter }}
-                      >
-                        <Text style={[styles.chipText, !categoryFilter && styles.chipTextActive]}>{t('ui.requestPartner.all')}</Text>
-                      </TouchableOpacity>
-                      {availableCategories.map((c) => (
-                        <TouchableOpacity
-                          key={c.key}
-                          style={[styles.chip, categoryFilter === c.key && styles.chipActive]}
-                          onPress={() => setCategoryFilter(categoryFilter === c.key ? null : c.key)}
-                          accessibilityRole="button"
-                          accessibilityLabel={c.key === 'uncategorized' ? c.label : categoryLabel(c.key, language)}
-                          accessibilityState={{ selected: categoryFilter === c.key }}
-                        >
-                          <Text style={[styles.chipText, categoryFilter === c.key && styles.chipTextActive]}>{c.key === 'uncategorized' ? c.label : categoryLabel(c.key, language)}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  )}
-                  {!isSearching && !loadingBrowsable && browsablePartners.length > 0 && (
-                    <Text style={styles.browseLabel}>{t('ui.requestPartner.businessesOnNearby')}</Text>
-                  )}
-                  {busy && <NLoader fullScreen={false} size="inline" kind="businesses" />}
-                  <FlatList
-                    data={listData}
-                    keyExtractor={(p) => p.id}
-                    contentContainerStyle={{ paddingTop: spacing.md }}
-                    ListEmptyComponent={
-                      !busy ? (
-                        <Text style={styles.emptyText}>
-                          {isSearching
-                            ? t('ui.requestPartner.noMatchingBusinessesFound')
-                            : categoryFilter
-                              ? t('ui.requestPartner.noBusinessesInThisCategory')
-                              : t('ui.requestPartner.noBusinessesOnNearbyYet')}
-                        </Text>
-                      ) : null
-                    }
-                    renderItem={({ item }) => (
-                      <TouchableOpacity style={styles.row} activeOpacity={0.85} onPress={() => setSelectedPartner(item)} accessibilityRole="button">
-                        {item.logo_url ? (
-                          <Image source={{ uri: item.logo_url }} style={styles.logo} />
-                        ) : (
-                          <View style={[styles.logo, styles.logoFallback]}>
-                            <Text style={styles.logoFallbackText}>🏪</Text>
-                          </View>
-                        )}
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.rowTitle}>{item.name}</Text>
-                          {item.category && <Text style={styles.rowSubtitle}>{categoryLabel(item.category, language)}</Text>}
-                        </View>
-                      </TouchableOpacity>
-                    )}
-                  />
-                </>
-              );
-            })()}
-          </>
+          <ScrollView keyboardShouldPersistTaps="handled">
+            <BusinessPicker initialQuery={initialBusinessQuery} onPick={setSelectedPartner} />
+          </ScrollView>
         ) : (
           <>
             <View style={styles.selectedCard}>
@@ -288,26 +158,6 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
                 <Text style={styles.changeLink}>{t('ui.requestPartner.change')}</Text>
               </TouchableOpacity>
             </View>
-            {selectedTarget?.type === 'gathering' ? (
-              <>
-                {/* Same form and request model as asking nearby businesses; the only difference is that it goes to this one business. */}
-                <Text style={styles.rowSubtitle}>{t('ui.requestPartner.tellWhatYoureLookingFor', { name: selectedPartner.name })}</Text>
-                <TouchableOpacity
-                  style={styles.submitButton}
-                  onPress={() => navigation.navigate('AskBusiness', {
-                    gatheringId: selectedTarget.id,
-                    gatheringTitle: selectedTarget.title,
-                    targetPartner: { id: selectedPartner.id, name: selectedPartner.name },
-                    partnershipTarget: { targetType: 'gathering', targetId: selectedTarget.id },
-                  })}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('ui.requestPartner.askA11y', { name: selectedPartner.name })}
-                >
-                  <Text style={styles.submitButtonText}>{t('ui.requestPartner.ask', { name: selectedPartner.name })}</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
             <TextInput
                 style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
                 placeholder={t('ui.requestPartner.addANoteForThem')}
@@ -320,8 +170,6 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
               <TouchableOpacity style={styles.submitButton} onPress={submit} disabled={submitting} accessibilityRole="button">
                 {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>{t('ui.requestPartner.sendRequest')}</Text>}
               </TouchableOpacity>
-                        </>
-            )}
           </>
         )}
       </SafeAreaView>

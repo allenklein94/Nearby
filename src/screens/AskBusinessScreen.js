@@ -1,3 +1,4 @@
+import BusinessPicker from '../components/BusinessPicker';
 import { askMissingField } from '../utils/askMissing';
 import { tr } from '../i18n/translate';
 import { useLanguage } from '../context/LanguageContext';
@@ -180,7 +181,12 @@ export default function AskBusinessScreen({ navigation, route }) {
 
   // "Ask this specific business": the SAME form and request model as asking nearby businesses; only the recipient differs
   // (one chosen business instead of the ranked nearby set). { id, name }, plus partnershipTarget when it started from a gathering.
-  const targetPartner = route.params?.targetPartner ?? null;
+  // Screen-reduction audit B7 (2026-10-09): a gathering's "Request a specific business" opens here with pickBusiness, and
+  // the business is picked IN PLACE (BusinessPicker) instead of on a separate screen first; Change picks again.
+  const pickBusiness = route.params?.pickBusiness === true;
+  const [pickedPartner, setPickedPartner] = useState(null);
+  const targetPartner = route.params?.targetPartner ?? (pickedPartner ? { id: pickedPartner.id, name: pickedPartner.name } : null);
+  const choosingBusiness = pickBusiness && !targetPartner;
   // Item 72: opened from a business's Reserve / Book / Request CTA. Same request, worded for what the person tapped.
   const [noteToBusiness, setNoteToBusiness] = useState('');
   // Optional preferred start time (deterministic picker, never inferred). null = any time.
@@ -610,6 +616,18 @@ export default function AskBusinessScreen({ navigation, route }) {
               onContinue={() => askDraft.restore(applyAskDraft)}
               onDiscard={askDraft.discard}
             />
+          )}
+          {choosingBusiness ? (
+            <>
+              <Text style={styles.heading}>{t('ui.requestPartner.partnerWithABusiness')}</Text>
+              {gatheringTitle ? <Text style={styles.subtitle}>{t('ui.askBusiness.findSomewhereToGo', { gatheringTitle })}</Text> : null}
+              <BusinessPicker initialQuery={route.params?.initialBusinessQuery ?? ''} onPick={setPickedPartner} />
+            </>
+          ) : (<>
+          {pickBusiness && pickedPartner && (
+            <TouchableOpacity onPress={() => setPickedPartner(null)} accessibilityRole="button" accessibilityLabel={t('ui.requestPartner.change')}>
+              <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: spacing.xs }}>← {t('ui.requestPartner.change')}</Text>
+            </TouchableOpacity>
           )}
           <Text style={styles.heading}>
             {targetPartner
@@ -1109,6 +1127,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           >
             {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>{gatheringId && targetPartner ? t('ui.askBusiness.ask', { name: targetPartner.name }) : t('ui.askBusiness.askNearbyBusinesses')}</Text>}
           </TouchableOpacity>
+          </>)}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

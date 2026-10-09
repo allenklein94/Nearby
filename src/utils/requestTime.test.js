@@ -30,7 +30,7 @@ test('the free-text note exists only on a targeted request and reaches only that
   expect(sql).not.toMatch(/create or replace function public\.business_safe_request_summary/i);
 });
 test('the specific-business flow reuses AskBusiness instead of a thinner form', () => {
-  expect(read('src/screens/RequestBusinessPartnerScreen.js')).toMatch(/navigation\.navigate\('AskBusiness'/);
+  expect(read('src/screens/RequestBusinessPartnerScreen.js')).toMatch(/navigation\.replace\('AskBusiness'/);
   expect(read('src/screens/BusinessProfileScreen.js')).toMatch(/targetPartner: \{ id: partnerId/);
   expect(read('src/screens/AskBusinessScreen.js')).toMatch(/t\('ui\.askBusiness\.ask', \{ name: targetPartner\.name \}\)/); // "Ask {name}" (askBusiness ui namespace)
 });

@@ -1068,7 +1068,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                           style={styles.businessHelpChooserOption}
                           onPress={() => {
                             setBusinessHelpChooserOpen(false);
-                            navigation.navigate('RequestBusinessPartner', { targetType: 'gathering', targetId: gatheringId, targetTitle: gathering.title });
+                            navigation.navigate('AskBusiness', { gatheringId, gatheringTitle: gathering.title, pickBusiness: true, partnershipTarget: { targetType: 'gathering', targetId: gatheringId } });
                           }}
                           accessibilityLabel={t('ui.gatheringDetail.specificA11y')}
                           accessibilityRole="button"

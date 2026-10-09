@@ -102,7 +102,7 @@ export const SCREEN_REGISTRY = {
   GroupPlan: { jobs: ['B', 'C', 'E'], reason: 'Respond to a group plan, confirm offers and manage it.' },
   GroupOccasionPlan: { jobs: ['B', 'C'], reason: 'Vote on and respond to an occasion group plan.' },
   AskBusiness: { jobs: ['B'], reason: 'Send a request to nearby businesses (or one business).' },
-  RequestBusinessPartner: { jobs: ['B'], reason: 'Pick the business to ask, then continue into the request.' },
+  RequestBusinessPartner: { jobs: ['B'], reason: 'Partner a community with one business (pick it, add a note), or pick which gathering/community first from the Create tab; a gathering continues on Ask a business, which picks the business in place (audit B7).' },
   BusinessRequestDetail: { jobs: ['E', 'C'], reason: 'Your request\'s replies: accept an offer, cancel or reopen.' },
   BusinessProfile: { jobs: ['F'], reason: 'A business\'s full profile, hours and how to book.' },
   BusinessConversation: { jobs: ['D'], reason: 'A conversation between a customer and a business.' },
