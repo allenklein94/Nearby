@@ -9,6 +9,9 @@ export default {
     revealHeader: '{name} made you an offer', aLocalBusiness: 'A local business', aBusiness: 'A business',
     type: { standard: 'Standard offer', discount: 'Discount', perk: 'Perk', upgrade: 'Upgrade', alt_time: 'Alternate time' },
     perPerson: '{price}/person',
+    arrivalOffers: { one: '{count} offer came in', other: '{count} offers came in' },
+    arrivalReplies: { one: '{count} reply came in', other: '{count} replies came in' },
+    arrivalOpenA11y: '{title}. Opens it.',
   },
   es: {
     replyAvailability: '{name} puede recibirte', replyAlternative: '{name} sugirió otro horario', replyOffer: '{name} te hizo una oferta',
@@ -18,6 +21,9 @@ export default {
     revealHeader: '{name} te hizo una oferta', aLocalBusiness: 'Un negocio local', aBusiness: 'Un negocio',
     type: { standard: 'Oferta estándar', discount: 'Descuento', perk: 'Beneficio', upgrade: 'Mejora', alt_time: 'Otro horario' },
     perPerson: '{price}/persona',
+    arrivalOffers: { one: 'Llegó {count} oferta', other: 'Llegaron {count} ofertas' },
+    arrivalReplies: { one: 'Llegó {count} respuesta', other: 'Llegaron {count} respuestas' },
+    arrivalOpenA11y: '{title}. Lo abre.',
   },
   de: {
     replyAvailability: '{name} kann dich empfangen', replyAlternative: '{name} hat eine andere Zeit vorgeschlagen', replyOffer: '{name} hat dir ein Angebot gemacht',
@@ -27,6 +33,9 @@ export default {
     revealHeader: '{name} hat dir ein Angebot gemacht', aLocalBusiness: 'Ein Geschäft in der Nähe', aBusiness: 'Ein Geschäft',
     type: { standard: 'Standardangebot', discount: 'Rabatt', perk: 'Extra', upgrade: 'Upgrade', alt_time: 'Andere Zeit' },
     perPerson: '{price}/Person',
+    arrivalOffers: { one: '{count} Angebot ist eingegangen', other: '{count} Angebote sind eingegangen' },
+    arrivalReplies: { one: '{count} Antwort ist eingegangen', other: '{count} Antworten sind eingegangen' },
+    arrivalOpenA11y: '{title}. Öffnet es.',
   },
   fr: {
     replyAvailability: '{name} peut vous accueillir', replyAlternative: '{name} a proposé un autre horaire', replyOffer: '{name} vous a fait une offre',
@@ -36,6 +45,9 @@ export default {
     revealHeader: '{name} vous a fait une offre', aLocalBusiness: 'Un commerce local', aBusiness: 'Un commerce',
     type: { standard: 'Offre standard', discount: 'Réduction', perk: 'Avantage', upgrade: 'Surclassement', alt_time: 'Autre horaire' },
     perPerson: '{price}/personne',
+    arrivalOffers: { one: '{count} offre est arrivée', other: '{count} offres sont arrivées' },
+    arrivalReplies: { one: '{count} réponse est arrivée', other: '{count} réponses sont arrivées' },
+    arrivalOpenA11y: "{title}. L'ouvre.",
   },
   pt: {
     replyAvailability: '{name} pode receber você', replyAlternative: '{name} sugeriu outro horário', replyOffer: '{name} fez uma oferta para você',
@@ -45,6 +57,9 @@ export default {
     revealHeader: '{name} fez uma oferta para você', aLocalBusiness: 'Um estabelecimento local', aBusiness: 'Um estabelecimento',
     type: { standard: 'Oferta padrão', discount: 'Desconto', perk: 'Benefício', upgrade: 'Upgrade', alt_time: 'Outro horário' },
     perPerson: '{price}/pessoa',
+    arrivalOffers: { one: 'Chegou {count} oferta', other: 'Chegaram {count} ofertas' },
+    arrivalReplies: { one: 'Chegou {count} resposta', other: 'Chegaram {count} respostas' },
+    arrivalOpenA11y: '{title}. Abre.',
   },
   ht: {
     replyAvailability: '{name} ka resevwa w', replyAlternative: '{name} pwopoze yon lòt lè', replyOffer: '{name} fè w yon òf',
@@ -54,6 +69,9 @@ export default {
     revealHeader: '{name} fè w yon òf', aLocalBusiness: 'Yon biznis nan zòn nan', aBusiness: 'Yon biznis',
     type: { standard: 'Òf nòmal', discount: 'Rabè', perk: 'Avantaj', upgrade: 'Amelyorasyon', alt_time: 'Yon lòt lè' },
     perPerson: '{price}/moun',
+    arrivalOffers: { other: '{count} òf rive' },
+    arrivalReplies: { other: '{count} repons rive' },
+    arrivalOpenA11y: '{title}. Ouvri l.',
   },
   zh: {
     replyAvailability: '{name} 可以接待你', replyAlternative: '{name} 建议了另一个时间', replyOffer: '{name} 给你发了一个优惠',
@@ -63,6 +81,9 @@ export default {
     revealHeader: '{name} 给你发了一个优惠', aLocalBusiness: '一家本地商家', aBusiness: '一家商家',
     type: { standard: '标准优惠', discount: '折扣', perk: '福利', upgrade: '升级', alt_time: '其他时间' },
     perPerson: '{price}/人',
+    arrivalOffers: { other: '收到{count}个优惠' },
+    arrivalReplies: { other: '收到{count}条回复' },
+    arrivalOpenA11y: '{title}。点击打开。',
   },
   vi: {
     replyAvailability: '{name} có thể tiếp đón bạn', replyAlternative: '{name} đã đề xuất thời gian khác', replyOffer: '{name} đã gửi bạn một ưu đãi',
@@ -72,6 +93,9 @@ export default {
     revealHeader: '{name} đã gửi bạn một ưu đãi', aLocalBusiness: 'Một cơ sở địa phương', aBusiness: 'Một cơ sở',
     type: { standard: 'Ưu đãi tiêu chuẩn', discount: 'Giảm giá', perk: 'Quà tặng', upgrade: 'Nâng cấp', alt_time: 'Thời gian khác' },
     perPerson: '{price}/người',
+    arrivalOffers: { other: 'Có {count} ưu đãi mới' },
+    arrivalReplies: { other: 'Có {count} phản hồi mới' },
+    arrivalOpenA11y: '{title}. Mở xem.',
   },
   tl: {
     replyAvailability: 'Kaya kang tanggapin ng {name}', replyAlternative: 'Nagmungkahi ang {name} ng ibang oras', replyOffer: 'Binigyan ka ng {name} ng alok',
@@ -81,6 +105,9 @@ export default {
     revealHeader: 'Binigyan ka ng {name} ng alok', aLocalBusiness: 'Isang lokal na negosyo', aBusiness: 'Isang negosyo',
     type: { standard: 'Karaniwang alok', discount: 'Diskwento', perk: 'Pribilehiyo', upgrade: 'Upgrade', alt_time: 'Ibang oras' },
     perPerson: '{price}/tao',
+    arrivalOffers: { one: 'May {count} alok na dumating', other: 'May {count} alok na dumating' },
+    arrivalReplies: { one: 'May {count} sagot na dumating', other: 'May {count} sagot na dumating' },
+    arrivalOpenA11y: '{title}. Bubuksan ito.',
   },
   ru: {
     replyAvailability: '{name} может вас принять', replyAlternative: '{name} предлагает другое время', replyOffer: '{name} сделал(а) вам предложение',
@@ -90,6 +117,9 @@ export default {
     revealHeader: '{name} сделал(а) вам предложение', aLocalBusiness: 'Местное заведение', aBusiness: 'Заведение',
     type: { standard: 'Обычное предложение', discount: 'Скидка', perk: 'Бонус', upgrade: 'Улучшение', alt_time: 'Другое время' },
     perPerson: '{price}/чел.',
+    arrivalOffers: { one: 'Пришло {count} предложение', few: 'Пришло {count} предложения', many: 'Пришло {count} предложений', other: 'Пришло {count} предложения' },
+    arrivalReplies: { one: 'Пришёл {count} ответ', few: 'Пришло {count} ответа', many: 'Пришло {count} ответов', other: 'Пришло {count} ответа' },
+    arrivalOpenA11y: '{title}. Открыть.',
   },
   ko: {
     replyAvailability: '{name}에서 받아 줄 수 있어요', replyAlternative: '{name}에서 다른 시간을 제안했어요', replyOffer: '{name}에서 제안을 보냈어요',
@@ -99,5 +129,8 @@ export default {
     revealHeader: '{name}에서 제안을 보냈어요', aLocalBusiness: '동네 업체', aBusiness: '업체',
     type: { standard: '기본 제안', discount: '할인', perk: '혜택', upgrade: '업그레이드', alt_time: '다른 시간' },
     perPerson: '1인 {price}',
+    arrivalOffers: { other: '제안 {count}개가 도착했어요' },
+    arrivalReplies: { other: '답변 {count}개가 도착했어요' },
+    arrivalOpenA11y: '{title}. 열어 보기.',
   },
 };

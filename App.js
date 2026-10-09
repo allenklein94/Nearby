@@ -10,6 +10,7 @@ import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import { SuccessToastHost } from './src/motion';
+import OfferArrivalHost from './src/components/OfferArrivalSignal';
 import { setupNotificationTapHandling } from './src/services/notifications';
 import { STRIPE_PUBLISHABLE_KEY, isStripeConfigured } from './src/services/stripeConnect';
 
@@ -60,6 +61,7 @@ function App() {
               <StatusBarWithTheme />
               <RootNavigator />
               <SuccessToastHost />
+              <OfferArrivalHost />
             </MaybeStripeProvider>
           </AuthProvider>
         </LanguageProvider>

@@ -9,6 +9,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Scro
 import * as Calendar from 'expo-calendar';
 import { NLoader, SuccessAnimation, ModeTransition } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
+import { subscribeViewedArrivals } from '../services/offerArrivals';
 import { useStripe, initStripe } from '@stripe/stripe-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
@@ -646,6 +647,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   }
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+  // Offer arrival signal (services/offerArrivals.js): a reply that lands on THIS request while it is on screen is not
+  // announced with a signal; the screen just reloads in place.
+  useEffect(() => subscribeViewedArrivals((id) => { if (id === requestId) load(); }), [requestId, load]);
 
   async function handleAccept(offerId) {
     setActingOfferId(offerId);

@@ -52,3 +52,19 @@ export function acceptedReplyTitle(partnerName, offer) {
 export function offerRevealHeader(partnerName) {
   return tr('ui.offerCopy.revealHeader', { name: partnerName || tr('ui.offerCopy.aBusiness') });
 }
+
+// The in-app arrival signal (services/offerArrivals.js). One reply = the same line Activity uses ("Coastal Coffee made you
+// an offer"); several = "2 offers came in" only when every one really is an offer, else "2 replies came in" (item 121:
+// plain availability is never called an offer).
+export function arrivalSignalTitle(signal) {
+  const items = signal?.items ?? [];
+  if (items.length === 0) return null;
+  if (items.length === 1) return businessReplyTitle(items[0].partnerName, items[0].offer);
+  const allOffers = items.every((i) => businessReplyKind(i.offer) === 'offer');
+  return tr(allOffers ? 'ui.offerCopy.arrivalOffers' : 'ui.offerCopy.arrivalReplies', { count: items.length });
+}
+
+export function arrivalSignalA11y(signal) {
+  const title = arrivalSignalTitle(signal);
+  return title ? tr('ui.offerCopy.arrivalOpenA11y', { title }) : null;
+}
